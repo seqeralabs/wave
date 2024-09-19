@@ -98,15 +98,15 @@ class LocalPersistenceService implements PersistenceService {
         scanStore.get(scanId)
     }
 
-    MirrorState loadMirrorResult(String mirrorId) {
+    MirrorState loadMirrorState(String mirrorId) {
         mirrorStore.get(mirrorId)
     }
 
-    MirrorState loadMirrorResult(String targetImage, String digest) {
+    MirrorState loadMirrorState(String targetImage, String digest) {
         mirrorStore.values().find( (MirrorState mirror) ->  mirror.targetImage==targetImage && mirror.digest==digest )
     }
 
-    void saveMirrorResult(MirrorState mirror) {
+    void saveMirrorState(MirrorState mirror) {
         mirrorStore.put(mirror.mirrorId, mirror)
     }
 

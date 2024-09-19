@@ -141,7 +141,7 @@ interface PersistenceService {
      * @param mirrorId The ID of the mirror record
      * @return The corresponding {@link MirrorState} object or null if it cannot be found
      */
-    MirrorState loadMirrorResult(String mirrorId)
+    MirrorState loadMirrorState(String mirrorId)
 
     /**
      * Load a mirror result record given the target image name and the image digest
@@ -150,13 +150,13 @@ interface PersistenceService {
      * @param digest The image content SHA256 digest
      * @return The corresponding {@link MirrorState} object or null if it cannot be found
      */
-    MirrorState loadMirrorResult(String targetImage, String digest)
+    MirrorState loadMirrorState(String targetImage, String digest)
 
     /**
      * Persists a {@link MirrorState} object
      *
      * @param mirror {@link MirrorState} object
      */
-    void saveMirrorResult(MirrorState mirror)
+    void saveMirrorState(MirrorState mirror)
 
 }

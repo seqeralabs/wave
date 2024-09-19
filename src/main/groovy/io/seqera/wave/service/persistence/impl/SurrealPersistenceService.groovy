@@ -262,7 +262,7 @@ class SurrealPersistenceService implements PersistenceService {
      * @param mirrorId The ID of the mirror record
      * @return The corresponding {@link MirrorState} object or null if it cannot be found
      */
-    MirrorState loadMirrorResult(String mirrorId) {
+    MirrorState loadMirrorState(String mirrorId) {
         final query = "select * from wave_mirror where mirrorId = '$mirrorId'"
         final json = surrealDb.sqlAsString(getAuthorization(), query)
         final type = new TypeReference<ArrayList<SurrealResult<MirrorState>>>() {}
@@ -278,7 +278,7 @@ class SurrealPersistenceService implements PersistenceService {
      * @param digest The image content SHA256 digest
      * @return The corresponding {@link MirrorState} object or null if it cannot be found
      */
-    MirrorState loadMirrorResult(String targetImage, String digest) {
+    MirrorState loadMirrorState(String targetImage, String digest) {
         final query = "select * from wave_mirror where targetImage = '$targetImage' and digest = '$digest'"
         final json = surrealDb.sqlAsString(getAuthorization(), query)
         final type = new TypeReference<ArrayList<SurrealResult<MirrorState>>>() {}
@@ -293,7 +293,7 @@ class SurrealPersistenceService implements PersistenceService {
      * @param mirror {@link MirrorState} object
      */
     @Override
-    void saveMirrorResult(MirrorState mirror) {
+    void saveMirrorState(MirrorState mirror) {
         surrealDb.insertMirrorAsync(getAuthorization(), mirror).subscribe({ result->
             log.trace "Mirror request with id '$mirror.mirrorId' saved record: ${result}"
         }, {error->

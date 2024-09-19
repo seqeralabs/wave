@@ -23,12 +23,17 @@ import spock.lang.Specification
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 import groovy.util.logging.Slf4j
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.inspect.ContainerInspectService
+import io.seqera.wave.service.job.JobSpec
+import io.seqera.wave.service.job.JobState
+import io.seqera.wave.service.mirror.impl.ContainerMirrorServiceImpl
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
@@ -41,7 +46,7 @@ import jakarta.inject.Inject
 class ContainerMirrorServiceTest extends Specification {
 
     @Inject
-    ContainerMirrorService service
+    ContainerMirrorServiceImpl mirrorService
 
     @Inject
     MirrorStateStore mirrorStateStore
@@ -69,9 +74,9 @@ class ContainerMirrorServiceTest extends Specification {
                 folder,
                 creds )
         and:
-        service.mirrorImage(request)
+        mirrorService.mirrorImage(request)
         then:
-        service.awaitCompletion(target)
+        mirrorService.awaitCompletion(target)
                 .get(90, TimeUnit.SECONDS)
                 .succeeded()
 
@@ -89,13 +94,13 @@ class ContainerMirrorServiceTest extends Specification {
                 Path.of('/some/dir'),
                 '{config}' )
         and:
-        def result = MirrorState.from(request)
+        def state = MirrorState.from(request)
         and:
-        persistenceService.saveMirrorResult(result)
+        persistenceService.saveMirrorState(state)
         when:
-        def copy = service.getMirrorState(request.id)
+        def copy = mirrorService.getMirrorState(request.id)
         then:
-        copy == result
+        copy == state
     }
 
     def 'should get mirror result from persistent service' () {
@@ -108,13 +113,94 @@ class ContainerMirrorServiceTest extends Specification {
                 Path.of('/some/dir'),
                 '{config}' )
         and:
-        def result = MirrorState.from(request)
+        def state = MirrorState.from(request)
         and:
-        mirrorStateStore.put('target/foo', result)
+        mirrorStateStore.put('target/foo', state)
         when:
-        def copy = service.getMirrorState(request.id)
+        def copy = mirrorService.getMirrorState(request.id)
         then:
-        copy == result
+        copy == state
+    }
+
+    def 'should update mirror state on job completion' () {
+        given:
+        def request = MirrorRequest.create(
+                'source/foo',
+                'target/foo',
+                'sha256:12345',
+                ContainerPlatform.DEFAULT,
+                Path.of('/some/dir'),
+                '{config}' )
+        and:
+        def state = MirrorState.from(request)
+        def job = JobSpec.mirror(request.id, 'mirror-123', Instant.now(), Duration.ofMillis(1), Mock(Path))
+        when:
+        mirrorService.onJobCompletion(job, state, new JobState(JobState.Status.SUCCEEDED, 0, 'OK'))
+        then:
+        def s1 = mirrorStateStore.get(request.targetImage)
+        and:
+        s1.done()
+        s1.succeeded()
+        s1.exitCode == 0
+        s1.logs == 'OK'
+        and:
+        def s2 = persistenceService.loadMirrorState(request.id)
+        and:
+        s2 == s1
+    }
+
+    def 'should update mirror state on job exception' () {
+        given:
+        def request = MirrorRequest.create(
+                'source/foo',
+                'target/foo',
+                'sha256:12345',
+                ContainerPlatform.DEFAULT,
+                Path.of('/some/dir'),
+                '{config}' )
+        and:
+        def state = MirrorState.from(request)
+        def job = JobSpec.mirror(request.id, 'mirror-123', Instant.now(), Duration.ofMillis(1), Mock(Path))
+        when:
+        mirrorService.onJobException(job, state, new Exception('Oops something went wrong'))
+        then:
+        def s1 = mirrorStateStore.get(request.targetImage)
+        and:
+        s1.done()
+        !s1.succeeded()
+        s1.exitCode == null
+        s1.logs == 'Oops something went wrong'
+        and:
+        def s2 = persistenceService.loadMirrorState(request.id)
+        and:
+        s2 == s1
+    }
+
+    def 'should update mirror state on job timeout' () {
+        given:
+        def request = MirrorRequest.create(
+                'source/foo',
+                'target/foo',
+                'sha256:12345',
+                ContainerPlatform.DEFAULT,
+                Path.of('/some/dir'),
+                '{config}' )
+        and:
+        def state = MirrorState.from(request)
+        def job = JobSpec.mirror(request.id, 'mirror-123', Instant.now(), Duration.ofMillis(1), Mock(Path))
+        when:
+        mirrorService.onJobTimeout(job, state)
+        then:
+        def s1 = mirrorStateStore.get(request.targetImage)
+        and:
+        s1.done()
+        !s1.succeeded()
+        s1.exitCode == null
+        s1.logs == 'Container mirror timed out'
+        and:
+        def s2 = persistenceService.loadMirrorState(request.id)
+        and:
+        s2 == s1
     }
 
 }

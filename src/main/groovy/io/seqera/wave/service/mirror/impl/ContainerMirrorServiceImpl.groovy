@@ -96,7 +96,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
      */
     @Override
     MirrorState getMirrorState(String mirrorId) {
-        store.getByRecordId(mirrorId) ?: persistence.loadMirrorResult(mirrorId)
+        store.getByRecordId(mirrorId) ?: persistence.loadMirrorState(mirrorId)
     }
 
     /**
@@ -114,7 +114,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
     void onJobCompletion(JobSpec jobSpec, MirrorState mirror, JobState jobState) {
         final result = mirror.complete(jobState.exitCode, jobState.stdout)
         store.put(mirror.targetImage, result)
-        persistence.saveMirrorResult(mirror)
+        persistence.saveMirrorState(result)
         log.debug "Mirror container completed - job=${jobSpec.operationName}; result=${result}; state=${jobState}"
     }
 
@@ -123,9 +123,9 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
      */
     @Override
     void onJobTimeout(JobSpec jobSpec, MirrorState mirror) {
-        final result = mirror.complete(null, "Mirror container timed out")
+        final result = mirror.complete(null, "Container mirror timed out")
         store.put(mirror.targetImage, result)
-        persistence.saveMirrorResult(mirror)
+        persistence.saveMirrorState(result)
         log.warn "Mirror container timed out - job=${jobSpec.operationName}; result=${result}"
     }
 
@@ -136,7 +136,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
     void onJobException(JobSpec jobSpec, MirrorState mirror, Throwable error) {
         final result = mirror.complete(null, error.message)
         store.put(mirror.targetImage, result)
-        persistence.saveMirrorResult(mirror)
+        persistence.saveMirrorState(result)
         log.error("Mirror container errored - job=${jobSpec.operationName}; result=${result}", error)
     }
 }
