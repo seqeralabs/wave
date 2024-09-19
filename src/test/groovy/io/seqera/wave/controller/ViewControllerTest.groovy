@@ -364,6 +364,8 @@ class ViewControllerTest extends Specification {
         '12345'         | 1     | Mock(WaveBuildRecord) { buildId >> '12345_99' }       | '/view/builds/12345_99'
         '12345'         | 1     | Mock(WaveBuildRecord) { buildId >> 'xyz_99' }         | null
         'foo-887766'    | 1     | Mock(WaveBuildRecord) { buildId >> 'foo-887766_99' }  | '/view/builds/foo-887766_99'
+        'foo-887766'    | 1     | Mock(WaveBuildRecord) { buildId >> 'foo-887766' }     | null
+
     }
 
 }

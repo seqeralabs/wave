@@ -76,20 +76,19 @@ class ViewController {
         // check redirection for invalid suffix in the form `-nn`
         final r1 = shouldRedirect1(buildId)
         if( r1 ) {
-            log.debug "Redirect to build page: $r1"
+            log.debug "Redirect to build page [1]: $r1"
             return HttpResponse.redirect(URI.create(r1))
         }
         // check redirection when missing the suffix `_nn`
         final r2 = shouldRedirect2(buildId)
         if( r2 ) {
-            log.debug "Redirect to build page: $r2"
+            log.debug "Redirect to build page [2]: $r2"
             return HttpResponse.redirect(URI.create(r2))
         }
         // go ahead with proper handling
         final record = buildService.getBuildRecord(buildId)
         if( !record )
             throw new NotFoundException("Unknown build id '$buildId'")
-        log.debug "View build page for: $buildId"
         return HttpResponse.ok(renderBuildView(record))
     }
 
@@ -112,7 +111,11 @@ class ViewController {
             return null
 
         final rec = buildService.getLatestBuild(buildId)
-        if( !rec || !rec.buildId.startsWith(buildId) )
+        if( !rec )
+            return null
+        if( !rec.buildId.startsWith(buildId) )
+            return null
+        if( rec.buildId==buildId )
             return null
 
         return "/view/builds/${rec.buildId}"
