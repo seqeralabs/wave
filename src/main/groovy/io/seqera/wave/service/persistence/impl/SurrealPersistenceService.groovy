@@ -94,7 +94,7 @@ class SurrealPersistenceService implements PersistenceService {
             throw new IllegalStateException("Unable to define SurrealDB table wave_mirror - cause: $ret5")
     }
 
-    private String getAuthorization() {
+    protected String getAuthorization() {
         "Basic "+"$user:$password".bytes.encodeBase64()
     }
 
@@ -144,6 +144,21 @@ class SurrealPersistenceService implements PersistenceService {
     @Override
     WaveBuildRecord loadBuild(String targetImage, String digest) {
         final query = "select * from wave_build where targetImage = '$targetImage' and digest = '$digest'"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result[0] : null
+        return result
+    }
+
+    @Override
+    WaveBuildRecord latestBuild(String containerId) {
+        final query = """
+            select * 
+            from wave_build 
+            where buildId ~ '${containerId}${BuildRequest.SEP}' 
+            order by startTime desc limit 1
+            """.stripIndent()
         final json = surrealDb.sqlAsString(getAuthorization(), query)
         final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null

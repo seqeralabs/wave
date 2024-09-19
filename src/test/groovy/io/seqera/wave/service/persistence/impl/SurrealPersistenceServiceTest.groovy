@@ -171,6 +171,31 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         loaded == record
     }
 
+    def 'should find latest build' () {
+        given:
+        def surreal = applicationContext.getBean(SurrealClient)
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def auth = persistence.getAuthorization()
+        def request1 = new BuildRequest( containerId: 'abc', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(30), identity: PlatformId.NULL ).withBuildId('1')
+        def request2 = new BuildRequest( containerId: 'abc', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(20), identity: PlatformId.NULL ).withBuildId('2')
+        def request3 = new BuildRequest( containerId: 'abc', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(10), identity: PlatformId.NULL ).withBuildId('3')
+
+        def result1 = new BuildResult(request1.buildId, -1, "ok", request1.startTime, Duration.ofSeconds(2), null)
+        surreal.insertBuild(auth, WaveBuildRecord.fromEvent(new BuildEvent(request1, result1)))
+        and:
+        def result2 = new BuildResult(request2.buildId, -1, "ok", request2.startTime, Duration.ofSeconds(2), null)
+        surreal.insertBuild(auth, WaveBuildRecord.fromEvent(new BuildEvent(request2, result2)))
+        and:
+        def result3 = new BuildResult(request3.buildId, -1, "ok", request3.startTime, Duration.ofSeconds(2), null)
+        surreal.insertBuild(auth, WaveBuildRecord.fromEvent(new BuildEvent(request3, result3)))
+
+        when:
+        def loaded = persistence.latestBuild('abc')
+
+        then:
+        loaded.buildId == 'abc_3'
+    }
+
     def 'should save and update a build' () {
         given:
         def persistence = applicationContext.getBean(SurrealPersistenceService)
