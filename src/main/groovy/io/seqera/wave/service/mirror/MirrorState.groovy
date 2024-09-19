@@ -29,6 +29,7 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.cache.StateRecord
 import io.seqera.wave.service.job.JobRecord
 import jakarta.inject.Singleton
+
 /**
  * Model a container mirror result object
  *

@@ -34,8 +34,10 @@ import jakarta.inject.Singleton
 import static java.nio.file.StandardOpenOption.CREATE
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import static java.nio.file.StandardOpenOption.WRITE
+
 /**
- *
+ * Implements a container mirror runner based on Docker
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Singleton

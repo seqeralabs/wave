@@ -19,7 +19,8 @@
 package io.seqera.wave.service.cache
 
 /**
- *
+ * Marker interface for record object that model long running operation state
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 interface StateRecord {

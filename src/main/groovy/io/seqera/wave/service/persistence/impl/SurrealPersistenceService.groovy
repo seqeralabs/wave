@@ -257,7 +257,7 @@ class SurrealPersistenceService implements PersistenceService {
     // ===  mirror operations
 
     /**
-     * Load a mirror result record
+     * Load a mirror state record
      *
      * @param mirrorId The ID of the mirror record
      * @return The corresponding {@link MirrorState} object or null if it cannot be found
@@ -272,7 +272,7 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     /**
-     * Load a mirror result record given the target image name and the image digest
+     * Load a mirror state record given the target image name and the image digest
      *
      * @param targetImage The target mirrored image name
      * @param digest The image content SHA256 digest

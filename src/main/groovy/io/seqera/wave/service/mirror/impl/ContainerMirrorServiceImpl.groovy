@@ -37,6 +37,7 @@ import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
+
 /**
  * Implement a service to mirror a container image to a repository specified by the user
  *

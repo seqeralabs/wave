@@ -26,6 +26,7 @@ import io.seqera.wave.service.cache.AbstractCacheStore
 import io.seqera.wave.service.cache.impl.CacheProvider
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+
 /**
  * Implement a {@link io.seqera.wave.service.cache.CacheStore} for {@link MirrorState} objects
  *
