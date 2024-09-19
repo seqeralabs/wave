@@ -32,52 +32,85 @@ class LocalCacheProviderTest extends Specification {
     LocalCacheProvider localCacheProvider
 
 
-    def 'conditional put with current value when ke is not set'() {
-        when: 'conditionally set a key that has no current value'
-        def current = localCacheProvider.putIfAbsentAndGetCurrent('key', 'new-value', Duration.ofMillis(Long.MAX_VALUE))
+    def 'should get and put a key-value pair' () {
+        given:
+        def k = UUID.randomUUID().toString()
 
-        then: 'the provided value is returned'
-        current == 'new-value'
+        expect:
+        localCacheProvider.get(k) == null
 
-        and: 'the value is set in the store'
-        localCacheProvider.get('key') == 'new-value'
-        
         when:
-        def other = localCacheProvider.putIfAbsentAndGetCurrent('key', 'hola', Duration.ofMillis(Long.MAX_VALUE))
+        localCacheProvider.put(k, "hello")
         then:
-        // should not be set because it already exists
-        other == 'new-value'
+        localCacheProvider.get(k) == 'hello'
     }
 
-    def 'conditional put with current value when key is already set'() {
-        given: 'a store containing a mapping for key that is not expired'
-        localCacheProvider.put('key','existing', Duration.ofMillis(Long.MAX_VALUE))
+    def 'should get and put a key-value pair with ttl' () {
+        given:
+        def TTL = 100
+        def k = UUID.randomUUID().toString()
 
-        when: 'try to conditionally set the key to a new value'
-        def current = localCacheProvider.putIfAbsentAndGetCurrent('key', 'new-value', Duration.ofMillis(Long.MAX_VALUE))
+        expect:
+        localCacheProvider.get(k) == null
 
-        then: 'the existing value is returned'
-        current == 'existing'
-
-        and: 'the value is not updated in the store'
-        localCacheProvider.get('key') == 'existing'
+        when:
+        localCacheProvider.put(k, "hello", Duration.ofMillis(TTL))
+        then:
+        localCacheProvider.get(k) == 'hello'
+        then:
+        sleep(TTL *2)
+        and:
+        localCacheProvider.get(k) == null
     }
 
+    def 'should get and put only if absent' () {
+        given:
+        def k = UUID.randomUUID().toString()
 
-    def 'conditional put with current value when key is set and has expired'() {
-        given: 'a store containing a mapping for key that will expire'
-        localCacheProvider.put('key', 'existing', Duration.ofMillis(100))
-        // give time for cache store to expire the key
-        sleep(Duration.ofMillis(200).toMillis())
+        expect:
+        localCacheProvider.get(k) == null
 
-        when: 'try to conditionally set the key to a new value'
-        def current = localCacheProvider.putIfAbsentAndGetCurrent('key', 'new-value', Duration.ofMillis(100))
+        when:
+        def done = localCacheProvider.putIfAbsent(k, 'foo')
+        then:
+        done 
+        and:
+        localCacheProvider.get(k) == 'foo'
 
-        then: 'the provided value is returned'
-        current == 'new-value'
-
-        and: 'the value is updated is set in the store'
-        localCacheProvider.get('key') == 'new-value'
+        when:
+        done = localCacheProvider.putIfAbsent(k, 'bar')
+        then:
+        !done
+        and:
+        localCacheProvider.get(k) == 'foo'
     }
 
+    def 'should get and put if absent with ttl' () {
+        given:
+        def TTL = 100
+        def k = UUID.randomUUID().toString()
+
+        when:
+        def done = localCacheProvider.putIfAbsent(k, 'foo', Duration.ofMillis(TTL))
+        then:
+        done
+        and:
+        localCacheProvider.get(k) == 'foo'
+
+        when:
+        done = localCacheProvider.putIfAbsent(k, 'bar', Duration.ofMillis(TTL))
+        then:
+        !done
+        and:
+        localCacheProvider.get(k) == 'foo'
+
+        when:
+        sleep(TTL *2)
+        and:
+        done = localCacheProvider.putIfAbsent(k, 'bar', Duration.ofMillis(TTL))
+        then:
+        done
+        and:
+        localCacheProvider.get(k) == 'bar'
+    }
 }
