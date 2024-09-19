@@ -30,7 +30,6 @@ import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.configuration.BuildConfig
-import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
@@ -66,9 +65,6 @@ class KubeBuildStrategy extends BuildStrategy {
     private BuildConfig buildConfig
 
     @Inject
-    private SpackConfig spackConfig
-
-    @Inject
     private RegistryProxyService proxyService
 
 
@@ -95,8 +91,7 @@ class KubeBuildStrategy extends BuildStrategy {
             final buildCmd = launchCmd(req)
             final timeout = req.maxDuration ?: buildConfig.defaultTimeout
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
-            final spackCfg0 = req.isSpackBuild ? spackConfig : null
-            k8sService.launchBuildJob(jobName, buildImage, buildCmd, req.workDir, configFile, timeout, spackCfg0, selector)
+            k8sService.launchBuildJob(jobName, buildImage, buildCmd, req.workDir, configFile, timeout, selector)
         }
         catch (ApiException e) {
             throw new BadRequestException("Unexpected build failure - ${e.responseBody}", e)

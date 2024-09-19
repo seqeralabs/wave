@@ -36,7 +36,6 @@ import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.HttpClientConfig
-import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.HttpServerRetryableErrorException
 import io.seqera.wave.ratelimit.AcquireRequest
@@ -52,9 +51,7 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.stream.StreamService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.Retryable
-import io.seqera.wave.util.SpackHelper
 import io.seqera.wave.util.TarUtils
-import io.seqera.wave.util.TemplateRenderer
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -99,9 +96,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     @Inject
     @Nullable
     private RateLimiterService rateLimiterService
-
-    @Inject
-    private SpackConfig spackConfig
 
     @Inject
     private HttpClientConfig httpClientConfig
@@ -153,25 +147,13 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
                 .awaitBuild(targetImage)
     }
 
-    protected String containerFile0(BuildRequest req, Path context, SpackConfig config) {
+    protected String containerFile0(BuildRequest req, Path context) {
         // add the context dir for singularity builds
         final containerFile = req.formatSingularity()
                 ? req.containerFile.replace('{{wave_context_dir}}', context.toString())
                 : req.containerFile
 
-        // render the Spack template if needed
-        if( req.isSpackBuild ) {
-            final binding = new HashMap(2)
-            binding.spack_builder_image = config.builderImage
-            binding.spack_runner_image = config.runnerImage
-            binding.spack_arch = SpackHelper.toSpackArch(req.getPlatform())
-            binding.spack_cache_bucket = config.cacheBucket
-            binding.spack_key_file = config.secretMountPath
-            return new TemplateRenderer().render(containerFile, binding)
-        }
-        else {
-            return containerFile
-        }
+        return containerFile
     }
 
     protected void launch(BuildRequest req) {
@@ -184,7 +166,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
             catch (FileAlreadyExistsException e) { /* ignore it */ }
             // save the dockerfile
             final containerFile = req.workDir.resolve('Containerfile')
-            Files.write(containerFile, containerFile0(req, context, spackConfig).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            Files.write(containerFile, containerFile0(req, context).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             // save build context
             if( req.buildContext ) {
                 saveBuildContext(req.buildContext, context, req.identity)
@@ -193,11 +175,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
             if( req.condaFile ) {
                 final condaFile = context.resolve('conda.yml')
                 Files.write(condaFile, req.condaFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
-            }
-            // save the spack file
-            if( req.spackFile ) {
-                final spackFile = context.resolve('spack.yaml')
-                Files.write(spackFile, req.spackFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             }
             // save layers provided via the container config
             if( req.containerConfig ) {

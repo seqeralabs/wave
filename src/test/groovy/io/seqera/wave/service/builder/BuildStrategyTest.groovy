@@ -128,12 +128,11 @@ class BuildStrategyTest extends Specification {
         def content = 'FROM foo:latest'
         def workspace = Path.of("some/path")
         def buildrepo = 'foo.com/repo'
-        def containerId = ContainerHelper.makeContainerId(content, null, null, ContainerPlatform.of('amd64'), buildrepo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildrepo, containerId, null, null, null)
+        def containerId = ContainerHelper.makeContainerId(content, null, ContainerPlatform.of('amd64'), buildrepo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildrepo, containerId, null, null)
         def build = new BuildRequest(
                 containerId,
                 content,
-                null,
                 null,
                 workspace,
                 targetImage,
