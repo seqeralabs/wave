@@ -355,6 +355,21 @@ class MoshiEncodingStrategyTest extends Specification {
         copy == record1
     }
 
+    def 'should decode legacy record with spack config' () {
+        given:
+        def legacy = '{"buildId":"12345_1","condaFile":"conda spec","dockerFile":"from foo","duration":"3000000000","exitStatus":-1,"platform":"linux/amd64","requestIp":"1.2.3.4","scanId":"scan12345","spackFile":"spack spec","targetImage":"docker.io/some:image:12345"}\n'
+        and:
+        def encoder = new MoshiEncodeStrategy<WaveBuildRecord>() { }
+
+        // verify decoding is OK when the payload contains `spackFile` not existing anymore in the WaveBuildRecord
+        when:
+        def rec = encoder.decode(legacy)
+        then:
+        rec.buildId == '12345_1'
+        rec.condaFile == 'conda spec'
+        rec.dockerFile == 'from foo'
+    }
+
     def 'should encode and decode registry info' () {
         given:
         def encoder = new MoshiEncodeStrategy<RegistryAuth>() { }
