@@ -75,8 +75,8 @@ class BuildControllerTest extends Specification {
         final containerFile = 'FROM foo:latest'
         final format = BuildFormat.DOCKER
         final platform = ContainerPlatform.of('amd64')
-        final containerId = ContainerHelper.makeContainerId(containerFile, null, null, platform, 'buildrepo', null)
-        final targetImage = ContainerHelper.makeTargetImage(format, repo, containerId, null, null, null)
+        final containerId = ContainerHelper.makeContainerId(containerFile, null, platform, 'buildrepo', null)
+        final targetImage = ContainerHelper.makeTargetImage(format, repo, containerId, null, null)
         final build = new BuildRequest(
                 containerId: containerId,
                 containerFile: containerFile,

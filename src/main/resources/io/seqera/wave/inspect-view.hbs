@@ -1,0 +1,234 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Wave container inspect">
+    <title>Wave inspect: {{imageName}}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap');
+        body {
+            font-family: "Inter", sans-serif;
+            font-optical-sizing: auto;
+            font-weight: 200;
+            font-style: normal;
+        }
+        .monospace {
+            font-family: "Roboto Mono", monospace;
+            font-optical-sizing: auto;
+            font-weight: 400;
+            font-style: normal;
+            font-size: 0.9em;
+        }
+        .container {
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        table {
+            width: 100%;
+            margin: 20px 0;
+            font-size: 18px;
+            text-align: left;
+            border-collapse: collapse;
+        }
+        td {
+            padding: 5px;
+            border: 1px solid #ddd;
+            vertical-align: top;
+        }
+        td:first-child {
+            max-width: 200px;
+            font-weight: 500;
+        }
+        .tree {
+            --spacing: 1.5rem;
+            --radius: 6px;
+            padding: 10px 0 0;
+        }
+
+        .tree li {
+            display: block;
+            position: relative;
+            padding-left: calc(2 * var(--spacing) - var(--radius) - 2px);
+        }
+
+        .tree ul {
+            margin-left: calc(var(--radius) - var(--spacing));
+            padding-left: 0;
+        }
+
+        .tree ul li {
+            border-left: 2px solid #ddd;
+        }
+
+        .tree ul li:last-child {
+            border-color: transparent;
+        }
+
+        .tree ul li::before {
+            content: '';
+            display: block;
+            position: absolute;
+            top: calc(var(--spacing) / -2);
+            left: -2px;
+            width: calc(var(--spacing) + 2px);
+            height: calc(var(--spacing) + 1px);
+            border: solid #ddd;
+            border-width: 0 0 2px 2px;
+        }
+
+        .tree summary {
+            display: block;
+            cursor: pointer;
+        }
+
+        .tree summary::marker,
+        .tree summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .tree summary:focus {
+            outline: none;
+        }
+
+        .tree summary:focus-visible {
+            outline: 1px dotted #000;
+        }
+
+        .tree li::after,
+        .tree summary::before {
+            content: '';
+            display: block;
+            position: absolute;
+            top: calc(var(--spacing) / 2 - var(--radius));
+            left: calc(var(--spacing) - var(--radius) - 1px);
+            width: calc(2 * var(--radius));
+            height: calc(2 * var(--radius));
+            border-radius: 50%;
+            background: #ddd;
+        }
+
+        .tree summary::before {
+            z-index: 1;
+            background: #3D95FD url("data:image/svg+xml,%3C%3Fxml version='1.0'%3F%3E%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='12' viewBox='0 0 40 20'%3E%3Cg fill='%23fff'%3E%3Cpath d='m5 9h4v-4h2v4h4v2h-4v4h-2v-4h-4z'/%3E%3Cpath d='m25 9h10v2h-10z'/%3E%3C/g%3E%3C/svg%3E%0A") 0 0;
+        }
+
+        .tree details[open] > summary::before {
+            background-position: calc(-2 * var(--radius)) 0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div>
+        <img style="float:left; margin-top: 5px; margin-right: 10px; width: 30px;" src="/assets/wave-logo.png">
+        <h1>Wave container inspect</h1>
+    </div>
+    <div style="min-height: 60vh">
+        {{#if error_message}}
+            <div style="color: black; background-color: #d3d3d3; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+                <h4 style="margin-top:0; font-weight: normal">
+                    {{error_message}}
+                </h4>
+            </div>
+        {{else}}
+        {{/if}}
+        <h3>Container Specification</h3>
+        <table>
+            <tr>
+                <td>Image Name</td>
+                <td class="monospace">{{imageName}}</td>
+            </tr>
+            <tr>
+                <td>Reference (tag)</td>
+                <td class="monospace">{{reference}}</td>
+            </tr>
+            <tr>
+                <td>Digest</td>
+                <td class="monospace">{{digest}}</td>
+            </tr>
+            <tr>
+                <td>Registry</td>
+                <td class="monospace">{{registry}}</td>
+            </tr>
+            <tr>
+                <td>Host Name</td>
+                <td>{{hostName}}</td>
+            </tr>
+            <tr>
+                <td>Config</td>
+                <td><div id="config-div"></div></td>
+            </tr>
+            <tr>
+                <td>Manifest</td>
+                <td><div id="manifest-div"></div></td>
+            </tr>
+        </table>
+    </div>
+    <div class="footer" style="clear:both;width:100%;">
+        <hr class="footer-hr" style="height:0;overflow:visible;margin-top:30px;border:0;border-top:1px solid #eee;color:#999999;font-size:12px;line-height:18px;margin-bottom:30px;">
+        <img style="float:right; width: 150px;" src="/assets/seqera-logo.png">
+        <p class="footer-text" style="font-family:'-apple-system', BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';font-weight:normal;margin:0;margin-bottom:15px;color:#999999;font-size:12px;line-height:18px;">
+            <a href="{{server_url}}">{{server_url}}</a><br>
+            Seqera<br>
+            Carrer de Marià Aguiló, 28<br>
+            08005 Barcelona<br>
+        </p>
+    </div>
+</div>
+<script>
+    function createTreeView(data) {
+        const ul = document.createElement('ul');
+        ul.classList.add('tree');
+
+        for (const key in data) {
+            if (data.hasOwnProperty(key)) {
+                const li = document.createElement('li');
+
+                if (typeof data[key] === 'object' && !Array.isArray(data[key])) {
+                    const details = document.createElement('details');
+                    const summary = document.createElement('summary');
+                    summary.textContent = key;
+                    details.appendChild(summary);
+                    details.appendChild(createTreeView(data[key]));
+                    li.appendChild(details);
+                } else if (Array.isArray(data[key])) {
+                    const details = document.createElement('details');
+                    const summary = document.createElement('summary');
+                    summary.textContent = key;
+                    details.appendChild(summary);
+
+                    const nestedUl = document.createElement('ul');
+                    nestedUl.classList.add('tree');
+                    data[key].forEach(item => {
+                        const nestedLi = document.createElement('li');
+
+                        if (typeof item === 'object') {
+                            nestedLi.appendChild(createTreeView(item));
+                        } else {
+                            nestedLi.textContent = item;
+                        }
+
+                        nestedUl.appendChild(nestedLi);
+                    });
+
+                    details.appendChild(nestedUl);
+                    li.appendChild(details);
+                } else {
+                    li.textContent = `${key}: ${data[key]}`;
+                }
+
+                ul.appendChild(li);
+            }
+        }
+
+        return ul;
+    }
+
+    document.getElementById('config-div').appendChild(createTreeView({{{config}}}));
+    document.getElementById('manifest-div').appendChild(createTreeView({{{manifest}}}));
+</script>
+</body>
+</html>
