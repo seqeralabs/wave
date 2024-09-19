@@ -129,7 +129,6 @@ class ViewController {
         binding.build_platform = result.platform
         binding.build_containerfile = result.dockerFile ?: '-'
         binding.build_condafile = result.condaFile
-        binding.build_spackfile = result.spackFile
         binding.build_digest = result.digest ?: '-'
         binding.put('server_url', serverUrl)
         binding.scan_url = result.scanId && result.succeeded() ? "$serverUrl/view/scans/${result.scanId}" : null

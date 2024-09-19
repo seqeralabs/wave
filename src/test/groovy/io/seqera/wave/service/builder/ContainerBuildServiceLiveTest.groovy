@@ -76,8 +76,8 @@ class ContainerBuildServiceLiveTest extends Specification {
         '''.stripIndent()
         and:
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, cacheRepo, Mock(PlatformId))
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
                 new BuildRequest(
                         containerId: containerId,
@@ -122,8 +122,8 @@ class ContainerBuildServiceLiveTest extends Specification {
         '''.stripIndent()
         and:
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
                 new BuildRequest(
                         containerId: containerId,
@@ -168,8 +168,8 @@ class ContainerBuildServiceLiveTest extends Specification {
         and:
         def buildRepo = "quay.io/pditommaso/wave-tests"
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('linux/arm64'), buildRepo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('linux/arm64'), buildRepo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
                 new BuildRequest(
                         containerId: containerId,
@@ -214,8 +214,8 @@ class ContainerBuildServiceLiveTest extends Specification {
         and:
         def duration = Duration.ofMinutes(1)
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
                 new BuildRequest(
                         containerId: containerId,
@@ -266,8 +266,8 @@ class ContainerBuildServiceLiveTest extends Specification {
         and:
         def duration = Duration.ofMinutes(1)
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
                 new BuildRequest(
                         containerId: containerId,

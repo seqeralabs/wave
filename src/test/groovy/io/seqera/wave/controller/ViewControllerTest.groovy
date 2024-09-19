@@ -84,7 +84,6 @@ class ViewControllerTest extends Specification {
                 buildId: '12345',
                 dockerFile: 'FROM foo',
                 condaFile: 'conda::foo',
-                spackFile: 'some-spack-recipe',
                 targetImage: 'docker.io/some:image',
                 userName: 'paolo',
                 userEmail: 'paolo@seqera.io',
@@ -110,7 +109,6 @@ class ViewControllerTest extends Specification {
         binding.build_platform == 'linux/amd64'
         binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
-        binding.build_spackfile == 'some-spack-recipe'
         binding.build_format == 'Docker'
         binding.build_log_data == 'log content'
         binding.build_log_truncated == false
@@ -146,7 +144,6 @@ class ViewControllerTest extends Specification {
         response.body().contains('FROM docker.io/test:foo')
         and:
         !response.body().contains('Conda file')
-        !response.body().contains('Spack file')
     }
 
     def 'should render a build page with conda file' () {
@@ -176,39 +173,6 @@ class ViewControllerTest extends Specification {
         and:
         response.body().contains('Conda file')
         response.body().contains('conda::foo')
-        and:
-        !response.body().contains('Spack file')
-    }
-
-    def 'should render a build page with spack file' () {
-        given:
-        def record1 = new WaveBuildRecord(
-                buildId: 'test',
-                spackFile: 'foo/conda/recipe',
-                targetImage: 'test',
-                userName: 'test',
-                userEmail: 'test',
-                userId: 1,
-                requestIp: '127.0.0.1',
-                startTime: Instant.now(),
-                duration: Duration.ofSeconds(1),
-                exitStatus: 0 )
-
-        when:
-        persistenceService.saveBuild(record1)
-        and:
-        def request = HttpRequest.GET("/view/builds/${record1.buildId}")
-        def response = client.toBlocking().exchange(request, String)
-        then:
-        response.body().contains(record1.buildId)
-        and:
-        response.body().contains('Container file')
-        response.body().contains('-')
-        and:
-        !response.body().contains('Conda file')
-        and:
-        response.body().contains('Spack file')
-        response.body().contains('foo/conda/recipe')
     }
 
     def 'should render container view page' () {
@@ -247,7 +211,7 @@ class ViewControllerTest extends Specification {
 
     def 'should render inspect view'() {
         when:
-        def request = HttpRequest.GET('/view/inspects/ubuntu')
+        def request = HttpRequest.GET('/view/inspect?image=ubuntu')
         def response = client.toBlocking().exchange(request, String)
 
         then:
@@ -265,7 +229,6 @@ class ViewControllerTest extends Specification {
                 buildId: '12345',
                 dockerFile: 'FROM foo',
                 condaFile: 'conda::foo',
-                spackFile: 'some-spack-recipe',
                 targetImage: 'docker.io/some:image',
                 userName: 'paolo',
                 userEmail: 'paolo@seqera.io',
@@ -290,7 +253,6 @@ class ViewControllerTest extends Specification {
         binding.build_platform == 'linux/amd64'
         binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
-        binding.build_spackfile == 'some-spack-recipe'
         binding.build_format == 'Docker'
         binding.build_log_data == 'log content'
         binding.build_log_truncated == false
@@ -308,7 +270,6 @@ class ViewControllerTest extends Specification {
                 buildId: '12345',
                 dockerFile: 'FROM foo',
                 condaFile: 'conda::foo',
-                spackFile: 'some-spack-recipe',
                 targetImage: 'docker.io/some:image',
                 userName: 'paolo',
                 userEmail: 'paolo@seqera.io',
@@ -334,7 +295,6 @@ class ViewControllerTest extends Specification {
         binding.build_platform == 'linux/amd64'
         binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
-        binding.build_spackfile == 'some-spack-recipe'
         binding.build_format == 'Docker'
         binding.build_log_data == 'log content'
         binding.build_log_truncated == false
