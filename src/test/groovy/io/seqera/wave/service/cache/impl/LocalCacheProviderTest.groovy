@@ -113,4 +113,21 @@ class LocalCacheProviderTest extends Specification {
         and:
         localCacheProvider.get(k) == 'bar'
     }
+
+    def 'should put and remove a value' () {
+        given:
+        def TTL = 100
+        def k = UUID.randomUUID().toString()
+
+        when:
+        localCacheProvider.put(k, 'foo')
+        then:
+        localCacheProvider.get(k) == 'foo'
+
+        when:
+        localCacheProvider.remove(k)
+        then:
+        localCacheProvider.get(k) == null
+    }
+
 }

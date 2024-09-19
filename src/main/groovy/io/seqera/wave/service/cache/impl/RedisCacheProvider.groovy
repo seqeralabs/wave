@@ -47,6 +47,7 @@ class RedisCacheProvider implements CacheProvider<String,String> {
         }
     }
 
+    @Override
     void put(String key, String value) {
         put(key, value, null)
     }
@@ -61,6 +62,7 @@ class RedisCacheProvider implements CacheProvider<String,String> {
         }
     }
 
+    @Override
     boolean putIfAbsent(String key, String value) {
         putIfAbsent(key, value, null)
     }

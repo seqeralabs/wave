@@ -128,4 +128,20 @@ class RedisCacheProviderTest extends Specification implements RedisTestContainer
         and:
         redisCacheProvider.get(k) == 'bar'
     }
+
+    def 'should put and remove a value' () {
+        given:
+        def TTL = 100
+        def k = UUID.randomUUID().toString()
+
+        when:
+        redisCacheProvider.put(k, 'foo')
+        then:
+        redisCacheProvider.get(k) == 'foo'
+
+        when:
+        redisCacheProvider.remove(k)
+        then:
+        redisCacheProvider.get(k) == null
+    }
 }

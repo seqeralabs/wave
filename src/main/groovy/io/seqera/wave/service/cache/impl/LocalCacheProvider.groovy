@@ -67,6 +67,7 @@ class LocalCacheProvider implements CacheProvider<String,String> {
         return entry.value
     }
 
+    @Override
     void put(String key, String value) {
         store.put(key, new Entry<>(value,null))
     }
@@ -76,6 +77,7 @@ class LocalCacheProvider implements CacheProvider<String,String> {
         store.put(key, new Entry<>(value,ttl))
     }
 
+    @Override
     boolean putIfAbsent(String key, String value) {
         return putIfAbsent0(key, value, null) == null
     }

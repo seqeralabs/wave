@@ -42,9 +42,25 @@ interface CacheStore<K,V> {
      *
      * @param key The key to retrieve the associated value
      * @param value The value to be store in the cache
+     */
+    void put(K key, V value)
+
+    /**
+     * Store a the specified key-value pair in the underlying cache
+     *
+     * @param key The key to retrieve the associated value
+     * @param value The value to be store in the cache
      * @param ttl The max time-to-live of the stored entry
      */
     void put(K key, V value, Duration ttl)
+
+    /**
+     * Store a value in the cache only if does not exist yet
+     * @param key The unique associated with this object
+     * @param value The object to store
+     * @return {@code true} if the value was stored, {@code false} otherwise
+     */
+    boolean putIfAbsent(K key, V value)
 
     /**
      * Store a value in the cache only if does not exist yet
