@@ -171,38 +171,23 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
     def 'should find latest build' () {
         given:
+        def surreal = applicationContext.getBean(SurrealClient)
         def persistence = applicationContext.getBean(SurrealPersistenceService)
-        final request = new BuildRequest(
-                'abc',
-                'FROM foo:latest',
-                'conda::recipe',
-                null,
-                Path.of("."),
-                'docker.io/my/repo:container1234',
-                PlatformId.NULL,
-                ContainerPlatform.of('amd64'),
-                'docker.io/my/cache',
-                '127.0.0.1',
-                '{"config":"json"}',
-                null,
-                null,
-                'scan12345',
-                null,
-                BuildFormat.DOCKER,
-                Duration.ofMinutes(1) )
+        def auth = persistence.getAuthorization()
+        def request1 = new BuildRequest( containerId: 'abc', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(30), identity: PlatformId.NULL ).withBuildId('1')
+        def request2 = new BuildRequest( containerId: 'abc', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(20), identity: PlatformId.NULL ).withBuildId('2')
+        def request3 = new BuildRequest( containerId: 'abc', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(10), identity: PlatformId.NULL ).withBuildId('3')
 
-
-        def result = new BuildResult(request.withBuildId('1').buildId, -1, "ok", Instant.now().minusSeconds(3), Duration.ofSeconds(2), null)
-        persistence.saveBuild(WaveBuildRecord.fromEvent(new BuildEvent(request, result)))
+        def result1 = new BuildResult(request1.buildId, -1, "ok", request1.startTime, Duration.ofSeconds(2), null)
+        surreal.insertBuild(auth, WaveBuildRecord.fromEvent(new BuildEvent(request1, result1)))
         and:
-        result = new BuildResult(request.withBuildId('2').buildId, -1, "ok", Instant.now().minusSeconds(2), Duration.ofSeconds(2), null)
-        persistence.saveBuild(WaveBuildRecord.fromEvent(new BuildEvent(request, result)))
+        def result2 = new BuildResult(request2.buildId, -1, "ok", request2.startTime, Duration.ofSeconds(2), null)
+        surreal.insertBuild(auth, WaveBuildRecord.fromEvent(new BuildEvent(request2, result2)))
         and:
-        result = new BuildResult(request.withBuildId('3').buildId, -1, "ok", Instant.now().minusSeconds(1), Duration.ofSeconds(2), null)
-        persistence.saveBuild(WaveBuildRecord.fromEvent(new BuildEvent(request, result)))
+        def result3 = new BuildResult(request3.buildId, -1, "ok", request3.startTime, Duration.ofSeconds(2), null)
+        surreal.insertBuild(auth, WaveBuildRecord.fromEvent(new BuildEvent(request3, result3)))
 
         when:
-        sleep 300
         def loaded = persistence.latestBuild('abc')
 
         then:

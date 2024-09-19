@@ -89,7 +89,7 @@ class SurrealPersistenceService implements PersistenceService {
             throw new IllegalStateException("Unable to define SurrealDB table wave_scan_vuln - cause: $ret4")
     }
 
-    private String getAuthorization() {
+    protected String getAuthorization() {
         "Basic "+"$user:$password".bytes.encodeBase64()
     }
 
@@ -148,7 +148,12 @@ class SurrealPersistenceService implements PersistenceService {
 
     @Override
     WaveBuildRecord latestBuild(String containerId) {
-        final query = "select * from wave_build where string::contains(buildId,'${containerId}${BuildRequest.SEP}') order by startTime desc limit 1"
+        final query = """
+            select * 
+            from wave_build 
+            where buildId ~ '${containerId}${BuildRequest.SEP}' 
+            order by startTime desc limit 1
+            """.stripIndent()
         final json = surrealDb.sqlAsString(getAuthorization(), query)
         final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
