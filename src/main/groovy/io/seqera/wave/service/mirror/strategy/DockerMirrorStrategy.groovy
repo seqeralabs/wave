@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.mirror.impl
+package io.seqera.wave.service.mirror.strategy
 
 
 import java.nio.file.Files
@@ -28,7 +28,6 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.service.mirror.MirrorConfig
 import io.seqera.wave.service.mirror.MirrorRequest
-import io.seqera.wave.service.mirror.MirrorStrategy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static java.nio.file.StandardOpenOption.CREATE
@@ -56,7 +55,6 @@ class DockerMirrorStrategy extends MirrorStrategy {
         Path configFile = null
         // create the work directory
         Files.createDirectories(request.workDir)
-
         // save docker config for creds
         if( request.authJson ) {
             configFile = request.workDir.resolve('config.json')

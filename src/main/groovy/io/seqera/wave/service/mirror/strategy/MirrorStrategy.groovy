@@ -16,10 +16,11 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.mirror
+package io.seqera.wave.service.mirror.strategy
+
 
 import groovy.transform.CompileStatic
-
+import io.seqera.wave.service.mirror.MirrorRequest
 /**
  * Implement the common strategy to handle container mirror
  * via Skopeo

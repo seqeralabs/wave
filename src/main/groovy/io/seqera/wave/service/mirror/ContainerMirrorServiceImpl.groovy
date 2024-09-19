@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.mirror.impl
+package io.seqera.wave.service.mirror
 
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
@@ -29,10 +29,6 @@ import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
-import io.seqera.wave.service.mirror.ContainerMirrorService
-import io.seqera.wave.service.mirror.MirrorRequest
-import io.seqera.wave.service.mirror.MirrorState
-import io.seqera.wave.service.mirror.MirrorStateStore
 import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.inject.Inject
 import jakarta.inject.Named

@@ -28,7 +28,7 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildStrategy
 import io.seqera.wave.service.cleanup.CleanupService
 import io.seqera.wave.service.mirror.MirrorRequest
-import io.seqera.wave.service.mirror.MirrorStrategy
+import io.seqera.wave.service.mirror.strategy.MirrorStrategy
 import io.seqera.wave.service.scan.ScanRequest
 import io.seqera.wave.service.scan.ScanStrategy
 import jakarta.inject.Inject

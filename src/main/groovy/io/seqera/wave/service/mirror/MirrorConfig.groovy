@@ -22,6 +22,7 @@ import java.time.Duration
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
 import jakarta.inject.Singleton
 
 /**
@@ -44,4 +45,16 @@ class MirrorConfig {
 
     @Value('${wave.mirror.skopeoImage:`quay.io/skopeo/stable`}')
     String skopeoImage
+
+    @Value('${wave.mirror.retry-attempts:3}')
+    Integer retryAttempts
+
+    @Nullable
+    @Value('${wave.mirror.requestsCpu}')
+    String requestsCpu
+
+    @Nullable
+    @Value('${wave.mirror.requestsMemory}')
+    String requestsMemory
+
 }

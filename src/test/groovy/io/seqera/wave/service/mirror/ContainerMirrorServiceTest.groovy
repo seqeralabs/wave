@@ -33,7 +33,6 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
-import io.seqera.wave.service.mirror.impl.ContainerMirrorServiceImpl
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
