@@ -26,6 +26,7 @@ import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.cache.StateRecord
 import io.seqera.wave.service.job.JobRecord
 import jakarta.inject.Singleton
 /**
@@ -37,7 +38,7 @@ import jakarta.inject.Singleton
 @Singleton
 @CompileStatic
 @Canonical
-class MirrorResult implements JobRecord {
+class MirrorResult implements JobRecord, StateRecord {
     enum Status { PENDING, COMPLETED }
 
     final String mirrorId
@@ -50,6 +51,11 @@ class MirrorResult implements JobRecord {
     final Duration duration
     final Integer exitCode
     final String logs
+
+    @Override
+    String getRecordId() {
+        return mirrorId
+    }
 
     @Override
     boolean done() {

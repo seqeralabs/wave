@@ -79,7 +79,7 @@ class ContainerMirrorServiceTest extends Specification {
         folder?.deleteDir()
     }
 
-    def 'should get mirror result from persistent service' () {
+    def 'should get mirror result from state store' () {
         given:
         def request = MirrorRequest.create(
                 'source/foo',
@@ -92,6 +92,25 @@ class ContainerMirrorServiceTest extends Specification {
         def result = MirrorResult.from(request)
         and:
         persistenceService.saveMirrorResult(result)
+        when:
+        def copy = service.getMirrorResult(request.id)
+        then:
+        copy == result
+    }
+
+    def 'should get mirror result from persistent service' () {
+        given:
+        def request = MirrorRequest.create(
+                'source/foo',
+                'target/foo',
+                'sha256:12345',
+                ContainerPlatform.DEFAULT,
+                Path.of('/some/dir'),
+                '{config}' )
+        and:
+        def result = MirrorResult.from(request)
+        and:
+        mirrorStateStore.put('target/foo', result)
         when:
         def copy = service.getMirrorResult(request.id)
         then:
