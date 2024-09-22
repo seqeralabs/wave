@@ -1,4 +1,8 @@
 # Wave changelog
+1.12.3 - 22 Sep 2024
+- Fix build status completion of submit exception [3c3af360]
+- Fix singularity build mounts [3b338b29]
+
 1.12.2 - 18 Sep 2024 
 - Fix Remove entries permanently from stream once consumed [adfad9d6]
 - Refactor container build service [1a858c12]
