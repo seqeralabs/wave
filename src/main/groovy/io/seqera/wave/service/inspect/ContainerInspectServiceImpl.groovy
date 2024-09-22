@@ -93,10 +93,13 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
         if( cacheRepo )
             repos.add(cacheRepo)
         final result = credsJson(repos, identity)
-        if( buildRepo && result && !result.contains(host0(buildRepo)) )
-            throw new BadRequestException("Missing credentials for target build repository: $buildRepo")
-        if( cacheRepo && result && !result.contains(host0(cacheRepo)) )
-            throw new BadRequestException("Missing credentials for target cache repository: $buildRepo")
+        final msg = identity
+                ? "Make sure you have provided a corresponding container credentials record in your Seqera Platform account"
+                : "Make sure you have provided your Seqera Platform token (aka Tower access token) in your request"
+        if( buildRepo && (!result || !result.contains(host0(buildRepo))) )
+            throw new BadRequestException("Missing credentials repository: $buildRepo - $msg")
+        if( cacheRepo && (!result || !result.contains(host0(cacheRepo))) )
+            throw new BadRequestException("Missing credentials repository: $buildRepo - $msg")
         return result
     }
 
