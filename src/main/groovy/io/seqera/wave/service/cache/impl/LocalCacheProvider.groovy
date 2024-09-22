@@ -67,19 +67,24 @@ class LocalCacheProvider implements CacheProvider<String,String> {
         return entry.value
     }
 
+    @Override
+    void put(String key, String value) {
+        store.put(key, new Entry<>(value,null))
+    }
+
+    @Override
     void put(String key, String value, Duration ttl) {
         store.put(key, new Entry<>(value,ttl))
     }
 
     @Override
-    boolean putIfAbsent(String key, String value, Duration ttl) {
-        return putIfAbsent0(key, value, ttl) == null
+    boolean putIfAbsent(String key, String value) {
+        return putIfAbsent0(key, value, null) == null
     }
 
     @Override
-    String putIfAbsentAndGetCurrent(String key, String value, Duration ttl) {
-        final ret = putIfAbsent0(key, value, ttl)
-        return ret!=null ? ret : value
+    boolean putIfAbsent(String key, String value, Duration ttl) {
+        return putIfAbsent0(key, value, ttl) == null
     }
 
     private String putIfAbsent0(String key, String value, Duration ttl) {

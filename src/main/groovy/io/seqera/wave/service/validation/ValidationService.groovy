@@ -31,4 +31,6 @@ interface ValidationService {
 
     String checkBuildRepository(String repo, boolean cache)
 
+    String checkMirrorRegistry(String registry)
+
 }

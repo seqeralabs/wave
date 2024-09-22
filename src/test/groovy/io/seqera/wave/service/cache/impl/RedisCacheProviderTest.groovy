@@ -47,46 +47,101 @@ class RedisCacheProviderTest extends Specification implements RedisTestContainer
         applicationContext.close()
     }
 
-    def 'conditional put with current value when ke is not set'() {
-        when: 'conditionally set a key that has no current value'
-        def current = redisCacheProvider.putIfAbsentAndGetCurrent('key', 'new-value', Duration.ofSeconds(100))
+    def 'should get and put a key-value pair' () {
+        given:
+        def k = UUID.randomUUID().toString()
 
-        then: 'the provided value is returned'
-        current == 'new-value'
+        expect:
+        redisCacheProvider.get(k) == null
 
-        and: 'the value is set in the store'
-        redisCacheProvider.get('key') == 'new-value'
+        when:
+        redisCacheProvider.put(k, "hello")
+        then:
+        redisCacheProvider.get(k) == 'hello'
     }
 
-    def 'conditional put with current value when key is already set'() {
-        given: 'a store containing a mapping for key that is not expired'
-        redisCacheProvider.put('key', 'existing', Duration.ofSeconds(100))
+    def 'should get and put a key-value pair with ttl' () {
+        given:
+        def TTL = 100
+        def k = UUID.randomUUID().toString()
 
-        when: 'try to conditionally set the key to a new value'
-        def current = redisCacheProvider.putIfAbsentAndGetCurrent('key', 'new-value', Duration.ofSeconds(100))
+        expect:
+        redisCacheProvider.get(k) == null
 
-        then: 'the existing value is returned'
-        current == 'existing'
-
-        and: 'the value is not updated in the store'
-        redisCacheProvider.get('key') == 'existing'
-
+        when:
+        redisCacheProvider.put(k, "hello", Duration.ofMillis(TTL))
+        then:
+        redisCacheProvider.get(k) == 'hello'
+        then:
+        sleep(TTL *2)
+        and:
+        redisCacheProvider.get(k) == null
     }
 
-    def 'conditional put with current value when key is set and has expired'() {
-        given: 'a store containing a mapping for key that will expire'
-        redisCacheProvider.put('key', 'existing', Duration.ofSeconds(1))
-        // give time for redis to expire the key
-        sleep(Duration.ofSeconds(2).toMillis())
+    def 'should get and put only if absent' () {
+        given:
+        def k = UUID.randomUUID().toString()
 
-        when: 'try to conditionally set the key to a new value'
-        def current = redisCacheProvider.putIfAbsentAndGetCurrent('key', 'new-value', Duration.ofSeconds(100))
+        expect:
+        redisCacheProvider.get(k) == null
 
-        then: 'the provided value is returned'
-        current == 'new-value'
+        when:
+        def done = redisCacheProvider.putIfAbsent(k, 'foo')
+        then:
+        done
+        and:
+        redisCacheProvider.get(k) == 'foo'
 
-        and: 'the value is updated is set in the store'
-        redisCacheProvider.get('key') == 'new-value'
+        when:
+        done = redisCacheProvider.putIfAbsent(k, 'bar')
+        then:
+        !done
+        and:
+        redisCacheProvider.get(k) == 'foo'
     }
 
+    def 'should get and put if absent with ttl' () {
+        given:
+        def TTL = 100
+        def k = UUID.randomUUID().toString()
+
+        when:
+        def done = redisCacheProvider.putIfAbsent(k, 'foo', Duration.ofMillis(TTL))
+        then:
+        done
+        and:
+        redisCacheProvider.get(k) == 'foo'
+
+        when:
+        done = redisCacheProvider.putIfAbsent(k, 'bar', Duration.ofMillis(TTL))
+        then:
+        !done
+        and:
+        redisCacheProvider.get(k) == 'foo'
+
+        when:
+        sleep(TTL *2)
+        and:
+        done = redisCacheProvider.putIfAbsent(k, 'bar', Duration.ofMillis(TTL))
+        then:
+        done
+        and:
+        redisCacheProvider.get(k) == 'bar'
+    }
+
+    def 'should put and remove a value' () {
+        given:
+        def TTL = 100
+        def k = UUID.randomUUID().toString()
+
+        when:
+        redisCacheProvider.put(k, 'foo')
+        then:
+        redisCacheProvider.get(k) == 'foo'
+
+        when:
+        redisCacheProvider.remove(k)
+        then:
+        redisCacheProvider.get(k) == null
+    }
 }

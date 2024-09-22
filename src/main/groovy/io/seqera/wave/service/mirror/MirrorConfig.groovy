@@ -16,30 +16,44 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job
+package io.seqera.wave.service.mirror
 
-import io.seqera.wave.service.blob.BlobCacheInfo
-import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.mirror.MirrorRequest
-import io.seqera.wave.service.scan.ScanRequest
+import java.time.Duration
 
+import groovy.transform.CompileStatic
+import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
+import jakarta.inject.Singleton
 /**
- * Define the contract for submitting and monitoring jobs
+ * Model mirror service config options
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface JobService {
+@Singleton
+@CompileStatic
+class MirrorConfig {
 
-    JobSpec launchTransfer(BlobCacheInfo blob, List<String> command)
+    @Value('${wave.mirror.max-duration:15m}')
+    Duration maxDuration
 
-    JobSpec launchBuild(BuildRequest request)
+    @Value('${wave.mirror.status.delay:4s}')
+    Duration statusDelay
 
-    JobSpec launchScan(ScanRequest request)
+    @Value('${wave.mirror.status.duration:1h}')
+    Duration statusDuration
 
-    JobSpec launchMirror(MirrorRequest request)
+    @Value('${wave.mirror.skopeoImage:`quay.io/skopeo/stable`}')
+    String skopeoImage
 
-    JobState status(JobSpec jobSpec)
+    @Value('${wave.mirror.retry-attempts:3}')
+    Integer retryAttempts
 
-    void cleanup(JobSpec jobSpec, Integer exitStatus)
+    @Nullable
+    @Value('${wave.mirror.requestsCpu}')
+    String requestsCpu
+
+    @Nullable
+    @Value('${wave.mirror.requestsMemory}')
+    String requestsMemory
 
 }

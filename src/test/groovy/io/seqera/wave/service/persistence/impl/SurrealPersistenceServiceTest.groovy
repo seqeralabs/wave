@@ -28,19 +28,21 @@ import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
 import io.seqera.wave.api.ContainerConfig
-import io.seqera.wave.api.SubmitContainerTokenRequest
-import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.api.ContainerLayer
+import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerDigestPair
-import io.seqera.wave.service.builder.BuildFormat
-import io.seqera.wave.service.scan.ScanVulnerability
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.service.mirror.MirrorRequest
+import io.seqera.wave.service.mirror.MirrorState
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.test.SurrealDBTestContainer
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
@@ -318,5 +320,56 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         and:
         result2 == scanRecord2
     }
+
+    //== mirror records tests
+
+    void "should save and load a mirror record by id"() {
+        given:
+        def storage = applicationContext.getBean(SurrealPersistenceService)
+        and:
+        def request = MirrorRequest.create(
+                'source.io/foo',
+                'target.io/foo',
+                'sha256:12345',
+                ContainerPlatform.DEFAULT,
+                Path.of('/workspace'),
+                '{auth json}' )
+        and:
+        storage.initializeDb()
+        and:
+        def result = MirrorState.from(request)
+        storage.saveMirrorState(result)
+        sleep 100
+
+        when:
+        def stored = storage.loadMirrorState(request.id)
+        then:
+        stored == result
+    }
+
+    void "should save and load a mirror record by target and digest"() {
+        given:
+        def storage = applicationContext.getBean(SurrealPersistenceService)
+        and:
+        def request = MirrorRequest.create(
+                'source.io/foo',
+                'target.io/foo',
+                'sha256:12345',
+                ContainerPlatform.DEFAULT,
+                Path.of('/workspace'),
+                '{auth json}'  )
+        and:
+        storage.initializeDb()
+        and:
+        def result = MirrorState.from(request)
+        storage.saveMirrorState(result)
+        sleep 100
+
+        when:
+        def stored = storage.loadMirrorState(request.targetImage, request.digest)
+        then:
+        stored == result
+    }
+
 
 }

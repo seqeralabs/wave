@@ -28,6 +28,8 @@ import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.mirror.MirrorConfig
+import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.scan.ScanRequest
 
 /**
@@ -99,5 +101,31 @@ class JobFactoryTest extends Specification {
         job.maxDuration == duration
         job.creationTime == request.creationTime
         job.workDir == workdir
+    }
+
+    def 'should create mirror job' () {
+        given:
+        def workspace = Path.of('/some/work/dir')
+        def duration = Duration.ofMinutes(1)
+        def config = new MirrorConfig(maxDuration: duration)
+        def factory = new JobFactory(mirrorConfig: config)
+        and:
+        def request = MirrorRequest.create(
+                'source/foo',
+                'target/foo',
+                'sha256:12345',
+                Mock(ContainerPlatform),
+                workspace,
+                '{config}' )
+
+        when:
+        def job = factory.mirror(request)
+        then:
+        job.recordId == "target/foo"
+        job.operationName == /mirror-${request.id.substring(3)}/
+        job.type == JobSpec.Type.Mirror
+        job.maxDuration == duration
+        job.workDir == workspace.resolve(/mirror-${request.id.substring(3)}/)
+        job.creationTime == request.creationTime
     }
 }

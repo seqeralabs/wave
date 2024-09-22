@@ -95,4 +95,19 @@ class ValidationServiceTest extends Specification {
 
     }
 
+    @Unroll
+    def 'should check registry' () {
+        expect:
+        validationService.checkMirrorRegistry(REG)==EXPECTED
+
+        where:
+        REG                     | EXPECTED
+        null                    | null
+        'docker.io'             | null
+        'docker.io/foo'         | 'Mirror registry syntax is invalid - offending value: docker.io/foo'
+        'docker://foo.io'       | 'Mirror registry should not include any protocol prefix - offending value: docker://foo.io'
+        'wave.seqera.io'        | 'Mirror registry not allowed - offending value: wave.seqera.io'
+        'cr.wave.seqera.io'     | 'Mirror registry not allowed - offending value: cr.wave.seqera.io'
+    }
+
 }

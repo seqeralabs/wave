@@ -42,6 +42,7 @@ import io.micronaut.context.annotation.Replaces
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.service.mirror.MirrorConfig
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -853,6 +854,65 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.volumes.size() == 1
         job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
         job.spec.template.spec.nodeSelector == null
+        job.spec.template.spec.restartPolicy == 'Never'
+
+        cleanup:
+        ctx.close()
+    }
+
+    def 'should create mirror job spec'() {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'foo',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.storage.claimName': 'bar',
+                'wave.build.k8s.storage.mountPath': '/build',
+                'wave.build.k8s.service-account': 'theAdminAccount',
+                'wave.mirror.retry-attempts': 3
+        ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def name = 'scan-job'
+        def containerImage = 'scan-image:latest'
+        def args = ['arg1', 'arg2']
+        def workDir = Path.of('/build/work/dir')
+        def credsFile = Path.of('/build/work/dir/creds/file')
+        def mirrorConfig = Mock(MirrorConfig) {
+            getRequestsCpu() >> null
+            getRequestsMemory() >> null
+            getRetryAttempts() >> 3
+        }
+
+        when:
+        def job = k8sService.mirrorJobSpec(name, containerImage, args, workDir, credsFile, mirrorConfig)
+
+        then:
+        job.metadata.name == name
+        job.metadata.namespace == 'foo'
+        job.spec.backoffLimit == 3
+        job.spec.template.spec.containers[0].image == containerImage
+        job.spec.template.spec.containers[0].args == args
+        job.spec.template.spec.containers[0].resources.requests == null
+        job.spec.template.spec.containers[0].env == [new V1EnvVar().name('REGISTRY_AUTH_FILE').value('/tmp/config.json')]
+        and:
+        job.spec.template.spec.containers[0].volumeMounts.size() == 2
+        and:
+        with(job.spec.template.spec.containers[0].volumeMounts[0]) {
+            mountPath == '/tmp/config.json'
+            readOnly == true
+            subPath == 'work/dir/creds/file'
+        }
+        and:
+        with(job.spec.template.spec.containers[0].volumeMounts[1]) {
+            mountPath == '/build/work/dir'
+            readOnly == true
+            subPath == 'work/dir'
+        }
+        and:
+        job.spec.template.spec.volumes.size() == 1
+        job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
         job.spec.template.spec.restartPolicy == 'Never'
 
         cleanup:

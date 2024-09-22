@@ -133,16 +133,16 @@ class ContainerHelper {
     static SubmitContainerTokenResponse makeResponseV1(ContainerRequestData data, TokenData token, String waveImage) {
         final target = waveImage
         final build = data.buildNew ? data.buildId : null
-        return new SubmitContainerTokenResponse(token.value, target, token.expiration, data.containerImage, build, null, null)
+        return new SubmitContainerTokenResponse(token.value, target, token.expiration, data.containerImage, build, null, null, null)
     }
 
     static SubmitContainerTokenResponse makeResponseV2(ContainerRequestData data, TokenData token, String waveImage) {
-        final target = data.freeze ? data.containerImage : waveImage
+        final target = data.durable() ? data.containerImage : waveImage
         final build = data.buildId
         final Boolean cached = !data.buildNew
-        final expiration = !data.freeze ? token.expiration : null
-        final tokenId = !data.freeze ? token.value : null
-        return new SubmitContainerTokenResponse(tokenId, target, expiration, data.containerImage, build, cached, data.freeze)
+        final expiration = !data.durable() ? token.expiration : null
+        final tokenId = !data.durable() ? token.value : null
+        return new SubmitContainerTokenResponse(tokenId, target, expiration, data.containerImage, build, cached, data.freeze, data.mirror)
     }
 
     static String patchPlatformEndpoint(String endpoint) {

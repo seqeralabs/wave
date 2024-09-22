@@ -26,6 +26,8 @@ import groovy.transform.CompileStatic
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.mirror.MirrorConfig
+import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.scan.ScanRequest
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -45,6 +47,10 @@ class JobFactory {
     @Inject
     @Nullable
     private ScanConfig scanConfig
+
+    @Inject
+    @Nullable
+    private MirrorConfig mirrorConfig
 
     JobSpec transfer(String stateId) {
         JobSpec.transfer(
@@ -71,6 +77,16 @@ class JobFactory {
                 "scan-${request.id}",
                 request.creationTime,
                 scanConfig.timeout,
+                request.workDir
+        )
+    }
+
+    JobSpec mirror(MirrorRequest request) {
+        JobSpec.mirror(
+                request.targetImage,
+                "mirror-${request.id.substring(MirrorRequest.ID_PREFIX.length())}",
+                request.creationTime,
+                mirrorConfig.maxDuration,
                 request.workDir
         )
     }
