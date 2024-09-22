@@ -710,11 +710,10 @@ class K8sServiceImplTest extends Specification {
         def workDir = Path.of('/build/work/xyz')
         def credsFile = workDir.resolve('config.json')
         def timeout = Duration.ofMinutes(10)
-        def spackConfig = new SpackConfig(secretKeyFile: Path.of('/build/secret/key'), secretMountPath: '/secret/mount')
         def nodeSelector = [key: 'value']
 
         when:
-        def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, spackConfig, nodeSelector)
+        def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, null, nodeSelector)
 
         then:
         job.spec.backoffLimit == 3
@@ -763,11 +762,10 @@ class K8sServiceImplTest extends Specification {
         def workDir = Path.of('/build/work/xyz')
         def credsFile = workDir.resolve('config.json')
         def timeout = Duration.ofMinutes(10)
-        def spackConfig = new SpackConfig(secretKeyFile: Path.of('/build/secret/key'), secretMountPath: '/secret/mount')
         def nodeSelector = [key: 'value']
 
         when:
-        def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, spackConfig, nodeSelector)
+        def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, null, nodeSelector)
 
         then:
         job.spec.template.spec.containers[0].image == containerImage
