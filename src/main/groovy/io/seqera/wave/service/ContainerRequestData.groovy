@@ -45,10 +45,6 @@ class ContainerRequestData {
     final Boolean freeze
     final Boolean mirror
 
-    boolean ephemeral() {
-        return !durable()
-    }
-
     boolean durable() {
         return freeze || mirror
     }
