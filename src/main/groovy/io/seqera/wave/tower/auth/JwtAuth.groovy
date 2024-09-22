@@ -142,5 +142,4 @@ class JwtAuth {
                 req.towerAccessToken,
                 req.towerRefreshToken )
     }
-
 }
