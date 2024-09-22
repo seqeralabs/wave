@@ -48,7 +48,7 @@ abstract class AbstractCacheStore<V> implements CacheStore<String,V> {
     protected String key0(String k) { return getPrefix() + k  }
 
     protected String recordId0(String recordId) {
-        return getPrefix() + 'state/' + recordId
+        return getPrefix() + 'state-id/' + recordId
     }
 
     protected V deserialize(String encoded) {
