@@ -21,6 +21,7 @@ package io.seqera.wave.service.builder
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
+import io.seqera.wave.service.cache.StateRecord
 import io.seqera.wave.service.job.JobRecord
 
 /**
@@ -31,11 +32,18 @@ import io.seqera.wave.service.job.JobRecord
 @ToString(includePackage = false, includeNames = true)
 @EqualsAndHashCode
 @CompileStatic
-class BuildStoreEntry implements JobRecord {
+class BuildStoreEntry implements JobRecord, StateRecord {
 
     final BuildRequest request
 
     final BuildResult result
+
+    @Override
+    String getRecordId() {
+        if( !request.buildId )
+            throw new IllegalStateException("Missing build id")
+        return request.buildId
+    }
 
     @Override
     boolean done() {
@@ -52,4 +60,5 @@ class BuildStoreEntry implements JobRecord {
     BuildStoreEntry withResult(BuildResult result) {
         new BuildStoreEntry(request, result)
     }
+
 }

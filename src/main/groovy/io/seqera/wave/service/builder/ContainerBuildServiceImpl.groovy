@@ -40,7 +40,6 @@ import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.HttpServerRetryableErrorException
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
-import io.seqera.wave.service.builder.store.BuildRecordStore
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
@@ -78,7 +77,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     private ApplicationEventPublisher<BuildEvent> eventPublisher
 
     @Inject
-    private BuildStore buildStore
+    private BuildCacheStore buildStore
 
     @Inject
     @Named(TaskExecutors.IO)
@@ -111,9 +110,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
 
     @Inject
     private MetricsService metricsService
-
-    @Inject
-    private BuildRecordStore buildRecordStore
 
     @Inject
     private RegistryProxyService proxyService
@@ -204,9 +200,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
 
         //increment metrics
         CompletableFuture.supplyAsync(() -> metricsService.incrementBuildsCounter(request.identity), executor)
-
-        // save the container request in the underlying storage (redis)
-        createBuildRecord(request)
 
         // launch the build async
         CompletableFuture
@@ -359,57 +352,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
 
     @EventListener
     protected void onBuildEvent(BuildEvent event) {
-        saveBuildRecord(event)
-    }
-
-    /**
-     * Store a build record for the given {@link BuildRequest} object.
-     *
-     * This method is expected to store the build record associated with the request
-     * *only* in the short term store caching system, ie. without hitting the
-     * long-term SurrealDB storage
-     *
-     * @param request The build request that needs to be storage
-     */
-    protected void createBuildRecord(BuildRequest request) {
-        final record0 = WaveBuildRecord.fromEvent(new BuildEvent(request))
-        createBuildRecord(record0.buildId, record0)
-    }
-
-    /**
-     * Store the build record associated with the specified event both in the
-     * short-term cache (redis) and long-term persistence layer (surrealdb)
-     *
-     * @param event The {@link BuildEvent} object for which the build record needs to be stored
-     */
-    protected void saveBuildRecord(BuildEvent event) {
         final record0 = WaveBuildRecord.fromEvent(event)
-        saveBuildRecord(record0.buildId, record0)
-    }
-
-    /**
-     * Store a build record object.
-     *
-     * This method is expected to store the build record *only* in the short term store cache (redis),
-     * ie. without hitting the long-term storage (surrealdb)
-     *
-     * @param buildId The Id of the build record
-     * @param value The {@link WaveBuildRecord} to be stored
-     */
-    protected void createBuildRecord(String buildId, WaveBuildRecord value) {
-        buildRecordStore.putBuildRecord(buildId, value)
-    }
-
-    /**
-     * Store the specified build record  both in the short-term cache (redis)
-     * and long-term persistence layer (surrealdb)
-     *
-     * @param buildId The Id of the build record
-     * @param value The {@link WaveBuildRecord} to be stored
-     */
-    protected void saveBuildRecord(String buildId, WaveBuildRecord value) {
-        buildRecordStore.putBuildRecord(buildId, value)
-        persistenceService.saveBuild(value)
+        persistenceService.saveBuild(record0)
     }
 
     /**
@@ -420,7 +364,10 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
      */
     @Override
     WaveBuildRecord getBuildRecord(String buildId) {
-        return buildRecordStore.getBuildRecord(buildId) ?: persistenceService.loadBuild(buildId)
+        final entry = buildStore.getByRecordId(buildId)
+        return entry
+                ? WaveBuildRecord.fromEntry(entry)
+                : persistenceService.loadBuild(buildId)
     }
 
     @Override

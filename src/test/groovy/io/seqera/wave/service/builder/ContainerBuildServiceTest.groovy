@@ -42,7 +42,6 @@ import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
-import io.seqera.wave.service.builder.store.BuildRecordStore
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
@@ -97,7 +96,6 @@ class ContainerBuildServiceTest extends Specification {
     @Inject ContainerInspectServiceImpl dockerAuthService
     @Inject HttpClientConfig httpClientConfig
     @Inject BuildConfig buildConfig
-    @Inject BuildRecordStore buildRecordStore
     @Inject BuildCacheStore buildCacheStore
     @Inject PersistenceService persistenceService
     @Inject JobService jobService
