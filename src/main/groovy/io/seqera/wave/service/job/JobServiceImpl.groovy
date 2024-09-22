@@ -109,9 +109,6 @@ class JobServiceImpl implements JobService {
 
     @Override
     JobSpec launchMirror(MirrorRequest request) {
-        if( !mirrorStrategy )
-            throw new IllegalStateException("Container mirror service is not available - check configuration setting 'wave.mirror.enabled'")
-
         // create the unique job id for the build
         final job = jobFactory.mirror(request)
         // launch the scan job

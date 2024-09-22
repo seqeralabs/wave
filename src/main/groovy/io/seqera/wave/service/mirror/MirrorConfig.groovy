@@ -24,7 +24,6 @@ import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import jakarta.inject.Singleton
-
 /**
  * Model mirror service config options
  *
@@ -34,13 +33,13 @@ import jakarta.inject.Singleton
 @CompileStatic
 class MirrorConfig {
 
-    @Value('${wave.mirror.max-duration:10m}')
+    @Value('${wave.mirror.max-duration:15m}')
     Duration maxDuration
 
-    @Value('${wave.blobCache.status.delay:4s}')
+    @Value('${wave.mirror.status.delay:4s}')
     Duration statusDelay
 
-    @Value('${wave.blobCache.status.duration:1h}')
+    @Value('${wave.mirror.status.duration:1h}')
     Duration statusDuration
 
     @Value('${wave.mirror.skopeoImage:`quay.io/skopeo/stable`}')
