@@ -661,7 +661,14 @@ class K8sServiceImpl implements K8sService {
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
         if( credsFile ){
-            mounts.add(0, mountHostPath(credsFile, storageMountPath, '/home/user/.docker/config.json'))
+            if( !singularity ) {
+                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/home/user/.docker/config.json'))
+            }
+            else {
+                final remoteFile = credsFile.resolveSibling('singularity-remote.yaml')
+                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/root/.singularity/docker-config.json'))
+                mounts.add(1, mountHostPath(remoteFile, storageMountPath, '/root/.singularity/remote.yaml'))
+            }
         }
 
         V1JobBuilder builder = new V1JobBuilder()
@@ -700,6 +707,7 @@ class K8sServiceImpl implements K8sService {
                 .withImage(containerImage)
                 .withVolumeMounts(mounts)
                 .withResources(requests)
+                .withWorkingDir('/tmp')
 
         if( singularity ) {
             container
