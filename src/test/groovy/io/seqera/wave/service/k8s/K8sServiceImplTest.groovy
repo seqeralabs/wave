@@ -42,6 +42,7 @@ import io.micronaut.context.annotation.Replaces
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.service.mirror.MirrorConfig
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -628,22 +629,20 @@ class K8sServiceImplTest extends Specification {
         given:
         def PROPS = [
                 'wave.build.workspace': '/build/work',
-                'wave.build.k8s.namespace': 'foo',
+                'wave.build.k8s.namespace': 'my-ns',
                 'wave.build.k8s.configPath': '/home/kube.config',
-                'wave.build.k8s.storage.claimName': 'bar',
+                'wave.build.k8s.storage.claimName': 'build-claim',
                 'wave.build.k8s.storage.mountPath': '/build',
-                'wave.build.k8s.service-account': 'theAdminAccount',
-                'wave.build.deleteAfterFinished': '1d',
                 'wave.build.retry-attempts': 3
         ]
         and:
         def ctx = ApplicationContext.run(PROPS)
         def k8sService = ctx.getBean(K8sServiceImpl)
-        def name = 'test-job'
-        def containerImage = 'singularity://test-image'
-        def args = ['arg1', 'arg2']
-        def workDir = Path.of('/work/dir')
-        def credsFile = Path.of('/creds/file')
+        def name = 'the-job-name'
+        def containerImage = 'singularity:latest'
+        def args = ['singularity', '--this', '--that']
+        def workDir = Path.of('/build/work/xyz')
+        def credsFile = workDir.resolve('config.json')
         def timeout = Duration.ofMinutes(10)
         def nodeSelector = [key: 'value']
 
@@ -655,6 +654,24 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.containers[0].image == containerImage
         job.spec.template.spec.containers[0].command == args
         job.spec.template.spec.containers[0].securityContext.privileged
+        and:
+        job.spec.template.spec.containers.get(0).getWorkingDir() == '/tmp'
+        and:
+        job.spec.template.spec.containers.get(0).volumeMounts.size() == 3
+        job.spec.template.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(0).mountPath == '/root/.singularity/docker-config.json'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz/config.json'
+        and:
+        job.spec.template.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(1).mountPath == '/root/.singularity/remote.yaml'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz/singularity-remote.yaml'
+        and:
+        job.spec.template.spec.containers.get(0).volumeMounts.get(2).name == 'build-data'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(2).mountPath == '/build/work/xyz'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(2).subPath == 'work/xyz'
+        and:
+        job.spec.template.spec.volumes.get(0).name == 'build-data'
+        job.spec.template.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
 
         cleanup:
         ctx.close()
@@ -664,11 +681,11 @@ class K8sServiceImplTest extends Specification {
         given:
         def PROPS = [
                 'wave.build.workspace': '/build/work',
-                'wave.build.k8s.namespace': 'foo',
+                'wave.build.k8s.namespace': 'my-ns',
                 'wave.build.k8s.configPath': '/home/kube.config',
-                'wave.build.k8s.storage.claimName': 'bar',
+                'wave.build.k8s.storage.claimName': 'build-claim',
                 'wave.build.k8s.storage.mountPath': '/build',
-                'wave.build.k8s.service-account': 'theAdminAccount'
+                'wave.build.retry-attempts': 3
         ]
         and:
         def ctx = ApplicationContext.run(PROPS)
@@ -676,8 +693,8 @@ class K8sServiceImplTest extends Specification {
         def name = 'test-job'
         def containerImage = 'docker://test-image'
         def args = ['arg1', 'arg2']
-        def workDir = Path.of('/work/dir')
-        def credsFile = Path.of('/creds/file')
+        def workDir = Path.of('/build/work/xyz')
+        def credsFile = workDir.resolve('config.json')
         def timeout = Duration.ofMinutes(10)
         def nodeSelector = [key: 'value']
 
@@ -689,6 +706,21 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.containers[0].env.find { it.name == 'BUILDKITD_FLAGS' }
         job.spec.template.spec.containers[0].command == ['buildctl-daemonless.sh']
         job.spec.template.spec.containers[0].args == args
+
+        and:
+        job.spec.template.spec.containers.get(0).getWorkingDir() == '/tmp'
+        and:
+        job.spec.template.spec.containers.get(0).volumeMounts.size() == 2
+        job.spec.template.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(0).mountPath == '/home/user/.docker/config.json'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz/config.json'
+        and:
+        job.spec.template.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(1).mountPath == '/build/work/xyz'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz'
+        and:
+        job.spec.template.spec.volumes.get(0).name == 'build-data'
+        job.spec.template.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
 
         cleanup:
         ctx.close()
@@ -822,6 +854,65 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.volumes.size() == 1
         job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
         job.spec.template.spec.nodeSelector == null
+        job.spec.template.spec.restartPolicy == 'Never'
+
+        cleanup:
+        ctx.close()
+    }
+
+    def 'should create mirror job spec'() {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'foo',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.storage.claimName': 'bar',
+                'wave.build.k8s.storage.mountPath': '/build',
+                'wave.build.k8s.service-account': 'theAdminAccount',
+                'wave.mirror.retry-attempts': 3
+        ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def name = 'scan-job'
+        def containerImage = 'scan-image:latest'
+        def args = ['arg1', 'arg2']
+        def workDir = Path.of('/build/work/dir')
+        def credsFile = Path.of('/build/work/dir/creds/file')
+        def mirrorConfig = Mock(MirrorConfig) {
+            getRequestsCpu() >> null
+            getRequestsMemory() >> null
+            getRetryAttempts() >> 3
+        }
+
+        when:
+        def job = k8sService.mirrorJobSpec(name, containerImage, args, workDir, credsFile, mirrorConfig)
+
+        then:
+        job.metadata.name == name
+        job.metadata.namespace == 'foo'
+        job.spec.backoffLimit == 3
+        job.spec.template.spec.containers[0].image == containerImage
+        job.spec.template.spec.containers[0].args == args
+        job.spec.template.spec.containers[0].resources.requests == null
+        job.spec.template.spec.containers[0].env == [new V1EnvVar().name('REGISTRY_AUTH_FILE').value('/tmp/config.json')]
+        and:
+        job.spec.template.spec.containers[0].volumeMounts.size() == 2
+        and:
+        with(job.spec.template.spec.containers[0].volumeMounts[0]) {
+            mountPath == '/tmp/config.json'
+            readOnly == true
+            subPath == 'work/dir/creds/file'
+        }
+        and:
+        with(job.spec.template.spec.containers[0].volumeMounts[1]) {
+            mountPath == '/build/work/dir'
+            readOnly == true
+            subPath == 'work/dir'
+        }
+        and:
+        job.spec.template.spec.volumes.size() == 1
+        job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
         job.spec.template.spec.restartPolicy == 'Never'
 
         cleanup:

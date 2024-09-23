@@ -47,31 +47,34 @@ class RedisCacheProvider implements CacheProvider<String,String> {
         }
     }
 
+    @Override
+    void put(String key, String value) {
+        put(key, value, null)
+    }
+
+    @Override
     void put(String key, String value, Duration ttl) {
         try( Jedis conn=pool.getResource() ) {
-            final params = new SetParams().ex(ttl.toSeconds())
+            final params = new SetParams()
+            if( ttl )
+                params.px(ttl.toMillis())
             conn.set(key, value, params)
         }
     }
 
     @Override
-    boolean putIfAbsent(String key, String value, Duration duration) {
-        try( Jedis conn=pool.getResource() ) {
-            final params = new SetParams().nx().ex(duration.toSeconds())
-            final result = conn.set(key, value, params)
-            return result == 'OK'
-        }
+    boolean putIfAbsent(String key, String value) {
+        putIfAbsent(key, value, null)
     }
 
     @Override
-    String putIfAbsentAndGetCurrent(String key, String value, Duration ttl) {
-        try (Jedis conn = pool.getResource()){
-            final params = new SetParams().nx().ex(ttl.toSeconds())
-            final tx = conn.multi()
-            tx.set(key,value,params)
-            tx.get(key)
-            final result = tx.exec()
-            return result[1].toString()
+    boolean putIfAbsent(String key, String value, Duration ttl) {
+        try( Jedis conn=pool.getResource() ) {
+            final params = new SetParams().nx()
+            if( ttl )
+                params.px(ttl.toMillis())
+            final result = conn.set(key, value, params)
+            return result == 'OK'
         }
     }
 

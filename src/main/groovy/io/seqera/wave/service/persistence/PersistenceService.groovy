@@ -21,6 +21,7 @@ package io.seqera.wave.service.persistence
 import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.exception.NotFoundException
+import io.seqera.wave.service.mirror.MirrorState
 import io.seqera.wave.service.scan.ScanResult
 /**
  * A storage for statistic data
@@ -57,6 +58,14 @@ interface PersistenceService {
      * @return The corresponding {@link WaveBuildRecord} object or {@code null} if no record is found
      */
     WaveBuildRecord loadBuild(String targetImage, String digest)
+
+    /**
+     * Retrieve the latest {@link WaveBuildRecord} object for the given container id
+     *
+     * @param containerId The container id for which the latest build record should be retrieved
+     * @return The corresponding {@link WaveBuildRecord} object or {@code null} if no record is found
+     */
+    WaveBuildRecord latestBuild(String containerId)
 
     /**
      * Store a {@link WaveContainerRecord} object in the Surreal wave_request table.
@@ -125,5 +134,29 @@ interface PersistenceService {
                 scanRecord.status,
                 scanRecord.vulnerabilities )
     }
+
+    /**
+     * Load a mirror state record
+     *
+     * @param mirrorId The ID of the mirror record
+     * @return The corresponding {@link MirrorState} object or null if it cannot be found
+     */
+    MirrorState loadMirrorState(String mirrorId)
+
+    /**
+     * Load a mirror state record given the target image name and the image digest
+     *
+     * @param targetImage The target mirrored image name
+     * @param digest The image content SHA256 digest
+     * @return The corresponding {@link MirrorState} object or null if it cannot be found
+     */
+    MirrorState loadMirrorState(String targetImage, String digest)
+
+    /**
+     * Persists a {@link MirrorState} state record
+     *
+     * @param mirror {@link MirrorState} object
+     */
+    void saveMirrorState(MirrorState mirror)
 
 }

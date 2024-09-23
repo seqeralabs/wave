@@ -48,6 +48,7 @@ import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.mirror.MirrorConfig
 import io.seqera.wave.service.scan.Trivy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -661,7 +662,14 @@ class K8sServiceImpl implements K8sService {
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
         if( credsFile ){
-            mounts.add(0, mountHostPath(credsFile, storageMountPath, '/home/user/.docker/config.json'))
+            if( !singularity ) {
+                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/home/user/.docker/config.json'))
+            }
+            else {
+                final remoteFile = credsFile.resolveSibling('singularity-remote.yaml')
+                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/root/.singularity/docker-config.json'))
+                mounts.add(1, mountHostPath(remoteFile, storageMountPath, '/root/.singularity/remote.yaml'))
+            }
         }
 
         V1JobBuilder builder = new V1JobBuilder()
@@ -700,6 +708,7 @@ class K8sServiceImpl implements K8sService {
                 .withImage(containerImage)
                 .withVolumeMounts(mounts)
                 .withResources(requests)
+                .withWorkingDir('/tmp')
 
         if( singularity ) {
             container
@@ -775,6 +784,67 @@ class K8sServiceImpl implements K8sService {
                 .withArgs(args)
                 .withVolumeMounts(mounts)
                 .withResources(requests)
+
+        // spec section
+        spec.withContainers(container.build()).endSpec().endTemplate().endSpec()
+
+        return builder.build()
+    }
+
+    @Override
+    V1Job launchMirrorJob(String name, String containerImage, List<String> args, Path workDir, Path creds, MirrorConfig config) {
+        final spec = mirrorJobSpec(name, containerImage, args, workDir, creds, config)
+        return k8sClient
+                .batchV1Api()
+                .createNamespacedJob(namespace, spec, null, null, null,null)
+    }
+
+    V1Job mirrorJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, MirrorConfig config) {
+
+        // required volumes
+        final mounts = new ArrayList<V1VolumeMount>(5)
+        mounts.add(mountBuildStorage(workDir, storageMountPath, true))
+
+        final volumes = new ArrayList<V1Volume>(5)
+        volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
+
+        if( credsFile ){
+            mounts.add(0, mountHostPath(credsFile, storageMountPath, '/tmp/config.json'))
+        }
+
+        V1JobBuilder builder = new V1JobBuilder()
+
+        //metadata section
+        builder.withNewMetadata()
+                .withNamespace(namespace)
+                .withName(name)
+                .addToLabels(labels)
+                .endMetadata()
+
+        //spec section
+        def spec = builder
+                .withNewSpec()
+                .withBackoffLimit(config.retryAttempts)
+                .withNewTemplate()
+                .editOrNewSpec()
+                .withServiceAccount(serviceAccount)
+                .withRestartPolicy("Never")
+                .addAllToVolumes(volumes)
+
+        final requests = new V1ResourceRequirements()
+        if( config.requestsCpu )
+            requests.putRequestsItem('cpu', new Quantity(config.requestsCpu))
+        if( config.requestsMemory )
+            requests.putRequestsItem('memory', new Quantity(config.requestsMemory))
+
+        // container section
+        final container = new V1ContainerBuilder()
+                .withName(name)
+                .withImage(containerImage)
+                .withArgs(args)
+                .withVolumeMounts(mounts)
+                .withResources(requests)
+                .withEnv(new V1EnvVar().name("REGISTRY_AUTH_FILE").value("/tmp/config.json"))
 
         // spec section
         spec.withContainers(container.build()).endSpec().endTemplate().endSpec()

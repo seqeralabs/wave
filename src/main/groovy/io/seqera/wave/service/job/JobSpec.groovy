@@ -37,7 +37,7 @@ import io.seqera.wave.util.LongRndKey
 @CompileStatic
 class JobSpec {
 
-    enum Type { Transfer, Build, Scan }
+    enum Type { Transfer, Build, Scan, Mirror }
 
     /**
      * The job unique identifier
@@ -86,11 +86,11 @@ class JobSpec {
         this.workDir = dir
     }
 
-    static JobSpec transfer(String stateId, String operationName, Instant creationTime, Duration maxDuration) {
+    static JobSpec transfer(String recordId, String operationName, Instant creationTime, Duration maxDuration) {
         new JobSpec(
                 LongRndKey.rndHex(),
                 Type.Transfer,
-                stateId,
+                recordId,
                 operationName,
                 creationTime,
                 maxDuration,
@@ -98,11 +98,11 @@ class JobSpec {
         )
     }
 
-    static JobSpec scan(String stateId, String operationName, Instant creationTime, Duration maxDuration, Path dir) {
+    static JobSpec scan(String recordId, String operationName, Instant creationTime, Duration maxDuration, Path dir) {
         new JobSpec(
                 LongRndKey.rndHex(),
                 Type.Scan,
-                stateId,
+                recordId,
                 operationName,
                 creationTime,
                 maxDuration,
@@ -110,15 +110,27 @@ class JobSpec {
         )
     }
 
-    static JobSpec build(String stateId, String operationName, Instant creationTime, Duration maxDuration,  Path dir) {
+    static JobSpec build(String recordId, String operationName, Instant creationTime, Duration maxDuration,  Path dir) {
         new JobSpec(
                 LongRndKey.rndHex(),
                 Type.Build,
-                stateId,
+                recordId,
                 operationName,
                 creationTime,
                 maxDuration,
                 dir
+        )
+    }
+
+    static JobSpec mirror(String recordId, String operationName, Instant creationTime, Duration maxDuration, Path workDir) {
+        new JobSpec(
+                LongRndKey.rndHex(),
+                Type.Mirror,
+                recordId,
+                operationName,
+                creationTime,
+                maxDuration,
+                workDir
         )
     }
 }

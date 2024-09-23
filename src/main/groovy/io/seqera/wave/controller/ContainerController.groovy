@@ -60,6 +60,8 @@ import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.FreezeService
 import io.seqera.wave.service.inclusion.ContainerInclusionService
 import io.seqera.wave.service.inspect.ContainerInspectService
+import io.seqera.wave.service.mirror.ContainerMirrorService
+import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
@@ -126,7 +128,7 @@ class ContainerController {
     ContainerBuildService buildService
 
     @Inject
-    ContainerInspectService dockerAuthService
+    ContainerInspectService inspectService
 
     @Inject
     RegistryProxyService registryProxyService
@@ -153,6 +155,9 @@ class ContainerController {
     @Nullable
     RateLimiterService rateLimiterService
 
+    @Inject
+    private ContainerMirrorService mirrorService
+
     @PostConstruct
     private void init() {
         log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl; default-build-repo: $buildConfig.defaultBuildRepository; default-cache-repo: $buildConfig.defaultCacheRepository; default-public-repo: $buildConfig.defaultPublicRepository"
@@ -177,6 +182,7 @@ class ContainerController {
 
         // validate request
         validateContainerRequest(req)
+        validateMirrorRequest(req, v2)
 
         // this is needed for backward compatibility with old clients
         if( !req.towerEndpoint ) {
@@ -326,7 +332,7 @@ class ContainerController {
                 ? buildConfig.defaultPublicRepository
                 : buildConfig.defaultBuildRepository), req.nameStrategy)
         final cacheRepository = req.cacheRepository ?: buildConfig.defaultCacheRepository
-        final configJson = dockerAuthService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
+        final configJson = inspectService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
         final scanId = scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
@@ -415,6 +421,15 @@ class ContainerController {
             buildId = track.id
             buildNew = !track.cached
         }
+        else if( req.mirrorRegistry ) {
+            final mirror = makeMirrorRequest(req, identity)
+            final track = checkMirror(mirror, identity, req.dryRun)
+            targetImage = track.targetImage
+            targetContent = null
+            condaContent = null
+            buildId = track.id
+            buildNew = !track.cached
+        }
         else if( req.containerImage ) {
             // normalize container image
             final coords = ContainerCoordinates.parse(req.containerImage)
@@ -436,7 +451,51 @@ class ContainerController {
                 ContainerPlatform.of(req.containerPlatform),
                 buildId,
                 buildNew,
-                req.freeze )
+                req.freeze,
+                req.mirrorRegistry!=null
+        )
+    }
+
+    protected MirrorRequest makeMirrorRequest(SubmitContainerTokenRequest request, PlatformId identity) {
+        final coords = ContainerCoordinates.parse(request.containerImage)
+        if( coords.registry == request.mirrorRegistry )
+            throw new BadRequestException("Source and target mirror registry as the same - offending value '${request.mirrorRegistry}'")
+        final targetImage = request.mirrorRegistry + '/' + coords.imageAndTag
+        final configJson = inspectService.credentialsConfigJson(null, request.containerImage, targetImage, identity)
+        final platform = request.containerPlatform
+                ? ContainerPlatform.of(request.containerPlatform)
+                : ContainerPlatform.DEFAULT
+        final digest = registryProxyService.getImageDigest(request.containerImage, identity)
+        if( !digest )
+            throw new BadRequestException("Container image '$request.containerImage' does not exist")
+        return MirrorRequest.create(
+                request.containerImage,
+                targetImage,
+                digest,
+                platform,
+                Path.of(buildConfig.buildWorkspace).toAbsolutePath(),
+                configJson )
+    }
+
+    protected BuildTrack checkMirror(MirrorRequest request, PlatformId identity, boolean dryRun) {
+        final targetDigest = registryProxyService.getImageDigest(request.targetImage, identity)
+        log.debug "== Mirror target digest: $targetDigest"
+        final cached = request.digest==targetDigest
+        // check for dry-run execution
+        if( dryRun ) {
+            log.debug "== Dry-run request request: $request"
+            final dryId = request.id +  BuildRequest.SEP + '0'
+            return new BuildTrack(dryId, request.targetImage, cached)
+        }
+        // check for existing image
+        if( request.digest==targetDigest ) {
+            log.debug "== Found cached request for request: $request"
+            final cache = persistenceService.loadMirrorState(request.targetImage, targetDigest)
+            return new BuildTrack(cache?.mirrorId, request.targetImage, true)
+        }
+        else {
+            return mirrorService.mirrorImage(request)
+        }
     }
 
     protected String targetImage(String token, ContainerCoordinates container) {
@@ -462,7 +521,7 @@ class ContainerController {
         return HttpResponse.ok()
     }
 
-    void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException{
+    void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException {
         String msg
         // check valid image name
         msg = validationService.checkContainerName(req.containerImage)
@@ -473,6 +532,32 @@ class ContainerController {
         // check cache repository
         msg = validationService.checkBuildRepository(req.cacheRepository, true)
         if( msg ) throw new BadRequestException(msg)
+    }
+
+    void validateMirrorRequest(SubmitContainerTokenRequest req, boolean v2) throws BadRequestException {
+        if( !req.mirrorRegistry )
+            return
+        // container mirror validation
+        if( !v2 )
+            throw new BadRequestException("Container mirroring requires the use of v2 API")
+        if( !req.containerImage )
+            throw new BadRequestException("Attribute `containerImage` is required when specifying `mirrorRegistry`")
+        if( !req.towerAccessToken )
+            throw new BadRequestException("Container mirroring requires an authenticated request - specify the tower token attribute")
+        if( req.freeze )
+            throw new BadRequestException("Attribute `mirrorRegistry` and `freeze` conflict each other")
+        if( req.containerFile )
+            throw new BadRequestException("Attribute `mirrorRegistry` and `containerFile` conflict each other")
+        if( req.containerIncludes )
+            throw new BadRequestException("Attribute `mirrorRegistry` and `containerIncludes` conflict each other")
+        if( req.containerConfig )
+            throw new BadRequestException("Attribute `mirrorRegistry` and `containerConfig` conflict each other")
+        final coords = ContainerCoordinates.parse(req.containerImage)
+        if( coords.registry == req.mirrorRegistry )
+            throw new BadRequestException("Source and target mirror registry as the same - offending value '${req.mirrorRegistry}'")
+        def msg = validationService.checkMirrorRegistry(req.mirrorRegistry)
+        if( msg )
+            throw new BadRequestException(msg)
     }
 
     @Error(exception = AuthorizationException.class)

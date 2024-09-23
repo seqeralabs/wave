@@ -187,6 +187,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
             log.error "== Container build unexpected exception: ${e.message} - request=$req", e
             final result = BuildResult.failed(req.buildId, e.message, req.startTime)
             buildStore.storeBuild(req.targetImage, new BuildStoreEntry(req, result), buildConfig.failureDuration)
+            eventPublisher.publishEvent(new BuildEvent(req, result))
         }
     }
 
@@ -422,4 +423,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         return buildRecordStore.getBuildRecord(buildId) ?: persistenceService.loadBuild(buildId)
     }
 
+    @Override
+    WaveBuildRecord getLatestBuild(String containerId) {
+        return persistenceService.latestBuild(containerId)
+    }
 }

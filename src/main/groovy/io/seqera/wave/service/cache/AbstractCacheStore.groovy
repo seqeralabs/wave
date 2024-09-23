@@ -20,6 +20,7 @@ package io.seqera.wave.service.cache
 
 import java.time.Duration
 
+import groovy.transform.CompileStatic
 import io.seqera.wave.encoder.EncodingStrategy
 import io.seqera.wave.service.cache.impl.CacheProvider
 
@@ -28,6 +29,7 @@ import io.seqera.wave.service.cache.impl.CacheProvider
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@CompileStatic
 abstract class AbstractCacheStore<V> implements CacheStore<String,V> {
 
     private EncodingStrategy<V> encodingStrategy
@@ -44,6 +46,10 @@ abstract class AbstractCacheStore<V> implements CacheStore<String,V> {
     protected abstract Duration getDuration()
 
     protected String key0(String k) { return getPrefix() + k  }
+
+    protected String recordId0(String recordId) {
+        return getPrefix() + 'state-id/' + recordId
+    }
 
     protected V deserialize(String encoded) {
         return encodingStrategy.decode(encoded)
@@ -63,32 +69,34 @@ abstract class AbstractCacheStore<V> implements CacheStore<String,V> {
         return result ? deserialize(result) : null
     }
 
+    V getByRecordId(String recordId) {
+        final key = delegate.get(recordId0(recordId))
+        return get(key)
+    }
+
     void put(String key, V value) {
-        delegate.put(key0(key), serialize(value), getDuration())
+        put(key, value, getDuration())
     }
 
     @Override
     void put(String key, V value, Duration ttl) {
         delegate.put(key0(key), serialize(value), ttl)
+        if( value instanceof StateRecord ) {
+            delegate.put(recordId0(value.getRecordId()), key, ttl)
+        }
     }
 
     @Override
     boolean putIfAbsent(String key, V value, Duration ttl) {
-        delegate.putIfAbsent(key0(key), serialize(value), ttl)
+        final result = delegate.putIfAbsent(key0(key), serialize(value), ttl)
+        if( result && value instanceof StateRecord ) {
+            delegate.put(recordId0(value.getRecordId()), key, ttl)
+        }
+        return result
     }
 
     boolean putIfAbsent(String key, V value) {
-        delegate.putIfAbsent(key0(key), serialize(value), getDuration())
-    }
-
-    @Override
-    V putIfAbsentAndGetCurrent(String key, V value, Duration ttl) {
-        final result = delegate.putIfAbsentAndGetCurrent(key0(key), serialize(value), ttl)
-        return result? deserialize(result) : null
-    }
-
-    V putIfAbsentAndGetCurrent(String key, V value) {
-        return putIfAbsentAndGetCurrent(key, value, getDuration())
+        return putIfAbsent(key, value, getDuration())
     }
 
     @Override

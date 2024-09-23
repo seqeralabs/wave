@@ -93,4 +93,19 @@ class JobSpecTest extends Specification {
         job.operationName == 'xyz'
         job.workDir == Path.of('/some/path')
     }
+
+    def 'should create mirror job' () {
+        given:
+        def now = Instant.now()
+        def job = JobSpec.mirror('12345','xyz', now, Duration.ofMinutes(1), Path.of('/some/path'))
+
+        expect:
+        job.id
+        job.recordId == '12345'
+        job.type == JobSpec.Type.Mirror
+        job.creationTime == now
+        job.maxDuration == Duration.ofMinutes(1)
+        job.operationName == 'xyz'
+        job.workDir == Path.of('/some/path')
+    }
 }

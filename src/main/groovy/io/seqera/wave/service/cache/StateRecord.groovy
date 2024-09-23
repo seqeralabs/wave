@@ -16,30 +16,15 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job
-
-import io.seqera.wave.service.blob.BlobCacheInfo
-import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.mirror.MirrorRequest
-import io.seqera.wave.service.scan.ScanRequest
+package io.seqera.wave.service.cache
 
 /**
- * Define the contract for submitting and monitoring jobs
- *
+ * Marker interface for record object that model long running operation state
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface JobService {
+interface StateRecord {
 
-    JobSpec launchTransfer(BlobCacheInfo blob, List<String> command)
-
-    JobSpec launchBuild(BuildRequest request)
-
-    JobSpec launchScan(ScanRequest request)
-
-    JobSpec launchMirror(MirrorRequest request)
-
-    JobState status(JobSpec jobSpec)
-
-    void cleanup(JobSpec jobSpec, Integer exitStatus)
+    String getRecordId()
 
 }
