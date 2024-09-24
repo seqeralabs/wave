@@ -45,6 +45,7 @@ import io.seqera.wave.util.ContainerHelper
 @Property(name="wave.build.k8s.storage.mountPath",value="/build")
 @Property(name='wave.build.k8s.node-selector[linux/amd64]',value="service=wave-build")
 @Property(name='wave.build.k8s.node-selector[linux/arm64]',value="service=wave-build-arm64")
+@Property(name='wave.scan.cache.enabled', value='false')
 class KubeBuildStrategyTest extends Specification {
 
     @Inject
