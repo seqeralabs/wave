@@ -91,16 +91,13 @@ class CondaLockServiceImpl implements CondaLockService {
     }
 
     protected static extractCondaLockFile(String logs) {
-        if ( !logs )
-            return null
-        def condaLock = null
         try {
-            condaLock = logs.substring(logs.lastIndexOf(CONDA_LOCK_START) + CONDA_LOCK_START.length(), logs.lastIndexOf(CONDA_LOCK_END))
+            return logs.substring(logs.lastIndexOf(CONDA_LOCK_START) + CONDA_LOCK_START.length(), logs.lastIndexOf(CONDA_LOCK_END))
                     .replaceAll(/#\d+ \d+\.\d+\s*/, '')
         } catch (Exception e) {
             log.warn "Unable to extract conda lock file from logs - reason: ${e.message}", e
+            return null
         }
-        return condaLock
     }
 
 }
