@@ -38,7 +38,6 @@ import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
 import io.kubernetes.client.openapi.models.V1PodStatus
 import io.micronaut.context.ApplicationContext
-import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Replaces
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.BlobCacheConfig
@@ -67,8 +66,7 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'bar',
                 'wave.build.k8s.storage.mountPath': '/build',
-                'wave.scan.enabled': 'true',
-                'wave.scan.cache.enabled': 'false']
+                'wave.scan.enabled': 'true']
         and:
         def ctx = ApplicationContext.run(PROPS)
         ctx.getBean(K8sServiceImpl)
@@ -98,8 +96,7 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.namespace': 'foo',
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'bar',
-                'wave.build.k8s.storage.mountPath': '/build',
-                'wave.scan.cache.enabled': 'false' ]
+                'wave.build.k8s.storage.mountPath': '/build' ]
         and:
         def ctx = ApplicationContext.run(PROPS)
         def k8sService = ctx.getBean(K8sServiceImpl)
@@ -146,8 +143,7 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.namespace': 'foo',
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'bar',
-                'wave.build.k8s.storage.mountPath': '/build',
-                'wave.scan.cache.enabled': 'false' ]
+                'wave.build.k8s.storage.mountPath': '/build' ]
         and:
         def ctx = ApplicationContext.run(PROPS)
         def k8sService = ctx.getBean(K8sServiceImpl)
@@ -175,8 +171,7 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.namespace': 'foo',
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'bar',
-                'wave.build.k8s.storage.mountPath': '/build',
-                'wave.scan.cache.enabled': 'false' ]
+                'wave.build.k8s.storage.mountPath': '/build' ]
         and:
         def ctx = ApplicationContext.run(PROPS)
         def k8sService = ctx.getBean(K8sServiceImpl)
@@ -200,8 +195,7 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.namespace'        : 'my-ns',
                 'wave.build.k8s.configPath'       : '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'build-claim',
-                'wave.build.k8s.storage.mountPath': '/build',
-                'wave.scan.cache.enabled': 'false']
+                'wave.build.k8s.storage.mountPath': '/build']
         and:
         def ctx = ApplicationContext.run(PROPS)
         def k8sService = ctx.getBean(K8sServiceImpl)
@@ -244,8 +238,7 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.namespace': 'my-ns',
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'build-claim',
-                'wave.build.k8s.storage.mountPath': '/build',
-                'wave.scan.cache.enabled': 'false' ]
+                'wave.build.k8s.storage.mountPath': '/build' ]
         and:
         def ctx = ApplicationContext.run(PROPS)
         def k8sService = ctx.getBean(K8sServiceImpl)
@@ -292,8 +285,7 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.namespace': 'my-ns',
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'build-claim',
-                'wave.build.k8s.storage.mountPath': '/build',
-                'wave.scan.cache.enabled': 'false' ]
+                'wave.build.k8s.storage.mountPath': '/build' ]
         and:
         def ctx = ApplicationContext.run(PROPS)
         def k8sService = ctx.getBean(K8sServiceImpl)
@@ -337,8 +329,7 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'bar',
                 'wave.build.k8s.storage.mountPath': '/build',
-                'wave.build.k8s.labels': ['department': 'unit a','organization': 'org'],
-                'wave.scan.cache.enabled': 'false'
+                'wave.build.k8s.labels': ['department': 'unit a','organization': 'org']
         ]
         and:
         def ctx = ApplicationContext.run(PROPS)
@@ -368,7 +359,6 @@ class K8sServiceImplTest extends Specification {
                 ],
                 'wave.build.k8s.resources.requests.cpu': '2',
                 'wave.build.k8s.resources.requests.memory': '4Gi',
-                'wave.scan.cache.enabled': 'false'
         ] as Map<String,Object>
         and:
         def ctx = ApplicationContext.run(PROPS)
@@ -394,8 +384,7 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'bar',
                 'wave.build.k8s.storage.mountPath': '/build',
-                'wave.build.k8s.service-account': 'theAdminAccount',
-                'wave.scan.cache.enabled': 'false'
+                'wave.build.k8s.service-account': 'theAdminAccount'
         ]
         and:
         def ctx = ApplicationContext.run(PROPS)
@@ -417,8 +406,7 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.namespace': 'my-ns',
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'build-claim',
-                'wave.build.k8s.storage.mountPath': '/build',
-                'wave.scan.cache.enabled': 'false' ]
+                'wave.build.k8s.storage.mountPath': '/build', ]
         and:
         def ctx = ApplicationContext.run(PROPS)
         def k8sService = ctx.getBean(K8sServiceImpl)
@@ -463,8 +451,7 @@ class K8sServiceImplTest extends Specification {
         def PROPS = [
                 'wave.build.workspace': '/build/work',
                 'wave.build.k8s.namespace': 'my-ns',
-                'wave.build.k8s.configPath': '/home/kube.config',
-                'wave.scan.cache.enabled': 'false' ]
+                'wave.build.k8s.configPath': '/home/kube.config' ]
         and:
         def ctx = ApplicationContext.run(PROPS)
         def k8sService = ctx.getBean(K8sServiceImpl)
@@ -500,8 +487,7 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.workspace': '/build/work',
                 'wave.build.k8s.namespace': 'my-ns',
                 'wave.build.k8s.service-account': 'foo-sa',
-                'wave.build.k8s.configPath': '/home/kube.config',
-                'wave.scan.cache.enabled': 'false' ]
+                'wave.build.k8s.configPath': '/home/kube.config' ]
         and:
         def ctx = ApplicationContext.run(PROPS)
         def k8sService = ctx.getBean(K8sServiceImpl)
@@ -647,8 +633,7 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'build-claim',
                 'wave.build.k8s.storage.mountPath': '/build',
-                'wave.build.retry-attempts': 3,
-                'wave.scan.cache.enabled': 'false'
+                'wave.build.retry-attempts': 3
         ]
         and:
         def ctx = ApplicationContext.run(PROPS)
@@ -700,8 +685,7 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'build-claim',
                 'wave.build.k8s.storage.mountPath': '/build',
-                'wave.build.retry-attempts': 3,
-                'wave.scan.cache.enabled': 'false'
+                'wave.build.retry-attempts': 3
         ]
         and:
         def ctx = ApplicationContext.run(PROPS)
@@ -750,8 +734,7 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'bar',
                 'wave.build.k8s.storage.mountPath': '/build',
-                'wave.build.k8s.service-account': 'theAdminAccount',
-                'wave.scan.cache.enabled': 'false'
+                'wave.build.k8s.service-account': 'theAdminAccount'
         ]
         and:
         def ctx = ApplicationContext.run(PROPS)
@@ -795,8 +778,7 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'bar',
                 'wave.build.k8s.storage.mountPath': '/build',
-                'wave.build.k8s.service-account': 'theAdminAccount',
-                'wave.scan.cache.enabled': 'false'
+                'wave.build.k8s.service-account': 'theAdminAccount'
         ]
         and:
         def ctx = ApplicationContext.run(PROPS)
@@ -841,7 +823,6 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.storage.claimName': 'bar',
                 'wave.build.k8s.storage.mountPath': '/build',
                 'wave.build.k8s.service-account': 'theAdminAccount',
-                'wave.scan.cache.enabled': 'false'
         ]
         and:
         def ctx = ApplicationContext.run(PROPS)
@@ -888,8 +869,7 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.storage.claimName': 'bar',
                 'wave.build.k8s.storage.mountPath': '/build',
                 'wave.build.k8s.service-account': 'theAdminAccount',
-                'wave.mirror.retry-attempts': 3,
-                'wave.scan.cache.enabled': 'false'
+                'wave.mirror.retry-attempts': 3
         ]
         and:
         def ctx = ApplicationContext.run(PROPS)
@@ -948,8 +928,7 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.storage.claimName': 'bar',
                 'wave.build.k8s.storage.mountPath': '/build',
                 'wave.build.k8s.service-account': 'theAdminAccount',
-                'wave.scan.retry-attempts': 3,
-                'wave.scan.cache.enabled': 'false'
+                'wave.scan.retry-attempts': 3
         ]
         and:
         def ctx = ApplicationContext.run(PROPS)

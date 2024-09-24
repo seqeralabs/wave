@@ -72,21 +72,15 @@ class ScanConfig {
     @Value('${wave.scan.retry-attempts:1}')
     int retryAttempts
 
-    @Value('${wave.scan.cache.enabled:true}')
-    boolean enableCache
-
     String getScanImage() {
         return scanImage
     }
 
     @Memoized
     Path getCacheDirectory() {
-        if ( enableCache ){
-            final result = Path.of(buildDirectory).toAbsolutePath().resolve('.trivy-cache')
-            Files.createDirectories(result)
-            return result
-        }
-        return null
+        final result = Path.of(buildDirectory).toAbsolutePath().resolve('.trivy-cache')
+        Files.createDirectories(result)
+        return result
     }
 
     String getRequestsCpu() {
