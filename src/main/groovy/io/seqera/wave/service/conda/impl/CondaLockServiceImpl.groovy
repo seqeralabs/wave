@@ -91,10 +91,16 @@ class CondaLockServiceImpl implements CondaLockService {
     }
 
     protected static extractCondaLockFile(String logs) {
-        if ( !logs || (logs.lastIndexOf(CONDA_LOCK_START) > logs.lastIndexOf(CONDA_LOCK_END)) ) // logs also print the dockerfile commands, so make sure we are not getting the dockerfile commands
+        if ( !logs )
             return null
-        return logs.substring(logs.lastIndexOf(CONDA_LOCK_START) + CONDA_LOCK_START.length(), logs.lastIndexOf(CONDA_LOCK_END))
-                .replaceAll(/#\d+ \d+\.\d+\s*/, '')
+        def condaLock = null
+        try {
+            condaLock = logs.substring(logs.lastIndexOf(CONDA_LOCK_START) + CONDA_LOCK_START.length(), logs.lastIndexOf(CONDA_LOCK_END))
+                    .replaceAll(/#\d+ \d+\.\d+\s*/, '')
+        } catch (Exception e) {
+            log.warn "Unable to extract conda lock file from logs - reason: ${e.message}", e
+        }
+        return condaLock
     }
 
 }
