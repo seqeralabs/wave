@@ -67,19 +67,24 @@ class LocalCacheProvider implements CacheProvider<String,String> {
         return entry.value
     }
 
+    @Override
+    void put(String key, String value) {
+        store.put(key, new Entry<>(value,null))
+    }
+
+    @Override
     void put(String key, String value, Duration ttl) {
         store.put(key, new Entry<>(value,ttl))
     }
 
     @Override
-    boolean putIfAbsent(String key, String value, Duration ttl) {
-        return putIfAbsent0(key, value, ttl) == null
+    boolean putIfAbsent(String key, String value) {
+        return putIfAbsent0(key, value, null) == null
     }
 
     @Override
-    String putIfAbsentAndGetCurrent(String key, String value, Duration ttl) {
-        final ret = putIfAbsent0(key, value, ttl)
-        return ret!=null ? ret : value
+    boolean putIfAbsent(String key, String value, Duration ttl) {
+        return putIfAbsent0(key, value, ttl) == null
     }
 
     private String putIfAbsent0(String key, String value, Duration ttl) {
@@ -99,57 +104,4 @@ class LocalCacheProvider implements CacheProvider<String,String> {
         store.clear()
     }
 
-    // =============== bi-cache store implementation ===============
-
-    private Map<Integer,Set<String>> index = new HashMap<>()
-
-    @Override
-    void biPut(String key, String value, Duration ttl) {
-        synchronized (this) {
-            this.put(key, value, ttl)
-            final id = value.hashCode()
-            def set = index.get(id)
-            if( set==null ) {
-                set=new HashSet<String>()
-                index.put(id, set)
-            }
-            set.add(key)
-        }
-    }
-
-    @Override
-    void biRemove(String key) {
-        synchronized (this) {
-            final entry = store.remove(key)
-            if( !entry )
-                return 
-            final id = entry.value.hashCode()
-            final set = index.get(id)
-            if( set ) {
-                set.remove(key)
-            }
-        }
-    }
-
-    @Override
-    Set<String> biKeysFor(String value) {
-        final id = value.hashCode()
-        return index.get(id) ?: Set.<String>of()
-    }
-
-    String biKeyFind(String value, boolean sorted) {
-        final id = value.hashCode()
-        final list = biKeysFor(value).toList()
-        final keys = sorted ? list.toSorted() : list.shuffled()
-        final itr = keys.iterator()
-        while( itr.hasNext() ) {
-            final result = itr.next()
-            // verify the key still exists
-            if( get(result)!=null )
-                return result
-            // if not exist, remove it from the set
-            index.get(id)?.remove(result)
-        }
-        return null
-    }
 }

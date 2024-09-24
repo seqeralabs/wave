@@ -26,7 +26,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.configuration.BuildConfig
-import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.util.RegHelper
@@ -49,9 +48,6 @@ class DockerBuildStrategy extends BuildStrategy {
 
     @Value('${wave.debug:false}')
     Boolean debug
-
-    @Inject
-    SpackConfig spackConfig
 
     @Inject
     BuildConfig buildConfig
@@ -100,16 +96,15 @@ class DockerBuildStrategy extends BuildStrategy {
     }
 
     protected List<String> buildCmd(String jobName, BuildRequest req, Path credsFile) {
-        final spack = req.isSpackBuild ? spackConfig : null
 
         final dockerCmd = req.formatDocker()
-                ? cmdForBuildkit(jobName, req.workDir, credsFile, spack, req.platform)
-                : cmdForSingularity(jobName, req.workDir, credsFile, spack, req.platform)
+                ? cmdForBuildkit(jobName, req.workDir, credsFile, req.platform)
+                : cmdForSingularity(jobName, req.workDir, credsFile, req.platform)
 
         return dockerCmd + launchCmd(req)
     }
 
-    protected List<String> cmdForBuildkit(String name, Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform ) {
+    protected List<String> cmdForBuildkit(String name, Path workDir, Path credsFile, ContainerPlatform platform ) {
         //checkout the documentation here to know more about these options https://github.com/moby/buildkit/blob/master/docs/rootless.md#docker
         final wrapper = ['docker',
                          'run',
@@ -125,12 +120,6 @@ class DockerBuildStrategy extends BuildStrategy {
             wrapper.add("$credsFile:/home/user/.docker/config.json:ro".toString())
         }
 
-        if( spackConfig ) {
-            // secret file
-            wrapper.add('-v')
-            wrapper.add("${spackConfig.secretKeyFile}:${spackConfig.secretMountPath}:ro".toString())
-        }
-
         if( platform ) {
             wrapper.add('--platform')
             wrapper.add(platform.toString())
@@ -142,7 +131,7 @@ class DockerBuildStrategy extends BuildStrategy {
         return wrapper
     }
 
-    protected List<String> cmdForSingularity(String name, Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform) {
+    protected List<String> cmdForSingularity(String name, Path workDir, Path credsFile, ContainerPlatform platform) {
         final wrapper = ['docker',
                          'run',
                          '--detach',
@@ -157,12 +146,6 @@ class DockerBuildStrategy extends BuildStrategy {
             //
             wrapper.add('-v')
             wrapper.add("${credsFile.resolveSibling('singularity-remote.yaml')}:/root/.singularity/remote.yaml:ro".toString())
-        }
-
-        if( spackConfig ) {
-            // secret file
-            wrapper.add('-v')
-            wrapper.add("${spackConfig.secretKeyFile}:${spackConfig.secretMountPath}:ro".toString())
         }
 
         if( platform ) {

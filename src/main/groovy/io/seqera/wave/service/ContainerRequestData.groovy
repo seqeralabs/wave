@@ -43,6 +43,11 @@ class ContainerRequestData {
     final String buildId
     final Boolean buildNew
     final Boolean freeze
+    final Boolean mirror
+
+    boolean durable() {
+        return freeze || mirror
+    }
 
     PlatformId getIdentity() {
         return identity

@@ -56,7 +56,6 @@ class BuildConfigTest extends Specification {
         config.singularityImage( ContainerPlatform.of('arm64') ) == 'bar'
     }
 
-
     @Unroll
     def 'should validate build max duration' () {
         given:
@@ -72,6 +71,5 @@ class BuildConfigTest extends Specification {
         'xyz'       | false         | 5             | 10            | 5
         'xtz'       | true          | 5             | 10            | 10    // <-- pick "trusted" because both "freeze" and "token" are provided
         'xtz'       | true          | 20            | 10            | 20    // <-- pick "default" when it's greater than "trusted"
-
     }
 }

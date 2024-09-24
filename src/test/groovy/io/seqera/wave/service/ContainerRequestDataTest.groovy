@@ -20,6 +20,8 @@ package io.seqera.wave.service
 
 import spock.lang.Specification
 
+import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 
@@ -38,7 +40,59 @@ class ContainerRequestDataTest extends Specification {
         then:
         req.identity
         req.identity == new PlatformId(new User(id:1))
+    }
 
+    def 'should validate constructor' () {
+        when:
+        def cfg = Mock(ContainerConfig)
+        def req = new ContainerRequestData(
+                new PlatformId(new User(id:1)),
+                'foo',
+                'from docker',
+                cfg,
+                'conda file',
+                ContainerPlatform.DEFAULT,
+                '12345',
+                true,
+                true,
+                true )
+        then:
+        req.identity == new PlatformId(new User(id:1))
+        req.containerImage == 'foo'
+        req.containerFile == 'from docker'
+        req.containerConfig == cfg
+        req.condaFile == 'conda file'
+        req.platform == ContainerPlatform.DEFAULT
+        req.buildId == '12345'
+        req.buildNew
+        req.freeze
+        req.mirror
+
+    }
+
+    def 'should validate durable flag' () {
+        given:
+        def req = new ContainerRequestData(
+                new PlatformId(new User(id:1)),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                FREEZE,
+                MIRROR )
+
+        expect:
+        req.durable() == EXPECTED
+
+        where:
+        FREEZE  | MIRROR    | EXPECTED
+        false   | false     | false
+        true    | false     | true
+        false   | true      | true
+        true    | true      | true
     }
 
 }

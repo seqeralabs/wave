@@ -31,9 +31,12 @@ import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.api.BuildStatusResponse
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.conda.CondaLockService
 import io.seqera.wave.service.logs.BuildLogService
+import io.seqera.wave.service.mirror.ContainerMirrorService
+import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import jakarta.inject.Inject
 /**
@@ -51,6 +54,9 @@ class BuildController {
     private ContainerBuildService buildService
 
     @Inject
+    private ContainerMirrorService mirrorService
+
+    @Inject
     @Nullable
     BuildLogService logService
 
@@ -58,7 +64,7 @@ class BuildController {
     CondaLockService condaLockService
 
     @Get("/v1alpha1/builds/{buildId}")
-    HttpResponse<WaveBuildRecord> getBuildRecord(String buildId){
+    HttpResponse<WaveBuildRecord> getBuildRecord(String buildId) {
         final record = buildService.getBuildRecord(buildId)
         return record
                 ? HttpResponse.ok(record)
@@ -77,10 +83,10 @@ class BuildController {
     }
 
     @Get("/v1alpha1/builds/{buildId}/status")
-    HttpResponse<BuildStatusResponse> getBuildStatus(String buildId){
-        final build = buildService.getBuildRecord(buildId)
-        build != null
-            ? HttpResponse.ok(build.toStatusResponse())
+    HttpResponse<BuildStatusResponse> getBuildStatus(String buildId) {
+        final resp = buildResponse0(buildId)
+        resp != null
+            ? HttpResponse.ok(resp)
             : HttpResponse.<BuildStatusResponse>notFound()
     }
 
@@ -94,6 +100,22 @@ class BuildController {
                 ? HttpResponse.ok(condaLock)
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + buildId  + ".lock\"")
                 : HttpResponse.<StreamedFile>notFound()
+    }
+
+    protected BuildStatusResponse buildResponse0(String buildId) {
+        if( !buildId )
+            throw new BadRequestException("Missing 'buildId' parameter")
+        // build IDs starting with the `mr-` prefix are interpreted as mirror requests
+        if( buildId.startsWith(MirrorRequest.ID_PREFIX) ) {
+            return mirrorService
+                    .getMirrorState(buildId)
+                    ?.toStatusResponse()
+        }
+        else {
+            return buildService
+                    .getBuildRecord(buildId)
+                    ?.toStatusResponse()
+        }
     }
 
 }

@@ -27,7 +27,6 @@ import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.config.CondaOpts
-import io.seqera.wave.config.SpackOpts
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.ContainerRequestData
@@ -35,16 +34,12 @@ import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.token.TokenData
 import org.yaml.snakeyaml.Yaml
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
-import static io.seqera.wave.util.DockerHelper.addPackagesToSpackYaml
 import static io.seqera.wave.util.DockerHelper.condaEnvironmentToCondaYaml
 import static io.seqera.wave.util.DockerHelper.condaFileToDockerFile
 import static io.seqera.wave.util.DockerHelper.condaFileToSingularityFile
 import static io.seqera.wave.util.DockerHelper.condaPackagesToCondaYaml
 import static io.seqera.wave.util.DockerHelper.condaPackagesToDockerFile
 import static io.seqera.wave.util.DockerHelper.condaPackagesToSingularityFile
-import static io.seqera.wave.util.DockerHelper.spackFileToDockerFile
-import static io.seqera.wave.util.DockerHelper.spackFileToSingularityFile
-import static io.seqera.wave.util.DockerHelper.spackPackagesToSpackYaml
 /**
  * Container helper methods
  *
@@ -82,16 +77,7 @@ class ContainerHelper {
             return result
         }
 
-        if( spec.type == PackagesSpec.Type.SPACK ) {
-            if( !spec.spackOpts )
-                spec.spackOpts = new SpackOpts()
-            final result = formatSingularity
-                        ? spackFileToSingularityFile(spec.spackOpts)
-                        : spackFileToDockerFile(spec.spackOpts)
-            return result
-        }
-
-        throw new IllegalArgumentException("Unexpected packages spec type: $spec.type")
+        throw new BadRequestException("Unexpected packages spec type: $spec.type")
     }
 
     static String condaFileFromRequest(SubmitContainerTokenRequest req) {
@@ -129,26 +115,6 @@ class ContainerHelper {
         return result[0]
     }
 
-    static String spackFileFromRequest(SubmitContainerTokenRequest req) {
-        if( !req.packages )
-            return decodeBase64OrFail(req.spackFile,'spackFile')
-
-        if( req.packages.type != PackagesSpec.Type.SPACK )
-            return null
-
-        if( req.packages.environment ) {
-            final decoded = decodeBase64OrFail(req.packages.environment,'packages.envFile')
-            return addPackagesToSpackYaml(decoded, req.packages.spackOpts)
-        }
-
-        if( req.packages.entries ) {
-            final String packages = req.packages.entries.join(' ')
-            return spackPackagesToSpackYaml(packages, req.packages.spackOpts)
-        }
-
-        return null
-    }
-
     static String decodeBase64OrFail(String value, String field) {
         if( !value )
             return null
@@ -167,16 +133,16 @@ class ContainerHelper {
     static SubmitContainerTokenResponse makeResponseV1(ContainerRequestData data, TokenData token, String waveImage) {
         final target = waveImage
         final build = data.buildNew ? data.buildId : null
-        return new SubmitContainerTokenResponse(token.value, target, token.expiration, data.containerImage, build, null, null)
+        return new SubmitContainerTokenResponse(token.value, target, token.expiration, data.containerImage, build, null, null, null)
     }
 
     static SubmitContainerTokenResponse makeResponseV2(ContainerRequestData data, TokenData token, String waveImage) {
-        final target = data.freeze ? data.containerImage : waveImage
+        final target = data.durable() ? data.containerImage : waveImage
         final build = data.buildId
         final Boolean cached = !data.buildNew
-        final expiration = !data.freeze ? token.expiration : null
-        final tokenId = !data.freeze ? token.value : null
-        return new SubmitContainerTokenResponse(tokenId, target, expiration, data.containerImage, build, cached, data.freeze)
+        final expiration = !data.durable() ? token.expiration : null
+        final tokenId = !data.durable() ? token.value : null
+        return new SubmitContainerTokenResponse(tokenId, target, expiration, data.containerImage, build, cached, data.freeze, data.mirror)
     }
 
     static String patchPlatformEndpoint(String endpoint) {
@@ -268,56 +234,7 @@ class ContainerHelper {
         return new Tuple2<String, String>(parts[0], parts[1])
     }
 
-    static NameVersionPair guessSpackRecipeName(String spackFileContent, boolean split=false) {
-        if( !spackFileContent )
-            return null
-        try {
-            final yaml = new Yaml().load(spackFileContent) as Map
-            final spack = yaml.spack as Map
-
-            if( !spack ){
-                throw new BadRequestException('Malformed Spack environment file - missing "spack:" section')
-            }
-            if( !spack.specs ){
-                throw new BadRequestException('Malformed Spack environment file - missing "spack.specs:" section')
-            }
-
-            if( spack.specs instanceof List ) {
-                final LinkedHashSet<String> result = new LinkedHashSet()
-                final LinkedHashSet<String> versions = new LinkedHashSet()
-                for( String it : spack.specs ) {
-                    final p = it.indexOf(' ')
-                    // remove everything after the first blank because they are supposed package directives
-                    if( p!=-1 )
-                        it = it.substring(0,p)
-                    if( split ) {
-                        final pair = splitVersion(it, '@')
-                        it = pair.v1
-                        versions.add(pair.v2)
-                    }
-                    else {
-                        // replaces '@' version separator with `-`
-                        it = it.replace('@','-')
-                    }
-                    if( it )
-                        result.add(it)
-                }
-                return split
-                        ? new NameVersionPair(result, versions)
-                        : new NameVersionPair(result)
-            }
-            return null
-        }
-        catch (BadRequestException e) {
-            throw  e
-        }
-        catch (Throwable e) {
-            log.warn "Unable to infer spack recipe name - cause: ${e.message}", e
-            return null
-        }
-    }
-
-    static String makeTargetImage(BuildFormat format, String repo, String id, @Nullable String condaFile, @Nullable String spackFile, @Nullable ImageNameStrategy nameStrategy) {
+    static String makeTargetImage(BuildFormat format, String repo, String id, @Nullable String condaFile, @Nullable ImageNameStrategy nameStrategy) {
         assert id, "Argument 'id' cannot be null or empty"
         assert repo, "Argument 'repo' cannot be null or empty"
         assert format, "Argument 'format' cannot be null"
@@ -328,17 +245,9 @@ class ContainerHelper {
             if( condaFile && (tools=guessCondaRecipeName(condaFile,false)) ) {
                 tag = "${normaliseTag(tools.qualifiedNames())}--${id}"
             }
-            else if( spackFile && (tools=guessSpackRecipeName(spackFile,false)) ) {
-                tag = "${normaliseTag(tools.qualifiedNames())}--${id}"
-            }
         }
         else if( nameStrategy==ImageNameStrategy.imageSuffix )  {
             if( condaFile && (tools=guessCondaRecipeName(condaFile,true)) ) {
-                repo = StringUtils.pathConcat(repo, normaliseName(tools.friendlyNames()))
-                if( tools.versions?.size()==1 && tools.versions[0] )
-                    tag = "${normaliseTag(tools.versions[0])}--${id}"
-            }
-            else if( spackFile && (tools=guessSpackRecipeName(spackFile, true)) ) {
                 repo = StringUtils.pathConcat(repo, normaliseName(tools.friendlyNames()))
                 if( tools.versions?.size()==1 && tools.versions[0] )
                     tag = "${normaliseTag(tools.versions[0])}--${id}"
@@ -387,13 +296,12 @@ class ContainerHelper {
         value ? normalise0(value.toLowerCase(), maxLength, /[^a-z0-9_.\-\/]/) : null
     }
 
-    static String makeContainerId(String containerFile, String condaFile, String spackFile, ContainerPlatform platform, String repository, BuildContext buildContext) {
+    static String makeContainerId(String containerFile, String condaFile, ContainerPlatform platform, String repository, BuildContext buildContext) {
         final attrs = new LinkedHashMap<String,String>(10)
         attrs.containerFile = containerFile
         attrs.condaFile = condaFile
         attrs.platform = platform?.toString()
         attrs.repository = repository
-        if( spackFile ) attrs.spackFile = spackFile
         if( buildContext ) attrs.buildContext = buildContext.tarDigest
         return RegHelper.sipHash(attrs)
     }

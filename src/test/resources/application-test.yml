@@ -53,8 +53,6 @@ wave:
       password: 'bar'
   build:
     workspace: 'build-workspace'
-    spack:
-      cacheDirectory: "spack-cache"
     logs :
       enabled : true
       bucket : 'nextflow-ci'

@@ -188,11 +188,15 @@ class RegistryProxyService {
     }
 
     String getImageDigest(BuildRequest request, boolean retryOnNotFound=false) {
+        return getImageDigest(request.targetImage, request.identity, retryOnNotFound)
+    }
+
+    String getImageDigest(String containerImage, PlatformId identity, boolean retryOnNotFound=false) {
         try {
-            return getImageDigest0(request.targetImage, request.identity, retryOnNotFound)
+            return getImageDigest0(containerImage, identity, retryOnNotFound)
         }
         catch(Exception e) {
-            log.warn "Unable to retrieve digest for image '${request.targetImage}' -- cause: ${e.message}"
+            log.warn "Unable to retrieve digest for image '${containerImage}' -- cause: ${e.message}"
             return null
         }
     }
