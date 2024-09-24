@@ -67,9 +67,11 @@ class CondaLockServiceImpl implements CondaLockService {
         if( !logs ) return
         try {
             String condaLock = extractCondaLockFile(logs)
-            log.debug "Storing condalock for buildId: $buildId"
-            def record = new WaveCondaLockRecord(buildId, condaLock.getBytes(StandardCharsets.UTF_8))
-            persistenceService.saveCondaLock(record)
+            if (condaLock){
+                log.debug "Storing condalock for buildId: $buildId"
+                def record = new WaveCondaLockRecord(buildId, condaLock.getBytes(StandardCharsets.UTF_8))
+                persistenceService.saveCondaLock(record)
+            }
         }
         catch (Exception e) {
             log.warn "Unable to store condalock for buildId: $buildId  - reason: ${e.message}", e
@@ -89,7 +91,7 @@ class CondaLockServiceImpl implements CondaLockService {
     }
 
     protected static extractCondaLockFile(String logs) {
-        if ( !logs )
+        if ( !logs || (logs.lastIndexOf(CONDA_LOCK_START) > logs.lastIndexOf(CONDA_LOCK_END)) ) // logs also print the dockerfile commands, so make sure we are not getting the dockerfile commands
             return null
         return logs.substring(logs.lastIndexOf(CONDA_LOCK_START) + CONDA_LOCK_START.length(), logs.lastIndexOf(CONDA_LOCK_END))
                 .replaceAll(/#\d+ \d+\.\d+\s*/, '')

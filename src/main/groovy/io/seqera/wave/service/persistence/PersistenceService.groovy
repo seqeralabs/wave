@@ -150,6 +150,8 @@ interface PersistenceService {
      * @return The corresponding condaLock file as a string
      */
     WaveCondaLockRecord loadCondaLock(String buildId)
+
+    /**
      * Load a mirror state record
      *
      * @param mirrorId The ID of the mirror record
