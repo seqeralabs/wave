@@ -78,9 +78,14 @@ class ScanConfig {
 
     @Memoized
     Path getCacheDirectory() {
-        final result = Path.of(buildDirectory).toAbsolutePath().resolve('.trivy-cache')
-        Files.createDirectories(result)
-        return result
+        try {
+            final result = Path.of(buildDirectory).toAbsolutePath().resolve('.trivy-cache')
+            Files.createDirectories(result)
+            return result
+        } catch (Exception e) {
+            log.error("Failed to create cache directory: ${e.message}")
+            return null
+        }
     }
 
     String getRequestsCpu() {

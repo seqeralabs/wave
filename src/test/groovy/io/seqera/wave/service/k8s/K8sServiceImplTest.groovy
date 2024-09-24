@@ -50,14 +50,6 @@ import io.seqera.wave.service.mirror.MirrorConfig
 @MicronautTest
 class K8sServiceImplTest extends Specification {
 
-    @Replaces(ScanConfig.class)
-    static class MockScanConfig extends ScanConfig {
-        @Override
-        Path getCacheDirectory() {
-            return Path.of('/build/scan/cache')
-        }
-    }
-
     def 'should validate context OK ' () {
         when:
         def PROPS = [
