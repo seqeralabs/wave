@@ -21,11 +21,13 @@ package io.seqera.wave.service.builder
 import spock.lang.Specification
 
 import java.nio.file.Files
+import java.nio.file.Path
 import java.time.Duration
 
 import io.micronaut.context.annotation.Property
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.k8s.K8sService
 import io.seqera.wave.service.k8s.K8sServiceImpl
@@ -58,6 +60,12 @@ class KubeBuildStrategyTest extends Specification {
         Mock(K8sService)
     }
 
+    @MockBean(ScanConfig)
+    ScanConfig mockScanConfig() {
+        Mock(ScanConfig) {
+            getCacheDirectory() >> Path.of('/build/cache/dir')
+        }
+    }
 
     def "request to build a container with right selector"(){
         given:

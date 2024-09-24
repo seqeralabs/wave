@@ -18,11 +18,9 @@
 
 package io.seqera.wave.controller
 
-import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -106,17 +104,6 @@ class ContainerControllerTest extends Specification {
 
     def setup() {
         jwtAuthStore.clear()
-    }
-
-    @Shared
-    Path workspace
-
-    def setupSpec() {
-        workspace = Files.createTempDirectory('test')
-    }
-
-    def cleanupSpec() {
-        workspace?.deleteDir()
     }
 
     def 'should create request data' () {
