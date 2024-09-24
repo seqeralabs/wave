@@ -18,9 +18,12 @@
 
 package io.seqera.wave.controller
 
+import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import java.nio.file.Files
+import java.nio.file.Path
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -40,6 +43,7 @@ import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.config.CondaOpts
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
@@ -93,8 +97,26 @@ class ContainerControllerTest extends Specification {
         Mock(JobService)
     }
 
+    @MockBean(ScanConfig)
+    ScanConfig mockScanConfig() {
+        Mock(ScanConfig) {
+            getCacheDirectory() >> Path.of('/build/cache/dir')
+        }
+    }
+
     def setup() {
         jwtAuthStore.clear()
+    }
+
+    @Shared
+    Path workspace
+
+    def setupSpec() {
+        workspace = Files.createTempDirectory('test')
+    }
+
+    def cleanupSpec() {
+        workspace?.deleteDir()
     }
 
     def 'should create request data' () {
