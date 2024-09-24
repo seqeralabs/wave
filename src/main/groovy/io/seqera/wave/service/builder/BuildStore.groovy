@@ -31,38 +31,50 @@ import groovy.transform.CompileStatic
 interface BuildStore {
 
     /**
-     * Retrieve a container image {@link BuildResult}
+     * Retrieve the build entry {@link BuildStoreEntry} for a given container image name
      *
-     * @param imageName The container image name
-     * @return The corresponding {@link BuildResult} or {@code null} otherwise
+     * @param imageName
+     *      The container image name
+     * @return
+     *      The corresponding {@link BuildStoreEntry} or {@code null} otherwise
      */
-    BuildResult getBuild(String imageName)
+    BuildStoreEntry getBuild(String imageName)
+
+    /**
+     * Retrieve the build entry {@link BuildResult} for a given container image name
+     *
+     * @param imageName
+     *      The container image name
+     * @return
+     *      The corresponding {@link BuildStoreEntry} or {@code null} otherwise
+     */
+    BuildResult getBuildResult(String imageName)
 
     /**
      * Store a container image build request
      *
      * @param imageName The container image name
-     * @param request The {@link BuildResult} object associated to the image name
+     * @param request The {@link BuildStoreEntry} object associated to the image name
      */
-    void storeBuild(String imageName, BuildResult result)
+    void storeBuild(String imageName, BuildStoreEntry result)
 
     /**
      * Store a container image build request using the specified time-to-live duration
      *
      * @param imageName The container image name
-     * @param result The {@link BuildResult} object associated to the image name
+     * @param result The {@link BuildStoreEntry} object associated to the image name
      * @param ttl The {@link Duration} after which the entry is expired
      */
-    void storeBuild(String imageName, BuildResult result, Duration ttl)
+    void storeBuild(String imageName, BuildStoreEntry result, Duration ttl)
 
     /**
      * Store a build result only if the specified key does not exit
      *
      * @param imageName The container image unique key
-     * @param build The {@link BuildResult} desired status to be stored
-     * @return {@code true} if the {@link BuildResult} was stored, {@code false} otherwise
+     * @param build The {@link BuildStoreEntry} desired status to be stored
+     * @return {@code true} if the {@link BuildStoreEntry} was stored, {@code false} otherwise
      */
-    boolean storeIfAbsent(String imageName, BuildResult build)
+    boolean storeIfAbsent(String imageName, BuildStoreEntry build)
 
     /**
      * Remove the build status for the given image name

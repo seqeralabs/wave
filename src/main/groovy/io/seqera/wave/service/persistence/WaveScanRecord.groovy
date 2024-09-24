@@ -25,6 +25,7 @@ import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
+import io.seqera.wave.service.job.JobRecord
 import io.seqera.wave.service.scan.ScanResult
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.StringUtils
@@ -37,26 +38,35 @@ import io.seqera.wave.util.StringUtils
 @ToString(includeNames = true, includePackage = false)
 @EqualsAndHashCode
 @CompileStatic
-class WaveScanRecord {
+class WaveScanRecord implements JobRecord {
+
     String id
     String buildId
+    String containerImage
     Instant startTime
     Duration duration
     String status
     List<ScanVulnerability> vulnerabilities
 
+    @Override
+    boolean done() {
+        return duration != null
+    }
+
     /* required by jackson deserialization - do not remove */
     WaveScanRecord() {}
 
-    WaveScanRecord(String id, String buildId, Instant startTime) {
+    WaveScanRecord(String id, String buildId, String containerImage, Instant startTime) {
         this.id = StringUtils.surrealId(id)
         this.buildId = buildId
+        this.containerImage = containerImage
         this.startTime = startTime
     }
 
-    WaveScanRecord(String id, String buildId, Instant startTime, Duration duration, String status, List<ScanVulnerability> vulnerabilities) {
+    WaveScanRecord(String id, String buildId, String containerImage, Instant startTime, Duration duration, String status, List<ScanVulnerability> vulnerabilities) {
         this.id = StringUtils.surrealId(id)
         this.buildId = buildId
+        this.containerImage = containerImage
         this.startTime = startTime
         this.duration = duration
         this.status = status
@@ -68,6 +78,7 @@ class WaveScanRecord {
     WaveScanRecord(String id, ScanResult scanResult) {
         this.id = StringUtils.surrealId(id)
         this.buildId = scanResult.buildId
+        this.containerImage = scanResult.containerImage
         this.startTime = scanResult.startTime
         this.duration = scanResult.duration
         this.status = scanResult.status

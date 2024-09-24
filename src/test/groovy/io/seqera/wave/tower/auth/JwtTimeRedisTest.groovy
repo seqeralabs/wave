@@ -35,6 +35,7 @@ class JwtTimeRedisTest extends Specification implements RedisTestContainer{
     @Shared
     ApplicationContext applicationContext
 
+    @Shared
     JwtTimeStore timer
 
     def setup() {
@@ -45,6 +46,11 @@ class JwtTimeRedisTest extends Specification implements RedisTestContainer{
         and:
         timer = applicationContext.getBean(JwtTimeStore)
     }
+
+    def cleanup() {
+        applicationContext.close()
+    }
+
 
     def 'should add and get token timers' () {
         given:

@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.counter.impl
 
+import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
@@ -28,8 +29,10 @@ import io.seqera.wave.test.RedisTestContainer
  */
 class RedisCounterProviderTest extends Specification implements RedisTestContainer {
 
+    @Shared
     ApplicationContext applicationContext
 
+    @Shared
     RedisCounterProvider redisCounterProvider
 
     def setup() {
@@ -40,6 +43,10 @@ class RedisCounterProviderTest extends Specification implements RedisTestContain
         ], 'test', 'redis')
         redisCounterProvider = applicationContext.getBean(RedisCounterProvider)
         sleep(500) // workaround to wait for Redis connection
+    }
+
+    def cleanup() {
+        applicationContext.close()
     }
 
 

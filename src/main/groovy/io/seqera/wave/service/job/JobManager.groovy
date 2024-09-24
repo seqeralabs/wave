@@ -21,10 +21,11 @@ package io.seqera.wave.service.job
 import java.time.Duration
 import java.time.Instant
 
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
-import io.micronaut.context.annotation.Requires
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 /**
@@ -35,11 +36,10 @@ import jakarta.inject.Inject
 @Slf4j
 @Context
 @CompileStatic
-@Requires(property = 'wave.blobCache.enabled', value = 'true')
 class JobManager {
 
     @Inject
-    private JobStrategy jobStrategy
+    private JobService jobService
 
     @Inject
     private JobQueue queue
@@ -50,49 +50,73 @@ class JobManager {
     @Inject
     private JobConfig config
 
+    private Cache<String,Instant> debounceCache
+
     @PostConstruct
     void init() {
         log.info "Creating job manager - config=$config"
-        queue.consume((job)-> processJob(job))
+        debounceCache = Caffeine.newBuilder().expireAfterWrite(config.graceInterval.multipliedBy(2)).build()
+        queue.addConsumer((job)-> processJob(job))
     }
 
-    protected boolean processJob(JobId jobId) {
+
+    protected boolean processJob(JobSpec jobSpec) {
         try {
-            return processJob0(jobId)
+            return processJob0(jobSpec)
         }
         catch (Throwable err) {
             // in the case of an expected exception report the error condition by using `onJobException`
-            dispatcher.onJobException(jobId, err)
-            // finally return `true` to signal the job should not be processed anymore
+            dispatcher.notifyJobException(jobSpec, err)
+            // note: return `true` to signal the job should not be processed anymore
             return true
         }
     }
 
-    protected boolean processJob0(JobId jobId) {
-        final duration = Duration.between(jobId.creationTime, Instant.now())
-        final state = jobStrategy.status(jobId)
-        log.trace "Job status id=${jobId.schedulerId}; state=${state}"
-        final done =
-                state.completed() ||
-                // considered failed when remain in unknown status too long         
-                (state.status==JobState.Status.UNKNOWN && duration>config.graceInterval)
-        if( done ) {
+    protected JobState state(JobSpec job) {
+        return state0(job, config.graceInterval, debounceCache)
+    }
+
+    protected JobState state0(final JobSpec job, final Duration graceInterval, final Cache<String,Instant> cache) {
+        final key = job.operationName
+        final state = jobService.status(job)
+        // return directly non-unknown statuses
+        if( state.status != JobState.Status.UNKNOWN ) {
+            cache.invalidate(key)
+            return state
+        }
+        // check how long it returns an unknown persistently
+        final initial = cache.get(key, (String)-> Instant.now())
+        final delta = Duration.between(initial, Instant.now())
+        // if it's less than the grace period return it
+        if( delta <= graceInterval ) {
+            return state
+        }
+        // if longer then the grace period, return a FAILED status to force an error
+        cache.invalidate(key)
+        return new JobState(JobState.Status.FAILED, null, state.stdout)
+    }
+
+    protected boolean processJob0(JobSpec jobSpec) {
+        final duration = Duration.between(jobSpec.creationTime, Instant.now())
+        final state = state(jobSpec)
+        log.trace "Job status id=${jobSpec.operationName}; state=${state}"
+        if( state.completed() ) {
             // publish the completion event
-            dispatcher.onJobCompletion(jobId, state)
+            dispatcher.notifyJobCompletion(jobSpec, state)
              // cleanup the job
-            jobStrategy.cleanup(jobId, state.exitCode)
+            jobService.cleanup(jobSpec, state.exitCode)
             return true
         }
-        // set the await timeout nearly double as the blob transfer timeout, this because the
-        // transfer pod can spend `timeout` time in pending status awaiting to be scheduled
-        // and the same `timeout` time amount carrying out the transfer (upload) operation
-        final max = (dispatcher.jobMaxDuration(jobId).toMillis() * 2.10) as long
+        // set the await timeout nearly double as the job timeout, this because the
+        // job can spend `timeout` time in pending status awaiting to be scheduled
+        // and the same `timeout` time amount carrying out job operation
+        final max = (jobSpec.maxDuration.toMillis() * 2.10) as long
         if( duration.toMillis()>max ) {
-            dispatcher.onJobTimeout(jobId)
+            dispatcher.notifyJobTimeout(jobSpec)
             return true
         }
         else {
-            log.trace "== Job pending for completion $jobId"
+            log.trace "== Job pending for completion ${jobSpec}"
             return false
         }
     }

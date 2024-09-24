@@ -22,7 +22,7 @@ import groovy.transform.Canonical
 import groovy.transform.ToString
 
 /**
- * Model a transfer operation state
+ * Model the state of a job execution
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -37,11 +37,11 @@ class JobState {
     final Integer exitCode
     final String stdout
 
-    final boolean completed() {
+    boolean completed() {
         return status==Status.SUCCEEDED || status==Status.FAILED
     }
 
-    final boolean succeeded() {
+    boolean succeeded() {
         status==Status.SUCCEEDED && exitCode==0
     }
 

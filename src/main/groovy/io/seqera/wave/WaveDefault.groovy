@@ -17,11 +17,14 @@
  */
 
 package io.seqera.wave
+
+import groovy.transform.CompileStatic
 /**
  * Wave app defaults
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@CompileStatic
 interface WaveDefault {
 
     final static public String DOCKER_IO = 'docker.io'
@@ -38,7 +41,7 @@ interface WaveDefault {
                     'application/vnd.docker.distribution.manifest.list.v2+json' ) )
 
 
-    final public static int[] HTTP_REDIRECT_CODES = List.of(301, 302, 303, 307, 308)
+    final public static List<Integer> HTTP_REDIRECT_CODES = List.of(301, 302, 303, 307, 308)
 
     final public static List<Integer> HTTP_SERVER_ERRORS = List.of(500, 502, 503, 504)
 

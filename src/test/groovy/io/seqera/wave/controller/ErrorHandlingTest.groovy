@@ -39,7 +39,7 @@ class ErrorHandlingTest extends Specification {
 
     @Inject
     @Client("/")
-    HttpClient client;
+    HttpClient client
 
     void 'should handle an error'() {
         when:

@@ -41,7 +41,7 @@ abstract class AbstractMessageStream<M> implements Closeable {
 
     static final private AtomicInteger count = new AtomicInteger()
 
-    final private Map<String,Predicate<M>> listeners = new ConcurrentHashMap<>()
+    final private Map<String,MessageConsumer<M>> listeners = new ConcurrentHashMap<>()
     
     final private ExponentialAttempt attempt = new ExponentialAttempt()
 
@@ -97,10 +97,15 @@ abstract class AbstractMessageStream<M> implements Closeable {
      * @param consumer
      *      The {@link Predicate} to be invoked when a stream message is consumed (read from) the stream.
      */
-    void consume(String streamId, Predicate<M> consumer) {
-        final value = listeners.put(streamId, consumer)
-        if( value!=null )
-            throw new IllegalStateException("Only one consumer can be defined for each stream - offending streamId=$streamId; consumer=$consumer")
+    void addConsumer(String streamId, MessageConsumer<M> consumer) {
+        synchronized (listeners) {
+            if( listeners.containsKey(streamId))
+                throw new IllegalStateException("Only one consumer can be defined for each stream - offending streamId=$streamId; consumer=$consumer")
+            // initialize the stream
+            stream.init(streamId)
+            // then add the consumer to the listeners
+            listeners.put(streamId, consumer)
+        }
     }
 
     /**
@@ -117,11 +122,11 @@ abstract class AbstractMessageStream<M> implements Closeable {
      * @return
      *      The result of the consumer {@link Predicate<M>} operation.
      */
-    protected boolean processMessage(String msg, Predicate<M> consumer, AtomicInteger count) {
+    protected boolean processMessage(String msg, MessageConsumer<M> consumer, AtomicInteger count) {
         count.incrementAndGet()
         final decoded = encoder.decode(msg)
-        log.trace "Message streaming - receiving message=$msg; decoded=$decoded"
-        return consumer.test(decoded)
+        log.trace "Message stream - receiving message=$msg; decoded=$decoded"
+        return consumer.accept(decoded)
     }
 
     /**
@@ -132,7 +137,7 @@ abstract class AbstractMessageStream<M> implements Closeable {
         while( !thread.interrupted() ) {
             try {
                 final count=new AtomicInteger()
-                for( Map.Entry<String,Predicate<M>> entry : listeners.entrySet() ) {
+                for( Map.Entry<String,MessageConsumer<M>> entry : listeners.entrySet() ) {
                     final streamId = entry.key
                     final consumer = entry.value
                     stream.consume(streamId, (String msg)-> processMessage(msg, consumer, count))
@@ -140,7 +145,8 @@ abstract class AbstractMessageStream<M> implements Closeable {
                 // reset the attempt count because no error has been thrown
                 attempt.reset()
                 // if no message was sent, sleep for a while before retrying
-                if( count==0 ) {
+                if( count.get()==0 ) {
+                    log.trace "Message stream - await before checking for new messages"
                     sleep(pollInterval().toMillis())
                 }
             }

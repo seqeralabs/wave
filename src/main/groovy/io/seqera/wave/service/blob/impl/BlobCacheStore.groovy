@@ -80,11 +80,10 @@ class BlobCacheStore extends AbstractCacheStore<BlobCacheInfo> implements BlobSt
 
     @Override
     void storeBlob(String key, BlobCacheInfo info) {
-        put(key, info)
-    }
-
-    @Override
-    void storeBlob(String key, BlobCacheInfo info, Duration ttl) {
+        final ttl = info.state == BlobCacheInfo.State.ERRORED
+                ? blobConfig.failureDuration
+                : blobConfig.statusDuration
         put(key, info, ttl)
     }
+
 }

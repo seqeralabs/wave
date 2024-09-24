@@ -19,10 +19,11 @@
 package io.seqera.wave.service.job
 
 import java.time.Duration
-import java.util.function.Predicate
 
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.seqera.wave.service.data.stream.AbstractMessageStream
+import io.seqera.wave.service.data.stream.MessageConsumer
 import io.seqera.wave.service.data.stream.MessageStream
 import jakarta.annotation.PreDestroy
 import jakarta.inject.Singleton
@@ -31,17 +32,19 @@ import jakarta.inject.Singleton
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @Singleton
 @CompileStatic
-class JobQueue extends AbstractMessageStream<JobId> {
+class JobQueue extends AbstractMessageStream<JobSpec> {
 
-    final private static String STREAM_NAME = 'jobs-queue/v1'
+    final private static String STREAM_NAME = 'jobs-queue/v1:'
 
     private volatile JobConfig config
 
     JobQueue(MessageStream<String> target, JobConfig config) {
         super(target)
         this.config = config
+        log.debug "Created job queue"
     }
 
     @Override
@@ -54,16 +57,17 @@ class JobQueue extends AbstractMessageStream<JobId> {
         return config.pollInterval
     }
 
-    final void offer(JobId job) {
-        super.offer(STREAM_NAME, job)
+    final void offer(JobSpec jobSpec) {
+        super.offer(STREAM_NAME, jobSpec)
     }
 
-    final void consume(Predicate<JobId> consumer) {
-        super.consume(STREAM_NAME, consumer)
+    final void addConsumer(MessageConsumer<JobSpec> consumer) {
+        super.addConsumer(STREAM_NAME, consumer)
     }
 
     @PreDestroy
     void destroy() {
+        log.debug "Shutting down job queue"
         this.close()
     }
 }

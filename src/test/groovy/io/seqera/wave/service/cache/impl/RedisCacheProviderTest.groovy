@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.cache.impl
 
+import spock.lang.Shared
 import spock.lang.Specification
 
 import java.time.Duration
@@ -27,8 +28,10 @@ import io.seqera.wave.test.RedisTestContainer
 
 class RedisCacheProviderTest extends Specification implements RedisTestContainer {
 
+    @Shared
     ApplicationContext applicationContext
 
+    @Shared
     RedisCacheProvider redisCacheProvider
 
     def setup() {
@@ -40,112 +43,105 @@ class RedisCacheProviderTest extends Specification implements RedisTestContainer
         sleep(500) // workaround to wait for Redis connection
     }
 
-    def 'conditional put with current value when ke is not set'() {
-        when: 'conditionally set a key that has no current value'
-        def current = redisCacheProvider.putIfAbsentAndGetCurrent('key', 'new-value', Duration.ofSeconds(100))
-
-        then: 'the provided value is returned'
-        current == 'new-value'
-
-        and: 'the value is set in the store'
-        redisCacheProvider.get('key') == 'new-value'
+    def cleanup() {
+        applicationContext.close()
     }
 
-    def 'conditional put with current value when key is already set'() {
-        given: 'a store containing a mapping for key that is not expired'
-        redisCacheProvider.put('key', 'existing', Duration.ofSeconds(100))
+    def 'should get and put a key-value pair' () {
+        given:
+        def k = UUID.randomUUID().toString()
 
-        when: 'try to conditionally set the key to a new value'
-        def current = redisCacheProvider.putIfAbsentAndGetCurrent('key', 'new-value', Duration.ofSeconds(100))
+        expect:
+        redisCacheProvider.get(k) == null
 
-        then: 'the existing value is returned'
-        current == 'existing'
-
-        and: 'the value is not updated in the store'
-        redisCacheProvider.get('key') == 'existing'
-
+        when:
+        redisCacheProvider.put(k, "hello")
+        then:
+        redisCacheProvider.get(k) == 'hello'
     }
 
-    def 'conditional put with current value when key is set and has expired'() {
-        given: 'a store containing a mapping for key that will expire'
-        redisCacheProvider.put('key', 'existing', Duration.ofSeconds(1))
-        // give time for redis to expire the key
-        sleep(Duration.ofSeconds(2).toMillis())
+    def 'should get and put a key-value pair with ttl' () {
+        given:
+        def TTL = 100
+        def k = UUID.randomUUID().toString()
 
-        when: 'try to conditionally set the key to a new value'
-        def current = redisCacheProvider.putIfAbsentAndGetCurrent('key', 'new-value', Duration.ofSeconds(100))
-
-        then: 'the provided value is returned'
-        current == 'new-value'
-
-        and: 'the value is updated is set in the store'
-        redisCacheProvider.get('key') == 'new-value'
-    }
-
-    def 'should add and find keys for values' () {
-        when:
-        redisCacheProvider.biPut('x1', 'a', Duration.ofMinutes(1))
-        redisCacheProvider.biPut('x2', 'b', Duration.ofMinutes(1))
-        redisCacheProvider.biPut('x3', 'a', Duration.ofMinutes(1))
-        redisCacheProvider.biPut('x4', 'c', Duration.ofMinutes(1))
-
-        then:
-        redisCacheProvider.biKeysFor('a') == ['x1', 'x3'] as Set
-        redisCacheProvider.biKeysFor('c') == ['x4'] as Set
-        redisCacheProvider.biKeysFor('d') == [] as Set
+        expect:
+        redisCacheProvider.get(k) == null
 
         when:
-        redisCacheProvider.biRemove('x1')
+        redisCacheProvider.put(k, "hello", Duration.ofMillis(TTL))
         then:
-        redisCacheProvider.biKeysFor('a') == ['x3'] as Set
-
-        when:
-        redisCacheProvider.biRemove('x3')
+        redisCacheProvider.get(k) == 'hello'
         then:
-        redisCacheProvider.biKeysFor('a') == [] as Set
-
-        cleanup:
-        redisCacheProvider.clear()
-    }
-
-    def 'should add and find single key for value' () {
-        when:
-        redisCacheProvider.biPut('x1', 'a', Duration.ofSeconds(1))
-        redisCacheProvider.biPut('x2', 'b', Duration.ofMinutes(1))
-        redisCacheProvider.biPut('x3', 'a', Duration.ofMinutes(1))
-        redisCacheProvider.biPut('x4', 'c', Duration.ofMinutes(1))
-
-        then:
-        redisCacheProvider.biKeyFind('a', true) == 'x1'
+        sleep(TTL *2)
         and:
-        redisCacheProvider.biKeysFor('a') == ['x1','x3'] as Set
-        and:
-        sleep 1500
-        and:
-        redisCacheProvider.biKeyFind('a', true) == 'x3'
-        redisCacheProvider.biKeysFor('a') == ['x3'] as Set
-
-        cleanup:
-        redisCacheProvider.clear()
+        redisCacheProvider.get(k) == null
     }
 
-    def 'should update expiration when re-putting the value' () {
-        when:
-        redisCacheProvider.biPut('x1', 'a', Duration.ofSeconds(1))
-        then:
-        redisCacheProvider.biKeyFind('a', true) == 'x1'
+    def 'should get and put only if absent' () {
+        given:
+        def k = UUID.randomUUID().toString()
+
+        expect:
+        redisCacheProvider.get(k) == null
 
         when:
-        sleep 500
-        redisCacheProvider.biPut('x1', 'a', Duration.ofSeconds(1))
-        sleep 500
-        redisCacheProvider.biPut('x1', 'a', Duration.ofSeconds(1))
-        sleep 500
+        def done = redisCacheProvider.putIfAbsent(k, 'foo')
         then:
-        redisCacheProvider.biKeyFind('a', true) == 'x1'
+        done
+        and:
+        redisCacheProvider.get(k) == 'foo'
 
-        cleanup:
-        redisCacheProvider.clear()
+        when:
+        done = redisCacheProvider.putIfAbsent(k, 'bar')
+        then:
+        !done
+        and:
+        redisCacheProvider.get(k) == 'foo'
     }
 
+    def 'should get and put if absent with ttl' () {
+        given:
+        def TTL = 100
+        def k = UUID.randomUUID().toString()
+
+        when:
+        def done = redisCacheProvider.putIfAbsent(k, 'foo', Duration.ofMillis(TTL))
+        then:
+        done
+        and:
+        redisCacheProvider.get(k) == 'foo'
+
+        when:
+        done = redisCacheProvider.putIfAbsent(k, 'bar', Duration.ofMillis(TTL))
+        then:
+        !done
+        and:
+        redisCacheProvider.get(k) == 'foo'
+
+        when:
+        sleep(TTL *2)
+        and:
+        done = redisCacheProvider.putIfAbsent(k, 'bar', Duration.ofMillis(TTL))
+        then:
+        done
+        and:
+        redisCacheProvider.get(k) == 'bar'
+    }
+
+    def 'should put and remove a value' () {
+        given:
+        def TTL = 100
+        def k = UUID.randomUUID().toString()
+
+        when:
+        redisCacheProvider.put(k, 'foo')
+        then:
+        redisCacheProvider.get(k) == 'foo'
+
+        when:
+        redisCacheProvider.remove(k)
+        then:
+        redisCacheProvider.get(k) == null
+    }
 }

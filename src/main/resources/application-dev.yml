@@ -4,8 +4,6 @@ wave:
     enabled: true
   build:
     workspace: 'build-workspace'
-    spack:
-      cacheDirectory: 'spack-cache'
   metrics:
     enabled: true
   accounts:
@@ -16,6 +14,10 @@ wave:
       interval: '10s'
     monitor:
       interval: '5s'
+  cleanup:
+    succeeded: '10s'
+    failed: '45s'
+    strategy: 'onsuccess'
 ---
 endpoints:
   metrics:
@@ -37,9 +39,10 @@ datasources:
 ---
 logger:
   levels:
-    io.seqera.wave.service.data: TRACE
+    io.seqera.wave.service.data: DEBUG
     io.seqera.wave.service.pairing: TRACE
     io.seqera.wave.tower.client.connector: TRACE
-#    io.seqera.wave.service.data.stream: TRACE
+    io.seqera.wave.service.job: TRACE
+    io.seqera.wave.service.k8s.K8sServiceImpl: TRACE
 #    io.seqera.wave.tower.auth: 'TRACE'
 ...

@@ -50,13 +50,11 @@ class MailServiceImplTest extends Specification {
         1* request.getTargetImage() >> 'wave/build:xyz'
         1* request.getPlatform() >> ContainerPlatform.DEFAULT
         1* request.getCondaFile() >> null
-        1* request.getSpackFile() >> null
         and:
         mail.to == recipient
         mail.body.contains('from foo')
         and:
         !mail.body.contains('Conda file')
-        !mail.body.contains('Spack file')
 
         // check it adds the Conda file content
         when:
@@ -70,17 +68,6 @@ class MailServiceImplTest extends Specification {
         mail.body.contains('Conda file')
         mail.body.contains('bioconda::foo')
 
-        // check it add the spack file content
-        when:
-        mail = service.buildCompletionMail(request, result, recipient)
-        then:
-        1* request.getTargetImage() >> 'wave/build:xyz'
-        1* request.getPlatform() >> ContainerPlatform.DEFAULT
-        1* request.getSpackFile() >> 'some-spac-recipe'
-        and:
-        mail.to == recipient
-        mail.body.contains('Spack file')
-        mail.body.contains('some-spac-recipe')
     }
 
 }

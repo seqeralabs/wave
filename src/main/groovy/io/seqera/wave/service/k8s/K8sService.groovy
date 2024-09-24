@@ -26,7 +26,8 @@ import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.ScanConfig
-import io.seqera.wave.configuration.SpackConfig
+import io.seqera.wave.service.mirror.MirrorConfig
+
 /**
  * Defines Kubernetes operations
  *
@@ -42,14 +43,19 @@ interface K8sService {
 
     void deletePod(String name)
 
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, SpackConfig spackConfig, Map <String,String> nodeSelector)
+    @Deprecated
+    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, Map <String,String> nodeSelector)
 
+    @Deprecated
     V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector)
 
+    @Deprecated
     Integer waitPodCompletion(V1Pod pod, long timeout)
 
+    @Deprecated
     void deletePodWhenReachStatus(String podName, String statusName, long timeout)
 
+    @Deprecated
     V1Job createJob(String name, String containerImage, List<String> args)
 
     V1Job getJob(String name)
@@ -58,8 +64,15 @@ interface K8sService {
 
     void deleteJob(String name)
   
-    V1Job launchJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig)
+    V1Job launchTransferJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig)
 
+    V1Job launchBuildJob(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, Map<String,String> nodeSelector)
+
+    V1Job launchScanJob(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector)
+
+    V1Job launchMirrorJob(String name, String containerImage, List<String> args, Path workDir, Path creds, MirrorConfig config)
+
+    @Deprecated
     V1PodList waitJob(V1Job job, Long timeout)
 
     V1Pod getLatestPodForJob(String jobName)
