@@ -73,6 +73,7 @@ import jakarta.inject.Inject
 @Property(name='wave.build.workspace', value='/some/wsp')
 @Property(name='wave.build.repo', value='wave/build')
 @Property(name='wave.build.cache', value='wave/build/cache')
+@Property(name='wave.scan.cache.enabled', value='false')
 class ContainerControllerTest extends Specification {
 
     @Inject
