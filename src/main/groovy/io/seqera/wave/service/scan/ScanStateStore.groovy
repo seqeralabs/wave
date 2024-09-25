@@ -23,8 +23,8 @@ import java.time.Duration
 import groovy.transform.CompileStatic
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.service.cache.AbstractCacheStore
-import io.seqera.wave.service.cache.impl.CacheProvider
+import io.seqera.wave.service.state.AbstractCacheStore
+import io.seqera.wave.service.state.impl.CacheProvider
 import jakarta.inject.Singleton
 
 /**

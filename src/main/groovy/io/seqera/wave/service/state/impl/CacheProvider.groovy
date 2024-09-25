@@ -16,16 +16,14 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.memstore.range.impl
+package io.seqera.wave.service.state.impl
+
+import io.seqera.wave.service.state.CacheStore
+
 /**
- * Contract for range store provider
- * 
+ * Define an cache interface alias to be used by cache implementation providers
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface RangeProvider {
-
-    void add(String key, String member, double score)
-
-    List<String> getRange(String key, double min, double max, int count, boolean remove)
-
+interface CacheProvider<K,V> extends CacheStore<K,V> {
 }

@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.cache.impl
+package io.seqera.wave.service.state.impl
 
 import spock.lang.Specification
 
@@ -25,8 +25,8 @@ import java.time.Duration
 import groovy.transform.Canonical
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.service.cache.AbstractCacheStore
-import io.seqera.wave.service.cache.StateRecord
+import io.seqera.wave.service.state.AbstractCacheStore
+import io.seqera.wave.service.state.StateRecord
 import jakarta.inject.Inject
 /**
  *

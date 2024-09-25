@@ -25,8 +25,8 @@ import groovy.util.logging.Slf4j
 import io.seqera.wave.configuration.TokenConfig
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.ContainerRequestData
-import io.seqera.wave.service.cache.AbstractCacheStore
-import io.seqera.wave.service.cache.impl.CacheProvider
+import io.seqera.wave.service.state.AbstractCacheStore
+import io.seqera.wave.service.state.impl.CacheProvider
 import jakarta.inject.Singleton
 
 /**

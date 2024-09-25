@@ -16,33 +16,48 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.cache.impl
+package io.seqera.wave.service.state.impl
 
+import spock.lang.Shared
 import spock.lang.Specification
 
 import java.time.Duration
 
-import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import jakarta.inject.Inject
+import io.micronaut.context.ApplicationContext
+import io.seqera.wave.test.RedisTestContainer
 
-@MicronautTest(environments = ['test'])
-class LocalCacheProviderTest extends Specification {
+class RedisCacheProviderTest extends Specification implements RedisTestContainer {
 
-    @Inject
-    LocalCacheProvider localCacheProvider
+    @Shared
+    ApplicationContext applicationContext
 
+    @Shared
+    RedisCacheProvider redisCacheProvider
+
+    def setup() {
+        applicationContext = ApplicationContext.run([
+                REDIS_HOST : redisHostName,
+                REDIS_PORT : redisPort
+        ], 'test', 'redis')
+        redisCacheProvider = applicationContext.getBean(RedisCacheProvider)
+        sleep(500) // workaround to wait for Redis connection
+    }
+
+    def cleanup() {
+        applicationContext.close()
+    }
 
     def 'should get and put a key-value pair' () {
         given:
         def k = UUID.randomUUID().toString()
 
         expect:
-        localCacheProvider.get(k) == null
+        redisCacheProvider.get(k) == null
 
         when:
-        localCacheProvider.put(k, "hello")
+        redisCacheProvider.put(k, "hello")
         then:
-        localCacheProvider.get(k) == 'hello'
+        redisCacheProvider.get(k) == 'hello'
     }
 
     def 'should get and put a key-value pair with ttl' () {
@@ -51,16 +66,16 @@ class LocalCacheProviderTest extends Specification {
         def k = UUID.randomUUID().toString()
 
         expect:
-        localCacheProvider.get(k) == null
+        redisCacheProvider.get(k) == null
 
         when:
-        localCacheProvider.put(k, "hello", Duration.ofMillis(TTL))
+        redisCacheProvider.put(k, "hello", Duration.ofMillis(TTL))
         then:
-        localCacheProvider.get(k) == 'hello'
+        redisCacheProvider.get(k) == 'hello'
         then:
         sleep(TTL *2)
         and:
-        localCacheProvider.get(k) == null
+        redisCacheProvider.get(k) == null
     }
 
     def 'should get and put only if absent' () {
@@ -68,21 +83,21 @@ class LocalCacheProviderTest extends Specification {
         def k = UUID.randomUUID().toString()
 
         expect:
-        localCacheProvider.get(k) == null
+        redisCacheProvider.get(k) == null
 
         when:
-        def done = localCacheProvider.putIfAbsent(k, 'foo')
+        def done = redisCacheProvider.putIfAbsent(k, 'foo')
         then:
-        done 
+        done
         and:
-        localCacheProvider.get(k) == 'foo'
+        redisCacheProvider.get(k) == 'foo'
 
         when:
-        done = localCacheProvider.putIfAbsent(k, 'bar')
+        done = redisCacheProvider.putIfAbsent(k, 'bar')
         then:
         !done
         and:
-        localCacheProvider.get(k) == 'foo'
+        redisCacheProvider.get(k) == 'foo'
     }
 
     def 'should get and put if absent with ttl' () {
@@ -91,27 +106,27 @@ class LocalCacheProviderTest extends Specification {
         def k = UUID.randomUUID().toString()
 
         when:
-        def done = localCacheProvider.putIfAbsent(k, 'foo', Duration.ofMillis(TTL))
+        def done = redisCacheProvider.putIfAbsent(k, 'foo', Duration.ofMillis(TTL))
         then:
         done
         and:
-        localCacheProvider.get(k) == 'foo'
+        redisCacheProvider.get(k) == 'foo'
 
         when:
-        done = localCacheProvider.putIfAbsent(k, 'bar', Duration.ofMillis(TTL))
+        done = redisCacheProvider.putIfAbsent(k, 'bar', Duration.ofMillis(TTL))
         then:
         !done
         and:
-        localCacheProvider.get(k) == 'foo'
+        redisCacheProvider.get(k) == 'foo'
 
         when:
         sleep(TTL *2)
         and:
-        done = localCacheProvider.putIfAbsent(k, 'bar', Duration.ofMillis(TTL))
+        done = redisCacheProvider.putIfAbsent(k, 'bar', Duration.ofMillis(TTL))
         then:
         done
         and:
-        localCacheProvider.get(k) == 'bar'
+        redisCacheProvider.get(k) == 'bar'
     }
 
     def 'should put and remove a value' () {
@@ -120,14 +135,13 @@ class LocalCacheProviderTest extends Specification {
         def k = UUID.randomUUID().toString()
 
         when:
-        localCacheProvider.put(k, 'foo')
+        redisCacheProvider.put(k, 'foo')
         then:
-        localCacheProvider.get(k) == 'foo'
+        redisCacheProvider.get(k) == 'foo'
 
         when:
-        localCacheProvider.remove(k)
+        redisCacheProvider.remove(k)
         then:
-        localCacheProvider.get(k) == null
+        redisCacheProvider.get(k) == null
     }
-
 }

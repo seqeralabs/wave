@@ -22,7 +22,7 @@ import spock.lang.Specification
 
 import java.time.Instant
 
-import io.seqera.wave.service.cache.impl.LocalCacheProvider
+import io.seqera.wave.service.state.impl.LocalCacheProvider
 
 class PairingCacheStoreTest extends Specification{
 

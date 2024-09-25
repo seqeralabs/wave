@@ -16,15 +16,16 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.cache
-
+package io.seqera.wave.store.range.impl
 /**
- * Marker interface for record object that model long running operation state
+ * Contract for range store provider
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface StateRecord {
+interface RangeProvider {
 
-    String getRecordId()
+    void add(String key, String member, double score)
+
+    List<String> getRange(String key, double min, double max, int count, boolean remove)
 
 }

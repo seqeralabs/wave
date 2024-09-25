@@ -16,11 +16,10 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.memstore.range
-
+package io.seqera.wave.store.range
 
 import groovy.transform.CompileStatic
-import io.seqera.wave.memstore.range.impl.RangeProvider
+import io.seqera.wave.store.range.impl.RangeProvider
 /**
  * Abstract implementation for range set similar to Redis `zrange`
  *

@@ -29,7 +29,7 @@ import java.security.spec.X509EncodedKeySpec
 import java.util.concurrent.ThreadLocalRandom
 
 import groovy.util.logging.Slf4j
-import io.seqera.wave.service.cache.impl.LocalCacheProvider
+import io.seqera.wave.service.state.impl.LocalCacheProvider
 import io.seqera.wave.util.LongRndKey
 
 @Slf4j

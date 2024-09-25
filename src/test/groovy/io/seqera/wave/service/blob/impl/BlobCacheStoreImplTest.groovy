@@ -26,7 +26,7 @@ import io.micronaut.context.annotation.Property
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.service.blob.BlobCacheInfo
-import io.seqera.wave.service.cache.impl.CacheProvider
+import io.seqera.wave.service.state.impl.CacheProvider
 import jakarta.inject.Inject
 
 /**

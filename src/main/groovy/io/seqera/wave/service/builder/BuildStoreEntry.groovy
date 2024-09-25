@@ -21,7 +21,7 @@ package io.seqera.wave.service.builder
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-import io.seqera.wave.service.cache.StateRecord
+import io.seqera.wave.service.state.StateRecord
 import io.seqera.wave.service.job.JobRecord
 
 /**

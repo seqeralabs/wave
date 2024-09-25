@@ -27,7 +27,7 @@ import java.util.concurrent.ExecutorService
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.BuildConfig
-import io.seqera.wave.service.cache.impl.LocalCacheProvider
+import io.seqera.wave.service.state.impl.LocalCacheProvider
 import jakarta.inject.Inject
 import jakarta.inject.Named
 

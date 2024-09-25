@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.memstore.range.impl
+package io.seqera.wave.store.range.impl
 
 
 import groovy.transform.CompileStatic

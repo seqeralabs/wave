@@ -26,7 +26,7 @@ import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.cache.StateRecord
+import io.seqera.wave.service.state.StateRecord
 import io.seqera.wave.service.job.JobRecord
 import jakarta.inject.Singleton
 

@@ -31,7 +31,7 @@ import groovy.transform.ToString
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 
-import io.seqera.wave.service.cache.StateRecord
+import io.seqera.wave.service.state.StateRecord
 import io.seqera.wave.service.job.JobRecord
 
 @ToString(includePackage = false, includeNames = true)

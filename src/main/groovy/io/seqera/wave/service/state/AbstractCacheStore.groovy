@@ -16,13 +16,13 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.cache
+package io.seqera.wave.service.state
 
 import java.time.Duration
 
 import groovy.transform.CompileStatic
 import io.seqera.wave.encoder.EncodingStrategy
-import io.seqera.wave.service.cache.impl.CacheProvider
+import io.seqera.wave.service.state.impl.CacheProvider
 
 /**
  * Implements a generic cache store

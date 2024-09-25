@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.memstore.range
+package io.seqera.wave.store.range
 
 import spock.lang.Shared
 import spock.lang.Specification
