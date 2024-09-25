@@ -33,12 +33,12 @@ import jakarta.inject.Singleton
  */
 @Singleton
 @CompileStatic
-class ScanStore extends AbstractStateStore<ScanResult> {
+class ScanStore extends AbstractStateStore<ScanState> {
 
     private ScanConfig config
 
     ScanStore(StateProvider<String, String> provider, ScanConfig config) {
-        super(provider, new MoshiEncodeStrategy<ScanResult>() { })
+        super(provider, new MoshiEncodeStrategy<ScanState>() { })
         this.config = config
     }
 
@@ -52,7 +52,7 @@ class ScanStore extends AbstractStateStore<ScanResult> {
         return config.statusDuration
     }
 
-    ScanResult getScan(String key) {
+    ScanState getScan(String key) {
         super.get(key)
     }
 }

@@ -37,7 +37,7 @@ import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
-import io.seqera.wave.service.scan.ScanResult
+import io.seqera.wave.service.scan.ScanState
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import static io.seqera.wave.util.DataTimeUtils.formatDuration
@@ -236,15 +236,15 @@ class ViewController {
         return HttpResponse.<Map<String,Object>>ok(binding)
     }
 
-    Map<String, Object> makeScanViewBinding(ScanResult result, Map<String,Object> binding=new HashMap(10)) {
+    Map<String, Object> makeScanViewBinding(ScanState result, Map<String,Object> binding=new HashMap(10)) {
         binding.should_refresh = !result.done()
         binding.scan_id = result.id
         binding.scan_container_image = result.containerImage ?: '-'
         binding.scan_exist = true
         binding.scan_completed = result.done()
         binding.scan_status = result.status
-        binding.scan_failed = result.status == ScanResult.FAILED
-        binding.scan_succeeded = result.status == ScanResult.SUCCEEDED
+        binding.scan_failed = result.status == ScanState.FAILED
+        binding.scan_succeeded = result.status == ScanState.SUCCEEDED
         binding.scan_exitcode = result.exitCode
         binding.scan_logs = result.logs
 

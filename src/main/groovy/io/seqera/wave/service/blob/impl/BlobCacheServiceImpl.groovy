@@ -268,8 +268,8 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobEntry> {
     // ============ handles transfer job events ============
 
     @Override
-    BlobEntry getJobRecord(JobSpec job) {
-        blobStore.getBlob(job.recordId)
+    BlobEntry getJobEntry(JobSpec job) {
+        blobStore.getBlob(job.entryKey)
     }
 
     @Override

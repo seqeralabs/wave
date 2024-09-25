@@ -92,7 +92,7 @@ class ContainerBuildServiceLiveTest extends Specification {
                 )
                     .withBuildId('1')
         and:
-        buildCacheStore.storeBuild(targetImage, new BuildStoreEntry(req, BuildResult.create(req)))
+        buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
 
         when:
         service.launch(req)
@@ -138,7 +138,7 @@ class ContainerBuildServiceLiveTest extends Specification {
                 )
                 .withBuildId('1')
         and:
-        buildCacheStore.storeBuild(targetImage, new BuildStoreEntry(req, BuildResult.create(req)))
+        buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
 
         when:
         service.launch(req)
@@ -184,7 +184,7 @@ class ContainerBuildServiceLiveTest extends Specification {
                 )
                 .withBuildId('1')
         and:
-        buildCacheStore.storeBuild(targetImage, new BuildStoreEntry(req, BuildResult.create(req)))
+        buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
 
         when:
         service.launch(req)
@@ -230,7 +230,7 @@ class ContainerBuildServiceLiveTest extends Specification {
                 )
                 .withBuildId('1')
         and:
-        buildCacheStore.storeBuild(targetImage, new BuildStoreEntry(req, BuildResult.create(req)))
+        buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
 
         when:
         service.launch(req)
@@ -283,7 +283,7 @@ class ContainerBuildServiceLiveTest extends Specification {
                 )
                         .withBuildId('1')
         and:
-        buildCacheStore.storeBuild(targetImage, new BuildStoreEntry(req, BuildResult.create(req)))
+        buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
         
         when:
         service.launch(req)

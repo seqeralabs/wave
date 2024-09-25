@@ -23,7 +23,7 @@ import spock.lang.Specification
 import java.time.Duration
 import java.time.Instant
 
-import io.seqera.wave.service.scan.ScanResult
+import io.seqera.wave.service.scan.ScanState
 import io.seqera.wave.service.scan.ScanVulnerability
 /**
  *
@@ -49,7 +49,7 @@ class WaveScanRecordTest extends Specification {
         def vulns = List.of(scanVulnerability)
 
         when:
-        def scanResult= new ScanResult(
+        def scanResult= new ScanState(
                 scanId,
                 buildId,
                 containerImage,

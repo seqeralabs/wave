@@ -355,7 +355,7 @@ class ContainerBuildServiceTest extends Specification {
                 startTime: Instant.now(),
                 maxDuration: Duration.ofMinutes(1)
         )
-        def build = new BuildStoreEntry(req, res)
+        def build = new BuildEntry(req, res)
 
         when:
         service.onJobCompletion(job, build, state)
@@ -383,7 +383,7 @@ class ContainerBuildServiceTest extends Specification {
                 startTime: Instant.now(),
                 maxDuration: Duration.ofMinutes(1)
         )
-        def build = new BuildStoreEntry(req, res)
+        def build = new BuildEntry(req, res)
 
         when:
         service.onJobException(job, build, error)
@@ -408,7 +408,7 @@ class ContainerBuildServiceTest extends Specification {
                 startTime: Instant.now(),
                 maxDuration: Duration.ofMinutes(1)
         )
-        def build = new BuildStoreEntry(req, res)
+        def build = new BuildEntry(req, res)
 
         when:
         service.onJobTimeout(job, build)

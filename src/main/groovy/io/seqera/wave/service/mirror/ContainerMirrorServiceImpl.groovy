@@ -100,8 +100,8 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
      * {@inheritDoc}
      */
     @Override
-    MirrorState getJobRecord(JobSpec jobSpec) {
-        store.get(jobSpec.recordId)
+    MirrorState getJobEntry(JobSpec jobSpec) {
+        store.get(jobSpec.entryKey)
     }
 
     /**

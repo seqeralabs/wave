@@ -23,7 +23,7 @@ import java.time.Instant
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.seqera.wave.service.job.JobRecord
+import io.seqera.wave.service.job.JobEntry
 
 /**
  * Model a blob cache metadata entry
@@ -33,7 +33,7 @@ import io.seqera.wave.service.job.JobRecord
 @Slf4j
 @Canonical
 @CompileStatic
-class BlobEntry implements JobRecord {
+class BlobEntry implements JobEntry {
 
     enum State { CREATED, CACHED, COMPLETED, ERRORED, UNKNOWN }
 

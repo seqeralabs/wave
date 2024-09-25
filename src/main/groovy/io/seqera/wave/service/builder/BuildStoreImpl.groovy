@@ -32,21 +32,21 @@ import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 /**
- * Implements Cache store for {@link BuildStoreEntry}
+ * Implements Cache store for {@link BuildEntry}
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @Singleton
 @CompileStatic
-class BuildStoreImpl extends AbstractStateStore<BuildStoreEntry> implements BuildStore {
+class BuildStoreImpl extends AbstractStateStore<BuildEntry> implements BuildStore {
 
     private BuildConfig buildConfig
 
     private ExecutorService ioExecutor
 
     BuildStoreImpl(StateProvider<String, String> provider, BuildConfig buildConfig, @Named(TaskExecutors.IO) ExecutorService ioExecutor) {
-        super(provider, new MoshiEncodeStrategy<BuildStoreEntry>() {})
+        super(provider, new MoshiEncodeStrategy<BuildEntry>() {})
         this.buildConfig = buildConfig
         this.ioExecutor = ioExecutor
     }
@@ -62,7 +62,7 @@ class BuildStoreImpl extends AbstractStateStore<BuildStoreEntry> implements Buil
     }
 
     @Override
-    BuildStoreEntry getBuild(String imageName) {
+    BuildEntry getBuild(String imageName) {
         return get(imageName)
     }
 
@@ -72,17 +72,17 @@ class BuildStoreImpl extends AbstractStateStore<BuildStoreEntry> implements Buil
     }
 
     @Override
-    void storeBuild(String imageName, BuildStoreEntry buildStoreEntry) {
+    void storeBuild(String imageName, BuildEntry buildStoreEntry) {
         put(imageName, buildStoreEntry)
     }
 
     @Override
-    void storeBuild(String imageName, BuildStoreEntry result, Duration ttl) {
+    void storeBuild(String imageName, BuildEntry result, Duration ttl) {
         put(imageName, result, ttl)
     }
 
     @Override
-    boolean storeIfAbsent(String imageName, BuildStoreEntry build) {
+    boolean storeIfAbsent(String imageName, BuildEntry build) {
         return putIfAbsent(imageName, build, buildConfig.statusDuration)
     }
 
@@ -127,10 +127,10 @@ class BuildStoreImpl extends AbstractStateStore<BuildStoreEntry> implements Buil
      * Load a build entry via the record id
      *
      * @param recordId The ID of the record to be loaded
-     * @return The {@link BuildStoreEntry} with with corresponding Id of {@code null} if it cannot be found
+     * @return The {@link BuildEntry} with with corresponding Id of {@code null} if it cannot be found
      */
     @Override
-    BuildStoreEntry getByRecordId(String recordId) {
+    BuildEntry getByRecordId(String recordId) {
         super.getByRecordId(recordId)
     }
 }

@@ -68,7 +68,7 @@ import static java.nio.file.StandardOpenOption.WRITE
 @Singleton
 @Named('Build')
 @CompileStatic
-class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<BuildStoreEntry> {
+class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<BuildEntry> {
 
     @Inject
     private BuildConfig buildConfig
@@ -182,7 +182,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         catch (Throwable e) {
             log.error "== Container build unexpected exception: ${e.message} - request=$req", e
             final result = BuildResult.failed(req.buildId, e.message, req.startTime)
-            buildStore.storeBuild(req.targetImage, new BuildStoreEntry(req, result), buildConfig.failureDuration)
+            buildStore.storeBuild(req.targetImage, new BuildEntry(req, result), buildConfig.failureDuration)
             eventPublisher.publishEvent(new BuildEvent(req, result))
         }
     }
@@ -213,7 +213,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         // try to store a new build status for the given target image
         // this returns true if and only if such container image was not set yet
         final ret1 = BuildResult.create(request)
-        if( buildStore.storeIfAbsent(request.targetImage, new BuildStoreEntry(request, ret1)) ) {
+        if( buildStore.storeIfAbsent(request.targetImage, new BuildEntry(request, ret1)) ) {
             // go ahead
             log.info "== Container build submitted - request=$request"
             launchAsync(request)
@@ -303,12 +303,12 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     // **************************************************************
 
     @Override
-    BuildStoreEntry getJobRecord(JobSpec job) {
-        buildStore.getBuild(job.recordId)
+    BuildEntry getJobEntry(JobSpec job) {
+        buildStore.getBuild(job.entryKey)
     }
 
     @Override
-    void onJobCompletion(JobSpec job, BuildStoreEntry build, JobState state) {
+    void onJobCompletion(JobSpec job, BuildEntry build, JobState state) {
         final buildId = build.request.buildId
         final digest = state.succeeded()
                         ? proxyService.getImageDigest(build.request, true)
@@ -324,24 +324,24 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         final result = state.completed()
                 ? BuildResult.completed(buildId, exit, state.stdout, job.creationTime, digest)
                 : BuildResult.failed(buildId, state.stdout, job.creationTime)
-        buildStore.storeBuild(job.recordId, build.withResult(result), ttl)
+        buildStore.storeBuild(job.entryKey, build.withResult(result), ttl)
         eventPublisher.publishEvent(new BuildEvent(build.request, result))
         log.info "== Container build completed '${build.request.targetImage}' - operation=${job.operationName}; exit=${exit}; status=${state.status}; duration=${result.duration}"
     }
 
     @Override
-    void onJobException(JobSpec job, BuildStoreEntry build, Throwable error) {
+    void onJobException(JobSpec job, BuildEntry build, Throwable error) {
         final result= BuildResult.failed(build.request.buildId, error.message, job.creationTime)
-        buildStore.storeBuild(job.recordId, build.withResult(result), buildConfig.failureDuration)
+        buildStore.storeBuild(job.entryKey, build.withResult(result), buildConfig.failureDuration)
         eventPublisher.publishEvent(new BuildEvent(build.request, result))
         log.error("== Container build exception '${build.request.targetImage}' - operation=${job.operationName}; cause=${error.message}", error)
     }
 
     @Override
-    void onJobTimeout(JobSpec job, BuildStoreEntry build) {
+    void onJobTimeout(JobSpec job, BuildEntry build) {
         final buildId = build.request.buildId
         final result= BuildResult.failed(buildId, "Container image build timed out '${build.request.targetImage}'", job.creationTime)
-        buildStore.storeBuild(job.recordId, build.withResult(result), buildConfig.failureDuration)
+        buildStore.storeBuild(job.entryKey, build.withResult(result), buildConfig.failureDuration)
         eventPublisher.publishEvent(new BuildEvent(build.request, result))
         log.warn "== Container build time out '${build.request.targetImage}'; operation=${job.operationName}; duration=${result.duration}"
     }

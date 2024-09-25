@@ -41,7 +41,7 @@ class JobDispatcher {
     @Inject
     private ApplicationContext context
 
-    private Map<JobSpec.Type, JobHandler<? extends JobRecord>> dispatch = new HashMap<>()
+    private Map<JobSpec.Type, JobHandler<? extends JobEntry>> dispatch = new HashMap<>()
 
     /**
      * Load all available implementations of {@link JobHandler}. Job handler should be:
@@ -62,14 +62,14 @@ class JobDispatcher {
         }
     }
 
-    protected void apply(JobSpec job, BiConsumer<JobHandler, JobRecord> consumer) {
+    protected void apply(JobSpec job, BiConsumer<JobHandler, JobEntry> consumer) {
         final handler = dispatch.get(job.type)
-        final record = handler.getJobRecord(job)
+        final record = handler.getJobEntry(job)
         if( !record ) {
-            log.error "== ${job.type} record unknown for job=${job.recordId}"
+            log.error "== ${job.type} record unknown for job=${job.entryKey}"
         }
         else if( record.done() ) {
-            log.warn "== ${job.type} record already marked as completed for job=${job.recordId}"
+            log.warn "== ${job.type} record already marked as completed for job=${job.entryKey}"
         }
         else {
             consumer.accept(handler, record)

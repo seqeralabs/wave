@@ -67,7 +67,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
                 startTime: Instant.now(),
                 maxDuration: Duration.ofMinutes(1)
         )
-        def entry = new BuildStoreEntry(req, res)
+        def entry = new BuildEntry(req, res)
         and:
         def cacheStore = applicationContext.getBean(BuildStore)
         
@@ -90,7 +90,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
                 startTime: Instant.now(),
                 maxDuration: Duration.ofMinutes(1)
         )
-        def entry = new BuildStoreEntry(req, res)
+        def entry = new BuildEntry(req, res)
         and:
         def cacheStore = applicationContext.getBean(BuildStore)
 
@@ -126,7 +126,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
                 startTime: Instant.now(),
                 maxDuration: Duration.ofMinutes(1)
         )
-        def entry1 = new BuildStoreEntry(req1, res1)
+        def entry1 = new BuildEntry(req1, res1)
         def res2 = BuildResult.create('2')
         def req2 = new BuildRequest(
                 targetImage: 'docker.io/foo:2',
@@ -134,7 +134,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
                 startTime: Instant.now(),
                 maxDuration: Duration.ofMinutes(1)
         )
-        def entry2 = new BuildStoreEntry(req2, res2)
+        def entry2 = new BuildEntry(req2, res2)
         and:
         def store = applicationContext.getBean(BuildStore)
 
@@ -162,7 +162,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
                 startTime: Instant.now(),
                 maxDuration: Duration.ofMinutes(1)
         )
-        def entry = new BuildStoreEntry(req, res)
+        def entry = new BuildEntry(req, res)
         def cache = applicationContext.getBean(BuildStore)
 
         when:
@@ -187,7 +187,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
                 startTime: Instant.now(),
                 maxDuration: Duration.ofSeconds(10)
         )
-        def entry = new BuildStoreEntry(req, res)
+        def entry = new BuildEntry(req, res)
         and:
         def cacheStore = applicationContext.getBean(BuildStore) as BuildStore
 
@@ -223,7 +223,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
                 startTime: Instant.now(),
                 maxDuration: Duration.ofSeconds(5)
         )
-        def entry = new BuildStoreEntry(req, res)
+        def entry = new BuildEntry(req, res)
         and:
         buildCacheStore.storeIfAbsent(req.targetImage, entry)
         jobQueue.offer(jobFactory.build(req))

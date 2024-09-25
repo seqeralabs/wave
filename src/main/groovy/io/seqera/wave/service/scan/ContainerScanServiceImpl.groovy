@@ -49,7 +49,7 @@ import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 @Requires(property = 'wave.scan.enabled', value = 'true')
 @Singleton
 @CompileStatic
-class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanResult> {
+class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanState> {
 
     @Inject
     private ScanConfig scanConfig
@@ -104,14 +104,14 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanR
     protected void launch(ScanRequest request) {
         try {
             // create a record to mark the beginning
-            final scan = ScanResult.pending(request.id, request.buildId, request.targetImage)
+            final scan = ScanState.pending(request.id, request.buildId, request.targetImage)
             scanStore.put(scan.id, scan)
             //launch container scan
             jobService.launchScan(request)
         }
         catch (Throwable e){
             log.warn "Unable to save scan result - id=${request.id}; cause=${e.message}", e
-            updateScanRecord(ScanResult.failure(request))
+            updateScanRecord(ScanState.failure(request))
         }
     }
 
@@ -121,13 +121,13 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanR
     // **************************************************************
 
     @Override
-    ScanResult getJobRecord(JobSpec job) {
-        scanStore.getScan(job.recordId)
+    ScanState getJobEntry(JobSpec job) {
+        scanStore.getScan(job.entryKey)
     }
 
     @Override
-    void onJobCompletion(JobSpec job, ScanResult scan, JobState state) {
-        ScanResult result
+    void onJobCompletion(JobSpec job, ScanState scan, JobState state) {
+        ScanState result
         if( state.succeeded() ) {
             try {
                 result = scan.success(TrivyResultProcessor.process(job.workDir.resolve(Trivy.OUTPUT_FILE_NAME)))
@@ -147,18 +147,18 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanR
     }
 
     @Override
-    void onJobException(JobSpec job, ScanResult scan, Throwable e) {
+    void onJobException(JobSpec job, ScanState scan, Throwable e) {
         log.error("Container scan exception - id=${scan.id} - cause=${e.getMessage()}", e)
         updateScanRecord(scan.failure(null, e.message))
     }
 
     @Override
-    void onJobTimeout(JobSpec job, ScanResult scan) {
+    void onJobTimeout(JobSpec job, ScanState scan) {
         log.warn("Container scan timed out - id=${scan.id}")
         updateScanRecord(scan.failure(null, "Container scan timed out"))
     }
 
-    protected void updateScanRecord(ScanResult scan) {
+    protected void updateScanRecord(ScanState scan) {
         try{
             //save scan results in the redis cache
             scanStore.put(scan.id, scan)

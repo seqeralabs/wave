@@ -16,13 +16,14 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job
+package io.seqera.wave.store.state
 
 /**
- * Marker interface for persisted state record associated with a job execution
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface JobRecord {
-    boolean done()
+interface Entry<K> {
+
+    K getKey()
+
 }

@@ -21,7 +21,7 @@ package io.seqera.wave.service.builder
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-import io.seqera.wave.service.job.JobRecord
+import io.seqera.wave.service.job.JobEntry
 import io.seqera.wave.store.state.StateRecord
 /**
  * Class to store build request and result in cache
@@ -31,7 +31,7 @@ import io.seqera.wave.store.state.StateRecord
 @ToString(includePackage = false, includeNames = true)
 @EqualsAndHashCode
 @CompileStatic
-class BuildStoreEntry implements JobRecord, StateRecord {
+class BuildEntry implements JobEntry, StateRecord {
 
     final BuildRequest request
 
@@ -49,15 +49,15 @@ class BuildStoreEntry implements JobRecord, StateRecord {
         return result.done()
     }
 
-    protected BuildStoreEntry() {}
+    protected BuildEntry() {}
 
-    BuildStoreEntry(BuildRequest request, BuildResult result) {
+    BuildEntry(BuildRequest request, BuildResult result) {
         this.request = request
         this.result = result
     }
 
-    BuildStoreEntry withResult(BuildResult result) {
-        new BuildStoreEntry(request, result)
+    BuildEntry withResult(BuildResult result) {
+        new BuildEntry(request, result)
     }
 
 }
