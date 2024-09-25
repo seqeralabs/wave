@@ -28,7 +28,7 @@ import java.time.Duration
 import java.util.concurrent.ThreadLocalRandom
 
 import groovy.util.logging.Slf4j
-import io.seqera.wave.store.state.impl.LocalCacheProvider
+import io.seqera.wave.store.state.impl.LocalStateProvider
 import io.seqera.wave.util.LongRndKey
 
 @Slf4j
@@ -36,7 +36,7 @@ class PairingServiceTest extends Specification{
 
     def 'check security service generates credentials'() {
         given: 'a cache store'
-        final store = new PairingCacheStore(new LocalCacheProvider())
+        final store = new PairingStore(new LocalStateProvider())
 
         and: 'a security service using it'
         final service = new PairingServiceImpl(store: store, lease: Duration.ofSeconds(100))
@@ -68,7 +68,7 @@ class PairingServiceTest extends Specification{
 
     def "skip generate keys if present and not expired"() {
         given: 'a cache store'
-        final store = new PairingCacheStore(new LocalCacheProvider())
+        final store = new PairingStore(new LocalStateProvider())
 
         and: 'a security service using the cache store'
         final service = new PairingServiceImpl(store: store, lease:  Duration.ofSeconds(1000))
@@ -84,7 +84,7 @@ class PairingServiceTest extends Specification{
 
     def "regenerates keys when they have no validUntil defined"() {
         given: 'a cache store'
-        final store = new PairingCacheStore(new LocalCacheProvider())
+        final store = new PairingStore(new LocalStateProvider())
 
         and: 'an old non timestamped pairing record coming from previous versions'
         final key = PairingServiceImpl.makeKey('tower','tower.io:9090')
@@ -105,7 +105,7 @@ class PairingServiceTest extends Specification{
 
     def "regenerate keys when expired"() {
         given: 'a cache store'
-        final store = new PairingCacheStore(new LocalCacheProvider())
+        final store = new PairingStore(new LocalStateProvider())
 
         and: 'a security service using the cache store'
         final service = new PairingServiceImpl(store: store, lease: Duration.ofMillis(100))

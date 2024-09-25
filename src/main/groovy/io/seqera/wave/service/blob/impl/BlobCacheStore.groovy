@@ -26,8 +26,8 @@ import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.BlobStore
-import io.seqera.wave.store.state.AbstractCacheStore
-import io.seqera.wave.store.state.impl.CacheProvider
+import io.seqera.wave.store.state.AbstractStateStore
+import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Inject
 /**
  * Implement a distributed store for blob cache entry.
@@ -39,12 +39,12 @@ import jakarta.inject.Inject
  */
 @Slf4j
 @CompileStatic
-class BlobCacheStore extends AbstractCacheStore<BlobCacheInfo> implements BlobStore {
+class BlobCacheStore extends AbstractStateStore<BlobCacheInfo> implements BlobStore {
 
     @Inject
     private BlobCacheConfig blobConfig
 
-    BlobCacheStore(CacheProvider<String, String> provider) {
+    BlobCacheStore(StateProvider<String, String> provider) {
         super(provider, new MoshiEncodeStrategy<BlobCacheInfo>() {})
     }
 

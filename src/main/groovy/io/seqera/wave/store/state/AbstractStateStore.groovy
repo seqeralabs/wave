@@ -22,20 +22,20 @@ import java.time.Duration
 
 import groovy.transform.CompileStatic
 import io.seqera.wave.encoder.EncodingStrategy
-import io.seqera.wave.store.state.impl.CacheProvider
+import io.seqera.wave.store.state.impl.StateProvider
 /**
  * Implements a generic cache store
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-abstract class AbstractCacheStore<V> implements CacheStore<String,V> {
+abstract class AbstractStateStore<V> implements StateStore<String,V> {
 
     private EncodingStrategy<V> encodingStrategy
 
-    private CacheProvider<String,String> delegate
+    private StateProvider<String,String> delegate
 
-    AbstractCacheStore(CacheProvider<String,String> provider, EncodingStrategy<V> encodingStrategy) {
+    AbstractStateStore(StateProvider<String,String> provider, EncodingStrategy<V> encodingStrategy) {
         this.delegate = provider
         this.encodingStrategy = encodingStrategy
     }

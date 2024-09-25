@@ -59,7 +59,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanR
     private ExecutorService executor
 
     @Inject
-    private ScanStateStore scanStore
+    private ScanStore scanStore
 
     @Inject
     private PersistenceService persistenceService

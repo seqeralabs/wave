@@ -22,13 +22,13 @@ import spock.lang.Specification
 
 import java.time.Instant
 
-import io.seqera.wave.store.state.impl.LocalCacheProvider
+import io.seqera.wave.store.state.impl.LocalStateProvider
 
-class PairingCacheStoreTest extends Specification{
+class PairingStoreTest extends Specification{
 
     def 'pairing cache store properly serializes/deserializes pairing record'() {
         given: 'a store'
-        final store = new PairingCacheStore(new LocalCacheProvider())
+        final store = new PairingStore(new LocalStateProvider())
         when: 'we put and get back a record'
         def now = Instant.now()
         store.put('key', new PairingRecord('tower','endpoint','pairingId', new byte[0], new byte[0],now))

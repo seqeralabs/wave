@@ -22,23 +22,23 @@ import java.time.Duration
 
 import groovy.transform.CompileStatic
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.store.state.AbstractCacheStore
-import io.seqera.wave.store.state.impl.CacheProvider
+import io.seqera.wave.store.state.AbstractStateStore
+import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
- * Implement a {@link io.seqera.wave.store.state.CacheStore} for {@link MirrorState} objects
+ * Implement a {@link io.seqera.wave.store.state.StateStore} for {@link MirrorState} objects
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Singleton
 @CompileStatic
-class MirrorStateStore extends AbstractCacheStore<MirrorState> {
+class MirrorStore extends AbstractStateStore<MirrorState> {
 
     @Inject
     private MirrorConfig config
 
-    MirrorStateStore(CacheProvider<String,String> provider) {
+    MirrorStore(StateProvider<String,String> provider) {
         super(provider, new MoshiEncodeStrategy<MirrorState>() {})
     }
 

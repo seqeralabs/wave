@@ -16,58 +16,46 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.token
+package io.seqera.wave.auth
 
 import java.time.Duration
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.seqera.wave.configuration.TokenConfig
+import io.micronaut.context.annotation.Value
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.service.ContainerRequestData
-import io.seqera.wave.store.state.AbstractCacheStore
-import io.seqera.wave.store.state.impl.CacheProvider
+import io.seqera.wave.store.state.AbstractStateStore
+import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Singleton
 /**
- * Implements a cache store for {@link ContainerRequestData}
+ * Implement a cache store for {@link RegistryAuth} object that
+ * can be distributed across wave replicas
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @Singleton
 @CompileStatic
-class TokenCacheStore extends AbstractCacheStore<ContainerRequestData> implements ContainerTokenStore {
+class RegistryAuthStore extends AbstractStateStore<RegistryAuth> {
 
-    private TokenConfig tokenConfig
+    private Duration duration
 
-    TokenCacheStore(CacheProvider<String, String> delegate, TokenConfig tokenConfig) {
-        super(delegate, new MoshiEncodeStrategy<ContainerRequestData>(){})
-        this.tokenConfig = tokenConfig
-        log.info "Creating Tokens cache store ― duration=${tokenConfig.cache.duration}"
+    RegistryAuthStore(
+            StateProvider<String, String> provider,
+            @Value('${wave.registry-auth.cache.duration:`3h`}') Duration duration)
+    {
+        super(provider, new MoshiEncodeStrategy<RegistryAuth>() {})
+        this.duration = duration
+        log.info "Creating Registry Auth cache store ― duration=$duration"
     }
 
     @Override
     protected String getPrefix() {
-        return 'wave-tokens/v1:'
+        return 'registry-auth/v1:'
     }
 
     @Override
     protected Duration getDuration() {
-        return tokenConfig.cache.duration
-    }
-
-    @Override
-    ContainerRequestData get(String key) {
-        return super.get(key)
-    }
-
-    @Override
-    void put(String key, ContainerRequestData value) {
-        super.put(key, value)
-    }
-
-    @Override
-    void remove(String key) {
-        super.remove(key)
+        return duration
     }
 }

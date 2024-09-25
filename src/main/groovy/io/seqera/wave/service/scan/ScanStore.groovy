@@ -16,46 +16,43 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.auth
+package io.seqera.wave.service.scan
 
 import java.time.Duration
 
 import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Value
+import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.store.state.AbstractCacheStore
-import io.seqera.wave.store.state.impl.CacheProvider
+import io.seqera.wave.store.state.AbstractStateStore
+import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Singleton
 /**
- * Implement a cache store for {@link RegistryAuth} object that
- * can be distributed across wave replicas
- *
+ * Implement a store for scan state
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Slf4j
 @Singleton
 @CompileStatic
-class RegistryAuthCacheStore extends AbstractCacheStore<RegistryAuth> {
+class ScanStore extends AbstractStateStore<ScanResult> {
 
-    private Duration duration
+    private ScanConfig config
 
-    RegistryAuthCacheStore(
-            CacheProvider<String, String> provider,
-            @Value('${wave.registry-auth.cache.duration:`3h`}') Duration duration)
-    {
-        super(provider, new MoshiEncodeStrategy<RegistryAuth>() {})
-        this.duration = duration
-        log.info "Creating Registry Auth cache store ― duration=$duration"
+    ScanStore(StateProvider<String, String> provider, ScanConfig config) {
+        super(provider, new MoshiEncodeStrategy<ScanResult>() { })
+        this.config = config
     }
 
     @Override
     protected String getPrefix() {
-        return 'registry-auth/v1:'
+        return 'wave-mirror/v1:'
     }
 
     @Override
     protected Duration getDuration() {
-        return duration
+        return config.statusDuration
+    }
+
+    ScanResult getScan(String key) {
+        super.get(key)
     }
 }

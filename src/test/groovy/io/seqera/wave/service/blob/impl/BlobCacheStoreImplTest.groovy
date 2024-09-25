@@ -26,7 +26,7 @@ import io.micronaut.context.annotation.Property
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.service.blob.BlobCacheInfo
-import io.seqera.wave.store.state.impl.CacheProvider
+import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Inject
 /**
  *
@@ -42,7 +42,7 @@ class BlobCacheStoreImplTest extends Specification {
     BlobCacheStore store
 
     @Inject
-    CacheProvider<String, String> provider
+    StateProvider<String, String> provider
 
     def 'should get and store an entry' () {
         given:

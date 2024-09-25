@@ -48,7 +48,7 @@ class ContainerMirrorServiceTest extends Specification {
     ContainerMirrorServiceImpl mirrorService
 
     @Inject
-    MirrorStateStore mirrorStateStore
+    MirrorStore mirrorStateStore
 
     @Inject
     PersistenceService persistenceService

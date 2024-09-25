@@ -46,7 +46,7 @@ import jakarta.inject.Singleton
 class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<MirrorState> {
 
     @Inject
-    private MirrorStateStore store
+    private MirrorStore store
 
     @Inject
     private JobService jobService

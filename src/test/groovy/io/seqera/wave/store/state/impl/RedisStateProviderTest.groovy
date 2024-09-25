@@ -26,20 +26,20 @@ import java.time.Duration
 import io.micronaut.context.ApplicationContext
 import io.seqera.wave.test.RedisTestContainer
 
-class RedisCacheProviderTest extends Specification implements RedisTestContainer {
+class RedisStateProviderTest extends Specification implements RedisTestContainer {
 
     @Shared
     ApplicationContext applicationContext
 
     @Shared
-    RedisCacheProvider redisCacheProvider
+    RedisStateProvider redisCacheProvider
 
     def setup() {
         applicationContext = ApplicationContext.run([
                 REDIS_HOST : redisHostName,
                 REDIS_PORT : redisPort
         ], 'test', 'redis')
-        redisCacheProvider = applicationContext.getBean(RedisCacheProvider)
+        redisCacheProvider = applicationContext.getBean(RedisStateProvider)
         sleep(500) // workaround to wait for Redis connection
     }
 

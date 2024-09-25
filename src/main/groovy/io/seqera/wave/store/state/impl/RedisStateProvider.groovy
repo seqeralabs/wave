@@ -19,89 +19,77 @@
 package io.seqera.wave.store.state.impl
 
 import java.time.Duration
-import java.time.Instant
-import java.util.concurrent.ConcurrentHashMap
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
+import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
+import redis.clients.jedis.Jedis
+import redis.clients.jedis.JedisPool
+import redis.clients.jedis.params.SetParams
 /**
- * Simple cache store implementation for development purpose
+ * Redis based implementation for a {@link StateProvider}
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Requires(missingProperty = 'redis.uri')
+@Requires(property = 'redis.uri')
 @Singleton
 @CompileStatic
-class LocalCacheProvider implements CacheProvider<String,String> {
+class RedisStateProvider implements StateProvider<String,String> {
 
-    private static class Entry<V> {
-        final V value
-        final Duration ttl
-        final Instant ts
-
-        Entry(V value, Duration ttl=null) {
-            this.value = value
-            this.ttl = ttl
-            this.ts = Instant.now()
-        }
-
-        boolean isExpired() {
-            return ttl!=null ? ts.plus(ttl) <= Instant.now() : false
-        }
-    }
-
-    private Map<String,Entry<String>> store = new ConcurrentHashMap<>()
+    @Inject
+    private JedisPool pool
 
     @Override
     String get(String key) {
-        final entry = store.get(key)
-        if( !entry ) {
-            return null
+        try( Jedis conn=pool.getResource() ) {
+            return conn.get(key)
         }
-        if( entry.isExpired() ) {
-            store.remove(key)
-            return null
-        }
-        return entry.value
     }
 
     @Override
     void put(String key, String value) {
-        store.put(key, new Entry<>(value,null))
+        put(key, value, null)
     }
 
     @Override
     void put(String key, String value, Duration ttl) {
-        store.put(key, new Entry<>(value,ttl))
+        try( Jedis conn=pool.getResource() ) {
+            final params = new SetParams()
+            if( ttl )
+                params.px(ttl.toMillis())
+            conn.set(key, value, params)
+        }
     }
 
     @Override
     boolean putIfAbsent(String key, String value) {
-        return putIfAbsent0(key, value, null) == null
+        putIfAbsent(key, value, null)
     }
 
     @Override
     boolean putIfAbsent(String key, String value, Duration ttl) {
-        return putIfAbsent0(key, value, ttl) == null
-    }
-
-    private String putIfAbsent0(String key, String value, Duration ttl) {
-        final entry = store.get(key)
-        if( entry?.isExpired() )
-            store.remove(key)
-        return store.putIfAbsent(key, new Entry<>(value,ttl))?.value
+        try( Jedis conn=pool.getResource() ) {
+            final params = new SetParams().nx()
+            if( ttl )
+                params.px(ttl.toMillis())
+            final result = conn.set(key, value, params)
+            return result == 'OK'
+        }
     }
 
     @Override
     void remove(String key) {
-        store.remove(key)
+        try( Jedis conn=pool.getResource() ) {
+            conn.del(key)
+        }
     }
 
     @Override
     void clear() {
-        store.clear()
+        try( Jedis conn=pool.getResource() ) {
+            conn.flushAll()
+        }
     }
 
 }

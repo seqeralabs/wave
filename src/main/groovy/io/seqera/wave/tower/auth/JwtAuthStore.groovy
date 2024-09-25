@@ -24,8 +24,8 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.store.state.AbstractCacheStore
-import io.seqera.wave.store.state.impl.CacheProvider
+import io.seqera.wave.store.state.AbstractStateStore
+import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -35,12 +35,12 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-class JwtAuthStore extends AbstractCacheStore<JwtAuth> {
+class JwtAuthStore extends AbstractStateStore<JwtAuth> {
 
     @Inject
     private JwtTimeStore jwtTimeStore
 
-    JwtAuthStore(CacheProvider<String, String> provider) {
+    JwtAuthStore(StateProvider<String, String> provider) {
         super(provider, new MoshiEncodeStrategy<JwtAuth>() {})
     }
 

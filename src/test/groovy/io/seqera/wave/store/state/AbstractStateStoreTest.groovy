@@ -25,17 +25,17 @@ import java.time.Duration
 import groovy.transform.Canonical
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.store.state.impl.CacheProvider
-import io.seqera.wave.store.state.impl.LocalCacheProvider
+import io.seqera.wave.store.state.impl.StateProvider
+import io.seqera.wave.store.state.impl.LocalStateProvider
 import jakarta.inject.Inject
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-class AbstractCacheStoreTest extends Specification {
+class AbstractStateStoreTest extends Specification {
 
-    @Inject LocalCacheProvider provider
+    @Inject LocalStateProvider provider
 
     static public long ttlMillis = 100
 
@@ -57,9 +57,9 @@ class AbstractCacheStoreTest extends Specification {
         }
     }
 
-    static class MyCacheStore extends AbstractCacheStore<MyObject> {
+    static class MyCacheStore extends AbstractStateStore<MyObject> {
 
-        MyCacheStore(CacheProvider<String, String> provider) {
+        MyCacheStore(StateProvider<String, String> provider) {
             super(provider, new MoshiEncodeStrategy<MyObject>() {})
         }
 

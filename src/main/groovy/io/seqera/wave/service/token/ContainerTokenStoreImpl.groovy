@@ -16,43 +16,58 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.scan
+package io.seqera.wave.service.token
 
 import java.time.Duration
 
 import groovy.transform.CompileStatic
-import io.seqera.wave.configuration.ScanConfig
+import groovy.util.logging.Slf4j
+import io.seqera.wave.configuration.TokenConfig
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.store.state.AbstractCacheStore
-import io.seqera.wave.store.state.impl.CacheProvider
+import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.store.state.AbstractStateStore
+import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Singleton
 /**
- * Implement a store for scan state
- * 
+ * Implements a cache store for {@link ContainerRequestData}
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @Singleton
 @CompileStatic
-class ScanStateStore extends AbstractCacheStore<ScanResult> {
+class ContainerTokenStoreImpl extends AbstractStateStore<ContainerRequestData> implements ContainerTokenStore {
 
-    private ScanConfig config
+    private TokenConfig tokenConfig
 
-    ScanStateStore(CacheProvider<String, String> provider, ScanConfig config) {
-        super(provider, new MoshiEncodeStrategy<ScanResult>() { })
-        this.config = config
+    ContainerTokenStoreImpl(StateProvider<String, String> delegate, TokenConfig tokenConfig) {
+        super(delegate, new MoshiEncodeStrategy<ContainerRequestData>(){})
+        this.tokenConfig = tokenConfig
+        log.info "Creating Tokens cache store ― duration=${tokenConfig.cache.duration}"
     }
 
     @Override
     protected String getPrefix() {
-        return 'wave-mirror/v1:'
+        return 'wave-tokens/v1:'
     }
 
     @Override
     protected Duration getDuration() {
-        return config.statusDuration
+        return tokenConfig.cache.duration
     }
 
-    ScanResult getScan(String key) {
-        super.get(key)
+    @Override
+    ContainerRequestData get(String key) {
+        return super.get(key)
+    }
+
+    @Override
+    void put(String key, ContainerRequestData value) {
+        super.put(key, value)
+    }
+
+    @Override
+    void remove(String key) {
+        super.remove(key)
     }
 }

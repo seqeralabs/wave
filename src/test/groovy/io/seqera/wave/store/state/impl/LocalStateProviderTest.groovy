@@ -26,10 +26,10 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import jakarta.inject.Inject
 
 @MicronautTest(environments = ['test'])
-class LocalCacheProviderTest extends Specification {
+class LocalStateProviderTest extends Specification {
 
     @Inject
-    LocalCacheProvider localCacheProvider
+    LocalStateProvider localCacheProvider
 
 
     def 'should get and put a key-value pair' () {

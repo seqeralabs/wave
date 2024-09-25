@@ -56,7 +56,7 @@ class ContainerBuildServiceLiveTest extends Specification {
     @Inject ContainerInspectServiceImpl dockerAuthService
     @Inject HttpClientConfig httpClientConfig
     @Inject BuildConfig buildConfig
-    @Inject BuildCacheStore buildCacheStore
+    @Inject BuildStoreImpl buildCacheStore
     @Inject PersistenceService persistenceService
     @Inject JobService jobService
 

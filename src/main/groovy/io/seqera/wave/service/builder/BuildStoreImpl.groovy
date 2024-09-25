@@ -27,8 +27,8 @@ import groovy.util.logging.Slf4j
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.store.state.AbstractCacheStore
-import io.seqera.wave.store.state.impl.CacheProvider
+import io.seqera.wave.store.state.AbstractStateStore
+import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 /**
@@ -39,13 +39,13 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-class BuildCacheStore extends AbstractCacheStore<BuildStoreEntry> implements BuildStore {
+class BuildStoreImpl extends AbstractStateStore<BuildStoreEntry> implements BuildStore {
 
     private BuildConfig buildConfig
 
     private ExecutorService ioExecutor
 
-    BuildCacheStore(CacheProvider<String, String> provider, BuildConfig buildConfig, @Named(TaskExecutors.IO) ExecutorService ioExecutor) {
+    BuildStoreImpl(StateProvider<String, String> provider, BuildConfig buildConfig, @Named(TaskExecutors.IO) ExecutorService ioExecutor) {
         super(provider, new MoshiEncodeStrategy<BuildStoreEntry>() {})
         this.buildConfig = buildConfig
         this.ioExecutor = ioExecutor
@@ -104,7 +104,7 @@ class BuildCacheStore extends AbstractCacheStore<BuildStoreEntry> implements Bui
      */
     private static class Waiter {
 
-        static BuildResult awaitCompletion(BuildCacheStore store, String imageName, BuildResult current) {
+        static BuildResult awaitCompletion(BuildStoreImpl store, String imageName, BuildResult current) {
             final await = store.buildConfig.statusDelay
             while( true ) {
                 if( current==null ) {

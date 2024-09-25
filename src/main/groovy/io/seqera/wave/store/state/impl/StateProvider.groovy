@@ -18,12 +18,12 @@
 
 package io.seqera.wave.store.state.impl
 
-import io.seqera.wave.store.state.CacheStore
+import io.seqera.wave.store.state.StateStore
 
 /**
  * Define an cache interface alias to be used by cache implementation providers
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface CacheProvider<K,V> extends CacheStore<K,V> {
+interface StateProvider<K,V> extends StateStore<K,V> {
 }

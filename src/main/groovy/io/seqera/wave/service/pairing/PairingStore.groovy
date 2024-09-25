@@ -25,8 +25,8 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.store.state.AbstractCacheStore
-import io.seqera.wave.store.state.impl.CacheProvider
+import io.seqera.wave.store.state.AbstractStateStore
+import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Singleton
 /**
  * Implements a cache store for {@link PairingRecord}
@@ -36,7 +36,7 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-class PairingCacheStore extends AbstractCacheStore<PairingRecord> {
+class PairingStore extends AbstractStateStore<PairingRecord> {
 
     /**
      * How long the pairing key can stay in the cache store before is evicted
@@ -50,7 +50,7 @@ class PairingCacheStore extends AbstractCacheStore<PairingRecord> {
     @Value('${wave.pairing-key.lease:`1d`}')
     private Duration lease
 
-    PairingCacheStore(CacheProvider<String, String> provider) {
+    PairingStore(StateProvider<String, String> provider) {
         super(provider, new MoshiEncodeStrategy<PairingRecord>() {})
     }
 

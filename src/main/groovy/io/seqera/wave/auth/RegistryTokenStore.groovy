@@ -23,8 +23,8 @@ import java.time.Duration
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.store.state.AbstractCacheStore
-import io.seqera.wave.store.state.impl.CacheProvider
+import io.seqera.wave.store.state.AbstractStateStore
+import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Singleton
 /**
  * Implement a cache store for {@link io.seqera.wave.auth.RegistryAuthServiceImpl.CacheKey} object and token that
@@ -35,9 +35,9 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-class RegistryTokenCacheStore extends AbstractCacheStore<String> {
+class RegistryTokenStore extends AbstractStateStore<String> {
 
-    RegistryTokenCacheStore(CacheProvider<String, String> provider) {
+    RegistryTokenStore(StateProvider<String, String> provider) {
         super(provider, new MoshiEncodeStrategy<String>() {})
         log.info "Creating Registry Auth token cache store"
     }

@@ -44,7 +44,7 @@ class ContainerScanServiceImplTest extends Specification {
 
     @Inject PersistenceService persistenceService
 
-    @Inject ScanStateStore stateStore
+    @Inject ScanStore stateStore
 
     def 'should start scan successfully'() {
         given:
