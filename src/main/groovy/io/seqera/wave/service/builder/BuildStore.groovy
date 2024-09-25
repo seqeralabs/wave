@@ -95,4 +95,11 @@ interface BuildStore {
      */
     CompletableFuture<BuildResult> awaitBuild(String imageName)
 
+    /**
+     * Load a build entry via the record id
+     *
+     * @param recordId The ID of the record to be loaded
+     * @return The {@link BuildStoreEntry} with with corresponding Id of {@code null} if it cannot be found
+     */
+    BuildStoreEntry getByRecordId(String recordId)
 }

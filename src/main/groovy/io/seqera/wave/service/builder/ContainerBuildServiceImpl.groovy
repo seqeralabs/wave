@@ -77,7 +77,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     private ApplicationEventPublisher<BuildEvent> eventPublisher
 
     @Inject
-    private BuildCacheStore buildStore
+    private BuildStore buildStore
 
     @Inject
     @Named(TaskExecutors.IO)
