@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.blob.impl
+package io.seqera.wave.service.blob
 
 import java.time.Duration
 
@@ -24,28 +24,26 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.service.blob.BlobCacheInfo
-import io.seqera.wave.service.blob.BlobStore
 import io.seqera.wave.store.state.AbstractStateStore
 import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Inject
 /**
  * Implement a distributed store for blob cache entry.
  *
- * NOTE: This only stores blob caching *metadata* i.e. {@link BlobCacheInfo}.
+ * NOTE: This only stores blob caching *metadata* i.e. {@link BlobEntry}.
  * The blob binary is stored into an object storage bucket
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @CompileStatic
-class BlobCacheStore extends AbstractStateStore<BlobCacheInfo> implements BlobStore {
+class BlobStoreImpl extends AbstractStateStore<BlobEntry> implements BlobStore {
 
     @Inject
     private BlobCacheConfig blobConfig
 
-    BlobCacheStore(StateProvider<String, String> provider) {
-        super(provider, new MoshiEncodeStrategy<BlobCacheInfo>() {})
+    BlobStoreImpl(StateProvider<String, String> provider) {
+        super(provider, new MoshiEncodeStrategy<BlobEntry>() {})
     }
 
     @Override
@@ -69,18 +67,18 @@ class BlobCacheStore extends AbstractStateStore<BlobCacheInfo> implements BlobSt
     }
 
     @Override
-    BlobCacheInfo getBlob(String key) {
+    BlobEntry getBlob(String key) {
         return get(key)
     }
 
     @Override
-    boolean storeIfAbsent(String key, BlobCacheInfo info) {
+    boolean storeIfAbsent(String key, BlobEntry info) {
         return putIfAbsent(key, info)
     }
 
     @Override
-    void storeBlob(String key, BlobCacheInfo info) {
-        final ttl = info.state == BlobCacheInfo.State.ERRORED
+    void storeBlob(String key, BlobEntry info) {
+        final ttl = info.state == BlobEntry.State.ERRORED
                 ? blobConfig.failureDuration
                 : blobConfig.statusDuration
         put(key, info, ttl)

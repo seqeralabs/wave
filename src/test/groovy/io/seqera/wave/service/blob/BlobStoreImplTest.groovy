@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.blob.impl
+package io.seqera.wave.service.blob
 
 import spock.lang.Specification
 
@@ -25,7 +25,6 @@ import java.time.Duration
 import io.micronaut.context.annotation.Property
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.BlobCacheConfig
-import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Inject
 /**
@@ -36,10 +35,10 @@ import jakarta.inject.Inject
 @Property(name = 'wave.blobCache.storage.bucket', value='s3://foo')
 @Property(name = 'wave.blobCache.storage.region', value='eu-west-1')
 @MicronautTest
-class BlobCacheStoreImplTest extends Specification {
+class BlobStoreImplTest extends Specification {
 
     @Inject
-    BlobCacheStore store
+    BlobStoreImpl store
 
     @Inject
     StateProvider<String, String> provider
@@ -47,8 +46,8 @@ class BlobCacheStoreImplTest extends Specification {
     def 'should get and store an entry' () {
         given:
         def key = UUID.randomUUID().toString()
-        def info1 = new BlobCacheInfo(BlobCacheInfo.State.CREATED, 'foo')
-        def info2 = new BlobCacheInfo(BlobCacheInfo.State.CREATED, 'bar')
+        def info1 = new BlobEntry(BlobEntry.State.CREATED, 'foo')
+        def info2 = new BlobEntry(BlobEntry.State.CREATED, 'bar')
 
         expect:
         store.get(key) == null
@@ -69,8 +68,8 @@ class BlobCacheStoreImplTest extends Specification {
     def 'should put an item only if absent' () {
         given:
         def key = UUID.randomUUID().toString()
-        def info1 = new BlobCacheInfo(BlobCacheInfo.State.CREATED, 'foo')
-        def info2 = new BlobCacheInfo(BlobCacheInfo.State.CREATED, 'bar')
+        def info1 = new BlobEntry(BlobEntry.State.CREATED, 'foo')
+        def info2 = new BlobEntry(BlobEntry.State.CREATED, 'bar')
 
         expect:
         store.putIfAbsent(key, info1)
@@ -86,14 +85,14 @@ class BlobCacheStoreImplTest extends Specification {
     def 'should put an entry with conditional ttl' () {
         given:
         def key = UUID.randomUUID().toString()
-        def info_ok = new BlobCacheInfo(BlobCacheInfo.State.CREATED, 'foo')
-        def info_err = new BlobCacheInfo(BlobCacheInfo.State.ERRORED, 'foo')
+        def info_ok = new BlobEntry(BlobEntry.State.CREATED, 'foo')
+        def info_err = new BlobEntry(BlobEntry.State.ERRORED, 'foo')
         and:
         def DELAY_ONE = Duration.ofMinutes(1)
         def DELAY_TWO = Duration.ofSeconds(1)
         and:
         def config = Mock(BlobCacheConfig)
-        def cache = Spy(new BlobCacheStore(provider))
+        def cache = Spy(new BlobStoreImpl(provider))
         cache.@blobConfig = config
 
         when:

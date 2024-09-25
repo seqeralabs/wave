@@ -33,7 +33,7 @@ import io.seqera.wave.service.job.JobRecord
 @Slf4j
 @Canonical
 @CompileStatic
-class BlobCacheInfo implements JobRecord {
+class BlobEntry implements JobRecord {
 
     enum State { CREATED, CACHED, COMPLETED, ERRORED, UNKNOWN }
 
@@ -94,7 +94,10 @@ class BlobCacheInfo implements JobRecord {
      */
     final String logs
 
-    String id() {
+    /**
+     * @return The key that identify unequivocally this entry in the {@link BlobStore}
+     */
+    String getKey() {
         return objectUri
     }
 
@@ -113,7 +116,7 @@ class BlobCacheInfo implements JobRecord {
                 : null
     }
 
-    static BlobCacheInfo create(String locationUri, String objectUri, Map<String,List<String>> request, Map<String,List<String>> response) {
+    static BlobEntry create(String locationUri, String objectUri, Map<String,List<String>> request, Map<String,List<String>> response) {
         final headers0 = new LinkedHashMap<String,String>()
         for( Map.Entry<String,List<String>> it : request )
             headers0.put( it.key, it.value.join(',') )
@@ -121,7 +124,7 @@ class BlobCacheInfo implements JobRecord {
         final type = headerString0(response, 'Content-Type')
         final cache = headerString0(response, 'Cache-Control')
         final creationTime = Instant.now()
-        return new BlobCacheInfo(State.CREATED, locationUri, objectUri, headers0, length, type, cache, creationTime, null, null, null)
+        return new BlobEntry(State.CREATED, locationUri, objectUri, headers0, length, type, cache, creationTime, null, null, null)
     }
 
     static String headerString0(Map<String,List<String>> headers, String name) {
@@ -157,8 +160,8 @@ class BlobCacheInfo implements JobRecord {
                 ')'
     }
 
-    BlobCacheInfo cached() {
-        new BlobCacheInfo(
+    BlobEntry cached() {
+        new BlobEntry(
                 State.CACHED,
                 locationUri,
                 objectUri,
@@ -173,8 +176,8 @@ class BlobCacheInfo implements JobRecord {
         )
     }
 
-    BlobCacheInfo completed(int status, String logs) {
-        new BlobCacheInfo(
+    BlobEntry completed(int status, String logs) {
+        new BlobEntry(
                 State.COMPLETED,
                 locationUri,
                 objectUri,
@@ -189,8 +192,8 @@ class BlobCacheInfo implements JobRecord {
         )
     }
 
-    BlobCacheInfo errored(String logs) {
-        new BlobCacheInfo(
+    BlobEntry errored(String logs) {
+        new BlobEntry(
                 State.ERRORED,
                 locationUri,
                 objectUri,
@@ -205,8 +208,8 @@ class BlobCacheInfo implements JobRecord {
         )
     }
 
-    BlobCacheInfo withLocation(String location) {
-        new BlobCacheInfo(
+    BlobEntry withLocation(String location) {
+        new BlobEntry(
                 state,
                 location,
                 objectUri,
@@ -221,15 +224,14 @@ class BlobCacheInfo implements JobRecord {
         )
     }
 
-    static BlobCacheInfo unknown(String logs) {
-        new BlobCacheInfo(State.UNKNOWN, null, null, null, null, null, null, Instant.ofEpochMilli(0), Instant.ofEpochMilli(0), null, logs) {
+    static BlobEntry unknown(String logs) {
+        new BlobEntry(State.UNKNOWN, null, null, null, null, null, null, Instant.ofEpochMilli(0), Instant.ofEpochMilli(0), null, logs) {
             @Override
-            BlobCacheInfo withLocation(String uri) {
+            BlobEntry withLocation(String uri) {
                 // prevent the change of location for unknown status
                 return this
             }
         }
     }
-
 
 }
