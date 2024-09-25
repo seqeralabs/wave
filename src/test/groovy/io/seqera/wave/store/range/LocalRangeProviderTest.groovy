@@ -20,8 +20,7 @@ package io.seqera.wave.store.range
 
 import spock.lang.Specification
 
-import io.seqera.wave.memstore.range.impl.LocalRangeProvider
-
+import io.seqera.wave.store.range.impl.LocalRangeProvider
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>

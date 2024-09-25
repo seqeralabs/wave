@@ -24,10 +24,9 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.service.state.AbstractCacheStore
-import io.seqera.wave.service.state.impl.CacheProvider
+import io.seqera.wave.store.state.AbstractCacheStore
+import io.seqera.wave.store.state.impl.CacheProvider
 import jakarta.inject.Singleton
-
 /**
  * Implement a cache store for {@link RegistryAuth} object that
  * can be distributed across wave replicas

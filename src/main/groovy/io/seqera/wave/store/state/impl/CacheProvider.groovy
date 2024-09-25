@@ -16,9 +16,9 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.state.impl
+package io.seqera.wave.store.state.impl
 
-import io.seqera.wave.service.state.CacheStore
+import io.seqera.wave.store.state.CacheStore
 
 /**
  * Define an cache interface alias to be used by cache implementation providers

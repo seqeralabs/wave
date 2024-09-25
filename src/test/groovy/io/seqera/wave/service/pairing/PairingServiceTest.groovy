@@ -18,18 +18,17 @@
 
 package io.seqera.wave.service.pairing
 
-import java.time.Duration
-
 import spock.lang.Specification
 
 import java.security.KeyFactory
 import java.security.Signature
 import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
+import java.time.Duration
 import java.util.concurrent.ThreadLocalRandom
 
 import groovy.util.logging.Slf4j
-import io.seqera.wave.service.state.impl.LocalCacheProvider
+import io.seqera.wave.store.state.impl.LocalCacheProvider
 import io.seqera.wave.util.LongRndKey
 
 @Slf4j

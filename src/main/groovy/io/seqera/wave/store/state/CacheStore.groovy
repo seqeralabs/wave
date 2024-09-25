@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.state
+package io.seqera.wave.store.state
 
 import java.time.Duration
 

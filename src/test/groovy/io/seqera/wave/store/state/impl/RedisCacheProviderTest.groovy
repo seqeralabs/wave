@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.state.impl
+package io.seqera.wave.store.state.impl
 
 import spock.lang.Shared
 import spock.lang.Specification

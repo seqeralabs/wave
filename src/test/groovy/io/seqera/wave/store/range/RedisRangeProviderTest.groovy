@@ -22,7 +22,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
-import io.seqera.wave.memstore.range.impl.RedisRangeProvider
+import io.seqera.wave.store.range.impl.RedisRangeProvider
 import io.seqera.wave.test.RedisTestContainer
 /**
  *

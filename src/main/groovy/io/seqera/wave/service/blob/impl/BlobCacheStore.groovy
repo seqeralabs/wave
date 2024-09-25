@@ -26,8 +26,8 @@ import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.BlobStore
-import io.seqera.wave.service.state.AbstractCacheStore
-import io.seqera.wave.service.state.impl.CacheProvider
+import io.seqera.wave.store.state.AbstractCacheStore
+import io.seqera.wave.store.state.impl.CacheProvider
 import jakarta.inject.Inject
 /**
  * Implement a distributed store for blob cache entry.

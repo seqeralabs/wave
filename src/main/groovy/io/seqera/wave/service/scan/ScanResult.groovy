@@ -24,6 +24,7 @@ import java.time.Instant
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
+import io.seqera.wave.service.job.JobRecord
 
 /**
  * Model for scan result
@@ -31,8 +32,7 @@ import groovy.transform.ToString
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 
-import io.seqera.wave.service.state.StateRecord
-import io.seqera.wave.service.job.JobRecord
+import io.seqera.wave.store.state.StateRecord
 
 @ToString(includePackage = false, includeNames = true)
 @Canonical

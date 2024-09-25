@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.state
+package io.seqera.wave.store.state
 
 /**
  * Marker interface for record object that model long running operation state
