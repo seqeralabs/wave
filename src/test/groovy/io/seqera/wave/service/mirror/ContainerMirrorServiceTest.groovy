@@ -97,7 +97,7 @@ class ContainerMirrorServiceTest extends Specification {
         and:
         persistenceService.saveMirrorState(state)
         when:
-        def copy = mirrorService.getMirrorState(request.id)
+        def copy = mirrorService.getMirrorState(request.mirrorId)
         then:
         copy == state
     }
@@ -116,7 +116,7 @@ class ContainerMirrorServiceTest extends Specification {
         and:
         mirrorStateStore.put('target/foo', state)
         when:
-        def copy = mirrorService.getMirrorState(request.id)
+        def copy = mirrorService.getMirrorState(request.mirrorId)
         then:
         copy == state
     }
@@ -132,7 +132,7 @@ class ContainerMirrorServiceTest extends Specification {
                 '{config}' )
         and:
         def state = MirrorState.from(request)
-        def job = JobSpec.mirror(request.id, 'mirror-123', Instant.now(), Duration.ofMillis(1), Mock(Path))
+        def job = JobSpec.mirror(request.mirrorId, 'mirror-123', Instant.now(), Duration.ofMillis(1), Mock(Path))
         when:
         mirrorService.onJobCompletion(job, state, new JobState(JobState.Status.SUCCEEDED, 0, 'OK'))
         then:
@@ -143,7 +143,7 @@ class ContainerMirrorServiceTest extends Specification {
         s1.exitCode == 0
         s1.logs == 'OK'
         and:
-        def s2 = persistenceService.loadMirrorState(request.id)
+        def s2 = persistenceService.loadMirrorState(request.mirrorId)
         and:
         s2 == s1
     }
@@ -159,7 +159,7 @@ class ContainerMirrorServiceTest extends Specification {
                 '{config}' )
         and:
         def state = MirrorState.from(request)
-        def job = JobSpec.mirror(request.id, 'mirror-123', Instant.now(), Duration.ofMillis(1), Mock(Path))
+        def job = JobSpec.mirror(request.mirrorId, 'mirror-123', Instant.now(), Duration.ofMillis(1), Mock(Path))
         when:
         mirrorService.onJobException(job, state, new Exception('Oops something went wrong'))
         then:
@@ -170,7 +170,7 @@ class ContainerMirrorServiceTest extends Specification {
         s1.exitCode == null
         s1.logs == 'Oops something went wrong'
         and:
-        def s2 = persistenceService.loadMirrorState(request.id)
+        def s2 = persistenceService.loadMirrorState(request.mirrorId)
         and:
         s2 == s1
     }
@@ -186,7 +186,7 @@ class ContainerMirrorServiceTest extends Specification {
                 '{config}' )
         and:
         def state = MirrorState.from(request)
-        def job = JobSpec.mirror(request.id, 'mirror-123', Instant.now(), Duration.ofMillis(1), Mock(Path))
+        def job = JobSpec.mirror(request.mirrorId, 'mirror-123', Instant.now(), Duration.ofMillis(1), Mock(Path))
         when:
         mirrorService.onJobTimeout(job, state)
         then:
@@ -197,7 +197,7 @@ class ContainerMirrorServiceTest extends Specification {
         s1.exitCode == null
         s1.logs == 'Container mirror timed out'
         and:
-        def s2 = persistenceService.loadMirrorState(request.id)
+        def s2 = persistenceService.loadMirrorState(request.mirrorId)
         and:
         s2 == s1
     }

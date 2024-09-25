@@ -342,7 +342,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         sleep 100
 
         when:
-        def stored = storage.loadMirrorState(request.id)
+        def stored = storage.loadMirrorState(request.mirrorId)
         then:
         stored == result
     }

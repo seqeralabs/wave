@@ -42,7 +42,7 @@ class MirrorRequest {
     /**
      * Unique id of the request
      */
-    final String id
+    final String mirrorId
 
     /**
      * The container image to be mirrored

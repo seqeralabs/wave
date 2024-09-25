@@ -364,7 +364,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
      */
     @Override
     WaveBuildRecord getBuildRecord(String buildId) {
-        final entry = buildStore.getByRecordId(buildId)
+        final entry = buildStore.findByRequestId(buildId)
         return entry
                 ? WaveBuildRecord.fromEntry(entry)
                 : persistenceService.loadBuild(buildId)

@@ -92,7 +92,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanS
         try{
             final scan = scanStore.getScan(scanId)
             return scan
-                    ? new WaveScanRecord(scan.id, scan)
+                    ? new WaveScanRecord(scan.scanId, scan)
                     : persistenceService.loadScanRecord(scanId)
         }
         catch (Throwable t){
@@ -104,13 +104,13 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanS
     protected void launch(ScanRequest request) {
         try {
             // create a record to mark the beginning
-            final scan = ScanState.pending(request.id, request.buildId, request.targetImage)
-            scanStore.put(scan.id, scan)
+            final scan = ScanState.pending(request.scanId, request.buildId, request.targetImage)
+            scanStore.put(scan.scanId, scan)
             //launch container scan
             jobService.launchScan(request)
         }
         catch (Throwable e){
-            log.warn "Unable to save scan result - id=${request.id}; cause=${e.message}", e
+            log.warn "Unable to save scan result - id=${request.scanId}; cause=${e.message}", e
             updateScanRecord(ScanState.failure(request))
         }
     }
@@ -131,16 +131,16 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanS
         if( state.succeeded() ) {
             try {
                 result = scan.success(TrivyResultProcessor.process(job.workDir.resolve(Trivy.OUTPUT_FILE_NAME)))
-                log.info("Container scan succeeded - id=${scan.id}; exit=${state.exitCode}; stdout=${state.stdout}")
+                log.info("Container scan succeeded - id=${scan.scanId}; exit=${state.exitCode}; stdout=${state.stdout}")
             }
             catch (NoSuchFileException e) {
                 result = scan.failure(0, "No such file: ${e.message}")
-                log.warn("Container scan failed - id=${scan.id}; exit=${state.exitCode}; stdout=${state.stdout}; exception: NoSuchFile=${e.message}")
+                log.warn("Container scan failed - id=${scan.scanId}; exit=${state.exitCode}; stdout=${state.stdout}; exception: NoSuchFile=${e.message}")
             }
         }
         else{
             result = scan.failure(state.exitCode, state.stdout)
-            log.warn("Container scan failed - id=${scan.id}; exit=${state.exitCode}; stdout=${state.stdout}")
+            log.warn("Container scan failed - id=${scan.scanId}; exit=${state.exitCode}; stdout=${state.stdout}")
         }
 
         updateScanRecord(result)
@@ -148,25 +148,25 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanS
 
     @Override
     void onJobException(JobSpec job, ScanState scan, Throwable e) {
-        log.error("Container scan exception - id=${scan.id} - cause=${e.getMessage()}", e)
+        log.error("Container scan exception - id=${scan.scanId} - cause=${e.getMessage()}", e)
         updateScanRecord(scan.failure(null, e.message))
     }
 
     @Override
     void onJobTimeout(JobSpec job, ScanState scan) {
-        log.warn("Container scan timed out - id=${scan.id}")
+        log.warn("Container scan timed out - id=${scan.scanId}")
         updateScanRecord(scan.failure(null, "Container scan timed out"))
     }
 
     protected void updateScanRecord(ScanState scan) {
         try{
             //save scan results in the redis cache
-            scanStore.put(scan.id, scan)
+            scanStore.put(scan.scanId, scan)
             // save in the persistent layer
-            persistenceService.updateScanRecord(new WaveScanRecord(scan.id, scan))
+            persistenceService.updateScanRecord(new WaveScanRecord(scan.scanId, scan))
         }
         catch (Throwable t){
-            log.error("Unable to save result - id=${scan.id}; cause=${t.message}", t)
+            log.error("Unable to save result - id=${scan.scanId}; cause=${t.message}", t)
         }
     }
 }

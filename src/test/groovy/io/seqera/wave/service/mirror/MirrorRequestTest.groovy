@@ -42,12 +42,12 @@ class MirrorRequestTest extends Specification {
                 Path.of('/workspace'),
                 '{json config}')
         then:
-        req.id 
+        req.mirrorId
         req.sourceImage == 'docker.io/foo:latest'
         req.targetImage == 'quay.io/foo:latest'
         req.digest == 'sha256:12345'
         req.platform == ContainerPlatform.DEFAULT
-        req.workDir == Path.of("/workspace/mirror-${req.id.substring(3)}")
+        req.workDir == Path.of("/workspace/mirror-${req.mirrorId.substring(3)}")
         req.authJson == '{json config}'
         req.creationTime >= ts
         req.creationTime <= Instant.now()

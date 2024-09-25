@@ -45,14 +45,14 @@ class AbstractStateStoreTest extends Specification {
         String field2
     }
 
-    static class MyState extends MyObject implements StateRecord {
+    static class MyState extends MyObject implements RequestIdAware {
 
         MyState(String field1, String field2) {
             super(field1, field2)
         }
 
         @Override
-        String getRecordId() {
+        String getRequestId() {
             return field1
         }
     }
@@ -87,7 +87,7 @@ class AbstractStateStoreTest extends Specification {
         def store = new MyCacheStore(provider)
 
         expect:
-        store.recordId0('one') == 'test/v1:state-id/one'
+        store.requestId0('one') == 'test/v1:request-id/one'
     }
 
     def 'should get and put a value' () {
@@ -225,17 +225,17 @@ class AbstractStateStoreTest extends Specification {
 
         expect:
         store.get(key) == null
-        store.getByRecordId(recId) == null
+        store.findByRequestId(recId) == null
 
         when:
         def value = new MyState(recId, 'value')
         store.put(key, value)
         then:
         store.get(key) == value
-        store.getByRecordId(recId) == value
+        store.findByRequestId(recId) == value
         and:
         store.get(recId) == null
-        store.getByRecordId(key) == null
+        store.findByRequestId(key) == null
     }
 
 
@@ -247,7 +247,7 @@ class AbstractStateStoreTest extends Specification {
 
         expect:
         store.get(key) == null
-        store.getByRecordId(recId) == null
+        store.findByRequestId(recId) == null
 
         when:
         def value = new MyState(recId, 'value')
@@ -256,10 +256,10 @@ class AbstractStateStoreTest extends Specification {
         done
         and:
         store.get(key) == value
-        store.getByRecordId(recId) == value
+        store.findByRequestId(recId) == value
         and:
         store.get(recId) == null
-        store.getByRecordId(key) == null
+        store.findByRequestId(key) == null
 
         when:
         done = store.putIfAbsent(key, new MyState('xx', 'yy'))
@@ -267,7 +267,7 @@ class AbstractStateStoreTest extends Specification {
         !done
         and:
         store.get(key) == value
-        store.getByRecordId(recId) == value
+        store.findByRequestId(recId) == value
     }
 
 }

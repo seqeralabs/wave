@@ -23,8 +23,8 @@ package io.seqera.wave.store.state
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface StateRecord {
+interface RequestIdAware {
 
-    String getRecordId()
+    String getRequestId()
 
 }

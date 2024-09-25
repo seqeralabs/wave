@@ -28,7 +28,7 @@ import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.job.JobEntry
 import io.seqera.wave.store.state.StateEntry
-import io.seqera.wave.store.state.StateRecord
+import io.seqera.wave.store.state.RequestIdAware
 import jakarta.inject.Singleton
 /**
  * Model a container mirror result object
@@ -39,7 +39,7 @@ import jakarta.inject.Singleton
 @Singleton
 @CompileStatic
 @Canonical
-class MirrorState implements StateEntry<String>, JobEntry, StateRecord {
+class MirrorState implements StateEntry<String>, JobEntry, RequestIdAware {
     enum Status { PENDING, COMPLETED }
 
     final String mirrorId
@@ -59,7 +59,7 @@ class MirrorState implements StateEntry<String>, JobEntry, StateRecord {
     }
 
     @Override
-    String getRecordId() {
+    String getRequestId() {
         return mirrorId
     }
 
@@ -89,7 +89,7 @@ class MirrorState implements StateEntry<String>, JobEntry, StateRecord {
 
     static MirrorState from(MirrorRequest request) {
         new MirrorState(
-                request.id,
+                request.mirrorId,
                 request.digest,
                 request.sourceImage,
                 request.targetImage,

@@ -44,7 +44,7 @@ class MirrorResultTest extends Specification {
         when:
         def result = MirrorState.from(request)
         then:
-        result.mirrorId == request.id
+        result.mirrorId == request.mirrorId
         result.digest == request.digest
         result.platform == request.platform
         result.sourceImage == request.sourceImage
@@ -78,7 +78,7 @@ class MirrorResultTest extends Specification {
         when:
         def m2 = m1.complete(0, 'Some logs')
         then:
-        m2.mirrorId == request.id
+        m2.mirrorId == request.mirrorId
         m2.digest == request.digest
         m2.sourceImage == request.sourceImage
         m2.targetImage == request.targetImage

@@ -122,10 +122,10 @@ class JobFactoryTest extends Specification {
         def job = factory.mirror(request)
         then:
         job.entryKey == "target/foo"
-        job.operationName == /mirror-${request.id.substring(3)}/
+        job.operationName == /mirror-${request.mirrorId.substring(3)}/
         job.type == JobSpec.Type.Mirror
         job.maxDuration == duration
-        job.workDir == workspace.resolve(/mirror-${request.id.substring(3)}/)
+        job.workDir == workspace.resolve(/mirror-${request.mirrorId.substring(3)}/)
         job.creationTime == request.creationTime
     }
 }

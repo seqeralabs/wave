@@ -53,7 +53,7 @@ class ScanResultTest extends Specification {
                     [ CVE1 ]
                 )
         then:
-        result.id == '123'
+        result.scanId == '123'
         result.buildId == 'build-123'
         result.containerImage == 'docker.io/foo/bar:latest'
         result.startTime == ts
@@ -113,7 +113,7 @@ class ScanResultTest extends Specification {
         when:
         def result = ScanState.create('scan-123', 'build-123', 'ubuntu:latest', ts,  Duration.ofMinutes(1), 'XYZ', [cve1])
         then:
-        result.id == 'scan-123'
+        result.scanId == 'scan-123'
         result.buildId == 'build-123'
         result.containerImage == 'ubuntu:latest'
         result.startTime == ts
@@ -139,7 +139,7 @@ class ScanResultTest extends Specification {
         when:
         def result = scan.success(scan.vulnerabilities)
         then:
-        result.id == '12345'
+        result.scanId == '12345'
         result.buildId == 'build-12345'
         result.containerImage == 'docker.io/some:image'
         result.startTime == ts
@@ -164,7 +164,7 @@ class ScanResultTest extends Specification {
         when:
         def result = scan.failure(1, "Oops something has failed")
         then:
-        result.id == '12345'
+        result.scanId == '12345'
         result.buildId == 'build-12345'
         result.containerImage == 'docker.io/some:image'
         result.startTime == ts
@@ -191,7 +191,7 @@ class ScanResultTest extends Specification {
         when:
         def result = ScanState.failure(request)
         then:
-        result.id == 'scan-123'
+        result.scanId == 'scan-123'
         result.buildId == 'build-345'
         result.containerImage == 'docker.io/foo/bar'
         result.startTime == ts
@@ -207,7 +207,7 @@ class ScanResultTest extends Specification {
         when:
         def scan = ScanState.pending('result-123', 'build-345', 'docker.io/foo/bar')
         then:
-        scan.id == 'result-123'
+        scan.scanId == 'result-123'
         scan.buildId == 'build-345'
         scan.containerImage == 'docker.io/foo/bar'
         scan.startTime >= ts

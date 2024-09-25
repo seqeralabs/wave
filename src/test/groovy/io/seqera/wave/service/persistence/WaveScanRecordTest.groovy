@@ -58,7 +58,7 @@ class WaveScanRecordTest extends Specification {
                 'SUCCEEDED',
                 vulns)
         then:
-        scanResult.id == scanId
+        scanResult.scanId == scanId
         scanResult.buildId == buildId
         scanResult.containerImage == containerImage
         scanResult.isCompleted()

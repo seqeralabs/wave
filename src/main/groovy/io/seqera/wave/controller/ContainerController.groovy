@@ -483,7 +483,7 @@ class ContainerController {
         // check for dry-run execution
         if( dryRun ) {
             log.debug "== Dry-run request request: $request"
-            final dryId = request.id +  BuildRequest.SEP + '0'
+            final dryId = request.mirrorId +  BuildRequest.SEP + '0'
             return new BuildTrack(dryId, request.targetImage, cached)
         }
         // check for existing image

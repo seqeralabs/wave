@@ -46,8 +46,8 @@ abstract class AbstractStateStore<V> implements StateStore<String,V> {
 
     protected String key0(String k) { return getPrefix() + k  }
 
-    protected String recordId0(String recordId) {
-        return getPrefix() + 'state-id/' + recordId
+    protected String requestId0(String requestId) {
+        return getPrefix() + 'request-id/' + requestId
     }
 
     protected V deserialize(String encoded) {
@@ -68,8 +68,8 @@ abstract class AbstractStateStore<V> implements StateStore<String,V> {
         return result ? deserialize(result) : null
     }
 
-    V getByRecordId(String recordId) {
-        final key = delegate.get(recordId0(recordId))
+    V findByRequestId(String requestId) {
+        final key = delegate.get(requestId0(requestId))
         return get(key)
     }
 
@@ -80,16 +80,16 @@ abstract class AbstractStateStore<V> implements StateStore<String,V> {
     @Override
     void put(String key, V value, Duration ttl) {
         delegate.put(key0(key), serialize(value), ttl)
-        if( value instanceof StateRecord ) {
-            delegate.put(recordId0(value.getRecordId()), key, ttl)
+        if( value instanceof RequestIdAware ) {
+            delegate.put(requestId0(value.getRequestId()), key, ttl)
         }
     }
 
     @Override
     boolean putIfAbsent(String key, V value, Duration ttl) {
         final result = delegate.putIfAbsent(key0(key), serialize(value), ttl)
-        if( result && value instanceof StateRecord ) {
-            delegate.put(recordId0(value.getRecordId()), key, ttl)
+        if( result && value instanceof RequestIdAware ) {
+            delegate.put(requestId0(value.getRequestId()), key, ttl)
         }
         return result
     }

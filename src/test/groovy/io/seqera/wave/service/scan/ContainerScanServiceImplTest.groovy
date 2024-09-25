@@ -56,8 +56,8 @@ class ContainerScanServiceImplTest extends Specification {
         containerScanService.scan(scanRequest)
         sleep 500
         then:
-        def scanRecord = stateStore.getScan(scanRequest.id)
-        scanRecord.id == scanRequest.id
+        def scanRecord = stateStore.getScan(scanRequest.scanId)
+        scanRecord.scanId == scanRequest.scanId
         scanRecord.buildId == scanRequest.buildId
 
         cleanup:
@@ -138,7 +138,7 @@ class ContainerScanServiceImplTest extends Specification {
         service.onJobCompletion(job, scan, new JobState(JobState.Status.SUCCEEDED,0))
         then:
         with( stateStore.getScan(KEY)) {
-            id == KEY
+            scanId == KEY
             buildId == 'build-20'
             containerImage == 'ubuntu:latest'
             status == 'SUCCEEDED'
@@ -156,7 +156,7 @@ class ContainerScanServiceImplTest extends Specification {
         service.onJobCompletion(job, scan, new JobState(JobState.Status.FAILED, 10, "I'm broken"))
         then:
         with( stateStore.getScan(KEY) ) {
-            id == KEY
+            scanId == KEY
             buildId == 'build-20'
             containerImage == 'ubuntu:latest'
             status == 'FAILED'
@@ -189,7 +189,7 @@ class ContainerScanServiceImplTest extends Specification {
         service.onJobException(job, scan, error)
         then:
         with( stateStore.getScan(KEY) ) {
-            id == KEY
+            scanId == KEY
             buildId == 'build-30'
             containerImage == 'ubuntu:latest'
             status == 'FAILED'
@@ -221,7 +221,7 @@ class ContainerScanServiceImplTest extends Specification {
 
         then:
         with( stateStore.getScan(KEY) ) {
-            id == KEY
+            scanId == KEY
             buildId == 'build-40'
             containerImage == 'ubuntu:latest'
             status == 'FAILED'

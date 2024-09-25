@@ -66,7 +66,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
         if( store.putIfAbsent(request.targetImage, MirrorState.from(request))) {
             log.info "== Container mirror submitted - request=$request"
             jobService.launchMirror(request)
-            return new BuildTrack(request.id, request.targetImage, false)
+            return new BuildTrack(request.mirrorId, request.targetImage, false)
         }
         final ret = store.get(request.targetImage)
         if( ret ) {
@@ -93,7 +93,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
      */
     @Override
     MirrorState getMirrorState(String mirrorId) {
-        store.getByRecordId(mirrorId) ?: persistence.loadMirrorState(mirrorId)
+        store.findByRequestId(mirrorId) ?: persistence.loadMirrorState(mirrorId)
     }
 
     /**

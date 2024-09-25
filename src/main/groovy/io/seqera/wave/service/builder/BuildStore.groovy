@@ -101,5 +101,5 @@ interface BuildStore {
      * @param recordId The ID of the record to be loaded
      * @return The {@link BuildState} with with corresponding Id of {@code null} if it cannot be found
      */
-    BuildState getByRecordId(String recordId)
+    BuildState findByRequestId(String recordId)
 }

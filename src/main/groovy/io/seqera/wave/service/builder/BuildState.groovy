@@ -23,7 +23,7 @@ import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import io.seqera.wave.service.job.JobEntry
 import io.seqera.wave.store.state.StateEntry
-import io.seqera.wave.store.state.StateRecord
+import io.seqera.wave.store.state.RequestIdAware
 /**
  * Class to store build request and result in cache
  *
@@ -32,7 +32,7 @@ import io.seqera.wave.store.state.StateRecord
 @ToString(includePackage = false, includeNames = true)
 @EqualsAndHashCode
 @CompileStatic
-class BuildState implements StateEntry<String>, JobEntry, StateRecord {
+class BuildState implements StateEntry<String>, JobEntry, RequestIdAware {
 
     final BuildRequest request
 
@@ -44,7 +44,7 @@ class BuildState implements StateEntry<String>, JobEntry, StateRecord {
     }
 
     @Override
-    String getRecordId() {
+    String getRequestId() {
         if( !request.buildId )
             throw new IllegalStateException("Missing build id")
         return request.buildId

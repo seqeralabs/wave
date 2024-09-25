@@ -41,7 +41,7 @@ class ScanState implements StateEntry<String>, JobEntry {
     static final public String SUCCEEDED = 'SUCCEEDED'
     static final public String FAILED = 'FAILED'
 
-    final String id
+    final String scanId
     final String buildId
     final String containerImage
     final Instant startTime
@@ -53,7 +53,7 @@ class ScanState implements StateEntry<String>, JobEntry {
 
     @Override
     String getKey() {
-        return id
+        return scanId
     }
 
     @Override
@@ -68,7 +68,7 @@ class ScanState implements StateEntry<String>, JobEntry {
 
     ScanState success(List<ScanVulnerability> vulnerabilities){
         return new ScanState(
-                this.id,
+                this.scanId,
                 this.buildId,
                 this.containerImage,
                 this.startTime,
@@ -79,11 +79,11 @@ class ScanState implements StateEntry<String>, JobEntry {
     }
 
     ScanState failure(Integer exitCode, String logs){
-        return new ScanState(this.id, this.buildId, this.containerImage, this.startTime, Duration.between(this.startTime, Instant.now()), FAILED, List.of(), exitCode, logs)
+        return new ScanState(this.scanId, this.buildId, this.containerImage, this.startTime, Duration.between(this.startTime, Instant.now()), FAILED, List.of(), exitCode, logs)
     }
 
     static ScanState failure(ScanRequest request){
-        return new ScanState(request.id, request.buildId, request.targetImage, request.creationTime, Duration.between(request.creationTime, Instant.now()), FAILED, List.of())
+        return new ScanState(request.scanId, request.buildId, request.targetImage, request.creationTime, Duration.between(request.creationTime, Instant.now()), FAILED, List.of())
     }
 
     static ScanState pending(String scanId, String buildId, String containerImage) {

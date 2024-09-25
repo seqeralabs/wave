@@ -126,11 +126,11 @@ class BuildStoreImpl extends AbstractStateStore<BuildState> implements BuildStor
     /**
      * Load a build entry via the record id
      *
-     * @param recordId The ID of the record to be loaded
+     * @param requestId The ID of the record to be loaded
      * @return The {@link BuildState} with with corresponding Id of {@code null} if it cannot be found
      */
     @Override
-    BuildState getByRecordId(String recordId) {
-        super.getByRecordId(recordId)
+    BuildState findByRequestId(String requestId) {
+        super.findByRequestId(requestId)
     }
 }
