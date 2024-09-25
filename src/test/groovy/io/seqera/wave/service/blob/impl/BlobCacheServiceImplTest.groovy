@@ -23,7 +23,7 @@ import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.model.ContainerCoordinates
-import io.seqera.wave.service.blob.BlobState
+import io.seqera.wave.service.blob.BlobEntry
 import io.seqera.wave.test.AwsS3TestContainer
 
 /**
@@ -39,12 +39,12 @@ class BlobCacheServiceImplTest extends Specification implements AwsS3TestContain
         def route = RoutePath.v2manifestPath(ContainerCoordinates.parse('ubuntu@sha256:aabbcc'))
 
         when:
-        def result = service.s5cmd(route, Mock(BlobState))
+        def result = service.s5cmd(route, Mock(BlobEntry))
         then:
         result == ['s5cmd', '--json', 'pipe',  's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc']
 
         when:
-        result = service.s5cmd(route, BlobState.create('http://foo', 'http://bar', [:], ['Content-Type':['foo'], 'Cache-Control': ['bar']]))
+        result = service.s5cmd(route, BlobEntry.create('http://foo', 'http://bar', [:], ['Content-Type':['foo'], 'Cache-Control': ['bar']]))
         then:
         result == ['s5cmd', '--json', 'pipe', '--content-type', 'foo', '--cache-control', 'bar', 's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc']
 
@@ -57,7 +57,7 @@ class BlobCacheServiceImplTest extends Specification implements AwsS3TestContain
         def route = RoutePath.v2manifestPath(ContainerCoordinates.parse('ubuntu@sha256:aabbcc'))
 
         when:
-        def result = service.s5cmd(route, new BlobState())
+        def result = service.s5cmd(route, new BlobEntry())
         then:
         result == ['s5cmd', '--endpoint-url', 'https://foo.com', '--json', 'pipe', 's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc']
     }
@@ -69,7 +69,7 @@ class BlobCacheServiceImplTest extends Specification implements AwsS3TestContain
         def route = RoutePath.v2manifestPath(ContainerCoordinates.parse('ubuntu@sha256:aabbcc'))
         and:
         def response = ['content-type': ['something']]
-        def blobCache = BlobState.create('http://foo','http://bar', ['foo': ['one']], response)
+        def blobCache = BlobEntry.create('http://foo','http://bar', ['foo': ['one']], response)
         
         when:
         def result = service.transferCommand(route, blobCache)

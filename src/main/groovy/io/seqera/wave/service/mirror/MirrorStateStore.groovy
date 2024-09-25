@@ -27,19 +27,19 @@ import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
- * Implement a {@link io.seqera.wave.store.state.StateStore} for {@link MirrorState} objects
+ * Implement a {@link io.seqera.wave.store.state.StateStore} for {@link MirrorEntry} objects
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Singleton
 @CompileStatic
-class MirrorStore extends AbstractStateStore<MirrorState> {
+class MirrorStateStore extends AbstractStateStore<MirrorEntry> {
 
     @Inject
     private MirrorConfig config
 
-    MirrorStore(StateProvider<String,String> provider) {
-        super(provider, new MoshiEncodeStrategy<MirrorState>() {})
+    MirrorStateStore(StateProvider<String,String> provider) {
+        super(provider, new MoshiEncodeStrategy<MirrorEntry>() {})
     }
 
     @Override
@@ -52,7 +52,7 @@ class MirrorStore extends AbstractStateStore<MirrorState> {
         return config.statusDuration
     }
 
-    MirrorState awaitCompletion(String targetImage) {
+    MirrorEntry awaitCompletion(String targetImage) {
         final beg = System.currentTimeMillis()
         while( true ) {
             final result = get(targetImage)

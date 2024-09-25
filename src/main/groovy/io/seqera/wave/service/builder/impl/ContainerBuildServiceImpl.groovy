@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.builder
+package io.seqera.wave.service.builder.impl
 
 import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
@@ -40,6 +40,14 @@ import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.HttpServerRetryableErrorException
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
+import io.seqera.wave.service.builder.BuildCounterStore
+import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.service.builder.BuildEntry
+import io.seqera.wave.service.builder.BuildStateStore
+import io.seqera.wave.service.builder.BuildTrack
+import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
@@ -68,7 +76,7 @@ import static java.nio.file.StandardOpenOption.WRITE
 @Singleton
 @Named('Build')
 @CompileStatic
-class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<BuildState> {
+class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<BuildEntry> {
 
     @Inject
     private BuildConfig buildConfig
@@ -77,7 +85,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     private ApplicationEventPublisher<BuildEvent> eventPublisher
 
     @Inject
-    private BuildStore buildStore
+    private BuildStateStore buildStore
 
     @Inject
     @Named(TaskExecutors.IO)
@@ -115,10 +123,10 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     private RegistryProxyService proxyService
     
     /**
-     * Build a container image for the given {@link BuildRequest}
+     * Build a container image for the given {@link io.seqera.wave.service.builder.BuildRequest}
      *
      * @param request
-     *      A {@link BuildRequest} modelling the build request
+     *      A {@link io.seqera.wave.service.builder.BuildRequest} modelling the build request
      * @return
      *      The container image where the resulting image is going to be hosted
      */
@@ -134,7 +142,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
      *      the container repository name where the target image is expected to be retrieved once the
      *      build it complete
      * @return
-     *      A completable future that holds the resulting {@link BuildResult} or
+     *      A completable future that holds the resulting {@link io.seqera.wave.service.builder.BuildResult} or
      *      {@code null} if not request has been submitted for such image
      */
     @Override
@@ -182,7 +190,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         catch (Throwable e) {
             log.error "== Container build unexpected exception: ${e.message} - request=$req", e
             final result = BuildResult.failed(req.buildId, e.message, req.startTime)
-            buildStore.storeBuild(req.targetImage, new BuildState(req, result), buildConfig.failureDuration)
+            buildStore.storeBuild(req.targetImage, new BuildEntry(req, result), buildConfig.failureDuration)
             eventPublisher.publishEvent(new BuildEvent(req, result))
         }
     }
@@ -213,7 +221,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         // try to store a new build status for the given target image
         // this returns true if and only if such container image was not set yet
         final ret1 = BuildResult.create(request)
-        if( buildStore.storeIfAbsent(request.targetImage, new BuildState(request, ret1)) ) {
+        if( buildStore.storeIfAbsent(request.targetImage, new BuildEntry(request, ret1)) ) {
             // go ahead
             log.info "== Container build submitted - request=$request"
             launchAsync(request)
@@ -303,15 +311,15 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     // **************************************************************
 
     @Override
-    BuildState getJobEntry(JobSpec job) {
+    BuildEntry getJobEntry(JobSpec job) {
         buildStore.getBuild(job.entryKey)
     }
 
     @Override
-    void onJobCompletion(JobSpec job, BuildState build, JobState state) {
-        final buildId = build.request.buildId
+    void onJobCompletion(JobSpec job, BuildEntry entry, JobState state) {
+        final buildId = entry.request.buildId
         final digest = state.succeeded()
-                        ? proxyService.getImageDigest(build.request, true)
+                        ? proxyService.getImageDigest(entry.request, true)
                         : null
         // use a short time-to-live for failed build
         // this is needed to allow re-try builds failed for
@@ -324,26 +332,26 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         final result = state.completed()
                 ? BuildResult.completed(buildId, exit, state.stdout, job.creationTime, digest)
                 : BuildResult.failed(buildId, state.stdout, job.creationTime)
-        buildStore.storeBuild(job.entryKey, build.withResult(result), ttl)
-        eventPublisher.publishEvent(new BuildEvent(build.request, result))
-        log.info "== Container build completed '${build.request.targetImage}' - operation=${job.operationName}; exit=${exit}; status=${state.status}; duration=${result.duration}"
+        buildStore.storeBuild(job.entryKey, entry.withResult(result), ttl)
+        eventPublisher.publishEvent(new BuildEvent(entry.request, result))
+        log.info "== Container build completed '${entry.request.targetImage}' - operation=${job.operationName}; exit=${exit}; status=${state.status}; duration=${result.duration}"
     }
 
     @Override
-    void onJobException(JobSpec job, BuildState build, Throwable error) {
-        final result= BuildResult.failed(build.request.buildId, error.message, job.creationTime)
-        buildStore.storeBuild(job.entryKey, build.withResult(result), buildConfig.failureDuration)
-        eventPublisher.publishEvent(new BuildEvent(build.request, result))
-        log.error("== Container build exception '${build.request.targetImage}' - operation=${job.operationName}; cause=${error.message}", error)
+    void onJobException(JobSpec job, BuildEntry entry, Throwable error) {
+        final result= BuildResult.failed(entry.request.buildId, error.message, job.creationTime)
+        buildStore.storeBuild(job.entryKey, entry.withResult(result), buildConfig.failureDuration)
+        eventPublisher.publishEvent(new BuildEvent(entry.request, result))
+        log.error("== Container build exception '${entry.request.targetImage}' - operation=${job.operationName}; cause=${error.message}", error)
     }
 
     @Override
-    void onJobTimeout(JobSpec job, BuildState build) {
-        final buildId = build.request.buildId
-        final result= BuildResult.failed(buildId, "Container image build timed out '${build.request.targetImage}'", job.creationTime)
-        buildStore.storeBuild(job.entryKey, build.withResult(result), buildConfig.failureDuration)
-        eventPublisher.publishEvent(new BuildEvent(build.request, result))
-        log.warn "== Container build time out '${build.request.targetImage}'; operation=${job.operationName}; duration=${result.duration}"
+    void onJobTimeout(JobSpec job, BuildEntry entry) {
+        final buildId = entry.request.buildId
+        final result= BuildResult.failed(buildId, "Container image build timed out '${entry.request.targetImage}'", job.creationTime)
+        buildStore.storeBuild(job.entryKey, entry.withResult(result), buildConfig.failureDuration)
+        eventPublisher.publishEvent(new BuildEvent(entry.request, result))
+        log.warn "== Container build time out '${entry.request.targetImage}'; operation=${job.operationName}; duration=${result.duration}"
     }
 
     // **************************************************************

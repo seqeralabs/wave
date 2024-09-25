@@ -35,7 +35,7 @@ import io.seqera.wave.store.state.StateEntry
 @ToString(includePackage = false, includeNames = true)
 @Canonical
 @CompileStatic
-class ScanState implements StateEntry<String>, JobEntry {
+class ScanEntry implements StateEntry<String>, JobEntry {
 
     static final public String PENDING = 'PENDING'
     static final public String SUCCEEDED = 'SUCCEEDED'
@@ -66,8 +66,8 @@ class ScanState implements StateEntry<String>, JobEntry {
     @Deprecated
     boolean isCompleted() { done() }
 
-    ScanState success(List<ScanVulnerability> vulnerabilities){
-        return new ScanState(
+    ScanEntry success(List<ScanVulnerability> vulnerabilities){
+        return new ScanEntry(
                 this.scanId,
                 this.buildId,
                 this.containerImage,
@@ -78,19 +78,19 @@ class ScanState implements StateEntry<String>, JobEntry {
                 0 )
     }
 
-    ScanState failure(Integer exitCode, String logs){
-        return new ScanState(this.scanId, this.buildId, this.containerImage, this.startTime, Duration.between(this.startTime, Instant.now()), FAILED, List.of(), exitCode, logs)
+    ScanEntry failure(Integer exitCode, String logs){
+        return new ScanEntry(this.scanId, this.buildId, this.containerImage, this.startTime, Duration.between(this.startTime, Instant.now()), FAILED, List.of(), exitCode, logs)
     }
 
-    static ScanState failure(ScanRequest request){
-        return new ScanState(request.scanId, request.buildId, request.targetImage, request.creationTime, Duration.between(request.creationTime, Instant.now()), FAILED, List.of())
+    static ScanEntry failure(ScanRequest request){
+        return new ScanEntry(request.scanId, request.buildId, request.targetImage, request.creationTime, Duration.between(request.creationTime, Instant.now()), FAILED, List.of())
     }
 
-    static ScanState pending(String scanId, String buildId, String containerImage) {
-        return new ScanState(scanId, buildId, containerImage, Instant.now(), null, PENDING, List.of())
+    static ScanEntry pending(String scanId, String buildId, String containerImage) {
+        return new ScanEntry(scanId, buildId, containerImage, Instant.now(), null, PENDING, List.of())
     }
 
-    static ScanState create(String scanId, String buildId, String containerImage, Instant startTime, Duration duration1, String status, List<ScanVulnerability> vulnerabilities){
-        return new ScanState(scanId, buildId, containerImage, startTime, duration1, status, vulnerabilities)
+    static ScanEntry create(String scanId, String buildId, String containerImage, Instant startTime, Duration duration1, String status, List<ScanVulnerability> vulnerabilities){
+        return new ScanEntry(scanId, buildId, containerImage, startTime, duration1, status, vulnerabilities)
     }
 }

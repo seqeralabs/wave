@@ -29,7 +29,7 @@ import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
-import io.seqera.wave.service.builder.BuildState
+import io.seqera.wave.service.builder.BuildEntry
 
 /**
  * A collection of request and response properties to be stored
@@ -61,7 +61,7 @@ class WaveBuildRecord {
 
     boolean succeeded() { exitStatus==0 }
 
-    static WaveBuildRecord fromEntry(BuildState entry) {
+    static WaveBuildRecord fromEntry(BuildEntry entry) {
         create0(entry.request, entry.result)
     }
     

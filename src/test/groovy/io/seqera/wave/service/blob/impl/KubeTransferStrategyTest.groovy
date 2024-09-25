@@ -28,7 +28,7 @@ import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
 import io.kubernetes.client.openapi.models.V1PodStatus
 import io.seqera.wave.configuration.BlobCacheConfig
-import io.seqera.wave.service.blob.BlobState
+import io.seqera.wave.service.blob.BlobEntry
 import io.seqera.wave.service.k8s.K8sService
 /**
  *
@@ -42,7 +42,7 @@ class KubeTransferStrategyTest extends Specification {
 
     def "transfer should start a transferJob"() {
         given:
-        def info = BlobState.create("https://test.com/blobs", "https://test.com/bucket/blobs", null, null)
+        def info = BlobEntry.create("https://test.com/blobs", "https://test.com/bucket/blobs", null, null)
         def command = ["transfer", "blob"]
         final jobName = "job-123"
         def podName = "$jobName-abc".toString()

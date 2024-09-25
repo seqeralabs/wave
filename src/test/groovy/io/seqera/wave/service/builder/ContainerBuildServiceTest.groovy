@@ -42,6 +42,8 @@ import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
+import io.seqera.wave.service.builder.impl.BuildStateStoreImpl
+import io.seqera.wave.service.builder.impl.ContainerBuildServiceImpl
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
@@ -95,7 +97,7 @@ class ContainerBuildServiceTest extends Specification {
     @Inject ContainerInspectServiceImpl dockerAuthService
     @Inject HttpClientConfig httpClientConfig
     @Inject BuildConfig buildConfig
-    @Inject BuildStoreImpl buildCacheStore
+    @Inject BuildStateStoreImpl buildCacheStore
     @Inject PersistenceService persistenceService
     @Inject JobService jobService
 
@@ -133,7 +135,7 @@ class ContainerBuildServiceTest extends Specification {
                 )
                 .withBuildId('1')
         and:
-        def store = Mock(BuildStore)
+        def store = Mock(BuildStateStore)
         def jobService = Mock(JobService)
         def builder = new ContainerBuildServiceImpl(buildStore: store, buildConfig: buildConfig, jobService: jobService)
         def RESPONSE = Mock(JobSpec)
@@ -342,7 +344,7 @@ class ContainerBuildServiceTest extends Specification {
 
     def 'should handle job completion event and update build store'() {
         given:
-        def mockBuildStore = Mock(BuildStore)
+        def mockBuildStore = Mock(BuildStateStore)
         def mockProxyService = Mock(RegistryProxyService)
         def mockEventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
         def service = new ContainerBuildServiceImpl(buildStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
@@ -355,7 +357,7 @@ class ContainerBuildServiceTest extends Specification {
                 startTime: Instant.now(),
                 maxDuration: Duration.ofMinutes(1)
         )
-        def build = new BuildState(req, res)
+        def build = new BuildEntry(req, res)
 
         when:
         service.onJobCompletion(job, build, state)
@@ -370,7 +372,7 @@ class ContainerBuildServiceTest extends Specification {
 
     def 'should handle job error event and update build store'() {
         given:
-        def mockBuildStore = Mock(BuildStore)
+        def mockBuildStore = Mock(BuildStateStore)
         def mockProxyService = Mock(RegistryProxyService)
         def mockEventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
         def service = new ContainerBuildServiceImpl(buildStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
@@ -383,7 +385,7 @@ class ContainerBuildServiceTest extends Specification {
                 startTime: Instant.now(),
                 maxDuration: Duration.ofMinutes(1)
         )
-        def build = new BuildState(req, res)
+        def build = new BuildEntry(req, res)
 
         when:
         service.onJobException(job, build, error)
@@ -396,7 +398,7 @@ class ContainerBuildServiceTest extends Specification {
 
     def 'should handle job timeout event and update build store'() {
         given:
-        def mockBuildStore = Mock(BuildStore)
+        def mockBuildStore = Mock(BuildStateStore)
         def mockProxyService = Mock(RegistryProxyService)
         def mockEventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
         def service = new ContainerBuildServiceImpl(buildStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
@@ -408,7 +410,7 @@ class ContainerBuildServiceTest extends Specification {
                 startTime: Instant.now(),
                 maxDuration: Duration.ofMinutes(1)
         )
-        def build = new BuildState(req, res)
+        def build = new BuildEntry(req, res)
 
         when:
         service.onJobTimeout(job, build)

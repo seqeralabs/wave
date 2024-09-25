@@ -30,20 +30,20 @@ import jakarta.inject.Inject
 /**
  * Implement a distributed store for blob cache entry.
  *
- * NOTE: This only stores blob caching *metadata* i.e. {@link BlobState}.
+ * NOTE: This only stores blob caching *metadata* i.e. {@link BlobEntry}.
  * The blob binary is stored into an object storage bucket
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @CompileStatic
-class BlobStoreImpl extends AbstractStateStore<BlobState> implements BlobStore {
+class BlobStoreImpl extends AbstractStateStore<BlobEntry> implements BlobStateStore {
 
     @Inject
     private BlobCacheConfig blobConfig
 
     BlobStoreImpl(StateProvider<String, String> provider) {
-        super(provider, new MoshiEncodeStrategy<BlobState>() {})
+        super(provider, new MoshiEncodeStrategy<BlobEntry>() {})
     }
 
     @Override
@@ -67,18 +67,18 @@ class BlobStoreImpl extends AbstractStateStore<BlobState> implements BlobStore {
     }
 
     @Override
-    BlobState getBlob(String key) {
+    BlobEntry getBlob(String key) {
         return get(key)
     }
 
     @Override
-    boolean storeIfAbsent(String key, BlobState info) {
+    boolean storeIfAbsent(String key, BlobEntry info) {
         return putIfAbsent(key, info)
     }
 
     @Override
-    void storeBlob(String key, BlobState info) {
-        final ttl = info.state == BlobState.State.ERRORED
+    void storeBlob(String key, BlobEntry info) {
+        final ttl = info.state == BlobEntry.State.ERRORED
                 ? blobConfig.failureDuration
                 : blobConfig.statusDuration
         put(key, info, ttl)

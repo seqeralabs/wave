@@ -26,6 +26,7 @@ import java.time.Duration
 import java.time.Instant
 
 import io.micronaut.context.ApplicationContext
+import io.seqera.wave.service.builder.impl.BuildStateStoreImpl
 import io.seqera.wave.service.job.JobFactory
 import io.seqera.wave.service.job.JobQueue
 import io.seqera.wave.test.RedisTestContainer
@@ -54,7 +55,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
         // The use of Redis flush removes also data structures like consumer groups
         // causing unexpected exceptions in other components. Only remove entries
         // creates by this tests
-        def cacheStore = applicationContext.getBean(BuildStore)
+        def cacheStore = applicationContext.getBean(BuildStateStore)
         cacheStore.removeBuild('foo')
     }
 
@@ -67,9 +68,9 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
                 startTime: Instant.now(),
                 maxDuration: Duration.ofMinutes(1)
         )
-        def entry = new BuildState(req, res)
+        def entry = new BuildEntry(req, res)
         and:
-        def cacheStore = applicationContext.getBean(BuildStore)
+        def cacheStore = applicationContext.getBean(BuildStateStore)
         
         expect:
         cacheStore.getBuild('foo') == null
@@ -90,9 +91,9 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
                 startTime: Instant.now(),
                 maxDuration: Duration.ofMinutes(1)
         )
-        def entry = new BuildState(req, res)
+        def entry = new BuildEntry(req, res)
         and:
-        def cacheStore = applicationContext.getBean(BuildStore)
+        def cacheStore = applicationContext.getBean(BuildStateStore)
 
         expect:
         cacheStore.getBuild('foo') == null
@@ -126,7 +127,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
                 startTime: Instant.now(),
                 maxDuration: Duration.ofMinutes(1)
         )
-        def entry1 = new BuildState(req1, res1)
+        def entry1 = new BuildEntry(req1, res1)
         def res2 = BuildResult.create('2')
         def req2 = new BuildRequest(
                 targetImage: 'docker.io/foo:2',
@@ -134,9 +135,9 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
                 startTime: Instant.now(),
                 maxDuration: Duration.ofMinutes(1)
         )
-        def entry2 = new BuildState(req2, res2)
+        def entry2 = new BuildEntry(req2, res2)
         and:
-        def store = applicationContext.getBean(BuildStore)
+        def store = applicationContext.getBean(BuildStateStore)
 
         expect:
         // the value is store because the key does not exists
@@ -162,8 +163,8 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
                 startTime: Instant.now(),
                 maxDuration: Duration.ofMinutes(1)
         )
-        def entry = new BuildState(req, res)
-        def cache = applicationContext.getBean(BuildStore)
+        def entry = new BuildEntry(req, res)
+        def cache = applicationContext.getBean(BuildStateStore)
 
         when:
         cache.storeBuild('foo', entry)
@@ -187,9 +188,9 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
                 startTime: Instant.now(),
                 maxDuration: Duration.ofSeconds(10)
         )
-        def entry = new BuildState(req, res)
+        def entry = new BuildEntry(req, res)
         and:
-        def cacheStore = applicationContext.getBean(BuildStore) as BuildStore
+        def cacheStore = applicationContext.getBean(BuildStateStore) as BuildStateStore
 
         when:
         // insert a value
@@ -213,7 +214,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
     @Timeout(value=30)
     def 'should abort an await if build never finish' () {
         given:
-        def buildCacheStore = applicationContext.getBean(BuildStoreImpl)
+        def buildCacheStore = applicationContext.getBean(BuildStateStoreImpl)
         def jobQueue = applicationContext.getBean(JobQueue)
         def jobFactory = applicationContext.getBean(JobFactory)
         def res = BuildResult.create('1')
@@ -223,7 +224,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
                 startTime: Instant.now(),
                 maxDuration: Duration.ofSeconds(5)
         )
-        def entry = new BuildState(req, res)
+        def entry = new BuildEntry(req, res)
         and:
         buildCacheStore.storeIfAbsent(req.targetImage, entry)
         jobQueue.offer(jobFactory.build(req))

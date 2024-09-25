@@ -42,7 +42,7 @@ class MirrorResultTest extends Specification {
                 '{auth json}' )
 
         when:
-        def result = MirrorState.from(request)
+        def result = MirrorEntry.from(request)
         then:
         result.mirrorId == request.mirrorId
         result.digest == request.digest
@@ -50,7 +50,7 @@ class MirrorResultTest extends Specification {
         result.sourceImage == request.sourceImage
         result.targetImage == request.targetImage
         result.creationTime == request.creationTime
-        result.status == MirrorState.Status.PENDING
+        result.status == MirrorEntry.Status.PENDING
         and:
         result.duration == null
         result.exitCode == null
@@ -68,9 +68,9 @@ class MirrorResultTest extends Specification {
                 '{auth json}'  )
 
         when:
-        def m1 = MirrorState.from(request)
+        def m1 = MirrorEntry.from(request)
         then:
-        m1.status == MirrorState.Status.PENDING
+        m1.status == MirrorEntry.Status.PENDING
         m1.duration == null
         m1.exitCode == null
         m1.logs == null
@@ -85,7 +85,7 @@ class MirrorResultTest extends Specification {
         m2.creationTime == request.creationTime
         m2.platform == request.platform
         and:
-        m2.status == MirrorState.Status.COMPLETED
+        m2.status == MirrorEntry.Status.COMPLETED
         m2.duration != null
         m2.exitCode == 0
         m2.logs == 'Some logs'
@@ -93,7 +93,7 @@ class MirrorResultTest extends Specification {
 
     def 'should convert to status response' () {
         when:
-        def result1 = new MirrorState('mr-123', 'sha256:12345', 'source/foo', 'target/foo', Mock(ContainerPlatform), Instant.now())
+        def result1 = new MirrorEntry('mr-123', 'sha256:12345', 'source/foo', 'target/foo', Mock(ContainerPlatform), Instant.now())
         def resp = result1.toStatusResponse()
         then:
         resp.id == result1.mirrorId

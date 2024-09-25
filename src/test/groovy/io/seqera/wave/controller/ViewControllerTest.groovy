@@ -41,7 +41,7 @@ import io.seqera.wave.service.logs.BuildLogServiceImpl
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
-import io.seqera.wave.service.scan.ScanState
+import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
@@ -305,13 +305,13 @@ class ViewControllerTest extends Specification {
         given:
         def controller = new ViewController(serverUrl: 'http://foo.com', buildLogService: buildLogService)
         and:
-        def result = new ScanState(
+        def result = new ScanEntry(
                 '12345',
                 '12345',
                 'docker.io/some:image',
                 Instant.now(),
                 Duration.ofMinutes(1),
-                ScanState.SUCCEEDED,
+                ScanEntry.SUCCEEDED,
                 [new ScanVulnerability('cve-1', 'HIGH', 'test vul', 'testpkg', '1.0.0', '1.1.0', 'http://vul/cve-1')],
                 0 )
         when:

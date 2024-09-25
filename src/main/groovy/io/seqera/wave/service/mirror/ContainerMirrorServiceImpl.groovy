@@ -43,10 +43,10 @@ import jakarta.inject.Singleton
 @Singleton
 @Named('Mirror')
 @CompileStatic
-class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<MirrorState> {
+class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<MirrorEntry> {
 
     @Inject
-    private MirrorStore store
+    private MirrorStateStore store
 
     @Inject
     private JobService jobService
@@ -63,7 +63,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
      */
     @Override
     BuildTrack mirrorImage(MirrorRequest request) {
-        if( store.putIfAbsent(request.targetImage, MirrorState.from(request))) {
+        if( store.putIfAbsent(request.targetImage, MirrorEntry.from(request))) {
             log.info "== Container mirror submitted - request=$request"
             jobService.launchMirror(request)
             return new BuildTrack(request.mirrorId, request.targetImage, false)
@@ -84,7 +84,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
      * {@inheritDoc}
      */
     @Override
-    CompletableFuture<MirrorState> awaitCompletion(String targetImage) {
+    CompletableFuture<MirrorEntry> awaitCompletion(String targetImage) {
         return CompletableFuture.supplyAsync(()-> store.awaitCompletion(targetImage), ioExecutor)
     }
 
@@ -92,15 +92,15 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
      * {@inheritDoc}
      */
     @Override
-    MirrorState getMirrorState(String mirrorId) {
-        store.findByRequestId(mirrorId) ?: persistence.loadMirrorState(mirrorId)
+    MirrorEntry getMirrorEntry(String mirrorId) {
+        store.findByRequestId(mirrorId) ?: persistence.loadMirrorEntry(mirrorId)
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    MirrorState getJobEntry(JobSpec jobSpec) {
+    MirrorEntry getJobEntry(JobSpec jobSpec) {
         store.get(jobSpec.entryKey)
     }
 
@@ -108,10 +108,10 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
      * {@inheritDoc}
      */
     @Override
-    void onJobCompletion(JobSpec jobSpec, MirrorState mirror, JobState jobState) {
-        final result = mirror.complete(jobState.exitCode, jobState.stdout)
-        store.put(mirror.targetImage, result)
-        persistence.saveMirrorState(result)
+    void onJobCompletion(JobSpec jobSpec, MirrorEntry entry, JobState jobState) {
+        final result = entry.complete(jobState.exitCode, jobState.stdout)
+        store.put(entry.targetImage, result)
+        persistence.saveMirrorEntry(result)
         log.debug "Mirror container completed - job=${jobSpec.operationName}; result=${result}; state=${jobState}"
     }
 
@@ -119,10 +119,10 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
      * {@inheritDoc}
      */
     @Override
-    void onJobTimeout(JobSpec jobSpec, MirrorState mirror) {
-        final result = mirror.complete(null, "Container mirror timed out")
-        store.put(mirror.targetImage, result)
-        persistence.saveMirrorState(result)
+    void onJobTimeout(JobSpec jobSpec, MirrorEntry entry) {
+        final result = entry.complete(null, "Container mirror timed out")
+        store.put(entry.targetImage, result)
+        persistence.saveMirrorEntry(result)
         log.warn "Mirror container timed out - job=${jobSpec.operationName}; result=${result}"
     }
 
@@ -130,10 +130,10 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
      * {@inheritDoc}
      */
     @Override
-    void onJobException(JobSpec jobSpec, MirrorState mirror, Throwable error) {
-        final result = mirror.complete(null, error.message)
-        store.put(mirror.targetImage, result)
-        persistence.saveMirrorState(result)
-        log.error("Mirror container errored - job=${jobSpec.operationName}; result=${result}", error)
+    void onJobException(JobSpec job, MirrorEntry entry, Throwable error) {
+        final result = entry.complete(null, error.message)
+        store.put(entry.key, result)
+        persistence.saveMirrorEntry(result)
+        log.error("Mirror container errored - job=${job.operationName}; result=${result}", error)
     }
 }

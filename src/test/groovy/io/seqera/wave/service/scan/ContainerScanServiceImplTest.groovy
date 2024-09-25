@@ -44,7 +44,7 @@ class ContainerScanServiceImplTest extends Specification {
 
     @Inject PersistenceService persistenceService
 
-    @Inject ScanStore stateStore
+    @Inject ScanStateStore stateStore
 
     def 'should start scan successfully'() {
         given:
@@ -132,7 +132,7 @@ class ContainerScanServiceImplTest extends Specification {
         def jobService = Mock(JobService)
         def service = new ContainerScanServiceImpl(scanStore: stateStore, persistenceService: persistenceService, jobService: jobService)
         def job = JobSpec.scan(KEY, 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), workDir)
-        def scan = new ScanState(KEY, 'build-20', 'ubuntu:latest', Instant.now())
+        def scan = new ScanEntry(KEY, 'build-20', 'ubuntu:latest', Instant.now())
 
         when:
         service.onJobCompletion(job, scan, new JobState(JobState.Status.SUCCEEDED,0))
@@ -183,7 +183,7 @@ class ContainerScanServiceImplTest extends Specification {
         def service = new ContainerScanServiceImpl(scanStore: stateStore, persistenceService: persistenceService, jobService: jobService)
         def job = JobSpec.scan(KEY, 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
         def error = new Exception('Some error msg')
-        def scan = new ScanState(KEY, 'build-30', 'ubuntu:latest', Instant.now())
+        def scan = new ScanEntry(KEY, 'build-30', 'ubuntu:latest', Instant.now())
 
         when:
         service.onJobException(job, scan, error)
@@ -214,7 +214,7 @@ class ContainerScanServiceImplTest extends Specification {
         def jobService = Mock(JobService)
         def service = new ContainerScanServiceImpl(scanStore: stateStore, persistenceService: persistenceService, jobService: jobService)
         def job = JobSpec.scan(KEY, 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
-        def scan = new ScanState(KEY, 'build-40', 'ubuntu:latest', Instant.now())
+        def scan = new ScanEntry(KEY, 'build-40', 'ubuntu:latest', Instant.now())
 
         when:
         service.onJobTimeout(job, scan)

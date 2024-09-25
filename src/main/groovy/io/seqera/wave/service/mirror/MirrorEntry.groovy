@@ -39,7 +39,7 @@ import jakarta.inject.Singleton
 @Singleton
 @CompileStatic
 @Canonical
-class MirrorState implements StateEntry<String>, JobEntry, RequestIdAware {
+class MirrorEntry implements StateEntry<String>, JobEntry, RequestIdAware {
     enum Status { PENDING, COMPLETED }
 
     final String mirrorId
@@ -72,8 +72,8 @@ class MirrorState implements StateEntry<String>, JobEntry, RequestIdAware {
         status==Status.COMPLETED && exitCode==0
     }
 
-    MirrorState complete(Integer exitCode, String logs ) {
-        new MirrorState(
+    MirrorEntry complete(Integer exitCode, String logs ) {
+        new MirrorEntry(
                 this.mirrorId,
                 this.digest,
                 this.sourceImage,
@@ -87,8 +87,8 @@ class MirrorState implements StateEntry<String>, JobEntry, RequestIdAware {
         )
     }
 
-    static MirrorState from(MirrorRequest request) {
-        new MirrorState(
+    static MirrorEntry from(MirrorRequest request) {
+        new MirrorEntry(
                 request.mirrorId,
                 request.digest,
                 request.sourceImage,

@@ -34,6 +34,8 @@ import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.builder.impl.BuildStateStoreImpl
+import io.seqera.wave.service.builder.impl.ContainerBuildServiceImpl
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.persistence.PersistenceService
@@ -56,7 +58,7 @@ class ContainerBuildServiceLiveTest extends Specification {
     @Inject ContainerInspectServiceImpl dockerAuthService
     @Inject HttpClientConfig httpClientConfig
     @Inject BuildConfig buildConfig
-    @Inject BuildStoreImpl buildCacheStore
+    @Inject BuildStateStoreImpl buildCacheStore
     @Inject PersistenceService persistenceService
     @Inject JobService jobService
 
@@ -92,7 +94,7 @@ class ContainerBuildServiceLiveTest extends Specification {
                 )
                     .withBuildId('1')
         and:
-        buildCacheStore.storeBuild(targetImage, new BuildState(req, BuildResult.create(req)))
+        buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
 
         when:
         service.launch(req)
@@ -138,7 +140,7 @@ class ContainerBuildServiceLiveTest extends Specification {
                 )
                 .withBuildId('1')
         and:
-        buildCacheStore.storeBuild(targetImage, new BuildState(req, BuildResult.create(req)))
+        buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
 
         when:
         service.launch(req)
@@ -184,7 +186,7 @@ class ContainerBuildServiceLiveTest extends Specification {
                 )
                 .withBuildId('1')
         and:
-        buildCacheStore.storeBuild(targetImage, new BuildState(req, BuildResult.create(req)))
+        buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
 
         when:
         service.launch(req)
@@ -230,7 +232,7 @@ class ContainerBuildServiceLiveTest extends Specification {
                 )
                 .withBuildId('1')
         and:
-        buildCacheStore.storeBuild(targetImage, new BuildState(req, BuildResult.create(req)))
+        buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
 
         when:
         service.launch(req)
@@ -283,7 +285,7 @@ class ContainerBuildServiceLiveTest extends Specification {
                 )
                         .withBuildId('1')
         and:
-        buildCacheStore.storeBuild(targetImage, new BuildState(req, BuildResult.create(req)))
+        buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
         
         when:
         service.launch(req)

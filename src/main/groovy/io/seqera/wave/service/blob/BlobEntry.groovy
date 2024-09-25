@@ -34,7 +34,7 @@ import io.seqera.wave.store.state.StateEntry
 @Slf4j
 @Canonical
 @CompileStatic
-class BlobState implements StateEntry<String>, JobEntry {
+class BlobEntry implements StateEntry<String>, JobEntry {
 
     enum State { CREATED, CACHED, COMPLETED, ERRORED, UNKNOWN }
 
@@ -96,7 +96,7 @@ class BlobState implements StateEntry<String>, JobEntry {
     final String logs
 
     /**
-     * @return The key that identify unequivocally this entry in the {@link BlobStore}
+     * @return The key that identify unequivocally this entry in the {@link BlobStateStore}
      */
     @Override
     String getKey() {
@@ -118,7 +118,7 @@ class BlobState implements StateEntry<String>, JobEntry {
                 : null
     }
 
-    static BlobState create(String locationUri, String objectUri, Map<String,List<String>> request, Map<String,List<String>> response) {
+    static BlobEntry create(String locationUri, String objectUri, Map<String,List<String>> request, Map<String,List<String>> response) {
         final headers0 = new LinkedHashMap<String,String>()
         for( Map.Entry<String,List<String>> it : request )
             headers0.put( it.key, it.value.join(',') )
@@ -126,7 +126,7 @@ class BlobState implements StateEntry<String>, JobEntry {
         final type = headerString0(response, 'Content-Type')
         final cache = headerString0(response, 'Cache-Control')
         final creationTime = Instant.now()
-        return new BlobState(State.CREATED, locationUri, objectUri, headers0, length, type, cache, creationTime, null, null, null)
+        return new BlobEntry(State.CREATED, locationUri, objectUri, headers0, length, type, cache, creationTime, null, null, null)
     }
 
     static String headerString0(Map<String,List<String>> headers, String name) {
@@ -162,8 +162,8 @@ class BlobState implements StateEntry<String>, JobEntry {
                 ')'
     }
 
-    BlobState cached() {
-        new BlobState(
+    BlobEntry cached() {
+        new BlobEntry(
                 State.CACHED,
                 locationUri,
                 objectUri,
@@ -178,8 +178,8 @@ class BlobState implements StateEntry<String>, JobEntry {
         )
     }
 
-    BlobState completed(int status, String logs) {
-        new BlobState(
+    BlobEntry completed(int status, String logs) {
+        new BlobEntry(
                 State.COMPLETED,
                 locationUri,
                 objectUri,
@@ -194,8 +194,8 @@ class BlobState implements StateEntry<String>, JobEntry {
         )
     }
 
-    BlobState errored(String logs) {
-        new BlobState(
+    BlobEntry errored(String logs) {
+        new BlobEntry(
                 State.ERRORED,
                 locationUri,
                 objectUri,
@@ -210,8 +210,8 @@ class BlobState implements StateEntry<String>, JobEntry {
         )
     }
 
-    BlobState withLocation(String location) {
-        new BlobState(
+    BlobEntry withLocation(String location) {
+        new BlobEntry(
                 state,
                 location,
                 objectUri,
@@ -226,10 +226,10 @@ class BlobState implements StateEntry<String>, JobEntry {
         )
     }
 
-    static BlobState unknown(String logs) {
-        new BlobState(State.UNKNOWN, null, null, null, null, null, null, Instant.ofEpochMilli(0), Instant.ofEpochMilli(0), null, logs) {
+    static BlobEntry unknown(String logs) {
+        new BlobEntry(State.UNKNOWN, null, null, null, null, null, null, Instant.ofEpochMilli(0), Instant.ofEpochMilli(0), null, logs) {
             @Override
-            BlobState withLocation(String uri) {
+            BlobEntry withLocation(String uri) {
                 // prevent the change of location for unknown status
                 return this
             }

@@ -43,7 +43,7 @@ class ScanResultTest extends Specification {
         def ts = Instant.now().minus(elapsed)
         def CVE1 = new ScanVulnerability('cve-1', 'x1', 'title1', 'package1', 'version1', 'fixed1', 'url1')
         when:
-        def result = new ScanState(
+        def result = new ScanEntry(
                     '123',
                     'build-123',
                     'docker.io/foo/bar:latest',
@@ -65,7 +65,7 @@ class ScanResultTest extends Specification {
     @Unroll
     def 'should validate completed' () {
         when:
-        def result = new ScanState(
+        def result = new ScanEntry(
                 '123',
                 'build-123',
                 'docker.io/foo/bar:latest',
@@ -87,7 +87,7 @@ class ScanResultTest extends Specification {
     @Unroll
     def 'should validate completed' () {
         when:
-        def result = new ScanState(
+        def result = new ScanEntry(
                 '123',
                 'build-123',
                 'docker.io/foo/bar:latest',
@@ -111,7 +111,7 @@ class ScanResultTest extends Specification {
         def elapsed = Duration.ofMinutes(1)
         def ts = Instant.now().minus(elapsed)
         when:
-        def result = ScanState.create('scan-123', 'build-123', 'ubuntu:latest', ts,  Duration.ofMinutes(1), 'XYZ', [cve1])
+        def result = ScanEntry.create('scan-123', 'build-123', 'ubuntu:latest', ts,  Duration.ofMinutes(1), 'XYZ', [cve1])
         then:
         result.scanId == 'scan-123'
         result.buildId == 'build-123'
@@ -128,13 +128,13 @@ class ScanResultTest extends Specification {
         def elapsed = Duration.ofMinutes(1)
         def ts = Instant.now().minus(elapsed)
         and:
-        def scan = new ScanState(
+        def scan = new ScanEntry(
                 '12345',
                 'build-12345',
                 'docker.io/some:image',
                 ts,
                 elapsed,
-                ScanState.SUCCEEDED,
+                ScanEntry.SUCCEEDED,
                 [cve1] )
         when:
         def result = scan.success(scan.vulnerabilities)
@@ -144,7 +144,7 @@ class ScanResultTest extends Specification {
         result.containerImage == 'docker.io/some:image'
         result.startTime == ts
         nearly(result.duration, elapsed)
-        result.status == ScanState.SUCCEEDED
+        result.status == ScanEntry.SUCCEEDED
         result.vulnerabilities == [cve1]
     }
 
@@ -153,13 +153,13 @@ class ScanResultTest extends Specification {
         def elapsed = Duration.ofMinutes(1)
         def ts = Instant.now().minus(elapsed)
         and:
-        def scan = new ScanState(
+        def scan = new ScanEntry(
                 '12345',
                 'build-12345',
                 'docker.io/some:image',
                 ts,
                 elapsed,
-                ScanState.FAILED,
+                ScanEntry.FAILED,
                 [] )
         when:
         def result = scan.failure(1, "Oops something has failed")
@@ -169,7 +169,7 @@ class ScanResultTest extends Specification {
         result.containerImage == 'docker.io/some:image'
         result.startTime == ts
         nearly(result.duration, elapsed)
-        result.status == ScanState.FAILED
+        result.status == ScanEntry.FAILED
         result.vulnerabilities == []
         result.exitCode == 1
         result.logs == "Oops something has failed"
@@ -189,14 +189,14 @@ class ScanResultTest extends Specification {
                 Path.of('/some/path'),
                 ts )
         when:
-        def result = ScanState.failure(request)
+        def result = ScanEntry.failure(request)
         then:
         result.scanId == 'scan-123'
         result.buildId == 'build-345'
         result.containerImage == 'docker.io/foo/bar'
         result.startTime == ts
         nearly(result.duration, elapsed)
-        result.status == ScanState.FAILED
+        result.status == ScanEntry.FAILED
         result.vulnerabilities == []
     }
 
@@ -205,13 +205,13 @@ class ScanResultTest extends Specification {
         def ts = Instant.now()
 
         when:
-        def scan = ScanState.pending('result-123', 'build-345', 'docker.io/foo/bar')
+        def scan = ScanEntry.pending('result-123', 'build-345', 'docker.io/foo/bar')
         then:
         scan.scanId == 'result-123'
         scan.buildId == 'build-345'
         scan.containerImage == 'docker.io/foo/bar'
         scan.startTime >= ts
-        scan.status == ScanState.PENDING
+        scan.status == ScanEntry.PENDING
         scan.vulnerabilities == []
         scan.exitCode == null
         scan.logs == null

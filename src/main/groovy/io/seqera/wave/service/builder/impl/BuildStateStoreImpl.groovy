@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.builder
+package io.seqera.wave.service.builder.impl
 
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
@@ -27,26 +27,29 @@ import groovy.util.logging.Slf4j
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.encoder.MoshiEncodeStrategy
+import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.service.builder.BuildEntry
+import io.seqera.wave.service.builder.BuildStateStore
 import io.seqera.wave.store.state.AbstractStateStore
 import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 /**
- * Implements Cache store for {@link BuildState}
+ * Implements Cache store for {@link BuildEntry}
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @Singleton
 @CompileStatic
-class BuildStoreImpl extends AbstractStateStore<BuildState> implements BuildStore {
+class BuildStateStoreImpl extends AbstractStateStore<BuildEntry> implements BuildStateStore {
 
     private BuildConfig buildConfig
 
     private ExecutorService ioExecutor
 
-    BuildStoreImpl(StateProvider<String, String> provider, BuildConfig buildConfig, @Named(TaskExecutors.IO) ExecutorService ioExecutor) {
-        super(provider, new MoshiEncodeStrategy<BuildState>() {})
+    BuildStateStoreImpl(StateProvider<String, String> provider, BuildConfig buildConfig, @Named(TaskExecutors.IO) ExecutorService ioExecutor) {
+        super(provider, new MoshiEncodeStrategy<BuildEntry>() {})
         this.buildConfig = buildConfig
         this.ioExecutor = ioExecutor
     }
@@ -62,7 +65,7 @@ class BuildStoreImpl extends AbstractStateStore<BuildState> implements BuildStor
     }
 
     @Override
-    BuildState getBuild(String imageName) {
+    BuildEntry getBuild(String imageName) {
         return get(imageName)
     }
 
@@ -72,17 +75,17 @@ class BuildStoreImpl extends AbstractStateStore<BuildState> implements BuildStor
     }
 
     @Override
-    void storeBuild(String imageName, BuildState buildStoreEntry) {
+    void storeBuild(String imageName, BuildEntry buildStoreEntry) {
         put(imageName, buildStoreEntry)
     }
 
     @Override
-    void storeBuild(String imageName, BuildState result, Duration ttl) {
+    void storeBuild(String imageName, BuildEntry result, Duration ttl) {
         put(imageName, result, ttl)
     }
 
     @Override
-    boolean storeIfAbsent(String imageName, BuildState build) {
+    boolean storeIfAbsent(String imageName, BuildEntry build) {
         return putIfAbsent(imageName, build, buildConfig.statusDuration)
     }
 
@@ -104,7 +107,7 @@ class BuildStoreImpl extends AbstractStateStore<BuildState> implements BuildStor
      */
     private static class Waiter {
 
-        static BuildResult awaitCompletion(BuildStoreImpl store, String imageName, BuildResult current) {
+        static BuildResult awaitCompletion(BuildStateStoreImpl store, String imageName, BuildResult current) {
             final await = store.buildConfig.statusDelay
             while( true ) {
                 if( current==null ) {
@@ -127,10 +130,10 @@ class BuildStoreImpl extends AbstractStateStore<BuildState> implements BuildStor
      * Load a build entry via the record id
      *
      * @param requestId The ID of the record to be loaded
-     * @return The {@link BuildState} with with corresponding Id of {@code null} if it cannot be found
+     * @return The {@link BuildEntry} with with corresponding Id of {@code null} if it cannot be found
      */
     @Override
-    BuildState findByRequestId(String requestId) {
+    BuildEntry findByRequestId(String requestId) {
         super.findByRequestId(requestId)
     }
 }

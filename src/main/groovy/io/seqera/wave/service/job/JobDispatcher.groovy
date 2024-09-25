@@ -77,15 +77,15 @@ class JobDispatcher {
     }
 
     void notifyJobCompletion(JobSpec job, JobState state) {
-        apply(job, (handler, record)-> handler.onJobCompletion(job, record, state))
+        apply(job, (handler, entry)-> handler.onJobCompletion(job, entry, state))
     }
 
     void notifyJobException(JobSpec job, Throwable error) {
-        apply(job, (handler, record)-> handler.onJobException(job, record, error))
+        apply(job, (handler, entry)-> handler.onJobException(job, entry, error))
     }
 
     void notifyJobTimeout(JobSpec job) {
-        apply(job, (handler, record)-> handler.onJobTimeout(job, record))
+        apply(job, (handler, entry)-> handler.onJobTimeout(job, entry))
     }
 
 }

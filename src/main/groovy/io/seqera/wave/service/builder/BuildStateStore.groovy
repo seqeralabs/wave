@@ -28,17 +28,17 @@ import groovy.transform.CompileStatic
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-interface BuildStore {
+interface BuildStateStore {
 
     /**
-     * Retrieve the build entry {@link BuildState} for a given container image name
+     * Retrieve the build entry {@link BuildEntry} for a given container image name
      *
      * @param imageName
      *      The container image name
      * @return
-     *      The corresponding {@link BuildState} or {@code null} otherwise
+     *      The corresponding {@link BuildEntry} or {@code null} otherwise
      */
-    BuildState getBuild(String imageName)
+    BuildEntry getBuild(String imageName)
 
     /**
      * Retrieve the build entry {@link BuildResult} for a given container image name
@@ -46,7 +46,7 @@ interface BuildStore {
      * @param imageName
      *      The container image name
      * @return
-     *      The corresponding {@link BuildState} or {@code null} otherwise
+     *      The corresponding {@link BuildEntry} or {@code null} otherwise
      */
     BuildResult getBuildResult(String imageName)
 
@@ -54,27 +54,27 @@ interface BuildStore {
      * Store a container image build request
      *
      * @param imageName The container image name
-     * @param request The {@link BuildState} object associated to the image name
+     * @param request The {@link BuildEntry} object associated to the image name
      */
-    void storeBuild(String imageName, BuildState result)
+    void storeBuild(String imageName, BuildEntry result)
 
     /**
      * Store a container image build request using the specified time-to-live duration
      *
      * @param imageName The container image name
-     * @param result The {@link BuildState} object associated to the image name
+     * @param result The {@link BuildEntry} object associated to the image name
      * @param ttl The {@link Duration} after which the entry is expired
      */
-    void storeBuild(String imageName, BuildState result, Duration ttl)
+    void storeBuild(String imageName, BuildEntry result, Duration ttl)
 
     /**
      * Store a build result only if the specified key does not exit
      *
      * @param imageName The container image unique key
-     * @param build The {@link BuildState} desired status to be stored
-     * @return {@code true} if the {@link BuildState} was stored, {@code false} otherwise
+     * @param build The {@link BuildEntry} desired status to be stored
+     * @return {@code true} if the {@link BuildEntry} was stored, {@code false} otherwise
      */
-    boolean storeIfAbsent(String imageName, BuildState build)
+    boolean storeIfAbsent(String imageName, BuildEntry build)
 
     /**
      * Remove the build status for the given image name
@@ -99,7 +99,7 @@ interface BuildStore {
      * Load a build entry via the record id
      *
      * @param recordId The ID of the record to be loaded
-     * @return The {@link BuildState} with with corresponding Id of {@code null} if it cannot be found
+     * @return The {@link BuildEntry} with with corresponding Id of {@code null} if it cannot be found
      */
-    BuildState findByRequestId(String recordId)
+    BuildEntry findByRequestId(String recordId)
 }

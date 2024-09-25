@@ -20,7 +20,7 @@ package io.seqera.wave.service.persistence
 
 import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerDigestPair
-import io.seqera.wave.service.mirror.MirrorState
+import io.seqera.wave.service.mirror.MirrorEntry
 /**
  * A storage for statistic data
  *
@@ -115,24 +115,24 @@ interface PersistenceService {
      * Load a mirror state record
      *
      * @param mirrorId The ID of the mirror record
-     * @return The corresponding {@link MirrorState} object or null if it cannot be found
+     * @return The corresponding {@link MirrorEntry} object or null if it cannot be found
      */
-    MirrorState loadMirrorState(String mirrorId)
+    MirrorEntry loadMirrorEntry(String mirrorId)
 
     /**
      * Load a mirror state record given the target image name and the image digest
      *
      * @param targetImage The target mirrored image name
      * @param digest The image content SHA256 digest
-     * @return The corresponding {@link MirrorState} object or null if it cannot be found
+     * @return The corresponding {@link MirrorEntry} object or null if it cannot be found
      */
-    MirrorState loadMirrorState(String targetImage, String digest)
+    MirrorEntry loadMirrorEntry(String targetImage, String digest)
 
     /**
-     * Persists a {@link MirrorState} state record
+     * Persists a {@link MirrorEntry} state record
      *
-     * @param mirror {@link MirrorState} object
+     * @param mirror {@link MirrorEntry} object
      */
-    void saveMirrorState(MirrorState mirror)
+    void saveMirrorEntry(MirrorEntry mirror)
 
 }

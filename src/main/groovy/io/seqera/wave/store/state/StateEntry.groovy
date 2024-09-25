@@ -19,7 +19,8 @@
 package io.seqera.wave.store.state
 
 /**
- *
+ * Marker interface for a state store entry
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 interface StateEntry<K> {

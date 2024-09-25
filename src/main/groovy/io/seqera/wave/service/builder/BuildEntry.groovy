@@ -32,7 +32,7 @@ import io.seqera.wave.store.state.RequestIdAware
 @ToString(includePackage = false, includeNames = true)
 @EqualsAndHashCode
 @CompileStatic
-class BuildState implements StateEntry<String>, JobEntry, RequestIdAware {
+class BuildEntry implements StateEntry<String>, JobEntry, RequestIdAware {
 
     final BuildRequest request
 
@@ -55,15 +55,15 @@ class BuildState implements StateEntry<String>, JobEntry, RequestIdAware {
         return result.done()
     }
 
-    protected BuildState() {}
+    protected BuildEntry() {}
 
-    BuildState(BuildRequest request, BuildResult result) {
+    BuildEntry(BuildRequest request, BuildResult result) {
         this.request = request
         this.result = result
     }
 
-    BuildState withResult(BuildResult result) {
-        new BuildState(request, result)
+    BuildEntry withResult(BuildResult result) {
+        new BuildEntry(request, result)
     }
 
 }
