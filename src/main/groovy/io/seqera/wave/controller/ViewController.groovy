@@ -245,6 +245,9 @@ class ViewController {
         binding.scan_status = result.status
         binding.scan_failed = result.status == ScanResult.FAILED
         binding.scan_succeeded = result.status == ScanResult.SUCCEEDED
+        binding.scan_exitcode = result.exitCode
+        binding.scan_logs = result.logs
+
         binding.build_id = result.buildId
         binding.build_url = "$serverUrl/view/builds/${result.buildId}"
         binding.scan_time = formatTimestamp(result.startTime) ?: '-'

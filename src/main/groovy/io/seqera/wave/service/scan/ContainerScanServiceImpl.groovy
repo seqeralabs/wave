@@ -19,7 +19,6 @@
 package io.seqera.wave.service.scan
 
 import java.nio.file.NoSuchFileException
-import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
@@ -32,8 +31,8 @@ import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
-import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.job.JobSpec
+import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveScanRecord
 import jakarta.inject.Inject
@@ -50,7 +49,7 @@ import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 @Requires(property = 'wave.scan.enabled', value = 'true')
 @Singleton
 @CompileStatic
-class ContainerScanServiceImpl implements ContainerScanService, JobHandler<WaveScanRecord> {
+class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanResult> {
 
     @Inject
     private ScanConfig scanConfig
@@ -58,6 +57,9 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<WaveS
     @Inject
     @Named(TaskExecutors.IO)
     private ExecutorService executor
+
+    @Inject
+    private ScanStateStore scanStore
 
     @Inject
     private PersistenceService persistenceService
@@ -88,7 +90,10 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<WaveS
     @Override
     WaveScanRecord getScanResult(String scanId) {
         try{
-            return persistenceService.loadScanRecord(scanId)
+            final scan = scanStore.getScan(scanId)
+            return scan
+                    ? new WaveScanRecord(scan.id, scan)
+                    : persistenceService.loadScanRecord(scanId)
         }
         catch (Throwable t){
             log.error("Unable to load the scan result - id=${scanId}", t)
@@ -99,7 +104,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<WaveS
     protected void launch(ScanRequest request) {
         try {
             // create a record to mark the beginning
-            persistenceService.createScanRecord(new WaveScanRecord(request.id, request.buildId, request.targetImage, Instant.now()))
+            final scan = ScanResult.pending(request.id, request.buildId, request.targetImage)
+            scanStore.put(scan.id, scan)
             //launch container scan
             jobService.launchScan(request)
         }
@@ -115,25 +121,25 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<WaveS
     // **************************************************************
 
     @Override
-    WaveScanRecord getJobRecord(JobSpec job) {
-        persistenceService.loadScanRecord(job.recordId)
+    ScanResult getJobRecord(JobSpec job) {
+        scanStore.getScan(job.recordId)
     }
 
     @Override
-    void onJobCompletion(JobSpec job, WaveScanRecord scan, JobState state) {
+    void onJobCompletion(JobSpec job, ScanResult scan, JobState state) {
         ScanResult result
-        if( state.completed() ) {
+        if( state.succeeded() ) {
             try {
-                result = ScanResult.success(scan, TrivyResultProcessor.process(job.workDir.resolve(Trivy.OUTPUT_FILE_NAME)))
+                result = scan.success(TrivyResultProcessor.process(job.workDir.resolve(Trivy.OUTPUT_FILE_NAME)))
                 log.info("Container scan succeeded - id=${scan.id}; exit=${state.exitCode}; stdout=${state.stdout}")
             }
             catch (NoSuchFileException e) {
-                result = ScanResult.failure(scan)
+                result = scan.failure(0, "No such file: ${e.message}")
                 log.warn("Container scan failed - id=${scan.id}; exit=${state.exitCode}; stdout=${state.stdout}; exception: NoSuchFile=${e.message}")
             }
         }
         else{
-            result = ScanResult.failure(scan)
+            result = scan.failure(state.exitCode, state.stdout)
             log.warn("Container scan failed - id=${scan.id}; exit=${state.exitCode}; stdout=${state.stdout}")
         }
 
@@ -141,24 +147,26 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<WaveS
     }
 
     @Override
-    void onJobException(JobSpec job, WaveScanRecord scan, Throwable e) {
+    void onJobException(JobSpec job, ScanResult scan, Throwable e) {
         log.error("Container scan exception - id=${scan.id} - cause=${e.getMessage()}", e)
-        updateScanRecord(ScanResult.failure(scan))
+        updateScanRecord(scan.failure(null, e.message))
     }
 
     @Override
-    void onJobTimeout(JobSpec job, WaveScanRecord scan) {
+    void onJobTimeout(JobSpec job, ScanResult scan) {
         log.warn("Container scan timed out - id=${scan.id}")
-        updateScanRecord(ScanResult.failure(scan))
+        updateScanRecord(scan.failure(null, "Container scan timed out"))
     }
 
-    protected void updateScanRecord(ScanResult result) {
+    protected void updateScanRecord(ScanResult scan) {
         try{
-            //save scan results
-            persistenceService.updateScanRecord(new WaveScanRecord(result.id, result))
+            //save scan results in the redis cache
+            scanStore.put(scan.id, scan)
+            // save in the persistent layer
+            persistenceService.updateScanRecord(new WaveScanRecord(scan.id, scan))
         }
         catch (Throwable t){
-            log.error("Unable to save result - id=${result.id}; cause=${t.message}", t)
+            log.error("Unable to save result - id=${scan.id}; cause=${t.message}", t)
         }
     }
 }

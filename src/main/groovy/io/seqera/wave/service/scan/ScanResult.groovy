@@ -23,6 +23,7 @@ import java.time.Instant
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import groovy.transform.ToString
 
 /**
  * Model for scan result
@@ -30,14 +31,15 @@ import groovy.transform.CompileStatic
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 
-import groovy.transform.ToString
-import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.cache.StateRecord
+import io.seqera.wave.service.job.JobRecord
 
 @ToString(includePackage = false, includeNames = true)
 @Canonical
 @CompileStatic
-class ScanResult {
+class ScanResult implements StateRecord, JobRecord {
 
+    static final public String PENDING = 'PENDING'
     static final public String SUCCEEDED = 'SUCCEEDED'
     static final public String FAILED = 'FAILED'
 
@@ -48,31 +50,46 @@ class ScanResult {
     Duration duration
     String status
     List<ScanVulnerability> vulnerabilities
+    Integer exitCode
+    String logs
 
-    private ScanResult(String id, String buildId, String containerImage, Instant startTime, Duration duration, String status, List<ScanVulnerability> vulnerabilities) {
-        this.id = id
-        this.buildId = buildId
-        this.containerImage = containerImage
-        this.startTime = startTime
-        this.duration = duration
-        this.status = status
-        this.vulnerabilities = vulnerabilities
+    @Override
+    String getRecordId() {
+        return id
+    }
+
+    @Override
+    boolean done() {
+        return duration != null
     }
 
     boolean isSucceeded() { status==SUCCEEDED }
 
-    boolean isCompleted() { duration!=null }
+    @Deprecated
+    boolean isCompleted() { done() }
 
-    static ScanResult success(WaveScanRecord scan, List<ScanVulnerability> vulnerabilities){
-        return new ScanResult(scan.id, scan.buildId, scan.containerImage, scan.startTime, Duration.between(scan.startTime, Instant.now()), SUCCEEDED, vulnerabilities)
+    ScanResult success(List<ScanVulnerability> vulnerabilities){
+        return new ScanResult(
+                this.id,
+                this.buildId,
+                this.containerImage,
+                this.startTime,
+                Duration.between(this.startTime, Instant.now()),
+                SUCCEEDED,
+                vulnerabilities,
+                0 )
     }
 
-    static ScanResult failure(WaveScanRecord scan){
-        return new ScanResult(scan.id, scan.buildId, scan.containerImage, scan.startTime, Duration.between(scan.startTime, Instant.now()), FAILED, List.of())
+    ScanResult failure(Integer exitCode, String logs){
+        return new ScanResult(this.id, this.buildId, this.containerImage, this.startTime, Duration.between(this.startTime, Instant.now()), FAILED, List.of(), exitCode, logs)
     }
 
     static ScanResult failure(ScanRequest request){
         return new ScanResult(request.id, request.buildId, request.targetImage, request.creationTime, Duration.between(request.creationTime, Instant.now()), FAILED, List.of())
+    }
+
+    static ScanResult pending(String scanId, String buildId, String containerImage) {
+        return new ScanResult(scanId, buildId, containerImage, Instant.now(), null, PENDING, null)
     }
 
     static ScanResult create(String scanId, String buildId, String containerImage, Instant startTime, Duration duration1, String status, List<ScanVulnerability> vulnerabilities){
