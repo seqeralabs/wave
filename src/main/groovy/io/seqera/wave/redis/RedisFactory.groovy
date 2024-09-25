@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.cache.impl
+package io.seqera.wave.redis
 
 
 import groovy.transform.CompileStatic
