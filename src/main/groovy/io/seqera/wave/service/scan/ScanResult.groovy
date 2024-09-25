@@ -43,15 +43,15 @@ class ScanResult implements StateRecord, JobRecord {
     static final public String SUCCEEDED = 'SUCCEEDED'
     static final public String FAILED = 'FAILED'
 
-    String id
-    String buildId
-    String containerImage
-    Instant startTime
-    Duration duration
-    String status
-    List<ScanVulnerability> vulnerabilities
-    Integer exitCode
-    String logs
+    final String id
+    final String buildId
+    final String containerImage
+    final Instant startTime
+    final Duration duration
+    final String status
+    final List<ScanVulnerability> vulnerabilities
+    final Integer exitCode
+    final String logs
 
     @Override
     String getRecordId() {
