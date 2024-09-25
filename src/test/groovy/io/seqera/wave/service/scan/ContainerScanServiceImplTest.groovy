@@ -31,7 +31,6 @@ import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.persistence.PersistenceService
-import io.seqera.wave.service.persistence.WaveScanRecord
 import jakarta.inject.Inject
 /**
  * Tests for ContainerScanServiceImpl
@@ -44,6 +43,8 @@ class ContainerScanServiceImplTest extends Specification {
     @Inject ContainerScanServiceImpl containerScanService
 
     @Inject PersistenceService persistenceService
+
+    @Inject ScanStateStore stateStore
 
     def 'should start scan successfully'() {
         given:
@@ -125,59 +126,117 @@ class ContainerScanServiceImplTest extends Specification {
         def workDir = Files.createTempDirectory('test')
         def reportFile = workDir.resolve('report.json')
         Files.write(reportFile, trivyDockerResulJson.bytes)
-        def mockPersistenceService = Mock(PersistenceService)
+        and:
+        def KEY = 'scan-10'
         def jobService = Mock(JobService)
-        def service = new ContainerScanServiceImpl(persistenceService: mockPersistenceService, jobService: jobService)
-        def job = JobSpec.scan('scan-1', 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), workDir)
-        def state = Mock(JobState)
-        def scan = new WaveScanRecord('scan-1', 'build-1', 'ubuntu:latest', Instant.now())
+        def service = new ContainerScanServiceImpl(scanStore: stateStore, persistenceService: persistenceService, jobService: jobService)
+        def job = JobSpec.scan(KEY, 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), workDir)
+        def scan = new ScanResult(KEY, 'build-1', 'ubuntu:latest', Instant.now())
 
         when:
-        service.onJobCompletion(job, scan, state)
+        service.onJobCompletion(job, scan, new JobState(JobState.Status.SUCCEEDED,0))
         then:
-        1 * state.completed() >> true
-        1 * mockPersistenceService.updateScanRecord(_ as WaveScanRecord) >> { WaveScanRecord scanRecord -> assert scanRecord.status=='SUCCEEDED' }
+        with( stateStore.getScan(KEY)) {
+            id == KEY
+            buildId == 'build-1'
+            containerImage == 'ubuntu:latest'
+            status == 'SUCCEEDED'
+            exitCode == 0
+        }
+        and:
+        with( persistenceService.loadScanRecord(KEY) ) {
+            id == KEY
+            buildId == 'build-1'
+            containerImage == 'ubuntu:latest'
+            status == 'SUCCEEDED'
+        }
 
         when:
-        service.onJobCompletion(job, scan, state)
+        service.onJobCompletion(job, scan, new JobState(JobState.Status.FAILED, 10, "I'm broken"))
         then:
-        1 * state.completed() >> false
-        1 * mockPersistenceService.updateScanRecord(_ as WaveScanRecord) >> { WaveScanRecord scanRecord -> assert scanRecord.status=='FAILED' }
+        with( stateStore.getScan(KEY) ) {
+            id == KEY
+            buildId == 'build-1'
+            containerImage == 'ubuntu:latest'
+            status == 'FAILED'
+            exitCode == 10
+            logs == "I'm broken"
+        }
+        and:
+        with( persistenceService.loadScanRecord(KEY) ) {
+            id == KEY
+            buildId == 'build-1'
+            containerImage == 'ubuntu:latest'
+            status == 'FAILED'
+        }
 
         cleanup:
         workDir?.deleteDir()
+        stateStore.clear()
     }
 
     def 'should handle job error event and update scan record'() {
         given:
-        def mockPersistenceService = Mock(PersistenceService)
+        def KEY = 'scan-20'
         def jobService = Mock(JobService)
-        def service = new ContainerScanServiceImpl(persistenceService: mockPersistenceService, jobService: jobService)
-        def job = JobSpec.scan('scan-1', 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
-        def error = new Exception('error')
-        def scan = new WaveScanRecord('scan-1', 'build-1', 'ubuntu:latest', Instant.now())
+        def service = new ContainerScanServiceImpl(scanStore: stateStore, persistenceService: persistenceService, jobService: jobService)
+        def job = JobSpec.scan(KEY, 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
+        def error = new Exception('Some error msg')
+        def scan = new ScanResult(KEY, 'build-20', 'ubuntu:latest', Instant.now())
 
         when:
         service.onJobException(job, scan, error)
         then:
-        1 * mockPersistenceService.updateScanRecord(_ as WaveScanRecord) >> { WaveScanRecord scanRecord -> assert scanRecord.status=='FAILED' }
+        with( stateStore.getScan(KEY) ) {
+            id == KEY
+            buildId == 'build-20'
+            containerImage == 'ubuntu:latest'
+            status == 'FAILED'
+            exitCode == null
+            logs == "Some error msg"
+        }
+        and:
+        with( persistenceService.loadScanRecord(KEY) ) {
+            id == KEY
+            buildId == 'build-20'
+            containerImage == 'ubuntu:latest'
+            status == 'FAILED'
+        }
 
+        cleanup:
+        stateStore.clear()
     }
 
     def 'should handle job timeout event and update scan record'() {
         given:
-        def mockPersistenceService = Mock(PersistenceService)
+        def KEY = 'scan-30'
         def jobService = Mock(JobService)
-        def service = new ContainerScanServiceImpl(persistenceService: mockPersistenceService, jobService: jobService)
-        def job = JobSpec.scan('scan-1', 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
-        def scan = new WaveScanRecord('scan-1', 'build-1', 'ubuntu:latest', Instant.now())
+        def service = new ContainerScanServiceImpl(scanStore: stateStore, persistenceService: persistenceService, jobService: jobService)
+        def job = JobSpec.scan(KEY, 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
+        def scan = new ScanResult(KEY, 'build-30', 'ubuntu:latest', Instant.now())
 
         when:
         service.onJobTimeout(job, scan)
 
         then:
-        1 * mockPersistenceService.updateScanRecord(_ as WaveScanRecord) >> { WaveScanRecord scanRecord -> assert scanRecord.status=='FAILED' }
+        with( stateStore.getScan(KEY) ) {
+            id == KEY
+            buildId == 'build-30'
+            containerImage == 'ubuntu:latest'
+            status == 'FAILED'
+            exitCode == null
+            logs == "Container scan timed out"
+        }
+        and:
+        with( persistenceService.loadScanRecord(KEY) ) {
+            id == KEY
+            buildId == 'build-30'
+            containerImage == 'ubuntu:latest'
+            status == 'FAILED'
+        }
 
+        cleanup:
+        stateStore.clear()
     }
 
 }

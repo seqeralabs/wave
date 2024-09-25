@@ -237,11 +237,11 @@ class ViewController {
     }
 
     Map<String, Object> makeScanViewBinding(ScanResult result, Map<String,Object> binding=new HashMap(10)) {
-        binding.should_refresh = !result.isCompleted()
+        binding.should_refresh = !result.done()
         binding.scan_id = result.id
         binding.scan_container_image = result.containerImage ?: '-'
         binding.scan_exist = true
-        binding.scan_completed = result.isCompleted()
+        binding.scan_completed = result.done()
         binding.scan_status = result.status
         binding.scan_failed = result.status == ScanResult.FAILED
         binding.scan_succeeded = result.status == ScanResult.SUCCEEDED

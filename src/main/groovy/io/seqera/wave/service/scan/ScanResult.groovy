@@ -89,7 +89,7 @@ class ScanResult implements StateRecord, JobRecord {
     }
 
     static ScanResult pending(String scanId, String buildId, String containerImage) {
-        return new ScanResult(scanId, buildId, containerImage, Instant.now(), null, PENDING, null)
+        return new ScanResult(scanId, buildId, containerImage, Instant.now(), null, PENDING, List.of())
     }
 
     static ScanResult create(String scanId, String buildId, String containerImage, Instant startTime, Duration duration1, String status, List<ScanVulnerability> vulnerabilities){

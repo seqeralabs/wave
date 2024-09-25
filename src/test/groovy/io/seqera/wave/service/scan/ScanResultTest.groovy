@@ -26,8 +26,6 @@ import java.time.Duration
 import java.time.Instant
 
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.persistence.WaveScanRecord
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -78,6 +76,7 @@ class ScanResultTest extends Specification {
         )
         then:
         result.isCompleted() == EXPECTED
+        result.done() == EXPECTED
 
         where:
         DURATION                | EXPECTED
@@ -129,16 +128,16 @@ class ScanResultTest extends Specification {
         def elapsed = Duration.ofMinutes(1)
         def ts = Instant.now().minus(elapsed)
         and:
-        def record = new WaveScanRecord(
-                id: '12345',
-                buildId: 'build-12345',
-                containerImage: 'docker.io/some:image',
-                startTime: ts,
-                duration: elapsed,
-                status: ScanResult.SUCCEEDED,
-                vulnerabilities: [cve1] )
+        def scan = new ScanResult(
+                '12345',
+                'build-12345',
+                'docker.io/some:image',
+                ts,
+                elapsed,
+                ScanResult.SUCCEEDED,
+                [cve1] )
         when:
-        def result = ScanResult.success(record, record.vulnerabilities)
+        def result = scan.success(scan.vulnerabilities)
         then:
         result.id == '12345'
         result.buildId == 'build-12345'
@@ -154,16 +153,16 @@ class ScanResultTest extends Specification {
         def elapsed = Duration.ofMinutes(1)
         def ts = Instant.now().minus(elapsed)
         and:
-        def record = new WaveScanRecord(
-                id: '12345',
-                buildId: 'build-12345',
-                containerImage: 'docker.io/some:image',
-                startTime: ts,
-                duration: elapsed,
-                status: ScanResult.FAILED,
-                vulnerabilities: [] )
+        def scan = new ScanResult(
+                '12345',
+                'build-12345',
+                'docker.io/some:image',
+                ts,
+                elapsed,
+                ScanResult.FAILED,
+                [] )
         when:
-        def result = ScanResult.failure(record)
+        def result = scan.failure(1, "Oops something has failed")
         then:
         result.id == '12345'
         result.buildId == 'build-12345'
@@ -172,6 +171,8 @@ class ScanResultTest extends Specification {
         nearly(result.duration, elapsed)
         result.status == ScanResult.FAILED
         result.vulnerabilities == []
+        result.exitCode == 1
+        result.logs == "Oops something has failed"
     }
 
     def 'should create failed result from request' () {
@@ -197,5 +198,22 @@ class ScanResultTest extends Specification {
         nearly(result.duration, elapsed)
         result.status == ScanResult.FAILED
         result.vulnerabilities == []
+    }
+
+    def 'should create scan pending' () {
+        given:
+        def ts = Instant.now()
+
+        when:
+        def scan = ScanResult.pending('result-123', 'build-345', 'docker.io/foo/bar')
+        then:
+        scan.id == 'result-123'
+        scan.buildId == 'build-345'
+        scan.containerImage == 'docker.io/foo/bar'
+        scan.startTime >= ts
+        scan.status == ScanResult.PENDING
+        scan.vulnerabilities == []
+        scan.exitCode == null
+        scan.logs == null
     }
 }
