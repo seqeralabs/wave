@@ -199,7 +199,7 @@ class ViewController {
     HttpResponse<Map<String,Object>> viewScan(String scanId) {
         final binding = new HashMap(10)
         try {
-            final result = persistenceService.loadScanResult(scanId)
+            final result = loadScanResult(scanId)
             makeScanViewBinding(result, binding)
         }
         catch (NotFoundException e){
@@ -212,6 +212,28 @@ class ViewController {
         // return the response
         binding.put('server_url', serverUrl)
         return HttpResponse.<Map<String,Object>>ok(binding)
+    }
+
+    /**
+     * Retrieve a {@link ScanState} object for the specified build ID
+     *
+     * @param buildId The ID of the build for which load the scan result
+     * @return The {@link ScanState} object associated with the specified build ID or throws the exception {@link NotFoundException} otherwise
+     * @throws NotFoundException If the a record for the specified build ID cannot be found
+     */
+    protected ScanState loadScanResult(String scanId) {
+        final scanRecord = persistenceService.loadScanRecord(scanId)
+        if( !scanRecord )
+            throw new NotFoundException("No scan report exists with id: ${scanId}")
+
+        return ScanState.create(
+                scanRecord.id,
+                scanRecord.buildId,
+                scanRecord.containerImage,
+                scanRecord.startTime,
+                scanRecord.duration,
+                scanRecord.status,
+                scanRecord.vulnerabilities )
     }
 
     @View("inspect-view")

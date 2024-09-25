@@ -301,11 +301,6 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def result = persistence.loadScanRecord(SCAN_ID)
         and:
         result == scanRecord
-        and:
-        def scan = persistence.loadScanResult(SCAN_ID)
-        scan.status == 'SUCCEEDED'
-        scan.buildId == BUILD_ID
-        scan.vulnerabilities == scanRecord.vulnerabilities
 
         when:
         def SCAN_ID2 = 'b2'

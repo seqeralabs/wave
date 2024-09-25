@@ -20,9 +20,7 @@ package io.seqera.wave.service.persistence
 
 import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerDigestPair
-import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.service.mirror.MirrorState
-import io.seqera.wave.service.scan.ScanState
 /**
  * A storage for statistic data
  *
@@ -112,28 +110,6 @@ interface PersistenceService {
      * @return The {@link WaveScanRecord} object for the specified build ID or null otherwise
      */
     WaveScanRecord loadScanRecord(String scanId)
-
-    /**
-     * Retrieve a {@link ScanState} object for the specified build ID
-     *
-     * @param buildId The ID of the build for which load the scan result
-     * @return The {@link ScanState} object associated with the specified build ID or throws the exception {@link NotFoundException} otherwise
-     * @throws NotFoundException If the a record for the specified build ID cannot be found
-     */
-    default ScanState loadScanResult(String scanId) {
-        final scanRecord = loadScanRecord(scanId)
-        if( !scanRecord )
-            throw new NotFoundException("No scan report exists with id: ${scanId}")
-
-        return ScanState.create(
-                scanRecord.id,
-                scanRecord.buildId,
-                scanRecord.containerImage,
-                scanRecord.startTime,
-                scanRecord.duration,
-                scanRecord.status,
-                scanRecord.vulnerabilities )
-    }
 
     /**
      * Load a mirror state record
