@@ -48,19 +48,20 @@ class ContainerScanServiceImplTest extends Specification {
 
     def 'should start scan successfully'() {
         given:
+        def KEY = 'scan-10'
         def workDir = Files.createTempDirectory('test')
-        def scanRequest = new ScanRequest('scan-1', 'build-1', null, 'ubuntu:latest', ContainerPlatform.of('linux/amd64'), workDir, Instant.now())
+        def scanRequest = new ScanRequest(KEY, 'build-1', null, 'ubuntu:latest', ContainerPlatform.of('linux/amd64'), workDir, Instant.now())
 
         when:
         containerScanService.scan(scanRequest)
-        sleep 500 // wait for the scan record to be stored in db
-
+        sleep 500
         then:
-        def scanRecord = persistenceService.loadScanRecord(scanRequest.id)
+        def scanRecord = stateStore.getScan(scanRequest.id)
         scanRecord.id == scanRequest.id
         scanRecord.buildId == scanRequest.buildId
 
         cleanup:
+        stateStore.clear()
         workDir?.deleteDir()
     }
 
@@ -127,18 +128,18 @@ class ContainerScanServiceImplTest extends Specification {
         def reportFile = workDir.resolve('report.json')
         Files.write(reportFile, trivyDockerResulJson.bytes)
         and:
-        def KEY = 'scan-10'
+        def KEY = 'scan-20'
         def jobService = Mock(JobService)
         def service = new ContainerScanServiceImpl(scanStore: stateStore, persistenceService: persistenceService, jobService: jobService)
         def job = JobSpec.scan(KEY, 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), workDir)
-        def scan = new ScanResult(KEY, 'build-1', 'ubuntu:latest', Instant.now())
+        def scan = new ScanResult(KEY, 'build-20', 'ubuntu:latest', Instant.now())
 
         when:
         service.onJobCompletion(job, scan, new JobState(JobState.Status.SUCCEEDED,0))
         then:
         with( stateStore.getScan(KEY)) {
             id == KEY
-            buildId == 'build-1'
+            buildId == 'build-20'
             containerImage == 'ubuntu:latest'
             status == 'SUCCEEDED'
             exitCode == 0
@@ -146,7 +147,7 @@ class ContainerScanServiceImplTest extends Specification {
         and:
         with( persistenceService.loadScanRecord(KEY) ) {
             id == KEY
-            buildId == 'build-1'
+            buildId == 'build-20'
             containerImage == 'ubuntu:latest'
             status == 'SUCCEEDED'
         }
@@ -156,7 +157,7 @@ class ContainerScanServiceImplTest extends Specification {
         then:
         with( stateStore.getScan(KEY) ) {
             id == KEY
-            buildId == 'build-1'
+            buildId == 'build-20'
             containerImage == 'ubuntu:latest'
             status == 'FAILED'
             exitCode == 10
@@ -165,7 +166,7 @@ class ContainerScanServiceImplTest extends Specification {
         and:
         with( persistenceService.loadScanRecord(KEY) ) {
             id == KEY
-            buildId == 'build-1'
+            buildId == 'build-20'
             containerImage == 'ubuntu:latest'
             status == 'FAILED'
         }
@@ -177,19 +178,19 @@ class ContainerScanServiceImplTest extends Specification {
 
     def 'should handle job error event and update scan record'() {
         given:
-        def KEY = 'scan-20'
+        def KEY = 'scan-30'
         def jobService = Mock(JobService)
         def service = new ContainerScanServiceImpl(scanStore: stateStore, persistenceService: persistenceService, jobService: jobService)
         def job = JobSpec.scan(KEY, 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
         def error = new Exception('Some error msg')
-        def scan = new ScanResult(KEY, 'build-20', 'ubuntu:latest', Instant.now())
+        def scan = new ScanResult(KEY, 'build-30', 'ubuntu:latest', Instant.now())
 
         when:
         service.onJobException(job, scan, error)
         then:
         with( stateStore.getScan(KEY) ) {
             id == KEY
-            buildId == 'build-20'
+            buildId == 'build-30'
             containerImage == 'ubuntu:latest'
             status == 'FAILED'
             exitCode == null
@@ -198,7 +199,7 @@ class ContainerScanServiceImplTest extends Specification {
         and:
         with( persistenceService.loadScanRecord(KEY) ) {
             id == KEY
-            buildId == 'build-20'
+            buildId == 'build-30'
             containerImage == 'ubuntu:latest'
             status == 'FAILED'
         }
@@ -209,11 +210,11 @@ class ContainerScanServiceImplTest extends Specification {
 
     def 'should handle job timeout event and update scan record'() {
         given:
-        def KEY = 'scan-30'
+        def KEY = 'scan-40'
         def jobService = Mock(JobService)
         def service = new ContainerScanServiceImpl(scanStore: stateStore, persistenceService: persistenceService, jobService: jobService)
         def job = JobSpec.scan(KEY, 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
-        def scan = new ScanResult(KEY, 'build-30', 'ubuntu:latest', Instant.now())
+        def scan = new ScanResult(KEY, 'build-40', 'ubuntu:latest', Instant.now())
 
         when:
         service.onJobTimeout(job, scan)
@@ -221,7 +222,7 @@ class ContainerScanServiceImplTest extends Specification {
         then:
         with( stateStore.getScan(KEY) ) {
             id == KEY
-            buildId == 'build-30'
+            buildId == 'build-40'
             containerImage == 'ubuntu:latest'
             status == 'FAILED'
             exitCode == null
@@ -230,7 +231,7 @@ class ContainerScanServiceImplTest extends Specification {
         and:
         with( persistenceService.loadScanRecord(KEY) ) {
             id == KEY
-            buildId == 'build-30'
+            buildId == 'build-40'
             containerImage == 'ubuntu:latest'
             status == 'FAILED'
         }
