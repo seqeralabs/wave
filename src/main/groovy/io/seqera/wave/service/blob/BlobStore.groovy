@@ -22,7 +22,7 @@ import java.time.Duration
 /**
  * Implement a distributed store for blob cache entry.
  *
- * NOTE: This only stores blob caching *metadata* i.e. {@link BlobEntry}.
+ * NOTE: This only stores blob caching *metadata* i.e. {@link BlobState}.
  * The blob binary is stored into an object storage bucket 
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -42,26 +42,26 @@ interface BlobStore {
     /**
      * Retrieve the blob cache info object for the given key
      *
-     * @param key The unique key associate with the {@link BlobEntry} object
+     * @param key The unique key associate with the {@link BlobState} object
      * @return The {z@link BlobCacheInfo} object associated with the specified key, or {@code null} otherwise
      */
-    BlobEntry getBlob(String key)
+    BlobState getBlob(String key)
 
     /**
      * Store the blob cache info object with the specified key
      *
      * @param key The unique to be used to store the blob cache info
-     * @param info The {@link BlobEntry} object modelling the container blob information
+     * @param info The {@link BlobState} object modelling the container blob information
      */
-    void storeBlob(String key, BlobEntry info)
+    void storeBlob(String key, BlobState info)
 
     /**
      * Store a blob cache location only if the specified key does not exit
      *
      * @param key The key of the blob
-     * @param info The {@link BlobEntry} holding the blob location information
-     * @return {@code true} if the {@link BlobEntry} was stored, {@code false} otherwise
+     * @param info The {@link BlobState} holding the blob location information
+     * @return {@code true} if the {@link BlobState} was stored, {@code false} otherwise
      */
-    boolean storeIfAbsent(String key, BlobEntry info)
+    boolean storeIfAbsent(String key, BlobState info)
 
 }

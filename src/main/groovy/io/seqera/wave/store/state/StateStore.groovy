@@ -25,7 +25,7 @@ import java.time.Duration
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface StateStore<K,V> {
+interface StateStore<K, V> {
 
     /**
      * Retrieve a cached object by the given key

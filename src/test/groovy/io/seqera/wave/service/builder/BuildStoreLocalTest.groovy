@@ -75,10 +75,10 @@ class BuildStoreLocalTest extends Specification {
             maxDuration: Duration.ofMinutes(1)
     )
 
-    def zero = new BuildEntry(zeroRequest, zeroResult)
-    def one = new BuildEntry(oneRequest, oneResult)
-    def two = new BuildEntry(twoRequest, twoResult)
-    def three = new BuildEntry(threeRequest, threeResult)
+    def zero = new BuildState(zeroRequest, zeroResult)
+    def one = new BuildState(oneRequest, oneResult)
+    def two = new BuildState(twoRequest, twoResult)
+    def three = new BuildState(threeRequest, threeResult)
 
     def 'should get and put key values' () {
         given:

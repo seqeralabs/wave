@@ -39,7 +39,7 @@ import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildStoreImpl
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
-import io.seqera.wave.service.builder.BuildEntry
+import io.seqera.wave.service.builder.BuildState
 import io.seqera.wave.service.job.JobFactory
 import io.seqera.wave.service.job.JobQueue
 import io.seqera.wave.service.token.ContainerTokenStoreImpl
@@ -113,7 +113,7 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
                 startTime: Instant.now(),
                 maxDuration: Duration.ofSeconds(5)
         )
-        def entry = new BuildEntry(req, res)
+        def entry = new BuildState(req, res)
         def containerRequestData = new ContainerRequestData(new PlatformId(new User(id:1)), "library/hello-world")
         and:
         tokenCacheStore.put("1234", containerRequestData)

@@ -25,6 +25,8 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.seqera.wave.service.job.JobEntry
+import io.seqera.wave.store.state.StateEntry
+
 /**
  * Model for scan result
  *
@@ -33,7 +35,7 @@ import io.seqera.wave.service.job.JobEntry
 @ToString(includePackage = false, includeNames = true)
 @Canonical
 @CompileStatic
-class ScanState implements JobEntry {
+class ScanState implements StateEntry<String>, JobEntry {
 
     static final public String PENDING = 'PENDING'
     static final public String SUCCEEDED = 'SUCCEEDED'
@@ -48,6 +50,11 @@ class ScanState implements JobEntry {
     final List<ScanVulnerability> vulnerabilities
     final Integer exitCode
     final String logs
+
+    @Override
+    String getKey() {
+        return id
+    }
 
     @Override
     boolean done() {

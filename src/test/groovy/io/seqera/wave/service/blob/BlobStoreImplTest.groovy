@@ -46,8 +46,8 @@ class BlobStoreImplTest extends Specification {
     def 'should get and store an entry' () {
         given:
         def key = UUID.randomUUID().toString()
-        def info1 = new BlobEntry(BlobEntry.State.CREATED, 'foo')
-        def info2 = new BlobEntry(BlobEntry.State.CREATED, 'bar')
+        def info1 = new BlobState(BlobState.State.CREATED, 'foo')
+        def info2 = new BlobState(BlobState.State.CREATED, 'bar')
 
         expect:
         store.get(key) == null
@@ -68,8 +68,8 @@ class BlobStoreImplTest extends Specification {
     def 'should put an item only if absent' () {
         given:
         def key = UUID.randomUUID().toString()
-        def info1 = new BlobEntry(BlobEntry.State.CREATED, 'foo')
-        def info2 = new BlobEntry(BlobEntry.State.CREATED, 'bar')
+        def info1 = new BlobState(BlobState.State.CREATED, 'foo')
+        def info2 = new BlobState(BlobState.State.CREATED, 'bar')
 
         expect:
         store.putIfAbsent(key, info1)
@@ -85,8 +85,8 @@ class BlobStoreImplTest extends Specification {
     def 'should put an entry with conditional ttl' () {
         given:
         def key = UUID.randomUUID().toString()
-        def info_ok = new BlobEntry(BlobEntry.State.CREATED, 'foo')
-        def info_err = new BlobEntry(BlobEntry.State.ERRORED, 'foo')
+        def info_ok = new BlobState(BlobState.State.CREATED, 'foo')
+        def info_err = new BlobState(BlobState.State.ERRORED, 'foo')
         and:
         def DELAY_ONE = Duration.ofMinutes(1)
         def DELAY_TWO = Duration.ofSeconds(1)

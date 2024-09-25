@@ -27,9 +27,9 @@ import groovy.transform.ToString
 import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.job.JobEntry
+import io.seqera.wave.store.state.StateEntry
 import io.seqera.wave.store.state.StateRecord
 import jakarta.inject.Singleton
-
 /**
  * Model a container mirror result object
  *
@@ -39,7 +39,7 @@ import jakarta.inject.Singleton
 @Singleton
 @CompileStatic
 @Canonical
-class MirrorState implements JobEntry, StateRecord {
+class MirrorState implements StateEntry<String>, JobEntry, StateRecord {
     enum Status { PENDING, COMPLETED }
 
     final String mirrorId
@@ -52,6 +52,11 @@ class MirrorState implements JobEntry, StateRecord {
     final Duration duration
     final Integer exitCode
     final String logs
+
+    @Override
+    String getKey() {
+        return targetImage
+    }
 
     @Override
     String getRecordId() {

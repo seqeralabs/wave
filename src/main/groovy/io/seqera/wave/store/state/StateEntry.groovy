@@ -22,8 +22,6 @@ package io.seqera.wave.store.state
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface Entry<K> {
-
+interface StateEntry<K> {
     K getKey()
-
 }

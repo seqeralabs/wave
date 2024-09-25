@@ -31,7 +31,7 @@ import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.service.blob.BlobCacheService
-import io.seqera.wave.service.blob.BlobEntry
+import io.seqera.wave.service.blob.BlobState
 import io.seqera.wave.service.blob.BlobSigningService
 import io.seqera.wave.service.blob.BlobStore
 import io.seqera.wave.service.job.JobHandler
@@ -56,7 +56,7 @@ import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
 @Singleton
 @Requires(property = 'wave.blobCache.enabled', value = 'true')
 @CompileStatic
-class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobEntry> {
+class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobState> {
 
     @Value('${wave.debug:false}')
     private Boolean debug
@@ -88,12 +88,12 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobEntry> {
     }
 
     @Override
-    BlobEntry retrieveBlobCache(RoutePath route, Map<String,List<String>> requestHeaders, Map<String,List<String>> responseHeaders) {
+    BlobState retrieveBlobCache(RoutePath route, Map<String,List<String>> requestHeaders, Map<String,List<String>> responseHeaders) {
         final locationUri = blobDownloadUri(route)
         final objectUri = blobStorePath(route)
         log.trace "Container blob download uri: $locationUri; target object: $objectUri"
 
-        final info = BlobEntry.create(locationUri, objectUri, requestHeaders, responseHeaders)
+        final info = BlobState.create(locationUri, objectUri, requestHeaders, responseHeaders)
         // both S3 and R2 are strongly consistent
         // therefore it's safe to check and return directly
         // if it exists (no risk of returning a partial upload)
@@ -137,7 +137,7 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobEntry> {
      * @param headers The layer blob HTTP headers
      * @return The s5cmd command to upload the blob into the object storage for caching purposes
      */
-    protected List<String> s5cmd(RoutePath route, BlobEntry info) {
+    protected List<String> s5cmd(RoutePath route, BlobState info) {
 
         final result = new ArrayList<String>(20)
         result << 's5cmd'
@@ -166,7 +166,7 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobEntry> {
         return result
     }
 
-    protected List<String> transferCommand(RoutePath route, BlobEntry info) {
+    protected List<String> transferCommand(RoutePath route, BlobState info) {
         final curl = proxyService.curl(route, info.headers)
         final s5cmd = s5cmd(route, info)
 
@@ -179,7 +179,7 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobEntry> {
         return command
     }
 
-    protected void store(RoutePath route, BlobEntry blob) {
+    protected void store(RoutePath route, BlobState blob) {
         log.debug "== Blob cache begin for object '${blob.locationUri}'"
         try {
             // the transfer command to be executed
@@ -231,11 +231,11 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobEntry> {
      * @param key
      *      The container blob unique key
      * @return
-     *      the {@link java.util.concurrent.CompletableFuture} holding the {@link BlobEntry} associated with
+     *      the {@link java.util.concurrent.CompletableFuture} holding the {@link BlobState} associated with
      *      specified blob key or {@code null} if no blob record is associated for the
      *      given key
      */
-    BlobEntry awaitCacheStore(String key) {
+    BlobState awaitCacheStore(String key) {
         final result = blobStore.getBlob(key)
         return result ? Waiter.awaitCompletion(blobStore, key, result) : null
     }
@@ -246,11 +246,11 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobEntry> {
     @CompileStatic
     private static class Waiter {
 
-        static BlobEntry awaitCompletion(BlobStore store, String key, BlobEntry current) {
+        static BlobState awaitCompletion(BlobStore store, String key, BlobState current) {
             final target = current?.locationUri ?: "(unknown)"
             while( true ) {
                 if( current==null ) {
-                    return BlobEntry.unknown("Unable to cache blob $target")
+                    return BlobState.unknown("Unable to cache blob $target")
                 }
                 // check is completed
                 if( current.done() ) {
@@ -268,12 +268,12 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobEntry> {
     // ============ handles transfer job events ============
 
     @Override
-    BlobEntry getJobEntry(JobSpec job) {
+    BlobState getJobEntry(JobSpec job) {
         blobStore.getBlob(job.entryKey)
     }
 
     @Override
-    void onJobCompletion(JobSpec job, BlobEntry blob, JobState state) {
+    void onJobCompletion(JobSpec job, BlobState blob, JobState state) {
         // update the blob status
         final result = state.succeeded()
                 ? blob.completed(state.exitCode, state.stdout)
@@ -283,14 +283,14 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobEntry> {
     }
 
     @Override
-    void onJobException(JobSpec job, BlobEntry blob, Throwable error) {
+    void onJobException(JobSpec job, BlobState blob, Throwable error) {
         final result = blob.errored("Unexpected error caching blob '${blob.locationUri}' - operation '${job.operationName}'")
         log.error("== Blob cache exception for object '${blob.objectUri}'; operation=${job.operationName}; cause=${error.message}", error)
         blobStore.storeBlob(blob.getKey(), result)
     }
 
     @Override
-    void onJobTimeout(JobSpec job, BlobEntry blob) {
+    void onJobTimeout(JobSpec job, BlobState blob) {
         final result = blob.errored("Blob cache transfer timed out ${blob.objectUri}")
         log.warn "== Blob cache timed out for object '${blob.objectUri}'; operation=${job.operationName}; duration=${result.duration()}"
         blobStore.storeBlob(blob.getKey(), result)
