@@ -175,7 +175,6 @@ class SurrealPersistenceService implements PersistenceService {
     void saveContainerRequest(String token, WaveContainerRecord data) {
         data.id = token
         final query = "INSERT INTO wave_request ${JacksonHelper.toJson(data)}"
-        log.info("Query: ${query}")
         surrealDb
                 .sqlAsync(getAuthorization(), query)
                 .subscribe({result ->
