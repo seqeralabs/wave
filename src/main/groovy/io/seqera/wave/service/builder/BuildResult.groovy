@@ -39,15 +39,15 @@ import groovy.transform.ToString
 class BuildResult {
 
     final String id
-    final int exitStatus
+    final Integer exitStatus
     final String logs
     final Instant startTime
     final Duration duration
     final String digest
 
-    BuildResult(String id, int exitStatus, String content, Instant startTime, Duration duration, String digest) {
+    BuildResult(String id, Integer exitStatus, String logs, Instant startTime, Duration duration, String digest) {
         this.id = id
-        this.logs = content?.replaceAll("\u001B\\[[;\\d]*m", "") // strip ansi escape codes
+        this.logs = logs?.replaceAll("\u001B\\[[;\\d]*m", "") // strip ansi escape codes
         this.exitStatus = exitStatus
         this.startTime = startTime
         this.duration = duration
@@ -61,7 +61,7 @@ class BuildResult {
 
     Duration getDuration() { duration }
 
-    int getExitStatus() { exitStatus }
+    Integer getExitStatus() { exitStatus }
 
     Instant getStartTime() { startTime }
 
@@ -75,10 +75,10 @@ class BuildResult {
 
     @Override
     String toString() {
-        return "BuildRequest[id=$id; exitStatus=$exitStatus; duration=$duration]"
+        return "BuildResult[id=$id; exitStatus=$exitStatus; duration=$duration]"
     }
 
-    static BuildResult completed(String buildId, int exitStatus, String content, Instant startTime, String digest) {
+    static BuildResult completed(String buildId, Integer exitStatus, String content, Instant startTime, String digest) {
         new BuildResult(buildId, exitStatus, content, startTime, Duration.between(startTime, Instant.now()), digest)
     }
 
@@ -87,11 +87,11 @@ class BuildResult {
     }
 
     static BuildResult create(BuildRequest req) {
-        new BuildResult(req.buildId, 0, null, req.startTime, null, null)
+        new BuildResult(req.buildId, null, null, req.startTime, null, null)
     }
 
     static BuildResult create(String buildId) {
-        new BuildResult(buildId, 0, null, Instant.now(), null, null)
+        new BuildResult(buildId, null, null, Instant.now(), null, null)
     }
 
     @Memoized
