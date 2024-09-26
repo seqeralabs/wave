@@ -29,7 +29,8 @@ import io.seqera.wave.core.ContainerPlatform
 import jakarta.inject.Singleton
 
 /**
- *
+ * Model a container mirror entry object
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @ToString(includeNames = true, includePackage = false)

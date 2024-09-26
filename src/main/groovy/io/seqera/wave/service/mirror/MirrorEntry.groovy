@@ -19,7 +19,6 @@
 package io.seqera.wave.service.mirror
 
 
-import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.seqera.wave.service.job.JobEntry
@@ -27,19 +26,25 @@ import io.seqera.wave.store.state.RequestIdAware
 import io.seqera.wave.store.state.StateEntry
 import jakarta.inject.Singleton
 /**
- * Model a container mirror result object
+ * Model a container mirror entry object
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @ToString(includeNames = true, includePackage = false)
 @Singleton
 @CompileStatic
-@Canonical
 class MirrorEntry implements StateEntry<String>, JobEntry, RequestIdAware {
 
     final MirrorRequest request
 
     final MirrorResult result
+
+    protected MirrorEntry() {}
+
+    MirrorEntry(MirrorRequest request, MirrorResult result) {
+        this.request = request
+        this.result = result
+    }
 
     @Override
     String getKey() {
@@ -56,10 +61,20 @@ class MirrorEntry implements StateEntry<String>, JobEntry, RequestIdAware {
         result?.status==MirrorResult.Status.COMPLETED
     }
 
+    /**
+     * Create a {@link MirrorEntry} object with the current {@link MirrorRequest} and
+     * the specified {@link MirrorResult} object
+     *
+     * @param result The {@link MirrorResult} object to be use as result
+     * @return The new {@link MirrorEntry} instance
+     */
     MirrorEntry withResult(MirrorResult result) {
         new MirrorEntry(this.request, result)
     }
 
+    /**
+     * Create a {@link MirrorEntry} object with the given {@link MirrorRequest} object
+     */
     static MirrorEntry of(MirrorRequest request) {
         new MirrorEntry(request, MirrorResult.from(request))
     }

@@ -77,7 +77,7 @@ class ContainerMirrorServiceTest extends Specification {
         then:
         mirrorService.awaitCompletion(target)
                 .get(90, TimeUnit.SECONDS)
-                .succeeded()
+                .done()
 
         cleanup:
         folder?.deleteDir()
@@ -93,7 +93,7 @@ class ContainerMirrorServiceTest extends Specification {
                 Path.of('/some/dir'),
                 '{config}' )
         and:
-        def state = MirrorEntry.of(request)
+        def state = MirrorResult.from(request)
         and:
         persistenceService.saveMirrorResult(state)
         when:
@@ -116,9 +116,9 @@ class ContainerMirrorServiceTest extends Specification {
         and:
         mirrorStateStore.put('target/foo', state)
         when:
-        def copy = mirrorService.getMirrorResult(request.mirrorId)
+        def result = mirrorService.getMirrorResult(request.mirrorId)
         then:
-        copy == state
+        result == state.result
     }
 
     def 'should update mirror state on job completion' () {
@@ -139,13 +139,13 @@ class ContainerMirrorServiceTest extends Specification {
         def s1 = mirrorStateStore.get(request.targetImage)
         and:
         s1.done()
-        s1.succeeded()
-        s1.exitCode == 0
-        s1.logs == 'OK'
+        s1.result.succeeded()
+        s1.result.exitCode == 0
+        s1.result.logs == 'OK'
         and:
         def s2 = persistenceService.loadMirrorResult(request.mirrorId)
         and:
-        s2 == s1
+        s2 == s1.result
     }
 
     def 'should update mirror state on job exception' () {
@@ -166,13 +166,14 @@ class ContainerMirrorServiceTest extends Specification {
         def s1 = mirrorStateStore.get(request.targetImage)
         and:
         s1.done()
-        !s1.succeeded()
-        s1.exitCode == null
-        s1.logs == 'Oops something went wrong'
+        and:
+        !s1.result.succeeded()
+        s1.result.exitCode == null
+        s1.result.logs == 'Oops something went wrong'
         and:
         def s2 = persistenceService.loadMirrorResult(request.mirrorId)
         and:
-        s2 == s1
+        s2 == s1.result
     }
 
     def 'should update mirror state on job timeout' () {
@@ -193,13 +194,14 @@ class ContainerMirrorServiceTest extends Specification {
         def s1 = mirrorStateStore.get(request.targetImage)
         and:
         s1.done()
-        !s1.succeeded()
-        s1.exitCode == null
-        s1.logs == 'Container mirror timed out'
+        and:
+        !s1.result.succeeded()
+        s1.result.exitCode == null
+        s1.result.logs == 'Container mirror timed out'
         and:
         def s2 = persistenceService.loadMirrorResult(request.mirrorId)
         and:
-        s2 == s1
+        s2 == s1.result
     }
 
 }
