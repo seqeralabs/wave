@@ -22,6 +22,7 @@ import spock.lang.Specification
 
 import java.nio.file.Path
 
+import io.seqera.wave.api.ScanMode
 import io.seqera.wave.core.ContainerPlatform
 
 /**
@@ -38,7 +39,10 @@ class MirrorEntryTest extends Specification {
                 'sha256:12345',
                 Mock(ContainerPlatform),
                 Path.of('/workspace'),
-                '{auth json}' )
+                '{auth json}',
+                'scan-123',
+                ScanMode.lazy,
+        )
 
         when:
         def entry = MirrorEntry.of(request)
@@ -59,7 +63,10 @@ class MirrorEntryTest extends Specification {
                 'sha256:12345',
                 Mock(ContainerPlatform),
                 Path.of('/workspace'),
-                '{auth json}' )
+                '{auth json}',
+                'scan-123',
+                ScanMode.lazy,
+        )
 
         when:
         def entry = MirrorEntry.of(request)

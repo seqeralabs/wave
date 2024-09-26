@@ -39,7 +39,7 @@ import static java.nio.file.StandardOpenOption.CREATE
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import static java.nio.file.StandardOpenOption.WRITE
 /**
- * Implements ScanStrategy for Kubernetes
+ * Implements ScanMode for Kubernetes
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */

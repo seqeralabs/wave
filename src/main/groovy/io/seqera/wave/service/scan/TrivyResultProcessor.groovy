@@ -24,7 +24,7 @@ import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 import io.seqera.wave.exception.ScanRuntimeException
 /**
- * Implements ScanStrategy for Docker
+ * Implements ScanMode for Docker
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */

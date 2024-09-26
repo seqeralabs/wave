@@ -18,13 +18,26 @@
 
 package io.seqera.wave.service.buildstatus
 
+import java.time.Duration
+import java.time.Instant
+
 import io.seqera.wave.api.BuildStatusResponse
+import io.seqera.wave.api.ScanMode
 
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 interface BuildStatusService {
+
+    interface StatusInfo {
+        String getBuildId()
+        String getScanId()
+        ScanMode getScanMode()
+        Instant getStartTime()
+        Duration getDuration()
+        Boolean getSucceeded()
+    }
 
     BuildStatusResponse getBuildStatus(String requestId)
 

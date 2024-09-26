@@ -29,6 +29,7 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
+import io.seqera.wave.api.ScanMode
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.core.ContainerPlatform
@@ -103,22 +104,19 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         """
         def storage = applicationContext.getBean(SurrealPersistenceService)
         final request = new BuildRequest(
-                'container1234',
-                dockerFile,
-                condaFile,
-                Path.of("."),
-                'docker.io/my/repo:container1234',
-                PlatformId.NULL,
-                ContainerPlatform.of('amd64'),
-                'docker.io/my/cache',
-                '127.0.0.1',
-                '{"config":"json"}',
-                null,
-                null,
-                'scan12345',
-                null,
-                BuildFormat.DOCKER,
-                Duration.ofMinutes(1)
+                containerId: 'container1234',
+                containerFile: dockerFile,
+                condaFile: condaFile,
+                workspace:  Path.of("."),
+                targetImage: 'docker.io/my/repo:container1234',
+                identity: PlatformId.NULL,
+                platform:  ContainerPlatform.of('amd64'),
+                cacheRepository: 'docker.io/my/cache',
+                ip: '127.0.0.1',
+                configJson: '{"config":"json"}',
+                scanId: 'scan12345',
+                format:  BuildFormat.DOCKER,
+                maxDuration:  Duration.ofMinutes(1)
         ).withBuildId('1')
         def result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         def event = new BuildEvent(request, result)
@@ -139,22 +137,19 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         given:
         def persistence = applicationContext.getBean(SurrealPersistenceService)
         final request = new BuildRequest(
-                'container1234',
-                'FROM foo:latest',
-                'conda::recipe',
-                Path.of("."),
-                'docker.io/my/repo:container1234',
-                PlatformId.NULL,
-                ContainerPlatform.of('amd64'),
-                'docker.io/my/cache',
-                '127.0.0.1',
-                '{"config":"json"}',
-                null,
-                null,
-                'scan12345',
-                null,
-                BuildFormat.DOCKER,
-                Duration.ofMinutes(1)
+                containerId:  'container1234',
+                containerFile:  'FROM foo:latest',
+                condaFile:  'conda::recipe',
+                workspace:  Path.of("."),
+                targetImage:  'docker.io/my/repo:container1234',
+                identity:  PlatformId.NULL,
+                platform:  ContainerPlatform.of('amd64'),
+                cacheRepository:  'docker.io/my/cache',
+                ip: '127.0.0.1',
+                configJson:  '{"config":"json"}',
+                scanId:  'scan12345',
+                format:  BuildFormat.DOCKER,
+                maxDuration:  Duration.ofMinutes(1)
         ).withBuildId('123')
         def result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         def event = new BuildEvent(request, result)
@@ -200,22 +195,19 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         given:
         def persistence = applicationContext.getBean(SurrealPersistenceService)
         final request = new BuildRequest(
-                'container1234',
-                'FROM foo:latest',
-                'conda::recipe',
-                Path.of("/some/path"),
-                'buildrepo:recipe-container1234',
-                PlatformId.NULL,
-                ContainerPlatform.of('amd64'),
-                'docker.io/my/cache',
-                '127.0.0.1',
-                '{"config":"json"}',
-                null,
-                null,
-                'scan12345',
-                null,
-                BuildFormat.DOCKER,
-                Duration.ofMinutes(1)
+                containerId: 'container1234',
+                containerFile:  'FROM foo:latest',
+                condaFile:  'conda::recipe',
+                workspace:  Path.of("/some/path"),
+                targetImage:  'buildrepo:recipe-container1234',
+                identity:  PlatformId.NULL,
+                platform:  ContainerPlatform.of('amd64'),
+                cacheRepository:  'docker.io/my/cache',
+                ip:  '127.0.0.1',
+                configJson:  '{"config":"json"}',
+                scanId:  'scan12345',
+                format:  BuildFormat.DOCKER,
+                maxDuration:  Duration.ofMinutes(1),
         ).withBuildId('123')
         and:
         def result = BuildResult.completed(request.buildId, 1, 'Hello', Instant.now().minusSeconds(60), 'xyz')
@@ -328,7 +320,10 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
                 Path.of('/workspace'),
-                '{auth json}' )
+                '{auth json}',
+                'scan-123',
+                ScanMode.lazy,
+        )
         and:
         storage.initializeDb()
         and:
@@ -352,7 +347,10 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
                 Path.of('/workspace'),
-                '{auth json}'  )
+                '{auth json}',
+                'scan-123',
+                ScanMode.lazy,
+        )
         and:
         storage.initializeDb()
         and:

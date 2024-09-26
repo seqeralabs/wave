@@ -19,6 +19,7 @@
 package io.seqera.wave.service.buildstatus
 
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.mirror.ContainerMirrorService
@@ -26,13 +27,15 @@ import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.scan.ContainerScanService
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @Singleton
 @CompileStatic
-class BuildStatusServiceImpl implements BuildStatusService{
+class BuildStatusServiceImpl implements BuildStatusService {
 
     @Inject
     private ContainerBuildService buildService
@@ -42,32 +45,12 @@ class BuildStatusServiceImpl implements BuildStatusService{
 
     @Inject
     private ContainerScanService scanService
-
-    BuildStatusServiceImpl() {}
-
-
+    
     @Override
-    BuildStatusResponse getBuildStatus(String requestId) {
+    BuildStatusResponse getBuildStatus(String buildId) {
         // build IDs starting with the `mr-` prefix are interpreted as mirror requests
-        if( requestId.startsWith(MirrorRequest.ID_PREFIX) ) {
-            handleMirrorRequest(requestId)
-            return mirrorService
-                    .getMirrorResult(requestId)
-                    ?.toStatusResponse()
-        }
-        else {
-            handleBuildRequest(requestId)
-            return buildService
-                    .getBuildRecord(requestId)
-                    ?.toStatusResponse()
-        }
-    }
-
-    protected handleMirrorRequest(String requestId) {
-
-    }
-
-    protected handleBuildRequest(String requestId) {
-
+        return buildId.startsWith(MirrorRequest.ID_PREFIX)
+                ? mirrorService.getBuildStatus(buildId)
+                : buildService.getBuildStatus(buildId)
     }
 }

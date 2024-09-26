@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.mirror
 
+import io.seqera.wave.api.ScanMode
 import spock.lang.Requires
 import spock.lang.Specification
 
@@ -71,7 +72,10 @@ class ContainerMirrorServiceTest extends Specification {
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
                 folder,
-                creds )
+                creds,
+                'scan-123',
+                ScanMode.lazy,
+        )
         and:
         mirrorService.mirrorImage(request)
         then:
@@ -91,7 +95,10 @@ class ContainerMirrorServiceTest extends Specification {
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
                 Path.of('/some/dir'),
-                '{config}' )
+                '{config}',
+                'scan-123',
+                ScanMode.lazy,
+        )
         and:
         def state = MirrorResult.from(request)
         and:
@@ -110,7 +117,10 @@ class ContainerMirrorServiceTest extends Specification {
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
                 Path.of('/some/dir'),
-                '{config}' )
+                '{config}',
+                'scan-123',
+                ScanMode.lazy,
+        )
         and:
         def state = MirrorEntry.of(request)
         and:
@@ -129,7 +139,10 @@ class ContainerMirrorServiceTest extends Specification {
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
                 Path.of('/some/dir'),
-                '{config}' )
+                '{config}',
+                'scan-123',
+                ScanMode.lazy,
+        )
         and:
         def state = MirrorEntry.of(request)
         def job = JobSpec.mirror(request.mirrorId, 'mirror-123', Instant.now(), Duration.ofMillis(1), Mock(Path))
@@ -156,7 +169,10 @@ class ContainerMirrorServiceTest extends Specification {
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
                 Path.of('/some/dir'),
-                '{config}' )
+                '{config}',
+                'scan-123',
+                ScanMode.lazy,
+        )
         and:
         def state = MirrorEntry.of(request)
         def job = JobSpec.mirror(request.mirrorId, 'mirror-123', Instant.now(), Duration.ofMillis(1), Mock(Path))
@@ -184,7 +200,10 @@ class ContainerMirrorServiceTest extends Specification {
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
                 Path.of('/some/dir'),
-                '{config}' )
+                '{config}',
+                'scan-123',
+                ScanMode.lazy,
+        )
         and:
         def state = MirrorEntry.of(request)
         def job = JobSpec.mirror(request.mirrorId, 'mirror-123', Instant.now(), Duration.ofMillis(1), Mock(Path))

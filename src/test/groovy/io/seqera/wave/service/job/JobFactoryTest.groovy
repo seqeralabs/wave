@@ -24,6 +24,7 @@ import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
+import io.seqera.wave.api.ScanMode
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
@@ -116,7 +117,10 @@ class JobFactoryTest extends Specification {
                 'sha256:12345',
                 Mock(ContainerPlatform),
                 workspace,
-                '{config}' )
+                '{config}',
+                'scan-123',
+                ScanMode.lazy,
+        )
 
         when:
         def job = factory.mirror(request)

@@ -33,7 +33,7 @@ import static java.nio.file.StandardOpenOption.CREATE
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import static java.nio.file.StandardOpenOption.WRITE
 /**
- * Implements ScanStrategy for Docker
+ * Implements ScanMode for Docker
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */

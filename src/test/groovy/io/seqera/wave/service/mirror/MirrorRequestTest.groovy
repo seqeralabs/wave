@@ -23,6 +23,7 @@ import spock.lang.Specification
 import java.nio.file.Path
 import java.time.Instant
 
+import io.seqera.wave.api.ScanMode
 import io.seqera.wave.core.ContainerPlatform
 
 /**
@@ -40,7 +41,10 @@ class MirrorRequestTest extends Specification {
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
                 Path.of('/workspace'),
-                '{json config}')
+                '{json config}',
+                'scan-123',
+                ScanMode.lazy,
+        )
         then:
         req.mirrorId
         req.sourceImage == 'docker.io/foo:latest'
@@ -51,6 +55,8 @@ class MirrorRequestTest extends Specification {
         req.authJson == '{json config}'
         req.creationTime >= ts
         req.creationTime <= Instant.now()
+        req.scanId == 'scan-123'
+        req.scanMode == ScanMode.lazy
     }
 
 }

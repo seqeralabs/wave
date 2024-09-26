@@ -21,7 +21,9 @@ package io.seqera.wave.service.builder
 import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
+import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.core.RoutePath
+import io.seqera.wave.service.buildstatus.BuildStatusService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 /**
  * Declare container build service interface
@@ -93,4 +95,14 @@ interface ContainerBuildService {
      */
     WaveBuildRecord getLatestBuild(String containerId)
 
+    /**
+     * The current status of the build request
+     *
+     * @param buildId
+     *      The Id of the build request
+     * @return
+     *      The {@link BuildStatusResponse} object representing the build status of {@code null}
+     *      if it cannot be found
+     */
+    BuildStatusService.StatusInfo getBuildStatus(String buildId)
 }

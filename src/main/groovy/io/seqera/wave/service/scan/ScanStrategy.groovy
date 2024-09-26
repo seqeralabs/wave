@@ -25,7 +25,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.ScanConfig
 /**
- * Implements ScanStrategy for Docker
+ * Implements ScanMode for Docker
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */

@@ -40,6 +40,7 @@ import io.micronaut.security.annotation.Secured
 import io.micronaut.security.authentication.AuthorizationException
 import io.micronaut.security.rules.SecurityRule
 import io.seqera.wave.api.ImageNameStrategy
+import io.seqera.wave.api.ScanMode
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.configuration.BuildConfig
@@ -334,7 +335,8 @@ class ContainerController {
         final configJson = inspectService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
-        final scanId = scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
+        final scanMode = req.scanMode ?: ScanMode.async
+        final scanId = scanEnabled && format==DOCKER && scanMode!=ScanMode.off ? LongRndKey.rndHex() : null
         // use 'imageSuffix' strategy by default for public repo images
         final nameStrategy = req.nameStrategy==null
                 && buildRepository
@@ -363,7 +365,8 @@ class ContainerController {
                 scanId,
                 req.buildContext,
                 format,
-                maxDuration
+                maxDuration,
+                scanMode
         )
     }
 
@@ -464,6 +467,9 @@ class ContainerController {
         final platform = request.containerPlatform
                 ? ContainerPlatform.of(request.containerPlatform)
                 : ContainerPlatform.DEFAULT
+        final scanMode = request.scanMode ?: ScanMode.off
+        final scanId = scanEnabled && scanMode!=ScanMode.off ? LongRndKey.rndHex() : null
+
         final digest = registryProxyService.getImageDigest(request.containerImage, identity)
         if( !digest )
             throw new BadRequestException("Container image '$request.containerImage' does not exist")
@@ -473,7 +479,10 @@ class ContainerController {
                 digest,
                 platform,
                 Path.of(buildConfig.buildWorkspace).toAbsolutePath(),
-                configJson )
+                configJson,
+                scanId,
+                scanMode
+        )
     }
 
     protected BuildTrack checkMirror(MirrorRequest request, PlatformId identity, boolean dryRun) {

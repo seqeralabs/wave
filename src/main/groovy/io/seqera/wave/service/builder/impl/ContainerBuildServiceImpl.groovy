@@ -32,6 +32,7 @@ import io.micronaut.core.annotation.Nullable
 import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.api.BuildContext
+import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.BuildConfig
@@ -48,6 +49,7 @@ import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildStateStore
 import io.seqera.wave.service.builder.BuildTrack
 import io.seqera.wave.service.builder.ContainerBuildService
+import io.seqera.wave.service.buildstatus.BuildStatusService
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
@@ -383,8 +385,23 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
                 : persistenceService.loadBuild(buildId)
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     WaveBuildRecord getLatestBuild(String containerId) {
         return persistenceService.latestBuild(containerId)
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    BuildStatusService.StatusInfo getBuildStatus(String buildId) {
+        final entry = buildStore.findByRequestId(buildId)
+        if( entry ) {
+
+        }
+        else
+        getBuildRecord(buildId) ?.toStatusResponse()
     }
 }
