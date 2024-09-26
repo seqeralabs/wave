@@ -19,6 +19,7 @@
 package io.seqera.wave.service.persistence
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.nio.file.Path
 import java.time.Duration
@@ -124,4 +125,46 @@ class WaveBuildRecordTest extends Specification {
 
     }
 
+    @Unroll
+    def 'should validate status and succeeded' () {
+       given:
+        final request = new BuildRequest(
+                'container1234',
+                'FROM foo:latest',
+                'conda::recipe',
+                Path.of("/some/path"),
+                'docker.io/my/repo:container1234',
+                PlatformId.NULL,
+                ContainerPlatform.of('amd64'),
+                'docker.io/my/cache',
+                '1.2.3.4',
+                '{"config":"json"}',
+                null,
+                null,
+                'scan12345',
+                null,
+                BuildFormat.DOCKER,
+                Duration.ofMinutes(1)
+        ).withBuildId('123')
+
+        final result = new BuildResult(request.buildId, EXIT, "ok", Instant.now(), DURATION, null)
+        final event = new BuildEvent(request, result)
+
+        when:
+        final build = WaveBuildRecord.fromEvent(event)
+        then:
+        build.succeeded() == EXPECET_SUCCEED
+
+        when:
+        def resp = build.toStatusResponse()
+        then:
+        resp.succeeded == EXPECET_SUCCEED
+        resp.status == EXPECT_STATUS
+        where:
+        EXIT    | DURATION              | EXPECET_SUCCEED  | EXPECT_STATUS
+        null    | null                  | null            | BuildStatusResponse.Status.PENDING
+        0       | null                  | null            | BuildStatusResponse.Status.PENDING
+        1       | Duration.ofSeconds(1) | false            | BuildStatusResponse.Status.COMPLETED
+        0       | Duration.ofSeconds(1) | true             | BuildStatusResponse.Status.COMPLETED
+    }
 }
