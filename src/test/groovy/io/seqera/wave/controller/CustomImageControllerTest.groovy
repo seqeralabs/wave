@@ -40,7 +40,7 @@ import io.seqera.wave.model.ContentType
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.ContainerBuildService
-import io.seqera.wave.service.builder.ContainerBuildServiceImpl
+import io.seqera.wave.service.builder.impl.ContainerBuildServiceImpl
 import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage

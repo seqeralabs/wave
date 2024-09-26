@@ -43,7 +43,7 @@ import jakarta.inject.Singleton
 class PairingServiceImpl implements PairingService {
 
     @Inject
-    private PairingCacheStore store
+    private PairingStore store
 
     /**
      * The period of time after which the token should be renewed

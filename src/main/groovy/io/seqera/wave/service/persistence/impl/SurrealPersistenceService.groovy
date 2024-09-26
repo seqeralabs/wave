@@ -30,7 +30,7 @@ import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.mirror.MirrorState
+import io.seqera.wave.service.mirror.MirrorEntry
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
@@ -260,12 +260,12 @@ class SurrealPersistenceService implements PersistenceService {
      * Load a mirror state record
      *
      * @param mirrorId The ID of the mirror record
-     * @return The corresponding {@link MirrorState} object or null if it cannot be found
+     * @return The corresponding {@link MirrorEntry} object or null if it cannot be found
      */
-    MirrorState loadMirrorState(String mirrorId) {
+    MirrorEntry loadMirrorEntry(String mirrorId) {
         final query = "select * from wave_mirror where mirrorId = '$mirrorId'"
         final json = surrealDb.sqlAsString(getAuthorization(), query)
-        final type = new TypeReference<ArrayList<SurrealResult<MirrorState>>>() {}
+        final type = new TypeReference<ArrayList<SurrealResult<MirrorEntry>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
         return result
@@ -276,24 +276,24 @@ class SurrealPersistenceService implements PersistenceService {
      *
      * @param targetImage The target mirrored image name
      * @param digest The image content SHA256 digest
-     * @return The corresponding {@link MirrorState} object or null if it cannot be found
+     * @return The corresponding {@link MirrorEntry} object or null if it cannot be found
      */
-    MirrorState loadMirrorState(String targetImage, String digest) {
+    MirrorEntry loadMirrorEntry(String targetImage, String digest) {
         final query = "select * from wave_mirror where targetImage = '$targetImage' and digest = '$digest'"
         final json = surrealDb.sqlAsString(getAuthorization(), query)
-        final type = new TypeReference<ArrayList<SurrealResult<MirrorState>>>() {}
+        final type = new TypeReference<ArrayList<SurrealResult<MirrorEntry>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
         return result
     }
 
     /**
-     * Persists a {@link MirrorState} object
+     * Persists a {@link MirrorEntry} object
      *
-     * @param mirror {@link MirrorState} object
+     * @param mirror {@link MirrorEntry} object
      */
     @Override
-    void saveMirrorState(MirrorState mirror) {
+    void saveMirrorEntry(MirrorEntry mirror) {
         surrealDb.insertMirrorAsync(getAuthorization(), mirror).subscribe({ result->
             log.trace "Mirror request with id '$mirror.mirrorId' saved record: ${result}"
         }, {error->
