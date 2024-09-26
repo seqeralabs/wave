@@ -24,20 +24,19 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
+import io.seqera.wave.api.BuildStatusResponse
+import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
-import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
-import io.seqera.wave.service.builder.BuildEntry
-
 /**
  * A collection of request and response properties to be stored
  *
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
-@ToString
+@ToString(includePackage = false, includeNames = true)
 @CompileStatic
 @EqualsAndHashCode
 class WaveBuildRecord {
@@ -59,7 +58,9 @@ class WaveBuildRecord {
     BuildFormat format
     String digest
 
-    boolean succeeded() { exitStatus==0 }
+    Boolean succeeded() {
+        return duration != null ? (exitStatus==0) : null
+    }
 
     static WaveBuildRecord fromEntry(BuildEntry entry) {
         create0(entry.request, entry.result)
@@ -93,19 +94,16 @@ class WaveBuildRecord {
     }
     
     BuildStatusResponse toStatusResponse() {
-        final status = exitStatus != null
+        final status = duration!=null
                 ? BuildStatusResponse.Status.COMPLETED
                 : BuildStatusResponse.Status.PENDING
-        final succeeded = exitStatus!=null
-                    ? exitStatus==0
-                    : null
+
         return new BuildStatusResponse(
                 buildId,
                 status,
                 startTime,
                 duration,
-                succeeded,
-        )
+                succeeded() )
     }
 
 }
