@@ -72,7 +72,9 @@ class LocalMessageStream implements MessageStream<String> {
         }
         finally {
             if( !result ) {
-                offer(streamId, message)
+                // add again message not consumed to mimic the behavior or redis stream
+                sleep(1_000)
+                offer(streamId,message)
             }
             return result
         }

@@ -19,14 +19,12 @@
 package io.seqera.wave.service.persistence
 
 import spock.lang.Specification
-import spock.lang.Unroll
 
 import java.time.Duration
 import java.time.Instant
 
-import io.seqera.wave.service.scan.ScanResult
+import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
-
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
@@ -51,7 +49,7 @@ class WaveScanRecordTest extends Specification {
         def vulns = List.of(scanVulnerability)
 
         when:
-        def scanResult= new ScanResult(
+        def scanResult= new ScanEntry(
                 scanId,
                 buildId,
                 containerImage,
@@ -60,11 +58,12 @@ class WaveScanRecordTest extends Specification {
                 'SUCCEEDED',
                 vulns)
         then:
-        scanResult.id == scanId
+        scanResult.scanId == scanId
         scanResult.buildId == buildId
         scanResult.containerImage == containerImage
         scanResult.isCompleted()
         scanResult.isSucceeded()
+        scanResult.done()
 
         when:
         def scanRecord = new WaveScanRecord(scanId, scanResult)
@@ -75,14 +74,4 @@ class WaveScanRecordTest extends Specification {
         scanRecord.vulnerabilities[0] == scanVulnerability
     }
 
-    @Unroll
-    def 'should validate done' () {
-        expect:
-        RECORD.done() == EXPECTED
-
-        where:
-        EXPECTED| RECORD
-        false   | new WaveScanRecord('123', 'scan-123', 'testcontainerimage', Instant.now())
-        true    | new WaveScanRecord('123', 'scan-123', 'testcontainerimage', Instant.now(), Duration.ofMinutes(1), 'OK', [])
-    }
 }

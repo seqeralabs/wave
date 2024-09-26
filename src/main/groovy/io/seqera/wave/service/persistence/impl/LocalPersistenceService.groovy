@@ -20,7 +20,7 @@ package io.seqera.wave.service.persistence.impl
 
 import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerDigestPair
-import io.seqera.wave.service.mirror.MirrorState
+import io.seqera.wave.service.mirror.MirrorEntry
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
@@ -39,7 +39,7 @@ class LocalPersistenceService implements PersistenceService {
 
     private Map<String,WaveContainerRecord> requestStore = new HashMap<>()
     private Map<String,WaveScanRecord> scanStore = new HashMap<>()
-    private Map<String, MirrorState> mirrorStore = new HashMap<>()
+    private Map<String, MirrorEntry> mirrorStore = new HashMap<>()
 
     @Override
     void saveBuild(WaveBuildRecord record) {
@@ -98,15 +98,15 @@ class LocalPersistenceService implements PersistenceService {
         scanStore.get(scanId)
     }
 
-    MirrorState loadMirrorState(String mirrorId) {
+    MirrorEntry loadMirrorEntry(String mirrorId) {
         mirrorStore.get(mirrorId)
     }
 
-    MirrorState loadMirrorState(String targetImage, String digest) {
-        mirrorStore.values().find( (MirrorState mirror) ->  mirror.targetImage==targetImage && mirror.digest==digest )
+    MirrorEntry loadMirrorEntry(String targetImage, String digest) {
+        mirrorStore.values().find( (MirrorEntry mirror) ->  mirror.targetImage==targetImage && mirror.digest==digest )
     }
 
-    void saveMirrorState(MirrorState mirror) {
+    void saveMirrorEntry(MirrorEntry mirror) {
         mirrorStore.put(mirror.mirrorId, mirror)
     }
 

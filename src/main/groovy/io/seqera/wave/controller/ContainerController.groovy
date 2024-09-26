@@ -484,13 +484,13 @@ class ContainerController {
         // check for dry-run execution
         if( dryRun ) {
             log.debug "== Dry-run request request: $request"
-            final dryId = request.id +  BuildRequest.SEP + '0'
+            final dryId = request.mirrorId +  BuildRequest.SEP + '0'
             return new BuildTrack(dryId, request.targetImage, cached)
         }
         // check for existing image
         if( request.digest==targetDigest ) {
             log.debug "== Found cached request for request: $request"
-            final cache = persistenceService.loadMirrorState(request.targetImage, targetDigest)
+            final cache = persistenceService.loadMirrorEntry(request.targetImage, targetDigest)
             return new BuildTrack(cache?.mirrorId, request.targetImage, true)
         }
         else {

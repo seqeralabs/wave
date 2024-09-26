@@ -33,7 +33,7 @@ import io.seqera.wave.service.builder.BuildRequest
 @Canonical
 @CompileStatic
 class ScanRequest {
-    final String id
+    final String scanId
     final String buildId
     final String configJson
     final String targetImage

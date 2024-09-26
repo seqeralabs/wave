@@ -22,7 +22,7 @@ import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.seqera.wave.service.blob.BlobCacheInfo
+import io.seqera.wave.service.blob.BlobEntry
 import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildStrategy
@@ -70,11 +70,11 @@ class JobServiceImpl implements JobService {
     private MirrorStrategy mirrorStrategy
 
     @Override
-    JobSpec launchTransfer(BlobCacheInfo blob, List<String> command) {
+    JobSpec launchTransfer(BlobEntry blob, List<String> command) {
         if( !transferStrategy )
             throw new IllegalStateException("Blob cache service is not available - check configuration setting 'wave.blobCache.enabled'")
         // create the ID for the job transfer
-        final job = jobFactory.transfer(blob.id())
+        final job = jobFactory.transfer(blob.getKey())
         // submit the job execution
         transferStrategy.launchJob(job.operationName, command)
         // signal the transfer has been submitted

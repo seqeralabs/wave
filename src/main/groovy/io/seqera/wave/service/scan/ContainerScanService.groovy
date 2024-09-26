@@ -30,4 +30,5 @@ interface ContainerScanService {
     void scan(ScanRequest request)
 
     WaveScanRecord getScanResult(String scanId)
+
 }

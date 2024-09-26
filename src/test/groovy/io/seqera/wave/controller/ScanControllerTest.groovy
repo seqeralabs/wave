@@ -31,7 +31,7 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ContainerScanService
-import io.seqera.wave.service.scan.ScanResult
+import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
 import jakarta.inject.Inject
 /**
@@ -66,7 +66,7 @@ class ScanControllerTest extends Specification {
         def results = List.of(scanVulnerability)
         def scanRecord = new WaveScanRecord(
                                                 buildId,
-                                                new ScanResult(
+                                                new ScanEntry(
                                                         scanId,
                                                         buildId,
                                                         containerImage,
