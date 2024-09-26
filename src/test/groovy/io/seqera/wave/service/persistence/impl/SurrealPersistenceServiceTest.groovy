@@ -263,6 +263,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         
         when:
         def loaded = persistence.loadContainerRequest(TOKEN)
+        request.id = "wave_request:$TOKEN" //surrealdb will add table name in front of id
+
         then:
         loaded == request
 
