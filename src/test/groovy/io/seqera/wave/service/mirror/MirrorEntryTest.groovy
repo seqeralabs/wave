@@ -29,7 +29,7 @@ import io.seqera.wave.core.ContainerPlatform
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class MirrorResultTest extends Specification {
+class MirrorEntryTest extends Specification {
 
     def 'should create a result from a request' () {
         given:
