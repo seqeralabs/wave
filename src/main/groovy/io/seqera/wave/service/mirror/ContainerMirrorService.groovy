@@ -58,6 +58,6 @@ interface ContainerMirrorService {
      *      The {@link MirrorEntry} object modelling the current state of the mirror operation,
      *      or {@link null} otherwise
      */
-    MirrorEntry getMirrorEntry(String id)
+    MirrorResult getMirrorResult(String id)
 
 }

@@ -33,7 +33,6 @@ import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.mirror.MirrorEntry
-import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveScanRecord
 import jakarta.inject.Inject
@@ -80,14 +79,14 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         }
     }
 
-    void scanOnMirror(MirrorRequest request, MirrorEntry state) {
+    void scanOnMirror(MirrorEntry entry) {
         try {
-            if( state.succeeded() ) {
-                scan(ScanRequest.fromMirror(request))
+            if( entry.result.succeeded() ) {
+                scan(ScanRequest.fromMirror(entry.request))
             }
         }
         catch (Exception e) {
-            log.warn "Unable to run the container scan - image=${request.targetImage}; reason=${e.message?:e}"
+            log.warn "Unable to run the container scan - image=${entry.request.targetImage}; reason=${e.message?:e}"
         }
     }
 

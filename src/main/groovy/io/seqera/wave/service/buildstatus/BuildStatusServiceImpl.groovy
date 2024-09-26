@@ -52,7 +52,7 @@ class BuildStatusServiceImpl implements BuildStatusService{
         if( requestId.startsWith(MirrorRequest.ID_PREFIX) ) {
             handleMirrorRequest(requestId)
             return mirrorService
-                    .getMirrorEntry(requestId)
+                    .getMirrorResult(requestId)
                     ?.toStatusResponse()
         }
         else {
@@ -61,5 +61,13 @@ class BuildStatusServiceImpl implements BuildStatusService{
                     .getBuildRecord(requestId)
                     ?.toStatusResponse()
         }
+    }
+
+    protected handleMirrorRequest(String requestId) {
+
+    }
+
+    protected handleBuildRequest(String requestId) {
+
     }
 }

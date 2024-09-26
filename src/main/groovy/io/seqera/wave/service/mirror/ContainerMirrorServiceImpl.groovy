@@ -66,7 +66,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
      */
     @Override
     BuildTrack mirrorImage(MirrorRequest request) {
-        if( store.putIfAbsent(request.targetImage, MirrorEntry.from(request))) {
+        if( store.putIfAbsent(request.targetImage, MirrorEntry.of(request))) {
             log.info "== Container mirror submitted - request=$request"
             jobService.launchMirror(request)
             return new BuildTrack(request.mirrorId, request.targetImage, false)
@@ -77,7 +77,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
             // note: mark as cached only if the build result is 'done'
             // if the build is still in progress it should be marked as not cached
             // so that the client will wait for the container completion
-            return new BuildTrack(ret.mirrorId, ret.targetImage, ret.done())
+            return new BuildTrack(ret.request.mirrorId, ret.request.targetImage, ret.done())
         }
         // invalid state
         throw new IllegalStateException("Unable to determine mirror status for '$request.targetImage'")
@@ -95,8 +95,8 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
      * {@inheritDoc}
      */
     @Override
-    MirrorEntry getMirrorEntry(String mirrorId) {
-        store.findByRequestId(mirrorId) ?: persistence.loadMirrorEntry(mirrorId)
+    MirrorResult getMirrorResult(String mirrorId) {
+        store.findByRequestId(mirrorId).result ?: persistence.loadMirrorResult(mirrorId)
     }
 
     /**
@@ -112,10 +112,10 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
      */
     @Override
     void onJobCompletion(JobSpec jobSpec, MirrorEntry entry, JobState jobState) {
-        final result = entry.complete(jobState.exitCode, jobState.stdout)
-        store.put(entry.targetImage, result)
-        persistence.saveMirrorEntry(result)
-        scanService.scanOnMirror()
+        final result = entry.result.complete(jobState.exitCode, jobState.stdout)
+        store.put(entry.key, entry.withResult(result))
+        persistence.saveMirrorResult(result)
+        scanService.scanOnMirror(entry.withResult(result))
         log.debug "Mirror container completed - job=${jobSpec.operationName}; result=${result}; state=${jobState}"
     }
 
@@ -124,9 +124,9 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
      */
     @Override
     void onJobTimeout(JobSpec jobSpec, MirrorEntry entry) {
-        final result = entry.complete(null, "Container mirror timed out")
-        store.put(entry.targetImage, result)
-        persistence.saveMirrorEntry(result)
+        final result = entry.result.complete(null, "Container mirror timed out")
+        store.put(entry.key, entry.withResult(result))
+        persistence.saveMirrorResult(result)
         log.warn "Mirror container timed out - job=${jobSpec.operationName}; result=${result}"
     }
 
@@ -135,9 +135,9 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
      */
     @Override
     void onJobException(JobSpec job, MirrorEntry entry, Throwable error) {
-        final result = entry.complete(null, error.message)
-        store.put(entry.key, result)
-        persistence.saveMirrorEntry(result)
+        final result = entry.result.complete(null, error.message)
+        store.put(entry.key, entry.withResult(result))
+        persistence.saveMirrorResult(result)
         log.error("Mirror container errored - job=${job.operationName}; result=${result}", error)
     }
 }

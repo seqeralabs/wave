@@ -91,7 +91,7 @@ class BuildController {
         // build IDs starting with the `mr-` prefix are interpreted as mirror requests
         if( buildId.startsWith(MirrorRequest.ID_PREFIX) ) {
             return mirrorService
-                    .getMirrorEntry(buildId)
+                    .getMirrorResult(buildId)
                     ?.toStatusResponse()
         }
         else {

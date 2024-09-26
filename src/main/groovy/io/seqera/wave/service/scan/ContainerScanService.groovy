@@ -20,7 +20,6 @@ package io.seqera.wave.service.scan
 
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.mirror.MirrorEntry
-import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.persistence.WaveScanRecord
 /**
  * Declare operations to scan containers
@@ -33,7 +32,7 @@ interface ContainerScanService {
 
     void scanOnBuild(BuildEvent build)
 
-    void scanOnMirror(MirrorRequest request, MirrorEntry state)
+    void scanOnMirror(MirrorEntry entry)
 
     WaveScanRecord getScanResult(String scanId)
 }

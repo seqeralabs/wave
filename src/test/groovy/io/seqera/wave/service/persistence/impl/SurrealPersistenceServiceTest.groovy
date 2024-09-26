@@ -332,12 +332,12 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         and:
         storage.initializeDb()
         and:
-        def result = MirrorEntry.from(request)
-        storage.saveMirrorEntry(result)
+        def result = MirrorEntry.of(request)
+        storage.saveMirrorResult(result)
         sleep 100
 
         when:
-        def stored = storage.loadMirrorEntry(request.mirrorId)
+        def stored = storage.loadMirrorResult(request.mirrorId)
         then:
         stored == result
     }
@@ -356,12 +356,12 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         and:
         storage.initializeDb()
         and:
-        def result = MirrorEntry.from(request)
-        storage.saveMirrorEntry(result)
+        def result = MirrorEntry.of(request)
+        storage.saveMirrorResult(result)
         sleep 100
 
         when:
-        def stored = storage.loadMirrorEntry(request.targetImage, request.digest)
+        def stored = storage.loadMirrorResult(request.targetImage, request.digest)
         then:
         stored == result
     }
