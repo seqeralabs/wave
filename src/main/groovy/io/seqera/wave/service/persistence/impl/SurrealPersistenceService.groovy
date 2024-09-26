@@ -100,15 +100,20 @@ class SurrealPersistenceService implements PersistenceService {
 
     @Override
     void saveBuild(WaveBuildRecord build) {
-        surrealDb.insertBuildAsync(getAuthorization(), build).subscribe({ result->
-            log.trace "Build request with id '$build.buildId' saved record: ${result}"
-        }, {error->
-            def msg = error.message
-            if( error instanceof HttpClientResponseException ){
-                msg += ":\n $error.response.body"
-            }
-            log.error("Error saving Build request record ${msg}\n${build}", error)
-        })
+        final query = "INSERT INTO wave_build ${JacksonHelper.toJson(build)}"
+        log.debug("Query: ${query}")
+        surrealDb
+                .sqlAsync(getAuthorization(), query)
+                .subscribe({result ->
+                    log.trace "Conda file added in wave_build with buildId '$build.buildId': ${result}"
+                },
+                        {error->
+                            def msg = error.message
+                            if( error instanceof HttpClientResponseException ){
+                                msg += ":\n $error.response.body"
+                            }
+                            log.error("Error saving conda file in wave_build with buildId '$build.buildId => ${msg}\n", error)
+                        })
     }
 
     @Override
@@ -166,17 +171,23 @@ class SurrealPersistenceService implements PersistenceService {
         return result
     }
 
-    @Override
+
     void saveContainerRequest(String token, WaveContainerRecord data) {
-        surrealDb.insertContainerRequestAsync(authorization, token, data).subscribe({ result->
-            log.trace "Container request with token '$token' saved record: ${result}"
-        }, {error->
-            def msg = error.message
-            if( error instanceof HttpClientResponseException ){
-                msg += ":\n $error.response.body"
-            }
-            log.error("Error saving container request record ${msg}\n${data}", error)
-        })
+        data.id = token
+        final query = "INSERT INTO wave_request ${JacksonHelper.toJson(data)}"
+        log.info("Query: ${query}")
+        surrealDb
+                .sqlAsync(getAuthorization(), query)
+                .subscribe({result ->
+                    log.trace "Container request with token '$token' saved record: ${result}"
+                },
+                        {error->
+                            def msg = error.message
+                            if( error instanceof HttpClientResponseException ){
+                                msg += ":\n $error.response.body"
+                            }
+                            log.error("Error saving container request record ${msg}\n${data}", error)
+                        })
     }
 
     void updateContainerRequest(String token, ContainerDigestPair digest) {

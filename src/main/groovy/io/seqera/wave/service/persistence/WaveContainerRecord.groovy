@@ -26,7 +26,6 @@ import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.api.ContainerConfig
-import io.seqera.wave.api.FusionVersion
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.tower.User
@@ -41,6 +40,11 @@ import static io.seqera.wave.util.DataTimeUtils.parseOffsetDateTime
 @Canonical
 @CompileStatic
 class WaveContainerRecord {
+
+    /**
+     * wave request id, this will be the token
+     */
+    String id
 
     /**
      * The Tower user associated with the request
