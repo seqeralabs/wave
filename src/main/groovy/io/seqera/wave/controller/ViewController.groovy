@@ -37,6 +37,7 @@ import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
+import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
@@ -69,6 +70,9 @@ class ViewController {
 
     @Inject
     private ContainerInspectService inspectService
+
+    @Inject
+    private ContainerScanService scanService
 
     @View("build-view")
     @Get('/builds/{buildId}')
@@ -222,7 +226,7 @@ class ViewController {
      * @throws NotFoundException If the a record for the specified build ID cannot be found
      */
     protected ScanEntry loadScanResult(String scanId) {
-        final scanRecord = persistenceService.loadScanRecord(scanId)
+        final scanRecord = scanService.getScanResult(scanId)
         if( !scanRecord )
             throw new NotFoundException("No scan report exists with id: ${scanId}")
 
