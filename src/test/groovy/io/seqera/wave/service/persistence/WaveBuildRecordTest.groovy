@@ -134,6 +134,7 @@ class WaveBuildRecordTest extends Specification {
                 'container1234',
                 'FROM foo:latest',
                 'conda::recipe',
+                null,
                 Path.of("/some/path"),
                 'docker.io/my/repo:container1234',
                 PlatformId.NULL,
