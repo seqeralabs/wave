@@ -101,7 +101,6 @@ class SurrealPersistenceService implements PersistenceService {
     @Override
     void saveBuild(WaveBuildRecord build) {
         final query = "INSERT INTO wave_build ${JacksonHelper.toJson(build)}"
-        log.debug("Query: ${query}")
         surrealDb
                 .sqlAsync(getAuthorization(), query)
                 .subscribe({result ->
