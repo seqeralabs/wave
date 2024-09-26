@@ -1,4 +1,7 @@
 # Wave changelog
+1.12.4 - 26 Sep 2024
+- Fix build succeded & status response [8a760b39]
+
 1.12.3 - 22 Sep 2024
 - Fix build status completion of submit exception [3c3af360]
 - Fix singularity build mounts [3b338b29]
