@@ -25,7 +25,6 @@ import java.util.concurrent.ExecutorService
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.service.builder.BuildEvent
@@ -33,6 +32,8 @@ import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
+import io.seqera.wave.service.mirror.MirrorEntry
+import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveScanRecord
 import jakarta.inject.Inject
@@ -67,9 +68,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     @Inject
     private JobService jobService
 
-
-    @EventListener
-    void onBuildEvent(BuildEvent event) {
+    @Override
+    void scanOnBuild(BuildEvent event) {
         try {
             if( event.result.succeeded() && event.request.format == DOCKER ) {
                 scan(ScanRequest.fromBuild(event.request))
@@ -77,6 +77,17 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         }
         catch (Exception e) {
             log.warn "Unable to run the container scan - image=${event.request.targetImage}; reason=${e.message?:e}"
+        }
+    }
+
+    void scanOnMirror(MirrorRequest request, MirrorEntry state) {
+        try {
+            if( state.succeeded() ) {
+                scan(ScanRequest.fromMirror(request))
+            }
+        }
+        catch (Exception e) {
+            log.warn "Unable to run the container scan - image=${request.targetImage}; reason=${e.message?:e}"
         }
     }
 

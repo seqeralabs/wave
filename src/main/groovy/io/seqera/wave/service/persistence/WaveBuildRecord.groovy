@@ -104,7 +104,8 @@ class WaveBuildRecord {
                 status,
                 startTime,
                 duration,
-                succeeded )
+                succeeded,
+        )
     }
 
 }

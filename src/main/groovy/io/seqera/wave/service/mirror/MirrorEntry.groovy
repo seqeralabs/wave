@@ -111,6 +111,7 @@ class MirrorEntry implements StateEntry<String>, JobEntry, RequestIdAware {
                 status,
                 creationTime,
                 duration,
-                succeeded )
+                succeeded,
+        )
     }
 }

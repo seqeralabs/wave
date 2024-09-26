@@ -30,10 +30,10 @@ import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.scan.ContainerScanService
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
-
 /**
  * Implement a service to mirror a container image to a repository specified by the user
  *
@@ -57,6 +57,9 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
 
     @Inject
     private PersistenceService persistence
+
+    @Inject
+    private ContainerScanService scanService
 
     /**
      * {@inheritDoc}
@@ -112,6 +115,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
         final result = entry.complete(jobState.exitCode, jobState.stdout)
         store.put(entry.targetImage, result)
         persistence.saveMirrorEntry(result)
+        scanService.scanOnMirror()
         log.debug "Mirror container completed - job=${jobSpec.operationName}; result=${result}; state=${jobState}"
     }
 

@@ -55,6 +55,7 @@ import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
+import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.stream.StreamService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.Retryable
@@ -121,6 +122,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
 
     @Inject
     private RegistryProxyService proxyService
+
+    @Inject
+    private ContainerScanService scanService
     
     /**
      * Build a container image for the given {@link io.seqera.wave.service.builder.BuildRequest}
@@ -362,6 +366,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     protected void onBuildEvent(BuildEvent event) {
         final record0 = WaveBuildRecord.fromEvent(event)
         persistenceService.saveBuild(record0)
+        scanService.scanOnBuild(event)
     }
 
     /**

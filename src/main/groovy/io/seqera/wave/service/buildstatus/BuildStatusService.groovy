@@ -16,24 +16,16 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.scan
+package io.seqera.wave.service.buildstatus
 
-import io.seqera.wave.service.builder.BuildEvent
-import io.seqera.wave.service.mirror.MirrorEntry
-import io.seqera.wave.service.mirror.MirrorRequest
-import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.api.BuildStatusResponse
+
 /**
- * Declare operations to scan containers
  *
- * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface ContainerScanService {
+interface BuildStatusService {
 
-    void scan(ScanRequest request)
+    BuildStatusResponse getBuildStatus(String requestId)
 
-    void scanOnBuild(BuildEvent build)
-
-    void scanOnMirror(MirrorRequest request, MirrorEntry state)
-
-    WaveScanRecord getScanResult(String scanId)
 }

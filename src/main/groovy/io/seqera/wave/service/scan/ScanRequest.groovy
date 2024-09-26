@@ -25,6 +25,9 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.mirror.MirrorRequest
+import io.seqera.wave.util.LongRndKey
+
 /**
  * Model a container scan request
  * 
@@ -45,5 +48,12 @@ class ScanRequest {
         final id = request.scanId
         final workDir = request.workDir.resolveSibling("scan-${id}")
         return new ScanRequest(id, request.buildId, request.configJson, request.targetImage, request.platform, workDir, Instant.now())
+    }
+
+    static ScanRequest fromMirror(MirrorRequest request) {
+        final id = LongRndKey.rndHex()
+        final workDir = request.workDir.resolveSibling("scan-${id}")
+        return new ScanRequest(id, request.mirrorId, request.authJson, request.targetImage, request.platform, workDir, Instant.now())
+
     }
 }
