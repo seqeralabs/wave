@@ -24,14 +24,9 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-import io.seqera.wave.api.BuildStatusResponse
-import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.api.BuildStatusResponse
-
-import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.builder.BuildResult
 /**
  * A collection of request and response properties to be stored
  *
