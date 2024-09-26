@@ -27,7 +27,6 @@ import groovy.transform.ToString
 import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.core.ContainerPlatform
 import jakarta.inject.Singleton
-
 /**
  * Model a container mirror entry object
  * 

@@ -35,4 +35,5 @@ interface ContainerScanService {
     void scanOnMirror(MirrorEntry entry)
 
     WaveScanRecord getScanResult(String scanId)
+
 }

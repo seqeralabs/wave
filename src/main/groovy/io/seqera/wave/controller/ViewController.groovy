@@ -70,6 +70,9 @@ class ViewController {
     @Inject
     private ContainerInspectService inspectService
 
+    @Inject
+    private ContainerScanService scanService
+
     @View("build-view")
     @Get('/builds/{buildId}')
     HttpResponse viewBuild(String buildId) {
