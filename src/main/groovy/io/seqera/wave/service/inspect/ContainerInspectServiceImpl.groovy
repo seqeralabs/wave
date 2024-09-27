@@ -223,7 +223,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
     }
 
     @Override
-    ContainerSpec containerSpec(String containerImage, PlatformId identity, String platform) {
+    ContainerSpec containerSpec(String containerImage, String platform, PlatformId identity) {
         final path = ContainerCoordinates.parse(containerImage)
 
         final creds = credentialsProvider.getCredentials(path, identity)

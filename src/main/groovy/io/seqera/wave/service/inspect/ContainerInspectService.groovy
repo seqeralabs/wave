@@ -73,5 +73,5 @@ interface ContainerInspectService {
      * @return
      *      The {@link ContainerSpec} object modelling the container image inspect metadata
      */
-    ContainerSpec containerSpec(String containerImage, PlatformId identity, String platform)
+    ContainerSpec containerSpec(String containerImage, String platform, PlatformId identity)
 }
