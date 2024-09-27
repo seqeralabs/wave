@@ -278,8 +278,8 @@ class ContainerController {
 
     protected void storeContainerRequest0(SubmitContainerTokenRequest req, ContainerRequestData data, TokenData token, String target, String ip) {
         try {
-            final recrd = new WaveContainerRecord(req, data, target, ip, token.expiration)
-            persistenceService.saveContainerRequest(token.value, recrd)
+            final recrd = new WaveContainerRecord(req, data, token.value, target, ip, token.expiration)
+            persistenceService.saveContainerRequest(recrd)
         }
         catch (Throwable e) {
             log.error("Unable to store container request with token: ${token}", e)

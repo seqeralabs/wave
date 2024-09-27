@@ -254,20 +254,38 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def addr = "100.200.300.400"
         def exp = Instant.now().plusSeconds(3600)
         and:
-        def request = new WaveContainerRecord(req, data, wave, addr, exp)
+        def request = new WaveContainerRecord(req, data, TOKEN, wave, addr, exp)
 
         and:
-        persistence.saveContainerRequest(TOKEN, request)
+        persistence.saveContainerRequest(request)
         and:
         sleep 200  // <-- the above request is async, give time to save it
         
         when:
         def loaded = persistence.loadContainerRequest(TOKEN)
-        request.id = "wave_request:$TOKEN" //surrealdb will add table name in front of id
 
         then:
-        loaded == request
-
+        verifyAll(loaded) {
+            loaded.id == "wave_request:$request.id" //surrealdb will add table name in front of id
+            loaded.user == request.user
+            loaded.workspaceId == request.workspaceId
+            loaded.containerImage == request.containerImage
+            loaded.containerConfig == request.containerConfig
+            loaded.platform == request.platform
+            loaded.towerEndpoint == request.towerEndpoint
+            loaded.buildRepository == request.buildRepository
+            loaded.cacheRepository == request.cacheRepository
+            loaded.fingerprint == request.fingerprint
+            loaded.sourceImage == request.sourceImage
+            loaded.sourceDigest == request.sourceDigest
+            loaded.waveImage == request.waveImage
+            loaded.waveDigest == request.waveDigest
+            loaded.expiration == request.expiration
+            loaded.buildId == request.buildId
+            loaded.buildNew == request.buildNew
+            loaded.freeze == request.freeze
+            loaded.fusionVersion == request.fusionVersion
+        }
 
         // should update the record
         when:

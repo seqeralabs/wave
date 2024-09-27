@@ -70,10 +70,9 @@ interface PersistenceService {
     /**
      * Store a {@link WaveContainerRecord} object in the Surreal wave_request table.
      *
-     * @param token The request token associated with this request
      * @param data A {@link WaveContainerRecord} object representing a Wave request record
      */
-    void saveContainerRequest(String token, WaveContainerRecord data)
+    void saveContainerRequest(WaveContainerRecord data)
 
     /**
      * Update a container request with the digest of the resolved request
