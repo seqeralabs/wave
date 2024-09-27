@@ -26,8 +26,6 @@ import java.time.Duration
 import java.time.Instant
 
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.persistence.WaveScanRecord
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -45,7 +43,7 @@ class ScanResultTest extends Specification {
         def ts = Instant.now().minus(elapsed)
         def CVE1 = new ScanVulnerability('cve-1', 'x1', 'title1', 'package1', 'version1', 'fixed1', 'url1')
         when:
-        def result = new ScanResult(
+        def result = new ScanEntry(
                     '123',
                     'build-123',
                     'docker.io/foo/bar:latest',
@@ -55,7 +53,7 @@ class ScanResultTest extends Specification {
                     [ CVE1 ]
                 )
         then:
-        result.id == '123'
+        result.scanId == '123'
         result.buildId == 'build-123'
         result.containerImage == 'docker.io/foo/bar:latest'
         result.startTime == ts
@@ -67,7 +65,7 @@ class ScanResultTest extends Specification {
     @Unroll
     def 'should validate completed' () {
         when:
-        def result = new ScanResult(
+        def result = new ScanEntry(
                 '123',
                 'build-123',
                 'docker.io/foo/bar:latest',
@@ -78,6 +76,7 @@ class ScanResultTest extends Specification {
         )
         then:
         result.isCompleted() == EXPECTED
+        result.done() == EXPECTED
 
         where:
         DURATION                | EXPECTED
@@ -88,7 +87,7 @@ class ScanResultTest extends Specification {
     @Unroll
     def 'should validate completed' () {
         when:
-        def result = new ScanResult(
+        def result = new ScanEntry(
                 '123',
                 'build-123',
                 'docker.io/foo/bar:latest',
@@ -112,9 +111,9 @@ class ScanResultTest extends Specification {
         def elapsed = Duration.ofMinutes(1)
         def ts = Instant.now().minus(elapsed)
         when:
-        def result = ScanResult.create('scan-123', 'build-123', 'ubuntu:latest', ts,  Duration.ofMinutes(1), 'XYZ', [cve1])
+        def result = ScanEntry.create('scan-123', 'build-123', 'ubuntu:latest', ts,  Duration.ofMinutes(1), 'XYZ', [cve1])
         then:
-        result.id == 'scan-123'
+        result.scanId == 'scan-123'
         result.buildId == 'build-123'
         result.containerImage == 'ubuntu:latest'
         result.startTime == ts
@@ -129,23 +128,23 @@ class ScanResultTest extends Specification {
         def elapsed = Duration.ofMinutes(1)
         def ts = Instant.now().minus(elapsed)
         and:
-        def record = new WaveScanRecord(
-                id: '12345',
-                buildId: 'build-12345',
-                containerImage: 'docker.io/some:image',
-                startTime: ts,
-                duration: elapsed,
-                status: ScanResult.SUCCEEDED,
-                vulnerabilities: [cve1] )
+        def scan = new ScanEntry(
+                '12345',
+                'build-12345',
+                'docker.io/some:image',
+                ts,
+                elapsed,
+                ScanEntry.SUCCEEDED,
+                [cve1] )
         when:
-        def result = ScanResult.success(record, record.vulnerabilities)
+        def result = scan.success(scan.vulnerabilities)
         then:
-        result.id == '12345'
+        result.scanId == '12345'
         result.buildId == 'build-12345'
         result.containerImage == 'docker.io/some:image'
         result.startTime == ts
         nearly(result.duration, elapsed)
-        result.status == ScanResult.SUCCEEDED
+        result.status == ScanEntry.SUCCEEDED
         result.vulnerabilities == [cve1]
     }
 
@@ -154,24 +153,26 @@ class ScanResultTest extends Specification {
         def elapsed = Duration.ofMinutes(1)
         def ts = Instant.now().minus(elapsed)
         and:
-        def record = new WaveScanRecord(
-                id: '12345',
-                buildId: 'build-12345',
-                containerImage: 'docker.io/some:image',
-                startTime: ts,
-                duration: elapsed,
-                status: ScanResult.FAILED,
-                vulnerabilities: [] )
+        def scan = new ScanEntry(
+                '12345',
+                'build-12345',
+                'docker.io/some:image',
+                ts,
+                elapsed,
+                ScanEntry.FAILED,
+                [] )
         when:
-        def result = ScanResult.failure(record)
+        def result = scan.failure(1, "Oops something has failed")
         then:
-        result.id == '12345'
+        result.scanId == '12345'
         result.buildId == 'build-12345'
         result.containerImage == 'docker.io/some:image'
         result.startTime == ts
         nearly(result.duration, elapsed)
-        result.status == ScanResult.FAILED
+        result.status == ScanEntry.FAILED
         result.vulnerabilities == []
+        result.exitCode == 1
+        result.logs == "Oops something has failed"
     }
 
     def 'should create failed result from request' () {
@@ -188,14 +189,31 @@ class ScanResultTest extends Specification {
                 Path.of('/some/path'),
                 ts )
         when:
-        def result = ScanResult.failure(request)
+        def result = ScanEntry.failure(request)
         then:
-        result.id == 'scan-123'
+        result.scanId == 'scan-123'
         result.buildId == 'build-345'
         result.containerImage == 'docker.io/foo/bar'
         result.startTime == ts
         nearly(result.duration, elapsed)
-        result.status == ScanResult.FAILED
+        result.status == ScanEntry.FAILED
         result.vulnerabilities == []
+    }
+
+    def 'should create scan pending' () {
+        given:
+        def ts = Instant.now()
+
+        when:
+        def scan = ScanEntry.pending('result-123', 'build-345', 'docker.io/foo/bar')
+        then:
+        scan.scanId == 'result-123'
+        scan.buildId == 'build-345'
+        scan.containerImage == 'docker.io/foo/bar'
+        scan.startTime >= ts
+        scan.status == ScanEntry.PENDING
+        scan.vulnerabilities == []
+        scan.exitCode == null
+        scan.logs == null
     }
 }

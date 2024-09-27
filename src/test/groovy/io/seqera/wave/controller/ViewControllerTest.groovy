@@ -42,8 +42,7 @@ import io.seqera.wave.service.logs.BuildLogServiceImpl
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
-import io.seqera.wave.service.persistence.WaveScanRecord
-import io.seqera.wave.service.scan.ScanResult
+import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
@@ -311,15 +310,15 @@ class ViewControllerTest extends Specification {
         given:
         def controller = new ViewController(serverUrl: 'http://foo.com', buildLogService: buildLogService)
         and:
-        def record = new WaveScanRecord(
-                id: '12345',
-                buildId: '12345',
-                containerImage: 'docker.io/some:image',
-                startTime: Instant.now(),
-                duration: Duration.ofMinutes(1),
-                status: ScanResult.SUCCEEDED,
-                vulnerabilities: [new ScanVulnerability('cve-1', 'HIGH', 'test vul', 'testpkg', '1.0.0', '1.1.0', 'http://vul/cve-1')] )
-        def result = ScanResult.success(record, record.vulnerabilities)
+        def result = new ScanEntry(
+                '12345',
+                '12345',
+                'docker.io/some:image',
+                Instant.now(),
+                Duration.ofMinutes(1),
+                ScanEntry.SUCCEEDED,
+                [new ScanVulnerability('cve-1', 'HIGH', 'test vul', 'testpkg', '1.0.0', '1.1.0', 'http://vul/cve-1')],
+                0 )
         when:
         def binding = controller.makeScanViewBinding(result)
         then:
@@ -328,6 +327,7 @@ class ViewControllerTest extends Specification {
         binding.scan_time == formatTimestamp(result.startTime)
         binding.scan_duration == formatDuration(result.duration)
         binding.scan_succeeded
+        binding.scan_exitcode == 0
         binding.vulnerabilities == [new ScanVulnerability(id:'cve-1', severity:'HIGH', title:'test vul', pkgName:'testpkg', installedVersion:'1.0.0', fixedVersion:'1.1.0', primaryUrl:'http://vul/cve-1')]
         binding.build_url == 'http://foo.com/view/builds/12345'
     }

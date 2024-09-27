@@ -26,7 +26,7 @@ import io.micronaut.http.annotation.Get
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.service.mirror.ContainerMirrorService
-import io.seqera.wave.service.mirror.MirrorState
+import io.seqera.wave.service.mirror.MirrorEntry
 import jakarta.inject.Inject
 /**
  * Implements a controller for container mirror apis
@@ -43,11 +43,11 @@ class MirrorController {
     private ContainerMirrorService mirrorService
 
     @Get("/v1alpha1/mirrors/{mirrorId}")
-    HttpResponse<MirrorState> getMirrorRecord(String mirrorId) {
-        final result = mirrorService.getMirrorState(mirrorId)
+    HttpResponse<MirrorEntry> getMirrorRecord(String mirrorId) {
+        final result = mirrorService.getMirrorEntry(mirrorId)
         return result
                 ? HttpResponse.ok(result)
-                : HttpResponse.<MirrorState>notFound()
+                : HttpResponse.<MirrorEntry>notFound()
     }
 
 }

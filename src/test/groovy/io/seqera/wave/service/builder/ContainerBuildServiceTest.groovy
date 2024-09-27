@@ -42,13 +42,13 @@ import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
-import io.seqera.wave.service.builder.store.BuildRecordStore
+import io.seqera.wave.service.builder.impl.BuildStateStoreImpl
+import io.seqera.wave.service.builder.impl.ContainerBuildServiceImpl
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.persistence.PersistenceService
-import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.scan.ScanRequest
 import io.seqera.wave.service.scan.ScanStrategy
 import io.seqera.wave.test.TestHelper
@@ -97,8 +97,7 @@ class ContainerBuildServiceTest extends Specification {
     @Inject ContainerInspectServiceImpl dockerAuthService
     @Inject HttpClientConfig httpClientConfig
     @Inject BuildConfig buildConfig
-    @Inject BuildRecordStore buildRecordStore
-    @Inject BuildCacheStore buildCacheStore
+    @Inject BuildStateStoreImpl buildCacheStore
     @Inject PersistenceService persistenceService
     @Inject JobService jobService
 
@@ -136,7 +135,7 @@ class ContainerBuildServiceTest extends Specification {
                 )
                 .withBuildId('1')
         and:
-        def store = Mock(BuildStore)
+        def store = Mock(BuildStateStore)
         def jobService = Mock(JobService)
         def builder = new ContainerBuildServiceImpl(buildStore: store, buildConfig: buildConfig, jobService: jobService)
         def RESPONSE = Mock(JobSpec)
@@ -334,78 +333,6 @@ class ContainerBuildServiceTest extends Specification {
         record.digest == 'abc123'
     }
 
-    void "should create build record in redis"() {
-        given:
-        final request =
-                new BuildRequest(
-                        containerId: 'container1234',
-                        containerFile:'test',
-                        condaFile: 'test',
-                        workspace: Path.of("."),
-                        targetImage: 'docker.io/my/repo:container1234',
-                        identity: PlatformId.NULL,
-                        platform: ContainerPlatform.of('amd64'),
-                        cacheRepository: 'docker.io/my/cache',
-                        ip: '127.0.0.1',
-                        configJson: '{"config":"json"}',
-                        scanId: 'scan12345',
-                        format: BuildFormat.DOCKER,
-                        startTime: Instant.now()
-                    )
-                .withBuildId('123')
-
-        and:
-        def result = BuildResult.completed(request.buildId, 1, 'Hello', Instant.now().minusSeconds(60), 'xyz')
-
-        and:
-        def build = WaveBuildRecord.fromEvent(new BuildEvent(request, result))
-
-        when:
-        service.createBuildRecord(build.buildId, build)
-
-        then:
-        def record = buildRecordStore.getBuildRecord(request.buildId)
-        record.buildId == request.buildId
-        record.digest == 'xyz'
-    }
-
-    void "should save build record in redis and surrealdb"() {
-        given:
-        final request =
-                new BuildRequest(
-                        containerId: 'container1234',
-                        containerFile: 'test',
-                        condaFile: 'test',
-                        workspace: Path.of("."),
-                        targetImage: 'docker.io/my/repo:container1234',
-                        identity: PlatformId.NULL,
-                        platform: ContainerPlatform.of('amd64'),
-                        cacheRepository: 'docker.io/my/cache',
-                        ip: '127.0.0.1',
-                        configJson: '{"config":"json"}',
-                        scanId: 'scan12345',
-                        format: BuildFormat.DOCKER
-                    )
-                        .withBuildId('123')
-
-        and:
-        def result = new BuildResult(request.buildId, 0, "content", Instant.now(), Duration.ofSeconds(1), 'abc123')
-        def event = new BuildEvent(request, result)
-
-        when:
-        service.saveBuildRecord(event)
-
-        then:
-        def record = persistenceService.loadBuild(request.buildId)
-        record.buildId == request.buildId
-        record.digest == 'abc123'
-
-        and:
-        def record2 = buildRecordStore.getBuildRecord(request.buildId)
-        record2.buildId == request.buildId
-        record2.digest == 'abc123'
-    }
-
     def 'should return only the host name' () {
         expect:
         ContainerInspectServiceImpl.host0(CONTAINER) == EXPECTED
@@ -417,7 +344,7 @@ class ContainerBuildServiceTest extends Specification {
 
     def 'should handle job completion event and update build store'() {
         given:
-        def mockBuildStore = Mock(BuildStore)
+        def mockBuildStore = Mock(BuildStateStore)
         def mockProxyService = Mock(RegistryProxyService)
         def mockEventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
         def service = new ContainerBuildServiceImpl(buildStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
@@ -430,7 +357,7 @@ class ContainerBuildServiceTest extends Specification {
                 startTime: Instant.now(),
                 maxDuration: Duration.ofMinutes(1)
         )
-        def build = new BuildStoreEntry(req, res)
+        def build = new BuildEntry(req, res)
 
         when:
         service.onJobCompletion(job, build, state)
@@ -445,7 +372,7 @@ class ContainerBuildServiceTest extends Specification {
 
     def 'should handle job error event and update build store'() {
         given:
-        def mockBuildStore = Mock(BuildStore)
+        def mockBuildStore = Mock(BuildStateStore)
         def mockProxyService = Mock(RegistryProxyService)
         def mockEventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
         def service = new ContainerBuildServiceImpl(buildStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
@@ -458,7 +385,7 @@ class ContainerBuildServiceTest extends Specification {
                 startTime: Instant.now(),
                 maxDuration: Duration.ofMinutes(1)
         )
-        def build = new BuildStoreEntry(req, res)
+        def build = new BuildEntry(req, res)
 
         when:
         service.onJobException(job, build, error)
@@ -471,7 +398,7 @@ class ContainerBuildServiceTest extends Specification {
 
     def 'should handle job timeout event and update build store'() {
         given:
-        def mockBuildStore = Mock(BuildStore)
+        def mockBuildStore = Mock(BuildStateStore)
         def mockProxyService = Mock(RegistryProxyService)
         def mockEventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
         def service = new ContainerBuildServiceImpl(buildStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
@@ -483,7 +410,7 @@ class ContainerBuildServiceTest extends Specification {
                 startTime: Instant.now(),
                 maxDuration: Duration.ofMinutes(1)
         )
-        def build = new BuildStoreEntry(req, res)
+        def build = new BuildEntry(req, res)
 
         when:
         service.onJobTimeout(job, build)

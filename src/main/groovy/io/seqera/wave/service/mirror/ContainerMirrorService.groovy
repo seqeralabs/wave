@@ -45,9 +45,9 @@ interface ContainerMirrorService {
      * @param targetImage
      *      The container image of the mirror operation to be awaited
      * @return
-     *      A future holding the {@link MirrorState} when the mirror operation complete
+     *      A future holding the {@link MirrorEntry} when the mirror operation complete
      */
-    CompletableFuture<MirrorState> awaitCompletion(String targetImage)
+    CompletableFuture<MirrorEntry> awaitCompletion(String targetImage)
 
     /**
      * Retrieve the current state of the mirror operation
@@ -55,9 +55,9 @@ interface ContainerMirrorService {
      * @param id
      *      The id of the mirror state record
      * @return
-     *      The {@link MirrorState} object modelling the current state of the mirror operation,
+     *      The {@link MirrorEntry} object modelling the current state of the mirror operation,
      *      or {@link null} otherwise
      */
-    MirrorState getMirrorState(String id)
+    MirrorEntry getMirrorEntry(String id)
 
 }
