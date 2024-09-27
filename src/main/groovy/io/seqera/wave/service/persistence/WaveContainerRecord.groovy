@@ -42,11 +42,6 @@ import static io.seqera.wave.util.DataTimeUtils.parseOffsetDateTime
 class WaveContainerRecord {
 
     /**
-     * wave request id, this will be the token
-     */
-    String id
-
-    /**
      * The Tower user associated with the request
      */
     final User user

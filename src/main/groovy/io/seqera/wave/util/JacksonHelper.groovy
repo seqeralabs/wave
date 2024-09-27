@@ -120,4 +120,20 @@ class JacksonHelper {
         config != null ? YAML_MAPPER.writeValueAsString(config) : null
     }
 
+    /**
+     * Converts a concrete instance of of {@code T} to a json
+     * representation and  appends it to the specified {@code Map}
+     *
+     * @param config A concrete instance of of {@code T}
+     * @param map A map to append the json representation
+     * @return A json representation of the specified object
+     */
+    static String toJsonAndAppend(Object config, Map map) {
+        if ( !config )
+            return null
+        Map configMap = DEFAULT_JSON_MAPPER.convertValue(config, Map)
+        configMap.putAll(map)
+        DEFAULT_JSON_MAPPER.writeValueAsString(configMap)
+    }
+
 }

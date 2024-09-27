@@ -19,6 +19,7 @@
 package io.seqera.wave.service.persistence.impl
 
 import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.databind.ObjectMapper
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Primary
@@ -172,8 +173,8 @@ class SurrealPersistenceService implements PersistenceService {
 
     @Override
     void saveContainerRequest(String token, WaveContainerRecord data) {
-        data.id = token
-        final query = "INSERT INTO wave_request ${JacksonHelper.toJson(data)}"
+        final query = "INSERT INTO wave_request ${JacksonHelper.toJsonAndAppend(data, Map.of('id',token))}"
+        log.info("query = $query")
         surrealDb
                 .sqlAsync(getAuthorization(), query)
                 .subscribe({result ->
