@@ -171,12 +171,13 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveContainerRequest(WaveContainerRecord data) {
+    void saveContainerRequest(String token, WaveContainerRecord data) {
+        data.id = token
         final query = "INSERT INTO wave_request ${JacksonHelper.toJson(data)}"
         surrealDb
                 .sqlAsync(getAuthorization(), query)
                 .subscribe({result ->
-                    log.trace "Container request with token '$data.id' saved record: ${result}"
+                    log.trace "Container request with token '$token' saved record: ${result}"
                 },
                         {error->
                             def msg = error.message
