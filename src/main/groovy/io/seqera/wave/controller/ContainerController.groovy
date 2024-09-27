@@ -537,7 +537,6 @@ class ContainerController {
         // check cache repository
         msg = validationService.checkBuildRepository(req.cacheRepository, true)
         if( msg ) throw new BadRequestException(msg)
-
     }
 
     void validateMirrorRequest(SubmitContainerTokenRequest req, boolean v2) throws BadRequestException {
