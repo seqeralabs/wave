@@ -59,10 +59,8 @@ class WaveContainerRecordTest extends Specification {
         
         when:
         def exp = Instant.now().plusSeconds(3600)
-        def token = '1234'
-        def container = new WaveContainerRecord(req, data, token, wave, addr, exp)
+        def container = new WaveContainerRecord(req, data, wave, addr, exp)
         then:
-        container.id == token
         container.user == user
         container.workspaceId == req.towerWorkspaceId
         container.containerImage == req.containerImage
@@ -103,10 +101,8 @@ class WaveContainerRecordTest extends Specification {
 
         when:
         def exp = Instant.now().plusSeconds(3600)
-        def token = '1234'
-        def container = new WaveContainerRecord(req, data, token, wave, addr, exp)
+        def container = new WaveContainerRecord(req, data, wave, addr, exp)
         then:
-        container.id == token
         container.user == user
         container.workspaceId == req.towerWorkspaceId
         container.containerImage == req.containerImage
