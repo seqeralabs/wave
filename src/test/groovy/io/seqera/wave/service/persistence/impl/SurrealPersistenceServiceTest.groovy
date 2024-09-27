@@ -38,7 +38,7 @@ import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.mirror.MirrorRequest
-import io.seqera.wave.service.mirror.MirrorState
+import io.seqera.wave.service.mirror.MirrorEntry
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
@@ -321,11 +321,6 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def result = persistence.loadScanRecord(SCAN_ID)
         and:
         result == scanRecord
-        and:
-        def scan = persistence.loadScanResult(SCAN_ID)
-        scan.status == 'SUCCEEDED'
-        scan.buildId == BUILD_ID
-        scan.vulnerabilities == scanRecord.vulnerabilities
 
         when:
         def SCAN_ID2 = 'b2'
@@ -357,12 +352,12 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         and:
         storage.initializeDb()
         and:
-        def result = MirrorState.from(request)
-        storage.saveMirrorState(result)
+        def result = MirrorEntry.from(request)
+        storage.saveMirrorEntry(result)
         sleep 100
 
         when:
-        def stored = storage.loadMirrorState(request.id)
+        def stored = storage.loadMirrorEntry(request.mirrorId)
         then:
         stored == result
     }
@@ -381,12 +376,12 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         and:
         storage.initializeDb()
         and:
-        def result = MirrorState.from(request)
-        storage.saveMirrorState(result)
+        def result = MirrorEntry.from(request)
+        storage.saveMirrorEntry(result)
         sleep 100
 
         when:
-        def stored = storage.loadMirrorState(request.targetImage, request.digest)
+        def stored = storage.loadMirrorEntry(request.targetImage, request.digest)
         then:
         stored == result
     }

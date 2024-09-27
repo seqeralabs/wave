@@ -54,7 +54,7 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
     private HttpClientConfig httpConfig
 
     @Inject
-    private RegistryAuthCacheStore store
+    private RegistryAuthStore store
 
     private CacheLoader<URI, RegistryAuth> loader = new CacheLoader<URI, RegistryAuth>() {
         @Override

@@ -63,7 +63,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     private HttpClientConfig httpConfig
 
     @Inject
-    private RegistryTokenCacheStore tokenStore
+    private RegistryTokenStore tokenStore
 
     @Canonical
     @ToString(includePackage = false, includeNames = true)

@@ -37,7 +37,7 @@ class ContainerTokenServiceImplTest extends Specification {
     private TokenConfig config
 
     @Inject
-    private TokenCacheStore tokenCache
+    private ContainerTokenStoreImpl tokenCache
 
     def 'should evict container request from cache'(){
         given:
