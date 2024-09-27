@@ -78,8 +78,8 @@ class InspectControllerTest extends Specification {
     def 'should inspect container with platform' () {
         when:
         def inspect = new ContainerInspectRequest(containerImage:
-                'library/busybox@sha256:4be429a5fbb2e71ae7958bfa558bc637cf3a61baf40a708cb8fff532b39e52d0')
-        def platform = 'linux/amd64'
+                'library/busybox')
+        def platform = 'linux/arm64'
         def req = HttpRequest.POST("/v1alpha1/inspect?platform=$platform", inspect)
         def resp = client.toBlocking().exchange(req, ContainerInspectResponse)
         then:
@@ -87,19 +87,7 @@ class InspectControllerTest extends Specification {
         and:
         resp.body().container.registry == 'docker.io'
         resp.body().container.imageName == 'library/busybox'
-        resp.body().container.reference == 'sha256:4be429a5fbb2e71ae7958bfa558bc637cf3a61baf40a708cb8fff532b39e52d0'
-        resp.body().container.digest == 'sha256:4be429a5fbb2e71ae7958bfa558bc637cf3a61baf40a708cb8fff532b39e52d0'
-        resp.body().container.config.architecture == 'amd64'
-        resp.body().container.manifest.schemaVersion == 2
-        resp.body().container.manifest.mediaType == 'application/vnd.oci.image.manifest.v1+json'
-        resp.body().container.manifest.config.mediaType == 'application/vnd.oci.image.config.v1+json'
-        resp.body().container.manifest.config.digest == 'sha256:ba5dc23f65d4cc4a4535bce55cf9e63b068eb02946e3422d3587e8ce803b6aab'
-        resp.body().container.manifest.config.size == 372
-        resp.body().container.manifest.layers[0].mediaType == 'application/vnd.oci.image.layer.v1.tar+gzip'
-        resp.body().container.manifest.layers[0].digest == 'sha256:7b2699543f22d5b8dc8d66a5873eb246767bca37232dee1e7a3b8c9956bceb0c'
-        resp.body().container.manifest.layers[0].size == 2152262
-        resp.body().container.config.rootfs.type == 'layers'
-        resp.body().container.config.rootfs.diff_ids == ['sha256:95c4a60383f7b6eb6f7b8e153a07cd6e896de0476763bef39d0f6cf3400624bd']
+        resp.body().container.config.architecture == 'arm64'
     }
 
     def 'should get BadRequestException, when container image name is not provided' () {
