@@ -43,6 +43,7 @@ class WaveContainerRecord {
 
     /**
      * wave request id, this will be the token
+     * This is container token and it is named as id for surrealdb requirement
      */
     final String id
 

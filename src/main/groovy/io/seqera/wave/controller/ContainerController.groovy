@@ -522,6 +522,12 @@ class ContainerController {
 
     void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException {
         String msg
+        //check conda file size
+        if( req.condaFile && req.condaFile.length() > buildConfig.maxCondaFileSize )
+            throw new BadRequestException("Conda file size exceeds the maximum allowed size of ${buildConfig.maxCondaFileSize} bytes")
+        // check container file size
+        if( req.containerFile && req.containerFile.length() > buildConfig.maxContainerFileSize )
+            throw new BadRequestException("Container file size exceeds the maximum allowed size of ${buildConfig.maxContainerFileSize} bytes")
         // check valid image name
         msg = validationService.checkContainerName(req.containerImage)
         if( msg ) throw new BadRequestException(msg)
@@ -531,6 +537,7 @@ class ContainerController {
         // check cache repository
         msg = validationService.checkBuildRepository(req.cacheRepository, true)
         if( msg ) throw new BadRequestException(msg)
+
     }
 
     void validateMirrorRequest(SubmitContainerTokenRequest req, boolean v2) throws BadRequestException {
