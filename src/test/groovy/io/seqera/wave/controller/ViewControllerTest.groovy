@@ -194,9 +194,8 @@ class ViewControllerTest extends Specification {
 
         and:
         def exp = Instant.now().plusSeconds(3600)
-        def token = '12345'
         def container = new WaveContainerRecord(req, data, wave, addr, exp)
-
+        def token = '12345'
 
         when:
         persistenceService.saveContainerRequest(token, container)
