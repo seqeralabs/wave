@@ -85,7 +85,7 @@ class InspectController {
 
         // anonymous access
         if( !req.towerAccessToken ) {
-            return CompletableFuture.completedFuture(makeResponse(req, PlatformId.NULL, platform))
+            return CompletableFuture.completedFuture(makeResponse(req, platform, PlatformId.NULL))
         }
 
         // We first check if the service is registered
@@ -96,11 +96,11 @@ class InspectController {
         // find out the user associated with the specified tower access token
         return userService
                 .getUserByAccessTokenAsync(registration.endpoint, JwtAuth.of(req))
-                .thenApply((User user) -> makeResponse(req, PlatformId.of(user,req), platform) )
+                .thenApply((User user) -> makeResponse(req, platform, PlatformId.of(user,req)) )
 
     }
 
-    protected HttpResponse<ContainerInspectResponse> makeResponse(ContainerInspectRequest req, PlatformId identity, String platform) {
+    protected HttpResponse<ContainerInspectResponse> makeResponse(ContainerInspectRequest req, String platform, PlatformId identity) {
         final spec = inspectService.containerSpec(req.containerImage, platform, identity)
         return spec
                 ? HttpResponse.ok(new ContainerInspectResponse(spec))
