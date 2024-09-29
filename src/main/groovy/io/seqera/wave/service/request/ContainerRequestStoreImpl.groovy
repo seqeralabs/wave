@@ -70,8 +70,4 @@ class ContainerRequestStoreImpl extends AbstractStateStore<ContainerRequest> imp
         super.remove(key)
     }
 
-    @Override
-    ContainerRequest findByRequestId(String requestId) {
-        return (ContainerRequest) super.findByRequestId(requestId)
-    }
 }

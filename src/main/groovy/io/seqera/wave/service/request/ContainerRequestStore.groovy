@@ -31,6 +31,4 @@ interface ContainerRequestStore {
 
     void remove(String key)
 
-    ContainerRequest findByRequestId(String requestId)
-
 }
