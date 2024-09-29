@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.token
+package io.seqera.wave.service.request
 
 import spock.lang.Specification
 
@@ -37,10 +37,10 @@ class ContainerRequestDataTest extends Specification {
 
     def 'should return request identity' () {
         given:
-        ContainerRequestData req
+        ContainerRequest req
 
         when:
-        req = ContainerRequestData.of(new PlatformId(new User(id:1)))
+        req = ContainerRequest.of(new PlatformId(new User(id:1)))
         then:
         req.identity
         req.identity == new PlatformId(new User(id:1))
@@ -50,7 +50,7 @@ class ContainerRequestDataTest extends Specification {
         when:
         def ts = Instant.now()
         def cfg = Mock(ContainerConfig)
-        def req = new ContainerRequestData(
+        def req = new ContainerRequest(
                 'r-1234',
                 new PlatformId(new User(id:1)),
                 'foo',
@@ -88,7 +88,7 @@ class ContainerRequestDataTest extends Specification {
 
     def 'should validate durable flag' () {
         given:
-        def req = ContainerRequestData.of(
+        def req = ContainerRequest.of(
                 identity: new PlatformId(new User(id:1)),
                 freeze: FREEZE,
                 mirror: MIRROR )

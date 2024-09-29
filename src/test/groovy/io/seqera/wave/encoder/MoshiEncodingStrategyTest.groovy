@@ -28,7 +28,7 @@ import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.auth.RegistryAuth
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.token.ContainerRequestData
+import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
@@ -86,9 +86,9 @@ class MoshiEncodingStrategyTest extends Specification {
 
     def 'should encode and decode ContainerRequestData' () {
         given:
-        def encoder = new MoshiEncodeStrategy<ContainerRequestData>() { }
+        def encoder = new MoshiEncodeStrategy<ContainerRequest>() { }
         and:
-        def data = ContainerRequestData.of(
+        def data = ContainerRequest.of(
                 identity: new PlatformId(new User(id:1),2),
                 containerImage:  'ubuntu',
                 containerFile:  'from foo',
@@ -137,7 +137,7 @@ class MoshiEncodingStrategyTest extends Specification {
             }
             '''
         and:
-        def encoder = new MoshiEncodeStrategy<ContainerRequestData>() { }
+        def encoder = new MoshiEncodeStrategy<ContainerRequest>() { }
 
         when:
         def result = encoder.decode(REQUEST)

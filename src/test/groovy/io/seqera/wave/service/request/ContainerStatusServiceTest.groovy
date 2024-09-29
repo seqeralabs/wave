@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.token
+package io.seqera.wave.service.request
 
 import spock.lang.Specification
 
@@ -40,7 +40,7 @@ class ContainerStatusServiceTest extends Specification {
         given:
         def ts = Instant.now().minusSeconds(10)
         def service = new ContainerStatusServiceImpl(serverUrl: 'http://foo.com')
-        def request = Mock(ContainerRequestData)
+        def request = Mock(ContainerRequest)
 
         when:
         def resp = service.createDefaultResponse(request, null)
@@ -57,7 +57,7 @@ class ContainerStatusServiceTest extends Specification {
     def 'should create scan result' () {
         given:
         def service = new ContainerStatusServiceImpl(serverUrl: 'http://foo.com')
-        def request = Mock(ContainerRequestData)
+        def request = Mock(ContainerRequest)
         def scan = Mock(WaveScanRecord)
 
         when:
@@ -134,7 +134,7 @@ class ContainerStatusServiceTest extends Specification {
         def impl = new ContainerStatusServiceImpl(serverUrl: 'http://foo.com', requestStore: store, scanService:scanService)
         def service = Spy(impl)
         def requestId = '123456'
-        def requestData = Mock(ContainerRequestData)
+        def requestData = Mock(ContainerRequest)
 
         // building is running
         when:
@@ -168,7 +168,7 @@ class ContainerStatusServiceTest extends Specification {
         def impl = new ContainerStatusServiceImpl(serverUrl: 'http://foo.com', requestStore: store, scanService:scanService)
         def service = Spy(impl)
         def requestId = '123456'
-        def requestData = Mock(ContainerRequestData)
+        def requestData = Mock(ContainerRequest)
 
         // building is successful, no scan
         when:
@@ -202,7 +202,7 @@ class ContainerStatusServiceTest extends Specification {
         def impl = new ContainerStatusServiceImpl(serverUrl: 'http://foo.com', requestStore: store, scanService:scanService)
         def service = Spy(impl)
         def requestId = '123456'
-        def requestData = Mock(ContainerRequestData)
+        def requestData = Mock(ContainerRequest)
 
         // building failed
         when:
@@ -236,7 +236,7 @@ class ContainerStatusServiceTest extends Specification {
         def impl = new ContainerStatusServiceImpl(serverUrl: 'http://foo.com', requestStore: store, scanService:scanService)
         def service = Spy(impl)
         def requestId = '123456'
-        def requestData = Mock(ContainerRequestData)
+        def requestData = Mock(ContainerRequest)
 
         // container build is successful, security scan is running
         when:
@@ -274,7 +274,7 @@ class ContainerStatusServiceTest extends Specification {
         def impl = new ContainerStatusServiceImpl(serverUrl: 'http://foo.com', requestStore: store, scanService:scanService)
         def service = Spy(impl)
         def requestId = '123456'
-        def requestData = Mock(ContainerRequestData)
+        def requestData = Mock(ContainerRequest)
 
         // container build is successful, security scan is successful
         when:
@@ -313,7 +313,7 @@ class ContainerStatusServiceTest extends Specification {
         def impl = new ContainerStatusServiceImpl(serverUrl: 'http://foo.com', requestStore: store, scanService:scanService)
         def service = Spy(impl)
         def requestId = '123456'
-        def requestData = Mock(ContainerRequestData)
+        def requestData = Mock(ContainerRequest)
 
         // container build is successful, security scan failed
         when:
@@ -352,7 +352,7 @@ class ContainerStatusServiceTest extends Specification {
         def impl = new ContainerStatusServiceImpl(serverUrl: 'http://foo.com', requestStore: store, scanService:scanService)
         def service = Spy(impl)
         def requestId = '123456'
-        def requestData = Mock(ContainerRequestData)
+        def requestData = Mock(ContainerRequest)
 
         // container build is successful, security scan found vulnerabilities
         when:
@@ -391,7 +391,7 @@ class ContainerStatusServiceTest extends Specification {
         def impl = new ContainerStatusServiceImpl(serverUrl: 'http://foo.com', requestStore: store, scanService:scanService)
         def service = Spy(impl)
         def requestId = '123456'
-        def requestData = Mock(ContainerRequestData)
+        def requestData = Mock(ContainerRequest)
 
         // container build is successful, security scan has vulnerabilities that are allowed
         when:
@@ -430,7 +430,7 @@ class ContainerStatusServiceTest extends Specification {
         def impl = new ContainerStatusServiceImpl(serverUrl: 'http://foo.com', requestStore: store, scanService:scanService)
         def service = Spy(impl)
         def requestId = '123456'
-        def requestData = Mock(ContainerRequestData)
+        def requestData = Mock(ContainerRequest)
 
         when:
         def resp = service.getContainerStatus(requestId)
@@ -468,7 +468,7 @@ class ContainerStatusServiceTest extends Specification {
         def impl = new ContainerStatusServiceImpl(serverUrl: 'http://foo.com', requestStore: store, scanService:scanService)
         def service = Spy(impl)
         def requestId = '123456'
-        def requestData = Mock(ContainerRequestData)
+        def requestData = Mock(ContainerRequest)
 
         // container build is successful, security scan found vulnerabilities
         when:
@@ -507,7 +507,7 @@ class ContainerStatusServiceTest extends Specification {
         def impl = new ContainerStatusServiceImpl(serverUrl: 'http://foo.com', requestStore: store, scanService:scanService)
         def service = Spy(impl)
         def requestId = '123456'
-        def requestData = Mock(ContainerRequestData)
+        def requestData = Mock(ContainerRequest)
 
         // container build is successful, security scan found vulnerabilities
         when:
@@ -544,7 +544,7 @@ class ContainerStatusServiceTest extends Specification {
         def impl = new ContainerStatusServiceImpl(serverUrl: 'http://foo.com', requestStore: store, scanService:scanService)
         def service = Spy(impl)
         def requestId = '123456'
-        def requestData = Mock(ContainerRequestData)
+        def requestData = Mock(ContainerRequest)
 
         // building is running
         when:
@@ -579,7 +579,7 @@ class ContainerStatusServiceTest extends Specification {
         def impl = new ContainerStatusServiceImpl(serverUrl: 'http://foo.com', requestStore: store, scanService:scanService)
         def service = Spy(impl)
         def requestId = '123456'
-        def requestData = Mock(ContainerRequestData)
+        def requestData = Mock(ContainerRequest)
 
         // building is successful, no scan
         when:
@@ -614,7 +614,7 @@ class ContainerStatusServiceTest extends Specification {
         def impl = new ContainerStatusServiceImpl(serverUrl: 'http://foo.com', requestStore: store, scanService:scanService)
         def service = Spy(impl)
         def requestId = '123456'
-        def requestData = Mock(ContainerRequestData)
+        def requestData = Mock(ContainerRequest)
 
         // building is successful, no scan
         when:

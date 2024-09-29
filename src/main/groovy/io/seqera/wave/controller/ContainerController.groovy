@@ -53,7 +53,7 @@ import io.seqera.wave.exchange.DescribeWaveContainerResponse
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
-import io.seqera.wave.service.token.ContainerRequestData
+import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildTrack
@@ -67,9 +67,9 @@ import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerRecord
-import io.seqera.wave.service.token.ContainerRequestService
-import io.seqera.wave.service.token.ContainerStatusService
-import io.seqera.wave.service.token.TokenData
+import io.seqera.wave.service.request.ContainerRequestService
+import io.seqera.wave.service.request.ContainerStatusService
+import io.seqera.wave.service.request.TokenData
 import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
@@ -282,7 +282,7 @@ class ContainerController {
         return true
     }
 
-    protected void storeContainerRequest0(SubmitContainerTokenRequest req, ContainerRequestData data, TokenData token, String target, String ip) {
+    protected void storeContainerRequest0(SubmitContainerTokenRequest req, ContainerRequest data, TokenData token, String target, String ip) {
         try {
             final recrd = new WaveContainerRecord(req, data, target, ip, token.expiration)
             persistenceService.saveContainerRequest(token.value, recrd)
@@ -393,7 +393,7 @@ class ContainerController {
         }
     }
 
-    ContainerRequestData makeRequestData(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
+    ContainerRequest makeRequestData(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
         if( !req.containerImage && !req.containerFile )
             throw new BadRequestException("Specify either 'containerImage' or 'containerFile' attribute")
         if( req.containerImage && req.containerFile )
@@ -455,7 +455,7 @@ class ContainerController {
         else
             throw new IllegalStateException("Specify either 'containerImage' or 'containerFile' attribute")
 
-        ContainerRequestData.create(
+        ContainerRequest.create(
                 identity,
                 targetImage,
                 targetContent,

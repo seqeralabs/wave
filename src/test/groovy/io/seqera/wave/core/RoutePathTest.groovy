@@ -22,7 +22,7 @@ import spock.lang.Specification
 import spock.lang.Unroll
 
 import io.seqera.wave.model.ContainerCoordinates
-import io.seqera.wave.service.token.ContainerRequestData
+import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 /**
@@ -141,7 +141,7 @@ class RoutePathTest extends Specification {
                 'ubuntu',
                 'latest',
                 '/v2/library/ubuntu/manifests/latest',
-                ContainerRequestData.of(identity: new PlatformId(new User(id: 100)), containerImage: 'ubuntu:latest') )
+                ContainerRequest.of(identity: new PlatformId(new User(id: 100)), containerImage: 'ubuntu:latest') )
         then:
         route2.type == 'manifests'
         route2.registry == 'foo.com'

@@ -39,8 +39,8 @@ import io.seqera.wave.model.ContentType
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.impl.ContainerBuildServiceImpl
-import io.seqera.wave.service.token.ContainerRequestData
-import io.seqera.wave.service.token.ContainerRequestService
+import io.seqera.wave.service.request.ContainerRequest
+import io.seqera.wave.service.request.ContainerRequestService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.test.DockerRegistryContainer
@@ -80,7 +80,7 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
     @MockBean(ContainerRequestService)
     ContainerRequestService containerTokenService(){
         Mock(ContainerRequestService){
-            getRequest(_) >> ContainerRequestData.of(
+            getRequest(_) >> ContainerRequest.of(
                     identity: PlatformId.NULL,
                     containerImage: "library/hello-world",
                     containerFile:  "FROM busybox" )

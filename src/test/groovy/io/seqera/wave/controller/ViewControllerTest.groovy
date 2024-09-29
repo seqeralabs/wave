@@ -43,7 +43,7 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
-import io.seqera.wave.service.token.ContainerRequestData
+import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
@@ -189,7 +189,7 @@ class ViewControllerTest extends Specification {
         def user = new User(id:1)
         def identity = new PlatformId(user,100)
         and:
-        def data = ContainerRequestData.of(identity: identity, containerImage: 'hello-world', containerFile: 'some docker', containerConfig: cfg, condaFile: 'some conda')
+        def data = ContainerRequest.of(identity: identity, containerImage: 'hello-world', containerFile: 'some docker', containerConfig: cfg, condaFile: 'some conda')
         def wave = 'https://wave.io/some/container:latest'
         def addr = '100.200.300.400'
 

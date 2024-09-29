@@ -29,9 +29,9 @@ import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.config.CondaOpts
 import io.seqera.wave.exception.BadRequestException
-import io.seqera.wave.service.token.ContainerRequestData
+import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.builder.BuildFormat
-import io.seqera.wave.service.token.TokenData
+import io.seqera.wave.service.request.TokenData
 /**
  * Container helper methods
  *
@@ -208,7 +208,7 @@ class ContainerHelperTest extends Specification {
 
     def 'should create response v1' () {
         given:
-        def data = ContainerRequestData.of(
+        def data = ContainerRequest.of(
                 containerImage: 'docker.io/some/container',
                 buildId:  '123',
                 buildNew:  NEW_BUILD )
@@ -235,7 +235,7 @@ class ContainerHelperTest extends Specification {
     @Unroll
     def 'should create response v2' () {
         given:
-        def data = ContainerRequestData.of(
+        def data = ContainerRequest.of(
                 containerImage:  'docker.io/some/container',
                 buildId: "build-123",
                 buildNew: NEW_BUILD,

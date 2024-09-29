@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.token
+package io.seqera.wave.service.request
 
 import spock.lang.Specification
 import spock.lang.Unroll

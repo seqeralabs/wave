@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.token
+package io.seqera.wave.service.request
 
 import java.time.Duration
 import java.time.Instant
@@ -105,7 +105,7 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
         return createDefaultResponse(request, state)
     }
 
-    protected ContainerState getBuildStatus(ContainerRequestData request) {
+    protected ContainerState getBuildStatus(ContainerRequest request) {
         if (!request.buildId)
             return null
 
@@ -123,7 +123,7 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
         }
     }
 
-    protected ContainerStatusResponse createResponse0(ContainerStatus status, ContainerRequestData request, ContainerState state, StageResult result=null) {
+    protected ContainerStatusResponse createResponse0(ContainerStatus status, ContainerRequest request, ContainerState state, StageResult result=null) {
         new ContainerStatusResponse(
                 request.requestId,
                 status,
@@ -139,7 +139,7 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
         )
     }
 
-    protected ContainerStatusResponse createScanResponse(ContainerRequestData request, ContainerState state, WaveScanRecord scan) {
+    protected ContainerStatusResponse createScanResponse(ContainerRequest request, ContainerState state, WaveScanRecord scan) {
 
         final result = scanResult(request, scan)
         return new ContainerStatusResponse(
@@ -157,7 +157,7 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
         )
     }
 
-    protected StageResult buildResult(ContainerRequestData request, ContainerState state) {
+    protected StageResult buildResult(ContainerRequest request, ContainerState state) {
         if( state.succeeded )
               return new StageResult(true)
 
@@ -175,7 +175,7 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
         }
     }
 
-    protected StageResult scanResult(ContainerRequestData request, WaveScanRecord scan) {
+    protected StageResult scanResult(ContainerRequest request, WaveScanRecord scan) {
         // scan was not successful
         if (!scan.succeeded()) {
             return new StageResult(
@@ -215,7 +215,7 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
         return new StageResult(true)
     }
 
-    protected ContainerStatusResponse createDefaultResponse(ContainerRequestData request, ContainerState state) {
+    protected ContainerStatusResponse createDefaultResponse(ContainerRequest request, ContainerState state) {
         if( !state ) {
             final delta = Duration.between(request.creationTime, Instant.now())
             state = new ContainerState(request.creationTime, delta, true)

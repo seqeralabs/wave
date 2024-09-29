@@ -59,8 +59,8 @@ import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerRecord
-import io.seqera.wave.service.token.ContainerRequestService
-import io.seqera.wave.service.token.TokenData
+import io.seqera.wave.service.request.ContainerRequestService
+import io.seqera.wave.service.request.TokenData
 import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User

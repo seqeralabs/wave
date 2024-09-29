@@ -16,16 +16,21 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.token
-
-
-import io.seqera.wave.api.ContainerStatusResponse
+package io.seqera.wave.service.request
 /**
+ * Define the container request token persistence operations
+ * 
+ * @author : jorge <jorge.aguilera@seqera.io>
  *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface ContainerStatusService {
+interface ContainerRequestStore {
 
-    ContainerStatusResponse getContainerStatus(String requestId)
+    void put(String key, ContainerRequest request)
+
+    ContainerRequest get(String key)
+
+    void remove(String key)
+
+    ContainerRequest findByRequestId(String requestId)
 
 }

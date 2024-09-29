@@ -30,9 +30,9 @@ import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.config.CondaOpts
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
-import io.seqera.wave.service.token.ContainerRequestData
+import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.builder.BuildFormat
-import io.seqera.wave.service.token.TokenData
+import io.seqera.wave.service.request.TokenData
 import org.yaml.snakeyaml.Yaml
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static io.seqera.wave.util.DockerHelper.condaEnvironmentToCondaYaml
@@ -131,13 +131,13 @@ class ContainerHelper {
         }
     }
 
-    static SubmitContainerTokenResponse makeResponseV1(ContainerRequestData data, TokenData token, String waveImage) {
+    static SubmitContainerTokenResponse makeResponseV1(ContainerRequest data, TokenData token, String waveImage) {
         final target = waveImage
         final build = data.buildNew ? data.buildId : null
         return new SubmitContainerTokenResponse(data.requestId, token.value, target, token.expiration, data.containerImage, build, null, null, null, null, null)
     }
 
-    static SubmitContainerTokenResponse makeResponseV2(ContainerRequestData data, TokenData token, String waveImage) {
+    static SubmitContainerTokenResponse makeResponseV2(ContainerRequest data, TokenData token, String waveImage) {
         final target = data.durable() ? data.containerImage : waveImage
         final build = data.buildId
         final Boolean cached = !data.buildNew

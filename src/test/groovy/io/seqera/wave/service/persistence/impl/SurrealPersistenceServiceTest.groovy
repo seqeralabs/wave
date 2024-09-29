@@ -32,7 +32,7 @@ import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.token.ContainerRequestData
+import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
@@ -240,7 +240,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 timestamp: Instant.now().toString()
         )
         def user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
-        def data = ContainerRequestData.of(identity: new PlatformId(user,100), containerImage: 'hello-world' )
+        def data = ContainerRequest.of(identity: new PlatformId(user,100), containerImage: 'hello-world' )
         def wave = "wave.io/wt/$TOKEN/hello-world"
         def addr = "100.200.300.400"
         def exp = Instant.now().plusSeconds(3600)

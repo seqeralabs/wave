@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.token
+package io.seqera.wave.service.request
 
 import java.time.Duration
 
@@ -28,19 +28,19 @@ import io.seqera.wave.store.state.AbstractStateStore
 import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Singleton
 /**
- * Implements a cache store for {@link ContainerRequestData}
+ * Implements a cache store for {@link ContainerRequest}
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @Singleton
 @CompileStatic
-class ContainerRequestStoreImpl extends AbstractStateStore<ContainerRequestData> implements ContainerRequestStore {
+class ContainerRequestStoreImpl extends AbstractStateStore<ContainerRequest> implements ContainerRequestStore {
 
     private TokenConfig tokenConfig
 
     ContainerRequestStoreImpl(StateProvider<String, String> delegate, TokenConfig tokenConfig) {
-        super(delegate, new MoshiEncodeStrategy<ContainerRequestData>(){})
+        super(delegate, new MoshiEncodeStrategy<ContainerRequest>(){})
         this.tokenConfig = tokenConfig
         log.info "Creating Tokens cache store ― duration=${tokenConfig.cache.duration}"
     }
@@ -56,12 +56,12 @@ class ContainerRequestStoreImpl extends AbstractStateStore<ContainerRequestData>
     }
 
     @Override
-    ContainerRequestData get(String key) {
-        return (ContainerRequestData) super.get(key)
+    ContainerRequest get(String key) {
+        return (ContainerRequest) super.get(key)
     }
 
     @Override
-    void put(String key, ContainerRequestData value) {
+    void put(String key, ContainerRequest value) {
         super.put(key, value)
     }
 
@@ -71,7 +71,7 @@ class ContainerRequestStoreImpl extends AbstractStateStore<ContainerRequestData>
     }
 
     @Override
-    ContainerRequestData findByRequestId(String requestId) {
-        return (ContainerRequestData) super.findByRequestId(requestId)
+    ContainerRequest findByRequestId(String requestId) {
+        return (ContainerRequest) super.findByRequestId(requestId)
     }
 }

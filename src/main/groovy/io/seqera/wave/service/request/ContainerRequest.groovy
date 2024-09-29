@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.token
+package io.seqera.wave.service.request
 
 import java.time.Instant
 
@@ -39,7 +39,7 @@ import static io.seqera.wave.util.StringUtils.trunc
 @Canonical
 @ToString(includePackage = false, includeNames = true)
 @CompileStatic
-class ContainerRequestData {
+class ContainerRequest {
 
     String requestId
     PlatformId identity
@@ -128,7 +128,7 @@ class ContainerRequestData {
         return creationTime
     }
 
-    static  ContainerRequestData create(
+    static  ContainerRequest create(
             PlatformId identity,
             String containerImage,
             String containerFile,
@@ -144,7 +144,7 @@ class ContainerRequestData {
             List<ScanLevel> scanLevels,
             Instant creationTime )
     {
-        return new ContainerRequestData(
+        return new ContainerRequest(
                 LongRndKey.rndHex(),
                 identity,
                 containerImage,
@@ -163,12 +163,12 @@ class ContainerRequestData {
         )
     }
 
-    static ContainerRequestData of(PlatformId identity) {
-        new ContainerRequestData((String)null, identity)
+    static ContainerRequest of(PlatformId identity) {
+        new ContainerRequest((String)null, identity)
     }
     
-    static ContainerRequestData of(Map data) {
-        new ContainerRequestData(
+    static ContainerRequest of(Map data) {
+        new ContainerRequest(
                 data.requestId as String,
                 data.identity as PlatformId,
                 data.containerImage as String,

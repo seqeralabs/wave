@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.token
+package io.seqera.wave.service.request
 
 import java.time.Instant
 
@@ -50,19 +50,19 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
     private PersistenceService persistenceService
 
     @Override
-    TokenData computeToken(ContainerRequestData request) {
+    TokenData computeToken(ContainerRequest request) {
         final expiration = Instant.now().plus(config.cache.duration);
         containerTokenStorage.put(request.requestId, request)
         return new TokenData(request.requestId, expiration)
     }
 
     @Override
-    ContainerRequestData getRequest(String requestId) {
+    ContainerRequest getRequest(String requestId) {
         return containerTokenStorage.get(requestId)
     }
 
     @Override
-    ContainerRequestData evictRequest(String requestId) {
+    ContainerRequest evictRequest(String requestId) {
         if(!requestId)
             return null
 

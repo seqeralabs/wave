@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.token
+package io.seqera.wave.service.request
 
 import spock.lang.Specification
 
@@ -43,7 +43,7 @@ class ContainerRequestServiceImplTest extends Specification {
         def containerTokenService = new ContainerRequestServiceImpl( tokenCache: requestStore, config: config )
         def TOKEN = '123abc'
         def user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
-        def data = ContainerRequestData.of(identity: new PlatformId(user,100), containerImage: 'hello-world')
+        def data = ContainerRequest.of(identity: new PlatformId(user,100), containerImage: 'hello-world')
         and:
         requestStore.put(TOKEN, data)
 

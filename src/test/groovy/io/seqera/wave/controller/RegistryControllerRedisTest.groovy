@@ -35,14 +35,14 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.server.EmbeddedServer
 import io.seqera.wave.exchange.RegistryErrorResponse
 import io.seqera.wave.model.ContentType
-import io.seqera.wave.service.token.ContainerRequestData
+import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.builder.impl.BuildStateStoreImpl
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.job.JobFactory
 import io.seqera.wave.service.job.JobQueue
-import io.seqera.wave.service.token.ContainerRequestStoreImpl
+import io.seqera.wave.service.request.ContainerRequestStoreImpl
 import io.seqera.wave.storage.ManifestCacheStore
 import io.seqera.wave.test.DockerRegistryContainer
 import io.seqera.wave.test.RedisTestContainer
@@ -114,7 +114,7 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
                 maxDuration: Duration.ofSeconds(5)
         )
         def entry = new BuildEntry(req, res)
-        def containerRequestData = ContainerRequestData.of(identity: new PlatformId(new User(id:1)), containerImage: "library/hello-world")
+        def containerRequestData = ContainerRequest.of(identity: new PlatformId(new User(id:1)), containerImage: "library/hello-world")
         and:
         tokenCacheStore.put("1234", containerRequestData)
         buildCacheStore.put("library/hello-world", entry)

@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.token
+package io.seqera.wave.service.request
 
 import io.seqera.wave.service.persistence.WaveContainerRecord
 
@@ -31,11 +31,11 @@ interface ContainerRequestService {
      * Get (generate) a new container token for the specified container request data
      *
      * @param request
-     *      An instance of {@link ContainerRequestData}
+     *      An instance of {@link ContainerRequest}
      * @return
      *      The {@link TokenData} representing the unique token and the expiration time
      */
-    TokenData computeToken(ContainerRequestData request)
+    TokenData computeToken(ContainerRequest request)
 
     /**
      * Get the container image for the given container requestId
@@ -43,10 +43,10 @@ interface ContainerRequestService {
      * @param requestId The
      *      container request unique id
      * @return
-     *      The {@link ContainerRequestData} object for the specified id,
+     *      The {@link ContainerRequest} object for the specified id,
      *      or {@code null} if the requestId is unknown
      */
-    ContainerRequestData getRequest(String requestId)
+    ContainerRequest getRequest(String requestId)
 
     /**
      * Evict the container request entry from the cache for the given container request id
@@ -56,7 +56,7 @@ interface ContainerRequestService {
      * @return
      *      The corresponding token string, or null if the token is unknown
      */
-    ContainerRequestData evictRequest(String requestId)
+    ContainerRequest evictRequest(String requestId)
 
     /**
      * Load the record persisted in the requests db

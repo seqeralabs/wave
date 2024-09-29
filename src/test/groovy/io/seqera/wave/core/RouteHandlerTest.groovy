@@ -22,8 +22,8 @@ import spock.lang.Specification
 import spock.lang.Unroll
 
 import io.seqera.wave.exception.NotFoundException
-import io.seqera.wave.service.token.ContainerRequestData
-import io.seqera.wave.service.token.ContainerRequestService
+import io.seqera.wave.service.request.ContainerRequest
+import io.seqera.wave.service.request.ContainerRequestService
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -115,7 +115,7 @@ class RouteHandlerTest extends Specification {
         when:
         def route = new RouteHandler(tokenService).parse(REQ_PATH)
         then:
-        1 * tokenService.getRequest(ROUTE_TKN) >> ContainerRequestData.of(containerImage: REQ_IMAGE)
+        1 * tokenService.getRequest(ROUTE_TKN) >> ContainerRequest.of(containerImage: REQ_IMAGE)
         and:
         route.image == ROUTE_IMAGE
         route.type == ROUTE_TYPE
