@@ -49,7 +49,7 @@ class WaveScanRecordTest extends Specification {
         def vulns = List.of(scanVulnerability)
 
         when:
-        def scanResult= new ScanEntry(
+        def entry= new ScanEntry(
                 scanId,
                 buildId,
                 containerImage,
@@ -58,20 +58,21 @@ class WaveScanRecordTest extends Specification {
                 'SUCCEEDED',
                 vulns)
         then:
-        scanResult.scanId == scanId
-        scanResult.buildId == buildId
-        scanResult.containerImage == containerImage
-        scanResult.isCompleted()
-        scanResult.isSucceeded()
-        scanResult.done()
+        entry.scanId == scanId
+        entry.buildId == buildId
+        entry.containerImage == containerImage
+        entry.completed()
+        entry.succeeded()
+        entry.done()
 
         when:
-        def scanRecord = new WaveScanRecord(scanId, scanResult)
+        def record = new WaveScanRecord(scanId, entry)
 
         then:
-        scanRecord.id == scanId
-        scanRecord.buildId == buildId
-        scanRecord.vulnerabilities[0] == scanVulnerability
+        record.id == scanId
+        record.buildId == buildId
+        record.vulnerabilities[0] == scanVulnerability
+        record.summary() == [low: 1]
     }
 
 }

@@ -23,9 +23,7 @@ import spock.lang.Specification
 import java.nio.file.Path
 import java.time.Instant
 
-import io.seqera.wave.api.ScanMode
 import io.seqera.wave.core.ContainerPlatform
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -43,7 +41,8 @@ class MirrorRequestTest extends Specification {
                 Path.of('/workspace'),
                 '{json config}',
                 'scan-123',
-                ScanMode.lazy,
+                ts,
+                'utc'
         )
         then:
         req.mirrorId
@@ -56,7 +55,8 @@ class MirrorRequestTest extends Specification {
         req.creationTime >= ts
         req.creationTime <= Instant.now()
         req.scanId == 'scan-123'
-        req.scanMode == ScanMode.lazy
+        req.creationTime == ts
+        req.offsetId == 'utc'
     }
 
 }

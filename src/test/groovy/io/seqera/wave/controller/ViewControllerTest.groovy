@@ -33,16 +33,17 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.logs.BuildLogServiceImpl
+import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
+import io.seqera.wave.service.token.ContainerRequestData
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
@@ -188,7 +189,7 @@ class ViewControllerTest extends Specification {
         def user = new User(id:1)
         def identity = new PlatformId(user,100)
         and:
-        def data = new ContainerRequestData(identity, 'hello-world', 'some docker', cfg, 'some conda')
+        def data = ContainerRequestData.of(identity: identity, containerImage: 'hello-world', containerFile: 'some docker', containerConfig: cfg, condaFile: 'some conda')
         def wave = 'https://wave.io/some/container:latest'
         def addr = '100.200.300.400'
 
@@ -325,6 +326,32 @@ class ViewControllerTest extends Specification {
         binding.scan_exitcode == 0
         binding.vulnerabilities == [new ScanVulnerability(id:'cve-1', severity:'HIGH', title:'test vul', pkgName:'testpkg', installedVersion:'1.0.0', fixedVersion:'1.1.0', primaryUrl:'http://vul/cve-1')]
         binding.build_url == 'http://foo.com/view/builds/12345'
+    }
+
+    def 'should render mirror page' () {
+        given:
+        def record1 = new MirrorResult(
+                '12345',
+                'sha256:abc12345',
+                'docker.io/ubuntu:latest',
+                'quay.io/ubuntu:latest',
+                ContainerPlatform.DEFAULT,
+                Instant.now(),
+                "GMT",
+                "scan-12456",
+                MirrorResult.Status.COMPLETED,
+                Duration.ofMinutes(1),
+                0,
+                'No logs'
+        )
+
+        when:
+        persistenceService.saveMirrorResult(record1)
+        and:
+        def request = HttpRequest.GET("/view/mirrors/${record1.mirrorId}")
+        def response = client.toBlocking().exchange(request, String)
+        then:
+        response.body().contains(record1.mirrorId)
     }
 
     @Unroll

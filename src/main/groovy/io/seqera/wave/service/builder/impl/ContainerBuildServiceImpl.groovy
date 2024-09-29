@@ -32,7 +32,6 @@ import io.micronaut.core.annotation.Nullable
 import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.api.BuildContext
-import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.BuildConfig
@@ -42,14 +41,13 @@ import io.seqera.wave.exception.HttpServerRetryableErrorException
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.builder.BuildCounterStore
+import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
-import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildStateStore
 import io.seqera.wave.service.builder.BuildTrack
 import io.seqera.wave.service.builder.ContainerBuildService
-import io.seqera.wave.service.buildstatus.BuildStatusService
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
@@ -334,13 +332,12 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
                 ? buildConfig.statusDuration
                 : buildConfig.failureDuration
         // update build status store
-        final exit = state.exitCode!=null ? state.exitCode : -1
         final result = state.completed()
-                ? BuildResult.completed(buildId, exit, state.stdout, job.creationTime, digest)
+                ? BuildResult.completed(buildId, state.exitCode, state.stdout, job.creationTime, digest)
                 : BuildResult.failed(buildId, state.stdout, job.creationTime)
         buildStore.storeBuild(job.entryKey, entry.withResult(result), ttl)
         eventPublisher.publishEvent(new BuildEvent(entry.request, result))
-        log.info "== Container build completed '${entry.request.targetImage}' - operation=${job.operationName}; exit=${exit}; status=${state.status}; duration=${result.duration}"
+        log.info "== Container build completed '${entry.request.targetImage}' - operation=${job.operationName}; exit=${state.exitCode}; status=${state.status}; duration=${result.duration}"
     }
 
     @Override
@@ -393,15 +390,4 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         return persistenceService.latestBuild(containerId)
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    BuildStatusService.StatusInfo getBuildStatus(String buildId) {
-        final entry = buildStore.findByRequestId(buildId)
-        if( entry ) {
-
-        }
-        else
-        getBuildRecord(buildId) ?.toStatusResponse()
-    }
 }

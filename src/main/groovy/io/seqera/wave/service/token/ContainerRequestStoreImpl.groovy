@@ -24,7 +24,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.configuration.TokenConfig
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.store.state.AbstractStateStore
 import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Singleton
@@ -36,11 +35,11 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-class ContainerTokenStoreImpl extends AbstractStateStore<ContainerRequestData> implements ContainerTokenStore {
+class ContainerRequestStoreImpl extends AbstractStateStore<ContainerRequestData> implements ContainerRequestStore {
 
     private TokenConfig tokenConfig
 
-    ContainerTokenStoreImpl(StateProvider<String, String> delegate, TokenConfig tokenConfig) {
+    ContainerRequestStoreImpl(StateProvider<String, String> delegate, TokenConfig tokenConfig) {
         super(delegate, new MoshiEncodeStrategy<ContainerRequestData>(){})
         this.tokenConfig = tokenConfig
         log.info "Creating Tokens cache store ― duration=${tokenConfig.cache.duration}"
@@ -58,7 +57,7 @@ class ContainerTokenStoreImpl extends AbstractStateStore<ContainerRequestData> i
 
     @Override
     ContainerRequestData get(String key) {
-        return super.get(key)
+        return (ContainerRequestData) super.get(key)
     }
 
     @Override
@@ -69,5 +68,10 @@ class ContainerTokenStoreImpl extends AbstractStateStore<ContainerRequestData> i
     @Override
     void remove(String key) {
         super.remove(key)
+    }
+
+    @Override
+    ContainerRequestData findByRequestId(String requestId) {
+        return (ContainerRequestData) super.findByRequestId(requestId)
     }
 }

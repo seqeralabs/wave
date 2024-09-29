@@ -20,10 +20,7 @@ package io.seqera.wave.service.mirror
 
 import java.util.concurrent.CompletableFuture
 
-import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.service.builder.BuildTrack
-import io.seqera.wave.service.buildstatus.BuildStatusService
-
 /**
  * Define the contract for container images mirroring service
  *
@@ -62,15 +59,4 @@ interface ContainerMirrorService {
      */
     MirrorResult getMirrorResult(String id)
 
-
-    /**
-     * The current status of the mirror request represented as a {@link BuildStatusResponse}
-     *
-     * @param mirrorId
-     *      The Id of the build request
-     * @return
-     *      The {@link io.seqera.wave.api.BuildStatusResponse} object representing the mirror status of {@code null}
-     *      if it cannot be found
-     */
-    BuildStatusService.StatusInfo getBuildStatus(String mirrorId)
 }

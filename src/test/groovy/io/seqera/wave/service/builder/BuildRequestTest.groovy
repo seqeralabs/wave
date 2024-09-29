@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.builder
 
-
 import spock.lang.Specification
 
 import java.nio.file.Path
@@ -27,7 +26,6 @@ import java.time.OffsetDateTime
 
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
-import io.seqera.wave.api.ScanMode
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
@@ -74,7 +72,6 @@ class BuildRequestTest extends Specification {
                 CONTEXT,
                 FORMAT,
                 TIMEOUT,
-                ScanMode.async,
         )
 
         then:
@@ -93,7 +90,6 @@ class BuildRequestTest extends Specification {
         req.offsetId == OFFSET
         req.containerConfig == CONFIG
         req.buildContext == CONTEXT
-        req.scanMode == ScanMode.async
 
         // ==== provide a Conda recipe ====
         when:
@@ -121,7 +117,6 @@ class BuildRequestTest extends Specification {
                 CONTEXT,
                 FORMAT,
                 TIMEOUT,
-                ScanMode.async,
         )
         then:
         req.containerId == '8026e3a63b5c863f'
@@ -148,7 +143,6 @@ class BuildRequestTest extends Specification {
                 CONTEXT,
                 FORMAT,
                 TIMEOUT,
-                ScanMode.async,
         )
         then:
         req.containerId == '181ec22b26ae6d04'
@@ -191,7 +185,6 @@ class BuildRequestTest extends Specification {
                 CONTEXT,
                 FORMAT,
                 TIMEOUT,
-                ScanMode.async,
         )
         then:
         req.containerId == 'd78ba9cb01188668'
@@ -225,26 +218,26 @@ class BuildRequestTest extends Specification {
         and:
         def CONTAINER_ID1 = ContainerHelper.makeContainerId(FOO_CONTENT, null, PLATFORM, BUILD_REPO, null)
         def TARGET_IMAGE1 = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID1, null, null)
-        def req1 = new BuildRequest(CONTAINER_ID1, FOO_CONTENT, null, PATH, TARGET_IMAGE1, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT, ScanMode.async)
+        def req1 = new BuildRequest(CONTAINER_ID1, FOO_CONTENT, null, PATH, TARGET_IMAGE1, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT)
         and:
-        def req2 = new BuildRequest(CONTAINER_ID1, FOO_CONTENT, null, PATH, TARGET_IMAGE1, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT, ScanMode.async)
+        def req2 = new BuildRequest(CONTAINER_ID1, FOO_CONTENT, null, PATH, TARGET_IMAGE1, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT)
         and:
         def CONTAINER_ID3 = ContainerHelper.makeContainerId(BAR_CONTENT, null, PLATFORM, BUILD_REPO, null)
         def TARGET_IMAGE3 = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID3, null, null)
-        def req3 = new BuildRequest(CONTAINER_ID3, BAR_CONTENT, null, PATH, TARGET_IMAGE3, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT, ScanMode.async)
+        def req3 = new BuildRequest(CONTAINER_ID3, BAR_CONTENT, null, PATH, TARGET_IMAGE3, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT)
         and:
         def CONTAINER_ID4 = ContainerHelper.makeContainerId(BAR_CONTENT, CONDA_CONTENT, PLATFORM, BUILD_REPO, null)
         def TARGET_IMAGE4 = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID4, CONDA_CONTENT, null)
-        def req4 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, PATH, TARGET_IMAGE4, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT, ScanMode.async)
+        def req4 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, PATH, TARGET_IMAGE4, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT)
         and:
-        def req5 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, PATH, TARGET_IMAGE4, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT, ScanMode.async)
+        def req5 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, PATH, TARGET_IMAGE4, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT)
         and:
         CONDA_CONTENT = 'salmon=1.2.5'
         def CONTAINER_ID6 = ContainerHelper.makeContainerId(BAR_CONTENT, CONDA_CONTENT, PLATFORM, BUILD_REPO, null)
         def TARGET_IMAGE6 = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID6, CONDA_CONTENT, null)
-        def req6 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, PATH, TARGET_IMAGE6, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT, ScanMode.async)
+        def req6 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, PATH, TARGET_IMAGE6, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT)
         and:
-        def req7 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, PATH, TARGET_IMAGE6, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', "UTC+2", null, null, null, FORMAT, TIMEOUT, ScanMode.async)
+        def req7 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, PATH, TARGET_IMAGE6, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', "UTC+2", null, null, null, FORMAT, TIMEOUT)
 
         expect:
         req1 == req2

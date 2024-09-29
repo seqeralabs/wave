@@ -27,7 +27,6 @@ import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
-import io.seqera.wave.api.ScanMode
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
@@ -130,8 +129,6 @@ class BuildRequest {
      * Max allow time duration for this build
      */
     final Duration maxDuration
-
-    final ScanMode scanMode
     
     volatile String buildId
 
@@ -152,8 +149,7 @@ class BuildRequest {
                  String scanId,
                  BuildContext buildContext,
                  BuildFormat format,
-                 Duration maxDuration,
-                 ScanMode scanMode
+                 Duration maxDuration
     )
     {
         this.containerId = containerId
@@ -173,7 +169,6 @@ class BuildRequest {
         this.buildContext = buildContext
         this.format = format
         this.maxDuration = maxDuration
-        this.scanMode = scanMode
     }
 
     BuildRequest(Map opts) {
@@ -196,7 +191,6 @@ class BuildRequest {
         this.workDir = opts.workDir as Path
         this.buildId = opts.buildId
         this.maxDuration = opts.maxDuration as Duration
-        this.scanMode = opts.scanMode as ScanMode
     }
 
     @Override

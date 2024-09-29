@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.mirror
 
-import io.seqera.wave.api.ScanMode
 import spock.lang.Specification
 
 import java.nio.file.Path
@@ -42,7 +41,8 @@ class MirrorResultTest extends Specification {
                 Path.of('/workspace'),
                 '{auth json}',
                 'scan-123',
-                ScanMode.lazy,
+                Instant.now(),
+                'GMT'
         )
 
         when:
@@ -63,6 +63,7 @@ class MirrorResultTest extends Specification {
 
     def 'should complete a result result' () {
         given:
+        def ts = Instant.now()
         def request = MirrorRequest.create(
                 'source.io/foo',
                 'target.io/foo',
@@ -71,7 +72,8 @@ class MirrorResultTest extends Specification {
                 Path.of('/workspace'),
                 '{auth json}',
                 'scan-123',
-                ScanMode.lazy,
+                ts,
+                'utc+1'
         )
 
         when:
@@ -91,6 +93,8 @@ class MirrorResultTest extends Specification {
         m2.targetImage == request.targetImage
         m2.creationTime == request.creationTime
         m2.platform == request.platform
+        m2.creationTime == request.creationTime
+        m2.offsetId == request.offsetId
         and:
         m2.status == MirrorResult.Status.COMPLETED
         m2.duration != null

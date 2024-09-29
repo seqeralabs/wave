@@ -18,16 +18,14 @@
 
 package io.seqera.wave.service.mirror.strategy
 
-import io.seqera.wave.api.ScanMode
-import io.seqera.wave.service.mirror.MirrorRequest
-
 import spock.lang.Specification
 import spock.lang.Unroll
 
 import java.nio.file.Path
+import java.time.Instant
 
 import io.seqera.wave.core.ContainerPlatform
-
+import io.seqera.wave.service.mirror.MirrorRequest
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -47,7 +45,8 @@ class MirrorStrategyTest extends Specification {
                 Path.of('/workspace'),
                 '{auth json}',
                 'scan-123',
-                ScanMode.lazy,
+                Instant.now(),
+                'GMT'
         )
         when:
         def cmd = strategy.copyCommand(request)

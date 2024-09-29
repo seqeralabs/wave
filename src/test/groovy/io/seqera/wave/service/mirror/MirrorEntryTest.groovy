@@ -21,10 +21,9 @@ package io.seqera.wave.service.mirror
 import spock.lang.Specification
 
 import java.nio.file.Path
+import java.time.Instant
 
-import io.seqera.wave.api.ScanMode
 import io.seqera.wave.core.ContainerPlatform
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -33,6 +32,7 @@ class MirrorEntryTest extends Specification {
 
     def 'should create mirror entry object' () {
         given:
+        def ts = Instant.now()
         def request = MirrorRequest.create(
                 'source.io/foo',
                 'target.io/foo',
@@ -41,7 +41,8 @@ class MirrorEntryTest extends Specification {
                 Path.of('/workspace'),
                 '{auth json}',
                 'scan-123',
-                ScanMode.lazy,
+                ts,
+                'utc'
         )
 
         when:
@@ -57,6 +58,7 @@ class MirrorEntryTest extends Specification {
 
     def 'should validate with result' () {
         given:
+        def ts = Instant.now()
         def request = MirrorRequest.create(
                 'source.io/foo',
                 'target.io/foo',
@@ -65,7 +67,8 @@ class MirrorEntryTest extends Specification {
                 Path.of('/workspace'),
                 '{auth json}',
                 'scan-123',
-                ScanMode.lazy,
+                ts,
+                'utc'
         )
 
         when:

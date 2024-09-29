@@ -35,8 +35,11 @@ import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.logs.BuildLogService
+import io.seqera.wave.service.mirror.ContainerMirrorService
+import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
+import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
@@ -73,6 +76,38 @@ class ViewController {
     @Inject
     private ContainerScanService scanService
 
+    @Inject
+    private ContainerMirrorService mirrorService
+
+    @View("mirror-view")
+    @Get('/mirrors/{mirrorId}')
+    HttpResponse viewMirror(String mirrorId) {
+        final result = mirrorService.getMirrorResult(mirrorId)
+        if( !result )
+            throw new NotFoundException("Unknown container mirror id '$mirrorId'")
+        return HttpResponse.ok(renderMirrorView(result))
+    }
+
+    protected Map<String,Object> renderMirrorView(MirrorResult result) {
+        // create template binding
+        final binding = new HashMap(20)
+        binding.mirror_id = result.mirrorId
+        binding.mirror_success = result.succeeded()
+        binding.mirror_failed = result.exitCode  && result.exitCode != 0
+        binding.mirror_in_progress = result.exitCode == null
+        binding.mirror_exit_status = result.exitCode
+        binding.mirror_time = formatTimestamp(result.creationTime, result.offsetId) ?: '-'
+        binding.mirror_duration = formatDuration(result.duration) ?: '-'
+        binding.mirror_image = result.targetImage
+        binding.mirror_platform = result.platform
+        binding.mirror_digest = result.digest ?: '-'
+        binding.put('server_url', serverUrl)
+        binding.scan_url = result.scanId && result.succeeded() ? "$serverUrl/view/scans/${result.scanId}" : null
+        binding.scan_id = result.scanId
+
+        return binding
+    }
+
     @View("build-view")
     @Get('/builds/{buildId}')
     HttpResponse viewBuild(String buildId) {
@@ -91,7 +126,7 @@ class ViewController {
         // go ahead with proper handling
         final record = buildService.getBuildRecord(buildId)
         if( !record )
-            throw new NotFoundException("Unknown build id '$buildId'")
+            throw new NotFoundException("Unknown container build id '$buildId'")
         return HttpResponse.ok(renderBuildView(record))
     }
 
@@ -225,7 +260,7 @@ class ViewController {
      * @throws NotFoundException If the a record for the specified build ID cannot be found
      */
     protected ScanEntry loadScanResult(String scanId) {
-        final scanRecord = persistenceService.loadScanRecord(scanId)
+        final scanRecord = scanService.getScanResult(scanId)
         if( !scanRecord )
             throw new NotFoundException("No scan report exists with id: ${scanId}")
 

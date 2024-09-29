@@ -26,9 +26,8 @@ import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.api.ContainerConfig
-import io.seqera.wave.api.FusionVersion
 import io.seqera.wave.api.SubmitContainerTokenRequest
-import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.token.ContainerRequestData
 import io.seqera.wave.tower.User
 import static io.seqera.wave.util.DataTimeUtils.parseOffsetDateTime
 /**

@@ -35,14 +35,14 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.server.EmbeddedServer
 import io.seqera.wave.exchange.RegistryErrorResponse
 import io.seqera.wave.model.ContentType
-import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.token.ContainerRequestData
 import io.seqera.wave.service.builder.impl.BuildStateStoreImpl
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.job.JobFactory
 import io.seqera.wave.service.job.JobQueue
-import io.seqera.wave.service.token.ContainerTokenStoreImpl
+import io.seqera.wave.service.token.ContainerRequestStoreImpl
 import io.seqera.wave.storage.ManifestCacheStore
 import io.seqera.wave.test.DockerRegistryContainer
 import io.seqera.wave.test.RedisTestContainer
@@ -103,7 +103,7 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         given:
         def client = applicationContext.createBean(HttpClient)
         def buildCacheStore = applicationContext.getBean(BuildStateStoreImpl)
-        def tokenCacheStore = applicationContext.getBean(ContainerTokenStoreImpl)
+        def tokenCacheStore = applicationContext.getBean(ContainerRequestStoreImpl)
         def jobQueue = applicationContext.getBean(JobQueue)
         def jobFactory = applicationContext.getBean(JobFactory)
         def res = BuildResult.create('1')
@@ -114,7 +114,7 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
                 maxDuration: Duration.ofSeconds(5)
         )
         def entry = new BuildEntry(req, res)
-        def containerRequestData = new ContainerRequestData(new PlatformId(new User(id:1)), "library/hello-world")
+        def containerRequestData = ContainerRequestData.of(identity: new PlatformId(new User(id:1)), containerImage: "library/hello-world")
         and:
         tokenCacheStore.put("1234", containerRequestData)
         buildCacheStore.put("library/hello-world", entry)

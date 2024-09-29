@@ -25,7 +25,7 @@ import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
-import io.seqera.wave.api.ScanMode
+import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
@@ -33,8 +33,6 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.JacksonHelper
-import io.seqera.wave.api.BuildStatusResponse
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -60,7 +58,6 @@ class WaveBuildRecordTest extends Specification {
                 null,
                 BuildFormat.DOCKER,
                 Duration.ofMinutes(1),
-                ScanMode.async,
         )
         final result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         final event = new BuildEvent(request, result)
@@ -92,7 +89,6 @@ class WaveBuildRecordTest extends Specification {
                 null,
                 BuildFormat.DOCKER,
                 Duration.ofMinutes(1),
-                ScanMode.async,
         ).withBuildId('123')
 
         and:
@@ -148,7 +144,6 @@ class WaveBuildRecordTest extends Specification {
                 null,
                 BuildFormat.DOCKER,
                 Duration.ofMinutes(1),
-                ScanMode.async,
         ).withBuildId('123')
 
         final result = new BuildResult(request.buildId, EXIT, "ok", Instant.now(), DURATION, null)

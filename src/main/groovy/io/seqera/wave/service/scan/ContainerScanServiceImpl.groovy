@@ -70,7 +70,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     @Override
     void scanOnBuild(BuildEvent event) {
         try {
-            if( event.result.succeeded() && event.request.format == DOCKER ) {
+            if( event.request.scanId && event.result.succeeded() && event.request.format == DOCKER ) {
                 scan(ScanRequest.fromBuild(event.request))
             }
         }
@@ -79,14 +79,15 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         }
     }
 
-    void scanOnMirror(MirrorEntry entry) {
+    @Override
+    void scanOnMirror(MirrorEntry event) {
         try {
-            if( entry.result.succeeded() ) {
-                scan(ScanRequest.fromMirror(entry.request))
+            if( event.request.scanId && event.result.succeeded() ) {
+                scan(ScanRequest.fromMirror(event.request))
             }
         }
         catch (Exception e) {
-            log.warn "Unable to run the container scan - image=${entry.request.targetImage}; reason=${e.message?:e}"
+            log.warn "Unable to run the container scan - image=${event.request.targetImage}; reason=${e.message?:e}"
         }
     }
 

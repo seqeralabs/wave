@@ -29,17 +29,16 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
-import io.seqera.wave.api.ScanMode
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.token.ContainerRequestData
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
-import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.mirror.MirrorEntry
+import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
@@ -241,7 +240,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 timestamp: Instant.now().toString()
         )
         def user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
-        def data = new ContainerRequestData(new PlatformId(user,100), 'hello-world' )
+        def data = ContainerRequestData.of(identity: new PlatformId(user,100), containerImage: 'hello-world' )
         def wave = "wave.io/wt/$TOKEN/hello-world"
         def addr = "100.200.300.400"
         def exp = Instant.now().plusSeconds(3600)
@@ -322,12 +321,13 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 Path.of('/workspace'),
                 '{auth json}',
                 'scan-123',
-                ScanMode.lazy,
+                Instant.now(),
+                "GMT"
         )
         and:
         storage.initializeDb()
         and:
-        def result = MirrorEntry.of(request)
+        def result = MirrorEntry.of(request).getResult()
         storage.saveMirrorResult(result)
         sleep 100
 
@@ -349,12 +349,13 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 Path.of('/workspace'),
                 '{auth json}',
                 'scan-123',
-                ScanMode.lazy,
+                Instant.now(),
+                "GMT"
         )
         and:
         storage.initializeDb()
         and:
-        def result = MirrorEntry.of(request)
+        def result = MirrorEntry.of(request).getResult()
         storage.saveMirrorResult(result)
         sleep 100
 

@@ -27,7 +27,7 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.token.ContainerRequestData
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 
@@ -53,7 +53,7 @@ class WaveContainerRecordTest extends Specification {
                 timestamp: Instant.now().toString() )
         and:
         def user = new User(id:1)
-        def data = new ContainerRequestData(new PlatformId(user,100), 'hello-world', 'some docker', cfg, 'some conda')
+        def data = ContainerRequestData.of(identity: new PlatformId(user,100), containerImage: 'hello-world', containerFile: 'some docker', containerConfig: cfg, condaFile: 'some conda')
         def wave = 'https://wave.io/some/container:latest'
         def addr = '100.200.300.400'
         
@@ -95,7 +95,7 @@ class WaveContainerRecordTest extends Specification {
                 fingerprint: 'xyz' )
         and:
         def user = new User(id:1)
-        def data = new ContainerRequestData(new PlatformId(user,100), 'hello-world', 'some docker', cfg, 'some conda')
+        def data = ContainerRequestData.of(identity: new PlatformId(user,100), containerImage: 'hello-world', containerFile: 'some docker', containerConfig: cfg, condaFile: 'some conda')
         def wave = 'https://wave.io/some/container:latest'
         def addr = '100.200.300.400'
 

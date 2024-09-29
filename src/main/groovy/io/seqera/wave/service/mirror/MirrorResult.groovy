@@ -46,6 +46,8 @@ class MirrorResult {
     final String targetImage
     final ContainerPlatform platform
     final Instant creationTime
+    final String offsetId
+    final String scanId
     final Status status
     final Duration duration
     final Integer exitCode
@@ -55,7 +57,7 @@ class MirrorResult {
         status==Status.COMPLETED && exitCode==0
     }
 
-    MirrorResult complete(Integer exitCode, String logs ) {
+    MirrorResult complete(Integer exitCode, String logs) {
         new MirrorResult(
                 this.mirrorId,
                 this.digest,
@@ -63,6 +65,8 @@ class MirrorResult {
                 this.targetImage,
                 this.platform,
                 this.creationTime,
+                this.offsetId,
+                this.scanId,
                 Status.COMPLETED,
                 Duration.between(this.creationTime, Instant.now()),
                 exitCode,
@@ -78,10 +82,13 @@ class MirrorResult {
                 request.targetImage,
                 request.platform,
                 request.creationTime,
+                request.offsetId,
+                request.scanId,
                 Status.PENDING
         )
     }
 
+    @Deprecated
     BuildStatusResponse toStatusResponse() {
         final status = status == Status.COMPLETED
                 ? BuildStatusResponse.Status.COMPLETED
@@ -98,4 +105,51 @@ class MirrorResult {
         )
     }
 
+    String getMirrorId() {
+        return mirrorId
+    }
+
+    String getDigest() {
+        return digest
+    }
+
+    String getSourceImage() {
+        return sourceImage
+    }
+
+    String getTargetImage() {
+        return targetImage
+    }
+
+    ContainerPlatform getPlatform() {
+        return platform
+    }
+
+    Instant getCreationTime() {
+        return creationTime
+    }
+
+    String getOffsetId() {
+        return offsetId
+    }
+
+    String getScanId() {
+        return scanId
+    }
+
+    Status getStatus() {
+        return status
+    }
+
+    Duration getDuration() {
+        return duration
+    }
+
+    Integer getExitCode() {
+        return exitCode
+    }
+
+    String getLogs() {
+        return logs
+    }
 }

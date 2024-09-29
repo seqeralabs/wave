@@ -28,7 +28,7 @@ import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.auth.RegistryAuth
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.token.ContainerRequestData
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
@@ -88,13 +88,13 @@ class MoshiEncodingStrategyTest extends Specification {
         given:
         def encoder = new MoshiEncodeStrategy<ContainerRequestData>() { }
         and:
-        def data = new ContainerRequestData(
-                new PlatformId(new User(id:1),2),
-                'ubuntu',
-                'from foo',
-                new ContainerConfig(entrypoint: ['some', 'entry'], cmd:['the', 'cmd']),
-                'some/conda/file',
-                ContainerPlatform.of('amd64') )
+        def data = ContainerRequestData.of(
+                identity: new PlatformId(new User(id:1),2),
+                containerImage:  'ubuntu',
+                containerFile:  'from foo',
+                containerConfig:  new ContainerConfig(entrypoint: ['some', 'entry'], cmd:['the', 'cmd']),
+                condaFile: 'some/conda/file',
+                platform: ContainerPlatform.of('amd64') )
 
         when:
         def json = encoder.encode(data)

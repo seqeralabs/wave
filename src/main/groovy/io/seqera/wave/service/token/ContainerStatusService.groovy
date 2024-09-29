@@ -18,19 +18,14 @@
 
 package io.seqera.wave.service.token
 
-import io.seqera.wave.service.ContainerRequestData
 
+import io.seqera.wave.api.ContainerStatusResponse
 /**
- * Define the container request token persistence operations
- * 
- * @author : jorge <jorge.aguilera@seqera.io>
  *
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface ContainerTokenStore {
+interface ContainerStatusService {
 
-    void put(String key, ContainerRequestData request)
+    ContainerStatusResponse getContainerStatus(String requestId)
 
-    ContainerRequestData get(String key)
-
-    void remove(String key)
 }

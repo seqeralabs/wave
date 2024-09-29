@@ -22,6 +22,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.api.BuildContext
+import io.seqera.wave.api.ContainerStatus
 import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
@@ -29,7 +30,7 @@ import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.config.CondaOpts
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
-import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.token.ContainerRequestData
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.token.TokenData
 import org.yaml.snakeyaml.Yaml
@@ -133,7 +134,7 @@ class ContainerHelper {
     static SubmitContainerTokenResponse makeResponseV1(ContainerRequestData data, TokenData token, String waveImage) {
         final target = waveImage
         final build = data.buildNew ? data.buildId : null
-        return new SubmitContainerTokenResponse(token.value, target, token.expiration, data.containerImage, build, null, null, null)
+        return new SubmitContainerTokenResponse(data.requestId, token.value, target, token.expiration, data.containerImage, build, null, null, null, null, null)
     }
 
     static SubmitContainerTokenResponse makeResponseV2(ContainerRequestData data, TokenData token, String waveImage) {
@@ -142,7 +143,10 @@ class ContainerHelper {
         final Boolean cached = !data.buildNew
         final expiration = !data.durable() ? token.expiration : null
         final tokenId = !data.durable() ? token.value : null
-        return new SubmitContainerTokenResponse(tokenId, target, expiration, data.containerImage, build, cached, data.freeze, data.mirror)
+        final status = data.buildNew || data.scanId
+                ? ContainerStatus.PENDING
+                : ContainerStatus.READY
+        return new SubmitContainerTokenResponse(data.requestId, tokenId, target, expiration, data.containerImage, build, cached, data.freeze, data.mirror, data.scanId, status)
     }
 
     static String patchPlatformEndpoint(String endpoint) {

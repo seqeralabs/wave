@@ -61,10 +61,10 @@ class ScanEntry implements StateEntry<String>, JobEntry {
         return duration != null
     }
 
-    boolean isSucceeded() { status==SUCCEEDED }
+    boolean succeeded() { status==SUCCEEDED }
 
     @Deprecated
-    boolean isCompleted() { done() }
+    boolean completed() { done() }
 
     ScanEntry success(List<ScanVulnerability> vulnerabilities){
         return new ScanEntry(

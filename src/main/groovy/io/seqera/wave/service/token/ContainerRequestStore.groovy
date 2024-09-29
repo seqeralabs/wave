@@ -16,29 +16,21 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.buildstatus
-
-import java.time.Duration
-import java.time.Instant
-
-import io.seqera.wave.api.BuildStatusResponse
-import io.seqera.wave.api.ScanMode
-
+package io.seqera.wave.service.token
 /**
+ * Define the container request token persistence operations
+ * 
+ * @author : jorge <jorge.aguilera@seqera.io>
  *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface BuildStatusService {
+interface ContainerRequestStore {
 
-    interface StatusInfo {
-        String getBuildId()
-        String getScanId()
-        ScanMode getScanMode()
-        Instant getStartTime()
-        Duration getDuration()
-        Boolean getSucceeded()
-    }
+    void put(String key, ContainerRequestData request)
 
-    BuildStatusResponse getBuildStatus(String requestId)
+    ContainerRequestData get(String key)
+
+    void remove(String key)
+
+    ContainerRequestData findByRequestId(String requestId)
 
 }

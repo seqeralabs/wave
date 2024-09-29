@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.mirror
 
-import io.seqera.wave.api.ScanMode
 import spock.lang.Requires
 import spock.lang.Specification
 
@@ -63,7 +62,7 @@ class ContainerMirrorServiceTest extends Specification {
         def source = 'docker.io/hello-world:latest'
         def target = 'docker.io/pditommaso/wave-tests'
         def folder = Files.createTempDirectory('test')
-        println "Temp path: $folder"
+
         when:
         def creds = dockerAuthService.credentialsConfigJson(null, source, target, Mock(PlatformId))
         def request = MirrorRequest.create(
@@ -73,8 +72,9 @@ class ContainerMirrorServiceTest extends Specification {
                 ContainerPlatform.DEFAULT,
                 folder,
                 creds,
-                'scan-123',
-                ScanMode.lazy,
+                null,
+                Instant.now(),
+                'GMT'
         )
         and:
         mirrorService.mirrorImage(request)
@@ -96,8 +96,9 @@ class ContainerMirrorServiceTest extends Specification {
                 ContainerPlatform.DEFAULT,
                 Path.of('/some/dir'),
                 '{config}',
-                'scan-123',
-                ScanMode.lazy,
+                null,
+                Instant.now(),
+                'GMT'
         )
         and:
         def state = MirrorResult.from(request)
@@ -118,8 +119,9 @@ class ContainerMirrorServiceTest extends Specification {
                 ContainerPlatform.DEFAULT,
                 Path.of('/some/dir'),
                 '{config}',
-                'scan-123',
-                ScanMode.lazy,
+                null,
+                Instant.now(),
+                'GMT'
         )
         and:
         def state = MirrorEntry.of(request)
@@ -140,8 +142,9 @@ class ContainerMirrorServiceTest extends Specification {
                 ContainerPlatform.DEFAULT,
                 Path.of('/some/dir'),
                 '{config}',
-                'scan-123',
-                ScanMode.lazy,
+                null,
+                Instant.now(),
+                'GMT'
         )
         and:
         def state = MirrorEntry.of(request)
@@ -170,8 +173,9 @@ class ContainerMirrorServiceTest extends Specification {
                 ContainerPlatform.DEFAULT,
                 Path.of('/some/dir'),
                 '{config}',
-                'scan-123',
-                ScanMode.lazy,
+                null,
+                Instant.now(),
+                'GMT'
         )
         and:
         def state = MirrorEntry.of(request)
@@ -201,8 +205,9 @@ class ContainerMirrorServiceTest extends Specification {
                 ContainerPlatform.DEFAULT,
                 Path.of('/some/dir'),
                 '{config}',
-                'scan-123',
-                ScanMode.lazy,
+                null,
+                Instant.now(),
+                'GMT'
         )
         and:
         def state = MirrorEntry.of(request)

@@ -25,7 +25,7 @@ import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.model.ContainerCoordinates
-import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.token.ContainerRequestData
 import io.seqera.wave.tower.PlatformId
 import static io.seqera.wave.WaveDefault.DOCKER_IO
 /**
@@ -125,7 +125,7 @@ class RoutePath implements ContainerPath {
     }
 
     static RoutePath v2manifestPath(ContainerCoordinates container, PlatformId identity=null) {
-        ContainerRequestData data = identity!=null ? new ContainerRequestData(identity) : null
+        ContainerRequestData data = identity!=null ? ContainerRequestData.of(identity) : null
         return new RoutePath('manifests', container.registry, container.image, container.reference, "/v2/${container.image}/manifests/${container.reference}", data)
     }
 
@@ -144,7 +144,7 @@ class RoutePath implements ContainerPath {
             final image = m.group(2)
             final type = m.group(3)
             final reference = m.group(4)
-            final data = identity!=null ? new ContainerRequestData(identity) : null
+            final data = identity!=null ? ContainerRequestData.of(identity) : null
             return v2path(type, registry, image, reference, data)
         }
         else

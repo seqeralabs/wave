@@ -23,8 +23,8 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.configuration.TokenConfig
-import io.seqera.wave.service.ContainerRequestData
-import io.seqera.wave.util.LongRndKey
+import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.persistence.WaveContainerRecord
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -35,39 +35,45 @@ import jakarta.inject.Singleton
 @Slf4j
 @CompileStatic
 @Singleton
-class ContainerTokenServiceImpl implements ContainerTokenService {
+class ContainerRequestServiceImpl implements ContainerRequestService {
 
     @Inject
-    private ContainerTokenStore containerTokenStorage
+    private ContainerRequestStore containerTokenStorage
 
     @Inject
     private TokenConfig config
 
     @Inject
-    private ContainerTokenStoreImpl tokenCache
+    private ContainerRequestStoreImpl tokenCache
+
+    @Inject
+    private PersistenceService persistenceService
 
     @Override
     TokenData computeToken(ContainerRequestData request) {
-        final token = LongRndKey.rndHex()
         final expiration = Instant.now().plus(config.cache.duration);
-        containerTokenStorage.put(token, request)
-        return new TokenData(token, expiration)
+        containerTokenStorage.put(request.requestId, request)
+        return new TokenData(request.requestId, expiration)
     }
 
     @Override
-    ContainerRequestData getRequest(String token) {
-        return containerTokenStorage.get(token)
+    ContainerRequestData getRequest(String requestId) {
+        return containerTokenStorage.get(requestId)
     }
 
     @Override
-    ContainerRequestData evictRequest(String token) {
-        if(!token)
+    ContainerRequestData evictRequest(String requestId) {
+        if(!requestId)
             return null
 
-        final request = tokenCache.get(token)
+        final request = tokenCache.get(requestId)
         if( request ) {
-            tokenCache.remove(token)
+            tokenCache.remove(requestId)
         }
         return request
+    }
+
+    WaveContainerRecord loadContainerRecord(String requestId) {
+        persistenceService.loadContainerRequest(requestId)
     }
 }

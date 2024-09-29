@@ -18,20 +18,19 @@
 
 package io.seqera.wave.service.mirror
 
-
 import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import io.seqera.wave.service.job.JobEntry
 import io.seqera.wave.store.state.RequestIdAware
 import io.seqera.wave.store.state.StateEntry
-import jakarta.inject.Singleton
 /**
  * Model a container mirror entry object
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @ToString(includeNames = true, includePackage = false)
-@Singleton
+@EqualsAndHashCode
 @CompileStatic
 class MirrorEntry implements StateEntry<String>, JobEntry, RequestIdAware {
 

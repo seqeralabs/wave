@@ -84,4 +84,21 @@ class WaveScanRecord {
     void setId(String id) {
         this.id = StringUtils.surrealId(id)
     }
+
+    Boolean succeeded() {
+        return duration != null
+                ? status == ScanEntry.SUCCEEDED
+                : null
+    }
+
+    Map<String,Integer> summary() {
+        final result = new HashMap<String,Integer>()
+        if( !vulnerabilities )
+            return result
+        for( ScanVulnerability it : vulnerabilities ) {
+            def v = result.getOrDefault(it.severity, 0)
+            result.put(it.severity, v+1)
+        }
+        return result
+    }
 }

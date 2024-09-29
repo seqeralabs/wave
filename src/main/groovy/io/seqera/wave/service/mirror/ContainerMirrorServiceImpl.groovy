@@ -24,7 +24,6 @@ import java.util.concurrent.ExecutorService
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.scheduling.TaskExecutors
-import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.service.builder.BuildTrack
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
@@ -145,10 +144,4 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
         log.error("Mirror container errored - job=${job.operationName}; result=${result}", error)
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    BuildStatusResponse getBuildStatus(String mirrorId) {
-        getMirrorResult(mirrorId) ?.toStatusResponse()
-    }
 }

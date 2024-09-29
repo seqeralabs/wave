@@ -25,7 +25,6 @@ import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
-import io.seqera.wave.api.ScanMode
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.impl.ContainerBuildServiceImpl
 import io.seqera.wave.tower.PlatformId
@@ -50,7 +49,7 @@ class FutureContainerBuildServiceTest extends Specification {
         and:
         def containerId = ContainerHelper.makeContainerId(dockerfile, null, ContainerPlatform.of('amd64'), buildRepo, null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
-        def req = new BuildRequest(containerId, dockerfile, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1), ScanMode.async).withBuildId('1')
+        def req = new BuildRequest(containerId, dockerfile, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withBuildId('1')
         def res = new BuildResult("", 0, "a fake build result in a test", Instant.now(), Duration.ofSeconds(3), 'abc')
         and:
         def buildStore = Mock(BuildStateStore)
@@ -85,7 +84,7 @@ class FutureContainerBuildServiceTest extends Specification {
         and:
         def containerId = ContainerHelper.makeContainerId(dockerfile, null, ContainerPlatform.of('amd64'), buildRepo, null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
-        def req = new BuildRequest(containerId, dockerfile, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1), ScanMode.async).withBuildId('1')
+        def req = new BuildRequest(containerId, dockerfile, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withBuildId('1')
         def res = new BuildResult("", 1, "a fake build result in a test", Instant.now(), Duration.ofSeconds(3), 'abc')
         and:
         def buildStore = Mock(BuildStateStore)

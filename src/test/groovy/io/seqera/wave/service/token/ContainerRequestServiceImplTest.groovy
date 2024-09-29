@@ -22,7 +22,6 @@ import spock.lang.Specification
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.TokenConfig
-import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
@@ -31,27 +30,28 @@ import jakarta.inject.Inject
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @MicronautTest
-class ContainerTokenServiceImplTest extends Specification {
+class ContainerRequestServiceImplTest extends Specification {
 
     @Inject
     private TokenConfig config
 
     @Inject
-    private ContainerTokenStoreImpl tokenCache
+    private ContainerRequestStoreImpl requestStore
 
     def 'should evict container request from cache'(){
         given:
-        def containerTokenService = new ContainerTokenServiceImpl( tokenCache: tokenCache, config: config )
+        def containerTokenService = new ContainerRequestServiceImpl( tokenCache: requestStore, config: config )
         def TOKEN = '123abc'
         def user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
-        def data = new ContainerRequestData(new PlatformId(user,100), 'hello-world')
+        def data = ContainerRequestData.of(identity: new PlatformId(user,100), containerImage: 'hello-world')
         and:
-        tokenCache.put(TOKEN, data)
+        requestStore.put(TOKEN, data)
 
         when:
         def request = containerTokenService.evictRequest(TOKEN)
         then:
         request == data
-        tokenCache.get(TOKEN) == null
+        requestStore.get(TOKEN) == null
     }
+
 }

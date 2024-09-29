@@ -78,12 +78,12 @@ class BuildResult {
         return "BuildResult[id=$id; exitStatus=$exitStatus; duration=$duration]"
     }
 
-    static BuildResult completed(String buildId, Integer exitStatus, String content, Instant startTime, String digest) {
-        new BuildResult(buildId, exitStatus, content, startTime, Duration.between(startTime, Instant.now()), digest)
+    static BuildResult completed(String buildId, Integer exitStatus, String logs, Instant startTime, String digest) {
+        new BuildResult(buildId, exitStatus, logs, startTime, Duration.between(startTime, Instant.now()), digest)
     }
 
-    static BuildResult failed(String buildId, String content, Instant startTime) {
-        new BuildResult(buildId, -1, content, startTime, Duration.between(startTime, Instant.now()), null)
+    static BuildResult failed(String buildId, String logs, Instant startTime) {
+        new BuildResult(buildId, -1, logs, startTime, Duration.between(startTime, Instant.now()), null)
     }
 
     static BuildResult create(BuildRequest req) {

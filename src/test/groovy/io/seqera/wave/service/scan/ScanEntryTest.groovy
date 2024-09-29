@@ -30,7 +30,7 @@ import io.seqera.wave.core.ContainerPlatform
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class ScanResultTest extends Specification {
+class ScanEntryTest extends Specification {
 
     boolean nearly(Duration given, Duration expected) {
         given >= expected
@@ -75,7 +75,7 @@ class ScanResultTest extends Specification {
                 []
         )
         then:
-        result.isCompleted() == EXPECTED
+        result.completed() == EXPECTED
         result.done() == EXPECTED
 
         where:
@@ -97,7 +97,7 @@ class ScanResultTest extends Specification {
                 []
         )
         then:
-        result.isSucceeded() == EXPECTED
+        result.succeeded() == EXPECTED
 
         where:
         STATUS              | EXPECTED
