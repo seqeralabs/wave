@@ -43,6 +43,8 @@ class BuildRequest {
 
     static final public String SEP = '_'
 
+    static final public String PREFIX = "bd-"
+
     /**
      * Unique request Id. This is computed as a consistent hash generated from
      * the container build assets e.g. Dockerfile. Therefore the same container build
@@ -264,7 +266,7 @@ class BuildRequest {
     }
 
     BuildRequest withCount(String id) {
-        this.buildId = containerId + SEP + id
+        this.buildId = PREFIX + containerId + SEP + id
         this.workDir = workspace.resolve(buildId).toAbsolutePath()
         return this
     }

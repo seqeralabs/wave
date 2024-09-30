@@ -187,7 +187,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def loaded = persistence.latestBuild('abc')
 
         then:
-        loaded.buildId == 'abc_3'
+        loaded.buildId == 'bd-abc_3'
     }
 
     def 'should save and update a build' () {

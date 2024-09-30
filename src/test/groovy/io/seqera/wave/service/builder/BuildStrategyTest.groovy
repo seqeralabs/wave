@@ -158,8 +158,8 @@ class BuildStrategyTest extends Specification {
         build.containerId == 'af15cb0a413a2d48'
         build.workspace == Path.of("some/path")
         and:
-        build.buildId == 'af15cb0a413a2d48_100'
-        build.workDir == Path.of('.').toRealPath().resolve('some/path/af15cb0a413a2d48_100')
+        build.buildId == 'bd-af15cb0a413a2d48_100'
+        build.workDir == Path.of('.').toRealPath().resolve('some/path/bd-af15cb0a413a2d48_100')
         build.maxDuration == timeout
     }
 }

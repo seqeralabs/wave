@@ -308,7 +308,7 @@ class ViewControllerTest extends Specification {
         and:
         def result = new ScanEntry(
                 '12345',
-                '12345',
+                'bd-12345',
                 'docker.io/some:image',
                 Instant.now(),
                 Duration.ofMinutes(1),
@@ -325,7 +325,9 @@ class ViewControllerTest extends Specification {
         binding.scan_succeeded
         binding.scan_exitcode == 0
         binding.vulnerabilities == [new ScanVulnerability(id:'cve-1', severity:'HIGH', title:'test vul', pkgName:'testpkg', installedVersion:'1.0.0', fixedVersion:'1.1.0', primaryUrl:'http://vul/cve-1')]
-        binding.build_url == 'http://foo.com/view/builds/12345'
+        binding.request_url == 'http://foo.com/view/builds/bd-12345'
+        binding.request_id == 'bd-12345'
+        binding.request_type == 'Build'
     }
 
     def 'should render mirror page' () {
