@@ -19,6 +19,7 @@
 package io.seqera.wave.service.scan
 
 import java.nio.file.NoSuchFileException
+import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
@@ -26,15 +27,20 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.scheduling.TaskExecutors
+import io.seqera.wave.api.ScanMode
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.mirror.MirrorEntry
+import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.request.ContainerRequest
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -46,13 +52,13 @@ import static io.seqera.wave.service.builder.BuildFormat.DOCKER
  */
 @Slf4j
 @Named("Scan")
-@Requires(property = 'wave.scan.enabled', value = 'true')
+@Requires(bean = ScanConfig)
 @Singleton
 @CompileStatic
 class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanEntry> {
 
     @Inject
-    private ScanConfig scanConfig
+    private ScanConfig config
 
     @Inject
     @Named(TaskExecutors.IO)
@@ -67,11 +73,41 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     @Inject
     private JobService jobService
 
+    @Inject
+    private ScanIdStore scanIdStore
+
+    @Inject
+    private ContainerInspectService inspectService
+
+    ContainerScanServiceImpl() {}
+
+    @Override
+    String getScanId(String targetImage, ScanMode mode, String format) {
+        // ignore singularity images
+        if( format == 'sif' )
+            return null
+        // skip if scan mode is empty
+        if( !mode )
+            return null
+        // create a new scan id if there's no entry for the given target image
+        final result = scanIdStore
+                .putIfAbsentAndCount(targetImage, ScanId.of(targetImage))
+        // if a scan id, increment the count and update it
+        if( result.v1 ) {
+            final count = result.v3
+            final ScanId scan = result.v2.withCount(count)
+            scanIdStore.put(targetImage, scan)
+            return scan
+        }
+        // use the existing scan id 
+        return result.v2
+    }
+
     @Override
     void scanOnBuild(BuildEvent event) {
         try {
             if( event.request.scanId && event.result.succeeded() && event.request.format == DOCKER ) {
-                scan(ScanRequest.fromBuild(event.request))
+                scan(fromBuild(event.request))
             }
         }
         catch (Exception e) {
@@ -83,11 +119,23 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     void scanOnMirror(MirrorEntry event) {
         try {
             if( event.request.scanId && event.result.succeeded() ) {
-                scan(ScanRequest.fromMirror(event.request))
+                scan(fromMirror(event.request))
             }
         }
         catch (Exception e) {
             log.warn "Unable to run the container scan - image=${event.request.targetImage}; reason=${e.message?:e}"
+        }
+    }
+
+    @Override
+    void scanOnRequest(ContainerRequest request) {
+        try {
+            if( request.scanId  ) {
+                scan(fromContainer(request))
+            }
+        }
+        catch (Exception e) {
+            log.warn "Unable to run the container scan - image=${request.containerImage}; reason=${e.message?:e}"
         }
     }
 
@@ -116,9 +164,10 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         try {
             // create a record to mark the beginning
             final scan = ScanEntry.pending(request.scanId, request.buildId, request.targetImage)
-            scanStore.put(scan.scanId, scan)
-            //launch container scan
-            jobService.launchScan(request)
+            if( scanStore.putIfAbsent(scan.scanId, scan) ) {
+                // launch container scan
+                jobService.launchScan(request)
+            }
         }
         catch (Throwable e){
             log.warn "Unable to save scan result - id=${request.scanId}; cause=${e.message}", e
@@ -179,5 +228,21 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         catch (Throwable t){
             log.error("Unable to save result - id=${scan.scanId}; cause=${t.message}", t)
         }
+    }
+
+    ScanRequest fromBuild(BuildRequest request) {
+        final workDir = request.workDir.resolveSibling(request.scanId)
+        return new ScanRequest(request.scanId, request.buildId, request.configJson, request.targetImage, request.platform, workDir, Instant.now())
+    }
+
+    ScanRequest fromMirror(MirrorRequest request) {
+        final workDir = request.workDir.resolveSibling(request.scanId)
+        return new ScanRequest(request.scanId, request.mirrorId, request.authJson, request.targetImage, request.platform, workDir, Instant.now())
+    }
+
+    ScanRequest fromContainer(ContainerRequest request) {
+        final workDir = config.workspace.resolve(request.scanId)
+        final authJson = inspectService.credentialsConfigJson(null, request.containerImage, null, request.identity)
+        return new ScanRequest(request.scanId, request.requestId, authJson, request.containerImage, request.platform, workDir, Instant.now())
     }
 }

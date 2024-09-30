@@ -18,9 +18,12 @@
 
 package io.seqera.wave.service.scan
 
+import io.seqera.wave.api.ScanMode
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.mirror.MirrorEntry
 import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.request.ContainerRequest
+
 /**
  * Declare operations to scan containers
  *
@@ -28,11 +31,15 @@ import io.seqera.wave.service.persistence.WaveScanRecord
  */
 interface ContainerScanService {
 
+    String getScanId(String targetImage, ScanMode mode, String format)
+
     void scan(ScanRequest request)
 
     void scanOnBuild(BuildEvent build)
 
     void scanOnMirror(MirrorEntry entry)
+
+    void scanOnRequest(ContainerRequest request)
 
     WaveScanRecord getScanResult(String scanId)
 

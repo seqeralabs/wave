@@ -63,7 +63,8 @@ interface StateStore<K, V> {
     boolean putIfAbsent(K key, V value)
 
     /**
-     * Store a value in the cache only if does not exist yet
+     * Store a value in the cache only if does not exist
+     *
      * @param key The unique associated with this object
      * @param value The object to store
      * @param ttl The max time-to-live of the stored entry

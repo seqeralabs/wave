@@ -53,7 +53,6 @@ import io.seqera.wave.exchange.DescribeWaveContainerResponse
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
-import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildTrack
@@ -67,16 +66,17 @@ import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerRecord
+import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.request.ContainerRequestService
 import io.seqera.wave.service.request.ContainerStatusService
 import io.seqera.wave.service.request.TokenData
+import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
-import io.seqera.wave.util.LongRndKey
 import jakarta.inject.Inject
 import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
@@ -120,9 +120,6 @@ class ContainerController {
     @Value('${tower.endpoint.url:`https://api.cloud.seqera.io`}')
     String towerEndpointUrl
 
-    @Value('${wave.scan.enabled:false}')
-    boolean scanEnabled
-
     @Inject
     BuildConfig buildConfig
 
@@ -162,6 +159,10 @@ class ContainerController {
 
     @Inject
     ContainerStatusService statusService
+
+    @Inject
+    @Nullable
+    ContainerScanService scanService
 
     @PostConstruct
     private void init() {
@@ -264,6 +265,8 @@ class ContainerController {
                         : makeResponseV1(data, token, target)
         // persist request
         storeContainerRequest0(req, data, token, target, ip)
+        if( !data.durable() && scanService )
+            scanService.scanOnRequest(data)
         // log the response
         log.debug "New container request fulfilled - token=$token.value; expiration=$token.expiration; container=$data.containerImage; build=$resp.buildId; identity=$identity"
         // return response
@@ -340,7 +343,6 @@ class ContainerController {
         final configJson = inspectService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
-        final scanId = scanEnabled && format==DOCKER && req.scanMode ? LongRndKey.rndHex() : null
         // use 'imageSuffix' strategy by default for public repo images
         final nameStrategy = req.nameStrategy==null
                 && buildRepository
@@ -353,6 +355,8 @@ class ContainerController {
         final containerId = makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext)
         final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, nameStrategy)
         final maxDuration = buildConfig.buildMaxDuration(req)
+        final scanId = scanService?.getScanId(targetImage, req.scanMode, req.format)
+
         return new BuildRequest(
                 containerId,
                 containerSpec,
@@ -449,7 +453,7 @@ class ContainerController {
             condaContent = null
             buildId = null
             buildNew = null
-            scanId = null
+            scanId = scanService?.getScanId(targetImage, req.scanMode, req.format)
             mirrorFlag = null
         }
         else
@@ -482,7 +486,7 @@ class ContainerController {
         final platform = request.containerPlatform
                 ? ContainerPlatform.of(request.containerPlatform)
                 : ContainerPlatform.DEFAULT
-        final scanId = scanEnabled && request.scanMode ? LongRndKey.rndHex() : null
+        final scanId = scanService?.getScanId(targetImage, request.scanMode, request.format)
         final offset = DataTimeUtils.offsetId(request.timestamp)
 
         final digest = registryProxyService.getImageDigest(request.containerImage, identity)

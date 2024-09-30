@@ -24,10 +24,6 @@ import java.time.Instant
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.mirror.MirrorRequest
-import io.seqera.wave.util.LongRndKey
-
 /**
  * Model a container scan request
  * 
@@ -36,24 +32,14 @@ import io.seqera.wave.util.LongRndKey
 @Canonical
 @CompileStatic
 class ScanRequest {
+    static final public String ID_PREFIX = 'sc-'
+
     final String scanId
-    final String buildId
+    final String buildId // TODO consider to rename requestId
     final String configJson
     final String targetImage
     final ContainerPlatform platform
     final Path workDir
     final Instant creationTime
 
-    static ScanRequest fromBuild(BuildRequest request) {
-        final id = request.scanId
-        final workDir = request.workDir.resolveSibling("scan-${id}")
-        return new ScanRequest(id, request.buildId, request.configJson, request.targetImage, request.platform, workDir, Instant.now())
-    }
-
-    static ScanRequest fromMirror(MirrorRequest request) {
-        final id = LongRndKey.rndHex()
-        final workDir = request.workDir.resolveSibling("scan-${id}")
-        return new ScanRequest(id, request.mirrorId, request.authJson, request.targetImage, request.platform, workDir, Instant.now())
-
-    }
 }

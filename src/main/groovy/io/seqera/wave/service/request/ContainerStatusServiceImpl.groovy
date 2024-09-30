@@ -25,6 +25,7 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.api.ContainerStatus
 import io.seqera.wave.api.ContainerStatusResponse
 import io.seqera.wave.api.ScanMode
@@ -60,6 +61,7 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
     private ContainerMirrorService mirrorService
 
     @Inject
+    @Nullable
     private ContainerScanService scanService
 
     @Inject
@@ -76,18 +78,16 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
         if( !request )
             return null
 
-        final ContainerState state = getBuildStatus(request)
+        final ContainerState state = getContainerState(request)
 
-        if( state ) {
-            if( state.running ) {
-                return createResponse0(BUILDING, request, state)
-            }
-            else if( !request.scanId ) {
-                return createResponse0(READY, request, state, buildResult(request,state))
-            }
+        if( state.running ) {
+            return createResponse0(BUILDING, request, state)
+        }
+        else if( !request.scanId ) {
+            return createResponse0(READY, request, state, buildResult(request,state))
         }
 
-        if( request.scanId && request.scanMode == ScanMode.sync ) {
+        if( request.scanId && request.scanMode == ScanMode.sync && scanService ) {
             final scan = scanService.getScanResult(request.scanId)
             if ( !scan )
                 throw new NotFoundException("Missing container scan record with id: ${request.scanId}")
@@ -102,24 +102,25 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
             }
         }
 
-        return createDefaultResponse(request, state)
+        return createResponse0(READY, request, state)
     }
 
-    protected ContainerState getBuildStatus(ContainerRequest request) {
-        if (!request.buildId)
-            return null
-
-        if (request.mirror) {
+    protected ContainerState getContainerState(ContainerRequest request) {
+        if( request.mirror && request.buildId ) {
             final mirror = mirrorService.getMirrorResult(request.buildId)
             if (!mirror)
                 throw new NotFoundException("Missing container mirror record with id: ${request.buildId}")
             return ContainerState.from(mirror)
         }
-        else {
+        if( request.buildId ) {
             final build = buildService.getBuildRecord(request.buildId)
             if (!build)
                 throw new NotFoundException("Missing container build record with id: ${request.buildId}")
             return ContainerState.from(build)
+        }
+        else {
+            final delta = Duration.between(request.creationTime, Instant.now())
+            return new ContainerState( request.creationTime, delta,true )
         }
     }
 
@@ -215,11 +216,4 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
         return new StageResult(true)
     }
 
-    protected ContainerStatusResponse createDefaultResponse(ContainerRequest request, ContainerState state) {
-        if( !state ) {
-            final delta = Duration.between(request.creationTime, Instant.now())
-            state = new ContainerState(request.creationTime, delta, true)
-        }
-        return createResponse0(READY, request, state)
-    }
 }

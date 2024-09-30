@@ -124,6 +124,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     private RegistryProxyService proxyService
 
     @Inject
+    @Nullable
     private ContainerScanService scanService
     
     /**
@@ -365,7 +366,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     protected void onBuildEvent(BuildEvent event) {
         final record0 = WaveBuildRecord.fromEvent(event)
         persistenceService.saveBuild(record0)
-        scanService.scanOnBuild(event)
+        scanService?.scanOnBuild(event)
     }
 
     /**

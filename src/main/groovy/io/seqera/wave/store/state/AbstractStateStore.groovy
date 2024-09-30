@@ -50,6 +50,10 @@ abstract class AbstractStateStore<V> implements StateStore<String,V> {
         return getPrefix() + 'request-id/' + requestId
     }
 
+    protected String counter0(String k) {
+        return getPrefix() + 'counter/' + k
+    }
+
     protected V deserialize(String encoded) {
         return encodingStrategy.decode(encoded)
     }
@@ -94,8 +98,24 @@ abstract class AbstractStateStore<V> implements StateStore<String,V> {
         return result
     }
 
+    @Override
     boolean putIfAbsent(String key, V value) {
         return putIfAbsent(key, value, getDuration())
+    }
+
+    Tuple3<Boolean,V,Integer> putIfAbsentAndCount(String key, V value) {
+        putIfAbsentAndCount(key, value, getDuration())
+    }
+
+    Tuple3<Boolean,V,Integer> putIfAbsentAndCount(String key, V value, Duration ttl) {
+        final result = delegate.putIfAbsent(key0(key), serialize(value), ttl, counter0(key))
+        if( result && value instanceof RequestIdAware ) {
+            delegate.put(requestId0(value.getRequestId()), key, ttl)
+        }
+        return new Tuple3<Boolean, V, Integer>(
+                result.v1,
+                deserialize(result.v2),
+                result.v3)
     }
 
     @Override

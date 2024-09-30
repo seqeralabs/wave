@@ -29,7 +29,7 @@ import jakarta.inject.Inject
 class LocalStateProviderTest extends Specification {
 
     @Inject
-    LocalStateProvider localCacheProvider
+    LocalStateProvider provider
 
 
     def 'should get and put a key-value pair' () {
@@ -37,12 +37,12 @@ class LocalStateProviderTest extends Specification {
         def k = UUID.randomUUID().toString()
 
         expect:
-        localCacheProvider.get(k) == null
+        provider.get(k) == null
 
         when:
-        localCacheProvider.put(k, "hello")
+        provider.put(k, "hello")
         then:
-        localCacheProvider.get(k) == 'hello'
+        provider.get(k) == 'hello'
     }
 
     def 'should get and put a key-value pair with ttl' () {
@@ -51,16 +51,16 @@ class LocalStateProviderTest extends Specification {
         def k = UUID.randomUUID().toString()
 
         expect:
-        localCacheProvider.get(k) == null
+        provider.get(k) == null
 
         when:
-        localCacheProvider.put(k, "hello", Duration.ofMillis(TTL))
+        provider.put(k, "hello", Duration.ofMillis(TTL))
         then:
-        localCacheProvider.get(k) == 'hello'
+        provider.get(k) == 'hello'
         then:
         sleep(TTL *2)
         and:
-        localCacheProvider.get(k) == null
+        provider.get(k) == null
     }
 
     def 'should get and put only if absent' () {
@@ -68,21 +68,21 @@ class LocalStateProviderTest extends Specification {
         def k = UUID.randomUUID().toString()
 
         expect:
-        localCacheProvider.get(k) == null
+        provider.get(k) == null
 
         when:
-        def done = localCacheProvider.putIfAbsent(k, 'foo')
+        def done = provider.putIfAbsent(k, 'foo')
         then:
         done 
         and:
-        localCacheProvider.get(k) == 'foo'
+        provider.get(k) == 'foo'
 
         when:
-        done = localCacheProvider.putIfAbsent(k, 'bar')
+        done = provider.putIfAbsent(k, 'bar')
         then:
         !done
         and:
-        localCacheProvider.get(k) == 'foo'
+        provider.get(k) == 'foo'
     }
 
     def 'should get and put if absent with ttl' () {
@@ -91,27 +91,64 @@ class LocalStateProviderTest extends Specification {
         def k = UUID.randomUUID().toString()
 
         when:
-        def done = localCacheProvider.putIfAbsent(k, 'foo', Duration.ofMillis(TTL))
+        def done = provider.putIfAbsent(k, 'foo', Duration.ofMillis(TTL))
         then:
         done
         and:
-        localCacheProvider.get(k) == 'foo'
+        provider.get(k) == 'foo'
 
         when:
-        done = localCacheProvider.putIfAbsent(k, 'bar', Duration.ofMillis(TTL))
+        done = provider.putIfAbsent(k, 'bar', Duration.ofMillis(TTL))
         then:
         !done
         and:
-        localCacheProvider.get(k) == 'foo'
+        provider.get(k) == 'foo'
 
         when:
         sleep(TTL *2)
         and:
-        done = localCacheProvider.putIfAbsent(k, 'bar', Duration.ofMillis(TTL))
+        done = provider.putIfAbsent(k, 'bar', Duration.ofMillis(TTL))
         then:
         done
         and:
-        localCacheProvider.get(k) == 'bar'
+        provider.get(k) == 'bar'
+    }
+
+    def 'should get and put if absent and increment' () {
+        given:
+        def ttlMillis = 100
+        def k = UUID.randomUUID().toString()
+        def c = UUID.randomUUID().toString()
+
+        expect:
+        provider.get(k) == null
+
+        when:
+        def result = provider.putIfAbsent(k, 'foo', Duration.ofMillis(ttlMillis), c)
+        then:
+        result.v1
+        result.v2 == 'foo'
+        result.v3 == 1
+        and:
+        provider.get(k) == 'foo'
+
+        when:
+        result = provider.putIfAbsent(k, 'bar', Duration.ofMillis(ttlMillis), c)
+        then:
+        !result.v1
+        result.v2 == 'foo'
+        result.v3 == 1
+        and:
+        provider.get(k) == 'foo'
+
+        when:
+        sleep(ttlMillis *2)
+        and:
+        result = provider.putIfAbsent(k, 'foo', Duration.ofMillis(ttlMillis), c)
+        then:
+        result.v1
+        result.v2 == 'foo'
+        result.v3 == 2
     }
 
     def 'should put and remove a value' () {
@@ -120,14 +157,14 @@ class LocalStateProviderTest extends Specification {
         def k = UUID.randomUUID().toString()
 
         when:
-        localCacheProvider.put(k, 'foo')
+        provider.put(k, 'foo')
         then:
-        localCacheProvider.get(k) == 'foo'
+        provider.get(k) == 'foo'
 
         when:
-        localCacheProvider.remove(k)
+        provider.remove(k)
         then:
-        localCacheProvider.get(k) == null
+        provider.get(k) == null
     }
 
 }

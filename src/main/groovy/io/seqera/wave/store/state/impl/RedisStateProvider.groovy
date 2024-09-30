@@ -78,6 +78,32 @@ class RedisStateProvider implements StateProvider<String,String> {
         }
     }
 
+    /*
+     * Set a value only the specified key does not exists, if the value can be set
+     * the counter identified by the key provided via 'KEYS[2]' is incremented by 1,
+     *
+     * If the key already exists return the current key value.
+     */
+    static final private String PUT_AND_INCREMENT = """
+        if redis.call('EXISTS', KEYS[1]) == 0 then
+            redis.call('SET', KEYS[1], ARGV[1], 'PX', ARGV[2])
+            local counter_value = redis.call('INCR', KEYS[2])
+            return {1, ARGV[1], counter_value} 
+        else
+            return {0, redis.call('GET', KEYS[1]), redis.call('GET', KEYS[2])}
+        end
+        """
+
+    @Override
+    Tuple3<Boolean,String,Integer> putIfAbsent(String key, String value, Duration ttl, String counterKey) {
+        try( Jedis jedis=pool.getResource() )  {
+            final result = jedis.eval(PUT_AND_INCREMENT, 2, key, counterKey, value, ttl.toMillis().toString());
+            return new Tuple3<>((result as List)[0] == 1,
+                    (result as List)[1] as String,
+                    (result as List)[2] as Integer)
+        }
+    }
+
     @Override
     void remove(String key) {
         try( Jedis conn=pool.getResource() ) {

@@ -18,41 +18,27 @@
 
 package io.seqera.wave.service.scan
 
-import java.time.Duration
+import spock.lang.Specification
 
-import groovy.transform.CompileStatic
-import io.seqera.wave.configuration.ScanConfig
-import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.store.state.AbstractStateStore
-import io.seqera.wave.store.state.impl.StateProvider
-import jakarta.inject.Singleton
 /**
- * Implement a store for scan state
- * 
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Singleton
-@CompileStatic
-class ScanStateStore extends AbstractStateStore<ScanEntry> {
+class ScanIdTest extends Specification {
 
-    private ScanConfig config
-
-    ScanStateStore(StateProvider<String, String> provider, ScanConfig config) {
-        super(provider, new MoshiEncodeStrategy<ScanEntry>() { })
-        this.config = config
+    def 'should create scanid' () {
+        ScanId.of("docker.io/foo/bar:latest").toString() == 'sc-057d44d43bb7f81c_0'
     }
 
-    @Override
-    protected String getPrefix() {
-        return 'wave-scan/v1:'
+    def 'create a count with the specified count' () {
+        given:
+        def scan = ScanId.of('x')
+
+        expect:
+        scan.toString() == 'sc-94be9fbddcc3af8e_0'
+        scan.withCount(1).toString() == 'sc-94be9fbddcc3af8e_1'
+        scan.withCount(9).toString() == 'sc-94be9fbddcc3af8e_9'
+
     }
 
-    @Override
-    protected Duration getDuration() {
-        return config.statusDuration
-    }
-
-    ScanEntry getScan(String key) {
-        super.get(key)
-    }
 }

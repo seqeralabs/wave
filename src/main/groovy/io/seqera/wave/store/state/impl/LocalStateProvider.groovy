@@ -21,6 +21,7 @@ package io.seqera.wave.store.state.impl
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
@@ -54,6 +55,8 @@ class LocalStateProvider implements StateProvider<String,String> {
 
     private Map<String,Entry<String>> store = new ConcurrentHashMap<>()
 
+    private Map<String, AtomicInteger> counters = new ConcurrentHashMap<>()
+
     @Override
     String get(String key) {
         final entry = store.get(key)
@@ -85,6 +88,18 @@ class LocalStateProvider implements StateProvider<String,String> {
     @Override
     boolean putIfAbsent(String key, String value, Duration ttl) {
         return putIfAbsent0(key, value, ttl) == null
+    }
+
+    @Override
+    synchronized Tuple3<Boolean,String,Integer> putIfAbsent(String key, String value, Duration ttl, String counterKey) {
+        final done = putIfAbsent0(key, value, ttl) == null
+        final count = counters
+                .computeIfAbsent(counterKey, (it)-> new AtomicInteger())
+        if( done ) {
+            return new Tuple3<Boolean,String,Integer>(true, value, count.incrementAndGet())
+        }
+        else
+            return new Tuple3<Boolean,String,Integer>(false, get(key), count.get())
     }
 
     private String putIfAbsent0(String key, String value, Duration ttl) {

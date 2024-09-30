@@ -32,14 +32,14 @@ class RedisStateProviderTest extends Specification implements RedisTestContainer
     ApplicationContext applicationContext
 
     @Shared
-    RedisStateProvider redisCacheProvider
+    RedisStateProvider provider
 
     def setup() {
         applicationContext = ApplicationContext.run([
                 REDIS_HOST : redisHostName,
                 REDIS_PORT : redisPort
         ], 'test', 'redis')
-        redisCacheProvider = applicationContext.getBean(RedisStateProvider)
+        provider = applicationContext.getBean(RedisStateProvider)
         sleep(500) // workaround to wait for Redis connection
     }
 
@@ -52,12 +52,12 @@ class RedisStateProviderTest extends Specification implements RedisTestContainer
         def k = UUID.randomUUID().toString()
 
         expect:
-        redisCacheProvider.get(k) == null
+        provider.get(k) == null
 
         when:
-        redisCacheProvider.put(k, "hello")
+        provider.put(k, "hello")
         then:
-        redisCacheProvider.get(k) == 'hello'
+        provider.get(k) == 'hello'
     }
 
     def 'should get and put a key-value pair with ttl' () {
@@ -66,16 +66,16 @@ class RedisStateProviderTest extends Specification implements RedisTestContainer
         def k = UUID.randomUUID().toString()
 
         expect:
-        redisCacheProvider.get(k) == null
+        provider.get(k) == null
 
         when:
-        redisCacheProvider.put(k, "hello", Duration.ofMillis(TTL))
+        provider.put(k, "hello", Duration.ofMillis(TTL))
         then:
-        redisCacheProvider.get(k) == 'hello'
+        provider.get(k) == 'hello'
         then:
         sleep(TTL *2)
         and:
-        redisCacheProvider.get(k) == null
+        provider.get(k) == null
     }
 
     def 'should get and put only if absent' () {
@@ -83,21 +83,21 @@ class RedisStateProviderTest extends Specification implements RedisTestContainer
         def k = UUID.randomUUID().toString()
 
         expect:
-        redisCacheProvider.get(k) == null
+        provider.get(k) == null
 
         when:
-        def done = redisCacheProvider.putIfAbsent(k, 'foo')
+        def done = provider.putIfAbsent(k, 'foo')
         then:
         done
         and:
-        redisCacheProvider.get(k) == 'foo'
+        provider.get(k) == 'foo'
 
         when:
-        done = redisCacheProvider.putIfAbsent(k, 'bar')
+        done = provider.putIfAbsent(k, 'bar')
         then:
         !done
         and:
-        redisCacheProvider.get(k) == 'foo'
+        provider.get(k) == 'foo'
     }
 
     def 'should get and put if absent with ttl' () {
@@ -106,27 +106,27 @@ class RedisStateProviderTest extends Specification implements RedisTestContainer
         def k = UUID.randomUUID().toString()
 
         when:
-        def done = redisCacheProvider.putIfAbsent(k, 'foo', Duration.ofMillis(TTL))
+        def done = provider.putIfAbsent(k, 'foo', Duration.ofMillis(TTL))
         then:
         done
         and:
-        redisCacheProvider.get(k) == 'foo'
+        provider.get(k) == 'foo'
 
         when:
-        done = redisCacheProvider.putIfAbsent(k, 'bar', Duration.ofMillis(TTL))
+        done = provider.putIfAbsent(k, 'bar', Duration.ofMillis(TTL))
         then:
         !done
         and:
-        redisCacheProvider.get(k) == 'foo'
+        provider.get(k) == 'foo'
 
         when:
         sleep(TTL *2)
         and:
-        done = redisCacheProvider.putIfAbsent(k, 'bar', Duration.ofMillis(TTL))
+        done = provider.putIfAbsent(k, 'bar', Duration.ofMillis(TTL))
         then:
         done
         and:
-        redisCacheProvider.get(k) == 'bar'
+        provider.get(k) == 'bar'
     }
 
     def 'should put and remove a value' () {
@@ -135,13 +135,50 @@ class RedisStateProviderTest extends Specification implements RedisTestContainer
         def k = UUID.randomUUID().toString()
 
         when:
-        redisCacheProvider.put(k, 'foo')
+        provider.put(k, 'foo')
         then:
-        redisCacheProvider.get(k) == 'foo'
+        provider.get(k) == 'foo'
 
         when:
-        redisCacheProvider.remove(k)
+        provider.remove(k)
         then:
-        redisCacheProvider.get(k) == null
+        provider.get(k) == null
+    }
+
+    def 'should get and put if absent and increment' () {
+        given:
+        def ttlMillis = 100
+        def k = UUID.randomUUID().toString()
+        def c = UUID.randomUUID().toString()
+
+        expect:
+        provider.get(k) == null
+
+        when:
+        def result = provider.putIfAbsent(k, 'foo', Duration.ofMillis(ttlMillis), c)
+        then:
+        result.v1
+        result.v2 == 'foo'
+        result.v3 == 1
+        and:
+        provider.get(k) == 'foo'
+
+        when:
+        result = provider.putIfAbsent(k, 'bar', Duration.ofMillis(ttlMillis), c)
+        then:
+        !result.v1
+        result.v2 == 'foo'
+        result.v3 == 1
+        and:
+        provider.get(k) == 'foo'
+
+        when:
+        sleep(ttlMillis *2)
+        and:
+        result = provider.putIfAbsent(k, 'foo', Duration.ofMillis(ttlMillis), c)
+        then:
+        result.v1
+        result.v2 == 'foo'
+        result.v3 == 2
     }
 }

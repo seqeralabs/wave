@@ -83,7 +83,7 @@ class JobFactoryTest extends Specification {
         def config = new ScanConfig(timeout: duration)
         def factory = new JobFactory(scanConfig: config)
         def request = new ScanRequest(
-                '12345',
+                'sc-12345',
                 'build-123',
                 '{ jsonConfig }',
                 'docker.io/foo:bar',
@@ -94,7 +94,7 @@ class JobFactoryTest extends Specification {
         when:
         def job = factory.scan(request)
         then:
-        job.entryKey == '12345'
+        job.entryKey == 'sc-12345'
         job.operationName == 'scan-12345'
         job.type == JobSpec.Type.Scan
         job.maxDuration == duration
@@ -116,7 +116,7 @@ class JobFactoryTest extends Specification {
                 Mock(ContainerPlatform),
                 workspace,
                 '{config}',
-                'scan-123',
+                'sc-123',
                 Instant.now(),
                 "GMT"
         )

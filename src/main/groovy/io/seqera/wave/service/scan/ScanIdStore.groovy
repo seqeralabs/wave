@@ -21,38 +21,30 @@ package io.seqera.wave.service.scan
 import java.time.Duration
 
 import groovy.transform.CompileStatic
-import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.store.state.AbstractStateStore
 import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Singleton
+
 /**
- * Implement a store for scan state
- * 
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Singleton
 @CompileStatic
-class ScanStateStore extends AbstractStateStore<ScanEntry> {
+class ScanIdStore extends AbstractStateStore<ScanId> {
 
-    private ScanConfig config
-
-    ScanStateStore(StateProvider<String, String> provider, ScanConfig config) {
-        super(provider, new MoshiEncodeStrategy<ScanEntry>() { })
-        this.config = config
+    ScanIdStore(StateProvider<String, String> provider) {
+        super(provider, new MoshiEncodeStrategy<ScanId>() {})
     }
 
     @Override
     protected String getPrefix() {
-        return 'wave-scan/v1:'
+        return 'wave-scanid/v1:'
     }
 
     @Override
     protected Duration getDuration() {
-        return config.statusDuration
-    }
-
-    ScanEntry getScan(String key) {
-        super.get(key)
+        return Duration.ofDays(7)
     }
 }

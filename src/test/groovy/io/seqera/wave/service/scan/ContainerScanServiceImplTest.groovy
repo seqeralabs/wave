@@ -26,11 +26,18 @@ import java.time.Duration
 import java.time.Instant
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.builder.BuildFormat
+import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
+import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.request.ContainerRequest
+import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
 /**
  * Tests for ContainerScanServiceImpl
@@ -40,11 +47,14 @@ import jakarta.inject.Inject
 @MicronautTest
 class ContainerScanServiceImplTest extends Specification {
 
-    @Inject ContainerScanServiceImpl containerScanService
+    @Inject
+    ContainerScanServiceImpl scanService
 
-    @Inject PersistenceService persistenceService
+    @Inject
+    PersistenceService persistenceService
 
-    @Inject ScanStateStore stateStore
+    @Inject
+    ScanStateStore stateStore
 
     def 'should start scan successfully'() {
         given:
@@ -53,7 +63,7 @@ class ContainerScanServiceImplTest extends Specification {
         def scanRequest = new ScanRequest(KEY, 'build-1', null, 'ubuntu:latest', ContainerPlatform.of('linux/amd64'), workDir, Instant.now())
 
         when:
-        containerScanService.scan(scanRequest)
+        scanService.scan(scanRequest)
         sleep 500
         then:
         def scanRecord = stateStore.getScan(scanRequest.scanId)
@@ -238,6 +248,99 @@ class ContainerScanServiceImplTest extends Specification {
 
         cleanup:
         stateStore.clear()
+    }
+
+
+    def 'should create a scan request' () {
+        given:
+        def scanService = new ContainerScanServiceImpl()
+        and:
+        def workspace = Path.of('/some/workspace')
+        def platform = ContainerPlatform.of('amd64')
+        final build =
+                new BuildRequest(
+                        containerId: 'container1234',
+                        containerFile: 'FROM ubuntu',
+                        workspace: workspace,
+                        targetImage: 'docker.io/my/repo:container1234',
+                        identity: PlatformId.NULL,
+                        platform: platform,
+                        configJson: '{"config":"json"}',
+                        scanId: 'scan12345',
+                        format: BuildFormat.DOCKER
+                )
+                        .withBuildId('123')
+
+        when:
+        def scan = scanService.fromBuild(build)
+        then:
+        scan.scanId == build.scanId
+        scan.buildId == build.buildId
+        scan.workDir != build.workDir
+        scan.configJson == build.configJson
+        scan.targetImage == build.targetImage
+        scan.platform == build.platform
+        scan.workDir.startsWith(workspace)
+    }
+
+    def 'should create scan request from mirror' () {
+        given:
+        def scanService = new ContainerScanServiceImpl()
+        and:
+        def timestamp = Instant.now()
+        def request = MirrorRequest.create(
+                'source/foo',
+                'target/foo',
+                'sha256:12345',
+                ContainerPlatform.DEFAULT,
+                Path.of('/some/workspace'),
+                '{config}',
+                'sc-123',
+                timestamp,
+                "GMT"
+        )
+        
+        when:
+        ScanRequest scan = scanService.fromMirror(request)
+        then:
+        scan.scanId == 'sc-123'
+        scan.buildId == request.mirrorId // build id is used to carry the mirror id
+        scan.configJson == '{config}'
+        scan.targetImage == 'target/foo'
+        scan.platform == ContainerPlatform.DEFAULT
+        scan.workDir == Path.of('/some/workspace/sc-123')
+        scan.creationTime >= timestamp
+    }
+
+    def 'should create scan request from container request' () {
+        given:
+        def config = Mock(ScanConfig)
+        def inspectService = Mock(ContainerInspectService)
+        and:
+        def scanService = new ContainerScanServiceImpl(inspectService: inspectService, config: config)
+        def userId = Mock(PlatformId)
+        and:
+        def timestamp = Instant.now()
+        def request = Mock(ContainerRequest)
+        request.requestId >> 'abc123'
+        request.scanId >> 'sc-345'
+        request.containerImage >> 'docker.io/foo:bar'
+        request.identity >> userId
+        request.platform >> ContainerPlatform.DEFAULT
+
+        when:
+        ScanRequest scan = scanService.fromContainer(request)
+        then:
+        config.workspace >> Path.of('/some/workspace')
+        inspectService.credentialsConfigJson(null,'docker.io/foo:bar',null,userId) >> '{docker json config}'
+        and:
+        scan.scanId == 'sc-345'
+        scan.buildId == 'abc123'
+        scan.configJson == '{docker json config}'
+        scan.targetImage == 'docker.io/foo:bar'
+        scan.platform == ContainerPlatform.DEFAULT
+        scan.workDir == Path.of('/some/workspace/sc-345')
+        scan.creationTime >= timestamp
     }
 
 }

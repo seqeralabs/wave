@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.service.builder.BuildTrack
 import io.seqera.wave.service.job.JobHandler
@@ -59,6 +60,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
     private PersistenceService persistence
 
     @Inject
+    @Nullable
     private ContainerScanService scanService
 
     /**
@@ -118,7 +120,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
         final result = entry.result.complete(jobState.exitCode, jobState.stdout)
         store.put(entry.key, entry.withResult(result))
         persistence.saveMirrorResult(result)
-        scanService.scanOnMirror(entry.withResult(result))
+        scanService?.scanOnMirror(entry.withResult(result))
         log.debug "Mirror container completed - job=${jobSpec.operationName}; result=${result}; state=${jobState}"
     }
 

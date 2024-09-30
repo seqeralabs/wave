@@ -74,7 +74,6 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
     @Inject
     private RegistryProxyService proxyService
 
-
     @Inject
     private RegistryAuthService loginService
 

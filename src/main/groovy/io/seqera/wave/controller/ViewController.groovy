@@ -25,12 +25,14 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.QueryValue
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.views.View
+import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.inspect.ContainerInspectService
@@ -74,6 +76,7 @@ class ViewController {
     private ContainerInspectService inspectService
 
     @Inject
+    @Nullable
     private ContainerScanService scanService
 
     @Inject
@@ -260,6 +263,8 @@ class ViewController {
      * @throws NotFoundException If the a record for the specified build ID cannot be found
      */
     protected ScanEntry loadScanResult(String scanId) {
+        if( !scanService )
+            throw new HttpResponseException(HttpStatus.SERVICE_UNAVAILABLE, "Scan service is not enabled - Check Wave  configuration setting 'wave.scan.enabled'")
         final scanRecord = scanService.getScanResult(scanId)
         if( !scanRecord )
             throw new NotFoundException("No scan report exists with id: ${scanId}")

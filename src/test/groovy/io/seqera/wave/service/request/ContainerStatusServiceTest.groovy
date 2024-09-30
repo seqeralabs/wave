@@ -36,24 +36,6 @@ import io.seqera.wave.service.scan.ContainerScanService
 @MicronautTest
 class ContainerStatusServiceTest extends Specification {
 
-    def 'should create default response' () {
-        given:
-        def ts = Instant.now().minusSeconds(10)
-        def service = new ContainerStatusServiceImpl(serverUrl: 'http://foo.com')
-        def request = Mock(ContainerRequest)
-
-        when:
-        def resp = service.createDefaultResponse(request, null)
-        then:
-        request.requestId >> 'req-123'
-        request.creationTime >> ts
-        and:
-        resp.id == 'req-123'
-        resp.status == ContainerStatus.READY
-        resp.creationTime == ts
-        resp.duration >= Duration.ofSeconds(10)
-    }
-
     def 'should create scan result' () {
         given:
         def service = new ContainerStatusServiceImpl(serverUrl: 'http://foo.com')
@@ -141,7 +123,7 @@ class ContainerStatusServiceTest extends Specification {
         def resp = service.getContainerStatus(requestId)
         then:
         store.get(requestId) >> requestData
-        service.getBuildStatus(requestData) >> new ContainerState(startTime)
+        service.getContainerState(requestData) >> new ContainerState(startTime)
         requestData.buildId >> 'build-123'
         requestData.requestId >> requestId
         and:
@@ -175,7 +157,7 @@ class ContainerStatusServiceTest extends Specification {
         def resp = service.getContainerStatus(requestId)
         then:
         store.get(requestId) >> requestData
-        service.getBuildStatus(requestData) >> new ContainerState(startTime, _1min, true)
+        service.getContainerState(requestData) >> new ContainerState(startTime, _1min, true)
         requestData.requestId >> requestId
         requestData.buildId >> 'build-123'
         and:
@@ -209,7 +191,7 @@ class ContainerStatusServiceTest extends Specification {
         def resp = service.getContainerStatus(requestId)
         then:
         store.get(requestId) >> requestData
-        service.getBuildStatus(requestData) >> new ContainerState(startTime, _1min, false)
+        service.getContainerState(requestData) >> new ContainerState(startTime, _1min, false)
         requestData.requestId >> requestId
         requestData.buildId >> 'build-123'
         and:
@@ -243,7 +225,7 @@ class ContainerStatusServiceTest extends Specification {
         def resp = service.getContainerStatus(requestId)
         then:
         store.get(requestId) >> requestData
-        service.getBuildStatus(requestData) >> new ContainerState(startTime, _1min, true)
+        service.getContainerState(requestData) >> new ContainerState(startTime, _1min, true)
         requestData.requestId >> requestId
         requestData.buildId >> 'build-123'
         requestData.scanId >> 'scan-abc'
@@ -281,7 +263,7 @@ class ContainerStatusServiceTest extends Specification {
         def resp5 = service.getContainerStatus(requestId)
         then:
         store.get(requestId) >> requestData
-        service.getBuildStatus(requestData) >> new ContainerState(startTime, _1min, true)
+        service.getContainerState(requestData) >> new ContainerState(startTime, _1min, true)
         requestData.requestId >> requestId
         requestData.buildId >> 'build-123'
         requestData.scanId >> 'scan-abc'
@@ -320,7 +302,7 @@ class ContainerStatusServiceTest extends Specification {
         def resp = service.getContainerStatus(requestId)
         then:
         store.get(requestId) >> requestData
-        service.getBuildStatus(requestData) >> new ContainerState(startTime, _1min, true)
+        service.getContainerState(requestData) >> new ContainerState(startTime, _1min, true)
         requestData.requestId >> requestId
         requestData.buildId >> 'build-123'
         requestData.scanId >> 'scan-abc'
@@ -359,7 +341,7 @@ class ContainerStatusServiceTest extends Specification {
         def resp = service.getContainerStatus(requestId)
         then:
         store.get(requestId) >> requestData
-        service.getBuildStatus(requestData) >> new ContainerState(startTime, _1min, true)
+        service.getContainerState(requestData) >> new ContainerState(startTime, _1min, true)
         requestData.requestId >> requestId
         requestData.buildId >> 'build-123'
         requestData.scanId >> 'scan-abc'
@@ -398,7 +380,7 @@ class ContainerStatusServiceTest extends Specification {
         def resp = service.getContainerStatus(requestId)
         then:
         store.get(requestId) >> requestData
-        service.getBuildStatus(requestData) >> new ContainerState(startTime, _1min, true)
+        service.getContainerState(requestData) >> new ContainerState(startTime, _1min, true)
         requestData.requestId >> requestId
         requestData.buildId >> 'build-123'
         requestData.scanId >> 'scan-abc'
@@ -436,7 +418,7 @@ class ContainerStatusServiceTest extends Specification {
         def resp = service.getContainerStatus(requestId)
         then:
         store.get(requestId) >> requestData
-        service.getBuildStatus(requestData) >> new ContainerState(startTime, _1min, true)
+        service.getContainerState(requestData) >> new ContainerState(startTime, _1min, true)
         requestData.requestId >> requestId
         requestData.buildId >> 'build-123'
         requestData.scanId >> 'scan-abc'
@@ -458,7 +440,7 @@ class ContainerStatusServiceTest extends Specification {
         resp.detailsUri == null
     }
 
-    def "should validate status for no build and scan with vulnerabilities ie. failed" () {
+    def "should validate status for container request and scan with vulnerabilities ie. failed" () {
         given:
         def startTime = Instant.now().minusSeconds(10)
         def _1min = Duration.ofMinutes(1)
@@ -475,7 +457,7 @@ class ContainerStatusServiceTest extends Specification {
         def resp = service.getContainerStatus(requestId)
         then:
         store.get(requestId) >> requestData
-        service.getBuildStatus(requestData) >> null
+        service.getContainerState(requestData) >> new ContainerState(startTime, _1min, true)
         requestData.requestId >> requestId
         requestData.buildId >>  null
         requestData.scanId >> 'scan-abc'
@@ -490,17 +472,17 @@ class ContainerStatusServiceTest extends Specification {
         resp.mirrorId == null
         resp.scanId == 'scan-abc'
         resp.creationTime == startTime
-        resp.duration == _2min // build + scan time
+        resp.duration == _1min + _2min // request time + scan time
         resp.succeeded == false
         resp.vulnerabilities == [HIGH:1]
         resp.reason == "Container security scan operation found one ore more vulnerabilities with severity: HIGH"
         resp.detailsUri == "http://foo.com/view/scans/scan-abc"
     }
 
-    def "should validate status for no build and scan with no vulnerabilities" () {
+    def "should validate status for container request and scan with no vulnerabilities" () {
         given:
         def startTime = Instant.now().minusSeconds(10)
-        def _1min = Duration.ofMinutes(1)
+        def _1sec = Duration.ofSeconds(1)
         def _2min = Duration.ofMinutes(2)
         def scanService = Mock(ContainerScanService)
         def store = Mock(ContainerRequestStore)
@@ -514,7 +496,7 @@ class ContainerStatusServiceTest extends Specification {
         def resp = service.getContainerStatus(requestId)
         then:
         store.get(requestId) >> requestData
-        service.getBuildStatus(requestData) >> null
+        service.getContainerState(requestData) >> new ContainerState(startTime, _1sec, true)
         requestData.requestId >> requestId
         requestData.buildId >>  null
         requestData.scanId >> 'scan-abc'
@@ -529,7 +511,7 @@ class ContainerStatusServiceTest extends Specification {
         resp.mirrorId == null
         resp.scanId == 'scan-abc'
         resp.creationTime == startTime
-        resp.duration == _2min
+        resp.duration == _1sec + _2min // request time + scan time
         resp.succeeded == true
         resp.vulnerabilities == null
         resp.reason == null
@@ -551,7 +533,7 @@ class ContainerStatusServiceTest extends Specification {
         def resp = service.getContainerStatus(requestId)
         then:
         store.get(requestId) >> requestData
-        service.getBuildStatus(requestData) >> new ContainerState(startTime)
+        service.getContainerState(requestData) >> new ContainerState(startTime)
         requestData.requestId >> requestId
         requestData.buildId >> 'build-123'
         requestData.mirror >> true
@@ -586,7 +568,7 @@ class ContainerStatusServiceTest extends Specification {
         def resp = service.getContainerStatus(requestId)
         then:
         store.get(requestId) >> requestData
-        service.getBuildStatus(requestData) >> new ContainerState(startTime, _1min, true)
+        service.getContainerState(requestData) >> new ContainerState(startTime, _1min, true)
         requestData.requestId >> requestId
         requestData.buildId >> 'build-123'
         requestData.mirror >> true
@@ -621,7 +603,7 @@ class ContainerStatusServiceTest extends Specification {
         def resp = service.getContainerStatus(requestId)
         then:
         store.get(requestId) >> requestData
-        service.getBuildStatus(requestData) >> new ContainerState(startTime, _1min, false)
+        service.getContainerState(requestData) >> new ContainerState(startTime, _1min, false)
         requestData.requestId >> requestId
         requestData.buildId >> 'build-123'
         requestData.mirror >> true
