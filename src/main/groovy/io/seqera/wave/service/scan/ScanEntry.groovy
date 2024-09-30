@@ -44,47 +44,47 @@ class ScanEntry implements StateEntry<String>, JobEntry {
     /**
      * The scan unique Id
      */
-    final String scanId
+    String scanId
 
     /**
      * The request that original this can. Can be either a container request, build request and mirror request
      */
-    final String requestId
+    String requestId
 
     /**
      * The target container image to be scanner
      */
-    final String containerImage
+    String containerImage
 
     /**
      * The request creation time
      */
-    final Instant startTime
+    Instant startTime
 
     /**
      * How long the scan operation required
      */
-    final Duration duration
+    Duration duration
 
     /**
      * The status of the scan operation
      */
-    final String status
+    String status
 
     /**
      * The list of security vulnerabilities reported
      */
-    final List<ScanVulnerability> vulnerabilities
+    List<ScanVulnerability> vulnerabilities
 
     /**
      * The scan job exit status
      */
-    final Integer exitCode
+    Integer exitCode
 
     /**
      * The scan job logs
      */
-    final String logs
+    String logs
 
     @Override
     String getKey() {
@@ -127,5 +127,16 @@ class ScanEntry implements StateEntry<String>, JobEntry {
 
     static ScanEntry create(String scanId, String requestId, String containerImage, Instant startTime, Duration duration1, String status, List<ScanVulnerability> vulnerabilities){
         return new ScanEntry(scanId, requestId, containerImage, startTime, duration1, status, vulnerabilities)
+    }
+
+    Map<String,Integer> summary() {
+        final result = new HashMap<String,Integer>()
+        if( !vulnerabilities )
+            return result
+        for( ScanVulnerability it : vulnerabilities ) {
+            def v = result.getOrDefault(it.severity, 0)
+            result.put(it.severity, v+1)
+        }
+        return result
     }
 }

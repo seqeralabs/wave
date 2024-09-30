@@ -237,7 +237,9 @@ class SurrealPersistenceService implements PersistenceService {
                                 SET 
                                     status = '${scanRecord.status}',
                                     duration = '${scanRecord.duration}',
-                                    vulnerabilities = ${ids ? "[$ids]" : "[]" } 
+                                    vulnerabilities = ${ids ? "[$ids]" : "[]" },
+                                    exitCode = ${scanRecord.exitCode},
+                                    logs = ${scanRecord.logs ? "'${scanRecord.logs}'" : null} 
                                 """.stripIndent()
         final result = surrealDb.sqlAsMap(authorization, statement)
         log.trace "Scan update result=$result"

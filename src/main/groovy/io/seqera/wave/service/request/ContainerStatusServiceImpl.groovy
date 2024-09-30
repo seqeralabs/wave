@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.request
 
+import static io.seqera.wave.api.ContainerStatus.*
+
 import java.time.Duration
 import java.time.Instant
 
@@ -32,12 +34,10 @@ import io.seqera.wave.api.ScanMode
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.mirror.ContainerMirrorService
-import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ContainerScanService
+import io.seqera.wave.service.scan.ScanEntry
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import static io.seqera.wave.api.ContainerStatus.*
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -88,7 +88,7 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
         }
 
         if( request.scanId && request.scanMode == ScanMode.sync && scanService ) {
-            final scan = scanService.getScanResult(request.scanId)
+            final scan = scanService.getScanState(request.scanId)
             if ( !scan )
                 throw new NotFoundException("Missing container scan record with id: ${request.scanId}")
             if ( !scan.duration ) {
@@ -140,7 +140,7 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
         )
     }
 
-    protected ContainerStatusResponse createScanResponse(ContainerRequest request, ContainerState state, WaveScanRecord scan) {
+    protected ContainerStatusResponse createScanResponse(ContainerRequest request, ContainerState state, ScanEntry scan) {
 
         final result = scanResult(request, scan)
         return new ContainerStatusResponse(
@@ -176,7 +176,7 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
         }
     }
 
-    protected StageResult scanResult(ContainerRequest request, WaveScanRecord scan) {
+    protected StageResult scanResult(ContainerRequest request, ScanEntry scan) {
         // scan was not successful
         if (!scan.succeeded()) {
             return new StageResult(

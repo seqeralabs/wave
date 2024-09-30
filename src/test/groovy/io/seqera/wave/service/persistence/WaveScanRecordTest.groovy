@@ -56,7 +56,10 @@ class WaveScanRecordTest extends Specification {
                 startTime,
                 duration,
                 'SUCCEEDED',
-                vulns)
+                vulns,
+                0,
+                "Some logs"
+        )
         then:
         entry.scanId == scanId
         entry.requestId == buildId
@@ -64,6 +67,8 @@ class WaveScanRecordTest extends Specification {
         entry.completed()
         entry.succeeded()
         entry.done()
+        entry.exitCode == 0
+        entry.logs == "Some logs"
 
         when:
         def record = new WaveScanRecord(scanId, entry)
@@ -72,6 +77,8 @@ class WaveScanRecordTest extends Specification {
         record.id == scanId
         record.buildId == buildId
         record.vulnerabilities[0] == scanVulnerability
+        record.exitCode == 0
+        record.logs == "Some logs"
         record.summary() == [low: 1]
     }
 

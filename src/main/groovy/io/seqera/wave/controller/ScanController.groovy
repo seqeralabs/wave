@@ -47,7 +47,7 @@ class ScanController {
 
     @Get("/v1alpha1/scans/{scanId}")
     HttpResponse<WaveScanRecord> scanImage(String scanId){
-        final record = containerScanService.getScanResult(scanId)
+        final record = containerScanService.getScanRecord(scanId)
         return record
                 ? HttpResponse.ok(record)
                 : HttpResponse.<WaveScanRecord>notFound()

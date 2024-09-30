@@ -41,6 +41,7 @@ import io.seqera.wave.service.mirror.ContainerMirrorService
 import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
+import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.util.JacksonHelper
@@ -240,7 +241,7 @@ class ViewController {
     HttpResponse<Map<String,Object>> viewScan(String scanId) {
         final binding = new HashMap(10)
         try {
-            final result = loadScanResult(scanId)
+            final WaveScanRecord result = loadScanResult(scanId)
             makeScanViewBinding(result, binding)
         }
         catch (NotFoundException e){
@@ -262,21 +263,13 @@ class ViewController {
      * @return The {@link ScanEntry} object associated with the specified build ID or throws the exception {@link NotFoundException} otherwise
      * @throws NotFoundException If the a record for the specified build ID cannot be found
      */
-    protected ScanEntry loadScanResult(String scanId) {
+    protected WaveScanRecord loadScanResult(String scanId) {
         if( !scanService )
             throw new HttpResponseException(HttpStatus.SERVICE_UNAVAILABLE, "Scan service is not enabled - Check Wave  configuration setting 'wave.scan.enabled'")
-        final scanRecord = scanService.getScanResult(scanId)
+        final scanRecord = scanService.getScanRecord(scanId)
         if( !scanRecord )
             throw new NotFoundException("No scan report exists with id: ${scanId}")
-
-        return ScanEntry.create(
-                scanRecord.id,
-                scanRecord.buildId,
-                scanRecord.containerImage,
-                scanRecord.startTime,
-                scanRecord.duration,
-                scanRecord.status,
-                scanRecord.vulnerabilities )
+        return scanRecord
     }
 
     @View("inspect-view")
@@ -301,9 +294,9 @@ class ViewController {
         return HttpResponse.<Map<String,Object>>ok(binding)
     }
 
-    Map<String, Object> makeScanViewBinding(ScanEntry result, Map<String,Object> binding=new HashMap(10)) {
+    Map<String, Object> makeScanViewBinding(WaveScanRecord result, Map<String,Object> binding=new HashMap(10)) {
         binding.should_refresh = !result.done()
-        binding.scan_id = result.scanId
+        binding.scan_id = result.id
         binding.scan_container_image = result.containerImage ?: '-'
         binding.scan_exist = true
         binding.scan_completed = result.done()
@@ -313,9 +306,9 @@ class ViewController {
         binding.scan_exitcode = result.exitCode
         binding.scan_logs = result.logs
 
-        binding.request_id = result.requestId
-        binding.request_url = requestUri(result.requestId)
-        binding.request_type = requestType(result.requestId)
+        binding.request_id = result.buildId
+        binding.request_url = requestUri(result.buildId)
+        binding.request_type = requestType(result.buildId)
         binding.scan_time = formatTimestamp(result.startTime) ?: '-'
         binding.scan_duration = formatDuration(result.duration) ?: '-'
         if ( result.vulnerabilities )

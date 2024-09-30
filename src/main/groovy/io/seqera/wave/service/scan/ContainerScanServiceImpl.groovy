@@ -148,7 +148,12 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     }
 
     @Override
-    WaveScanRecord getScanResult(String scanId) {
+    ScanEntry getScanState(String scanId) {
+        return scanStore.get(scanId)
+    }
+
+    @Override
+    WaveScanRecord getScanRecord(String scanId) {
         try{
             final scan = scanStore.getScan(scanId)
             return scan

@@ -18,8 +18,6 @@
 
 package io.seqera.wave.service.request
 
-import spock.lang.Specification
-
 import java.time.Duration
 import java.time.Instant
 
@@ -27,8 +25,9 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerStatus
 import io.seqera.wave.api.ScanLevel
 import io.seqera.wave.api.ScanMode
-import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ContainerScanService
+import io.seqera.wave.service.scan.ScanEntry
+import spock.lang.Specification
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -40,7 +39,7 @@ class ContainerStatusServiceTest extends Specification {
         given:
         def service = new ContainerStatusServiceImpl(serverUrl: 'http://foo.com')
         def request = Mock(ContainerRequest)
-        def scan = Mock(WaveScanRecord)
+        def scan = Mock(ScanEntry)
 
         when:
         def res1 = service.scanResult(request, scan)
@@ -232,7 +231,7 @@ class ContainerStatusServiceTest extends Specification {
         requestData.scanMode >> ScanMode.sync
         requestData.scanLevels >> List.of()
         and:
-        scanService.getScanResult('scan-abc') >> Mock(WaveScanRecord)
+        scanService.getScanState('scan-abc') >> Mock(ScanEntry)
         then:
         resp.id == requestId
         resp.status == ContainerStatus.SCANNING
@@ -270,7 +269,7 @@ class ContainerStatusServiceTest extends Specification {
         requestData.scanMode >> ScanMode.sync
         requestData.scanLevels >> List.of()
         and:
-        scanService.getScanResult('scan-abc') >> Mock(WaveScanRecord) { getDuration()>>_2min; succeeded()>>true  }
+        scanService.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>true  }
         then:
         resp5.id == requestId
         resp5.status == ContainerStatus.READY
@@ -309,7 +308,7 @@ class ContainerStatusServiceTest extends Specification {
         requestData.scanMode >> ScanMode.sync
         requestData.scanLevels >> List.of()
         and:
-        scanService.getScanResult('scan-abc') >> Mock(WaveScanRecord) { getDuration()>>_2min; succeeded()>>false  }
+        scanService.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>false  }
         then:
         resp.id == requestId
         resp.status == ContainerStatus.READY
@@ -348,7 +347,7 @@ class ContainerStatusServiceTest extends Specification {
         requestData.scanMode >> ScanMode.sync
         requestData.scanLevels >> List.of()
         and:
-        scanService.getScanResult('scan-abc') >> Mock(WaveScanRecord) { getDuration()>>_2min; succeeded()>>true; summary()>>[HIGH:1]  }
+        scanService.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>true; summary()>>[HIGH:1]  }
         then:
         resp.id == requestId
         resp.status == ContainerStatus.READY
@@ -387,7 +386,7 @@ class ContainerStatusServiceTest extends Specification {
         requestData.scanMode >> ScanMode.sync
         requestData.scanLevels >> List.of(ScanLevel.medium,ScanLevel.high)
         and:
-        scanService.getScanResult('scan-abc') >> Mock(WaveScanRecord) { getDuration()>>_2min; succeeded()>>true; summary()>>[HIGH:1]  }
+        scanService.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>true; summary()>>[HIGH:1]  }
         then:
         resp.id == requestId
         resp.status == ContainerStatus.READY
@@ -425,7 +424,7 @@ class ContainerStatusServiceTest extends Specification {
         requestData.scanMode >> ScanMode.none
         requestData.scanLevels >> List.of(ScanLevel.medium,ScanLevel.high)
         and:
-        0 * scanService.getScanResult('scan-abc') >> null
+        0 * scanService.getScanState('scan-abc') >> null
         then:
         resp.id == requestId
         resp.status == ContainerStatus.READY
@@ -464,7 +463,7 @@ class ContainerStatusServiceTest extends Specification {
         requestData.scanMode >> ScanMode.sync
         requestData.scanLevels >> List.of()
         and:
-        scanService.getScanResult('scan-abc') >> Mock(WaveScanRecord) { getDuration()>>_2min; succeeded()>>true; summary()>>[HIGH:1]; getStartTime()>>startTime  }
+        scanService.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>true; summary()>>[HIGH:1]; getStartTime()>>startTime  }
         then:
         resp.id == requestId
         resp.status == ContainerStatus.READY
@@ -503,7 +502,7 @@ class ContainerStatusServiceTest extends Specification {
         requestData.scanMode >> ScanMode.sync
         requestData.scanLevels >> List.of()
         and:
-        scanService.getScanResult('scan-abc') >> Mock(WaveScanRecord) { getDuration()>>_2min; succeeded()>>true; summary()>>null; getStartTime()>>startTime  }
+        scanService.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>true; summary()>>null; getStartTime()>>startTime  }
         then:
         resp.id == requestId
         resp.status == ContainerStatus.READY

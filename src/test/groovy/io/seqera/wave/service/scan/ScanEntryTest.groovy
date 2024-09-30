@@ -216,4 +216,20 @@ class ScanEntryTest extends Specification {
         scan.exitCode == null
         scan.logs == null
     }
+
+    def 'should create vul summary' () {
+        given:
+        def s1 = Mock(ScanVulnerability) { severity>>'low' }
+        def s2 = Mock(ScanVulnerability) { severity>>'low' }
+        def s3 = Mock(ScanVulnerability) { severity>>'low' }
+        def s4 = Mock(ScanVulnerability) { severity>>'high' }
+        def s5 = Mock(ScanVulnerability) { severity>>'critical' }
+        and:
+        def entry = new ScanEntry(null, null, null, null, null, null, [s1,s2,s3,s4,s5])
+
+        when:
+        def result = entry.summary()
+        then:
+        result == [low:3, high:1, critical:1]
+    }
 }

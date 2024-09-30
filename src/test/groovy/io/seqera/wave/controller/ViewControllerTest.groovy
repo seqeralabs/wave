@@ -41,6 +41,7 @@ import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
+import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
@@ -306,7 +307,7 @@ class ViewControllerTest extends Specification {
         given:
         def controller = new ViewController(serverUrl: 'http://foo.com', buildLogService: buildLogService)
         and:
-        def result = new ScanEntry(
+        def result = new WaveScanRecord(
                 '12345',
                 'bd-12345',
                 'docker.io/some:image',
@@ -314,7 +315,9 @@ class ViewControllerTest extends Specification {
                 Duration.ofMinutes(1),
                 ScanEntry.SUCCEEDED,
                 [new ScanVulnerability('cve-1', 'HIGH', 'test vul', 'testpkg', '1.0.0', '1.1.0', 'http://vul/cve-1')],
-                0 )
+                0,
+                "Some scan logs"
+        )
         when:
         def binding = controller.makeScanViewBinding(result)
         then:
@@ -324,6 +327,7 @@ class ViewControllerTest extends Specification {
         binding.scan_duration == formatDuration(result.duration)
         binding.scan_succeeded
         binding.scan_exitcode == 0
+        binding.scan_logs == "Some scan logs"
         binding.vulnerabilities == [new ScanVulnerability(id:'cve-1', severity:'HIGH', title:'test vul', pkgName:'testpkg', installedVersion:'1.0.0', fixedVersion:'1.1.0', primaryUrl:'http://vul/cve-1')]
         binding.request_url == 'http://foo.com/view/builds/bd-12345'
         binding.request_id == 'bd-12345'
