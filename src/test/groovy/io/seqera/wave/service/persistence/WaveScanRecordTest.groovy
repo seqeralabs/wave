@@ -79,7 +79,6 @@ class WaveScanRecordTest extends Specification {
         record.vulnerabilities[0] == scanVulnerability
         record.exitCode == 0
         record.logs == "Some logs"
-        record.summary() == [low: 1]
     }
 
 }

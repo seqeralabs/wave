@@ -108,7 +108,6 @@ class ViewController {
         binding.put('server_url', serverUrl)
         binding.scan_url = result.scanId && result.succeeded() ? "$serverUrl/view/scans/${result.scanId}" : null
         binding.scan_id = result.scanId
-
         return binding
     }
 
@@ -213,6 +212,7 @@ class ViewController {
         binding.source_container_image = data.sourceImage ?: '-'
         binding.source_container_digest = data.sourceDigest ?: '-'
 
+        binding.wave_container_show = !data.freeze && !data.mirror ? true : null
         binding.wave_container_image = data.waveImage ?: '-'
         binding.wave_container_digest = data.waveDigest ?: '-'
 
@@ -230,8 +230,15 @@ class ViewController {
         binding.build_id = data.buildId ?: '-'
         binding.build_cached = data.buildId ? !data.buildNew : '-'
         binding.build_freeze = data.buildId ? data.freeze : '-'
-        binding.build_url = data.buildId ? "$serverUrl/view/builds/${data.buildId}" : '#'
+        binding.build_url = data.buildId ? "$serverUrl/view/builds/${data.buildId}" : null
         binding.fusion_version = data.fusionVersion ?: '-'
+
+        binding.scan_id = data.scanId
+        binding.scan_url = data.scanId ? "$serverUrl/view/scans/${data.scanId}" : null
+
+        binding.mirror_id = data.mirror ? data.buildId : null
+        binding.mirror_url =  data.mirror ? "$serverUrl/view/mirrors/${data.buildId}" : null
+        binding.mirror_cached = data.mirror ? !data.buildNew : null
 
         return HttpResponse.<Map<String,Object>>ok(binding)
     }
