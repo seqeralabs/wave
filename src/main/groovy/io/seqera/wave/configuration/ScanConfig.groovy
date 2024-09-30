@@ -75,6 +75,9 @@ class ScanConfig {
     @Value('${wave.scan.status.duration:1h}')
     Duration statusDuration
 
+    @Value('${wave.scan.id.duration:7d}')
+    Duration scanIdDuration
+
     String getScanImage() {
         return scanImage
     }
