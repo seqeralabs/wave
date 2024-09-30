@@ -23,6 +23,7 @@ import groovy.transform.CompileStatic
 import io.seqera.wave.util.RegHelper
 
 /**
+ * Model a scan operation id
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

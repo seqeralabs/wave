@@ -92,7 +92,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         // create a new scan id if there's no entry for the given target image
         final result = scanIdStore
                 .putIfAbsentAndCount(targetImage, ScanId.of(targetImage))
-        // if a scan id, increment the count and update it
+        // if the put is successful, update the scan id with count value
+        // returned in the put operation
         if( result.v1 ) {
             final count = result.v3
             final ScanId scan = result.v2.withCount(count)
@@ -175,6 +176,21 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         }
     }
 
+    protected ScanRequest fromBuild(BuildRequest request) {
+        final workDir = request.workDir.resolveSibling(request.scanId)
+        return new ScanRequest(request.scanId, request.buildId, request.configJson, request.targetImage, request.platform, workDir, Instant.now())
+    }
+
+    protected ScanRequest fromMirror(MirrorRequest request) {
+        final workDir = request.workDir.resolveSibling(request.scanId)
+        return new ScanRequest(request.scanId, request.mirrorId, request.authJson, request.targetImage, request.platform, workDir, Instant.now())
+    }
+
+    protected ScanRequest fromContainer(ContainerRequest request) {
+        final workDir = config.workspace.resolve(request.scanId)
+        final authJson = inspectService.credentialsConfigJson(null, request.containerImage, null, request.identity)
+        return new ScanRequest(request.scanId, request.requestId, authJson, request.containerImage, request.platform, workDir, Instant.now())
+    }
 
     // **************************************************************
     // **               scan job handle implementation
@@ -230,19 +246,4 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         }
     }
 
-    ScanRequest fromBuild(BuildRequest request) {
-        final workDir = request.workDir.resolveSibling(request.scanId)
-        return new ScanRequest(request.scanId, request.buildId, request.configJson, request.targetImage, request.platform, workDir, Instant.now())
-    }
-
-    ScanRequest fromMirror(MirrorRequest request) {
-        final workDir = request.workDir.resolveSibling(request.scanId)
-        return new ScanRequest(request.scanId, request.mirrorId, request.authJson, request.targetImage, request.platform, workDir, Instant.now())
-    }
-
-    ScanRequest fromContainer(ContainerRequest request) {
-        final workDir = config.workspace.resolve(request.scanId)
-        final authJson = inspectService.credentialsConfigJson(null, request.containerImage, null, request.identity)
-        return new ScanRequest(request.scanId, request.requestId, authJson, request.containerImage, request.platform, workDir, Instant.now())
-    }
 }

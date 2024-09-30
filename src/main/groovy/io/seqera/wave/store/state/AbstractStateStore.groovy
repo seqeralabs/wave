@@ -24,7 +24,7 @@ import groovy.transform.CompileStatic
 import io.seqera.wave.encoder.EncodingStrategy
 import io.seqera.wave.store.state.impl.StateProvider
 /**
- * Implements a generic cache store
+ * Implements a generic store for ephemeral state data
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -77,6 +77,7 @@ abstract class AbstractStateStore<V> implements StateStore<String,V> {
         return get(key)
     }
 
+    @Override
     void put(String key, V value) {
         put(key, value, getDuration())
     }
