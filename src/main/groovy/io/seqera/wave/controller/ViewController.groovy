@@ -313,14 +313,41 @@ class ViewController {
         binding.scan_exitcode = result.exitCode
         binding.scan_logs = result.logs
 
-        binding.build_id = result.buildId
-        binding.build_url = "$serverUrl/view/builds/${result.buildId}"
+        binding.request_id = result.requestId
+        binding.request_url = requestUri(result.requestId)
+        binding.request_type = requestType(result.requestId)
         binding.scan_time = formatTimestamp(result.startTime) ?: '-'
         binding.scan_duration = formatDuration(result.duration) ?: '-'
         if ( result.vulnerabilities )
             binding.vulnerabilities = result.vulnerabilities.toSorted().reverse()
 
         return binding
+    }
+
+    protected String requestType(String requestId) {
+        if( !requestId )
+            return null
+        if( requestId.startsWith('bd-') )
+            return 'Build'
+        if( requestId.startsWith('mr-'))
+            return 'Mirror'
+        if( requestId.startsWith('sc-'))
+            return 'Scan'
+        else
+            return "Container"
+    }
+
+    protected String requestUri(String requestId) {
+        if( !requestId )
+            return null
+        if( requestId.startsWith('bd-') )
+            return "$serverUrl/view/builds/${requestId}"
+        if( requestId.startsWith('mr-'))
+            return "$serverUrl/view/mirrors/${requestId}"
+        if( requestId.startsWith('sc-'))
+            return "$serverUrl/view/scans/${requestId}"
+        else
+            return "$serverUrl/view/containers/${requestId}"
     }
 
 }

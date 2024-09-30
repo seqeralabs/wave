@@ -89,7 +89,7 @@ class WaveBuildRecordTest extends Specification {
                 null,
                 BuildFormat.DOCKER,
                 Duration.ofMinutes(1),
-        ).withBuildId('123')
+        ).withCount('123')
 
         and:
         final event = new BuildEvent(request)
@@ -144,7 +144,7 @@ class WaveBuildRecordTest extends Specification {
                 null,
                 BuildFormat.DOCKER,
                 Duration.ofMinutes(1),
-        ).withBuildId('123')
+        ).withCount('123')
 
         final result = new BuildResult(request.buildId, EXIT, "ok", Instant.now(), DURATION, null)
         final event = new BuildEvent(request, result)

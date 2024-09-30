@@ -34,12 +34,39 @@ import io.seqera.wave.core.ContainerPlatform
 class ScanRequest {
     static final public String ID_PREFIX = 'sc-'
 
+    /**
+     * The scan unique id
+     */
     final String scanId
-    final String buildId // TODO consider to rename requestId
+
+    /**
+     * The request that generated this scan operation, either a container, build or mirror request
+     */
+    final String requestId
+
+    /**
+     * The docker config json required to authenticate this request
+     */
     final String configJson
+
+    /**
+     * The container image that needs to be scanned
+     */
     final String targetImage
+
+    /**
+     * The container platform to be used
+     */
     final ContainerPlatform platform
+
+    /**
+     * The scan job work directory
+     */
     final Path workDir
+
+    /**
+     * Scan request creation time
+     */
     final Instant creationTime
 
 }

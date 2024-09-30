@@ -40,10 +40,12 @@
             <td>Scan ID</td>
             <td>{{scan_id}}</td>
         </tr>
+        {{#if request_id}}
         <tr>
-            <td>Build ID</td>
-            <td><a href="{{build_url}}">{{build_id}}</a></td>
+            <td>{{request_type}}</td>
+            <td><a href="{{request_url}}">{{request_id}}</a></td>
         </tr>
+        {{/if}}
         <tr>
             <td>Container image</td>
             <td>{{scan_container_image}}</td>

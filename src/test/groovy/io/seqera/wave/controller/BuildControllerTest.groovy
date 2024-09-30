@@ -89,7 +89,7 @@ class BuildControllerTest extends Specification {
                 configJson: '{"config":"json"}',
                 scanId: 'scan12345',
                 format: format )
-            .withBuildId('1')
+            .withCount('1')
         final result = new BuildResult(build.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         final event = new BuildEvent(build, result)
         final entry = WaveBuildRecord.fromEvent(event)

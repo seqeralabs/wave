@@ -68,7 +68,7 @@ class ContainerScanServiceImplTest extends Specification {
         then:
         def scanRecord = stateStore.getScan(scanRequest.scanId)
         scanRecord.scanId == scanRequest.scanId
-        scanRecord.buildId == scanRequest.buildId
+        scanRecord.requestId == scanRequest.requestId
 
         cleanup:
         stateStore.clear()
@@ -149,7 +149,7 @@ class ContainerScanServiceImplTest extends Specification {
         then:
         with( stateStore.getScan(KEY)) {
             scanId == KEY
-            buildId == 'build-20'
+            requestId == 'build-20'
             containerImage == 'ubuntu:latest'
             status == 'SUCCEEDED'
             exitCode == 0
@@ -167,7 +167,7 @@ class ContainerScanServiceImplTest extends Specification {
         then:
         with( stateStore.getScan(KEY) ) {
             scanId == KEY
-            buildId == 'build-20'
+            requestId == 'build-20'
             containerImage == 'ubuntu:latest'
             status == 'FAILED'
             exitCode == 10
@@ -200,7 +200,7 @@ class ContainerScanServiceImplTest extends Specification {
         then:
         with( stateStore.getScan(KEY) ) {
             scanId == KEY
-            buildId == 'build-30'
+            requestId == 'build-30'
             containerImage == 'ubuntu:latest'
             status == 'FAILED'
             exitCode == null
@@ -232,7 +232,7 @@ class ContainerScanServiceImplTest extends Specification {
         then:
         with( stateStore.getScan(KEY) ) {
             scanId == KEY
-            buildId == 'build-40'
+            requestId == 'build-40'
             containerImage == 'ubuntu:latest'
             status == 'FAILED'
             exitCode == null
@@ -269,13 +269,13 @@ class ContainerScanServiceImplTest extends Specification {
                         scanId: 'scan12345',
                         format: BuildFormat.DOCKER
                 )
-                        .withBuildId('123')
+                        .withCount('123')
 
         when:
         def scan = scanService.fromBuild(build)
         then:
         scan.scanId == build.scanId
-        scan.buildId == build.buildId
+        scan.requestId == build.buildId
         scan.workDir != build.workDir
         scan.configJson == build.configJson
         scan.targetImage == build.targetImage
@@ -304,7 +304,7 @@ class ContainerScanServiceImplTest extends Specification {
         ScanRequest scan = scanService.fromMirror(request)
         then:
         scan.scanId == 'sc-123'
-        scan.buildId == request.mirrorId // build id is used to carry the mirror id
+        scan.requestId == request.mirrorId // build id is used to carry the mirror id
         scan.configJson == '{config}'
         scan.targetImage == 'target/foo'
         scan.platform == ContainerPlatform.DEFAULT
@@ -335,7 +335,7 @@ class ContainerScanServiceImplTest extends Specification {
         inspectService.credentialsConfigJson(null,'docker.io/foo:bar',null,userId) >> '{docker json config}'
         and:
         scan.scanId == 'sc-345'
-        scan.buildId == 'abc123'
+        scan.requestId == 'abc123'
         scan.configJson == '{docker json config}'
         scan.targetImage == 'docker.io/foo:bar'
         scan.platform == ContainerPlatform.DEFAULT

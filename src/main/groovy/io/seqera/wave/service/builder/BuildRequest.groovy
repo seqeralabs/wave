@@ -263,7 +263,7 @@ class BuildRequest {
         format==SINGULARITY
     }
 
-    BuildRequest withBuildId(String id) {
+    BuildRequest withCount(String id) {
         this.buildId = containerId + SEP + id
         this.workDir = workspace.resolve(buildId).toAbsolutePath()
         return this

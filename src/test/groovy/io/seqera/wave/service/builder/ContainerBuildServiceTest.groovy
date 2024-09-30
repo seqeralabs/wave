@@ -133,7 +133,7 @@ class ContainerBuildServiceTest extends Specification {
                         startTime: Instant.now(),
                         maxDuration: Duration.ofMinutes(1)
                 )
-                .withBuildId('1')
+                .withCount('1')
         and:
         def store = Mock(BuildStateStore)
         def jobService = Mock(JobService)
@@ -173,7 +173,7 @@ class ContainerBuildServiceTest extends Specification {
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now()
                 )
-                        .withBuildId('1')
+                        .withCount('1')
 
         when:
         def result = builder.containerFile0(req, null)
@@ -208,7 +208,7 @@ class ContainerBuildServiceTest extends Specification {
                         format: BuildFormat.SINGULARITY,
                         startTime: Instant.now()
                 )
-                        .withBuildId('1')
+                        .withCount('1')
 
         when:
         def result = builder.containerFile0(req, Path.of('/some/context/'))
@@ -290,7 +290,7 @@ class ContainerBuildServiceTest extends Specification {
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now()
                 )
-                        .withBuildId('1')
+                        .withCount('1')
 
         when:
         service.saveLayersToContext(req, folder)
@@ -318,7 +318,7 @@ class ContainerBuildServiceTest extends Specification {
                 format: BuildFormat.DOCKER,
                 startTime: Instant.now()
         )
-                .withBuildId('123')
+                .withCount('123')
 
         and:
         def result = new BuildResult(request.buildId, 0, "content", Instant.now(), Duration.ofSeconds(1), 'abc123')

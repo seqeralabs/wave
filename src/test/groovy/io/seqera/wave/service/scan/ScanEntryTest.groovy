@@ -54,7 +54,7 @@ class ScanEntryTest extends Specification {
                 )
         then:
         result.scanId == '123'
-        result.buildId == 'build-123'
+        result.requestId == 'build-123'
         result.containerImage == 'docker.io/foo/bar:latest'
         result.startTime == ts
         result.duration == Duration.ofMinutes(1)
@@ -114,7 +114,7 @@ class ScanEntryTest extends Specification {
         def result = ScanEntry.create('scan-123', 'build-123', 'ubuntu:latest', ts,  Duration.ofMinutes(1), 'XYZ', [cve1])
         then:
         result.scanId == 'scan-123'
-        result.buildId == 'build-123'
+        result.requestId == 'build-123'
         result.containerImage == 'ubuntu:latest'
         result.startTime == ts
         result.duration == elapsed
@@ -140,7 +140,7 @@ class ScanEntryTest extends Specification {
         def result = scan.success(scan.vulnerabilities)
         then:
         result.scanId == '12345'
-        result.buildId == 'build-12345'
+        result.requestId == 'build-12345'
         result.containerImage == 'docker.io/some:image'
         result.startTime == ts
         nearly(result.duration, elapsed)
@@ -165,7 +165,7 @@ class ScanEntryTest extends Specification {
         def result = scan.failure(1, "Oops something has failed")
         then:
         result.scanId == '12345'
-        result.buildId == 'build-12345'
+        result.requestId == 'build-12345'
         result.containerImage == 'docker.io/some:image'
         result.startTime == ts
         nearly(result.duration, elapsed)
@@ -192,7 +192,7 @@ class ScanEntryTest extends Specification {
         def result = ScanEntry.failure(request)
         then:
         result.scanId == 'scan-123'
-        result.buildId == 'build-345'
+        result.requestId == 'build-345'
         result.containerImage == 'docker.io/foo/bar'
         result.startTime == ts
         nearly(result.duration, elapsed)
@@ -208,7 +208,7 @@ class ScanEntryTest extends Specification {
         def scan = ScanEntry.pending('result-123', 'build-345', 'docker.io/foo/bar')
         then:
         scan.scanId == 'result-123'
-        scan.buildId == 'build-345'
+        scan.requestId == 'build-345'
         scan.containerImage == 'docker.io/foo/bar'
         scan.startTime >= ts
         scan.status == ScanEntry.PENDING

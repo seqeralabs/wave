@@ -71,7 +71,7 @@ class WaveScanRecord {
 
     WaveScanRecord(String id, ScanEntry scanResult) {
         this.id = StringUtils.surrealId(id)
-        this.buildId = scanResult.buildId
+        this.buildId = scanResult.requestId
         this.containerImage = scanResult.containerImage
         this.startTime = scanResult.startTime
         this.duration = scanResult.duration

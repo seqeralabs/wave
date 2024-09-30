@@ -164,7 +164,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     protected void launch(ScanRequest request) {
         try {
             // create a record to mark the beginning
-            final scan = ScanEntry.pending(request.scanId, request.buildId, request.targetImage)
+            final scan = ScanEntry.pending(request.scanId, request.requestId, request.targetImage)
             if( scanStore.putIfAbsent(scan.scanId, scan) ) {
                 // launch container scan
                 jobService.launchScan(request)
@@ -178,18 +178,39 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
 
     protected ScanRequest fromBuild(BuildRequest request) {
         final workDir = request.workDir.resolveSibling(request.scanId)
-        return new ScanRequest(request.scanId, request.buildId, request.configJson, request.targetImage, request.platform, workDir, Instant.now())
+        return new ScanRequest(
+                request.scanId,
+                request.buildId,
+                request.configJson,
+                request.targetImage,
+                request.platform,
+                workDir,
+                Instant.now())
     }
 
     protected ScanRequest fromMirror(MirrorRequest request) {
         final workDir = request.workDir.resolveSibling(request.scanId)
-        return new ScanRequest(request.scanId, request.mirrorId, request.authJson, request.targetImage, request.platform, workDir, Instant.now())
+        return new ScanRequest(
+                request.scanId,
+                request.mirrorId,
+                request.authJson,
+                request.targetImage,
+                request.platform,
+                workDir,
+                Instant.now())
     }
 
     protected ScanRequest fromContainer(ContainerRequest request) {
         final workDir = config.workspace.resolve(request.scanId)
         final authJson = inspectService.credentialsConfigJson(null, request.containerImage, null, request.identity)
-        return new ScanRequest(request.scanId, request.requestId, authJson, request.containerImage, request.platform, workDir, Instant.now())
+        return new ScanRequest(
+                request.scanId,
+                request.requestId,
+                authJson,
+                request.containerImage,
+                request.platform,
+                workDir,
+                Instant.now())
     }
 
     // **************************************************************

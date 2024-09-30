@@ -116,7 +116,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 scanId: 'scan12345',
                 format:  BuildFormat.DOCKER,
                 maxDuration:  Duration.ofMinutes(1)
-        ).withBuildId('1')
+        ).withCount('1')
         def result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         def event = new BuildEvent(request, result)
         def build = WaveBuildRecord.fromEvent(event)
@@ -149,7 +149,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 scanId:  'scan12345',
                 format:  BuildFormat.DOCKER,
                 maxDuration:  Duration.ofMinutes(1)
-        ).withBuildId('123')
+        ).withCount('123')
         def result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         def event = new BuildEvent(request, result)
         def record = WaveBuildRecord.fromEvent(event)
@@ -170,9 +170,9 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def surreal = applicationContext.getBean(SurrealClient)
         def persistence = applicationContext.getBean(SurrealPersistenceService)
         def auth = persistence.getAuthorization()
-        def request1 = new BuildRequest( containerId: 'abc', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(30), identity: PlatformId.NULL ).withBuildId('1')
-        def request2 = new BuildRequest( containerId: 'abc', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(20), identity: PlatformId.NULL ).withBuildId('2')
-        def request3 = new BuildRequest( containerId: 'abc', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(10), identity: PlatformId.NULL ).withBuildId('3')
+        def request1 = new BuildRequest( containerId: 'abc', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(30), identity: PlatformId.NULL ).withCount('1')
+        def request2 = new BuildRequest( containerId: 'abc', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(20), identity: PlatformId.NULL ).withCount('2')
+        def request3 = new BuildRequest( containerId: 'abc', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(10), identity: PlatformId.NULL ).withCount('3')
 
         def result1 = new BuildResult(request1.buildId, -1, "ok", request1.startTime, Duration.ofSeconds(2), null)
         surreal.insertBuild(auth, WaveBuildRecord.fromEvent(new BuildEvent(request1, result1)))
@@ -207,7 +207,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 scanId:  'scan12345',
                 format:  BuildFormat.DOCKER,
                 maxDuration:  Duration.ofMinutes(1),
-        ).withBuildId('123')
+        ).withCount('123')
         and:
         def result = BuildResult.completed(request.buildId, 1, 'Hello', Instant.now().minusSeconds(60), 'xyz')
 

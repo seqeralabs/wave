@@ -222,7 +222,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     protected BuildTrack checkOrSubmit(BuildRequest request) {
         // find next build number
         final num = buildCounter.inc(request.containerId)
-        request.withBuildId(String.valueOf(num))
+        request.withCount(String.valueOf(num))
         // try to store a new build status for the given target image
         // this returns true if and only if such container image was not set yet
         final ret1 = BuildResult.create(request)

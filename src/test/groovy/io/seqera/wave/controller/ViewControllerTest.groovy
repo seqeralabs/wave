@@ -41,9 +41,9 @@ import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
+import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
-import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
@@ -392,6 +392,25 @@ class ViewControllerTest extends Specification {
         '12345'         | 1     | Mock(WaveBuildRecord) { buildId >> 'xyz_99' }         | null
         'foo-887766'    | 1     | Mock(WaveBuildRecord) { buildId >> 'foo-887766_99' }  | '/view/builds/foo-887766_99'
         'foo-887766'    | 1     | Mock(WaveBuildRecord) { buildId >> 'foo-887766' }     | null
+
+    }
+
+    @Unroll
+    def 'should get request uri and name from id' () {
+        given:
+        def service = Mock(ContainerBuildService)
+        def controller = new ViewController(buildService: service, serverUrl: 'http://foo.com')
+
+        expect:
+        controller.requestType(RID) == EXPECTED_TYPE
+        controller.requestUri(RID) == EXPECTED_URI
+        
+        where:
+        RID      | EXPECTED_TYPE    | EXPECTED_URI
+        null     | null             | null
+        '123'    | 'Container'      | 'http://foo.com/view/containers/123'
+        'mr-123' | 'Mirror'         | 'http://foo.com/view/mirrors/mr-123'
+        'bd-123' | 'Build'          | 'http://foo.com/view/builds/bd-123'
 
     }
 

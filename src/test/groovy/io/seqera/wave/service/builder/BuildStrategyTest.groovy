@@ -153,7 +153,7 @@ class BuildStrategyTest extends Specification {
         !build.workDir
 
         when:
-        build.withBuildId('100')
+        build.withCount('100')
         then:
         build.containerId == 'af15cb0a413a2d48'
         build.workspace == Path.of("some/path")

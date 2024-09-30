@@ -92,7 +92,7 @@ class ContainerBuildServiceLiveTest extends Specification {
                         startTime: Instant.now(),
                         maxDuration: duration
                 )
-                    .withBuildId('1')
+                    .withCount('1')
         and:
         buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
 
@@ -138,7 +138,7 @@ class ContainerBuildServiceLiveTest extends Specification {
                         startTime: Instant.now(),
                         maxDuration: duration
                 )
-                .withBuildId('1')
+                .withCount('1')
         and:
         buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
 
@@ -184,7 +184,7 @@ class ContainerBuildServiceLiveTest extends Specification {
                         startTime: Instant.now(),
                         maxDuration: duration
                 )
-                .withBuildId('1')
+                .withCount('1')
         and:
         buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
 
@@ -230,7 +230,7 @@ class ContainerBuildServiceLiveTest extends Specification {
                         startTime: Instant.now(),
                         maxDuration: duration
                 )
-                .withBuildId('1')
+                .withCount('1')
         and:
         buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
 
@@ -283,7 +283,7 @@ class ContainerBuildServiceLiveTest extends Specification {
                         startTime: Instant.now(),
                         maxDuration: duration
                 )
-                        .withBuildId('1')
+                        .withCount('1')
         and:
         buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
         
