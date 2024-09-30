@@ -108,6 +108,6 @@ jobs:
           min-coverage-overall : 60
           min-coverage-changed-files : 60
           title : Code Coverage
-          update-comment : true
+          update-comment : false
           pass-emoji : ':green_circle:'
           fail-emoji : ':red_circle:'
