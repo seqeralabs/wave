@@ -98,16 +98,20 @@ jobs:
           path: |
             **/build/reports/tests/test
 
+      - name: Run Code Coverage
+        run: |
+          ./gradlew jacocoTestReport
+
       - name : Add coverage to PR
         id : jacoco
         uses : madrapps/jacoco-report@v1.7.1
         with :
           paths : |
-            ${{ github.workspace }}/**/build/reports/jacoco/test/jacocoTestReport.xml
+            **/build/reports/jacoco/test/jacocoTestReport.xml
           token : ${{ secrets.GITHUB_TOKEN }}
           min-coverage-overall : 60
           min-coverage-changed-files : 60
-          title : Code Coverage
+          title : Code Coverage Report
           update-comment : false
           pass-emoji : ':green_circle:'
           fail-emoji : ':red_circle:'
