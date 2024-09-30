@@ -40,7 +40,7 @@ class MirrorRequestTest extends Specification {
                 ContainerPlatform.DEFAULT,
                 Path.of('/workspace'),
                 '{json config}',
-                'scan-123',
+                'sc-123',
                 ts,
                 'utc'
         )
@@ -50,11 +50,11 @@ class MirrorRequestTest extends Specification {
         req.targetImage == 'quay.io/foo:latest'
         req.digest == 'sha256:12345'
         req.platform == ContainerPlatform.DEFAULT
-        req.workDir == Path.of("/workspace/mirror-${req.mirrorId.substring(3)}")
+        req.workDir == Path.of("/workspace/${req.mirrorId}")
         req.authJson == '{json config}'
         req.creationTime >= ts
         req.creationTime <= Instant.now()
-        req.scanId == 'scan-123'
+        req.scanId == 'sc-123'
         req.creationTime == ts
         req.offsetId == 'utc'
     }

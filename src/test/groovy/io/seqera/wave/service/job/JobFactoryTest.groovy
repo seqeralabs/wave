@@ -44,7 +44,7 @@ class JobFactoryTest extends Specification {
         and:
         def request = new BuildRequest(
                 targetImage: 'docker.io/foo:bar',
-                buildId: '12345_9',
+                buildId: 'bd-12345_9',
                 startTime: ts,
                 maxDuration: Duration.ofMinutes(1),
                 workDir: Path.of('/some/work/dir')
@@ -54,7 +54,7 @@ class JobFactoryTest extends Specification {
         def job = factory.build(request)
         then:
         job.entryKey == 'docker.io/foo:bar'
-        job.operationName == 'build-12345-9'
+        job.operationName == 'bd-12345-9'
         job.creationTime == ts
         job.type == JobSpec.Type.Build
         job.maxDuration == Duration.ofMinutes(1)
@@ -83,8 +83,8 @@ class JobFactoryTest extends Specification {
         def config = new ScanConfig(timeout: duration)
         def factory = new JobFactory(scanConfig: config)
         def request = new ScanRequest(
-                'sc-12345',
-                'build-123',
+                'sc-12345_1',
+                'bd-67890_2',
                 '{ jsonConfig }',
                 'docker.io/foo:bar',
                 ContainerPlatform.of('linux/amd64'),
@@ -94,8 +94,8 @@ class JobFactoryTest extends Specification {
         when:
         def job = factory.scan(request)
         then:
-        job.entryKey == 'sc-12345'
-        job.operationName == 'scan-12345'
+        job.entryKey == 'sc-12345_1'
+        job.operationName == 'sc-12345-1'
         job.type == JobSpec.Type.Scan
         job.maxDuration == duration
         job.creationTime == request.creationTime
@@ -125,10 +125,11 @@ class JobFactoryTest extends Specification {
         def job = factory.mirror(request)
         then:
         job.entryKey == "target/foo"
-        job.operationName == /mirror-${request.mirrorId.substring(3)}/
+        job.operationName == request.mirrorId
+        job.operationName =~ /mr-.+/
         job.type == JobSpec.Type.Mirror
         job.maxDuration == duration
-        job.workDir == workspace.resolve(/mirror-${request.mirrorId.substring(3)}/)
+        job.workDir == workspace.resolve(request.mirrorId)
         job.creationTime == request.creationTime
     }
 }

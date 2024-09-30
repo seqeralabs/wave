@@ -43,7 +43,7 @@ class BuildRequest {
 
     static final public String SEP = '_'
 
-    static final public String PREFIX = "bd-"
+    static final public String ID_PREFIX = "bd-"
 
     /**
      * Unique request Id. This is computed as a consistent hash generated from
@@ -266,7 +266,7 @@ class BuildRequest {
     }
 
     BuildRequest withCount(String id) {
-        this.buildId = PREFIX + containerId + SEP + id
+        this.buildId = ID_PREFIX + containerId + SEP + id
         this.workDir = workspace.resolve(buildId).toAbsolutePath()
         return this
     }

@@ -94,14 +94,14 @@ class MirrorRequest {
         assert workspace, "Argument 'workspace' cannot be null"
         assert digest, "Argument 'digest' cannot be empty"
 
-        final id = LongRndKey.rndHex()
+        final mirrorId = ID_PREFIX + LongRndKey.rndHex()
         return new MirrorRequest(
-                ID_PREFIX + id,
+                mirrorId,
                 sourceImage,
                 targetImage,
                 digest,
                 platform,
-                workspace.resolve("mirror-${id}"),
+                workspace.resolve(mirrorId),
                 authJson,
                 scanId,
                 ts,
