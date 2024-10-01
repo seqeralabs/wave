@@ -39,6 +39,7 @@ import io.seqera.wave.service.scan.ScanEntry
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
+ * Implements the {@link ContainerStatusService} service
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

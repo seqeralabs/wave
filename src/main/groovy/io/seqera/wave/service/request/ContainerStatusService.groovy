@@ -21,6 +21,7 @@ package io.seqera.wave.service.request
 
 import io.seqera.wave.api.ContainerStatusResponse
 /**
+ * Define the contract for container request status service
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
