@@ -18,8 +18,9 @@
 
 package io.seqera.wave.service.job
 
-import io.seqera.wave.service.blob.BlobCacheInfo
+import io.seqera.wave.service.blob.BlobEntry
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.scan.ScanRequest
 
 /**
@@ -29,11 +30,13 @@ import io.seqera.wave.service.scan.ScanRequest
  */
 interface JobService {
 
-    JobSpec launchTransfer(BlobCacheInfo blob, List<String> command)
+    JobSpec launchTransfer(BlobEntry blob, List<String> command)
 
     JobSpec launchBuild(BuildRequest request)
 
     JobSpec launchScan(ScanRequest request)
+
+    JobSpec launchMirror(MirrorRequest request)
 
     JobState status(JobSpec jobSpec)
 

@@ -28,6 +28,8 @@ import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.mirror.MirrorConfig
+import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.scan.ScanRequest
 
 /**
@@ -52,7 +54,7 @@ class JobFactoryTest extends Specification {
         when:
         def job = factory.build(request)
         then:
-        job.recordId == 'docker.io/foo:bar'
+        job.entryKey == 'docker.io/foo:bar'
         job.operationName == 'build-12345-9'
         job.creationTime == ts
         job.type == JobSpec.Type.Build
@@ -69,7 +71,7 @@ class JobFactoryTest extends Specification {
         when:
         def job = factory.transfer('foo-123')
         then:
-        job.recordId == 'foo-123'
+        job.entryKey == 'foo-123'
         job.operationName =~ /transfer-.+/
         job.type == JobSpec.Type.Transfer
         job.maxDuration == duration
@@ -93,11 +95,37 @@ class JobFactoryTest extends Specification {
         when:
         def job = factory.scan(request)
         then:
-        job.recordId == '12345'
+        job.entryKey == '12345'
         job.operationName == 'scan-12345'
         job.type == JobSpec.Type.Scan
         job.maxDuration == duration
         job.creationTime == request.creationTime
         job.workDir == workdir
+    }
+
+    def 'should create mirror job' () {
+        given:
+        def workspace = Path.of('/some/work/dir')
+        def duration = Duration.ofMinutes(1)
+        def config = new MirrorConfig(maxDuration: duration)
+        def factory = new JobFactory(mirrorConfig: config)
+        and:
+        def request = MirrorRequest.create(
+                'source/foo',
+                'target/foo',
+                'sha256:12345',
+                Mock(ContainerPlatform),
+                workspace,
+                '{config}' )
+
+        when:
+        def job = factory.mirror(request)
+        then:
+        job.entryKey == "target/foo"
+        job.operationName == /mirror-${request.mirrorId.substring(3)}/
+        job.type == JobSpec.Type.Mirror
+        job.maxDuration == duration
+        job.workDir == workspace.resolve(/mirror-${request.mirrorId.substring(3)}/)
+        job.creationTime == request.creationTime
     }
 }

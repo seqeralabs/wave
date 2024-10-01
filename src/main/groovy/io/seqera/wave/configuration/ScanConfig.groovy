@@ -62,7 +62,7 @@ class ScanConfig {
     @Value('${wave.build.workspace}')
     private String buildDirectory
 
-    @Value('${wave.scan.timeout:10m}')
+    @Value('${wave.scan.timeout:15m}')
     private Duration timeout
 
     @Value('${wave.scan.severity}')
@@ -71,6 +71,9 @@ class ScanConfig {
 
     @Value('${wave.scan.retry-attempts:1}')
     int retryAttempts
+
+    @Value('${wave.scan.status.duration:1h}')
+    Duration statusDuration
 
     String getScanImage() {
         return scanImage

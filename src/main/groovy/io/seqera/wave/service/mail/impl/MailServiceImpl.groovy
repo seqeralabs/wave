@@ -88,7 +88,7 @@ class MailServiceImpl implements MailService {
         final status = result.succeeded() ? 'DONE': 'FAILED'
         binding.build_id = result.id
         binding.build_user =  "${req.identity?.user ? req.identity.user.userName : '-'} (${req.ip})"
-        binding.build_success = result.exitStatus==0
+        binding.build_success = result.succeeded()
         binding.build_exit_status = result.exitStatus
         binding.build_time = formatTimestamp(result.startTime, req.offsetId) ?: '-'
         binding.build_duration = formatDuration(result.duration) ?: '-'
@@ -97,7 +97,6 @@ class MailServiceImpl implements MailService {
         binding.build_platform = req.platform
         binding.build_containerfile = req.containerFile ?: '-'
         binding.build_condafile = req.condaFile
-        binding.build_spackfile = req.spackFile
         binding.build_digest = result.digest ?: '-'
         binding.put('build_log_data', result.logs)
         binding.build_url = "$serverUrl/view/builds/${result.id}"

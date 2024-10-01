@@ -62,6 +62,22 @@
             <td>{{scan_duration}}</td>
         </tr>
 
+        {{#if scan_exitcode}}
+        <tr>
+            <td>Exit status</td>
+            <td>{{scan_exitcode}}</td>
+        </tr>
+        {{/if}}
+
+       {{#if scan_logs}}
+       <tr>
+            <td colspan="2">
+            <h3>Logs</h3>
+            <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{scan_logs}}</pre>
+            </td>
+        </tr>
+        {{/if}}
+
         {{#if scan_succeeded}}
         <tr>
             <td colspan="2">

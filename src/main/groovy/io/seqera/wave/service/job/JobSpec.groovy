@@ -37,7 +37,7 @@ import io.seqera.wave.util.LongRndKey
 @CompileStatic
 class JobSpec {
 
-    enum Type { Transfer, Build, Scan }
+    enum Type { Transfer, Build, Scan, Mirror }
 
     /**
      * The job unique identifier
@@ -52,7 +52,7 @@ class JobSpec {
     /**
      * The unique id of the state record associated with this job
      */
-    final String recordId
+    final String entryKey
 
     /**
      * The unique name of the underlying infra operation associated with this job
@@ -76,21 +76,21 @@ class JobSpec {
      */
     final Path workDir
 
-    protected JobSpec(String id, Type type, String recordId, String operationName, Instant createdAt, Duration maxDuration, Path dir) {
+    protected JobSpec(String id, Type type, String entryKey, String operationName, Instant createdAt, Duration maxDuration, Path dir) {
         this.id = id
         this.type = type
-        this.recordId = recordId
+        this.entryKey = entryKey
         this.operationName = operationName
         this.maxDuration = maxDuration
         this.creationTime = createdAt
         this.workDir = dir
     }
 
-    static JobSpec transfer(String stateId, String operationName, Instant creationTime, Duration maxDuration) {
+    static JobSpec transfer(String recordId, String operationName, Instant creationTime, Duration maxDuration) {
         new JobSpec(
                 LongRndKey.rndHex(),
                 Type.Transfer,
-                stateId,
+                recordId,
                 operationName,
                 creationTime,
                 maxDuration,
@@ -98,11 +98,11 @@ class JobSpec {
         )
     }
 
-    static JobSpec scan(String stateId, String operationName, Instant creationTime, Duration maxDuration, Path dir) {
+    static JobSpec scan(String recordId, String operationName, Instant creationTime, Duration maxDuration, Path dir) {
         new JobSpec(
                 LongRndKey.rndHex(),
                 Type.Scan,
-                stateId,
+                recordId,
                 operationName,
                 creationTime,
                 maxDuration,
@@ -110,15 +110,27 @@ class JobSpec {
         )
     }
 
-    static JobSpec build(String stateId, String operationName, Instant creationTime, Duration maxDuration,  Path dir) {
+    static JobSpec build(String recordId, String operationName, Instant creationTime, Duration maxDuration,  Path dir) {
         new JobSpec(
                 LongRndKey.rndHex(),
                 Type.Build,
-                stateId,
+                recordId,
                 operationName,
                 creationTime,
                 maxDuration,
                 dir
+        )
+    }
+
+    static JobSpec mirror(String recordId, String operationName, Instant creationTime, Duration maxDuration, Path workDir) {
+        new JobSpec(
+                LongRndKey.rndHex(),
+                Type.Mirror,
+                recordId,
+                operationName,
+                creationTime,
+                maxDuration,
+                workDir
         )
     }
 }

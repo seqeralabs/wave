@@ -26,6 +26,7 @@ import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.builder.impl.ContainerBuildServiceImpl
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.ContainerHelper
 /**
@@ -46,12 +47,12 @@ class FutureContainerBuildServiceTest extends Specification {
         RUN echo 'hello' > hello.txt
         """.stripIndent()
         and:
-        def containerId = ContainerHelper.makeContainerId(dockerfile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
-        def req = new BuildRequest(containerId, dockerfile, null, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withBuildId('1')
+        def containerId = ContainerHelper.makeContainerId(dockerfile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
+        def req = new BuildRequest(containerId, dockerfile, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withBuildId('1')
         def res = new BuildResult("", 0, "a fake build result in a test", Instant.now(), Duration.ofSeconds(3), 'abc')
         and:
-        def buildStore = Mock(BuildStore)
+        def buildStore = Mock(BuildStateStore)
         def buildCounter = Mock(BuildCounterStore)
         buildStore.getBuildResult(targetImage) >> res
         buildStore.awaitBuild(targetImage) >> CompletableFuture.completedFuture(res)
@@ -81,12 +82,12 @@ class FutureContainerBuildServiceTest extends Specification {
         RUN echo 'hello' > hello.txt
         """.stripIndent()
         and:
-        def containerId = ContainerHelper.makeContainerId(dockerfile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
-        def req = new BuildRequest(containerId, dockerfile, null, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withBuildId('1')
+        def containerId = ContainerHelper.makeContainerId(dockerfile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
+        def req = new BuildRequest(containerId, dockerfile, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withBuildId('1')
         def res = new BuildResult("", 1, "a fake build result in a test", Instant.now(), Duration.ofSeconds(3), 'abc')
         and:
-        def buildStore = Mock(BuildStore)
+        def buildStore = Mock(BuildStateStore)
         def buildCounter = Mock(BuildCounterStore)
         buildStore.getBuildResult(targetImage) >> res
         buildStore.awaitBuild(targetImage) >> CompletableFuture.completedFuture(res)

@@ -19,11 +19,13 @@
 package io.seqera.wave.controller
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.time.Duration
 import java.time.Instant
 
 import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.test.annotation.MockBean
@@ -32,13 +34,14 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.builder.ContainerBuildService
+import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.logs.BuildLogServiceImpl
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
-import io.seqera.wave.service.persistence.WaveScanRecord
-import io.seqera.wave.service.scan.ScanResult
+import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
@@ -67,7 +70,10 @@ class ViewControllerTest extends Specification {
     @Inject
     BuildLogService buildLogService
 
-    def 'should render build page' () {
+    @Inject
+    private ContainerInspectService inspectService
+
+    def 'should return build page mapping' () {
         given:
         def controller = new ViewController(serverUrl: 'http://foo.com', buildLogService: buildLogService)
         and:
@@ -75,7 +81,6 @@ class ViewControllerTest extends Specification {
                 buildId: '12345',
                 dockerFile: 'FROM foo',
                 condaFile: 'conda::foo',
-                spackFile: 'some-spack-recipe',
                 targetImage: 'docker.io/some:image',
                 userName: 'paolo',
                 userEmail: 'paolo@seqera.io',
@@ -101,7 +106,6 @@ class ViewControllerTest extends Specification {
         binding.build_platform == 'linux/amd64'
         binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
-        binding.build_spackfile == 'some-spack-recipe'
         binding.build_format == 'Docker'
         binding.build_log_data == 'log content'
         binding.build_log_truncated == false
@@ -111,7 +115,7 @@ class ViewControllerTest extends Specification {
         binding.build_failed == false
     }
 
-    def 'should render a build page' () {
+    def 'should render build page' () {
         given:
         def record1 = new WaveBuildRecord(
                 buildId: '112233',
@@ -137,10 +141,9 @@ class ViewControllerTest extends Specification {
         response.body().contains('FROM docker.io/test:foo')
         and:
         !response.body().contains('Conda file')
-        !response.body().contains('Spack file')
     }
 
-    def 'should render a build page with conda file' () {
+    def 'should render build page with conda file' () {
         given:
         def record1 = new WaveBuildRecord(
                 buildId: 'test',
@@ -167,39 +170,6 @@ class ViewControllerTest extends Specification {
         and:
         response.body().contains('Conda file')
         response.body().contains('conda::foo')
-        and:
-        !response.body().contains('Spack file')
-    }
-
-    def 'should render a build page with spack file' () {
-        given:
-        def record1 = new WaveBuildRecord(
-                buildId: 'test',
-                spackFile: 'foo/conda/recipe',
-                targetImage: 'test',
-                userName: 'test',
-                userEmail: 'test',
-                userId: 1,
-                requestIp: '127.0.0.1',
-                startTime: Instant.now(),
-                duration: Duration.ofSeconds(1),
-                exitStatus: 0 )
-
-        when:
-        persistenceService.saveBuild(record1)
-        and:
-        def request = HttpRequest.GET("/view/builds/${record1.buildId}")
-        def response = client.toBlocking().exchange(request, String)
-        then:
-        response.body().contains(record1.buildId)
-        and:
-        response.body().contains('Container file')
-        response.body().contains('-')
-        and:
-        !response.body().contains('Conda file')
-        and:
-        response.body().contains('Spack file')
-        response.body().contains('foo/conda/recipe')
     }
 
     def 'should render container view page' () {
@@ -236,6 +206,32 @@ class ViewControllerTest extends Specification {
         response.body().contains(token)
     }
 
+    def 'should render inspect view'() {
+        when:
+        def request = HttpRequest.GET('/view/inspect?image=ubuntu')
+        def response = client.toBlocking().exchange(request, String)
+
+        then:
+        response.status == HttpStatus.OK
+        response.body().contains('ubuntu')
+        response.body().contains('latest')
+        response.body().contains('https://registry-1.docker.io')
+        response.body().contains('amd64')
+    }
+
+    def 'should render inspect view with platform'() {
+        when:
+        def request = HttpRequest.GET('/view/inspect?image=ubuntu&platform=linux/arm64')
+        def response = client.toBlocking().exchange(request, String)
+
+        then:
+        response.status == HttpStatus.OK
+        response.body().contains('ubuntu')
+        response.body().contains('latest')
+        response.body().contains('https://registry-1.docker.io')
+        response.body().contains('arm64')
+    }
+
     def 'should render in progress build page' () {
         given:
         def controller = new ViewController(serverUrl: 'http://foo.com', buildLogService: buildLogService)
@@ -244,7 +240,6 @@ class ViewControllerTest extends Specification {
                 buildId: '12345',
                 dockerFile: 'FROM foo',
                 condaFile: 'conda::foo',
-                spackFile: 'some-spack-recipe',
                 targetImage: 'docker.io/some:image',
                 userName: 'paolo',
                 userEmail: 'paolo@seqera.io',
@@ -269,7 +264,6 @@ class ViewControllerTest extends Specification {
         binding.build_platform == 'linux/amd64'
         binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
-        binding.build_spackfile == 'some-spack-recipe'
         binding.build_format == 'Docker'
         binding.build_log_data == 'log content'
         binding.build_log_truncated == false
@@ -287,7 +281,6 @@ class ViewControllerTest extends Specification {
                 buildId: '12345',
                 dockerFile: 'FROM foo',
                 condaFile: 'conda::foo',
-                spackFile: 'some-spack-recipe',
                 targetImage: 'docker.io/some:image',
                 userName: 'paolo',
                 userEmail: 'paolo@seqera.io',
@@ -313,7 +306,6 @@ class ViewControllerTest extends Specification {
         binding.build_platform == 'linux/amd64'
         binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
-        binding.build_spackfile == 'some-spack-recipe'
         binding.build_format == 'Docker'
         binding.build_log_data == 'log content'
         binding.build_log_truncated == false
@@ -327,15 +319,15 @@ class ViewControllerTest extends Specification {
         given:
         def controller = new ViewController(serverUrl: 'http://foo.com', buildLogService: buildLogService)
         and:
-        def record = new WaveScanRecord(
-                id: '12345',
-                buildId: '12345',
-                containerImage: 'docker.io/some:image',
-                startTime: Instant.now(),
-                duration: Duration.ofMinutes(1),
-                status: ScanResult.SUCCEEDED,
-                vulnerabilities: [new ScanVulnerability('cve-1', 'HIGH', 'test vul', 'testpkg', '1.0.0', '1.1.0', 'http://vul/cve-1')] )
-        def result = ScanResult.success(record, record.vulnerabilities)
+        def result = new ScanEntry(
+                '12345',
+                '12345',
+                'docker.io/some:image',
+                Instant.now(),
+                Duration.ofMinutes(1),
+                ScanEntry.SUCCEEDED,
+                [new ScanVulnerability('cve-1', 'HIGH', 'test vul', 'testpkg', '1.0.0', '1.1.0', 'http://vul/cve-1')],
+                0 )
         when:
         def binding = controller.makeScanViewBinding(result)
         then:
@@ -344,7 +336,50 @@ class ViewControllerTest extends Specification {
         binding.scan_time == formatTimestamp(result.startTime)
         binding.scan_duration == formatDuration(result.duration)
         binding.scan_succeeded
+        binding.scan_exitcode == 0
         binding.vulnerabilities == [new ScanVulnerability(id:'cve-1', severity:'HIGH', title:'test vul', pkgName:'testpkg', installedVersion:'1.0.0', fixedVersion:'1.1.0', primaryUrl:'http://vul/cve-1')]
         binding.build_url == 'http://foo.com/view/builds/12345'
     }
+
+    @Unroll
+    def 'should validate redirection check' () {
+        given:
+        def service = Mock(ContainerBuildService)
+        def controller = new ViewController(buildService: service)
+
+        when:
+        def result = controller.shouldRedirect1(BUILD)
+        then:
+        result == EXPECTED
+
+        where:
+        BUILD           | EXPECTED
+        '12345_1'       | null
+        '12345-1'       | '/view/builds/12345_1'
+        'foo-887766-1'  | '/view/builds/foo-887766_1'
+
+    }
+
+
+    def 'should validate redirect 2' () {
+        given:
+        def service = Mock(ContainerBuildService)
+        def controller = new ViewController(buildService: service)
+
+        when:
+        def result = controller.shouldRedirect2(BUILD)
+        then:
+        result == EXPECTED
+        TIMES * service.getLatestBuild(BUILD) >> LATEST
+
+        where:
+        BUILD           | TIMES | LATEST     | EXPECTED
+        '12345_1'       | 0     | null       | null
+        '12345'         | 1     | Mock(WaveBuildRecord) { buildId >> '12345_99' }       | '/view/builds/12345_99'
+        '12345'         | 1     | Mock(WaveBuildRecord) { buildId >> 'xyz_99' }         | null
+        'foo-887766'    | 1     | Mock(WaveBuildRecord) { buildId >> 'foo-887766_99' }  | '/view/builds/foo-887766_99'
+        'foo-887766'    | 1     | Mock(WaveBuildRecord) { buildId >> 'foo-887766' }     | null
+
+    }
+
 }

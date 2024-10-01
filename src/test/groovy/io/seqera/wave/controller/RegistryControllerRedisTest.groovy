@@ -36,14 +36,13 @@ import io.micronaut.runtime.server.EmbeddedServer
 import io.seqera.wave.exchange.RegistryErrorResponse
 import io.seqera.wave.model.ContentType
 import io.seqera.wave.service.ContainerRequestData
-import io.seqera.wave.service.builder.BuildCacheStore
+import io.seqera.wave.service.builder.impl.BuildStateStoreImpl
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
-import io.seqera.wave.service.builder.BuildStoreEntry
+import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.job.JobFactory
 import io.seqera.wave.service.job.JobQueue
-import io.seqera.wave.service.job.JobSpec
-import io.seqera.wave.service.token.TokenCacheStore
+import io.seqera.wave.service.token.ContainerTokenStoreImpl
 import io.seqera.wave.storage.ManifestCacheStore
 import io.seqera.wave.test.DockerRegistryContainer
 import io.seqera.wave.test.RedisTestContainer
@@ -103,8 +102,8 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
     void 'should return a timeout when build failed'() {
         given:
         def client = applicationContext.createBean(HttpClient)
-        def buildCacheStore = applicationContext.getBean(BuildCacheStore)
-        def tokenCacheStore = applicationContext.getBean(TokenCacheStore)
+        def buildCacheStore = applicationContext.getBean(BuildStateStoreImpl)
+        def tokenCacheStore = applicationContext.getBean(ContainerTokenStoreImpl)
         def jobQueue = applicationContext.getBean(JobQueue)
         def jobFactory = applicationContext.getBean(JobFactory)
         def res = BuildResult.create('1')
@@ -114,7 +113,7 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
                 startTime: Instant.now(),
                 maxDuration: Duration.ofSeconds(5)
         )
-        def entry = new BuildStoreEntry(req, res)
+        def entry = new BuildEntry(req, res)
         def containerRequestData = new ContainerRequestData(new PlatformId(new User(id:1)), "library/hello-world")
         and:
         tokenCacheStore.put("1234", containerRequestData)

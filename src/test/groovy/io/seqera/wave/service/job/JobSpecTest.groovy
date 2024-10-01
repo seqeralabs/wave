@@ -45,7 +45,7 @@ class JobSpecTest extends Specification {
         )
         then:
         job.id == '1234'
-        job.recordId == 'record-123'
+        job.entryKey == 'record-123'
         job.operationName == 'oper-123'
         job.creationTime == ts
         job.maxDuration == Duration.ofMinutes(1)
@@ -59,7 +59,7 @@ class JobSpecTest extends Specification {
         def job = JobSpec.transfer('12345','xyz', now, Duration.ofMinutes(1))
         expect:
         job.id
-        job.recordId == '12345'
+        job.entryKey == '12345'
         job.type == JobSpec.Type.Transfer
         job.creationTime == now
         job.maxDuration == Duration.ofMinutes(1)
@@ -72,7 +72,7 @@ class JobSpecTest extends Specification {
         def job = JobSpec.build('12345','xyz', now, Duration.ofMinutes(1), Path.of('/some/path'))
         expect:
         job.id
-        job.recordId == '12345'
+        job.entryKey == '12345'
         job.type == JobSpec.Type.Build
         job.creationTime == now
         job.maxDuration == Duration.ofMinutes(1)
@@ -86,8 +86,23 @@ class JobSpecTest extends Specification {
         def job = JobSpec.scan('12345','xyz', now, Duration.ofMinutes(1), Path.of('/some/path'))
         expect:
         job.id
-        job.recordId == '12345'
+        job.entryKey == '12345'
         job.type == JobSpec.Type.Scan
+        job.creationTime == now
+        job.maxDuration == Duration.ofMinutes(1)
+        job.operationName == 'xyz'
+        job.workDir == Path.of('/some/path')
+    }
+
+    def 'should create mirror job' () {
+        given:
+        def now = Instant.now()
+        def job = JobSpec.mirror('12345','xyz', now, Duration.ofMinutes(1), Path.of('/some/path'))
+
+        expect:
+        job.id
+        job.entryKey == '12345'
+        job.type == JobSpec.Type.Mirror
         job.creationTime == now
         job.maxDuration == Duration.ofMinutes(1)
         job.operationName == 'xyz'

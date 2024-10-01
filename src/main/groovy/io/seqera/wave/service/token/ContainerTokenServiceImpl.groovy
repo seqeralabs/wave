@@ -44,7 +44,7 @@ class ContainerTokenServiceImpl implements ContainerTokenService {
     private TokenConfig config
 
     @Inject
-    private TokenCacheStore tokenCache
+    private ContainerTokenStoreImpl tokenCache
 
     @Override
     TokenData computeToken(ContainerRequestData request) {

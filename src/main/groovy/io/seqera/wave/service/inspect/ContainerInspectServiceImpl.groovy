@@ -87,7 +87,8 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
     @Override
     String credentialsConfigJson(String containerFile, String buildRepo, String cacheRepo, PlatformId identity) {
         final repos = new HashSet(10)
-        repos.addAll(findRepositories(containerFile))
+        if( containerFile )
+            repos.addAll(findRepositories(containerFile))
         if( buildRepo )
             repos.add(buildRepo)
         if( cacheRepo )
@@ -222,7 +223,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
     }
 
     @Override
-    ContainerSpec containerSpec(String containerImage, PlatformId identity) {
+    ContainerSpec containerSpec(String containerImage, String platform, PlatformId identity) {
         final path = ContainerCoordinates.parse(containerImage)
 
         final creds = credentialsProvider.getCredentials(path, identity)
@@ -232,6 +233,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
 
         return new ContainerAugmenter()
                 .withClient(client)
+                .withPlatform(platform)
                 .getContainerSpec(path.image, path.getReference(), WaveDefault.ACCEPT_HEADERS)
     }
 }
