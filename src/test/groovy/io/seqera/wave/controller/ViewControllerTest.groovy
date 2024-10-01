@@ -221,6 +221,20 @@ class ViewControllerTest extends Specification {
         response.body().contains('ubuntu')
         response.body().contains('latest')
         response.body().contains('https://registry-1.docker.io')
+        response.body().contains('amd64')
+    }
+
+    def 'should render inspect view with platform'() {
+        when:
+        def request = HttpRequest.GET('/view/inspect?image=ubuntu&platform=linux/arm64')
+        def response = client.toBlocking().exchange(request, String)
+
+        then:
+        response.status == HttpStatus.OK
+        response.body().contains('ubuntu')
+        response.body().contains('latest')
+        response.body().contains('https://registry-1.docker.io')
+        response.body().contains('arm64')
     }
 
     def 'should render in progress build page' () {
