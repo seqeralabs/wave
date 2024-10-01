@@ -281,10 +281,10 @@ class ViewController {
 
     @View("inspect-view")
     @Get('/inspect')
-    HttpResponse<Map<String,Object>> viewInspect(@QueryValue String image) {
+    HttpResponse<Map<String,Object>> viewInspect(@QueryValue String image, @Nullable @QueryValue String platform) {
         final binding = new HashMap(10)
         try {
-            final spec = inspectService.containerSpec(image, null)
+            final spec = inspectService.containerSpec(image, platform, null)
             binding.imageName = spec.imageName
             binding.reference = spec.reference
             binding.digest = spec.digest
