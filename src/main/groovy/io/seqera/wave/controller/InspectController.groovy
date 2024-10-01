@@ -23,10 +23,12 @@ import java.util.concurrent.CompletableFuture
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Post
+import io.micronaut.http.annotation.QueryValue
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.api.ContainerInspectRequest
@@ -69,8 +71,7 @@ class InspectController {
     private String serverUrl
 
     @Post("/v1alpha1/inspect")
-    CompletableFuture<HttpResponse<ContainerInspectResponse>> inspect(@Body ContainerInspectRequest req) {
-
+    CompletableFuture<HttpResponse<ContainerInspectResponse>> inspect(ContainerInspectRequest req, @Nullable @QueryValue String platform) {
         if( !req.containerImage )
             throw new BadRequestException("Missing 'containerImage' attribute")
 
@@ -84,7 +85,7 @@ class InspectController {
 
         // anonymous access
         if( !req.towerAccessToken ) {
-            return CompletableFuture.completedFuture(makeResponse(req, PlatformId.NULL))
+            return CompletableFuture.completedFuture(makeResponse(req, platform, PlatformId.NULL))
         }
 
         // We first check if the service is registered
@@ -95,12 +96,12 @@ class InspectController {
         // find out the user associated with the specified tower access token
         return userService
                 .getUserByAccessTokenAsync(registration.endpoint, JwtAuth.of(req))
-                .thenApply((User user) -> makeResponse(req, PlatformId.of(user,req)) )
+                .thenApply((User user) -> makeResponse(req, platform, PlatformId.of(user,req)) )
 
     }
 
-    protected HttpResponse<ContainerInspectResponse> makeResponse(ContainerInspectRequest req, PlatformId identity) {
-        final spec = inspectService.containerSpec(req.containerImage, identity)
+    protected HttpResponse<ContainerInspectResponse> makeResponse(ContainerInspectRequest req, String platform, PlatformId identity) {
+        final spec = inspectService.containerSpec(req.containerImage, platform, identity)
         return spec
                 ? HttpResponse.ok(new ContainerInspectResponse(spec))
                 : HttpResponse.<ContainerInspectResponse>notFound()

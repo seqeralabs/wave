@@ -81,9 +81,7 @@ class TowerClient {
         if (!pairingId)
             throw new IllegalArgumentException("Missing encryptionKey argument")
 
-        // keep `keyId` only for backward compatibility
-        // it should be removed in a following version in favour of `pairingId`
-        def uri = "${checkEndpoint(towerEndpoint)}/credentials/$credentialsId/keys?pairingId=$pairingId&keyId=$pairingId"
+        def uri = "${checkEndpoint(towerEndpoint)}/credentials/$credentialsId/keys?pairingId=$pairingId"
         if( workspaceId!=null )
             uri += "&workspaceId=$workspaceId"
 
