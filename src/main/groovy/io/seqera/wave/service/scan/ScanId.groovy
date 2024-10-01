@@ -42,8 +42,12 @@ class ScanId {
         "sc-${base}_${count}"
     }
 
-    static ScanId of(String containerImage){
-        final x = RegHelper.sipHash([image:containerImage])
+    static ScanId of(String containerImage, String digest=null){
+        final data = new LinkedHashMap(2)
+        data.image = containerImage
+        if( digest )
+            data.digest = digest
+        final x = RegHelper.sipHash(data)
         return new ScanId(x)
     }
 

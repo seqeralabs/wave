@@ -82,7 +82,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     ContainerScanServiceImpl() {}
 
     @Override
-    String getScanId(String targetImage, ScanMode mode, String format) {
+    String getScanId(String targetImage, String digest, ScanMode mode, String format) {
         // ignore singularity images
         if( format == 'sif' )
             return null
@@ -91,7 +91,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
             return null
         // create a new scan id if there's no entry for the given target image
         final result = scanIdStore
-                .putIfAbsentAndCount(targetImage, ScanId.of(targetImage))
+                .putIfAbsentAndCount(targetImage, ScanId.of(targetImage, digest))
         // if the put is successful, update the scan id with count value
         // returned in the put operation
         if( result.v1 ) {

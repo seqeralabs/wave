@@ -31,7 +31,7 @@ import io.seqera.wave.service.request.ContainerRequest
  */
 interface ContainerScanService {
 
-    String getScanId(String targetImage, ScanMode mode, String format)
+    String getScanId(String targetImage, String digest, ScanMode mode, String format)
 
     void scan(ScanRequest request)
 

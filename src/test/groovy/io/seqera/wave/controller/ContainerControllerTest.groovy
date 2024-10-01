@@ -89,9 +89,19 @@ class ContainerControllerTest extends Specification {
     @Inject
     ApplicationContext applicationContext
 
+    @Inject
+    RegistryProxyService proxyRegistry
+
     @MockBean(JobServiceImpl)
     JobService mockJobService() {
         Mock(JobService)
+    }
+
+    @MockBean(RegistryProxyService)
+    RegistryProxyService mockProxy() {
+        Mock(RegistryProxyService) {
+            getImageDigest(_,_) >> 'sha256:mock-digest'
+        }
     }
 
     def setup() {
@@ -100,7 +110,7 @@ class ContainerControllerTest extends Specification {
 
     def 'should create request data' () {
         given:
-        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService))
+        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry)
 
         when:
         def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest')
@@ -136,6 +146,7 @@ class ContainerControllerTest extends Specification {
     def 'should create request data with freeze mode' () {
         given:
         def freeze = Mock(FreezeService)
+        def containerImage = 'ubuntu:latest'
         and:
         def controller = Spy(new ContainerController(freezeService: freeze, inclusionService: Mock(ContainerInclusionService)))
         and:
@@ -144,7 +155,7 @@ class ContainerControllerTest extends Specification {
             getTargetImage() >> target
         }
         and:
-        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true, buildRepository: 'docker.io/foo/bar')
+        def req = new SubmitContainerTokenRequest(containerImage: containerImage, freeze: true, buildRepository: 'docker.io/foo/bar')
 
         when:
         def data = controller.makeRequestData(req, PlatformId.NULL, "")
@@ -152,6 +163,7 @@ class ContainerControllerTest extends Specification {
         1 * freeze.freezeBuildRequest(req, _) >> req.copyWith(containerFile: 'FROM ubuntu:latest')
         1 * controller.makeBuildRequest(_,_,_) >> BUILD
         1 * controller.checkBuild(BUILD,false) >> new BuildTrack('1', target, false)
+        1 * controller.getContainerDigest(containerImage, PlatformId.NULL) >> 'sha256:12345'
         and:
         data.containerImage == target
 
@@ -169,7 +181,6 @@ class ContainerControllerTest extends Specification {
         given:
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def proxyRegistry = Mock(RegistryProxyService)
         def controller = new ContainerController(buildService: builder, inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
         def DOCKER = 'FROM foo'
         def user = new PlatformId(new User(id: 100))
@@ -196,7 +207,6 @@ class ContainerControllerTest extends Specification {
         given:
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def proxyRegistry = Mock(RegistryProxyService)
         def persistenceService = Mock(PersistenceService)
         def controller = new ContainerController(buildService: builder, inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, persistenceService:persistenceService, inclusionService: Mock(ContainerInclusionService))
         def DOCKER = 'FROM foo'
@@ -225,7 +235,6 @@ class ContainerControllerTest extends Specification {
         given:
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def proxyRegistry = Mock(RegistryProxyService)
         def controller = new ContainerController(buildService: builder, inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig:buildConfig, inclusionService: Mock(ContainerInclusionService))
         def DOCKER = 'FROM foo'
         def user = new PlatformId(new User(id: 100))
@@ -252,10 +261,8 @@ class ContainerControllerTest extends Specification {
 
     def 'should make a mirror request' () {
         given:
-        def jobService = applicationContext.getBean(JobService)
         def mirrorService = applicationContext.getBean(ContainerMirrorService)
         def inspectService = Mock(ContainerInspectServiceImpl)
-        def proxyRegistry = Mock(RegistryProxyService)
         def controller = new ContainerController(mirrorService: mirrorService, inspectService: inspectService, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
         def user = new PlatformId(new User(id: 100))
         def req = new SubmitContainerTokenRequest(
@@ -354,7 +361,7 @@ class ContainerControllerTest extends Specification {
     def 'should add library prefix' () {
         when:
         def body = new SubmitContainerTokenRequest(containerImage: 'docker.io/hello-world')
-        def req1 = HttpRequest.POST("/container-token", body)
+        def req1 = HttpRequest.POST("/v1alpha2/container", body)
         def resp1 = client.toBlocking().exchange(req1, SubmitContainerTokenResponse)
         then:
         resp1.status() == HttpStatus.OK
@@ -368,7 +375,7 @@ class ContainerControllerTest extends Specification {
     def 'should not add library prefix' () {
         when:
         def body = new SubmitContainerTokenRequest(containerImage: 'quay.io/hello-world')
-        def req1 = HttpRequest.POST("/container-token", body)
+        def req1 = HttpRequest.POST("/v1alpha2/container", body)
         def resp1 = client.toBlocking().exchange(req1, SubmitContainerTokenResponse)
         then:
         resp1.status() == HttpStatus.OK
@@ -382,7 +389,7 @@ class ContainerControllerTest extends Specification {
     def 'should record a container request' () {
         when:
         def body = new SubmitContainerTokenRequest(containerImage: 'hello-world')
-        def req1 = HttpRequest.POST("/container-token", body)
+        def req1 = HttpRequest.POST("/v1alpha2/container", body)
         def resp1 = client.toBlocking().exchange(req1, SubmitContainerTokenResponse)
         then:
         resp1.status() == HttpStatus.OK

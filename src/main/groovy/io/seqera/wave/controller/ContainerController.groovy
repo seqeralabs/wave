@@ -355,7 +355,8 @@ class ContainerController {
         final containerId = makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext)
         final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, nameStrategy)
         final maxDuration = buildConfig.buildMaxDuration(req)
-        final scanId = scanService?.getScanId(targetImage, req.scanMode, req.format)
+        // digest is not needed for builds, because they use a unique checksum in the container name
+        final scanId = scanService?.getScanId(targetImage, null, req.scanMode, req.format)
 
         return new BuildRequest(
                 containerId,
@@ -397,6 +398,12 @@ class ContainerController {
         }
     }
 
+    protected String getContainerDigest(String containerImage, PlatformId identity) {
+        containerImage
+                ? registryProxyService.getImageDigest(containerImage, identity)
+                : null
+    }
+
     ContainerRequest makeRequestData(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
         if( !req.containerImage && !req.containerFile )
             throw new BadRequestException("Specify either 'containerImage' or 'containerFile' attribute")
@@ -415,6 +422,10 @@ class ContainerController {
         if( req.freeze ) {
             req = freezeService.freezeBuildRequest(req, identity)
         }
+
+        final digest = getContainerDigest(req.containerImage, identity)
+        if( !digest && req.containerImage )
+            throw new BadRequestException("Container image '${req.containerImage}' does not exist or access is not authorized")
 
         String targetImage
         String targetContent
@@ -435,7 +446,7 @@ class ContainerController {
             mirrorFlag = false
         }
         else if( req.mirrorRegistry ) {
-            final mirror = makeMirrorRequest(req, identity)
+            final mirror = makeMirrorRequest(req, identity, digest)
             final track = checkMirror(mirror, identity, req.dryRun)
             targetImage = track.targetImage
             targetContent = null
@@ -453,7 +464,7 @@ class ContainerController {
             condaContent = null
             buildId = null
             buildNew = null
-            scanId = scanService?.getScanId(targetImage, req.scanMode, req.format)
+            scanId = scanService?.getScanId(req.containerImage, digest, req.scanMode, req.format)
             mirrorFlag = null
         }
         else
@@ -477,7 +488,7 @@ class ContainerController {
         )
     }
 
-    protected MirrorRequest makeMirrorRequest(SubmitContainerTokenRequest request, PlatformId identity) {
+    protected MirrorRequest makeMirrorRequest(SubmitContainerTokenRequest request, PlatformId identity, String digest) {
         final coords = ContainerCoordinates.parse(request.containerImage)
         if( coords.registry == request.mirrorRegistry )
             throw new BadRequestException("Source and target mirror registry as the same - offending value '${request.mirrorRegistry}'")
@@ -486,12 +497,10 @@ class ContainerController {
         final platform = request.containerPlatform
                 ? ContainerPlatform.of(request.containerPlatform)
                 : ContainerPlatform.DEFAULT
-        final scanId = scanService?.getScanId(targetImage, request.scanMode, request.format)
-        final offset = DataTimeUtils.offsetId(request.timestamp)
 
-        final digest = registryProxyService.getImageDigest(request.containerImage, identity)
-        if( !digest )
-            throw new BadRequestException("Container image '$request.containerImage' does not exist")
+        final offset = DataTimeUtils.offsetId(request.timestamp)
+        final scanId = scanService?.getScanId(targetImage, digest, request.scanMode, request.format)
+
         return MirrorRequest.create(
                 request.containerImage,
                 targetImage,

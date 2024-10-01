@@ -31,14 +31,14 @@ class ScanIdTest extends Specification {
     }
 
     def 'create a count with the specified count' () {
-        given:
-        def scan = ScanId.of('x')
-
         expect:
-        scan.toString() == 'sc-94be9fbddcc3af8e_0'
-        scan.withCount(1).toString() == 'sc-94be9fbddcc3af8e_1'
-        scan.withCount(9).toString() == 'sc-94be9fbddcc3af8e_9'
-
+        ScanId.of('x').toString() == 'sc-94be9fbddcc3af8e_0'
+        ScanId.of('x').withCount(1).toString() == 'sc-94be9fbddcc3af8e_1'
+        ScanId.of('x').withCount(9).toString() == 'sc-94be9fbddcc3af8e_9'
+        and:
+        ScanId.of('x', 'y').toString() == 'sc-00769af315dcb1fe_0'
+        ScanId.of('x', 'y').withCount(1).toString() == 'sc-00769af315dcb1fe_1'
+        ScanId.of('x', 'y').withCount(9).toString() == 'sc-00769af315dcb1fe_9'
     }
 
 }
