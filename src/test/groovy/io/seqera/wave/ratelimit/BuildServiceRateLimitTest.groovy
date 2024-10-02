@@ -29,7 +29,7 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.builder.ContainerBuildServiceImpl
+import io.seqera.wave.service.builder.impl.ContainerBuildServiceImpl
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.ContainerHelper
 /**

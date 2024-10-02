@@ -37,7 +37,8 @@ import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
-import io.seqera.wave.service.scan.ScanResult
+import io.seqera.wave.service.scan.ContainerScanService
+import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import static io.seqera.wave.util.DataTimeUtils.formatDuration
@@ -69,6 +70,9 @@ class ViewController {
 
     @Inject
     private ContainerInspectService inspectService
+
+    @Inject
+    private ContainerScanService scanService
 
     @View("build-view")
     @Get('/builds/{buildId}')
@@ -199,7 +203,7 @@ class ViewController {
     HttpResponse<Map<String,Object>> viewScan(String scanId) {
         final binding = new HashMap(10)
         try {
-            final result = persistenceService.loadScanResult(scanId)
+            final result = loadScanResult(scanId)
             makeScanViewBinding(result, binding)
         }
         catch (NotFoundException e){
@@ -214,12 +218,34 @@ class ViewController {
         return HttpResponse.<Map<String,Object>>ok(binding)
     }
 
+    /**
+     * Retrieve a {@link ScanEntry} object for the specified build ID
+     *
+     * @param buildId The ID of the build for which load the scan result
+     * @return The {@link ScanEntry} object associated with the specified build ID or throws the exception {@link NotFoundException} otherwise
+     * @throws NotFoundException If the a record for the specified build ID cannot be found
+     */
+    protected ScanEntry loadScanResult(String scanId) {
+        final scanRecord = scanService.getScanResult(scanId)
+        if( !scanRecord )
+            throw new NotFoundException("No scan report exists with id: ${scanId}")
+
+        return ScanEntry.create(
+                scanRecord.id,
+                scanRecord.buildId,
+                scanRecord.containerImage,
+                scanRecord.startTime,
+                scanRecord.duration,
+                scanRecord.status,
+                scanRecord.vulnerabilities )
+    }
+
     @View("inspect-view")
     @Get('/inspect')
-    HttpResponse<Map<String,Object>> viewInspect(@QueryValue String image) {
+    HttpResponse<Map<String,Object>> viewInspect(@QueryValue String image, @Nullable @QueryValue String platform) {
         final binding = new HashMap(10)
         try {
-            final spec = inspectService.containerSpec(image, null)
+            final spec = inspectService.containerSpec(image, platform, null)
             binding.imageName = spec.imageName
             binding.reference = spec.reference
             binding.digest = spec.digest
@@ -236,15 +262,18 @@ class ViewController {
         return HttpResponse.<Map<String,Object>>ok(binding)
     }
 
-    Map<String, Object> makeScanViewBinding(ScanResult result, Map<String,Object> binding=new HashMap(10)) {
-        binding.should_refresh = !result.isCompleted()
-        binding.scan_id = result.id
+    Map<String, Object> makeScanViewBinding(ScanEntry result, Map<String,Object> binding=new HashMap(10)) {
+        binding.should_refresh = !result.done()
+        binding.scan_id = result.scanId
         binding.scan_container_image = result.containerImage ?: '-'
         binding.scan_exist = true
-        binding.scan_completed = result.isCompleted()
+        binding.scan_completed = result.done()
         binding.scan_status = result.status
-        binding.scan_failed = result.status == ScanResult.FAILED
-        binding.scan_succeeded = result.status == ScanResult.SUCCEEDED
+        binding.scan_failed = result.status == ScanEntry.FAILED
+        binding.scan_succeeded = result.status == ScanEntry.SUCCEEDED
+        binding.scan_exitcode = result.exitCode
+        binding.scan_logs = result.logs
+
         binding.build_id = result.buildId
         binding.build_url = "$serverUrl/view/builds/${result.buildId}"
         binding.scan_time = formatTimestamp(result.startTime) ?: '-'

@@ -22,41 +22,41 @@ package io.seqera.wave.service.job
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface JobHandler<R extends JobRecord> {
+interface JobHandler<R extends JobEntry> {
 
     /**
-     * Retrieve the {@link JobRecord} instance associated with the specified {@link JobSpec} object
+     * Retrieve the {@link JobEntry} instance associated with the specified {@link JobSpec} object
      *
      * @param job
      *      The {@link JobSpec} object for which the corresponding record is needed
      * @return
      *      The associated job record or {@link null} otherwise
      */
-    R getJobRecord(JobSpec job)
+    R getJobEntry(JobSpec job)
 
     /**
      * Event invoked when a job complete either successfully or with a failure
      *
      * @param job
      *      The {@link JobSpec} object
-     * @param jobRecord
+     * @param entry
      *      The associate state record
      * @param state
      *      The job execution state
      */
-    void onJobCompletion(JobSpec job, R jobRecord, JobState state)
+    void onJobCompletion(JobSpec job, R entry, JobState state)
 
     /**
      * Event invoked when a job execution reports an exception
      *
      * @param job
      *      The {@link JobSpec} object
-     * @param jobRecord
+     * @param entry
      *      The associate state record
      * @param error
      *      The job job exception
      */
-    void onJobException(JobSpec job, R jobRecord, Throwable error)
+    void onJobException(JobSpec job, R entry, Throwable error)
 
     /**
      * Event invoked when a job exceed the expected max execution duration
@@ -66,6 +66,6 @@ interface JobHandler<R extends JobRecord> {
      * @param jobRecord
      *      The associate state record
      */
-    void onJobTimeout(JobSpec job, R jobRecord)
+    void onJobTimeout(JobSpec job, R entry)
 
 }

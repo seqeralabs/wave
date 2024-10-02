@@ -75,6 +75,21 @@ class InspectControllerTest extends Specification {
         resp.body().container.config.rootfs.diff_ids == ['sha256:95c4a60383f7b6eb6f7b8e153a07cd6e896de0476763bef39d0f6cf3400624bd']
     }
 
+    def 'should inspect container with platform' () {
+        when:
+        def inspect = new ContainerInspectRequest(containerImage:
+                'library/busybox')
+        def platform = 'linux/arm64'
+        def req = HttpRequest.POST("/v1alpha1/inspect?platform=$platform", inspect)
+        def resp = client.toBlocking().exchange(req, ContainerInspectResponse)
+        then:
+        resp.status() == HttpStatus.OK
+        and:
+        resp.body().container.registry == 'docker.io'
+        resp.body().container.imageName == 'library/busybox'
+        resp.body().container.config.architecture == 'arm64'
+    }
+
     def 'should get BadRequestException, when container image name is not provided' () {
         when:
         def inspect = new ContainerInspectRequest()

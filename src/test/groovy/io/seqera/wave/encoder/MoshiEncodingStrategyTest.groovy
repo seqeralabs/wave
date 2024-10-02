@@ -32,7 +32,7 @@ import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
-import io.seqera.wave.service.builder.BuildStoreEntry
+import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingResponse
@@ -411,7 +411,7 @@ class MoshiEncodingStrategyTest extends Specification {
 
     def 'should encode and decode build store entry' () {
         given:
-        def encoder = new MoshiEncodeStrategy<BuildStoreEntry>() { }
+        def encoder = new MoshiEncodeStrategy<BuildEntry>() { }
         def context = new BuildContext('http://foo.com', '12345', 100, '67890')
         and:
         def res = BuildResult.completed('1', 2, 'Oops', Instant.now(), null)
@@ -430,7 +430,7 @@ class MoshiEncodingStrategyTest extends Specification {
                 buildContext: context )
                 .withBuildId('1')
         and:
-        def entry = new BuildStoreEntry(req, res)
+        def entry = new BuildEntry(req, res)
         when:
         def json = encoder.encode(entry)
         and:
