@@ -98,10 +98,6 @@ jobs:
           path: |
             **/build/reports/tests/test
 
-      - name: Run Code Coverage
-        run: |
-          ./gradlew jacocoTestReport
-
       - name : Add coverage to PR
         id : jacoco
         uses : madrapps/jacoco-report@v1.7.1
@@ -112,6 +108,10 @@ jobs:
           min-coverage-overall : 60
           min-coverage-changed-files : 60
           title : Code Coverage Report
-          update-comment : false
           pass-emoji : ':green_circle:'
           fail-emoji : ':red_circle:'
+
+      - name : Get the Coverage info
+        run : |
+          echo "Total coverage ${{ steps.jacoco.outputs.coverage-overall }}"
+          echo "Changed Files coverage ${{ steps.jacoco.outputs.coverage-changed-files }}"
