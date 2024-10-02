@@ -100,18 +100,20 @@ class SurrealPersistenceService implements PersistenceService {
 
     @Override
     void saveBuild(WaveBuildRecord build) {
+        // note: use surreal sql in order to by-pass issue with large payload
+        // see https://github.com/seqeralabs/wave/issues/559#issuecomment-2369412170
         final query = "INSERT INTO wave_build ${JacksonHelper.toJson(build)}"
         surrealDb
                 .sqlAsync(getAuthorization(), query)
                 .subscribe({result ->
-                    log.trace "Conda file added in wave_build with buildId '$build.buildId': ${result}"
+                    log.trace "Build request with id '$build.buildId' saved record: ${result}"
                 },
                         {error->
                             def msg = error.message
                             if( error instanceof HttpClientResponseException ){
                                 msg += ":\n $error.response.body"
                             }
-                            log.error("Error saving conda file in wave_build with buildId '$build.buildId => ${msg}\n", error)
+                            log.error("Error saving Build request record ${msg}\n${build}", error)
                         })
     }
 
@@ -172,6 +174,8 @@ class SurrealPersistenceService implements PersistenceService {
 
     @Override
     void saveContainerRequest(WaveContainerRecord data) {
+        // note: use surreal sql in order to by-pass issue with large payload
+        // see https://github.com/seqeralabs/wave/issues/559#issuecomment-2369412170
         final query = "INSERT INTO wave_request ${JacksonHelper.toJson(data)}"
         surrealDb
                 .sqlAsync(getAuthorization(), query)

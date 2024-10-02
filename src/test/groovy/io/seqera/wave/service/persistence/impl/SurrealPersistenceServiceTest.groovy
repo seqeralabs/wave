@@ -235,6 +235,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
     def 'should load a request record' () {
         given:
+        def largeContainerFile = RandomStringUtils.random(25600, true, true)
         def persistence = applicationContext.getBean(SurrealPersistenceService)
         and:
         def TOKEN = '123abc'
@@ -251,7 +252,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 timestamp: Instant.now().toString()
         )
         def user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
-        def data = new ContainerRequestData(new PlatformId(user,100), 'hello-world' )
+        def data = new ContainerRequestData(new PlatformId(user,100), 'hello-world', largeContainerFile )
         def wave = "wave.io/wt/$TOKEN/hello-world"
         def addr = "100.200.300.400"
         def exp = Instant.now().plusSeconds(3600)
@@ -267,6 +268,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def loaded = persistence.loadContainerRequest(TOKEN)
         then:
         loaded == request
+        loaded.containerFile == largeContainerFile
 
         // should update the record
         when:
