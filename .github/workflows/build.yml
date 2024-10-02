@@ -97,3 +97,11 @@ jobs:
           name: test-reports-jdk-${{ matrix.java_version }}
           path: |
             **/build/reports/tests/test
+
+      - name : Publish code coverage report
+        if: success()
+        uses : actions/upload-artifact@v4
+        with :
+          name : code-coverage-reports-jdk-${{ matrix.java_version }}
+          path : |
+            **/build/reports/jacoco/test
