@@ -106,7 +106,7 @@ class BuildConfig {
     @Value('${wave.build.retry-attempts:0}')
     int retryAttempts
 
-    @Value('${wave.build.max-conda-file-size:100000}')
+    @Value('${wave.build.max-conda-file-size:50000}')
     int maxCondaFileSize
 
     @Value('${wave.build.max-container-file-size:100000}')
