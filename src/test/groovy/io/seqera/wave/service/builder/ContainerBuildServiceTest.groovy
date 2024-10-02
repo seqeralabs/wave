@@ -337,9 +337,11 @@ class ContainerBuildServiceTest extends Specification {
         expect:
         ContainerInspectServiceImpl.host0(CONTAINER) == EXPECTED
         where:
-        CONTAINER       | EXPECTED
-        'docker.io'     | 'docker.io'
-        'docker.io/foo/'| 'docker.io'
+        CONTAINER           | EXPECTED
+        'docker.io'         | 'docker.io'
+        'docker.io/foo/'    | 'docker.io'
+        'foo/bar'           | 'docker.io'
+        'quay.io/foo/bar'   | 'quay.io'
     }
 
     def 'should handle job completion event and update build store'() {
