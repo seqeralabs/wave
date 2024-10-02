@@ -71,7 +71,7 @@ class InspectController {
     private String serverUrl
 
     @Post("/v1alpha1/inspect")
-    CompletableFuture<HttpResponse<ContainerInspectResponse>> inspect(ContainerInspectRequest req, @Nullable @QueryValue String platform) {
+    CompletableFuture<HttpResponse<ContainerInspectResponse>> inspect(@Body ContainerInspectRequest req, @Nullable @QueryValue String platform) {
         if( !req.containerImage )
             throw new BadRequestException("Missing 'containerImage' attribute")
 
