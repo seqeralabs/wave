@@ -263,29 +263,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         
         when:
         def loaded = persistence.loadContainerRequest(TOKEN)
-
         then:
-        verifyAll(loaded) {
-            loaded.id == "wave_request:$request.id" //surrealdb will add table name in front of id
-            loaded.user == request.user
-            loaded.workspaceId == request.workspaceId
-            loaded.containerImage == request.containerImage
-            loaded.containerConfig == request.containerConfig
-            loaded.platform == request.platform
-            loaded.towerEndpoint == request.towerEndpoint
-            loaded.buildRepository == request.buildRepository
-            loaded.cacheRepository == request.cacheRepository
-            loaded.fingerprint == request.fingerprint
-            loaded.sourceImage == request.sourceImage
-            loaded.sourceDigest == request.sourceDigest
-            loaded.waveImage == request.waveImage
-            loaded.waveDigest == request.waveDigest
-            loaded.expiration == request.expiration
-            loaded.buildId == request.buildId
-            loaded.buildNew == request.buildNew
-            loaded.freeze == request.freeze
-            loaded.fusionVersion == request.fusionVersion
-        }
+        loaded == request
 
         // should update the record
         when:
@@ -386,5 +365,12 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         stored == result
     }
 
+    def 'should remove surreal table from json' () {
+        given:
+        def json = /{"id":"wave_request:1234abc", "this":"one", "that":123 }/
+        expect:
+        SurrealPersistenceService.patchSurrealId(json, "wave_request")
+                == /{"id":"1234abc", "this":"one", "that":123 }/
+    }
 
 }

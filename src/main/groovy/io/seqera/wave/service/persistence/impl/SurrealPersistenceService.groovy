@@ -214,9 +214,13 @@ class SurrealPersistenceService implements PersistenceService {
         final json = surrealDb.getContainerRequest(getAuthorization(), token)
         log.trace "Container request with token '$token' loaded: ${json}"
         final type = new TypeReference<ArrayList<SurrealResult<WaveContainerRecord>>>() {}
-        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final data= json ? JacksonHelper.fromJson(patchSurrealId(json,"wave_request"), type) : null
         final result = data && data[0].result ? data[0].result[0] : null
         return result
+    }
+
+    static protected String patchSurrealId(String json, String table) {
+        json.replaceFirst(/"id":\s*"${table}:(\w*)"/) { List<String> it-> /"id":"${it[1]}"/ }
     }
 
     void createScanRecord(WaveScanRecord scanRecord) {
