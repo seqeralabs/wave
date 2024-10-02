@@ -109,7 +109,7 @@ class BuildConfig {
     @Value('${wave.build.max-conda-file-size:50000}')
     int maxCondaFileSize
 
-    @Value('${wave.build.max-container-file-size:100000}')
+    @Value('${wave.build.max-container-file-size:10000}')
     int maxContainerFileSize
 
     @PostConstruct
