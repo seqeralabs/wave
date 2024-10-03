@@ -99,18 +99,19 @@ class BuildLogServiceImpl implements BuildLogService {
     void onBuildEvent(BuildEvent event) {
         if(event.result.logs) {
             CompletableFuture.supplyAsync(() -> storeLog(event.result.id, event.result.logs), ioExecutor)
-            CompletableFuture.supplyAsync(() -> storeCondaLock(event.result.id, event.result.logs), ioExecutor)
         }
     }
 
     @Override
     void storeLog(String buildId, String content){
-        log.debug("Logs: $content")
+
         try {
-            content = removeCondaLockFile(content)
+            final String logs = removeCondaLockFile(content)
             log.debug "Storing logs for buildId: $buildId"
-            final uploadRequest = UploadRequest.fromBytes(content.getBytes(), logKey(buildId))
+            final uploadRequest = UploadRequest.fromBytes(logs.bytes, logKey(buildId))
             objectStorageOperations.upload(uploadRequest)
+
+            storeCondaLock(buildId, content)
         }
         catch (Exception e) {
             log.warn "Unable to store logs for buildId: $buildId  - reason: ${e.message}", e
@@ -144,15 +145,13 @@ class BuildLogServiceImpl implements BuildLogService {
         return logs.replaceAll(/(?s)\n?#\d+ \d+\.\d+ $CONDA_LOCK_START.*?$CONDA_LOCK_END\n?/, '\n')
     }
 
-    @Override
-    void storeCondaLock(String buildId, String logs) {
+    protected void storeCondaLock(String buildId, String logs) {
         if( !logs ) return
         try {
             String condaLock = extractCondaLockFile(logs)
             if (condaLock){
                 log.debug "Storing conda lock for buildId: $buildId"
-                log.debug "conda lock: $condaLock"
-                final uploadRequest = UploadRequest.fromBytes(condaLock.getBytes(), condaLockKey(buildId))
+                final uploadRequest = UploadRequest.fromBytes(condaLock.bytes, condaLockKey(buildId))
                 objectStorageOperations.upload(uploadRequest)
             }
         }
