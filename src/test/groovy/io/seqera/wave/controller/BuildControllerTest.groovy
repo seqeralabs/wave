@@ -163,7 +163,7 @@ class BuildControllerTest extends Specification {
         def res = client.toBlocking().exchange(req, String)
 
         then:
-        1 * buildLogService.fetchCondaLock(buildId) >> response
+        1 * buildLogService.fetchCondaLockStream(buildId) >> response
         and:
         res.code() == 200
         res.body() == condaLock
