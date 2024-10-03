@@ -111,22 +111,6 @@ interface PersistenceService {
     WaveScanRecord loadScanRecord(String scanId)
 
     /**
-     * Store a  condaLock for buildId in the underlying persistence layer.
-     *
-     *
-     * @param build A {@link WaveBuildRecord} object
-     */
-    void saveCondaLock(WaveCondaLockRecord condaLock)
-
-    /**
-     * Retrieve a condaLock for the given build id
-     *
-     * @param buildId
-     * @return The corresponding condaLock file as a string
-     */
-    WaveCondaLockRecord loadCondaLock(String buildId)
-
-    /**
      * Load a mirror state record
      *
      * @param mirrorId The ID of the mirror record

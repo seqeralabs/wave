@@ -23,7 +23,7 @@ import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.mirror.MirrorEntry
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
-import io.seqera.wave.service.persistence.WaveCondaLockRecord
+
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import jakarta.inject.Singleton
@@ -42,8 +42,6 @@ class LocalPersistenceService implements PersistenceService {
 
     private Map<String,WaveScanRecord> scanStore = new HashMap<>()
     private Map<String, MirrorEntry> mirrorStore = new HashMap<>()
-
-    private Map<String,WaveCondaLockRecord> condaLockStore = new HashMap<>()
 
     @Override
     void saveBuild(WaveBuildRecord record) {
@@ -100,16 +98,6 @@ class LocalPersistenceService implements PersistenceService {
     @Override
     WaveScanRecord loadScanRecord(String scanId) {
         scanStore.get(scanId)
-    }
-
-    @Override
-    void saveCondaLock(WaveCondaLockRecord condaLock) {
-        condaLockStore.put(condaLock.buildId, condaLock)
-    }
-
-    @Override
-    WaveCondaLockRecord loadCondaLock(String buildId) {
-        return condaLockStore.get(buildId)
     }
 
     MirrorEntry loadMirrorEntry(String mirrorId) {

@@ -33,7 +33,6 @@ import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.builder.ContainerBuildService
-import io.seqera.wave.service.conda.CondaLockService
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.mirror.ContainerMirrorService
 import io.seqera.wave.service.mirror.MirrorRequest
@@ -59,9 +58,6 @@ class BuildController {
     @Inject
     @Nullable
     BuildLogService logService
-
-    @Inject
-    CondaLockService condaLockService
 
     @Get("/v1alpha1/builds/{buildId}")
     HttpResponse<WaveBuildRecord> getBuildRecord(String buildId) {
@@ -93,9 +89,9 @@ class BuildController {
     @Produces(MediaType.TEXT_PLAIN)
     @Get(value="/v1alpha1/builds/{buildId}/condalock")
     HttpResponse<StreamedFile> getCondaLock(String buildId){
-        if( condaLockService==null )
+        if( logService==null )
             throw new IllegalStateException("Build Logs service not configured")
-        final condaLock = condaLockService.fetchCondaLock(buildId)
+        final condaLock = logService.fetchCondaLock(buildId)
         return condaLock
                 ? HttpResponse.ok(condaLock)
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + buildId  + ".lock\"")

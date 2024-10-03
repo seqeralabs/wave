@@ -34,7 +34,6 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.ContainerRequestData
-import io.seqera.wave.service.conda.CondaLockService
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.logs.BuildLogService
@@ -73,9 +72,6 @@ class ViewControllerTest extends Specification {
 
     @Inject
     private ContainerInspectService inspectService
-
-    @Inject
-    private CondaLockService condaLockService
 
     def 'should return build page mapping' () {
         given:

@@ -1,4 +1,4 @@
-package io.seqera.wave.service.conda
+package io.seqera.wave.service.logs
 
 /**
  * Interface for Conda constants

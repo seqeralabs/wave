@@ -39,4 +39,8 @@ interface BuildLogService {
     StreamedFile fetchLogStream(String buildId)
 
     BuildLog fetchLogString(String buildId)
+
+    void storeCondaLock(String buildId, String condaLock)
+
+    StreamedFile fetchCondaLock(String buildId)
 }

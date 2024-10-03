@@ -31,9 +31,6 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerDigestPair
-import io.seqera.wave.service.builder.BuildFormat
-import io.seqera.wave.service.persistence.WaveCondaLockRecord
-import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildEvent
@@ -320,21 +317,6 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def result2 = persistence.loadScanRecord(SCAN_ID2)
         and:
         result2 == scanRecord2
-    }
-
-    def 'should save and load conda lockfile' (){
-        given:
-        def persistence = applicationContext.getBean(SurrealPersistenceService)
-        def lockfile = "some lockfile content"
-        def buildId = 'build1234'
-        def record = new WaveCondaLockRecord(buildId, lockfile.bytes)
-
-        when:
-        persistence.saveCondaLock(record)
-        sleep 200
-        def loaded = persistence.loadCondaLock(buildId)
-        then:
-        loaded == record
     }
 
     //== mirror records tests

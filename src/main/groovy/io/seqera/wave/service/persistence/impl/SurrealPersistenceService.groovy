@@ -33,7 +33,7 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.mirror.MirrorEntry
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
-import io.seqera.wave.service.persistence.WaveCondaLockRecord
+
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ScanVulnerability
@@ -93,19 +93,6 @@ class SurrealPersistenceService implements PersistenceService {
         final ret5 = surrealDb.sqlAsMap(authorization, "define table wave_mirror SCHEMALESS")
         if( ret5.status != "OK")
             throw new IllegalStateException("Unable to define SurrealDB table wave_mirror - cause: $ret5")
-        // create wave_conda_lock table
-        final ret6 = surrealDb.sqlAsMap(authorization, "DEFINE TABLE wave_conda_lock SCHEMAFULL;")
-        if( ret6.status != "OK")
-            throw new IllegalStateException("Unable to define SurrealDB table wave_conda_lock - cause: $ret6")
-        final ret7 = surrealDb.sqlAsMap(authorization, "DEFINE FIELD buildId ON TABLE wave_conda_lock TYPE number;")
-        if( ret7.status != "OK")
-            throw new IllegalStateException("Unable to define SurrealDB field buildId on table wave_conda_lock - cause: $ret7")
-        final ret8 = surrealDb.sqlAsMap(authorization, "DEFINE FIELD condaLockFile ON TABLE wave_conda_lock TYPE bytes;")
-        if( ret8.status != "OK")
-            throw new IllegalStateException("Unable to define SurrealDB field condaLockFile on table wave_conda_lock - cause: $ret8")
-        final ret9 = surrealDb.sqlAsMap(authorization, "DEFINE INDEX idx_buildId ON TABLE wave_conda_lock COLUMNS buildId UNIQUE;")
-        if( ret9.status != "OK")
-            throw new IllegalStateException("Unable to define SurrealDB index idx_buildId on table wave_conda_lock - cause: $ret9")
     }
 
     protected String getAuthorization() {
@@ -279,37 +266,6 @@ class SurrealPersistenceService implements PersistenceService {
         final statement = "SELECT * FROM wave_scan:$scanId FETCH vulnerabilities"
         final json = surrealDb.sqlAsString(getAuthorization(), statement)
         final type = new TypeReference<ArrayList<SurrealResult<WaveScanRecord>>>() {}
-        final data= json ? JacksonHelper.fromJson(json, type) : null
-        final result = data && data[0].result ? data[0].result[0] : null
-        return result
-    }
-
-    @Override
-    void saveCondaLock(WaveCondaLockRecord condaLock) {
-        final query = """\
-                                INSERT into wave_conda_lock {
-                                    buildId: '$condaLock.buildId',
-                                    condaLockFile: $condaLock.condaLockFile
-                                }""".stripIndent()
-        surrealDb
-                .sqlAsync(getAuthorization(), query)
-                .subscribe({result ->
-                    log.trace "Conda lock for buildId '$condaLock.buildId' saved record: ${result}"
-                },
-                        {error->
-                            def msg = error.message
-                            if( error instanceof HttpClientResponseException ){
-                                msg += ":\n $error.response.body"
-                            }
-                            log.error("Error saving conda lock for buildId: $condaLock.buildId", error)
-                        })
-    }
-
-    @Override
-    WaveCondaLockRecord loadCondaLock(String buildId) {
-        final query = "select * from wave_conda_lock where buildId = '$buildId'"
-        final json = surrealDb.sqlAsString(getAuthorization(), query)
-        final type = new TypeReference<ArrayList<SurrealResult<WaveCondaLockRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
         return result

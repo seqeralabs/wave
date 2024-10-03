@@ -44,7 +44,7 @@ import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.logs.BuildLogServiceImpl
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
-import io.seqera.wave.service.persistence.WaveCondaLockRecord
+
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.ContainerHelper
 import jakarta.inject.Inject
@@ -172,36 +172,19 @@ class BuildControllerTest extends Specification {
 
     def 'should get conda lock file' () {
         given:
-        def build1 = new WaveBuildRecord(
-                buildId: 'test1',
-                dockerFile: 'test1',
-                condaFile: 'test1',
-                targetImage: 'testImage1',
-                userName: 'testUser1',
-                userEmail: 'test1@xyz.com',
-                userId: 1,
-                requestIp: '127.0.0.1',
-                startTime: Instant.now().minus(1, ChronoUnit.DAYS) )
-        def condaLock = "conda lock content"
-        def waveCondaLock = new WaveCondaLockRecord(build1.buildId, condaLock.bytes)
+        def buildId = 'testbuildid1234'
+        def condaLock = "test conda lock"
+        def response = new StreamedFile(new ByteArrayInputStream(condaLock.bytes), MediaType.APPLICATION_OCTET_STREAM_TYPE)
+
+        when:
+        def req = HttpRequest.GET("/v1alpha1/builds/${buildId}/condalock")
+        def res = client.toBlocking().exchange(req, StreamedFile)
+
+        then:
+        1 * buildLogService.fetchCondaLock(buildId) >> response
         and:
-        persistenceService.saveBuild(build1)
-        persistenceService.saveCondaLock(waveCondaLock)
-        sleep(500)
-
-        when:
-        def req = HttpRequest.GET("/v1alpha1/builds/${build1.buildId}/condalock")
-        def res = client.toBlocking().exchange(req, byte[])
-        then:
-        res.status() == HttpStatus.OK
-        new String(res.body()) == condaLock
-        res.header("Content-Disposition") == "attachment; filename=\"${build1.buildId}.lock\""
-
-        when:
-        client.toBlocking().exchange(HttpRequest.GET("/v1alpha1/builds/0000/condalock"), String)
-        then:
-        HttpClientResponseException e = thrown(HttpClientResponseException)
-        e.status == HttpStatus.NOT_FOUND
+        res.code() == 200
+        new String(res.bodyBytes) == condaLock
     }
 
 }

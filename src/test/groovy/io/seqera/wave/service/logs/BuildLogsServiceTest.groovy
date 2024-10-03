@@ -20,14 +20,11 @@ package io.seqera.wave.service.logs
 
 import spock.lang.Specification
 import spock.lang.Unroll
-
-import io.seqera.wave.service.conda.impl.CondaLockServiceImpl
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class BuildLogsServiceTest extends Specification {
+class BuildLogsServiceTest extends Specification{
 
     @Unroll
     def 'should make log key name' () {
@@ -42,25 +39,17 @@ class BuildLogsServiceTest extends Specification {
         '/foo/bar/'     | '123'         | 'foo/bar/123.log'
     }
 
-    def 'should remove conda lockfile from logs' () {
-        def logs = """
-                #9 12.23 logs....
-                #10 12.24 conda_lock_start
-                #10 12.24 # This file may be used to create an environment using:
-                #10 12.24 # \$ conda create --name <env> --file <this file>
-                #10 12.24 # platform: linux-aarch64
-                #10 12.24 @EXPLICIT
-                #10 12.25 conda_lock_end
-                #11 12.26 logs....""".stripIndent()
-        def service = new BuildLogServiceImpl()
+    @Unroll
+    def 'should make conda lock key name' () {
+        expect:
+        new BuildLogServiceImpl(condaLockPrefix: PREFIX).logKey(BUILD) == EXPECTED
 
-        when:
-        def result = service.removeCondaLockFile(logs)
-
-        then:
-        result == """
-             #9 12.23 logs....
-             #11 12.26 logs....""".stripIndent()
+        where:
+        PREFIX          | BUILD         | EXPECTED
+        null            | null          | null
+        null            | '123'         | '123.lock'
+        'foo'           | '123'         | 'foo/123.lock'
+        '/foo/bar/'     | '123'         | 'foo/bar/123.lock'
     }
 
 }
