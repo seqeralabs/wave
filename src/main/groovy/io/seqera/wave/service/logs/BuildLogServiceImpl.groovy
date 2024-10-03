@@ -27,7 +27,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
-import io.micronaut.http.MediaType
 import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.objectstorage.ObjectStorageEntry
 import io.micronaut.objectstorage.ObjectStorageOperations
@@ -43,8 +42,6 @@ import jakarta.inject.Named
 import jakarta.inject.Singleton
 import org.apache.commons.io.input.BoundedInputStream
 import static org.apache.commons.lang3.StringUtils.strip
-import static Conda.CONDA_LOCK_END
-import static Conda.CONDA_LOCK_START
 /**
  * Implements Service  to manage logs from an Object store
  *
@@ -170,15 +167,16 @@ class BuildLogServiceImpl implements BuildLogService {
     }
 
     @Override
-    StreamedFile fetchCondaLock(String buildId) {
+    String fetchCondaLockString(String buildId) {
         final result = fetchCondaLockStream(buildId)
         if( !result )
             return null
-        return new StreamedFile(result.getInputStream(), MediaType.APPLICATION_OCTET_STREAM_TYPE)
+        return result.getInputStream().getText()
 
     }
 
-    private StreamedFile fetchCondaLockStream(String buildId) {
+    @Override
+    StreamedFile fetchCondaLockStream(String buildId) {
         if( !buildId ) return null
         final Optional<ObjectStorageEntry<?>> result = objectStorageOperations.retrieve(condaLockKey(buildId))
         return result.isPresent() ? result.get().toStreamedFile() : null

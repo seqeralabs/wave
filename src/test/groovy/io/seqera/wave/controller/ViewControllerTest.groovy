@@ -95,6 +95,7 @@ class ViewControllerTest extends Specification {
         def binding = controller.renderBuildView(record)
         then:
         1 * buildLogService.fetchLogString('12345') >> new BuildLogService.BuildLog('log content', false)
+        1 * buildLogService.fetchCondaLockString('12345') >> 'conda lock content'
         and:
         binding.build_id == '12345'
         binding.build_containerfile == 'FROM foo'
@@ -106,11 +107,11 @@ class ViewControllerTest extends Specification {
         binding.build_platform == 'linux/amd64'
         binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
+        binding.build_conda_lock_data == 'conda lock content'
         binding.build_format == 'Docker'
         binding.build_log_data == 'log content'
         binding.build_log_truncated == false
         binding.build_log_url == 'http://foo.com/v1alpha1/builds/12345/logs'
-        binding.build_conda_lock_url == 'http://foo.com/v1alpha1/builds/12345/condalock'
         binding.build_success == true
         binding.build_in_progress == false
         binding.build_failed == false

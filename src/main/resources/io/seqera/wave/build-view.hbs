@@ -117,13 +117,6 @@
                 <td><a href="{{scan_url}}">Image scan report</a></td>
             </tr>
         {{/if}}
-
-        {{#if build_success}}
-            {{#if build_conda_lock_url }}
-                <td>Conda lockfile</td>
-                <td><a href="{{build_conda_lock_url}}">Conda lockfile</a></td>
-            {{/if}}
-        {{/if}}
     </table>
 
     <h3>Container file</h3>
@@ -132,6 +125,13 @@
     {{#if build_condafile}}
         <h3>Conda file</h3>
         <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{build_condafile}}</pre>
+    {{/if}}
+
+    {{#if build_success}}
+        {{#if build_conda_lock_data }}
+            <h3>Conda lockfile</h3>
+            <pre style="white-space: pre-wrap; overflow-x: auto; overflow-y: auto; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{build_conda_lock_data}}</pre>
+        {{/if}}
     {{/if}}
 
     {{#if build_log_data}}

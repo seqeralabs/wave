@@ -154,7 +154,7 @@ class ViewController {
         }
         //add conda lock file when available
         if( buildLogService && result.condaFile ) {
-            binding.build_conda_lock_url = "$serverUrl/v1alpha1/builds/${result.buildId}/condalock"
+            binding.build_conda_lock_data = buildLogService.fetchCondaLockString(result.buildId)
         }
         // result the main object
         return binding

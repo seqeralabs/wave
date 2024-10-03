@@ -91,7 +91,7 @@ class BuildController {
     HttpResponse<StreamedFile> getCondaLock(String buildId){
         if( logService==null )
             throw new IllegalStateException("Build Logs service not configured")
-        final condaLock = logService.fetchCondaLock(buildId)
+        final condaLock = logService.fetchCondaLockStream(buildId)
         return condaLock
                 ? HttpResponse.ok(condaLock)
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"conda-env-" + buildId  + ".lock\"")

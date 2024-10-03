@@ -28,6 +28,9 @@ import io.micronaut.http.server.types.files.StreamedFile
  */
 interface BuildLogService {
 
+    String CONDA_LOCK_START = "conda_lock_start"
+    String CONDA_LOCK_END = "conda_lock_end"
+
     @Canonical
     class BuildLog {
         String data
@@ -40,5 +43,7 @@ interface BuildLogService {
 
     BuildLog fetchLogString(String buildId)
 
-    StreamedFile fetchCondaLock(String buildId)
+    String fetchCondaLockString(String buildId)
+
+    StreamedFile fetchCondaLockStream(String buildId)
 }
