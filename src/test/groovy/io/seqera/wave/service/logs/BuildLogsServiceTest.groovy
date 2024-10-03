@@ -43,12 +43,12 @@ class BuildLogsServiceTest extends Specification {
     def 'should remove conda lockfile from logs' () {
         def logs = """
                 #9 12.23 logs....
-                #10 12.24 conda_lock_start
+                #10 12.24 >>>>>>> CONDA_LOCK_START
                 #10 12.24 # This file may be used to create an environment using:
                 #10 12.24 # \$ conda create --name <env> --file <this file>
                 #10 12.24 # platform: linux-aarch64
                 #10 12.24 @EXPLICIT
-                #10 12.25 conda_lock_end
+                #10 12.25 <<<<<<< CONDA_LOCK_END
                 #11 12.26 logs....""".stripIndent()
         def service = new BuildLogServiceImpl()
 
@@ -76,12 +76,12 @@ class BuildLogsServiceTest extends Specification {
     def 'should extract conda lockfile' () {
         def logs = """
                 #9 12.23 logs....
-                #10 12.24 conda_lock_start
+                #10 12.24 >>>>>>> CONDA_LOCK_START
                 #10 12.24 # This file may be used to create an environment using:
                 #10 12.24 # \$ conda create --name <env> --file <this file>
                 #10 12.24 # platform: linux-aarch64
                 #10 12.24 @EXPLICIT
-                #10 12.25 conda_lock_end
+                #10 12.25 <<<<<<< CONDA_LOCK_END
                 #11 12.26 logs....""".stripIndent()
         def service = new BuildLogServiceImpl()
 

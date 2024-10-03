@@ -53,6 +53,10 @@ import static org.apache.commons.lang3.StringUtils.strip
 @Requires(property = 'wave.build.logs.bucket')
 class BuildLogServiceImpl implements BuildLogService {
 
+    private static final String CONDA_LOCK_START = ">>>>>>> CONDA_LOCK_START"
+
+    private static final String CONDA_LOCK_END = "<<<<<<< CONDA_LOCK_END"
+
     @Inject
     @Named('build-logs')
     private ObjectStorageOperations<?, ?, ?> objectStorageOperations
