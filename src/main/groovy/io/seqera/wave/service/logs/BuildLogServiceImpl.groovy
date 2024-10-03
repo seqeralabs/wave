@@ -75,7 +75,7 @@ class BuildLogServiceImpl implements BuildLogService {
     private long maxLength
 
     @Nullable
-    @Value('${wave.build.logs.conda-lock-prefix}')
+    @Value('${wave.build.conda-lock-prefix}')
     private String condaLockPrefix
 
     @Inject
