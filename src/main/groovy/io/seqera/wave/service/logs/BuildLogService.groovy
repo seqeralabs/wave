@@ -28,8 +28,8 @@ import io.micronaut.http.server.types.files.StreamedFile
  */
 interface BuildLogService {
 
-    String CONDA_LOCK_START = "conda_lock_start"
-    String CONDA_LOCK_END = "conda_lock_end"
+    String CONDA_LOCK_START = ">>>>>>> CONDA_LOCK_START"
+    String CONDA_LOCK_END = ">>>>>>> CONDA_LOCK_END"
 
     @Canonical
     class BuildLog {
