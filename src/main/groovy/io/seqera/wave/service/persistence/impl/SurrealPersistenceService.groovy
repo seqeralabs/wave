@@ -33,7 +33,6 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.mirror.MirrorEntry
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
-
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ScanVulnerability

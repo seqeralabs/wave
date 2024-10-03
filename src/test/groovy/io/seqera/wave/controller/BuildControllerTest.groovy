@@ -44,7 +44,6 @@ import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.logs.BuildLogServiceImpl
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
-
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.ContainerHelper
 import jakarta.inject.Inject

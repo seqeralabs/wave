@@ -23,7 +23,6 @@ import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.mirror.MirrorEntry
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
-
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import jakarta.inject.Singleton
