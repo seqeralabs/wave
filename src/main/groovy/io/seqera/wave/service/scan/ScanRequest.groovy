@@ -42,6 +42,8 @@ class ScanRequest {
     /**
      * The request that generated this scan operation, either a container, build or mirror request
      */
+    // TODO, add a type field and add a disambiguation mechanism
+    // all include buildId for backward compatibility 
     final String requestId
 
     /**
