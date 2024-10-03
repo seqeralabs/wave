@@ -288,7 +288,7 @@ class ContainerController {
     protected void storeContainerRequest0(SubmitContainerTokenRequest req, ContainerRequest data, TokenData token, String target, String ip) {
         try {
             final recrd = new WaveContainerRecord(req, data, target, ip, token.expiration)
-            persistenceService.saveContainerRequest(token.value, recrd)
+            persistenceService.saveContainerRequest(recrd)
         }
         catch (Throwable e) {
             log.error("Unable to store container request with token: ${token}", e)
@@ -560,6 +560,12 @@ class ContainerController {
 
     void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException {
         String msg
+        //check conda file size
+        if( req.condaFile && req.condaFile.length() > buildConfig.maxCondaFileSize )
+            throw new BadRequestException("Conda file size exceeds the maximum allowed size of ${buildConfig.maxCondaFileSize} bytes")
+        // check container file size
+        if( req.containerFile && req.containerFile.length() > buildConfig.maxContainerFileSize )
+            throw new BadRequestException("Container file size exceeds the maximum allowed size of ${buildConfig.maxContainerFileSize} bytes")
         // check valid image name
         msg = validationService.checkContainerName(req.containerImage)
         if( msg ) throw new BadRequestException(msg)

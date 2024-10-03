@@ -42,6 +42,12 @@ import static io.seqera.wave.util.DataTimeUtils.parseOffsetDateTime
 class WaveContainerRecord {
 
     /**
+     * wave request id, this will be the token
+     * This is container token and it is named as id for surrealdb requirement
+     */
+    final String id
+
+    /**
      * The Tower user associated with the request
      */
     final User user
@@ -168,6 +174,7 @@ class WaveContainerRecord {
     final String scanId
 
     WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequest data, String waveImage, String addr, Instant expiration) {
+        this.id = data.requestId
         this.user = data.identity.user
         this.workspaceId = request.towerWorkspaceId
         this.containerImage = request.containerImage
@@ -195,6 +202,7 @@ class WaveContainerRecord {
     }
 
     WaveContainerRecord(WaveContainerRecord that, String sourceDigest, String waveDigest) {
+        this.id = that.id
         this.user = that.user
         this.workspaceId = that.workspaceId
         this.containerImage = that.containerImage
