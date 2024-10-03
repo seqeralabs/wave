@@ -94,7 +94,7 @@ class BuildController {
         final condaLock = logService.fetchCondaLock(buildId)
         return condaLock
                 ? HttpResponse.ok(condaLock)
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + buildId  + ".lock\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"conda-env-" + buildId  + ".lock\"")
                 : HttpResponse.<StreamedFile>notFound()
     }
 
