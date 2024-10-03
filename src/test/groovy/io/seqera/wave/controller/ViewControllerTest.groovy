@@ -75,7 +75,7 @@ class ViewControllerTest extends Specification {
 
     def 'should return build page mapping' () {
         given:
-        def controller = new ViewController(serverUrl: 'http://foo.com', buildLogService: buildLogService, condaLockService: condaLockService)
+        def controller = new ViewController(serverUrl: 'http://foo.com', buildLogService: buildLogService)
         and:
         def record = new WaveBuildRecord(
                 buildId: '12345',
