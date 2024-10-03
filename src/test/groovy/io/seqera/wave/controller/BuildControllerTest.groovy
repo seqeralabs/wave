@@ -112,13 +112,13 @@ class BuildControllerTest extends Specification {
 
         when:
         def req = HttpRequest.GET("/v1alpha1/builds/${buildId}/logs")
-        def res = client.toBlocking().exchange(req, StreamedFile)
+        def res = client.toBlocking().exchange(req, String)
 
         then:
         1 * buildLogService.fetchLogStream(buildId) >> response
         and:
         res.code() == 200
-        new String(res.bodyBytes) == LOGS
+        res.body() == LOGS
     }
 
     def 'should get container status' () {
@@ -152,23 +152,6 @@ class BuildControllerTest extends Specification {
         e.status == HttpStatus.NOT_FOUND
     }
 
-    def 'should get container build log' () {
-        given:
-        def buildId = 'testbuildid1234'
-        def LOGS = "test build log"
-        def response = new StreamedFile(new ByteArrayInputStream(LOGS.bytes), MediaType.APPLICATION_OCTET_STREAM_TYPE)
-
-        when:
-        def req = HttpRequest.GET("/v1alpha1/builds/${buildId}/logs")
-        def res = client.toBlocking().exchange(req, StreamedFile)
-
-        then:
-        1 * buildLogService.fetchLogStream(buildId) >> response
-        and:
-        res.code() == 200
-        new String(res.bodyBytes) == LOGS
-    }
-
     def 'should get conda lock file' () {
         given:
         def buildId = 'testbuildid1234'
@@ -177,13 +160,13 @@ class BuildControllerTest extends Specification {
 
         when:
         def req = HttpRequest.GET("/v1alpha1/builds/${buildId}/condalock")
-        def res = client.toBlocking().exchange(req, StreamedFile)
+        def res = client.toBlocking().exchange(req, String)
 
         then:
         1 * buildLogService.fetchCondaLock(buildId) >> response
         and:
         res.code() == 200
-        new String(res.bodyBytes) == condaLock
+        res.body() == condaLock
     }
 
 }

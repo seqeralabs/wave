@@ -20,6 +20,7 @@ package io.seqera.wave.service.logs
 
 import spock.lang.Specification
 import spock.lang.Unroll
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
