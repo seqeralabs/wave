@@ -52,15 +52,15 @@ class WaveContainerRecordTest extends Specification {
                 fingerprint: 'xyz',
                 timestamp: Instant.now().toString() )
         and:
+        def token = '1234'
         def user = new User(id:1)
-        def data = ContainerRequest.of(identity: new PlatformId(user,100), containerImage: 'hello-world', containerFile: 'some docker', containerConfig: cfg, condaFile: 'some conda')
+        def data = ContainerRequest.of(requestId: token, identity: new PlatformId(user,100), containerImage: 'hello-world', containerFile: 'some docker', containerConfig: cfg, condaFile: 'some conda')
         def wave = 'https://wave.io/some/container:latest'
         def addr = '100.200.300.400'
         
         when:
         def exp = Instant.now().plusSeconds(3600)
-        def token = '1234'
-        def container = new WaveContainerRecord(req, data, token, wave, addr, exp)
+        def container = new WaveContainerRecord(req, data, wave, addr, exp)
         then:
         container.id == token
         container.user == user
@@ -96,15 +96,15 @@ class WaveContainerRecordTest extends Specification {
                 cacheRepository: 'cache.docker.io',
                 fingerprint: 'xyz' )
         and:
+        def token = '1234'
         def user = new User(id:1)
-        def data = ContainerRequest.of(identity: new PlatformId(user,100), containerImage: 'hello-world', containerFile: 'some docker', containerConfig: cfg, condaFile: 'some conda')
+        def data = ContainerRequest.of(requestId: token, identity: new PlatformId(user,100), containerImage: 'hello-world', containerFile: 'some docker', containerConfig: cfg, condaFile: 'some conda')
         def wave = 'https://wave.io/some/container:latest'
         def addr = '100.200.300.400'
 
         when:
         def exp = Instant.now().plusSeconds(3600)
-        def token = '1234'
-        def container = new WaveContainerRecord(req, data, token, wave, addr, exp)
+        def container = new WaveContainerRecord(req, data, wave, addr, exp)
         then:
         container.id == token
         container.user == user

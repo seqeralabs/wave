@@ -190,14 +190,14 @@ class ViewControllerTest extends Specification {
         def user = new User(id:1)
         def identity = new PlatformId(user,100)
         and:
-        def data = ContainerRequest.of(identity: identity, containerImage: 'hello-world', containerFile: 'some docker', containerConfig: cfg, condaFile: 'some conda')
+        def token = '12345'
+        def data = ContainerRequest.of(requestId: token, identity: identity, containerImage: 'hello-world', containerFile: 'some docker', containerConfig: cfg, condaFile: 'some conda')
         def wave = 'https://wave.io/some/container:latest'
         def addr = '100.200.300.400'
 
         and:
         def exp = Instant.now().plusSeconds(3600)
-        def token = '12345'
-        def container = new WaveContainerRecord(req, data, token, wave, addr, exp)
+        def container = new WaveContainerRecord(req, data, wave, addr, exp)
 
         when:
         persistenceService.saveContainerRequest(container)
