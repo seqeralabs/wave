@@ -26,7 +26,6 @@ import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.api.ContainerConfig
-import io.seqera.wave.api.FusionVersion
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.tower.User
@@ -41,6 +40,12 @@ import static io.seqera.wave.util.DataTimeUtils.parseOffsetDateTime
 @Canonical
 @CompileStatic
 class WaveContainerRecord {
+
+    /**
+     * wave request id, this will be the token
+     * This is container token and it is named as id for surrealdb requirement
+     */
+    final String id
 
     /**
      * The Tower user associated with the request
@@ -158,7 +163,8 @@ class WaveContainerRecord {
      */
     final String fusionVersion
 
-    WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequestData data, String waveImage, String addr, Instant expiration) {
+    WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequestData data, String token, String waveImage, String addr, Instant expiration) {
+        this.id = token
         this.user = data.identity.user
         this.workspaceId = request.towerWorkspaceId
         this.containerImage = request.containerImage
@@ -184,6 +190,7 @@ class WaveContainerRecord {
     }
 
     WaveContainerRecord(WaveContainerRecord that, String sourceDigest, String waveDigest) {
+        this.id = that.id
         this.user = that.user
         this.workspaceId = that.workspaceId
         this.containerImage = that.containerImage

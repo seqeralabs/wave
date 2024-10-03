@@ -114,15 +114,21 @@ class SurrealPersistenceService implements PersistenceService {
 
     @Override
     void saveBuild(WaveBuildRecord build) {
-        surrealDb.insertBuildAsync(getAuthorization(), build).subscribe({ result->
-            log.trace "Build request with id '$build.buildId' saved record: ${result}"
-        }, {error->
-            def msg = error.message
-            if( error instanceof HttpClientResponseException ){
-                msg += ":\n $error.response.body"
-            }
-            log.error("Error saving Build request record ${msg}\n${build}", error)
-        })
+        // note: use surreal sql in order to by-pass issue with large payload
+        // see https://github.com/seqeralabs/wave/issues/559#issuecomment-2369412170
+        final query = "INSERT INTO wave_build ${JacksonHelper.toJson(build)}"
+        surrealDb
+                .sqlAsync(getAuthorization(), query)
+                .subscribe({result ->
+                    log.trace "Build request with id '$build.buildId' saved record: ${result}"
+                },
+                        {error->
+                            def msg = error.message
+                            if( error instanceof HttpClientResponseException ){
+                                msg += ":\n $error.response.body"
+                            }
+                            log.error("Error saving Build request record ${msg}\n${build}", error)
+                        })
     }
 
     @Override
@@ -181,16 +187,22 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveContainerRequest(String token, WaveContainerRecord data) {
-        surrealDb.insertContainerRequestAsync(authorization, token, data).subscribe({ result->
-            log.trace "Container request with token '$token' saved record: ${result}"
-        }, {error->
-            def msg = error.message
-            if( error instanceof HttpClientResponseException ){
-                msg += ":\n $error.response.body"
-            }
-            log.error("Error saving container request record ${msg}\n${data}", error)
-        })
+    void saveContainerRequest(WaveContainerRecord data) {
+        // note: use surreal sql in order to by-pass issue with large payload
+        // see https://github.com/seqeralabs/wave/issues/559#issuecomment-2369412170
+        final query = "INSERT INTO wave_request ${JacksonHelper.toJson(data)}"
+        surrealDb
+                .sqlAsync(getAuthorization(), query)
+                .subscribe({result ->
+                    log.trace "Container request with token '$data.id' saved record: ${result}"
+                },
+                        {error->
+                            def msg = error.message
+                            if( error instanceof HttpClientResponseException ){
+                                msg += ":\n $error.response.body"
+                            }
+                            log.error("Error saving container request record ${msg}\n${data}", error)
+                        })
     }
 
     void updateContainerRequest(String token, ContainerDigestPair digest) {
@@ -220,9 +232,13 @@ class SurrealPersistenceService implements PersistenceService {
         final json = surrealDb.getContainerRequest(getAuthorization(), token)
         log.trace "Container request with token '$token' loaded: ${json}"
         final type = new TypeReference<ArrayList<SurrealResult<WaveContainerRecord>>>() {}
-        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final data= json ? JacksonHelper.fromJson(patchSurrealId(json,"wave_request"), type) : null
         final result = data && data[0].result ? data[0].result[0] : null
         return result
+    }
+
+    static protected String patchSurrealId(String json, String table) {
+        json.replaceFirst(/"id":\s*"${table}:(\w*)"/) { List<String> it-> /"id":"${it[1]}"/ }
     }
 
     void createScanRecord(WaveScanRecord scanRecord) {

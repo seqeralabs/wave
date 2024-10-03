@@ -49,6 +49,8 @@ import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.test.SurrealDBTestContainer
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
+import org.apache.commons.lang3.RandomStringUtils
+
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  *
@@ -236,6 +238,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
     def 'should load a request record' () {
         given:
+        def largeContainerFile = RandomStringUtils.random(25600, true, true)
         def persistence = applicationContext.getBean(SurrealPersistenceService)
         and:
         def TOKEN = '123abc'
@@ -252,15 +255,15 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 timestamp: Instant.now().toString()
         )
         def user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
-        def data = new ContainerRequestData(new PlatformId(user,100), 'hello-world' )
+        def data = new ContainerRequestData(new PlatformId(user,100), 'hello-world', largeContainerFile )
         def wave = "wave.io/wt/$TOKEN/hello-world"
         def addr = "100.200.300.400"
         def exp = Instant.now().plusSeconds(3600)
         and:
-        def request = new WaveContainerRecord(req, data, wave, addr, exp)
+        def request = new WaveContainerRecord(req, data, TOKEN, wave, addr, exp)
 
         and:
-        persistence.saveContainerRequest(TOKEN, request)
+        persistence.saveContainerRequest(request)
         and:
         sleep 200  // <-- the above request is async, give time to save it
         
@@ -268,7 +271,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def loaded = persistence.loadContainerRequest(TOKEN)
         then:
         loaded == request
-
+        loaded.containerFile == largeContainerFile
 
         // should update the record
         when:
@@ -382,6 +385,49 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def stored = storage.loadMirrorEntry(request.targetImage, request.digest)
         then:
         stored == result
+    }
+
+    def 'should remove surreal table from json' () {
+        given:
+        def json = /{"id":"wave_request:1234abc", "this":"one", "that":123 }/
+        expect:
+        SurrealPersistenceService.patchSurrealId(json, "wave_request")
+                == /{"id":"1234abc", "this":"one", "that":123 }/
+    }
+
+    def 'should save 50KB container and conda file' (){
+        given:
+        def data = RandomStringUtils.random(25600, true, true)
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        final request = new BuildRequest(
+                'container1234',
+                data,
+                data,
+                Path.of("/some/path"),
+                'buildrepo:recipe-container1234',
+                PlatformId.NULL,
+                ContainerPlatform.of('amd64'),
+                'docker.io/my/cache',
+                '127.0.0.1',
+                '{"config":"json"}',
+                null,
+                null,
+                'scan12345',
+                null,
+                BuildFormat.DOCKER,
+                Duration.ofMinutes(1)
+        ).withBuildId('123')
+        and:
+        def result = BuildResult.completed(request.buildId, 1, 'Hello', Instant.now().minusSeconds(60), 'xyz')
+
+        and:
+        def build1 = WaveBuildRecord.fromEvent(new BuildEvent(request, result))
+
+        when:
+        persistence.saveBuild(build1)
+        sleep 100
+        then:
+        persistence.loadBuild(request.buildId) == build1
     }
 
 }

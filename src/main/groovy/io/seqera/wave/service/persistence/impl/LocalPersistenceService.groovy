@@ -70,8 +70,8 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveContainerRequest(String token, WaveContainerRecord data) {
-        requestStore.put(token, data)
+    void saveContainerRequest(WaveContainerRecord data) {
+        requestStore.put(data.id, data)
     }
 
     @Override
