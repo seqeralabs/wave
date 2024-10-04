@@ -286,23 +286,21 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def CVE1 = new ScanVulnerability('cve-1', 'x1', 'title1', 'package1', 'version1', 'fixed1', 'url1')
         def CVE2 = new ScanVulnerability('cve-2', 'x2', 'title2', 'package2', 'version2', 'fixed2', 'url2')
         def CVE3 = new ScanVulnerability('cve-3', 'x3', 'title3', 'package3', 'version3', 'fixed3', 'url3')
-        def scanRecord = new WaveScanRecord(SCAN_ID, BUILD_ID, CONTAINER_IMAGE, NOW, Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3], null, null)
+        def scan = new WaveScanRecord(SCAN_ID, BUILD_ID, null, null, CONTAINER_IMAGE, NOW, Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3], null, null)
         when:
-        persistence.createScanRecord(new WaveScanRecord(SCAN_ID, BUILD_ID, CONTAINER_IMAGE, NOW))
-        persistence.updateScanRecord(scanRecord)
+        persistence.saveScanRecord(scan)
         then:
         def result = persistence.loadScanRecord(SCAN_ID)
         and:
-        result == scanRecord
+        result == scan
 
         when:
         def SCAN_ID2 = 'b2'
         def BUILD_ID2 = '102'
-        def scanRecord2 = new WaveScanRecord(SCAN_ID2, BUILD_ID2, CONTAINER_IMAGE, NOW, Duration.ofSeconds(20), 'FAILED', [CVE1], 1, "Error 'quote'")
+        def scanRecord2 = new WaveScanRecord(SCAN_ID2, BUILD_ID2, null, null, CONTAINER_IMAGE, NOW, Duration.ofSeconds(20), 'FAILED', [CVE1], 1, "Error 'quote'")
         and:
-        persistence.createScanRecord(new WaveScanRecord(SCAN_ID2, BUILD_ID2, CONTAINER_IMAGE, NOW))
         // should save the same CVE into another build
-        persistence.updateScanRecord(scanRecord2)
+        persistence.saveScanRecord(scanRecord2)
         then:
         def result2 = persistence.loadScanRecord(SCAN_ID2)
         and:

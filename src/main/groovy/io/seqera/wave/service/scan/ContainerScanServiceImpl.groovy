@@ -157,7 +157,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         try{
             final scan = scanStore.getScan(scanId)
             return scan
-                    ? new WaveScanRecord(scan.scanId, scan)
+                    ? new WaveScanRecord(scan)
                     : persistenceService.loadScanRecord(scanId)
         }
         catch (Throwable t){
@@ -169,7 +169,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     protected void launch(ScanRequest request) {
         try {
             // create a record to mark the beginning
-            final scan = ScanEntry.pending(request.scanId, request.requestId, request.targetImage)
+            final scan = ScanEntry.create(request)
             if( scanStore.putIfAbsent(scan.scanId, scan) ) {
                 // launch container scan
                 jobService.launchScan(request)
@@ -186,6 +186,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         return new ScanRequest(
                 request.scanId,
                 request.buildId,
+                null,
+                null,
                 request.configJson,
                 request.targetImage,
                 request.platform,
@@ -197,7 +199,9 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         final workDir = request.workDir.resolveSibling(request.scanId)
         return new ScanRequest(
                 request.scanId,
+                null,
                 request.mirrorId,
+                null,
                 request.authJson,
                 request.targetImage,
                 request.platform,
@@ -210,6 +214,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         final authJson = inspectService.credentialsConfigJson(null, request.containerImage, null, request.identity)
         return new ScanRequest(
                 request.scanId,
+                null,
+                null,
                 request.requestId,
                 authJson,
                 request.containerImage,
@@ -265,7 +271,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
             //save scan results in the redis cache
             scanStore.put(scan.scanId, scan)
             // save in the persistent layer
-            persistenceService.updateScanRecord(new WaveScanRecord(scan.scanId, scan))
+            persistenceService.saveScanRecord(new WaveScanRecord(scan))
         }
         catch (Throwable t){
             log.error("Unable to save result - id=${scan.scanId}; cause=${t.message}", t)

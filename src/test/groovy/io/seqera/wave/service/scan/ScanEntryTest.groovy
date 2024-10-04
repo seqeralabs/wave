@@ -54,7 +54,7 @@ class ScanEntryTest extends Specification {
                 )
         then:
         result.scanId == '123'
-        result.requestId == 'build-123'
+        result.buildId == 'build-123'
         result.containerImage == 'docker.io/foo/bar:latest'
         result.startTime == ts
         result.duration == Duration.ofMinutes(1)
@@ -111,10 +111,10 @@ class ScanEntryTest extends Specification {
         def elapsed = Duration.ofMinutes(1)
         def ts = Instant.now().minus(elapsed)
         when:
-        def result = ScanEntry.create('scan-123', 'build-123', 'ubuntu:latest', ts,  Duration.ofMinutes(1), 'XYZ', [cve1])
+        def result = ScanEntry.of(scanId: 'scan-123', buildId: 'build-123', containerImage: 'ubuntu:latest', startTime: ts, duration: Duration.ofMinutes(1), status: 'XYZ', vulnerabilities: [cve1])
         then:
         result.scanId == 'scan-123'
-        result.requestId == 'build-123'
+        result.buildId == 'build-123'
         result.containerImage == 'ubuntu:latest'
         result.startTime == ts
         result.duration == elapsed
@@ -140,7 +140,7 @@ class ScanEntryTest extends Specification {
         def result = scan.success(scan.vulnerabilities)
         then:
         result.scanId == '12345'
-        result.requestId == 'build-12345'
+        result.buildId == 'build-12345'
         result.containerImage == 'docker.io/some:image'
         result.startTime == ts
         nearly(result.duration, elapsed)
@@ -165,7 +165,7 @@ class ScanEntryTest extends Specification {
         def result = scan.failure(1, "Oops something has failed")
         then:
         result.scanId == '12345'
-        result.requestId == 'build-12345'
+        result.buildId == 'build-12345'
         result.containerImage == 'docker.io/some:image'
         result.startTime == ts
         nearly(result.duration, elapsed)
@@ -180,19 +180,19 @@ class ScanEntryTest extends Specification {
         def elapsed = Duration.ofMinutes(1)
         def ts = Instant.now().minus(elapsed)
         and:
-        def request = new ScanRequest(
-                'scan-123',
-                'build-345',
-                'config',
-                'docker.io/foo/bar',
-                ContainerPlatform.DEFAULT,
-                Path.of('/some/path'),
-                ts )
+        def request = ScanRequest.of(
+                scanId:'scan-123',
+                buildId: 'build-345',
+                configJson: 'config',
+                targetImage: 'docker.io/foo/bar',
+                platform: ContainerPlatform.DEFAULT,
+                workDir: Path.of('/some/path'),
+                creationTime: ts )
         when:
         def result = ScanEntry.failure(request)
         then:
         result.scanId == 'scan-123'
-        result.requestId == 'build-345'
+        result.buildId == 'build-345'
         result.containerImage == 'docker.io/foo/bar'
         result.startTime == ts
         nearly(result.duration, elapsed)
@@ -203,14 +203,16 @@ class ScanEntryTest extends Specification {
     def 'should create scan pending' () {
         given:
         def ts = Instant.now()
-
+        def request = ScanRequest.of(scanId: 'sc-123', buildId: 'bd-345', mirrorId: 'mr-1234', requestId: 'rq-123', targetImage: 'docker.io/foo/bar', creationTime: ts)
         when:
-        def scan = ScanEntry.pending('result-123', 'build-345', 'docker.io/foo/bar')
+        def scan = ScanEntry.create(request)
         then:
-        scan.scanId == 'result-123'
-        scan.requestId == 'build-345'
+        scan.scanId == 'sc-123'
+        scan.buildId == 'bd-345'
+        scan.mirrorId == 'mr-1234'
+        scan.requestId == 'rq-123'
         scan.containerImage == 'docker.io/foo/bar'
-        scan.startTime >= ts
+        scan.startTime == ts
         scan.status == ScanEntry.PENDING
         scan.vulnerabilities == []
         scan.exitCode == null

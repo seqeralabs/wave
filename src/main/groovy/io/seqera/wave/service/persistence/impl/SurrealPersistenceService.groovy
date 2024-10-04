@@ -225,7 +225,7 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     static protected String patchSurrealId(String json, String table) {
-        json.replaceFirst(/"id":\s*"${table}:(\w*)"/) { List<String> it-> /"id":"${it[1]}"/ }
+        return json.replaceFirst(/"id":\s*"${table}:(\w*)"/) { List<String> it-> /"id":"${it[1]}"/ }
     }
 
     void createScanRecord(WaveScanRecord scanRecord) {
@@ -234,7 +234,7 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    void updateScanRecord(WaveScanRecord scanRecord) {
+    void saveScanRecord(WaveScanRecord scanRecord) {
         final vulnerabilities = scanRecord.vulnerabilities ?: List.<ScanVulnerability>of()
 
         // save all vulnerabilities
@@ -244,21 +244,24 @@ class SurrealPersistenceService implements PersistenceService {
 
         // compose the list of ids
         final ids = vulnerabilities
-                .collect(it-> "wave_scan_vuln:⟨$it.id⟩")
-                .join(', ')
+                .collect(it-> "wave_scan_vuln:⟨$it.id⟩".toString())
+
+
+        // scan object
+        final copy = scanRecord.clone()
+        copy.vulnerabilities = List.of()
+        final json = JacksonHelper.toJson(copy)
 
         // create the scan record
-        final statement = """\
-                                UPDATE wave_scan:${scanRecord.id} 
-                                SET 
-                                    status = '${scanRecord.status}',
-                                    duration = '${scanRecord.duration}',
-                                    vulnerabilities = ${ids ? "[$ids]" : "[]" },
-                                    exitCode = ${scanRecord.exitCode},
-                                    logs = ${scanRecord.logs ? "'${scanRecord.logs}'" : null} 
-                                """.stripIndent()
+        final statement = "INSERT INTO wave_scan ${patchScanVulnerabilities(json, ids)}".toString()
+        log.debug("Scan insert: $statement")
         final result = surrealDb.sqlAsMap(authorization, statement)
         log.trace "Scan update result=$result"
+    }
+
+    protected String patchScanVulnerabilities(String json, List<String> ids) {
+        final value = "\"vulnerabilities\":${ids.collect(it-> "\"$it\"").toString()}"
+        json.replaceFirst(/"vulnerabilities":\s*\[]/, value)
     }
 
     @Override

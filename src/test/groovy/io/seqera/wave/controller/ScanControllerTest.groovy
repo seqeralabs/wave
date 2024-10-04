@@ -30,7 +30,6 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveScanRecord
-import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
 import jakarta.inject.Inject
@@ -49,11 +48,12 @@ class ScanControllerTest extends Specification {
 
     def "should return 200 and WaveContainerScanRecord "() {
         given:
-        def containerScanService = Mock(ContainerScanService)
         def startTime = Instant.now()
         def duration = Duration.ofMinutes(2)
-        def scanId = '123'
-        def buildId = "testbuildid"
+        def scanId = 'sc123'
+        def buildId = "bd-123"
+        def mirrorId = 'mr-123'
+        def requestId = 'rq-123'
         def containerImage = "testcontainerimage"
         def scanVulnerability = new ScanVulnerability(
                 "id1",
@@ -64,26 +64,29 @@ class ScanControllerTest extends Specification {
                 "fix.version",
                 "url")
         def results = List.of(scanVulnerability)
-        def scanRecord = new WaveScanRecord(
-                                                buildId,
-                                                new ScanEntry(
-                                                        scanId,
-                                                        buildId,
-                                                        containerImage,
-                                                        startTime,
-                                                        duration,
-                                                        'SUCCEEDED',
-                                                        results))
+        def scan = new WaveScanRecord(
+                        new ScanEntry(
+                                scanId,
+                                buildId,
+                                mirrorId,
+                                requestId,
+                                containerImage,
+                                startTime,
+                                duration,
+                                'SUCCEEDED',
+                                results))
         and:
-        persistenceService.createScanRecord(scanRecord)
+        persistenceService.createScanRecord(scan)
 
         when:
-        def req = HttpRequest.GET("/v1alpha1/scans/${scanRecord.id}")
+        def req = HttpRequest.GET("/v1alpha1/scans/${scan.id}")
         def res = client.toBlocking().exchange(req, WaveScanRecord)
 
         then:
-        res.body().id == scanRecord.id
-        res.body().buildId == scanRecord.buildId
+        res.body().id == scan.id
+        res.body().buildId == scan.buildId
+        res.body().mirrorId == scan.mirrorId
+        res.body().requestId == scan.requestId
     }
 
 

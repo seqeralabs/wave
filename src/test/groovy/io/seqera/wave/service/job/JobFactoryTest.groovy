@@ -82,13 +82,13 @@ class JobFactoryTest extends Specification {
         def duration = Duration.ofMinutes(1)
         def config = new ScanConfig(timeout: duration)
         def factory = new JobFactory(scanConfig: config)
-        def request = new ScanRequest(
-                'sc-12345_1',
-                'bd-67890_2',
-                '{ jsonConfig }',
-                'docker.io/foo:bar',
-                ContainerPlatform.of('linux/amd64'),
-                workdir
+        def request = ScanRequest.of(
+                scanId: 'sc-12345_1',
+                buildId: 'bd-67890_2',
+                configJson: '{ jsonConfig }',
+                targetImage: 'docker.io/foo:bar',
+                platform: ContainerPlatform.of('linux/amd64'),
+                workDir: workdir
         )
 
         when:

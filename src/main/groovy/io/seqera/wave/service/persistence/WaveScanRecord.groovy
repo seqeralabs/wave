@@ -37,10 +37,12 @@ import io.seqera.wave.util.StringUtils
 @ToString(includeNames = true, includePackage = false)
 @EqualsAndHashCode
 @CompileStatic
-class WaveScanRecord {
+class WaveScanRecord implements Cloneable {
 
     String id
     String buildId
+    String mirrorId
+    String requestId
     String containerImage
     Instant startTime
     Duration duration
@@ -52,16 +54,11 @@ class WaveScanRecord {
     /* required by jackson deserialization - do not remove */
     WaveScanRecord() {}
 
-    WaveScanRecord(String id, String buildId, String containerImage, Instant startTime) {
-        this.id = StringUtils.surrealId(id)
-        this.buildId = buildId
-        this.containerImage = containerImage
-        this.startTime = startTime
-    }
-
     WaveScanRecord(
             String id,
             String buildId,
+            String mirrorId,
+            String requestId,
             String containerImage,
             Instant startTime,
             Duration duration,
@@ -73,6 +70,8 @@ class WaveScanRecord {
     {
         this.id = StringUtils.surrealId(id)
         this.buildId = buildId
+        this.mirrorId = mirrorId
+        this.requestId = requestId
         this.containerImage = containerImage
         this.startTime = startTime
         this.duration = duration
@@ -84,9 +83,11 @@ class WaveScanRecord {
         this.logs = sanitize0(logs)
     }
 
-    WaveScanRecord(String id, ScanEntry scan) {
-        this.id = StringUtils.surrealId(id)
-        this.buildId = scan.requestId
+    WaveScanRecord(ScanEntry scan) {
+        this.id = StringUtils.surrealId(scan.scanId)
+        this.buildId = scan.buildId
+        this.mirrorId = scan.mirrorId
+        this.requestId = scan.requestId
         this.containerImage = scan.containerImage
         this.startTime = scan.startTime
         this.duration = scan.duration
@@ -122,4 +123,8 @@ class WaveScanRecord {
         return duration != null
     }
 
+    @Override
+    WaveScanRecord clone() {
+        return (WaveScanRecord) super.clone()
+    }
 }

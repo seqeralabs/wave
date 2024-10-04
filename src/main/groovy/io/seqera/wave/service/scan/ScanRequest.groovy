@@ -32,7 +32,6 @@ import io.seqera.wave.core.ContainerPlatform
 @Canonical
 @CompileStatic
 class ScanRequest {
-    static final public String ID_PREFIX = 'sc-'
 
     /**
      * The scan unique id
@@ -40,10 +39,18 @@ class ScanRequest {
     final String scanId
 
     /**
-     * The request that generated this scan operation, either a container, build or mirror request
+     * The container build that generated this scan operation, either a container, build or mirror request
      */
-    // TODO, add a type field and add a disambiguation mechanism
-    // all include buildId for backward compatibility 
+    final String buildId
+
+    /**
+     * The container mirror that generated this scan operation, either a container, build or mirror request
+     */
+    final String mirrorId
+
+    /**
+     * The container request that generated this scan operation, either a container, build or mirror request
+     */
     final String requestId
 
     /**
@@ -70,5 +77,20 @@ class ScanRequest {
      * Scan request creation time
      */
     final Instant creationTime
+
+
+    static ScanRequest of(Map opts) {
+        new ScanRequest(
+                opts.scanId as String,
+                opts.buildId as String,
+                opts.mirrorId as String,
+                opts.requestId as String,
+                opts.configJson as String,
+                opts.targetImage as String,
+                opts.platform as ContainerPlatform,
+                opts.workDir as Path,
+                opts.creationTime as Instant
+        )
+    }
 
 }

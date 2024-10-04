@@ -28,9 +28,6 @@ import io.micronaut.http.client.annotation.Client
 import io.micronaut.retry.annotation.Retryable
 import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.WaveBuildRecord
-import io.seqera.wave.service.persistence.WaveContainerRecord
-import io.seqera.wave.service.mirror.MirrorEntry
-import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ScanVulnerability
 import reactor.core.publisher.Flux

@@ -47,7 +47,17 @@ class ScanEntry implements StateEntry<String>, JobEntry {
     String scanId
 
     /**
-     * The request that original this can. Can be either a container request, build request and mirror request
+     * The build request that original this scan entry
+     */
+    String buildId
+
+    /**
+     * The container mirror request that original this scan entry
+     */
+    String mirrorId
+
+    /**
+     * The container request that original this scan entry
      */
     String requestId
 
@@ -101,9 +111,24 @@ class ScanEntry implements StateEntry<String>, JobEntry {
     @Deprecated
     boolean completed() { done() }
 
+    static ScanEntry create(ScanRequest request) {
+        return new ScanEntry(
+                request.scanId,
+                request.buildId,
+                request.mirrorId,
+                request.requestId,
+                request.targetImage,
+                request.creationTime,
+                null,
+                PENDING,
+                List.of())
+    }
+
     ScanEntry success(List<ScanVulnerability> vulnerabilities){
         return new ScanEntry(
                 this.scanId,
+                this.buildId,
+                this.mirrorId,
                 this.requestId,
                 this.containerImage,
                 this.startTime,
@@ -114,20 +139,33 @@ class ScanEntry implements StateEntry<String>, JobEntry {
     }
 
     ScanEntry failure(Integer exitCode, String logs){
-        return new ScanEntry(this.scanId, this.requestId, this.containerImage, this.startTime, Duration.between(this.startTime, Instant.now()), FAILED, List.of(), exitCode, logs)
+        return new ScanEntry(
+                this.scanId,
+                this.buildId,
+                this.mirrorId,
+                this.requestId,
+                this.containerImage,
+                this.startTime,
+                Duration.between(this.startTime, Instant.now()),
+                FAILED,
+                List.of(),
+                exitCode,
+                logs)
     }
 
     static ScanEntry failure(ScanRequest request){
-        return new ScanEntry(request.scanId, request.requestId, request.targetImage, request.creationTime, Duration.between(request.creationTime, Instant.now()), FAILED, List.of())
+        return new ScanEntry(
+                request.scanId,
+                request.buildId,
+                request.mirrorId,
+                request.requestId,
+                request.targetImage,
+                request.creationTime,
+                Duration.between(request.creationTime, Instant.now()),
+                FAILED,
+                List.of())
     }
 
-    static ScanEntry pending(String scanId, String requestId, String containerImage) {
-        return new ScanEntry(scanId, requestId, containerImage, Instant.now(), null, PENDING, List.of())
-    }
-
-    static ScanEntry create(String scanId, String requestId, String containerImage, Instant startTime, Duration duration1, String status, List<ScanVulnerability> vulnerabilities){
-        return new ScanEntry(scanId, requestId, containerImage, startTime, duration1, status, vulnerabilities)
-    }
 
     Map<String,Integer> summary() {
         final result = new HashMap<String,Integer>()
@@ -139,4 +177,22 @@ class ScanEntry implements StateEntry<String>, JobEntry {
         }
         return result
     }
+
+
+    static ScanEntry of(Map opts){
+        return new ScanEntry(
+                opts.scanId as String,
+                opts.buildId as String,
+                opts.mirrorId as String,
+                opts.requestId as String,
+                opts.containerImage as String,
+                opts.startTime as Instant,
+                opts.duration as Duration,
+                opts.status as String,
+                opts.vulnerabilities as List<ScanVulnerability>,
+                opts.exitCode as Integer,
+                opts.logs as String
+        )
+    }
+
 }
