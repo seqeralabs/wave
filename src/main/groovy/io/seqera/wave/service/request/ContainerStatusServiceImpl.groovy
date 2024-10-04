@@ -200,7 +200,7 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
         if (foundLevels) {
             return new StageResult(
                     false,
-                    "Container security scan operation found one ore more vulnerabilities with severity: ${foundLevels.join(',')}",
+                    "Container security scan operation found one or more vulnerabilities with severity: ${foundLevels.join(',')}",
                     "${serverUrl}/view/scans/${request.scanId}"
             )
         }
@@ -208,7 +208,7 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
         if( scan.summary() ) {
             return new StageResult(
                     true,
-                    "Container security scan operation found one ore more vulnerabilities that are compatible with requested security levels: ${allowedLevels.join(',')}",
+                    "Container security scan operation found one or more vulnerabilities that are compatible with requested security levels: ${allowedLevels.join(',')}",
                     "${serverUrl}/view/scans/${request.scanId}"
             )
         }

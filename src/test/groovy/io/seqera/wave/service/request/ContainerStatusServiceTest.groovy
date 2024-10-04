@@ -63,7 +63,7 @@ class ContainerStatusServiceTest extends Specification {
         and:
         res2 == new ContainerStatusServiceImpl.StageResult(
                 false,
-                "Container security scan operation found one ore more vulnerabilities with severity: MEDIUM",
+                "Container security scan operation found one or more vulnerabilities with severity: MEDIUM",
                 "http://foo.com/view/scans/scan-123"
         )
 
@@ -77,7 +77,7 @@ class ContainerStatusServiceTest extends Specification {
         and:
         res3 == new ContainerStatusServiceImpl.StageResult(
                 false,
-                "Container security scan operation found one ore more vulnerabilities with severity: HIGH,CRITICAL",
+                "Container security scan operation found one or more vulnerabilities with severity: HIGH,CRITICAL",
                 "http://foo.com/view/scans/scan-123"
         )
 
@@ -91,7 +91,7 @@ class ContainerStatusServiceTest extends Specification {
         and:
         res4 == new ContainerStatusServiceImpl.StageResult(
                 true,
-                "Container security scan operation found one ore more vulnerabilities that are compatible with requested security levels: LOW,MEDIUM",
+                "Container security scan operation found one or more vulnerabilities that are compatible with requested security levels: LOW,MEDIUM",
                 "http://foo.com/view/scans/scan-123"
         )
 
@@ -358,7 +358,7 @@ class ContainerStatusServiceTest extends Specification {
         resp.duration == _1min + _2min // build + scan time
         resp.succeeded == false
         resp.vulnerabilities == [HIGH:1]
-        resp.reason == "Container security scan operation found one ore more vulnerabilities with severity: HIGH"
+        resp.reason == "Container security scan operation found one or more vulnerabilities with severity: HIGH"
         resp.detailsUri == "http://foo.com/view/scans/scan-abc"
     }
 
@@ -397,7 +397,7 @@ class ContainerStatusServiceTest extends Specification {
         resp.duration == _1min + _2min // build + scan time
         resp.succeeded == true
         resp.vulnerabilities == [HIGH:1]
-        resp.reason == "Container security scan operation found one ore more vulnerabilities that are compatible with requested security levels: MEDIUM,HIGH"
+        resp.reason == "Container security scan operation found one or more vulnerabilities that are compatible with requested security levels: MEDIUM,HIGH"
         resp.detailsUri == "http://foo.com/view/scans/scan-abc"
     }
 
@@ -474,7 +474,7 @@ class ContainerStatusServiceTest extends Specification {
         resp.duration == _1min + _2min // request time + scan time
         resp.succeeded == false
         resp.vulnerabilities == [HIGH:1]
-        resp.reason == "Container security scan operation found one ore more vulnerabilities with severity: HIGH"
+        resp.reason == "Container security scan operation found one or more vulnerabilities with severity: HIGH"
         resp.detailsUri == "http://foo.com/view/scans/scan-abc"
     }
 
