@@ -279,6 +279,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
     def 'should save a scan and load a result' () {
         given:
         def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def auth = persistence.getAuthorization()
+        def surrealDb = applicationContext.getBean(SurrealClient)
         def NOW = Instant.now()
         def SCAN_ID = 'a1'
         def BUILD_ID = '100'
@@ -286,6 +288,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def CVE1 = new ScanVulnerability('cve-1', 'x1', 'title1', 'package1', 'version1', 'fixed1', 'url1')
         def CVE2 = new ScanVulnerability('cve-2', 'x2', 'title2', 'package2', 'version2', 'fixed2', 'url2')
         def CVE3 = new ScanVulnerability('cve-3', 'x3', 'title3', 'package3', 'version3', 'fixed3', 'url3')
+        def CVE4 = new ScanVulnerability('cve-4', 'x4', 'title4', 'package4', 'version4', 'fixed4', 'url4')
         def scan = new WaveScanRecord(SCAN_ID, BUILD_ID, null, null, CONTAINER_IMAGE, NOW, Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3], null, null)
         when:
         persistence.saveScanRecord(scan)
@@ -293,11 +296,16 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def result = persistence.loadScanRecord(SCAN_ID)
         and:
         result == scan
+        and:
+        surrealDb
+                .sqlAsMap(auth, "select * from wave_scan_vuln")
+                .result
+                .size() == 3
 
         when:
         def SCAN_ID2 = 'b2'
         def BUILD_ID2 = '102'
-        def scanRecord2 = new WaveScanRecord(SCAN_ID2, BUILD_ID2, null, null, CONTAINER_IMAGE, NOW, Duration.ofSeconds(20), 'FAILED', [CVE1], 1, "Error 'quote'")
+        def scanRecord2 = new WaveScanRecord(SCAN_ID2, BUILD_ID2, null, null, CONTAINER_IMAGE, NOW, Duration.ofSeconds(20), 'FAILED', [CVE1, CVE4], 1, "Error 'quote'")
         and:
         // should save the same CVE into another build
         persistence.saveScanRecord(scanRecord2)
@@ -305,6 +313,11 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def result2 = persistence.loadScanRecord(SCAN_ID2)
         and:
         result2 == scanRecord2
+        and:
+        surrealDb
+                .sqlAsMap(auth, "select * from wave_scan_vuln")
+                .result
+                .size() == 4
     }
 
     //== mirror records tests
