@@ -228,11 +228,6 @@ class SurrealPersistenceService implements PersistenceService {
         return json.replaceFirst(/"id":\s*"${table}:(\w*)"/) { List<String> it-> /"id":"${it[1]}"/ }
     }
 
-    void createScanRecord(WaveScanRecord scanRecord) {
-        final result = surrealDb.insertScanRecord(authorization, scanRecord)
-        log.trace "Scan create result=$result"
-    }
-
     @Override
     void saveScanRecord(WaveScanRecord scanRecord) {
         final vulnerabilities = scanRecord.vulnerabilities ?: List.<ScanVulnerability>of()

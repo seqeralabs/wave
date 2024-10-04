@@ -37,12 +37,27 @@
 
     <table cellpadding="4" >
         <tr>
-            <td>Scan ID</td>
+            <td>Scan id</td>
             <td>{{scan_id}}</td>
         </tr>
+        {{! build info }}
+        {{#if build_id}}
+        <tr>
+            <td>Build id</td>
+            <td><a href="{{build_url}}">{{build_id}}</a></td>
+        </tr>
+        {{/if}}
+        {{! mirror info }}
+        {{#if mirror_id}}
+        <tr>
+            <td>Mirror id</td>
+            <td><a href="{{mirror_url}}">{{mirror_id}}</a></td>
+        </tr>
+        {{/if}}
+        {{! request info }}
         {{#if request_id}}
         <tr>
-            <td>{{request_type}}</td>
+            <td>Request id</td>
             <td><a href="{{request_url}}">{{request_id}}</a></td>
         </tr>
         {{/if}}

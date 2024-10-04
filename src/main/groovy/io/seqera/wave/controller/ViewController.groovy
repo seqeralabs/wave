@@ -248,7 +248,8 @@ class ViewController {
     HttpResponse<Map<String,Object>> viewScan(String scanId) {
         final binding = new HashMap(10)
         try {
-            final WaveScanRecord result = loadScanResult(scanId)
+            final result = loadScanRecord(scanId)
+            log.debug "Render scan record=$result"
             makeScanViewBinding(result, binding)
         }
         catch (NotFoundException e){
@@ -270,7 +271,7 @@ class ViewController {
      * @return The {@link ScanEntry} object associated with the specified build ID or throws the exception {@link NotFoundException} otherwise
      * @throws NotFoundException If the a record for the specified build ID cannot be found
      */
-    protected WaveScanRecord loadScanResult(String scanId) {
+    protected WaveScanRecord loadScanRecord(String scanId) {
         if( !scanService )
             throw new HttpResponseException(HttpStatus.SERVICE_UNAVAILABLE, "Scan service is not enabled - Check Wave  configuration setting 'wave.scan.enabled'")
         final scanRecord = scanService.getScanRecord(scanId)
@@ -312,42 +313,22 @@ class ViewController {
         binding.scan_succeeded = result.status == ScanEntry.SUCCEEDED
         binding.scan_exitcode = result.exitCode
         binding.scan_logs = result.logs
+        // build info
+        binding.build_id = result.buildId
+        binding.build_url = result.buildId ? "$serverUrl/view/builds/${result.buildId}" : null
+        // mirror info
+        binding.mirror_id = result.mirrorId
+        binding.mirror_url = result.mirrorId ? "$serverUrl/view/mirrors/${result.mirrorId}" : null
+        // container info
+        binding.request_id = result.requestId
+        binding.request_url = result.requestId ? "$serverUrl/view/containers/${result.requestId}" : null
 
-        binding.request_id = result.buildId
-        binding.request_url = requestUri(result.buildId)
-        binding.request_type = requestType(result.buildId)
         binding.scan_time = formatTimestamp(result.startTime) ?: '-'
         binding.scan_duration = formatDuration(result.duration) ?: '-'
         if ( result.vulnerabilities )
             binding.vulnerabilities = result.vulnerabilities.toSorted().reverse()
 
         return binding
-    }
-
-    protected String requestType(String requestId) {
-        if( !requestId )
-            return null
-        if( requestId.startsWith('bd-') )
-            return 'Build'
-        if( requestId.startsWith('mr-'))
-            return 'Mirror'
-        if( requestId.startsWith('sc-'))
-            return 'Scan'
-        else
-            return "Container"
-    }
-
-    protected String requestUri(String requestId) {
-        if( !requestId )
-            return null
-        if( requestId.startsWith('bd-') )
-            return "$serverUrl/view/builds/${requestId}"
-        if( requestId.startsWith('mr-'))
-            return "$serverUrl/view/mirrors/${requestId}"
-        if( requestId.startsWith('sc-'))
-            return "$serverUrl/view/scans/${requestId}"
-        else
-            return "$serverUrl/view/containers/${requestId}"
     }
 
 }

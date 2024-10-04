@@ -322,7 +322,9 @@ class ContainerScanServiceImplTest extends Specification {
         and:
         def timestamp = Instant.now()
         def request = Mock(ContainerRequest)
-        request.requestId >> 'abc123'
+        request.buildId >> 'bd-1234'
+        request.mirrorId >> 'mr-1234'
+        request.requestId >> 'cr-abc123'
         request.scanId >> 'sc-345'
         request.containerImage >> 'docker.io/foo:bar'
         request.identity >> userId
@@ -335,7 +337,9 @@ class ContainerScanServiceImplTest extends Specification {
         inspectService.credentialsConfigJson(null,'docker.io/foo:bar',null,userId) >> '{docker json config}'
         and:
         scan.scanId == 'sc-345'
-        scan.requestId == 'abc123'
+        scan.buildId == 'bd-1234'
+        scan.mirrorId == null
+        scan.requestId == 'cr-abc123'
         scan.configJson == '{docker json config}'
         scan.targetImage == 'docker.io/foo:bar'
         scan.platform == ContainerPlatform.DEFAULT

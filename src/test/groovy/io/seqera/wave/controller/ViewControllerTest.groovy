@@ -75,7 +75,7 @@ class ViewControllerTest extends Specification {
     @Inject
     private ContainerInspectService inspectService
 
-    def 'should return build page mapping' () {
+    def 'should create build binding' () {
         given:
         def controller = new ViewController(serverUrl: 'http://foo.com', buildLogService: buildLogService)
         and:
@@ -317,13 +317,15 @@ class ViewControllerTest extends Specification {
         binding.build_failed == true
     }
 
-    def 'should render in success scan page' () {
+    def 'should create binding' () {
         given:
         def controller = new ViewController(serverUrl: 'http://foo.com', buildLogService: buildLogService)
         and:
         def result = new WaveScanRecord(
                 '12345',
                 'bd-12345',
+                'mr-12345',
+                'cr-12345',
                 'docker.io/some:image',
                 Instant.now(),
                 Duration.ofMinutes(1),
@@ -343,9 +345,41 @@ class ViewControllerTest extends Specification {
         binding.scan_exitcode == 0
         binding.scan_logs == "Some scan logs"
         binding.vulnerabilities == [new ScanVulnerability(id:'cve-1', severity:'HIGH', title:'test vul', pkgName:'testpkg', installedVersion:'1.0.0', fixedVersion:'1.1.0', primaryUrl:'http://vul/cve-1')]
-        binding.request_url == 'http://foo.com/view/builds/bd-12345'
-        binding.request_id == 'bd-12345'
-        binding.request_type == 'Build'
+        binding.build_id == 'bd-12345'
+        binding.build_url == 'http://foo.com/view/builds/bd-12345'
+        binding.mirror_id == 'mr-12345'
+        binding.mirror_url == 'http://foo.com/view/mirrors/mr-12345'
+        binding.request_id == 'cr-12345'
+        binding.request_url == 'http://foo.com/view/containers/cr-12345'
+    }
+
+    def 'should render scan view page' () {
+        given:
+        def scan = new WaveScanRecord(
+                '12345',
+                'bd-12345',
+                'mr-12345',
+                'cr-12345',
+                'docker.io/some:image',
+                Instant.now(),
+                Duration.ofMinutes(1),
+                ScanEntry.SUCCEEDED,
+                [new ScanVulnerability('cve-1', 'HIGH', 'test vul', 'testpkg', '1.0.0', '1.1.0', 'http://vul/cve-1')],
+                0,
+                "Some scan logs"
+        )
+
+        when:
+        persistenceService.saveScanRecord(scan)
+        and:
+        def request = HttpRequest.GET("/view/scans/${scan.id}")
+        def response = client.toBlocking().exchange(request, String)
+        then:
+        response.body().contains(scan.id)
+        response.body().contains(scan.buildId)
+        response.body().contains(scan.mirrorId)
+        response.body().contains(scan.requestId)
+        response.body().contains(scan.containerImage)
     }
 
     def 'should render mirror page' () {
@@ -415,23 +449,5 @@ class ViewControllerTest extends Specification {
 
     }
 
-    @Unroll
-    def 'should get request uri and name from id' () {
-        given:
-        def service = Mock(ContainerBuildService)
-        def controller = new ViewController(buildService: service, serverUrl: 'http://foo.com')
-
-        expect:
-        controller.requestType(RID) == EXPECTED_TYPE
-        controller.requestUri(RID) == EXPECTED_URI
-        
-        where:
-        RID      | EXPECTED_TYPE    | EXPECTED_URI
-        null     | null             | null
-        '123'    | 'Container'      | 'http://foo.com/view/containers/123'
-        'mr-123' | 'Mirror'         | 'http://foo.com/view/mirrors/mr-123'
-        'bd-123' | 'Build'          | 'http://foo.com/view/builds/bd-123'
-
-    }
 
 }

@@ -214,8 +214,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         final authJson = inspectService.credentialsConfigJson(null, request.containerImage, null, request.identity)
         return new ScanRequest(
                 request.scanId,
-                null,
-                null,
+                !request.mirror ? request.buildId : null,
+                request.mirror ? request.buildId : null,
                 request.requestId,
                 authJson,
                 request.containerImage,
