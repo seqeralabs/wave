@@ -178,7 +178,6 @@ class ScanEntry implements StateEntry<String>, JobEntry {
         return result
     }
 
-
     static ScanEntry of(Map opts){
         return new ScanEntry(
                 opts.scanId as String,

@@ -43,14 +43,14 @@ class ScanEntryTest extends Specification {
         def ts = Instant.now().minus(elapsed)
         def CVE1 = new ScanVulnerability('cve-1', 'x1', 'title1', 'package1', 'version1', 'fixed1', 'url1')
         when:
-        def result = new ScanEntry(
-                    '123',
-                    'build-123',
-                    'docker.io/foo/bar:latest',
-                    ts,
-                    elapsed,
-                    'DONE',
-                    [ CVE1 ]
+        def result = ScanEntry.of(
+                    scanId: '123',
+                    buildId: 'build-123',
+                    containerImage: 'docker.io/foo/bar:latest',
+                    startTime: ts,
+                    duration: elapsed,
+                    status: 'DONE',
+                    vulnerabilities: [ CVE1 ]
                 )
         then:
         result.scanId == '123'
@@ -65,14 +65,14 @@ class ScanEntryTest extends Specification {
     @Unroll
     def 'should validate completed' () {
         when:
-        def result = new ScanEntry(
-                '123',
-                'build-123',
-                'docker.io/foo/bar:latest',
-                Instant.now(),
-                DURATION,
-                'DONE',
-                []
+        def result = ScanEntry.of(
+                scanId: '123',
+                buildId: 'build-123',
+                containerImage: 'docker.io/foo/bar:latest',
+                startTime: Instant.now(),
+                duration: DURATION,
+                status: 'DONE',
+                vulnerabilities:  []
         )
         then:
         result.completed() == EXPECTED
@@ -87,14 +87,13 @@ class ScanEntryTest extends Specification {
     @Unroll
     def 'should validate completed' () {
         when:
-        def result = new ScanEntry(
-                '123',
-                'build-123',
-                'docker.io/foo/bar:latest',
-                Instant.now(),
-                null,
-                STATUS,
-                []
+        def result = ScanEntry.of(
+                scanId: '123',
+                buildId: 'build-123',
+                containerImage: 'docker.io/foo/bar:latest',
+                startTime: Instant.now(),
+                status: STATUS,
+                vulnerabilities: []
         )
         then:
         result.succeeded() == EXPECTED
@@ -128,14 +127,14 @@ class ScanEntryTest extends Specification {
         def elapsed = Duration.ofMinutes(1)
         def ts = Instant.now().minus(elapsed)
         and:
-        def scan = new ScanEntry(
-                '12345',
-                'build-12345',
-                'docker.io/some:image',
-                ts,
-                elapsed,
-                ScanEntry.SUCCEEDED,
-                [cve1] )
+        def scan = ScanEntry.of(
+                scanId: '12345',
+                buildId: 'build-12345',
+                containerImage: 'docker.io/some:image',
+                startTime: ts,
+                duration: elapsed,
+                status: ScanEntry.SUCCEEDED,
+                vulnerabilities: [cve1] )
         when:
         def result = scan.success(scan.vulnerabilities)
         then:
@@ -153,14 +152,14 @@ class ScanEntryTest extends Specification {
         def elapsed = Duration.ofMinutes(1)
         def ts = Instant.now().minus(elapsed)
         and:
-        def scan = new ScanEntry(
-                '12345',
-                'build-12345',
-                'docker.io/some:image',
-                ts,
-                elapsed,
-                ScanEntry.FAILED,
-                [] )
+        def scan = ScanEntry.of(
+                scanId: '12345',
+                buildId: 'build-12345',
+                containerImage: 'docker.io/some:image',
+                startTime:  ts,
+                duration: elapsed,
+                status: ScanEntry.FAILED,
+                vulnerabilities: [] )
         when:
         def result = scan.failure(1, "Oops something has failed")
         then:
@@ -227,7 +226,7 @@ class ScanEntryTest extends Specification {
         def s4 = Mock(ScanVulnerability) { severity>>'high' }
         def s5 = Mock(ScanVulnerability) { severity>>'critical' }
         and:
-        def entry = new ScanEntry(null, null, null, null, null, null, [s1,s2,s3,s4,s5])
+        def entry = ScanEntry.of(vulnerabilities: [s1,s2,s3,s4,s5])
 
         when:
         def result = entry.summary()
