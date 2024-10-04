@@ -3,4 +3,6 @@ wave:
   build:
     logs:
       bucket: "nextflow-ci"
+      prefix: 'wave-build/logs'
+      conda-lock-prefix: 'wave-build/conda-locks'
 ...
