@@ -24,7 +24,6 @@ import java.time.Instant
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
-import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.core.ContainerPlatform
 import jakarta.inject.Singleton
 /**
@@ -47,6 +46,9 @@ class MirrorResult {
     final ContainerPlatform platform
     final Instant creationTime
     final String offsetId
+    final String userName
+    final String userEmail
+    final Long userId
     final String scanId
     final Status status
     final Duration duration
@@ -66,6 +68,9 @@ class MirrorResult {
                 this.platform,
                 this.creationTime,
                 this.offsetId,
+                this.userName,
+                this.userEmail,
+                this.userId,
                 this.scanId,
                 Status.COMPLETED,
                 Duration.between(this.creationTime, Instant.now()),
@@ -74,7 +79,7 @@ class MirrorResult {
         )
     }
 
-    static MirrorResult from(MirrorRequest request) {
+    static MirrorResult of(MirrorRequest request) {
         new MirrorResult(
                 request.mirrorId,
                 request.digest,
@@ -83,25 +88,11 @@ class MirrorResult {
                 request.platform,
                 request.creationTime,
                 request.offsetId,
+                request.identity?.user?.userName,
+                request.identity?.user?.email,
+                request.identity?.user?.id,
                 request.scanId,
                 Status.PENDING
-        )
-    }
-
-    @Deprecated
-    BuildStatusResponse toStatusResponse() {
-        final status = status == Status.COMPLETED
-                ? BuildStatusResponse.Status.COMPLETED
-                : BuildStatusResponse.Status.PENDING
-        final succeeded = exitCode!=null
-                ? exitCode==0
-                : null
-        return new BuildStatusResponse(
-                mirrorId,
-                status,
-                creationTime,
-                duration,
-                succeeded,
         )
     }
 
@@ -131,6 +122,18 @@ class MirrorResult {
 
     String getOffsetId() {
         return offsetId
+    }
+
+    String getUserName() {
+        return userName
+    }
+
+    String getUserEmail() {
+        return userEmail
+    }
+
+    Long getUserId() {
+        return userId
     }
 
     String getScanId() {

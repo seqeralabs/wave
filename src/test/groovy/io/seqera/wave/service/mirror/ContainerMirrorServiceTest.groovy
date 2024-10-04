@@ -74,7 +74,8 @@ class ContainerMirrorServiceTest extends Specification {
                 creds,
                 null,
                 Instant.now(),
-                'GMT'
+                'GMT',
+                Mock(PlatformId)
         )
         and:
         mirrorService.mirrorImage(request)
@@ -98,10 +99,11 @@ class ContainerMirrorServiceTest extends Specification {
                 '{config}',
                 null,
                 Instant.now(),
-                'GMT'
+                'GMT',
+                Mock(PlatformId)
         )
         and:
-        def state = MirrorResult.from(request)
+        def state = MirrorResult.of(request)
         and:
         persistenceService.saveMirrorResult(state)
         when:
@@ -121,7 +123,8 @@ class ContainerMirrorServiceTest extends Specification {
                 '{config}',
                 null,
                 Instant.now(),
-                'GMT'
+                'GMT',
+                Mock(PlatformId)
         )
         and:
         def state = MirrorEntry.of(request)
@@ -144,7 +147,8 @@ class ContainerMirrorServiceTest extends Specification {
                 '{config}',
                 null,
                 Instant.now(),
-                'GMT'
+                'GMT',
+                Mock(PlatformId)
         )
         and:
         def state = MirrorEntry.of(request)
@@ -175,7 +179,8 @@ class ContainerMirrorServiceTest extends Specification {
                 '{config}',
                 null,
                 Instant.now(),
-                'GMT'
+                'GMT',
+                Mock(PlatformId)
         )
         and:
         def state = MirrorEntry.of(request)
@@ -207,7 +212,8 @@ class ContainerMirrorServiceTest extends Specification {
                 '{config}',
                 null,
                 Instant.now(),
-                'GMT'
+                'GMT',
+                Mock(PlatformId)
         )
         and:
         def state = MirrorEntry.of(request)

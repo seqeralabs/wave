@@ -31,6 +31,8 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.mirror.MirrorConfig
 import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.scan.ScanRequest
+import io.seqera.wave.tower.PlatformId
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -118,7 +120,8 @@ class JobFactoryTest extends Specification {
                 '{config}',
                 'sc-123',
                 Instant.now(),
-                "GMT"
+                "GMT",
+                Mock(PlatformId)
         )
 
         when:

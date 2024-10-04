@@ -297,7 +297,8 @@ class ContainerScanServiceImplTest extends Specification {
                 '{config}',
                 'sc-123',
                 timestamp,
-                "GMT"
+                "GMT",
+                Mock(PlatformId)
         )
         
         when:

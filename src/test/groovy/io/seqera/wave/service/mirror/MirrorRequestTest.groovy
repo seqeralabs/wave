@@ -24,6 +24,8 @@ import java.nio.file.Path
 import java.time.Instant
 
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.tower.PlatformId
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -42,7 +44,8 @@ class MirrorRequestTest extends Specification {
                 '{json config}',
                 'sc-123',
                 ts,
-                'utc'
+                'utc',
+                Mock(PlatformId)
         )
         then:
         req.mirrorId

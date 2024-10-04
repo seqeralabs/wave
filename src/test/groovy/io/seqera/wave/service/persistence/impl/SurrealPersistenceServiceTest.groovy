@@ -335,7 +335,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 '{auth json}',
                 'scan-123',
                 Instant.now(),
-                "GMT"
+                "GMT",
+                Mock(PlatformId)
         )
         and:
         storage.initializeDb()
@@ -363,7 +364,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 '{auth json}',
                 'scan-123',
                 Instant.now(),
-                "GMT"
+                "GMT",
+                Mock(PlatformId)
         )
         and:
         storage.initializeDb()

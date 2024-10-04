@@ -392,6 +392,9 @@ class ViewControllerTest extends Specification {
                 ContainerPlatform.DEFAULT,
                 Instant.now(),
                 "GMT",
+                'pditommaso',
+                'paolo@me.com',
+                1,
                 "sc-12456",
                 MirrorResult.Status.COMPLETED,
                 Duration.ofMinutes(1),
@@ -410,6 +413,7 @@ class ViewControllerTest extends Specification {
         response.body().contains(record1.sourceImage)
         response.body().contains(record1.targetImage)
         response.body().contains(record1.digest)
+        response.body().contains(record1.userName)
     }
 
     @Unroll

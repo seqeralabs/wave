@@ -510,7 +510,8 @@ class ContainerController {
                 configJson,
                 scanId,
                 Instant.now(),
-                offset
+                offset,
+                identity
         )
     }
 

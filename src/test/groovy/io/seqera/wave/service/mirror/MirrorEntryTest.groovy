@@ -24,6 +24,8 @@ import java.nio.file.Path
 import java.time.Instant
 
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.tower.PlatformId
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -42,7 +44,8 @@ class MirrorEntryTest extends Specification {
                 '{auth json}',
                 'scan-123',
                 ts,
-                'utc'
+                'utc',
+                Mock(PlatformId)
         )
 
         when:
@@ -53,7 +56,7 @@ class MirrorEntryTest extends Specification {
         and:
         entry.request == request
         and:
-        entry.result == MirrorResult.from(request)
+        entry.result == MirrorResult.of(request)
     }
 
     def 'should validate with result' () {
@@ -68,7 +71,8 @@ class MirrorEntryTest extends Specification {
                 '{auth json}',
                 'scan-123',
                 ts,
-                'utc'
+                'utc',
+                Mock(PlatformId)
         )
 
         when:

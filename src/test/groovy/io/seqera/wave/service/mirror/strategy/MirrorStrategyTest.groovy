@@ -26,6 +26,8 @@ import java.time.Instant
 
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.mirror.MirrorRequest
+import io.seqera.wave.tower.PlatformId
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -46,7 +48,8 @@ class MirrorStrategyTest extends Specification {
                 '{auth json}',
                 'scan-123',
                 Instant.now(),
-                'GMT'
+                'GMT',
+                Mock(PlatformId)
         )
         when:
         def cmd = strategy.copyCommand(request)

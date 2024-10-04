@@ -75,7 +75,7 @@ class MirrorEntry implements StateEntry<String>, JobEntry, RequestIdAware {
      * Create a {@link MirrorEntry} object with the given {@link MirrorRequest} object
      */
     static MirrorEntry of(MirrorRequest request) {
-        new MirrorEntry(request, MirrorResult.from(request))
+        new MirrorEntry(request, MirrorResult.of(request))
     }
 
 }

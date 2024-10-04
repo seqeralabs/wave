@@ -23,8 +23,10 @@ import spock.lang.Specification
 import java.nio.file.Path
 import java.time.Instant
 
-import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.User
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -42,11 +44,12 @@ class MirrorResultTest extends Specification {
                 '{auth json}',
                 'scan-123',
                 Instant.now(),
-                'GMT'
+                'GMT',
+                Mock(PlatformId)
         )
 
         when:
-        def result = MirrorResult.from(request)
+        def result = MirrorResult.of(request)
         then:
         result.mirrorId == request.mirrorId
         result.digest == request.digest
@@ -73,13 +76,17 @@ class MirrorResultTest extends Specification {
                 '{auth json}',
                 'scan-123',
                 ts,
-                'utc+1'
+                'utc+1',
+                new PlatformId(new User(id: 1, userName: 'me', email: 'me@host.com'))
         )
 
         when:
-        def m1 = MirrorResult.from(request)
+        def m1 = MirrorResult.of(request)
         then:
         m1.status == MirrorResult.Status.PENDING
+        m1.userId == 1
+        m1.userName == 'me'
+        m1.userEmail == 'me@host.com'
         m1.duration == null
         m1.exitCode == null
         m1.logs == null
@@ -95,6 +102,9 @@ class MirrorResultTest extends Specification {
         m2.platform == request.platform
         m2.creationTime == request.creationTime
         m2.offsetId == request.offsetId
+        m2.userId == 1
+        m2.userName == 'me'
+        m2.userEmail == 'me@host.com'
         and:
         m2.status == MirrorResult.Status.COMPLETED
         m2.duration != null
@@ -102,31 +112,4 @@ class MirrorResultTest extends Specification {
         m2.logs == 'Some logs'
     }
 
-    def 'should convert to status response' () {
-        when:
-        def result1 = new MirrorResult('mr-123', 'sha256:12345', 'source/foo', 'target/foo', Mock(ContainerPlatform), Instant.now())
-        def resp = result1.toStatusResponse()
-        then:
-        resp.id == result1.mirrorId
-        resp.status == BuildStatusResponse.Status.PENDING
-        resp.startTime == result1.creationTime
-        and:
-        resp.duration == null
-        resp.succeeded == null
-
-        when:
-        final result2 = result1.complete(1, 'Some error')
-        final resp2 = result2.toStatusResponse()
-        then:
-        resp2.duration == result2.duration
-        resp2.succeeded == false
-
-        when:
-        final result3 = result1.complete(0, 'OK')
-        final resp3 = result3.toStatusResponse()
-        then:
-        resp3.duration == result3.duration
-        resp3.succeeded == true
-
-    }
 }

@@ -25,6 +25,7 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.LongRndKey
 /**
  * Model a container mirror request
@@ -88,7 +89,12 @@ class MirrorRequest {
      */
     final String offsetId
 
-    static MirrorRequest create(String sourceImage, String targetImage, String digest, ContainerPlatform platform, Path workspace, String authJson, String scanId, Instant ts, String offsetId) {
+    /**
+     * Platform identity of the user that created this request
+     */
+    final PlatformId identity
+
+    static MirrorRequest create(String sourceImage, String targetImage, String digest, ContainerPlatform platform, Path workspace, String authJson, String scanId, Instant ts, String offsetId, PlatformId identity) {
         assert sourceImage, "Argument 'sourceImage' cannot be null"
         assert targetImage, "Argument 'targetImage' cannot be empty"
         assert workspace, "Argument 'workspace' cannot be null"
@@ -105,7 +111,8 @@ class MirrorRequest {
                 authJson,
                 scanId,
                 ts,
-                offsetId
+                offsetId,
+                identity
         )
     }
 
@@ -147,5 +154,9 @@ class MirrorRequest {
 
     String getOffsetId() {
         return offsetId
+    }
+
+    PlatformId getIdentity() {
+        return identity
     }
 }

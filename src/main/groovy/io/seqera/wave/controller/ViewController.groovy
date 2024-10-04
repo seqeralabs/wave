@@ -107,6 +107,7 @@ class ViewController {
         binding.mirror_target_image = result.targetImage
         binding.mirror_platform = result.platform
         binding.mirror_digest = result.digest ?: '-'
+        binding.mirror_user = result.userName ?: '-'
         binding.put('server_url', serverUrl)
         binding.scan_url = result.scanId && result.succeeded() ? "$serverUrl/view/scans/${result.scanId}" : null
         binding.scan_id = result.scanId
