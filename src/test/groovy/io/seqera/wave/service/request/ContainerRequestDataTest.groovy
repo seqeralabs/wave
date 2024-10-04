@@ -63,8 +63,8 @@ class ContainerRequestDataTest extends Specification {
                 true,
                 true,
                 'scan-1234',
-                ScanMode.sync,
-                List.of(ScanLevel.high),
+                ScanMode.required,
+                List.of(ScanLevel.HIGH),
                 ts
         )
         then:
@@ -80,8 +80,8 @@ class ContainerRequestDataTest extends Specification {
         req.freeze
         req.mirror
         req.scanId == 'scan-1234'
-        req.scanMode == ScanMode.sync
-        req.scanLevels == List.of(ScanLevel.high)
+        req.scanMode == ScanMode.required
+        req.scanLevels == List.of(ScanLevel.HIGH)
         req.creationTime == ts
 
     }

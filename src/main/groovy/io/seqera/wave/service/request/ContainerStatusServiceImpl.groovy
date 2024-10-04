@@ -85,10 +85,10 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
             return createResponse0(BUILDING, request, state)
         }
         else if( !request.scanId ) {
-            return createResponse0(READY, request, state, buildResult(request,state))
+            return createResponse0(DONE, request, state, buildResult(request,state))
         }
 
-        if( request.scanId && request.scanMode == ScanMode.sync && scanService ) {
+        if( request.scanId && request.scanMode == ScanMode.required && scanService ) {
             final scan = scanService.getScanState(request.scanId)
             if ( !scan )
                 throw new NotFoundException("Missing container scan record with id: ${request.scanId}")
@@ -103,7 +103,7 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
             }
         }
 
-        return createResponse0(READY, request, state)
+        return createResponse0(DONE, request, state)
     }
 
     protected ContainerState getContainerState(ContainerRequest request) {
@@ -146,7 +146,7 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
         final result = scanResult(request, scan)
         return new ContainerStatusResponse(
                 request.requestId,
-                READY,
+                DONE,
                 !request.mirror ? request.buildId : null,
                 request.mirror ? request.buildId : null,
                 request.scanId,

@@ -73,7 +73,7 @@ class ContainerStatusServiceTest extends Specification {
         scan.succeeded() >> true
         scan.summary() >> [HIGH:2, CRITICAL:1, MEDIUM: 5]
         request.getScanId() >> 'scan-123'
-        request.getScanLevels() >> [ScanLevel.low, ScanLevel.medium]
+        request.getScanLevels() >> [ScanLevel.LOW, ScanLevel.MEDIUM]
         and:
         res3 == new ContainerStatusServiceImpl.StageResult(
                 false,
@@ -87,7 +87,7 @@ class ContainerStatusServiceTest extends Specification {
         scan.succeeded() >> true
         scan.summary() >> [MEDIUM: 5]
         request.getScanId() >> 'scan-123'
-        request.getScanLevels() >> [ScanLevel.low, ScanLevel.medium]
+        request.getScanLevels() >> [ScanLevel.LOW, ScanLevel.MEDIUM]
         and:
         res4 == new ContainerStatusServiceImpl.StageResult(
                 true,
@@ -101,7 +101,7 @@ class ContainerStatusServiceTest extends Specification {
         scan.succeeded() >> true
         scan.summary() >> [:]
         request.getScanId() >> 'scan-123'
-        request.getScanLevels() >> [ScanLevel.low, ScanLevel.medium]
+        request.getScanLevels() >> [ScanLevel.LOW, ScanLevel.MEDIUM]
         and:
         res5 == new ContainerStatusServiceImpl.StageResult(true)
 
@@ -161,7 +161,7 @@ class ContainerStatusServiceTest extends Specification {
         requestData.buildId >> 'build-123'
         and:
         resp.id == requestId
-        resp.status == ContainerStatus.READY
+        resp.status == ContainerStatus.DONE
         resp.buildId == "build-123"
         resp.mirrorId == null
         resp.scanId == null
@@ -195,7 +195,7 @@ class ContainerStatusServiceTest extends Specification {
         requestData.buildId >> 'build-123'
         and:
         resp.id == requestId
-        resp.status == ContainerStatus.READY
+        resp.status == ContainerStatus.DONE
         resp.buildId == "build-123"
         resp.mirrorId == null
         resp.scanId == null
@@ -228,7 +228,7 @@ class ContainerStatusServiceTest extends Specification {
         requestData.requestId >> requestId
         requestData.buildId >> 'build-123'
         requestData.scanId >> 'scan-abc'
-        requestData.scanMode >> ScanMode.sync
+        requestData.scanMode >> ScanMode.required
         requestData.scanLevels >> List.of()
         and:
         scanService.getScanState('scan-abc') >> Mock(ScanEntry)
@@ -266,13 +266,13 @@ class ContainerStatusServiceTest extends Specification {
         requestData.requestId >> requestId
         requestData.buildId >> 'build-123'
         requestData.scanId >> 'scan-abc'
-        requestData.scanMode >> ScanMode.sync
+        requestData.scanMode >> ScanMode.required
         requestData.scanLevels >> List.of()
         and:
         scanService.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>true  }
         then:
         resp5.id == requestId
-        resp5.status == ContainerStatus.READY
+        resp5.status == ContainerStatus.DONE
         resp5.buildId == "build-123"
         resp5.mirrorId == null
         resp5.scanId == 'scan-abc'
@@ -305,13 +305,13 @@ class ContainerStatusServiceTest extends Specification {
         requestData.requestId >> requestId
         requestData.buildId >> 'build-123'
         requestData.scanId >> 'scan-abc'
-        requestData.scanMode >> ScanMode.sync
+        requestData.scanMode >> ScanMode.required
         requestData.scanLevels >> List.of()
         and:
         scanService.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>false  }
         then:
         resp.id == requestId
-        resp.status == ContainerStatus.READY
+        resp.status == ContainerStatus.DONE
         resp.buildId == "build-123"
         resp.mirrorId == null
         resp.scanId == 'scan-abc'
@@ -344,13 +344,13 @@ class ContainerStatusServiceTest extends Specification {
         requestData.requestId >> requestId
         requestData.buildId >> 'build-123'
         requestData.scanId >> 'scan-abc'
-        requestData.scanMode >> ScanMode.sync
+        requestData.scanMode >> ScanMode.required
         requestData.scanLevels >> List.of()
         and:
         scanService.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>true; summary()>>[HIGH:1]  }
         then:
         resp.id == requestId
-        resp.status == ContainerStatus.READY
+        resp.status == ContainerStatus.DONE
         resp.buildId == "build-123"
         resp.mirrorId == null
         resp.scanId == 'scan-abc'
@@ -383,13 +383,13 @@ class ContainerStatusServiceTest extends Specification {
         requestData.requestId >> requestId
         requestData.buildId >> 'build-123'
         requestData.scanId >> 'scan-abc'
-        requestData.scanMode >> ScanMode.sync
-        requestData.scanLevels >> List.of(ScanLevel.medium,ScanLevel.high)
+        requestData.scanMode >> ScanMode.required
+        requestData.scanLevels >> List.of(ScanLevel.MEDIUM,ScanLevel.HIGH)
         and:
         scanService.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>true; summary()>>[HIGH:1]  }
         then:
         resp.id == requestId
-        resp.status == ContainerStatus.READY
+        resp.status == ContainerStatus.DONE
         resp.buildId == "build-123"
         resp.mirrorId == null
         resp.scanId == 'scan-abc'
@@ -422,12 +422,12 @@ class ContainerStatusServiceTest extends Specification {
         requestData.buildId >> 'build-123'
         requestData.scanId >> 'scan-abc'
         requestData.scanMode >> ScanMode.none
-        requestData.scanLevels >> List.of(ScanLevel.medium,ScanLevel.high)
+        requestData.scanLevels >> List.of(ScanLevel.MEDIUM,ScanLevel.HIGH)
         and:
         0 * scanService.getScanState('scan-abc') >> null
         then:
         resp.id == requestId
-        resp.status == ContainerStatus.READY
+        resp.status == ContainerStatus.DONE
         resp.buildId == "build-123"
         resp.mirrorId == null
         resp.scanId == 'scan-abc'
@@ -460,13 +460,13 @@ class ContainerStatusServiceTest extends Specification {
         requestData.requestId >> requestId
         requestData.buildId >>  null
         requestData.scanId >> 'scan-abc'
-        requestData.scanMode >> ScanMode.sync
+        requestData.scanMode >> ScanMode.required
         requestData.scanLevels >> List.of()
         and:
         scanService.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>true; summary()>>[HIGH:1]; getStartTime()>>startTime  }
         then:
         resp.id == requestId
-        resp.status == ContainerStatus.READY
+        resp.status == ContainerStatus.DONE
         resp.buildId == null
         resp.mirrorId == null
         resp.scanId == 'scan-abc'
@@ -499,13 +499,13 @@ class ContainerStatusServiceTest extends Specification {
         requestData.requestId >> requestId
         requestData.buildId >>  null
         requestData.scanId >> 'scan-abc'
-        requestData.scanMode >> ScanMode.sync
+        requestData.scanMode >> ScanMode.required
         requestData.scanLevels >> List.of()
         and:
         scanService.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>true; summary()>>null; getStartTime()>>startTime  }
         then:
         resp.id == requestId
-        resp.status == ContainerStatus.READY
+        resp.status == ContainerStatus.DONE
         resp.buildId == null
         resp.mirrorId == null
         resp.scanId == 'scan-abc'
@@ -573,7 +573,7 @@ class ContainerStatusServiceTest extends Specification {
         requestData.mirror >> true
         and:
         resp.id == requestId
-        resp.status == ContainerStatus.READY
+        resp.status == ContainerStatus.DONE
         resp.buildId == null
         resp.mirrorId == "build-123"
         resp.scanId == null
@@ -608,7 +608,7 @@ class ContainerStatusServiceTest extends Specification {
         requestData.mirror >> true
         and:
         resp.id == requestId
-        resp.status == ContainerStatus.READY
+        resp.status == ContainerStatus.DONE
         resp.buildId == null
         resp.mirrorId == "build-123"
         resp.scanId == null

@@ -145,7 +145,7 @@ class ContainerHelper {
         final tokenId = !data.durable() ? token.value : null
         final status = data.buildNew || data.scanId
                 ? ContainerStatus.PENDING
-                : ContainerStatus.READY
+                : ContainerStatus.DONE
         return new SubmitContainerTokenResponse(data.requestId, tokenId, target, expiration, data.containerImage, build, cached, data.freeze, data.mirror, data.scanId, status)
     }
 
