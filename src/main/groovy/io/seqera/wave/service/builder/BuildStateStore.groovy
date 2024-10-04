@@ -76,6 +76,8 @@ interface BuildStateStore {
      */
     boolean storeIfAbsent(String imageName, BuildEntry build)
 
+    Tuple3<Boolean,BuildEntry,Integer> storeIfAbsentAndInc(String imageName, BuildEntry build)
+
     /**
      * Remove the build status for the given image name
      *

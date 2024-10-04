@@ -84,7 +84,7 @@ class RedisStateProvider implements StateProvider<String,String> {
      *
      * If the key already exists return the current key value.
      */
-    static final private String PUT_AND_INCREMENT = """
+    static final private String PUT_AND_INC = """
         if redis.call('EXISTS', KEYS[1]) == 0 then
             redis.call('SET', KEYS[1], ARGV[1], 'PX', ARGV[2])
             local counter_value = redis.call('INCR', KEYS[2])
@@ -94,10 +94,33 @@ class RedisStateProvider implements StateProvider<String,String> {
         end
         """
 
+    // same as above, but using hincr for the counter
+    static final private String PUT_AND_HINCRBY = """
+        if redis.call('EXISTS', KEYS[1]) == 0 then
+            redis.call('SET', KEYS[1], ARGV[1], 'PX', ARGV[2])
+            local counter_value = redis.call('HINCRBY', KEYS[2], KEYS[3], 1)
+            return {1, ARGV[1], counter_value} 
+        else
+            return {0, redis.call('GET', KEYS[1]), redis.call('HGET', KEYS[2], KEYS[3])}
+        end
+        """
+
+    protected eval0(Jedis jedis, String key, String value, Duration ttl, String counterKey) {
+        final buildPrefix = 'build-counters/v1/'
+        if( counterKey.startsWith(buildPrefix) ) {
+            final field = counterKey.substring(buildPrefix.size())
+            final kount = counterKey.substring(0,buildPrefix.size()-1)
+            return jedis.eval(PUT_AND_HINCRBY, 3, key, kount, field, value, ttl.toMillis().toString())
+        }
+        else {
+            return jedis.eval(PUT_AND_INC, 2, key, counterKey, value, ttl.toMillis().toString())
+        }
+    }
+
     @Override
     Tuple3<Boolean,String,Integer> putIfAbsent(String key, String value, Duration ttl, String counterKey) {
         try( Jedis jedis=pool.getResource() )  {
-            final result = jedis.eval(PUT_AND_INCREMENT, 2, key, counterKey, value, ttl.toMillis().toString());
+            final result = eval0(jedis, key, value, ttl, counterKey)
             return new Tuple3<>((result as List)[0] == 1,
                     (result as List)[1] as String,
                     (result as List)[2] as Integer)

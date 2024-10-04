@@ -25,6 +25,7 @@ import java.time.Duration
 
 import io.micronaut.context.ApplicationContext
 import io.seqera.wave.test.RedisTestContainer
+import redis.clients.jedis.JedisPool
 
 class RedisStateProviderTest extends Specification implements RedisTestContainer {
 
@@ -181,4 +182,59 @@ class RedisStateProviderTest extends Specification implements RedisTestContainer
         result.v2 == 'foo'
         result.v3 == 2
     }
+
+    def 'should get and put if absent and increment with legacy build counter' () {
+        given:
+        def ttlMillis = 100
+        def k = UUID.randomUUID().toString()
+        def c = 'build-counters/v1/key1'
+
+        expect:
+        provider.get(k) == null
+
+        when:
+        def result = provider.putIfAbsent(k, 'foo', Duration.ofMillis(ttlMillis), c)
+        then:
+        result.v1
+        result.v2 == 'foo'
+        result.v3 == 1
+        and:
+        provider.get(k) == 'foo'
+        and:
+        applicationContext
+                .getBean(JedisPool)
+                .getResource()
+                .hget('build-counters/v1', 'key1') == '1'
+
+        when:
+        sleep(2 *ttlMillis)
+        and:
+        result = provider.putIfAbsent(k, 'foo', Duration.ofMillis(ttlMillis), c)
+        then:
+        result.v1
+        result.v2 == 'foo'
+        result.v3 == 2
+        and:
+        applicationContext
+                .getBean(JedisPool)
+                .getResource()
+                .hget('build-counters/v1', 'key1') == '2'
+
+    }
+
+//    def 'should validate legacy counter' () {
+//        given:
+//        def _1sec = Duration.ofSeconds(1)
+//        def jedis = Mock(Jedis)
+//        def pool = Mock(JedisPool) { getResource() >> jedis }
+//        def provider = Spy(new RedisStateProvider(pool:pool))
+//
+//        when:
+//        def result = provider.putIfAbsent('key1', 'val1', _1sec, 'counter')
+//        then:
+//        1 * jedis.eval(_ as String, 2, 'key1', 'counter', 'val1', '60000') >>  {[1, 'xx', 3]}
+//        and:
+//        result == new Tuple3<>(true, 'xx', 3)
+//
+//    }
 }

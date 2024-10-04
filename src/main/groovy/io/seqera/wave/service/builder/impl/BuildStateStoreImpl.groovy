@@ -90,6 +90,16 @@ class BuildStateStoreImpl extends AbstractStateStore<BuildEntry> implements Buil
     }
 
     @Override
+    protected String counter0(String key, BuildEntry build) {
+        "build-counters/v1/" + build.request.containerId
+    }
+
+    @Override
+    Tuple3<Boolean,BuildEntry,Integer> storeIfAbsentAndInc(String imageName, BuildEntry build) {
+        putIfAbsentAndCount(imageName, build)
+    }
+
+    @Override
     void removeBuild(String imageName) {
         remove(imageName)
     }

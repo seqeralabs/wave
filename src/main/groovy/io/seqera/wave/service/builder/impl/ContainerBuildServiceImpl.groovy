@@ -40,7 +40,6 @@ import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.HttpServerRetryableErrorException
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
-import io.seqera.wave.service.builder.BuildCounterStore
 import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
@@ -110,9 +109,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
 
     @Inject
     private StreamService streamService
-
-    @Inject
-    private BuildCounterStore buildCounter
 
     @Inject
     private PersistenceService persistenceService
@@ -220,17 +216,19 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     }
 
     protected BuildTrack checkOrSubmit(BuildRequest request) {
-        // find next build number
-        final num = buildCounter.inc(request.containerId)
-        request.withCount(String.valueOf(num))
         // try to store a new build status for the given target image
         // this returns true if and only if such container image was not set yet
-        final ret1 = BuildResult.create(request)
-        if( buildStore.storeIfAbsent(request.targetImage, new BuildEntry(request, ret1)) ) {
+        final result = buildStore.storeIfAbsentAndInc(request.targetImage, new BuildEntry(request, BuildResult.create(request)))
+        if( result.v1 ) {
+            // update the counter and store it again
+            final count = result.v3
+            final incRequest = request.withCount(count)
+            buildStore.storeBuild(request.targetImage, new BuildEntry(incRequest, BuildResult.create(incRequest)))
+
             // go ahead
             log.info "== Container build submitted - request=$request"
             launchAsync(request)
-            return new BuildTrack(ret1.id, request.targetImage, false)
+            return new BuildTrack(request.buildId, request.targetImage, false)
         }
         // since it was unable to initialise the build result status
         // this means the build status already exists, retrieve it

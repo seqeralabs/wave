@@ -265,7 +265,12 @@ class BuildRequest {
         format==SINGULARITY
     }
 
+    @Deprecated
     BuildRequest withCount(String id) {
+        return withCount(id as Long)
+    }
+
+    BuildRequest withCount(Long id) {
         this.buildId = ID_PREFIX + containerId + SEP + id
         this.workDir = workspace.resolve(buildId).toAbsolutePath()
         return this

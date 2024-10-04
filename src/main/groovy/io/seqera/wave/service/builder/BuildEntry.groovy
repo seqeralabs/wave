@@ -45,8 +45,6 @@ class BuildEntry implements StateEntry<String>, JobEntry, RequestIdAware {
 
     @Override
     String getRequestId() {
-        if( !request.buildId )
-            throw new IllegalStateException("Missing build id")
         return request.buildId
     }
 
