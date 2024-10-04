@@ -102,14 +102,16 @@ namespace wave {
   @route("validate-creds")
     @post op validateCreds(@body request: ValidateRegistryCredsRequest):  boolean;
 
-    @route("/v1alpha1/mirrors/{mirrorId}")
-     interface getMirrorRecord {
-       @post op inspectContainer(@path mirrorId: string): {
-         @body response: ContainerMirrorResponse;
-         @statusCode statusCode: 200;
-        }|{
-         @statusCode statusCode: 404;
-        };
+  @route("/v1alpha1/mirrors")
+  interface getMirrorRecord {
 
-     }
+    @route("/{mirrorId}")
+    @get op containerMirror(@path mirrorId: string): {
+      @body response: ContainerMirrorResponse;
+      @statusCode statusCode: 200;
+     }|{
+      @statusCode statusCode: 404;
+    };
+  }
+
 }
