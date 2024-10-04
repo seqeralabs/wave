@@ -38,7 +38,7 @@ trait AwsS3TestContainer {
         awsS3Container = new GenericContainer<>("localstack/localstack:3.8.0")
                 .withExposedPorts(4566)
                 .withEnv("SERVICES", "s3")
-                .withEnv("DEFAULT_REGION", "us-east-1")
+                .withEnv("DEFAULT_REGION", "eu-west-1")
                 .withEnv("EDGE_PORT", "4566")
                 .waitingFor(Wait.forHttp("/_localstack/health").forStatusCode(200))
                 .withStartupTimeout(Duration.ofMinutes(1))

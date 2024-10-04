@@ -108,9 +108,9 @@ class BuildLogsServiceTest extends Specification implements AwsS3TestContainer {
 
     def 'should extract conda lockfile from s3' (){
         given:
-        S3Client s3Client = S3Client.builder()
+        def s3Client = S3Client.builder()
                 .endpointOverride(URI.create("http://${awsS3HostName}:${awsS3Port}"))
-                .region(Region.US_EAST_1)
+                .region(Region.EU_WEST_1)
                 .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("accesskey", "secretkey")))
                 .forcePathStyle(true)
                 .build()
