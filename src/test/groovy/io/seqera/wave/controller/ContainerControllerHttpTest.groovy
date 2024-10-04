@@ -20,6 +20,7 @@ package io.seqera.wave.controller
 
 import spock.lang.Specification
 
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
 import io.micronaut.context.annotation.Property
@@ -34,6 +35,7 @@ import io.micronaut.objectstorage.aws.AwsS3Configuration
 import io.micronaut.objectstorage.aws.AwsS3Operations
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
@@ -392,6 +394,7 @@ class ContainerControllerHttpTest extends Specification implements AwsS3TestCont
         given:
         def request = new SubmitContainerTokenRequest(
                 packages: new PackagesSpec(channels: ['conda-forge'], entries: ['xz'], type: 'CONDA'),
+                containerPlatform: 'arm64',
                 buildRepository: "test/repository",
                 cacheRepository: "test/cache",
 
@@ -403,14 +406,33 @@ class ContainerControllerHttpTest extends Specification implements AwsS3TestCont
         def res = httpClient
                 .toBlocking()
                 .exchange(HttpRequest.POST("/v1alpha2/container",request), SubmitContainerTokenResponse).body()
-
-        sleep 30_000 //wait for build to complete an push the image, because logs will be available after that
-
+        and:
+        awaitBuild(res.buildId)
+        and:
         res = httpClient
                 .toBlocking()
                 .exchange(HttpRequest.GET("/v1alpha1/builds/$res.buildId/condalock"), String).body()
 
         then:
         res.contains('conda create --name <env> --file <this file>')
+    }
+
+    boolean awaitBuild(String buildId) {
+        long startTime = System.currentTimeMillis()
+        long timeout = 60000
+        long checkInterval = 5000
+        while (System.currentTimeMillis() - startTime < timeout) {
+            def res = httpClient
+                    .toBlocking()
+                    .exchange(HttpRequest.GET("/v1alpha1/builds/$buildId/status"), BuildStatusResponse)
+                    .body()
+
+            if (res.status == BuildStatusResponse.Status.COMPLETED) {
+                return true
+            }
+            sleep checkInterval
+        }
+
+        return false
     }
 }
