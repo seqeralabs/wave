@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.mirror
 
+import io.seqera.wave.configuration.MirrorConfig
+
 import java.time.Duration
 
 import groovy.transform.CompileStatic

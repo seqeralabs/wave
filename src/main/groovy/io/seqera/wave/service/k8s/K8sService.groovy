@@ -26,7 +26,7 @@ import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.ScanConfig
-import io.seqera.wave.service.mirror.MirrorConfig
+import io.seqera.wave.configuration.MirrorConfig
 
 /**
  * Defines Kubernetes operations
