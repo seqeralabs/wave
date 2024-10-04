@@ -392,7 +392,7 @@ class ViewControllerTest extends Specification {
                 ContainerPlatform.DEFAULT,
                 Instant.now(),
                 "GMT",
-                "scan-12456",
+                "sc-12456",
                 MirrorResult.Status.COMPLETED,
                 Duration.ofMinutes(1),
                 0,
@@ -406,6 +406,10 @@ class ViewControllerTest extends Specification {
         def response = client.toBlocking().exchange(request, String)
         then:
         response.body().contains(record1.mirrorId)
+        response.body().contains(record1.scanId)
+        response.body().contains(record1.sourceImage)
+        response.body().contains(record1.targetImage)
+        response.body().contains(record1.digest)
     }
 
     @Unroll

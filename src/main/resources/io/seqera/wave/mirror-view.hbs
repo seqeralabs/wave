@@ -73,23 +73,18 @@
         </tr>
 
         <tr>
-            <td>User</td>
-            <td>{{mirror_user}}</td>
+            <td>Source container</td>
+            <td>{{mirror_source_image}}</td>
         </tr>
-
+    
         <tr>
-            <td>Container image</td>
-            <td>{{mirror_image}}</td>
+            <td>Target container</td>
+            <td>{{mirror_target_image}}</td>
         </tr>
 
         <tr>
             <td>Container digest</td>
             <td>{{mirror_digest}}</td>
-        </tr>
-
-        <tr>
-            <td>Image format</td>
-            <td>{{mirror_format}}</td>
         </tr>
 
         <tr>
@@ -107,10 +102,22 @@
             <td>{{mirror_duration}}</td>
         </tr>
 
+        {{#if mirror_exitcode}}
         <tr>
             <td>Exit status</td>
-            <td>{{mirror_exit_status}}</td>
+            <td>{{mirror_exitcode}}</td>
         </tr>
+        {{/if}}
+
+       {{#if mirror_logs}}
+       <tr>
+            <td colspan="2">
+            <h3>Logs</h3>
+            <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{mirror_logs}}</pre>
+            </td>
+        </tr>
+        {{/if}}
+
         {{#if scan_url}}
             <tr>
                 <td>Security scan</td>

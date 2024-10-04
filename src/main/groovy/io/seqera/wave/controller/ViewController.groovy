@@ -99,10 +99,12 @@ class ViewController {
         binding.mirror_success = result.succeeded()
         binding.mirror_failed = result.exitCode  && result.exitCode != 0
         binding.mirror_in_progress = result.exitCode == null
-        binding.mirror_exit_status = result.exitCode
+        binding.mirror_exitcode = result.exitCode ?: null
+        binding.mirror_logs = result.exitCode ? result.logs : null
         binding.mirror_time = formatTimestamp(result.creationTime, result.offsetId) ?: '-'
         binding.mirror_duration = formatDuration(result.duration) ?: '-'
-        binding.mirror_image = result.targetImage
+        binding.mirror_source_image = result.sourceImage
+        binding.mirror_target_image = result.targetImage
         binding.mirror_platform = result.platform
         binding.mirror_digest = result.digest ?: '-'
         binding.put('server_url', serverUrl)
