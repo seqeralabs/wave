@@ -28,7 +28,7 @@ import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.auth.RegistryAuth
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
@@ -77,7 +77,7 @@ class MoshiEncodingStrategyTest extends Specification {
         when:
         def build = encoder.decode(json)
         then:
-        build.id == '100'
+        build.buildId == '100'
         build.exitStatus == 1
         build.logs == 'logs'
         build.startTime == Instant.parse('2022-12-03T22:27:04.079724Z')
@@ -86,15 +86,15 @@ class MoshiEncodingStrategyTest extends Specification {
 
     def 'should encode and decode ContainerRequestData' () {
         given:
-        def encoder = new MoshiEncodeStrategy<ContainerRequestData>() { }
+        def encoder = new MoshiEncodeStrategy<ContainerRequest>() { }
         and:
-        def data = new ContainerRequestData(
-                new PlatformId(new User(id:1),2),
-                'ubuntu',
-                'from foo',
-                new ContainerConfig(entrypoint: ['some', 'entry'], cmd:['the', 'cmd']),
-                'some/conda/file',
-                ContainerPlatform.of('amd64') )
+        def data = ContainerRequest.of(
+                identity: new PlatformId(new User(id:1),2),
+                containerImage:  'ubuntu',
+                containerFile:  'from foo',
+                containerConfig:  new ContainerConfig(entrypoint: ['some', 'entry'], cmd:['the', 'cmd']),
+                condaFile: 'some/conda/file',
+                platform: ContainerPlatform.of('amd64') )
 
         when:
         def json = encoder.encode(data)
@@ -137,7 +137,7 @@ class MoshiEncodingStrategyTest extends Specification {
             }
             '''
         and:
-        def encoder = new MoshiEncodeStrategy<ContainerRequestData>() { }
+        def encoder = new MoshiEncodeStrategy<ContainerRequest>() { }
 
         when:
         def result = encoder.decode(REQUEST)
@@ -337,8 +337,9 @@ class MoshiEncodingStrategyTest extends Specification {
                 ip: "1.2.3.4",
                 configJson:  '{"config":"json"}',
                 scanId: 'scan12345',
-                buildContext: context )
-                .withBuildId('1')
+                buildContext: context,
+                buildId: '12345_1',
+        )
         def result = new BuildResult(build.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         def event = new BuildEvent(build, result)
 
@@ -427,8 +428,9 @@ class MoshiEncodingStrategyTest extends Specification {
                 ip: "1.2.3.4",
                 configJson:  '{"config":"json"}',
                 scanId: 'scan12345',
-                buildContext: context )
-                .withBuildId('1')
+                buildContext: context,
+                buildId: '12345_1',
+        )
         and:
         def entry = new BuildEntry(req, res)
         when:

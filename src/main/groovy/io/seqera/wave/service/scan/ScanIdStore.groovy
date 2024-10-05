@@ -16,58 +16,41 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.token
+package io.seqera.wave.service.scan
 
 import java.time.Duration
 
 import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
-import io.seqera.wave.configuration.TokenConfig
+import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.store.state.AbstractStateStore
 import io.seqera.wave.store.state.impl.StateProvider
+import jakarta.inject.Inject
 import jakarta.inject.Singleton
+
 /**
- * Implements a cache store for {@link ContainerRequestData}
- *
+ * Implements a store strategy for scan ids
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Slf4j
 @Singleton
 @CompileStatic
-class ContainerTokenStoreImpl extends AbstractStateStore<ContainerRequestData> implements ContainerTokenStore {
+class ScanIdStore extends AbstractStateStore<ScanId> {
 
-    private TokenConfig tokenConfig
+    @Inject
+    private ScanConfig config
 
-    ContainerTokenStoreImpl(StateProvider<String, String> delegate, TokenConfig tokenConfig) {
-        super(delegate, new MoshiEncodeStrategy<ContainerRequestData>(){})
-        this.tokenConfig = tokenConfig
-        log.info "Creating Tokens cache store ― duration=${tokenConfig.cache.duration}"
+    ScanIdStore(StateProvider<String, String> provider) {
+        super(provider, new MoshiEncodeStrategy<ScanId>() {})
     }
 
     @Override
     protected String getPrefix() {
-        return 'wave-tokens/v1:'
+        return 'wave-scanid/v1:'
     }
 
     @Override
     protected Duration getDuration() {
-        return tokenConfig.cache.duration
-    }
-
-    @Override
-    ContainerRequestData get(String key) {
-        return super.get(key)
-    }
-
-    @Override
-    void put(String key, ContainerRequestData value) {
-        super.put(key, value)
-    }
-
-    @Override
-    void remove(String key) {
-        super.remove(key)
+        return config.scanIdDuration
     }
 }

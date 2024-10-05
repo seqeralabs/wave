@@ -21,10 +21,15 @@ package io.seqera.wave.store.state.impl
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
+import io.seqera.wave.store.state.CountResult
 import jakarta.inject.Singleton
+import org.luaj.vm2.Globals
+import org.luaj.vm2.LuaValue
+import org.luaj.vm2.lib.jse.JsePlatform
 
 /**
  * Simple cache store implementation for development purpose
@@ -53,6 +58,8 @@ class LocalStateProvider implements StateProvider<String,String> {
     }
 
     private Map<String,Entry<String>> store = new ConcurrentHashMap<>()
+
+    private Map<String, AtomicInteger> counters = new ConcurrentHashMap<>()
 
     @Override
     String get(String key) {
@@ -85,6 +92,27 @@ class LocalStateProvider implements StateProvider<String,String> {
     @Override
     boolean putIfAbsent(String key, String value, Duration ttl) {
         return putIfAbsent0(key, value, ttl) == null
+    }
+
+    @Override
+    synchronized CountResult<String> putJsonIfAbsentAndIncreaseCount(String key, String json, Duration ttl, String counterKey, String luaScript) {
+        final done = putIfAbsent0(key, json, ttl) == null
+        final addr = counters
+                .computeIfAbsent(counterKey, (it)-> new AtomicInteger())
+        if( done ) {
+            final count = addr.incrementAndGet()
+            // apply the conversion
+            Globals globals = JsePlatform.standardGlobals()
+            globals.set('value', LuaValue.valueOf(json))
+            globals.set('counter_value', LuaValue.valueOf(count))
+            LuaValue chunk = globals.load("return $luaScript;");
+            LuaValue result = chunk.call();
+            // store the result
+            put(key, result.toString(), ttl)
+            return new CountResult<String>(true, result.toString(), count)
+        }
+        else
+            return new CountResult<String>(false, get(key), addr.get())
     }
 
     private String putIfAbsent0(String key, String value, Duration ttl) {

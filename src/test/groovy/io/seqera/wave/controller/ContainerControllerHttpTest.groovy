@@ -36,7 +36,7 @@ import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.exchange.DescribeWaveContainerResponse
-import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.PairingServiceImpl
@@ -299,7 +299,7 @@ class ContainerControllerHttpTest extends Specification {
 
         when:
         def req = HttpRequest.DELETE("/container-token/$waveToken").basicAuth("username", "password")
-        def deleteResp = httpClient.toBlocking().exchange(req, ContainerRequestData)
+        def deleteResp = httpClient.toBlocking().exchange(req, ContainerRequest)
 
         then:
         deleteResp.status.code == 200

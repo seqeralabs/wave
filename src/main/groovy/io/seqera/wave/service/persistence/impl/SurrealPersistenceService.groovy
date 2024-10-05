@@ -31,6 +31,7 @@ import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.mirror.MirrorEntry
+import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
@@ -162,7 +163,7 @@ class SurrealPersistenceService implements PersistenceService {
         final query = """
             select * 
             from wave_build 
-            where buildId ~ '${containerId}${BuildRequest.SEP}' 
+            where buildId ~ '${BuildRequest.ID_PREFIX}${containerId}${BuildRequest.SEP}' 
             order by startTime desc limit 1
             """.stripIndent()
         final json = surrealDb.sqlAsString(getAuthorization(), query)
@@ -224,16 +225,11 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     static protected String patchSurrealId(String json, String table) {
-        json.replaceFirst(/"id":\s*"${table}:(\w*)"/) { List<String> it-> /"id":"${it[1]}"/ }
-    }
-
-    void createScanRecord(WaveScanRecord scanRecord) {
-        final result = surrealDb.insertScanRecord(authorization, scanRecord)
-        log.trace "Scan create result=$result"
+        return json.replaceFirst(/"id":\s*"${table}:(\w*)"/) { List<String> it-> /"id":"${it[1]}"/ }
     }
 
     @Override
-    void updateScanRecord(WaveScanRecord scanRecord) {
+    void saveScanRecord(WaveScanRecord scanRecord) {
         final vulnerabilities = scanRecord.vulnerabilities ?: List.<ScanVulnerability>of()
 
         // save all vulnerabilities
@@ -243,19 +239,24 @@ class SurrealPersistenceService implements PersistenceService {
 
         // compose the list of ids
         final ids = vulnerabilities
-                .collect(it-> "wave_scan_vuln:⟨$it.id⟩")
-                .join(', ')
+                .collect(it-> "wave_scan_vuln:⟨$it.id⟩".toString())
+
+
+        // scan object
+        final copy = scanRecord.clone()
+        copy.vulnerabilities = List.of()
+        final json = JacksonHelper.toJson(copy)
 
         // create the scan record
-        final statement = """\
-                                UPDATE wave_scan:${scanRecord.id} 
-                                SET 
-                                    status = '${scanRecord.status}',
-                                    duration = '${scanRecord.duration}',
-                                    vulnerabilities = ${ids ? "[$ids]" : "[]" } 
-                                """.stripIndent()
+        final statement = "INSERT INTO wave_scan ${patchScanVulnerabilities(json, ids)}".toString()
+        log.debug("Scan insert: $statement")
         final result = surrealDb.sqlAsMap(authorization, statement)
         log.trace "Scan update result=$result"
+    }
+
+    protected String patchScanVulnerabilities(String json, List<String> ids) {
+        final value = "\"vulnerabilities\":${ids.collect(it-> "\"$it\"").toString()}"
+        json.replaceFirst(/"vulnerabilities":\s*\[]/, value)
     }
 
     @Override
@@ -278,10 +279,10 @@ class SurrealPersistenceService implements PersistenceService {
      * @param mirrorId The ID of the mirror record
      * @return The corresponding {@link MirrorEntry} object or null if it cannot be found
      */
-    MirrorEntry loadMirrorEntry(String mirrorId) {
+    MirrorResult loadMirrorResult(String mirrorId) {
         final query = "select * from wave_mirror where mirrorId = '$mirrorId'"
         final json = surrealDb.sqlAsString(getAuthorization(), query)
-        final type = new TypeReference<ArrayList<SurrealResult<MirrorEntry>>>() {}
+        final type = new TypeReference<ArrayList<SurrealResult<MirrorResult>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
         return result
@@ -294,10 +295,10 @@ class SurrealPersistenceService implements PersistenceService {
      * @param digest The image content SHA256 digest
      * @return The corresponding {@link MirrorEntry} object or null if it cannot be found
      */
-    MirrorEntry loadMirrorEntry(String targetImage, String digest) {
+    MirrorResult loadMirrorResult(String targetImage, String digest) {
         final query = "select * from wave_mirror where targetImage = '$targetImage' and digest = '$digest'"
         final json = surrealDb.sqlAsString(getAuthorization(), query)
-        final type = new TypeReference<ArrayList<SurrealResult<MirrorEntry>>>() {}
+        final type = new TypeReference<ArrayList<SurrealResult<MirrorResult>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
         return result
@@ -309,7 +310,7 @@ class SurrealPersistenceService implements PersistenceService {
      * @param mirror {@link MirrorEntry} object
      */
     @Override
-    void saveMirrorEntry(MirrorEntry mirror) {
+    void saveMirrorResult(MirrorResult mirror) {
         surrealDb.insertMirrorAsync(getAuthorization(), mirror).subscribe({ result->
             log.trace "Mirror request with id '$mirror.mirrorId' saved record: ${result}"
         }, {error->

@@ -16,11 +16,15 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service
+package io.seqera.wave.service.request
 
 import spock.lang.Specification
 
+import java.time.Instant
+
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.ScanLevel
+import io.seqera.wave.api.ScanMode
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
@@ -29,14 +33,14 @@ import io.seqera.wave.tower.User
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class ContainerRequestDataTest extends Specification {
+class ContainerRequestTest extends Specification {
 
     def 'should return request identity' () {
         given:
-        ContainerRequestData req
+        ContainerRequest req
 
         when:
-        req = new ContainerRequestData(new PlatformId(new User(id:1)))
+        req = ContainerRequest.of(new PlatformId(new User(id:1)))
         then:
         req.identity
         req.identity == new PlatformId(new User(id:1))
@@ -44,45 +48,50 @@ class ContainerRequestDataTest extends Specification {
 
     def 'should validate constructor' () {
         when:
+        def ts = Instant.now()
         def cfg = Mock(ContainerConfig)
-        def req = new ContainerRequestData(
+        def req = new ContainerRequest(
+                'r-1234',
                 new PlatformId(new User(id:1)),
                 'foo',
                 'from docker',
                 cfg,
                 'conda file',
                 ContainerPlatform.DEFAULT,
-                '12345',
+                'build-12345',
                 true,
                 true,
-                true )
+                true,
+                'scan-1234',
+                ScanMode.required,
+                List.of(ScanLevel.HIGH),
+                ts
+        )
         then:
+        req.requestId == 'r-1234'
         req.identity == new PlatformId(new User(id:1))
         req.containerImage == 'foo'
         req.containerFile == 'from docker'
         req.containerConfig == cfg
         req.condaFile == 'conda file'
         req.platform == ContainerPlatform.DEFAULT
-        req.buildId == '12345'
+        req.buildId == 'build-12345'
         req.buildNew
         req.freeze
         req.mirror
+        req.scanId == 'scan-1234'
+        req.scanMode == ScanMode.required
+        req.scanLevels == List.of(ScanLevel.HIGH)
+        req.creationTime == ts
 
     }
 
     def 'should validate durable flag' () {
         given:
-        def req = new ContainerRequestData(
-                new PlatformId(new User(id:1)),
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                FREEZE,
-                MIRROR )
+        def req = ContainerRequest.of(
+                identity: new PlatformId(new User(id:1)),
+                freeze: FREEZE,
+                mirror: MIRROR )
 
         expect:
         req.durable() == EXPECTED

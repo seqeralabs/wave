@@ -40,11 +40,10 @@ import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.HttpServerRetryableErrorException
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
-import io.seqera.wave.service.builder.BuildCounterStore
+import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
-import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildStateStore
 import io.seqera.wave.service.builder.BuildTrack
 import io.seqera.wave.service.builder.ContainerBuildService
@@ -55,6 +54,7 @@ import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
+import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.stream.StreamService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.Retryable
@@ -111,9 +111,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     private StreamService streamService
 
     @Inject
-    private BuildCounterStore buildCounter
-
-    @Inject
     private PersistenceService persistenceService
 
     @Inject
@@ -121,6 +118,10 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
 
     @Inject
     private RegistryProxyService proxyService
+
+    @Inject
+    @Nullable
+    private ContainerScanService scanService
     
     /**
      * Build a container image for the given {@link io.seqera.wave.service.builder.BuildRequest}
@@ -215,17 +216,17 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     }
 
     protected BuildTrack checkOrSubmit(BuildRequest request) {
-        // find next build number
-        final num = buildCounter.inc(request.containerId)
-        request.withBuildId(String.valueOf(num))
         // try to store a new build status for the given target image
         // this returns true if and only if such container image was not set yet
-        final ret1 = BuildResult.create(request)
-        if( buildStore.storeIfAbsent(request.targetImage, new BuildEntry(request, ret1)) ) {
-            // go ahead
+        final result = buildStore.putIfAbsentAndCount(request.targetImage, BuildEntry.create(request))
+        if( result.succeed ) {
+            // NOTE: when the entry is stored, the buildId is automatically incremented
+            // therefore the request reference should be overridden
+            request = result.value.request
+            // go ahead with the launch
             log.info "== Container build submitted - request=$request"
             launchAsync(request)
-            return new BuildTrack(ret1.id, request.targetImage, false)
+            return new BuildTrack(request.buildId, request.targetImage, false)
         }
         // since it was unable to initialise the build result status
         // this means the build status already exists, retrieve it
@@ -235,7 +236,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
             // note: mark as cached only if the build result is 'done'
             // if the build is still in progress it should be marked as not cached
             // so that the client will wait for the container completion
-            return new BuildTrack(ret2.id, request.targetImage, ret2.done())
+            return new BuildTrack(ret2.buildId, request.targetImage, ret2.done())
         }
         // invalid state
         throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")
@@ -328,13 +329,12 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
                 ? buildConfig.statusDuration
                 : buildConfig.failureDuration
         // update build status store
-        final exit = state.exitCode!=null ? state.exitCode : -1
         final result = state.completed()
-                ? BuildResult.completed(buildId, exit, state.stdout, job.creationTime, digest)
+                ? BuildResult.completed(buildId, state.exitCode, state.stdout, job.creationTime, digest)
                 : BuildResult.failed(buildId, state.stdout, job.creationTime)
         buildStore.storeBuild(job.entryKey, entry.withResult(result), ttl)
         eventPublisher.publishEvent(new BuildEvent(entry.request, result))
-        log.info "== Container build completed '${entry.request.targetImage}' - operation=${job.operationName}; exit=${exit}; status=${state.status}; duration=${result.duration}"
+        log.info "== Container build completed '${entry.request.targetImage}' - operation=${job.operationName}; exit=${state.exitCode}; status=${state.status}; duration=${result.duration}"
     }
 
     @Override
@@ -362,6 +362,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     protected void onBuildEvent(BuildEvent event) {
         final record0 = WaveBuildRecord.fromEvent(event)
         persistenceService.saveBuild(record0)
+        scanService?.scanOnBuild(event)
     }
 
     /**
@@ -378,8 +379,12 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
                 : persistenceService.loadBuild(buildId)
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     WaveBuildRecord getLatestBuild(String containerId) {
         return persistenceService.latestBuild(containerId)
     }
+
 }

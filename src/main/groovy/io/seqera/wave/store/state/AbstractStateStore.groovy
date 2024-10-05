@@ -24,7 +24,7 @@ import groovy.transform.CompileStatic
 import io.seqera.wave.encoder.EncodingStrategy
 import io.seqera.wave.store.state.impl.StateProvider
 /**
- * Implements a generic cache store
+ * Implements a generic store for ephemeral state data
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -47,7 +47,40 @@ abstract class AbstractStateStore<V> implements StateStore<String,V> {
     protected String key0(String k) { return getPrefix() + k  }
 
     protected String requestId0(String requestId) {
+        if( !requestId )
+            throw new IllegalStateException("Argument 'requestId' cannot be null")
         return getPrefix() + 'request-id/' + requestId
+    }
+
+    /**
+     * Defines the counter for auto-increment operations. By default
+     * uses the entry "key". Subclasses can provide a custom logic to use a
+     * different counter key.
+     *
+     * @param key
+     *      The entry for which the increment should be performed
+     * @param value
+     *      The entry value for which the increment should be performed
+     * @return
+     *      The counter key that by default is the entry key.
+     */
+    protected String counterKey(String key, V value) {
+        return key
+    }
+
+    /**
+     * Defines the Lua script that's applied to increment the entry counter.
+     *
+     * It assumes the entry is serialised as JSON object and it contains a {@code count} attribute
+     * that will be update with the store counter value.
+     *
+     * @return The Lua script used to increment the entry count.
+     */
+    protected String counterScript() {
+        // NOTE:
+        // "value" is expected to be a Lua variable holding the JSON object
+        // "counter_value" is expected to be a Lua variable holding the new count value
+        /string.gsub(value, '"count"%s*:%s*(%d+)', '"count":' .. counter_value)/
     }
 
     protected V deserialize(String encoded) {
@@ -56,10 +89,6 @@ abstract class AbstractStateStore<V> implements StateStore<String,V> {
 
     protected String serialize(V value) {
         return encodingStrategy.encode(value)
-    }
-
-    protected String getRaw(String key) {
-        delegate.get(key)
     }
 
     @Override
@@ -73,6 +102,7 @@ abstract class AbstractStateStore<V> implements StateStore<String,V> {
         return get(key)
     }
 
+    @Override
     void put(String key, V value) {
         put(key, value, getDuration())
     }
@@ -94,8 +124,28 @@ abstract class AbstractStateStore<V> implements StateStore<String,V> {
         return result
     }
 
+    @Override
     boolean putIfAbsent(String key, V value) {
         return putIfAbsent(key, value, getDuration())
+    }
+
+    CountResult<V> putIfAbsentAndCount(String key, V value) {
+        putIfAbsentAndCount(key, value, getDuration())
+    }
+
+    CountResult<V> putIfAbsentAndCount(String key, V value, Duration ttl) {
+        final result = delegate.putJsonIfAbsentAndIncreaseCount(
+                key0(key),
+                serialize(value),
+                ttl,
+                counterKey(key,value),
+                counterScript())
+        // update the `value` with the result one
+        final updated = deserialize(result.value)
+        if( result && updated instanceof RequestIdAware ) {
+            delegate.put(requestId0(updated.getRequestId()), key, ttl)
+        }
+        return new CountResult<V>( result.succeed, updated, result.count)
     }
 
     @Override

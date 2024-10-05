@@ -18,14 +18,15 @@
 
 package io.seqera.wave.service.mirror.strategy
 
-import io.seqera.wave.service.mirror.MirrorRequest
-
 import spock.lang.Specification
 import spock.lang.Unroll
 
 import java.nio.file.Path
+import java.time.Instant
 
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.mirror.MirrorRequest
+import io.seqera.wave.tower.PlatformId
 
 /**
  *
@@ -44,7 +45,12 @@ class MirrorStrategyTest extends Specification {
                 'sha256:12345',
                 PLATFORM ? ContainerPlatform.of(PLATFORM) : null,
                 Path.of('/workspace'),
-                '{auth json}')
+                '{auth json}',
+                'scan-123',
+                Instant.now(),
+                'GMT',
+                Mock(PlatformId)
+        )
         when:
         def cmd = strategy.copyCommand(request)
         then:
@@ -55,7 +61,7 @@ class MirrorStrategyTest extends Specification {
         null            | "copy --preserve-digests --multi-arch all docker://source.io/foo docker://target.io/foo"
         'linux/amd64'   | "--override-os linux --override-arch amd64 copy --preserve-digests --multi-arch system docker://source.io/foo docker://target.io/foo"
         'linux/arm64'   | "--override-os linux --override-arch arm64 copy --preserve-digests --multi-arch system docker://source.io/foo docker://target.io/foo"
-        'linux/arm64/7'| "--override-os linux --override-arch arm64 --override-variant 7 copy --preserve-digests --multi-arch system docker://source.io/foo docker://target.io/foo"
+        'linux/arm64/7' | "--override-os linux --override-arch arm64 --override-variant 7 copy --preserve-digests --multi-arch system docker://source.io/foo docker://target.io/foo"
 
     }
 
