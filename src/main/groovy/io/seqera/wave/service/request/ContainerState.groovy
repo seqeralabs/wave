@@ -29,6 +29,7 @@ import io.seqera.wave.service.mirror.MirrorEntry
 import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.WaveBuildRecord
 /**
+ * Model the state of container request
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
