@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.storage
+package io.seqera.wave.service.scan
 
 import spock.lang.Specification
 
@@ -28,14 +28,13 @@ import jakarta.inject.Inject
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-class ManifestCacheStoreTest extends Specification {
+class ScanStateStoreTest extends Specification {
 
-    @Inject
-    ManifestCacheStore store
+    @Inject ScanStateStore store
 
     def 'should return entry key' () {
         expect:
-        store.key0('foo') == 'wave-blobs/v1:foo'
+        store.key0('foo') == 'wave-scan/v1:foo'
     }
 
 }

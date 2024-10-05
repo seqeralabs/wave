@@ -16,26 +16,30 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.storage
+package io.seqera.wave.service.mirror
 
 import spock.lang.Specification
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import jakarta.inject.Inject
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-class ManifestCacheStoreTest extends Specification {
+class MirrorStateStoreTest extends Specification {
 
     @Inject
-    ManifestCacheStore store
+    MirrorStateStore store
 
     def 'should return entry key' () {
         expect:
-        store.key0('foo') == 'wave-blobs/v1:foo'
+        store.key0('foo') == 'wave-mirror/v1:foo'
+    }
+
+    def 'should return record id' () {
+        expect:
+        store.requestId0('foo') == 'wave-mirror/v1:request-id/foo'
     }
 
 }

@@ -32,8 +32,12 @@ import jakarta.inject.Inject
 @MicronautTest
 class ScanIdStoreLocalTest extends Specification {
 
-    @Inject
-    ScanIdStore store
+    @Inject ScanIdStore store
+
+    def 'should return entry key' () {
+        expect:
+        store.key0('foo') == 'wave-scanid/v1:foo'
+    }
 
     def 'should get scan id' () {
         given:

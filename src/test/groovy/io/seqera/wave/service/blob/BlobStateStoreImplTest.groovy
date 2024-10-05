@@ -43,6 +43,12 @@ class BlobStateStoreImplTest extends Specification {
     @Inject
     StateProvider<String, String> provider
 
+    def 'should return entry key' () {
+        expect:
+        store.key0('foo') == 'wave-blobcache/v1:foo'
+    }
+
+
     def 'should get and store an entry' () {
         given:
         def key = UUID.randomUUID().toString()
