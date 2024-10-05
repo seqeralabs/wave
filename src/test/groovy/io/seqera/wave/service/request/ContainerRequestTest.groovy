@@ -33,7 +33,7 @@ import io.seqera.wave.tower.User
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class ContainerRequestDataTest extends Specification {
+class ContainerRequestTest extends Specification {
 
     def 'should return request identity' () {
         given:
