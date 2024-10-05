@@ -194,8 +194,8 @@ class BuildRequest {
         this.scanId = opts.scanId
         this.buildContext = opts.buildContext as BuildContext
         this.format = opts.format as BuildFormat
-        this.buildId = opts.buildId
         this.maxDuration = opts.maxDuration as Duration
+        this.buildId = opts.buildId
     }
 
     @Override

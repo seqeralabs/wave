@@ -137,7 +137,7 @@ class ContainerBuildServiceTest extends Specification {
         and:
         def store = Mock(BuildStateStore)
         def jobService = Mock(JobService)
-        def builder = new ContainerBuildServiceImpl(buildStateStore: store, buildConfig: buildConfig, jobService: jobService)
+        def builder = new ContainerBuildServiceImpl(buildStore: store, buildConfig: buildConfig, jobService: jobService)
         def RESPONSE = Mock(JobSpec)
           
         when:
@@ -350,7 +350,7 @@ class ContainerBuildServiceTest extends Specification {
         def mockBuildStore = Mock(BuildStateStore)
         def mockProxyService = Mock(RegistryProxyService)
         def mockEventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
-        def service = new ContainerBuildServiceImpl(buildStateStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
+        def service = new ContainerBuildServiceImpl(buildStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
         def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
         def state = JobState.succeeded('logs')
         def res = BuildResult.create('1')
@@ -378,7 +378,7 @@ class ContainerBuildServiceTest extends Specification {
         def mockBuildStore = Mock(BuildStateStore)
         def mockProxyService = Mock(RegistryProxyService)
         def mockEventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
-        def service = new ContainerBuildServiceImpl(buildStateStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
+        def service = new ContainerBuildServiceImpl(buildStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
         def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
         def error = new Exception('error')
         def res = BuildResult.create('1')
@@ -404,7 +404,7 @@ class ContainerBuildServiceTest extends Specification {
         def mockBuildStore = Mock(BuildStateStore)
         def mockProxyService = Mock(RegistryProxyService)
         def mockEventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
-        def service = new ContainerBuildServiceImpl(buildStateStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
+        def service = new ContainerBuildServiceImpl(buildStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
         def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
         def res = BuildResult.create('1')
         def req = new BuildRequest(

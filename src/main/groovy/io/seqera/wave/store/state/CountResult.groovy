@@ -21,12 +21,13 @@ package io.seqera.wave.store.state
 import groovy.transform.Canonical
 
 /**
- *
+ * Model the result object of state auto-increment operation
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Canonical
 class CountResult<V> {
-    Boolean succeed
-    V value
-    Integer count
+    final Boolean succeed
+    final V value
+    final Integer count
 }

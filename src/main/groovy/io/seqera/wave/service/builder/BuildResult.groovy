@@ -78,7 +78,7 @@ class BuildResult {
 
     @Override
     String toString() {
-        return "BuildResult[id=$buildId; exitStatus=$exitStatus; duration=$duration]"
+        return "BuildResult[buildId=$buildId; exitStatus=$exitStatus; duration=$duration]"
     }
 
     static BuildResult completed(String buildId, Integer exitStatus, String logs, Instant startTime, String digest) {

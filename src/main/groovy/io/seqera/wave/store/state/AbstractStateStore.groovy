@@ -52,11 +52,34 @@ abstract class AbstractStateStore<V> implements StateStore<String,V> {
         return getPrefix() + 'request-id/' + requestId
     }
 
+    /**
+     * Defines the counter for auto-increment operations. By default
+     * uses the entry "key". Subclasses can provide a custom logic to use a
+     * different counter key.
+     *
+     * @param key
+     *      The entry for which the increment should be performed
+     * @param value
+     *      The entry value for which the increment should be performed
+     * @return
+     *      The counter key that by default is the entry key.
+     */
     protected String counterKey(String key, V value) {
         return key
     }
 
+    /**
+     * Defines the Lua script that's applied to increment the entry counter.
+     *
+     * It assumes the entry is serialised as JSON object and it contains a {@code count} attribute
+     * that will be update with the store counter value.
+     *
+     * @return The Lua script used to increment the entry count.
+     */
     protected String counterScript() {
+        // NOTE:
+        // "value" is expected to be a Lua variable holding the JSON object
+        // "counter_value" is expected to be a Lua variable holding the new count value
         /string.gsub(value, '"count"%s*:%s*(%d+)', '"count":' .. counter_value)/
     }
 
