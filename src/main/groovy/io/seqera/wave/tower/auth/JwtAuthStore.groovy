@@ -31,6 +31,7 @@ import jakarta.inject.Singleton
 /**
  * Implements storage for {@link JwtAuth} record
  *
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @Singleton
@@ -92,7 +93,7 @@ class JwtAuthStore extends AbstractStateStore<JwtAuth> {
         final now = Instant.now()
         final entry = auth.withUpdatedAt(now)
         this.put(auth.key, entry)
-        log.debug "JWT updating refreshed record - $entry"
+        log.trace "JWT updating refreshed record - $entry"
     }
 
     boolean storeIfAbsent(JwtAuth auth) {
