@@ -94,20 +94,21 @@ class RedisStateProvider implements StateProvider<String,String> {
         end
         """
 
-    Tuple2<String,String> splitKey(String key) {
+    static protected Tuple2<String,String> splitKey(String key) {
         final p=key.lastIndexOf('/')
-        if( p==-1 )
-            throw new IllegalArgumentException("Invalid counter key - offending value '$key'")
-        final k = key.substring(0,p)
-        final f = key.substring(p+1)
-        return new Tuple2<String, String>(k,f)
+        return p==-1
+            ? new Tuple2<String, String>("counters/v1", key)
+            : new Tuple2<String, String>(key.substring(0,p), key.substring(p+1))
     }
 
     @Override
-    Tuple3<Boolean,String,Integer> putIfAbsent(String key, String value, Duration ttl, String counterKey) {
+    Tuple3<Boolean,String,Integer> putIfAbsent(String key, String value, Duration ttl, String counter) {
+        return putIfAbsent(key, value, ttl, splitKey(counter))
+    }
+
+    Tuple3<Boolean,String,Integer> putIfAbsent(String key, String value, Duration ttl, Tuple2<String,String> counter) {
         try( Jedis jedis=pool.getResource() )  {
-            final kount = splitKey(counterKey)
-            final result = jedis.eval(PUT_AND_INCREMENT, 3, key, kount.v1, kount.v2, value, ttl.toMillis().toString())
+            final result = jedis.eval(PUT_AND_INCREMENT, 3, key, counter.v1, counter.v2, value, ttl.toMillis().toString())
             return new Tuple3<>((result as List)[0] == 1,
                     (result as List)[1] as String,
                     (result as List)[2] as Integer)

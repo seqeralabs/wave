@@ -90,7 +90,7 @@ class BuildStateStoreImpl extends AbstractStateStore<BuildEntry> implements Buil
     }
 
     @Override
-    protected String counter0(String key, BuildEntry build) {
+    protected String counterKey(String key, BuildEntry build) {
         "build-counters/v1/" + build.request.containerId
     }
 
