@@ -46,7 +46,7 @@ class ScanIdStore extends AbstractStateStore<ScanId> {
 
     @Override
     protected String getPrefix() {
-        return 'wave-scanid/v1:'
+        return 'wave-scanid/v1'
     }
 
     @Override

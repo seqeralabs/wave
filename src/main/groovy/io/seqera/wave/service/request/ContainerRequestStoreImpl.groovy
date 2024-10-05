@@ -47,7 +47,7 @@ class ContainerRequestStoreImpl extends AbstractStateStore<ContainerRequest> imp
 
     @Override
     protected String getPrefix() {
-        return 'wave-tokens/v1:'
+        return 'wave-tokens/v1'
     }
 
     @Override

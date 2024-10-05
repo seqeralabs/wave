@@ -44,7 +44,7 @@ class MirrorStateStore extends AbstractStateStore<MirrorEntry> {
 
     @Override
     protected String getPrefix() {
-        return 'wave-mirror/v1:'
+        return 'wave-mirror/v1'
     }
 
     @Override

@@ -65,7 +65,7 @@ class AbstractStateStoreTest extends Specification {
 
         @Override
         protected String getPrefix() {
-            return 'test/v1:'
+            return 'test/v1'
         }
 
         @Override

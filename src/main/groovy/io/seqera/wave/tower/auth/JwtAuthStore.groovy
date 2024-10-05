@@ -47,7 +47,7 @@ class JwtAuthStore extends AbstractStateStore<JwtAuth> {
 
     @Override
     protected String getPrefix() {
-        return "tower-jwt-store/v1:"
+        return "tower-jwt-store/v1"
     }
 
     /**

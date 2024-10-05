@@ -44,12 +44,12 @@ abstract class AbstractStateStore<V> implements StateStore<String,V> {
 
     protected abstract Duration getDuration()
 
-    protected String key0(String k) { return getPrefix() + k  }
+    protected String key0(String k) { return getPrefix() + ':' + k  }
 
     protected String requestId0(String requestId) {
         if( !requestId )
             throw new IllegalStateException("Argument 'requestId' cannot be null")
-        return getPrefix() + 'request-id/' + requestId
+        return getPrefix() + ':request-id/' + requestId
     }
 
     /**

@@ -48,7 +48,7 @@ class BlobStoreImpl extends AbstractStateStore<BlobEntry> implements BlobStateSt
 
     @Override
     protected String getPrefix() {
-        return 'wave-blobcache/v1:'
+        return 'wave-blobcache/v1'
     }
 
     @Override

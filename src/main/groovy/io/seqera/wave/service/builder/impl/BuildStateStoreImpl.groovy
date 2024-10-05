@@ -57,7 +57,7 @@ class BuildStateStoreImpl extends AbstractStateStore<BuildEntry> implements Buil
 
     @Override
     protected String getPrefix() {
-        return 'wave-build/v2:'
+        return 'wave-build/v2'
     }
 
     @Override
