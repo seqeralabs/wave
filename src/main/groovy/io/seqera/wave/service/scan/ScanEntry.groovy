@@ -31,6 +31,7 @@ import io.seqera.wave.store.state.StateEntry
  * Model for scan result
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @ToString(includePackage = false, includeNames = true)
 @Canonical

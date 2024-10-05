@@ -36,6 +36,7 @@ import static java.nio.file.StandardOpenOption.WRITE
  * Implements ScanStrategy for Docker
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @Singleton

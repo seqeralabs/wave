@@ -49,6 +49,7 @@ import static io.seqera.wave.service.builder.BuildFormat.DOCKER
  * Implements ContainerScanService
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @Named("Scan")

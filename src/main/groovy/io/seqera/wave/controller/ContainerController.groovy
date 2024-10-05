@@ -42,6 +42,7 @@ import io.micronaut.security.authentication.AuthorizationException
 import io.micronaut.security.rules.SecurityRule
 import io.seqera.wave.api.ContainerStatusResponse
 import io.seqera.wave.api.ImageNameStrategy
+import io.seqera.wave.api.ScanMode
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.configuration.BuildConfig
@@ -358,12 +359,14 @@ class ContainerController {
 
         checkContainerSpec(containerSpec)
 
-        // create a unique digest to identify the build request
+        // create a unique digest to identify the build req
         final containerId = makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext)
         final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, nameStrategy)
         final maxDuration = buildConfig.buildMaxDuration(req)
+        // default to async scan for build req for backward compatibility
+        final scanMode = req.scanMode!=null ? req.scanMode : ScanMode.async
         // digest is not needed for builds, because they use a unique checksum in the container name
-        final scanId = scanService?.getScanId(targetImage, null, req.scanMode, req.format)
+        final scanId = scanService?.getScanId(targetImage, null, scanMode, req.format)
 
         return new BuildRequest(
                 containerId,

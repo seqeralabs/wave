@@ -28,6 +28,7 @@ import io.seqera.wave.service.request.ContainerRequest
  * Declare operations to scan containers
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 interface ContainerScanService {
 

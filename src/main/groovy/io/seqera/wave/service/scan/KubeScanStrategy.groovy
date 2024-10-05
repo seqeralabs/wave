@@ -42,6 +42,7 @@ import static java.nio.file.StandardOpenOption.WRITE
  * Implements ScanStrategy for Kubernetes
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @Primary
