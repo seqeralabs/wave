@@ -29,7 +29,8 @@ import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
 /**
- *
+ * Implements a store strategy for scan ids
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Singleton

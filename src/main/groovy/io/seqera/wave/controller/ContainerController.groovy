@@ -103,66 +103,73 @@ import static java.util.concurrent.CompletableFuture.completedFuture
 @ExecuteOn(TaskExecutors.IO)
 class ContainerController {
 
-    @Inject HttpClientAddressResolver addressResolver
-    @Inject ContainerRequestService containerService
-    @Inject UserService userService
-    @Inject JwtAuthStore jwtAuthStore
+    @Inject
+    private HttpClientAddressResolver addressResolver
+
+    @Inject
+    private ContainerRequestService containerService
+
+    @Inject
+    private UserService userService
+
+    @Inject
+    private JwtAuthStore jwtAuthStore
 
     @Inject
     @Value('${wave.allowAnonymous}')
-    Boolean allowAnonymous
+    private Boolean allowAnonymous
 
     @Inject
     @Value('${wave.server.url}')
-    String serverUrl
+    private String serverUrl
 
     @Inject
     @Value('${tower.endpoint.url:`https://api.cloud.seqera.io`}')
-    String towerEndpointUrl
+    private String towerEndpointUrl
 
     @Inject
-    BuildConfig buildConfig
+    private BuildConfig buildConfig
 
     @Inject
-    ContainerBuildService buildService
+    private ContainerBuildService buildService
 
     @Inject
-    ContainerInspectService inspectService
+    private ContainerInspectService inspectService
 
     @Inject
-    RegistryProxyService registryProxyService
+    private RegistryProxyService registryProxyService
 
     @Inject
-    PersistenceService persistenceService
+    private PersistenceService persistenceService
 
     @Inject
-    ValidationService validationService
+    private ValidationService validationService
 
     @Inject
-    PairingService pairingService
+    private PairingService pairingService
 
     @Inject
-    PairingChannel pairingChannel
+    private PairingChannel pairingChannel
 
     @Inject
-    FreezeService freezeService
+    private FreezeService freezeService
 
     @Inject
-    ContainerInclusionService inclusionService
-
-    @Inject
-    @Nullable
-    RateLimiterService rateLimiterService
-
-    @Inject
-    ContainerMirrorService mirrorService
-
-    @Inject
-    ContainerStatusService statusService
+    private ContainerInclusionService inclusionService
 
     @Inject
     @Nullable
-    ContainerScanService scanService
+    private RateLimiterService rateLimiterService
+
+    @Inject
+    private ContainerMirrorService mirrorService
+
+    @Inject
+    private ContainerStatusService statusService
+
+    @Inject
+    @Nullable
+    private ContainerScanService scanService
 
     @PostConstruct
     private void init() {

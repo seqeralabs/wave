@@ -50,7 +50,7 @@ class BuildController {
 
     @Inject
     @Nullable
-    BuildLogService logService
+    private BuildLogService logService
 
     @Get("/v1alpha1/builds/{buildId}")
     HttpResponse<WaveBuildRecord> getBuildRecord(String buildId) {
