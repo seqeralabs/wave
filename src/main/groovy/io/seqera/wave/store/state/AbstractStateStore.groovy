@@ -62,9 +62,6 @@ abstract class AbstractStateStore<V> implements StateStore<String,V> {
         return encodingStrategy.encode(value)
     }
 
-    protected String getRaw(String key) {
-        delegate.get(key)
-    }
 
     @Override
     V get(String key) {

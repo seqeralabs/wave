@@ -150,7 +150,7 @@ class RedisStateProviderTest extends Specification implements RedisTestContainer
         given:
         def ttlMillis = 100
         def k = UUID.randomUUID().toString()
-        def c = UUID.randomUUID().toString()
+        def c = 'k/' + UUID.randomUUID().toString()
 
         expect:
         provider.get(k) == null
@@ -222,19 +222,4 @@ class RedisStateProviderTest extends Specification implements RedisTestContainer
 
     }
 
-//    def 'should validate legacy counter' () {
-//        given:
-//        def _1sec = Duration.ofSeconds(1)
-//        def jedis = Mock(Jedis)
-//        def pool = Mock(JedisPool) { getResource() >> jedis }
-//        def provider = Spy(new RedisStateProvider(pool:pool))
-//
-//        when:
-//        def result = provider.putIfAbsent('key1', 'val1', _1sec, 'counter')
-//        then:
-//        1 * jedis.eval(_ as String, 2, 'key1', 'counter', 'val1', '60000') >>  {[1, 'xx', 3]}
-//        and:
-//        result == new Tuple3<>(true, 'xx', 3)
-//
-//    }
 }
