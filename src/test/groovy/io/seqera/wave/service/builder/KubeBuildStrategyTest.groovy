@@ -70,7 +70,7 @@ class KubeBuildStrategyTest extends Specification {
         when:
         def containerId = ContainerHelper.makeContainerId(dockerfile, null, ContainerPlatform.of('amd64'), repo, null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, repo, containerId, null, null)
-        def req = new BuildRequest(containerId, dockerfile, null, PATH, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withCount('1')
+        def req = new BuildRequest(containerId, dockerfile, null, PATH, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1))
         Files.createDirectories(req.workDir)
         strategy.build('build-job-name', req)
 
@@ -78,7 +78,7 @@ class KubeBuildStrategyTest extends Specification {
         1 * k8sService.launchBuildJob( _, _, _, _, _, _, [service:'wave-build']) >> null
 
         when:
-        def req2 = new BuildRequest(containerId, dockerfile, null, PATH, targetImage, USER, ContainerPlatform.of('arm64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withCount('1')
+        def req2 = new BuildRequest(containerId, dockerfile, null, PATH, targetImage, USER, ContainerPlatform.of('arm64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1))
         Files.createDirectories(req2.workDir)
         strategy.build('job-name', req2)
 
@@ -98,19 +98,19 @@ class KubeBuildStrategyTest extends Specification {
         when:'getting docker with amd64 arch in build request'
         def containerId = ContainerHelper.makeContainerId(dockerfile, null, ContainerPlatform.of('amd64'), repo, null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, repo, containerId, null, null)
-        def req = new BuildRequest(containerId, dockerfile, null, PATH, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withCount('1')
+        def req = new BuildRequest(containerId, dockerfile, null, PATH, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1))
 
         then: 'should return buildkit image'
         strategy.getBuildImage(req) == 'moby/buildkit:v0.14.1-rootless'
 
         when:'getting singularity with amd64 arch in build request'
-        req = new BuildRequest(containerId, dockerfile, null, PATH, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.SINGULARITY,Duration.ofMinutes(1)).withCount('1')
+        req = new BuildRequest(containerId, dockerfile, null, PATH, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.SINGULARITY,Duration.ofMinutes(1))
 
         then:'should return singularity amd64 image'
         strategy.getBuildImage(req) == 'quay.io/singularity/singularity:v3.11.4-slim'
 
         when:'getting singularity with arm64 arch in build request'
-        req = new BuildRequest(containerId, dockerfile, null, PATH, targetImage, USER, ContainerPlatform.of('arm64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.SINGULARITY, Duration.ofMinutes(1)).withCount('1')
+        req = new BuildRequest(containerId, dockerfile, null, PATH, targetImage, USER, ContainerPlatform.of('arm64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.SINGULARITY, Duration.ofMinutes(1))
 
         then:'should return singularity arm64 image'
         strategy.getBuildImage(req) == 'quay.io/singularity/singularity:v3.11.4-slim-arm64'

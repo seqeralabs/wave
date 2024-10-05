@@ -64,4 +64,7 @@ class BuildEntry implements StateEntry<String>, JobEntry, RequestIdAware {
         new BuildEntry(request, result)
     }
 
+    static BuildEntry create(BuildRequest request) {
+        new BuildEntry(request, BuildResult.create(request))
+    }
 }

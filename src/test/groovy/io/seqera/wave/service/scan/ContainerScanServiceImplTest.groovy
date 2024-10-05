@@ -254,12 +254,13 @@ class ContainerScanServiceImplTest extends Specification {
     def 'should create a scan request' () {
         given:
         def scanService = new ContainerScanServiceImpl()
+        def containerId = 'container1234'
         and:
         def workspace = Path.of('/some/workspace')
         def platform = ContainerPlatform.of('amd64')
         final build =
                 new BuildRequest(
-                        containerId: 'container1234',
+                        containerId: containerId,
                         containerFile: 'FROM ubuntu',
                         workspace: workspace,
                         targetImage: 'docker.io/my/repo:container1234',
@@ -267,9 +268,9 @@ class ContainerScanServiceImplTest extends Specification {
                         platform: platform,
                         configJson: '{"config":"json"}',
                         scanId: 'scan12345',
-                        format: BuildFormat.DOCKER
+                        format: BuildFormat.DOCKER,
+                        buildId: "${containerId}_1",
                 )
-                        .withCount('123')
 
         when:
         def scan = scanService.fromBuild(build)

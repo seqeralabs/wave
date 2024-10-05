@@ -85,7 +85,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     private ApplicationEventPublisher<BuildEvent> eventPublisher
 
     @Inject
-    private BuildStateStore buildStore
+    private BuildStateStore buildStateStore
 
     @Inject
     @Named(TaskExecutors.IO)
@@ -148,7 +148,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
      */
     @Override
     CompletableFuture<BuildResult> buildResult(String targetImage) {
-        return buildStore
+        return buildStateStore
                 .awaitBuild(targetImage)
     }
 
@@ -191,7 +191,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         catch (Throwable e) {
             log.error "== Container build unexpected exception: ${e.message} - request=$req", e
             final result = BuildResult.failed(req.buildId, e.message, req.startTime)
-            buildStore.storeBuild(req.targetImage, new BuildEntry(req, result), buildConfig.failureDuration)
+            buildStateStore.storeBuild(req.targetImage, new BuildEntry(req, result), buildConfig.failureDuration)
             eventPublisher.publishEvent(new BuildEvent(req, result))
         }
     }
@@ -203,7 +203,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
                 rateLimiterService.acquireBuild(new AcquireRequest(request.identity.userId as String, request.ip))
         }
         catch (Exception e) {
-            buildStore.removeBuild(request.targetImage)
+            buildStateStore.removeBuild(request.targetImage)
             throw e
         }
 
@@ -218,27 +218,25 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     protected BuildTrack checkOrSubmit(BuildRequest request) {
         // try to store a new build status for the given target image
         // this returns true if and only if such container image was not set yet
-        final result = buildStore.storeIfAbsentAndInc(request.targetImage, new BuildEntry(request, BuildResult.create(request)))
-        if( result.v1 ) {
-            // update the counter and store it again
-            final count = result.v3
-            final incRequest = request.withCount(count)
-            buildStore.storeBuild(request.targetImage, new BuildEntry(incRequest, BuildResult.create(incRequest)))
-
-            // go ahead
+        final result = buildStateStore.putIfAbsentAndCount(request.targetImage, BuildEntry.create(request))
+        if( result.succeed ) {
+            // NOTE: when the entry is stored, the buildId is automatically incremented
+            // therefore the request reference should be overridden
+            request = result.value.request
+            // go ahead with the launch
             log.info "== Container build submitted - request=$request"
             launchAsync(request)
             return new BuildTrack(request.buildId, request.targetImage, false)
         }
         // since it was unable to initialise the build result status
         // this means the build status already exists, retrieve it
-        final ret2 = buildStore.getBuildResult(request.targetImage)
+        final ret2 = buildStateStore.getBuildResult(request.targetImage)
         if( ret2 ) {
             log.info "== Container build hit cache - request=$request"
             // note: mark as cached only if the build result is 'done'
             // if the build is still in progress it should be marked as not cached
             // so that the client will wait for the container completion
-            return new BuildTrack(ret2.id, request.targetImage, ret2.done())
+            return new BuildTrack(ret2.buildId, request.targetImage, ret2.done())
         }
         // invalid state
         throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")
@@ -315,7 +313,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
 
     @Override
     BuildEntry getJobEntry(JobSpec job) {
-        buildStore.getBuild(job.entryKey)
+        buildStateStore.getBuild(job.entryKey)
     }
 
     @Override
@@ -334,7 +332,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         final result = state.completed()
                 ? BuildResult.completed(buildId, state.exitCode, state.stdout, job.creationTime, digest)
                 : BuildResult.failed(buildId, state.stdout, job.creationTime)
-        buildStore.storeBuild(job.entryKey, entry.withResult(result), ttl)
+        buildStateStore.storeBuild(job.entryKey, entry.withResult(result), ttl)
         eventPublisher.publishEvent(new BuildEvent(entry.request, result))
         log.info "== Container build completed '${entry.request.targetImage}' - operation=${job.operationName}; exit=${state.exitCode}; status=${state.status}; duration=${result.duration}"
     }
@@ -342,7 +340,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     @Override
     void onJobException(JobSpec job, BuildEntry entry, Throwable error) {
         final result= BuildResult.failed(entry.request.buildId, error.message, job.creationTime)
-        buildStore.storeBuild(job.entryKey, entry.withResult(result), buildConfig.failureDuration)
+        buildStateStore.storeBuild(job.entryKey, entry.withResult(result), buildConfig.failureDuration)
         eventPublisher.publishEvent(new BuildEvent(entry.request, result))
         log.error("== Container build exception '${entry.request.targetImage}' - operation=${job.operationName}; cause=${error.message}", error)
     }
@@ -351,7 +349,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     void onJobTimeout(JobSpec job, BuildEntry entry) {
         final buildId = entry.request.buildId
         final result= BuildResult.failed(buildId, "Container image build timed out '${entry.request.targetImage}'", job.creationTime)
-        buildStore.storeBuild(job.entryKey, entry.withResult(result), buildConfig.failureDuration)
+        buildStateStore.storeBuild(job.entryKey, entry.withResult(result), buildConfig.failureDuration)
         eventPublisher.publishEvent(new BuildEvent(entry.request, result))
         log.warn "== Container build time out '${entry.request.targetImage}'; operation=${job.operationName}; duration=${result.duration}"
     }
@@ -375,7 +373,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
      */
     @Override
     WaveBuildRecord getBuildRecord(String buildId) {
-        final entry = buildStore.findByRequestId(buildId)
+        final entry = buildStateStore.findByRequestId(buildId)
         return entry
                 ? WaveBuildRecord.fromEntry(entry)
                 : persistenceService.loadBuild(buildId)

@@ -24,6 +24,8 @@ import java.nio.file.Path
 import java.time.Duration
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.api.BuildContext
+import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.ContainerHelper
@@ -42,10 +44,12 @@ class BuildStrategyTest extends Specification {
         given:
         def req = new BuildRequest(
                 containerId: 'c168dba125e28777',
-                workDir: Path.of('/work/foo/c168dba125e28777'),
+                buildId: 'bd-c168dba125e28777_1',
+                workspace: Path.of('/work/foo'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'quay.io/wave:c168dba125e28777',
-                cacheRepository: 'reg.io/wave/build/cache' )
+                cacheRepository: 'reg.io/wave/build/cache',
+        )
 
         when:
         def cmd = strategy.launchCmd(req)
@@ -55,11 +59,11 @@ class BuildStrategyTest extends Specification {
                 '--frontend',
                 'dockerfile.v0',
                 '--local',
-                'dockerfile=/work/foo/c168dba125e28777',
+                'dockerfile=/work/foo/bd-c168dba125e28777_1',
                 '--opt',
                 'filename=Containerfile',
                 '--local',
-                'context=/work/foo/c168dba125e28777/context',
+                'context=/work/foo/bd-c168dba125e28777_1/context',
                 '--output',
                 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true',
                 '--opt',
@@ -75,9 +79,10 @@ class BuildStrategyTest extends Specification {
         given:
         def req = new BuildRequest(
                 containerId: 'c168dba125e28777',
-                workDir: Path.of('/work/foo/3980470531b4a52a'),
+                buildId: 'bd-c168dba125e28777_1',
+                workspace: Path.of('/work/foo'),
                 platform: ContainerPlatform.of('linux/amd64'),
-                targetImage: 'quay.io/wave:3980470531b4a52a',
+                targetImage: 'quay.io/wave:c168dba125e28777',
                 cacheRepository: 'reg.io/wave/build/cache' )
         
         when:
@@ -88,13 +93,13 @@ class BuildStrategyTest extends Specification {
                 '--frontend',
                 'dockerfile.v0',
                 '--local',
-                'dockerfile=/work/foo/3980470531b4a52a',
+                'dockerfile=/work/foo/bd-c168dba125e28777_1',
                 '--opt',
                 'filename=Containerfile',
                 '--local',
-                'context=/work/foo/3980470531b4a52a/context',
+                'context=/work/foo/bd-c168dba125e28777_1/context',
                 '--output',
-                'type=image,name=quay.io/wave:3980470531b4a52a,push=true,oci-mediatypes=true',
+                'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true',
                 '--opt',
                 'platform=linux/amd64',
                 '--export-cache',
@@ -107,7 +112,9 @@ class BuildStrategyTest extends Specification {
     def 'should get singularity command' () {
         given:
         def req = new BuildRequest(
-                workDir: Path.of('/work/foo/c168dba125e28777'),
+                containerId: 'c168dba125e28777',
+                buildId: 'bd-c168dba125e28777_1',
+                workspace: Path.of('/work/foo'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'oras://quay.io/wave:c168dba125e28777',
                 format: BuildFormat.SINGULARITY,
@@ -118,7 +125,7 @@ class BuildStrategyTest extends Specification {
         cmd == [
                 "sh",
                 "-c",
-                "singularity build image.sif /work/foo/c168dba125e28777/Containerfile && singularity push image.sif oras://quay.io/wave:c168dba125e28777"
+                "singularity build image.sif /work/foo/bd-c168dba125e28777_1/Containerfile && singularity push image.sif oras://quay.io/wave:c168dba125e28777"
             ]
     }
 
@@ -131,35 +138,33 @@ class BuildStrategyTest extends Specification {
         def containerId = ContainerHelper.makeContainerId(content, null, ContainerPlatform.of('amd64'), buildrepo, null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildrepo, containerId, null, null)
         def build = new BuildRequest(
-                containerId: containerId,
-                containerFile: content,
-                workspace: workspace,
-                targetImage: targetImage,
-                identity:  PlatformId.NULL,
-                platform: ContainerPlatform.of('amd64'),
-                cacheRepository: 'caherepo',
-                ip: "1.2.3.4",
-                configJson: '{"config":"json"}',
-                scanId: 'scan12345',
-                format: BuildFormat.DOCKER,
-                maxDuration: timeout
+                containerId,
+                content,
+                'condaFile',
+                workspace,
+                targetImage,
+                PlatformId.NULL,
+                ContainerPlatform.of('amd64'),
+                'caherepo',
+                "1.2.3.4",
+                '{"config":"json"}',
+                'GMT+1',
+                Mock(ContainerConfig),
+                'sc-12345',
+                Mock(BuildContext),
+                BuildFormat.DOCKER,
+                timeout
         )
 
         then:
         build.containerId == 'af15cb0a413a2d48'
         build.workspace == Path.of("some/path")
         and:
-        !build.buildId
-        !build.workDir
-
-        when:
-        build.withCount('100')
-        then:
         build.containerId == 'af15cb0a413a2d48'
         build.workspace == Path.of("some/path")
         and:
-        build.buildId == 'bd-af15cb0a413a2d48_100'
-        build.workDir == Path.of('.').toRealPath().resolve('some/path/bd-af15cb0a413a2d48_100')
+        build.buildId == 'bd-af15cb0a413a2d48_0'
+        build.workDir == Path.of('.').toRealPath().resolve('some/path/bd-af15cb0a413a2d48_0')
         build.maxDuration == timeout
     }
 }

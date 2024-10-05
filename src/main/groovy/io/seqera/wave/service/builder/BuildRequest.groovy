@@ -131,27 +131,29 @@ class BuildRequest {
      * Max allow time duration for this build
      */
     final Duration maxDuration
-    
-    volatile String buildId
 
-    volatile Path workDir
+    /**
+     * The build unique request id
+     */
+    final String buildId
 
-    BuildRequest(String containerId,
-                 String containerFile,
-                 String condaFile,
-                 Path workspace,
-                 String targetImage,
-                 PlatformId identity,
-                 ContainerPlatform platform,
-                 String cacheRepository,
-                 String ip,
-                 String configJson,
-                 String offsetId,
-                 ContainerConfig containerConfig,
-                 String scanId,
-                 BuildContext buildContext,
-                 BuildFormat format,
-                 Duration maxDuration
+    BuildRequest(
+            String containerId,
+            String containerFile,
+            String condaFile,
+            Path workspace,
+            String targetImage,
+            PlatformId identity,
+            ContainerPlatform platform,
+            String cacheRepository,
+            String ip,
+            String configJson,
+            String offsetId,
+            ContainerConfig containerConfig,
+            String scanId,
+            BuildContext buildContext,
+            BuildFormat format,
+            Duration maxDuration
     )
     {
         this.containerId = containerId
@@ -171,6 +173,8 @@ class BuildRequest {
         this.buildContext = buildContext
         this.format = format
         this.maxDuration = maxDuration
+        // NOTE: this is meant to be updated - automatically - when the request is submitted
+        this.buildId = ID_PREFIX + containerId + SEP + '0'
     }
 
     BuildRequest(Map opts) {
@@ -190,7 +194,6 @@ class BuildRequest {
         this.scanId = opts.scanId
         this.buildContext = opts.buildContext as BuildContext
         this.format = opts.format as BuildFormat
-        this.workDir = opts.workDir as Path
         this.buildId = opts.buildId
         this.maxDuration = opts.maxDuration as Duration
     }
@@ -218,7 +221,7 @@ class BuildRequest {
     }
 
     Path getWorkDir() {
-        return workDir
+        return workspace.resolve(buildId).toAbsolutePath()
     }
 
     String getTargetImage() {
@@ -263,17 +266,6 @@ class BuildRequest {
 
     boolean formatSingularity() {
         format==SINGULARITY
-    }
-
-    @Deprecated
-    BuildRequest withCount(String id) {
-        return withCount(id as Long)
-    }
-
-    BuildRequest withCount(Long id) {
-        this.buildId = ID_PREFIX + containerId + SEP + id
-        this.workDir = workspace.resolve(buildId).toAbsolutePath()
-        return this
     }
 
     static String legacyBuildId(String id) {

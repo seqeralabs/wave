@@ -92,16 +92,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         // create a new scan id if there's no entry for the given target image
         final result = scanIdStore
                 .putIfAbsentAndCount(targetImage, ScanId.of(targetImage, digest))
-        // if the put is successful, update the scan id with count value
-        // returned in the put operation
-        if( result.v1 ) {
-            final count = result.v3
-            final ScanId scan = result.v2.withCount(count)
-            scanIdStore.put(targetImage, scan)
-            return scan
-        }
-        // use the existing scan id 
-        return result.v2
+        // return the value updated by the put operation
+        return result.value.toString()
     }
 
     @Override

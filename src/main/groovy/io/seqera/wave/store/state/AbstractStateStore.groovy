@@ -47,11 +47,17 @@ abstract class AbstractStateStore<V> implements StateStore<String,V> {
     protected String key0(String k) { return getPrefix() + k  }
 
     protected String requestId0(String requestId) {
+        if( !requestId )
+            throw new IllegalStateException("Argument 'requestId' cannot be null")
         return getPrefix() + 'request-id/' + requestId
     }
 
     protected String counterKey(String key, V value) {
         return key
+    }
+
+    protected String counterScript() {
+        /string.gsub(value, '"count"%s*:%s*(%d+)', '"count":' .. counter_value)/
     }
 
     protected V deserialize(String encoded) {
@@ -61,7 +67,6 @@ abstract class AbstractStateStore<V> implements StateStore<String,V> {
     protected String serialize(V value) {
         return encodingStrategy.encode(value)
     }
-
 
     @Override
     V get(String key) {
@@ -101,20 +106,23 @@ abstract class AbstractStateStore<V> implements StateStore<String,V> {
         return putIfAbsent(key, value, getDuration())
     }
 
-    Tuple3<Boolean,V,Integer> putIfAbsentAndCount(String key, V value) {
+    CountResult<V> putIfAbsentAndCount(String key, V value) {
         putIfAbsentAndCount(key, value, getDuration())
     }
 
-    Tuple3<Boolean,V,Integer> putIfAbsentAndCount(String key, V value, Duration ttl) {
-        final String reqId
-        final result = delegate.putIfAbsent(key0(key), serialize(value), ttl, counterKey(key,value))
-        if( result && value instanceof RequestIdAware && (reqId=value.getRequestId()) ) {
-            delegate.put(requestId0(reqId), key, ttl)
+    CountResult<V> putIfAbsentAndCount(String key, V value, Duration ttl) {
+        final result = delegate.putJsonIfAbsentAndIncreaseCount(
+                key0(key),
+                serialize(value),
+                ttl,
+                counterKey(key,value),
+                counterScript())
+        // update the `value` with the result one
+        final updated = deserialize(result.value)
+        if( result && updated instanceof RequestIdAware ) {
+            delegate.put(requestId0(updated.getRequestId()), key, ttl)
         }
-        return new Tuple3<Boolean, V, Integer>(
-                result.v1,
-                deserialize(result.v2),
-                result.v3)
+        return new CountResult<V>( result.succeed, updated, result.count)
     }
 
     @Override

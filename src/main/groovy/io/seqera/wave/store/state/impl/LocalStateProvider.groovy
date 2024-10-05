@@ -25,7 +25,11 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
+import io.seqera.wave.store.state.CountResult
 import jakarta.inject.Singleton
+import org.luaj.vm2.Globals
+import org.luaj.vm2.LuaValue
+import org.luaj.vm2.lib.jse.JsePlatform
 
 /**
  * Simple cache store implementation for development purpose
@@ -91,15 +95,24 @@ class LocalStateProvider implements StateProvider<String,String> {
     }
 
     @Override
-    synchronized Tuple3<Boolean,String,Integer> putIfAbsent(String key, String value, Duration ttl, String counterKey) {
-        final done = putIfAbsent0(key, value, ttl) == null
-        final count = counters
+    synchronized CountResult<String> putJsonIfAbsentAndIncreaseCount(String key, String json, Duration ttl, String counterKey, String luaScript) {
+        final done = putIfAbsent0(key, json, ttl) == null
+        final addr = counters
                 .computeIfAbsent(counterKey, (it)-> new AtomicInteger())
         if( done ) {
-            return new Tuple3<Boolean,String,Integer>(true, value, count.incrementAndGet())
+            final count = addr.incrementAndGet()
+            // apply the conversion
+            Globals globals = JsePlatform.standardGlobals()
+            globals.set('value', LuaValue.valueOf(json))
+            globals.set('counter_value', LuaValue.valueOf(count))
+            LuaValue chunk = globals.load("return $luaScript;");
+            LuaValue result = chunk.call();
+            // store the result
+            put(key, result.toString(), ttl)
+            return new CountResult<String>(true, result.toString(), count)
         }
         else
-            return new Tuple3<Boolean,String,Integer>(false, get(key), count.get())
+            return new CountResult<String>(false, get(key), addr.get())
     }
 
     private String putIfAbsent0(String key, String value, Duration ttl) {

@@ -131,13 +131,13 @@ class ContainerBuildServiceTest extends Specification {
                         cacheRepository: cacheRepo,
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
-                        maxDuration: Duration.ofMinutes(1)
+                        maxDuration: Duration.ofMinutes(1),
+                        buildId: "${containerId}_1",
                 )
-                .withCount('1')
         and:
         def store = Mock(BuildStateStore)
         def jobService = Mock(JobService)
-        def builder = new ContainerBuildServiceImpl(buildStore: store, buildConfig: buildConfig, jobService: jobService)
+        def builder = new ContainerBuildServiceImpl(buildStateStore: store, buildConfig: buildConfig, jobService: jobService)
         def RESPONSE = Mock(JobSpec)
           
         when:
@@ -171,9 +171,9 @@ class ContainerBuildServiceTest extends Specification {
                         identity: Mock(PlatformId),
                         platform: ContainerPlatform.of('amd64'),
                         format: BuildFormat.DOCKER,
-                        startTime: Instant.now()
+                        startTime: Instant.now(),
+                        buildId: "${containerId}_1",
                 )
-                        .withCount('1')
 
         when:
         def result = builder.containerFile0(req, null)
@@ -206,9 +206,9 @@ class ContainerBuildServiceTest extends Specification {
                         identity: Mock(PlatformId),
                         platform: ContainerPlatform.of('amd64'),
                         format: BuildFormat.SINGULARITY,
-                        startTime: Instant.now()
+                        startTime: Instant.now(),
+                        buildId: "${containerId}_1",
                 )
-                        .withCount('1')
 
         when:
         def result = builder.containerFile0(req, Path.of('/some/context/'))
@@ -288,9 +288,9 @@ class ContainerBuildServiceTest extends Specification {
                         configJson: '{"config":"json"}',
                         containerConfig: config ,
                         format: BuildFormat.DOCKER,
-                        startTime: Instant.now()
+                        startTime: Instant.now(),
+                        buildId: "${containerId}_1",
                 )
-                        .withCount('1')
 
         when:
         service.saveLayersToContext(req, folder)
@@ -305,8 +305,9 @@ class ContainerBuildServiceTest extends Specification {
 
     void "an event insert a build"() {
         given:
+        def containerId = 'container1234'
         final request = new BuildRequest(
-                containerId: 'container1234',
+                containerId: containerId,
                 containerFile: 'test',
                 condaFile: 'test',
                 workspace: Path.of("."),
@@ -316,9 +317,9 @@ class ContainerBuildServiceTest extends Specification {
                 configJson: '{"config":"json"}',
                 scanId: 'scan12345',
                 format: BuildFormat.DOCKER,
-                startTime: Instant.now()
+                startTime: Instant.now(),
+                buildId: "${containerId}_1",
         )
-                .withCount('123')
 
         and:
         def result = new BuildResult(request.buildId, 0, "content", Instant.now(), Duration.ofSeconds(1), 'abc123')
@@ -349,7 +350,7 @@ class ContainerBuildServiceTest extends Specification {
         def mockBuildStore = Mock(BuildStateStore)
         def mockProxyService = Mock(RegistryProxyService)
         def mockEventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
-        def service = new ContainerBuildServiceImpl(buildStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
+        def service = new ContainerBuildServiceImpl(buildStateStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
         def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
         def state = JobState.succeeded('logs')
         def res = BuildResult.create('1')
@@ -377,7 +378,7 @@ class ContainerBuildServiceTest extends Specification {
         def mockBuildStore = Mock(BuildStateStore)
         def mockProxyService = Mock(RegistryProxyService)
         def mockEventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
-        def service = new ContainerBuildServiceImpl(buildStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
+        def service = new ContainerBuildServiceImpl(buildStateStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
         def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
         def error = new Exception('error')
         def res = BuildResult.create('1')
@@ -403,7 +404,7 @@ class ContainerBuildServiceTest extends Specification {
         def mockBuildStore = Mock(BuildStateStore)
         def mockProxyService = Mock(RegistryProxyService)
         def mockEventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
-        def service = new ContainerBuildServiceImpl(buildStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
+        def service = new ContainerBuildServiceImpl(buildStateStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
         def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
         def res = BuildResult.create('1')
         def req = new BuildRequest(

@@ -31,6 +31,7 @@ import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildStateStore
 import io.seqera.wave.store.state.AbstractStateStore
+import io.seqera.wave.store.state.CountResult
 import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -95,8 +96,13 @@ class BuildStateStoreImpl extends AbstractStateStore<BuildEntry> implements Buil
     }
 
     @Override
-    Tuple3<Boolean,BuildEntry,Integer> storeIfAbsentAndInc(String imageName, BuildEntry build) {
-        putIfAbsentAndCount(imageName, build)
+    protected String counterScript() {
+        /string.gsub(value, '"buildId"%s*:%s*"(.-)(%d+)"', '"buildId":"%1' .. counter_value .. '"')/
+    }
+
+    @Override
+    CountResult<BuildEntry> putIfAbsentAndCount(String imageName, BuildEntry build) {
+        super.putIfAbsentAndCount(imageName, build)
     }
 
     @Override

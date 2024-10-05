@@ -77,7 +77,7 @@ class MoshiEncodingStrategyTest extends Specification {
         when:
         def build = encoder.decode(json)
         then:
-        build.id == '100'
+        build.buildId == '100'
         build.exitStatus == 1
         build.logs == 'logs'
         build.startTime == Instant.parse('2022-12-03T22:27:04.079724Z')
@@ -337,8 +337,9 @@ class MoshiEncodingStrategyTest extends Specification {
                 ip: "1.2.3.4",
                 configJson:  '{"config":"json"}',
                 scanId: 'scan12345',
-                buildContext: context )
-                .withCount('1')
+                buildContext: context,
+                buildId: '12345_1',
+        )
         def result = new BuildResult(build.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         def event = new BuildEvent(build, result)
 
@@ -427,8 +428,9 @@ class MoshiEncodingStrategyTest extends Specification {
                 ip: "1.2.3.4",
                 configJson:  '{"config":"json"}',
                 scanId: 'scan12345',
-                buildContext: context )
-                .withCount('1')
+                buildContext: context,
+                buildId: '12345_1',
+        )
         and:
         def entry = new BuildEntry(req, res)
         when:

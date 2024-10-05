@@ -119,36 +119,48 @@ class LocalStateProviderTest extends Specification {
         def ttlMillis = 100
         def k = UUID.randomUUID().toString()
         def c = UUID.randomUUID().toString()
+        def luaScript1 = /string.gsub(value, '"count"%s*:%s*(%d+)', '"count":' .. counter_value)/
+        def luaScript2 = /string.gsub(value, '"count"%s*:%s*"(.-)(%d+)"', '"count":"%1' .. counter_value .. '"')/
 
         expect:
         provider.get(k) == null
 
         when:
-        def result = provider.putIfAbsent(k, 'foo', Duration.ofMillis(ttlMillis), c)
+        def result = provider.putJsonIfAbsentAndIncreaseCount(k, '{"foo":"x","count":0}', Duration.ofMillis(ttlMillis), c, luaScript1)
         then:
-        result.v1
-        result.v2 == 'foo'
-        result.v3 == 1
+        result.succeed
+        result.value == '{"foo":"x","count":1}'
+        result.count == 1
         and:
-        provider.get(k) == 'foo'
+        provider.get(k) == '{"foo":"x","count":1}'
 
         when:
-        result = provider.putIfAbsent(k, 'bar', Duration.ofMillis(ttlMillis), c)
+        result = provider.putJsonIfAbsentAndIncreaseCount(k, '{"bar":"y","count":0}', Duration.ofMillis(ttlMillis), c, luaScript1)
         then:
-        !result.v1
-        result.v2 == 'foo'
-        result.v3 == 1
+        !result.succeed
+        result.value == '{"foo":"x","count":1}'
+        result.count == 1
         and:
-        provider.get(k) == 'foo'
+        provider.get(k) == '{"foo":"x","count":1}'
 
         when:
         sleep(ttlMillis *2)
         and:
-        result = provider.putIfAbsent(k, 'foo', Duration.ofMillis(ttlMillis), c)
+        result = provider.putJsonIfAbsentAndIncreaseCount(k, '{"bar":"y","count":0}', Duration.ofMillis(ttlMillis), c, luaScript1)
         then:
-        result.v1
-        result.v2 == 'foo'
-        result.v3 == 2
+        result.succeed
+        result.value == '{"bar":"y","count":2}'
+        result.count == 2
+
+        when:
+        sleep(ttlMillis *2)
+        and:
+        result = provider.putJsonIfAbsentAndIncreaseCount(k, '{"bar":"y", "count":"xx-a1b2c3_100"}', Duration.ofMillis(ttlMillis), c, luaScript2)
+        then:
+        result.succeed
+        result.value == '{"bar":"y", "count":"xx-a1b2c3_3"}'
+        result.count == 3
+
     }
 
     def 'should put and remove a value' () {

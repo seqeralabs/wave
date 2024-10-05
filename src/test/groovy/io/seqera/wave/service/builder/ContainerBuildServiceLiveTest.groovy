@@ -90,9 +90,9 @@ class ContainerBuildServiceLiveTest extends Specification {
                         configJson: cfg,
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
-                        maxDuration: duration
+                        maxDuration: duration,
+                        buildId: "${containerId}_1",
                 )
-                    .withCount('1')
         and:
         buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
 
@@ -136,9 +136,9 @@ class ContainerBuildServiceLiveTest extends Specification {
                         configJson: cfg,
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
-                        maxDuration: duration
+                        maxDuration: duration,
+                        buildId: "${containerId}_1",
                 )
-                .withCount('1')
         and:
         buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
 
@@ -182,9 +182,9 @@ class ContainerBuildServiceLiveTest extends Specification {
                         configJson: cfg,
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
-                        maxDuration: duration
+                        maxDuration: duration,
+                        buildId: "${containerId}_1",
                 )
-                .withCount('1')
         and:
         buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
 
@@ -228,9 +228,9 @@ class ContainerBuildServiceLiveTest extends Specification {
                         configJson: cfg,
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
-                        maxDuration: duration
+                        maxDuration: duration,
+                        buildId: "${containerId}_1",
                 )
-                .withCount('1')
         and:
         buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
 
@@ -281,9 +281,9 @@ class ContainerBuildServiceLiveTest extends Specification {
                         containerConfig: containerConfig ,
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
-                        maxDuration: duration
+                        maxDuration: duration,
+                        buildId: "${containerId}_1",
                 )
-                        .withCount('1')
         and:
         buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
         

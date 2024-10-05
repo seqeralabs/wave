@@ -20,6 +20,7 @@ package io.seqera.wave.service.builder
 
 import spock.lang.Specification
 
+import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ExecutorService
@@ -27,8 +28,10 @@ import java.util.concurrent.ExecutorService
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.impl.BuildStateStoreImpl
 import io.seqera.wave.store.state.impl.LocalStateProvider
+import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
 import jakarta.inject.Named
 
@@ -185,4 +188,62 @@ class BuildStoreLocalTest extends Specification {
         cache.awaitBuild('foo').get() == three.result
     }
 
+    def 'should store a build entry only if absent' () {
+        given:
+        def _100ms = 100
+        def config = Mock(BuildConfig) { getStatusDuration()>>Duration.ofMillis(_100ms) }
+        def provider = new LocalStateProvider()
+        def store = new BuildStateStoreImpl(provider, config, ioExecutor)
+        and:
+        def request = new BuildRequest(
+                containerId: '12345',
+                buildId: 'bd-12345_0',
+                containerFile: 'from foo',
+                condaFile: 'conda spec',
+                workspace:  Path.of("/some/path"),
+                targetImage:  'docker.io/some:image:12345',
+                identity: PlatformId.NULL,
+                platform:  ContainerPlatform.of('linux/amd64'),
+                cacheRepository:  'cacherepo',
+                ip: "1.2.3.4",
+                configJson:  '{"config":"json"}',
+                scanId: 'scan12345' )
+        def entry = BuildEntry.create(request)
+
+        when:
+        def result= store.putIfAbsentAndCount('my/container:latest', entry)
+        then:
+        result.succeed
+        result.count == 1
+        result.value.request.buildId == 'bd-12345_1'
+        result.value.result.buildId == 'bd-12345_1'
+        result.value.request.workDir == Path.of("/some/path/bd-12345_1")
+        and:
+        store.findByRequestId('bd-12345_1') == result.value
+
+        when:
+        result= store.putIfAbsentAndCount('my/container:latest', entry)
+        then:
+        !result.succeed
+        result.count == 1
+        result.value.request.buildId == 'bd-12345_1'
+        result.value.result.buildId == 'bd-12345_1'
+        result.value.request.workDir == Path.of("/some/path/bd-12345_1")
+        and:
+        store.findByRequestId('bd-12345_1') == result.value
+
+        when:
+        sleep(2 *_100ms)
+        and:
+        result= store.putIfAbsentAndCount('my/container:latest', entry)
+        then:
+        result.succeed
+        result.count == 2
+        result.value.request.buildId == 'bd-12345_2'
+        result.value.result.buildId == 'bd-12345_2'
+        result.value.request.workDir == Path.of("/some/path/bd-12345_2")
+        and:
+        store.findByRequestId('bd-12345_1') == null
+        store.findByRequestId('bd-12345_2') == result.value
+    }
 }

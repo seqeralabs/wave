@@ -22,6 +22,7 @@ import java.time.Duration
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
+import io.seqera.wave.store.state.CountResult
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import redis.clients.jedis.Jedis
@@ -84,15 +85,23 @@ class RedisStateProvider implements StateProvider<String,String> {
      *
      * If the key already exists return the current key value.
      */
-    static final private String PUT_AND_INCREMENT = """
+    static private String putAndIncrement(String luaScript) {
+        """
+        local value = ARGV[1]
+        local ttl = ARGV[2]
+        local pattern = ARGV[3]  
         if redis.call('EXISTS', KEYS[1]) == 0 then
-            redis.call('SET', KEYS[1], ARGV[1], 'PX', ARGV[2])
+            -- increment the counter 
             local counter_value = redis.call('HINCRBY', KEYS[2], KEYS[3], 1)
-            return {1, ARGV[1], counter_value} 
+            value = ${luaScript}
+            redis.call('SET', KEYS[1], value, 'PX', ttl)
+            -- return the updated value
+            return {1, value, counter_value} 
         else
             return {0, redis.call('GET', KEYS[1]), redis.call('HGET', KEYS[2], KEYS[3])}
         end
         """
+    }
 
     static protected Tuple2<String,String> splitKey(String key) {
         final p=key.lastIndexOf('/')
@@ -102,14 +111,15 @@ class RedisStateProvider implements StateProvider<String,String> {
     }
 
     @Override
-    Tuple3<Boolean,String,Integer> putIfAbsent(String key, String value, Duration ttl, String counter) {
-        return putIfAbsent(key, value, ttl, splitKey(counter))
+    CountResult<String> putJsonIfAbsentAndIncreaseCount(String key, String json, Duration ttl, String counter, String luaScript) {
+        return putJsonIfAbsentAndIncreaseCount(key, json, ttl, splitKey(counter), luaScript)
     }
 
-    Tuple3<Boolean,String,Integer> putIfAbsent(String key, String value, Duration ttl, Tuple2<String,String> counter) {
+    CountResult<String> putJsonIfAbsentAndIncreaseCount(String key, String json, Duration ttl, Tuple2<String,String> counter, String mapping) {
         try( Jedis jedis=pool.getResource() )  {
-            final result = jedis.eval(PUT_AND_INCREMENT, 3, key, counter.v1, counter.v2, value, ttl.toMillis().toString())
-            return new Tuple3<>((result as List)[0] == 1,
+            final result = jedis.eval(putAndIncrement(mapping), 3, key, counter.v1, counter.v2, json, ttl.toMillis().toString())
+            return new CountResult<>(
+                    (result as List)[0] == 1,
                     (result as List)[1] as String,
                     (result as List)[2] as Integer)
         }

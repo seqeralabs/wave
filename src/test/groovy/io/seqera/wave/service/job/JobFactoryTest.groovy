@@ -45,11 +45,12 @@ class JobFactoryTest extends Specification {
         def factory = new JobFactory()
         and:
         def request = new BuildRequest(
+                containerId: '12345',
                 targetImage: 'docker.io/foo:bar',
                 buildId: 'bd-12345_9',
                 startTime: ts,
                 maxDuration: Duration.ofMinutes(1),
-                workDir: Path.of('/some/work/dir')
+                workspace: Path.of('/some/work/dir')
         )
 
         when:
@@ -60,7 +61,7 @@ class JobFactoryTest extends Specification {
         job.creationTime == ts
         job.type == JobSpec.Type.Build
         job.maxDuration == Duration.ofMinutes(1)
-        job.workDir == Path.of('/some/work/dir')
+        job.workDir == Path.of('/some/work/dir/bd-12345_9')
     }
 
     def 'should create transfer job' () {

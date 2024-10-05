@@ -22,14 +22,19 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Timeout
 
+import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
 import io.micronaut.context.ApplicationContext
+import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.impl.BuildStateStoreImpl
 import io.seqera.wave.service.job.JobFactory
 import io.seqera.wave.service.job.JobQueue
+import io.seqera.wave.store.state.impl.RedisStateProvider
 import io.seqera.wave.test.RedisTestContainer
+import io.seqera.wave.tower.PlatformId
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -222,7 +227,8 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
                 targetImage: 'docker.io/foo:1',
                 buildId: '1',
                 startTime: Instant.now(),
-                maxDuration: Duration.ofSeconds(5)
+                maxDuration: Duration.ofSeconds(5),
+                workspace: Path.of('/some/work/dir')
         )
         def entry = new BuildEntry(req, res)
         and:
@@ -234,6 +240,66 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
 
         then: "job will timeout and the build will be marked as failed"
         buildCacheStore.getBuild(req.targetImage).result.exitStatus == -1
+    }
+
+    def 'should store a build entry only if absent' () {
+        given:
+        def _100ms = 100
+        def config = Mock(BuildConfig) { getStatusDuration()>>Duration.ofMillis(_100ms) }
+        def provider = applicationContext.getBean(RedisStateProvider)
+        def store = new BuildStateStoreImpl(provider, config, null)
+        and:
+        def request = new BuildRequest(
+                containerId: '12345',
+                buildId: 'bd-12345_0',
+                containerFile: 'from foo',
+                condaFile: 'conda spec',
+                workspace:  Path.of("/some/path"),
+                targetImage:  'docker.io/some:image:12345',
+                identity: PlatformId.NULL,
+                platform:  ContainerPlatform.of('linux/amd64'),
+                cacheRepository:  'cacherepo',
+                ip: "1.2.3.4",
+                configJson:  '{"config":"json"}',
+                scanId: 'scan12345' )
+        def entry = BuildEntry.create(request)
+
+        when:
+        def result= store.putIfAbsentAndCount('my/container:latest', entry)
+        then:
+        result.succeed
+        result.count == 1
+        result.value.request.buildId == 'bd-12345_1'
+        result.value.result.buildId == 'bd-12345_1'
+        result.value.request.workDir == Path.of("/some/path/bd-12345_1")
+        and:
+        store.findByRequestId('bd-12345_1') == result.value
+
+        when:
+        result= store.putIfAbsentAndCount('my/container:latest', entry)
+        then:
+        !result.succeed
+        result.count == 1
+        result.value.request.buildId == 'bd-12345_1'
+        result.value.result.buildId == 'bd-12345_1'
+        result.value.request.workDir == Path.of("/some/path/bd-12345_1")
+        and:
+        store.findByRequestId('bd-12345_1') == result.value
+
+        when:
+        sleep(2 *_100ms)
+        and:
+        result= store.putIfAbsentAndCount('my/container:latest', entry)
+        then:
+        result.succeed
+        result.count == 2
+        result.value.request.buildId == 'bd-12345_2'
+        result.value.result.buildId == 'bd-12345_2'
+        result.value.request.workDir == Path.of("/some/path/bd-12345_2")
+        and:
+        store.findByRequestId('bd-12345_1') == null
+        store.findByRequestId('bd-12345_2') == result.value
+
     }
 
 }

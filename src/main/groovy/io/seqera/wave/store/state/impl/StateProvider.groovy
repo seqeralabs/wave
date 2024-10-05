@@ -20,6 +20,7 @@ package io.seqera.wave.store.state.impl
 
 import java.time.Duration
 
+import io.seqera.wave.store.state.CountResult
 import io.seqera.wave.store.state.StateStore
 /**
  * Define an cache interface alias to be used by cache implementation providers
@@ -36,7 +37,7 @@ interface StateProvider<K,V> extends StateStore<K,V> {
      * @param key
      *      The unique associated with this object
      * @param value
-     *      The object to store
+     *      A JSON payload to be stored. It attribute "count" is updated with the counter incremented value
      * @param counterKey
      *      The counter unique key to be incremented
      * @param ttl
@@ -47,6 +48,6 @@ interface StateProvider<K,V> extends StateStore<K,V> {
      *      "return" is true or the value currently existing if the key already exist. Finally "count" is the value
      *      of the count after the increment operation.
      */
-    Tuple3<Boolean,V,Integer> putIfAbsent(K key, V value, Duration ttl, String counterKey)
+    CountResult<V> putJsonIfAbsentAndIncreaseCount(K key, V value, Duration ttl, String counterKey, String luaScript)
 
 }

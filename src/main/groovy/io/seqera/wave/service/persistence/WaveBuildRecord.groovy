@@ -71,7 +71,7 @@ class WaveBuildRecord {
     }
     
     static private WaveBuildRecord create0(BuildRequest request, BuildResult result) {
-        if( result && request.buildId != result.id )
+        if( result && request.buildId != result.buildId )
             throw new IllegalStateException("Build id must match the result id")
         return new WaveBuildRecord(
                 buildId: request.buildId,

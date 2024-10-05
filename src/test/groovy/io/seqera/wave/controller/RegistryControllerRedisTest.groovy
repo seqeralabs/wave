@@ -22,6 +22,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Timeout
 
+import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
@@ -109,9 +110,11 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         def res = BuildResult.create('1')
         def req = new BuildRequest(
                 targetImage: 'library/hello-world',
-                buildId: '1',
+                containerId: '12345',
+                buildId: 'bd-12345_1',
                 startTime: Instant.now(),
-                maxDuration: Duration.ofSeconds(5)
+                maxDuration: Duration.ofSeconds(5),
+                workspace: Path.of('/some/work/dir')
         )
         def entry = new BuildEntry(req, res)
         def containerRequestData = ContainerRequest.of(identity: new PlatformId(new User(id:1)), containerImage: "library/hello-world")

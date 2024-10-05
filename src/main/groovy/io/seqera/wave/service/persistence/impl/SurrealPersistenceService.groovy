@@ -163,7 +163,7 @@ class SurrealPersistenceService implements PersistenceService {
         final query = """
             select * 
             from wave_build 
-            where buildId ~ '${containerId}${BuildRequest.SEP}' 
+            where buildId ~ '${BuildRequest.ID_PREFIX}${containerId}${BuildRequest.SEP}' 
             order by startTime desc limit 1
             """.stripIndent()
         final json = surrealDb.sqlAsString(getAuthorization(), query)
