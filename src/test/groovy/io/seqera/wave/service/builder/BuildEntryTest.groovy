@@ -72,7 +72,7 @@ class BuildEntryTest extends Specification {
                 buildId: "bd-12345_1",
                 containerFile: 'FROM foo',
                 workspace: Path.of("/some/path"),
-                targetImage: 'some/targer:12345',
+                targetImage: 'some/target:12345',
                 identity: PlatformId.NULL,
                 platform: ContainerPlatform.DEFAULT,
                 cacheRepository: 'cacherepo',
