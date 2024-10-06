@@ -58,6 +58,7 @@ import io.seqera.wave.config.CondaOpts;
 import io.seqera.wave.util.DockerIgnoreFilter;
 import io.seqera.wave.util.Packer;
 import org.apache.commons.lang3.StringUtils;
+import org.semver4j.Semver;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import static io.seqera.wave.cli.util.Checkers.isEmpty;
@@ -696,7 +697,19 @@ public class App implements Runnable {
         System.out.println(String.format(" Endpoint  : %s", waveEndpoint));
     }
 
-    private String serviceVersion() {
+    protected String serviceVersion() {
+        return serviceVersion0(getServiceVersion(), "1.13.0");
+    }
+
+    protected String serviceVersion0(String current, String required) {
+        Semver current0 = new Semver(current);
+        Semver required0 = new Semver(required);
+        return current0.compareTo(required0) >= 0
+                ? current
+                : current + " (required: " + required0 + ")";
+    }
+
+    protected String getServiceVersion() {
         fixServiceInfoConstructor();
         try {
             return client().serviceInfo().version;
@@ -709,7 +722,7 @@ public class App implements Runnable {
 
     private void fixServiceInfoConstructor() {
         /*
-         dirty hack to force Graal compiler  to recognise the access via reflection of the
+         dirty hack to force Graal compiler to recognise the access via reflection of the
          ServiceInfo constructor
          */
         try {

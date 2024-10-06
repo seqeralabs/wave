@@ -555,4 +555,18 @@ class AppTest extends Specification {
         e.getMessage() == "Argument --mirror-registry and --freeze conflict each other"
     }
 
+    @Unroll
+    def 'should check service version'() {
+        given:
+        def app = new App()
+        expect:
+        app.serviceVersion0(CURRENT, REQUIRED) == EXPECTED
+
+        where:
+        CURRENT     | REQUIRED      | EXPECTED
+        '2.0.0'     | '1.1.1'       | '2.0.0'
+        '2.0.0'     | '2.0.0'       | '2.0.0'
+        '2.0.0'     | '2.1.0'       | '2.0.0 (required: 2.1.0)'
+    }
+
 }
