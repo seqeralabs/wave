@@ -65,7 +65,8 @@ abstract class AbstractStateStore<V> implements StateStore<String,V> {
      *      The counter key that by default is the entry key.
      */
     protected String counterKey(String key, V value) {
-        return key
+        assert key, "Argument 'key' cannot be empty"
+        return getPrefix() + '/counter/' + key
     }
 
     /**

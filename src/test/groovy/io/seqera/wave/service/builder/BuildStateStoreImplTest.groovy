@@ -44,4 +44,12 @@ class BuildStateStoreImplTest extends Specification {
         store.requestId0('foo') == 'wave-build/v2/request-id:foo'
     }
 
+    def 'should return counter key' () {
+        given:
+        def build = Mock(BuildEntry) {
+            getRequest()>>Mock(BuildRequest) { getContainerId()>>'12345' }
+        }
+        expect:
+        store.counterKey('foo', build) == 'build-counters/v1/12345'
+    }
 }

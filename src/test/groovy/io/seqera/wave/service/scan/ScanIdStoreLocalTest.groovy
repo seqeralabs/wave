@@ -39,6 +39,11 @@ class ScanIdStoreLocalTest extends Specification {
         store.key0('foo') == 'wave-scanid/v1:foo'
     }
 
+    def 'should return counter key' () {
+        expect:
+        store.counterKey('foo', Mock(ScanId)) == 'wave-scanid/v1/counter/foo'
+    }
+
     def 'should get scan id' () {
         given:
         def _100ms = 100
