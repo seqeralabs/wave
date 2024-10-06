@@ -23,3 +23,9 @@ Examples:
 
   # Build a Singularity container based on Conda packages
   wave --conda-package bamtools=2.5.2 --singularity --freeze --build-repo docker.io/user/repo
+
+  # Copy a container image to another registry
+  wave -i quay.io/biocontainers/bwa:0.7.15--0 --mirror-registry <YOUR REGISTRY> --tower-token <YOUR TOKEN>
+
+  # Scan a container for security vulnerability
+  wave -i ubuntu --scan-mode required --await

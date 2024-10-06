@@ -19,6 +19,7 @@ package io.seqera.wave.cli.util
 
 import java.time.Instant
 
+import io.seqera.wave.api.ContainerStatus
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.cli.model.ContainerInspectResponseEx
 import io.seqera.wave.core.spec.ContainerSpec
@@ -40,7 +41,10 @@ class YamlHelperTest extends Specification {
                 expiration: Instant.ofEpochMilli(1691839913),
                 buildId: '98765',
                 cached: false,
-                freeze: false
+                freeze: false,
+                mirror: false,
+                scanId: 'scan-123',
+                status: ContainerStatus.BUILDING
         )
 
         when:
@@ -53,6 +57,9 @@ class YamlHelperTest extends Specification {
             containerToken: '12345'
             expiration: '1970-01-20T13:57:19.913Z'
             freeze: false
+            mirror: false
+            scanId: scan-123
+            status: BUILDING
             targetImage: docker.io/some/repo
             '''.stripIndent(true)
     }
@@ -69,7 +76,6 @@ class YamlHelperTest extends Specification {
         then:
         result == '''\
             container:
-              config: null
               digest: sha:12345
               hostName: https://docker.io
               imageName: ubuntu
@@ -77,15 +83,12 @@ class YamlHelperTest extends Specification {
                 annotations:
                   one: '1'
                   two: '2'
-                config: null
                 layers:
-                - annotations: null
-                  digest: sha256:12345
+                - digest: sha256:12345
                   mediaType: text
                   size: 100
                   uri: https://docker.io/v2/ubuntu/blobs/sha256:12345
-                - annotations: null
-                  digest: sha256:67890
+                - digest: sha256:67890
                   mediaType: text
                   size: 200
                   uri: https://docker.io/v2/ubuntu/blobs/sha256:67890

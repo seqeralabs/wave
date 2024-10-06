@@ -63,29 +63,7 @@
   "methods":[{"name":"setPattern","parameterTypes":["java.lang.String"] }]
 },
 {
-  "name":"ch.qos.logback.core.rolling.RollingFileAppender",
-  "queryAllPublicMethods":true,
-  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setFile","parameterTypes":["java.lang.String"] }, {"name":"setRollingPolicy","parameterTypes":["ch.qos.logback.core.rolling.RollingPolicy"] }]
-},
-{
-  "name":"ch.qos.logback.core.rolling.RollingPolicyBase",
-  "methods":[{"name":"setFileNamePattern","parameterTypes":["java.lang.String"] }, {"name":"setParent","parameterTypes":["ch.qos.logback.core.FileAppender"] }]
-},
-{
-  "name":"ch.qos.logback.core.rolling.TimeBasedRollingPolicy",
-  "queryAllPublicMethods":true,
-  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setMaxHistory","parameterTypes":["int"] }, {"name":"setTotalSizeCap","parameterTypes":["ch.qos.logback.core.util.FileSize"] }]
-},
-{
-  "name":"ch.qos.logback.core.rolling.helper.DateTokenConverter",
-  "methods":[{"name":"<init>","parameterTypes":[] }]
-},
-{
   "name":"ch.qos.logback.core.spi.ContextAware",
-  "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
-},
-{
-  "name":"ch.qos.logback.core.util.FileSize",
   "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
 },
 {
@@ -214,16 +192,6 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
-  "name":"io.seqera.wave.api.BuildStatusResponse",
-  "allDeclaredFields":true,
-  "queryAllPublicMethods":true,
-  "methods":[{"name":"<init>","parameterTypes":[] }]
-},
-{
-  "name":"io.seqera.wave.api.BuildStatusResponse$Status",
-  "fields":[{"name":"COMPLETED"}, {"name":"PENDING"}]
-},
-{
   "name":"io.seqera.wave.api.ContainerConfig",
   "allDeclaredFields":true,
   "methods":[{"name":"<init>","parameterTypes":[] }]
@@ -236,17 +204,19 @@
 {
   "name":"io.seqera.wave.api.ContainerInspectResponse",
   "allDeclaredFields":true,
-  "queryAllPublicMethods":true,
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
-  "name":"io.seqera.wave.api.ContainerInspectResponseBeanInfo"
-},
-{
-  "name":"io.seqera.wave.api.ContainerInspectResponseCustomizer"
-},
-{
   "name":"io.seqera.wave.api.ContainerLayer",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.seqera.wave.api.ContainerStatus",
+  "fields":[{"name":"BUILDING"}, {"name":"DONE"}, {"name":"PENDING"}, {"name":"SCANNING"}]
+},
+{
+  "name":"io.seqera.wave.api.ContainerStatusResponse",
   "allDeclaredFields":true,
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
@@ -257,7 +227,15 @@
 },
 {
   "name":"io.seqera.wave.api.PackagesSpec$Type",
-  "fields":[{"name":"CONDA"}]
+  "fields":[{"name":"CONDA"}, {"name":"SPACK"}]
+},
+{
+  "name":"io.seqera.wave.api.ScanLevel",
+  "fields":[{"name":"CRITICAL"}, {"name":"HIGH"}, {"name":"LOW"}, {"name":"MEDIUM"}]
+},
+{
+  "name":"io.seqera.wave.api.ScanMode",
+  "fields":[{"name":"async"}, {"name":"none"}, {"name":"required"}]
 },
 {
   "name":"io.seqera.wave.api.ServiceInfo",
@@ -303,7 +281,7 @@
 {
   "name":"io.seqera.wave.cli.json.ImageNameStrategyAdapter",
   "queryAllDeclaredMethods":true,
-  "methods":[{"name":"fromJson","parameterTypes":["java.lang.String"] }, {"name":"toJson","parameterTypes":["io.seqera.wave.api.ImageNameStrategy"] }]
+  "methods":[{"name":"toJson","parameterTypes":["io.seqera.wave.api.ImageNameStrategy"] }]
 },
 {
   "name":"io.seqera.wave.cli.json.LayerRefAdapter",
@@ -316,7 +294,8 @@
 },
 {
   "name":"io.seqera.wave.cli.model.ContainerInspectResponseEx",
-  "allDeclaredFields":true
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
   "name":"io.seqera.wave.cli.model.ContainerSpecEx",
@@ -324,7 +303,19 @@
 },
 {
   "name":"io.seqera.wave.cli.model.LayerRef",
-  "allDeclaredFields":true
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.seqera.wave.cli.model.SubmitContainerTokenResponseEx",
+  "allDeclaredFields":true,
+  "queryAllPublicMethods":true
+},
+{
+  "name":"io.seqera.wave.cli.model.SubmitContainerTokenResponseExBeanInfo"
+},
+{
+  "name":"io.seqera.wave.cli.model.SubmitContainerTokenResponseExCustomizer"
 },
 {
   "name":"io.seqera.wave.cli.util.CliVersionProvider",
@@ -334,6 +325,11 @@
 },
 {
   "name":"io.seqera.wave.config.CondaOpts",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.seqera.wave.config.SpackOpts",
   "allDeclaredFields":true,
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
@@ -355,14 +351,7 @@
 {
   "name":"io.seqera.wave.core.spec.ContainerSpec",
   "allDeclaredFields":true,
-  "queryAllPublicMethods":true,
   "methods":[{"name":"<init>","parameterTypes":[] }]
-},
-{
-  "name":"io.seqera.wave.core.spec.ContainerSpecBeanInfo"
-},
-{
-  "name":"io.seqera.wave.core.spec.ContainerSpecCustomizer"
 },
 {
   "name":"io.seqera.wave.core.spec.ManifestSpec",

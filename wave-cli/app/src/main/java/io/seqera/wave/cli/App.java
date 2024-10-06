@@ -44,9 +44,11 @@ import io.seqera.wave.api.*;
 import io.seqera.wave.cli.exception.BadClientResponseException;
 import io.seqera.wave.cli.exception.ClientConnectionException;
 import io.seqera.wave.cli.exception.IllegalCliArgumentException;
+import io.seqera.wave.cli.exception.ReadyTimeoutException;
 import io.seqera.wave.cli.json.JsonHelper;
 import io.seqera.wave.cli.model.ContainerInspectResponseEx;
 import io.seqera.wave.cli.model.ContainerSpecEx;
+import io.seqera.wave.cli.model.SubmitContainerTokenResponseEx;
 import io.seqera.wave.cli.util.BuildInfo;
 import io.seqera.wave.cli.util.CliVersionProvider;
 import io.seqera.wave.cli.util.DurationConverter;
@@ -55,6 +57,7 @@ import io.seqera.wave.cli.util.YamlHelper;
 import io.seqera.wave.config.CondaOpts;
 import io.seqera.wave.util.DockerIgnoreFilter;
 import io.seqera.wave.util.Packer;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import static io.seqera.wave.cli.util.Checkers.isEmpty;
@@ -184,6 +187,15 @@ public class App implements Runnable {
     @Option(names = {"--name-strategy"}, paramLabel = "false", description = "Specify the name strategy for the container name, it can be 'none' or 'tagPrefix' or 'imageSuffix'")
     private ImageNameStrategy nameStrategy;
 
+    @Option(names = {"-m","--mirror-registry"}, paramLabel = "false", description = "Specify registry where the container should be mirrored e.g. 'docker.io'")
+    private String mirrorRegistry;
+
+    @Option(names = {"--scan-mode"}, paramLabel = "false", description = "Specify container security scan mode, it can be 'none', 'async' or 'required'")
+    private ScanMode scanMode;
+
+    @Option(names = {"--scan-level"}, paramLabel = "false", description = "Specify one or more security scan vulnerabilities level allowed in the container e.g. low,medium,high,critical")
+    private List<ScanLevel> scanLevels;
+
     @CommandLine.Parameters
     List<String> prompt;
 
@@ -234,7 +246,7 @@ public class App implements Runnable {
             }
         }
         catch (IllegalCliArgumentException | CommandLine.ParameterException | BadClientResponseException |
-               ClientConnectionException e) {
+               ReadyTimeoutException | ClientConnectionException e) {
             System.err.println(e.getMessage());
             System.exit(1);
         }
@@ -343,6 +355,27 @@ public class App implements Runnable {
                 throw new IllegalCliArgumentException("Context path is not a directory - offending value: " + contextDir);
         }
 
+        if( !isEmpty(mirrorRegistry) && !isEmpty(containerFile) )
+            throw new IllegalCliArgumentException("Argument --mirror-registry and --containerfile conflict each other");
+
+        if( !isEmpty(mirrorRegistry) && !isEmpty(condaFile) )
+            throw new IllegalCliArgumentException("Argument --mirror-registry and --conda-file conflict each other");
+
+        if( !isEmpty(mirrorRegistry) && !isEmpty(condaPackages) )
+            throw new IllegalCliArgumentException("Argument --mirror-registry and --conda-package conflict each other");
+
+        if( !isEmpty(mirrorRegistry) && !isEmpty(contextDir) )
+            throw new IllegalCliArgumentException("Argument --mirror-registry and --context conflict each other");
+
+        if( !isEmpty(mirrorRegistry) && freeze )
+            throw new IllegalCliArgumentException("Argument --mirror-registry and --freeze conflict each other");
+
+        if( !isEmpty(mirrorRegistry) && !isEmpty(buildRepository) )
+            throw new IllegalCliArgumentException("Argument --mirror-registry and --build-repository conflict each other");
+
+        if( !isEmpty(mirrorRegistry) && !isEmpty(cacheRepository) )
+            throw new IllegalCliArgumentException("Argument --mirror-registry and --cache-repository conflict each other");
+
         if( dryRun && await != null )
             throw new IllegalCliArgumentException("Options --dry-run and --await conflicts each other");
 
@@ -373,7 +406,11 @@ public class App implements Runnable {
                 .withFreezeMode(freeze)
                 .withDryRun(dryRun)
                 .withContainerIncludes(includes)
-                .withNameStrategy(nameStrategy);
+                .withNameStrategy(nameStrategy)
+                .withMirrorRegistry(mirrorRegistry)
+                .withScanMode(scanMode)
+                .withScanLevels(scanLevels)
+                ;
     }
 
     public void inspect() {
@@ -404,10 +441,15 @@ public class App implements Runnable {
         // submit it
         SubmitContainerTokenResponse resp = client.submit(request);
         // await build to be completed
-        if( await != null && resp.buildId!=null && !resp.cached )
-            client.awaitCompletion(resp.buildId, await);
-        // print the wave container name
-        System.out.println(dumpOutput(resp));
+        if( await != null && resp.status!=null && resp.status!=ContainerStatus.DONE ) {
+            ContainerStatusResponse status = client.awaitCompletion(resp.requestId, await);
+            // print the wave container name
+            System.out.println(dumpOutput(new SubmitContainerTokenResponseEx(resp, status)));
+        }
+        else {
+            // print the wave container name
+            System.out.println(dumpOutput(resp));
+        }
     }
 
     private String encodePathBase64(String value) {
@@ -577,6 +619,18 @@ public class App implements Runnable {
         }
 
         return null;
+    }
+
+    protected String dumpOutput(SubmitContainerTokenResponseEx resp) {
+        if( outputFormat==null && !resp.succeeded ) {
+            String message = "Container provisioning did not complete successfully";
+            if( !StringUtils.isEmpty(resp.reason) )
+                message += "\n- Reason: " + resp.reason;
+            if( !StringUtils.isEmpty(resp.detailsUri) )
+                message += "\n- Find out more here: " + resp.detailsUri;
+            throw new BadClientResponseException(message);
+        }
+        return dumpOutput((SubmitContainerTokenResponse)resp);
     }
 
     protected String dumpOutput(SubmitContainerTokenResponse resp) {

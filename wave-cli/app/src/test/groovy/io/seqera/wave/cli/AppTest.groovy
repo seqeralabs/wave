@@ -17,16 +17,21 @@
 
 package io.seqera.wave.cli
 
-import io.seqera.wave.api.ImageNameStrategy
-import io.seqera.wave.cli.util.DurationConverter
-
 import java.nio.file.Files
 import java.time.Duration
 import java.time.Instant
 
+import io.seqera.wave.api.ContainerStatus
+import io.seqera.wave.api.ContainerStatusResponse
+import io.seqera.wave.api.ImageNameStrategy
+import io.seqera.wave.api.ScanLevel
+import io.seqera.wave.api.ScanMode
 import io.seqera.wave.api.SubmitContainerTokenResponse
+import io.seqera.wave.cli.exception.BadClientResponseException
 import io.seqera.wave.cli.exception.IllegalCliArgumentException
 import io.seqera.wave.cli.model.ContainerInspectResponseEx
+import io.seqera.wave.cli.model.SubmitContainerTokenResponseEx
+import io.seqera.wave.cli.util.DurationConverter
 import io.seqera.wave.core.spec.ContainerSpec
 import io.seqera.wave.util.TarUtils
 import picocli.CommandLine
@@ -77,9 +82,96 @@ class AppTest extends Specification {
             containerImage: docker.io/some/container
             containerToken: '12345'
             expiration: '1970-01-20T13:57:19.913Z'
-            freeze: null
             targetImage: docker.io/some/repo
             '''.stripIndent(true)
+    }
+
+    def 'should dump response with status to yaml' () {
+        given:
+        def app = new App()
+        String[] args = ["--output", "yaml"]
+        and:
+        def resp = new SubmitContainerTokenResponse(
+                containerToken: "12345",
+                targetImage: 'docker.io/some/repo',
+                containerImage: 'docker.io/some/container',
+                expiration: Instant.ofEpochMilli(1691839913),
+                buildId: '98765',
+                cached: true
+        )
+        def status = new ContainerStatusResponse(
+                "12345",
+                ContainerStatus.DONE,
+                "98765",
+                null,
+                "scan-1234",
+                [MEDIUM:1, HIGH:2],
+                true,
+                "All ok",
+                "http://foo.com",
+                Instant.now(),
+                Duration.ofMinutes(1)
+        )
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        def result = app.dumpOutput(new SubmitContainerTokenResponseEx(resp, status))
+        then:
+        result == '''\
+            buildId: '98765'
+            cached: true
+            containerImage: docker.io/some/container
+            containerToken: '12345'
+            detailsUri: http://foo.com
+            duration: PT1M
+            expiration: '1970-01-20T13:57:19.913Z'
+            reason: All ok
+            status: DONE
+            succeeded: true
+            targetImage: docker.io/some/repo
+            vulnerabilities:
+              MEDIUM: 1
+              HIGH: 2
+            '''.stripIndent(true)
+    }
+
+    def 'should throw exception on failure' (){
+        given:
+        def app = new App()
+        String[] args = []
+        and:
+        def resp = new SubmitContainerTokenResponse(
+                containerToken: "12345",
+                targetImage: 'docker.io/some/repo',
+                containerImage: 'docker.io/some/container',
+                expiration: Instant.ofEpochMilli(1691839913),
+                buildId: '98765',
+                cached: false
+        )
+        def status = new ContainerStatusResponse(
+                "12345",
+                ContainerStatus.DONE,
+                "98765",
+                null,
+                "scan-1234",
+                [MEDIUM:1, HIGH:2],
+                false,
+                "Something went wrong",
+                "http://foo.com/bar/1234",
+                Instant.now(),
+                Duration.ofMinutes(1)
+        )
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        app.dumpOutput(new SubmitContainerTokenResponseEx(resp, status))
+        then:
+        def e = thrown(BadClientResponseException)
+        e.message == '''\
+            Container provisioning did not complete successfully
+            - Reason: Something went wrong
+            - Find out more here: http://foo.com/bar/1234\
+            '''.stripIndent()
     }
 
     def 'should dump response to json' () {
@@ -129,11 +221,9 @@ class AppTest extends Specification {
         then:
         result == '''\
             container:
-              config: null
               digest: sha:12345
               hostName: https://docker.io
               imageName: busybox
-              manifest: null
               reference: latest
               registry: docker.io
             '''.stripIndent()
@@ -188,6 +278,34 @@ class AppTest extends Specification {
         def req = app.createRequest()
         then:
         req.dryRun
+    }
+
+    def 'should set scan mode' () {
+        given:
+        def app = new App()
+        String[] args = ["--scan-mode", 'async']
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        and:
+        def req = app.createRequest()
+        then:
+        req.scanMode == ScanMode.async
+        req.scanLevels == null
+    }
+
+    def 'should set scan levels' () {
+        given:
+        def app = new App()
+        String[] args = ["--scan-level", 'LOW', "--scan-level", 'MEDIUM']
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        and:
+        def req = app.createRequest()
+        then:
+        req.scanMode == null
+        req.scanLevels == List.of(ScanLevel.LOW, ScanLevel.MEDIUM)
     }
 
     def 'should not allow dry-run and await' () {
@@ -387,6 +505,54 @@ class AppTest extends Specification {
         def e = thrown(CommandLine.ParameterException)
         and:
         e.getMessage() == "Invalid value for option '--name-strategy': expected one of [none, tagPrefix, imageSuffix] (case-sensitive) but was 'wrong'"
+    }
+
+    def 'should fail when specifying mirror registry and container file' () {
+        given:
+        def app = new App()
+        String[] args = ["--mirror-registry", "docker.io", "-f", "foo"]
+
+        when:
+        def cli = new CommandLine(app)
+        cli.parseArgs(args)
+        and:
+        app.validateArgs()
+        then:
+        def e = thrown(IllegalCliArgumentException)
+        and:
+        e.getMessage() == "Argument --mirror-registry and --containerfile conflict each other"
+    }
+
+    def 'should fail when specifying mirror registry and conda package' () {
+        given:
+        def app = new App()
+        String[] args = ["--mirror-registry", "docker.io", "--conda-package", "foo"]
+
+        when:
+        def cli = new CommandLine(app)
+        cli.parseArgs(args)
+        and:
+        app.validateArgs()
+        then:
+        def e = thrown(IllegalCliArgumentException)
+        and:
+        e.getMessage() == "Argument --mirror-registry and --conda-package conflict each other"
+    }
+
+    def 'should fail when specifying mirror registry and freeze' () {
+        given:
+        def app = new App()
+        String[] args = ["--mirror-registry", "docker.io", "--image", "foo", "--freeze"]
+
+        when:
+        def cli = new CommandLine(app)
+        cli.parseArgs(args)
+        and:
+        app.validateArgs()
+        then:
+        def e = thrown(IllegalCliArgumentException)
+        and:
+        e.getMessage() == "Argument --mirror-registry and --freeze conflict each other"
     }
 
 }

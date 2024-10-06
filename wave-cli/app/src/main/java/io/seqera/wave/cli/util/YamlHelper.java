@@ -17,6 +17,7 @@
 
 package io.seqera.wave.cli.util;
 
+import java.time.Duration;
 import java.time.Instant;
 
 import io.seqera.wave.api.ContainerInspectResponse;
@@ -24,12 +25,15 @@ import io.seqera.wave.api.SubmitContainerTokenResponse;
 import io.seqera.wave.cli.model.ContainerInspectResponseEx;
 import io.seqera.wave.cli.model.ContainerSpecEx;
 import io.seqera.wave.cli.model.LayerRef;
+import io.seqera.wave.cli.model.SubmitContainerTokenResponseEx;
 import io.seqera.wave.core.spec.ConfigSpec;
 import io.seqera.wave.core.spec.ContainerSpec;
 import io.seqera.wave.core.spec.ManifestSpec;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.introspector.BeanAccess;
+import org.yaml.snakeyaml.introspector.Property;
+import org.yaml.snakeyaml.nodes.NodeTuple;
 import org.yaml.snakeyaml.nodes.Tag;
 import org.yaml.snakeyaml.representer.Representer;
 
@@ -46,7 +50,18 @@ public class YamlHelper {
         final Representer representer = new Representer(opts) {
             {
                 addClassTag(SubmitContainerTokenResponse.class, Tag.MAP);
+                addClassTag(SubmitContainerTokenResponseEx.class, Tag.MAP);
                 representers.put(Instant.class, data -> representScalar(Tag.STR, data.toString()));
+                representers.put(Duration.class, data -> representScalar(Tag.STR, data.toString()));
+            }
+
+            // skip null values in the resulting yaml
+            @Override
+            protected NodeTuple representJavaBeanProperty(Object javaBean, Property property, Object propertyValue, Tag customTag) {
+                if (propertyValue == null) {
+                    return null;
+                }
+                return super.representJavaBeanProperty(javaBean, property, propertyValue, customTag);
             }
         };
 
@@ -69,6 +84,16 @@ public class YamlHelper {
                 addClassTag(ContainerInspectResponseEx.class, Tag.MAP);
                 addClassTag(LayerRef.class, Tag.MAP);
                 representers.put(Instant.class, data -> representScalar(Tag.STR, data.toString()));
+            }
+
+            // skip null values in the resulting yaml 
+            @Override
+            protected NodeTuple representJavaBeanProperty(Object javaBean, Property property, Object propertyValue, Tag customTag) {
+                // Skip null values
+                if (propertyValue == null) {
+                    return null;
+                }
+                return super.representJavaBeanProperty(javaBean, property, propertyValue, customTag);
             }
         };
 

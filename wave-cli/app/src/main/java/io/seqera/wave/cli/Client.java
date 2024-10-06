@@ -37,9 +37,10 @@ import dev.failsafe.RetryPolicy;
 import dev.failsafe.event.EventListener;
 import dev.failsafe.event.ExecutionAttemptedEvent;
 import dev.failsafe.function.CheckedSupplier;
-import io.seqera.wave.api.BuildStatusResponse;
 import io.seqera.wave.api.ContainerInspectRequest;
 import io.seqera.wave.api.ContainerInspectResponse;
+import io.seqera.wave.api.ContainerStatus;
+import io.seqera.wave.api.ContainerStatusResponse;
 import io.seqera.wave.api.ServiceInfo;
 import io.seqera.wave.api.ServiceInfoResponse;
 import io.seqera.wave.api.SubmitContainerTokenRequest;
@@ -47,6 +48,7 @@ import io.seqera.wave.api.SubmitContainerTokenResponse;
 import io.seqera.wave.cli.config.RetryOpts;
 import io.seqera.wave.cli.exception.BadClientResponseException;
 import io.seqera.wave.cli.exception.ClientConnectionException;
+import io.seqera.wave.cli.exception.ReadyTimeoutException;
 import io.seqera.wave.cli.json.JsonHelper;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -197,18 +199,32 @@ public class Client {
         return URI.create(result);
     }
 
-    void awaitCompletion(String buildId, Duration await) {
-        log.debug("Waiting for build completion: {} - timeout: {} Seconds", buildId, await.toSeconds());
+    ContainerStatusResponse awaitCompletion(String requestId, Duration await) {
+        if( StringUtils.isEmpty(requestId) )
+            throw new IllegalArgumentException("Argument 'requestId' cannot be empty");
+        log.debug("Waiting for build completion: {} - timeout: {} Seconds", requestId, await.toSeconds());
         final long startTime = Instant.now().toEpochMilli();
-        while (!isComplete(buildId)) {
+        while ( true ) {
+            final ContainerStatusResponse response = checkStatus(requestId);
+            if( response.status==ContainerStatus.DONE )
+                return response;
+
             if (System.currentTimeMillis() - startTime > await.toMillis()) {
-                break;
+                String msg = String.format("Container provisioning did not complete within the max await time (%s)", await.toString());
+                throw new ReadyTimeoutException(msg);
+            }
+            // await
+            try {
+                TimeUnit.SECONDS.sleep(10);
+            }
+            catch (InterruptedException e) {
+                throw new RuntimeException("Execution interrupted", e);
             }
         }
     }
 
-    protected boolean isComplete(String buildId) {
-        final String statusEndpoint = endpoint + "/v1alpha1/builds/"+buildId+"/status";
+    protected ContainerStatusResponse checkStatus(String requestId) {
+        final String statusEndpoint = endpoint + "/v1alpha2/container/"+requestId+"/status";
         final HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(statusEndpoint))
                 .headers("Content-Type","application/json")
@@ -216,21 +232,17 @@ public class Client {
                 .build();
 
         try {
-            //interval of 10 seconds
-            TimeUnit.SECONDS.sleep(10);
-
             final HttpResponse<String> resp = httpSend(req);
             log.debug("Wave response: statusCode={}; body={}", resp.statusCode(), resp.body());
             if( resp.statusCode()==200 ) {
-                BuildStatusResponse result = JsonHelper.fromJson(resp.body(), BuildStatusResponse.class);
-                return result.status == BuildStatusResponse.Status.COMPLETED;
+                return JsonHelper.fromJson(resp.body(), ContainerStatusResponse.class);
             }
             else {
                 String msg = String.format("Wave invalid response: [%s] %s", resp.statusCode(), resp.body());
                 throw new BadClientResponseException(msg);
             }
         }
-        catch (IOException | FailsafeException | InterruptedException e) {
+        catch (IOException | FailsafeException e) {
             throw new ClientConnectionException("Unable to connect Wave service: " + endpoint, e);
         }
     }
