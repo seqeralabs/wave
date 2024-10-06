@@ -157,7 +157,7 @@ class ViewController {
         final rec = buildService.getLatestBuild(buildId)
         if( !rec )
             return null
-        if( !rec.buildId.startsWith(buildId) )
+        if( !rec.buildId.contains(buildId) )
             return null
         if( rec.buildId==buildId )
             return null

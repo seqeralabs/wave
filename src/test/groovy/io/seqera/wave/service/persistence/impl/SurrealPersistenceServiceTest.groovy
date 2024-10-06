@@ -187,11 +187,10 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def result3 = new BuildResult(request3.buildId, -1, "ok", request3.startTime, Duration.ofSeconds(2), null)
         surreal.insertBuild(auth, WaveBuildRecord.fromEvent(new BuildEvent(request3, result3)))
 
-        when:
-        def loaded = persistence.latestBuild('abc')
-
-        then:
-        loaded.buildId == 'bd-abc_3'
+        expect:
+        persistence.latestBuild('abc').buildId == 'bd-abc_3'
+        persistence.latestBuild('bd-abc').buildId == 'bd-abc_3'
+        persistence.latestBuild('xyz') == null
     }
 
     def 'should save and update a build' () {
