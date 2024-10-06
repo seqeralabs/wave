@@ -3,7 +3,7 @@ config ?= compileClasspath
 ifdef module
 mm = :${module}:
 else
-mm =
+mm = :app:
 endif
 
 
