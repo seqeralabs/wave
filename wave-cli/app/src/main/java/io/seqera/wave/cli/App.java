@@ -53,7 +53,6 @@ import io.seqera.wave.cli.util.DurationConverter;
 import io.seqera.wave.cli.util.GptHelper;
 import io.seqera.wave.cli.util.YamlHelper;
 import io.seqera.wave.config.CondaOpts;
-import io.seqera.wave.config.SpackOpts;
 import io.seqera.wave.util.DockerIgnoreFilter;
 import io.seqera.wave.util.Packer;
 import org.slf4j.LoggerFactory;
@@ -153,15 +152,6 @@ public class App implements Runnable {
 
     @Option(names = {"--conda-channels"}, paramLabel = "''", description = "Conda channels used to build the container (default: ${DEFAULT-VALUE}).")
     private String condaChannels = DEFAULT_CONDA_CHANNELS;
-
-    @Option(names = {"--spack-file"}, paramLabel = "''",  description = "A Spack file used to build the container e.g. /some/path/spack.yaml.")
-    private String spackFile;
-
-    @Option(names = {"--spack-package"}, paramLabel = "''", description = "One or more Spack packages used to build the container e.g. cowsay.")
-    private List<String> spackPackages;
-
-    @Option(names = {"--spack-run-command"}, paramLabel = "''",  description = "Dockerfile RUN commands used to build the container.")
-    private List<String> spackRunCommands;
 
     @Option(names = {"--log-level"}, paramLabel = "''", description = "Set the application log level. One of: OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL")
     private String logLevel;
@@ -304,7 +294,7 @@ public class App implements Runnable {
         if( !isEmpty(image) && !isEmpty(containerFile) )
             throw new IllegalCliArgumentException("Argument --image and --containerfile conflict each other - Specify an image name or a container file for the container to be provisioned");
 
-        if( isEmpty(image) && isEmpty(containerFile) && isEmpty(condaFile) && condaPackages==null  && isEmpty(spackFile) && spackPackages==null && isEmpty(prompt) )
+        if( isEmpty(image) && isEmpty(containerFile) && isEmpty(condaFile) && condaPackages==null && isEmpty(prompt) )
             throw new IllegalCliArgumentException("Provide either a image name or a container file for the Wave container to be provisioned");
 
         if( isEmpty(towerToken) && !isEmpty(buildRepository) )
@@ -326,44 +316,13 @@ public class App implements Runnable {
         if( condaPackages!=null && !isEmpty(containerFile) )
             throw new IllegalCliArgumentException("Option --conda-package and --containerfile conflict each other");
 
-        // -- check spack options
-        if( !isEmpty(spackFile) && spackPackages!=null )
-            throw new IllegalCliArgumentException("Option --spack-file and --spack-package conflict each other");
-
-        if( !isEmpty(spackFile) && !isEmpty(image) )
-            throw new IllegalCliArgumentException("Option --spack-file and --image conflict each other");
-
-        if( !isEmpty(spackFile) && !isEmpty(containerFile) )
-            throw new IllegalCliArgumentException("Option --spack-file and --containerfile conflict each other");
-
-        if( spackPackages!=null && !isEmpty(image) )
-            throw new IllegalCliArgumentException("Option --spack-package and --image conflict each other");
-
-        if( spackPackages!=null && !isEmpty(containerFile) )
-            throw new IllegalCliArgumentException("Option --spack-package and --containerfile conflict each other");
-
         if( !isEmpty(outputFormat) && !List.of("json","yaml").contains(outputFormat) ) {
             final String msg = String.format("Invalid output format: '%s' - expected value: json, yaml", outputFormat);
             throw new IllegalCliArgumentException(msg);
         }
 
-        if( condaPackages!=null && spackPackages!=null )
-            throw new IllegalCliArgumentException("Option --conda-package and --spack-package conflict each other");
-
-        if( condaPackages!=null && !isEmpty(spackFile) )
-            throw new IllegalCliArgumentException("Option --conda-package and --spack-file conflict each other");
-
-        if( !isEmpty(condaFile) && spackPackages!=null )
-            throw new IllegalCliArgumentException("Option --conda-file and --spack-package conflict each other");
-
-        if( !isEmpty(condaFile) && !isEmpty(spackFile) )
-            throw new IllegalCliArgumentException("Option --conda-file and --spack-file conflict each other");
-
         if( !isEmpty(condaFile) && !Files.exists(Path.of(condaFile)) )
             throw new IllegalCliArgumentException("The specified Conda file path cannot be accessed - offending file path: " + condaFile);
-
-        if( !isEmpty(spackFile) && !Files.exists(Path.of(spackFile)) )
-            throw new IllegalCliArgumentException("The specified Spack file path cannot be accessed - offending file path: " + spackFile);
 
         if( !isEmpty(contextDir) && isEmpty(containerFile) )
             throw new IllegalCliArgumentException("Option --context requires the use of a container file");
@@ -588,11 +547,6 @@ public class App implements Runnable {
                 ;
     }
 
-    private SpackOpts spackOpts() {
-        return new SpackOpts()
-                .withCommands(spackRunCommands);
-    }
-
     protected String containerFileBase64() {
         return !isEmpty(containerFile)
                 ? encodePathBase64(containerFile)
@@ -616,20 +570,6 @@ public class App implements Runnable {
                     .withEntries(condaPackages)
                     .withChannels(condaChannels())
                     ;
-        }
-
-        if( !isEmpty(spackFile) ) {
-            return new PackagesSpec()
-                    .withType(PackagesSpec.Type.SPACK)
-                    .withSpackOpts(spackOpts())
-                    .withEnvironment(encodePathBase64(spackFile));
-        }
-
-        if( !isEmpty(spackPackages) ) {
-            return new PackagesSpec()
-                    .withType(PackagesSpec.Type.SPACK)
-                    .withSpackOpts(spackOpts())
-                    .withEntries(spackPackages);
         }
 
         if( !isEmpty(prompt) ) {

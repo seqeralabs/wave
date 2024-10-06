@@ -11,10 +11,8 @@ that it can be used in your Docker (replace-with-your-own-fav-container-engine) 
 
 * Build container images on-demand for a given container file (aka Dockerfile);
 * Build container images on-demand based on one or more [Conda](https://conda.io/) packages;
-* Build container images on-demand based on one or more [Spack](https://spack.io/)  packages;
 * Build container images for a specified target platform (currently linux/amd64 and linux/arm64);
 * Push and cache built containers to a user-provided container repository;
-* Build Singularity native containers both using a Singularity spec file, Conda package(s) and Spack package(s);
 * Push Singularity native container images to OCI-compliant registries;
   
 ### Installation 
@@ -146,13 +144,6 @@ docker run $container cowpy 'Hello, world!'
 ```bash
 container=$(wave --conda-package fastp --platform linux/arm64)
 docker run --platform linux/arm64 $container sh -c 'fastp --version'
-```
-
-#### Build a Spack package container
-
-```bash
-container=$(wave --spack-package cowsay)
-docker run $container sh -c 'cowsay Hello world!'
 ```
 
 #### Build a Singularity container using a Conda package and pushing to a OCI registry

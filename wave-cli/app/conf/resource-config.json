@@ -39,10 +39,6 @@
   }, {
     "pattern":"\\Qtemplates/conda/singularityfile-conda-packages.txt\\E"
   }, {
-    "pattern":"\\Qtemplates/spack/dockerfile-spack-file.txt\\E"
-  }, {
-    "pattern":"\\Qtemplates/spack/singularityfile-spack-file.txt\\E"
-  }, {
     "pattern":"java.base:\\Qjdk/internal/icu/impl/data/icudt72b/nfc.nrm\\E"
   }, {
     "pattern":"java.base:\\Qjdk/internal/icu/impl/data/icudt72b/nfkc.nrm\\E"
