@@ -249,7 +249,6 @@ class SurrealPersistenceService implements PersistenceService {
 
         // create the scan record
         final statement = "INSERT INTO wave_scan ${patchScanVulnerabilities(json, ids)}".toString()
-        log.debug("Scan insert: $statement")
         final result = surrealDb.sqlAsMap(authorization, statement)
         log.trace "Scan update result=$result"
     }
