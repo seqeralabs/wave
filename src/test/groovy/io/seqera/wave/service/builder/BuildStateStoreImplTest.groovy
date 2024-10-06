@@ -41,7 +41,7 @@ class BuildStateStoreImplTest extends Specification {
 
     def 'should return record id' () {
         expect:
-        store.requestId0('foo') == 'wave-build/v2:request-id/foo'
+        store.requestId0('foo') == 'wave-build/v2/request-id:foo'
     }
 
 }

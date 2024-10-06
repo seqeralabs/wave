@@ -39,7 +39,7 @@ class MirrorStateStoreTest extends Specification {
 
     def 'should return record id' () {
         expect:
-        store.requestId0('foo') == 'wave-mirror/v1:request-id/foo'
+        store.requestId0('foo') == 'wave-mirror/v1/request-id:foo'
     }
 
 }

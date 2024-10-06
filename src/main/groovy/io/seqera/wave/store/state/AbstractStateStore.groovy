@@ -49,7 +49,7 @@ abstract class AbstractStateStore<V> implements StateStore<String,V> {
     protected String requestId0(String requestId) {
         if( !requestId )
             throw new IllegalStateException("Argument 'requestId' cannot be null")
-        return getPrefix() + ':request-id/' + requestId
+        return getPrefix() + '/request-id:' + requestId
     }
 
     /**

@@ -87,7 +87,7 @@ class AbstractStateStoreTest extends Specification {
         def store = new MyCacheStore(provider)
 
         expect:
-        store.requestId0('one') == 'test/v1:request-id/one'
+        store.requestId0('one') == 'test/v1/request-id:one'
     }
 
     def 'should get and put a value' () {
