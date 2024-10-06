@@ -432,9 +432,11 @@ class ViewControllerTest extends Specification {
         '12345_1'       | null
         '12345-1'       | '/view/builds/12345_1'
         'foo-887766-1'  | '/view/builds/foo-887766_1'
-
+        and:
+        'bd-12345_1'    | null
+        'bd-12345-1'    | '/view/builds/bd-12345_1'
+        'bd-887766-1'   | '/view/builds/bd-887766_1'
     }
-
 
     def 'should validate redirect 2' () {
         given:
@@ -445,15 +447,18 @@ class ViewControllerTest extends Specification {
         def result = controller.shouldRedirect2(BUILD)
         then:
         result == EXPECTED
-        TIMES * service.getLatestBuild(BUILD) >> LATEST
+        TIMES * service.getLatestBuild(BUILD) >> Mock(WaveBuildRecord) { buildId>>LATEST }
 
         where:
-        BUILD           | TIMES | LATEST     | EXPECTED
-        '12345_1'       | 0     | null       | null
-        '12345'         | 1     | Mock(WaveBuildRecord) { buildId >> '12345_99' }       | '/view/builds/12345_99'
-        '12345'         | 1     | Mock(WaveBuildRecord) { buildId >> 'xyz_99' }         | null
-        'foo-887766'    | 1     | Mock(WaveBuildRecord) { buildId >> 'foo-887766_99' }  | '/view/builds/foo-887766_99'
-        'foo-887766'    | 1     | Mock(WaveBuildRecord) { buildId >> 'foo-887766' }     | null
+        BUILD           | TIMES | LATEST            | EXPECTED
+        '12345_1'       | 0     | null              | null
+        '12345'         | 1     | '12345_99'        | '/view/builds/12345_99'
+        '12345'         | 1     | 'xyz_99'          | null
+        'foo-887766'    | 1     | 'foo-887766_99'   | '/view/builds/foo-887766_99'
+        'foo-887766'    | 1     | 'foo-887766'      | null
+        'bd-887766'     | 1     | 'bd-887766_2'     | '/view/builds/bd-887766_2'
+        '887766'        | 1     | 'bd-887766_2'     | '/view/builds/bd-887766_2'
+
 
     }
 
