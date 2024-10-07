@@ -20,6 +20,7 @@ package io.seqera.wave.store.state.impl
 
 import java.time.Duration
 
+import io.seqera.wave.store.state.CountParams
 import io.seqera.wave.store.state.CountResult
 import io.seqera.wave.store.state.StateStore
 /**
@@ -48,6 +49,6 @@ interface StateProvider<K,V> extends StateStore<K,V> {
      *      "return" is true or the value currently existing if the key already exist. Finally "count" is the value
      *      of the count after the increment operation.
      */
-    CountResult<V> putJsonIfAbsentAndIncreaseCount(K key, V value, Duration ttl, String counterKey, String luaScript)
+    CountResult<V> putJsonIfAbsentAndIncreaseCount(K key, V value, Duration ttl, CountParams counterKey, String luaScript)
 
 }

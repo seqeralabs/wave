@@ -31,6 +31,7 @@ import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildStateStore
 import io.seqera.wave.store.state.AbstractStateStore
+import io.seqera.wave.store.state.CountParams
 import io.seqera.wave.store.state.CountResult
 import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Named
@@ -91,8 +92,8 @@ class BuildStateStoreImpl extends AbstractStateStore<BuildEntry> implements Buil
     }
 
     @Override
-    protected String counterKey(String key, BuildEntry build) {
-        "build-counters/v1/" + build.request.containerId
+    protected CountParams counterKey(String key, BuildEntry build) {
+       new CountParams( "build-counters/v1", build.request.containerId)
     }
 
     @Override

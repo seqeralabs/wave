@@ -195,16 +195,5 @@ class RedisStateProviderTest extends Specification implements RedisTestContainer
         result.count == 3
     }
 
-    def 'should split key'() {
-        when:
-        def result = RedisStateProvider.splitKey(KEY)
-        then:
-        result == EXPECTED
-        where:
-        KEY                 | EXPECTED
-        'one'               | new Tuple2("counters/v1", "one")
-        'one/two'           | new Tuple2("one", "two")
-        'one/two/three'     | new Tuple2("one/two", "three")
-    }
 
 }

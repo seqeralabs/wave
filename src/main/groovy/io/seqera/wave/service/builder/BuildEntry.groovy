@@ -38,6 +38,14 @@ class BuildEntry implements StateEntry<String>, JobEntry, RequestIdAware {
 
     final BuildResult result
 
+    BuildRequest getRequest() {
+        return request
+    }
+
+    BuildResult getResult() {
+        return result
+    }
+
     @Override
     String getKey() {
         return request.targetImage

@@ -55,6 +55,7 @@ class ContainerRequest {
     String scanId
     ScanMode scanMode
     List<ScanLevel> scanLevels
+    Boolean scanOnRequest
     Instant creationTime
 
     boolean durable() {
@@ -128,6 +129,10 @@ class ContainerRequest {
         return creationTime
     }
 
+    Boolean getScanOnRequest() {
+        scanOnRequest
+    }
+
     static  ContainerRequest create(
             PlatformId identity,
             String containerImage,
@@ -142,7 +147,9 @@ class ContainerRequest {
             String scanId,
             ScanMode scanMode,
             List<ScanLevel> scanLevels,
-            Instant creationTime )
+            Boolean scanOnRequest,
+            Instant creationTime
+    )
     {
         return new ContainerRequest(
                 LongRndKey.rndHex(),
@@ -159,6 +166,7 @@ class ContainerRequest {
                 scanId,
                 scanMode,
                 scanLevels,
+                scanOnRequest,
                 creationTime
         )
     }
@@ -183,6 +191,7 @@ class ContainerRequest {
                 data.scanId as String,
                 data.scanMode as ScanMode,
                 data.scanLevels as List<ScanLevel>,
+                data.scanOnRequest as Boolean,
                 data.creationTime as Instant
         )
     }

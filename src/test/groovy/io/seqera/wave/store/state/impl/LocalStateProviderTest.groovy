@@ -23,6 +23,7 @@ import spock.lang.Specification
 import java.time.Duration
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.store.state.CountParams
 import jakarta.inject.Inject
 
 @MicronautTest(environments = ['test'])
@@ -118,7 +119,7 @@ class LocalStateProviderTest extends Specification {
         given:
         def ttlMillis = 100
         def k = UUID.randomUUID().toString()
-        def c = UUID.randomUUID().toString()
+        def c = CountParams .of(UUID.randomUUID().toString())
         def luaScript1 = /string.gsub(value, '"count"%s*:%s*(%d+)', '"count":' .. counter_value)/
         def luaScript2 = /string.gsub(value, '"count"%s*:%s*"(.-)(%d+)"', '"count":"%1' .. counter_value .. '"')/
 

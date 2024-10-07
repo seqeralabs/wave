@@ -65,6 +65,7 @@ class ContainerRequestTest extends Specification {
                 'scan-1234',
                 ScanMode.required,
                 List.of(ScanLevel.HIGH),
+                true,
                 ts
         )
         then:
@@ -82,6 +83,7 @@ class ContainerRequestTest extends Specification {
         req.scanId == 'scan-1234'
         req.scanMode == ScanMode.required
         req.scanLevels == List.of(ScanLevel.HIGH)
+        req.scanOnRequest == true
         req.creationTime == ts
 
     }
