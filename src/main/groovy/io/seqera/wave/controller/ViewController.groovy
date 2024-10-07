@@ -192,6 +192,10 @@ class ViewController {
             binding.build_log_truncated = buildLog?.truncated
             binding.build_log_url = "$serverUrl/v1alpha1/builds/${result.buildId}/logs"
         }
+        //add conda lock file when available
+        if( buildLogService && result.condaFile ) {
+            binding.build_conda_lock_data = buildLogService.fetchCondaLockString(result.buildId)
+        }
         // result the main object
         return binding
       }

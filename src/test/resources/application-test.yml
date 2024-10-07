@@ -57,6 +57,7 @@ wave:
       enabled : true
       bucket : 'nextflow-ci'
       prefix : 'wave-build/logs'
+      conda-lock-prefix: 'wave-build/conda-locks'
   scan:
     enabled: true
 ---

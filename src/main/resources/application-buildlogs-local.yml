@@ -4,4 +4,5 @@ wave:
     logs:
       bucket: "$PWD/build-workspace"
       prefix: 'wave-build/logs'
+      conda-lock-prefix: 'wave-build/conda-locks'
 ...
