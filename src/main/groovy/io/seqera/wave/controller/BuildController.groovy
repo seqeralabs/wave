@@ -31,11 +31,8 @@ import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.api.BuildStatusResponse
-import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.logs.BuildLogService
-import io.seqera.wave.service.mirror.ContainerMirrorService
-import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import jakarta.inject.Inject
 /**
@@ -53,11 +50,8 @@ class BuildController {
     private ContainerBuildService buildService
 
     @Inject
-    private ContainerMirrorService mirrorService
-
-    @Inject
     @Nullable
-    BuildLogService logService
+    private BuildLogService logService
 
     @Get("/v1alpha1/builds/{buildId}")
     HttpResponse<WaveBuildRecord> getBuildRecord(String buildId) {
@@ -80,9 +74,9 @@ class BuildController {
 
     @Get("/v1alpha1/builds/{buildId}/status")
     HttpResponse<BuildStatusResponse> getBuildStatus(String buildId) {
-        final resp = buildResponse0(buildId)
-        resp != null
-            ? HttpResponse.ok(resp)
+        final build = buildService.getBuildRecord(buildId)
+        build != null
+            ? HttpResponse.ok(build.toStatusResponse())
             : HttpResponse.<BuildStatusResponse>notFound()
     }
 

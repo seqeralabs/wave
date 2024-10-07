@@ -24,6 +24,7 @@ import java.nio.file.Path
 import java.time.Instant
 
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.tower.PlatformId
 
 /**
  *
@@ -40,17 +41,25 @@ class MirrorRequestTest extends Specification {
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
                 Path.of('/workspace'),
-                '{json config}')
+                '{json config}',
+                'sc-123',
+                ts,
+                'utc',
+                Mock(PlatformId)
+        )
         then:
         req.mirrorId
         req.sourceImage == 'docker.io/foo:latest'
         req.targetImage == 'quay.io/foo:latest'
         req.digest == 'sha256:12345'
         req.platform == ContainerPlatform.DEFAULT
-        req.workDir == Path.of("/workspace/mirror-${req.mirrorId.substring(3)}")
+        req.workDir == Path.of("/workspace/${req.mirrorId}")
         req.authJson == '{json config}'
         req.creationTime >= ts
         req.creationTime <= Instant.now()
+        req.scanId == 'sc-123'
+        req.creationTime == ts
+        req.offsetId == 'utc'
     }
 
 }

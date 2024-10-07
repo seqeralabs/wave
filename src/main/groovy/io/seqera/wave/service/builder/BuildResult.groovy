@@ -38,15 +38,18 @@ import groovy.transform.ToString
 @CompileStatic
 class BuildResult {
 
-    final String id
+    final String buildId
     final Integer exitStatus
     final String logs
     final Instant startTime
     final Duration duration
     final String digest
 
-    BuildResult(String id, Integer exitStatus, String logs, Instant startTime, Duration duration, String digest) {
-        this.id = id
+    // This field is deprecated. It's only used for de-serializing object objects
+    @Deprecated final private String id
+
+    BuildResult(String buildId, Integer exitStatus, String logs, Instant startTime, Duration duration, String digest) {
+        this.buildId = buildId
         this.logs = logs?.replaceAll("\u001B\\[[;\\d]*m", "") // strip ansi escape codes
         this.exitStatus = exitStatus
         this.startTime = startTime
@@ -57,7 +60,7 @@ class BuildResult {
     /* Do not remove - required by jackson de-ser */
     protected BuildResult() {}
 
-    String getId() { id }
+    String getBuildId() { buildId ?: id }
 
     Duration getDuration() { duration }
 
@@ -75,15 +78,15 @@ class BuildResult {
 
     @Override
     String toString() {
-        return "BuildResult[id=$id; exitStatus=$exitStatus; duration=$duration]"
+        return "BuildResult[buildId=$buildId; exitStatus=$exitStatus; duration=$duration]"
     }
 
-    static BuildResult completed(String buildId, Integer exitStatus, String content, Instant startTime, String digest) {
-        new BuildResult(buildId, exitStatus, content, startTime, Duration.between(startTime, Instant.now()), digest)
+    static BuildResult completed(String buildId, Integer exitStatus, String logs, Instant startTime, String digest) {
+        new BuildResult(buildId, exitStatus, logs, startTime, Duration.between(startTime, Instant.now()), digest)
     }
 
-    static BuildResult failed(String buildId, String content, Instant startTime) {
-        new BuildResult(buildId, -1, content, startTime, Duration.between(startTime, Instant.now()), null)
+    static BuildResult failed(String buildId, String logs, Instant startTime) {
+        new BuildResult(buildId, -1, logs, startTime, Duration.between(startTime, Instant.now()), null)
     }
 
     static BuildResult create(BuildRequest req) {

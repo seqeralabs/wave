@@ -99,7 +99,7 @@ class BuildLogServiceImpl implements BuildLogService {
     @EventListener
     void onBuildEvent(BuildEvent event) {
         if(event.result.logs) {
-            CompletableFuture.supplyAsync(() -> storeLog(event.result.id, event.result.logs), ioExecutor)
+            CompletableFuture.supplyAsync(() -> storeLog(event.result.buildId, event.result.logs), ioExecutor)
         }
     }
 

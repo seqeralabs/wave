@@ -23,13 +23,14 @@ import spock.lang.Specification
 import java.time.Duration
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.store.state.CountParams
 import jakarta.inject.Inject
 
 @MicronautTest(environments = ['test'])
 class LocalStateProviderTest extends Specification {
 
     @Inject
-    LocalStateProvider localCacheProvider
+    LocalStateProvider provider
 
 
     def 'should get and put a key-value pair' () {
@@ -37,12 +38,12 @@ class LocalStateProviderTest extends Specification {
         def k = UUID.randomUUID().toString()
 
         expect:
-        localCacheProvider.get(k) == null
+        provider.get(k) == null
 
         when:
-        localCacheProvider.put(k, "hello")
+        provider.put(k, "hello")
         then:
-        localCacheProvider.get(k) == 'hello'
+        provider.get(k) == 'hello'
     }
 
     def 'should get and put a key-value pair with ttl' () {
@@ -51,16 +52,16 @@ class LocalStateProviderTest extends Specification {
         def k = UUID.randomUUID().toString()
 
         expect:
-        localCacheProvider.get(k) == null
+        provider.get(k) == null
 
         when:
-        localCacheProvider.put(k, "hello", Duration.ofMillis(TTL))
+        provider.put(k, "hello", Duration.ofMillis(TTL))
         then:
-        localCacheProvider.get(k) == 'hello'
+        provider.get(k) == 'hello'
         then:
         sleep(TTL *2)
         and:
-        localCacheProvider.get(k) == null
+        provider.get(k) == null
     }
 
     def 'should get and put only if absent' () {
@@ -68,21 +69,21 @@ class LocalStateProviderTest extends Specification {
         def k = UUID.randomUUID().toString()
 
         expect:
-        localCacheProvider.get(k) == null
+        provider.get(k) == null
 
         when:
-        def done = localCacheProvider.putIfAbsent(k, 'foo')
+        def done = provider.putIfAbsent(k, 'foo')
         then:
         done 
         and:
-        localCacheProvider.get(k) == 'foo'
+        provider.get(k) == 'foo'
 
         when:
-        done = localCacheProvider.putIfAbsent(k, 'bar')
+        done = provider.putIfAbsent(k, 'bar')
         then:
         !done
         and:
-        localCacheProvider.get(k) == 'foo'
+        provider.get(k) == 'foo'
     }
 
     def 'should get and put if absent with ttl' () {
@@ -91,27 +92,76 @@ class LocalStateProviderTest extends Specification {
         def k = UUID.randomUUID().toString()
 
         when:
-        def done = localCacheProvider.putIfAbsent(k, 'foo', Duration.ofMillis(TTL))
+        def done = provider.putIfAbsent(k, 'foo', Duration.ofMillis(TTL))
         then:
         done
         and:
-        localCacheProvider.get(k) == 'foo'
+        provider.get(k) == 'foo'
 
         when:
-        done = localCacheProvider.putIfAbsent(k, 'bar', Duration.ofMillis(TTL))
+        done = provider.putIfAbsent(k, 'bar', Duration.ofMillis(TTL))
         then:
         !done
         and:
-        localCacheProvider.get(k) == 'foo'
+        provider.get(k) == 'foo'
 
         when:
         sleep(TTL *2)
         and:
-        done = localCacheProvider.putIfAbsent(k, 'bar', Duration.ofMillis(TTL))
+        done = provider.putIfAbsent(k, 'bar', Duration.ofMillis(TTL))
         then:
         done
         and:
-        localCacheProvider.get(k) == 'bar'
+        provider.get(k) == 'bar'
+    }
+
+    def 'should get and put if absent and increment' () {
+        given:
+        def ttlMillis = 100
+        def k = UUID.randomUUID().toString()
+        def c = CountParams .of(UUID.randomUUID().toString())
+        def luaScript1 = /string.gsub(value, '"count"%s*:%s*(%d+)', '"count":' .. counter_value)/
+        def luaScript2 = /string.gsub(value, '"count"%s*:%s*"(.-)(%d+)"', '"count":"%1' .. counter_value .. '"')/
+
+        expect:
+        provider.get(k) == null
+
+        when:
+        def result = provider.putJsonIfAbsentAndIncreaseCount(k, '{"foo":"x","count":0}', Duration.ofMillis(ttlMillis), c, luaScript1)
+        then:
+        result.succeed
+        result.value == '{"foo":"x","count":1}'
+        result.count == 1
+        and:
+        provider.get(k) == '{"foo":"x","count":1}'
+
+        when:
+        result = provider.putJsonIfAbsentAndIncreaseCount(k, '{"bar":"y","count":0}', Duration.ofMillis(ttlMillis), c, luaScript1)
+        then:
+        !result.succeed
+        result.value == '{"foo":"x","count":1}'
+        result.count == 1
+        and:
+        provider.get(k) == '{"foo":"x","count":1}'
+
+        when:
+        sleep(ttlMillis *2)
+        and:
+        result = provider.putJsonIfAbsentAndIncreaseCount(k, '{"bar":"y","count":0}', Duration.ofMillis(ttlMillis), c, luaScript1)
+        then:
+        result.succeed
+        result.value == '{"bar":"y","count":2}'
+        result.count == 2
+
+        when:
+        sleep(ttlMillis *2)
+        and:
+        result = provider.putJsonIfAbsentAndIncreaseCount(k, '{"bar":"y", "count":"xx-a1b2c3_100"}', Duration.ofMillis(ttlMillis), c, luaScript2)
+        then:
+        result.succeed
+        result.value == '{"bar":"y", "count":"xx-a1b2c3_3"}'
+        result.count == 3
+
     }
 
     def 'should put and remove a value' () {
@@ -120,14 +170,14 @@ class LocalStateProviderTest extends Specification {
         def k = UUID.randomUUID().toString()
 
         when:
-        localCacheProvider.put(k, 'foo')
+        provider.put(k, 'foo')
         then:
-        localCacheProvider.get(k) == 'foo'
+        provider.get(k) == 'foo'
 
         when:
-        localCacheProvider.remove(k)
+        provider.remove(k)
         then:
-        localCacheProvider.get(k) == null
+        provider.get(k) == null
     }
 
 }

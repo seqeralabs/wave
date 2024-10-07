@@ -48,7 +48,7 @@
             <td>{{request_token}}</td>
         </tr>
         <tr>
-            <td>Container image</td>
+            <td>Request container</td>
             <td>{{request_container_image}}</td>
         </tr>
         <tr>
@@ -74,13 +74,14 @@
     <h3>Container info</h3>
     <table cellpadding="4" >
         <tr>
-            <td>Source image</td>
+            <td>Container image</td>
             <td>{{source_container_image}}</td>
         </tr>
         <tr>
-            <td>Source digest</td>
+            <td>Container digest</td>
             <td>{{source_container_digest}}</td>
         </tr>
+        {{#if wave_container_show }}
         <tr>
             <td>Wave image</td>
             <td>{{wave_container_image}}</td>
@@ -89,6 +90,7 @@
             <td>Wave digest</td>
             <td>{{wave_container_digest}}</td>
         </tr>
+        {{/if}}
         <tr>
             <td>Fusion version</td>
             <td>{{fusion_version}}</td>
@@ -111,7 +113,11 @@
         <table cellpadding="4" >
             <tr>
                 <td>Build ID</td>
+                {{#if build_url}}
                 <td><a href="{{build_url}}">{{build_id}}</a></td>
+                {{else}}
+                <td>-</td>
+                {{/if}}
             </tr>
             <tr>
                 <td>Cached</td>
@@ -132,7 +138,27 @@
         </table>
     {{/if}}
 
-    <!-- Build & user info -->
+    {{#if mirror_id }}
+        <table cellpadding="4" >
+            <tr>
+                <td>Mirror ID</td>
+                <td><a href="{{mirror_url}}">{{mirror_id}}</a></td>
+            </tr>
+            <tr>
+                <td>Cached</td>
+                <td>{{mirror_cached}}</td>
+            </tr>
+        </table>
+    {{/if}}
+
+    {{#if scan_id }}
+        <table cellpadding="4" >
+            <tr>
+                <td>Security scan</td>
+                <td><a href="{{scan_url}}">{{scan_id}}</a></td>
+            </tr>
+        </table>
+    {{/if}}
 
     <!-- Platform & user info -->
     {{#if tower_user_id}}

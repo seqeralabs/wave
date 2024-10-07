@@ -42,7 +42,7 @@ class DockerJobOperation implements JobOperation {
     @Override
     JobState status(JobSpec jobSpec) {
         final state = getDockerContainerState(jobSpec.operationName)
-        log.trace "Docker container status name=$jobSpec.operationName; state=$state"
+        log.trace "Docker container status name=${jobSpec.operationName}; state=${state}"
 
         if (state.status == 'running') {
             return JobState.running()
@@ -55,6 +55,7 @@ class DockerJobOperation implements JobOperation {
             return JobState.pending()
         }
         else {
+            log.warn "Unexpected state for container state=${state}"
             final logs = getDockerContainerLogs(jobSpec.operationName)
             return JobState.unknown(logs)
         }

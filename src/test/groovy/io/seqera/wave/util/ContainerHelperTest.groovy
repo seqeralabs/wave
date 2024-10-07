@@ -29,9 +29,9 @@ import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.config.CondaOpts
 import io.seqera.wave.exception.BadRequestException
-import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.builder.BuildFormat
-import io.seqera.wave.service.token.TokenData
+import io.seqera.wave.service.request.TokenData
 /**
  * Container helper methods
  *
@@ -52,7 +52,7 @@ class ContainerHelperTest extends Specification {
         then:
         result =='''\
                 BootStrap: docker
-                From: mambaorg/micromamba:1.5.8-lunar
+                From: mambaorg/micromamba:1.5.10-lunar
                 %post
                     micromamba install -y -n base -c conda-forge -c defaults -f https://foo.com/lock.yml
                     micromamba install -y -n base foo::one bar::two
@@ -79,7 +79,7 @@ class ContainerHelperTest extends Specification {
 
         then:
         result =='''\
-                FROM mambaorg/micromamba:1.5.8-lunar
+                FROM mambaorg/micromamba:1.5.10-lunar
                 RUN \\
                     micromamba install -y -n base -c conda-forge -c defaults -f https://foo.com/lock.yml \\
                     && micromamba install -y -n base foo::one bar::two \\
@@ -107,7 +107,7 @@ class ContainerHelperTest extends Specification {
         then:
         result =='''\
                 BootStrap: docker
-                From: mambaorg/micromamba:1.5.8-lunar
+                From: mambaorg/micromamba:1.5.10-lunar
                 %files
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
@@ -135,7 +135,7 @@ class ContainerHelperTest extends Specification {
 
         then:
         result =='''\
-                FROM mambaorg/micromamba:1.5.8-lunar
+                FROM mambaorg/micromamba:1.5.10-lunar
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
                 RUN micromamba install -y -n base -f /tmp/conda.yml \\
                     && micromamba install -y -n base foo::one bar::two \\
@@ -224,15 +224,10 @@ class ContainerHelperTest extends Specification {
 
     def 'should create response v1' () {
         given:
-        def data = new ContainerRequestData(null,
-                'docker.io/some/container',
-                null,
-                null,
-                null,
-                null,
-                '123',
-                NEW_BUILD
-        )
+        def data = ContainerRequest.of(
+                containerImage: 'docker.io/some/container',
+                buildId:  '123',
+                buildNew:  NEW_BUILD )
         def token = new TokenData('123abc', Instant.now().plusSeconds(100))
         def target = 'wave.com/this/that'
 
@@ -256,21 +251,20 @@ class ContainerHelperTest extends Specification {
     @Unroll
     def 'should create response v2' () {
         given:
-        def data = new ContainerRequestData(null,
-                'docker.io/some/container',
-                null,
-                null,
-                null,
-                null,
-                '123',
-                NEW_BUILD,
-                IS_FREEZE
+        def data = ContainerRequest.of(
+                containerImage:  'docker.io/some/container',
+                buildId: "build-123",
+                buildNew: NEW_BUILD,
+                freeze: IS_FREEZE,
+                mirror: IS_MIRROR,
+                scanId: "scan-123",
         )
         def token = new TokenData('123abc', Instant.now().plusSeconds(100))
         def target = 'wave.com/this/that'
         and:
         def EXPECTED_IMAGE = 'docker.io/some/container'
-        def EXPECTED_BUILD = '123'
+        def EXPECTED_BUILD = 'build-123'
+        def EXPECTED_SCAN = 'scan-123'
 
         when:
         def result = ContainerHelper.makeResponseV2(data, token, target)
@@ -282,15 +276,20 @@ class ContainerHelperTest extends Specification {
             buildId == EXPECTED_BUILD
             cached == EXPECTED_CACHE
             freeze == IS_FREEZE
+            mirror == IS_MIRROR
+            scanId == EXPECTED_SCAN
         }
 
         where:
-        NEW_BUILD   | IS_FREEZE | EXPECTED_TOKEN | EXPECTED_TARGET           | EXPECTED_CACHE
-        false       | false     | '123abc'       | 'wave.com/this/that'      | true
-        true        | false     | '123abc'       | 'wave.com/this/that'      | false
+        NEW_BUILD   | IS_FREEZE | IS_MIRROR | EXPECTED_TOKEN | EXPECTED_TARGET           | EXPECTED_CACHE
+        false       | false     | false     | '123abc'       | 'wave.com/this/that'      | true
+        true        | false     | false     | '123abc'       | 'wave.com/this/that'      | false
         and:
-        false       | true      | null           | 'docker.io/some/container'| true
-        true        | true      | null           | 'docker.io/some/container'| false
+        false       | true      | false     | null           | 'docker.io/some/container'| true
+        true        | true      | false     | null           | 'docker.io/some/container'| false
+        and:
+        false       | false     | true      | null           | 'docker.io/some/container'| true
+        true        | false     | true      | null           | 'docker.io/some/container'| false
     }
 
     def 'should check if is a conda lock file' () {

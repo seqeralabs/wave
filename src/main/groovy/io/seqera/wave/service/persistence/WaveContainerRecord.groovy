@@ -27,7 +27,7 @@ import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
-import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.tower.User
 import static io.seqera.wave.util.DataTimeUtils.parseOffsetDateTime
 /**
@@ -163,8 +163,18 @@ class WaveContainerRecord {
      */
     final String fusionVersion
 
-    WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequestData data, String token, String waveImage, String addr, Instant expiration) {
-        this.id = token
+    /**
+     * Whenever it's a "mirror" build request
+     */
+    final Boolean mirror
+
+    /**
+     * The scan id associated with this request
+     */
+    final String scanId
+
+    WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequest data, String waveImage, String addr, Instant expiration) {
+        this.id = data.requestId
         this.user = data.identity.user
         this.workspaceId = request.towerWorkspaceId
         this.containerImage = request.containerImage
@@ -187,6 +197,8 @@ class WaveContainerRecord {
         this.buildNew = data.buildId ? data.buildNew : null
         this.freeze = data.buildId ? data.freeze : null
         this.fusionVersion = request?.containerConfig?.fusionVersion()?.number
+        this.mirror = data.mirror
+        this.scanId = data.scanId
     }
 
     WaveContainerRecord(WaveContainerRecord that, String sourceDigest, String waveDigest) {
@@ -211,6 +223,8 @@ class WaveContainerRecord {
         this.buildNew = that.buildNew
         this.freeze = that.freeze
         this.fusionVersion = that.fusionVersion
+        this.mirror == that.mirror
+        this.scanId = that.scanId
         // -- digest part 
         this.sourceDigest = sourceDigest
         this.waveDigest = waveDigest

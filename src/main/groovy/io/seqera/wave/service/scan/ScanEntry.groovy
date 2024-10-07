@@ -31,6 +31,7 @@ import io.seqera.wave.store.state.StateEntry
  * Model for scan result
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @ToString(includePackage = false, includeNames = true)
 @Canonical
@@ -41,15 +42,60 @@ class ScanEntry implements StateEntry<String>, JobEntry {
     static final public String SUCCEEDED = 'SUCCEEDED'
     static final public String FAILED = 'FAILED'
 
-    final String scanId
-    final String buildId
-    final String containerImage
-    final Instant startTime
-    final Duration duration
-    final String status
-    final List<ScanVulnerability> vulnerabilities
-    final Integer exitCode
-    final String logs
+    /**
+     * The scan unique Id
+     */
+    String scanId
+
+    /**
+     * The build request that original this scan entry
+     */
+    String buildId
+
+    /**
+     * The container mirror request that original this scan entry
+     */
+    String mirrorId
+
+    /**
+     * The container request that original this scan entry
+     */
+    String requestId
+
+    /**
+     * The target container image to be scanner
+     */
+    String containerImage
+
+    /**
+     * The request creation time
+     */
+    Instant startTime
+
+    /**
+     * How long the scan operation required
+     */
+    Duration duration
+
+    /**
+     * The status of the scan operation
+     */
+    String status
+
+    /**
+     * The list of security vulnerabilities reported
+     */
+    List<ScanVulnerability> vulnerabilities
+
+    /**
+     * The scan job exit status
+     */
+    Integer exitCode
+
+    /**
+     * The scan job logs
+     */
+    String logs
 
     @Override
     String getKey() {
@@ -61,15 +107,30 @@ class ScanEntry implements StateEntry<String>, JobEntry {
         return duration != null
     }
 
-    boolean isSucceeded() { status==SUCCEEDED }
+    boolean succeeded() { status==SUCCEEDED }
 
     @Deprecated
-    boolean isCompleted() { done() }
+    boolean completed() { done() }
+
+    static ScanEntry create(ScanRequest request) {
+        return new ScanEntry(
+                request.scanId,
+                request.buildId,
+                request.mirrorId,
+                request.requestId,
+                request.targetImage,
+                request.creationTime,
+                null,
+                PENDING,
+                List.of())
+    }
 
     ScanEntry success(List<ScanVulnerability> vulnerabilities){
         return new ScanEntry(
                 this.scanId,
                 this.buildId,
+                this.mirrorId,
+                this.requestId,
                 this.containerImage,
                 this.startTime,
                 Duration.between(this.startTime, Instant.now()),
@@ -79,18 +140,59 @@ class ScanEntry implements StateEntry<String>, JobEntry {
     }
 
     ScanEntry failure(Integer exitCode, String logs){
-        return new ScanEntry(this.scanId, this.buildId, this.containerImage, this.startTime, Duration.between(this.startTime, Instant.now()), FAILED, List.of(), exitCode, logs)
+        return new ScanEntry(
+                this.scanId,
+                this.buildId,
+                this.mirrorId,
+                this.requestId,
+                this.containerImage,
+                this.startTime,
+                Duration.between(this.startTime, Instant.now()),
+                FAILED,
+                List.of(),
+                exitCode,
+                logs)
     }
 
     static ScanEntry failure(ScanRequest request){
-        return new ScanEntry(request.scanId, request.buildId, request.targetImage, request.creationTime, Duration.between(request.creationTime, Instant.now()), FAILED, List.of())
+        return new ScanEntry(
+                request.scanId,
+                request.buildId,
+                request.mirrorId,
+                request.requestId,
+                request.targetImage,
+                request.creationTime,
+                Duration.between(request.creationTime, Instant.now()),
+                FAILED,
+                List.of())
     }
 
-    static ScanEntry pending(String scanId, String buildId, String containerImage) {
-        return new ScanEntry(scanId, buildId, containerImage, Instant.now(), null, PENDING, List.of())
+
+    Map<String,Integer> summary() {
+        final result = new HashMap<String,Integer>()
+        if( !vulnerabilities )
+            return result
+        for( ScanVulnerability it : vulnerabilities ) {
+            def v = result.getOrDefault(it.severity, 0)
+            result.put(it.severity, v+1)
+        }
+        return result
     }
 
-    static ScanEntry create(String scanId, String buildId, String containerImage, Instant startTime, Duration duration1, String status, List<ScanVulnerability> vulnerabilities){
-        return new ScanEntry(scanId, buildId, containerImage, startTime, duration1, status, vulnerabilities)
+    static ScanEntry of(Map opts){
+        return new ScanEntry(
+                opts.scanId as String,
+                opts.buildId as String,
+                opts.mirrorId as String,
+                opts.requestId as String,
+                opts.containerImage as String,
+                opts.startTime as Instant,
+                opts.duration as Duration,
+                opts.status as String,
+                opts.vulnerabilities as List<ScanVulnerability>,
+                opts.exitCode as Integer,
+                opts.logs as String
+        )
     }
+
 }

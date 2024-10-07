@@ -16,21 +16,39 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.token
+package io.seqera.wave.service.scan
 
-import io.seqera.wave.service.ContainerRequestData
+import groovy.transform.Canonical
+import groovy.transform.CompileStatic
+import io.seqera.wave.util.RegHelper
 
 /**
- * Define the container request token persistence operations
- * 
- * @author : jorge <jorge.aguilera@seqera.io>
+ * Model a scan operation id
  *
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface ContainerTokenStore {
+@Canonical
+@CompileStatic
+class ScanId {
 
-    void put(String key, ContainerRequestData request)
+    final String base
+    final int count
 
-    ContainerRequestData get(String key)
+    ScanId withCount(int count) {
+        new ScanId(this.base, count)
+    }
 
-    void remove(String key)
+    String toString() {
+        "sc-${base}_${count}"
+    }
+
+    static ScanId of(String containerImage, String digest=null){
+        final data = new LinkedHashMap(2)
+        data.image = containerImage
+        if( digest )
+            data.digest = digest
+        final x = RegHelper.sipHash(data)
+        return new ScanId(x)
+    }
+
 }

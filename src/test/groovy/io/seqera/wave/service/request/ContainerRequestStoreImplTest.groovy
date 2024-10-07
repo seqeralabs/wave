@@ -16,11 +16,9 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.tower.auth
+package io.seqera.wave.service.request
 
 import spock.lang.Specification
-
-import java.time.Instant
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import jakarta.inject.Inject
@@ -30,34 +28,13 @@ import jakarta.inject.Inject
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-class JwtAuthStoreLocalTest extends Specification {
+class ContainerRequestStoreImplTest extends Specification {
 
-    @Inject
-    JwtAuthStore store
+    @Inject ContainerRequestStoreImpl store
 
-    def 'should put and get jwt tokens' () {
-        given:
-        def now = Instant.now();
-        and:
-        def auth = new JwtAuth(
-                'key-1234',
-                'http://foo.com',
-                'bearer-12345',
-                'refresh-12345',
-                now,
-                now )
-        when:
-        store.store(auth)
-        then:
-        store.refresh(auth) == store.get(auth.key)
-        and:
-        with(store.get(auth.key)) {
-            key == auth.key
-            endpoint == auth.endpoint
-            bearer == auth.bearer
-            refresh == auth.refresh
-            createdAt == auth.createdAt
-            updatedAt >= auth.updatedAt
-        }
+    def 'should return entry key' () {
+        expect:
+        store.key0('foo') == 'wave-tokens/v1:foo'
     }
+
 }

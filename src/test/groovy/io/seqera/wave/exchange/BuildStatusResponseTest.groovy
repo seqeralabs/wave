@@ -46,6 +46,5 @@ class BuildStatusResponseTest extends Specification {
         def copy = JacksonHelper.fromJson(json, BuildStatusResponse)
         then:
         copy == resp
-
     }
 }

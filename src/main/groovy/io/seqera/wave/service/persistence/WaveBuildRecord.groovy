@@ -24,12 +24,12 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
+import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
-import io.seqera.wave.api.BuildStatusResponse
 /**
  * A collection of request and response properties to be stored
  *
@@ -71,7 +71,7 @@ class WaveBuildRecord {
     }
     
     static private WaveBuildRecord create0(BuildRequest request, BuildResult result) {
-        if( result && request.buildId != result.id )
+        if( result && request.buildId != result.buildId )
             throw new IllegalStateException("Build id must match the result id")
         return new WaveBuildRecord(
                 buildId: request.buildId,
