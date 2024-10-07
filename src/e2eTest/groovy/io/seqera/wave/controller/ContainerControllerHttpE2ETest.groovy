@@ -95,8 +95,7 @@ class ContainerControllerHttpE2ETest extends Specification implements AwsS3TestC
         def request = new SubmitContainerTokenRequest(
                 packages: new PackagesSpec(channels: ['conda-forge'], entries: ['xz'], type: 'CONDA'),
                 buildRepository: "test/repository",
-                cacheRepository: "test/cache",
-                containerPlatform: "arm64"
+                cacheRepository: "test/cache"
 
         )
         and:
