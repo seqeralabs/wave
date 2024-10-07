@@ -23,8 +23,8 @@ import spock.lang.Specification
 import java.time.Duration
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.store.state.CountParams
 import jakarta.inject.Inject
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -41,7 +41,7 @@ class ScanIdStoreLocalTest extends Specification {
 
     def 'should return counter key' () {
         expect:
-        store.counterKey('foo', Mock(ScanId)) == 'wave-scanid/v1/counter/foo'
+        store.counterKey('foo', Mock(ScanId)) == new CountParams('wave-scanid/v1/counter','foo')
     }
 
     def 'should get scan id' () {

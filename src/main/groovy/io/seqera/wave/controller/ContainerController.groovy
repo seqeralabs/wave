@@ -273,8 +273,7 @@ class ContainerController {
                         : makeResponseV1(data, token, target)
         // persist request
         storeContainerRequest0(req, data, token, target, ip)
-        if( !data.durable() || !data.buildNew )
-            scanService?.scanOnRequest(data)
+        scanService?.scanOnRequest(data)
         // log the response
         log.debug "New container request fulfilled - token=$token.value; expiration=$token.expiration; container=$data.containerImage; build=$resp.buildId; identity=$identity"
         // return response
@@ -444,6 +443,7 @@ class ContainerController {
         boolean buildNew
         String scanId
         Boolean mirrorFlag
+        Boolean scanOnRequest = false
         if( req.containerFile ) {
             final build = makeBuildRequest(req, identity, ip)
             final track = checkBuild(build, req.dryRun)
@@ -476,6 +476,7 @@ class ContainerController {
             buildNew = null
             scanId = scanService?.getScanId(req.containerImage, digest, req.scanMode, req.format)
             mirrorFlag = null
+            scanOnRequest = true
         }
         else
             throw new IllegalStateException("Specify either 'containerImage' or 'containerFile' attribute")
@@ -494,6 +495,7 @@ class ContainerController {
                 scanId,
                 req.scanMode,
                 req.scanLevels,
+                scanOnRequest,
                 Instant.now()
         )
     }

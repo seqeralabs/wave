@@ -16,40 +16,25 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.builder
+package io.seqera.wave.store.state
 
 import spock.lang.Specification
-
-import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.service.builder.impl.BuildStateStoreImpl
-import io.seqera.wave.store.state.CountParams
-import jakarta.inject.Inject
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@MicronautTest
-class BuildStateStoreImplTest extends Specification {
+class CountParamsTest extends Specification {
 
-    @Inject
-    BuildStateStoreImpl store
-
-    def 'should return entry key' () {
-        expect:
-        store.key0('foo') == 'wave-build/v2:foo'
+    def 'should split key'() {
+        when:
+        def result = CountParams.of(KEY)
+        then:
+        result == EXPECTED
+        where:
+        KEY                 | EXPECTED
+        'one'               | new CountParams("counters/v1", "one")
+        'one/two'           | new CountParams("one", "two")
+        'one/two/three'     | new CountParams("one/two", "three")
     }
 
-    def 'should return record id' () {
-        expect:
-        store.requestId0('foo') == 'wave-build/v2/request-id:foo'
-    }
-
-    def 'should return counter key' () {
-        given:
-        def build = Mock(BuildEntry) {
-            getRequest()>>Mock(BuildRequest) { getContainerId()>>'12345' }
-        }
-        expect:
-        store.counterKey('foo', build) == new CountParams('build-counters/v1','12345')
-    }
 }

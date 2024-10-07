@@ -22,6 +22,7 @@ import java.time.Duration
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
+import io.seqera.wave.store.state.CountParams
 import io.seqera.wave.store.state.CountResult
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -103,21 +104,15 @@ class RedisStateProvider implements StateProvider<String,String> {
         """
     }
 
-    static protected Tuple2<String,String> splitKey(String key) {
-        final p=key.lastIndexOf('/')
-        return p==-1
-            ? new Tuple2<String, String>("counters/v1", key)
-            : new Tuple2<String, String>(key.substring(0,p), key.substring(p+1))
+
+    CountResult<String> putJsonIfAbsentAndIncreaseCount(String key, String json, Duration ttl, String counter, String luaScript) {
+        return putJsonIfAbsentAndIncreaseCount(key, json, ttl, CountParams.of(counter), luaScript)
     }
 
     @Override
-    CountResult<String> putJsonIfAbsentAndIncreaseCount(String key, String json, Duration ttl, String counter, String luaScript) {
-        return putJsonIfAbsentAndIncreaseCount(key, json, ttl, splitKey(counter), luaScript)
-    }
-
-    CountResult<String> putJsonIfAbsentAndIncreaseCount(String key, String json, Duration ttl, Tuple2<String,String> counter, String mapping) {
+    CountResult<String> putJsonIfAbsentAndIncreaseCount(String key, String json, Duration ttl, CountParams counter, String mapping) {
         try( Jedis jedis=pool.getResource() )  {
-            final result = jedis.eval(putAndIncrement(mapping), 3, key, counter.v1, counter.v2, json, ttl.toMillis().toString())
+            final result = jedis.eval(putAndIncrement(mapping), 3, key, counter.key, counter.field, json, ttl.toMillis().toString())
             return new CountResult<>(
                     (result as List)[0] == 1,
                     (result as List)[1] as String,

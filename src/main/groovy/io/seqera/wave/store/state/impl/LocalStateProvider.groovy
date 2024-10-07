@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
+import io.seqera.wave.store.state.CountParams
 import io.seqera.wave.store.state.CountResult
 import jakarta.inject.Singleton
 import org.luaj.vm2.Globals
@@ -95,10 +96,11 @@ class LocalStateProvider implements StateProvider<String,String> {
     }
 
     @Override
-    synchronized CountResult<String> putJsonIfAbsentAndIncreaseCount(String key, String json, Duration ttl, String counterKey, String luaScript) {
+    synchronized CountResult<String> putJsonIfAbsentAndIncreaseCount(String key, String json, Duration ttl, CountParams counterKey, String luaScript) {
+        final counter = counterKey.key + '/' + counterKey.field
         final done = putIfAbsent0(key, json, ttl) == null
         final addr = counters
-                .computeIfAbsent(counterKey, (it)-> new AtomicInteger())
+                .computeIfAbsent(counter, (it)-> new AtomicInteger())
         if( done ) {
             final count = addr.incrementAndGet()
             // apply the conversion
