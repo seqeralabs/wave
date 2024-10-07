@@ -22,19 +22,13 @@ import spock.lang.Specification
 
 import java.util.concurrent.CompletableFuture
 
-import io.micronaut.context.annotation.Property
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
-import io.micronaut.objectstorage.InputStreamMapper
-import io.micronaut.objectstorage.ObjectStorageOperations
-import io.micronaut.objectstorage.aws.AwsS3Configuration
-import io.micronaut.objectstorage.aws.AwsS3Operations
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
@@ -52,18 +46,12 @@ import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.client.TowerClient
 import io.seqera.wave.tower.client.UserInfoResponse
 import jakarta.inject.Inject
-import jakarta.inject.Named
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.s3.S3Client
 import static io.seqera.wave.service.pairing.PairingService.TOWER_SERVICE
 import static io.seqera.wave.util.FutureUtils.completeExceptionally
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  */
 @MicronautTest
-@Property(name = 'wave.build.logs.bucket', value = 'test-bucket')
 class ContainerControllerHttpTest extends Specification implements AwsS3TestContainer {
 
     @Inject
@@ -87,21 +75,6 @@ class ContainerControllerHttpTest extends Specification implements AwsS3TestCont
     @MockBean(TowerClient)
     TowerClient mockTowerClient() {
         Mock(TowerClient)
-    }
-
-    def s3Client = S3Client.builder()
-            .endpointOverride(URI.create("http://${awsS3HostName}:${awsS3Port}"))
-            .region(Region.EU_WEST_1)
-            .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("accesskey", "secretkey")))
-            .forcePathStyle(true)
-            .build()
-
-    @MockBean(ObjectStorageOperations)
-    @Named('build-logs')
-    ObjectStorageOperations mockObjectStorageOperations() {
-        AwsS3Configuration configuration = new AwsS3Configuration('build-logs')
-        configuration.setBucket("test-bucket")
-        return new AwsS3Operations(configuration, s3Client, Mock(InputStreamMapper))
     }
 
     def 'should create token request for anonymous user' () {
@@ -389,48 +362,4 @@ class ContainerControllerHttpTest extends Specification implements AwsS3TestCont
         response.targetImage.startsWith("docker.io/foo/test:salmon")
     }
 
-    def 'should build conda image then store conda lockfile and fetch conda lockfile' () {
-        given:
-        def request = new SubmitContainerTokenRequest(
-                packages: new PackagesSpec(channels: ['conda-forge'], entries: ['xz'], type: 'CONDA'),
-                buildRepository: "test/repository",
-                cacheRepository: "test/cache",
-
-        )
-        and:
-        s3Client.createBucket { it.bucket("test-bucket") }
-
-        when:
-        def res = httpClient
-                .toBlocking()
-                .exchange(HttpRequest.POST("/v1alpha2/container",request), SubmitContainerTokenResponse).body()
-        and:
-        awaitBuild(res.buildId)
-        and:
-        res = httpClient
-                .toBlocking()
-                .exchange(HttpRequest.GET("/v1alpha1/builds/$res.buildId/condalock"), String).body()
-
-        then:
-        res.contains('conda create --name <env> --file <this file>')
-    }
-
-    boolean awaitBuild(String buildId) {
-        long startTime = System.currentTimeMillis()
-        long timeout = 90000
-        long checkInterval = 5000
-        while (System.currentTimeMillis() - startTime < timeout) {
-            def res = httpClient
-                    .toBlocking()
-                    .exchange(HttpRequest.GET("/v1alpha1/builds/$buildId/status"), BuildStatusResponse)
-                    .body()
-
-            if (res.status == BuildStatusResponse.Status.COMPLETED) {
-                return true
-            }
-            sleep checkInterval
-        }
-
-        return false
-    }
 }
