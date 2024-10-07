@@ -127,6 +127,15 @@
         <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{build_condafile}}</pre>
     {{/if}}
 
+    {{#if build_success}}
+        {{#if build_conda_lock_data }}
+            <h3>Conda lockfile</h3>
+            <pre style="white-space: pre-wrap; overflow-x: auto; overflow-y: auto; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px; max-height: 400px; max-width: 100%; word-wrap: break-word;">
+                {{build_conda_lock_data}}
+            </pre>
+        {{/if}}
+    {{/if}}
+
     {{#if build_log_data}}
         <h3>Build logs</h3>
         <pre style="white-space: pre-wrap; overflow-x: auto; overflow-y: auto; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{build_log_data}}</pre>

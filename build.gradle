@@ -36,8 +36,7 @@ dependencies {
     implementation("jakarta.persistence:jakarta.persistence-api:3.0.0")
     api 'io.seqera:lib-mail:1.0.0'
     api 'io.seqera:wave-api:0.13.0'
-    api 'io.seqera:wave-utils:0.13.1'
-
+    api 'io.seqera:wave-utils:0.14.0'
     implementation("io.micronaut:micronaut-http-client")
     implementation("io.micronaut:micronaut-jackson-databind")
     implementation("io.micronaut.groovy:micronaut-runtime-groovy")
