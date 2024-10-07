@@ -92,20 +92,4 @@ class BuildController {
                 : HttpResponse.<StreamedFile>notFound()
     }
 
-    protected BuildStatusResponse buildResponse0(String buildId) {
-        if( !buildId )
-            throw new BadRequestException("Missing 'buildId' parameter")
-        // build IDs starting with the `mr-` prefix are interpreted as mirror requests
-        if( buildId.startsWith(MirrorRequest.ID_PREFIX) ) {
-            return mirrorService
-                    .getMirrorEntry(buildId)
-                    ?.toStatusResponse()
-        }
-        else {
-            return buildService
-                    .getBuildRecord(buildId)
-                    ?.toStatusResponse()
-        }
-    }
-
 }
