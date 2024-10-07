@@ -31,12 +31,12 @@ repositories {
 dependencies {
     annotationProcessor("io.micronaut:micronaut-http-validation")
     compileOnly("io.micronaut.data:micronaut-data-processor")
-    compileOnly("io.micronaut:micronaut-inject-groovy")
+    implementation("io.micronaut:micronaut-inject-groovy")
     compileOnly("io.micronaut:micronaut-http-validation")
     implementation("jakarta.persistence:jakarta.persistence-api:3.0.0")
     api 'io.seqera:lib-mail:1.0.0'
     api 'io.seqera:wave-api:0.13.0'
-    api 'io.seqera:wave-utils:0.14.0'
+    api 'io.seqera:wave-utils:0.14.1'
     implementation("io.micronaut:micronaut-http-client")
     implementation("io.micronaut:micronaut-jackson-databind")
     implementation("io.micronaut.groovy:micronaut-runtime-groovy")
@@ -203,4 +203,30 @@ jacocoTestReport {
             fileTree(dir: dir, excludes: ['**/*$*_closure*'])
         }))
     }
+}
+
+configurations {
+    e2eTestImplementation.extendsFrom testImplementation, implementation
+    e2eTestRuntimeOnly.extendsFrom testRuntimeOnly, runtimeOnly
+    e2eTestAnnotationProcessor.extendsFrom testAnnotationProcessor
+}
+
+sourceSets {
+    e2eTest {
+        java {
+            srcDirs = ['src/e2eTest/groovy']
+        }
+        resources {
+            srcDirs = ['src/e2eTest/resources']
+        }
+        compileClasspath += sourceSets.main.output + sourceSets.test.output
+        runtimeClasspath += sourceSets.main.output + sourceSets.test.output
+    }
+}
+
+tasks.register('e2eTest', Test) {
+    group = 'verification'
+    testClassesDirs = sourceSets.e2eTest.output.classesDirs
+    classpath = sourceSets.e2eTest.runtimeClasspath
+    shouldRunAfter test
 }
