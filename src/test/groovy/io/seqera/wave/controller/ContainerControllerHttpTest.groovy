@@ -40,7 +40,6 @@ import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.PairingServiceImpl
-import io.seqera.wave.test.AwsS3TestContainer
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.client.TowerClient
@@ -52,7 +51,7 @@ import static io.seqera.wave.util.FutureUtils.completeExceptionally
  * @author : jorge <jorge.aguilera@seqera.io>
  */
 @MicronautTest
-class ContainerControllerHttpTest extends Specification implements AwsS3TestContainer {
+class ContainerControllerHttpTest extends Specification {
 
     @Inject
     @Client("/")
@@ -361,5 +360,4 @@ class ContainerControllerHttpTest extends Specification implements AwsS3TestCont
         then:
         response.targetImage.startsWith("docker.io/foo/test:salmon")
     }
-
 }

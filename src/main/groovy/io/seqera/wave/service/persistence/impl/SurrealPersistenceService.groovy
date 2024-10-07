@@ -269,7 +269,7 @@ class SurrealPersistenceService implements PersistenceService {
         final result = data && data[0].result ? data[0].result[0] : null
         return result
     }
-      
+
     // ===  mirror operations
 
     /**

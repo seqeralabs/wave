@@ -38,7 +38,6 @@ class LocalPersistenceService implements PersistenceService {
     private Map<String,WaveBuildRecord> buildStore = new HashMap<>()
 
     private Map<String,WaveContainerRecord> requestStore = new HashMap<>()
-
     private Map<String,WaveScanRecord> scanStore = new HashMap<>()
     private Map<String,MirrorResult> mirrorStore = new HashMap<>()
 
