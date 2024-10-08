@@ -38,6 +38,14 @@ class BuildEntry implements StateEntry<String>, JobEntry, RequestIdAware {
 
     final BuildResult result
 
+    BuildRequest getRequest() {
+        return request
+    }
+
+    BuildResult getResult() {
+        return result
+    }
+
     @Override
     String getKey() {
         return request.targetImage
@@ -45,8 +53,6 @@ class BuildEntry implements StateEntry<String>, JobEntry, RequestIdAware {
 
     @Override
     String getRequestId() {
-        if( !request.buildId )
-            throw new IllegalStateException("Missing build id")
         return request.buildId
     }
 
@@ -66,4 +72,7 @@ class BuildEntry implements StateEntry<String>, JobEntry, RequestIdAware {
         new BuildEntry(request, result)
     }
 
+    static BuildEntry create(BuildRequest request) {
+        new BuildEntry(request, BuildResult.create(request))
+    }
 }

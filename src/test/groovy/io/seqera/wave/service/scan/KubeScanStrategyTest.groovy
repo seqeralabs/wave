@@ -63,7 +63,7 @@ class KubeScanStrategyTest extends Specification {
         def folder = Files.createTempDirectory('test')
 
         when:
-        def request = new ScanRequest('100', 'abc', null, 'ubuntu', ContainerPlatform.of('amd64'), folder.resolve('foo'))
+        def request = ScanRequest.of(scanId: '100', buildId: 'abc', targetImage: 'ubuntu', platform: ContainerPlatform.of('amd64'), workDir:  folder.resolve('foo'))
         Files.createDirectories(request.workDir)
 
         strategy.scanContainer('job-name', request)
@@ -71,7 +71,7 @@ class KubeScanStrategyTest extends Specification {
         1 * k8sService.launchScanJob(_, _, _, _, _, _, [service:'wave-scan']) >> null
 
         when:
-        def request2 = new ScanRequest('100', 'abc', null, 'ubuntu', ContainerPlatform.of('arm64'), folder.resolve('bar'))
+        def request2 = ScanRequest.of(scanId: '100', buildId: 'abc', targetImage: 'ubuntu', platform: ContainerPlatform.of('arm64'), workDir: folder.resolve('bar'))
         Files.createDirectories(request.workDir)
 
         strategy.scanContainer('job-name', request2)

@@ -32,13 +32,13 @@ import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
-import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.mirror.MirrorEntry
+import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
@@ -105,23 +105,21 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         """
         def storage = applicationContext.getBean(SurrealPersistenceService)
         final request = new BuildRequest(
-                'container1234',
-                dockerFile,
-                condaFile,
-                Path.of("."),
-                'docker.io/my/repo:container1234',
-                PlatformId.NULL,
-                ContainerPlatform.of('amd64'),
-                'docker.io/my/cache',
-                '127.0.0.1',
-                '{"config":"json"}',
-                null,
-                null,
-                'scan12345',
-                null,
-                BuildFormat.DOCKER,
-                Duration.ofMinutes(1)
-        ).withBuildId('1')
+                containerId: 'container1234',
+                containerFile: dockerFile,
+                condaFile: condaFile,
+                workspace:  Path.of("."),
+                targetImage: 'docker.io/my/repo:container1234',
+                identity: PlatformId.NULL,
+                platform:  ContainerPlatform.of('amd64'),
+                cacheRepository: 'docker.io/my/cache',
+                ip: '127.0.0.1',
+                configJson: '{"config":"json"}',
+                scanId: 'scan12345',
+                format:  BuildFormat.DOCKER,
+                maxDuration:  Duration.ofMinutes(1),
+                buildId: '12345_1',
+        )
         def result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         def event = new BuildEvent(request, result)
         def build = WaveBuildRecord.fromEvent(event)
@@ -141,23 +139,21 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         given:
         def persistence = applicationContext.getBean(SurrealPersistenceService)
         final request = new BuildRequest(
-                'container1234',
-                'FROM foo:latest',
-                'conda::recipe',
-                Path.of("."),
-                'docker.io/my/repo:container1234',
-                PlatformId.NULL,
-                ContainerPlatform.of('amd64'),
-                'docker.io/my/cache',
-                '127.0.0.1',
-                '{"config":"json"}',
-                null,
-                null,
-                'scan12345',
-                null,
-                BuildFormat.DOCKER,
-                Duration.ofMinutes(1)
-        ).withBuildId('123')
+                containerId:  'container1234',
+                containerFile:  'FROM foo:latest',
+                condaFile:  'conda::recipe',
+                workspace:  Path.of("."),
+                targetImage:  'docker.io/my/repo:container1234',
+                identity:  PlatformId.NULL,
+                platform:  ContainerPlatform.of('amd64'),
+                cacheRepository:  'docker.io/my/cache',
+                ip: '127.0.0.1',
+                configJson:  '{"config":"json"}',
+                scanId:  'scan12345',
+                format:  BuildFormat.DOCKER,
+                maxDuration:  Duration.ofMinutes(1),
+                buildId: '12345_1',
+        )
         def result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         def event = new BuildEvent(request, result)
         def record = WaveBuildRecord.fromEvent(event)
@@ -178,9 +174,9 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def surreal = applicationContext.getBean(SurrealClient)
         def persistence = applicationContext.getBean(SurrealPersistenceService)
         def auth = persistence.getAuthorization()
-        def request1 = new BuildRequest( containerId: 'abc', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(30), identity: PlatformId.NULL ).withBuildId('1')
-        def request2 = new BuildRequest( containerId: 'abc', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(20), identity: PlatformId.NULL ).withBuildId('2')
-        def request3 = new BuildRequest( containerId: 'abc', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(10), identity: PlatformId.NULL ).withBuildId('3')
+        def request1 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_1' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(30), identity: PlatformId.NULL)
+        def request2 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_2' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(20), identity: PlatformId.NULL)
+        def request3 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_3' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(10), identity: PlatformId.NULL)
 
         def result1 = new BuildResult(request1.buildId, -1, "ok", request1.startTime, Duration.ofSeconds(2), null)
         surreal.insertBuild(auth, WaveBuildRecord.fromEvent(new BuildEvent(request1, result1)))
@@ -191,34 +187,31 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def result3 = new BuildResult(request3.buildId, -1, "ok", request3.startTime, Duration.ofSeconds(2), null)
         surreal.insertBuild(auth, WaveBuildRecord.fromEvent(new BuildEvent(request3, result3)))
 
-        when:
-        def loaded = persistence.latestBuild('abc')
-
-        then:
-        loaded.buildId == 'abc_3'
+        expect:
+        persistence.latestBuild('abc').buildId == 'bd-abc_3'
+        persistence.latestBuild('bd-abc').buildId == 'bd-abc_3'
+        persistence.latestBuild('xyz') == null
     }
 
     def 'should save and update a build' () {
         given:
         def persistence = applicationContext.getBean(SurrealPersistenceService)
         final request = new BuildRequest(
-                'container1234',
-                'FROM foo:latest',
-                'conda::recipe',
-                Path.of("/some/path"),
-                'buildrepo:recipe-container1234',
-                PlatformId.NULL,
-                ContainerPlatform.of('amd64'),
-                'docker.io/my/cache',
-                '127.0.0.1',
-                '{"config":"json"}',
-                null,
-                null,
-                'scan12345',
-                null,
-                BuildFormat.DOCKER,
-                Duration.ofMinutes(1)
-        ).withBuildId('123')
+                containerId: 'container1234',
+                containerFile:  'FROM foo:latest',
+                condaFile:  'conda::recipe',
+                workspace:  Path.of("/some/path"),
+                targetImage:  'buildrepo:recipe-container1234',
+                identity:  PlatformId.NULL,
+                platform:  ContainerPlatform.of('amd64'),
+                cacheRepository:  'docker.io/my/cache',
+                ip:  '127.0.0.1',
+                configJson:  '{"config":"json"}',
+                scanId:  'scan12345',
+                format:  BuildFormat.DOCKER,
+                maxDuration:  Duration.ofMinutes(1),
+                buildId: '12345_1'
+        )
         and:
         def result = BuildResult.completed(request.buildId, 1, 'Hello', Instant.now().minusSeconds(60), 'xyz')
 
@@ -252,13 +245,12 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 timestamp: Instant.now().toString()
         )
         def user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
-        def data = new ContainerRequestData(new PlatformId(user,100), 'hello-world', largeContainerFile )
+        def data = ContainerRequest.of(requestId: TOKEN, identity: new PlatformId(user,100), containerImage: 'hello-world', containerFile: largeContainerFile )
         def wave = "wave.io/wt/$TOKEN/hello-world"
         def addr = "100.200.300.400"
         def exp = Instant.now().plusSeconds(3600)
         and:
-        def request = new WaveContainerRecord(req, data, TOKEN, wave, addr, exp)
-
+        def request = new WaveContainerRecord(req, data, wave, addr, exp)
         and:
         persistence.saveContainerRequest(request)
         and:
@@ -289,6 +281,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
     def 'should save a scan and load a result' () {
         given:
         def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def auth = persistence.getAuthorization()
+        def surrealDb = applicationContext.getBean(SurrealClient)
         def NOW = Instant.now()
         def SCAN_ID = 'a1'
         def BUILD_ID = '100'
@@ -296,27 +290,36 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def CVE1 = new ScanVulnerability('cve-1', 'x1', 'title1', 'package1', 'version1', 'fixed1', 'url1')
         def CVE2 = new ScanVulnerability('cve-2', 'x2', 'title2', 'package2', 'version2', 'fixed2', 'url2')
         def CVE3 = new ScanVulnerability('cve-3', 'x3', 'title3', 'package3', 'version3', 'fixed3', 'url3')
-        def scanRecord = new WaveScanRecord(SCAN_ID, BUILD_ID, CONTAINER_IMAGE, NOW, Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3])
+        def CVE4 = new ScanVulnerability('cve-4', 'x4', 'title4', 'package4', 'version4', 'fixed4', 'url4')
+        def scan = new WaveScanRecord(SCAN_ID, BUILD_ID, null, null, CONTAINER_IMAGE, NOW, Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3], null, null)
         when:
-        persistence.createScanRecord(new WaveScanRecord(SCAN_ID, BUILD_ID, CONTAINER_IMAGE, NOW))
-        persistence.updateScanRecord(scanRecord)
+        persistence.saveScanRecord(scan)
         then:
         def result = persistence.loadScanRecord(SCAN_ID)
         and:
-        result == scanRecord
+        result == scan
+        and:
+        surrealDb
+                .sqlAsMap(auth, "select * from wave_scan_vuln")
+                .result
+                .size() == 3
 
         when:
         def SCAN_ID2 = 'b2'
         def BUILD_ID2 = '102'
-        def scanRecord2 = new WaveScanRecord(SCAN_ID2, BUILD_ID2, CONTAINER_IMAGE, NOW, Duration.ofSeconds(20), 'FAILED', [CVE1])
+        def scanRecord2 = new WaveScanRecord(SCAN_ID2, BUILD_ID2, null, null, CONTAINER_IMAGE, NOW, Duration.ofSeconds(20), 'FAILED', [CVE1, CVE4], 1, "Error 'quote'")
         and:
-        persistence.createScanRecord(new WaveScanRecord(SCAN_ID2, BUILD_ID2, CONTAINER_IMAGE, NOW))
         // should save the same CVE into another build
-        persistence.updateScanRecord(scanRecord2)
+        persistence.saveScanRecord(scanRecord2)
         then:
         def result2 = persistence.loadScanRecord(SCAN_ID2)
         and:
         result2 == scanRecord2
+        and:
+        surrealDb
+                .sqlAsMap(auth, "select * from wave_scan_vuln")
+                .result
+                .size() == 4
     }
 
     //== mirror records tests
@@ -331,16 +334,21 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
                 Path.of('/workspace'),
-                '{auth json}' )
+                '{auth json}',
+                'scan-123',
+                Instant.now(),
+                "GMT",
+                Mock(PlatformId)
+        )
         and:
         storage.initializeDb()
         and:
-        def result = MirrorEntry.from(request)
-        storage.saveMirrorEntry(result)
+        def result = MirrorEntry.of(request).getResult()
+        storage.saveMirrorResult(result)
         sleep 100
 
         when:
-        def stored = storage.loadMirrorEntry(request.mirrorId)
+        def stored = storage.loadMirrorResult(request.mirrorId)
         then:
         stored == result
     }
@@ -355,16 +363,21 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
                 Path.of('/workspace'),
-                '{auth json}'  )
+                '{auth json}',
+                'scan-123',
+                Instant.now(),
+                "GMT",
+                Mock(PlatformId)
+        )
         and:
         storage.initializeDb()
         and:
-        def result = MirrorEntry.from(request)
-        storage.saveMirrorEntry(result)
+        def result = MirrorEntry.of(request).getResult()
+        storage.saveMirrorResult(result)
         sleep 100
 
         when:
-        def stored = storage.loadMirrorEntry(request.targetImage, request.digest)
+        def stored = storage.loadMirrorResult(request.targetImage, request.digest)
         then:
         stored == result
     }
@@ -398,7 +411,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 null,
                 BuildFormat.DOCKER,
                 Duration.ofMinutes(1)
-        ).withBuildId('123')
+        )
         and:
         def result = BuildResult.completed(request.buildId, 1, 'Hello', Instant.now().minusSeconds(60), 'xyz')
 

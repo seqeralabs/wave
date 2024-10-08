@@ -21,7 +21,6 @@ package io.seqera.wave.service.mirror
 import java.util.concurrent.CompletableFuture
 
 import io.seqera.wave.service.builder.BuildTrack
-
 /**
  * Define the contract for container images mirroring service
  *
@@ -58,6 +57,6 @@ interface ContainerMirrorService {
      *      The {@link MirrorEntry} object modelling the current state of the mirror operation,
      *      or {@link null} otherwise
      */
-    MirrorEntry getMirrorEntry(String id)
+    MirrorResult getMirrorResult(String id)
 
 }

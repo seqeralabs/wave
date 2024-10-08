@@ -88,8 +88,9 @@ class BuildControllerTest extends Specification {
                 ip: "1.2.3.4",
                 configJson: '{"config":"json"}',
                 scanId: 'scan12345',
-                format: format )
-            .withBuildId('1')
+                format: format,
+                buildId: "bd-${containerId}_1"
+        )
         final result = new BuildResult(build.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         final event = new BuildEvent(build, result)
         final entry = WaveBuildRecord.fromEvent(event)
@@ -151,6 +152,23 @@ class BuildControllerTest extends Specification {
         then:
         HttpClientResponseException e = thrown(HttpClientResponseException)
         e.status == HttpStatus.NOT_FOUND
+    }
+
+    def 'should get conda lock file' () {
+        given:
+        def buildId = 'testbuildid1234'
+        def condaLock = "test conda lock"
+        def response = new StreamedFile(new ByteArrayInputStream(condaLock.bytes), MediaType.APPLICATION_OCTET_STREAM_TYPE)
+
+        when:
+        def req = HttpRequest.GET("/v1alpha1/builds/${buildId}/condalock")
+        def res = client.toBlocking().exchange(req, String)
+
+        then:
+        1 * buildLogService.fetchCondaLockStream(buildId) >> response
+        and:
+        res.code() == 200
+        res.body() == condaLock
     }
 
 }

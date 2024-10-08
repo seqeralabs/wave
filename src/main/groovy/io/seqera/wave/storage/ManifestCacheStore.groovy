@@ -51,7 +51,7 @@ class ManifestCacheStore extends AbstractStateStore<DigestStore> implements Stor
 
     @Override
     protected String getPrefix() {
-        return "wave-blobs/v1:"
+        return "wave-blobs/v1"
     }
 
     @Override

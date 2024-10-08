@@ -37,7 +37,7 @@ import jakarta.inject.Singleton
 @CompileStatic
 class JobQueue extends AbstractMessageStream<JobSpec> {
 
-    final private static String STREAM_NAME = 'jobs-queue/v1:'
+    final private static String STREAM_NAME = 'jobs-queue/v1'
 
     private volatile JobConfig config
 

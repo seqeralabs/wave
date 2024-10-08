@@ -203,7 +203,7 @@ class RegistryProxyService {
 
     static private List<Integer> RETRY_ON_NOT_FOUND = HTTP_RETRYABLE_ERRORS + 404
 
-    @Cacheable(value = 'cache-registry-proxy', atomic = true)
+    @Cacheable(value = 'cache-registry-proxy', atomic = true, parameters = ['image'])
     protected String getImageDigest0(String image, PlatformId identity, boolean retryOnNotFound) {
         final coords = ContainerCoordinates.parse(image)
         final route = RoutePath.v2manifestPath(coords, identity)

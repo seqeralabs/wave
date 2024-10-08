@@ -61,7 +61,7 @@ class PairingStore extends AbstractStateStore<PairingRecord> {
 
     @Override
     protected String getPrefix() {
-        return 'pairing-keys/v1:'
+        return 'pairing-keys/v1'
     }
 
     /**
