@@ -34,6 +34,7 @@ import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.ContainerStatusResponse
 import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
@@ -58,8 +59,8 @@ import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerRecord
-import io.seqera.wave.service.token.ContainerTokenService
-import io.seqera.wave.service.token.TokenData
+import io.seqera.wave.service.request.ContainerRequestService
+import io.seqera.wave.service.request.TokenData
 import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
@@ -88,9 +89,19 @@ class ContainerControllerTest extends Specification {
     @Inject
     ApplicationContext applicationContext
 
+    @Inject
+    RegistryProxyService proxyRegistry
+
     @MockBean(JobServiceImpl)
     JobService mockJobService() {
         Mock(JobService)
+    }
+
+    @MockBean(RegistryProxyService)
+    RegistryProxyService mockProxy() {
+        Mock(RegistryProxyService) {
+            getImageDigest(_,_) >> 'sha256:mock-digest'
+        }
     }
 
     def setup() {
@@ -99,7 +110,7 @@ class ContainerControllerTest extends Specification {
 
     def 'should create request data' () {
         given:
-        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService))
+        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry)
 
         when:
         def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest')
@@ -135,6 +146,7 @@ class ContainerControllerTest extends Specification {
     def 'should create request data with freeze mode' () {
         given:
         def freeze = Mock(FreezeService)
+        def containerImage = 'ubuntu:latest'
         and:
         def controller = Spy(new ContainerController(freezeService: freeze, inclusionService: Mock(ContainerInclusionService)))
         and:
@@ -143,7 +155,7 @@ class ContainerControllerTest extends Specification {
             getTargetImage() >> target
         }
         and:
-        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true, buildRepository: 'docker.io/foo/bar')
+        def req = new SubmitContainerTokenRequest(containerImage: containerImage, freeze: true, buildRepository: 'docker.io/foo/bar')
 
         when:
         def data = controller.makeRequestData(req, PlatformId.NULL, "")
@@ -151,6 +163,7 @@ class ContainerControllerTest extends Specification {
         1 * freeze.freezeBuildRequest(req, _) >> req.copyWith(containerFile: 'FROM ubuntu:latest')
         1 * controller.makeBuildRequest(_,_,_) >> BUILD
         1 * controller.checkBuild(BUILD,false) >> new BuildTrack('1', target, false)
+        1 * controller.getContainerDigest(containerImage, PlatformId.NULL) >> 'sha256:12345'
         and:
         data.containerImage == target
 
@@ -168,7 +181,6 @@ class ContainerControllerTest extends Specification {
         given:
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def proxyRegistry = Mock(RegistryProxyService)
         def controller = new ContainerController(buildService: builder, inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
         def DOCKER = 'FROM foo'
         def user = new PlatformId(new User(id: 100))
@@ -195,7 +207,6 @@ class ContainerControllerTest extends Specification {
         given:
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def proxyRegistry = Mock(RegistryProxyService)
         def persistenceService = Mock(PersistenceService)
         def controller = new ContainerController(buildService: builder, inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, persistenceService:persistenceService, inclusionService: Mock(ContainerInclusionService))
         def DOCKER = 'FROM foo'
@@ -224,7 +235,6 @@ class ContainerControllerTest extends Specification {
         given:
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def proxyRegistry = Mock(RegistryProxyService)
         def controller = new ContainerController(buildService: builder, inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig:buildConfig, inclusionService: Mock(ContainerInclusionService))
         def DOCKER = 'FROM foo'
         def user = new PlatformId(new User(id: 100))
@@ -251,10 +261,8 @@ class ContainerControllerTest extends Specification {
 
     def 'should make a mirror request' () {
         given:
-        def jobService = applicationContext.getBean(JobService)
         def mirrorService = applicationContext.getBean(ContainerMirrorService)
         def inspectService = Mock(ContainerInspectServiceImpl)
-        def proxyRegistry = Mock(RegistryProxyService)
         def controller = new ContainerController(mirrorService: mirrorService, inspectService: inspectService, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
         def user = new PlatformId(new User(id: 100))
         def req = new SubmitContainerTokenRequest(
@@ -353,7 +361,7 @@ class ContainerControllerTest extends Specification {
     def 'should add library prefix' () {
         when:
         def body = new SubmitContainerTokenRequest(containerImage: 'docker.io/hello-world')
-        def req1 = HttpRequest.POST("/container-token", body)
+        def req1 = HttpRequest.POST("/v1alpha2/container", body)
         def resp1 = client.toBlocking().exchange(req1, SubmitContainerTokenResponse)
         then:
         resp1.status() == HttpStatus.OK
@@ -367,7 +375,7 @@ class ContainerControllerTest extends Specification {
     def 'should not add library prefix' () {
         when:
         def body = new SubmitContainerTokenRequest(containerImage: 'quay.io/hello-world')
-        def req1 = HttpRequest.POST("/container-token", body)
+        def req1 = HttpRequest.POST("/v1alpha2/container", body)
         def resp1 = client.toBlocking().exchange(req1, SubmitContainerTokenResponse)
         then:
         resp1.status() == HttpStatus.OK
@@ -381,7 +389,7 @@ class ContainerControllerTest extends Specification {
     def 'should record a container request' () {
         when:
         def body = new SubmitContainerTokenRequest(containerImage: 'hello-world')
-        def req1 = HttpRequest.POST("/container-token", body)
+        def req1 = HttpRequest.POST("/v1alpha2/container", body)
         def resp1 = client.toBlocking().exchange(req1, SubmitContainerTokenResponse)
         then:
         resp1.status() == HttpStatus.OK
@@ -523,11 +531,11 @@ class ContainerControllerTest extends Specification {
         def builder = Mock(ContainerBuildService)
         def proxyRegistry = Mock(RegistryProxyService)
         def addressResolver = Mock(HttpClientAddressResolver)
-        def tokenService = Mock(ContainerTokenService)
+        def tokenService = Mock(ContainerRequestService)
         def persistence = Mock(PersistenceService)
         def controller = new ContainerController(freezeService:  freeze, buildService: builder, inspectService: dockerAuth,
                 registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService),
-                addressResolver: addressResolver, tokenService: tokenService, persistenceService: persistence, serverUrl: 'http://wave.com')
+                addressResolver: addressResolver, containerService: tokenService, persistenceService: persistence, serverUrl: 'http://wave.com')
 
         when:'packages with conda'
         def CHANNELS = ['conda-forge', 'defaults']
@@ -671,18 +679,18 @@ class ContainerControllerTest extends Specification {
         noExceptionThrown()
     }
 
-    def '/v1alpha2/container/{containerId} should return a container record' () {
+    def 'should return the container record' () {
         given:
         def body = new SubmitContainerTokenRequest(containerImage: 'hello-world')
-        def req1 = HttpRequest.POST("/container-token", body)
+        def req1 = HttpRequest.POST("/v1alpha2/container", body)
         def resp1 = client.toBlocking().exchange(req1, SubmitContainerTokenResponse)
         and:
         resp1.status() == HttpStatus.OK
         and:
-        def containerId = resp1.body().containerToken
+        def requestId = resp1.body().requestId
 
         when:
-        def req2 = HttpRequest.GET("/v1alpha2/container/${containerId}")
+        def req2 = HttpRequest.GET("/v1alpha2/container/${requestId}")
         def resp2 = client.toBlocking().exchange(req2, WaveContainerRecord)
         then:
         resp2.status() == HttpStatus.OK
@@ -692,5 +700,29 @@ class ContainerControllerTest extends Specification {
         result.containerImage == 'hello-world'
         result.sourceImage == 'docker.io/library/hello-world:latest'
         result.waveImage == resp1.body().targetImage
+    }
+
+    def 'should return the container status' () {
+        given:
+        def body = new SubmitContainerTokenRequest(containerImage: 'hello-world')
+        def req1 = HttpRequest.POST("/v1alpha2/container", body)
+        def resp1 = client.toBlocking().exchange(req1, SubmitContainerTokenResponse)
+        and:
+        resp1.status() == HttpStatus.OK
+        and:
+        def requestId = resp1.body().requestId
+
+        when:
+        def req2 = HttpRequest.GET("/v1alpha2/container/${requestId}/status")
+        def resp2 = client.toBlocking().exchange(req2, ContainerStatusResponse)
+        then:
+        resp2.status() == HttpStatus.OK
+        and:
+        ContainerStatusResponse result = resp2.body()
+        and:
+        result.id == requestId
+        result.succeeded
+        result.creationTime
+        result.duration
     }
 }

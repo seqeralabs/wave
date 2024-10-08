@@ -22,9 +22,20 @@ import spock.lang.Specification
 
 import java.time.Instant
 
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.store.state.impl.LocalStateProvider
+import jakarta.inject.Inject
 
+@MicronautTest
 class PairingStoreTest extends Specification{
+
+    @Inject
+    PairingStore store
+
+    def 'should return entry key' () {
+        expect:
+        store.key0('foo') == 'pairing-keys/v1:foo'
+    }
 
     def 'pairing cache store properly serializes/deserializes pairing record'() {
         given: 'a store'

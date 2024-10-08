@@ -74,7 +74,6 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
     @Inject
     private RegistryProxyService proxyService
 
-
     @Inject
     private RegistryAuthService loginService
 
@@ -95,14 +94,16 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
             repos.add(cacheRepo)
         final result = credsJson(repos, identity)
         if( buildRepo && result && !result.contains(host0(buildRepo)) )
-            throw new BadRequestException("Missing credentials for target build repository: $buildRepo")
+            throw new BadRequestException("Missing credentials for container repository: $buildRepo")
         if( cacheRepo && result && !result.contains(host0(cacheRepo)) )
-            throw new BadRequestException("Missing credentials for target cache repository: $buildRepo")
+            throw new BadRequestException("Missing credentials for container repository: $cacheRepo")
         return result
     }
 
     static protected String host0(String repo) {
-        repo.tokenize('/')[0]
+        ContainerCoordinates
+                .parse(repo)
+                .registry
     }
 
     protected String credsJson(Set<String> repositories, PlatformId identity) {

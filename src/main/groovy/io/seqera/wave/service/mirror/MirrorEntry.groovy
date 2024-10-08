@@ -18,99 +18,64 @@
 
 package io.seqera.wave.service.mirror
 
-import java.time.Duration
-import java.time.Instant
-
-import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-import io.seqera.wave.api.BuildStatusResponse
-import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.job.JobEntry
-import io.seqera.wave.store.state.StateEntry
 import io.seqera.wave.store.state.RequestIdAware
-import jakarta.inject.Singleton
+import io.seqera.wave.store.state.StateEntry
 /**
- * Model a container mirror result object
+ * Model a container mirror entry object
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @ToString(includeNames = true, includePackage = false)
-@Singleton
+@EqualsAndHashCode
 @CompileStatic
-@Canonical
 class MirrorEntry implements StateEntry<String>, JobEntry, RequestIdAware {
-    enum Status { PENDING, COMPLETED }
 
-    final String mirrorId
-    final String digest
-    final String sourceImage
-    final String targetImage
-    final ContainerPlatform platform
-    final Instant creationTime
-    final Status status
-    final Duration duration
-    final Integer exitCode
-    final String logs
+    final MirrorRequest request
+
+    final MirrorResult result
+
+    protected MirrorEntry() {}
+
+    MirrorEntry(MirrorRequest request, MirrorResult result) {
+        this.request = request
+        this.result = result
+    }
 
     @Override
     String getKey() {
-        return targetImage
+        return request.targetImage
     }
 
     @Override
     String getRequestId() {
-        return mirrorId
+        return request.mirrorId
     }
 
     @Override
     boolean done() {
-        status==Status.COMPLETED
+        result?.status==MirrorResult.Status.COMPLETED
     }
 
-    boolean succeeded() {
-        status==Status.COMPLETED && exitCode==0
+    /**
+     * Create a {@link MirrorEntry} object with the current {@link MirrorRequest} and
+     * the specified {@link MirrorResult} object
+     *
+     * @param result The {@link MirrorResult} object to be use as result
+     * @return The new {@link MirrorEntry} instance
+     */
+    MirrorEntry withResult(MirrorResult result) {
+        new MirrorEntry(this.request, result)
     }
 
-    MirrorEntry complete(Integer exitCode, String logs ) {
-        new MirrorEntry(
-                this.mirrorId,
-                this.digest,
-                this.sourceImage,
-                this.targetImage,
-                this.platform,
-                this.creationTime,
-                Status.COMPLETED,
-                Duration.between(this.creationTime, Instant.now()),
-                exitCode,
-                logs
-        )
+    /**
+     * Create a {@link MirrorEntry} object with the given {@link MirrorRequest} object
+     */
+    static MirrorEntry of(MirrorRequest request) {
+        new MirrorEntry(request, MirrorResult.of(request))
     }
 
-    static MirrorEntry from(MirrorRequest request) {
-        new MirrorEntry(
-                request.mirrorId,
-                request.digest,
-                request.sourceImage,
-                request.targetImage,
-                request.platform,
-                request.creationTime,
-                Status.PENDING
-        )
-    }
-
-    BuildStatusResponse toStatusResponse() {
-        final status = status == Status.COMPLETED
-                ? BuildStatusResponse.Status.COMPLETED
-                : BuildStatusResponse.Status.PENDING
-        final succeeded = exitCode!=null
-                ? exitCode==0
-                : null
-        return new BuildStatusResponse(
-                mirrorId,
-                status,
-                creationTime,
-                duration,
-                succeeded )
-    }
 }

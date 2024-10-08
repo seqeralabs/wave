@@ -18,17 +18,32 @@
 
 package io.seqera.wave.service.scan
 
-
+import io.seqera.wave.api.ScanMode
+import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.mirror.MirrorEntry
 import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.request.ContainerRequest
+
 /**
  * Declare operations to scan containers
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 interface ContainerScanService {
 
+    String getScanId(String targetImage, String digest, ScanMode mode, String format)
+
     void scan(ScanRequest request)
 
-    WaveScanRecord getScanResult(String scanId)
+    void scanOnBuild(BuildEvent build)
+
+    void scanOnMirror(MirrorEntry entry)
+
+    void scanOnRequest(ContainerRequest request)
+
+    WaveScanRecord getScanRecord(String scanId)
+
+    ScanEntry getScanState(String scanId)
 
 }

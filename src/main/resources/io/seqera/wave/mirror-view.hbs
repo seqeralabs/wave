@@ -1,0 +1,148 @@
+<html>
+<head>
+    <head>
+        {{#if mirror_in_progress}}
+            <meta http-equiv="refresh" content="5">
+        {{/if}}
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="Wave container build data">
+        <title>Wave container mirror notification</title>
+    </head>
+<body>
+<div style="font-family:'-apple-system', BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; padding: 30px; max-width: 800px; margin: 0 auto;">
+
+    <div>
+        <img style="float:left; margin-top: 5px; margin-right: 10px; width: 30px;" src="/assets/wave-logo.png">
+        <h1>Wave container mirror completion</h1>
+    </div>
+
+    {{#if mirror_success}}
+        <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+            <h4 style="margin-top:0; color: inherit;">
+                Container mirror completed successfully!
+            </h4>
+        </div>
+    {{else mirror_failed}}
+        <div style="color: #a94442; background-color: #f2dede; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+            <h4 style="margin-top:0; color: inherit;">
+                Container mirror failed
+            </h4>
+        </div>
+    {{else mirror_in_progress}}
+    {{! mirror is not completed, show a spinning icon }}
+        <style>
+        .lds-dual-ring {
+            display: inline-block;
+            width: 50px;
+            height: 30px;
+        }
+        .lds-dual-ring:after {
+            content: " ";
+            display: block;
+            width: 20px;
+            height: 20px;
+            margin: 8px;
+            border-radius: 50%;
+            border: 6px solid #3c763d;
+            border-color: #3c763d transparent #3c763d transparent;
+            animation: lds-dual-ring 1.2s linear infinite;
+        }
+        @keyframes lds-dual-ring {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        </style>
+        <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+            <h4 style="margin-top:0; color: inherit;">
+                <div class="lds-dual-ring"></div> Container mirror in progress
+            </h4>
+        </div>
+    {{/if}}
+
+    <h3>Summary</h3>
+    <table cellpadding="4" >
+        <tr>
+            <td>Mirror ID</td>
+            <td>{{mirror_id}}</td>
+        </tr>
+
+        <tr>
+            <td>User</td>
+            <td>{{mirror_user}}</td>
+        </tr>
+
+        <tr>
+            <td>Source container</td>
+            <td>{{mirror_source_image}}</td>
+        </tr>
+    
+        <tr>
+            <td>Target container</td>
+            <td>{{mirror_target_image}}</td>
+        </tr>
+
+        <tr>
+            <td>Container digest</td>
+            <td>{{mirror_digest}}</td>
+        </tr>
+
+        <tr>
+            <td>Platform</td>
+            <td>{{mirror_platform}}</td>
+        </tr>
+
+        <tr>
+            <td>Creation time</td>
+            <td>{{mirror_time}}</td>
+        </tr>
+
+        <tr>
+            <td>Duration</td>
+            <td>{{mirror_duration}}</td>
+        </tr>
+
+        {{#if mirror_exitcode}}
+        <tr>
+            <td>Exit status</td>
+            <td>{{mirror_exitcode}}</td>
+        </tr>
+        {{/if}}
+
+       {{#if mirror_logs}}
+       <tr>
+            <td colspan="2">
+            <h3>Logs</h3>
+            <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{mirror_logs}}</pre>
+            </td>
+        </tr>
+        {{/if}}
+
+        {{#if scan_url}}
+            <tr>
+                <td>Security scan</td>
+                <td><a href="{{scan_url}}">{{scan_id}}</a></td>
+            </tr>
+        {{/if}}
+    </table>
+
+    <div class="footer" style="clear:both;width:100%;">
+        <hr class="footer-hr" style="height:0;overflow:visible;margin-top:30px;border:0;border-top:1px solid #eee;color:#999999;font-size:12px;line-height:18px;margin-bottom:30px;">
+        <img style="float:right; width: 150px;" src="/assets/seqera-logo.png">
+        <p class="footer-text" style="font-family:'-apple-system', BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';font-weight:normal;margin:0;margin-bottom:15px;color:#999999;font-size:12px;line-height:18px;">
+            <a href="{{server_url}}">{{server_url}}</a><br>
+            Seqera<br>
+            Carrer de Marià Aguiló, 28<br>
+            08005 Barcelona<br>
+        </p>
+    </div>
+
+</div>
+
+</body>
+</html>

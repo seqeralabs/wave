@@ -21,6 +21,8 @@ package io.seqera.wave.service.persistence
 import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.mirror.MirrorEntry
+import io.seqera.wave.service.mirror.MirrorResult
+
 /**
  * A storage for statistic data
  *
@@ -68,10 +70,9 @@ interface PersistenceService {
     /**
      * Store a {@link WaveContainerRecord} object in the Surreal wave_request table.
      *
-     * @param token The request token associated with this request
      * @param data A {@link WaveContainerRecord} object representing a Wave request record
      */
-    void saveContainerRequest(String token, WaveContainerRecord data)
+    void saveContainerRequest(WaveContainerRecord data)
 
     /**
      * Update a container request with the digest of the resolved request
@@ -90,18 +91,11 @@ interface PersistenceService {
     WaveContainerRecord loadContainerRequest(String token)
 
     /**
-     * Create a scan record, this signal that a container scan request has been created
-     *
-     * @param scanRecord Create a record with the object specified
-     */
-    void createScanRecord(WaveScanRecord scanRecord)
-
-    /**
      * Store a {@link WaveScanRecord} object in the Surreal wave_scan table.
      *
      * @param data A {@link WaveScanRecord} object representing the a container scan request
      */
-    void updateScanRecord(WaveScanRecord scanRecord)
+    void saveScanRecord(WaveScanRecord scanRecord)
 
     /**
      * Retrieve a {@link WaveScanRecord} object for the specified build ID
@@ -117,7 +111,7 @@ interface PersistenceService {
      * @param mirrorId The ID of the mirror record
      * @return The corresponding {@link MirrorEntry} object or null if it cannot be found
      */
-    MirrorEntry loadMirrorEntry(String mirrorId)
+    MirrorResult loadMirrorResult(String mirrorId)
 
     /**
      * Load a mirror state record given the target image name and the image digest
@@ -126,13 +120,13 @@ interface PersistenceService {
      * @param digest The image content SHA256 digest
      * @return The corresponding {@link MirrorEntry} object or null if it cannot be found
      */
-    MirrorEntry loadMirrorEntry(String targetImage, String digest)
+    MirrorResult loadMirrorResult(String targetImage, String digest)
 
     /**
      * Persists a {@link MirrorEntry} state record
      *
      * @param mirror {@link MirrorEntry} object
      */
-    void saveMirrorEntry(MirrorEntry mirror)
+    void saveMirrorResult(MirrorResult mirror)
 
 }

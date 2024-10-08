@@ -19,6 +19,7 @@
 package io.seqera.wave.controller
 
 import java.nio.file.Path
+import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import javax.annotation.PostConstruct
 
@@ -39,7 +40,9 @@ import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.security.annotation.Secured
 import io.micronaut.security.authentication.AuthorizationException
 import io.micronaut.security.rules.SecurityRule
+import io.seqera.wave.api.ContainerStatusResponse
 import io.seqera.wave.api.ImageNameStrategy
+import io.seqera.wave.api.ScanMode
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.configuration.BuildConfig
@@ -51,7 +54,6 @@ import io.seqera.wave.exchange.DescribeWaveContainerResponse
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
-import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildTrack
@@ -65,15 +67,17 @@ import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerRecord
-import io.seqera.wave.service.token.ContainerTokenService
-import io.seqera.wave.service.token.TokenData
+import io.seqera.wave.service.request.ContainerRequest
+import io.seqera.wave.service.request.ContainerRequestService
+import io.seqera.wave.service.request.ContainerStatusService
+import io.seqera.wave.service.request.TokenData
+import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
-import io.seqera.wave.util.LongRndKey
 import jakarta.inject.Inject
 import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
@@ -100,62 +104,73 @@ import static java.util.concurrent.CompletableFuture.completedFuture
 @ExecuteOn(TaskExecutors.IO)
 class ContainerController {
 
-    @Inject HttpClientAddressResolver addressResolver
-    @Inject ContainerTokenService tokenService
-    @Inject UserService userService
-    @Inject JwtAuthStore jwtAuthStore
+    @Inject
+    private HttpClientAddressResolver addressResolver
+
+    @Inject
+    private ContainerRequestService containerService
+
+    @Inject
+    private UserService userService
+
+    @Inject
+    private JwtAuthStore jwtAuthStore
 
     @Inject
     @Value('${wave.allowAnonymous}')
-    Boolean allowAnonymous
+    private Boolean allowAnonymous
 
     @Inject
     @Value('${wave.server.url}')
-    String serverUrl
+    private String serverUrl
 
     @Inject
     @Value('${tower.endpoint.url:`https://api.cloud.seqera.io`}')
-    String towerEndpointUrl
-
-    @Value('${wave.scan.enabled:false}')
-    boolean scanEnabled
+    private String towerEndpointUrl
 
     @Inject
-    BuildConfig buildConfig
+    private BuildConfig buildConfig
 
     @Inject
-    ContainerBuildService buildService
+    private ContainerBuildService buildService
 
     @Inject
-    ContainerInspectService inspectService
+    private ContainerInspectService inspectService
 
     @Inject
-    RegistryProxyService registryProxyService
+    private RegistryProxyService registryProxyService
 
     @Inject
-    PersistenceService persistenceService
+    private PersistenceService persistenceService
 
     @Inject
-    ValidationService validationService
+    private ValidationService validationService
 
     @Inject
-    PairingService pairingService
+    private PairingService pairingService
 
     @Inject
-    PairingChannel pairingChannel
+    private PairingChannel pairingChannel
 
     @Inject
-    FreezeService freezeService
+    private FreezeService freezeService
 
     @Inject
-    ContainerInclusionService inclusionService
+    private ContainerInclusionService inclusionService
 
     @Inject
     @Nullable
-    RateLimiterService rateLimiterService
+    private RateLimiterService rateLimiterService
 
     @Inject
     private ContainerMirrorService mirrorService
+
+    @Inject
+    private ContainerStatusService statusService
+
+    @Inject
+    @Nullable
+    private ContainerScanService scanService
 
     @PostConstruct
     private void init() {
@@ -251,13 +266,14 @@ class ContainerController {
             rateLimiterService.acquirePull(new AcquireRequest(identity.userId as String, ip))
         // create request data
         final data = makeRequestData(req, identity, ip)
-        final token = tokenService.computeToken(data)
+        final token = containerService.computeToken(data)
         final target = targetImage(token.value, data.coordinates())
         final resp = v2
                         ? makeResponseV2(data, token, target)
                         : makeResponseV1(data, token, target)
         // persist request
         storeContainerRequest0(req, data, token, target, ip)
+        scanService?.scanOnRequest(data)
         // log the response
         log.debug "New container request fulfilled - token=$token.value; expiration=$token.expiration; container=$data.containerImage; build=$resp.buildId; identity=$identity"
         // return response
@@ -276,10 +292,10 @@ class ContainerController {
         return true
     }
 
-    protected void storeContainerRequest0(SubmitContainerTokenRequest req, ContainerRequestData data, TokenData token, String target, String ip) {
+    protected void storeContainerRequest0(SubmitContainerTokenRequest req, ContainerRequest data, TokenData token, String target, String ip) {
         try {
             final recrd = new WaveContainerRecord(req, data, target, ip, token.expiration)
-            persistenceService.saveContainerRequest(token.value, recrd)
+            persistenceService.saveContainerRequest(recrd)
         }
         catch (Throwable e) {
             log.error("Unable to store container request with token: ${token}", e)
@@ -334,7 +350,6 @@ class ContainerController {
         final configJson = inspectService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
-        final scanId = scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
         // use 'imageSuffix' strategy by default for public repo images
         final nameStrategy = req.nameStrategy==null
                 && buildRepository
@@ -343,10 +358,15 @@ class ContainerController {
 
         checkContainerSpec(containerSpec)
 
-        // create a unique digest to identify the build request
+        // create a unique digest to identify the build req
         final containerId = makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext)
         final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, nameStrategy)
         final maxDuration = buildConfig.buildMaxDuration(req)
+        // default to async scan for build req for backward compatibility
+        final scanMode = req.scanMode!=null ? req.scanMode : ScanMode.async
+        // digest is not needed for builds, because they use a unique checksum in the container name
+        final scanId = scanService?.getScanId(targetImage, null, scanMode, req.format)
+
         return new BuildRequest(
                 containerId,
                 containerSpec,
@@ -387,7 +407,13 @@ class ContainerController {
         }
     }
 
-    ContainerRequestData makeRequestData(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
+    protected String getContainerDigest(String containerImage, PlatformId identity) {
+        containerImage
+                ? registryProxyService.getImageDigest(containerImage, identity)
+                : null
+    }
+
+    ContainerRequest makeRequestData(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
         if( !req.containerImage && !req.containerFile )
             throw new BadRequestException("Specify either 'containerImage' or 'containerFile' attribute")
         if( req.containerImage && req.containerFile )
@@ -406,11 +432,18 @@ class ContainerController {
             req = freezeService.freezeBuildRequest(req, identity)
         }
 
+        final digest = getContainerDigest(req.containerImage, identity)
+        if( !digest && req.containerImage )
+            throw new BadRequestException("Container image '${req.containerImage}' does not exist or access is not authorized")
+
         String targetImage
         String targetContent
         String condaContent
         String buildId
         boolean buildNew
+        String scanId
+        Boolean mirrorFlag
+        Boolean scanOnRequest = false
         if( req.containerFile ) {
             final build = makeBuildRequest(req, identity, ip)
             final track = checkBuild(build, req.dryRun)
@@ -419,15 +452,19 @@ class ContainerController {
             condaContent = build.condaFile
             buildId = track.id
             buildNew = !track.cached
+            scanId = build.scanId
+            mirrorFlag = false
         }
         else if( req.mirrorRegistry ) {
-            final mirror = makeMirrorRequest(req, identity)
+            final mirror = makeMirrorRequest(req, identity, digest)
             final track = checkMirror(mirror, identity, req.dryRun)
             targetImage = track.targetImage
             targetContent = null
             condaContent = null
             buildId = track.id
             buildNew = !track.cached
+            scanId = mirror.scanId
+            mirrorFlag = true
         }
         else if( req.containerImage ) {
             // normalize container image
@@ -437,11 +474,14 @@ class ContainerController {
             condaContent = null
             buildId = null
             buildNew = null
+            scanId = scanService?.getScanId(req.containerImage, digest, req.scanMode, req.format)
+            mirrorFlag = null
+            scanOnRequest = true
         }
         else
             throw new IllegalStateException("Specify either 'containerImage' or 'containerFile' attribute")
 
-        new ContainerRequestData(
+        ContainerRequest.create(
                 identity,
                 targetImage,
                 targetContent,
@@ -451,11 +491,16 @@ class ContainerController {
                 buildId,
                 buildNew,
                 req.freeze,
-                req.mirrorRegistry!=null
+                mirrorFlag,
+                scanId,
+                req.scanMode,
+                req.scanLevels,
+                scanOnRequest,
+                Instant.now()
         )
     }
 
-    protected MirrorRequest makeMirrorRequest(SubmitContainerTokenRequest request, PlatformId identity) {
+    protected MirrorRequest makeMirrorRequest(SubmitContainerTokenRequest request, PlatformId identity, String digest) {
         final coords = ContainerCoordinates.parse(request.containerImage)
         if( coords.registry == request.mirrorRegistry )
             throw new BadRequestException("Source and target mirror registry as the same - offending value '${request.mirrorRegistry}'")
@@ -464,16 +509,22 @@ class ContainerController {
         final platform = request.containerPlatform
                 ? ContainerPlatform.of(request.containerPlatform)
                 : ContainerPlatform.DEFAULT
-        final digest = registryProxyService.getImageDigest(request.containerImage, identity)
-        if( !digest )
-            throw new BadRequestException("Container image '$request.containerImage' does not exist")
+
+        final offset = DataTimeUtils.offsetId(request.timestamp)
+        final scanId = scanService?.getScanId(targetImage, digest, request.scanMode, request.format)
+
         return MirrorRequest.create(
                 request.containerImage,
                 targetImage,
                 digest,
                 platform,
                 Path.of(buildConfig.buildWorkspace).toAbsolutePath(),
-                configJson )
+                configJson,
+                scanId,
+                Instant.now(),
+                offset,
+                identity
+        )
     }
 
     protected BuildTrack checkMirror(MirrorRequest request, PlatformId identity, boolean dryRun) {
@@ -489,7 +540,7 @@ class ContainerController {
         // check for existing image
         if( request.digest==targetDigest ) {
             log.debug "== Found cached request for request: $request"
-            final cache = persistenceService.loadMirrorEntry(request.targetImage, targetDigest)
+            final cache = persistenceService.loadMirrorResult(request.targetImage, targetDigest)
             return new BuildTrack(cache?.mirrorId, request.targetImage, true)
         }
         else {
@@ -503,7 +554,7 @@ class ContainerController {
 
     @Get('/container-token/{token}')
     HttpResponse<DescribeWaveContainerResponse> describeContainerRequest(String token) {
-        final data = persistenceService.loadContainerRequest(token)
+        final data = containerService.loadContainerRecord(token)
         if( !data )
             throw new NotFoundException("Missing container record for token: $token")
         // return the response 
@@ -513,7 +564,7 @@ class ContainerController {
     @Secured(SecurityRule.IS_AUTHENTICATED)
     @Delete('/container-token/{token}')
     HttpResponse deleteContainerRequest(String token) {
-        final record = tokenService.evictRequest(token)
+        final record = containerService.evictRequest(token)
         if( !record ){
             throw new NotFoundException("Missing container record for token: $token")
         }
@@ -522,6 +573,12 @@ class ContainerController {
 
     void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException {
         String msg
+        //check conda file size
+        if( req.condaFile && req.condaFile.length() > buildConfig.maxCondaFileSize )
+            throw new BadRequestException("Conda file size exceeds the maximum allowed size of ${buildConfig.maxCondaFileSize} bytes")
+        // check container file size
+        if( req.containerFile && req.containerFile.length() > buildConfig.maxContainerFileSize )
+            throw new BadRequestException("Container file size exceeds the maximum allowed size of ${buildConfig.maxContainerFileSize} bytes")
         // check valid image name
         msg = validationService.checkContainerName(req.containerImage)
         if( msg ) throw new BadRequestException(msg)
@@ -565,12 +622,20 @@ class ContainerController {
                 .header(WWW_AUTHENTICATE, "Basic realm=Wave Authentication")
     }
 
-    @Get('/v1alpha2/container/{containerId}')
-    HttpResponse<WaveContainerRecord> getContainerDetails(String containerId) {
-        final data = persistenceService.loadContainerRequest(containerId)
+    @Get('/v1alpha2/container/{requestId}')
+    HttpResponse<WaveContainerRecord> getContainerDetails(String requestId) {
+        final data = containerService.loadContainerRecord(requestId)
         if( !data )
             return HttpResponse.notFound()
         return HttpResponse.ok(data)
+    }
+
+    @Get('/v1alpha2/container/{requestId}/status')
+    HttpResponse<ContainerStatusResponse> getContainerStatus(String requestId) {
+        final ContainerStatusResponse resp = statusService.getContainerStatus(requestId)
+        if( !resp )
+            return HttpResponse.notFound()
+        return HttpResponse.ok(resp)
     }
 
 }

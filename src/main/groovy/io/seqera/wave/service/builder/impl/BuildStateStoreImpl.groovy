@@ -31,6 +31,8 @@ import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildStateStore
 import io.seqera.wave.store.state.AbstractStateStore
+import io.seqera.wave.store.state.CountParams
+import io.seqera.wave.store.state.CountResult
 import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -56,7 +58,7 @@ class BuildStateStoreImpl extends AbstractStateStore<BuildEntry> implements Buil
 
     @Override
     protected String getPrefix() {
-        return 'wave-build/v2:'
+        return 'wave-build/v2'
     }
 
     @Override
@@ -87,6 +89,21 @@ class BuildStateStoreImpl extends AbstractStateStore<BuildEntry> implements Buil
     @Override
     boolean storeIfAbsent(String imageName, BuildEntry build) {
         return putIfAbsent(imageName, build, buildConfig.statusDuration)
+    }
+
+    @Override
+    protected CountParams counterKey(String key, BuildEntry build) {
+       new CountParams( "build-counters/v1", build.request.containerId)
+    }
+
+    @Override
+    protected String counterScript() {
+        /string.gsub(value, '"buildId"%s*:%s*"(.-)(%d+)"', '"buildId":"%1' .. counter_value .. '"')/
+    }
+
+    @Override
+    CountResult<BuildEntry> putIfAbsentAndCount(String imageName, BuildEntry build) {
+        super.putIfAbsentAndCount(imageName, build)
     }
 
     @Override
