@@ -33,14 +33,16 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.logs.BuildLogServiceImpl
+import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
+import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.tower.PlatformId
@@ -73,7 +75,7 @@ class ViewControllerTest extends Specification {
     @Inject
     private ContainerInspectService inspectService
 
-    def 'should return build page mapping' () {
+    def 'should create build binding' () {
         given:
         def controller = new ViewController(serverUrl: 'http://foo.com', buildLogService: buildLogService)
         and:
@@ -95,6 +97,7 @@ class ViewControllerTest extends Specification {
         def binding = controller.renderBuildView(record)
         then:
         1 * buildLogService.fetchLogString('12345') >> new BuildLogService.BuildLog('log content', false)
+        1 * buildLogService.fetchCondaLockString('12345') >> 'conda lock content'
         and:
         binding.build_id == '12345'
         binding.build_containerfile == 'FROM foo'
@@ -106,6 +109,7 @@ class ViewControllerTest extends Specification {
         binding.build_platform == 'linux/amd64'
         binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
+        binding.build_conda_lock_data == 'conda lock content'
         binding.build_format == 'Docker'
         binding.build_log_data == 'log content'
         binding.build_log_truncated == false
@@ -188,14 +192,14 @@ class ViewControllerTest extends Specification {
         def user = new User(id:1)
         def identity = new PlatformId(user,100)
         and:
-        def data = new ContainerRequestData(identity, 'hello-world', 'some docker', cfg, 'some conda')
+        def token = '12345'
+        def data = ContainerRequest.of(requestId: token, identity: identity, containerImage: 'hello-world', containerFile: 'some docker', containerConfig: cfg, condaFile: 'some conda')
         def wave = 'https://wave.io/some/container:latest'
         def addr = '100.200.300.400'
 
         and:
         def exp = Instant.now().plusSeconds(3600)
-        def token = '12345'
-        def container = new WaveContainerRecord(req, data, token, wave, addr, exp)
+        def container = new WaveContainerRecord(req, data, wave, addr, exp)
 
         when:
         persistenceService.saveContainerRequest(container)
@@ -315,19 +319,23 @@ class ViewControllerTest extends Specification {
         binding.build_failed == true
     }
 
-    def 'should render in success scan page' () {
+    def 'should create binding' () {
         given:
         def controller = new ViewController(serverUrl: 'http://foo.com', buildLogService: buildLogService)
         and:
-        def result = new ScanEntry(
+        def result = new WaveScanRecord(
                 '12345',
-                '12345',
+                'bd-12345',
+                'mr-12345',
+                'cr-12345',
                 'docker.io/some:image',
                 Instant.now(),
                 Duration.ofMinutes(1),
                 ScanEntry.SUCCEEDED,
                 [new ScanVulnerability('cve-1', 'HIGH', 'test vul', 'testpkg', '1.0.0', '1.1.0', 'http://vul/cve-1')],
-                0 )
+                0,
+                "Some scan logs"
+        )
         when:
         def binding = controller.makeScanViewBinding(result)
         then:
@@ -337,8 +345,77 @@ class ViewControllerTest extends Specification {
         binding.scan_duration == formatDuration(result.duration)
         binding.scan_succeeded
         binding.scan_exitcode == 0
+        binding.scan_logs == "Some scan logs"
         binding.vulnerabilities == [new ScanVulnerability(id:'cve-1', severity:'HIGH', title:'test vul', pkgName:'testpkg', installedVersion:'1.0.0', fixedVersion:'1.1.0', primaryUrl:'http://vul/cve-1')]
-        binding.build_url == 'http://foo.com/view/builds/12345'
+        binding.build_id == 'bd-12345'
+        binding.build_url == 'http://foo.com/view/builds/bd-12345'
+        binding.mirror_id == 'mr-12345'
+        binding.mirror_url == 'http://foo.com/view/mirrors/mr-12345'
+        binding.request_id == 'cr-12345'
+        binding.request_url == 'http://foo.com/view/containers/cr-12345'
+    }
+
+    def 'should render scan view page' () {
+        given:
+        def scan = new WaveScanRecord(
+                '12345',
+                'bd-12345',
+                'mr-12345',
+                'cr-12345',
+                'docker.io/some:image',
+                Instant.now(),
+                Duration.ofMinutes(1),
+                ScanEntry.SUCCEEDED,
+                [new ScanVulnerability('cve-1', 'HIGH', 'test vul', 'testpkg', '1.0.0', '1.1.0', 'http://vul/cve-1')],
+                0,
+                "Some scan logs"
+        )
+
+        when:
+        persistenceService.saveScanRecord(scan)
+        and:
+        def request = HttpRequest.GET("/view/scans/${scan.id}")
+        def response = client.toBlocking().exchange(request, String)
+        then:
+        response.body().contains(scan.id)
+        response.body().contains(scan.buildId)
+        response.body().contains(scan.mirrorId)
+        response.body().contains(scan.requestId)
+        response.body().contains(scan.containerImage)
+    }
+
+    def 'should render mirror page' () {
+        given:
+        def record1 = new MirrorResult(
+                '12345',
+                'sha256:abc12345',
+                'docker.io/ubuntu:latest',
+                'quay.io/ubuntu:latest',
+                ContainerPlatform.DEFAULT,
+                Instant.now(),
+                "GMT",
+                'pditommaso',
+                'paolo@me.com',
+                1,
+                "sc-12456",
+                MirrorResult.Status.COMPLETED,
+                Duration.ofMinutes(1),
+                0,
+                'No logs'
+        )
+
+        when:
+        persistenceService.saveMirrorResult(record1)
+        and:
+        def request = HttpRequest.GET("/view/mirrors/${record1.mirrorId}")
+        def response = client.toBlocking().exchange(request, String)
+        then:
+        response.body().contains(record1.mirrorId)
+        response.body().contains(record1.scanId)
+        response.body().contains(record1.sourceImage)
+        response.body().contains(record1.targetImage)
+        response.body().contains(record1.digest)
+        response.body().contains(record1.userName)
     }
 
     @Unroll
@@ -357,9 +434,11 @@ class ViewControllerTest extends Specification {
         '12345_1'       | null
         '12345-1'       | '/view/builds/12345_1'
         'foo-887766-1'  | '/view/builds/foo-887766_1'
-
+        and:
+        'bd-12345_1'    | null
+        'bd-12345-1'    | '/view/builds/bd-12345_1'
+        'bd-887766-1'   | '/view/builds/bd-887766_1'
     }
-
 
     def 'should validate redirect 2' () {
         given:
@@ -370,16 +449,20 @@ class ViewControllerTest extends Specification {
         def result = controller.shouldRedirect2(BUILD)
         then:
         result == EXPECTED
-        TIMES * service.getLatestBuild(BUILD) >> LATEST
+        TIMES * service.getLatestBuild(BUILD) >> Mock(WaveBuildRecord) { buildId>>LATEST }
 
         where:
-        BUILD           | TIMES | LATEST     | EXPECTED
-        '12345_1'       | 0     | null       | null
-        '12345'         | 1     | Mock(WaveBuildRecord) { buildId >> '12345_99' }       | '/view/builds/12345_99'
-        '12345'         | 1     | Mock(WaveBuildRecord) { buildId >> 'xyz_99' }         | null
-        'foo-887766'    | 1     | Mock(WaveBuildRecord) { buildId >> 'foo-887766_99' }  | '/view/builds/foo-887766_99'
-        'foo-887766'    | 1     | Mock(WaveBuildRecord) { buildId >> 'foo-887766' }     | null
+        BUILD           | TIMES | LATEST            | EXPECTED
+        '12345_1'       | 0     | null              | null
+        '12345'         | 1     | '12345_99'        | '/view/builds/12345_99'
+        '12345'         | 1     | 'xyz_99'          | null
+        'foo-887766'    | 1     | 'foo-887766_99'   | '/view/builds/foo-887766_99'
+        'foo-887766'    | 1     | 'foo-887766'      | null
+        'bd-887766'     | 1     | 'bd-887766_2'     | '/view/builds/bd-887766_2'
+        '887766'        | 1     | 'bd-887766_2'     | '/view/builds/bd-887766_2'
+
 
     }
+
 
 }

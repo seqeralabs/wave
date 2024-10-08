@@ -44,7 +44,7 @@ class ScanStateStore extends AbstractStateStore<ScanEntry> {
 
     @Override
     protected String getPrefix() {
-        return 'wave-mirror/v1:'
+        return 'wave-scan/v1'
     }
 
     @Override

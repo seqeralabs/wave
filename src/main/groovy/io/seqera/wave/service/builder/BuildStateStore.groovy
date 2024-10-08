@@ -22,6 +22,8 @@ import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
+import io.seqera.wave.store.state.CountResult
+
 /**
  * Define build request store operations
  *
@@ -68,13 +70,28 @@ interface BuildStateStore {
     void storeBuild(String imageName, BuildEntry result, Duration ttl)
 
     /**
-     * Store a build result only if the specified key does not exit
+     * Store a {@link BuildEntry} object only if the specified key does not exit
      *
      * @param imageName The container image unique key
      * @param build The {@link BuildEntry} desired status to be stored
      * @return {@code true} if the {@link BuildEntry} was stored, {@code false} otherwise
      */
     boolean storeIfAbsent(String imageName, BuildEntry build)
+
+    /**
+     * Store a {@link BuildEntry} object only if the specified key does not exit.
+     * When the entry is stored the {@code buildId} fields in the request and response
+     * and incremented by 1.
+     *
+     * @param imageName
+     *      The container image name used as store key.
+     * @param build
+     *      A {@link BuildEntry} object to be stored
+     * @return
+     *      A {@link CountResult} object holding the {@link BuildEntry} object with the updated {@code buildId}
+     *      if the store is successful, or the currently store {@link BuildEntry} if the key already exist.
+     */
+    CountResult<BuildEntry> putIfAbsentAndCount(String imageName, BuildEntry build)
 
     /**
      * Remove the build status for the given image name

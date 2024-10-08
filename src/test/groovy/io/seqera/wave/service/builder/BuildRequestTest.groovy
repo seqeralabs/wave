@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.builder
 
-
 import spock.lang.Specification
 
 import java.nio.file.Path
@@ -72,7 +71,7 @@ class BuildRequestTest extends Specification {
                 SCAN_ID,
                 CONTEXT,
                 FORMAT,
-                TIMEOUT
+                TIMEOUT,
         )
 
         then:
@@ -117,7 +116,7 @@ class BuildRequestTest extends Specification {
                 SCAN_ID,
                 CONTEXT,
                 FORMAT,
-                TIMEOUT
+                TIMEOUT,
         )
         then:
         req.containerId == '8026e3a63b5c863f'
@@ -143,7 +142,7 @@ class BuildRequestTest extends Specification {
                 SCAN_ID,
                 CONTEXT,
                 FORMAT,
-                TIMEOUT
+                TIMEOUT,
         )
         then:
         req.containerId == '181ec22b26ae6d04'
@@ -185,7 +184,7 @@ class BuildRequestTest extends Specification {
                 null,
                 CONTEXT,
                 FORMAT,
-                TIMEOUT
+                TIMEOUT,
         )
         then:
         req.containerId == 'd78ba9cb01188668'

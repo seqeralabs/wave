@@ -131,9 +131,9 @@ class ContainerBuildServiceTest extends Specification {
                         cacheRepository: cacheRepo,
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
-                        maxDuration: Duration.ofMinutes(1)
+                        maxDuration: Duration.ofMinutes(1),
+                        buildId: "${containerId}_1",
                 )
-                .withBuildId('1')
         and:
         def store = Mock(BuildStateStore)
         def jobService = Mock(JobService)
@@ -171,9 +171,9 @@ class ContainerBuildServiceTest extends Specification {
                         identity: Mock(PlatformId),
                         platform: ContainerPlatform.of('amd64'),
                         format: BuildFormat.DOCKER,
-                        startTime: Instant.now()
+                        startTime: Instant.now(),
+                        buildId: "${containerId}_1",
                 )
-                        .withBuildId('1')
 
         when:
         def result = builder.containerFile0(req, null)
@@ -206,9 +206,9 @@ class ContainerBuildServiceTest extends Specification {
                         identity: Mock(PlatformId),
                         platform: ContainerPlatform.of('amd64'),
                         format: BuildFormat.SINGULARITY,
-                        startTime: Instant.now()
+                        startTime: Instant.now(),
+                        buildId: "${containerId}_1",
                 )
-                        .withBuildId('1')
 
         when:
         def result = builder.containerFile0(req, Path.of('/some/context/'))
@@ -288,9 +288,9 @@ class ContainerBuildServiceTest extends Specification {
                         configJson: '{"config":"json"}',
                         containerConfig: config ,
                         format: BuildFormat.DOCKER,
-                        startTime: Instant.now()
+                        startTime: Instant.now(),
+                        buildId: "${containerId}_1",
                 )
-                        .withBuildId('1')
 
         when:
         service.saveLayersToContext(req, folder)
@@ -305,8 +305,9 @@ class ContainerBuildServiceTest extends Specification {
 
     void "an event insert a build"() {
         given:
+        def containerId = 'container1234'
         final request = new BuildRequest(
-                containerId: 'container1234',
+                containerId: containerId,
                 containerFile: 'test',
                 condaFile: 'test',
                 workspace: Path.of("."),
@@ -316,9 +317,9 @@ class ContainerBuildServiceTest extends Specification {
                 configJson: '{"config":"json"}',
                 scanId: 'scan12345',
                 format: BuildFormat.DOCKER,
-                startTime: Instant.now()
+                startTime: Instant.now(),
+                buildId: "${containerId}_1",
         )
-                .withBuildId('123')
 
         and:
         def result = new BuildResult(request.buildId, 0, "content", Instant.now(), Duration.ofSeconds(1), 'abc123')

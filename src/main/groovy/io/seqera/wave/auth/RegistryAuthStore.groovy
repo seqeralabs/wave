@@ -51,7 +51,7 @@ class RegistryAuthStore extends AbstractStateStore<RegistryAuth> {
 
     @Override
     protected String getPrefix() {
-        return 'registry-auth/v1:'
+        return 'registry-auth/v1'
     }
 
     @Override

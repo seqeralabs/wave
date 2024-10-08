@@ -113,6 +113,7 @@ class JobManager {
         final max = (jobSpec.maxDuration.toMillis() * 2.10) as long
         if( duration.toMillis()>max ) {
             dispatcher.notifyJobTimeout(jobSpec)
+            jobService.cleanup(jobSpec, null)
             return true
         }
         else {

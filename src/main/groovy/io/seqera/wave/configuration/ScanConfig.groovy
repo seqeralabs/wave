@@ -75,6 +75,9 @@ class ScanConfig {
     @Value('${wave.scan.status.duration:1h}')
     Duration statusDuration
 
+    @Value('${wave.scan.id.duration:7d}')
+    Duration scanIdDuration
+
     String getScanImage() {
         return scanImage
     }
@@ -84,6 +87,11 @@ class ScanConfig {
         final result = Path.of(buildDirectory).toAbsolutePath().resolve('.trivy-cache')
         Files.createDirectories(result)
         return result
+    }
+
+    @Memoized
+    Path getWorkspace() {
+        Path.of(buildDirectory).toAbsolutePath()
     }
 
     String getRequestsCpu() {

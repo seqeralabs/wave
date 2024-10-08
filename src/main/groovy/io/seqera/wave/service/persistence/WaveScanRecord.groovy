@@ -37,29 +37,41 @@ import io.seqera.wave.util.StringUtils
 @ToString(includeNames = true, includePackage = false)
 @EqualsAndHashCode
 @CompileStatic
-class WaveScanRecord {
+class WaveScanRecord implements Cloneable {
 
     String id
     String buildId
+    String mirrorId
+    String requestId
     String containerImage
     Instant startTime
     Duration duration
     String status
     List<ScanVulnerability> vulnerabilities
+    Integer exitCode
+    String logs
 
     /* required by jackson deserialization - do not remove */
     WaveScanRecord() {}
 
-    WaveScanRecord(String id, String buildId, String containerImage, Instant startTime) {
+    WaveScanRecord(
+            String id,
+            String buildId,
+            String mirrorId,
+            String requestId,
+            String containerImage,
+            Instant startTime,
+            Duration duration,
+            String status,
+            List<ScanVulnerability> vulnerabilities,
+            Integer exitCode,
+            String logs
+    )
+    {
         this.id = StringUtils.surrealId(id)
         this.buildId = buildId
-        this.containerImage = containerImage
-        this.startTime = startTime
-    }
-
-    WaveScanRecord(String id, String buildId, String containerImage, Instant startTime, Duration duration, String status, List<ScanVulnerability> vulnerabilities) {
-        this.id = StringUtils.surrealId(id)
-        this.buildId = buildId
+        this.mirrorId = mirrorId
+        this.requestId = requestId
         this.containerImage = containerImage
         this.startTime = startTime
         this.duration = duration
@@ -67,21 +79,52 @@ class WaveScanRecord {
         this.vulnerabilities = vulnerabilities
                 ? new ArrayList<ScanVulnerability>(vulnerabilities)
                 : List.<ScanVulnerability>of()
+        this.exitCode = exitCode
+        this.logs = sanitize0(logs)
     }
 
-    WaveScanRecord(String id, ScanEntry scanResult) {
-        this.id = StringUtils.surrealId(id)
-        this.buildId = scanResult.buildId
-        this.containerImage = scanResult.containerImage
-        this.startTime = scanResult.startTime
-        this.duration = scanResult.duration
-        this.status = scanResult.status
-        this.vulnerabilities = scanResult.vulnerabilities
-                ? new ArrayList<ScanVulnerability>(scanResult.vulnerabilities)
+    WaveScanRecord(ScanEntry scan) {
+        this.id = StringUtils.surrealId(scan.scanId)
+        this.buildId = scan.buildId
+        this.mirrorId = scan.mirrorId
+        this.requestId = scan.requestId
+        this.containerImage = scan.containerImage
+        this.startTime = scan.startTime
+        this.duration = scan.duration
+        this.status = scan.status
+        this.vulnerabilities = scan.vulnerabilities
+                ? new ArrayList<ScanVulnerability>(scan.vulnerabilities)
                 : List.<ScanVulnerability>of()
+        this.exitCode = scan.exitCode
+        this.logs = sanitize0(scan.logs)
+    }
+
+    private static String sanitize0(String str) {
+        if( !str )
+            return null
+        // remove quotes that break sql statement
+        str = str.replaceAll(/'/,'')
+        if( str.size()>10_000 )
+            str = str.substring(0,10_000) + ' [truncated]'
+        return str
     }
 
     void setId(String id) {
         this.id = StringUtils.surrealId(id)
+    }
+
+    Boolean succeeded() {
+        return duration != null
+                ? status == ScanEntry.SUCCEEDED
+                : null
+    }
+
+    Boolean done() {
+        return duration != null
+    }
+
+    @Override
+    WaveScanRecord clone() {
+        return (WaveScanRecord) super.clone()
     }
 }

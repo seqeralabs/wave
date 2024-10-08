@@ -16,19 +16,18 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.token
-
-import java.time.Instant
+package io.seqera.wave.store.state
 
 import groovy.transform.Canonical
 
 /**
- * Model container token
- *
+ * Model the result object of state auto-increment operation
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Canonical
-class TokenData {
-    final String value
-    final Instant expiration
+class CountResult<V> {
+    final Boolean succeed
+    final V value
+    final Integer count
 }

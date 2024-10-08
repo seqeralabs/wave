@@ -26,7 +26,7 @@ import io.micronaut.http.annotation.Header
 import io.micronaut.http.annotation.Post
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.retry.annotation.Retryable
-import io.seqera.wave.service.mirror.MirrorEntry
+import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ScanVulnerability
@@ -79,5 +79,5 @@ interface SurrealClient {
     Map<String, Object> insertScanVulnerability(@Header String authorization, @Body ScanVulnerability scanVulnerability)
 
     @Post('/key/wave_mirror')
-    Flux<Map<String, Object>> insertMirrorAsync(@Header String authorization, @Body MirrorEntry body)
+    Flux<Map<String, Object>> insertMirrorAsync(@Header String authorization, @Body MirrorResult body)
 }

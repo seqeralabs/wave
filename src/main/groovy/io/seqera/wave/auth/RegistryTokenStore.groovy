@@ -44,7 +44,7 @@ class RegistryTokenStore extends AbstractStateStore<String> {
 
     @Override
     protected String getPrefix() {
-        return 'registry-token/v1:'
+        return 'registry-token/v1'
     }
 
     @Override
