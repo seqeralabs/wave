@@ -145,25 +145,25 @@
         {{/if}}
     </table>
 
-    <div style="position: relative; margin-bottom: 30px;">
     <h3>Container file</h3>
-    <button class="copy-btn" onclick="copyToClipboard('containerfiledata')" title="Copy">
+    <div style="position: relative; margin-bottom: 30px;">
+    <button id="containerFileCopyBtn" class="copy-btn" onclick="copyToClipboard('containerFileData', 'containerFileCopyBtn')" title="Copy">
         <svg width="16" height="16">
             <use href="#icon-copy"></use>
         </svg>
     </button>
-    <pre id="containerfiledata">{{build_containerfile}}</pre>
+    <pre id="containerFileData">{{build_containerfile}}</pre>
     </div>
 
     {{#if build_condafile}}
         <h3>Conda file</h3>
         <div style="position: relative; margin-bottom: 30px;">
-            <button class="copy-btn" onclick="copyToClipboard('condafiledata')" title="Copy">
+            <button id="condaFileCopyBtn" class="copy-btn" onclick="copyToClipboard('condaFileData', 'condaFileCopyBtn')" title="Copy">
                 <svg width="16" height="16">
                     <use href="#icon-copy"></use>
                 </svg>
             </button>
-            <pre id="condafileData">{{build_condafile}}</pre>
+            <pre id="condaFileData">{{build_condafile}}</pre>
         </div>
     {{/if}}
 
@@ -171,14 +171,12 @@
         {{#if build_conda_lock_data }}
             <h3>Conda lockfile</h3>
             <div style="position: relative; margin-bottom: 30px;">
-                <button class="copy-btn" onclick="copyToClipboard('lockfileData')" title="Copy">
+                <button id="lockFileCopyBtn" class="copy-btn" onclick="copyToClipboard('lockFileData', 'lockFileCopyBtn')" title="Copy">
                     <svg width="16" height="16">
                         <use href="#icon-copy"></use>
                     </svg>
                 </button>
-                <pre id="lockfileData">
-                    {{build_conda_lock_data}}
-                </pre>
+                <pre id="lockFileData">{{build_conda_lock_data}}</pre>
             </div>
         {{/if}}
     {{/if}}
@@ -186,7 +184,7 @@
     {{#if build_log_data}}
         <h3>Build logs</h3>
     <div style="position: relative; margin-bottom: 30px;">
-        <button class="copy-btn" onclick="copyToClipboard('logdata')" title="Copy">
+        <button id="logCopyBtn" class="copy-btn" onclick="copyToClipboard('logData', 'logCopyBtn')" title="Copy">
             <svg width="16" height="16">
                 <use href="#icon-copy"></use>
             </svg>
@@ -211,10 +209,10 @@
 
 </div>
 <script>
-    function copyToClipboard(elementId) {
-        const textToCopy = document.getElementById(elementId).innerText;
+    function copyToClipboard(preId, buttonId) {
+        const textToCopy = document.getElementById(preId).innerText;
         navigator.clipboard.writeText(textToCopy).then(() => {
-            const copyBtn = document.getElementById('copyBtn');
+            const copyBtn = document.getElementById(buttonId);
             copyBtn.innerHTML = `
                 <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" data-view-component="true" class="octicon octicon-check">
                     <path fill-rule="evenodd" d="M13.78 3.22a.75.75 0 0 1 1.06 1.06l-7 7a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 0 1 1.06-1.06L7.25 9.94l6.53-6.72z"></path>
@@ -224,8 +222,8 @@
 
             setTimeout(() => {
                 copyBtn.innerHTML = `
-                    <svg width="16" height="16">
-                        <use href="#icon-copy"></use>
+                    <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" data-view-component="true" class="octicon octicon-copy">
+                        <path fill-rule="evenodd" d="M0 1.75A.75.75 0 0 1 .75 1h10.5a.75.75 0 0 1 .75.75V3h-1V2.5H1.5v11h2v1H.75a.75.75 0 0 1-.75-.75zm3.5 2.5A.75.75 0 0 1 4.25 3h10.5a.75.75 0 0 1 .75.75v10.5a.75.75 0 0 1-.75.75H4.25a.75.75 0 0 1-.75-.75V4.25zm1.5.75v9h9v-9h-9z"></path>
                     </svg>
                 `;
             }, 2000);
