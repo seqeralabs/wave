@@ -26,9 +26,11 @@ import java.time.Instant
 
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.ContainerStatus
+import io.seqera.wave.api.ContainerStatusResponse
 import io.seqera.wave.auth.RegistryAuth
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
@@ -77,7 +79,7 @@ class MoshiEncodingStrategyTest extends Specification {
         when:
         def build = encoder.decode(json)
         then:
-        build.id == '100'
+        build.buildId == '100'
         build.exitStatus == 1
         build.logs == 'logs'
         build.startTime == Instant.parse('2022-12-03T22:27:04.079724Z')
@@ -86,15 +88,15 @@ class MoshiEncodingStrategyTest extends Specification {
 
     def 'should encode and decode ContainerRequestData' () {
         given:
-        def encoder = new MoshiEncodeStrategy<ContainerRequestData>() { }
+        def encoder = new MoshiEncodeStrategy<ContainerRequest>() { }
         and:
-        def data = new ContainerRequestData(
-                new PlatformId(new User(id:1),2),
-                'ubuntu',
-                'from foo',
-                new ContainerConfig(entrypoint: ['some', 'entry'], cmd:['the', 'cmd']),
-                'some/conda/file',
-                ContainerPlatform.of('amd64') )
+        def data = ContainerRequest.of(
+                identity: new PlatformId(new User(id:1),2),
+                containerImage:  'ubuntu',
+                containerFile:  'from foo',
+                containerConfig:  new ContainerConfig(entrypoint: ['some', 'entry'], cmd:['the', 'cmd']),
+                condaFile: 'some/conda/file',
+                platform: ContainerPlatform.of('amd64') )
 
         when:
         def json = encoder.encode(data)
@@ -137,7 +139,7 @@ class MoshiEncodingStrategyTest extends Specification {
             }
             '''
         and:
-        def encoder = new MoshiEncodeStrategy<ContainerRequestData>() { }
+        def encoder = new MoshiEncodeStrategy<ContainerRequest>() { }
 
         when:
         def result = encoder.decode(REQUEST)
@@ -337,8 +339,9 @@ class MoshiEncodingStrategyTest extends Specification {
                 ip: "1.2.3.4",
                 configJson:  '{"config":"json"}',
                 scanId: 'scan12345',
-                buildContext: context )
-                .withBuildId('1')
+                buildContext: context,
+                buildId: '12345_1',
+        )
         def result = new BuildResult(build.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         def event = new BuildEvent(build, result)
 
@@ -427,8 +430,9 @@ class MoshiEncodingStrategyTest extends Specification {
                 ip: "1.2.3.4",
                 configJson:  '{"config":"json"}',
                 scanId: 'scan12345',
-                buildContext: context )
-                .withBuildId('1')
+                buildContext: context,
+                buildId: '12345_1',
+        )
         and:
         def entry = new BuildEntry(req, res)
         when:
@@ -439,5 +443,29 @@ class MoshiEncodingStrategyTest extends Specification {
         copy.getClass() == entry.getClass()
         and:
         copy == entry
+    }
+
+    def 'should encode container status response' () {
+        given:
+        def encoder =  new MoshiEncodeStrategy<ContainerStatusResponse>() {}
+        def timestamp = Instant.parse('2024-10-07T20:41:00.804699Z')
+        def resp =     new ContainerStatusResponse(
+                '1234',
+                ContainerStatus.DONE,
+                'bd-12345',
+                'mr-12345',
+                'sc-12345',
+                [LOW: 1, MEDIUM: 2],
+                true,
+                'Some err message',
+                'http://foo.com/view/123',
+                timestamp,
+                Duration.ofMinutes(1),
+        )
+
+        when:
+        def result = encoder.encode(resp)
+        then:
+        result == '{"buildId":"bd-12345","creationTime":"2024-10-07T20:41:00.804699Z","detailsUri":"http://foo.com/view/123","duration":"60000000000","id":"1234","mirrorId":"mr-12345","reason":"Some err message","scanId":"sc-12345","status":"DONE","succeeded":true,"vulnerabilities":{"LOW":1,"MEDIUM":2}}'
     }
 }

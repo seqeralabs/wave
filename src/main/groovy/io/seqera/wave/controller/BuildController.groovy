@@ -21,6 +21,7 @@ package io.seqera.wave.controller
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.http.HttpHeaders
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Controller
@@ -30,11 +31,8 @@ import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.api.BuildStatusResponse
-import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.logs.BuildLogService
-import io.seqera.wave.service.mirror.ContainerMirrorService
-import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import jakarta.inject.Inject
 /**
@@ -52,11 +50,8 @@ class BuildController {
     private ContainerBuildService buildService
 
     @Inject
-    private ContainerMirrorService mirrorService
-
-    @Inject
     @Nullable
-    BuildLogService logService
+    private BuildLogService logService
 
     @Get("/v1alpha1/builds/{buildId}")
     HttpResponse<WaveBuildRecord> getBuildRecord(String buildId) {
@@ -79,25 +74,22 @@ class BuildController {
 
     @Get("/v1alpha1/builds/{buildId}/status")
     HttpResponse<BuildStatusResponse> getBuildStatus(String buildId) {
-        final resp = buildResponse0(buildId)
-        resp != null
-            ? HttpResponse.ok(resp)
+        final build = buildService.getBuildRecord(buildId)
+        build != null
+            ? HttpResponse.ok(build.toStatusResponse())
             : HttpResponse.<BuildStatusResponse>notFound()
     }
 
-    protected BuildStatusResponse buildResponse0(String buildId) {
-        if( !buildId )
-            throw new BadRequestException("Missing 'buildId' parameter")
-        // build IDs starting with the `mr-` prefix are interpreted as mirror requests
-        if( buildId.startsWith(MirrorRequest.ID_PREFIX) ) {
-            return mirrorService
-                    .getMirrorEntry(buildId)
-                    ?.toStatusResponse()
-        }
-        else {
-            return buildService
-                    .getBuildRecord(buildId)
-                    ?.toStatusResponse()
-        }
+    @Produces(MediaType.TEXT_PLAIN)
+    @Get(value="/v1alpha1/builds/{buildId}/condalock")
+    HttpResponse<StreamedFile> getCondaLock(String buildId){
+        if( logService==null )
+            throw new IllegalStateException("Build Logs service not configured")
+        final condaLock = logService.fetchCondaLockStream(buildId)
+        return condaLock
+                ? HttpResponse.ok(condaLock)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"conda-env-${buildId}.lock\"")
+                : HttpResponse.<StreamedFile>notFound()
     }
+
 }

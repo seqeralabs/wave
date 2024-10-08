@@ -62,7 +62,7 @@ class ContainerMirrorServiceTest extends Specification {
         def source = 'docker.io/hello-world:latest'
         def target = 'docker.io/pditommaso/wave-tests'
         def folder = Files.createTempDirectory('test')
-        println "Temp path: $folder"
+
         when:
         def creds = dockerAuthService.credentialsConfigJson(null, source, target, Mock(PlatformId))
         def request = MirrorRequest.create(
@@ -71,13 +71,18 @@ class ContainerMirrorServiceTest extends Specification {
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
                 folder,
-                creds )
+                creds,
+                null,
+                Instant.now(),
+                'GMT',
+                Mock(PlatformId)
+        )
         and:
         mirrorService.mirrorImage(request)
         then:
         mirrorService.awaitCompletion(target)
                 .get(90, TimeUnit.SECONDS)
-                .succeeded()
+                .done()
 
         cleanup:
         folder?.deleteDir()
@@ -91,13 +96,18 @@ class ContainerMirrorServiceTest extends Specification {
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
                 Path.of('/some/dir'),
-                '{config}' )
+                '{config}',
+                null,
+                Instant.now(),
+                'GMT',
+                Mock(PlatformId)
+        )
         and:
-        def state = MirrorEntry.from(request)
+        def state = MirrorResult.of(request)
         and:
-        persistenceService.saveMirrorEntry(state)
+        persistenceService.saveMirrorResult(state)
         when:
-        def copy = mirrorService.getMirrorEntry(request.mirrorId)
+        def copy = mirrorService.getMirrorResult(request.mirrorId)
         then:
         copy == state
     }
@@ -110,15 +120,20 @@ class ContainerMirrorServiceTest extends Specification {
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
                 Path.of('/some/dir'),
-                '{config}' )
+                '{config}',
+                null,
+                Instant.now(),
+                'GMT',
+                Mock(PlatformId)
+        )
         and:
-        def state = MirrorEntry.from(request)
+        def state = MirrorEntry.of(request)
         and:
         mirrorStateStore.put('target/foo', state)
         when:
-        def copy = mirrorService.getMirrorEntry(request.mirrorId)
+        def result = mirrorService.getMirrorResult(request.mirrorId)
         then:
-        copy == state
+        result == state.result
     }
 
     def 'should update mirror state on job completion' () {
@@ -129,9 +144,14 @@ class ContainerMirrorServiceTest extends Specification {
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
                 Path.of('/some/dir'),
-                '{config}' )
+                '{config}',
+                null,
+                Instant.now(),
+                'GMT',
+                Mock(PlatformId)
+        )
         and:
-        def state = MirrorEntry.from(request)
+        def state = MirrorEntry.of(request)
         def job = JobSpec.mirror(request.mirrorId, 'mirror-123', Instant.now(), Duration.ofMillis(1), Mock(Path))
         when:
         mirrorService.onJobCompletion(job, state, new JobState(JobState.Status.SUCCEEDED, 0, 'OK'))
@@ -139,13 +159,13 @@ class ContainerMirrorServiceTest extends Specification {
         def s1 = mirrorStateStore.get(request.targetImage)
         and:
         s1.done()
-        s1.succeeded()
-        s1.exitCode == 0
-        s1.logs == 'OK'
+        s1.result.succeeded()
+        s1.result.exitCode == 0
+        s1.result.logs == 'OK'
         and:
-        def s2 = persistenceService.loadMirrorEntry(request.mirrorId)
+        def s2 = persistenceService.loadMirrorResult(request.mirrorId)
         and:
-        s2 == s1
+        s2 == s1.result
     }
 
     def 'should update mirror state on job exception' () {
@@ -156,9 +176,14 @@ class ContainerMirrorServiceTest extends Specification {
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
                 Path.of('/some/dir'),
-                '{config}' )
+                '{config}',
+                null,
+                Instant.now(),
+                'GMT',
+                Mock(PlatformId)
+        )
         and:
-        def state = MirrorEntry.from(request)
+        def state = MirrorEntry.of(request)
         def job = JobSpec.mirror(request.mirrorId, 'mirror-123', Instant.now(), Duration.ofMillis(1), Mock(Path))
         when:
         mirrorService.onJobException(job, state, new Exception('Oops something went wrong'))
@@ -166,13 +191,14 @@ class ContainerMirrorServiceTest extends Specification {
         def s1 = mirrorStateStore.get(request.targetImage)
         and:
         s1.done()
-        !s1.succeeded()
-        s1.exitCode == null
-        s1.logs == 'Oops something went wrong'
         and:
-        def s2 = persistenceService.loadMirrorEntry(request.mirrorId)
+        !s1.result.succeeded()
+        s1.result.exitCode == null
+        s1.result.logs == 'Oops something went wrong'
         and:
-        s2 == s1
+        def s2 = persistenceService.loadMirrorResult(request.mirrorId)
+        and:
+        s2 == s1.result
     }
 
     def 'should update mirror state on job timeout' () {
@@ -183,9 +209,14 @@ class ContainerMirrorServiceTest extends Specification {
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
                 Path.of('/some/dir'),
-                '{config}' )
+                '{config}',
+                null,
+                Instant.now(),
+                'GMT',
+                Mock(PlatformId)
+        )
         and:
-        def state = MirrorEntry.from(request)
+        def state = MirrorEntry.of(request)
         def job = JobSpec.mirror(request.mirrorId, 'mirror-123', Instant.now(), Duration.ofMillis(1), Mock(Path))
         when:
         mirrorService.onJobTimeout(job, state)
@@ -193,13 +224,14 @@ class ContainerMirrorServiceTest extends Specification {
         def s1 = mirrorStateStore.get(request.targetImage)
         and:
         s1.done()
-        !s1.succeeded()
-        s1.exitCode == null
-        s1.logs == 'Container mirror timed out'
         and:
-        def s2 = persistenceService.loadMirrorEntry(request.mirrorId)
+        !s1.result.succeeded()
+        s1.result.exitCode == null
+        s1.result.logs == 'Container mirror timed out'
         and:
-        s2 == s1
+        def s2 = persistenceService.loadMirrorResult(request.mirrorId)
+        and:
+        s2 == s1.result
     }
 
 }

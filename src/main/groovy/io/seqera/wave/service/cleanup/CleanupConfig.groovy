@@ -41,7 +41,7 @@ class CleanupConfig {
     @Nullable
     String strategy
 
-    @Value('${wave.cleanup.succeeded:5m}')
+    @Value('${wave.cleanup.succeeded:30m}')
     Duration succeededDuration
 
     @Value('${wave.cleanup.failed:1d}')

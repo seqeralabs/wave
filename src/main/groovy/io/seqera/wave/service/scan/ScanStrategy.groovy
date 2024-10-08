@@ -28,6 +28,7 @@ import io.seqera.wave.configuration.ScanConfig
  * Implements ScanStrategy for Docker
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @CompileStatic

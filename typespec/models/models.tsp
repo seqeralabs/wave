@@ -8,3 +8,4 @@ import "./WaveScanRecord.tsp";
 import "./WaveBuildRecord.tsp";
 import "./ValidateRegistryCredsRequest.tsp";
 import "./WaveContainerRecord.tsp";
+import "./ContainerMirrorResponse.tsp";

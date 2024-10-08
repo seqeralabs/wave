@@ -31,6 +31,7 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.scan.ScanRequest
+import io.seqera.wave.tower.PlatformId
 
 /**
  *
@@ -44,22 +45,23 @@ class JobFactoryTest extends Specification {
         def factory = new JobFactory()
         and:
         def request = new BuildRequest(
+                containerId: '12345',
                 targetImage: 'docker.io/foo:bar',
-                buildId: '12345_9',
+                buildId: 'bd-12345_9',
                 startTime: ts,
                 maxDuration: Duration.ofMinutes(1),
-                workDir: Path.of('/some/work/dir')
+                workspace: Path.of('/some/work/dir')
         )
 
         when:
         def job = factory.build(request)
         then:
         job.entryKey == 'docker.io/foo:bar'
-        job.operationName == 'build-12345-9'
+        job.operationName == 'bd-12345-9'
         job.creationTime == ts
         job.type == JobSpec.Type.Build
         job.maxDuration == Duration.ofMinutes(1)
-        job.workDir == Path.of('/some/work/dir')
+        job.workDir == Path.of('/some/work/dir/bd-12345_9')
     }
 
     def 'should create transfer job' () {
@@ -83,20 +85,20 @@ class JobFactoryTest extends Specification {
         def duration = Duration.ofMinutes(1)
         def config = new ScanConfig(timeout: duration)
         def factory = new JobFactory(scanConfig: config)
-        def request = new ScanRequest(
-                '12345',
-                'build-123',
-                '{ jsonConfig }',
-                'docker.io/foo:bar',
-                ContainerPlatform.of('linux/amd64'),
-                workdir
+        def request = ScanRequest.of(
+                scanId: 'sc-12345_1',
+                buildId: 'bd-67890_2',
+                configJson: '{ jsonConfig }',
+                targetImage: 'docker.io/foo:bar',
+                platform: ContainerPlatform.of('linux/amd64'),
+                workDir: workdir
         )
 
         when:
         def job = factory.scan(request)
         then:
-        job.entryKey == '12345'
-        job.operationName == 'scan-12345'
+        job.entryKey == 'sc-12345_1'
+        job.operationName == 'sc-12345-1'
         job.type == JobSpec.Type.Scan
         job.maxDuration == duration
         job.creationTime == request.creationTime
@@ -116,16 +118,22 @@ class JobFactoryTest extends Specification {
                 'sha256:12345',
                 Mock(ContainerPlatform),
                 workspace,
-                '{config}' )
+                '{config}',
+                'sc-123',
+                Instant.now(),
+                "GMT",
+                Mock(PlatformId)
+        )
 
         when:
         def job = factory.mirror(request)
         then:
         job.entryKey == "target/foo"
-        job.operationName == /mirror-${request.mirrorId.substring(3)}/
+        job.operationName == request.mirrorId
+        job.operationName =~ /mr-.+/
         job.type == JobSpec.Type.Mirror
         job.maxDuration == duration
-        job.workDir == workspace.resolve(/mirror-${request.mirrorId.substring(3)}/)
+        job.workDir == workspace.resolve(request.mirrorId)
         job.creationTime == request.creationTime
     }
 }

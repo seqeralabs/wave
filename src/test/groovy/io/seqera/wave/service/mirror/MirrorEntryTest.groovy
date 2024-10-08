@@ -23,99 +23,70 @@ import spock.lang.Specification
 import java.nio.file.Path
 import java.time.Instant
 
-import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.tower.PlatformId
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 class MirrorEntryTest extends Specification {
 
-    def 'should create a result from a request' () {
+    def 'should create mirror entry object' () {
         given:
+        def ts = Instant.now()
         def request = MirrorRequest.create(
                 'source.io/foo',
                 'target.io/foo',
                 'sha256:12345',
                 Mock(ContainerPlatform),
                 Path.of('/workspace'),
-                '{auth json}' )
+                '{auth json}',
+                'scan-123',
+                ts,
+                'utc',
+                Mock(PlatformId)
+        )
 
         when:
-        def result = MirrorEntry.from(request)
+        def entry = MirrorEntry.of(request)
         then:
-        result.mirrorId == request.mirrorId
-        result.digest == request.digest
-        result.platform == request.platform
-        result.sourceImage == request.sourceImage
-        result.targetImage == request.targetImage
-        result.creationTime == request.creationTime
-        result.status == MirrorEntry.Status.PENDING
+        entry.requestId == request.mirrorId
+        entry.key == request.targetImage
         and:
-        result.duration == null
-        result.exitCode == null
-        result.logs == null
+        entry.request == request
+        and:
+        entry.result == MirrorResult.of(request)
     }
 
-    def 'should complete a result result' () {
+    def 'should validate with result' () {
         given:
+        def ts = Instant.now()
         def request = MirrorRequest.create(
                 'source.io/foo',
                 'target.io/foo',
                 'sha256:12345',
                 Mock(ContainerPlatform),
                 Path.of('/workspace'),
-                '{auth json}'  )
+                '{auth json}',
+                'scan-123',
+                ts,
+                'utc',
+                Mock(PlatformId)
+        )
 
         when:
-        def m1 = MirrorEntry.from(request)
+        def entry = MirrorEntry.of(request)
         then:
-        m1.status == MirrorEntry.Status.PENDING
-        m1.duration == null
-        m1.exitCode == null
-        m1.logs == null
+        !entry.done()
 
         when:
-        def m2 = m1.complete(0, 'Some logs')
+        entry = entry.withResult( entry.result.complete(0, 'All ok') )
         then:
-        m2.mirrorId == request.mirrorId
-        m2.digest == request.digest
-        m2.sourceImage == request.sourceImage
-        m2.targetImage == request.targetImage
-        m2.creationTime == request.creationTime
-        m2.platform == request.platform
-        and:
-        m2.status == MirrorEntry.Status.COMPLETED
-        m2.duration != null
-        m2.exitCode == 0
-        m2.logs == 'Some logs'
+        entry.done()
+        entry.result.succeeded()
+        entry.result.exitCode == 0
+        entry.result.logs == 'All ok'
     }
 
-    def 'should convert to status response' () {
-        when:
-        def result1 = new MirrorEntry('mr-123', 'sha256:12345', 'source/foo', 'target/foo', Mock(ContainerPlatform), Instant.now())
-        def resp = result1.toStatusResponse()
-        then:
-        resp.id == result1.mirrorId
-        resp.status == BuildStatusResponse.Status.PENDING
-        resp.startTime == result1.creationTime
-        and:
-        resp.duration == null
-        resp.succeeded == null
-
-        when:
-        final result2 = result1.complete(1, 'Some error')
-        final resp2 = result2.toStatusResponse()
-        then:
-        resp2.duration == result2.duration
-        resp2.succeeded == false
-
-        when:
-        final result3 = result1.complete(0, 'OK')
-        final resp3 = result3.toStatusResponse()
-        then:
-        resp3.duration == result3.duration
-        resp3.succeeded == true
-
-    }
 }

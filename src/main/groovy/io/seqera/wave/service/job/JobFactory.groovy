@@ -64,7 +64,7 @@ class JobFactory {
     JobSpec build(BuildRequest request) {
         JobSpec.build(
                 request.targetImage,
-                "build-" + request.buildId.replace('_', '-'),
+                request.buildId.replace('_', '-'),
                 request.startTime,
                 request.maxDuration,
                 request.workDir
@@ -74,7 +74,7 @@ class JobFactory {
     JobSpec scan(ScanRequest request) {
         JobSpec.scan(
                 request.scanId,
-                "scan-${request.scanId}",
+                request.scanId.replace('_', '-'),
                 request.creationTime,
                 scanConfig.timeout,
                 request.workDir
@@ -82,9 +82,10 @@ class JobFactory {
     }
 
     JobSpec mirror(MirrorRequest request) {
+        assert request.mirrorId.startsWith(MirrorRequest.ID_PREFIX)
         JobSpec.mirror(
                 request.targetImage,
-                "mirror-${request.mirrorId.substring(MirrorRequest.ID_PREFIX.length())}",
+                request.mirrorId.replace('_', '-'),
                 request.creationTime,
                 mirrorConfig.maxDuration,
                 request.workDir

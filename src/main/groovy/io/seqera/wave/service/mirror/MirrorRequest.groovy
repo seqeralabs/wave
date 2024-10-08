@@ -25,8 +25,8 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.LongRndKey
-
 /**
  * Model a container mirror request
  *
@@ -75,25 +75,88 @@ class MirrorRequest {
     final String authJson
 
     /**
+     * The scanId associated this mirror request
+     */
+    final String scanId
+
+    /**
      * The timestamp when the request has been submitted
      */
     final Instant creationTime
 
-    static MirrorRequest create(String sourceImage, String targetImage, String digest, ContainerPlatform platform, Path workspace, String authJson, Instant ts=Instant.now()) {
+    /**
+     * Request timezone offset
+     */
+    final String offsetId
+
+    /**
+     * Platform identity of the user that created this request
+     */
+    final PlatformId identity
+
+    static MirrorRequest create(String sourceImage, String targetImage, String digest, ContainerPlatform platform, Path workspace, String authJson, String scanId, Instant ts, String offsetId, PlatformId identity) {
         assert sourceImage, "Argument 'sourceImage' cannot be null"
         assert targetImage, "Argument 'targetImage' cannot be empty"
         assert workspace, "Argument 'workspace' cannot be null"
         assert digest, "Argument 'digest' cannot be empty"
 
-        final id = LongRndKey.rndHex()
+        final mirrorId = ID_PREFIX + LongRndKey.rndHex()
         return new MirrorRequest(
-                ID_PREFIX + id,
+                mirrorId,
                 sourceImage,
                 targetImage,
                 digest,
                 platform,
-                workspace.resolve("mirror-${id}"),
+                workspace.resolve(mirrorId),
                 authJson,
-                ts )
+                scanId,
+                ts,
+                offsetId,
+                identity
+        )
+    }
+
+    String getMirrorId() {
+        return mirrorId
+    }
+
+    String getSourceImage() {
+        return sourceImage
+    }
+
+    String getTargetImage() {
+        return targetImage
+    }
+
+    String getDigest() {
+        return digest
+    }
+
+    ContainerPlatform getPlatform() {
+        return platform
+    }
+
+    Path getWorkDir() {
+        return workDir
+    }
+
+    String getAuthJson() {
+        return authJson
+    }
+
+    String getScanId() {
+        return scanId
+    }
+
+    Instant getCreationTime() {
+        return creationTime
+    }
+
+    String getOffsetId() {
+        return offsetId
+    }
+
+    PlatformId getIdentity() {
+        return identity
     }
 }

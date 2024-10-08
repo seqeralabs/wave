@@ -38,9 +38,11 @@ class CleanupStrategyTest extends Specification {
         STATUS  | CONFIG        | DEBUG | EXPECTED
         0       | null          | false | true
         1       | null          | false | true
+        null    | null          | false | true
         and:
         0       | null          | true  | false
         1       | null          | true  | false
+        null    | null          | true  | false
         and:
         0       | 'always'      | false | true
         0       | 'never'       | false | false
@@ -48,6 +50,9 @@ class CleanupStrategyTest extends Specification {
         1       | 'always'      | false | true
         1       | 'never'       | false | false
         1       | 'onsuccess'   | false | false
+        null    | 'always'      | false | true
+        null    | 'never'       | false | false
+        null    | 'onsuccess'   | false | false
         and:
         0       | 'always'      | true | true
         0       | 'never'       | true | false
@@ -55,5 +60,8 @@ class CleanupStrategyTest extends Specification {
         1       | 'always'      | true | true
         1       | 'never'       | true | false
         1       | 'onsuccess'   | true | false
+        null    | 'always'      | true | true
+        null    | 'never'       | true | false
+        null    | 'onsuccess'   | true | false
     }
 }

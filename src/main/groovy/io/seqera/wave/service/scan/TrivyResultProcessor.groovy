@@ -27,6 +27,7 @@ import io.seqera.wave.exception.ScanRuntimeException
  * Implements ScanStrategy for Docker
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 class TrivyResultProcessor {
