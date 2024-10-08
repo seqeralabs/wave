@@ -26,6 +26,8 @@ import java.time.Instant
 
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.ContainerStatus
+import io.seqera.wave.api.ContainerStatusResponse
 import io.seqera.wave.auth.RegistryAuth
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.request.ContainerRequest
@@ -441,5 +443,29 @@ class MoshiEncodingStrategyTest extends Specification {
         copy.getClass() == entry.getClass()
         and:
         copy == entry
+    }
+
+    def 'should encode container status response' () {
+        given:
+        def encoder =  new MoshiEncodeStrategy<ContainerStatusResponse>() {}
+        def timestamp = Instant.parse('2024-10-07T20:41:00.804699Z')
+        def resp =     new ContainerStatusResponse(
+                '1234',
+                ContainerStatus.DONE,
+                'bd-12345',
+                'mr-12345',
+                'sc-12345',
+                [LOW: 1, MEDIUM: 2],
+                true,
+                'Some err message',
+                'http://foo.com/view/123',
+                timestamp,
+                Duration.ofMinutes(1),
+        )
+
+        when:
+        def result = encoder.encode(resp)
+        then:
+        result == '{"buildId":"bd-12345","creationTime":"2024-10-07T20:41:00.804699Z","detailsUri":"http://foo.com/view/123","duration":"60000000000","id":"1234","mirrorId":"mr-12345","reason":"Some err message","scanId":"sc-12345","status":"DONE","succeeded":true,"vulnerabilities":{"LOW":1,"MEDIUM":2}}'
     }
 }
