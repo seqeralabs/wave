@@ -18,7 +18,7 @@ model ContainerRequest {
   format: "sif" | "docker";
   freeze?: boolean;
   nameStrategy?: "none" | "tagPrefix" | "imageSuffix";
-  mirrorRegistry?: string;
+  mirror?: boolean;
   packages?: Packages;
   scanMode?: ScanMode;
   scanLevels?: ScanLevel[];
