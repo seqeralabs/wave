@@ -614,6 +614,9 @@ class ContainerController {
         def msg = validationService.checkMirrorRegistry(req.mirrorRegistry)
         if( msg )
             throw new BadRequestException(msg)
+        if( !isCustomRepo0(req.mirrorRegistry) ) {
+            throw new BadRequestException("Not allowed mirror registry - offending value '${req.mirrorRegistry}'")
+        }
     }
 
     @Error(exception = AuthorizationException.class)

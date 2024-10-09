@@ -522,6 +522,12 @@ class ContainerControllerTest extends Specification {
         then:
         err = thrown(BadRequestException)
         err.message == "Mirror registry syntax is invalid - offending value: quay.io/bar"
+
+        when:
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirrorRegistry: 'community.wave.seqera.io', containerImage: 'docker.io/foo', towerAccessToken: 'xyz'), true)
+        then:
+        err = thrown(BadRequestException)
+        err.message == "Mirror registry not allowed - offending value: community.wave.seqera.io"
     }
 
     def 'should create response with conda packages' () {
