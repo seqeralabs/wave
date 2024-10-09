@@ -14,6 +14,8 @@ that it can be used in your Docker (replace-with-your-own-fav-container-engine) 
 * Build container images for a specified target platform (currently linux/amd64 and linux/arm64);
 * Push and cache built containers to a user-provided container repository;
 * Push Singularity native container images to OCI-compliant registries;
+* Mirror (ie. copy) container images on-demand to a given registry;
+* Scan container images on-demand for security vulnerabilities;
   
 ### Installation 
 
@@ -67,7 +69,7 @@ If you use [Homebrew](https://brew.sh/), you can install like this:
     chmod +x new-layer/usr/local/bin/hello.sh
     ```
 
-2. Run the container via Wave 
+2. Augment the container with the local layer and run with Docker:
 
     ```bash
     container=$(wave -i alpine --layer new-layer)
@@ -151,6 +153,19 @@ docker run --platform linux/arm64 $container sh -c 'fastp --version'
 ```bash
 container=$(wave --singularity --conda-package bamtools=2.5.2 --build-repo docker.io/user/repo --freeze --await)
 singularity exec $container bamtools --version
+```
+
+#### Mirror (aka copy) a container to another registry
+
+```bash
+container=$(wave -i ubuntu:latest --mirror --build-repo <YOUR REGISTRY> --tower-token <YOUR ACCESS TOKEN> --await)
+docker pull $container
+```
+
+#### Build a container and scan it for vulnerabilities
+
+```bash
+wave --conda-package bamtools=2.5.2 --scan-mode required --await -o yaml
 ```
 
 ### Development
