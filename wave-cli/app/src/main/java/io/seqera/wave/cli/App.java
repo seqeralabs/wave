@@ -188,8 +188,8 @@ public class App implements Runnable {
     @Option(names = {"--name-strategy"}, paramLabel = "false", description = "Specify the name strategy for the container name, it can be 'none' or 'tagPrefix' or 'imageSuffix'")
     private ImageNameStrategy nameStrategy;
 
-    @Option(names = {"-m","--mirror-registry"}, paramLabel = "false", description = "Specify registry where the container should be mirrored e.g. 'docker.io'")
-    private String mirrorRegistry;
+    @Option(names = {"-m","--mirror"}, paramLabel = "false", description = "Enable container mirror mode'")
+    private boolean mirror;
 
     @Option(names = {"--scan-mode"}, paramLabel = "false", description = "Specify container security scan mode, it can be 'none', 'async' or 'required'")
     private ScanMode scanMode;
@@ -356,26 +356,23 @@ public class App implements Runnable {
                 throw new IllegalCliArgumentException("Context path is not a directory - offending value: " + contextDir);
         }
 
-        if( !isEmpty(mirrorRegistry) && !isEmpty(containerFile) )
-            throw new IllegalCliArgumentException("Argument --mirror-registry and --containerfile conflict each other");
+        if( mirror && !isEmpty(containerFile) )
+            throw new IllegalCliArgumentException("Argument --mirror and --containerfile conflict each other");
 
-        if( !isEmpty(mirrorRegistry) && !isEmpty(condaFile) )
-            throw new IllegalCliArgumentException("Argument --mirror-registry and --conda-file conflict each other");
+        if( mirror && !isEmpty(condaFile) )
+            throw new IllegalCliArgumentException("Argument --mirror and --conda-file conflict each other");
 
-        if( !isEmpty(mirrorRegistry) && !isEmpty(condaPackages) )
-            throw new IllegalCliArgumentException("Argument --mirror-registry and --conda-package conflict each other");
+        if( mirror && !isEmpty(condaPackages) )
+            throw new IllegalCliArgumentException("Argument --mirror and --conda-package conflict each other");
 
-        if( !isEmpty(mirrorRegistry) && !isEmpty(contextDir) )
-            throw new IllegalCliArgumentException("Argument --mirror-registry and --context conflict each other");
+        if( mirror && !isEmpty(contextDir) )
+            throw new IllegalCliArgumentException("Argument --mirror and --context conflict each other");
 
-        if( !isEmpty(mirrorRegistry) && freeze )
-            throw new IllegalCliArgumentException("Argument --mirror-registry and --freeze conflict each other");
+        if( mirror && freeze )
+            throw new IllegalCliArgumentException("Argument --mirror and --freeze conflict each other");
 
-        if( !isEmpty(mirrorRegistry) && !isEmpty(buildRepository) )
-            throw new IllegalCliArgumentException("Argument --mirror-registry and --build-repository conflict each other");
-
-        if( !isEmpty(mirrorRegistry) && !isEmpty(cacheRepository) )
-            throw new IllegalCliArgumentException("Argument --mirror-registry and --cache-repository conflict each other");
+        if( mirror && isEmpty(buildRepository) )
+            throw new IllegalCliArgumentException("Option --mirror and requires the use of a build repository");
 
         if( dryRun && await != null )
             throw new IllegalCliArgumentException("Options --dry-run and --await conflicts each other");
@@ -408,7 +405,7 @@ public class App implements Runnable {
                 .withDryRun(dryRun)
                 .withContainerIncludes(includes)
                 .withNameStrategy(nameStrategy)
-                .withMirrorRegistry(mirrorRegistry)
+                .withMirror(mirror)
                 .withScanMode(scanMode)
                 .withScanLevels(scanLevels)
                 ;

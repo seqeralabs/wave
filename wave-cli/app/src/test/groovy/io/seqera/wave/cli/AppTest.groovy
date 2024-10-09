@@ -510,7 +510,7 @@ class AppTest extends Specification {
     def 'should fail when specifying mirror registry and container file' () {
         given:
         def app = new App()
-        String[] args = ["--mirror-registry", "docker.io", "-f", "foo"]
+        String[] args = ["--mirror", "true", "-f", "foo"]
 
         when:
         def cli = new CommandLine(app)
@@ -520,13 +520,13 @@ class AppTest extends Specification {
         then:
         def e = thrown(IllegalCliArgumentException)
         and:
-        e.getMessage() == "Argument --mirror-registry and --containerfile conflict each other"
+        e.getMessage() == "Argument --mirror and --containerfile conflict each other"
     }
 
     def 'should fail when specifying mirror registry and conda package' () {
         given:
         def app = new App()
-        String[] args = ["--mirror-registry", "docker.io", "--conda-package", "foo"]
+        String[] args = ["--mirror", "true", "--conda-package", "foo"]
 
         when:
         def cli = new CommandLine(app)
@@ -536,13 +536,13 @@ class AppTest extends Specification {
         then:
         def e = thrown(IllegalCliArgumentException)
         and:
-        e.getMessage() == "Argument --mirror-registry and --conda-package conflict each other"
+        e.getMessage() == "Argument --mirror and --conda-package conflict each other"
     }
 
     def 'should fail when specifying mirror registry and freeze' () {
         given:
         def app = new App()
-        String[] args = ["--mirror-registry", "docker.io", "--image", "foo", "--freeze"]
+        String[] args = ["--mirror", "true", "--image", "foo", "--freeze"]
 
         when:
         def cli = new CommandLine(app)
@@ -552,7 +552,23 @@ class AppTest extends Specification {
         then:
         def e = thrown(IllegalCliArgumentException)
         and:
-        e.getMessage() == "Argument --mirror-registry and --freeze conflict each other"
+        e.getMessage() == "Argument --mirror and --freeze conflict each other"
+    }
+
+    def 'should fail when specifying mirror and missing build repo' () {
+        given:
+        def app = new App()
+        String[] args = ["--mirror", "true"]
+
+        when:
+        def cli = new CommandLine(app)
+        cli.parseArgs(args)
+        and:
+        app.validateArgs()
+        then:
+        def e = thrown(IllegalCliArgumentException)
+        and:
+        e.getMessage() == "Option --mirror and requires the use of a build repository"
     }
 
     @Unroll
