@@ -43,7 +43,7 @@
         }
         .copy-btn {
             position: absolute;
-            right: 10px;
+            right: 15px;
             top: 10px;
             background: none;
             border: none;
@@ -52,11 +52,6 @@
     </style>
 </head>
 <body>
-<svg style="display: none;">
-    <symbol id="icon-copy" viewBox="0 0 16 16" aria-hidden="true" class="octicon octicon-copy">
-        <path fill-rule="evenodd" d="M0 1.75A.75.75 0 0 1 .75 1h10.5a.75.75 0 0 1 .75.75V3h-1V2.5H1.5v11h2v1H.75a.75.75 0 0 1-.75-.75zm3.5 2.5A.75.75 0 0 1 4.25 3h10.5a.75.75 0 0 1 .75.75v10.5a.75.75 0 0 1-.75.75H4.25a.75.75 0 0 1-.75-.75V4.25zm1.5.75v9h9v-9h-9z"></path>
-    </symbol>
-</svg>
 <div style="font-family:'-apple-system', BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; padding: 30px; max-width: 800px; margin: 0 auto;">
 
     <div>
@@ -131,8 +126,8 @@
         <h3>Container file</h3>
     <div style="position: relative; margin-bottom: 30px;">
         <button id="containerFileCopyBtn" class="copy-btn" onclick="copyToClipboard('containerFileData', 'containerFileCopyBtn')" title="Copy">
-            <svg width="16" height="16">
-                <use href="#icon-copy"></use>
+            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
             </svg>
         </button>
         <pre id="containerFileData">{{build_container_file}}</pre>
@@ -141,8 +136,8 @@
         <h3>Conda file</h3>
     <div style="position: relative; margin-bottom: 30px;">
         <button id="condaFileCopyBtn" class="copy-btn" onclick="copyToClipboard('condaFileData', 'condaFileCopyBtn')" title="Copy">
-            <svg width="16" height="16">
-                <use href="#icon-copy"></use>
+            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
             </svg>
         </button>
         <pre id="condaFileData">{{build_conda_file}}</pre>
@@ -284,16 +279,16 @@
         navigator.clipboard.writeText(textToCopy).then(() => {
             const copyBtn = document.getElementById(buttonId);
             copyBtn.innerHTML = `
-                <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" data-view-component="true" class="octicon octicon-check">
-                    <path fill-rule="evenodd" d="M13.78 3.22a.75.75 0 0 1 1.06 1.06l-7 7a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 0 1 1.06-1.06L7.25 9.94l6.53-6.72z"></path>
+                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+                    <path fill="currentColor" fill-rule="evenodd" d="M8.657 18.435L3 12.778l1.414-1.414l4.95 4.95L20.678 5l1.414 1.414l-12.02 12.021a1 1 0 0 1-1.415 0"/>
                 </svg>
                 <span style="margin-left: 5px;">Copied!</span>
             `;
 
             setTimeout(() => {
                 copyBtn.innerHTML = `
-                    <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" data-view-component="true" class="octicon octicon-copy">
-                        <path fill-rule="evenodd" d="M0 1.75A.75.75 0 0 1 .75 1h10.5a.75.75 0 0 1 .75.75V3h-1V2.5H1.5v11h2v1H.75a.75.75 0 0 1-.75-.75zm3.5 2.5A.75.75 0 0 1 4.25 3h10.5a.75.75 0 0 1 .75.75v10.5a.75.75 0 0 1-.75.75H4.25a.75.75 0 0 1-.75-.75V4.25zm1.5.75v9h9v-9h-9z"></path>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
                     </svg>
                 `;
             }, 2000);
