@@ -23,6 +23,14 @@ namespace wave {
     }|{
       @statusCode statusCode: 404;
       };
+
+    @route("/{requestId}/status")
+    @get op getContainerStatus(@path requestId: string): {
+      @body response: ContainerStatusResponse;
+      @statusCode statusCode: 200;
+    }|{
+      @statusCode statusCode: 404;
+      };
   }
 
   @route("/v1alpha1/builds/{buildId}")
