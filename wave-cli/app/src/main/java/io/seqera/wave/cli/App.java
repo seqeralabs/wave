@@ -226,6 +226,11 @@ public class App implements Runnable {
                 .footer(readExamples("usage-examples.txt"));
 
             final CommandLine.ParseResult result = cli.parseArgs(makeArgs(args));
+            if( !result.originalArgs().contains("--") ) {
+                // reset prompt if `-- was not entered
+                app.prompt=null;
+            }
+
             if( result.matchedArgs().size()==0 || result.isUsageHelpRequested() ) {
                 cli.usage(System.out);
             }
