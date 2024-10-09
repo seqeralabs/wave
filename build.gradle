@@ -205,3 +205,6 @@ jacocoTestReport {
         }))
     }
 }
+shadowJar {
+    zip64 true
+}
