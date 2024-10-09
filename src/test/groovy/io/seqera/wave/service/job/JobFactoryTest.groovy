@@ -28,7 +28,7 @@ import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.mirror.MirrorConfig
+import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.scan.ScanRequest
 import io.seqera.wave.tower.PlatformId

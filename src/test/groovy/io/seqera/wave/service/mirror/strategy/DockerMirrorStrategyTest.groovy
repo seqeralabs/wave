@@ -22,7 +22,7 @@ import spock.lang.Specification
 
 import java.nio.file.Path
 
-import io.seqera.wave.service.mirror.MirrorConfig
+import io.seqera.wave.configuration.MirrorConfig
 
 /**
  *

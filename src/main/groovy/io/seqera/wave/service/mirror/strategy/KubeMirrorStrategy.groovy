@@ -29,7 +29,7 @@ import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
-import io.seqera.wave.service.mirror.MirrorConfig
+import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.service.mirror.MirrorRequest
 import jakarta.inject.Inject
 import jakarta.inject.Singleton

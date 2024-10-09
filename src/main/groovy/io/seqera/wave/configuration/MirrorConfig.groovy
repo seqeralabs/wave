@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.mirror
+package io.seqera.wave.configuration
 
 import java.time.Duration
 

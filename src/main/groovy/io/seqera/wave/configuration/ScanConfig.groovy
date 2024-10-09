@@ -72,7 +72,7 @@ class ScanConfig {
     @Value('${wave.scan.retry-attempts:1}')
     int retryAttempts
 
-    @Value('${wave.scan.status.duration:1h}')
+    @Value('${wave.scan.status.duration:5d}')
     Duration statusDuration
 
     @Value('${wave.scan.id.duration:7d}')
