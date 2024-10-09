@@ -106,6 +106,14 @@ interface PersistenceService {
     WaveScanRecord loadScanRecord(String scanId)
 
     /**
+     * Check if a scan record exist
+     *
+     * @param scanId The Id of the scan to check
+     * @return {@code true} if the scan record with the specified id exists or {@code false} otherwise
+     */
+    boolean existsScanRecord(String scanId)
+
+    /**
      * Load a mirror state record
      *
      * @param mirrorId The ID of the mirror record
