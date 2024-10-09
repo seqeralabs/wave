@@ -173,7 +173,7 @@ class ViewController {
         binding.build_failed = result.exitStatus  && result.exitStatus != 0
         binding.build_in_progress = result.exitStatus == null
         binding.build_exit_status = result.exitStatus
-        binding.build_user = (result.userName ?: '-') + " (ip: ${result.requestIp})"
+        binding.build_user = (result.userName ?: '-')
         binding.build_time = formatTimestamp(result.startTime, result.offsetId) ?: '-'
         binding.build_duration = formatDuration(result.duration) ?: '-'
         binding.build_image = result.targetImage
@@ -195,6 +195,7 @@ class ViewController {
         //add conda lock file when available
         if( buildLogService && result.condaFile ) {
             binding.build_conda_lock_data = buildLogService.fetchCondaLockString(result.buildId)
+            binding.build_conda_lock_url = "$serverUrl/v1alpha1/builds/${result.buildId}/condalock"
         }
         // result the main object
         return binding
