@@ -303,6 +303,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 .sqlAsMap(auth, "select * from wave_scan_vuln")
                 .result
                 .size() == 3
+        and:
+        persistence.existsScanRecord(SCAN_ID)
 
         when:
         def SCAN_ID2 = 'b2'
@@ -320,6 +322,27 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 .sqlAsMap(auth, "select * from wave_scan_vuln")
                 .result
                 .size() == 4
+    }
+
+    def 'should save a scan and check it exists' () {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def auth = persistence.getAuthorization()
+        def surrealDb = applicationContext.getBean(SurrealClient)
+        def NOW = Instant.now()
+        def SCAN_ID = 'a1'
+        def BUILD_ID = '100'
+        def CONTAINER_IMAGE = 'docker.io/my/repo:container1234'
+        def CVE1 = new ScanVulnerability('cve-1', 'x1', 'title1', 'package1', 'version1', 'fixed1', 'url1')
+        def scan = new WaveScanRecord(SCAN_ID, BUILD_ID, null, null, CONTAINER_IMAGE, NOW, Duration.ofSeconds(10), 'SUCCEEDED', [CVE1], null, null)
+
+        expect:
+        !persistence.existsScanRecord(SCAN_ID)
+
+        when:
+        persistence.saveScanRecord(scan)
+        then:
+        persistence.existsScanRecord(SCAN_ID)
     }
 
     //== mirror records tests
