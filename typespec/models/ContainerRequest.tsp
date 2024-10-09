@@ -2,6 +2,7 @@ import "./ContainerConfig.tsp";
 import "./Packages.tsp";
 import "./ScanMode.tsp";
 import "./ScanLevel.tsp";
+
 @doc("Request payload for creating a container token.")
 model ContainerRequest {
   buildContext: ContainerLayer;
