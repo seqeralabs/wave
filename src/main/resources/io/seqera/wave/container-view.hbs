@@ -6,6 +6,7 @@
     <meta name="description" content="Wave container request data">
     <title>Wave container</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap');
         body {
             font-family: "Inter", sans-serif;
             font-optical-sizing: auto;
@@ -65,29 +66,29 @@
     <h3>Request</h3>
     <table cellpadding="4" >
         <tr>
-            <td class="monospace">Token</td>
-            <td class="monospace">{{request_token}}</td>
+            <td>Token</td>
+            <td>{{request_token}}</td>
         </tr>
         <tr>
-            <td class="monospace">Request container</td>
+            <td>Request container</td>
             <td class="monospace">{{request_container_image}}</td>
         </tr>
         <tr>
-            <td class="monospace">Platform</td>
-            <td class="monospace">{{request_contaiener_platform}}</td>
+            <td>Platform</td>
+            <td>{{request_contaiener_platform}}</td>
         </tr>
         <tr>
-            <td class="monospace">Fingerprint</td>
-            <td class="monospace">{{request_fingerprint}}</td>
+            <td>Fingerprint</td>
+            <td>{{request_fingerprint}}</td>
         </tr>
         <tr>
-            <td class="monospace">Timestamp</td>
-            <td class="monospace">{{request_timestamp}}</td>
+            <td>Timestamp</td>
+            <td>{{request_timestamp}}</td>
         </tr>
 
         <tr>
-            <td class="monospace">Expiration</td>
-            <td class="monospace">{{request_expiration}}</td>
+            <td>Expiration</td>
+            <td>{{request_expiration}}</td>
         </tr>
     </table>
 
@@ -95,26 +96,26 @@
     <h3>Container info</h3>
     <table cellpadding="4" >
         <tr>
-            <td class="monospace">Container image</td>
+            <td>Container image</td>
             <td class="monospace">{{source_container_image}}</td>
         </tr>
         <tr>
-            <td class="monospace">Container digest</td>
+            <td>Container digest</td>
             <td class="monospace">{{source_container_digest}}</td>
         </tr>
         {{#if wave_container_show }}
         <tr>
-            <td class="monospace">Wave image</td>
+            <td>Wave image</td>
             <td class="monospace">{{wave_container_image}}</td>
         </tr>
         <tr>
-            <td class="monospace">Wave digest</td>
+            <td>Wave digest</td>
             <td class="monospace">{{wave_container_digest}}</td>
         </tr>
         {{/if}}
         <tr>
-            <td class="monospace">Fusion version</td>
-            <td class="monospace">{{fusion_version}}</td>
+            <td>Fusion version</td>
+            <td>{{fusion_version}}</td>
         </tr>
     </table>
 
@@ -147,28 +148,28 @@
 
         <table cellpadding="4" >
             <tr>
-                <td class="monospace">Build ID</td>
+                <td>Build ID</td>
                 {{#if build_url}}
-                <td class="monospace"><a href="{{build_url}}">{{build_id}}</a></td>
+                <td><a href="{{build_url}}">{{build_id}}</a></td>
                 {{else}}
-                <td class="monospace">-</td>
+                <td>-</td>
                 {{/if}}
             </tr>
             <tr>
-                <td class="monospace">Cached</td>
-                <td class="monospace">{{build_cached}}</td>
+                <td>Cached</td>
+                <td>{{build_cached}}</td>
             </tr>
             <tr>
-                <td class="monospace">Freeze mode</td>
-                <td class="monospace">{{build_freeze}}</td>
+                <td>Freeze mode</td>
+                <td>{{build_freeze}}</td>
             </tr>
             <tr>
-                <td class="monospace">Build repository</td>
-                <td class="monospace">{{build_repository}}</td>
+                <td>Build repository</td>
+                <td>{{build_repository}}</td>
             </tr>
             <tr>
-                <td class="monospace">Cache repository</td>
-                <td class="monospace">{{build_cache_repository}}</td>
+                <td>Cache repository</td>
+                <td>{{build_cache_repository}}</td>
             </tr>
         </table>
     {{/if}}
@@ -176,12 +177,12 @@
     {{#if mirror_id }}
         <table cellpadding="4" >
             <tr>
-                <td class="monospace">Mirror ID</td>
-                <td class="monospace"><a href="{{mirror_url}}">{{mirror_id}}</a></td>
+                <td>Mirror ID</td>
+                <td><a href="{{mirror_url}}">{{mirror_id}}</a></td>
             </tr>
             <tr>
-                <td class="monospace">Cached</td>
-                <td class="monospace">{{mirror_cached}}</td>
+                <td>Cached</td>
+                <td>{{mirror_cached}}</td>
             </tr>
         </table>
     {{/if}}
@@ -189,8 +190,8 @@
     {{#if scan_id }}
         <table cellpadding="4" >
             <tr>
-                <td class="monospace">Security scan</td>
-                <td class="monospace"><a href="{{scan_url}}">{{scan_id}}</a></td>
+                <td>Security scan</td>
+                <td><a href="{{scan_url}}">{{scan_id}}</a></td>
             </tr>
         </table>
     {{/if}}
@@ -200,24 +201,24 @@
     <h3>Tower &amp; User info</h3>
     <table cellpadding="4" >
         <tr>
-            <td class="monospace">User Id</td>
-            <td class="monospace">{{tower_user_id}}</td>
+            <td>User Id</td>
+            <td>{{tower_user_id}}</td>
         </tr>
         <tr>
-            <td class="monospace">User name</td>
-            <td class="monospace">{{tower_user_name}}</td>
+            <td>User name</td>
+            <td>{{tower_user_name}}</td>
         </tr>
         <tr>
-            <td class="monospace">User email</td>
-            <td class="monospace">{{tower_user_email}}</td>
+            <td>User email</td>
+            <td>{{tower_user_email}}</td>
         </tr>
         <tr>
-            <td class="monospace">Workspace Id</td>
-            <td class="monospace">{{tower_workspace_id}}</td>
+            <td>Workspace Id</td>
+            <td>{{tower_workspace_id}}</td>
         </tr>
         <tr>
-            <td class="monospace">Endpoint</td>
-            <td class="monospace">{{tower_endpoint}}</td>
+            <td>Endpoint</td>
+            <td>{{tower_endpoint}}</td>
         </tr>
     </table>
     {{/if}}
@@ -228,8 +229,8 @@
     <div>
         <table id="evictTable" class="table">
             <tr>
-                <td class="monospace">Do you want to evict this wave container record from cache?</td>
-                <td class="monospace">
+                <td>Do you want to evict this wave container record from cache?</td>
+                <td>
                     <button class="button" onclick="evictFromCache()">Yes evict it</button>
                 </td>
             </tr>

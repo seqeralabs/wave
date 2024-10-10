@@ -16,13 +16,6 @@
             font-weight: 200;
             font-style: normal;
         }
-        .monospace {
-            font-family: "Roboto Mono", monospace;
-            font-optical-sizing: auto;
-            font-weight: 400;
-            font-style: normal;
-            font-size: 0.9em;
-        }
         pre {
             white-space: pre-wrap;
             overflow-x: auto;
@@ -119,53 +112,53 @@
     <h3>Summary</h3>
     <table cellpadding="4" >
         <tr>
-            <td class="monospace">Build ID</td>
+            <td>Build ID</td>
             <td class="monospace">{{build_id}}</td>
         </tr>
 
         <tr>
-            <td class="monospace">User</td>
-            <td class="monospace">{{build_user}}</td>
+            <td>User</td>
+            <td>{{build_user}}</td>
         </tr>
 
         <tr>
-            <td class="monospace">Container image</td>
+            <td>Container image</td>
             <td class="monospace">{{build_image}}</td>
         </tr>
 
         <tr>
-            <td class="monospace">Container digest</td>
+            <td>Container digest</td>
             <td class="monospace">{{build_digest}}</td>
         </tr>
 
         <tr>
-            <td class="monospace">Image format</td>
-            <td class="monospace">{{build_format}}</td>
+            <td>Image format</td>
+            <td>{{build_format}}</td>
         </tr>
 
         <tr>
-            <td class="monospace">Platform</td>
-            <td class="monospace">{{build_platform}}</td>
+            <td>Platform</td>
+            <td>{{build_platform}}</td>
         </tr>
 
         <tr>
-            <td class="monospace">Build time</td>
-            <td class="monospace">{{build_time}}</td>
+            <td>Build time</td>
+            <td>{{build_time}}</td>
         </tr>
 
         <tr>
-            <td class="monospace">Duration</td>
-            <td class="monospace">{{build_duration}}</td>
+            <td>Duration</td>
+            <td>{{build_duration}}</td>
         </tr>
 
         <tr>
-            <td class="monospace">Exit status</td>
-            <td class="monospace">{{build_exit_status}}</td>
+            <td>Exit status</td>
+            <td>{{build_exit_status}}</td>
         </tr>
         {{#if scan_url}}
             <tr>
-                <td class="monospace">Security scan</td>
-                <td class="monospace"><a href="{{scan_url}}">{{scan_id}}</a></td>
+                <td>Security scan</td>
+                <td><a href="{{scan_url}}">{{scan_id}}</a></td>
             </tr>
         {{/if}}
     </table>

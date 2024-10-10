@@ -9,6 +9,7 @@
     <meta name="description" content="Wave container build data">
     <title>Wave container mirror notification</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap');
         body {
             font-family: "Inter", sans-serif;
             font-optical-sizing: auto;
@@ -102,49 +103,49 @@
     <h3>Summary</h3>
     <table cellpadding="4" >
         <tr>
-            <td class="monospace">Mirror ID</td>
+            <td>Mirror ID</td>
             <td class="monospace">{{mirror_id}}</td>
         </tr>
 
         <tr>
-            <td class="monospace">User</td>
-            <td class="monospace">{{mirror_user}}</td>
+            <td>User</td>
+            <td>{{mirror_user}}</td>
         </tr>
 
         <tr>
-            <td class="monospace">Source container</td>
-            <td class="monospace">{{mirror_source_image}}</td>
+            <td>Source container</td>
+            <td>{{mirror_source_image}}</td>
         </tr>
     
         <tr>
-            <td class="monospace">Target container</td>
+            <td>Target container</td>
             <td class="monospace">{{mirror_target_image}}</td>
         </tr>
 
         <tr>
-            <td class="monospace">Container digest</td>
+            <td>Container digest</td>
             <td class="monospace">{{mirror_digest}}</td>
         </tr>
 
         <tr>
-            <td class="monospace">Platform</td>
-            <td class="monospace">{{mirror_platform}}</td>
+            <td>Platform</td>
+            <td>{{mirror_platform}}</td>
         </tr>
 
         <tr>
-            <td class="monospace">Creation time</td>
-            <td class="monospace">{{mirror_time}}</td>
+            <td>Creation time</td>
+            <td>{{mirror_time}}</td>
         </tr>
 
         <tr>
-            <td class="monospace">Duration</td>
-            <td class="monospace">{{mirror_duration}}</td>
+            <td>Duration</td>
+            <td>{{mirror_duration}}</td>
         </tr>
 
         {{#if mirror_exitcode}}
         <tr>
-            <td class="monospace">Exit status</td>
-            <td class="monospace">{{mirror_exitcode}}</td>
+            <td>Exit status</td>
+            <td>{{mirror_exitcode}}</td>
         </tr>
         {{/if}}
 
@@ -166,8 +167,8 @@
 
         {{#if scan_url}}
             <tr>
-                <td class="monospace">Security scan</td>
-                <td class="monospace"><a href="{{scan_url}}">{{scan_id}}</a></td>
+                <td>Security scan</td>
+                <td><a href="{{scan_url}}">{{scan_id}}</a></td>
             </tr>
         {{/if}}
     </table>

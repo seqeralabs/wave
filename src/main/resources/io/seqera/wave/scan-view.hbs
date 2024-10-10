@@ -53,52 +53,52 @@ body {
 
     <table cellpadding="4" >
         <tr>
-            <td class="monospace">Scan ID</td>
+            <td>Scan ID</td>
             <td class="monospace">{{scan_id}}</td>
         </tr>
         {{! build info }}
         {{#if build_id}}
         <tr>
-            <td class="monospace">Build ID</td>
-            <td class="monospace"><a href="{{build_url}}">{{build_id}}</a></td>
+            <td>Build ID</td>
+            <td><a href="{{build_url}}">{{build_id}}</a></td>
         </tr>
         {{/if}}
         {{! mirror info }}
         {{#if mirror_id}}
         <tr>
-            <td class="monospace">Mirror ID</td>
-            <td class="monospace"><a href="{{mirror_url}}">{{mirror_id}}</a></td>
+            <td>Mirror ID</td>
+            <td><a href="{{mirror_url}}">{{mirror_id}}</a></td>
         </tr>
         {{/if}}
         {{! request info }}
         {{#if request_id}}
         <tr>
-            <td class="monospace">Request ID</td>
-            <td class="monospace"><a href="{{request_url}}">{{request_id}}</a></td>
+            <td>Request ID</td>
+            <td><a href="{{request_url}}">{{request_id}}</a></td>
         </tr>
         {{/if}}
         <tr>
-            <td class="monospace">Container image</td>
+            <td>Container image</td>
             <td class="monospace">{{scan_container_image}}</td>
         </tr>
         <tr>
-            <td class="monospace">Status</td>
-            <td class="monospace">{{scan_status}}</td>
+            <td>Status</td>
+            <td>{{scan_status}}</td>
         </tr>
         <tr>
-            <td class="monospace">Created</td>
-            <td class="monospace">{{scan_time}}</td>
+            <td>Created</td>
+            <td>{{scan_time}}</td>
         </tr>
 
         <tr>
-            <td class="monospace">Duration</td>
-            <td class="monospace">{{scan_duration}}</td>
+            <td>Duration</td>
+            <td>{{scan_duration}}</td>
         </tr>
 
         {{#if scan_exitcode}}
         <tr>
-            <td class="monospace">Exit status</td>
-            <td class="monospace">{{scan_exitcode}}</td>
+            <td>Exit status</td>
+            <td>{{scan_exitcode}}</td>
         </tr>
         {{/if}}
 
@@ -136,11 +136,11 @@ body {
                             {{#each vulnerabilities}}
                                 <tr>
                                     <td class='nowrap'><a href="{{this.primaryUrl}}" target="_blank">{{this.id}}</a></td>
-                                    <td class="monospace">{{this.severity}}</td>
-                                    <td class="monospace">{{this.pkgName}}</td>
-                                    <td class="monospace">{{this.installedVersion}}</td>
-                                    <td class="monospace">{{this.fixedVersion}}</td>
-                                    <td class="monospace">{{this.title}}<br/></td>
+                                    <td>{{this.severity}}</td>
+                                    <td>{{this.pkgName}}</td>
+                                    <td>{{this.installedVersion}}</td>
+                                    <td>{{this.fixedVersion}}</td>
+                                    <td>{{this.title}}<br/></td>
                                 </tr>
                             {{/each}}
                         </tbody>
