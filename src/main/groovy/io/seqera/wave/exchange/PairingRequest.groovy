@@ -18,11 +18,10 @@
 
 package io.seqera.wave.exchange
 
-import javax.validation.constraints.NotBlank
-import javax.validation.constraints.NotNull
-
 import groovy.transform.CompileStatic
 import io.micronaut.core.annotation.Introspected
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotNull
 
 /**
  * Model the request for a remote service instance to register
