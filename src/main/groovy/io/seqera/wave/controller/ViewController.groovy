@@ -247,7 +247,7 @@ class ViewController {
         binding.mirror_id = data.mirror ? data.buildId : null
         binding.mirror_url =  data.mirror ? "$serverUrl/view/mirrors/${data.buildId}" : null
         binding.mirror_cached = data.mirror ? !data.buildNew : null
-
+        binding.server_url = serverUrl
         return HttpResponse.<Map<String,Object>>ok(binding)
     }
 
