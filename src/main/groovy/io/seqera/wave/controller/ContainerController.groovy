@@ -502,7 +502,11 @@ class ContainerController {
         final targetImage = target.repository
                 ? target.repository + '/' + coords.imageAndTag
                 : target.registry + '/' + coords.imageAndTag
-        final configJson = inspectService.credentialsConfigJson(null, request.containerImage, targetImage, identity)
+        // note: sourceImage is specified is provided via a dummy from-only dockerfile
+        // in order to bypass the strict credentials check made on the build and cache repo
+        // in fact, the absence of creds in the docker file is tolerated because it may be a
+        // public accessible repo. With build and cache repo, the creds needs to be available
+        final configJson = inspectService.credentialsConfigJson("FROM ${request.containerImage}", targetImage, null, identity)
         final platform = request.containerPlatform
                 ? ContainerPlatform.of(request.containerPlatform)
                 : ContainerPlatform.DEFAULT
