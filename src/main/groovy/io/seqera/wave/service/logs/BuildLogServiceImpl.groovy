@@ -155,8 +155,7 @@ class BuildLogServiceImpl implements BuildLogService {
                 final uploadRequest = UploadRequest.fromBytes(condaLock.bytes, condaLockKey(buildId))
                 objectStorageOperations.upload(uploadRequest)
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.warn "Unable to store condalock for buildId: $buildId  - reason: ${e.message}", e
         }
     }
@@ -186,19 +185,14 @@ class BuildLogServiceImpl implements BuildLogService {
         return result.isPresent() ? result.get().toStreamedFile() : null
     }
 
-    protected static extractCondaLockFile(String logs) {
-        try {
+    protected static String extractCondaLockFile(String logs) {
             int start = logs.lastIndexOf(CONDA_LOCK_START)
             int end = logs.lastIndexOf(CONDA_LOCK_END)
-            if( start > end ) { // when build fails, there will be commands in the logs, so to avoid extracting wrong content
+            if( start >= end ) { // when build fails, there will be commands in the logs, so to avoid extracting wrong content
                 return null
             }
             return logs.substring(start + CONDA_LOCK_START.length(), end)
                     .replaceAll(/#\d+ \d+\.\d+\s*/, '')
-        } catch (Exception e) {
-            log.warn "Unable to extract conda lock file from logs - reason: ${e.message}", e
-            return null
-        }
     }
 
 }
