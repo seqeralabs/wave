@@ -83,6 +83,10 @@ class LocalPersistenceService implements PersistenceService {
         requestStore.get(token)
     }
 
+    @Override
+    boolean existsScanRecord(String scanId) {
+        scanStore.containsKey(scanId)
+    }
 
     @Override
     void saveScanRecord(WaveScanRecord scanRecord) {

@@ -63,6 +63,7 @@ import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.request.ContainerRequestService
 import io.seqera.wave.service.request.TokenData
+import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
@@ -93,6 +94,9 @@ class ContainerControllerTest extends Specification {
 
     @Inject
     RegistryProxyService proxyRegistry
+
+    @Inject
+    ValidationService validationService
 
     @MockBean(JobServiceImpl)
     JobService mockJobService() {
@@ -275,24 +279,31 @@ class ContainerControllerTest extends Specification {
         def controller = new ContainerController(mirrorService: mirrorService, inspectService: inspectService, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
         def user = new PlatformId(new User(id: 100))
         def req = new SubmitContainerTokenRequest(
-                containerImage: 'docker.io/source/image:latest',
+                containerImage: SOURCE,
                 containerPlatform: 'arm64',
-                mirrorRegistry: 'quay.io'
+                buildRepository: BUILD,
+                mirror: true
         )
 
         when:
         def data = controller.makeRequestData(req, user, "")
         then:
-        1 * proxyRegistry.getImageDigest('docker.io/source/image:latest', user) >> 'sha256:12345'
-        1 * proxyRegistry.getImageDigest('quay.io/source/image:latest', user) >> null
+        1 * proxyRegistry.getImageDigest(SOURCE, user) >> 'sha256:12345'
+        1 * proxyRegistry.getImageDigest(TARGET, user) >> null
         and:
         data.identity.userId == 100
-        data.containerImage ==  'quay.io/source/image:latest'
+        data.containerImage ==  TARGET
         data.platform.toString() == 'linux/arm64'
         data.buildId =~ /mr-.+/
         data.buildNew
         !data.freeze
         data.mirror
+
+        where:
+        SOURCE                          | BUILD           | TARGET
+        'docker.io/source/image:latest' | 'quay.io'       | 'quay.io/source/image:latest'
+        'docker.io/source/image:latest' | 'quay.io/lib'   | 'quay.io/lib/source/image:latest'
+        'docker.io/source/image:latest' | 'quay.io/lib/'  | 'quay.io/lib/source/image:latest'
     }
 
     def 'should create build request' () {
@@ -461,82 +472,70 @@ class ContainerControllerTest extends Specification {
 
     def 'should validate mirror request' () {
         given:
-        def validation = new ValidationServiceImpl()
         def pairing = Mock(PairingService)
         def channel = Mock(PairingChannel)
-        def controller = new ContainerController(validationService: validation, pairingService: pairing, pairingChannel: channel)
+        def controller = new ContainerController(validationService: validationService, pairingService: pairing, pairingChannel: channel)
         def err
 
         when:
-        controller.validateMirrorRequest(new SubmitContainerTokenRequest(containerImage: 'foo:latest'), false)
-        then:
-        noExceptionThrown()
-
-        when:
-        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirrorRegistry: 'quay.io'), false)
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirror: true, buildRepository: 'quay.io'), false)
         then:
         err = thrown(BadRequestException)
         err.message == 'Container mirroring requires the use of v2 API'
 
         when:
-        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirrorRegistry: 'quay.io'), true)
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirror: true, buildRepository: 'quay.io'), true)
         then:
         err = thrown(BadRequestException)
-        err.message == 'Attribute `containerImage` is required when specifying `mirrorRegistry`'
+        err.message == 'Attribute `containerImage` is required when specifying `mirror` mode'
 
         when:
-        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirrorRegistry: 'quay.io', containerImage: 'docker.io/foo'), true)
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirror: true, buildRepository: 'quay.io', containerImage: 'docker.io/foo'), true)
         then:
         err = thrown(BadRequestException)
         err.message == 'Container mirroring requires an authenticated request - specify the tower token attribute'
 
         when:
-        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirrorRegistry: 'docker.io', containerImage: 'docker.io/foo', towerAccessToken: 'xyz'), true)
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirror: true, buildRepository: 'docker.io', containerImage: 'docker.io/foo', towerAccessToken: 'xyz'), true)
         then:
         err = thrown(BadRequestException)
-        err.message == "Source and target mirror registry as the same - offending value 'docker.io'"
+        err.message == "Source and target mirror registry are the same - offending value 'docker.io'"
 
         when:
-        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirrorRegistry: 'docker.io', containerImage: 'foo', towerAccessToken: 'xyz'), true)
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirror: true, buildRepository: 'docker.io', containerImage: 'foo', towerAccessToken: 'xyz'), true)
         then:
         err = thrown(BadRequestException)
-        err.message == "Source and target mirror registry as the same - offending value 'docker.io'"
+        err.message == "Source and target mirror registry are the same - offending value 'docker.io'"
 
         when:
-        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirrorRegistry: 'quay.io', containerImage: 'docker.io/foo', towerAccessToken: 'xyz', containerFile: 'content'), true)
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirror: true, buildRepository: 'quay.io', containerImage: 'docker.io/foo', towerAccessToken: 'xyz', containerFile: 'content'), true)
         then:
         err = thrown(BadRequestException)
-        err.message == "Attribute `mirrorRegistry` and `containerFile` conflict each other"
+        err.message == "Attribute `mirror` and `containerFile` conflict each other"
 
         when:
-        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirrorRegistry: 'quay.io', containerImage: 'docker.io/foo', towerAccessToken: 'xyz', freeze: true), true)
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirror: true, buildRepository: 'quay.io', containerImage: 'docker.io/foo', towerAccessToken: 'xyz', freeze: true), true)
         then:
         err = thrown(BadRequestException)
-        err.message == "Attribute `mirrorRegistry` and `freeze` conflict each other"
+        err.message == "Attribute `mirror` and `freeze` conflict each other"
 
         when:
-        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirrorRegistry: 'quay.io', containerImage: 'docker.io/foo', towerAccessToken: 'xyz', containerIncludes: ['include']), true)
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirror: true, buildRepository: 'quay.io', containerImage: 'docker.io/foo', towerAccessToken: 'xyz', containerIncludes: ['include']), true)
         then:
         err = thrown(BadRequestException)
-        err.message == "Attribute `mirrorRegistry` and `containerIncludes` conflict each other"
+        err.message == "Attribute `mirror` and `containerIncludes` conflict each other"
 
         when:
-        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirrorRegistry: 'quay.io', containerImage: 'docker.io/foo', towerAccessToken: 'xyz', containerConfig: new ContainerConfig(entrypoint: ['foo'])), true)
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirror: true, buildRepository: 'quay.io', containerImage: 'docker.io/foo', towerAccessToken: 'xyz', containerConfig: new ContainerConfig(entrypoint: ['foo'])), true)
         then:
         err = thrown(BadRequestException)
-        err.message == "Attribute `mirrorRegistry` and `containerConfig` conflict each other"
+        err.message == "Attribute `mirror` and `containerConfig` conflict each other"
 
         when:
-        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirrorRegistry: 'quay.io/bar', containerImage: 'docker.io/foo', towerAccessToken: 'xyz'), true)
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirror: true, buildRepository: 'community.wave.seqera.io', containerImage: 'docker.io/foo', towerAccessToken: 'xyz'), true)
         then:
         err = thrown(BadRequestException)
-        err.message == "Mirror registry syntax is invalid - offending value: quay.io/bar"
-
-        when:
-        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirrorRegistry: 'community.wave.seqera.io', containerImage: 'docker.io/foo', towerAccessToken: 'xyz'), true)
-        then:
-        err = thrown(BadRequestException)
-        err.message == "Mirror registry not allowed - offending value: community.wave.seqera.io"
+        err.message == "Mirror registry not allowed - offending value 'community.wave.seqera.io'"
     }
 
     def 'should create response with conda packages' () {
@@ -550,7 +549,7 @@ class ContainerControllerTest extends Specification {
         def persistence = Mock(PersistenceService)
         def controller = new ContainerController(freezeService:  freeze, buildService: builder, inspectService: dockerAuth,
                 registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService),
-                addressResolver: addressResolver, containerService: tokenService, persistenceService: persistence, serverUrl: 'http://wave.com')
+                addressResolver: addressResolver, containerService: tokenService, persistenceService: persistence, validationService: validationService, serverUrl: 'http://wave.com')
 
         when:'packages with conda'
         def CHANNELS = ['conda-forge', 'defaults']
@@ -578,7 +577,7 @@ class ContainerControllerTest extends Specification {
 
     def 'should throw BadRequestException when more than one artifact (container image, container file or packages) is provided in the request' () {
         given:
-        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), allowAnonymous: false)
+        def controller = new ContainerController(validationService: validationService, inclusionService: Mock(ContainerInclusionService), allowAnonymous: false)
 
         when: 'container access token is not provided'
         def req = new SubmitContainerTokenRequest(packages: new PackagesSpec())

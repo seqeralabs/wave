@@ -43,7 +43,7 @@ import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.ScanConfig
-import io.seqera.wave.service.mirror.MirrorConfig
+import io.seqera.wave.configuration.MirrorConfig
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
