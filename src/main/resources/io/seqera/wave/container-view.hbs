@@ -138,56 +138,50 @@
         </button>
         <pre id="condaFileData">{{build_conda_file}}</pre>
     </div>
-
-        <table cellpadding="4" >
-            <tr>
-                <td>Build ID</td>
-                {{#if build_url}}
-                <td><a href="{{build_url}}">{{build_id}}</a></td>
-                {{else}}
-                <td>-</td>
-                {{/if}}
-            </tr>
-            <tr>
-                <td>Cached</td>
-                <td>{{build_cached}}</td>
-            </tr>
-            <tr>
-                <td>Freeze mode</td>
-                <td>{{build_freeze}}</td>
-            </tr>
-            <tr>
-                <td>Build repository</td>
-                <td>{{build_repository}}</td>
-            </tr>
-            <tr>
-                <td>Cache repository</td>
-                <td>{{build_cache_repository}}</td>
-            </tr>
-        </table>
     {{/if}}
 
+<table cellpadding="4" >
+    {{#if build_container_file}}
+        <tr>
+            <td>Build ID</td>
+            {{#if build_url}}<td><a href="{{build_url}}">{{build_id}}</a></td>
+            {{else}}<td>-</td>
+            {{/if}}
+        </tr>
+        <tr>
+            <td>Cached</td>
+            <td>{{build_cached}}</td>
+        </tr>
+        <tr>
+            <td>Freeze mode</td>
+            <td>{{build_freeze}}</td>
+        </tr>
+        <tr>
+            <td>Build repository</td>
+            <td>{{build_repository}}</td>
+        </tr>
+        <tr>
+            <td>Cache repository</td>
+            <td>{{build_cache_repository}}</td>
+        </tr>
+    {{/if}}
     {{#if mirror_id }}
-        <table cellpadding="4" >
-            <tr>
-                <td>Mirror ID</td>
-                <td><a href="{{mirror_url}}">{{mirror_id}}</a></td>
-            </tr>
-            <tr>
-                <td>Cached</td>
-                <td>{{mirror_cached}}</td>
-            </tr>
-        </table>
+        <tr>
+            <td>Mirror ID</td>
+            <td><a href="{{mirror_url}}">{{mirror_id}}</a></td>
+        </tr>
+        <tr>
+            <td>Cached</td>
+            <td>{{mirror_cached}}</td>
+        </tr>
     {{/if}}
-
     {{#if scan_id }}
-        <table cellpadding="4" >
-            <tr>
-                <td>Security scan</td>
-                <td><a href="{{scan_url}}">{{scan_id}}</a></td>
-            </tr>
-        </table>
+        <tr>
+            <td>Security scan</td>
+            <td><a href="{{scan_url}}">{{scan_id}}</a></td>
+        </tr>
     {{/if}}
+</table>
 
     <!-- Platform & user info -->
     {{#if tower_user_id}}
