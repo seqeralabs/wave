@@ -154,28 +154,8 @@ class BuildLogsServiceTest extends Specification implements AwsS3TestContainer {
 
     def 'should throw no exception when there is no conda lockfile in logs' (){
         given:
-        def s3Client = S3Client.builder()
-                .endpointOverride(URI.create("http://${awsS3HostName}:${awsS3Port}"))
-                .region(Region.EU_WEST_1)
-                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("accesskey", "secretkey")))
-                .forcePathStyle(true)
-                .build()
-
-
-        def inputStreamMapper = Mock(InputStreamMapper)
-
-        and: "create s3 bucket"
-        def storageBucket = "test-bucket"
-        s3Client.createBucket { it.bucket(storageBucket) }
+        def service = new BuildLogServiceImpl()
         and:
-        def configuration = new AwsS3Configuration('build-logs')
-        configuration.setBucket(storageBucket)
-        and:
-        AwsS3Operations awsS3Operations = new AwsS3Operations(configuration, s3Client, inputStreamMapper)
-        and:
-        def service = new BuildLogServiceImpl(objectStorageOperations: awsS3Operations, condaLockPrefix: "build-logs/conda-lock")
-        and:
-        def buildID = "123"
         def logs = """
                 #9 12.23 logs....
                 #11 12.26 logs....""".stripIndent()
