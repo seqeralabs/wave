@@ -99,12 +99,12 @@ class BuildLogServiceImpl implements BuildLogService {
     @EventListener
     void onBuildEvent(BuildEvent event) {
         if(event.result.logs) {
-            CompletableFuture.supplyAsync(() -> storeLog(event.result.buildId, event.result.logs), ioExecutor)
+            CompletableFuture.supplyAsync(() -> storeLog(event.result.buildId, event.result.logs, event.request.condaFile), ioExecutor)
         }
     }
 
     @Override
-    void storeLog(String buildId, String content){
+    void storeLog(String buildId, String content, String condaFile) {
 
         try {
             final String logs = removeCondaLockFile(content)
@@ -112,7 +112,8 @@ class BuildLogServiceImpl implements BuildLogService {
             final uploadRequest = UploadRequest.fromBytes(logs.bytes, logKey(buildId))
             objectStorageOperations.upload(uploadRequest)
 
-            storeCondaLock(buildId, content)
+            if ( condaFile )
+                storeCondaLock(buildId, content)
         }
         catch (Exception e) {
             log.warn "Unable to store logs for buildId: $buildId  - reason: ${e.message}", e
