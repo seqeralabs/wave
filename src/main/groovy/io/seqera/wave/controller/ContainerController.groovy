@@ -485,6 +485,7 @@ class ContainerController {
                 req.scanMode,
                 req.scanLevels,
                 scanOnRequest,
+                req.dryRun,
                 Instant.now()
         )
     }

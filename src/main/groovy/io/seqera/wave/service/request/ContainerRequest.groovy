@@ -55,7 +55,8 @@ class ContainerRequest {
     String scanId
     ScanMode scanMode
     List<ScanLevel> scanLevels
-    Boolean scanOnRequest
+    boolean scanOnRequest
+    boolean dryRun
     Instant creationTime
 
     boolean durable() {
@@ -129,11 +130,15 @@ class ContainerRequest {
         return creationTime
     }
 
-    Boolean getScanOnRequest() {
-        scanOnRequest
+    boolean getScanOnRequest() {
+        return scanOnRequest
     }
 
-    static  ContainerRequest create(
+    boolean getDryRun() {
+        return dryRun
+    }
+
+    static ContainerRequest create(
             PlatformId identity,
             String containerImage,
             String containerFile,
@@ -147,7 +152,8 @@ class ContainerRequest {
             String scanId,
             ScanMode scanMode,
             List<ScanLevel> scanLevels,
-            Boolean scanOnRequest,
+            boolean scanOnRequest,
+            boolean dryRun,
             Instant creationTime
     )
     {
@@ -167,6 +173,7 @@ class ContainerRequest {
                 scanMode,
                 scanLevels,
                 scanOnRequest,
+                dryRun,
                 creationTime
         )
     }
@@ -191,7 +198,8 @@ class ContainerRequest {
                 data.scanId as String,
                 data.scanMode as ScanMode,
                 data.scanLevels as List<ScanLevel>,
-                data.scanOnRequest as Boolean,
+                data.scanOnRequest as boolean,
+                data.dryRun as boolean,
                 data.creationTime as Instant
         )
     }
