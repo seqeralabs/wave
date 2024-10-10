@@ -231,7 +231,7 @@ class ContainerStatusServiceTest extends Specification {
         requestData.scanMode >> ScanMode.required
         requestData.scanLevels >> List.of()
         and:
-        scanService.getScanState('scan-abc') >> Mock(ScanEntry)
+        service.getScanState('scan-abc') >> Mock(ScanEntry)
         then:
         resp.id == requestId
         resp.status == ContainerStatus.SCANNING
@@ -269,7 +269,7 @@ class ContainerStatusServiceTest extends Specification {
         requestData.scanMode >> ScanMode.required
         requestData.scanLevels >> List.of()
         and:
-        scanService.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>true  }
+        service.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>true  }
         then:
         resp5.id == requestId
         resp5.status == ContainerStatus.DONE
@@ -308,7 +308,7 @@ class ContainerStatusServiceTest extends Specification {
         requestData.scanMode >> ScanMode.required
         requestData.scanLevels >> List.of()
         and:
-        scanService.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>false  }
+        service.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>false  }
         then:
         resp.id == requestId
         resp.status == ContainerStatus.DONE
@@ -347,7 +347,7 @@ class ContainerStatusServiceTest extends Specification {
         requestData.scanMode >> ScanMode.required
         requestData.scanLevels >> List.of()
         and:
-        scanService.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>true; summary()>>[HIGH:1]  }
+        service.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>true; summary()>>[HIGH:1]  }
         then:
         resp.id == requestId
         resp.status == ContainerStatus.DONE
@@ -386,7 +386,7 @@ class ContainerStatusServiceTest extends Specification {
         requestData.scanMode >> ScanMode.required
         requestData.scanLevels >> List.of(ScanLevel.MEDIUM,ScanLevel.HIGH)
         and:
-        scanService.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>true; summary()>>[HIGH:1]  }
+        service.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>true; summary()>>[HIGH:1]  }
         then:
         resp.id == requestId
         resp.status == ContainerStatus.DONE
@@ -424,7 +424,7 @@ class ContainerStatusServiceTest extends Specification {
         requestData.scanMode >> ScanMode.none
         requestData.scanLevels >> List.of(ScanLevel.MEDIUM,ScanLevel.HIGH)
         and:
-        0 * scanService.getScanState('scan-abc') >> null
+        0 * service.getScanState('scan-abc') >> null
         then:
         resp.id == requestId
         resp.status == ContainerStatus.DONE
@@ -463,7 +463,7 @@ class ContainerStatusServiceTest extends Specification {
         requestData.scanMode >> ScanMode.required
         requestData.scanLevels >> List.of()
         and:
-        scanService.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>true; summary()>>[HIGH:1]; getStartTime()>>startTime  }
+        service.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>true; summary()>>[HIGH:1]; getStartTime()>>startTime  }
         then:
         resp.id == requestId
         resp.status == ContainerStatus.DONE
@@ -502,7 +502,7 @@ class ContainerStatusServiceTest extends Specification {
         requestData.scanMode >> ScanMode.required
         requestData.scanLevels >> List.of()
         and:
-        scanService.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>true; summary()>>null; getStartTime()>>startTime  }
+        service.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>true; summary()>>null; getStartTime()>>startTime  }
         then:
         resp.id == requestId
         resp.status == ContainerStatus.DONE
