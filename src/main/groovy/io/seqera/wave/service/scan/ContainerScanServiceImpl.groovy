@@ -124,11 +124,11 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     @Override
     void scanOnRequest(ContainerRequest request) {
         try {
-            if( request.scanId && request.scanOnRequest ) {
+            if( request.scanId && request.scanOnRequest && !request.dryRun ) {
                 log.debug "Container scan required by scanOnRequest=$request"
                 scan(fromContainer(request))
             }
-            else if( request.scanId && request.buildId && request.buildNew==false && !existsScan(request.scanId) ) {
+            else if( request.scanId && request.buildId && request.buildNew==false && !request.dryRun && !existsScan(request.scanId) ) {
                 log.debug "Container scan required by cached request=$request"
                 scan(fromContainer(request))
             }
