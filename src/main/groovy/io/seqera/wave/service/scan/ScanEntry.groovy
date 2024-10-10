@@ -25,6 +25,7 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.seqera.wave.service.job.JobEntry
+import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.store.state.StateEntry
 
 /**
@@ -192,6 +193,22 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 opts.vulnerabilities as List<ScanVulnerability>,
                 opts.exitCode as Integer,
                 opts.logs as String
+        )
+    }
+
+    static ScanEntry of(WaveScanRecord record) {
+        return new ScanEntry(
+                record.id,
+                record.buildId,
+                record.mirrorId,
+                record.requestId,
+                record.containerImage,
+                record.startTime,
+                record.duration,
+                record.status,
+                record.vulnerabilities,
+                record.exitCode,
+                record.logs
         )
     }
 

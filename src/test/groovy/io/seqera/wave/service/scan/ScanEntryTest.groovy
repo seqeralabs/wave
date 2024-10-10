@@ -26,6 +26,8 @@ import java.time.Duration
 import java.time.Instant
 
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.persistence.WaveScanRecord
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -232,5 +234,37 @@ class ScanEntryTest extends Specification {
         def result = entry.summary()
         then:
         result == [low:3, high:1, critical:1]
+    }
+
+    def 'should create entry from record' () {
+        given:
+        def recrd = new WaveScanRecord(
+                '12345',
+                'bd-12345',
+                'mr-12345',
+                'cr-12345',
+                'docker.io/some:image',
+                Instant.now(),
+                Duration.ofMinutes(1),
+                ScanEntry.SUCCEEDED,
+                [new ScanVulnerability('cve-1', 'HIGH', 'test vul', 'testpkg', '1.0.0', '1.1.0', 'http://vul/cve-1')],
+                0,
+                "Some scan logs"
+        )
+
+        when:
+        def entry = ScanEntry.of(recrd)
+        then:
+        entry.scanId == recrd.id
+        entry.buildId == recrd.buildId
+        entry.mirrorId == recrd.mirrorId
+        entry.requestId == recrd.requestId
+        entry.containerImage == recrd.containerImage
+        entry.startTime == recrd.startTime
+        entry.duration == recrd.duration
+        entry.status == recrd.status
+        entry.vulnerabilities == recrd.vulnerabilities
+        entry.exitCode == recrd.exitCode
+        entry.logs == recrd.logs
     }
 }
