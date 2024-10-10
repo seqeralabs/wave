@@ -38,7 +38,8 @@ class RedisCounterProviderTest extends Specification implements RedisTestContain
     def setup() {
         applicationContext = ApplicationContext.run([
                 REDIS_HOST : redisHostName,
-                REDIS_PORT : redisPort
+                REDIS_PORT : redisPort,
+                'redis.key.expiry': '1s'
         ], 'test', 'redis')
         redisCounterProvider = applicationContext.getBean(RedisCounterProvider)
         sleep(500) // workaround to wait for Redis connection
@@ -85,8 +86,22 @@ class RedisCounterProviderTest extends Specification implements RedisTestContain
         then:
         redisCounterProvider.getAllMatchingEntries('metrics/v1', 'pulls/o/*') ==
                 ['pulls/o/abc.in':3, 'pulls/o/bar.es':2, 'pulls/o/foo.it':1, 'pulls/o/abc.com.au/d/2024-05-30':1, 'pulls/o/abc.com.au/d/2024-05-31':1]
-        and:
-        redisCounterProvider.getAllMatchingEntries('metrics/v1', 'pulls/o/*/d/2024-05-30') ==
-                ['pulls/o/abc.com.au/d/2024-05-30':1]
     }
+
+    def 'should expire the hash'(){
+        when:
+        redisCounterProvider.inc('metrics/v1', 'pulls/o/abc.com.au', 1)
+        redisCounterProvider.inc('metrics/v1', 'pulls/o/abc.com.au/d/2024-07-14', 1)
+        sleep(500)
+        redisCounterProvider.inc('metrics/v1', 'pulls/o/abc.com.au/d/2024-07-15', 1)
+        sleep(500)
+        then:'this value should be one, because foo should be expired'
+        redisCounterProvider.get('metrics/v1', 'pulls/o/abc.com.au/d/2024-07-14') == null
+        sleep(500)
+        and:
+        redisCounterProvider.get('metrics/v1', 'pulls/o/abc.com.au/d/2024-07-15') == null
+        and: 'this value should be one, because org metric should not expire'
+        redisCounterProvider.get('metrics/v1', 'pulls/o/abc.com.au') == 1
+    }
+
 }
