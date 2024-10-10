@@ -13,13 +13,6 @@
             font-weight: 200;
             font-style: normal;
         }
-        .monospace {
-            font-family: "Roboto Mono", monospace;
-            font-optical-sizing: auto;
-            font-weight: 400;
-            font-style: normal;
-            font-size: 0.9em;
-        }
         .button {
             color: rgb(207, 34, 46);
             text-align: center;
@@ -71,7 +64,7 @@
         </tr>
         <tr>
             <td>Request container</td>
-            <td class="monospace">{{request_container_image}}</td>
+            <td>{{request_container_image}}</td>
         </tr>
         <tr>
             <td>Platform</td>
@@ -97,20 +90,20 @@
     <table cellpadding="4" >
         <tr>
             <td>Container image</td>
-            <td class="monospace">{{source_container_image}}</td>
+            <td>{{source_container_image}}</td>
         </tr>
         <tr>
             <td>Container digest</td>
-            <td class="monospace">{{source_container_digest}}</td>
+            <td>{{source_container_digest}}</td>
         </tr>
         {{#if wave_container_show }}
         <tr>
             <td>Wave image</td>
-            <td class="monospace">{{wave_container_image}}</td>
+            <td>{{wave_container_image}}</td>
         </tr>
         <tr>
             <td>Wave digest</td>
-            <td class="monospace">{{wave_container_digest}}</td>
+            <td>{{wave_container_digest}}</td>
         </tr>
         {{/if}}
         <tr>
