@@ -19,6 +19,7 @@
 package io.seqera.wave.service.request
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.time.Instant
 
@@ -46,6 +47,7 @@ class ContainerRequestTest extends Specification {
         req.identity == new PlatformId(new User(id:1))
     }
 
+    @Unroll
     def 'should validate constructor' () {
         when:
         def ts = Instant.now()
@@ -59,13 +61,14 @@ class ContainerRequestTest extends Specification {
                 'conda file',
                 ContainerPlatform.DEFAULT,
                 'build-12345',
-                true,
-                true,
-                true,
+                BUILD_NEW,
+                FREEZE,
+                MIRROR,
                 'scan-1234',
                 ScanMode.required,
                 List.of(ScanLevel.HIGH),
-                true,
+                SCAN_ON_REQ,
+                DRY_RUN,
                 ts
         )
         then:
@@ -77,15 +80,24 @@ class ContainerRequestTest extends Specification {
         req.condaFile == 'conda file'
         req.platform == ContainerPlatform.DEFAULT
         req.buildId == 'build-12345'
-        req.buildNew
-        req.freeze
-        req.mirror
+        req.buildNew == BUILD_NEW
+        req.freeze == FREEZE
+        req.mirror == MIRROR
         req.scanId == 'scan-1234'
         req.scanMode == ScanMode.required
         req.scanLevels == List.of(ScanLevel.HIGH)
-        req.scanOnRequest == true
+        req.scanOnRequest == SCAN_ON_REQ
+        req.dryRun == DRY_RUN
         req.creationTime == ts
 
+        where:
+        BUILD_NEW | FREEZE | MIRROR | SCAN_ON_REQ | DRY_RUN
+        false     | false  | false  | false       | false
+        true      | false  | false  | false       | false
+        false     | true   | false  | false       | false
+        false     | false  | true   | false       | false
+        false     | false  | false  | true        | false
+        false     | false  | false  | false       | true
     }
 
     def 'should validate durable flag' () {

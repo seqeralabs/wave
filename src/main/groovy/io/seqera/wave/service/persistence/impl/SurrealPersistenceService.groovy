@@ -259,10 +259,20 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
+    boolean existsScanRecord(String scanId) {
+        final statement = "SELECT count() FROM wave_scan where id == 'wave_scan:⟨$scanId⟩'"
+        final json = surrealDb.sqlAsString(getAuthorization(), statement)
+        final type = new TypeReference<ArrayList<SurrealResult<Map>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result[0].count==1 : false
+        return result
+    }
+
+    @Override
     WaveScanRecord loadScanRecord(String scanId) {
         if( !scanId )
             throw new IllegalArgumentException("Missing 'scanId' argument")
-        final statement = "SELECT * FROM wave_scan:$scanId FETCH vulnerabilities"
+        final statement = "SELECT * FROM wave_scan where id == 'wave_scan:⟨$scanId⟩' FETCH vulnerabilities"
         final json = surrealDb.sqlAsString(getAuthorization(), statement)
         final type = new TypeReference<ArrayList<SurrealResult<WaveScanRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
