@@ -104,7 +104,7 @@ class BuildLogServiceImpl implements BuildLogService {
     }
 
     @Override
-    void storeLog(String buildId, String content, boolean storeCondaLock) {
+    void storeLog(String buildId, String content, boolean condaLock) {
 
         try {
             final String logs = removeCondaLockFile(content)
@@ -112,7 +112,7 @@ class BuildLogServiceImpl implements BuildLogService {
             final uploadRequest = UploadRequest.fromBytes(logs.bytes, logKey(buildId))
             objectStorageOperations.upload(uploadRequest)
 
-            if ( storeCondaLock )
+            if ( condaLock )
                 storeCondaLock(buildId, content)
         }
         catch (Exception e) {

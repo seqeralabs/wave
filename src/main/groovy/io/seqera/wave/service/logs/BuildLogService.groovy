@@ -34,7 +34,7 @@ interface BuildLogService {
         boolean truncated
     }
 
-    void storeLog(String buildId, String log, boolean storeCondaLock)
+    void storeLog(String buildId, String log, boolean condaLock)
 
     StreamedFile fetchLogStream(String buildId)
 
