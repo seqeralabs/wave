@@ -232,7 +232,7 @@ class ViewController {
         binding.tower_endpoint = data.towerEndpoint
 
         binding.build_container_file = data.containerFile
-        binding.build_conda_file = data.condaFile ?: '-'
+        binding.build_conda_file = data.condaFile
         binding.build_repository = data.buildRepository ?: '-'
         binding.build_cache_repository = data.cacheRepository  ?: '-'
         binding.build_id = data.buildId ?: '-'

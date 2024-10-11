@@ -120,27 +120,28 @@
     <!-- build info -->
     {{#if build_container_file}}
         <h3>Container file</h3>
-    <div style="position: relative; margin-bottom: 30px;">
-        <button id="containerFileCopyBtn" class="copy-btn" onclick="copyToClipboard('containerFileData', 'containerFileCopyBtn')" title="Copy">
-            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
-                <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
-            </svg>
-        </button>
-        <pre id="containerFileData">{{build_container_file}}</pre>
-    </div>
-
+        <div style="position: relative; margin-bottom: 30px;">
+            <button id="containerFileCopyBtn" class="copy-btn" onclick="copyToClipboard('containerFileData', 'containerFileCopyBtn')" title="Copy">
+                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
+                </svg>
+            </button>
+            <pre id="containerFileData">{{build_container_file}}</pre>
+        </div>
+    {{/if}}
+    {{#if build_conda_file}}
         <h3>Conda file</h3>
-    <div style="position: relative; margin-bottom: 30px;">
-        <button id="condaFileCopyBtn" class="copy-btn" onclick="copyToClipboard('condaFileData', 'condaFileCopyBtn')" title="Copy">
-            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
-                <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
-            </svg>
-        </button>
-        <pre id="condaFileData">{{build_conda_file}}</pre>
-    </div>
+        <div style="position: relative; margin-bottom: 30px;">
+            <button id="condaFileCopyBtn" class="copy-btn" onclick="copyToClipboard('condaFileData', 'condaFileCopyBtn')" title="Copy">
+                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
+                </svg>
+            </button>
+            <pre id="condaFileData">{{build_conda_file}}</pre>
+        </div>
     {{/if}}
 
-<table cellpadding="4" >
+    <table cellpadding="4" >
     {{#if build_container_file}}
         <tr>
             <td>Build ID</td>
@@ -181,7 +182,7 @@
             <td><a href="{{scan_url}}">{{scan_id}}</a></td>
         </tr>
     {{/if}}
-</table>
+    </table>
 
     <!-- Platform & user info -->
     {{#if tower_user_id}}
