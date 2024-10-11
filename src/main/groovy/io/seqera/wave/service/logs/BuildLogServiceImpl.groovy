@@ -104,15 +104,17 @@ class BuildLogServiceImpl implements BuildLogService {
     }
 
     @Override
-    void storeLog(String buildId, String content){
+    void storeLog(String buildId, String content) {
 
         try {
             final String logs = removeCondaLockFile(content)
             log.debug "Storing logs for buildId: $buildId"
             final uploadRequest = UploadRequest.fromBytes(logs.bytes, logKey(buildId))
             objectStorageOperations.upload(uploadRequest)
-
-            storeCondaLock(buildId, content)
+            // check if needed to store the conda lock
+            final condaLock = content.contains(CONDA_LOCK_START)
+            if ( condaLock )
+                storeCondaLock(buildId, content)
         }
         catch (Exception e) {
             log.warn "Unable to store logs for buildId: $buildId  - reason: ${e.message}", e
@@ -186,19 +188,14 @@ class BuildLogServiceImpl implements BuildLogService {
         return result.isPresent() ? result.get().toStreamedFile() : null
     }
 
-    protected static extractCondaLockFile(String logs) {
-        try {
+    protected static String extractCondaLockFile(String logs) {
             int start = logs.lastIndexOf(CONDA_LOCK_START)
             int end = logs.lastIndexOf(CONDA_LOCK_END)
-            if( start > end ) { // when build fails, there will be commands in the logs, so to avoid extracting wrong content
+            if( start >= end ) { // when build fails, there will be commands in the logs, so to avoid extracting wrong content
                 return null
             }
             return logs.substring(start + CONDA_LOCK_START.length(), end)
                     .replaceAll(/#\d+ \d+\.\d+\s*/, '')
-        } catch (Exception e) {
-            log.warn "Unable to extract conda lock file from logs - reason: ${e.message}", e
-            return null
-        }
     }
 
 }
