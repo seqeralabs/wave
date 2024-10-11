@@ -157,7 +157,8 @@ class BuildLogServiceImpl implements BuildLogService {
                 final uploadRequest = UploadRequest.fromBytes(condaLock.bytes, condaLockKey(buildId))
                 objectStorageOperations.upload(uploadRequest)
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             log.warn "Unable to store condalock for buildId: $buildId  - reason: ${e.message}", e
         }
     }
