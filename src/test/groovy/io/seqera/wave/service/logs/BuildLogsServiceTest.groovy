@@ -152,4 +152,19 @@ class BuildLogsServiceTest extends Specification implements AwsS3TestContainer {
              """.stripIndent()
     }
 
+    def 'should throw no exception when there is no conda lockfile in logs' (){
+        given:
+        def service = new BuildLogServiceImpl()
+        and:
+        def logs = """
+                #9 12.23 logs....
+                #11 12.26 logs....""".stripIndent()
+
+        when:
+        service.extractCondaLockFile(logs)
+
+        then:
+        noExceptionThrown()
+    }
+
 }
