@@ -22,7 +22,6 @@ import java.time.Instant
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
-import groovy.transform.ToString
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ScanLevel
 import io.seqera.wave.api.ScanMode
@@ -37,7 +36,6 @@ import static io.seqera.wave.util.StringUtils.trunc
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Canonical
-@ToString(includePackage = false, includeNames = true)
 @CompileStatic
 class ContainerRequest {
 
@@ -71,7 +69,25 @@ class ContainerRequest {
 
     @Override
     String toString() {
-        return "ContainerRequestData[requestId=${requestId}; identity=${getIdentity()}; containerImage=$containerImage; containerFile=${trunc(containerFile)}; condaFile=${trunc(condaFile)}; containerConfig=${containerConfig}; buildId=${buildId}; scanId=${scanId}; scanMode=${scanMode}]"
+        return "ContainerRequest[" +
+                "requestId=${requestId}; " +
+                "identity=${getIdentity()}; " +
+                "containerImage=$containerImage; " +
+                "containerFile=${trunc(containerFile)}; " +
+                "condaFile=${trunc(condaFile)}; " +
+                "containerConfig=${containerConfig}; " +
+                "platform=${platform}; " +
+                "buildId=${buildId}; " +
+                "buildNew=${buildNew}; " +
+                "freeze=${freeze}; " +
+                "mirror=${mirror}; " +
+                "scanId=${scanId}; " +
+                "scanMode=${scanMode}" +
+                "scanLevels=${scanLevels}" +
+                "scanOnRequest=${scanOnRequest}" +
+                "dryRun=${dryRun}" +
+                "creationTime=${creationTime}" +
+                "]"
     }
 
     String getRequestId() {
@@ -126,10 +142,6 @@ class ContainerRequest {
         return scanLevels
     }
 
-    Instant getCreationTime() {
-        return creationTime
-    }
-
     boolean getScanOnRequest() {
         return scanOnRequest
     }
@@ -137,6 +149,11 @@ class ContainerRequest {
     boolean getDryRun() {
         return dryRun
     }
+
+    Instant getCreationTime() {
+        return creationTime
+    }
+
 
     static ContainerRequest create(
             PlatformId identity,
