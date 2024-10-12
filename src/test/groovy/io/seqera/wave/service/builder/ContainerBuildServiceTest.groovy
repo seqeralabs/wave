@@ -366,7 +366,7 @@ class ContainerBuildServiceTest extends Specification {
         service.onJobCompletion(job, build, state)
 
         then:
-        1 * mockBuildStore.storeBuild('1', _, _)
+        1 * mockBuildStore.storeBuild('1', _)
         and:
         1 * mockProxyService.getImageDigest(_, _) >> 'digest'
         and:
@@ -394,7 +394,7 @@ class ContainerBuildServiceTest extends Specification {
         service.onJobException(job, build, error)
 
         then:
-        1 * mockBuildStore.storeBuild('1', _, _)
+        1 * mockBuildStore.storeBuild('1', _)
         and:
         1 * mockEventPublisher.publishEvent(_)
     }
@@ -419,7 +419,7 @@ class ContainerBuildServiceTest extends Specification {
         service.onJobTimeout(job, build)
 
         then:
-        1 * mockBuildStore.storeBuild('1', _, _)
+        1 * mockBuildStore.storeBuild('1', _)
         and:
         1 * mockEventPublisher.publishEvent(_)
     }

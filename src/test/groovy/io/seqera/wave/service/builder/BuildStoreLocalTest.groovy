@@ -102,7 +102,8 @@ class BuildStoreLocalTest extends Specification {
         given:
         def DURATION = Duration.ofSeconds(2)
         def provider = new LocalStateProvider()
-        def cache = Spy(new BuildStateStoreImpl(provider, buildConfig, ioExecutor)) { getDuration() >> DURATION }
+        def config = new BuildConfig(statusDuration: DURATION)
+        def cache = new BuildStateStoreImpl(provider, config, ioExecutor)
 
         expect:
         cache.getBuild('foo') == null
@@ -118,14 +119,6 @@ class BuildStoreLocalTest extends Specification {
         sleep DURATION.toMillis()
         cache.getBuild('foo') == null
 
-        when:
-        cache.storeBuild('foo', one, Duration.ofSeconds(1))
-        then:
-        sleep 500
-        cache.getBuild('foo') == one
-        and:
-        sleep 1_000
-        cache.getBuild('foo') == null
     }
 
     def 'should store if absent' () {
