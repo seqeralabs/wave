@@ -78,10 +78,19 @@ class BuildStateStoreImpl extends AbstractStateStore<BuildEntry> implements Buil
 
     @Override
     void storeBuild(String imageName, BuildEntry entry) {
-        put(imageName, entry)
+        if( !entry.result )
+            throw new IllegalArgumentException("Missing build entry result - offending value=$entry")
+        // use a short time-to-live for failed build
+        // this is needed to allow re-try builds failed for
+        // temporary error conditions e.g. expired credentials
+        final ttl = entry.result.succeeded()
+                ? buildConfig.statusDuration
+                : buildConfig.failureDuration
+        put(imageName, entry, ttl)
     }
 
     @Override
+    @Deprecated
     void storeBuild(String imageName, BuildEntry entry, Duration ttl) {
         put(imageName, entry, ttl)
     }
