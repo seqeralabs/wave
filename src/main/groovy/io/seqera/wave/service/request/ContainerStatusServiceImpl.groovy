@@ -92,7 +92,7 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
         if( state.running ) {
             return createResponse0(BUILDING, request, state)
         }
-        else if( !request.scanId ) {
+        else if( !request.scanId || !state.succeeded ) {
             return createResponse0(DONE, request, state, buildResult(request,state))
         }
 

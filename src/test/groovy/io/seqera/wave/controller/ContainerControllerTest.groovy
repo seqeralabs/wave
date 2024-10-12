@@ -166,10 +166,11 @@ class ContainerControllerTest extends Specification {
         then:
         1 * freeze.freezeBuildRequest(req, _) >> req.copyWith(containerFile: 'FROM ubuntu:latest')
         1 * controller.makeBuildRequest(_,_,_) >> BUILD
-        1 * controller.checkBuild(BUILD,false) >> new BuildTrack('1', target, false)
+        1 * controller.checkBuild(BUILD,false) >> new BuildTrack('1', target, false, false)
         1 * controller.getContainerDigest(containerImage, PlatformId.NULL) >> 'sha256:12345'
         and:
         data.containerImage == target
+        data.succeeded == false
 
     }
 
@@ -198,13 +199,15 @@ class ContainerControllerTest extends Specification {
         def data = controller.makeRequestData(req, user, "")
         then:
         1 * proxyRegistry.getImageDigest(_) >> null
-        1 * builder.buildImage(_) >> new BuildTrack('1', 'wave/build:be9ee6ac1eeff4b5')
+        1 * builder.buildImage(_) >> new BuildTrack('1', 'wave/build:be9ee6ac1eeff4b5', false, true)
         and:
         data.containerFile == DOCKER
         data.identity.userId == 100
         data.containerImage ==  'wave/build:be9ee6ac1eeff4b5'
         data.containerConfig == cfg
         data.platform.toString() == 'linux/arm64'
+        data.buildNew == true
+        data.succeeded == true
     }
 
     def 'should not run a build request if manifest is present' () {
@@ -553,7 +556,7 @@ class ContainerControllerTest extends Specification {
         def response = controller.handleRequest(null, req, id, true)
 
         then:
-        1 * builder.buildImage(_) >> new BuildTrack('build123', 'oras://docker.io/foo:9b266d5b5c455fe0', true)
+        1 * builder.buildImage(_) >> new BuildTrack('build123', 'oras://docker.io/foo:9b266d5b5c455fe0', true, true)
         and:
         1 * tokenService.computeToken(_) >> new TokenData('wavetoken123', Instant.now().plus(1, ChronoUnit.HOURS))
         and:
@@ -563,6 +566,7 @@ class ContainerControllerTest extends Specification {
             buildId == 'build123'
             containerToken == null
             cached == true
+            succeeded == true
         }
     }
 

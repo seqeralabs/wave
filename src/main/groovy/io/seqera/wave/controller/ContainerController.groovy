@@ -383,13 +383,13 @@ class ContainerController {
             log.debug "== Dry-run build request: $build"
             final dryId = build.containerId +  BuildRequest.SEP + '0'
             final cached = digest!=null
-            return new BuildTrack(dryId, build.targetImage, cached)
+            return new BuildTrack(dryId, build.targetImage, cached, true)
         }
         // check for existing image
         if( digest ) {
             log.debug "== Found cached build for request: $build"
             final cache = persistenceService.loadBuild(build.targetImage, digest)
-            return new BuildTrack(cache?.buildId, build.targetImage, true)
+            return new BuildTrack(cache?.buildId, build.targetImage, true, true)
         }
         else {
             return buildService.buildImage(build)
@@ -425,14 +425,14 @@ class ContainerController {
         if( !digest && req.containerImage )
             throw new BadRequestException("Container image '${req.containerImage}' does not exist or access is not authorized")
 
+        ContainerRequest.Type type
         String targetImage
         String targetContent
         String condaContent
         String buildId
         boolean buildNew
         String scanId
-        Boolean mirrorFlag
-        Boolean scanOnRequest = false
+        Boolean succeeded
         if( req.containerFile ) {
             final build = makeBuildRequest(req, identity, ip)
             final track = checkBuild(build, req.dryRun)
@@ -442,7 +442,8 @@ class ContainerController {
             buildId = track.id
             buildNew = !track.cached
             scanId = build.scanId
-            mirrorFlag = false
+            succeeded = track.succeeded
+            type = ContainerRequest.Type.Build
         }
         else if( req.mirror ) {
             final mirror = makeMirrorRequest(req, identity, digest)
@@ -453,7 +454,8 @@ class ContainerController {
             buildId = track.id
             buildNew = !track.cached
             scanId = mirror.scanId
-            mirrorFlag = true
+            succeeded = track.succeeded
+            type = ContainerRequest.Type.Mirror
         }
         else if( req.containerImage ) {
             // normalize container image
@@ -464,13 +466,15 @@ class ContainerController {
             buildId = null
             buildNew = null
             scanId = scanService?.getScanId(req.containerImage, digest, req.scanMode, req.format)
-            mirrorFlag = null
-            scanOnRequest = true
+            type = ContainerRequest.Type.Container
+            // when there's a scan, return null because the scan status is not known
+            succeeded = scanId==null ? true : null
         }
         else
             throw new IllegalStateException("Specify either 'containerImage' or 'containerFile' attribute")
 
         ContainerRequest.create(
+                type,
                 identity,
                 targetImage,
                 targetContent,
@@ -480,12 +484,11 @@ class ContainerController {
                 buildId,
                 buildNew,
                 req.freeze,
-                mirrorFlag,
                 scanId,
                 req.scanMode,
                 req.scanLevels,
-                scanOnRequest,
                 req.dryRun,
+                succeeded,
                 Instant.now()
         )
     }
@@ -536,13 +539,13 @@ class ContainerController {
         if( dryRun ) {
             log.debug "== Dry-run request request: $request"
             final dryId = request.mirrorId +  BuildRequest.SEP + '0'
-            return new BuildTrack(dryId, request.targetImage, cached)
+            return new BuildTrack(dryId, request.targetImage, cached, true)
         }
         // check for existing image
         if( request.digest==targetDigest ) {
             log.debug "== Found cached request for request: $request"
             final cache = persistenceService.loadMirrorResult(request.targetImage, targetDigest)
-            return new BuildTrack(cache?.mirrorId, request.targetImage, true)
+            return new BuildTrack(cache?.mirrorId, request.targetImage, true, true)
         }
         else {
             return mirrorService.mirrorImage(request)

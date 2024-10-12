@@ -39,6 +39,9 @@ import static io.seqera.wave.util.StringUtils.trunc
 @CompileStatic
 class ContainerRequest {
 
+    enum Type { Container, Build, Mirror }
+
+    Type type
     String requestId
     PlatformId identity
     String containerImage
@@ -49,20 +52,23 @@ class ContainerRequest {
     String buildId
     Boolean buildNew
     Boolean freeze
-    Boolean mirror
     String scanId
     ScanMode scanMode
     List<ScanLevel> scanLevels
-    boolean scanOnRequest
     boolean dryRun
+    Boolean succeeded
     Instant creationTime
 
     boolean durable() {
-        return freeze || mirror
+        return freeze || getMirror()
     }
 
     PlatformId getIdentity() {
         return identity
+    }
+
+    boolean isContainer() {
+        type==Type.Container
     }
 
     ContainerCoordinates coordinates() { ContainerCoordinates.parse(containerImage) }
@@ -70,6 +76,7 @@ class ContainerRequest {
     @Override
     String toString() {
         return "ContainerRequest[" +
+                "type=${type}; " +
                 "requestId=${requestId}; " +
                 "identity=${getIdentity()}; " +
                 "containerImage=$containerImage; " +
@@ -80,14 +87,17 @@ class ContainerRequest {
                 "buildId=${buildId}; " +
                 "buildNew=${buildNew}; " +
                 "freeze=${freeze}; " +
-                "mirror=${mirror}; " +
                 "scanId=${scanId}; " +
-                "scanMode=${scanMode}" +
-                "scanLevels=${scanLevels}" +
-                "scanOnRequest=${scanOnRequest}" +
-                "dryRun=${dryRun}" +
-                "creationTime=${creationTime}" +
+                "scanMode=${scanMode}; " +
+                "scanLevels=${scanLevels}; " +
+                "dryRun=${dryRun}; " +
+                "succeeded=${succeeded}; " +
+                "creationTime=${creationTime}; " +
                 "]"
+    }
+
+    Type getType() {
+        return type
     }
 
     String getRequestId() {
@@ -127,7 +137,7 @@ class ContainerRequest {
     }
 
     Boolean getMirror() {
-        return mirror
+        return type==Type.Mirror
     }
 
     String getScanId() {
@@ -142,20 +152,20 @@ class ContainerRequest {
         return scanLevels
     }
 
-    boolean getScanOnRequest() {
-        return scanOnRequest
-    }
-
     boolean getDryRun() {
         return dryRun
+    }
+
+    Boolean getSucceeded() {
+        return succeeded
     }
 
     Instant getCreationTime() {
         return creationTime
     }
 
-
     static ContainerRequest create(
+            Type type,
             PlatformId identity,
             String containerImage,
             String containerFile,
@@ -165,16 +175,16 @@ class ContainerRequest {
             String buildId,
             Boolean buildNew,
             Boolean freeze,
-            Boolean mirror,
             String scanId,
             ScanMode scanMode,
             List<ScanLevel> scanLevels,
-            boolean scanOnRequest,
             boolean dryRun,
+            Boolean succeeded,
             Instant creationTime
     )
     {
         return new ContainerRequest(
+                type,
                 LongRndKey.rndHex(),
                 identity,
                 containerImage,
@@ -185,22 +195,22 @@ class ContainerRequest {
                 buildId,
                 buildNew,
                 freeze,
-                mirror,
                 scanId,
                 scanMode,
                 scanLevels,
-                scanOnRequest,
                 dryRun,
+                succeeded,
                 creationTime
         )
     }
 
     static ContainerRequest of(PlatformId identity) {
-        new ContainerRequest((String)null, identity)
+        new ContainerRequest(Type.Container, (String)null, identity)
     }
     
     static ContainerRequest of(Map data) {
         new ContainerRequest(
+                data.type as Type,
                 data.requestId as String,
                 data.identity as PlatformId,
                 data.containerImage as String,
@@ -211,12 +221,11 @@ class ContainerRequest {
                 data.buildId as String,
                 (Boolean) data.buildNew,
                 (Boolean) data.freeze,
-                (Boolean) data.mirror,
                 data.scanId as String,
                 data.scanMode as ScanMode,
                 data.scanLevels as List<ScanLevel>,
-                data.scanOnRequest as boolean,
                 data.dryRun as boolean,
+                data.succeeded as Boolean,
                 data.creationTime as Instant
         )
     }

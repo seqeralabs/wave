@@ -64,6 +64,10 @@ class MirrorEntry implements StateEntry<String>, JobEntry, RequestIdAware {
         result?.status==MirrorResult.Status.COMPLETED
     }
 
+    Boolean succeeded() {
+        return done() ? result.succeeded() : null
+    }
+
     /**
      * Create a {@link MirrorEntry} object with the current {@link MirrorRequest} and
      * the specified {@link MirrorResult} object

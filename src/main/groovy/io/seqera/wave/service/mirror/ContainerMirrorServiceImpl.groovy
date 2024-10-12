@@ -71,7 +71,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
         if( store.putIfAbsent(request.targetImage, MirrorEntry.of(request))) {
             log.info "== Container mirror submitted - request=$request"
             jobService.launchMirror(request)
-            return new BuildTrack(request.mirrorId, request.targetImage, false)
+            return new BuildTrack(request.mirrorId, request.targetImage, false, null)
         }
         final ret = store.get(request.targetImage)
         if( ret ) {
@@ -79,7 +79,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
             // note: mark as cached only if the build result is 'done'
             // if the build is still in progress it should be marked as not cached
             // so that the client will wait for the container completion
-            return new BuildTrack(ret.request.mirrorId, ret.request.targetImage, ret.done())
+            return new BuildTrack(ret.request.mirrorId, ret.request.targetImage, ret.done(), ret.succeeded())
         }
         // invalid state
         throw new IllegalStateException("Unable to determine mirror status for '$request.targetImage'")
