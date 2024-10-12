@@ -45,6 +45,10 @@ class MirrorEntry implements StateEntry<String>, JobEntry, RequestIdAware {
         this.result = result
     }
 
+    MirrorRequest getRequest() { request }
+
+    MirrorResult getResult() { result }
+
     @Override
     String getKey() {
         return request.targetImage
