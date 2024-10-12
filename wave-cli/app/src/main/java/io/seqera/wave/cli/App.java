@@ -443,8 +443,8 @@ public class App implements Runnable {
         final Client client = client();
         // submit it
         SubmitContainerTokenResponse resp = client.submit(request);
-        // await build to be completed
-        if( await != null && resp.status!=null && resp.status!=ContainerStatus.DONE ) {
+        // await container request to be completed
+        if( await != null && resp.requestId!=null && resp.succeeded==null ) {
             ContainerStatusResponse status = client.awaitCompletion(resp.requestId, await);
             // print the wave container name
             System.out.println(dumpOutput(new SubmitContainerTokenResponseEx(resp, status)));

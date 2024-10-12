@@ -20,6 +20,7 @@ package io.seqera.wave.cli.model;
 import java.time.Duration;
 import java.util.Map;
 
+import io.seqera.wave.api.ContainerStatus;
 import io.seqera.wave.api.ContainerStatusResponse;
 import io.seqera.wave.api.SubmitContainerTokenResponse;
 
@@ -31,6 +32,11 @@ import io.seqera.wave.api.SubmitContainerTokenResponse;
 public class SubmitContainerTokenResponseEx extends SubmitContainerTokenResponse {
 
     /**
+     * The status of this request
+     */
+    public ContainerStatus status;
+
+    /**
      * The request duration
      */
     public Duration duration;
@@ -39,11 +45,6 @@ public class SubmitContainerTokenResponseEx extends SubmitContainerTokenResponse
      * The found vulnerabilities
      */
     public Map<String,Integer> vulnerabilities;
-
-    /**
-     * Whenever the request is succeeded or not
-     */
-    public Boolean succeeded;
 
     /**
      * Descriptive reason for returned status, used for failures

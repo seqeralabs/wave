@@ -19,7 +19,6 @@ package io.seqera.wave.cli.util
 
 import java.time.Instant
 
-import io.seqera.wave.api.ContainerStatus
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.cli.model.ContainerInspectResponseEx
 import io.seqera.wave.core.spec.ContainerSpec
@@ -44,7 +43,7 @@ class YamlHelperTest extends Specification {
                 freeze: false,
                 mirror: false,
                 scanId: 'scan-123',
-                status: ContainerStatus.BUILDING
+                succeeded: true
         )
 
         when:
@@ -59,7 +58,7 @@ class YamlHelperTest extends Specification {
             freeze: false
             mirror: false
             scanId: scan-123
-            status: BUILDING
+            succeeded: true
             targetImage: docker.io/some/repo
             '''.stripIndent(true)
     }
