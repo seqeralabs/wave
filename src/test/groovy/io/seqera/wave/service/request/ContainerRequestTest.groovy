@@ -30,6 +30,8 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 
+import io.seqera.wave.service.request.ContainerRequest.Type
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -53,6 +55,7 @@ class ContainerRequestTest extends Specification {
         def ts = Instant.now()
         def cfg = Mock(ContainerConfig)
         def req = new ContainerRequest(
+                ContainerRequest.Type.Container,
                 'r-1234',
                 new PlatformId(new User(id:1)),
                 'foo',
@@ -63,15 +66,15 @@ class ContainerRequestTest extends Specification {
                 'build-12345',
                 BUILD_NEW,
                 FREEZE,
-                MIRROR,
                 'scan-1234',
                 ScanMode.required,
                 List.of(ScanLevel.HIGH),
-                SCAN_ON_REQ,
                 DRY_RUN,
+                SUCCEEDED,
                 ts
         )
         then:
+        req.type == ContainerRequest.Type.Container
         req.requestId == 'r-1234'
         req.identity == new PlatformId(new User(id:1))
         req.containerImage == 'foo'
@@ -82,40 +85,62 @@ class ContainerRequestTest extends Specification {
         req.buildId == 'build-12345'
         req.buildNew == BUILD_NEW
         req.freeze == FREEZE
-        req.mirror == MIRROR
         req.scanId == 'scan-1234'
         req.scanMode == ScanMode.required
         req.scanLevels == List.of(ScanLevel.HIGH)
-        req.scanOnRequest == SCAN_ON_REQ
         req.dryRun == DRY_RUN
         req.creationTime == ts
 
         where:
-        BUILD_NEW | FREEZE | MIRROR | SCAN_ON_REQ | DRY_RUN
-        false     | false  | false  | false       | false
-        true      | false  | false  | false       | false
-        false     | true   | false  | false       | false
-        false     | false  | true   | false       | false
-        false     | false  | false  | true        | false
-        false     | false  | false  | false       | true
+        BUILD_NEW | FREEZE | DRY_RUN | SUCCEEDED
+        true      | false  | false   | false
+        false     | true   | false   | false
+        false     | false  | true    | false
+        false     | false  | false   | true
     }
 
+    @Unroll
     def 'should validate durable flag' () {
         given:
         def req = ContainerRequest.of(
                 identity: new PlatformId(new User(id:1)),
                 freeze: FREEZE,
-                mirror: MIRROR )
+                type: TYPE )
 
         expect:
         req.durable() == EXPECTED
 
         where:
-        FREEZE  | MIRROR    | EXPECTED
-        false   | false     | false
-        true    | false     | true
-        false   | true      | true
-        true    | true      | true
+        FREEZE  | TYPE          | EXPECTED
+        false   | Type.Build    | false
+        true    | Type.Build    | true
+        false   | Type.Mirror   | true
+        true    | Type.Mirror   | true
     }
 
+    def 'should validate mirror flag' () {
+        given:
+        def req = ContainerRequest.of(type: TYPE)
+        expect:
+        req.getMirror() == EXPECTED
+
+        where:
+        TYPE            | EXPECTED
+        Type.Container  | false
+        Type.Build      | false
+        Type.Mirror     | true
+    }
+
+    def 'should validate container request flag' () {
+        given:
+        def req = ContainerRequest.of(type: TYPE)
+        expect:
+        req.isContainer() == EXPECTED
+
+        where:
+        TYPE            | EXPECTED
+        Type.Container  | true
+        Type.Build      | false
+        Type.Mirror     | false
+    }
 }

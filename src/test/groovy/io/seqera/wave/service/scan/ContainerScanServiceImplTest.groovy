@@ -358,7 +358,7 @@ class ContainerScanServiceImplTest extends Specification {
         def scanService = Spy(new ContainerScanServiceImpl(inspectService: inspectService, config: config))
         def request = Mock(ContainerRequest)
         request.scanId >> SCAN_ID
-        request.scanOnRequest >> ON_REQUEST
+        request.isContainer() >> CONTAINER
         request.dryRun >> DRY_RUN
         and:
         def scan = Mock(ScanRequest)
@@ -370,9 +370,9 @@ class ContainerScanServiceImplTest extends Specification {
         RUN_TIMES * scanService.scan(scan) >> null
 
         where:
-        SCAN_ID | ON_REQUEST    | DRY_RUN   | RUN_TIMES
-        null    | null          | false     | 0
-        'sc-123'| null          | false     | 0
+        SCAN_ID | CONTAINER     | DRY_RUN   | RUN_TIMES
+        null    | false         | false     | 0
+        'sc-123'| false         | false     | 0
         'sc-123'| true          | false     | 1
         'sc-123'| true          | true      | 0
         null    | true          | false     | 0

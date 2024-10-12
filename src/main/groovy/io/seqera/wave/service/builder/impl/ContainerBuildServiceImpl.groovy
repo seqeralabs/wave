@@ -226,7 +226,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
             // go ahead with the launch
             log.info "== Container build submitted - request=$request"
             launchAsync(request)
-            return new BuildTrack(request.buildId, request.targetImage, false)
+            return new BuildTrack(request.buildId, request.targetImage, false, null)
         }
         // since it was unable to initialise the build result status
         // this means the build status already exists, retrieve it
@@ -236,7 +236,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
             // note: mark as cached only if the build result is 'done'
             // if the build is still in progress it should be marked as not cached
             // so that the client will wait for the container completion
-            return new BuildTrack(ret2.buildId, request.targetImage, ret2.done())
+            return new BuildTrack(ret2.buildId, request.targetImage, ret2.done(), ret2.done() ? ret2.succeeded() : null)
         }
         // invalid state
         throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")

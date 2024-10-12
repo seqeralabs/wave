@@ -207,6 +207,42 @@ class ContainerStatusServiceTest extends Specification {
         resp.detailsUri == "http://foo.com/view/builds/build-123"
     }
 
+    def "should validate status build failed and scan required" () {
+        given:
+        def startTime = Instant.now().minusSeconds(10)
+        def _1min = Duration.ofMinutes(1)
+        def _2min = Duration.ofMinutes(2)
+        def scanService = Mock(ContainerScanService)
+        def store = Mock(ContainerRequestStore)
+        def impl = new ContainerStatusServiceImpl(serverUrl: 'http://foo.com', requestStore: store, scanService:scanService)
+        def service = Spy(impl)
+        def requestId = '123456'
+        def requestData = Mock(ContainerRequest)
+
+        // building failed
+        when:
+        def resp = service.getContainerStatus(requestId)
+        then:
+        store.get(requestId) >> requestData
+        service.getContainerState(requestData) >> new ContainerState(startTime, _1min, false)
+        requestData.requestId >> requestId
+        requestData.buildId >> 'build-123'
+        requestData.scanId >> 'sc-1234'
+        requestData.scanMode >> ScanMode.required
+        and:
+        resp.id == requestId
+        resp.status == ContainerStatus.DONE
+        resp.buildId == "build-123"
+        resp.mirrorId == null
+        resp.scanId == 'sc-1234'
+        resp.creationTime == startTime
+        resp.duration == _1min
+        resp.succeeded == false
+        resp.vulnerabilities == null
+        resp.reason == "Container build did not complete successfully"
+        resp.detailsUri == "http://foo.com/view/builds/build-123"
+    }
+
     def "should validate status for build successful and scan running" () {
         given:
         def startTime = Instant.now().minusSeconds(10)
@@ -245,6 +281,7 @@ class ContainerStatusServiceTest extends Specification {
         resp.reason == null
         resp.detailsUri == null
     }
+
     def "should validate status for build successful and security scan successful" () {
         given:
         def startTime = Instant.now().minusSeconds(10)
@@ -259,7 +296,7 @@ class ContainerStatusServiceTest extends Specification {
 
         // container build is successful, security scan is successful
         when:
-        def resp5 = service.getContainerStatus(requestId)
+        def resp = service.getContainerStatus(requestId)
         then:
         store.get(requestId) >> requestData
         service.getContainerState(requestData) >> new ContainerState(startTime, _1min, true)
@@ -271,17 +308,17 @@ class ContainerStatusServiceTest extends Specification {
         and:
         service.getScanState('scan-abc') >> Mock(ScanEntry) { getDuration()>>_2min; succeeded()>>true  }
         then:
-        resp5.id == requestId
-        resp5.status == ContainerStatus.DONE
-        resp5.buildId == "build-123"
-        resp5.mirrorId == null
-        resp5.scanId == 'scan-abc'
-        resp5.creationTime == startTime
-        resp5.duration == _1min + _2min // build + scan time
-        resp5.succeeded == true
-        resp5.vulnerabilities == null
-        resp5.reason == null
-        resp5.detailsUri == null
+        resp.id == requestId
+        resp.status == ContainerStatus.DONE
+        resp.buildId == "build-123"
+        resp.mirrorId == null
+        resp.scanId == 'scan-abc'
+        resp.creationTime == startTime
+        resp.duration == _1min + _2min // build + scan time
+        resp.succeeded == true
+        resp.vulnerabilities == null
+        resp.reason == null
+        resp.detailsUri == null
     }
 
     def "should validate status for build successful and scan failed" ( ) {
@@ -612,6 +649,43 @@ class ContainerStatusServiceTest extends Specification {
         resp.buildId == null
         resp.mirrorId == "build-123"
         resp.scanId == null
+        resp.creationTime == startTime
+        resp.duration == _1min
+        resp.succeeded == false
+        resp.vulnerabilities == null
+        resp.reason == "Container mirror did not complete successfully"
+        resp.detailsUri == "http://foo.com/view/mirrors/build-123"
+    }
+
+    def "should validate status for mirror failed and scan required" () {
+        given:
+        def startTime = Instant.now().minusSeconds(10)
+        def _1min = Duration.ofMinutes(1)
+        def _2min = Duration.ofMinutes(2)
+        def scanService = Mock(ContainerScanService)
+        def store = Mock(ContainerRequestStore)
+        def impl = new ContainerStatusServiceImpl(serverUrl: 'http://foo.com', requestStore: store, scanService:scanService)
+        def service = Spy(impl)
+        def requestId = '123456'
+        def requestData = Mock(ContainerRequest)
+
+        // building is successful, no scan
+        when:
+        def resp = service.getContainerStatus(requestId)
+        then:
+        store.get(requestId) >> requestData
+        service.getContainerState(requestData) >> new ContainerState(startTime, _1min, false)
+        requestData.requestId >> requestId
+        requestData.buildId >> 'build-123'
+        requestData.scanId >> 'sc-123'
+        requestData.scanMode >> ScanMode.required
+        requestData.mirror >> true
+        and:
+        resp.id == requestId
+        resp.status == ContainerStatus.DONE
+        resp.buildId == null
+        resp.mirrorId == "build-123"
+        resp.scanId == 'sc-123'
         resp.creationTime == startTime
         resp.duration == _1min
         resp.succeeded == false
