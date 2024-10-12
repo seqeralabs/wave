@@ -72,16 +72,16 @@ class BlobStoreImpl extends AbstractStateStore<BlobEntry> implements BlobStateSt
     }
 
     @Override
-    boolean storeIfAbsent(String key, BlobEntry info) {
-        return putIfAbsent(key, info)
+    boolean storeIfAbsent(String key, BlobEntry entry) {
+        return putIfAbsent(key, entry)
     }
 
     @Override
-    void storeBlob(String key, BlobEntry info) {
-        final ttl = info.state == BlobEntry.State.ERRORED
+    void storeBlob(String key, BlobEntry entry) {
+        final ttl = entry.state == BlobEntry.State.ERRORED
                 ? blobConfig.failureDuration
                 : blobConfig.statusDuration
-        put(key, info, ttl)
+        put(key, entry, ttl)
     }
 
 }
