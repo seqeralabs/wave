@@ -62,6 +62,10 @@ class WaveBuildRecord {
         return duration != null ? (exitStatus==0) : null
     }
 
+    Boolean done() {
+        return duration != null
+    }
+
     static WaveBuildRecord fromEntry(BuildEntry entry) {
         create0(entry.request, entry.result)
     }

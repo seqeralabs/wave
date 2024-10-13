@@ -169,10 +169,10 @@ class ViewController {
         // create template binding
         final binding = new HashMap(20)
         binding.build_id = result.buildId
-        binding.build_success = result.succeeded()
-        binding.build_failed = result.exitStatus  && result.exitStatus != 0
-        binding.build_in_progress = result.exitStatus == null
-        binding.build_exit_status = result.exitStatus
+        binding.build_success = result.done() && result.succeeded()
+        binding.build_failed = result.done() && !result.succeeded() 
+        binding.build_in_progress = !result.done()
+        binding.build_exit_status = result.exitStatus != null ? result.exitStatus : '-'
         binding.build_user = (result.userName ?: '-')
         binding.build_time = formatTimestamp(result.startTime, result.offsetId) ?: '-'
         binding.build_duration = formatDuration(result.duration) ?: '-'
