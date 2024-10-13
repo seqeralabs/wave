@@ -122,13 +122,14 @@ interface PersistenceService {
     MirrorResult loadMirrorResult(String mirrorId)
 
     /**
-     * Load a mirror state record given the target image name and the image digest
+     * Load a mirror state record given the target image name and the image digest.
+     * It returns the latest succeed mirror result.
      *
      * @param targetImage The target mirrored image name
      * @param digest The image content SHA256 digest
      * @return The corresponding {@link MirrorEntry} object or null if it cannot be found
      */
-    MirrorResult loadMirrorResult(String targetImage, String digest)
+    MirrorResult loadMirrorSucceeded(String targetImage, String digest)
 
     /**
      * Persists a {@link MirrorEntry} state record

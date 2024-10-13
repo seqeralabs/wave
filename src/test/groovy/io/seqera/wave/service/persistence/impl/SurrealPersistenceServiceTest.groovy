@@ -32,6 +32,7 @@ import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
@@ -378,31 +379,64 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
     void "should save and load a mirror record by target and digest"() {
         given:
+        def digest = 'sha256:12345'
+        def timestamp = Instant.now()
+        def source = 'source.io/foo'
+        def target = 'target.io/foo'
+        and:
         def storage = applicationContext.getBean(SurrealPersistenceService)
         and:
-        def request = MirrorRequest.create(
-                'source.io/foo',
-                'target.io/foo',
-                'sha256:12345',
+        def request1 = MirrorRequest.create(
+                source,
+                target,
+                digest,
                 ContainerPlatform.DEFAULT,
                 Path.of('/workspace'),
                 '{auth json}',
-                'scan-123',
-                Instant.now(),
+                'scan-1',
+                timestamp.minusSeconds(180),
                 "GMT",
-                Mock(PlatformId)
-        )
+                Mock(PlatformId) )
+        and:
+        def request2 = MirrorRequest.create(
+                source,
+                target,
+                digest,
+                ContainerPlatform.DEFAULT,
+                Path.of('/workspace'),
+                '{auth json}',
+                'scan-2',
+                timestamp.minusSeconds(120),
+                "GMT",
+                Mock(PlatformId) )
+        and:
+        def request3 = MirrorRequest.create(
+                source,
+                target,
+                digest,
+                ContainerPlatform.DEFAULT,
+                Path.of('/workspace'),
+                '{auth json}',
+                'scan-3',
+                timestamp.minusSeconds(60),
+                "GMT",
+                Mock(PlatformId) )
+
         and:
         storage.initializeDb()
         and:
-        def result = MirrorEntry.of(request).getResult()
-        storage.saveMirrorResult(result)
+        def result1 = MirrorResult.of(request1).complete(1, 'err')
+        def result2 = MirrorResult.of(request2).complete(0, 'ok')
+        def result3 = MirrorResult.of(request3).complete(0, 'ok')
+        storage.saveMirrorResult(result1)
+        storage.saveMirrorResult(result2)
+        storage.saveMirrorResult(result3)
         sleep 100
 
         when:
-        def stored = storage.loadMirrorResult(request.targetImage, request.digest)
+        def stored = storage.loadMirrorSucceeded(target, digest)
         then:
-        stored == result
+        stored == result3
     }
 
     def 'should remove surreal table from json' () {
