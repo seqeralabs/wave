@@ -98,14 +98,17 @@ class LocalPersistenceService implements PersistenceService {
         scanStore.get(scanId)
     }
 
+    @Override
     MirrorResult loadMirrorResult(String mirrorId) {
         mirrorStore.get(mirrorId)
     }
 
-    MirrorResult loadMirrorResult(String targetImage, String digest) {
-        mirrorStore.values().find( (MirrorResult mirror) ->  mirror.targetImage==targetImage && mirror.digest==digest )
+    @Override
+    MirrorResult loadMirrorSucceeded(String targetImage, String digest) {
+        mirrorStore.values().find( (MirrorResult mirror) ->  mirror.targetImage==targetImage && mirror.digest==digest && mirror.succeeded() )
     }
 
+    @Override
     void saveMirrorResult(MirrorResult mirror) {
         mirrorStore.put(mirror.mirrorId, mirror)
     }

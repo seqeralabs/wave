@@ -298,14 +298,23 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     /**
-     * Load a mirror state record given the target image name and the image digest
+     * Load a mirror state record given the target image name and the image digest.
+     * It returns the latest succeed mirror result.
      *
      * @param targetImage The target mirrored image name
      * @param digest The image content SHA256 digest
      * @return The corresponding {@link MirrorEntry} object or null if it cannot be found
      */
-    MirrorResult loadMirrorResult(String targetImage, String digest) {
-        final query = "select * from wave_mirror where targetImage = '$targetImage' and digest = '$digest'"
+    MirrorResult loadMirrorSucceeded(String targetImage, String digest) {
+        final query = """
+            select * from wave_mirror 
+            where 
+                targetImage = '$targetImage' 
+                and digest = '$digest'
+                and exitCode = 0
+                and status = '${MirrorResult.Status.COMPLETED}'
+            order by creationTime desc limit 1
+            """
         final json = surrealDb.sqlAsString(getAuthorization(), query)
         final type = new TypeReference<ArrayList<SurrealResult<MirrorResult>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null

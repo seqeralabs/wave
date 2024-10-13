@@ -544,7 +544,7 @@ class ContainerController {
         // check for existing image
         if( request.digest==targetDigest ) {
             log.debug "== Found cached request for request: $request"
-            final cache = persistenceService.loadMirrorResult(request.targetImage, targetDigest)
+            final cache = persistenceService.loadMirrorSucceeded(request.targetImage, targetDigest)
             return new BuildTrack(cache?.mirrorId, request.targetImage, true, true)
         }
         else {
