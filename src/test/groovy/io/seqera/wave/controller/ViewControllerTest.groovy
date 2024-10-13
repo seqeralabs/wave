@@ -265,7 +265,7 @@ class ViewControllerTest extends Specification {
                 requestIp: '10.20.30.40',
                 startTime: Instant.now(),
                 offsetId: '+02:00',
-                duration: Duration.ofMinutes(1),
+                duration: null,
                 platform: 'linux/amd64' )
         when:
         def binding = controller.renderBuildView(record)
@@ -278,7 +278,7 @@ class ViewControllerTest extends Specification {
         binding.build_image == 'docker.io/some:image'
         binding.build_user == 'paolo'
         binding.build_platform == 'linux/amd64'
-        binding.build_exit_status == null
+        binding.build_exit_status == '-'
         binding.build_platform == 'linux/amd64'
         binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
@@ -286,9 +286,9 @@ class ViewControllerTest extends Specification {
         binding.build_log_data == 'log content'
         binding.build_log_truncated == false
         binding.build_log_url == 'http://foo.com/v1alpha1/builds/12345/logs'
-        binding.build_success == false
-        binding.build_in_progress == true
-        binding.build_failed == false
+        !binding.build_success
+        binding.build_in_progress
+        !binding.build_failed
     }
 
     def 'should render in progress build page' () {
