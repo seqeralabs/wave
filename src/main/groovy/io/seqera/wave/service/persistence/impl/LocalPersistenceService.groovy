@@ -61,8 +61,8 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
-    WaveBuildRecord loadBuild(String targetImage, String digest) {
-        buildStore.values().find( (build) ->  build.targetImage==targetImage && build.digest==digest )
+    WaveBuildRecord loadBuildSucceed(String targetImage, String digest) {
+        buildStore.values().find( (build) ->  build.targetImage==targetImage && build.digest==digest && build.succeeded() )
     }
 
     @Override
@@ -104,7 +104,7 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
-    MirrorResult loadMirrorSucceeded(String targetImage, String digest) {
+    MirrorResult loadMirrorSucceed(String targetImage, String digest) {
         mirrorStore.values().find( (MirrorResult mirror) ->  mirror.targetImage==targetImage && mirror.digest==digest && mirror.succeeded() )
     }
 

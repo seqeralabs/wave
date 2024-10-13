@@ -170,6 +170,34 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         loaded == record
     }
 
+    def 'should find latest succeed' () {
+        given:
+        def surreal = applicationContext.getBean(SurrealClient)
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def auth = persistence.getAuthorization()
+        def target = 'docker.io/my/target'
+        def digest = 'sha256:12345'
+        and:
+        def request1 = new BuildRequest( targetImage: target, containerId: 'abc', buildId: 'bd-abc_1', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(30), identity: PlatformId.NULL)
+        def request2 = new BuildRequest( targetImage: target, containerId: 'abc', buildId: 'bd-abc_2', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(20), identity: PlatformId.NULL)
+        def request3 = new BuildRequest( targetImage: target, containerId: 'abc', buildId: 'bd-abc_3', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(10), identity: PlatformId.NULL)
+        and:
+        def result1 = new BuildResult(request1.buildId, 1, "err", request1.startTime, Duration.ofSeconds(2), digest)
+        def rec1 = WaveBuildRecord.fromEvent(new BuildEvent(request1, result1))
+        surreal.insertBuild(auth, rec1)
+        and:
+        def result2 = new BuildResult(request2.buildId, 0, "ok", request2.startTime, Duration.ofSeconds(2), digest)
+        def rec2 = WaveBuildRecord.fromEvent(new BuildEvent(request2, result2))
+        surreal.insertBuild(auth, rec2)
+        and:
+        def result3 = new BuildResult(request3.buildId, 0, "ok", request3.startTime, Duration.ofSeconds(2), digest)
+        def rec3 = WaveBuildRecord.fromEvent(new BuildEvent(request3, result3))
+        surreal.insertBuild(auth, rec3)
+
+        expect:
+        persistence.loadBuildSucceed(target, digest) == rec3
+    }
+
     def 'should find latest build' () {
         given:
         def surreal = applicationContext.getBean(SurrealClient)
@@ -434,7 +462,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         sleep 100
 
         when:
-        def stored = storage.loadMirrorSucceeded(target, digest)
+        def stored = storage.loadMirrorSucceed(target, digest)
         then:
         stored == result3
     }

@@ -388,7 +388,7 @@ class ContainerController {
         // check for existing image
         if( digest ) {
             log.debug "== Found cached build for request: $build"
-            final cache = persistenceService.loadBuild(build.targetImage, digest)
+            final cache = persistenceService.loadBuildSucceed(build.targetImage, digest)
             return new BuildTrack(cache?.buildId, build.targetImage, true, true)
         }
         else {
@@ -544,7 +544,7 @@ class ContainerController {
         // check for existing image
         if( request.digest==targetDigest ) {
             log.debug "== Found cached request for request: $request"
-            final cache = persistenceService.loadMirrorSucceeded(request.targetImage, targetDigest)
+            final cache = persistenceService.loadMirrorSucceed(request.targetImage, targetDigest)
             return new BuildTrack(cache?.mirrorId, request.targetImage, true, true)
         }
         else {

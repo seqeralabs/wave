@@ -228,7 +228,7 @@ class ContainerControllerTest extends Specification {
         def data = controller.makeRequestData(req, user, "")
         then:
         1 * proxyRegistry.getImageDigest(_) >> 'abc'
-        1 * persistenceService.loadBuild(_,'abc')
+        1 * persistenceService.loadBuildSucceed(_,'abc')
         0 * builder.buildImage(_) >> null
         and:
         data.containerFile == DOCKER

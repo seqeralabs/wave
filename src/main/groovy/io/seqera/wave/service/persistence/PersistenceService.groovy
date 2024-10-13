@@ -57,7 +57,7 @@ interface PersistenceService {
      * @param digest The container image sha256 checksum
      * @return The corresponding {@link WaveBuildRecord} object or {@code null} if no record is found
      */
-    WaveBuildRecord loadBuild(String targetImage, String digest)
+    WaveBuildRecord loadBuildSucceed(String targetImage, String digest)
 
     /**
      * Retrieve the latest {@link WaveBuildRecord} object for the given container id
@@ -129,7 +129,7 @@ interface PersistenceService {
      * @param digest The image content SHA256 digest
      * @return The corresponding {@link MirrorEntry} object or null if it cannot be found
      */
-    MirrorResult loadMirrorSucceeded(String targetImage, String digest)
+    MirrorResult loadMirrorSucceed(String targetImage, String digest)
 
     /**
      * Persists a {@link MirrorEntry} state record
