@@ -139,9 +139,11 @@ class ContainerHelper {
     static SubmitContainerTokenResponse makeResponseV2(ContainerRequest data, TokenData token, String waveImage) {
         final target = data.durable() ? data.containerImage : waveImage
         final build = data.buildId
-        final Boolean cached = !data.buildNew
+        // cached only applied when there's a buildId (which includes mirror)
+        final Boolean cached = data.buildId ? !data.buildNew : null
         final expiration = !data.durable() ? token.expiration : null
         final tokenId = !data.durable() ? token.value : null
+        // when a scan is requested, succeed is not determined (because it depends on the scan result), therefore return null
         final Boolean succeeded = !data.scanId ? data.succeeded : null
         return new SubmitContainerTokenResponse(data.requestId, tokenId, target, expiration, data.containerImage, build, cached, data.freeze, data.mirror, data.scanId, succeeded)
     }

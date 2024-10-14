@@ -256,7 +256,7 @@ class ContainerHelperTest extends Specification {
         given:
         def data = ContainerRequest.of(
                 containerImage:  'docker.io/some/container',
-                buildId: "build-123",
+                buildId: BUILD_ID,
                 buildNew: NEW_BUILD,
                 freeze: IS_FREEZE,
                 type: TYPE,
@@ -266,7 +266,6 @@ class ContainerHelperTest extends Specification {
         def target = 'wave.com/this/that'
         and:
         def EXPECTED_IMAGE = 'docker.io/some/container'
-        def EXPECTED_BUILD = 'build-123'
         def EXPECTED_SCAN = 'scan-123'
 
         when:
@@ -276,7 +275,7 @@ class ContainerHelperTest extends Specification {
             containerToken == EXPECT_TOKEN
             containerImage == EXPECTED_IMAGE
             targetImage == EXPECT_TARGET
-            buildId == EXPECTED_BUILD
+            buildId == BUILD_ID
             cached == EXPECT_CACHE
             freeze == IS_FREEZE
             mirror == EXPECT_MIRROR
@@ -284,15 +283,19 @@ class ContainerHelperTest extends Specification {
         }
 
         where:
-        TYPE        | NEW_BUILD   | IS_FREEZE | EXPECT_MIRROR | EXPECT_TOKEN   | EXPECT_TARGET             | EXPECT_CACHE
-        Type.Build  | false       | false     | false         | '123abc'       | 'wave.com/this/that'      | true
-        Type.Build  | true        | false     | false         | '123abc'       | 'wave.com/this/that'      | false
+        TYPE            | BUILD_ID    | NEW_BUILD   | IS_FREEZE | EXPECT_MIRROR | EXPECT_TOKEN   | EXPECT_TARGET              | EXPECT_CACHE
+        Type.Build      | 'build-123' | false       | false     | false         | '123abc'       | 'wave.com/this/that'       | true
+        Type.Build      | 'build-123' | true        | false     | false         | '123abc'       | 'wave.com/this/that'       | false
+        Type.Build      | 'build-123' | false       | true      | false         | null           | 'docker.io/some/container' | true
         and:
-        Type.Build  | false       | true      | false         | null           | 'docker.io/some/container'| true
-        Type.Build  | true        | true      | false         | null           | 'docker.io/some/container'| false
+        Type.Build      | 'build-123' | true        | true      | false         | null           | 'docker.io/some/container' | false
         and:
-        Type.Mirror | false       | false     | true          | null           | 'docker.io/some/container'| true
-        Type.Mirror | true        | false     | true          | null           | 'docker.io/some/container'| false
+        Type.Mirror     | 'mr-123'    | false       | false     | true          | null           | 'docker.io/some/container' | true
+        Type.Mirror     | 'mr-123'    | true        | false     | true          | null           | 'docker.io/some/container' | false
+        and:
+        Type.Container  | null        | true        | false     | false         | '123abc'       | 'wave.com/this/that'       | null
+        Type.Container  | 'bd-123'    | true        | false     | false         | '123abc'       | 'wave.com/this/that'       | false
+        Type.Container  | 'bd-123'    | true        | true      | false         | null           | 'docker.io/some/container' | false
     }
 
     def 'should check if is a conda lock file' () {
