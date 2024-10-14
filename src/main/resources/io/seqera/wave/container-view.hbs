@@ -120,78 +120,73 @@
     <!-- build info -->
     {{#if build_container_file}}
         <h3>Container file</h3>
-    <div style="position: relative; margin-bottom: 30px;">
-        <button id="containerFileCopyBtn" class="copy-btn" onclick="copyToClipboard('containerFileData', 'containerFileCopyBtn')" title="Copy">
-            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
-                <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
-            </svg>
-        </button>
-        <pre id="containerFileData">{{build_container_file}}</pre>
-    </div>
-
+        <div style="position: relative; margin-bottom: 30px;">
+            <button id="containerFileCopyBtn" class="copy-btn" onclick="copyToClipboard('containerFileData', 'containerFileCopyBtn')" title="Copy">
+                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
+                </svg>
+            </button>
+            <pre id="containerFileData">{{build_container_file}}</pre>
+        </div>
+    {{/if}}
+    {{#if build_conda_file}}
         <h3>Conda file</h3>
-    <div style="position: relative; margin-bottom: 30px;">
-        <button id="condaFileCopyBtn" class="copy-btn" onclick="copyToClipboard('condaFileData', 'condaFileCopyBtn')" title="Copy">
-            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
-                <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
-            </svg>
-        </button>
-        <pre id="condaFileData">{{build_conda_file}}</pre>
-    </div>
-
-        <table cellpadding="4" >
-            <tr>
-                <td>Build ID</td>
-                {{#if build_url}}
-                <td><a href="{{build_url}}">{{build_id}}</a></td>
-                {{else}}
-                <td>-</td>
-                {{/if}}
-            </tr>
-            <tr>
-                <td>Cached</td>
-                <td>{{build_cached}}</td>
-            </tr>
-            <tr>
-                <td>Freeze mode</td>
-                <td>{{build_freeze}}</td>
-            </tr>
-            <tr>
-                <td>Build repository</td>
-                <td>{{build_repository}}</td>
-            </tr>
-            <tr>
-                <td>Cache repository</td>
-                <td>{{build_cache_repository}}</td>
-            </tr>
-        </table>
+        <div style="position: relative; margin-bottom: 30px;">
+            <button id="condaFileCopyBtn" class="copy-btn" onclick="copyToClipboard('condaFileData', 'condaFileCopyBtn')" title="Copy">
+                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
+                </svg>
+            </button>
+            <pre id="condaFileData">{{build_conda_file}}</pre>
+        </div>
     {{/if}}
 
+    <table cellpadding="4" >
+    {{#if build_container_file}}
+        <tr>
+            <td>Build ID</td>
+            {{#if build_url}}<td><a href="{{build_url}}">{{build_id}}</a></td>
+            {{else}}<td>-</td>
+            {{/if}}
+        </tr>
+        <tr>
+            <td>Cached</td>
+            <td>{{build_cached}}</td>
+        </tr>
+        <tr>
+            <td>Freeze mode</td>
+            <td>{{build_freeze}}</td>
+        </tr>
+        <tr>
+            <td>Build repository</td>
+            <td>{{build_repository}}</td>
+        </tr>
+        <tr>
+            <td>Cache repository</td>
+            <td>{{build_cache_repository}}</td>
+        </tr>
+    {{/if}}
     {{#if mirror_id }}
-        <table cellpadding="4" >
-            <tr>
-                <td>Mirror ID</td>
-                <td><a href="{{mirror_url}}">{{mirror_id}}</a></td>
-            </tr>
-            <tr>
-                <td>Cached</td>
-                <td>{{mirror_cached}}</td>
-            </tr>
-        </table>
+        <tr>
+            <td>Mirror ID</td>
+            <td><a href="{{mirror_url}}">{{mirror_id}}</a></td>
+        </tr>
+        <tr>
+            <td>Cached</td>
+            <td>{{mirror_cached}}</td>
+        </tr>
     {{/if}}
-
     {{#if scan_id }}
-        <table cellpadding="4" >
-            <tr>
-                <td>Security scan</td>
-                <td><a href="{{scan_url}}">{{scan_id}}</a></td>
-            </tr>
-        </table>
+        <tr>
+            <td>Security scan</td>
+            <td><a href="{{scan_url}}">{{scan_id}}</a></td>
+        </tr>
     {{/if}}
+    </table>
 
     <!-- Platform & user info -->
     {{#if tower_user_id}}
-    <h3>Tower &amp; User info</h3>
+    <h3>Platform &amp; User info</h3>
     <table cellpadding="4" >
         <tr>
             <td>User Id</td>

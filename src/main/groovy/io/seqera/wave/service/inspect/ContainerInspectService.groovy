@@ -68,10 +68,13 @@ interface ContainerInspectService {
      *
      * @param containerImage
      *      The container image to be inspect e.g. ubuntu:latest or docker.io/library/ubuntu:22.04
+     * @param arch
+     *      The  CPU arch a.k.a. container platform e.g. {@code linux/amd64}, {@code linux/arm64}, etc
      * @param identity
      *      The platform identity of the user submitting the request
      * @return
      *      The {@link ContainerSpec} object modelling the container image inspect metadata
      */
-    ContainerSpec containerSpec(String containerImage, String platform, PlatformId identity)
+    ContainerSpec containerSpec(String containerImage, String arch, PlatformId identity)
+
 }
