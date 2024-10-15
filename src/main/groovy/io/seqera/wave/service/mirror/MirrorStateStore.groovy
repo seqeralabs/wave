@@ -54,6 +54,18 @@ class MirrorStateStore extends AbstractStateStore<MirrorEntry> {
         return config.statusDuration
     }
 
+    void putEntry(MirrorEntry entry) {
+        if( !entry.result )
+            throw new IllegalArgumentException("Missing mirror entry result - offending value=$entry")
+        // use a short time-to-live for failed build
+        // this is needed to allow re-try builds failed for
+        // temporary error conditions e.g. expired credentials
+        final ttl = entry.result.succeeded()
+                ? config.statusDuration
+                : config.failureDuration
+        put(entry.key, entry, ttl)
+    }
+
     MirrorEntry awaitCompletion(String targetImage) {
         final beg = System.currentTimeMillis()
         while( true ) {

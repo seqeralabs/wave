@@ -77,23 +77,32 @@ class BuildStateStoreImpl extends AbstractStateStore<BuildEntry> implements Buil
     }
 
     @Override
-    void storeBuild(String imageName, BuildEntry buildStoreEntry) {
-        put(imageName, buildStoreEntry)
+    void storeBuild(String imageName, BuildEntry entry) {
+        if( !entry.result )
+            throw new IllegalArgumentException("Missing build entry result - offending value=$entry")
+        // use a short time-to-live for failed build
+        // this is needed to allow re-try builds failed for
+        // temporary error conditions e.g. expired credentials
+        final ttl = entry.result.succeeded()
+                ? buildConfig.statusDuration
+                : buildConfig.failureDuration
+        put(imageName, entry, ttl)
     }
 
     @Override
-    void storeBuild(String imageName, BuildEntry result, Duration ttl) {
-        put(imageName, result, ttl)
+    @Deprecated
+    void storeBuild(String imageName, BuildEntry entry, Duration ttl) {
+        put(imageName, entry, ttl)
     }
 
     @Override
-    boolean storeIfAbsent(String imageName, BuildEntry build) {
-        return putIfAbsent(imageName, build, buildConfig.statusDuration)
+    boolean storeIfAbsent(String imageName, BuildEntry entry) {
+        return putIfAbsent(imageName, entry, buildConfig.statusDuration)
     }
 
     @Override
-    protected CountParams counterKey(String key, BuildEntry build) {
-       new CountParams( "build-counters/v1", build.request.containerId)
+    protected CountParams counterKey(String key, BuildEntry entry) {
+       new CountParams( "build-counters/v1", entry.request.containerId)
     }
 
     @Override
@@ -102,8 +111,8 @@ class BuildStateStoreImpl extends AbstractStateStore<BuildEntry> implements Buil
     }
 
     @Override
-    CountResult<BuildEntry> putIfAbsentAndCount(String imageName, BuildEntry build) {
-        super.putIfAbsentAndCount(imageName, build)
+    CountResult<BuildEntry> putIfAbsentAndCount(String imageName, BuildEntry entry) {
+        super.putIfAbsentAndCount(imageName, entry)
     }
 
     @Override

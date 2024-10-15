@@ -32,6 +32,9 @@ import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.request.TokenData
+
+import io.seqera.wave.service.request.ContainerRequest.Type
+
 /**
  * Container helper methods
  *
@@ -253,43 +256,46 @@ class ContainerHelperTest extends Specification {
         given:
         def data = ContainerRequest.of(
                 containerImage:  'docker.io/some/container',
-                buildId: "build-123",
+                buildId: BUILD_ID,
                 buildNew: NEW_BUILD,
                 freeze: IS_FREEZE,
-                mirror: IS_MIRROR,
-                scanId: "scan-123",
+                type: TYPE,
+                scanId: "scan-123"
         )
         def token = new TokenData('123abc', Instant.now().plusSeconds(100))
         def target = 'wave.com/this/that'
         and:
         def EXPECTED_IMAGE = 'docker.io/some/container'
-        def EXPECTED_BUILD = 'build-123'
         def EXPECTED_SCAN = 'scan-123'
 
         when:
         def result = ContainerHelper.makeResponseV2(data, token, target)
         then:
         verifyAll(result){
-            containerToken == EXPECTED_TOKEN
+            containerToken == EXPECT_TOKEN
             containerImage == EXPECTED_IMAGE
-            targetImage == EXPECTED_TARGET
-            buildId == EXPECTED_BUILD
-            cached == EXPECTED_CACHE
+            targetImage == EXPECT_TARGET
+            buildId == BUILD_ID
+            cached == EXPECT_CACHE
             freeze == IS_FREEZE
-            mirror == IS_MIRROR
+            mirror == EXPECT_MIRROR
             scanId == EXPECTED_SCAN
         }
 
         where:
-        NEW_BUILD   | IS_FREEZE | IS_MIRROR | EXPECTED_TOKEN | EXPECTED_TARGET           | EXPECTED_CACHE
-        false       | false     | false     | '123abc'       | 'wave.com/this/that'      | true
-        true        | false     | false     | '123abc'       | 'wave.com/this/that'      | false
+        TYPE            | BUILD_ID    | NEW_BUILD   | IS_FREEZE | EXPECT_MIRROR | EXPECT_TOKEN   | EXPECT_TARGET              | EXPECT_CACHE
+        Type.Build      | 'build-123' | false       | false     | false         | '123abc'       | 'wave.com/this/that'       | true
+        Type.Build      | 'build-123' | true        | false     | false         | '123abc'       | 'wave.com/this/that'       | false
+        Type.Build      | 'build-123' | false       | true      | false         | null           | 'docker.io/some/container' | true
         and:
-        false       | true      | false     | null           | 'docker.io/some/container'| true
-        true        | true      | false     | null           | 'docker.io/some/container'| false
+        Type.Build      | 'build-123' | true        | true      | false         | null           | 'docker.io/some/container' | false
         and:
-        false       | false     | true      | null           | 'docker.io/some/container'| true
-        true        | false     | true      | null           | 'docker.io/some/container'| false
+        Type.Mirror     | 'mr-123'    | false       | false     | true          | null           | 'docker.io/some/container' | true
+        Type.Mirror     | 'mr-123'    | true        | false     | true          | null           | 'docker.io/some/container' | false
+        and:
+        Type.Container  | null        | true        | false     | false         | '123abc'       | 'wave.com/this/that'       | null
+        Type.Container  | 'bd-123'    | true        | false     | false         | '123abc'       | 'wave.com/this/that'       | false
+        Type.Container  | 'bd-123'    | true        | true      | false         | null           | 'docker.io/some/container' | false
     }
 
     def 'should check if is a conda lock file' () {

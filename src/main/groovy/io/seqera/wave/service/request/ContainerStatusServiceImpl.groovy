@@ -72,6 +72,14 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
     @Value('${wave.server.url}')
     private String serverUrl
 
+    protected ScanEntry getScanState(String scanId) {
+        final entry = scanService.getScanState(scanId)
+        if( entry!=null )
+            return entry
+        final recrd = scanService.getScanRecord(scanId)
+        return recrd!=null ? ScanEntry.of(recrd) : null
+    }
+
     @Override
     ContainerStatusResponse getContainerStatus(String requestId) {
 
@@ -84,12 +92,12 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
         if( state.running ) {
             return createResponse0(BUILDING, request, state)
         }
-        else if( !request.scanId ) {
+        else if( !request.scanId || !state.succeeded ) {
             return createResponse0(DONE, request, state, buildResult(request,state))
         }
 
         if( request.scanId && request.scanMode == ScanMode.required && scanService ) {
-            final scan = scanService.getScanState(request.scanId)
+            final scan = getScanState(request.scanId)
             if ( !scan )
                 throw new NotFoundException("Missing container scan record with id: ${request.scanId}")
             if ( !scan.duration ) {
