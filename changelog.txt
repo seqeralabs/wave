@@ -1,4 +1,7 @@
 # Wave changelog
+1.13.1 - 15 Oct 2024
+- Fix conda lock download [0e86c4a3]
+
 1.13.0 - 14 Oct 2024
 - Add cleanup for timeout jobs [87898328]
 - Add code coverage report to build (#661) [8f3de2a0]
