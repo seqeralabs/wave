@@ -90,6 +90,11 @@ class ContainerAugmenter {
         return this
     }
 
+    ContainerAugmenter withPlatform(ContainerPlatform platform) {
+        this.platform = platform
+        return this
+    }
+
     @Deprecated
     ContainerAugmenter withContainerConfig(ContainerConfig containerConfig) {
         this.containerConfig = containerConfig
@@ -529,7 +534,7 @@ class ContainerAugmenter {
         }
 
         final manifestResult
-                = parseManifest(type, manifestsList,digest)
+                = parseManifest(type, manifestsList, digest)
                 ?: findImageManifestAndDigest(manifestsList, imageName, tag, headers)
 
         // fetch the image config
