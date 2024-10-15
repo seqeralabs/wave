@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.mirror
 
+import io.seqera.wave.configuration.MirrorConfig
+
 import java.time.Duration
 
 import groovy.transform.CompileStatic
@@ -50,6 +52,18 @@ class MirrorStateStore extends AbstractStateStore<MirrorEntry> {
     @Override
     protected Duration getDuration() {
         return config.statusDuration
+    }
+
+    void putEntry(MirrorEntry entry) {
+        if( !entry.result )
+            throw new IllegalArgumentException("Missing mirror entry result - offending value=$entry")
+        // use a short time-to-live for failed build
+        // this is needed to allow re-try builds failed for
+        // temporary error conditions e.g. expired credentials
+        final ttl = entry.result.succeeded()
+                ? config.statusDuration
+                : config.failureDuration
+        put(entry.key, entry, ttl)
     }
 
     MirrorEntry awaitCompletion(String targetImage) {

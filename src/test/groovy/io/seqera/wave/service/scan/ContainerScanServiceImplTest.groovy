@@ -19,6 +19,7 @@
 package io.seqera.wave.service.scan
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -325,7 +326,6 @@ class ContainerScanServiceImplTest extends Specification {
         def timestamp = Instant.now()
         def request = Mock(ContainerRequest)
         request.buildId >> 'bd-1234'
-        request.mirrorId >> 'mr-1234'
         request.requestId >> 'cr-abc123'
         request.scanId >> 'sc-345'
         request.containerImage >> 'docker.io/foo:bar'
@@ -347,6 +347,71 @@ class ContainerScanServiceImplTest extends Specification {
         scan.platform == ContainerPlatform.DEFAULT
         scan.workDir == Path.of('/some/workspace/sc-345')
         scan.creationTime >= timestamp
+    }
+
+    @Unroll
+    def 'should scan on container requests' () {
+        given:
+        def config = Mock(ScanConfig)
+        def inspectService = Mock(ContainerInspectService)
+        and:
+        def scanService = Spy(new ContainerScanServiceImpl(inspectService: inspectService, config: config))
+        def request = Mock(ContainerRequest)
+        request.scanId >> SCAN_ID
+        request.isContainer() >> CONTAINER
+        request.dryRun >> DRY_RUN
+        and:
+        def scan = Mock(ScanRequest)
+
+        when:
+        scanService.scanOnRequest(request)
+        then:
+        RUN_TIMES * scanService.fromContainer(request) >> scan
+        RUN_TIMES * scanService.scan(scan) >> null
+
+        where:
+        SCAN_ID | CONTAINER     | DRY_RUN   | RUN_TIMES
+        null    | false         | false     | 0
+        'sc-123'| false         | false     | 0
+        'sc-123'| true          | false     | 1
+        'sc-123'| true          | true      | 0
+        null    | true          | false     | 0
+
+    }
+
+    @Unroll
+    def 'should scan on cached build requests' () {
+        given:
+        def config = Mock(ScanConfig)
+        def inspectService = Mock(ContainerInspectService)
+        and:
+        def scanService = Spy(new ContainerScanServiceImpl(inspectService: inspectService, config: config))
+        scanService.existsScan(SCAN_ID)  >> EXISTS_SCAN
+        and:
+        def request = Mock(ContainerRequest)
+        request.scanId >> SCAN_ID
+        request.buildId >> BUILD_ID
+        request.buildNew >> BUILD_NEW
+        request.dryRun >> DRY_RUN
+        and:
+        def scan = Mock(ScanRequest)
+
+        when:
+        scanService.scanOnRequest(request)
+        then:
+        RUN_TIMES * scanService.fromContainer(request) >> scan
+        RUN_TIMES * scanService.scan(scan) >> null
+
+        where:
+        SCAN_ID | BUILD_ID  | BUILD_NEW | DRY_RUN   | EXISTS_SCAN   | RUN_TIMES
+        null    | null      | null      | null      | false         | 0
+        'sc-123'| null      | null      | null      | false         | 0
+        and:
+        'sc-123'| 'bd-123'  | null      | null      | false         | 0
+        'sc-123'| 'bd-123'  | true      | null      | false         | 0
+        'sc-123'| 'bd-123'  | false     | null      | false         | 1
+        'sc-123'| 'bd-123'  | false     | null      | true          | 0
+        'sc-123'| 'bd-123'  | false     | true      | false         | 0
     }
 
 }

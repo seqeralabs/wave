@@ -57,7 +57,7 @@ interface PersistenceService {
      * @param digest The container image sha256 checksum
      * @return The corresponding {@link WaveBuildRecord} object or {@code null} if no record is found
      */
-    WaveBuildRecord loadBuild(String targetImage, String digest)
+    WaveBuildRecord loadBuildSucceed(String targetImage, String digest)
 
     /**
      * Retrieve the latest {@link WaveBuildRecord} object for the given container id
@@ -106,6 +106,14 @@ interface PersistenceService {
     WaveScanRecord loadScanRecord(String scanId)
 
     /**
+     * Check if a scan record exist
+     *
+     * @param scanId The Id of the scan to check
+     * @return {@code true} if the scan record with the specified id exists or {@code false} otherwise
+     */
+    boolean existsScanRecord(String scanId)
+
+    /**
      * Load a mirror state record
      *
      * @param mirrorId The ID of the mirror record
@@ -114,13 +122,14 @@ interface PersistenceService {
     MirrorResult loadMirrorResult(String mirrorId)
 
     /**
-     * Load a mirror state record given the target image name and the image digest
+     * Load a mirror state record given the target image name and the image digest.
+     * It returns the latest succeed mirror result.
      *
      * @param targetImage The target mirrored image name
      * @param digest The image content SHA256 digest
      * @return The corresponding {@link MirrorEntry} object or null if it cannot be found
      */
-    MirrorResult loadMirrorResult(String targetImage, String digest)
+    MirrorResult loadMirrorSucceed(String targetImage, String digest)
 
     /**
      * Persists a {@link MirrorEntry} state record

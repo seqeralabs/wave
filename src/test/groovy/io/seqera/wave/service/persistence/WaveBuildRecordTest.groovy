@@ -152,18 +152,19 @@ class WaveBuildRecordTest extends Specification {
         when:
         final build = WaveBuildRecord.fromEvent(event)
         then:
-        build.succeeded() == EXPECET_SUCCEED
+        build.succeeded() == EXPECT_SUCCEED
+        build.done() == EXPECT_DONE
 
         when:
         def resp = build.toStatusResponse()
         then:
-        resp.succeeded == EXPECET_SUCCEED
+        resp.succeeded == EXPECT_SUCCEED
         resp.status == EXPECT_STATUS
         where:
-        EXIT    | DURATION              | EXPECET_SUCCEED  | EXPECT_STATUS
-        null    | null                  | null            | BuildStatusResponse.Status.PENDING
-        0       | null                  | null            | BuildStatusResponse.Status.PENDING
-        1       | Duration.ofSeconds(1) | false            | BuildStatusResponse.Status.COMPLETED
-        0       | Duration.ofSeconds(1) | true             | BuildStatusResponse.Status.COMPLETED
+        EXIT    | DURATION              | EXPECT_SUCCEED   | EXPECT_STATUS                          | EXPECT_DONE
+        null    | null                  | null             | BuildStatusResponse.Status.PENDING     | false
+        0       | null                  | null             | BuildStatusResponse.Status.PENDING     | false
+        1       | Duration.ofSeconds(1) | false            | BuildStatusResponse.Status.COMPLETED   | true
+        0       | Duration.ofSeconds(1) | true             | BuildStatusResponse.Status.COMPLETED   | true
     }
 }

@@ -24,6 +24,8 @@ import spock.lang.Unroll
 import java.time.Duration
 import java.time.Instant
 
+import io.micronaut.context.annotation.Property
+import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
@@ -54,6 +56,7 @@ import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Property(name = 'wave.server.url', value = 'http://foo.com')
 @MicronautTest
 class ViewControllerTest extends Specification {
 
@@ -73,11 +76,14 @@ class ViewControllerTest extends Specification {
     BuildLogService buildLogService
 
     @Inject
-    private ContainerInspectService inspectService
+    ContainerInspectService inspectService
+
+    @Value('${wave.server.url}')
+    String serverUrl
 
     def 'should create build binding' () {
         given:
-        def controller = new ViewController(serverUrl: 'http://foo.com', buildLogService: buildLogService)
+        def controller = new ViewController(serverUrl: serverUrl, buildLogService: buildLogService)
         and:
         def record = new WaveBuildRecord(
                 buildId: '12345',
@@ -103,7 +109,7 @@ class ViewControllerTest extends Specification {
         binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
         binding.build_image == 'docker.io/some:image'
-        binding.build_user == 'paolo (ip: 10.20.30.40)'
+        binding.build_user == 'paolo'
         binding.build_platform == 'linux/amd64'
         binding.build_exit_status == 0
         binding.build_platform == 'linux/amd64'
@@ -145,6 +151,8 @@ class ViewControllerTest extends Specification {
         response.body().contains('FROM docker.io/test:foo')
         and:
         !response.body().contains('Conda file')
+        and:
+        response.body().contains(serverUrl)
     }
 
     def 'should render build page with conda file' () {
@@ -174,6 +182,8 @@ class ViewControllerTest extends Specification {
         and:
         response.body().contains('Conda file')
         response.body().contains('conda::foo')
+        and:
+        response.body().contains(serverUrl)
     }
 
     def 'should render container view page' () {
@@ -208,6 +218,9 @@ class ViewControllerTest extends Specification {
         def response = client.toBlocking().exchange(request, String)
         then:
         response.body().contains(token)
+        response.body().contains(token)
+        and:
+        response.body().contains(serverUrl)
     }
 
     def 'should render inspect view'() {
@@ -234,11 +247,12 @@ class ViewControllerTest extends Specification {
         response.body().contains('latest')
         response.body().contains('https://registry-1.docker.io')
         response.body().contains('arm64')
+        response.body().contains(serverUrl)
     }
 
     def 'should render in progress build page' () {
         given:
-        def controller = new ViewController(serverUrl: 'http://foo.com', buildLogService: buildLogService)
+        def controller = new ViewController(serverUrl: serverUrl, buildLogService: buildLogService)
         and:
         def record = new WaveBuildRecord(
                 buildId: '12345',
@@ -251,7 +265,7 @@ class ViewControllerTest extends Specification {
                 requestIp: '10.20.30.40',
                 startTime: Instant.now(),
                 offsetId: '+02:00',
-                duration: Duration.ofMinutes(1),
+                duration: null,
                 platform: 'linux/amd64' )
         when:
         def binding = controller.renderBuildView(record)
@@ -262,9 +276,9 @@ class ViewControllerTest extends Specification {
         binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
         binding.build_image == 'docker.io/some:image'
-        binding.build_user == 'paolo (ip: 10.20.30.40)'
+        binding.build_user == 'paolo'
         binding.build_platform == 'linux/amd64'
-        binding.build_exit_status == null
+        binding.build_exit_status == '-'
         binding.build_platform == 'linux/amd64'
         binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
@@ -272,14 +286,14 @@ class ViewControllerTest extends Specification {
         binding.build_log_data == 'log content'
         binding.build_log_truncated == false
         binding.build_log_url == 'http://foo.com/v1alpha1/builds/12345/logs'
-        binding.build_success == false
-        binding.build_in_progress == true
-        binding.build_failed == false
+        !binding.build_success
+        binding.build_in_progress
+        !binding.build_failed
     }
 
     def 'should render in progress build page' () {
         given:
-        def controller = new ViewController(serverUrl: 'http://foo.com', buildLogService: buildLogService)
+        def controller = new ViewController(serverUrl: serverUrl, buildLogService: buildLogService)
         and:
         def record = new WaveBuildRecord(
                 buildId: '12345',
@@ -304,7 +318,7 @@ class ViewControllerTest extends Specification {
         binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
         binding.build_image == 'docker.io/some:image'
-        binding.build_user == 'paolo (ip: 10.20.30.40)'
+        binding.build_user == 'paolo'
         binding.build_platform == 'linux/amd64'
         binding.build_exit_status == 1
         binding.build_platform == 'linux/amd64'
@@ -321,7 +335,7 @@ class ViewControllerTest extends Specification {
 
     def 'should create binding' () {
         given:
-        def controller = new ViewController(serverUrl: 'http://foo.com', buildLogService: buildLogService)
+        def controller = new ViewController(serverUrl: serverUrl, buildLogService: buildLogService)
         and:
         def result = new WaveScanRecord(
                 '12345',
@@ -382,6 +396,7 @@ class ViewControllerTest extends Specification {
         response.body().contains(scan.mirrorId)
         response.body().contains(scan.requestId)
         response.body().contains(scan.containerImage)
+        response.body().contains(serverUrl)
     }
 
     def 'should render mirror page' () {
@@ -416,6 +431,7 @@ class ViewControllerTest extends Specification {
         response.body().contains(record1.targetImage)
         response.body().contains(record1.digest)
         response.body().contains(record1.userName)
+        response.body().contains(serverUrl)
     }
 
     @Unroll

@@ -32,6 +32,7 @@ import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
@@ -169,6 +170,34 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         loaded == record
     }
 
+    def 'should find latest succeed' () {
+        given:
+        def surreal = applicationContext.getBean(SurrealClient)
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def auth = persistence.getAuthorization()
+        def target = 'docker.io/my/target'
+        def digest = 'sha256:12345'
+        and:
+        def request1 = new BuildRequest( targetImage: target, containerId: 'abc', buildId: 'bd-abc_1', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(30), identity: PlatformId.NULL)
+        def request2 = new BuildRequest( targetImage: target, containerId: 'abc', buildId: 'bd-abc_2', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(20), identity: PlatformId.NULL)
+        def request3 = new BuildRequest( targetImage: target, containerId: 'abc', buildId: 'bd-abc_3', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(10), identity: PlatformId.NULL)
+        and:
+        def result1 = new BuildResult(request1.buildId, 1, "err", request1.startTime, Duration.ofSeconds(2), digest)
+        def rec1 = WaveBuildRecord.fromEvent(new BuildEvent(request1, result1))
+        surreal.insertBuild(auth, rec1)
+        and:
+        def result2 = new BuildResult(request2.buildId, 0, "ok", request2.startTime, Duration.ofSeconds(2), digest)
+        def rec2 = WaveBuildRecord.fromEvent(new BuildEvent(request2, result2))
+        surreal.insertBuild(auth, rec2)
+        and:
+        def result3 = new BuildResult(request3.buildId, 0, "ok", request3.startTime, Duration.ofSeconds(2), digest)
+        def rec3 = WaveBuildRecord.fromEvent(new BuildEvent(request3, result3))
+        surreal.insertBuild(auth, rec3)
+
+        expect:
+        persistence.loadBuildSucceed(target, digest) == rec3
+    }
+
     def 'should find latest build' () {
         given:
         def surreal = applicationContext.getBean(SurrealClient)
@@ -303,6 +332,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 .sqlAsMap(auth, "select * from wave_scan_vuln")
                 .result
                 .size() == 3
+        and:
+        persistence.existsScanRecord(SCAN_ID)
 
         when:
         def SCAN_ID2 = 'b2'
@@ -320,6 +351,27 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 .sqlAsMap(auth, "select * from wave_scan_vuln")
                 .result
                 .size() == 4
+    }
+
+    def 'should save a scan and check it exists' () {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def auth = persistence.getAuthorization()
+        def surrealDb = applicationContext.getBean(SurrealClient)
+        def NOW = Instant.now()
+        def SCAN_ID = 'a1'
+        def BUILD_ID = '100'
+        def CONTAINER_IMAGE = 'docker.io/my/repo:container1234'
+        def CVE1 = new ScanVulnerability('cve-1', 'x1', 'title1', 'package1', 'version1', 'fixed1', 'url1')
+        def scan = new WaveScanRecord(SCAN_ID, BUILD_ID, null, null, CONTAINER_IMAGE, NOW, Duration.ofSeconds(10), 'SUCCEEDED', [CVE1], null, null)
+
+        expect:
+        !persistence.existsScanRecord(SCAN_ID)
+
+        when:
+        persistence.saveScanRecord(scan)
+        then:
+        persistence.existsScanRecord(SCAN_ID)
     }
 
     //== mirror records tests
@@ -355,31 +407,64 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
     void "should save and load a mirror record by target and digest"() {
         given:
+        def digest = 'sha256:12345'
+        def timestamp = Instant.now()
+        def source = 'source.io/foo'
+        def target = 'target.io/foo'
+        and:
         def storage = applicationContext.getBean(SurrealPersistenceService)
         and:
-        def request = MirrorRequest.create(
-                'source.io/foo',
-                'target.io/foo',
-                'sha256:12345',
+        def request1 = MirrorRequest.create(
+                source,
+                target,
+                digest,
                 ContainerPlatform.DEFAULT,
                 Path.of('/workspace'),
                 '{auth json}',
-                'scan-123',
-                Instant.now(),
+                'scan-1',
+                timestamp.minusSeconds(180),
                 "GMT",
-                Mock(PlatformId)
-        )
+                Mock(PlatformId) )
+        and:
+        def request2 = MirrorRequest.create(
+                source,
+                target,
+                digest,
+                ContainerPlatform.DEFAULT,
+                Path.of('/workspace'),
+                '{auth json}',
+                'scan-2',
+                timestamp.minusSeconds(120),
+                "GMT",
+                Mock(PlatformId) )
+        and:
+        def request3 = MirrorRequest.create(
+                source,
+                target,
+                digest,
+                ContainerPlatform.DEFAULT,
+                Path.of('/workspace'),
+                '{auth json}',
+                'scan-3',
+                timestamp.minusSeconds(60),
+                "GMT",
+                Mock(PlatformId) )
+
         and:
         storage.initializeDb()
         and:
-        def result = MirrorEntry.of(request).getResult()
-        storage.saveMirrorResult(result)
+        def result1 = MirrorResult.of(request1).complete(1, 'err')
+        def result2 = MirrorResult.of(request2).complete(0, 'ok')
+        def result3 = MirrorResult.of(request3).complete(0, 'ok')
+        storage.saveMirrorResult(result1)
+        storage.saveMirrorResult(result2)
+        storage.saveMirrorResult(result3)
         sleep 100
 
         when:
-        def stored = storage.loadMirrorResult(request.targetImage, request.digest)
+        def stored = storage.loadMirrorSucceed(target, digest)
         then:
-        stored == result
+        stored == result3
     }
 
     def 'should remove surreal table from json' () {

@@ -149,8 +149,17 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    WaveBuildRecord loadBuild(String targetImage, String digest) {
-        final query = "select * from wave_build where targetImage = '$targetImage' and digest = '$digest'"
+    WaveBuildRecord loadBuildSucceed(String targetImage, String digest) {
+        final query = """\
+            select * from wave_build 
+            where   
+                targetImage = '$targetImage' 
+                and digest = '$digest'
+                and exitStatus = 0 
+                and duration is not null
+            order by 
+               startTime desc limit 1
+            """.stripIndent()
         final json = surrealDb.sqlAsString(getAuthorization(), query)
         final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
@@ -259,6 +268,16 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
+    boolean existsScanRecord(String scanId) {
+        final statement = "SELECT count() FROM wave_scan where id == 'wave_scan:⟨$scanId⟩'"
+        final json = surrealDb.sqlAsString(getAuthorization(), statement)
+        final type = new TypeReference<ArrayList<SurrealResult<Map>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result[0].count==1 : false
+        return result
+    }
+
+    @Override
     WaveScanRecord loadScanRecord(String scanId) {
         if( !scanId )
             throw new IllegalArgumentException("Missing 'scanId' argument")
@@ -288,14 +307,24 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     /**
-     * Load a mirror state record given the target image name and the image digest
+     * Load a mirror state record given the target image name and the image digest.
+     * It returns the latest succeed mirror result.
      *
      * @param targetImage The target mirrored image name
      * @param digest The image content SHA256 digest
      * @return The corresponding {@link MirrorEntry} object or null if it cannot be found
      */
-    MirrorResult loadMirrorResult(String targetImage, String digest) {
-        final query = "select * from wave_mirror where targetImage = '$targetImage' and digest = '$digest'"
+    MirrorResult loadMirrorSucceed(String targetImage, String digest) {
+        final query = """
+            select * from wave_mirror 
+            where 
+                targetImage = '$targetImage' 
+                and digest = '$digest'
+                and exitCode = 0
+                and status = '${MirrorResult.Status.COMPLETED}'
+            order by 
+                creationTime desc limit 1
+            """
         final json = surrealDb.sqlAsString(getAuthorization(), query)
         final type = new TypeReference<ArrayList<SurrealResult<MirrorResult>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null

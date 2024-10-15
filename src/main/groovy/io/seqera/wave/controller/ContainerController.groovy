@@ -73,6 +73,7 @@ import io.seqera.wave.service.request.ContainerStatusService
 import io.seqera.wave.service.request.TokenData
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.validation.ValidationService
+import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuth
@@ -240,14 +241,14 @@ class ContainerController {
             throw new BadRequestException("Attribute `nameStrategy` is not allowed by legacy container endpoint")
 
         // prevent the use of container file and freeze without a custom build repository
-        if( req.containerFile && req.freeze && !isCustomRepo0(req.buildRepository) && (!v2 || (v2 && !req.packages)))
+        if( req.containerFile && req.freeze && !validationService.isCustomRepo(req.buildRepository) && (!v2 || (v2 && !req.packages)))
             throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode [1]")
 
         // prevent the use of container image and freeze without a custom build repository
-        if( req.containerImage && req.freeze && !isCustomRepo0(req.buildRepository) )
+        if( req.containerImage && req.freeze && !validationService.isCustomRepo(req.buildRepository) )
             throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode [2]")
 
-        if( v2 && req.packages && req.freeze && !isCustomRepo0(req.buildRepository) && !buildConfig.defaultPublicRepository )
+        if( v2 && req.packages && req.freeze && !validationService.isCustomRepo(req.buildRepository) && !buildConfig.defaultPublicRepository )
             throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode [3]")
 
         if( v2 && req.packages ) {
@@ -278,18 +279,6 @@ class ContainerController {
         log.debug "New container request fulfilled - token=$token.value; expiration=$token.expiration; container=$data.containerImage; build=$resp.buildId; identity=$identity"
         // return response
         return HttpResponse.ok(resp)
-    }
-
-    protected boolean isCustomRepo0(String repo) {
-        if( !repo )
-            return false
-        if( buildConfig.defaultPublicRepository && repo.startsWith(buildConfig.defaultPublicRepository) )
-            return false
-        if( buildConfig.defaultBuildRepository && repo.startsWith(buildConfig.defaultBuildRepository) )
-            return false
-        if( buildConfig.defaultCacheRepository && repo.startsWith(buildConfig.defaultCacheRepository) )
-            return false
-        return true
     }
 
     protected void storeContainerRequest0(SubmitContainerTokenRequest req, ContainerRequest data, TokenData token, String target, String ip) {
@@ -394,13 +383,13 @@ class ContainerController {
             log.debug "== Dry-run build request: $build"
             final dryId = build.containerId +  BuildRequest.SEP + '0'
             final cached = digest!=null
-            return new BuildTrack(dryId, build.targetImage, cached)
+            return new BuildTrack(dryId, build.targetImage, cached, true)
         }
         // check for existing image
         if( digest ) {
             log.debug "== Found cached build for request: $build"
-            final cache = persistenceService.loadBuild(build.targetImage, digest)
-            return new BuildTrack(cache?.buildId, build.targetImage, true)
+            final cache = persistenceService.loadBuildSucceed(build.targetImage, digest)
+            return new BuildTrack(cache?.buildId, build.targetImage, true, true)
         }
         else {
             return buildService.buildImage(build)
@@ -436,14 +425,14 @@ class ContainerController {
         if( !digest && req.containerImage )
             throw new BadRequestException("Container image '${req.containerImage}' does not exist or access is not authorized")
 
+        ContainerRequest.Type type
         String targetImage
         String targetContent
         String condaContent
         String buildId
         boolean buildNew
         String scanId
-        Boolean mirrorFlag
-        Boolean scanOnRequest = false
+        Boolean succeeded
         if( req.containerFile ) {
             final build = makeBuildRequest(req, identity, ip)
             final track = checkBuild(build, req.dryRun)
@@ -453,9 +442,10 @@ class ContainerController {
             buildId = track.id
             buildNew = !track.cached
             scanId = build.scanId
-            mirrorFlag = false
+            succeeded = track.succeeded
+            type = ContainerRequest.Type.Build
         }
-        else if( req.mirrorRegistry ) {
+        else if( req.mirror ) {
             final mirror = makeMirrorRequest(req, identity, digest)
             final track = checkMirror(mirror, identity, req.dryRun)
             targetImage = track.targetImage
@@ -464,7 +454,8 @@ class ContainerController {
             buildId = track.id
             buildNew = !track.cached
             scanId = mirror.scanId
-            mirrorFlag = true
+            succeeded = track.succeeded
+            type = ContainerRequest.Type.Mirror
         }
         else if( req.containerImage ) {
             // normalize container image
@@ -475,13 +466,15 @@ class ContainerController {
             buildId = null
             buildNew = null
             scanId = scanService?.getScanId(req.containerImage, digest, req.scanMode, req.format)
-            mirrorFlag = null
-            scanOnRequest = true
+            type = ContainerRequest.Type.Container
+            // when there's a scan, return null because the scan status is not known
+            succeeded = scanId==null ? true : null
         }
         else
             throw new IllegalStateException("Specify either 'containerImage' or 'containerFile' attribute")
 
         ContainerRequest.create(
+                type,
                 identity,
                 targetImage,
                 targetContent,
@@ -491,21 +484,32 @@ class ContainerController {
                 buildId,
                 buildNew,
                 req.freeze,
-                mirrorFlag,
                 scanId,
                 req.scanMode,
                 req.scanLevels,
-                scanOnRequest,
+                req.dryRun,
+                succeeded,
                 Instant.now()
         )
     }
 
     protected MirrorRequest makeMirrorRequest(SubmitContainerTokenRequest request, PlatformId identity, String digest) {
         final coords = ContainerCoordinates.parse(request.containerImage)
-        if( coords.registry == request.mirrorRegistry )
-            throw new BadRequestException("Source and target mirror registry as the same - offending value '${request.mirrorRegistry}'")
-        final targetImage = request.mirrorRegistry + '/' + coords.imageAndTag
-        final configJson = inspectService.credentialsConfigJson(null, request.containerImage, targetImage, identity)
+        final target = ContainerCoordinates.parse(request.buildRepository)
+        if( !coords.imageAndTag )
+            throw new BadRequestException("Missing mirror source image - offending value '${request.containerImage}'")
+        if( !target.registry )
+            throw new BadRequestException("Missing mirror target registry - offending value '${request.buildRepository}'")
+        if( coords.registry == target.registry )
+            throw new BadRequestException("Source and target mirror registries are the same - offending value '${request.buildRepository}'")
+        final targetImage = target.repository
+                ? target.repository + '/' + coords.imageAndTag
+                : target.registry + '/' + coords.imageAndTag
+        // note: sourceImage is specified is provided via a dummy from-only dockerfile
+        // in order to bypass the strict credentials check made on the build and cache repo
+        // in fact, the absence of creds in the docker file is tolerated because it may be a
+        // public accessible repo. With build and cache repo, the creds needs to be available
+        final configJson = inspectService.credentialsConfigJson("FROM ${request.containerImage}", targetImage, null, identity)
         final platform = request.containerPlatform
                 ? ContainerPlatform.of(request.containerPlatform)
                 : ContainerPlatform.DEFAULT
@@ -535,13 +539,13 @@ class ContainerController {
         if( dryRun ) {
             log.debug "== Dry-run request request: $request"
             final dryId = request.mirrorId +  BuildRequest.SEP + '0'
-            return new BuildTrack(dryId, request.targetImage, cached)
+            return new BuildTrack(dryId, request.targetImage, cached, true)
         }
         // check for existing image
         if( request.digest==targetDigest ) {
             log.debug "== Found cached request for request: $request"
-            final cache = persistenceService.loadMirrorResult(request.targetImage, targetDigest)
-            return new BuildTrack(cache?.mirrorId, request.targetImage, true)
+            final cache = persistenceService.loadMirrorSucceed(request.targetImage, targetDigest)
+            return new BuildTrack(cache?.mirrorId, request.targetImage, true, true)
         }
         else {
             return mirrorService.mirrorImage(request)
@@ -582,41 +586,45 @@ class ContainerController {
         // check valid image name
         msg = validationService.checkContainerName(req.containerImage)
         if( msg ) throw new BadRequestException(msg)
+        // stop here for mirror request
+        if( req.mirror )
+            return
         // check build repo
-        msg = validationService.checkBuildRepository(req.buildRepository, false)
+        if( !req.mirror )
+            msg = validationService.checkBuildRepository(req.buildRepository, ValidationServiceImpl.RepoType.Build)
         if( msg ) throw new BadRequestException(msg)
         // check cache repository
-        msg = validationService.checkBuildRepository(req.cacheRepository, true)
+        msg = validationService.checkBuildRepository(req.cacheRepository, ValidationServiceImpl.RepoType.Cache)
         if( msg ) throw new BadRequestException(msg)
     }
 
     void validateMirrorRequest(SubmitContainerTokenRequest req, boolean v2) throws BadRequestException {
-        if( !req.mirrorRegistry )
+        if( !req.mirror )
             return
         // container mirror validation
         if( !v2 )
             throw new BadRequestException("Container mirroring requires the use of v2 API")
         if( !req.containerImage )
-            throw new BadRequestException("Attribute `containerImage` is required when specifying `mirrorRegistry`")
+            throw new BadRequestException("Attribute `containerImage` is required when specifying `mirror` mode")
         if( !req.towerAccessToken )
             throw new BadRequestException("Container mirroring requires an authenticated request - specify the tower token attribute")
         if( req.freeze )
-            throw new BadRequestException("Attribute `mirrorRegistry` and `freeze` conflict each other")
+            throw new BadRequestException("Attribute `mirror` and `freeze` conflict each other")
         if( req.containerFile )
-            throw new BadRequestException("Attribute `mirrorRegistry` and `containerFile` conflict each other")
+            throw new BadRequestException("Attribute `mirror` and `containerFile` conflict each other")
         if( req.containerIncludes )
-            throw new BadRequestException("Attribute `mirrorRegistry` and `containerIncludes` conflict each other")
+            throw new BadRequestException("Attribute `mirror` and `containerIncludes` conflict each other")
         if( req.containerConfig )
-            throw new BadRequestException("Attribute `mirrorRegistry` and `containerConfig` conflict each other")
+            throw new BadRequestException("Attribute `mirror` and `containerConfig` conflict each other")
+        if( !req.buildRepository )
+            throw new BadRequestException("Attribute `buildRepository` is required when specifying `mirror` mode")
         final coords = ContainerCoordinates.parse(req.containerImage)
-        if( coords.registry == req.mirrorRegistry )
-            throw new BadRequestException("Source and target mirror registry as the same - offending value '${req.mirrorRegistry}'")
-        def msg = validationService.checkMirrorRegistry(req.mirrorRegistry)
+        final target = ContainerCoordinates.parse(req.buildRepository)
+        if( coords.registry == target.registry )
+            throw new BadRequestException("Source and target mirror registry are the same - offending value '${req.buildRepository}'")
+        def msg = validationService.checkBuildRepository(req.buildRepository, ValidationServiceImpl.RepoType.Mirror)
         if( msg )
             throw new BadRequestException(msg)
-        if( !isCustomRepo0(req.mirrorRegistry) ) {
-            throw new BadRequestException("Not allowed mirror registry - offending value '${req.mirrorRegistry}'")
-        }
     }
 
     @Error(exception = AuthorizationException.class)

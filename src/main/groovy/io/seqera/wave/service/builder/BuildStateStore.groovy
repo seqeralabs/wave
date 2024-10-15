@@ -67,6 +67,7 @@ interface BuildStateStore {
      * @param result The {@link BuildEntry} object associated to the image name
      * @param ttl The {@link Duration} after which the entry is expired
      */
+    @Deprecated
     void storeBuild(String imageName, BuildEntry result, Duration ttl)
 
     /**

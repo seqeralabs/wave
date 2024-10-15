@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.mirror
+package io.seqera.wave.configuration
 
 import java.time.Duration
 
@@ -41,6 +41,9 @@ class MirrorConfig {
 
     @Value('${wave.mirror.status.duration:1h}')
     Duration statusDuration
+
+    @Value('${wave.mirror.failure.duration:50s}')
+    Duration failureDuration
 
     @Value('${wave.mirror.skopeoImage:`quay.io/skopeo/stable`}')
     String skopeoImage

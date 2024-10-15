@@ -124,12 +124,16 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     @Override
     void scanOnRequest(ContainerRequest request) {
         try {
-            if( request.scanId && request.scanOnRequest ) {
+            if( request.scanId && request.isContainer() && !request.dryRun ) {
                 log.debug "Container scan required by scanOnRequest=$request"
                 scan(fromContainer(request))
             }
+            else if( request.scanId && !request.isContainer() && request.buildNew==false && !request.dryRun && !existsScan(request.scanId) ) {
+                log.debug "Container scan required by cached request=$request"
+                scan(fromContainer(request))
+            }
             else {
-                log.trace "Container scan NOT required by scanOnRequest=$request"
+                log.debug "Container scan NOT required by scanOnRequest=$request"
             }
         }
         catch (Exception e) {
@@ -147,6 +151,10 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     @Override
     ScanEntry getScanState(String scanId) {
         return scanStore.get(scanId)
+    }
+
+    boolean existsScan(String scanId) {
+        return scanStore.get(scanId) ?: persistenceService.existsScanRecord(scanId)
     }
 
     @Override

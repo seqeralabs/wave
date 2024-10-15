@@ -20,7 +20,11 @@ package io.seqera.wave.service.mirror
 
 import spock.lang.Specification
 
+import java.time.Duration
+
+import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.configuration.MirrorConfig
 import jakarta.inject.Inject
 /**
  *
@@ -32,6 +36,14 @@ class MirrorStateStoreTest extends Specification {
     @Inject
     MirrorStateStore store
 
+    @MockBean(MirrorConfig)
+    MirrorConfig mockConfig() {
+        Mock(MirrorConfig)
+    }
+
+    @Inject
+    MirrorConfig config
+
     def 'should return entry key' () {
         expect:
         store.key0('foo') == 'wave-mirror/v1:foo'
@@ -42,4 +54,32 @@ class MirrorStateStoreTest extends Specification {
         store.requestId0('foo') == 'wave-mirror/v1/request-id:foo'
     }
 
+    def 'should put entry' () {
+        given:
+        def entry = Mock(MirrorEntry)
+
+        when:
+        store.putEntry(entry)
+        then:
+        entry.key >> 'one'
+        entry.requestId >> '123'
+        entry.result >> Mock(MirrorResult) {  succeeded()>>true }
+        and:
+        1 * config.statusDuration >> Duration.ofSeconds(1)
+        0 * config.failureDuration >> null
+        and:
+        store.get('one')
+
+        when:
+        store.putEntry(entry)
+        then:
+        entry.key >> 'two'
+        entry.requestId >> '123'
+        entry.result >> Mock(MirrorResult) {  succeeded()>>false }
+        and:
+        0 * config.statusDuration >> null
+        1 * config.failureDuration >>  Duration.ofSeconds(1)
+        and:
+        store.get('two')
+    }
 }
