@@ -77,67 +77,72 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
     void 'test valid login'() {
         given:
 
-        String uri = getTestRegistryUrl(REGISTRY_URL)
+        String registry = getTestRegistryName(REGISTRY)
 
         when:
-        boolean logged = loginService.login(uri, USER, PWD)
+        boolean logged = loginService.login(registry, USER, PWD)
 
         then:
         logged == VALID
 
         where:
-        USER           | PWD            | REGISTRY_URL                   | VALID
-        'test'         | 'test'         | 'localhost'                    | true
-        'nope'         | 'yepes'        | 'localhost'                    | false
-        dockerUsername | dockerPassword | "https://registry-1.docker.io" | true
-        'nope'         | 'yepes'        | "https://registry-1.docker.io" | false
-        quayUsername   | quayPassword   | "https://quay.io"              | true
-        'nope'         | 'yepes'        | "https://quay.io"              | false
+        USER           | PWD            | REGISTRY          | VALID
+        'test'         | 'test'         | 'localhost'       | true
+        'nope'         | 'yepes'        | 'localhost'       | false
+        dockerUsername | dockerPassword | "docker.io"       | true
+        'nope'         | 'yepes'        | "docker.io"       | false
+        quayUsername   | quayPassword   | "quay.io"         | true
+        'nope'         | 'yepes'        | "quay.io"         | false
     }
 
     @IgnoreIf({!System.getenv('AZURECR_USER')})
     void 'test valid azure login'() {
         given:
-        def REGISTRY_URL = 'seqeralabs.azurecr.io'
+        def registry = 'seqeralabs.azurecr.io'
 
         expect:
-        loginService.login(REGISTRY_URL, azureUsername, azurePassword)
+        loginService.login(registry, azureUsername, azurePassword)
     }
 
     @IgnoreIf({!System.getenv('AWS_ACCESS_KEY_ID')})
     void 'test valid aws ecr private'() {
         given:
-        String REGISTRY_URL = '195996028523.dkr.ecr.eu-west-1.amazonaws.com'
+        String registry = '195996028523.dkr.ecr.eu-west-1.amazonaws.com'
         expect:
-        loginService.login(REGISTRY_URL, awsEcrUsername, awsEcrPassword)
+        loginService.login(registry, awsEcrUsername, awsEcrPassword)
     }
 
     @IgnoreIf({!System.getenv('AWS_ACCESS_KEY_ID')})
     void 'test valid aws ecr public'() {
         given:
-        String REGISTRY_URL = 'public.ecr.aws'
+        String registry = 'public.ecr.aws'
         expect:
-        loginService.login(REGISTRY_URL, awsEcrUsername, awsEcrPassword)
+        loginService.login(registry, awsEcrUsername, awsEcrPassword)
     }
     
     void 'test containerService valid login'() {
         given:
-        String uri = getTestRegistryUrl(REGISTRY_URL)
+        String registry = getTestRegistryName(REGISTRY)
 
         when:
-        boolean logged = loginService.validateUser(uri, USER, PWD)
+        boolean logged = loginService.validateUser(registry, USER, PWD)
 
         then:
         logged == VALID
 
         where:
-        USER           | PWD            | REGISTRY_URL                   | VALID
-        'test'         | 'test'         | 'localhost'                    | true
-        'nope'         | 'yepes'        | 'localhost'                    | false
-        dockerUsername | dockerPassword | "https://registry-1.docker.io" | true
-        'nope'         | 'yepes'        | "https://registry-1.docker.io" | false
-        quayUsername   | quayPassword   | "https://quay.io"              | true
-        'nope'         | 'yepes'        | "https://quay.io"              | false
+        USER           | PWD            | REGISTRY                              | VALID
+        'test'         | 'test'         | 'localhost'                           | true
+        'nope'         | 'yepes'        | 'localhost'                           | false
+        dockerUsername | dockerPassword | "docker.io"                           | true
+        'nope'         | 'yepes'        | "docker.io"                           | false
+        quayUsername   | quayPassword   | "quay.io"                             | true
+        'nope'         | 'yepes'        | "quay.io"                             | false
+        and:
+        dockerUsername | dockerPassword | "docker.io/pditommaso/wave-tests"     | true
+        dockerUsername | dockerPassword | "docker.io/pditommaso"                | true
+        // the following should fail
+        //dockerUsername | dockerPassword | "registry-1.docker.io/unknown/repo"           | false
     }
 
     @Ignore
@@ -199,7 +204,7 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
         def c5 = new RegistryAuthServiceImpl.CacheKey(i1, a1, k3)
 
         expect:
-        c1.stableKey() == '23476a51c7b6216a'
+        c1.stableKey() == 'c234dc4c210c6612'
         c1.stableKey() == c2.stableKey()
         c1.stableKey() == c3.stableKey()
         and:

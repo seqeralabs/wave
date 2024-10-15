@@ -25,6 +25,7 @@ import io.micronaut.http.annotation.Post
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.auth.RegistryAuthService
+import io.seqera.wave.exchange.ValidateRegistryCredsRequest
 import jakarta.inject.Inject
 import reactor.core.publisher.Mono
 
