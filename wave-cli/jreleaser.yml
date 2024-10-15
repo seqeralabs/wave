@@ -109,7 +109,6 @@ distributions:
 
 packagers:
   brew:
-    active: ALWAYS
     continueOnError: false
     multiPlatform: true
     repository:

@@ -143,11 +143,23 @@ jobs:
           echo "VERSION=$VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
+      - name: Enable Homebrew for final release
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Homebrew release enabled."
+            echo "JRELEASER_PACKAGERS_BREW_ACTIVE=ALWAYS" >> $GITHUB_ENV
+          else
+            echo "Homebrew release disabled (pre-release detected)."
+            echo "JRELEASER_PACKAGERS_BREW_ACTIVE=NEVER" >> $GITHUB_ENV
+          fi
+
       - name: Run JReleaser
         uses: jreleaser/release-action@v2
         env:
           JRELEASER_GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
           JRELEASER_PROJECT_VERSION: ${{ steps.version.outputs.VERSION }}
+          JRELEASER_PACKAGERS_BREW_ACTIVE: ${{ env.JRELEASER_PACKAGERS_BREW_ACTIVE }}
 
       - name: JReleaser release output
         if: always()
