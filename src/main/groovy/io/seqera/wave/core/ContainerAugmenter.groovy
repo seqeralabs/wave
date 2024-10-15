@@ -534,7 +534,7 @@ class ContainerAugmenter {
         }
 
         final manifestResult
-                = parseManifest(type, manifestsList, digest)
+                = parseManifest(type, manifestsList,digest)
                 ?: findImageManifestAndDigest(manifestsList, imageName, tag, headers)
 
         // fetch the image config
