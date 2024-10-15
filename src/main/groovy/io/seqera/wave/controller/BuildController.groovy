@@ -21,7 +21,6 @@ package io.seqera.wave.controller
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Nullable
-import io.micronaut.http.HttpHeaders
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Controller
@@ -88,7 +87,6 @@ class BuildController {
         final condaLock = logService.fetchCondaLockStream(buildId)
         return condaLock
                 ? HttpResponse.ok(condaLock)
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"conda-env-${buildId}.lock\"")
                 : HttpResponse.<StreamedFile>notFound()
     }
 
