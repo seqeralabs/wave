@@ -1,5 +1,18 @@
 WAVE CLI CHANGE-LOG
 ===================
+1.5.0 - 15 Oct 2024 
+- [BREAKING] this version requires Wave backend 1.13.0 or later
+- Add required version info [fd01d1a5]
+- Add support for registry mirror and container scan feature (#78) [89ed9355]
+- Add support for succeced field in container response [6a5989d4]
+- Prevent false gpt prompts [2a82000e]
+- Remove hidden to --name-strategy option (#77) [fe4d00f2]
+- Removed spack support (#79) [72e23e1c]
+- Update reflect-config.json [fe91f4b1]
+- Upgrade gradle build [a1653d91]
+- Use build repository for mirror registry [b2b6ccf8]
+- Bump gradle 8.10 [592e5ad9]
+
 1.4.1 - 28 May 2024
 - Add uri in wave inpect json output (#70) [08b17e4f]
 - Add --name-strategy option to wave cli (#71) [269df0e5]
