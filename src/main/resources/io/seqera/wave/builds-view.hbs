@@ -28,7 +28,7 @@
         .table-container th, .table-container td {
             padding: 10px;
             text-align: left;
-            border: 1px solid #e5e7eb;
+            border-bottom: 1px solid #e5e7eb;
             vertical-align: middle;
         }
 
@@ -68,14 +68,14 @@
                 <th>Build ID</th>
                 <th>Container image</th>
                 <th>Build time</th>
-                <th>Exit status</th>
+                <th>Status</th>
             </tr>
             {{#each build_records}}
             <tr>
                 <td><a href="{{server_url}}/view/builds/{{build_id}}">{{build_id}}</td>
                 <td>{{build_image}}</td>
                 <td>{{build_time}}</td>
-                <td>{{build_exit_status}}</td>
+                <td>{{build_status}}</td>
             </tr>
             {{/each}}
         </table>

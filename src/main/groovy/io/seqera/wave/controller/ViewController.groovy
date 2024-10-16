@@ -171,7 +171,14 @@ class ViewController {
             final bind = new HashMap(20)
             bind.build_id = result.buildId
             bind.build_image = result.targetImage
-            bind.build_exit_status = result.exitStatus != null ? result.exitStatus : '-'
+            if( result.done() && result.succeeded() )
+                bind.build_status = "SUCCEEDED"
+            else if ( result.done() && !result.succeeded() )
+                bind.build_status = "FAILED"
+            else if (!result.done())
+                bind.build_status = "IN PROGRESS"
+            else
+                bind.build_status = "UNKNOWN"
             bind.build_time = formatTimestamp(result.startTime, result.offsetId) ?: '-'
             binding.add(bind)
         }
