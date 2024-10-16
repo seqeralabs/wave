@@ -126,6 +126,7 @@ class ViewControllerTest extends Specification {
         binding.build_success == true
         binding.build_in_progress == false
         binding.build_failed == false
+        binding.inspect_url == 'http://foo.com/view/inspect?image=docker.io/some:image&platform=linux/amd64'
     }
 
     def 'should render build page' () {
