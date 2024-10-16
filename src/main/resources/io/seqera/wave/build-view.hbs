@@ -123,7 +123,11 @@
 
         <tr>
             <td>Container image</td>
+            {{if build_in_progress}}
+            <td>{{build_image}}</td>
+            {{else}}
             <td><a href="{{inspect_url}}">{{build_image}}</a></td>
+            {{/if}}
         </tr>
 
         <tr>
