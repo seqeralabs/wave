@@ -20,12 +20,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-12, macos-latest-xlarge, windows-latest]
+        os: [ubuntu-latest, macos-latest-large, macos-latest-xlarge, windows-latest]
         include:
           - os: ubuntu-latest
             fatjar: true
             musl: true
-          - os: macos-12
+          - os: macos-latest-large
             codesign: true
           - os: macos-latest-xlarge
             codesign: true
