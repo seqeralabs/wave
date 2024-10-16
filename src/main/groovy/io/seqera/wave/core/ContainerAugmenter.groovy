@@ -90,6 +90,11 @@ class ContainerAugmenter {
         return this
     }
 
+    ContainerAugmenter withPlatform(ContainerPlatform platform) {
+        this.platform = platform
+        return this
+    }
+
     @Deprecated
     ContainerAugmenter withContainerConfig(ContainerConfig containerConfig) {
         this.containerConfig = containerConfig

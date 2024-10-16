@@ -30,6 +30,7 @@ import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.ContainerAugmenter
 import io.seqera.wave.core.ContainerPath
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.spec.ConfigSpec
 import io.seqera.wave.core.spec.ContainerSpec
@@ -169,7 +170,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
      * {@inheritDoc}
      */
     @Override
-    List<String> containerEntrypoint(String containerFile, PlatformId identity) {
+    List<String> containerEntrypoint(String containerFile, ContainerPlatform containerPlatform, PlatformId identity) {
         final repos = inspectItems(containerFile)
         if( !repos )
             return null
@@ -190,7 +191,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
                 final creds = credentialsProvider.getCredentials(path, identity)
                 log.debug "Config credentials for repository: ${item.getImage()} => $creds"
 
-                final entry = fetchConfig0(path, creds).config?.entrypoint
+                final entry = fetchConfig0(path, creds, containerPlatform).config?.entrypoint
                 if( entry )
                     return entry
             }
@@ -214,11 +215,12 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
                 .withLoginService(loginService)
     }
 
-    private ConfigSpec fetchConfig0(ContainerPath path, RegistryCredentials creds) {
+    private ConfigSpec fetchConfig0(ContainerPath path, RegistryCredentials creds, ContainerPlatform platform) {
         final client = client0(path, creds)
 
         return new ContainerAugmenter()
                 .withClient(client)
+                .withPlatform(platform)
                 .getContainerSpec(path.image, path.getReference(), WaveDefault.ACCEPT_HEADERS)
                 .getConfig()
     }
