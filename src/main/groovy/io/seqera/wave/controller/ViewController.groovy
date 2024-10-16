@@ -116,52 +116,54 @@ class ViewController {
     }
 
     @Get('/builds/{buildId}')
-    ModelAndView viewBuild(String buildId) {
-        // fix buildId
-        buildId = fixSuffix(buildId) ?: buildId
+    HttpResponse viewBuild(String buildId) {
+        // check redirection for invalid suffix in the form `-nn`
+        final r1 = isBuildInvalidSuffix(buildId)
+        if( r1 ) {
+            log.debug "Redirect to build page [1]: $r1"
+            return HttpResponse.redirect(URI.create(r1))
+        }
 
-        // check for all builds
-        final builds = getAllBuilds(buildId)
-
-        if( builds ) {
-            return new ModelAndView("builds-view", renderBuildsView(builds))
+        // check all builds matching the pattern
+        if( isBuildMissingSuffix(buildId) ) {
+            final builds = buildService.getAllBuilds(buildId)
+            if( !builds ) {
+                log.debug "Found not build with id: $buildId"
+                throw new NotFoundException("Unknown container build id '$buildId'")
+            }
+            if( builds.size()==1 ) {
+                log.debug "Redirect to build page [2]: ${builds.first().buildId}"
+                return HttpResponse.temporaryRedirect(URI.create("/view/builds/${builds.first().buildId}"))
+            }
+            else
+                return HttpResponse.ok(new ModelAndView("build-list", renderBuildsView(builds)))
         }
 
         // go ahead with proper handling
         final record = buildService.getBuildRecord(buildId)
         if( !record )
             throw new NotFoundException("Unknown container build id '$buildId'")
-        return new ModelAndView("build-view", renderBuildView(record))
+        return HttpResponse.ok(new ModelAndView("build-view", renderBuildView(record)))
     }
 
-    static final private Pattern DASH_SUFFIX = ~/([0-9a-zA-Z\-]+)-(\d+)$/
+    static final private Pattern DASH_SUFFIX_REGEX = ~/([0-9a-zA-Z\-]+)-(\d+)$/
 
-    static final private Pattern MISSING_SUFFIX = ~/([0-9a-zA-Z\-]+)(?<!_\d{2})$/
+    static final private Pattern CONTAINER_ID_REGEX = ~/((bd-)?[0-9a-z\-]{16})(?<!_\d{2})$/
 
-    protected static String fixSuffix(String buildId) {
+    protected String isBuildInvalidSuffix(String buildId) {
         // check for build id containing a -nn suffix
-        final check1 = DASH_SUFFIX.matcher(buildId)
+        final check1 = DASH_SUFFIX_REGEX.matcher(buildId)
         if( check1.matches() ) {
-            return "${check1.group(1)}_${check1.group(2)}"
+            return "/view/builds/${check1.group(1)}_${check1.group(2)}"
         }
         return null
     }
 
-    protected List<WaveBuildRecord> getAllBuilds(String buildId) {
+    protected boolean isBuildMissingSuffix(String buildId) {
         // check build id missing the _nn suffix
-        def results = null
-        if( MISSING_SUFFIX.matcher(buildId).matches() ) {
-            def records = buildService.getAllBuilds(buildId)
-            if ( records ) {
-                results = new ArrayList<WaveBuildRecord>()
-                for (def record : records) {
-                    if (record.buildId.contains(buildId))
-                        results.add(record)
-                }
-            }
-        }
-
-        return results
+        return buildId
+                ? CONTAINER_ID_REGEX.matcher(buildId).matches()
+                : false
     }
 
     Map<String,?> renderBuildsView(List<WaveBuildRecord> results) {

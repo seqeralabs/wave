@@ -64,9 +64,9 @@ class LocalPersistenceService implements PersistenceService {
     List<WaveBuildRecord> allBuilds(String containerId) {
         buildStore
                 .values()
-                .findAll( it-> it.buildId.startsWith(containerId) )
-                .sort { it.buildId}
-                .collect { it }
+                .findAll( it-> it.buildId.contains(containerId) )
+                .sort { it.startTime }
+                .reverse()
     }
 
     @Override

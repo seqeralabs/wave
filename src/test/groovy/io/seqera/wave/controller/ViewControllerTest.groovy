@@ -438,62 +438,10 @@ class ViewControllerTest extends Specification {
         response.body().contains(serverUrl)
     }
 
-    @Unroll
-    def 'should fix suffix for build id'() {
-        expect:
-        ViewController.fixSuffix(BUILDID) == EXPECTED
-
-        where:
-        BUILDID          | EXPECTED
-        'build-123'      | 'build_123'
-        'build-abc'      | null
-        'build-123-456'  | 'build-123_456'
-        'build'          | null
-        'build_123'      | null
-    }
-
-    @Unroll
-    def 'should get all builds for build id'() {
-        given:
-        def controller = new ViewController(serverUrl: serverUrl, buildLogService: buildLogService, buildService: buildService)
-        and:
-        def record1 = new WaveBuildRecord(
-                buildId: '112233_1',
-                dockerFile: 'FROM docker.io/test:foo',
-                targetImage: 'test',
-                userName: 'test',
-                userEmail: 'test',
-                userId: 1,
-                requestIp: '127.0.0.1',
-                startTime: Instant.now(),
-                duration: Duration.ofSeconds(1),
-                exitStatus: 0 )
-        def record2 = new WaveBuildRecord(
-                buildId: '112233_2',
-                dockerFile: 'FROM docker.io/test:foo',
-                targetImage: 'test',
-                userName: 'test',
-                userEmail: 'test',
-                userId: 1,
-                requestIp: '127.0.0.1',
-                startTime: Instant.now(),
-                duration: Duration.ofSeconds(1),
-                exitStatus: 0 )
-        and:
-        persistenceService.saveBuild(record1)
-        persistenceService.saveBuild(record2)
-
-        when:
-        def records = controller.getAllBuilds('112233')
-
-        then:
-        records == [record1, record2]
-    }
-
     def 'should render builds page' () {
         given:
         def record1 = new WaveBuildRecord(
-                buildId: '112233_1',
+                buildId: 'bd-0727765dc72cee24_1',
                 dockerFile: 'FROM docker.io/test:foo',
                 targetImage: 'test',
                 userName: 'test',
@@ -504,7 +452,7 @@ class ViewControllerTest extends Specification {
                 duration: Duration.ofSeconds(1),
                 exitStatus: 0 )
         def record2 = new WaveBuildRecord(
-                buildId: '112233_2',
+                buildId: 'bd-0727765dc72cee24_2',
                 dockerFile: 'FROM docker.io/test:foo',
                 targetImage: 'test',
                 userName: 'test',
@@ -520,7 +468,7 @@ class ViewControllerTest extends Specification {
         persistenceService.saveBuild(record2)
 
         when:
-        def request = HttpRequest.GET("/view/builds/112233")
+        def request = HttpRequest.GET("/view/builds/0727765dc72cee24")
         def response = client.toBlocking().exchange(request, String)
 
         then:
@@ -615,4 +563,46 @@ class ViewControllerTest extends Specification {
         ViewController.getStatus(result) == "IN PROGRESS"
     }
 
+    @Unroll
+    def 'should validate redirection check' () {
+        given:
+        def service = Mock(ContainerBuildService)
+        def controller = new ViewController(buildService: service)
+
+        when:
+        def result = controller.isBuildInvalidSuffix(BUILD)
+        then:
+        result == EXPECTED
+
+        where:
+        BUILD           | EXPECTED
+        '12345_1'       | null
+        '12345-1'       | '/view/builds/12345_1'
+        'foo-887766-1'  | '/view/builds/foo-887766_1'
+        and:
+        'bd-12345_1'    | null
+        'bd-12345-1'    | '/view/builds/bd-12345_1'
+        'bd-887766-1'   | '/view/builds/bd-887766_1'
+    }
+
+    def 'should validate build id patten' () {
+        given:
+        def service = Mock(ContainerBuildService)
+        def controller = new ViewController(buildService: service)
+
+        when:
+        def result = controller.isBuildMissingSuffix(BUILD)
+        then:
+        result == EXPECTED
+
+        where:
+        BUILD                   | EXPECTED
+        null                    | false
+        'bd-beac24afd572398d_1' | false // fully qualified
+        and:
+        'bd-beac24afd572398d'   | true  // prerix + container id
+        'beac24afd572398d'      | true  // just the container id
+        and:
+        'beac24afd572398'       | false  // too short
+    }
 }

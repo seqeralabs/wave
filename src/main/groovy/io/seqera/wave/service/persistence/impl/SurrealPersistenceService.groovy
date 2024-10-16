@@ -187,7 +187,7 @@ class SurrealPersistenceService implements PersistenceService {
         final query = """
             select * 
             from wave_build 
-            where string::contains(buildId, '${containerId}${BuildRequest.SEP}')
+            where buildId ~ '${containerId}'
             order by startTime desc
             """.stripIndent()
         final json = surrealDb.sqlAsString(getAuthorization(), query)
