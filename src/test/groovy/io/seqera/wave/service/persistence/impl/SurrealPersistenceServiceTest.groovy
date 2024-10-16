@@ -532,7 +532,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         surreal.insertBuild(auth, record3)
 
         expect:
-        persistence.allBuilds('abc') == [record1, record2, record3]
+        persistence.allBuilds('abc') == [record3, record2, record1]
     }
 
 }
