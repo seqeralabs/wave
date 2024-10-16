@@ -149,10 +149,19 @@ class ViewController {
 
     protected List<WaveBuildRecord> getAllBuilds(String buildId) {
         // check build id missing the _nn suffix
-        if( MISSING_SUFFIX.matcher(buildId).matches() )
-            return buildService.getAllBuilds(buildId)
+        def results = null
+        if( MISSING_SUFFIX.matcher(buildId).matches() ) {
+            def records = buildService.getAllBuilds(buildId)
+            if ( records ) {
+                results = new ArrayList<WaveBuildRecord>()
+                for (def record : records) {
+                    if (record.buildId.contains(buildId))
+                        results.add(record)
+                }
+            }
+        }
 
-        return null
+        return results
     }
 
     Map<String,?> renderBuildsView(List<WaveBuildRecord> results) {
@@ -162,7 +171,6 @@ class ViewController {
             final bind = new HashMap(20)
             bind.build_id = result.buildId
             bind.build_image = result.targetImage
-            bind.build_digest = result.digest ?: '-'
             bind.build_exit_status = result.exitStatus != null ? result.exitStatus : '-'
             bind.build_time = formatTimestamp(result.startTime, result.offsetId) ?: '-'
             binding.add(bind)

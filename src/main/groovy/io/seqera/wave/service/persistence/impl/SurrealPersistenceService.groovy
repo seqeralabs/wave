@@ -184,11 +184,14 @@ class SurrealPersistenceService implements PersistenceService {
 
     @Override
     List<WaveBuildRecord> allBuilds(String containerId) {
+        if( !containerId.contains('bd-') )
+            containerId = "bd-${containerId}"
+
         final query = """
             select * 
             from wave_build 
-            where buildId ~ '${containerId}${BuildRequest.SEP}'
-            order by buildId
+            where string::contains(buildId, '${containerId}${BuildRequest.SEP}')
+            order by startTime desc
             """.stripIndent()
         final json = surrealDb.sqlAsString(getAuthorization(), query)
         final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
