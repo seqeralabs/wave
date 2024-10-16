@@ -561,4 +561,57 @@ class ViewControllerTest extends Specification {
         response.body().contains(serverUrl)
     }
 
+    def 'should return correct status for success build record'() {
+        given:
+        def result = new WaveBuildRecord(
+                buildId: '112233_1',
+                dockerFile: 'FROM docker.io/test:foo',
+                targetImage: 'test',
+                userName: 'test',
+                userEmail: 'test',
+                userId: 1,
+                requestIp: '127.0.0.1',
+                startTime: Instant.now(),
+                duration: Duration.ofSeconds(1),
+                exitStatus: 0 )
+
+        expect:
+        ViewController.getStatus(result) == "SUCCEEDED"
+    }
+
+    def 'should return correct status for failed build record'() {
+        given:
+        def result = new WaveBuildRecord(
+                buildId: '112233_1',
+                dockerFile: 'FROM docker.io/test:foo',
+                targetImage: 'test',
+                userName: 'test',
+                userEmail: 'test',
+                userId: 1,
+                requestIp: '127.0.0.1',
+                startTime: Instant.now(),
+                duration: Duration.ofSeconds(1),
+                exitStatus: 1 )
+
+        expect:
+        ViewController.getStatus(result) == "FAILED"
+    }
+
+    def 'should return correct status for in progress build record'() {
+        given:
+        def result = new WaveBuildRecord(
+                buildId: '112233_1',
+                dockerFile: 'FROM docker.io/test:foo',
+                targetImage: 'test',
+                userName: 'test',
+                userEmail: 'test',
+                userId: 1,
+                requestIp: '127.0.0.1',
+                startTime: Instant.now(),
+                duration: null)
+
+        expect:
+        ViewController.getStatus(result) == "IN PROGRESS"
+    }
+
 }

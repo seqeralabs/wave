@@ -171,19 +171,23 @@ class ViewController {
             final bind = new HashMap(20)
             bind.build_id = result.buildId
             bind.build_image = result.targetImage
-            if( result.done() && result.succeeded() )
-                bind.build_status = "SUCCEEDED"
-            else if ( result.done() && !result.succeeded() )
-                bind.build_status = "FAILED"
-            else if (!result.done())
-                bind.build_status = "IN PROGRESS"
-            else
-                bind.build_status = "UNKNOWN"
+            bind.build_status = getStatus(result)
             bind.build_time = formatTimestamp(result.startTime, result.offsetId) ?: '-'
             binding.add(bind)
         }
         // result the main object
         return Map.of("build_records", binding, 'server_url', serverUrl)
+    }
+
+    protected static String getStatus(WaveBuildRecord result){
+        if( result.done() && result.succeeded() )
+            return "SUCCEEDED"
+        else if ( result.done() && !result.succeeded() )
+            return "FAILED"
+        else if (!result.done())
+            return "IN PROGRESS"
+        else
+            return "UNKNOWN"
     }
 
     Map<String,String> renderBuildView(WaveBuildRecord result) {
