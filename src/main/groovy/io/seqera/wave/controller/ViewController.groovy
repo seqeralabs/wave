@@ -31,6 +31,7 @@ import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.QueryValue
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
+import io.micronaut.views.ModelAndView
 import io.micronaut.views.View
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.exception.NotFoundException
@@ -114,55 +115,60 @@ class ViewController {
         return binding
     }
 
-    @View("build-view")
     @Get('/builds/{buildId}')
-    HttpResponse viewBuild(String buildId) {
-        // check redirection for invalid suffix in the form `-nn`
-        final r1 = shouldRedirect1(buildId)
-        if( r1 ) {
-            log.debug "Redirect to build page [1]: $r1"
-            return HttpResponse.redirect(URI.create(r1))
+    ModelAndView viewBuild(String buildId) {
+        // fix buildId
+        buildId = fixSuffix(buildId) ?: buildId
+
+        // check for all builds
+        final builds = getAllBuilds(buildId)
+
+        if( builds ) {
+            return new ModelAndView("builds-view", renderBuildsView(builds))
         }
-        // check redirection when missing the suffix `_nn`
-        final r2 = shouldRedirect2(buildId)
-        if( r2 ) {
-            log.debug "Redirect to build page [2]: $r2"
-            return HttpResponse.redirect(URI.create(r2))
-        }
+
         // go ahead with proper handling
         final record = buildService.getBuildRecord(buildId)
         if( !record )
             throw new NotFoundException("Unknown container build id '$buildId'")
-        return HttpResponse.ok(renderBuildView(record))
+        return new ModelAndView("build-view", renderBuildView(record))
     }
 
     static final private Pattern DASH_SUFFIX = ~/([0-9a-zA-Z\-]+)-(\d+)$/
 
     static final private Pattern MISSING_SUFFIX = ~/([0-9a-zA-Z\-]+)(?<!_\d{2})$/
 
-    protected String shouldRedirect1(String buildId) {
+    protected static String fixSuffix(String buildId) {
         // check for build id containing a -nn suffix
         final check1 = DASH_SUFFIX.matcher(buildId)
         if( check1.matches() ) {
-            return "/view/builds/${check1.group(1)}_${check1.group(2)}"
+            return "${check1.group(1)}_${check1.group(2)}"
         }
         return null
     }
 
-    protected String shouldRedirect2(String buildId) {
+    protected List<WaveBuildRecord> getAllBuilds(String buildId) {
         // check build id missing the _nn suffix
-        if( !MISSING_SUFFIX.matcher(buildId).matches() )
-            return null
+        if( MISSING_SUFFIX.matcher(buildId).matches() )
+            return buildService.getAllBuilds(buildId)
 
-        final rec = buildService.getLatestBuild(buildId)
-        if( !rec )
-            return null
-        if( !rec.buildId.contains(buildId) )
-            return null
-        if( rec.buildId==buildId )
-            return null
+        return null
+    }
 
-        return "/view/builds/${rec.buildId}"
+    Map<String,?> renderBuildsView(List<WaveBuildRecord> results) {
+        // create template binding
+        final binding = new ArrayList<Map<String,String>>()
+        for (def result : results){
+            final bind = new HashMap(20)
+            bind.build_id = result.buildId
+            bind.build_image = result.targetImage
+            bind.build_digest = result.digest ?: '-'
+            bind.build_exit_status = result.exitStatus != null ? result.exitStatus : '-'
+            bind.build_time = formatTimestamp(result.startTime, result.offsetId) ?: '-'
+            binding.add(bind)
+        }
+        // result the main object
+        return Map.of("build_records", binding, 'server_url', serverUrl)
     }
 
     Map<String,String> renderBuildView(WaveBuildRecord result) {

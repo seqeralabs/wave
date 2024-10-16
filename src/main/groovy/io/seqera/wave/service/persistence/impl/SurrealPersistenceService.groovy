@@ -183,6 +183,21 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
+    List<WaveBuildRecord> allBuilds(String containerId) {
+        final query = """
+            select * 
+            from wave_build 
+            where buildId ~ '${containerId}${BuildRequest.SEP}'
+            order by buildId
+            """.stripIndent()
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result : null
+        return result ? Arrays.asList(result) : null
+    }
+
+    @Override
     void saveContainerRequest(WaveContainerRecord data) {
         // note: use surreal sql in order to by-pass issue with large payload
         // see https://github.com/seqeralabs/wave/issues/559#issuecomment-2369412170

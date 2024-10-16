@@ -78,6 +78,9 @@ class ViewControllerTest extends Specification {
     @Inject
     ContainerInspectService inspectService
 
+    @Inject
+    ContainerBuildService buildService
+
     @Value('${wave.server.url}')
     String serverUrl
 
@@ -128,7 +131,7 @@ class ViewControllerTest extends Specification {
     def 'should render build page' () {
         given:
         def record1 = new WaveBuildRecord(
-                buildId: '112233',
+                buildId: '112233_1',
                 dockerFile: 'FROM docker.io/test:foo',
                 targetImage: 'test',
                 userName: 'test',
@@ -158,7 +161,7 @@ class ViewControllerTest extends Specification {
     def 'should render build page with conda file' () {
         given:
         def record1 = new WaveBuildRecord(
-                buildId: 'test',
+                buildId: '112233_1',
                 condaFile: 'conda::foo',
                 targetImage: 'test',
                 userName: 'test',
@@ -435,50 +438,127 @@ class ViewControllerTest extends Specification {
     }
 
     @Unroll
-    def 'should validate redirection check' () {
-        given:
-        def service = Mock(ContainerBuildService)
-        def controller = new ViewController(buildService: service)
-
-        when:
-        def result = controller.shouldRedirect1(BUILD)
-        then:
-        result == EXPECTED
+    def 'should fix suffix for build id'() {
+        expect:
+        ViewController.fixSuffix(BUILDID) == EXPECTED
 
         where:
-        BUILD           | EXPECTED
-        '12345_1'       | null
-        '12345-1'       | '/view/builds/12345_1'
-        'foo-887766-1'  | '/view/builds/foo-887766_1'
+        BUILDID          | EXPECTED
+        'build-123'      | 'build_123'
+        'build-abc'      | null
+        'build-123-456'  | 'build-123_456'
+        'build'          | null
+        'build_123'      | null
+    }
+
+    @Unroll
+    def 'should get all builds for build id'() {
+        given:
+        def controller = new ViewController(serverUrl: serverUrl, buildLogService: buildLogService, buildService: buildService)
         and:
-        'bd-12345_1'    | null
-        'bd-12345-1'    | '/view/builds/bd-12345_1'
-        'bd-887766-1'   | '/view/builds/bd-887766_1'
-    }
-
-    def 'should validate redirect 2' () {
-        given:
-        def service = Mock(ContainerBuildService)
-        def controller = new ViewController(buildService: service)
+        def record1 = new WaveBuildRecord(
+                buildId: '112233_1',
+                dockerFile: 'FROM docker.io/test:foo',
+                targetImage: 'test',
+                userName: 'test',
+                userEmail: 'test',
+                userId: 1,
+                requestIp: '127.0.0.1',
+                startTime: Instant.now(),
+                duration: Duration.ofSeconds(1),
+                exitStatus: 0 )
+        def record2 = new WaveBuildRecord(
+                buildId: '112233_2',
+                dockerFile: 'FROM docker.io/test:foo',
+                targetImage: 'test',
+                userName: 'test',
+                userEmail: 'test',
+                userId: 1,
+                requestIp: '127.0.0.1',
+                startTime: Instant.now(),
+                duration: Duration.ofSeconds(1),
+                exitStatus: 0 )
+        and:
+        persistenceService.saveBuild(record1)
+        persistenceService.saveBuild(record2)
 
         when:
-        def result = controller.shouldRedirect2(BUILD)
+        def records = controller.getAllBuilds('112233')
+
         then:
-        result == EXPECTED
-        TIMES * service.getLatestBuild(BUILD) >> Mock(WaveBuildRecord) { buildId>>LATEST }
-
-        where:
-        BUILD           | TIMES | LATEST            | EXPECTED
-        '12345_1'       | 0     | null              | null
-        '12345'         | 1     | '12345_99'        | '/view/builds/12345_99'
-        '12345'         | 1     | 'xyz_99'          | null
-        'foo-887766'    | 1     | 'foo-887766_99'   | '/view/builds/foo-887766_99'
-        'foo-887766'    | 1     | 'foo-887766'      | null
-        'bd-887766'     | 1     | 'bd-887766_2'     | '/view/builds/bd-887766_2'
-        '887766'        | 1     | 'bd-887766_2'     | '/view/builds/bd-887766_2'
-
-
+        records == [record1, record2]
     }
 
+    def 'should render builds page' () {
+        given:
+        def record1 = new WaveBuildRecord(
+                buildId: '112233_1',
+                dockerFile: 'FROM docker.io/test:foo',
+                targetImage: 'test',
+                userName: 'test',
+                userEmail: 'test',
+                userId: 1,
+                requestIp: '127.0.0.1',
+                startTime: Instant.now(),
+                duration: Duration.ofSeconds(1),
+                exitStatus: 0 )
+        def record2 = new WaveBuildRecord(
+                buildId: '112233_2',
+                dockerFile: 'FROM docker.io/test:foo',
+                targetImage: 'test',
+                userName: 'test',
+                userEmail: 'test',
+                userId: 1,
+                requestIp: '127.0.0.1',
+                startTime: Instant.now(),
+                duration: Duration.ofSeconds(1),
+                exitStatus: 0 )
+
+        and:
+        persistenceService.saveBuild(record1)
+        persistenceService.saveBuild(record2)
+
+        when:
+        def request = HttpRequest.GET("/view/builds/112233")
+        def response = client.toBlocking().exchange(request, String)
+
+        then:
+        response.body().contains(record1.buildId)
+        response.body().contains(record2.buildId)
+        and:
+        response.body().contains('test')
+        and:
+        response.body().contains(serverUrl)
+    }
+
+    def 'should render build page after fixing buildId' () {
+        given:
+        def record1 = new WaveBuildRecord(
+                buildId: '112233_1',
+                dockerFile: 'FROM docker.io/test:foo',
+                targetImage: 'test',
+                userName: 'test',
+                userEmail: 'test',
+                userId: 1,
+                requestIp: '127.0.0.1',
+                startTime: Instant.now(),
+                duration: Duration.ofSeconds(1),
+                exitStatus: 0 )
+
+        when:
+        persistenceService.saveBuild(record1)
+        and:
+        def request = HttpRequest.GET("/view/builds/112233-1")
+        def response = client.toBlocking().exchange(request, String)
+        then:
+        response.body().contains(record1.buildId)
+        and:
+        response.body().contains('Container file')
+        response.body().contains('FROM docker.io/test:foo')
+        and:
+        !response.body().contains('Conda file')
+        and:
+        response.body().contains(serverUrl)
+    }
 
 }
