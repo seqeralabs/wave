@@ -16,7 +16,7 @@
 - Fix Include cached only with build [0a16554b]
 - Fix build status completion of submit exception [19eceb10]
 - Fix build status failure with missing exit status [900c1e45]
-- Fix build succeded & status response [9a1b7954]
+- Fix build succeeded & status response [9a1b7954]
 - Fix container scan on request [2a8e1c53]
 - Fix container view alignment (#686) [097f6628]
 - Fix entity too large when using conda file > 10k  (#658) [afeaf832]
@@ -24,7 +24,7 @@
 - Fix load last build succeed [5abce684]
 - Fix mirror typespec (#670) [5b5697f8]
 - Fix repository creds check (#665) [c77d49d1]
-- Fix retrieval of last succeded mirror result [23cb0564]
+- Fix retrieval of last succeeded mirror result [23cb0564]
 - Fix scan status of cache record [9ee87b5f]
 - Fix singularity build mounts [3d1e00e4]
 - Fix wave build redirect [863fa105]
@@ -55,11 +55,11 @@
 - Simulate xclaim delay with local stream [42c3f260]
 - Update container request typespec model [1a27aee9]
 - Update scan state duration to 5 days [6270b6c5]
-- Use 3-state succeed attribute in contaienr response [d3ed2ba1]
+- Use 3-state succeed attribute in container response [d3ed2ba1]
 - Use gstring for lock file [e5364c21]
 
 1.12.4 - 26 Sep 2024
-- Fix build succeded & status response [8a760b39]
+- Fix build succeeded & status response [8a760b39]
 
 1.12.3 - 22 Sep 2024
 - Fix build status completion of submit exception [3c3af360]
