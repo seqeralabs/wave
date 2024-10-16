@@ -184,9 +184,6 @@ class SurrealPersistenceService implements PersistenceService {
 
     @Override
     List<WaveBuildRecord> allBuilds(String containerId) {
-        if( !containerId.contains('bd-') )
-            containerId = "bd-${containerId}"
-
         final query = """
             select * 
             from wave_build 
