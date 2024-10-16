@@ -187,7 +187,7 @@
                     details.appendChild(summary);
                     details.appendChild(createTreeView(data[key]));
                     li.appendChild(details);
-                } else if (Array.isArray(data[key])) {
+                } else if (Array.isArray(data[key]) && data[key].length > 0) {
                     const details = document.createElement('details');
                     const summary = document.createElement('summary');
                     summary.textContent = key;

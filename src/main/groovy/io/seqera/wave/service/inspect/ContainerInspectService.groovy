@@ -18,7 +18,7 @@
 
 package io.seqera.wave.service.inspect
 
-
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.spec.ContainerSpec
 import io.seqera.wave.tower.PlatformId
 /**
@@ -54,14 +54,15 @@ interface ContainerInspectService {
      *
      * @param containerFile
      *      The container definition file i.e. Dockerfile
+     * @param containerPlatform
+     *      The container platform identifier i.e. architecture e.g. {@code linux/amd64}, {@code linux/arm64}, etc
      * @param identity
      *      The platform identity of the user submitting the request
      * @return
      *      The container entrypoint model as list of string representing the command to be executed or {@code null}
      *      if not entrypoint is defined
      */
-    List<String> containerEntrypoint(String containerFile, PlatformId identity)
-
+    List<String> containerEntrypoint(String containerFile, ContainerPlatform containerPlatform, PlatformId identity)
 
     /**
      * Inspect a container image
