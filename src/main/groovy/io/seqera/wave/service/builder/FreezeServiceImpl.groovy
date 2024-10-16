@@ -22,6 +22,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.Escape
@@ -67,7 +68,7 @@ class FreezeServiceImpl implements FreezeService {
 
     protected String appendEntrypoint(String containerFile, SubmitContainerTokenRequest req, PlatformId identity) {
         // get the container manifest
-        final entry = inspectService.containerEntrypoint(containerFile, identity)
+        final entry = inspectService.containerEntrypoint(containerFile, ContainerPlatform.of(req.containerPlatform), identity)
         if( entry ) {
             if( req.formatSingularity() ) {
                 return containerFile + "%environment\n  export WAVE_ENTRY_CHAIN=\"${entry.join(' ')}\"\n"
