@@ -168,12 +168,12 @@ class ViewController {
 
     Map<String,?> renderBuildsView(List<WaveBuildRecord> results) {
         // create template binding
-        final binding = new ArrayList<Map<String,String>>()
         final bindingMap = new HashMap<String, ?>(3)
         if( results ) {
             bindingMap.put("build_image", results[0].targetImage)
             bindingMap.put("build_format", results[0].format?.render() ?: 'Docker')
             bindingMap.put("build_platform", results[0].platform)
+            final binding = new ArrayList<Map<String,String>>()
             for (def result : results) {
                 final bind = new HashMap(20)
                 bind.build_id = result.buildId
@@ -182,9 +182,9 @@ class ViewController {
                 bind.build_time = formatTimestamp(result.startTime, result.offsetId) ?: '-'
                 binding.add(bind)
             }
+            bindingMap.put('build_records', binding)
         }
         // result the main object
-        bindingMap.put('build_records', binding)
         bindingMap.put('server_url', serverUrl)
         return bindingMap
     }
