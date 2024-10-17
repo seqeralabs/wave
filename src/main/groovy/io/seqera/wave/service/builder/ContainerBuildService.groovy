@@ -93,4 +93,12 @@ interface ContainerBuildService {
      */
     WaveBuildRecord getLatestBuild(String containerId)
 
+    /**
+     * Retrieve the all build record available for the specified container id.
+     *
+     * @param containerId The ID of the container for which the build record needs to be retrieve
+     * @return The {@link WaveBuildRecord} associated with the corresponding Id, or {@code null} if it cannot be found
+     */
+    List<WaveBuildRecord> getAllBuilds(String containerId)
+
 }
