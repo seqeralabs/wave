@@ -30,6 +30,7 @@ import groovy.transform.CompileStatic
 import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.util.StringUtils
 import jakarta.inject.Singleton
 /**
  * Container Scan service settings
@@ -78,6 +79,10 @@ class ScanConfig {
     @Value('${wave.scan.id.duration:7d}')
     Duration scanIdDuration
 
+    @Nullable
+    @Value('${wave.scan.github-token}')
+    String githubToken
+
     String getScanImage() {
         return scanImage
     }
@@ -112,6 +117,6 @@ class ScanConfig {
 
     @PostConstruct
     private void init() {
-        log.debug("Scanner config: docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}; severity: $severity; retry-attempts: $retryAttempts")
+        log.debug("Scanner config: docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}; severity: $severity; retry-attempts: $retryAttempts; github-token=${StringUtils.redact(githubToken)}")
     }
 }
