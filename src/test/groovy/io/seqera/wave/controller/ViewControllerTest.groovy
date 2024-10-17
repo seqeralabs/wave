@@ -78,6 +78,9 @@ class ViewControllerTest extends Specification {
     @Inject
     ContainerInspectService inspectService
 
+    @Inject
+    ContainerBuildService buildService
+
     @Value('${wave.server.url}')
     String serverUrl
 
@@ -123,12 +126,13 @@ class ViewControllerTest extends Specification {
         binding.build_success == true
         binding.build_in_progress == false
         binding.build_failed == false
+        binding.inspect_url == 'http://foo.com/view/inspect?image=docker.io/some:image&platform=linux/amd64'
     }
 
     def 'should render build page' () {
         given:
         def record1 = new WaveBuildRecord(
-                buildId: '112233',
+                buildId: '112233_1',
                 dockerFile: 'FROM docker.io/test:foo',
                 targetImage: 'test',
                 userName: 'test',
@@ -158,7 +162,7 @@ class ViewControllerTest extends Specification {
     def 'should render build page with conda file' () {
         given:
         def record1 = new WaveBuildRecord(
-                buildId: 'test',
+                buildId: '112233_1',
                 condaFile: 'conda::foo',
                 targetImage: 'test',
                 userName: 'test',
@@ -434,6 +438,131 @@ class ViewControllerTest extends Specification {
         response.body().contains(serverUrl)
     }
 
+    def 'should render builds page' () {
+        given:
+        def record1 = new WaveBuildRecord(
+                buildId: 'bd-0727765dc72cee24_1',
+                dockerFile: 'FROM docker.io/test:foo',
+                targetImage: 'test',
+                userName: 'test',
+                userEmail: 'test',
+                userId: 1,
+                requestIp: '127.0.0.1',
+                startTime: Instant.now(),
+                duration: Duration.ofSeconds(1),
+                exitStatus: 0 )
+        def record2 = new WaveBuildRecord(
+                buildId: 'bd-0727765dc72cee24_2',
+                dockerFile: 'FROM docker.io/test:foo',
+                targetImage: 'test',
+                userName: 'test',
+                userEmail: 'test',
+                userId: 1,
+                requestIp: '127.0.0.1',
+                startTime: Instant.now(),
+                duration: Duration.ofSeconds(1),
+                exitStatus: 0 )
+
+        and:
+        persistenceService.saveBuild(record1)
+        persistenceService.saveBuild(record2)
+
+        when:
+        def request = HttpRequest.GET("/view/builds/0727765dc72cee24")
+        def response = client.toBlocking().exchange(request, String)
+
+        then:
+        response.body().contains(record1.buildId)
+        response.body().contains(record2.buildId)
+        and:
+        response.body().contains('test')
+        and:
+        response.body().contains(serverUrl)
+    }
+
+    def 'should render build page after fixing buildId' () {
+        given:
+        def record1 = new WaveBuildRecord(
+                buildId: '112233_1',
+                dockerFile: 'FROM docker.io/test:foo',
+                targetImage: 'test',
+                userName: 'test',
+                userEmail: 'test',
+                userId: 1,
+                requestIp: '127.0.0.1',
+                startTime: Instant.now(),
+                duration: Duration.ofSeconds(1),
+                exitStatus: 0 )
+
+        when:
+        persistenceService.saveBuild(record1)
+        and:
+        def request = HttpRequest.GET("/view/builds/112233-1")
+        def response = client.toBlocking().exchange(request, String)
+        then:
+        response.body().contains(record1.buildId)
+        and:
+        response.body().contains('Container file')
+        response.body().contains('FROM docker.io/test:foo')
+        and:
+        !response.body().contains('Conda file')
+        and:
+        response.body().contains(serverUrl)
+    }
+
+    def 'should return correct status for success build record'() {
+        given:
+        def result = new WaveBuildRecord(
+                buildId: '112233_1',
+                dockerFile: 'FROM docker.io/test:foo',
+                targetImage: 'test',
+                userName: 'test',
+                userEmail: 'test',
+                userId: 1,
+                requestIp: '127.0.0.1',
+                startTime: Instant.now(),
+                duration: Duration.ofSeconds(1),
+                exitStatus: 0 )
+
+        expect:
+        ViewController.getStatus(result) == "SUCCEEDED"
+    }
+
+    def 'should return correct status for failed build record'() {
+        given:
+        def result = new WaveBuildRecord(
+                buildId: '112233_1',
+                dockerFile: 'FROM docker.io/test:foo',
+                targetImage: 'test',
+                userName: 'test',
+                userEmail: 'test',
+                userId: 1,
+                requestIp: '127.0.0.1',
+                startTime: Instant.now(),
+                duration: Duration.ofSeconds(1),
+                exitStatus: 1 )
+
+        expect:
+        ViewController.getStatus(result) == "FAILED"
+    }
+
+    def 'should return correct status for in progress build record'() {
+        given:
+        def result = new WaveBuildRecord(
+                buildId: '112233_1',
+                dockerFile: 'FROM docker.io/test:foo',
+                targetImage: 'test',
+                userName: 'test',
+                userEmail: 'test',
+                userId: 1,
+                requestIp: '127.0.0.1',
+                startTime: Instant.now(),
+                duration: null)
+
+        expect:
+        ViewController.getStatus(result) == "IN PROGRESS"
+    }
+
     @Unroll
     def 'should validate redirection check' () {
         given:
@@ -441,7 +570,7 @@ class ViewControllerTest extends Specification {
         def controller = new ViewController(buildService: service)
 
         when:
-        def result = controller.shouldRedirect1(BUILD)
+        def result = controller.isBuildInvalidSuffix(BUILD)
         then:
         result == EXPECTED
 
@@ -456,29 +585,24 @@ class ViewControllerTest extends Specification {
         'bd-887766-1'   | '/view/builds/bd-887766_1'
     }
 
-    def 'should validate redirect 2' () {
+    def 'should validate build id patten' () {
         given:
         def service = Mock(ContainerBuildService)
         def controller = new ViewController(buildService: service)
 
         when:
-        def result = controller.shouldRedirect2(BUILD)
+        def result = controller.isBuildMissingSuffix(BUILD)
         then:
         result == EXPECTED
-        TIMES * service.getLatestBuild(BUILD) >> Mock(WaveBuildRecord) { buildId>>LATEST }
 
         where:
-        BUILD           | TIMES | LATEST            | EXPECTED
-        '12345_1'       | 0     | null              | null
-        '12345'         | 1     | '12345_99'        | '/view/builds/12345_99'
-        '12345'         | 1     | 'xyz_99'          | null
-        'foo-887766'    | 1     | 'foo-887766_99'   | '/view/builds/foo-887766_99'
-        'foo-887766'    | 1     | 'foo-887766'      | null
-        'bd-887766'     | 1     | 'bd-887766_2'     | '/view/builds/bd-887766_2'
-        '887766'        | 1     | 'bd-887766_2'     | '/view/builds/bd-887766_2'
-
-
+        BUILD                   | EXPECTED
+        null                    | false
+        'bd-beac24afd572398d_1' | false // fully qualified
+        and:
+        'bd-beac24afd572398d'   | true  // prerix + container id
+        'beac24afd572398d'      | true  // just the container id
+        and:
+        'beac24afd572398'       | false  // too short
     }
-
-
 }

@@ -381,4 +381,12 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         return persistenceService.latestBuild(containerId)
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    List<WaveBuildRecord> getAllBuilds(String containerId) {
+        return persistenceService.allBuilds(containerId)
+    }
+
 }
