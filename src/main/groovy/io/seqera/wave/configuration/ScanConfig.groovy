@@ -21,6 +21,8 @@ package io.seqera.wave.configuration
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
+
+import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import javax.annotation.PostConstruct
 
@@ -37,6 +39,7 @@ import jakarta.inject.Singleton
 @CompileStatic
 @Singleton
 @Slf4j
+@Requires(property = 'wave.scan.enabled', value = 'true')
 class ScanConfig {
 
     /**
@@ -59,12 +62,21 @@ class ScanConfig {
     @Value('${wave.build.workspace}')
     private String buildDirectory
 
-    @Value('${wave.scan.timeout:10m}')
+    @Value('${wave.scan.timeout:15m}')
     private Duration timeout
 
     @Value('${wave.scan.severity}')
     @Nullable
     private String severity
+
+    @Value('${wave.scan.retry-attempts:1}')
+    int retryAttempts
+
+    @Value('${wave.scan.status.duration:5d}')
+    Duration statusDuration
+
+    @Value('${wave.scan.id.duration:7d}')
+    Duration scanIdDuration
 
     String getScanImage() {
         return scanImage
@@ -75,6 +87,11 @@ class ScanConfig {
         final result = Path.of(buildDirectory).toAbsolutePath().resolve('.trivy-cache')
         Files.createDirectories(result)
         return result
+    }
+
+    @Memoized
+    Path getWorkspace() {
+        Path.of(buildDirectory).toAbsolutePath()
     }
 
     String getRequestsCpu() {
@@ -95,6 +112,6 @@ class ScanConfig {
 
     @PostConstruct
     private void init() {
-        log.debug("Scanner config: docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}; severity: $severity")
+        log.debug("Scanner config: docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}; severity: $severity; retry-attempts: $retryAttempts")
     }
 }

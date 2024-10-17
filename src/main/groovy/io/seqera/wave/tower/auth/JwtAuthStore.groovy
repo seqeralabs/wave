@@ -24,29 +24,30 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.service.cache.AbstractCacheStore
-import io.seqera.wave.service.cache.impl.CacheProvider
+import io.seqera.wave.store.state.AbstractStateStore
+import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
  * Implements storage for {@link JwtAuth} record
  *
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @Singleton
 @CompileStatic
-class JwtAuthStore extends AbstractCacheStore<JwtAuth> {
+class JwtAuthStore extends AbstractStateStore<JwtAuth> {
 
     @Inject
     private JwtTimeStore jwtTimeStore
 
-    JwtAuthStore(CacheProvider<String, String> provider) {
+    JwtAuthStore(StateProvider<String, String> provider) {
         super(provider, new MoshiEncodeStrategy<JwtAuth>() {})
     }
 
     @Override
     protected String getPrefix() {
-        return "tower-jwt-store/v1:"
+        return "tower-jwt-store/v1"
     }
 
     /**
@@ -92,7 +93,7 @@ class JwtAuthStore extends AbstractCacheStore<JwtAuth> {
         final now = Instant.now()
         final entry = auth.withUpdatedAt(now)
         this.put(auth.key, entry)
-        log.debug "JWT updating refreshed record - $entry"
+        log.trace "JWT updating refreshed record - $entry"
     }
 
     boolean storeIfAbsent(JwtAuth auth) {

@@ -20,8 +20,9 @@ package io.seqera.wave.service.persistence
 
 import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerDigestPair
-import io.seqera.wave.exception.NotFoundException
-import io.seqera.wave.service.scan.ScanResult
+import io.seqera.wave.service.mirror.MirrorEntry
+import io.seqera.wave.service.mirror.MirrorResult
+
 /**
  * A storage for statistic data
  *
@@ -56,15 +57,30 @@ interface PersistenceService {
      * @param digest The container image sha256 checksum
      * @return The corresponding {@link WaveBuildRecord} object or {@code null} if no record is found
      */
-    WaveBuildRecord loadBuild(String targetImage, String digest)
+    WaveBuildRecord loadBuildSucceed(String targetImage, String digest)
+
+    /**
+     * Retrieve the latest {@link WaveBuildRecord} object for the given container id
+     *
+     * @param containerId The container id for which the latest build record should be retrieved
+     * @return The corresponding {@link WaveBuildRecord} object or {@code null} if no record is found
+     */
+    WaveBuildRecord latestBuild(String containerId)
+
+    /**
+     * Retrieve all {@link WaveBuildRecord} object for the given container id
+     *
+     * @param containerId The container id for which the latest build record should be retrieved
+     * @return The corresponding {@link WaveBuildRecord} object or {@code null} if no record is found
+     */
+    List<WaveBuildRecord> allBuilds(String containerId)
 
     /**
      * Store a {@link WaveContainerRecord} object in the Surreal wave_request table.
      *
-     * @param token The request token associated with this request
      * @param data A {@link WaveContainerRecord} object representing a Wave request record
      */
-    void saveContainerRequest(String token, WaveContainerRecord data)
+    void saveContainerRequest(WaveContainerRecord data)
 
     /**
      * Update a container request with the digest of the resolved request
@@ -83,18 +99,11 @@ interface PersistenceService {
     WaveContainerRecord loadContainerRequest(String token)
 
     /**
-     * Create a scan record, this signal that a container scan request has been created
-     *
-     * @param scanRecord Create a record with the object specified
-     */
-    void createScanRecord(WaveScanRecord scanRecord)
-
-    /**
      * Store a {@link WaveScanRecord} object in the Surreal wave_scan table.
      *
      * @param data A {@link WaveScanRecord} object representing the a container scan request
      */
-    void updateScanRecord(WaveScanRecord scanRecord)
+    void saveScanRecord(WaveScanRecord scanRecord)
 
     /**
      * Retrieve a {@link WaveScanRecord} object for the specified build ID
@@ -105,24 +114,36 @@ interface PersistenceService {
     WaveScanRecord loadScanRecord(String scanId)
 
     /**
-     * Retrieve a {@link ScanResult} object for the specified build ID
+     * Check if a scan record exist
      *
-     * @param buildId The ID of the build for which load the scan result
-     * @return The {@link ScanResult} object associated with the specified build ID or throws the exception {@link NotFoundException} otherwise
-     * @throws NotFoundException If the a record for the specified build ID cannot be found
+     * @param scanId The Id of the scan to check
+     * @return {@code true} if the scan record with the specified id exists or {@code false} otherwise
      */
-    default ScanResult loadScanResult(String scanId) {
-        final scanRecord = loadScanRecord(scanId)
-        if( !scanRecord )
-            throw new NotFoundException("No scan report exists with id: ${scanId}")
+    boolean existsScanRecord(String scanId)
 
-        return ScanResult.create(
-                scanRecord.id,
-                scanRecord.buildId,
-                scanRecord.startTime,
-                scanRecord.duration,
-                scanRecord.status,
-                scanRecord.vulnerabilities )
-    }
+    /**
+     * Load a mirror state record
+     *
+     * @param mirrorId The ID of the mirror record
+     * @return The corresponding {@link MirrorEntry} object or null if it cannot be found
+     */
+    MirrorResult loadMirrorResult(String mirrorId)
+
+    /**
+     * Load a mirror state record given the target image name and the image digest.
+     * It returns the latest succeed mirror result.
+     *
+     * @param targetImage The target mirrored image name
+     * @param digest The image content SHA256 digest
+     * @return The corresponding {@link MirrorEntry} object or null if it cannot be found
+     */
+    MirrorResult loadMirrorSucceed(String targetImage, String digest)
+
+    /**
+     * Persists a {@link MirrorEntry} state record
+     *
+     * @param mirror {@link MirrorEntry} object
+     */
+    void saveMirrorResult(MirrorResult mirror)
 
 }

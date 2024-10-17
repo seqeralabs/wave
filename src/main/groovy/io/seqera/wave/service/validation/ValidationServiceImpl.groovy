@@ -19,8 +19,10 @@
 package io.seqera.wave.service.validation
 
 import groovy.transform.CompileStatic
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.util.StringUtils
+import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
  * Validation service
@@ -31,7 +33,12 @@ import jakarta.inject.Singleton
 @CompileStatic
 class ValidationServiceImpl implements ValidationService {
 
+    enum RepoType { Build, Cache, Mirror }
+
     static private final List<String> VALID_PROTOCOLS = ['http','https']
+
+    @Inject
+    private BuildConfig buildConfig
 
     @Override
     String checkEndpoint(String endpoint) {
@@ -74,22 +81,39 @@ class ValidationServiceImpl implements ValidationService {
     }
 
     @Override
-    String checkBuildRepository(String repo, boolean cache) {
-        if( !repo )
+    String checkBuildRepository(String repo, RepoType type ) {
+        if( !repo && type!=RepoType.Mirror )
             return null
-        final type = cache ? "build cache" : "build"
+        // repo is required when using mirror more
+        if( !repo && type==RepoType.Mirror )
+            return "Missing target build repository required by 'mirror' mode"
+        final typeStr = type==RepoType.Cache ? "build cache" : "build"
         // check does not start with a protocol prefix
         final prot = StringUtils.getUrlProtocol(repo)
         if( prot )
-            return "Container ${type} repository should not include any protocol prefix - offending value: $repo"
+            return "Container ${typeStr} repository should not include any protocol prefix - offending value: '$repo'"
         // check no tag is included
         final coords = ContainerCoordinates.parse(repo)
-        if( !coords.repository )
-            return "Container ${type} repository is invalid or incomplete - offending value: $repo"
+        if( !coords.repository && type!=RepoType.Mirror )
+            return "Container ${typeStr} repository is invalid or incomplete - offending value: '$repo'"
         if( coords.reference && repo.endsWith(":${coords.reference}") )
-            return "Container ${type} repository should not include any tag suffix - offending value: $repo"
+            return "Container ${typeStr} repository should not include any tag suffix - offending value: '$repo'"
+        if( type==RepoType.Mirror && !isCustomRepo(coords.registry) )
+            return "Mirror registry not allowed - offending value '${repo}'"
         else
             return null
+    }
+
+    boolean isCustomRepo(String repo) {
+        if( !repo )
+            return false
+        if( buildConfig.defaultPublicRepository && repo.startsWith(buildConfig.defaultPublicRepository) )
+            return false
+        if( buildConfig.defaultBuildRepository && repo.startsWith(buildConfig.defaultBuildRepository) )
+            return false
+        if( buildConfig.defaultCacheRepository && repo.startsWith(buildConfig.defaultCacheRepository) )
+            return false
+        return true
     }
 
 }

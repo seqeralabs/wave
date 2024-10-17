@@ -19,11 +19,11 @@
 package io.seqera.wave.service.scan
 
 import java.nio.file.Path
+import java.time.Instant
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.builder.BuildRequest
 /**
  * Model a container scan request
  * 
@@ -32,16 +32,65 @@ import io.seqera.wave.service.builder.BuildRequest
 @Canonical
 @CompileStatic
 class ScanRequest {
-    final String id
+
+    /**
+     * The scan unique id
+     */
+    final String scanId
+
+    /**
+     * The container build that generated this scan operation, either a container, build or mirror request
+     */
     final String buildId
+
+    /**
+     * The container mirror that generated this scan operation, either a container, build or mirror request
+     */
+    final String mirrorId
+
+    /**
+     * The container request that generated this scan operation, either a container, build or mirror request
+     */
+    final String requestId
+
+    /**
+     * The docker config json required to authenticate this request
+     */
     final String configJson
+
+    /**
+     * The container image that needs to be scanned
+     */
     final String targetImage
+
+    /**
+     * The container platform to be used
+     */
     final ContainerPlatform platform
+
+    /**
+     * The scan job work directory
+     */
     final Path workDir
 
-    static ScanRequest fromBuild(BuildRequest request) {
-        final id = request.scanId
-        final workDir = request.workDir.resolveSibling("scan-${id}")
-        return new ScanRequest(id, request.buildId, request.configJson, request.targetImage, request.platform, workDir)
+    /**
+     * Scan request creation time
+     */
+    final Instant creationTime
+
+
+    static ScanRequest of(Map opts) {
+        new ScanRequest(
+                opts.scanId as String,
+                opts.buildId as String,
+                opts.mirrorId as String,
+                opts.requestId as String,
+                opts.configJson as String,
+                opts.targetImage as String,
+                opts.platform as ContainerPlatform,
+                opts.workDir as Path,
+                opts.creationTime as Instant
+        )
     }
+
 }

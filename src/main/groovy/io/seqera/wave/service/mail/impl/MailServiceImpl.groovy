@@ -78,7 +78,7 @@ class MailServiceImpl implements MailService {
             spooler.sendMail(mail)
         }
         else {
-            log.debug "Missing email recipient from build id=$build.id - user=$user"
+            log.debug "Missing email recipient from build id=$build.buildId - user=$user"
         }
     }
 
@@ -86,9 +86,9 @@ class MailServiceImpl implements MailService {
         // create template binding
         final binding = new HashMap(20)
         final status = result.succeeded() ? 'DONE': 'FAILED'
-        binding.build_id = result.id
+        binding.build_id = result.buildId
         binding.build_user =  "${req.identity?.user ? req.identity.user.userName : '-'} (${req.ip})"
-        binding.build_success = result.exitStatus==0
+        binding.build_success = result.succeeded()
         binding.build_exit_status = result.exitStatus
         binding.build_time = formatTimestamp(result.startTime, req.offsetId) ?: '-'
         binding.build_duration = formatDuration(result.duration) ?: '-'
@@ -97,10 +97,8 @@ class MailServiceImpl implements MailService {
         binding.build_platform = req.platform
         binding.build_containerfile = req.containerFile ?: '-'
         binding.build_condafile = req.condaFile
-        binding.build_spackfile = req.spackFile
         binding.build_digest = result.digest ?: '-'
-        binding.put('build_log_data', result.logs)
-        binding.build_url = "$serverUrl/view/builds/${result.id}"
+        binding.build_url = "$serverUrl/view/builds/${result.buildId}"
         binding.scan_url = req.scanId && result.succeeded() ? "$serverUrl/view/scans/${req.scanId}" : null
         binding.scan_id = req.scanId
         binding.put('server_url', serverUrl)

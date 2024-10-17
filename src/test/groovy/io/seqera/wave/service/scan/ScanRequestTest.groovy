@@ -21,11 +21,10 @@ package io.seqera.wave.service.scan
 import spock.lang.Specification
 
 import java.nio.file.Path
+import java.time.Instant
 
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.builder.BuildFormat
-import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.tower.PlatformId
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -34,32 +33,30 @@ class ScanRequestTest extends Specification {
 
     def 'should create a scan request' () {
         given:
-        def workspace = Path.of('/some/workspace')
-        def platform = ContainerPlatform.of('amd64')
-        final build =
-                new BuildRequest(
-                        containerId: 'container1234',
-                        containerFile: 'FROM ubuntu',
-                        workspace: workspace,
-                        targetImage: 'docker.io/my/repo:container1234',
-                        identity: PlatformId.NULL,
-                        platform: platform,
-                        configJson: '{"config":"json"}',
-                        scanId: 'scan12345',
-                        format: BuildFormat.DOCKER
-                )
-                        .withBuildId('123')
-
+        def timestamp = Instant.now()
         when:
-        def scan = ScanRequest.fromBuild(build)
+        def scan = ScanRequest.of(
+                scanId: 'sc-123',
+                buildId: 'bd-123',
+                mirrorId: 'mr-123',
+                requestId: 'rq-123',
+                configJson: '{config}',
+                targetImage: 'tg-image',
+                platform: ContainerPlatform.DEFAULT,
+                workDir: Path.of('/some/dir'),
+                creationTime: timestamp
+        )
+        
         then:
-        scan.id == build.scanId
-        scan.buildId == build.buildId
-        scan.workDir != build.workDir
-        scan.configJson == build.configJson
-        scan.targetImage == build.targetImage
-        scan.platform == build.platform
-        scan.workDir.startsWith(workspace)
+        scan.scanId == 'sc-123'
+        scan.buildId == 'bd-123'
+        scan.mirrorId == 'mr-123'
+        scan.requestId == 'rq-123'
+        scan.configJson == '{config}'
+        scan.targetImage == 'tg-image'
+        scan.platform == ContainerPlatform.DEFAULT
+        scan.workDir == Path.of('/some/dir')
+        scan.creationTime == timestamp
     }
 
 }

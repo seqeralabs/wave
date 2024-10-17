@@ -1,0 +1,100 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Wave container build data">
+    <title>Wave container builds</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap');
+        pre {
+            white-space: pre-wrap;
+            overflow-x: auto;
+            overflow-y: auto;
+            background-color: #ededed;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 30px;
+            max-height: 400px;
+            max-width: 100%;
+            word-wrap: break-word;
+        }
+
+        .table-container table{
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table-container th, .table-container td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+            vertical-align: middle;
+        }
+
+        .table-container th {
+            font-weight: bold;
+            background-color: #f1f5f9;
+        }
+
+        .table-container td {
+            font-size: 14px;
+        }
+
+        .table-container a {
+            background-color: #f1f5f9;
+            text-decoration: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .table-container a:hover {
+            text-decoration: underline;
+        }
+
+    </style>
+</head>
+<body>
+<div style="font-family:'-apple-system', BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; padding: 30px; max-width: 800px; margin: 0 auto;">
+    <div>
+        <img style="float:left; margin-top: 5px; margin-right: 10px; width: 30px;" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAD0AAAA8CAMAAADi4EJ+AAAApVBMVEUAAAA9lf4/nP88lf06lP49lf5Alv49lf09lf49lf09lf09lf49lf48lf49lf0/lP09lv89lf49lf09lf09lf09lv09lf49lf09lf09lv09lfw9lf49lf09lf09lf49lf09lv89lf49lv49lf09lf09lf09lf48lf89lf49lP09lP48lP09lP08lf89lf5Bn/8+l/8/mv9Anf9BoP9Cof9Fqv9Co/8+fXihAAAALnRSTlMA+wT9BvcPkOvAY7WBIsoURt6iiXA30LOoXT4c8ujbmTHjua+VeGsK1lQsKXpNcp061QAAA+NJREFUSMeVlolyozAMhhG200Lus7nva9susk267/9oS2BBMngys5pMhiB9/o2t+CdoRBhmX/3B97z3fmgFYS0ZtDZaJM8QWq187Op6XBtEY949dBeSkt606nAQTEdrtFoAgPbRA1PACZhZg923DWoAkZUIL91J4R9t205KBvJNo4B/g/vpyJZ0OnYzy2GaFDmia/Bndr/U/uXkJsYokbyiZTBGKLOqy1NnLuyng9VaV9I9vl6nB1TCtCWhK73DUgDwwpLzh3JZUHVt+dyuckkT+CqTYTBOlYMKg9ZSrxVF/Y0h6XaZk8EC+bQhQXPfxdOuO+2gZ6EqMYOCzr6/QAsmjDBfFikOywgJthFNiw2agLYfn3nHh077d+/Iisyykp6k/L5a5NUMldmvheIK6aiC++9a0JS2XYeV+fUyQs2n994v08/GJ3jWyu64sYojY4EvjP0dyKY0mAPBeXL6fe4ptIJ3oXqMaasnWKZEIvYFTM31Y60GEBxO56xkxlpgUsBEv6HKUa4csYq9Fs3GJzqFWgOnx5C2mq3ZczHC1zSIbK94UWSBS7+ihTL6wmG24oBXSnhoATrdLt1Gmmoh6LDw0RWLqiNrzRCjb+JEP+BJgjCpOneD+vAdqyAPZXeUc3dMGzTDTsbK+vDzH4N5mJ8LZXm3pEbN3gaSdFlcolP7o519PqJlIx8G8Wl8HayKkf4jQinZ6vJLCvbDLWCXNMrL4Dqt6aIzGt2a2dvo+JE/6kf71Hcy5eN9TY4bjfhQHh9b6dTiM+wD6nSY4YtI5Basko2HXmooQum7rM85jLdok/wPLbzuP6HuiurCgzuaDH3hwKeKxp37xLeRzdiXDtxf8z8Vh/fDlFgvLWniItF7PuwvQfbNaBcfmnLiZhvynjSahIluSpcTP1dJGcQoXLi5YyEz/0SYJZnoLyNEzYLtH+U6cHGK0fsWvcyABs6aVG/nnYV0FpwfU4Bx5WRyaxgMGg/jvWx0YYfb91BWiV2quH2/T251C85qzygEl5b09kjCiR21Sutk7CpCINj2HC+iWes4cIwwd2954fYthJ4GYbVZDE4GzfOr+z1EDdzKOpVAeDdkonrgHmD9/e9OpFIDgsF4ZB1qmfnHNQceP0xqdc5S0bBFdJtaAEcNB34oyFmCzZp5TldpeqXu032/AyfKrj+ZxBVJ+kr3/bRQOOyyIjoshDnc/A7M7fvY4vDtYEQpPfZ6KLFgdccxJHrZpxbw0wAGe1MXpv0SZiv9DlxYsMVh3HCzC52Rc58Dp0+DTgzqXuyx0XNFp9R+XFsjopiNp14bnZP2wqetZ+23xVfRV434C+G26LEOOFWjAAAAAElFTkSuQmCC">
+        <h1>Wave container build records</h1>
+    </div>
+{{#if build_records}}
+    <div class="table-container">
+        <table cellpadding="4" >
+            <tr>
+                <th>Build ID</th>
+                <th>Container image</th>
+                <th>Build time</th>
+                <th>Status</th>
+            </tr>
+            {{#each build_records}}
+            <tr>
+                <td><a href="{{server_url}}/view/builds/{{build_id}}">{{build_id}}</td>
+                <td>{{build_image}}</td>
+                <td>{{build_time}}</td>
+                <td>{{build_status}}</td>
+            </tr>
+            {{/each}}
+        </table>
+    </div>
+{{else}}
+    <pre> No Build Record Found</pre>
+{{/if}}
+
+    <div class="footer" style="clear:both;width:100%;">
+        <hr class="footer-hr" style="height:0;overflow:visible;margin-top:30px;border:0;border-top:1px solid #eee;color:#999999;font-size:12px;line-height:18px;margin-bottom:30px;">
+        <img style="float:right; width: 150px;" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAA7CAMAAAD2B0fQAAAC2VBMVEUAAAAfEB8PATAWDyUWDyYWDyYWDyYWECUXDyYWDyYXFi0WDyYWDyYWDyYXDyf6aGP6Z2PygUYWDiYMwJ0XECXygUY+lP0NwJ0SESPdgFUWDyb6aGMVDiU9lfzygUbrgEAVECUWDiX6aGM9lv49lf77d3PxgEcWDyYWECYVDiUWDyYVDiUWECYWDyYWDyYVDiUPDSQWECYWDyUWDyYYDybxgEYVDyYWDyYSDSUWDyYWECYWDyYWECYYDyUWDyUVDiYWDyUWDyUWECYXEyUdDycMwJ0WDyYWDyYVDiYiESwYGBoWDiUVDiPveljxgEYWDyYWDyYsFicTDSUwGSgWDyb5Z2L2ZmEVDiYXDSYVECQYECPufkYWDyYWECYXDyYYDiMWDyUcHjwAAB8WECYVECUWDyYQDh48mfkVDyYAAR8WkZAWDyYPCyQUDycHu5v4Z2IWDiXzfUoNwZ8AAx4ABiEXAAASiXPygUYWDyYWECY7kPT0dVAWFi49l/4NwZ4NwZ3wgEcWECUAAB0AAB49lf79cF2TQj0QDSY9lf3xgEY8lfzwgEYNwJ0oFib4fFL1d1AKwZ86lP+ANDsWKTAjSoTfdkL6aGP7aGMwGij5Z2MZIkM4GCoMwp71dFUOwJ2xVj4/mf/8Z2ROJS30c1MLwp09jvL0aGKdOzs5iuogP3HBZjxxLjgUX1QvGifxgEbtfkZZLysPqIrpYV5lKTUOxqH6aGMNwJ40GycpuZY6JiwAACUXGCc+lv89lfwMwJ48IChAYVMAACA7GSk9lfw8lPwAAB8XECcWDyYYECkNwJ09lf37aGPxgEb/bWf/cGtBoP8Oz6n/iUv/iEoZESssFSoSDic+mv8MxKAMwp//amX1gkcaECc9l///jE0QAAD6hUgmFChAnf8N1a4MyaQKDCbvY18ZJEc4iOcydswnV5oOtJW7YjysWjgTMDVBICoXAB3/d3HNVVSrR0mKdHuAAAAAxnRSTlMACAX8/fv69fn4C/fI0SD9+vjt+Uz6mZkNBvPTbP3IDF96tf77BLy+gJuWacORhUQ8LOjjy76DZEnf16BPKdt2iXNcGhb976xWEgo4Ign+uXBbJf7q1b21NTAd0aijjVFACv7TsqYQB69fBs1aMgu8fExKPzf+/fv55b50/vXwx6ukblU6Hv777M7NvY1oZDkiHf78+/j36uPeuamXjoFcR0ZBLi0nFg3+/v38+/Dt5ubh2szJx728uaegnZSTgX97eHBlYmJw1httAAAQpElEQVR42u2bhV8sVRTH7+7E7myAIiquqGDBsgu7hNIpEoKFKMZ7iCDY3d3d3d3d3XXmii2K3d3xF3jOnVlmZ5hlWfWjftQfDzbe2d+99zvnxhzeY4ztzNi1j99/+PO5af233t6b7c7+Y9qZ7Xzq4a+++tb/sBaj3Y949bP1l1v/f1iL0RGfLkeo/oe1CJ36KaH6H9ZidCaOWwx+uRy1/vr/PViXv7ocsXrrs1dz1Kev/vdgHfEZJtbbb31714qXrpiDKPpa3En/Wzr87fWff3u5/Sfy2P/Kqucxr9a/db9H8MD1n0uU3DMLYe2/3w9NW/+5toOJks7SdLWv25c5rnjbrYqyGG6dqG8vba8vbPUyQ9XrtpNridclOG8B16nOcvxg6Z5iwFsVVzY3Rycr8pjNpn+gpLyiOVpZXjIwZV+z3vr2J/1QvW3PsX72J2nLjrAfuF0wU8acGugIa2ac3thc6M1ouF5xWQQMG3miqpXR0GIzQK5NAeZ1tF5VF0y51h7V4nQd0umDfCaBkWVgdA0GmMeKaJisAW4KapsTtt1w//3O0XFw0Li0vtrL/rCqe9FLV7RgMCi+ja8e6GWWaIBjI2Ycyg/4vK7F3XCqtIZz01DVgavt9Pku6CHXOMJKd01urztc+xxZV6P3aBFNSbAWncvkGdFrtrJgJePAQdKCQpqML8oGrHPWWwhLetNUU3TX6g3YH1GJxsGnyToKdEOAX0G+o41VUSVQnGSGyKpPBVja7WI41oSBQQnMQL9P59sXYTvcr6NryJZZnlGnq5/zJevZYBWAqks6tHp84BPdVCCym4BFTlXAqSu6KVB9Ctc7rRM8Lln6x29sltJtDzxxdfdaK2UXc1MMICJhNzVNkdIk+2DHdFZDdVyPyGI8mqb5aXTgU3lbtYsh9/l1kuTHSFXWFUS0HYtxTdd9dlhbh1xdG3ezwzpQl3XYZBIQGcVF9OG5zOrlug9E91VFUTU/kAPwjlTV4d7nf7rwoaML9yEl99032XDMMYn12O/UmA4R7KJfXmjN8rDWWu5TKC4IQrpGPOQI76lmXlsGtgP4dJKm6UZo0I8JtT3blgedsPIaeYRc1TlXzXTdzQYL2yIvWcZ8JXF9SxPWUq6RgZbqPqiil8A7zYAzH3xy3kq10mqLEJsvbxmP6IDu0Lh9ZdW6VZbKK7ssAus18QhdsyBw8A/X1vjwUcydCNSmbzMe1geYByhFo/lVUztMi2tQkaCjAlQHrKkwNm66qjZXXrueE5Yuy36Zc2m4traxoKkam8I/m3BFFnCgdiQ6OtpcVsB1lehDkCIMbXj6katuk6aTVs2uk1Y9g23IHEoASOTds8mCR5FeLnJd5cElsWTrYOtAV7SAy4oOOPrt01ltbY7Mr/OaaMkAhibrlxZwylwA3QFriWAlqVztjY0ZrsOIDV0j6OqEpWsA8c5E9eBg3mCeR7Q25ANJrGEHFecZl7W6Q6e3QIIljLQWY4fc8dFruer1Dz7Yaz6scu6jxnwJtpDqQVaQlcJHtrR29GbQiZbKd02NHh+bQQJxZWHUusVojWK6YQY4YPVxDZCVlLZ7scEo6IgGNN7lhOWHSL2ZLFZrIMCErbYwtXWgIfUYqbXSka+9/uLyy+aqjZZ3gbWEYPl4JWMZt1Qv624DH81VDEN5SDTeUtAlHCy0WYmV9IOi03uRFvqkCGWoXVVQwQFru0bQ8ApIELW5doKOFkFoCthg0RUdozhDorXdgrQ3AdRszegd0SJ1S8Ye4IYgYB35wUbLHvBirtro3XddYG2MsMDP69lCKuZ+oF1/KfXQFD0bBV3G4ULX3NtLQaZrDWqS2U9TDRjngFWPCz61vcThWg6KTK112WDBgTyWHkjP64HjXqhBCQukt1WLtECGZoY65ANC9SfBKqPM0ngxW0CekAiipdxr6ywLg0SwNp5bsWpBFRtXDF/YtQn3O2CFQCXXxq3ZdjZXb5wHCdbGNlgatAXmday6s8zPZ9rsb7IoVygRaTM/btl3idVGGy2fm5Z9caPM03BjaiSTBrBpN6IBVkypBRDZGsdPDl0ACtELubiEwW+DVY0fxFAotV0B46ivS/gVzEuH5eMVzE1DsdCetr57aYukVTMcEIlFqDb66PUc9cFrLrDWJVigwCjLKGxco+W1J28erKECkOi4v63Z3UqQab2APhf0XVxLh0Vzm1wLcB12utYCNci3tWBlyX477HoQsCaKGFvndUqsj14875S1T1k7k05ZZ57WXmedM9i8Q3xCLKcA0BTLeHZYmsq++YqDTLDWNQc8wlVKrOEit3vrHlAsWOSqEpE4Dc+h7Y15WJ4GC1RekiOsMPbi9nc3evHdA767c0v2p2hj41woAw/WRTdJ5HkzLFk+LpJv202KLW1SPwFCk8wrbh/DlC0KjDA3ldlP8CEcEkhcbIWFnTHLNRYLgZj2k3ZYXQuUg7ZMFLa0tBT2bSXWfT4H60VktdHx4w8ztkCFpPC0007bNF0lV5x+DZ7Q5murCARBpy1cB7pbaNuxc0v7vOhvA436XkqnBW4XgEjLMmNlzaulCaPiCcNNFdyXBsvTCBItWR20yAAHm6txKi9bVGZ5WqITPjDEoc+eWbhQv/v9+I91+DSjPNWx3hqYmRHDoX58PH78zxet5Eor4eOyJInDnaoaxNoqk+nka6izfloz9sSjuKKqqmLKODsBhAxY1QUGrE7X61hqgzVVADLtDuXiZOVDV8NYTbmqULcYWLFGzgH7rqCkoI600mGd9NG75338+cefx7uMGmTGDGuNLWlTAUDGOtHH42cv89IhuL675VYYUAodboiYX5SEQg322w3QeIy1g+KX7DKQ1dlhuS/F7TZY3REAgtWOrMAnz3OVfIuBVV3Hwa8pNEqSrunQxbqsaXjZa8vePL7ZCSpwX6iqIUO1wTzR9jd0xAuAw5uYWe+8dJ97JF7aJkDpkupXJVESCiLkCq/tnCNBfEfIIB62w4oxN3U6YOlAX6FewJ8u0nk4CywPG4jwoLhvVkA3pAJ0NoOcgnXNRx99P77Z52+ecMKbb/I3C0ba9+nOsC14xHCHdt3x8/c2G//lpXcuOI6t5E7L03dUG+UTUMlSFYdH/4y5TKfujSXgigRuklKZ1Tq8+Mzq7xErE7YqqfhzvrRsmeWhv/FRzxTgYGmGS7oJi+52vhv/8Y00XXjJ01f3rzVPbK21NrzhBlqmLtls/OwX8t/Jv8p9Hop9v7uhvHeXGmwW81oRRaXUOt1tHnuaBxpaCl3VkjRcBs0Ffk/mpg4brMBBIFNG9W5Z6O7agK5ZpmEvV6mnOo+UVaxbnlJxr5VZbLXTr9hpTrses+tzRz919DGDLKOm2NHjt3zxTv47L2SClbqL9gwlipvDIKokdL2MClwgDGLPr2ILy8O6mwxYzZnKPOlHhwmQ6OhQkcU1IywP29IHiiiBL8GOWkpfs3JX9z2/Iqv8d5ahelYmeWmVM9a5pTIYlapK84xoHkoDLOCxa4NAfxE9pOrhcbrUEoSZiwJt4E+HNQLGoTTA0MKuwJThmgVWuXkfX2H2X8gbYKUWrNX32GOPLbbYAr/pp/mw+kK6+4t33sl/If+lC6631ix3YKmCSoQGoqQWjSqC5Yea9TIklKVmLolq0lZud5ggQTqsdblfuLaSg7trlmmI0432hoM8rMh2go9asF7OXS+9gKzyX1odz1nZhZeGjdKgJThoipFaQJJ18LttRyXFc3NYVHmNChem5AauZ1JIg9Ug7rmNspNDfe1U7soKK04OWBJ1GkxYa9YyuSs//wXE9Q7dRy9GAbatjv2QoafbOJWKFV6DJq9zoVuvgMf70lcRSklCkueg5WXVYs6kwSqqAUm49jOPY+lr5PGuLJmFHp46gqXwqOMCjoE+txu+8Pt0/stZE8tqT8CSYLg/PSk0WsO8tpmyI9Dx3cLFysxCaYiQ20J3AWc9q0IU/1QarCcNAk1mmVyzwfKGjMzaPr1TXnFz/8dg5Z//8kXXLx7WuhwnnjKXSgMqJYwsQ7k1LpomHUDHQYAo86Zql2IeggwjmHjeuaWQNgnVWYMXBS0MhyprJtOTPUH2oyuPZpuGI0ArJPSkpaaHOpWWWfk5CyfiCy+vfFw2VtbQqsXh8kDrV9JRSi0a19IpikCJ6pUgo0jQYg7fa9ZO6fy0i1jkzcjWEPIDByxWkXJd0p3mWiWKRiqWsxaEhSaV5m44iZDos+Lzo+hoHUpfyl0vv7zMZRsiq0Uq0SiKwxqvT3Ur7yDwieMf1OxpnuiKtq0TrHQFZ6d37sK2GG8iGyk6YOZbskIFmhrggNVdA5rhOlw+ZC6XLXFhIM4tC8PagLXo5jmrd26fHguBTrmegrXyYrR5ulZe/ZDjMhZzBvNsGkrGNtbBuDQ1U9b+BOA3GIAa7q2oWFpWA2CuDbvYLncFF2+L43njSLQiOtJIkfhS08EOizWArpquSnjHlKvBtM6TBRZqF4JFtCKTsYZkoqQjDMSqoE0HA9bv1LYHX8l2cHl/BAr8QW1OQQW4sW3JKq+33dhh89gxAYFzQMn0WoWC9Zw1PiSDMiO5qLRLUDDUMf/X9zF01W2uOrnqQQzPes6iNDZoycZnRdcR/G67gZQDrO5kQ0MimdwXlUwmE5uOTnz49WHXudEq45puEyiSKAXKjhuRdgBJAtE1qqCYT/F4sZVzR49zXZKFF0ZK+CF8BNiWzrZOWCyGrvKca6oBFXq2zH4oRZsOrovKEnZNltFBBtmPFd2xnGAFkuVlkfdSQuyHfnjuKye71nppkU2X0TK+5yx3tgxz0CVjaMboJIwKD84bAZsEIzA9Dke6rgss1lADTlcq+bSy7LBIlfZP44f5xgxhycYvLBat/obRUI/5T1M0hPX+J8+wHdxK8JKSLgRF9Nr65v9eulklN5CMMIqKVLmWHksaASif5uLaEswVFj7rj2pOV1+HzTVvGHyS6gPXGnyswNEUFe6ToCm+RWcW7f+k1vqjmvzkduiH38zOHuwSGJqB+YqENvG43a1tVdEmg6W2yqEMZdqi9l38kJI80e5hHicsy7W6sklKy+zGilb7DeegwgE1U+++Q3W0pU2Nul2pR2Oc4huzw3KWEYrGSkO6/uWHX8++f+JZ81MrWlsXTtcu8R0rY7QMeeYbetEtUdq8cSgcDpUdVd4whVEZ762TpZNlu4TrypaUN3jpHRssx2UNGK4YPVle2O90XS/eVIcdayzM0FSgsKo3Hm4Kh3bsMGvhWzY2NYVrtw/k9p/tdt5uZ3q8+MsPb1plzffXPHY+LM92HrsYKiMEj/uje2KTuddyc8JyulrRHtc+brdwU4Ht0poqIuXAyjLrZsUffvnV+6u8/z6eHhabktn/DktHC7lQoPXECSuz6wbenEe4QVpTf1iei7+5cXaVNWfdMot5HWLZZYZllxXngJWbq9dQDk3NfWCFXPXowV+9P7vK9CqzYs36e+SE9Vfpldw1+/4q02tMf3Iwy03/AlirrLnKKviNX2saz4wn9C1+Wi9ElPHG9PT0Gp88m1ti/RtgrTG9Bmka/xjf0yR6Yr4lHqxnZsCan5zMctO/Adb079Eah30i7g3/Tq0r/iHRPx3WGjgRXzmRtsK/VeU8okgRiP+zYb0/+8rswWexv1sdM4Camfgnw1pj+rCTHzuW/f2qD28cj28crvCwv0y/Ae3/0KuEqjJWAAAAAElFTkSuQmCC">
+        <p class="footer-text" style="font-family:'-apple-system', BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';font-weight:normal;margin:0;margin-bottom:15px;color:#999999;font-size:12px;line-height:18px;">
+            <a href="{{server_url}}">{{server_url}}</a><br>
+            Seqera<br>
+            Carrer de Marià Aguiló, 28<br>
+            08005 Barcelona<br>
+        </p>
+    </div>
+
+</div>
+</body>
+</html>

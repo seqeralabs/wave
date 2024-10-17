@@ -63,24 +63,21 @@ class KubeScanStrategyTest extends Specification {
         def folder = Files.createTempDirectory('test')
 
         when:
-        def request = new ScanRequest('100', 'abc', null, 'ubuntu', ContainerPlatform.of('amd64'), folder.resolve('foo'))
+        def request = ScanRequest.of(scanId: '100', buildId: 'abc', targetImage: 'ubuntu', platform: ContainerPlatform.of('amd64'), workDir:  folder.resolve('foo'))
         Files.createDirectories(request.workDir)
 
-        def scanResult = strategy.scanContainer(request)
+        strategy.scanContainer('job-name', request)
         then:
-        scanResult
-        and:
-        1 * k8sService.scanContainer(_, _, _, _, _, _, [service:'wave-scan']) >> null
+        1 * k8sService.launchScanJob(_, _, _, _, _, _, [service:'wave-scan']) >> null
 
         when:
-        def request2 = new ScanRequest('100', 'abc', null, 'ubuntu', ContainerPlatform.of('arm64'), folder.resolve('bar'))
+        def request2 = ScanRequest.of(scanId: '100', buildId: 'abc', targetImage: 'ubuntu', platform: ContainerPlatform.of('arm64'), workDir: folder.resolve('bar'))
         Files.createDirectories(request.workDir)
 
-        def scanResult2 = strategy.scanContainer(request2)
+        strategy.scanContainer('job-name', request2)
+
         then:
-        scanResult2
-        and:
-        1 * k8sService.scanContainer(_, _, _, _, _, _, [service:'wave-scan-arm64']) >> null
+        1 * k8sService.launchScanJob(_, _, _, _, _, _, [service:'wave-scan-arm64']) >> null
 
         cleanup:
         folder?.deleteDir()

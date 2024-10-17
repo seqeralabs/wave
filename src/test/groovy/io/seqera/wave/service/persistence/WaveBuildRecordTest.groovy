@@ -19,11 +19,13 @@
 package io.seqera.wave.service.persistence
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
+import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
@@ -31,8 +33,6 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.JacksonHelper
-import io.seqera.wave.api.BuildStatusResponse
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -45,7 +45,6 @@ class WaveBuildRecordTest extends Specification {
                 'container1234',
                 'FROM foo:latest',
                 'conda::recipe',
-                'some-spack-recipe',
                 Path.of("/some/path"),
                 'docker.io/my/repo:container1234',
                 PlatformId.NULL,
@@ -58,7 +57,7 @@ class WaveBuildRecordTest extends Specification {
                 'scan12345',
                 null,
                 BuildFormat.DOCKER,
-                Duration.ofMinutes(1)
+                Duration.ofMinutes(1),
         )
         final result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         final event = new BuildEvent(request, result)
@@ -77,7 +76,6 @@ class WaveBuildRecordTest extends Specification {
                 'container1234',
                 'FROM foo:latest',
                 'conda::recipe',
-                'some-spack-recipe',
                 Path.of("/some/path"),
                 'docker.io/my/repo:container1234',
                 PlatformId.NULL,
@@ -90,8 +88,8 @@ class WaveBuildRecordTest extends Specification {
                 'scan12345',
                 null,
                 BuildFormat.DOCKER,
-                Duration.ofMinutes(1)
-        ).withBuildId('123')
+                Duration.ofMinutes(1),
+        )
 
         and:
         final event = new BuildEvent(request)
@@ -126,4 +124,47 @@ class WaveBuildRecordTest extends Specification {
 
     }
 
+    @Unroll
+    def 'should validate status and succeeded' () {
+       given:
+        final request = new BuildRequest(
+                'container1234',
+                'FROM foo:latest',
+                'conda::recipe',
+                Path.of("/some/path"),
+                'docker.io/my/repo:container1234',
+                PlatformId.NULL,
+                ContainerPlatform.of('amd64'),
+                'docker.io/my/cache',
+                '1.2.3.4',
+                '{"config":"json"}',
+                null,
+                null,
+                'scan12345',
+                null,
+                BuildFormat.DOCKER,
+                Duration.ofMinutes(1),
+        )
+
+        final result = new BuildResult(request.buildId, EXIT, "ok", Instant.now(), DURATION, null)
+        final event = new BuildEvent(request, result)
+
+        when:
+        final build = WaveBuildRecord.fromEvent(event)
+        then:
+        build.succeeded() == EXPECT_SUCCEED
+        build.done() == EXPECT_DONE
+
+        when:
+        def resp = build.toStatusResponse()
+        then:
+        resp.succeeded == EXPECT_SUCCEED
+        resp.status == EXPECT_STATUS
+        where:
+        EXIT    | DURATION              | EXPECT_SUCCEED   | EXPECT_STATUS                          | EXPECT_DONE
+        null    | null                  | null             | BuildStatusResponse.Status.PENDING     | false
+        0       | null                  | null             | BuildStatusResponse.Status.PENDING     | false
+        1       | Duration.ofSeconds(1) | false            | BuildStatusResponse.Status.COMPLETED   | true
+        0       | Duration.ofSeconds(1) | true             | BuildStatusResponse.Status.COMPLETED   | true
+    }
 }

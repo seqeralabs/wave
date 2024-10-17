@@ -24,13 +24,12 @@ import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Header
 import io.micronaut.http.annotation.Post
-import io.micronaut.http.annotation.Put
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.retry.annotation.Retryable
+import io.seqera.wave.service.mirror.MirrorResult
+import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ScanVulnerability
-import io.seqera.wave.service.persistence.WaveBuildRecord
-import io.seqera.wave.service.persistence.WaveContainerRecord
 import reactor.core.publisher.Flux
 /**
  * Declarative http client for SurrealDB
@@ -73,16 +72,12 @@ interface SurrealClient {
     @Get('/key/wave_request/{token}')
     String getContainerRequest(@Header String authorization, String token)
 
-    @Post('/key/wave_request/{token}')
-    Flux<Map<String, Object>> insertContainerRequestAsync(@Header String authorization, String token, @Body WaveContainerRecord body)
-
-    @Put('/key/wave_request/{token}')
-    Flux<Map<String, Object>> updateContainerRequestAsync(@Header String authorization, String token, @Body WaveContainerRecord body)
-
     @Post('/key/wave_scan')
     Map<String,Object> insertScanRecord(@Header String authorization, @Body WaveScanRecord body)
 
     @Post('/key/wave_scan_vuln')
     Map<String, Object> insertScanVulnerability(@Header String authorization, @Body ScanVulnerability scanVulnerability)
 
+    @Post('/key/wave_mirror')
+    Flux<Map<String, Object>> insertMirrorAsync(@Header String authorization, @Body MirrorResult body)
 }

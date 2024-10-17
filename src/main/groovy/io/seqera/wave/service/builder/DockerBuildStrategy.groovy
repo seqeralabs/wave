@@ -20,14 +20,12 @@ package io.seqera.wave.service.builder
 
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.concurrent.TimeUnit
 
 import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.configuration.BuildConfig
-import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.util.RegHelper
@@ -52,16 +50,13 @@ class DockerBuildStrategy extends BuildStrategy {
     Boolean debug
 
     @Inject
-    SpackConfig spackConfig
-
-    @Inject
     BuildConfig buildConfig
 
     @Inject
     RegistryProxyService proxyService
 
     @Override
-    BuildResult build(BuildRequest req) {
+    void build(String jobName, BuildRequest req) {
 
         Path configFile = null
         // save docker config for creds
@@ -80,7 +75,7 @@ class DockerBuildStrategy extends BuildStrategy {
         }
 
         // command the docker build command
-        final buildCmd= buildCmd(req, configFile)
+        final buildCmd= buildCmd(jobName, req, configFile)
         log.debug "Build run command: ${buildCmd.join(' ')}"
         // save docker cli for debugging purpose
         if( debug ) {
@@ -89,38 +84,28 @@ class DockerBuildStrategy extends BuildStrategy {
                     CREATE, WRITE, TRUNCATE_EXISTING)
         }
         
-        final proc = new ProcessBuilder()
-                .command(buildCmd)
-                .directory(req.workDir.toFile())
-                .redirectErrorStream(true)
-                .start()
+        final process = new ProcessBuilder()
+            .command(buildCmd)
+            .directory(req.workDir.toFile())
+            .redirectErrorStream(true)
+            .start()
 
-        final timeout = req.maxDuration ?: buildConfig.defaultTimeout
-        final completed = proc.waitFor(timeout.toSeconds(), TimeUnit.SECONDS)
-        final stdout = proc.inputStream.text
-        if( completed ) {
-            final digest = proc.exitValue()==0 ? proxyService.getImageDigest(req, true) : null
-            return BuildResult.completed(req.buildId, proc.exitValue(), stdout, req.startTime, digest)
-        }
-        else {
-            return BuildResult.failed(req.buildId, stdout, req.startTime)
+        if( process.waitFor()!=0 ) {
+            throw new IllegalStateException("Unable to launch build container - exitCode=${process.exitValue()}; output=${process.text}")
         }
     }
 
-    protected List<String> buildCmd(BuildRequest req, Path credsFile) {
-        final spack = req.isSpackBuild ? spackConfig : null
+    protected List<String> buildCmd(String jobName, BuildRequest req, Path credsFile) {
 
         final dockerCmd = req.formatDocker()
-
-                ? cmdForBuildkit( req.workDir, credsFile, spack, req.platform, req.buildId)
-                : cmdForSingularity( req.workDir, credsFile, spack, req.platform, req.buildId)
+                ? cmdForBuildkit(jobName, req.workDir, credsFile, req.platform)
+                : cmdForSingularity(jobName, req.workDir, credsFile, req.platform)
 
         return dockerCmd + launchCmd(req)
     }
 
-    protected List<String> cmdForBuildkit(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform, String buildId) {
+    protected List<String> cmdForBuildkit(String name, Path workDir, Path credsFile, ContainerPlatform platform ) {
         //checkout the documentation here to know more about these options https://github.com/moby/buildkit/blob/master/docs/rootless.md#docker
-
         final wrapper = ['docker',
                          'run',
                          '--rm',
@@ -134,12 +119,6 @@ class DockerBuildStrategy extends BuildStrategy {
             wrapper.add("$credsFile:/home/user/.docker/config.json:ro".toString())
         }
 
-        if( spackConfig ) {
-            // secret file
-            wrapper.add('-v')
-            wrapper.add("${spackConfig.secretKeyFile}:${spackConfig.secretMountPath}:ro".toString())
-        }
-
         if( platform ) {
             wrapper.add('--platform')
             wrapper.add(platform.toString())
@@ -151,15 +130,15 @@ class DockerBuildStrategy extends BuildStrategy {
 
         // the container image to be used to build
         wrapper.add( buildConfig.buildkitImage )
-
         // return it
         return wrapper
     }
 
-    protected List<String> cmdForSingularity(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform, String buildId) {
+    protected List<String> cmdForSingularity(String name, Path workDir, Path credsFile, ContainerPlatform platform) {
         final wrapper = ['docker',
                          'run',
-                         '--rm',
+                         '--detach',
+                         '--name', name,
                          '--privileged',
                          "--entrypoint", '',
                          '-v', "$workDir:$workDir".toString()]
@@ -170,12 +149,6 @@ class DockerBuildStrategy extends BuildStrategy {
             //
             wrapper.add('-v')
             wrapper.add("${credsFile.resolveSibling('singularity-remote.yaml')}:/root/.singularity/remote.yaml:ro".toString())
-        }
-
-        if( spackConfig ) {
-            // secret file
-            wrapper.add('-v')
-            wrapper.add("${spackConfig.secretKeyFile}:${spackConfig.secretMountPath}:ro".toString())
         }
 
         if( platform ) {

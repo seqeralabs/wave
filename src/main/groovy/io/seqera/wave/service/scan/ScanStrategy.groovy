@@ -22,17 +22,20 @@ import java.nio.file.Path
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.ScanConfig
 /**
  * Implements ScanStrategy for Docker
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @CompileStatic
+@Requires(bean = ScanConfig)
 abstract class ScanStrategy {
 
-    abstract ScanResult scanContainer(ScanRequest request)
+    abstract void scanContainer(String jobName, ScanRequest request)
 
     protected List<String> scanCommand(String targetImage, Path outputFile, ScanConfig config) {
         def cmd = ['--quiet',

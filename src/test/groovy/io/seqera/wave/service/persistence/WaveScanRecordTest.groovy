@@ -23,9 +23,8 @@ import spock.lang.Specification
 import java.time.Duration
 import java.time.Instant
 
-import io.seqera.wave.service.scan.ScanResult
+import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
-
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
@@ -36,8 +35,11 @@ class WaveScanRecordTest extends Specification {
         given:
         def startTime = Instant.now()
         def duration = Duration.ofMinutes(2)
-        def scanId = '12345'
-        def buildId = "testbuildid"
+        def scanId = 'sc-12345'
+        def buildId = 'bd-1234'
+        def mirrorId = 'mr-1234'
+        def requestId = 'cr-1234'
+        def containerImage = "testcontainerimage"
         def scanVulnerability = new ScanVulnerability(
                                 "id1",
                                 "low",
@@ -49,25 +51,40 @@ class WaveScanRecordTest extends Specification {
         def vulns = List.of(scanVulnerability)
 
         when:
-        def scanResult= new ScanResult(
+        def entry= new ScanEntry(
                 scanId,
                 buildId,
+                mirrorId,
+                requestId,
+                containerImage,
                 startTime,
                 duration,
                 'SUCCEEDED',
-                vulns)
+                vulns,
+                0,
+                "Some logs"
+        )
         then:
-        scanResult.id == scanId
-        scanResult.buildId == buildId
-        scanResult.isCompleted()
-        scanResult.isSucceeded()
+        entry.scanId == scanId
+        entry.buildId == buildId
+        entry.mirrorId == mirrorId
+        entry.requestId == requestId
+        entry.containerImage == containerImage
+        entry.completed()
+        entry.succeeded()
+        entry.done()
+        entry.exitCode == 0
+        entry.logs == "Some logs"
 
         when:
-        def scanRecord = new WaveScanRecord(scanId, scanResult)
+        def record = new WaveScanRecord(entry)
 
         then:
-        scanRecord.id == scanId
-        scanRecord.buildId == buildId
-        scanRecord.vulnerabilities[0] == scanVulnerability
+        record.id == scanId
+        record.buildId == buildId
+        record.vulnerabilities[0] == scanVulnerability
+        record.exitCode == 0
+        record.logs == "Some logs"
     }
+
 }

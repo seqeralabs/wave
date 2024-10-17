@@ -10,7 +10,6 @@ model WaveBuildRecord {
     platform: string;
     requestIp: string;
     scanId: string;
-    spackFile: string;
     startTime: string;
     succeeded: boolean;
     targetImage: string;
@@ -18,4 +17,3 @@ model WaveBuildRecord {
     userId: int64;
     userName: string;
   }
-  

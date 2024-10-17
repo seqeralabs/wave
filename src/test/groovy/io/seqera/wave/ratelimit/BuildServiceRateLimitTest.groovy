@@ -29,7 +29,7 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.builder.ContainerBuildServiceImpl
+import io.seqera.wave.service.builder.impl.ContainerBuildServiceImpl
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.ContainerHelper
 /**
@@ -59,6 +59,9 @@ class BuildServiceRateLimitTest extends Specification {
         configuration = applicationContext.getBean(RateLimiterConfig)
     }
 
+    def cleanupSpec() {
+        applicationContext.close()
+    }
 
     def 'should not allow more auth builds than rate limit' () {
         given:
@@ -69,8 +72,8 @@ class BuildServiceRateLimitTest extends Specification {
         RUN echo hi > hello.txt
         """.stripIndent()
         and:
-        def CONTAINER_ID = ContainerHelper.makeContainerId(dockerfile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def TARGET_IMAGE = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, CONTAINER_ID, null, null, null)
+        def CONTAINER_ID = ContainerHelper.makeContainerId(dockerfile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def TARGET_IMAGE = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, CONTAINER_ID, null, null)
         def REQ = new BuildRequest(
                 containerId: CONTAINER_ID,
                 containerFile: dockerfile,
@@ -103,8 +106,8 @@ class BuildServiceRateLimitTest extends Specification {
         RUN echo hi > hello.txt
         """.stripIndent()
         and:
-        def CONTAINER_ID = ContainerHelper.makeContainerId(dockerfile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def TARGET_IMAGE = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, CONTAINER_ID, null, null, null)
+        def CONTAINER_ID = ContainerHelper.makeContainerId(dockerfile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def TARGET_IMAGE = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, CONTAINER_ID, null, null)
         def REQ = new BuildRequest(
                 containerId: CONTAINER_ID,
                 containerFile: dockerfile,

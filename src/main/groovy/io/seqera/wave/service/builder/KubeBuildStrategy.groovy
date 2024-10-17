@@ -30,7 +30,6 @@ import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.configuration.BuildConfig
-import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
@@ -66,17 +65,11 @@ class KubeBuildStrategy extends BuildStrategy {
     private BuildConfig buildConfig
 
     @Inject
-    private SpackConfig spackConfig
-
-    @Inject
     private RegistryProxyService proxyService
 
-    protected String podName(String buildId) {
-        return "build-${buildId}".toString().replace('_', '-')
-    }
 
     @Override
-    BuildResult build(BuildRequest req) {
+    void build(String jobName, BuildRequest req) {
 
         Path configFile = null
         if( req.configJson ) {
@@ -96,20 +89,9 @@ class KubeBuildStrategy extends BuildStrategy {
         try {
             final buildImage = getBuildImage(req)
             final buildCmd = launchCmd(req)
-            final name = podName(req.buildId)
             final timeout = req.maxDuration ?: buildConfig.defaultTimeout
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
-            final spackCfg0 = req.isSpackBuild ? spackConfig : null
-            final pod = k8sService.buildContainer(name, buildImage, buildCmd, req.workDir, configFile, timeout, spackCfg0, selector)
-            final exitCode = k8sService.waitPodCompletion(pod, timeout.toMillis())
-            final stdout = k8sService.logsPod(pod)
-            if( exitCode!=null ) {
-                final digest = exitCode==0 ? proxyService.getImageDigest(req, true) : null
-                return BuildResult.completed(req.buildId, exitCode, stdout, req.startTime, digest)
-            }
-            else {
-                return BuildResult.failed(req.buildId, stdout, req.startTime)
-            }
+            k8sService.launchBuildJob(jobName, buildImage, buildCmd, req.workDir, configFile, timeout, selector)
         }
         catch (ApiException e) {
             throw new BadRequestException("Unexpected build failure - ${e.responseBody}", e)
@@ -126,23 +108,6 @@ class KubeBuildStrategy extends BuildStrategy {
         }
 
         throw new IllegalArgumentException("Unexpected container platform: ${buildRequest.platform}")
-    }
-
-    @Override
-    void cleanup(BuildRequest req) {
-        super.cleanup(req)
-        final name = podName(req.buildId)
-        try {
-            k8sService.deletePod(name)
-        }
-        catch (Exception e) {
-            log.warn ("Unable to delete pod=$name - cause: ${e.message ?: e}", e)
-        }
-    }
-
-    @Override
-    InputStream getLogs(String buildId) {
-        return k8sService.getCurrentLogsPod(podName(buildId))
     }
 
 }

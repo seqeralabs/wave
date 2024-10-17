@@ -30,6 +30,7 @@ import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.ContainerAugmenter
 import io.seqera.wave.core.ContainerPath
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.spec.ConfigSpec
 import io.seqera.wave.core.spec.ContainerSpec
@@ -74,7 +75,6 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
     @Inject
     private RegistryProxyService proxyService
 
-
     @Inject
     private RegistryAuthService loginService
 
@@ -87,21 +87,24 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
     @Override
     String credentialsConfigJson(String containerFile, String buildRepo, String cacheRepo, PlatformId identity) {
         final repos = new HashSet(10)
-        repos.addAll(findRepositories(containerFile))
+        if( containerFile )
+            repos.addAll(findRepositories(containerFile))
         if( buildRepo )
             repos.add(buildRepo)
         if( cacheRepo )
             repos.add(cacheRepo)
         final result = credsJson(repos, identity)
         if( buildRepo && result && !result.contains(host0(buildRepo)) )
-            throw new BadRequestException("Missing credentials for target build repository: $buildRepo")
+            throw new BadRequestException("Missing credentials for container repository: $buildRepo")
         if( cacheRepo && result && !result.contains(host0(cacheRepo)) )
-            throw new BadRequestException("Missing credentials for target cache repository: $buildRepo")
+            throw new BadRequestException("Missing credentials for container repository: $cacheRepo")
         return result
     }
 
     static protected String host0(String repo) {
-        repo.tokenize('/')[0]
+        ContainerCoordinates
+                .parse(repo)
+                .registry
     }
 
     protected String credsJson(Set<String> repositories, PlatformId identity) {
@@ -167,7 +170,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
      * {@inheritDoc}
      */
     @Override
-    List<String> containerEntrypoint(String containerFile, PlatformId identity) {
+    List<String> containerEntrypoint(String containerFile, ContainerPlatform containerPlatform, PlatformId identity) {
         final repos = inspectItems(containerFile)
         if( !repos )
             return null
@@ -188,7 +191,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
                 final creds = credentialsProvider.getCredentials(path, identity)
                 log.debug "Config credentials for repository: ${item.getImage()} => $creds"
 
-                final entry = fetchConfig0(path, creds).config?.entrypoint
+                final entry = fetchConfig0(path, creds, containerPlatform).config?.entrypoint
                 if( entry )
                     return entry
             }
@@ -212,17 +215,18 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
                 .withLoginService(loginService)
     }
 
-    private ConfigSpec fetchConfig0(ContainerPath path, RegistryCredentials creds) {
+    private ConfigSpec fetchConfig0(ContainerPath path, RegistryCredentials creds, ContainerPlatform platform) {
         final client = client0(path, creds)
 
         return new ContainerAugmenter()
                 .withClient(client)
+                .withPlatform(platform)
                 .getContainerSpec(path.image, path.getReference(), WaveDefault.ACCEPT_HEADERS)
                 .getConfig()
     }
 
     @Override
-    ContainerSpec containerSpec(String containerImage, PlatformId identity) {
+    ContainerSpec containerSpec(String containerImage, String arch, PlatformId identity) {
         final path = ContainerCoordinates.parse(containerImage)
 
         final creds = credentialsProvider.getCredentials(path, identity)
@@ -232,6 +236,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
 
         return new ContainerAugmenter()
                 .withClient(client)
+                .withPlatform(arch)
                 .getContainerSpec(path.image, path.getReference(), WaveDefault.ACCEPT_HEADERS)
     }
 }
