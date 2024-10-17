@@ -24,6 +24,8 @@ import java.time.Instant
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.tower.PlatformId
+
 /**
  * Model a container scan request
  * 
@@ -78,6 +80,11 @@ class ScanRequest {
      */
     final Instant creationTime
 
+    /**
+     * Scan request platform identity
+     */
+    final PlatformId identity
+
 
     static ScanRequest of(Map opts) {
         new ScanRequest(
@@ -89,7 +96,8 @@ class ScanRequest {
                 opts.targetImage as String,
                 opts.platform as ContainerPlatform,
                 opts.workDir as Path,
-                opts.creationTime as Instant
+                opts.creationTime as Instant,
+                opts.identity as PlatformId
         )
     }
 

@@ -36,6 +36,7 @@ import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
+import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.service.mirror.MirrorEntry
 import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.persistence.PersistenceService
@@ -79,6 +80,9 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
 
     @Inject
     private ContainerInspectService inspectService
+
+    @Inject
+    private MetricsService metricsService
 
     ContainerScanServiceImpl() {}
 
@@ -176,6 +180,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
             // create a record to mark the beginning
             final scan = ScanEntry.create(request)
             if( scanStore.putIfAbsent(scan.scanId, scan) ) {
+                //increment metrics
+                CompletableFuture.supplyAsync(() -> metricsService.incrementScansCounter(request.identity), executor)
                 // launch container scan
                 jobService.launchScan(request)
             }
@@ -197,7 +203,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
                 request.targetImage,
                 request.platform,
                 workDir,
-                Instant.now())
+                Instant.now(),
+                request.identity)
     }
 
     protected ScanRequest fromMirror(MirrorRequest request) {
@@ -211,7 +218,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
                 request.targetImage,
                 request.platform,
                 workDir,
-                Instant.now())
+                Instant.now(),
+                request.identity)
     }
 
     protected ScanRequest fromContainer(ContainerRequest request) {
@@ -226,7 +234,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
                 request.containerImage,
                 request.platform,
                 workDir,
-                Instant.now())
+                Instant.now(),
+                request.identity)
     }
 
     // **************************************************************

@@ -30,6 +30,7 @@ import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
+import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.scan.ContainerScanService
 import jakarta.inject.Inject
@@ -63,6 +64,9 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
     @Nullable
     private ContainerScanService scanService
 
+    @Inject
+    private MetricsService metricsService
+
     /**
      * {@inheritDoc}
      */
@@ -70,6 +74,8 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
     BuildTrack mirrorImage(MirrorRequest request) {
         if( store.putIfAbsent(request.targetImage, MirrorEntry.of(request))) {
             log.info "== Container mirror submitted - request=$request"
+            //increment mirror counter
+            CompletableFuture.supplyAsync(() -> metricsService.incrementMirrorsCounter(request.identity), ioExecutor)
             jobService.launchMirror(request)
             return new BuildTrack(request.mirrorId, request.targetImage, false, null)
         }
