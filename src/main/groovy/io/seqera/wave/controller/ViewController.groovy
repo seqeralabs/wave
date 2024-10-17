@@ -31,6 +31,7 @@ import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.QueryValue
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
+import io.micronaut.views.ModelAndView
 import io.micronaut.views.View
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.exception.NotFoundException
@@ -114,55 +115,81 @@ class ViewController {
         return binding
     }
 
-    @View("build-view")
     @Get('/builds/{buildId}')
     HttpResponse viewBuild(String buildId) {
         // check redirection for invalid suffix in the form `-nn`
-        final r1 = shouldRedirect1(buildId)
+        final r1 = isBuildInvalidSuffix(buildId)
         if( r1 ) {
             log.debug "Redirect to build page [1]: $r1"
             return HttpResponse.redirect(URI.create(r1))
         }
-        // check redirection when missing the suffix `_nn`
-        final r2 = shouldRedirect2(buildId)
-        if( r2 ) {
-            log.debug "Redirect to build page [2]: $r2"
-            return HttpResponse.redirect(URI.create(r2))
+
+        // check all builds matching the pattern
+        if( isBuildMissingSuffix(buildId) ) {
+            final builds = buildService.getAllBuilds(buildId)
+            if( !builds ) {
+                log.debug "Found not build with id: $buildId"
+                throw new NotFoundException("Unknown container build id '$buildId'")
+            }
+            if( builds.size()==1 ) {
+                log.debug "Redirect to build page [2]: ${builds.first().buildId}"
+                return HttpResponse.temporaryRedirect(URI.create("/view/builds/${builds.first().buildId}"))
+            }
+            else
+                return HttpResponse.ok(new ModelAndView("build-list", renderBuildsView(builds)))
         }
+
         // go ahead with proper handling
         final record = buildService.getBuildRecord(buildId)
         if( !record )
             throw new NotFoundException("Unknown container build id '$buildId'")
-        return HttpResponse.ok(renderBuildView(record))
+        return HttpResponse.ok(new ModelAndView("build-view", renderBuildView(record)))
     }
 
-    static final private Pattern DASH_SUFFIX = ~/([0-9a-zA-Z\-]+)-(\d+)$/
+    static final private Pattern DASH_SUFFIX_REGEX = ~/([0-9a-zA-Z\-]+)-(\d+)$/
 
-    static final private Pattern MISSING_SUFFIX = ~/([0-9a-zA-Z\-]+)(?<!_\d{2})$/
+    static final private Pattern CONTAINER_ID_REGEX = ~/((bd-)?[0-9a-z\-]{16})(?<!_\d{2})$/
 
-    protected String shouldRedirect1(String buildId) {
+    protected String isBuildInvalidSuffix(String buildId) {
         // check for build id containing a -nn suffix
-        final check1 = DASH_SUFFIX.matcher(buildId)
+        final check1 = DASH_SUFFIX_REGEX.matcher(buildId)
         if( check1.matches() ) {
             return "/view/builds/${check1.group(1)}_${check1.group(2)}"
         }
         return null
     }
 
-    protected String shouldRedirect2(String buildId) {
+    protected boolean isBuildMissingSuffix(String buildId) {
         // check build id missing the _nn suffix
-        if( !MISSING_SUFFIX.matcher(buildId).matches() )
-            return null
+        return buildId
+                ? CONTAINER_ID_REGEX.matcher(buildId).matches()
+                : false
+    }
 
-        final rec = buildService.getLatestBuild(buildId)
-        if( !rec )
-            return null
-        if( !rec.buildId.contains(buildId) )
-            return null
-        if( rec.buildId==buildId )
-            return null
+    Map<String,?> renderBuildsView(List<WaveBuildRecord> results) {
+        // create template binding
+        final binding = new ArrayList<Map<String,String>>()
+        for (def result : results){
+            final bind = new HashMap(20)
+            bind.build_id = result.buildId
+            bind.build_image = result.targetImage
+            bind.build_status = getStatus(result)
+            bind.build_time = formatTimestamp(result.startTime, result.offsetId) ?: '-'
+            binding.add(bind)
+        }
+        // result the main object
+        return Map.of("build_records", binding, 'server_url', serverUrl)
+    }
 
-        return "/view/builds/${rec.buildId}"
+    protected static String getStatus(WaveBuildRecord result){
+        if( result.done() && result.succeeded() )
+            return "SUCCEEDED"
+        else if ( result.done() && !result.succeeded() )
+            return "FAILED"
+        else if (!result.done())
+            return "IN PROGRESS"
+        else
+            return "UNKNOWN"
     }
 
     Map<String,String> renderBuildView(WaveBuildRecord result) {
