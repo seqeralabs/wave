@@ -85,6 +85,23 @@ class MetricsController {
 
     }
 
+    @Get(uri = "/v1alpha2/metrics/mirrors", produces = MediaType.APPLICATION_JSON)
+    HttpResponse<?> getMirrorsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
+        if(!date && !org)
+            return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_MIRRORS))
+        validateQueryParams(date)
+        return HttpResponse.ok(metricsService.getOrgCount(MetricsConstants.PREFIX_MIRRORS, date, org))
+    }
+
+    @Get(uri = "/v1alpha2/metrics/scans", produces = MediaType.APPLICATION_JSON)
+    HttpResponse<?> getScansMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
+        if(!date && !org)
+            return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_SCANS))
+        validateQueryParams(date)
+        return HttpResponse.ok(metricsService.getOrgCount(MetricsConstants.PREFIX_SCANS, date, org))
+    }
+
+
     @Error(exception = AuthorizationException.class)
     HttpResponse<?> handleAuthorizationException() {
         return HttpResponse.unauthorized()

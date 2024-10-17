@@ -35,6 +35,7 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.logs.BuildLogService
@@ -450,6 +451,8 @@ class ViewControllerTest extends Specification {
                 requestIp: '127.0.0.1',
                 startTime: Instant.now(),
                 duration: Duration.ofSeconds(1),
+                format: BuildFormat.DOCKER,
+                platform: ContainerPlatform.DEFAULT_ARCH,
                 exitStatus: 0 )
         def record2 = new WaveBuildRecord(
                 buildId: 'bd-0727765dc72cee24_2',
@@ -461,6 +464,8 @@ class ViewControllerTest extends Specification {
                 requestIp: '127.0.0.1',
                 startTime: Instant.now(),
                 duration: Duration.ofSeconds(1),
+                format: BuildFormat.DOCKER,
+                platform: ContainerPlatform.DEFAULT_ARCH,
                 exitStatus: 0 )
 
         and:
@@ -476,6 +481,10 @@ class ViewControllerTest extends Specification {
         response.body().contains(record2.buildId)
         and:
         response.body().contains('test')
+        and:
+        response.body().contains(BuildFormat.DOCKER.render())
+        and:
+        response.body().contains(ContainerPlatform.DEFAULT_ARCH)
         and:
         response.body().contains(serverUrl)
     }
