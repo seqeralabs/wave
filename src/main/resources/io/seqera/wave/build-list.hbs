@@ -62,19 +62,22 @@
         <h1>Wave container build history</h1>
     </div>
 {{#if build_records}}
+    <h3>Summary</h3>
+    <table cellpadding="4" >
+        <tr>
+            <td>Container Image</td>
+            <td>{{build_image}}</td>
+        </tr>
+        <tr>
+            <td>Format</td>
+            <td>{{build_format}}</td>
+        </tr>
+        <tr>
+            <td>Platform</td>
+            <td>{{build_platform}}</td>
+        </tr>
+    </table>
     <div class="table-container">
-        <table cellpadding="4" >
-            <tr>
-                <th>Container Image</th>
-                <th>Format</th>
-                <th>Platform</th>
-            </tr>
-            <tr>
-                <td>{{build_image}}</td>
-                <td>{{build_format}}</td>
-                <td>{{build_platform}}</td>
-            </tr>
-        </table>
         <h3>History</h3>
         <table cellpadding="4" >
             <tr>
