@@ -148,7 +148,7 @@ class ViewController {
 
     static final private Pattern DASH_SUFFIX_REGEX = ~/([0-9a-zA-Z\-]+)-(\d+)$/
 
-    static final private Pattern CONTAINER_ID_REGEX = ~/((bd-)?[0-9a-z\-]{16})(?<!_\d{2})$/
+    static final private Pattern CONTAINER_ID_REGEX = ~/((bd-)?[0-9a-z\-]{14,16})(?<!_\d{2})$/
 
     protected String isBuildInvalidSuffix(String buildId) {
         // check for build id containing a -nn suffix

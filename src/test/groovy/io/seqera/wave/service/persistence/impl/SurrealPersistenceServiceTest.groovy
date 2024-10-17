@@ -541,7 +541,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         and:
         persistence.allBuilds('bd-abc') == [record3, record2, record1]
         and:
-        persistence.allBuilds('bd-abc_2') == [record2]
+        persistence.allBuilds('ab') == null
     }
 
 }
