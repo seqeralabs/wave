@@ -187,7 +187,7 @@ class SurrealPersistenceService implements PersistenceService {
         final query = """
             select * 
             from wave_build 
-            where buildId ~ '${containerId}'
+            where string::matches(buildId, '^(bd-)?${containerId}_[0-9]+')
             order by startTime desc
             """.stripIndent()
         final json = surrealDb.sqlAsString(getAuthorization(), query)

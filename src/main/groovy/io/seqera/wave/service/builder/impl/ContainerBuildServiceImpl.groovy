@@ -386,11 +386,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
      */
     @Override
     List<WaveBuildRecord> getAllBuilds(String containerId) {
-        // normalise the container id with expected prefix and suffix
-        if( !containerId.endsWith(BuildRequest.SEP) )
-            containerId += BuildRequest.SEP
-        if( !containerId.startsWith(BuildRequest.ID_PREFIX) )
-            containerId = BuildRequest.ID_PREFIX + containerId
         return persistenceService.allBuilds(containerId)
     }
 
