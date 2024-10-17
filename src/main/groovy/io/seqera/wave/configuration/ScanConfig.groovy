@@ -78,6 +78,10 @@ class ScanConfig {
     @Value('${wave.scan.id.duration:7d}')
     Duration scanIdDuration
 
+    @Nullable
+    @Value('${wave.scan.github-token}')
+    String githubToken
+
     String getScanImage() {
         return scanImage
     }
