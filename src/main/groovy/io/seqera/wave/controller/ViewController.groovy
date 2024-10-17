@@ -168,17 +168,25 @@ class ViewController {
 
     Map<String,?> renderBuildsView(List<WaveBuildRecord> results) {
         // create template binding
-        final binding = new ArrayList<Map<String,String>>()
-        for (def result : results){
-            final bind = new HashMap(20)
-            bind.build_id = result.buildId
-            bind.build_image = result.targetImage
-            bind.build_status = getStatus(result)
-            bind.build_time = formatTimestamp(result.startTime, result.offsetId) ?: '-'
-            binding.add(bind)
+        final bindingMap = new HashMap<String, ?>(3)
+        if( results ) {
+            bindingMap.put("build_image", results[0].targetImage)
+            bindingMap.put("build_format", results[0].format?.render() ?: 'Docker')
+            bindingMap.put("build_platform", results[0].platform)
+            final binding = new ArrayList<Map<String,String>>()
+            for (def result : results) {
+                final bind = new HashMap(20)
+                bind.build_id = result.buildId
+                bind.build_digest = result.digest
+                bind.build_status = getStatus(result)
+                bind.build_time = formatTimestamp(result.startTime, result.offsetId) ?: '-'
+                binding.add(bind)
+            }
+            bindingMap.put('build_records', binding)
         }
         // result the main object
-        return Map.of("build_records", binding, 'server_url', serverUrl)
+        bindingMap.put('server_url', serverUrl)
+        return bindingMap
     }
 
     protected static String getStatus(WaveBuildRecord result){
