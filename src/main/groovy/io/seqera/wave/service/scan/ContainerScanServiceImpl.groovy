@@ -181,7 +181,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
             final scan = ScanEntry.create(request)
             if( scanStore.putIfAbsent(scan.scanId, scan) ) {
                 //increment metrics
-                CompletableFuture.supplyAsync(() -> metricsService.incrementBuildsCounter(request.identity), executor)
+                CompletableFuture.supplyAsync(() -> metricsService.incrementScansCounter(request.identity), executor)
                 // launch container scan
                 jobService.launchScan(request)
             }
