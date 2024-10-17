@@ -609,9 +609,11 @@ class ViewControllerTest extends Specification {
         null                    | false
         'bd-beac24afd572398d_1' | false // fully qualified
         and:
-        'bd-beac24afd572398d'   | true  // prerix + container id
+        'bd-beac24afd572398d'   | true  // prefix + container id
         'beac24afd572398d'      | true  // just the container id
+        'beac24afd572398'       | true
+        'beac24afd57239'        | true
         and:
-        'beac24afd572398'       | false  // too short
+        'beac24afd5723'         | false // too short
     }
 }
