@@ -68,6 +68,14 @@ interface PersistenceService {
     WaveBuildRecord latestBuild(String containerId)
 
     /**
+     * Retrieve all {@link WaveBuildRecord} object for the given container id
+     *
+     * @param containerId The container id for which the latest build record should be retrieved
+     * @return The corresponding {@link WaveBuildRecord} object or {@code null} if no record is found
+     */
+    List<WaveBuildRecord> allBuilds(String containerId)
+
+    /**
      * Store a {@link WaveContainerRecord} object in the Surreal wave_request table.
      *
      * @param data A {@link WaveContainerRecord} object representing a Wave request record

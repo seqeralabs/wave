@@ -1,21 +1,12 @@
 <html>
 <head>
-    {{#if build_in_progress}}
-        <meta http-equiv="refresh" content="5">
-    {{/if}}
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Wave container build data">
-    <title>Wave container build notification</title>
+    <title>Wave container builds</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap');
-        body {
-            font-family: "Inter", sans-serif;
-            font-optical-sizing: auto;
-            font-weight: 200;
-            font-style: normal;
-        }
         pre {
             white-space: pre-wrap;
             overflow-x: auto;
@@ -28,201 +19,70 @@
             max-width: 100%;
             word-wrap: break-word;
         }
-        .copy-btn {
-            position: absolute;
-            right: 15px;
-            top: 10px;
-            background: none;
-            border: none;
-            cursor: pointer;
+
+        .table-container table{
+            width: 100%;
+            border-collapse: collapse;
         }
-        .copy-btn2 {
-            position: absolute;
-            right: 25px;
-            top: 10px;
-            background: none;
-            border: none;
-            cursor: pointer;
+
+        .table-container th, .table-container td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+            vertical-align: middle;
         }
-        .download-a {
-            position: absolute;
-            right: 15px;
-            top: 10px;
-            background: none;
-            border: none;
-            cursor: pointer;
+
+        .table-container th {
+            font-weight: bold;
+            background-color: #f1f5f9;
         }
+
+        .table-container td {
+            font-size: 14px;
+        }
+
+        .table-container a {
+            background-color: #f1f5f9;
+            text-decoration: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .table-container a:hover {
+            text-decoration: underline;
+        }
+
     </style>
 </head>
 <body>
 <div style="font-family:'-apple-system', BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; padding: 30px; max-width: 800px; margin: 0 auto;">
-
     <div>
         <img style="float:left; margin-top: 5px; margin-right: 10px; width: 30px;" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAD0AAAA8CAMAAADi4EJ+AAAApVBMVEUAAAA9lf4/nP88lf06lP49lf5Alv49lf09lf49lf09lf09lf49lf48lf49lf0/lP09lv89lf49lf09lf09lf09lv09lf49lf09lf09lv09lfw9lf49lf09lf09lf49lf09lv89lf49lv49lf09lf09lf09lf48lf89lf49lP09lP48lP09lP08lf89lf5Bn/8+l/8/mv9Anf9BoP9Cof9Fqv9Co/8+fXihAAAALnRSTlMA+wT9BvcPkOvAY7WBIsoURt6iiXA30LOoXT4c8ujbmTHjua+VeGsK1lQsKXpNcp061QAAA+NJREFUSMeVlolyozAMhhG200Lus7nva9susk267/9oS2BBMngys5pMhiB9/o2t+CdoRBhmX/3B97z3fmgFYS0ZtDZaJM8QWq187Op6XBtEY949dBeSkt606nAQTEdrtFoAgPbRA1PACZhZg923DWoAkZUIL91J4R9t205KBvJNo4B/g/vpyJZ0OnYzy2GaFDmia/Bndr/U/uXkJsYokbyiZTBGKLOqy1NnLuyng9VaV9I9vl6nB1TCtCWhK73DUgDwwpLzh3JZUHVt+dyuckkT+CqTYTBOlYMKg9ZSrxVF/Y0h6XaZk8EC+bQhQXPfxdOuO+2gZ6EqMYOCzr6/QAsmjDBfFikOywgJthFNiw2agLYfn3nHh077d+/Iisyykp6k/L5a5NUMldmvheIK6aiC++9a0JS2XYeV+fUyQs2n994v08/GJ3jWyu64sYojY4EvjP0dyKY0mAPBeXL6fe4ptIJ3oXqMaasnWKZEIvYFTM31Y60GEBxO56xkxlpgUsBEv6HKUa4csYq9Fs3GJzqFWgOnx5C2mq3ZczHC1zSIbK94UWSBS7+ihTL6wmG24oBXSnhoATrdLt1Gmmoh6LDw0RWLqiNrzRCjb+JEP+BJgjCpOneD+vAdqyAPZXeUc3dMGzTDTsbK+vDzH4N5mJ8LZXm3pEbN3gaSdFlcolP7o519PqJlIx8G8Wl8HayKkf4jQinZ6vJLCvbDLWCXNMrL4Dqt6aIzGt2a2dvo+JE/6kf71Hcy5eN9TY4bjfhQHh9b6dTiM+wD6nSY4YtI5Basko2HXmooQum7rM85jLdok/wPLbzuP6HuiurCgzuaDH3hwKeKxp37xLeRzdiXDtxf8z8Vh/fDlFgvLWniItF7PuwvQfbNaBcfmnLiZhvynjSahIluSpcTP1dJGcQoXLi5YyEz/0SYJZnoLyNEzYLtH+U6cHGK0fsWvcyABs6aVG/nnYV0FpwfU4Bx5WRyaxgMGg/jvWx0YYfb91BWiV2quH2/T251C85qzygEl5b09kjCiR21Sutk7CpCINj2HC+iWes4cIwwd2954fYthJ4GYbVZDE4GzfOr+z1EDdzKOpVAeDdkonrgHmD9/e9OpFIDgsF4ZB1qmfnHNQceP0xqdc5S0bBFdJtaAEcNB34oyFmCzZp5TldpeqXu032/AyfKrj+ZxBVJ+kr3/bRQOOyyIjoshDnc/A7M7fvY4vDtYEQpPfZ6KLFgdccxJHrZpxbw0wAGe1MXpv0SZiv9DlxYsMVh3HCzC52Rc58Dp0+DTgzqXuyx0XNFp9R+XFsjopiNp14bnZP2wqetZ+23xVfRV434C+G26LEOOFWjAAAAAElFTkSuQmCC">
-        <h1>Wave container build completion</h1>
+        <h1>Wave container build records</h1>
     </div>
-
-    {{#if build_success}}
-        <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
-            <h4 style="margin-top:0; color: inherit;">
-                Container build completed successfully!
-            </h4>
-        </div>
-    {{else build_failed}}
-        <div style="color: #a94442; background-color: #f2dede; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
-            <h4 style="margin-top:0; color: inherit;">
-                Container build failed
-            </h4>
-        </div>
-    {{else build_in_progress}}
-    {{! build is not completed, show a spinning icon }}
-        <style>
-        .lds-dual-ring {
-            display: inline-block;
-            width: 50px;
-            height: 30px;
-        }
-        .lds-dual-ring:after {
-            content: " ";
-            display: block;
-            width: 20px;
-            height: 20px;
-            margin: 8px;
-            border-radius: 50%;
-            border: 6px solid #3c763d;
-            border-color: #3c763d transparent #3c763d transparent;
-            animation: lds-dual-ring 1.2s linear infinite;
-        }
-        @keyframes lds-dual-ring {
-            0% {
-                transform: rotate(0deg);
-            }
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-        </style>
-        <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
-            <h4 style="margin-top:0; color: inherit;">
-                <div class="lds-dual-ring"></div> Container build in progress
-            </h4>
-        </div>
-    {{/if}}
-
-    <h3>Summary</h3>
-    <table cellpadding="4" >
-        <tr>
-            <td>Build ID</td>
-            <td>{{build_id}}</td>
-        </tr>
-
-        <tr>
-            <td>User</td>
-            <td>{{build_user}}</td>
-        </tr>
-
-        <tr>
-            <td>Container image</td>
-            {{#if build_in_progress}}
-            <td>{{build_image}}</td>
-            {{else}}
-            <td><a href="{{inspect_url}}">{{build_image}}</a></td>
-            {{/if}}
-        </tr>
-
-        <tr>
-            <td>Container digest</td>
-            <td>{{build_digest}}</td>
-        </tr>
-
-        <tr>
-            <td>Image format</td>
-            <td>{{build_format}}</td>
-        </tr>
-
-        <tr>
-            <td>Platform</td>
-            <td>{{build_platform}}</td>
-        </tr>
-
-        <tr>
-            <td>Build time</td>
-            <td>{{build_time}}</td>
-        </tr>
-
-        <tr>
-            <td>Duration</td>
-            <td>{{build_duration}}</td>
-        </tr>
-
-        <tr>
-            <td>Exit status</td>
-            <td>{{build_exit_status}}</td>
-        </tr>
-        {{#if scan_url}}
+{{#if build_records}}
+    <div class="table-container">
+        <table cellpadding="4" >
             <tr>
-                <td>Security scan</td>
-                <td><a href="{{scan_url}}">{{scan_id}}</a></td>
+                <th>Build ID</th>
+                <th>Container image</th>
+                <th>Build time</th>
+                <th>Status</th>
             </tr>
-        {{/if}}
-    </table>
-
-    <h3>Container file</h3>
-    <div style="position: relative; margin-bottom: 30px;">
-    <button id="containerFileCopyBtn" class="copy-btn" onclick="copyToClipboard('containerFileData', 'containerFileCopyBtn')" title="Copy">
-        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
-            <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
-        </svg>
-    </button>
-    <pre id="containerFileData">{{build_containerfile}}</pre>
+            {{#each build_records}}
+            <tr>
+                <td><a href="{{server_url}}/view/builds/{{build_id}}">{{build_id}}</td>
+                <td>{{build_image}}</td>
+                <td>{{build_time}}</td>
+                <td>{{build_status}}</td>
+            </tr>
+            {{/each}}
+        </table>
     </div>
-
-    {{#if build_condafile}}
-        <h3>Conda file</h3>
-        <div style="position: relative; margin-bottom: 30px;">
-            <button id="condaFileCopyBtn" class="copy-btn" onclick="copyToClipboard('condaFileData', 'condaFileCopyBtn')" title="Copy">
-                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
-                    <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
-                </svg>
-            </button>
-            <pre id="condaFileData">{{build_condafile}}</pre>
-        </div>
-    {{/if}}
-
-    {{#if build_success}}
-        {{#if build_conda_lock_data }}
-            <h3>Conda lockfile</h3>
-            <div style="position: relative; margin-bottom: 30px;">
-                <button id="lockFileCopyBtn" class="copy-btn2" onclick="copyToClipboard('lockFileData', 'lockFileCopyBtn')" title="Copy">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
-                        <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
-                    </svg>
-                </button>
-                <a href="{{build_conda_lock_url}}" title="Download" class="download-a">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="black" d="M5 20h14v-2H5m14-9h-4V3H9v6H5l7 7z"/></svg>
-                </a>
-                <pre id="lockFileData">{{build_conda_lock_data}}</pre>
-            </div>
-        {{/if}}
-    {{/if}}
-
-    {{#if build_log_data}}
-        <h3>Build logs</h3>
-    <div style="position: relative; margin-bottom: 30px;">
-        <button id="logCopyBtn" class="copy-btn2" onclick="copyToClipboard('logData', 'logCopyBtn')" title="Copy">
-            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
-                <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
-            </svg>
-        </button>
-        <a href="{{build_log_url}}" title="Download" class="download-a">
-            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="black" d="M5 20h14v-2H5m14-9h-4V3H9v6H5l7 7z"/></svg>
-        </a>
-        <pre id="logData">{{build_log_data}}</pre>
-        {{#if build_log_truncated}}
-            <a href="{{build_log_url}}" download>Click here to download the complete build log</a>
-        {{/if}}
-    </div>
-    {{/if}}
+{{else}}
+    <pre> No Build Record Found</pre>
+{{/if}}
 
     <div class="footer" style="clear:both;width:100%;">
         <hr class="footer-hr" style="height:0;overflow:visible;margin-top:30px;border:0;border-top:1px solid #eee;color:#999999;font-size:12px;line-height:18px;margin-bottom:30px;">
@@ -236,29 +96,5 @@
     </div>
 
 </div>
-<script>
-    function copyToClipboard(preId, buttonId) {
-        const textToCopy = document.getElementById(preId).innerText;
-        navigator.clipboard.writeText(textToCopy).then(() => {
-            const copyBtn = document.getElementById(buttonId);
-            copyBtn.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
-                    <path fill="currentColor" fill-rule="evenodd" d="M8.657 18.435L3 12.778l1.414-1.414l4.95 4.95L20.678 5l1.414 1.414l-12.02 12.021a1 1 0 0 1-1.415 0"/>
-                </svg>
-                <span style="margin-left: 5px;">Copied!</span>
-            `;
-
-            setTimeout(() => {
-                copyBtn.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
-                        <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
-                    </svg>
-                `;
-            }, 2000);
-        }).catch(err => {
-            console.error('Failed to copy text: ', err);
-        });
-    }
-</script>
 </body>
 </html>

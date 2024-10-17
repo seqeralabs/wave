@@ -510,4 +510,38 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.loadBuild(request.buildId) == build1
     }
 
+    def 'should find all builds' () {
+        given:
+        def surreal = applicationContext.getBean(SurrealClient)
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def auth = persistence.getAuthorization()
+        def request1 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_1' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(30), identity: PlatformId.NULL)
+        def request2 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_2' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(20), identity: PlatformId.NULL)
+        def request3 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_3' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(10), identity: PlatformId.NULL)
+        def request4 = new BuildRequest( containerId: 'abc', buildId: 'bd-xyz_3' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(0), identity: PlatformId.NULL)
+
+        def result1 = new BuildResult(request1.buildId, -1, "ok", request1.startTime, Duration.ofSeconds(2), null)
+        def record1 =WaveBuildRecord.fromEvent(new BuildEvent(request1, result1))
+        surreal.insertBuild(auth, record1)
+        and:
+        def result2 = new BuildResult(request2.buildId, -1, "ok", request2.startTime, Duration.ofSeconds(2), null)
+        def record2 = WaveBuildRecord.fromEvent(new BuildEvent(request2, result2))
+        surreal.insertBuild(auth, record2)
+        and:
+        def result3 = new BuildResult(request3.buildId, -1, "ok", request3.startTime, Duration.ofSeconds(2), null)
+        def record3 = WaveBuildRecord.fromEvent(new BuildEvent(request3, result3))
+        surreal.insertBuild(auth, record3)
+        and:
+        def result4 = new BuildResult(request4.buildId, -1, "ok", request4.startTime, Duration.ofSeconds(2), null)
+        def record4 = WaveBuildRecord.fromEvent(new BuildEvent(request4, result4))
+        surreal.insertBuild(auth, record4)
+
+        expect:
+        persistence.allBuilds('abc') == [record3, record2, record1]
+        and:
+        persistence.allBuilds('bd-abc') == [record3, record2, record1]
+        and:
+        persistence.allBuilds('bd-abc_2') == [record2]
+    }
+
 }

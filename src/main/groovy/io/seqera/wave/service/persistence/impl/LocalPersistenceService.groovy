@@ -61,6 +61,15 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
+    List<WaveBuildRecord> allBuilds(String containerId) {
+        buildStore
+                .values()
+                .findAll( it-> it.buildId.contains(containerId) )
+                .sort { it.startTime }
+                .reverse()
+    }
+
+    @Override
     WaveBuildRecord loadBuildSucceed(String targetImage, String digest) {
         buildStore.values().find( (build) ->  build.targetImage==targetImage && build.digest==digest && build.succeeded() )
     }
