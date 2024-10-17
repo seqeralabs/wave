@@ -75,6 +75,8 @@ interface K8sService {
     @Deprecated
     V1PodList waitJob(V1Job job, Long timeout)
 
+    InputStream getCurrentLogsPod(String name)
+
     V1Pod getLatestPodForJob(String jobName)
 
 }
