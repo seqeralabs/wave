@@ -76,6 +76,9 @@ class ScanConfig {
     @Value('${wave.scan.status.duration:5d}')
     Duration statusDuration
 
+    @Value('${wave.scan.status.duration:1h}')
+    Duration failureDuration
+
     @Value('${wave.scan.id.duration:7d}')
     Duration scanIdDuration
 

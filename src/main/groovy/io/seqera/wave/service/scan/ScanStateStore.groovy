@@ -55,4 +55,14 @@ class ScanStateStore extends AbstractStateStore<ScanEntry> {
     ScanEntry getScan(String key) {
         super.get(key)
     }
+
+    void storeScan(ScanEntry entry) {
+        // use a short time-to-live for failed build
+        // this is needed to allow re-try builds failed for
+        // temporary error conditions e.g. expired credentials
+        final ttl = entry.succeeded()
+                ? config.statusDuration
+                : config.failureDuration
+        super.put(entry.key, entry, ttl)
+    }
 }

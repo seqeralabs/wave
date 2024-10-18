@@ -283,7 +283,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     protected void updateScanEntry(ScanEntry scan) {
         try{
             //save scan results in the redis cache
-            scanStore.put(scan.scanId, scan)
+            scanStore.storeScan(scan)
             // save in the persistent layer
             persistenceService.saveScanRecord(new WaveScanRecord(scan))
         }
