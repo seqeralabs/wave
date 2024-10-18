@@ -349,35 +349,6 @@ class ViewController {
         return bindingMap
     }
 
-    Map<String, Object> makeScanViewBinding(WaveScanRecord result, Map<String,Object> binding=new HashMap(10)) {
-        binding.should_refresh = !result.done()
-        binding.scan_id = result.id
-        binding.scan_container_image = result.containerImage ?: '-'
-        binding.scan_exist = true
-        binding.scan_completed = result.done()
-        binding.scan_status = result.status
-        binding.scan_failed = result.status == ScanEntry.FAILED
-        binding.scan_succeeded = result.status == ScanEntry.SUCCEEDED
-        binding.scan_exitcode = result.exitCode
-        binding.scan_logs = result.logs
-        // build info
-        binding.build_id = result.buildId
-        binding.build_url = result.buildId ? "$serverUrl/view/builds/${result.buildId}" : null
-        // mirror info
-        binding.mirror_id = result.mirrorId
-        binding.mirror_url = result.mirrorId ? "$serverUrl/view/mirrors/${result.mirrorId}" : null
-        // container info
-        binding.request_id = result.requestId
-        binding.request_url = result.requestId ? "$serverUrl/view/containers/${result.requestId}" : null
-
-        binding.scan_time = formatTimestamp(result.startTime) ?: '-'
-        binding.scan_duration = formatDuration(result.duration) ?: '-'
-        if ( result.vulnerabilities )
-            binding.vulnerabilities = result.vulnerabilities.toSorted().reverse()
-
-        return binding
-    }
-
     protected String isScanInvalidSuffix(String buildId) {
         // check for scan id containing a -nn suffix
         final check1 = DASH_SUFFIX_REGEX.matcher(buildId)
@@ -433,6 +404,35 @@ class ViewController {
         // return the response
         binding.put('server_url', serverUrl)
         return HttpResponse.<Map<String,Object>>ok(binding)
+    }
+
+    Map<String, Object> makeScanViewBinding(WaveScanRecord result, Map<String,Object> binding=new HashMap(10)) {
+        binding.should_refresh = !result.done()
+        binding.scan_id = result.id
+        binding.scan_container_image = result.containerImage ?: '-'
+        binding.scan_exist = true
+        binding.scan_completed = result.done()
+        binding.scan_status = result.status
+        binding.scan_failed = result.status == ScanEntry.FAILED
+        binding.scan_succeeded = result.status == ScanEntry.SUCCEEDED
+        binding.scan_exitcode = result.exitCode
+        binding.scan_logs = result.logs
+        // build info
+        binding.build_id = result.buildId
+        binding.build_url = result.buildId ? "$serverUrl/view/builds/${result.buildId}" : null
+        // mirror info
+        binding.mirror_id = result.mirrorId
+        binding.mirror_url = result.mirrorId ? "$serverUrl/view/mirrors/${result.mirrorId}" : null
+        // container info
+        binding.request_id = result.requestId
+        binding.request_url = result.requestId ? "$serverUrl/view/containers/${result.requestId}" : null
+
+        binding.scan_time = formatTimestamp(result.startTime) ?: '-'
+        binding.scan_duration = formatDuration(result.duration) ?: '-'
+        if ( result.vulnerabilities )
+            binding.vulnerabilities = result.vulnerabilities.toSorted().reverse()
+
+        return binding
     }
 
 }
