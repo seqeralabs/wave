@@ -785,6 +785,10 @@ class K8sServiceImpl implements K8sService {
                 .withVolumeMounts(mounts)
                 .withResources(requests)
 
+        if( scanConfig.githubToken ) {
+            container.withEnv(new V1EnvVar().name('GITHUB_TOKEN').value(scanConfig.githubToken))
+        }
+
         // spec section
         spec.withContainers(container.build()).endSpec().endTemplate().endSpec()
 
