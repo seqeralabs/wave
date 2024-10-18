@@ -748,6 +748,7 @@ class K8sServiceImplTest extends Specification {
             getCacheDirectory() >> Path.of('/build/cache/dir')
             getRequestsCpu() >> '2'
             getRequestsMemory() >> '4Gi'
+            getGithubToken() >> '123abc'
         }
         def nodeSelector = [key: 'value']
 
@@ -761,6 +762,7 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.containers[0].args == args
         job.spec.template.spec.containers[0].resources.requests.get('cpu') == new Quantity('2')
         job.spec.template.spec.containers[0].resources.requests.get('memory') == new Quantity('4Gi')
+        job.spec.template.spec.containers[0].env == [ new V1EnvVar().name('GITHUB_TOKEN').value('123abc') ]
         job.spec.template.spec.volumes.size() == 1
         job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
         job.spec.template.spec.nodeSelector == nodeSelector
