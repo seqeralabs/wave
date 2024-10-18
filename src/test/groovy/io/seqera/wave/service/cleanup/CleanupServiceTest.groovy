@@ -39,5 +39,10 @@ class CleanupServiceTest extends Specification {
         service.cleanupEntry('dir:/some/data/dir')
         then:
         1 * service.cleanupDir0('/some/data/dir') >> null
+
+        when:
+        service.cleanupEntry('scanid:foo:bar')
+        then:
+        1 * service.cleanupScanId0('foo:bar') >> null
     }
 }

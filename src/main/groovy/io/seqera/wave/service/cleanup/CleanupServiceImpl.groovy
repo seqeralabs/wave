@@ -25,8 +25,10 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
 import io.micronaut.scheduling.TaskScheduler
+import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.service.job.JobOperation
 import io.seqera.wave.service.job.JobSpec
+import io.seqera.wave.service.scan.ScanIdStore
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 /**
@@ -43,6 +45,8 @@ class CleanupServiceImpl implements Runnable, CleanupService {
 
     static final private String JOB_PREFIX = 'job:'
 
+    static final private String SCANID_PREFIX = 'scanid:'
+
     @Inject
     private TaskScheduler scheduler
 
@@ -57,6 +61,12 @@ class CleanupServiceImpl implements Runnable, CleanupService {
 
     @Inject
     private JobOperation operation
+
+    @Inject
+    private ScanIdStore scanIdStore
+
+    @Inject
+    private ScanConfig scanConfig
 
     @PostConstruct
     private init() {
@@ -94,6 +104,9 @@ class CleanupServiceImpl implements Runnable, CleanupService {
         else if( entry.startsWith(DIR_PREFIX) ) {
             cleanupDir0(entry.substring(4))
         }
+        else if( entry.startsWith(SCANID_PREFIX) ) {
+            cleanupScanId0(entry.substring(SCANID_PREFIX.length()))
+        }
         else {
             log.error "Unknown cleanup entry - offending value: $entry"
         }
@@ -117,6 +130,10 @@ class CleanupServiceImpl implements Runnable, CleanupService {
         }
     }
 
+    protected void cleanupScanId0(String scanId) {
+        scanIdStore.remove(scanId)
+    }
+
     @Override
     void cleanupJob(JobSpec job, Integer exitStatus) {
         if( !cleanupStrategy.shouldCleanup(exitStatus) ) {
@@ -135,4 +152,8 @@ class CleanupServiceImpl implements Runnable, CleanupService {
         }
     }
 
+    @Override
+    void cleanupScanId(String containerImage) {
+        store.add(SCANID_PREFIX + containerImage, scanConfig.failureDuration.toSeconds())
+    }
 }

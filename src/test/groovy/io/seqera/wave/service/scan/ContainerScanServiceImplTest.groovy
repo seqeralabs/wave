@@ -31,14 +31,17 @@ import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.cleanup.CleanupService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.util.LongRndKey
 import jakarta.inject.Inject
 /**
  * Tests for ContainerScanServiceImpl
@@ -55,7 +58,13 @@ class ContainerScanServiceImplTest extends Specification {
     PersistenceService persistenceService
 
     @Inject
-    ScanStateStore stateStore
+    ScanStateStore scanStore
+
+    @Inject
+    ScanIdStore scanIdStore
+
+    @Inject
+    CleanupService cleanupService
 
     def 'should start scan successfully'() {
         given:
@@ -67,12 +76,12 @@ class ContainerScanServiceImplTest extends Specification {
         scanService.scan(scanRequest)
         sleep 500
         then:
-        def scanRecord = stateStore.getScan(scanRequest.scanId)
+        def scanRecord = scanStore.getScan(scanRequest.scanId)
         scanRecord.scanId == scanRequest.scanId
         scanRecord.buildId == scanRequest.buildId
 
         cleanup:
-        stateStore.clear()
+        scanStore.clear()
         workDir?.deleteDir()
     }
 
@@ -141,14 +150,14 @@ class ContainerScanServiceImplTest extends Specification {
         and:
         def KEY = 'scan-20'
         def jobService = Mock(JobService)
-        def service = new ContainerScanServiceImpl(scanStore: stateStore, persistenceService: persistenceService, jobService: jobService)
+        def service = new ContainerScanServiceImpl(scanStore: scanStore, persistenceService: persistenceService, jobService: jobService)
         def job = JobSpec.scan(KEY, 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), workDir)
         def scan = ScanEntry.of(scanId: KEY, buildId: 'build-20', containerImage: 'ubuntu:latest', startTime: Instant.now())
 
         when:
         service.onJobCompletion(job, scan, new JobState(JobState.Status.SUCCEEDED,0))
         then:
-        with( stateStore.getScan(KEY)) {
+        with( scanStore.getScan(KEY)) {
             scanId == KEY
             buildId == 'build-20'
             containerImage == 'ubuntu:latest'
@@ -166,7 +175,7 @@ class ContainerScanServiceImplTest extends Specification {
         when:
         service.onJobCompletion(job, scan, new JobState(JobState.Status.FAILED, 10, "I'm broken"))
         then:
-        with( stateStore.getScan(KEY) ) {
+        with( scanStore.getScan(KEY) ) {
             scanId == KEY
             buildId == 'build-20'
             containerImage == 'ubuntu:latest'
@@ -184,14 +193,14 @@ class ContainerScanServiceImplTest extends Specification {
 
         cleanup:
         workDir?.deleteDir()
-        stateStore.clear()
+        scanStore.clear()
     }
 
     def 'should handle job error event and update scan record'() {
         given:
         def KEY = 'scan-30'
         def jobService = Mock(JobService)
-        def service = new ContainerScanServiceImpl(scanStore: stateStore, persistenceService: persistenceService, jobService: jobService)
+        def service = new ContainerScanServiceImpl(scanStore: scanStore, persistenceService: persistenceService, jobService: jobService)
         def job = JobSpec.scan(KEY, 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
         def error = new Exception('Some error msg')
         def scan = ScanEntry.of(scanId: KEY, buildId: 'build-30', containerImage: 'ubuntu:latest', startTime: Instant.now())
@@ -199,7 +208,7 @@ class ContainerScanServiceImplTest extends Specification {
         when:
         service.onJobException(job, scan, error)
         then:
-        with( stateStore.getScan(KEY) ) {
+        with( scanStore.getScan(KEY) ) {
             scanId == KEY
             buildId == 'build-30'
             containerImage == 'ubuntu:latest'
@@ -216,14 +225,14 @@ class ContainerScanServiceImplTest extends Specification {
         }
 
         cleanup:
-        stateStore.clear()
+        scanStore.clear()
     }
 
     def 'should handle job timeout event and update scan record'() {
         given:
         def KEY = 'scan-40'
         def jobService = Mock(JobService)
-        def service = new ContainerScanServiceImpl(scanStore: stateStore, persistenceService: persistenceService, jobService: jobService)
+        def service = new ContainerScanServiceImpl(scanStore: scanStore, persistenceService: persistenceService, jobService: jobService)
         def job = JobSpec.scan(KEY, 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
         def scan = ScanEntry.of(scanId: KEY, buildId: 'build-40', containerImage: 'ubuntu:latest', startTime: Instant.now())
 
@@ -231,7 +240,7 @@ class ContainerScanServiceImplTest extends Specification {
         service.onJobTimeout(job, scan)
 
         then:
-        with( stateStore.getScan(KEY) ) {
+        with( scanStore.getScan(KEY) ) {
             scanId == KEY
             buildId == 'build-40'
             containerImage == 'ubuntu:latest'
@@ -248,7 +257,7 @@ class ContainerScanServiceImplTest extends Specification {
         }
 
         cleanup:
-        stateStore.clear()
+        scanStore.clear()
     }
 
 
@@ -414,4 +423,33 @@ class ContainerScanServiceImplTest extends Specification {
         'sc-123'| 'bd-123'  | false     | true      | false         | 0
     }
 
+    def 'should store scan entry' () {
+        given:
+        def duration = Duration.ofSeconds(1)
+        def config = Mock(ScanConfig) { getFailureDuration()>>duration }
+        def container = "ubuntu:${LongRndKey.rndHex()}"
+        def scanId = ScanId.of(container).toString()
+        and:
+        def scanStore = Mock(ScanStateStore)
+        def persistenceService = Mock(PersistenceService)
+        def cleanupService = Mock(CleanupService)
+        and:
+        def scanService = Spy(new ContainerScanServiceImpl(config: config, scanStore: scanStore, persistenceService: persistenceService, cleanupService: cleanupService))
+        def scanOk = ScanEntry.of(scanId: scanId, buildId: 'build-30', containerImage: container, status: ScanEntry.SUCCEEDED, startTime: Instant.now())
+        def scanFail = ScanEntry.of(scanId: scanId, buildId: 'build-30', containerImage: container, status: ScanEntry.FAILED, startTime: Instant.now())
+
+        when:
+        scanService.storeScanEntry(scanOk)
+        then:
+        1 * scanStore.storeScan(scanOk) >> null
+        1 * persistenceService.saveScanRecord(new WaveScanRecord(scanOk)) >> null
+        0 * cleanupService.cleanupScanId(container) >> null
+
+        when:
+        scanService.storeScanEntry(scanFail)
+        then:
+        1 * scanStore.storeScan(scanFail) >> null
+        1 * persistenceService.saveScanRecord(new WaveScanRecord(scanFail)) >> null
+        1 * cleanupService.cleanupScanId(container) >> null
+    }
 }
