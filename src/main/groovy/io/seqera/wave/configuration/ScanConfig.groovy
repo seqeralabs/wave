@@ -117,6 +117,6 @@ class ScanConfig {
 
     @PostConstruct
     private void init() {
-        log.debug("Scanner config: docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}; severity: $severity; retry-attempts: $retryAttempts; github-token=${StringUtils.redact(githubToken)}")
+        log.info("Scanner config: docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}; severity: $severity; retry-attempts: $retryAttempts; github-token=${StringUtils.redact(githubToken)}")
     }
 }
