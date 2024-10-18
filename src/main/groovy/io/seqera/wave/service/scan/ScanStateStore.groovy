@@ -57,12 +57,6 @@ class ScanStateStore extends AbstractStateStore<ScanEntry> {
     }
 
     void storeScan(ScanEntry entry) {
-        // use a short time-to-live for failed scan
-        // this is needed to allow re-try scans failed for
-        // temporary error conditions e.g. expired credentials
-        final ttl = entry.succeeded()
-                ? config.statusDuration
-                : config.failureDuration
-        super.put(entry.key, entry, ttl)
+        super.put(entry.key, entry)
     }
 }

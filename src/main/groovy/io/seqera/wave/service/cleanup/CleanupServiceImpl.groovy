@@ -19,6 +19,7 @@
 package io.seqera.wave.service.cleanup
 
 import java.nio.file.Path
+import java.time.Duration
 import java.time.Instant
 
 import groovy.transform.CompileStatic
@@ -27,6 +28,8 @@ import io.micronaut.context.annotation.Context
 import io.micronaut.scheduling.TaskScheduler
 import io.seqera.wave.service.job.JobOperation
 import io.seqera.wave.service.job.JobSpec
+import io.seqera.wave.service.scan.ScanEntry
+import io.seqera.wave.service.scan.ScanIdStore
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 /**
@@ -43,6 +46,8 @@ class CleanupServiceImpl implements Runnable, CleanupService {
 
     static final private String JOB_PREFIX = 'job:'
 
+    static final private String SCANID_PREFIX = 'scanid:'
+
     @Inject
     private TaskScheduler scheduler
 
@@ -57,6 +62,9 @@ class CleanupServiceImpl implements Runnable, CleanupService {
 
     @Inject
     private JobOperation operation
+
+    @Inject
+    private ScanIdStore scanIdStore
 
     @PostConstruct
     private init() {
@@ -94,6 +102,9 @@ class CleanupServiceImpl implements Runnable, CleanupService {
         else if( entry.startsWith(DIR_PREFIX) ) {
             cleanupDir0(entry.substring(4))
         }
+        else if( entry.startsWith(SCANID_PREFIX) ) {
+            cleanupScanId0(entry.substring(SCANID_PREFIX.length()))
+        }
         else {
             log.error "Unknown cleanup entry - offending value: $entry"
         }
@@ -117,6 +128,10 @@ class CleanupServiceImpl implements Runnable, CleanupService {
         }
     }
 
+    protected void cleanupScanId0(String scanId) {
+        scanIdStore.remove(scanId)
+    }
+
     @Override
     void cleanupJob(JobSpec job, Integer exitStatus) {
         if( !cleanupStrategy.shouldCleanup(exitStatus) ) {
@@ -135,4 +150,8 @@ class CleanupServiceImpl implements Runnable, CleanupService {
         }
     }
 
+    @Override
+    void cleanupScan(ScanEntry entry, Duration ttl) {
+        store.add(SCANID_PREFIX + entry.scanId, ttl.toSeconds())
+    }
 }

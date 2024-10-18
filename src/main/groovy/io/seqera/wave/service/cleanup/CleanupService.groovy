@@ -18,8 +18,11 @@
 
 package io.seqera.wave.service.cleanup
 
+import java.time.Duration
 
 import io.seqera.wave.service.job.JobSpec
+import io.seqera.wave.service.scan.ScanEntry
+
 /**
  * Define the contract for resources cleanup service
  *
@@ -28,5 +31,7 @@ import io.seqera.wave.service.job.JobSpec
 interface CleanupService {
 
     void cleanupJob(JobSpec job, Integer exitStatus)
+
+    void cleanupScan(ScanEntry scan, Duration ttl)
 
 }

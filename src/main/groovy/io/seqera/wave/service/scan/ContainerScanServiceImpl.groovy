@@ -31,6 +31,7 @@ import io.seqera.wave.api.ScanMode
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.cleanup.CleanupService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
@@ -83,6 +84,9 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
 
     @Inject
     private MetricsService metricsService
+
+    @Inject
+    private CleanupService cleanupService
 
     ContainerScanServiceImpl() {}
 
@@ -286,6 +290,10 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
             scanStore.storeScan(scan)
             // save in the persistent layer
             persistenceService.saveScanRecord(new WaveScanRecord(scan))
+            // cleanup
+            if( !scan.succeeded() ) {
+                cleanupService.cleanupScan(scan, config.failureDuration)
+            }
         }
         catch (Throwable t){
             log.error("Unable to save result - id=${scan.scanId}; cause=${t.message}", t)
