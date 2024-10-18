@@ -339,6 +339,7 @@ class ViewController {
                 bind.scan_id = result.id
                 bind.scan_status = result.status
                 bind.scan_time = formatTimestamp(result.startTime) ?: '-'
+                bind.scan_vuls_count = result.status == 'SUCCEEDED' ? result.vulnerabilities.size() : '-'
                 binding.add(bind)
             }
             bindingMap.put('scan_records', binding)

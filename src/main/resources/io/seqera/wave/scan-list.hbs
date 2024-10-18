@@ -73,15 +73,17 @@
             <h3>History</h3>
             <table cellpadding="4" >
                 <tr>
-                    <th>scan ID</th>
-                    <th>scan time</th>
+                    <th>Scan ID</th>
+                    <th>Scan time</th>
                     <th>Status</th>
+                    <th>Number of CVEs</th>
                 </tr>
                 {{#each scan_records}}
                     <tr>
                         <td><a href="{{server_url}}/view/scans/{{scan_id}}">{{scan_id}}</td>
                         <td>{{scan_time}}</td>
                         <td>{{scan_status}}</td>
+                        <td>{{scan_vuls_count}}</td>
                     </tr>
                 {{/each}}
             </table>
