@@ -192,7 +192,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         }
         catch (Throwable e){
             log.warn "Unable to save scan result - id=${request.scanId}; cause=${e.message}", e
-            updateScanEntry(ScanEntry.failure(request))
+            storeScanEntry(ScanEntry.failure(request))
         }
     }
 
@@ -269,22 +269,22 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
             log.warn("Container scan failed - id=${entry.scanId}; exit=${state.exitCode}; stdout=${state.stdout}")
         }
 
-        updateScanEntry(result)
+        storeScanEntry(result)
     }
 
     @Override
     void onJobException(JobSpec job, ScanEntry entry, Throwable e) {
         log.error("Container scan exception - id=${entry.scanId} - cause=${e.getMessage()}", e)
-        updateScanEntry(entry.failure(null, e.message))
+        storeScanEntry(entry.failure(null, e.message))
     }
 
     @Override
     void onJobTimeout(JobSpec job, ScanEntry entry) {
         log.warn("Container scan timed out - id=${entry.scanId}")
-        updateScanEntry(entry.failure(null, "Container scan timed out"))
+        storeScanEntry(entry.failure(null, "Container scan timed out"))
     }
 
-    protected void updateScanEntry(ScanEntry scan) {
+    protected void storeScanEntry(ScanEntry scan) {
         try{
             //save scan results in the redis cache
             scanStore.storeScan(scan)
@@ -292,7 +292,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
             persistenceService.saveScanRecord(new WaveScanRecord(scan))
             // cleanup
             if( !scan.succeeded() ) {
-                cleanupService.cleanupScanId(scan.containerImage, config.failureDuration)
+                cleanupService.cleanupScanId(scan.containerImage)
             }
         }
         catch (Throwable t){

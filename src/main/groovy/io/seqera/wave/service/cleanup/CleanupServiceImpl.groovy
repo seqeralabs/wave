@@ -19,13 +19,13 @@
 package io.seqera.wave.service.cleanup
 
 import java.nio.file.Path
-import java.time.Duration
 import java.time.Instant
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
 import io.micronaut.scheduling.TaskScheduler
+import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.service.job.JobOperation
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.scan.ScanIdStore
@@ -64,6 +64,9 @@ class CleanupServiceImpl implements Runnable, CleanupService {
 
     @Inject
     private ScanIdStore scanIdStore
+
+    @Inject
+    private ScanConfig scanConfig
 
     @PostConstruct
     private init() {
@@ -150,7 +153,7 @@ class CleanupServiceImpl implements Runnable, CleanupService {
     }
 
     @Override
-    void cleanupScanId(String containerImage, Duration ttl) {
-        store.add(SCANID_PREFIX + containerImage, ttl.toSeconds())
+    void cleanupScanId(String containerImage) {
+        store.add(SCANID_PREFIX + containerImage, scanConfig.failureDuration.toSeconds())
     }
 }
