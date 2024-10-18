@@ -30,6 +30,7 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
+import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
@@ -439,7 +440,7 @@ class ViewControllerTest extends Specification {
         response.body().contains(serverUrl)
     }
 
-    def 'should render builds page' () {
+    def 'should render builds history page' () {
         given:
         def record1 = new WaveBuildRecord(
                 buildId: 'bd-0727765dc72cee24_1',
@@ -454,8 +455,23 @@ class ViewControllerTest extends Specification {
                 format: BuildFormat.DOCKER,
                 platform: ContainerPlatform.DEFAULT_ARCH,
                 exitStatus: 0 )
+        and:
         def record2 = new WaveBuildRecord(
                 buildId: 'bd-0727765dc72cee24_2',
+                dockerFile: 'FROM docker.io/test:foo',
+                targetImage: 'test',
+                userName: 'test',
+                userEmail: 'test',
+                userId: 1,
+                requestIp: '127.0.0.1',
+                startTime: Instant.now(),
+                duration: Duration.ofSeconds(1),
+                format: BuildFormat.DOCKER,
+                platform: ContainerPlatform.DEFAULT_ARCH,
+                exitStatus: 0 )
+        and:
+        def record3 = new WaveBuildRecord(
+                buildId: 'bd-1234567890123456_2',
                 dockerFile: 'FROM docker.io/test:foo',
                 targetImage: 'test',
                 userName: 'test',
@@ -471,22 +487,40 @@ class ViewControllerTest extends Specification {
         and:
         persistenceService.saveBuild(record1)
         persistenceService.saveBuild(record2)
+        persistenceService.saveBuild(record3)
 
         when:
         def request = HttpRequest.GET("/view/builds/0727765dc72cee24")
         def response = client.toBlocking().exchange(request, String)
-
         then:
         response.body().contains(record1.buildId)
         response.body().contains(record2.buildId)
+        !response.body().contains(record3.buildId)
+
+        when:
+        request = HttpRequest.GET("/view/builds/bd-0727765dc72cee24")
+        response = client.toBlocking().exchange(request, String)
+        then:
+        response.body().contains(record1.buildId)
+        response.body().contains(record2.buildId)
+        !response.body().contains(record3.buildId)
+
+        when:
+        request = HttpRequest.GET("/view/builds/bd-0727765dc72cee24_2")
+        response = client.toBlocking().exchange(request, String)
+        then:
+        !response.body().contains(record1.buildId)
+        response.body().contains(record2.buildId)
+        !response.body().contains(record3.buildId)
+
+        when:
+        request = HttpRequest.GET("/view/builds/07277")
+        client.toBlocking().exchange(request, String)
+        then:
+        HttpClientResponseException e = thrown(HttpClientResponseException)
         and:
-        response.body().contains('test')
-        and:
-        response.body().contains(BuildFormat.DOCKER.render())
-        and:
-        response.body().contains(ContainerPlatform.DEFAULT_ARCH)
-        and:
-        response.body().contains(serverUrl)
+        e.status.code == 404
+
     }
 
     def 'should render build page after fixing buildId' () {
@@ -609,9 +643,11 @@ class ViewControllerTest extends Specification {
         null                    | false
         'bd-beac24afd572398d_1' | false // fully qualified
         and:
-        'bd-beac24afd572398d'   | true  // prerix + container id
+        'bd-beac24afd572398d'   | true  // prefix + container id
         'beac24afd572398d'      | true  // just the container id
+        'beac24afd572398'       | true
+        'beac24afd57239'        | true
         and:
-        'beac24afd572398'       | false  // too short
+        'beac24afd5723'         | false // too short
     }
 }

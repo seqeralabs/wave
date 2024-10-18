@@ -62,9 +62,10 @@ class LocalPersistenceService implements PersistenceService {
 
     @Override
     List<WaveBuildRecord> allBuilds(String containerId) {
+        final pattern = ~/^(bd-)?${containerId}_[0-9]+/
         buildStore
                 .values()
-                .findAll( it-> it.buildId.contains(containerId) )
+                .findAll( it-> pattern.matcher(it.buildId).matches() )
                 .sort { it.startTime }
                 .reverse()
     }
