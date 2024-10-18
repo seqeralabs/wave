@@ -292,7 +292,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
             persistenceService.saveScanRecord(new WaveScanRecord(scan))
             // cleanup
             if( !scan.succeeded() ) {
-                cleanupService.cleanupScan(scan, config.failureDuration)
+                cleanupService.cleanupScanId(scan.containerImage, config.failureDuration)
             }
         }
         catch (Throwable t){
@@ -300,6 +300,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         }
     }
 
+    @Override
     List<WaveScanRecord> getAllScans(String scanId){
         persistenceService.allScans(scanId)
     }

@@ -28,7 +28,6 @@ import io.micronaut.context.annotation.Context
 import io.micronaut.scheduling.TaskScheduler
 import io.seqera.wave.service.job.JobOperation
 import io.seqera.wave.service.job.JobSpec
-import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanIdStore
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
@@ -151,7 +150,7 @@ class CleanupServiceImpl implements Runnable, CleanupService {
     }
 
     @Override
-    void cleanupScan(ScanEntry entry, Duration ttl) {
-        store.add(SCANID_PREFIX + entry.scanId, ttl.toSeconds())
+    void cleanupScanId(String containerImage, Duration ttl) {
+        store.add(SCANID_PREFIX + containerImage, ttl.toSeconds())
     }
 }
