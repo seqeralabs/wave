@@ -349,9 +349,9 @@ class ViewController {
         return bindingMap
     }
 
-    protected String isScanInvalidSuffix(String buildId) {
+    protected String isScanInvalidSuffix(String scanId) {
         // check for scan id containing a -nn suffix
-        final check1 = DASH_SUFFIX_REGEX.matcher(buildId)
+        final check1 = DASH_SUFFIX_REGEX.matcher(scanId)
         if( check1.matches() ) {
             return "/view/scans/${check1.group(1)}_${check1.group(2)}"
         }
@@ -369,11 +369,11 @@ class ViewController {
 
 
     /**
-     * Retrieve a {@link ScanEntry} object for the specified build ID
+     * Retrieve a {@link ScanEntry} object for the specified scan ID
      *
-     * @param buildId The ID of the build for which load the scan result
+     * @param scanId The ID of the scan for which load the scan result
      * @return The {@link ScanEntry} object associated with the specified build ID or throws the exception {@link NotFoundException} otherwise
-     * @throws NotFoundException If the a record for the specified build ID cannot be found
+     * @throws NotFoundException If the a record for the specified scan ID cannot be found
      */
     protected WaveScanRecord loadScanRecord(String scanId) {
         if( !scanService )
