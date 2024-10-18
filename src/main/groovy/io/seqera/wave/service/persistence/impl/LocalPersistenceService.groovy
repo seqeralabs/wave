@@ -110,9 +110,10 @@ class LocalPersistenceService implements PersistenceService {
 
     @Override
     List<WaveScanRecord> allScans(String scanId) {
+        final pattern = ~/^.*(sc-)?${scanId}_[0-9]+/
         scanStore
                 .values()
-                .findAll( it-> it.id.contains(scanId) )
+                .findAll( it-> pattern.matcher(it.id).matches() )
                 .sort { it.startTime }
                 .reverse()
     }

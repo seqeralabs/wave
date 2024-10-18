@@ -309,7 +309,7 @@ class SurrealPersistenceService implements PersistenceService {
         final query = """
             select * 
             from wave_scan
-            where type::string(id) ~ '${scanId}'
+            where string::matches(type::string(id) , '^.*(sc-)?${scanId}_[0-9]+')
             order by startTime desc
             FETCH vulnerabilities
             """.stripIndent()

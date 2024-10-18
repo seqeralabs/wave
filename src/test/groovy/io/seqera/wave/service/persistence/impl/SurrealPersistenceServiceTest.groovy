@@ -553,17 +553,17 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def CVE2 = new ScanVulnerability('cve-2', 'x2', 'title2', 'package2', 'version2', 'fixed2', 'url2')
         def CVE3 = new ScanVulnerability('cve-3', 'x3', 'title3', 'package3', 'version3', 'fixed3', 'url3')
         def CVE4 = new ScanVulnerability('cve-4', 'x4', 'title4', 'package4', 'version4', 'fixed4', 'url4')
-        def scan1 = new WaveScanRecord('sc-1234_1', '100', null, null, CONTAINER_IMAGE, Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3, CVE4], null, null)
-        def scan2 = new WaveScanRecord('sc-1234_2', '101', null, null, CONTAINER_IMAGE, Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3], null, null)
-        def scan3 = new WaveScanRecord('sc-1234_3', '102', null, null, CONTAINER_IMAGE, Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2], null, null)
-        def scan4 = new WaveScanRecord('sc-1234_4', '103', null, null, CONTAINER_IMAGE, Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1], null, null)
+        def scan1 = new WaveScanRecord('sc-1234567890abcdef_1', '100', null, null, CONTAINER_IMAGE, Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3, CVE4], null, null)
+        def scan2 = new WaveScanRecord('sc-1234567890abcdef_2', '101', null, null, CONTAINER_IMAGE, Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3], null, null)
+        def scan3 = new WaveScanRecord('sc-1234567890abcdef_3', '102', null, null, CONTAINER_IMAGE, Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2], null, null)
+        def scan4 = new WaveScanRecord('sc-1234567890abcdef_4', '103', null, null, CONTAINER_IMAGE, Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1], null, null)
         when:
         persistence.saveScanRecord(scan1)
         persistence.saveScanRecord(scan2)
         persistence.saveScanRecord(scan3)
         persistence.saveScanRecord(scan4)
         then:
-        persistence.allScans("1234") == [scan4, scan3, scan2, scan1]
+        persistence.allScans("1234567890abcdef") == [scan4, scan3, scan2, scan1]
     }
 
 }
