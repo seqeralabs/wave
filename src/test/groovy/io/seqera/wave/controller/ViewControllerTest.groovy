@@ -46,7 +46,9 @@ import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.persistence.impl.SurrealPersistenceService
 import io.seqera.wave.service.request.ContainerRequest
+import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.tower.PlatformId
@@ -542,6 +544,7 @@ class ViewControllerTest extends Specification {
         and:
         def request = HttpRequest.GET("/view/builds/112233-1")
         def response = client.toBlocking().exchange(request, String)
+
         then:
         response.body().contains(record1.buildId)
         and:
@@ -649,5 +652,96 @@ class ViewControllerTest extends Specification {
         'beac24afd57239'        | true
         and:
         'beac24afd5723'         | false // too short
+    }
+
+    def 'should return binding map with scan results'() {
+        given:
+        def service = Mock(ContainerScanService)
+        def controller = new ViewController(scanService: service)
+        def scan1 = new WaveScanRecord(
+                id: 'scan1',
+                containerImage: 'docker.io/image1',
+                startTime: Instant.now(),
+                status: 'SUCCEEDED'
+        )
+        def scan2 = new WaveScanRecord(
+                id: 'scan2',
+                containerImage: 'docker.io/image1',
+                startTime: Instant.now(),
+                status: 'FAILED'
+        )
+
+        when:
+        def result = controller.renderScansView([scan1, scan2])
+
+        then:
+        result.scan_container_image == 'docker.io/image1'
+        result.scan_records.size() == 2
+        result.scan_records[0].scan_id == 'scan1'
+        result.scan_records[0].scan_status == 'SUCCEEDED'
+        result.scan_records[1].scan_id == 'scan2'
+        result.scan_records[1].scan_status == 'FAILED'
+    }
+
+    @Unroll
+    def 'should handle scan id suffix scenarios'() {
+        given:
+        def controller = new ViewController()
+
+        expect:
+        controller.isScanInvalidSuffix(SCANID) == EXPECTED
+
+        where:
+        SCANID          | EXPECTED
+        'scan-12345-1'  | '/view/scans/scan-12345_1'
+        'scan-abc-2'    | '/view/scans/scan-abc_2'
+        'scan-xyz-99'   | '/view/scans/scan-xyz_99'
+        'scan12345'     | null
+        'scan-12345'    | '/view/scans/scan_12345'
+        'scan_12345'    | null
+        'scan-12345-'   | null
+        'scan-12345-0'  | '/view/scans/scan-12345_0'
+        'scan-12345-01' | '/view/scans/scan-12345_01'
+    }
+
+    def 'should find all scans' () {
+        given:
+        def CONTAINER_IMAGE = 'docker.io/my/repo:container1234'
+        def CVE1 = new ScanVulnerability('cve-1', 'x1', 'title1', 'package1', 'version1', 'fixed1', 'url1')
+        def CVE2 = new ScanVulnerability('cve-2', 'x2', 'title2', 'package2', 'version2', 'fixed2', 'url2')
+        def CVE3 = new ScanVulnerability('cve-3', 'x3', 'title3', 'package3', 'version3', 'fixed3', 'url3')
+        def CVE4 = new ScanVulnerability('cve-4', 'x4', 'title4', 'package4', 'version4', 'fixed4', 'url4')
+        def scan1 = new WaveScanRecord('sc-1234567890abcdef_1', '100', null, null, CONTAINER_IMAGE, Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3, CVE4], null, null)
+        def scan2 = new WaveScanRecord('sc-1234567890abcdef_2', '101', null, null, CONTAINER_IMAGE, Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3], null, null)
+
+        when:
+        persistenceService.saveScanRecord(scan1)
+        persistenceService.saveScanRecord(scan2)
+        sleep 200
+        and:
+        def request = HttpRequest.GET("/view/scans/1234567890abcdef")
+        def response = client.toBlocking().exchange(request, String)
+
+        then:
+        response.body().contains(scan1.id)
+        response.body().contains(scan2.id)
+        and:
+        response.body().contains('docker.io/my/repo:container1234')
+        and:
+        response.body().contains(serverUrl)
+    }
+
+    @Unroll
+    def 'should validate scan id pattern'() {
+        expect:
+        new ViewController().isScanMissingSuffix(scanId) == expected
+
+        where:
+        scanId                  | expected
+        'sc-1234567890abcdef'   | true
+        'sc-1234567890abcde'    | false
+        'sc-1234567890abcdef_01'| false
+        null                    | false
+        '1234567890abcdef'      | true
     }
 }

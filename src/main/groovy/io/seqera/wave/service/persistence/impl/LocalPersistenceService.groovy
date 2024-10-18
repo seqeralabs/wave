@@ -112,7 +112,7 @@ class LocalPersistenceService implements PersistenceService {
     List<WaveScanRecord> allScans(String scanId) {
         scanStore
                 .values()
-                .findAll( it-> it.buildId.contains(scanId) )
+                .findAll( it-> it.id.contains(scanId) )
                 .sort { it.startTime }
                 .reverse()
     }

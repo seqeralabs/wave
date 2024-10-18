@@ -297,7 +297,7 @@ class ViewController {
             return HttpResponse.redirect(URI.create(r1))
         }
         // check all scans matching the pattern
-        if( isBuildMissingSuffix(scanId) ) {
+        if( isScanMissingSuffix(scanId) ) {
             final scans = scanService.getAllScans(scanId)
             if( !scans ) {
                 log.debug "Found not scan with id: $scanId"
@@ -338,8 +338,7 @@ class ViewController {
                 final bind = new HashMap(20)
                 bind.scan_id = result.id
                 bind.scan_status = result.status
-                binding.scan_time = formatTimestamp(result.startTime) ?: '-'
-
+                bind.scan_time = formatTimestamp(result.startTime) ?: '-'
                 binding.add(bind)
             }
             bindingMap.put('scan_records', binding)
@@ -379,12 +378,21 @@ class ViewController {
     }
 
     protected String isScanInvalidSuffix(String buildId) {
-        // check for build id containing a -nn suffix
+        // check for scan id containing a -nn suffix
         final check1 = DASH_SUFFIX_REGEX.matcher(buildId)
         if( check1.matches() ) {
             return "/view/scans/${check1.group(1)}_${check1.group(2)}"
         }
         return null
+    }
+
+    static final private Pattern SCAN_ID_REGEX = ~/((sc-)?[0-9a-z\-]{16})(?<!_\d{2})$/
+
+    protected boolean isScanMissingSuffix(String scanId) {
+        // check scan id missing the _nn suffix
+        return scanId
+                ? SCAN_ID_REGEX.matcher(scanId).matches()
+                : false
     }
 
 
