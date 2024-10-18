@@ -109,6 +109,16 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
+    List<WaveScanRecord> allScans(String scanId) {
+        final pattern = ~/^.*(sc-)?${scanId}_[0-9]+/
+        scanStore
+                .values()
+                .findAll( it-> pattern.matcher(it.id).matches() )
+                .sort { it.startTime }
+                .reverse()
+    }
+
+    @Override
     MirrorResult loadMirrorResult(String mirrorId) {
         mirrorStore.get(mirrorId)
     }

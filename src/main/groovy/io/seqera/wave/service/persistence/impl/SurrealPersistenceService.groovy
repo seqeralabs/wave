@@ -304,6 +304,22 @@ class SurrealPersistenceService implements PersistenceService {
         return result
     }
 
+    @Override
+    List<WaveScanRecord> allScans(String scanId) {
+        final query = """
+            select * 
+            from wave_scan
+            where string::matches(type::string(id), '^wave_scan:⟨(sc-)?${scanId}_[0-9]+')
+            order by startTime desc
+            FETCH vulnerabilities
+            """.stripIndent()
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveScanRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result : null
+        return result ? Arrays.asList(result) : null
+    }
+
     // ===  mirror operations
 
     /**

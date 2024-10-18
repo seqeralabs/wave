@@ -292,4 +292,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         }
     }
 
+    List<WaveScanRecord> getAllScans(String scanId){
+        persistenceService.allScans(scanId)
+    }
+
 }

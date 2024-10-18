@@ -288,9 +288,28 @@ class ViewController {
         return HttpResponse.<Map<String,Object>>ok(binding)
     }
 
-    @View("scan-view")
     @Get('/scans/{scanId}')
-    HttpResponse<Map<String,Object>> viewScan(String scanId) {
+    HttpResponse viewScan(String scanId) {
+        // check redirection for invalid suffix in the form `-nn`
+        final r1 = isScanInvalidSuffix(scanId)
+        if( r1 ) {
+            log.debug "Redirect to scan page [1]: $r1"
+            return HttpResponse.redirect(URI.create(r1))
+        }
+        // check all scans matching the pattern
+        if( isScanMissingSuffix(scanId) ) {
+            final scans = scanService.getAllScans(scanId)
+            if( !scans ) {
+                log.debug "Found not scan with id: $scanId"
+                throw new NotFoundException("Unknown container scan id '$scanId'")
+            }
+            if( scans.size()==1 ) {
+                log.debug "Redirect to scan page [2]: ${scans.first().id}"
+                return HttpResponse.temporaryRedirect(URI.create("/view/scans/${scans.first().id}"))
+            }
+            else
+                return HttpResponse.ok(new ModelAndView("scan-list", renderScansView(scans)))
+        }
         final binding = new HashMap(10)
         try {
             final result = loadScanRecord(scanId)
@@ -306,15 +325,55 @@ class ViewController {
 
         // return the response
         binding.put('server_url', serverUrl)
-        return HttpResponse.<Map<String,Object>>ok(binding)
+        return HttpResponse.ok(new ModelAndView("scan-view", binding))
     }
 
+    Map<String,?> renderScansView(List<WaveScanRecord> results) {
+        // create template binding
+        final bindingMap = new HashMap<String, ?>(3)
+        if( results ) {
+            bindingMap.put("scan_container_image", results[0].containerImage)
+            final binding = new ArrayList<Map<String,String>>()
+            for (def result : results) {
+                final bind = new HashMap(20)
+                bind.scan_id = result.id
+                bind.scan_status = result.status
+                bind.scan_time = formatTimestamp(result.startTime) ?: '-'
+                bind.scan_vuls_count = result.status == 'SUCCEEDED' ? result.vulnerabilities.size() : '-'
+                binding.add(bind)
+            }
+            bindingMap.put('scan_records', binding)
+        }
+        // result the main object
+        bindingMap.put('server_url', serverUrl)
+        return bindingMap
+    }
+
+    protected String isScanInvalidSuffix(String scanId) {
+        // check for scan id containing a -nn suffix
+        final check1 = DASH_SUFFIX_REGEX.matcher(scanId)
+        if( check1.matches() ) {
+            return "/view/scans/${check1.group(1)}_${check1.group(2)}"
+        }
+        return null
+    }
+
+    static final private Pattern SCAN_ID_REGEX = ~/((sc-)?[0-9a-z\-]{14,16})(?<!_\d{2})$/
+
+    protected boolean isScanMissingSuffix(String scanId) {
+        // check scan id missing the _nn suffix
+        return scanId
+                ? SCAN_ID_REGEX.matcher(scanId).matches()
+                : false
+    }
+
+
     /**
-     * Retrieve a {@link ScanEntry} object for the specified build ID
+     * Retrieve a {@link ScanEntry} object for the specified scan ID
      *
-     * @param buildId The ID of the build for which load the scan result
+     * @param scanId The ID of the scan for which load the scan result
      * @return The {@link ScanEntry} object associated with the specified build ID or throws the exception {@link NotFoundException} otherwise
-     * @throws NotFoundException If the a record for the specified build ID cannot be found
+     * @throws NotFoundException If the a record for the specified scan ID cannot be found
      */
     protected WaveScanRecord loadScanRecord(String scanId) {
         if( !scanService )
