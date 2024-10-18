@@ -358,7 +358,7 @@ class ViewController {
         return null
     }
 
-    static final private Pattern SCAN_ID_REGEX = ~/((sc-)?[0-9a-z\-]{16})(?<!_\d{2})$/
+    static final private Pattern SCAN_ID_REGEX = ~/((sc-)?[0-9a-z\-]{14,16})(?<!_\d{2})$/
 
     protected boolean isScanMissingSuffix(String scanId) {
         // check scan id missing the _nn suffix
