@@ -85,6 +85,9 @@ wave:
   scan:
     image:
       name: aquasec/trivy:0.55.0
+    failure:
+      duration: '30s'
+    github-token: "${GITHUB_TOKEN:}"
   blobCache:
     s5cmdImage: public.cr.seqera.io/wave/s5cmd:v2.2.2
 ---
