@@ -290,8 +290,10 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
             scanStore.storeScan(scan)
             // save in the persistent layer
             persistenceService.saveScanRecord(new WaveScanRecord(scan))
-            // cleanup
-            if( !scan.succeeded() ) {
+            // when the scan fails delete the scanId via cleanup service
+            // this is needed to prevent the caching of the scanId and
+            // allow re-scanning the container in case of a job failure
+            if( scan.done() && !scan.succeeded() ) {
                 cleanupService.cleanupScanId(scan.containerImage)
             }
         }

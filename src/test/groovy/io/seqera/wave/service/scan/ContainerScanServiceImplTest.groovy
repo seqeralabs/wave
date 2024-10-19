@@ -435,21 +435,29 @@ class ContainerScanServiceImplTest extends Specification {
         def cleanupService = Mock(CleanupService)
         and:
         def scanService = Spy(new ContainerScanServiceImpl(config: config, scanStore: scanStore, persistenceService: persistenceService, cleanupService: cleanupService))
-        def scanOk = ScanEntry.of(scanId: scanId, buildId: 'build-30', containerImage: container, status: ScanEntry.SUCCEEDED, startTime: Instant.now())
-        def scanFail = ScanEntry.of(scanId: scanId, buildId: 'build-30', containerImage: container, status: ScanEntry.FAILED, startTime: Instant.now())
+        def scanSucceeded = ScanEntry.of(scanId: scanId, buildId: 'build-30', containerImage: container, status: ScanEntry.SUCCEEDED, startTime: Instant.now())
+        def scanNotDone = ScanEntry.of(scanId: scanId, buildId: 'build-30', containerImage: container, status: ScanEntry.FAILED, startTime: Instant.now())
+        def scanFailed = ScanEntry.of(scanId: scanId, buildId: 'build-30', containerImage: container, status: ScanEntry.FAILED, duration: Duration.ofSeconds(1), startTime: Instant.now())
 
         when:
-        scanService.storeScanEntry(scanOk)
+        scanService.storeScanEntry(scanSucceeded)
         then:
-        1 * scanStore.storeScan(scanOk) >> null
-        1 * persistenceService.saveScanRecord(new WaveScanRecord(scanOk)) >> null
+        1 * scanStore.storeScan(scanSucceeded) >> null
+        1 * persistenceService.saveScanRecord(new WaveScanRecord(scanSucceeded)) >> null
         0 * cleanupService.cleanupScanId(container) >> null
 
         when:
-        scanService.storeScanEntry(scanFail)
+        scanService.storeScanEntry(scanNotDone)
         then:
-        1 * scanStore.storeScan(scanFail) >> null
-        1 * persistenceService.saveScanRecord(new WaveScanRecord(scanFail)) >> null
+        1 * scanStore.storeScan(scanNotDone) >> null
+        1 * persistenceService.saveScanRecord(new WaveScanRecord(scanNotDone)) >> null
+        0 * cleanupService.cleanupScanId(container) >> null
+
+        when:
+        scanService.storeScanEntry(scanFailed)
+        then:
+        1 * scanStore.storeScan(scanFailed) >> null
+        1 * persistenceService.saveScanRecord(new WaveScanRecord(scanFailed)) >> null
         1 * cleanupService.cleanupScanId(container) >> null
     }
 }
