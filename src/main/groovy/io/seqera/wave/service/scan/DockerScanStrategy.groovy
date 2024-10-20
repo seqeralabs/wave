@@ -74,7 +74,7 @@ class DockerScanStrategy extends ScanStrategy {
         final reportFile = req.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
         // create the launch command
         final dockerCommand = dockerWrapper(jobName, req.workDir, configFile, scanConfig.githubToken)
-        final trivyCommand = List.of(scanConfig.scanImage) + scanCommand(req.targetImage, reportFile, scanConfig)
+        final trivyCommand = List.of(scanConfig.scanImage) + scanCommand(req.targetImage, reportFile, req.platform, scanConfig)
         final command = dockerCommand + trivyCommand
 
         //launch scanning

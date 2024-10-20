@@ -23,6 +23,7 @@ import spock.lang.Specification
 import java.time.Duration
 import java.time.Instant
 
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
 /**
@@ -57,6 +58,7 @@ class WaveScanRecordTest extends Specification {
                 mirrorId,
                 requestId,
                 containerImage,
+                ContainerPlatform.DEFAULT,
                 startTime,
                 duration,
                 'SUCCEEDED',
@@ -70,6 +72,7 @@ class WaveScanRecordTest extends Specification {
         entry.mirrorId == mirrorId
         entry.requestId == requestId
         entry.containerImage == containerImage
+        entry.platform == ContainerPlatform.DEFAULT
         entry.completed()
         entry.succeeded()
         entry.done()

@@ -49,6 +49,7 @@ class ScanEntryTest extends Specification {
                     scanId: '123',
                     buildId: 'build-123',
                     containerImage: 'docker.io/foo/bar:latest',
+                    platform: ContainerPlatform.DEFAULT,
                     startTime: ts,
                     duration: elapsed,
                     status: 'DONE',
@@ -58,6 +59,7 @@ class ScanEntryTest extends Specification {
         result.scanId == '123'
         result.buildId == 'build-123'
         result.containerImage == 'docker.io/foo/bar:latest'
+        result.platform == ContainerPlatform.DEFAULT
         result.startTime == ts
         result.duration == Duration.ofMinutes(1)
         result.status == 'DONE'
@@ -71,6 +73,7 @@ class ScanEntryTest extends Specification {
                 scanId: '123',
                 buildId: 'build-123',
                 containerImage: 'docker.io/foo/bar:latest',
+                platform: ContainerPlatform.DEFAULT,
                 startTime: Instant.now(),
                 duration: DURATION,
                 status: 'DONE',
@@ -93,6 +96,7 @@ class ScanEntryTest extends Specification {
                 scanId: '123',
                 buildId: 'build-123',
                 containerImage: 'docker.io/foo/bar:latest',
+                platform: ContainerPlatform.DEFAULT,
                 startTime: Instant.now(),
                 status: STATUS,
                 vulnerabilities: []
@@ -112,11 +116,12 @@ class ScanEntryTest extends Specification {
         def elapsed = Duration.ofMinutes(1)
         def ts = Instant.now().minus(elapsed)
         when:
-        def result = ScanEntry.of(scanId: 'scan-123', buildId: 'build-123', containerImage: 'ubuntu:latest', startTime: ts, duration: Duration.ofMinutes(1), status: 'XYZ', vulnerabilities: [cve1])
+        def result = ScanEntry.of(scanId: 'scan-123', buildId: 'build-123', containerImage: 'ubuntu:latest', platform: ContainerPlatform.DEFAULT, startTime: ts, duration: Duration.ofMinutes(1), status: 'XYZ', vulnerabilities: [cve1])
         then:
         result.scanId == 'scan-123'
         result.buildId == 'build-123'
         result.containerImage == 'ubuntu:latest'
+        result.platform == ContainerPlatform.DEFAULT
         result.startTime == ts
         result.duration == elapsed
         result.status == 'XYZ'
@@ -133,6 +138,7 @@ class ScanEntryTest extends Specification {
                 scanId: '12345',
                 buildId: 'build-12345',
                 containerImage: 'docker.io/some:image',
+                platform: ContainerPlatform.DEFAULT,
                 startTime: ts,
                 duration: elapsed,
                 status: ScanEntry.SUCCEEDED,
@@ -145,6 +151,7 @@ class ScanEntryTest extends Specification {
         result.containerImage == 'docker.io/some:image'
         result.startTime == ts
         nearly(result.duration, elapsed)
+        result.platform == ContainerPlatform.DEFAULT
         result.status == ScanEntry.SUCCEEDED
         result.vulnerabilities == [cve1]
     }
@@ -158,6 +165,7 @@ class ScanEntryTest extends Specification {
                 scanId: '12345',
                 buildId: 'build-12345',
                 containerImage: 'docker.io/some:image',
+                platform: ContainerPlatform.DEFAULT,
                 startTime:  ts,
                 duration: elapsed,
                 status: ScanEntry.FAILED,
@@ -168,6 +176,7 @@ class ScanEntryTest extends Specification {
         result.scanId == '12345'
         result.buildId == 'build-12345'
         result.containerImage == 'docker.io/some:image'
+        result.platform == ContainerPlatform.DEFAULT
         result.startTime == ts
         nearly(result.duration, elapsed)
         result.status == ScanEntry.FAILED
@@ -195,6 +204,7 @@ class ScanEntryTest extends Specification {
         result.scanId == 'scan-123'
         result.buildId == 'build-345'
         result.containerImage == 'docker.io/foo/bar'
+        result.platform == ContainerPlatform.DEFAULT
         result.startTime == ts
         nearly(result.duration, elapsed)
         result.status == ScanEntry.FAILED
@@ -204,7 +214,7 @@ class ScanEntryTest extends Specification {
     def 'should create scan pending' () {
         given:
         def ts = Instant.now()
-        def request = ScanRequest.of(scanId: 'sc-123', buildId: 'bd-345', mirrorId: 'mr-1234', requestId: 'rq-123', targetImage: 'docker.io/foo/bar', creationTime: ts)
+        def request = ScanRequest.of(scanId: 'sc-123', buildId: 'bd-345', mirrorId: 'mr-1234', requestId: 'rq-123', targetImage: 'docker.io/foo/bar', platform: ContainerPlatform.DEFAULT, creationTime: ts)
         when:
         def scan = ScanEntry.create(request)
         then:
@@ -213,6 +223,7 @@ class ScanEntryTest extends Specification {
         scan.mirrorId == 'mr-1234'
         scan.requestId == 'rq-123'
         scan.containerImage == 'docker.io/foo/bar'
+        scan.platform ==  ContainerPlatform.DEFAULT
         scan.startTime == ts
         scan.status == ScanEntry.PENDING
         scan.vulnerabilities == []
@@ -244,6 +255,7 @@ class ScanEntryTest extends Specification {
                 'mr-12345',
                 'cr-12345',
                 'docker.io/some:image',
+                ContainerPlatform.DEFAULT,
                 Instant.now(),
                 Duration.ofMinutes(1),
                 ScanEntry.SUCCEEDED,
@@ -260,6 +272,7 @@ class ScanEntryTest extends Specification {
         entry.mirrorId == recrd.mirrorId
         entry.requestId == recrd.requestId
         entry.containerImage == recrd.containerImage
+        entry.platform == recrd.platform
         entry.startTime == recrd.startTime
         entry.duration == recrd.duration
         entry.status == recrd.status

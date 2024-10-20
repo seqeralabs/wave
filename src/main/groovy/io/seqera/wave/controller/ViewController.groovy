@@ -397,7 +397,8 @@ class ViewController {
             binding.hostName = spec.hostName
             binding.config = JacksonHelper.toJson(spec.config)
             binding.manifest = JacksonHelper.toJson(spec.manifest)
-        }catch (Exception e){
+        }
+        catch (Exception e){
             binding.error_message = e.getMessage()
         }
 
@@ -410,6 +411,7 @@ class ViewController {
         binding.should_refresh = !result.done()
         binding.scan_id = result.id
         binding.scan_container_image = result.containerImage ?: '-'
+        binding.scan_platform = result.platform?.toString()  ?: '-'
         binding.scan_exist = true
         binding.scan_completed = result.done()
         binding.scan_status = result.status

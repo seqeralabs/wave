@@ -731,14 +731,14 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
-    V1Job launchScanJob(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
-        final spec = scanJobSpec(name, containerImage, args, workDir, creds, scanConfig, nodeSelector)
+    V1Job launchScanJob(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig) {
+        final spec = scanJobSpec(name, containerImage, args, workDir, creds, scanConfig)
         return k8sClient
                 .batchV1Api()
                 .createNamespacedJob(namespace, spec, null, null, null,null)
     }
 
-    V1Job scanJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig, Map<String,String> nodeSelector) {
+    V1Job scanJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig) {
 
         final mounts = new ArrayList<V1VolumeMount>(5)
         mounts.add(mountBuildStorage(workDir, storageMountPath, false))
@@ -766,7 +766,6 @@ class K8sServiceImpl implements K8sService {
                 .withBackoffLimit(scanConfig.retryAttempts)
                 .withNewTemplate()
                 .editOrNewSpec()
-                .withNodeSelector(nodeSelector)
                 .withServiceAccount(serviceAccount)
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)

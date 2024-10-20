@@ -28,6 +28,7 @@ import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ScanEntry
@@ -50,6 +51,7 @@ class ScanControllerTest extends Specification {
         given:
         def startTime = Instant.now()
         def duration = Duration.ofMinutes(2)
+        def platform = ContainerPlatform.DEFAULT
         def scanId = 'sc123'
         def buildId = "bd-123"
         def mirrorId = 'mr-123'
@@ -71,6 +73,7 @@ class ScanControllerTest extends Specification {
                                 mirrorId,
                                 requestId,
                                 containerImage,
+                                platform,
                                 startTime,
                                 duration,
                                 'SUCCEEDED',
