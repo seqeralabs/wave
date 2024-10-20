@@ -33,7 +33,7 @@ import jakarta.inject.Singleton
 @CompileStatic
 class MirrorConfig {
 
-    @Value('${wave.mirror.max-duration:15m}')
+    @Value('${wave.mirror.max-duration:20m}')
     Duration maxDuration
 
     @Value('${wave.mirror.status.delay:4s}')
@@ -48,7 +48,7 @@ class MirrorConfig {
     @Value('${wave.mirror.skopeoImage:`quay.io/skopeo/stable`}')
     String skopeoImage
 
-    @Value('${wave.mirror.retry-attempts:3}')
+    @Value('${wave.mirror.retry-attempts:2}')
     Integer retryAttempts
 
     @Nullable
