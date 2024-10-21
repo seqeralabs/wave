@@ -113,10 +113,10 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
             throw new IllegalArgumentException("Missing required parameter userId -- Unable to retrieve credentials for container repository '$container'")
 
         // use default credentials for default repositories
-        // NOTE: this requires that 'defaultBuildRepository', 'defaultCacheRepository' and 'defaultPublicRepository' have a unique registry host name
+        // NOTE: this requires that 'defaultBuildRepository', 'defaultCacheRepository' and 'defaultCommunityRegistry' have a unique registry host name
         // that means that for example docker.io/some/repo should not be used otherwise wave credentials could be used in place of user credentials
         // for a repo having the same registry host
-        if( container.sameRegistry(buildConfig.defaultBuildRepository) || container.sameRegistry(buildConfig.defaultCacheRepository) || container.sameRegistry(buildConfig.defaultPublicRepository) )
+        if( container.sameRegistry(buildConfig.defaultBuildRepository) || container.sameRegistry(buildConfig.defaultCacheRepository) || container.sameRegistry(buildConfig.defaultCommunityRegistry) )
             return getDefaultCredentials(container)
 
         return getUserCredentials0(container.registry, identity)

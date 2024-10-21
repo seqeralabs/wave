@@ -55,7 +55,7 @@ class BuildConfig {
 
     @Nullable
     @Value('${wave.build.public-repo}')
-    String defaultPublicRepository
+    String defaultCommunityRegistry
 
     /**
      * File system path there the dockerfile is save
@@ -120,7 +120,7 @@ class BuildConfig {
                 "singularity-image-amr64=${singularityImageArm64}; " +
                 "default-build-repository=${defaultBuildRepository}; " +
                 "default-cache-repository=${defaultCacheRepository}; " +
-                "default-public-repository=${defaultPublicRepository}; " +
+                "default-public-repository=${defaultCommunityRegistry}; " +
                 "build-workspace=${buildWorkspace}; " +
                 "build-timeout=${defaultTimeout}; " +
                 "build-trusted-timeout=${trustedTimeout}; " +
