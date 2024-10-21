@@ -6,11 +6,11 @@ on:
     branches:
       - '**'
     paths :
-      - 'typespec/**'
+      - '../../src/main/resources/typespec/**'
   pull_request:
     types: [opened, reopened, synchronize]
     paths:
-      - 'typespec/**'
+      - '../../src/main/resources/typespec/**'
 
 permissions:
   contents: read
