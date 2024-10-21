@@ -107,7 +107,7 @@ class ValidationServiceImpl implements ValidationService {
     boolean isCustomRepo(String repo) {
         if( !repo )
             return false
-        if( buildConfig.defaultPublicRepository && repo.startsWith(buildConfig.defaultPublicRepository) )
+        if( buildConfig.defaultCommunityRegistry && repo.startsWith(buildConfig.defaultCommunityRegistry) )
             return false
         if( buildConfig.defaultBuildRepository && repo.startsWith(buildConfig.defaultBuildRepository) )
             return false

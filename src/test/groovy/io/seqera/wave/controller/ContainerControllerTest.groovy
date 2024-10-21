@@ -627,7 +627,7 @@ class ContainerControllerTest extends Specification {
     @Unroll
     def 'should normalise community repo' () {
         given:
-        def config = new BuildConfig(defaultPublicRepository: PUBLIC, reservedWords: ['build','library'] as Set)
+        def config = new BuildConfig(defaultCommunityRegistry: PUBLIC, reservedWords: ['build','library'] as Set)
         def controller = new ContainerController(buildConfig: config)
         expect:
         controller.targetRepo(REPO, STRATEGY) == EXPECTED
@@ -656,7 +656,7 @@ class ContainerControllerTest extends Specification {
 
     def 'should not allow reserved words' () {
         given:
-        def config = new BuildConfig(defaultPublicRepository: 'foo.com',  reservedWords: ['build','library'] as Set)
+        def config = new BuildConfig(defaultCommunityRegistry: 'foo.com',  reservedWords: ['build','library'] as Set)
         def controller = new ContainerController(buildConfig: config)
 
         when:
