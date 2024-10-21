@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.logs
 
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
@@ -27,6 +28,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.micronaut.http.MediaType
 import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.objectstorage.ObjectStorageEntry
 import io.micronaut.objectstorage.ObjectStorageOperations
@@ -35,6 +37,7 @@ import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.builder.BuildStrategy
 import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
@@ -63,6 +66,9 @@ class BuildLogServiceImpl implements BuildLogService {
 
     @Inject
     private PersistenceService persistenceService
+
+    @Inject
+    private BuildStrategy buildStrategy
 
     @Nullable
     @Value('${wave.build.logs.prefix}')
@@ -129,7 +135,14 @@ class BuildLogServiceImpl implements BuildLogService {
     private StreamedFile fetchLogStream0(String buildId) {
         if( !buildId ) return null
         final Optional<ObjectStorageEntry<?>> result = objectStorageOperations.retrieve(logKey(buildId))
-        return result.isPresent() ? result.get().toStreamedFile() : null
+        return result.isPresent() ? result.get().toStreamedFile() : fetchLogStream1(buildId)
+    }
+
+    private StreamedFile fetchLogStream1(String buildId) {
+        def logStream = buildStrategy.getLogs(buildId)
+        if( !logStream )
+            return null
+        return logStream ? new StreamedFile(logStream, MediaType.APPLICATION_OCTET_STREAM_TYPE) : null
     }
 
     @Override

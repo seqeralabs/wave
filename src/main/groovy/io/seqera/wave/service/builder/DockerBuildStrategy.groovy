@@ -108,8 +108,7 @@ class DockerBuildStrategy extends BuildStrategy {
         //checkout the documentation here to know more about these options https://github.com/moby/buildkit/blob/master/docs/rootless.md#docker
         final wrapper = ['docker',
                          'run',
-                         '--detach',
-                         '--name', name,
+                         '--rm',
                          '--privileged',
                          '-v', "$workDir:$workDir".toString(),
                          '--entrypoint',
@@ -124,6 +123,10 @@ class DockerBuildStrategy extends BuildStrategy {
             wrapper.add('--platform')
             wrapper.add(platform.toString())
         }
+
+        //add builder name
+        wrapper.add('--name')
+        wrapper.add(builderName(buildId))
 
         // the container image to be used to build
         wrapper.add( buildConfig.buildkitImage )
@@ -153,7 +156,26 @@ class DockerBuildStrategy extends BuildStrategy {
             wrapper.add(platform.toString())
         }
 
+        //add builder name
+        wrapper.add('--name')
+        wrapper.add(builderName(buildId))
+
         wrapper.add(buildConfig.singularityImage(platform))
         return wrapper
+    }
+
+    protected static String builderName(String buildId) {
+        return "build-${buildId}".toString().replace('_', '-')
+    }
+
+    @Override
+    InputStream getLogs(String buildId) {
+        def logCmd = ['docker', 'logs'] + builderName(buildId)
+        log.info("Get build logs: ${logCmd.join(' ')}")
+        final proc = new ProcessBuilder()
+                .command(logCmd)
+                .redirectErrorStream(true)
+                .start()
+        return proc.inputStream
     }
 }

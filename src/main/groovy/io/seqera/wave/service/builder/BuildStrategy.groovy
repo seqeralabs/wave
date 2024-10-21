@@ -35,8 +35,10 @@ abstract class BuildStrategy {
     @Inject
     private BuildConfig buildConfig
 
-    abstract void build(String jobName, BuildRequest req)
-
+    abstract BuildResult build(BuildRequest req)
+  
+    abstract  InputStream getLogs(String buildId)
+  
     static final public String BUILDKIT_ENTRYPOINT = 'buildctl-daemonless.sh'
 
     List<String> launchCmd(BuildRequest req) {
