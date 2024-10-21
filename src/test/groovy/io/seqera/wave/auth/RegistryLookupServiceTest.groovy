@@ -74,6 +74,8 @@ class RegistryLookupServiceTest extends Specification {
         'http://foo.com'    | 'http://foo.com/v2/'
         'http://foo.com/v2' | 'http://foo.com/v2/'
         'http://foo.com/v2/'| 'http://foo.com/v2/'
+        'localhost'         | 'http://localhost/v2/'
+        'localhost:8000'    | 'http://localhost:8000/v2/'
     }
 
 }
