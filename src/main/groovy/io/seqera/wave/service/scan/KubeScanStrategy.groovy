@@ -34,7 +34,6 @@ import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Singleton
-import static io.seqera.wave.util.K8sHelper.getSelectorLabel
 import static java.nio.file.StandardOpenOption.CREATE
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import static java.nio.file.StandardOpenOption.WRITE
@@ -85,9 +84,8 @@ class KubeScanStrategy extends ScanStrategy {
 
             final reportFile = req.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
 
-            final trivyCommand = scanCommand(req.targetImage, reportFile, scanConfig)
-            final selector= getSelectorLabel(req.platform, nodeSelectorMap)
-            k8sService.launchScanJob(jobName, scanConfig.scanImage, trivyCommand, req.workDir, configFile, scanConfig, selector)
+            final trivyCommand = scanCommand(req.targetImage, reportFile, req.platform, scanConfig)
+            k8sService.launchScanJob(jobName, scanConfig.scanImage, trivyCommand, req.workDir, configFile, scanConfig)
         }
         catch (ApiException e) {
             throw new BadRequestException("Unexpected scan failure: ${e.responseBody}", e)

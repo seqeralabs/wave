@@ -46,4 +46,6 @@ interface ContainerScanService {
 
     ScanEntry getScanState(String scanId)
 
+    List<WaveScanRecord> getAllScans(String scanId)
+
 }

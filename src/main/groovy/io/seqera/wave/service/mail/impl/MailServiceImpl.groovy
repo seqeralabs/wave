@@ -92,7 +92,7 @@ class MailServiceImpl implements MailService {
         binding.build_exit_status = result.exitStatus
         binding.build_time = formatTimestamp(result.startTime, req.offsetId) ?: '-'
         binding.build_duration = formatDuration(result.duration) ?: '-'
-        binding.build_image = req.targetImage
+        binding.build_image = preventLinkFormatting(req.targetImage)
         binding.build_format = req.format?.render() ?: 'Docker'
         binding.build_platform = req.platform
         binding.build_containerfile = req.containerFile ?: '-'
@@ -112,4 +112,16 @@ class MailServiceImpl implements MailService {
         return mail
     }
 
+    /**
+     * Replaces dot characters in the image name with zero-with blank entity followed by a dot
+     * to prevent the mail client to render the container image name as a uri.
+     *
+     * @param name
+     *      The container image name as a string
+     * @return
+     *      The image string in which dot chars are replaced with {@code &#8203;.}
+     */
+    static protected String preventLinkFormatting(String name) {
+        name ? name.replaceAll(/\./,'&#8203;.') : null
+    }
 }

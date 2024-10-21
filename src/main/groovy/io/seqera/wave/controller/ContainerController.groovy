@@ -522,7 +522,7 @@ class ContainerController {
                 request.containerImage,
                 targetImage,
                 digest,
-                platform,
+                null, // <-- use null to copy all container tags
                 Path.of(buildConfig.buildWorkspace).toAbsolutePath(),
                 configJson,
                 scanId,

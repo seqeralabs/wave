@@ -754,11 +754,11 @@ class K8sServiceImplTest extends Specification {
             getCacheDirectory() >> workspace.resolve('cache/dir')
             getRequestsCpu() >> '2'
             getRequestsMemory() >> '4Gi'
+            getGithubToken() >> '123abc'
         }
-        def nodeSelector = [key: 'value']
 
         when:
-        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig, nodeSelector)
+        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig)
 
         then:
         job.metadata.name == name
@@ -767,9 +767,9 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.containers[0].args == args
         job.spec.template.spec.containers[0].resources.requests.get('cpu') == new Quantity('2')
         job.spec.template.spec.containers[0].resources.requests.get('memory') == new Quantity('4Gi')
+        job.spec.template.spec.containers[0].env == [ new V1EnvVar().name('GITHUB_TOKEN').value('123abc') ]
         job.spec.template.spec.volumes.size() == 1
         job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
-        job.spec.template.spec.nodeSelector == nodeSelector
         job.spec.template.spec.restartPolicy == 'Never'
 
         cleanup:
@@ -799,10 +799,9 @@ class K8sServiceImplTest extends Specification {
             getRequestsCpu() >> '2'
             getRequestsMemory() >> '4Gi'
         }
-        def nodeSelector = [key: 'value']
 
         when:
-        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig, nodeSelector)
+        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig)
 
         then:
         job.metadata.name == name
@@ -813,7 +812,6 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.containers[0].resources.requests.get('memory') == new Quantity('4Gi')
         job.spec.template.spec.volumes.size() == 1
         job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
-        job.spec.template.spec.nodeSelector == nodeSelector
         job.spec.template.spec.restartPolicy == 'Never'
 
         cleanup:
@@ -844,10 +842,9 @@ class K8sServiceImplTest extends Specification {
             getRequestsMemory() >> '4Gi'
             getRetryAttempts() >> 3
         }
-        def nodeSelector = null
 
         when:
-        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig, nodeSelector)
+        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig)
 
         then:
         job.metadata.name == name
@@ -859,7 +856,6 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.containers[0].resources.requests.get('memory') == new Quantity('4Gi')
         job.spec.template.spec.volumes.size() == 1
         job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
-        job.spec.template.spec.nodeSelector == null
         job.spec.template.spec.restartPolicy == 'Never'
 
         cleanup:
@@ -950,10 +946,9 @@ class K8sServiceImplTest extends Specification {
             getRequestsMemory() >> null
             getRetryAttempts() >> 3
         }
-        def nodeSelector = [key: 'value']
 
         when:
-        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig, nodeSelector)
+        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig)
 
         then:
         job.metadata.name == name
@@ -964,13 +959,11 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.containers[0].resources.requests == null
         job.spec.template.spec.volumes.size() == 1
         job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
-        job.spec.template.spec.nodeSelector == nodeSelector
         job.spec.template.spec.restartPolicy == 'Never'
 
         cleanup:
         ctx.close()
     }
-
 
     private V1Job jobActive() {
         def status = new V1JobStatus()

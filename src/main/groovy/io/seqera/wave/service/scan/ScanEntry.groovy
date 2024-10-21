@@ -24,6 +24,7 @@ import java.time.Instant
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.job.JobEntry
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.store.state.StateEntry
@@ -67,6 +68,11 @@ class ScanEntry implements StateEntry<String>, JobEntry {
      * The target container image to be scanner
      */
     String containerImage
+
+    /**
+     * The target container platform for which the scan is required
+     */
+    ContainerPlatform platform
 
     /**
      * The request creation time
@@ -120,6 +126,7 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 request.mirrorId,
                 request.requestId,
                 request.targetImage,
+                request.platform,
                 request.creationTime,
                 null,
                 PENDING,
@@ -133,6 +140,7 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 this.mirrorId,
                 this.requestId,
                 this.containerImage,
+                this.platform,
                 this.startTime,
                 Duration.between(this.startTime, Instant.now()),
                 SUCCEEDED,
@@ -147,6 +155,7 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 this.mirrorId,
                 this.requestId,
                 this.containerImage,
+                this.platform,
                 this.startTime,
                 Duration.between(this.startTime, Instant.now()),
                 FAILED,
@@ -162,6 +171,7 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 request.mirrorId,
                 request.requestId,
                 request.targetImage,
+                request.platform,
                 request.creationTime,
                 Duration.between(request.creationTime, Instant.now()),
                 FAILED,
@@ -187,6 +197,7 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 opts.mirrorId as String,
                 opts.requestId as String,
                 opts.containerImage as String,
+                opts.platform as ContainerPlatform,
                 opts.startTime as Instant,
                 opts.duration as Duration,
                 opts.status as String,
@@ -203,6 +214,7 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 record.mirrorId,
                 record.requestId,
                 record.containerImage,
+                record.platform,
                 record.startTime,
                 record.duration,
                 record.status,
