@@ -41,12 +41,13 @@ class DockerBuildStrategyTest extends Specification {
         def work = Path.of('/work/foo')
         when:
         def cmd = service.cmdForBuildkit('build-job-name', work, null, null)
+        def name = 'build-job-name'
         then:
         cmd == ['docker',
                 'run',
                 '--detach',
                 '--name',
-                'build-job-name',
+                name,
                 '--privileged',
                 '-v', '/work/foo:/work/foo',
                 '--entrypoint',
@@ -54,7 +55,7 @@ class DockerBuildStrategyTest extends Specification {
                 'moby/buildkit:v0.14.1-rootless']
 
         when:
-        cmd = service.cmdForBuildkit(work, Path.of('/foo/creds.json'), null, ContainerPlatform.of('arm64'))
+        cmd = service.cmdForBuildkit(name, work, Path.of('/foo/creds.json'), ContainerPlatform.of('arm64'))
         then:
         cmd == ['docker',
                 'run',
