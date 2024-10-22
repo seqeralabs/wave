@@ -98,6 +98,11 @@ class KubeBuildStrategy extends BuildStrategy {
         }
     }
 
+    @Override
+    InputStream getLogs(String podName) {
+        return k8sService.getCurrentLogsPod(podName)
+    }
+
     protected String getBuildImage(BuildRequest buildRequest){
         if( buildRequest.formatDocker() ) {
             return buildConfig.buildkitImage

@@ -35,7 +35,7 @@ abstract class BuildStrategy {
     @Inject
     private BuildConfig buildConfig
 
-    abstract BuildResult build(BuildRequest req)
+    abstract void build(String jobName, BuildRequest req)
   
     abstract  InputStream getLogs(String buildId)
   
