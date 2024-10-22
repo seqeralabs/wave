@@ -1,0 +1,23 @@
+name: Generate and submit dependency graph for wave-cli
+on:
+  push:
+    branches: ['master']
+
+permissions:
+  contents: write
+
+jobs:
+  dependency-submission:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: graalvm/setup-graalvm@v1
+      with:
+        java-version: 21
+
+    - name: Generate and submit dependency graph for wave-cli
+      uses: gradle/actions/dependency-submission@v4
+      with:
+        dependency-resolution-task: ":app:dependencies"
+        additional-arguments: "--configuration runtimeClasspath"
+        dependency-graph: generate-and-submit
