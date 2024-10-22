@@ -16,10 +16,9 @@ jobs:
         distribution: temurin
         java-version: 17
 
-    - name: Generate and submit dependency graph for tower-backend
+    - name: Generate and submit dependency graph for wave
       uses: gradle/actions/dependency-submission@v4
       with:
         dependency-resolution-task: "dependencies"
         additional-arguments: "--configuration runtimeClasspath"
         dependency-graph: generate-and-submit
- 
