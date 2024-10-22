@@ -18,6 +18,8 @@
 
 package io.seqera.wave.auth
 
+import io.seqera.wave.exception.RegistryUnauthorizedAccessException
+
 /**
  * Declares container registry authentication & authorization operations
  *

@@ -20,11 +20,11 @@ package io.seqera.wave.service.data.stream.impl
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.LinkedBlockingQueue
-import java.util.function.Predicate
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
+import io.seqera.wave.service.data.stream.MessageConsumer
 import io.seqera.wave.service.data.stream.MessageStream
 import jakarta.inject.Singleton
 /**
@@ -42,16 +42,21 @@ class LocalMessageStream implements MessageStream<String> {
     private ConcurrentHashMap<String, LinkedBlockingQueue<String>> delegate = new ConcurrentHashMap<>()
 
     @Override
+    void init(String streamId) {
+        delegate.put(streamId, new LinkedBlockingQueue<>())
+    }
+
+    @Override
     void offer(String streamId, String message) {
         delegate
-                .computeIfAbsent(streamId, (it)-> new LinkedBlockingQueue<>())
+                .get(streamId)
                 .offer(message)
     }
 
     @Override
-    boolean consume(String streamId, Predicate<String> consumer) {
+    boolean consume(String streamId, MessageConsumer<String> consumer) {
         final message = delegate
-                .computeIfAbsent(streamId, (it)-> new LinkedBlockingQueue<>())
+                .get(streamId)
                 .poll()
         if( message==null ) {
             return false
@@ -59,7 +64,7 @@ class LocalMessageStream implements MessageStream<String> {
 
         def result = false
         try {
-            result = consumer.test(message)
+            result = consumer.accept(message)
         }
         catch (Throwable e) {
             result = false
@@ -67,7 +72,9 @@ class LocalMessageStream implements MessageStream<String> {
         }
         finally {
             if( !result ) {
-                offer(streamId, message)
+                // add again message not consumed to mimic the behavior or redis stream
+                sleep(1_000)
+                offer(streamId,message)
             }
             return result
         }

@@ -37,7 +37,7 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
     ApplicationContext applicationContext
 
     @Inject
-    private RegistryTokenCacheStore tokenStore
+    private RegistryTokenStore tokenStore
 
     @Shared
     @Value('${wave.registries.docker.io.username}')

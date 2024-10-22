@@ -39,20 +39,22 @@ import io.seqera.wave.test.RedisTestContainer
 class AbstractMessageQueueRedisTest extends Specification implements RedisTestContainer {
 
     @Shared
-    ApplicationContext applicationContext
+    ApplicationContext context
 
     def setup() {
-        applicationContext = ApplicationContext.run([
+        context = ApplicationContext.run([
                 REDIS_HOST: redisHostName,
                 REDIS_PORT: redisPort
         ], 'test', 'redis')
-
     }
 
+    def cleanup() {
+        context.stop()
+    }
 
     def 'should send and consume a request'() {
         given:
-        def broker = applicationContext.getBean(RedisMessageQueue)
+        def broker = context.getBean(RedisMessageQueue)
         def queue = new PairingOutboundQueue(broker, Duration.ofMillis(100))
         and:
         def result = new CompletableFuture<PairingMessage>()
@@ -70,10 +72,10 @@ class AbstractMessageQueueRedisTest extends Specification implements RedisTestCo
 
     def 'should send and consume a request across instances'() {
         given:
-        def broker1 = applicationContext.getBean(RedisMessageQueue)
+        def broker1 = context.getBean(RedisMessageQueue)
         def queue1 = new PairingOutboundQueue(broker1, Duration.ofMillis(100))
         and:
-        def broker2 = applicationContext.getBean(RedisMessageQueue)
+        def broker2 = context.getBean(RedisMessageQueue)
         def queue2 = new PairingOutboundQueue(broker2, Duration.ofMillis(100))
         and:
         def result = new CompletableFuture<PairingMessage>()

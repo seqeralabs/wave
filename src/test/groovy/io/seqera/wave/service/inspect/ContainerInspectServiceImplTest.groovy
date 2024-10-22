@@ -22,6 +22,7 @@ import spock.lang.Specification
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.auth.RegistryCredentialsProvider
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
 
@@ -102,7 +103,7 @@ class ContainerInspectServiceImplTest extends Specification {
         given:
         def DOCKERFILE = 'FROM busybox'
         when:
-        service.containerEntrypoint(DOCKERFILE, PlatformId.NULL)
+        service.containerEntrypoint(DOCKERFILE, ContainerPlatform.DEFAULT, PlatformId.NULL)
         then:
         noExceptionThrown()
     }
@@ -111,7 +112,7 @@ class ContainerInspectServiceImplTest extends Specification {
         given:
         def DOCKERFILE = 'FROM quay.io/biocontainers/fastqc:0.11.9--0'
         when:
-        service.containerEntrypoint(DOCKERFILE, PlatformId.NULL)
+        service.containerEntrypoint(DOCKERFILE, ContainerPlatform.DEFAULT, PlatformId.NULL)
         then:
         noExceptionThrown()
     }

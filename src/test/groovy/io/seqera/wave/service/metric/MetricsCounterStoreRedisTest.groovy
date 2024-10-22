@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.metric
 
+import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
@@ -29,8 +30,11 @@ import redis.clients.jedis.Jedis
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 class MetricsCounterStoreRedisTest  extends Specification implements RedisTestContainer {
+
+    @Shared
     ApplicationContext applicationContext
 
+    @Shared
     Jedis jedis
 
     def setup() {
@@ -45,6 +49,7 @@ class MetricsCounterStoreRedisTest  extends Specification implements RedisTestCo
     def cleanup(){
         jedis.flushAll()
         jedis.close()
+        applicationContext.close()
     }
     
     def 'should get correct count value' () {
@@ -80,5 +85,24 @@ class MetricsCounterStoreRedisTest  extends Specification implements RedisTestCo
         metricsCounterStore.getAllMatchingEntries('fusion/o/*') == ['fusion/o/bar.in/d/2024-05-30':1]
         metricsCounterStore.getAllMatchingEntries('builds/o/*/d/2024-05-30') == ['builds/o/bar.org/d/2024-05-30':1]
         metricsCounterStore.getAllMatchingEntries('pulls/o/bar.in/d/2024-05-31') == ['pulls/o/bar.in/d/2024-05-31':1]
+    }
+
+    def 'should get correct org count value for mirror and scan' () {
+        given:
+        def metricsCounterStore = applicationContext.getBean(MetricsCounterStore)
+
+        when:
+        metricsCounterStore.inc('mirrors/o/foo.com')
+        metricsCounterStore.inc('mirrors/o/bar.org')
+        metricsCounterStore.inc('scans/o/bar.in')
+        metricsCounterStore.inc('scans/o/foo.com/d/2024-05-29')
+        metricsCounterStore.inc('mirrors/o/bar.org/d/2024-05-30')
+        metricsCounterStore.inc('scans/o/bar.in/d/2024-05-31')
+
+        then:
+        metricsCounterStore.getAllMatchingEntries('mirrors/o/*') == ['mirrors/o/foo.com':1, 'mirrors/o/bar.org':1, 'mirrors/o/bar.org/d/2024-05-30':1]
+        metricsCounterStore.getAllMatchingEntries('scans/o/*') == ['scans/o/bar.in':1, 'scans/o/foo.com/d/2024-05-29':1, 'scans/o/bar.in/d/2024-05-31':1]
+        metricsCounterStore.getAllMatchingEntries('mirrors/o/*/d/2024-05-30') == ['mirrors/o/bar.org/d/2024-05-30':1]
+        metricsCounterStore.getAllMatchingEntries('scans/o/bar.in/d/2024-05-31') == ['scans/o/bar.in/d/2024-05-31':1]
     }
 }

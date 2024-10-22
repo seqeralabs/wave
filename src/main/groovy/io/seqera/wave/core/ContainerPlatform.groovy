@@ -43,9 +43,9 @@ class ContainerPlatform {
     final String variant
 
     String toString() {
-        def result = "$os/$arch"
+        def result = os + "/" + arch
         if( variant )
-            result += "/$variant"
+            result += "/" + variant
         return result
     }
 

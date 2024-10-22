@@ -22,16 +22,13 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
-import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.service.data.stream.impl.RedisMessageStream
 import io.seqera.wave.test.RedisTestContainer
 import io.seqera.wave.util.LongRndKey
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@MicronautTest(environments = ['test'])
 class RedisMessageStreamTest extends Specification implements RedisTestContainer {
 
     @Shared
@@ -45,12 +42,19 @@ class RedisMessageStreamTest extends Specification implements RedisTestContainer
         ], 'test', 'redis')
     }
 
+    def cleanup() {
+        context.stop()
+    }
+
     def 'should offer and consume a value' () {
         given:
         def id1 = "stream-${LongRndKey.rndHex()}"
         def id2 = "stream-${LongRndKey.rndHex()}"
         and:
         def stream = context.getBean(RedisMessageStream)
+        and:
+        stream.init(id1)
+        stream.init(id2)
         when:
         stream.offer(id1, 'one')
         and:
@@ -72,6 +76,7 @@ class RedisMessageStreamTest extends Specification implements RedisTestContainer
         given:
         def id1 = "stream-${LongRndKey.rndHex()}"
         def stream = context.getBean(RedisMessageStream)
+        stream.init(id1)
         when:
         stream.offer(id1, 'alpha')
         stream.offer(id1, 'delta')

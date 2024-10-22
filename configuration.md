@@ -107,20 +107,6 @@ Below are the standard format for known registries, but you can change registry 
 
 - **`wave.build.force-compression`**: determines whether to force the compression for each cache layers produced by the build process. The default is `false`, enabling compression for more efficient storage. *Optional*.
 
-### Spack configuration for wave build process
-
-**Note**: Spack support will be removed in future releases.
-
-Spack configuration consists of the path of its secret file, the mount path for the secret file in the spack container, and the optional S3 bucket name for the spack binary cache.
-
-**Note**: these configuration are mandatory to support Spack in a wave installation.
-
-- **`wave.build.spack.secretKeyFile`**: the path to the file containing the PGP private key used to [sign Spack packages built by Wave](https://spack.readthedocs.io/en/latest/binary_caches.html#build-cache-signing). For example, `/efs/wave/spack/key`. *Mandatory*.
-
-- **`wave.build.spack.secretMountPath`**: sets the mount path inside the Spack Docker image for the PGP private key specified by `wave.build.spack.secretKeyFile`. For instance `/var/seqera/spack/key`. Indicating where the PGP private key should be mounted inside the Spack Docker image. *Mandatory*.
-
-- **`wave.build.spack.cacheBucket`**: specifies the S3 bucket for the Spack binary cache, for example, `s3://spack-binarycache`. *Optional*.
-
 ### Build process logs configuration
 
 This configuration specifies attributes for the persistence of the logs fetched from containers or k8s pods used for building requested images, which can be accessed later and also attached to the build completion email.
@@ -216,7 +202,7 @@ Wave offers a feature to provide a cache for Docker blobs, which improves the pe
 
 - **`wave.blobCache.enabled`**: whether to enable the blob cache. It is `false` by default. *Optional*.
 
-- **`wave.blobCache.s5cmdImage`**: the Docker image that supplies the [s5cmd tool](https://github.com/peak/s5cmd). This tool is used to upload blob binaries to the S3 bucket. The default image used by Wave is `cr.seqera.io/public/wave/s5cmd:v2.2.2`. *Optional*.
+- **`wave.blobCache.s5cmdImage`**: the Docker image that supplies the [s5cmd tool](https://github.com/peak/s5cmd). This tool is used to upload blob binaries to the S3 bucket. The default image used by Wave is `public.cr.seqera.io/wave/s5cmd:v2.2.2`. *Optional*.
 
 - **`wave.blobCache.status.delay`**: the time delay in checking the status of the transfer of the blob binary from the repository to the cache. Its default value is `5s`. *Optional*.
 

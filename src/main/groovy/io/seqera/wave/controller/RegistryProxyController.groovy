@@ -104,7 +104,7 @@ class RegistryProxyController {
 
     @Error
     HttpResponse<RegistryErrorResponse> handleError(HttpRequest request, Throwable t) {
-        return errorHandler.handle(request, t, (msg, code) -> new RegistryErrorResponse(code,msg) )
+        return errorHandler.handle(request, t, (String msg, String code) -> new RegistryErrorResponse(code,msg) )
     }
 
     @Get
@@ -140,7 +140,7 @@ class RegistryProxyController {
         if( future ) {
             // wait for the build completion, then apply the usual 'handleGet0' logic
             future
-                .thenApply( (build) -> build.exitStatus==0 ? handleGet0(route, httpRequest) : badRequest(build.logs) )
+                .thenApply( (build) -> build.succeeded() ? handleGet0(route, httpRequest) : badRequest(build.logs) )
         }
         else
             return null

@@ -18,68 +18,74 @@
 
 package io.seqera.wave.service.job
 
-import java.time.Duration
+import java.util.function.BiConsumer
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
-import io.micronaut.inject.qualifiers.Qualifiers
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 /**
  * Concrete implementation of {@link JobHandler} that dispatcher event invocations
- * to the target implementation based on the job {@link JobId#type}
+ * to the target implementation based on the job {@link JobSpec#type}
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @Singleton
 @CompileStatic
-class JobDispatcher implements JobHandler {
+class JobDispatcher {
 
     @Inject
     private ApplicationContext context
 
-    private Map<JobId.Type, JobHandler> dispatch = new HashMap<>()
+    private Map<JobSpec.Type, JobHandler<? extends JobEntry>> dispatch = new HashMap<>()
 
+    /**
+     * Load all available implementations of {@link JobHandler}. Job handler should be:
+     * 1. declared as a @Singleton
+     * 2. annotated with the {@link Named} annotation
+     * 3. the Named value should be a literal matching the corresponding {@JobSpec.Type}
+     */
     @PostConstruct
-    void init() {
-        // implementation should be added here
-        add(JobId.Type.Transfer, dispatch, false)
+    protected init() {
+        final handlers = context.getBeansOfType(JobHandler)
+        for( JobHandler it : handlers ) {
+            final qualifier = it.getClass().getAnnotation(Named)?.value()
+            if( !qualifier )
+                throw new IllegalStateException("Missing 'Named' annotation for handler ${it.class.name}")
+            final type = JobSpec.Type.valueOf(qualifier)
+            log.info "Adding job handler for type: $type; handler=${it.class.simpleName}"
+            dispatch.put(type, it)
+        }
     }
 
-    protected void add(JobId.Type type, Map<JobId.Type, JobHandler> map, boolean required) {
-        final handler = context.findBean(JobHandler.class, Qualifiers.byName(type.toString()))
-        if( handler.isPresent() ) {
-            log.debug "Adding job handler for type: $type; handler=$handler"
-            map.put(type, handler.get())
+    protected void apply(JobSpec job, BiConsumer<JobHandler, JobEntry> consumer) {
+        final handler = dispatch.get(job.type)
+        final record = handler.getJobEntry(job)
+        if( !record ) {
+            log.error "== ${job.type} record unknown for job=${job.entryKey}"
         }
-        else if( required ) {
-            throw new IllegalStateException("Unable to find Job handler for type: $type")
+        else if( record.done() ) {
+            log.warn "== ${job.type} record already marked as completed for job=${job.entryKey}"
         }
         else {
-            log.debug "Disabled job handler for type: $type"
+            consumer.accept(handler, record)
         }
     }
 
-    @Override
-    Duration jobMaxDuration(JobId job) {
-        return dispatch.get(job.type).jobMaxDuration(job)
+    void notifyJobCompletion(JobSpec job, JobState state) {
+        apply(job, (handler, entry)-> handler.onJobCompletion(job, entry, state))
     }
 
-    @Override
-    void onJobCompletion(JobId job, JobState state) {
-        dispatch.get(job.type).onJobCompletion(job, state)
+    void notifyJobException(JobSpec job, Throwable error) {
+        apply(job, (handler, entry)-> handler.onJobException(job, entry, error))
     }
 
-    @Override
-    void onJobException(JobId job, Throwable error) {
-        dispatch.get(job.type).onJobException(job, error)
+    void notifyJobTimeout(JobSpec job) {
+        apply(job, (handler, entry)-> handler.onJobTimeout(job, entry))
     }
 
-    @Override
-    void onJobTimeout(JobId job) {
-        dispatch.get(job.type).onJobTimeout(job)
-    }
 }

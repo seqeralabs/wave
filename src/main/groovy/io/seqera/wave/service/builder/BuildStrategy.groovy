@@ -35,13 +35,9 @@ abstract class BuildStrategy {
     @Inject
     private BuildConfig buildConfig
 
-    abstract BuildResult build(BuildRequest req)
+    abstract void build(String jobName, BuildRequest req)
 
     static final public String BUILDKIT_ENTRYPOINT = 'buildctl-daemonless.sh'
-
-    void cleanup(BuildRequest req) {
-        req.workDir?.deleteDir()
-    }
 
     List<String> launchCmd(BuildRequest req) {
         if(req.formatDocker()) {
@@ -86,19 +82,6 @@ abstract class BuildStrategy {
 
             result << "--import-cache"
             result << "type=registry,ref=$req.cacheRepository:$req.containerId".toString()
-        }
-
-        if(req.spackFile){
-            result << '--opt'
-            result << 'build-arg:AWS_STS_REGIONAL_ENDPOINTS=$(AWS_STS_REGIONAL_ENDPOINTS)'
-            result << '--opt'
-            result << 'build-arg:AWS_REGION=$(AWS_REGION)'
-            result << '--opt'
-            result << 'build-arg:AWS_DEFAULT_REGION=$(AWS_DEFAULT_REGION)'
-            result << '--opt'
-            result << 'build-arg:AWS_ROLE_ARN=$(AWS_ROLE_ARN)'
-            result << '--opt'
-            result << 'build-arg:AWS_WEB_IDENTITY_TOKEN_FILE=$(AWS_WEB_IDENTITY_TOKEN_FILE)'
         }
 
         return result

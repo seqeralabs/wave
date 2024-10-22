@@ -188,10 +188,18 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         metricsService.incrementFusionPullsCounter(platformId1)
         metricsService.incrementFusionPullsCounter(platformId2)
         metricsService.incrementFusionPullsCounter(null)
+        metricsService.incrementMirrorsCounter(platformId1)
+        metricsService.incrementMirrorsCounter(platformId2)
+        metricsService.incrementMirrorsCounter(null)
+        metricsService.incrementScansCounter(platformId1)
+        metricsService.incrementScansCounter(platformId2)
+        metricsService.incrementScansCounter(null)
         and:
         def buildOrgCounts = metricsService.getAllOrgCount(PREFIX_BUILDS)
         def pullOrgCounts = metricsService.getAllOrgCount(PREFIX_PULLS)
         def fusionOrgCounts = metricsService.getAllOrgCount(PREFIX_FUSION)
+        def mirrorOrgCounts = metricsService.getAllOrgCount(PREFIX_MIRRORS)
+        def scanOrgCounts = metricsService.getAllOrgCount(PREFIX_SCANS)
         def emptyOrgCounts = metricsService.getAllOrgCount(null)
 
         then:
@@ -206,6 +214,14 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         fusionOrgCounts.metric == PREFIX_FUSION
         fusionOrgCounts.count == 2
         fusionOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        and:
+        mirrorOrgCounts.metric == PREFIX_MIRRORS
+        mirrorOrgCounts.count == 2
+        mirrorOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        and:
+        scanOrgCounts.metric == PREFIX_SCANS
+        scanOrgCounts.count == 2
+        scanOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
         and:
         emptyOrgCounts.metric == null
         emptyOrgCounts.count == 0
@@ -233,10 +249,18 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         metricsService.incrementFusionPullsCounter(platformId1)
         metricsService.incrementFusionPullsCounter(platformId2)
         metricsService.incrementFusionPullsCounter(null)
+        metricsService.incrementMirrorsCounter(platformId1)
+        metricsService.incrementMirrorsCounter(platformId2)
+        metricsService.incrementMirrorsCounter(null)
+        metricsService.incrementScansCounter(platformId1)
+        metricsService.incrementScansCounter(platformId2)
+        metricsService.incrementScansCounter(null)
         and:
         def buildOrgCounts = metricsService.getOrgCount(PREFIX_BUILDS, date, null)
         def pullOrgCounts = metricsService.getOrgCount(PREFIX_PULLS, date, null)
         def fusionOrgCounts = metricsService.getOrgCount(PREFIX_FUSION, date, null)
+        def mirrorOrgCounts = metricsService.getOrgCount(PREFIX_MIRRORS, date, null)
+        def scanOrgCounts = metricsService.getOrgCount(PREFIX_SCANS, date, null)
         def emptyOrgCounts = metricsService.getOrgCount(null, date, null)
 
         then:
@@ -251,6 +275,14 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         fusionOrgCounts.metric == PREFIX_FUSION
         fusionOrgCounts.count == 3
         fusionOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        and:
+        mirrorOrgCounts.metric == PREFIX_MIRRORS
+        mirrorOrgCounts.count == 3
+        mirrorOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        and:
+        scanOrgCounts.metric == PREFIX_SCANS
+        scanOrgCounts.count == 3
+        scanOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
         and:
         emptyOrgCounts.metric == null
         emptyOrgCounts.count == 0

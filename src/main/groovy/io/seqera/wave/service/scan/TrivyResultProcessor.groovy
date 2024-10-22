@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.scan
 
+import java.nio.file.Path
+
 import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 import io.seqera.wave.exception.ScanRuntimeException
@@ -25,11 +27,16 @@ import io.seqera.wave.exception.ScanRuntimeException
  * Implements ScanStrategy for Docker
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 class TrivyResultProcessor {
 
-    static List<ScanVulnerability> process(String trivyResult){
+    static List<ScanVulnerability> process(Path reportFile) {
+        process(reportFile.getText())
+    }
+
+    static List<ScanVulnerability> process(String trivyResult) {
         final slurper = new JsonSlurper()
         try{
             final jsonMap = slurper.parseText(trivyResult) as Map

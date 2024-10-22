@@ -50,10 +50,10 @@ class BuildController {
 
     @Inject
     @Nullable
-    BuildLogService logService
+    private BuildLogService logService
 
     @Get("/v1alpha1/builds/{buildId}")
-    HttpResponse<WaveBuildRecord> getBuildRecord(String buildId){
+    HttpResponse<WaveBuildRecord> getBuildRecord(String buildId) {
         final record = buildService.getBuildRecord(buildId)
         return record
                 ? HttpResponse.ok(record)
@@ -72,11 +72,22 @@ class BuildController {
     }
 
     @Get("/v1alpha1/builds/{buildId}/status")
-    HttpResponse<BuildStatusResponse> getBuildStatus(String buildId){
+    HttpResponse<BuildStatusResponse> getBuildStatus(String buildId) {
         final build = buildService.getBuildRecord(buildId)
         build != null
             ? HttpResponse.ok(build.toStatusResponse())
             : HttpResponse.<BuildStatusResponse>notFound()
+    }
+
+    @Produces(MediaType.TEXT_PLAIN)
+    @Get(value="/v1alpha1/builds/{buildId}/condalock")
+    HttpResponse<StreamedFile> getCondaLock(String buildId){
+        if( logService==null )
+            throw new IllegalStateException("Build Logs service not configured")
+        final condaLock = logService.fetchCondaLockStream(buildId)
+        return condaLock
+                ? HttpResponse.ok(condaLock)
+                : HttpResponse.<StreamedFile>notFound()
     }
 
 }

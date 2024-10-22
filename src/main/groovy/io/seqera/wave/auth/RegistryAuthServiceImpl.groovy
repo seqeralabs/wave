@@ -35,6 +35,8 @@ import groovy.transform.PackageScope
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.configuration.HttpClientConfig
+import io.seqera.wave.exception.RegistryForwardException
+import io.seqera.wave.exception.RegistryUnauthorizedAccessException
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.util.RegHelper
@@ -43,7 +45,7 @@ import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
-import static io.seqera.wave.WaveDefault.HTTP_RETRYABLE_ERRORS
+import static io.seqera.wave.auth.RegistryUtils.isServerError
 /**
  * Implement Docker authentication & login service
  *
@@ -62,7 +64,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     private HttpClientConfig httpConfig
 
     @Inject
-    private RegistryTokenCacheStore tokenStore
+    private RegistryTokenStore tokenStore
 
     @Canonical
     @ToString(includePackage = false, includeNames = true)
@@ -111,7 +113,6 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
 
     @Inject RegistryCredentialsFactory credentialsFactory
 
-
     /**
      * Implements container registry login
      *
@@ -147,10 +148,13 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
                 .header("Authorization", "Basic $basic")
                 .build()
         // retry strategy
+        // note: do not retry on 429 error code because it just continues to report the error
+        // for a while. better returning the error to the upstream client
+        // see also https://github.com/docker/hub-feedback/issues/1907#issuecomment-631028965
         final retryable = Retryable
                 .<HttpResponse<String>>of(httpConfig)
-                .retryIf( (response) -> response.statusCode() in HTTP_RETRYABLE_ERRORS)
-                .onRetry((event) -> log.warn("Unable to connect '$endpoint' - event: $event}"))
+                .retryIf((response) -> isServerError(response))
+                .onRetry((event) -> log.warn("Unable to connect '$endpoint' - attempt: ${event.attempt} status: ${event.result?.statusCode()}; body: ${event.result?.body()}"))
         // make the request
         final response = retryable.apply(()-> httpClient.send(request, HttpResponse.BodyHandlers.ofString()))
         final body = response.body()
@@ -234,10 +238,13 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         log.trace "Token request=$req"
 
         // retry strategy
+        // note: do not retry on 429 error code because it just continues to report the error
+        // for a while. better returning the error to the upstream client
+        // see also https://github.com/docker/hub-feedback/issues/1907#issuecomment-631028965
         final retryable = Retryable
                 .<HttpResponse<String>>of(httpConfig)
-                .retryIf( (response) -> ((HttpResponse)response).statusCode() in HTTP_RETRYABLE_ERRORS )
-                .onRetry((event) -> log.warn("Unable to connect '$login' - event: $event"))
+                .retryIf((response) -> isServerError(response))
+                .onRetry((event) -> log.warn("Unable to connect '$login' - attempt: ${event.attempt} status: ${event.result?.statusCode()}; body: ${event.result?.body()}"))
         // submit http request
         final response = retryable.apply(()-> httpClient.send(req, HttpResponse.BodyHandlers.ofString()))
         // check the response
@@ -252,8 +259,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
                 return token
             }
         }
-
-        throw new RegistryUnauthorizedAccessException("Unable to authorize request: $login", response.statusCode(), body)
+        throw new RegistryForwardException("Unexpected response acquiring token for '$login' [${response.statusCode()}]", response)
     }
 
     String buildLoginUrl(URI realm, String image, String service){
