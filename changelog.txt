@@ -5,7 +5,7 @@
 - Copy all tags on mirror request [20a5f7b5]
 - Fix dev scan failure dutation & GH token [f5711ff8]
 - Fix use of container platform in scan job [61df2424]
-- Fix Prevent rendereing image names as uri in mail notication [f8d57921]
+- Fix Prevent rendering image names as uri in mail notification [f8d57921]
 - Fix Tune mirror config [f7290bd5]
 
 1.13.3 - 18 Oct 2024 
