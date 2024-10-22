@@ -24,6 +24,8 @@ import java.nio.file.Path
 import java.time.Instant
 
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.User
 
 /**
  *
@@ -34,6 +36,7 @@ class ScanRequestTest extends Specification {
     def 'should create a scan request' () {
         given:
         def timestamp = Instant.now()
+        def identity = new PlatformId(new User(id:1))
         when:
         def scan = ScanRequest.of(
                 scanId: 'sc-123',
@@ -44,7 +47,8 @@ class ScanRequestTest extends Specification {
                 targetImage: 'tg-image',
                 platform: ContainerPlatform.DEFAULT,
                 workDir: Path.of('/some/dir'),
-                creationTime: timestamp
+                creationTime: timestamp,
+                identity: identity
         )
         
         then:
@@ -57,6 +61,7 @@ class ScanRequestTest extends Specification {
         scan.platform == ContainerPlatform.DEFAULT
         scan.workDir == Path.of('/some/dir')
         scan.creationTime == timestamp
+        scan.identity == identity
     }
 
 }

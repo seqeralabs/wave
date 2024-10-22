@@ -30,11 +30,13 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
+import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.logs.BuildLogService
@@ -45,6 +47,7 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.request.ContainerRequest
+import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.tower.PlatformId
@@ -347,6 +350,7 @@ class ViewControllerTest extends Specification {
                 'mr-12345',
                 'cr-12345',
                 'docker.io/some:image',
+                ContainerPlatform.DEFAULT,
                 Instant.now(),
                 Duration.ofMinutes(1),
                 ScanEntry.SUCCEEDED,
@@ -381,6 +385,7 @@ class ViewControllerTest extends Specification {
                 'mr-12345',
                 'cr-12345',
                 'docker.io/some:image',
+                ContainerPlatform.DEFAULT,
                 Instant.now(),
                 Duration.ofMinutes(1),
                 ScanEntry.SUCCEEDED,
@@ -438,7 +443,7 @@ class ViewControllerTest extends Specification {
         response.body().contains(serverUrl)
     }
 
-    def 'should render builds page' () {
+    def 'should render builds history page' () {
         given:
         def record1 = new WaveBuildRecord(
                 buildId: 'bd-0727765dc72cee24_1',
@@ -450,7 +455,10 @@ class ViewControllerTest extends Specification {
                 requestIp: '127.0.0.1',
                 startTime: Instant.now(),
                 duration: Duration.ofSeconds(1),
+                format: BuildFormat.DOCKER,
+                platform: ContainerPlatform.DEFAULT_ARCH,
                 exitStatus: 0 )
+        and:
         def record2 = new WaveBuildRecord(
                 buildId: 'bd-0727765dc72cee24_2',
                 dockerFile: 'FROM docker.io/test:foo',
@@ -461,23 +469,61 @@ class ViewControllerTest extends Specification {
                 requestIp: '127.0.0.1',
                 startTime: Instant.now(),
                 duration: Duration.ofSeconds(1),
+                format: BuildFormat.DOCKER,
+                platform: ContainerPlatform.DEFAULT_ARCH,
+                exitStatus: 0 )
+        and:
+        def record3 = new WaveBuildRecord(
+                buildId: 'bd-1234567890123456_2',
+                dockerFile: 'FROM docker.io/test:foo',
+                targetImage: 'test',
+                userName: 'test',
+                userEmail: 'test',
+                userId: 1,
+                requestIp: '127.0.0.1',
+                startTime: Instant.now(),
+                duration: Duration.ofSeconds(1),
+                format: BuildFormat.DOCKER,
+                platform: ContainerPlatform.DEFAULT_ARCH,
                 exitStatus: 0 )
 
         and:
         persistenceService.saveBuild(record1)
         persistenceService.saveBuild(record2)
+        persistenceService.saveBuild(record3)
 
         when:
         def request = HttpRequest.GET("/view/builds/0727765dc72cee24")
         def response = client.toBlocking().exchange(request, String)
-
         then:
         response.body().contains(record1.buildId)
         response.body().contains(record2.buildId)
+        !response.body().contains(record3.buildId)
+
+        when:
+        request = HttpRequest.GET("/view/builds/bd-0727765dc72cee24")
+        response = client.toBlocking().exchange(request, String)
+        then:
+        response.body().contains(record1.buildId)
+        response.body().contains(record2.buildId)
+        !response.body().contains(record3.buildId)
+
+        when:
+        request = HttpRequest.GET("/view/builds/bd-0727765dc72cee24_2")
+        response = client.toBlocking().exchange(request, String)
+        then:
+        !response.body().contains(record1.buildId)
+        response.body().contains(record2.buildId)
+        !response.body().contains(record3.buildId)
+
+        when:
+        request = HttpRequest.GET("/view/builds/07277")
+        client.toBlocking().exchange(request, String)
+        then:
+        HttpClientResponseException e = thrown(HttpClientResponseException)
         and:
-        response.body().contains('test')
-        and:
-        response.body().contains(serverUrl)
+        e.status.code == 404
+
     }
 
     def 'should render build page after fixing buildId' () {
@@ -499,6 +545,7 @@ class ViewControllerTest extends Specification {
         and:
         def request = HttpRequest.GET("/view/builds/112233-1")
         def response = client.toBlocking().exchange(request, String)
+
         then:
         response.body().contains(record1.buildId)
         and:
@@ -600,9 +647,100 @@ class ViewControllerTest extends Specification {
         null                    | false
         'bd-beac24afd572398d_1' | false // fully qualified
         and:
-        'bd-beac24afd572398d'   | true  // prerix + container id
+        'bd-beac24afd572398d'   | true  // prefix + container id
         'beac24afd572398d'      | true  // just the container id
+        'beac24afd572398'       | true
+        'beac24afd57239'        | true
         and:
-        'beac24afd572398'       | false  // too short
+        'beac24afd5723'         | false // too short
+    }
+
+    def 'should return binding map with scan results'() {
+        given:
+        def service = Mock(ContainerScanService)
+        def controller = new ViewController(scanService: service)
+        def CONTAINER_IMAGE = 'docker.io/my/repo:container1234'
+        def PLATFORM = ContainerPlatform.of('linux/arm64')
+        def CVE1 = new ScanVulnerability('cve-1', 'x1', 'title1', 'package1', 'version1', 'fixed1', 'url1')
+        def CVE2 = new ScanVulnerability('cve-2', 'x2', 'title2', 'package2', 'version2', 'fixed2', 'url2')
+        def CVE3 = new ScanVulnerability('cve-3', 'x3', 'title3', 'package3', 'version3', 'fixed3', 'url3')
+        def CVE4 = new ScanVulnerability('cve-4', 'x4', 'title4', 'package4', 'version4', 'fixed4', 'url4')
+        def scan1 = new WaveScanRecord('sc-1234567890abcdef_1', '100', null, null, CONTAINER_IMAGE, PLATFORM, Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3, CVE4], null, null)
+        def scan2 = new WaveScanRecord('sc-1234567890abcdef_2', '101', null, null, CONTAINER_IMAGE, PLATFORM, Instant.now(), Duration.ofSeconds(10), 'FAILED', [], null, null)
+
+        when:
+        def result = controller.renderScansView([scan1, scan2])
+
+        then:
+        result.scan_container_image == 'docker.io/my/repo:container1234'
+        result.scan_records.size() == 2
+        result.scan_records[0].scan_id == 'sc-1234567890abcdef_1'
+        result.scan_records[0].scan_status == 'SUCCEEDED'
+        result.scan_records[0].scan_vuls_count == 4
+        result.scan_records[1].scan_id == 'sc-1234567890abcdef_2'
+        result.scan_records[1].scan_status == 'FAILED'
+        result.scan_records[1].scan_vuls_count == '-'
+    }
+
+    @Unroll
+    def 'should handle scan id suffix scenarios'() {
+        given:
+        def controller = new ViewController()
+
+        expect:
+        controller.isScanInvalidSuffix(SCANID) == EXPECTED
+
+        where:
+        SCANID          | EXPECTED
+        'scan-12345-1'  | '/view/scans/scan-12345_1'
+        'scan-abc-2'    | '/view/scans/scan-abc_2'
+        'scan-xyz-99'   | '/view/scans/scan-xyz_99'
+        'scan12345'     | null
+        'scan-12345'    | '/view/scans/scan_12345'
+        'scan_12345'    | null
+        'scan-12345-'   | null
+        'scan-12345-0'  | '/view/scans/scan-12345_0'
+        'scan-12345-01' | '/view/scans/scan-12345_01'
+    }
+
+    def 'should find all scans' () {
+        given:
+        def CONTAINER_IMAGE = 'docker.io/my/repo:container1234'
+        def PLATFORM = ContainerPlatform.of('linux/arm64')
+        def CVE1 = new ScanVulnerability('cve-1', 'x1', 'title1', 'package1', 'version1', 'fixed1', 'url1')
+        def CVE2 = new ScanVulnerability('cve-2', 'x2', 'title2', 'package2', 'version2', 'fixed2', 'url2')
+        def CVE3 = new ScanVulnerability('cve-3', 'x3', 'title3', 'package3', 'version3', 'fixed3', 'url3')
+        def CVE4 = new ScanVulnerability('cve-4', 'x4', 'title4', 'package4', 'version4', 'fixed4', 'url4')
+        def scan1 = new WaveScanRecord('sc-1234567890abcde_1', '100', null, null, CONTAINER_IMAGE, PLATFORM, Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3, CVE4], null, null)
+        def scan2 = new WaveScanRecord('sc-1234567890abcde_2', '101', null, null, CONTAINER_IMAGE, PLATFORM, Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3], null, null)
+
+        when:
+        persistenceService.saveScanRecord(scan1)
+        persistenceService.saveScanRecord(scan2)
+        and:
+        def request = HttpRequest.GET("/view/scans/1234567890abcde")
+        def response = client.toBlocking().exchange(request, String)
+
+        then:
+        response.body().contains(scan1.id)
+        response.body().contains(scan2.id)
+        and:
+        response.body().contains('docker.io/my/repo:container1234')
+        and:
+        response.body().contains(serverUrl)
+    }
+
+    @Unroll
+    def 'should validate scan id pattern'() {
+        expect:
+        new ViewController().isScanMissingSuffix(scanId) == expected
+
+        where:
+        scanId                  | expected
+        'sc-1234567890abcdef'   | true
+        'sc-1234567890abcde'    | true
+        'sc-1234567890abcdef_01'| false
+        null                    | false
+        '1234567890abcdef'      | true
     }
 }
