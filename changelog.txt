@@ -1,4 +1,26 @@
 # Wave changelog
+1.13.4 - 20 Oct 2024
+- Add scan failure duration setting (#705) [372d6dec]
+- Change scan config log to info [f382c51a]
+- Copy all tags on mirror request [20a5f7b5]
+- Fix dev scan failure dutation & GH token [f5711ff8]
+- Fix use of container platform in scan job [61df2424]
+- Fix Prevent rendering image names as uri in mail notification [f8d57921]
+- Fix Tune mirror config [f7290bd5]
+
+1.13.3 - 18 Oct 2024 
+- Add scan history page (#704) [89da55df]
+- Add Github token to scan job env (#703) [1394871e]
+- Improve build history view (#701) [27e316da]
+- Capture usage metrics for scan and mirrors (#699) [12c65721]
+- Fix lookup for partial build ids [f663c6c1]
+
+1.13.2 - 17 Oct 2024
+- Add build list view for containerId  (#696) [3cabb839]
+- Add link to inspect from build view (#695) [6fcd4922]
+- Fix empty array icon in inspect page (#697) [2bc9594b]
+- Propagate container platform when inferring entrypoint (#692) [0922cb3f]
+
 1.13.1 - 15 Oct 2024
 - Fix conda lock download [0e86c4a3]
 

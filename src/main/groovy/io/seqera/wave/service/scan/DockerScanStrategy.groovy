@@ -73,8 +73,8 @@ class DockerScanStrategy extends ScanStrategy {
         // outfile file name
         final reportFile = req.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
         // create the launch command
-        final dockerCommand = dockerWrapper(jobName, req.workDir, configFile)
-        final trivyCommand = List.of(scanConfig.scanImage) + scanCommand(req.targetImage, reportFile, scanConfig)
+        final dockerCommand = dockerWrapper(jobName, req.workDir, configFile, scanConfig.githubToken)
+        final trivyCommand = List.of(scanConfig.scanImage) + scanCommand(req.targetImage, reportFile, req.platform, scanConfig)
         final command = dockerCommand + trivyCommand
 
         //launch scanning
@@ -89,7 +89,7 @@ class DockerScanStrategy extends ScanStrategy {
         }
     }
 
-    protected List<String> dockerWrapper(String jobName, Path scanDir, Path credsFile) {
+    protected List<String> dockerWrapper(String jobName, Path scanDir, Path credsFile, String githubToken) {
 
         final wrapper = ['docker','run']
         wrapper.add('--detach')
@@ -112,6 +112,10 @@ class DockerScanStrategy extends ScanStrategy {
             wrapper.add("${credsFile}:${Trivy.CONFIG_MOUNT_PATH}:ro".toString())
         }
 
+        if( githubToken ) {
+            wrapper.add('-e')
+            wrapper.add("GITHUB_TOKEN="+githubToken)
+        }
 
         return wrapper
     }

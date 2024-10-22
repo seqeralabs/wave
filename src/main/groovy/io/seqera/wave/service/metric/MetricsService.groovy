@@ -48,6 +48,20 @@ interface MetricsService {
     void incrementPullsCounter(PlatformId platformId)
 
     /**
+     * increment wave mirrors count
+     *
+     * @param seqera platform id
+     */
+    void incrementMirrorsCounter(PlatformId platformId)
+
+    /**
+     * increment wave scans count
+     *
+     * @param seqera platform id
+     */
+    void incrementScansCounter(PlatformId platformId)
+
+    /**
      * Get counts of all organisations
      *
      * @param metric

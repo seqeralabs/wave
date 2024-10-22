@@ -24,6 +24,7 @@ import java.nio.file.Path
 import java.time.Duration
 
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.core.ContainerPlatform
 
 /**
  *
@@ -37,12 +38,15 @@ class ContainerScanStrategyTest extends Specification {
         def containerScanStrategy = Spy(ScanStrategy)
         def outFile = Path.of('/some/out.json')
         def config = Mock(ScanConfig) { getTimeout() >> Duration.ofMinutes(100) }
+        def platform = ContainerPlatform.DEFAULT
 
         when:
-        def command = containerScanStrategy.scanCommand(targetImage, outFile, config)
+        def command = containerScanStrategy.scanCommand(targetImage, outFile, platform, config)
         then:
         command == [ '--quiet',
                      'image',
+                     '--platform',
+                     'linux/amd64',
                      '--timeout',
                      '100m',
                      '--format',
@@ -57,16 +61,19 @@ class ContainerScanStrategyTest extends Specification {
         def targetImage = "repository/scantool"
         def containerScanStrategy = Spy(ScanStrategy)
         def outFile = Path.of('/some/out.json')
+        def platform = ContainerPlatform.DEFAULT
         def config = Mock(ScanConfig) {
             getTimeout() >> Duration.ofMinutes(100)
             getSeverity() >> 'low,high'
         }
 
         when:
-        def command = containerScanStrategy.scanCommand(targetImage, outFile, config)
+        def command = containerScanStrategy.scanCommand(targetImage, outFile, platform, config)
         then:
         command == [ '--quiet',
                      'image',
+                     '--platform',
+                     'linux/amd64',
                      '--timeout',
                      '100m',
                      '--format',
