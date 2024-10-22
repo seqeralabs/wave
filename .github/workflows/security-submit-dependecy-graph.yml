@@ -1,6 +1,7 @@
 name: Generate and submit dependency graph for wave
 on:
-  pull_request:
+    push:
+      branches: ['master']
 
 permissions:
   contents: write
