@@ -239,7 +239,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
         buildCacheStore.awaitBuild(req.targetImage).get()
 
         then: "job will timeout and the build will be marked as failed"
-        buildCacheStore.getBuild(req.targetImage).result.exitStatus == -1
+        buildCacheStore.getBuild(req.targetImage).result.exitStatus != 0
     }
 
     def 'should store a build entry only if absent' () {

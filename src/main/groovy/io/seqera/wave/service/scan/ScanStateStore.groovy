@@ -55,4 +55,8 @@ class ScanStateStore extends AbstractStateStore<ScanEntry> {
     ScanEntry getScan(String key) {
         super.get(key)
     }
+
+    void storeScan(ScanEntry entry) {
+        super.put(entry.key, entry)
+    }
 }

@@ -31,6 +31,7 @@ import io.seqera.wave.api.ScanMode
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.cleanup.CleanupService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
@@ -83,6 +84,9 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
 
     @Inject
     private MetricsService metricsService
+
+    @Inject
+    private CleanupService cleanupService
 
     ContainerScanServiceImpl() {}
 
@@ -188,7 +192,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         }
         catch (Throwable e){
             log.warn "Unable to save scan result - id=${request.scanId}; cause=${e.message}", e
-            updateScanEntry(ScanEntry.failure(request))
+            storeScanEntry(ScanEntry.failure(request))
         }
     }
 
@@ -265,31 +269,42 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
             log.warn("Container scan failed - id=${entry.scanId}; exit=${state.exitCode}; stdout=${state.stdout}")
         }
 
-        updateScanEntry(result)
+        storeScanEntry(result)
     }
 
     @Override
     void onJobException(JobSpec job, ScanEntry entry, Throwable e) {
         log.error("Container scan exception - id=${entry.scanId} - cause=${e.getMessage()}", e)
-        updateScanEntry(entry.failure(null, e.message))
+        storeScanEntry(entry.failure(null, e.message))
     }
 
     @Override
     void onJobTimeout(JobSpec job, ScanEntry entry) {
         log.warn("Container scan timed out - id=${entry.scanId}")
-        updateScanEntry(entry.failure(null, "Container scan timed out"))
+        storeScanEntry(entry.failure(null, "Container scan timed out"))
     }
 
-    protected void updateScanEntry(ScanEntry scan) {
+    protected void storeScanEntry(ScanEntry scan) {
         try{
             //save scan results in the redis cache
-            scanStore.put(scan.scanId, scan)
+            scanStore.storeScan(scan)
             // save in the persistent layer
             persistenceService.saveScanRecord(new WaveScanRecord(scan))
+            // when the scan fails delete the scanId via cleanup service
+            // this is needed to prevent the caching of the scanId and
+            // allow re-scanning the container in case of a job failure
+            if( scan.done() && !scan.succeeded() ) {
+                cleanupService.cleanupScanId(scan.containerImage)
+            }
         }
         catch (Throwable t){
             log.error("Unable to save result - id=${scan.scanId}; cause=${t.message}", t)
         }
+    }
+
+    @Override
+    List<WaveScanRecord> getAllScans(String scanId){
+        persistenceService.allScans(scanId)
     }
 
 }

@@ -180,7 +180,7 @@
             if (data.hasOwnProperty(key)) {
                 const li = document.createElement('li');
 
-                if (typeof data[key] === 'object' && !Array.isArray(data[key])) {
+                if (typeof data[key] === 'object' && !Array.isArray(data[key]) && Object.keys(data[key]).length > 0) {
                     const details = document.createElement('details');
                     const summary = document.createElement('summary');
                     summary.textContent = key;
