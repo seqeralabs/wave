@@ -136,12 +136,12 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
                 log.debug "Container scan required by scanOnRequest=$request"
                 scan(fromContainer(request))
             }
-            else if( request.scanId && !request.isContainer() && request.buildNew==false && !request.dryRun && !existsScan(request.scanId) ) {
+            else if( request.scanId && !request.isContainer() && request.buildNew==false && request.succeeded && !request.dryRun && !existsScan(request.scanId) ) {
                 log.debug "Container scan required by cached request=$request"
                 scan(fromContainer(request))
             }
             else {
-                log.debug "Container scan NOT required by scanOnRequest=$request"
+                log.debug "Container scan NOT required by request=$request"
             }
         }
         catch (Exception e) {
