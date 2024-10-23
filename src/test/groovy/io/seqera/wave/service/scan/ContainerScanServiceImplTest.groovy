@@ -402,6 +402,7 @@ class ContainerScanServiceImplTest extends Specification {
         request.buildId >> BUILD_ID
         request.buildNew >> BUILD_NEW
         request.dryRun >> DRY_RUN
+        request.succeeded >> SUCCEEDED
         and:
         def scan = Mock(ScanRequest)
 
@@ -412,15 +413,16 @@ class ContainerScanServiceImplTest extends Specification {
         RUN_TIMES * scanService.scan(scan) >> null
 
         where:
-        SCAN_ID | BUILD_ID  | BUILD_NEW | DRY_RUN   | EXISTS_SCAN   | RUN_TIMES
-        null    | null      | null      | null      | false         | 0
-        'sc-123'| null      | null      | null      | false         | 0
+        SCAN_ID | BUILD_ID  | BUILD_NEW | SUCCEEDED | DRY_RUN | EXISTS_SCAN | RUN_TIMES
+        null    | null      | null      | null      | null      | false         | 0
+        'sc-123'| null      | null      | null      | null      | false         | 0
         and:
-        'sc-123'| 'bd-123'  | null      | null      | false         | 0
-        'sc-123'| 'bd-123'  | true      | null      | false         | 0
-        'sc-123'| 'bd-123'  | false     | null      | false         | 1
-        'sc-123'| 'bd-123'  | false     | null      | true          | 0
-        'sc-123'| 'bd-123'  | false     | true      | false         | 0
+        'sc-123'| 'bd-123'  | null      | null      | null      | false         | 0
+        'sc-123'| 'bd-123'  | true      | null      | null      | false         | 0
+        'sc-123'| 'bd-123'  | false     | true      | null      | false         | 1
+        'sc-123'| 'bd-123'  | false     | false     | null      | false         | 0
+        'sc-123'| 'bd-123'  | false     | null      | null      | true          | 0
+        'sc-123'| 'bd-123'  | false     | null      | true      | false         | 0
     }
 
     def 'should store scan entry' () {

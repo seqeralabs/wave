@@ -18,16 +18,14 @@
 
 package io.seqera.wave.redis
 
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import jakarta.inject.Singleton
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig
 import redis.clients.jedis.JedisPool
-
+import redis.clients.jedis.JedisPoolConfig
 /**
  * Redis connection pool factory
  *
@@ -47,7 +45,7 @@ class RedisFactory {
             @Value('${redis.pool.maxTotal:50}') int maxTotal
     ) {
         log.info "Using redis $uri as storage for rate limit - pool minIdle: ${minIdle}; maxIdle: ${maxIdle}; maxTotal: ${maxTotal}"
-        final config = new GenericObjectPoolConfig()
+        final config = new JedisPoolConfig()
         config.setMinIdle(minIdle)
         config.setMaxIdle(maxIdle)
         config.setMaxTotal(maxTotal)

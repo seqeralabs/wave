@@ -221,7 +221,7 @@ class ViewController {
         binding.scan_url = result.scanId && result.succeeded() ? "$serverUrl/view/scans/${result.scanId}" : null
         binding.scan_id = result.scanId
         // inspect uri
-        binding.inspect_url = "$serverUrl/view/inspect?image=${result.targetImage}&platform=${result.platform}"
+        binding.inspect_url = result.succeeded() ? "$serverUrl/view/inspect?image=${result.targetImage}&platform=${result.platform}" : null
         // configure build logs when available
         if( buildLogService ) {
             final buildLog = buildLogService.fetchLogString(result.buildId)
