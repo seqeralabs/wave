@@ -76,6 +76,11 @@ class ContainerBuildServiceTest extends Specification {
             // do nothing
             log.debug "Running fake build job=$jobName - request=$request"
         }
+
+        @Override
+        InputStream getLogs(String podName) {
+            return "logs for pod name"
+        }
     }
 
     @Primary
