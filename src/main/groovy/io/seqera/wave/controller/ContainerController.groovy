@@ -175,7 +175,7 @@ class ContainerController {
 
     @PostConstruct
     private void init() {
-        log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl; default-build-repo: $buildConfig.defaultBuildRepository; default-cache-repo: $buildConfig.defaultCacheRepository; default-public-repo: $buildConfig.defaultPublicRepository"
+        log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl; default-build-repo: $buildConfig.defaultBuildRepository; default-cache-repo: $buildConfig.defaultCacheRepository; default-public-repo: $buildConfig.defaultCommunityRegistry"
     }
 
     @Deprecated
@@ -248,7 +248,7 @@ class ContainerController {
         if( req.containerImage && req.freeze && !validationService.isCustomRepo(req.buildRepository) )
             throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode [2]")
 
-        if( v2 && req.packages && req.freeze && !validationService.isCustomRepo(req.buildRepository) && !buildConfig.defaultPublicRepository )
+        if( v2 && req.packages && req.freeze && !validationService.isCustomRepo(req.buildRepository) && !buildConfig.defaultCommunityRegistry )
             throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode [3]")
 
         if( v2 && req.packages ) {
@@ -294,9 +294,9 @@ class ContainerController {
     protected String targetRepo(String repo, ImageNameStrategy strategy) {
         assert repo, 'Missing default public repository setting'
         // ignore everything that's not a public (community) repo
-        if( !buildConfig.defaultPublicRepository )
+        if( !buildConfig.defaultCommunityRegistry )
             return repo
-        if( !repo.startsWith(buildConfig.defaultPublicRepository) )
+        if( !repo.startsWith(buildConfig.defaultCommunityRegistry) )
             return repo
 
         // check if the repository does use any reserved word
@@ -332,8 +332,8 @@ class ContainerController {
         final condaContent = condaFileFromRequest(req)
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
-        final buildRepository = targetRepo( req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository
-                ? buildConfig.defaultPublicRepository
+        final buildRepository = targetRepo( req.buildRepository ?: (req.freeze && buildConfig.defaultCommunityRegistry
+                ? buildConfig.defaultCommunityRegistry
                 : buildConfig.defaultBuildRepository), req.nameStrategy)
         final cacheRepository = req.cacheRepository ?: buildConfig.defaultCacheRepository
         final configJson = inspectService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
@@ -342,8 +342,8 @@ class ContainerController {
         // use 'imageSuffix' strategy by default for public repo images
         final nameStrategy = req.nameStrategy==null
                 && buildRepository
-                && buildConfig.defaultPublicRepository
-                && buildRepository.startsWith(buildConfig.defaultPublicRepository) ? ImageNameStrategy.imageSuffix : req.nameStrategy
+                && buildConfig.defaultCommunityRegistry
+                && buildRepository.startsWith(buildConfig.defaultCommunityRegistry) ? ImageNameStrategy.imageSuffix : req.nameStrategy
 
         checkContainerSpec(containerSpec)
 

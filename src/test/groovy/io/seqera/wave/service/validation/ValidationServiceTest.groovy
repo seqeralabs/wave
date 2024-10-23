@@ -38,7 +38,7 @@ class ValidationServiceTest extends Specification {
     @MockBean(BuildConfig)
     BuildConfig buildConfig() {
         Mock(BuildConfig) {
-            defaultPublicRepository >> 'public.repo.io'
+            defaultCommunityRegistry >> 'public.repo.io'
         }
     }
 
