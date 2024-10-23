@@ -1,11 +1,19 @@
 # Wave changelog
+1.13.5 - 23 Oct 2024
+- Fix Do not render inspect url on fail [d96275a1]
+- Fix inspect view empty nodes (#706) [b3473b7e]
+- Fix prevent scan on cached failed builds [4473fe8c]
+- Use JedisPool in place of generic connection pool (#711) [cd16cfd1]
+- Minor page title change [c3be9304]
+- GHA to submit dependency graph to Github (#715) [09c86627]
+
 1.13.4 - 20 Oct 2024
 - Add scan failure duration setting (#705) [372d6dec]
 - Change scan config log to info [f382c51a]
 - Copy all tags on mirror request [20a5f7b5]
 - Fix dev scan failure dutation & GH token [f5711ff8]
 - Fix use of container platform in scan job [61df2424]
-- Fix Prevent rendereing image names as uri in mail notication [f8d57921]
+- Fix Prevent rendering image names as uri in mail notification [f8d57921]
 - Fix Tune mirror config [f7290bd5]
 
 1.13.3 - 18 Oct 2024 
