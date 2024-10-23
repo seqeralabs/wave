@@ -55,4 +55,9 @@ abstract class AbstractCounterStore implements CounterStore {
     Map<String, Long> getAllMatchingEntries(String pattern) {
         provider.getAllMatchingEntries(getPrefix(), pattern)
     }
+
+    @Override
+    void deleteAllMatchingEntries(String pattern) {
+        provider.getAllMatchingEntries(getPrefix(), pattern)
+    }
 }
