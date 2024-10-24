@@ -29,6 +29,7 @@ import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.RateLimiterConfig
 import io.seqera.wave.configuration.RedisConfig
+import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import redis.clients.jedis.JedisPool
 
@@ -53,9 +54,8 @@ class SpillWayStorageFactory {
 
     @Singleton
     @Requires(property = 'redis.uri')
-    LimitUsageStorage redisStorage(@NotNull RedisConfig redisConfig){
+    LimitUsageStorage redisStorage(@NotNull RedisConfig redisConfig, JedisPool pool){
         log.info "Using redis $redisConfig.uri as storage for rate limit"
-        def jedisPool = new JedisPool(redisConfig.uri)
-        return RedisStorage.builder().withJedisPool(jedisPool).build()
+        return RedisStorage.builder().withJedisPool(pool).build()
     }
 }
