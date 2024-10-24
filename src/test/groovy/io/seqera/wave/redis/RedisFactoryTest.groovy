@@ -31,15 +31,15 @@ class RedisFactoryTest extends Specification {
         def factory = new RedisFactory()
 
         when:
-        def pool = factory.createRedisPool(uriString, minIdle, maxIdle, maxTotal, timeout)
+        def pool = factory.createRedisPool(URI_STRING, MIN_IDLE, MAX_IDLE, MAX_TOTAL, TIMEOUT)
 
         then:
         pool != null
 
         where:
-        uriString                | minIdle | maxIdle | maxTotal | timeout
-        'redis://localhost:6379' | 0       | 10      | 50       | 5000
-        'rediss://localhost:6379'| 1       | 5       | 20       | 3000
+        URI_STRING               | MIN_IDLE | MAX_IDLE  | MAX_TOTAL |  TIMEOUT
+        'redis://localhost:6379' | 0        | 10        | 50        | 5000
+        'rediss://localhost:6379'| 1        | 5         | 20        | 3000
     }
 
     def 'should throw exception for invalid URI'() {
@@ -47,16 +47,16 @@ class RedisFactoryTest extends Specification {
         def factory = new RedisFactory()
 
         when:
-        factory.createRedisPool(uriString, minIdle, maxIdle, maxTotal, timeout)
+        factory.createRedisPool(URI_STRING, MIN_IDLE, MAX_IDLE, MAX_TOTAL, TIMEOUT)
 
         then:
         def e = thrown(InvalidURIException)
         e.message.contains("Cannot open Redis connection due invalid URI")
 
         where:
-        uriString               | minIdle | maxIdle | maxTotal | timeout
-        'localhost:6379'        | 0       | 10      | 50       | 5000
-        'redis://localhost'     | 1       | 5       | 20       | 3000
+        URI_STRING               | MIN_IDLE | MAX_IDLE  | MAX_TOTAL |  TIMEOUT
+        'redis://localhost' | 0        | 10        | 50        | 5000
+        'localhost:6379'| 1        | 5         | 20        | 3000
     }
 
 }
