@@ -54,9 +54,9 @@ class RedisFactoryTest extends Specification {
         e.message.contains("Cannot open Redis connection due invalid URI")
 
         where:
-        URI_STRING               | MIN_IDLE | MAX_IDLE  | MAX_TOTAL |  TIMEOUT
+        URI_STRING          | MIN_IDLE | MAX_IDLE  | MAX_TOTAL |  TIMEOUT
         'redis://localhost' | 0        | 10        | 50        | 5000
-        'localhost:6379'| 1        | 5         | 20        | 3000
+        'localhost:6379'    | 1        | 5         | 20        | 3000
     }
 
 }
