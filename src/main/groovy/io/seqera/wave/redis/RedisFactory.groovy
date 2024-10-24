@@ -52,7 +52,7 @@ class RedisFactory {
             @Value('${redis.pool.minIdle:0}') int minIdle,
             @Value('${redis.pool.maxIdle:10}') int maxIdle,
             @Value('${redis.pool.maxTotal:50}') int maxTotal,
-            @Value('${redis.client.timeout:50}') int timeout,
+            @Value('${redis.client.timeout:5000}') int timeout,
             @Nullable @Value('${redis.password}') String password
     ) {
         log.info "Using redis $uri as storage for rate limit - pool minIdle: ${minIdle}; maxIdle: ${maxIdle}; maxTotal: ${maxTotal}"
