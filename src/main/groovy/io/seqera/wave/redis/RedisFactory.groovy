@@ -18,6 +18,12 @@
 
 package io.seqera.wave.redis
 
+import java.security.KeyStore
+import javax.net.ssl.KeyManagerFactory
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLSocketFactory
+import javax.net.ssl.TrustManagerFactory
+
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Factory
@@ -55,8 +61,9 @@ class RedisFactory {
         final  uri = URI.create(uriString)
         if (!JedisURIHelper.isValid(uri)) {
             throw new InvalidURIException(String.format(
-                    "Cannot open Redis connection due invalid URI. %s", uri.toString()));
+                    "Cannot open Redis connection due invalid URI. %s", uri.toString()))
         }
+
         def clientConfig = DefaultJedisClientConfig.builder().connectionTimeoutMillis(timeout)
                 .socketTimeoutMillis(timeout)
                 .blockingSocketTimeoutMillis(timeout)
@@ -65,7 +72,7 @@ class RedisFactory {
                 .database(JedisURIHelper.getDBIndex(uri))
                 .protocol(JedisURIHelper.getRedisProtocol(uri))
                 .ssl(JedisURIHelper.isRedisSSLScheme(uri))
-                .build();
+                .build()
 
         final config = new JedisPoolConfig()
         config.setMinIdle(minIdle)
