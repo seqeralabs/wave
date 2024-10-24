@@ -31,7 +31,7 @@ class RedisFactoryTest extends Specification {
         def factory = new RedisFactory()
 
         when:
-        def pool = factory.createRedisPool(URI_STRING, MIN_IDLE, MAX_IDLE, MAX_TOTAL, TIMEOUT)
+        def pool = factory.createRedisPool(URI_STRING, MIN_IDLE, MAX_IDLE, MAX_TOTAL, TIMEOUT, 'password')
 
         then:
         pool != null
@@ -47,7 +47,7 @@ class RedisFactoryTest extends Specification {
         def factory = new RedisFactory()
 
         when:
-        factory.createRedisPool(URI_STRING, MIN_IDLE, MAX_IDLE, MAX_TOTAL, TIMEOUT)
+        factory.createRedisPool(URI_STRING, MIN_IDLE, MAX_IDLE, MAX_TOTAL, TIMEOUT, null)
 
         then:
         def e = thrown(InvalidURIException)

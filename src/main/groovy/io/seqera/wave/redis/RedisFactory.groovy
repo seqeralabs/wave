@@ -47,7 +47,8 @@ class RedisFactory {
             @Value('${redis.pool.minIdle:0}') int minIdle,
             @Value('${redis.pool.maxIdle:10}') int maxIdle,
             @Value('${redis.pool.maxTotal:50}') int maxTotal,
-            @Value('${redis.client.timeout:5000}') int timeout
+            @Value('${redis.client.timeout:5000}') int timeout,
+            @Value('${redis.password}') String password
     ) {
         log.info "Using redis $uriString as storage for rate limit - pool minIdle: ${minIdle}; maxIdle: ${maxIdle}; maxTotal: ${maxTotal}; timeout: ${timeout}"
         final  uri = URI.create(uriString)
@@ -59,7 +60,7 @@ class RedisFactory {
                 .socketTimeoutMillis(timeout)
                 .blockingSocketTimeoutMillis(timeout)
                 .user(JedisURIHelper.getUser(uri))
-                .password(JedisURIHelper.getPassword(uri))
+                .password(password?:JedisURIHelper.getPassword(uri))
                 .database(JedisURIHelper.getDBIndex(uri))
                 .protocol(JedisURIHelper.getRedisProtocol(uri))
                 .ssl(JedisURIHelper.isRedisSSLScheme(uri))
