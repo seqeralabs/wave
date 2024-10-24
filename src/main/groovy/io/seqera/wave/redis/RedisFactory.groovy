@@ -18,9 +18,6 @@
 
 package io.seqera.wave.redis
 
-import java.util.regex.Pattern
-import javax.annotation.Nullable
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Factory
@@ -28,7 +25,6 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import jakarta.inject.Singleton
 import redis.clients.jedis.DefaultJedisClientConfig
-import redis.clients.jedis.HostAndPort
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.JedisPoolConfig
 import redis.clients.jedis.exceptions.InvalidURIException
@@ -44,10 +40,6 @@ import redis.clients.jedis.util.JedisURIHelper
 @Requires(property = 'redis.uri')
 @CompileStatic
 class RedisFactory {
-
-    final static private String ADDRESS_REGEX = '(rediss?://)?(?<host>[^:]+)(:(?<port>\\d+))?'
-
-    final static private Pattern ADDRESS_PATTERN = Pattern.compile(ADDRESS_REGEX)
 
     @Singleton
     JedisPool createRedisPool(
