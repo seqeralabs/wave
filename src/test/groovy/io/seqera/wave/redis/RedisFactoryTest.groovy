@@ -20,29 +20,43 @@ package io.seqera.wave.redis
 
 import spock.lang.Specification
 
-import redis.clients.jedis.HostAndPort
+import redis.clients.jedis.exceptions.InvalidURIException
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 class RedisFactoryTest extends Specification {
-    def 'should build address' () {
-        expect:
-        RedisFactory.buildHostAndPort(ADDR) == EXPECTED
+    def 'should create redis pool with valid URI'() {
+        given:
+        def factory = new RedisFactory()
+
+        when:
+        def pool = factory.createRedisPool(uriString, minIdle, maxIdle, maxTotal, timeout)
+
+        then:
+        pool != null
 
         where:
-        ADDR                    | EXPECTED
-        'foo'                   | new HostAndPort('foo', 6379)
-        'bar.com:5000'          | new HostAndPort('bar.com', 5000)
-        'redis://bar.com:1234'  | new HostAndPort('bar.com', 1234)
-        'rediss://bar.com:1234' | new HostAndPort('bar.com', 1234)
+        uriString                | minIdle | maxIdle | maxTotal | timeout
+        'redis://localhost:6379' | 0       | 10      | 50       | 5000
+        'rediss://localhost:6379'| 1       | 5       | 20       | 3000
     }
 
-    def 'should report and error' () {
+    def 'should throw exception for invalid URI'() {
+        given:
+        def factory = new RedisFactory()
+
         when:
-        RedisFactory.buildHostAndPort('http://foo')
+        factory.createRedisPool(uriString, minIdle, maxIdle, maxTotal, timeout)
+
         then:
-        def e = thrown(IllegalArgumentException)
-        e.message == "Invalid Redis address: 'http://foo' - it should match the regex (rediss?://)?(?<host>[^:]+)(:(?<port>\\d+))?"
+        def e = thrown(InvalidURIException)
+        e.message.contains("Cannot open Redis connection due invalid URI")
+
+        where:
+        uriString               | minIdle | maxIdle | maxTotal | timeout
+        'localhost:6379'        | 0       | 10      | 50       | 5000
+        'redis://localhost'     | 1       | 5       | 20       | 3000
     }
+
 }

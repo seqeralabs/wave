@@ -31,6 +31,9 @@ import redis.clients.jedis.DefaultJedisClientConfig
 import redis.clients.jedis.HostAndPort
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.JedisPoolConfig
+import redis.clients.jedis.exceptions.InvalidURIException
+import redis.clients.jedis.util.JedisURIHelper
+
 /**
  * Redis connection pool factory
  *
@@ -48,44 +51,34 @@ class RedisFactory {
 
     @Singleton
     JedisPool createRedisPool(
-            @Value('${redis.uri}') String uri,
+            @Value('${redis.uri}') String uriString,
             @Value('${redis.pool.minIdle:0}') int minIdle,
             @Value('${redis.pool.maxIdle:10}') int maxIdle,
             @Value('${redis.pool.maxTotal:50}') int maxTotal,
-            @Value('${redis.client.timeout:5000}') int timeout,
-            @Nullable @Value('${redis.password}') String password
+            @Value('${redis.client.timeout:5000}') int timeout
     ) {
-        log.info "Using redis $uri as storage for rate limit - pool minIdle: ${minIdle}; maxIdle: ${maxIdle}; maxTotal: ${maxTotal}"
-        boolean ssl = uri.startsWith("rediss")
-        DefaultJedisClientConfig clientConfig = DefaultJedisClientConfig.builder()
-                .password(password)
-                .connectionTimeoutMillis(timeout)
+        log.info "Using redis $uriString as storage for rate limit - pool minIdle: ${minIdle}; maxIdle: ${maxIdle}; maxTotal: ${maxTotal}; timeout: ${timeout}"
+        final  uri = URI.create(uriString)
+        if (!JedisURIHelper.isValid(uri)) {
+            throw new InvalidURIException(String.format(
+                    "Cannot open Redis connection due invalid URI. %s", uri.toString()));
+        }
+        def clientConfig = DefaultJedisClientConfig.builder().connectionTimeoutMillis(timeout)
                 .socketTimeoutMillis(timeout)
-                .ssl(ssl)
-                .build()
+                .blockingSocketTimeoutMillis(timeout)
+                .user(JedisURIHelper.getUser(uri))
+                .password(JedisURIHelper.getPassword(uri))
+                .database(JedisURIHelper.getDBIndex(uri))
+                .protocol(JedisURIHelper.getRedisProtocol(uri))
+                .ssl(JedisURIHelper.isRedisSSLScheme(uri))
+                .build();
 
         final config = new JedisPoolConfig()
         config.setMinIdle(minIdle)
         config.setMaxIdle(maxIdle)
         config.setMaxTotal(maxTotal)
 
-        return new JedisPool(config, buildHostAndPort(uri), clientConfig)
-    }
-
-    static HostAndPort buildHostAndPort(String address) {
-        if (!address) {
-            throw new IllegalArgumentException("Missing redis address")
-        }
-        final matcher = ADDRESS_PATTERN.matcher(address)
-        if (!matcher.matches()) {
-            throw new IllegalArgumentException("Invalid Redis address: '${address}' - it should match the regex $ADDRESS_REGEX")
-        }
-
-        final host =  matcher.group('host')
-        final port = matcher.group('port')
-        return port
-                ? new HostAndPort(host, Integer.parseInt(port))
-                : new HostAndPort(host, 6379)
+        return new JedisPool(config, JedisURIHelper.getHostAndPort(uri), clientConfig)
     }
 
 }
