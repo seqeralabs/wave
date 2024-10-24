@@ -23,6 +23,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
 import jakarta.inject.Singleton
 import redis.clients.jedis.DefaultJedisClientConfig
 import redis.clients.jedis.JedisPool
@@ -48,7 +49,7 @@ class RedisFactory {
             @Value('${redis.pool.maxIdle:10}') int maxIdle,
             @Value('${redis.pool.maxTotal:50}') int maxTotal,
             @Value('${redis.client.timeout:5000}') int timeout,
-            @Value('${redis.password}') String password
+            @Nullable @Value('${redis.password}') String password
     ) {
         log.info "Using redis $uriString as storage for rate limit - pool minIdle: ${minIdle}; maxIdle: ${maxIdle}; maxTotal: ${maxTotal}; timeout: ${timeout}"
         final  uri = URI.create(uriString)
