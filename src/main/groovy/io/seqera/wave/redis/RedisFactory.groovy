@@ -18,12 +18,17 @@
 
 package io.seqera.wave.redis
 
+import javax.annotation.Nullable
+
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.util.JedisUtils
 import jakarta.inject.Singleton
+import redis.clients.jedis.HostAndPort
+import redis.clients.jedis.JedisClientConfig
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.JedisPoolConfig
 /**
@@ -42,14 +47,18 @@ class RedisFactory {
             @Value('${redis.uri}') String uri,
             @Value('${redis.pool.minIdle:0}') int minIdle,
             @Value('${redis.pool.maxIdle:10}') int maxIdle,
-            @Value('${redis.pool.maxTotal:50}') int maxTotal
+            @Value('${redis.pool.maxTotal:50}') int maxTotal,
+            @Value('${redis.pool.maxTotal:50}') int timeout,
+            @Nullable @Value('${redis.password}') String password
     ) {
         log.info "Using redis $uri as storage for rate limit - pool minIdle: ${minIdle}; maxIdle: ${maxIdle}; maxTotal: ${maxTotal}"
+        HostAndPort address = JedisUtils.buildHostAndPort(uri)
+        JedisClientConfig clientConfig = JedisUtils.buildClientConfig(uri, password, timeout)
         final config = new JedisPoolConfig()
         config.setMinIdle(minIdle)
         config.setMaxIdle(maxIdle)
         config.setMaxTotal(maxTotal)
-        return new JedisPool(config, URI.create(uri))
+        return new JedisPool(config, address, clientConfig)
     }
 
 }
