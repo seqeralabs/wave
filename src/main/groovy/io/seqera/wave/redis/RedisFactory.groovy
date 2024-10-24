@@ -18,6 +18,7 @@
 
 package io.seqera.wave.redis
 
+import java.util.regex.Pattern
 import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
@@ -25,10 +26,9 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
-import io.seqera.wave.util.JedisUtils
 import jakarta.inject.Singleton
+import redis.clients.jedis.DefaultJedisClientConfig
 import redis.clients.jedis.HostAndPort
-import redis.clients.jedis.JedisClientConfig
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.JedisPoolConfig
 /**
@@ -42,23 +42,50 @@ import redis.clients.jedis.JedisPoolConfig
 @CompileStatic
 class RedisFactory {
 
+    final static private String ADDRESS_REGEX = '(rediss?://)?(?<host>[^:]+)(:(?<port>\\d+))?'
+
+    final static private Pattern ADDRESS_PATTERN = Pattern.compile(ADDRESS_REGEX)
+
     @Singleton
     JedisPool createRedisPool(
             @Value('${redis.uri}') String uri,
             @Value('${redis.pool.minIdle:0}') int minIdle,
             @Value('${redis.pool.maxIdle:10}') int maxIdle,
             @Value('${redis.pool.maxTotal:50}') int maxTotal,
-            @Value('${redis.pool.maxTotal:50}') int timeout,
+            @Value('${redis.client.timeout:50}') int timeout,
             @Nullable @Value('${redis.password}') String password
     ) {
         log.info "Using redis $uri as storage for rate limit - pool minIdle: ${minIdle}; maxIdle: ${maxIdle}; maxTotal: ${maxTotal}"
-        HostAndPort address = JedisUtils.buildHostAndPort(uri)
-        JedisClientConfig clientConfig = JedisUtils.buildClientConfig(uri, password, timeout)
+        boolean ssl = uri.startsWith("rediss")
+        DefaultJedisClientConfig clientConfig = DefaultJedisClientConfig.builder()
+                .password(password)
+                .connectionTimeoutMillis(timeout)
+                .socketTimeoutMillis(timeout)
+                .ssl(ssl)
+                .build()
+
         final config = new JedisPoolConfig()
         config.setMinIdle(minIdle)
         config.setMaxIdle(maxIdle)
         config.setMaxTotal(maxTotal)
-        return new JedisPool(config, address, clientConfig)
+
+        return new JedisPool(config, buildHostAndPort(uri), clientConfig)
+    }
+
+    static HostAndPort buildHostAndPort(String address) {
+        if (!address) {
+            throw new IllegalArgumentException("Missing redis address")
+        }
+        final matcher = ADDRESS_PATTERN.matcher(address)
+        if (!matcher.matches()) {
+            throw new IllegalArgumentException("Invalid Redis address: '${address}' - it should match the regex $ADDRESS_REGEX")
+        }
+
+        final host =  matcher.group('host')
+        final port = matcher.group('port')
+        return port
+                ? new HostAndPort(host, Integer.parseInt(port))
+                : new HostAndPort(host, 6379)
     }
 
 }
