@@ -446,7 +446,7 @@ class ViewController {
         boolean hasHighOrCritical = vulnerabilities.stream()
                 .anyMatch(v -> v.severity.equals("HIGH") || v.severity.equals("CRITICAL"))
         if(hasHighOrCritical){
-            scanColor = 'e00404'
+            scanColor = '#ffe4e2'
         } else if(hasMedium){
             scanColor = '#ffa500'
         }
