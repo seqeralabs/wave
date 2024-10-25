@@ -20,6 +20,7 @@ package io.seqera.wave.controller
 
 import java.util.regex.Pattern
 
+import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
@@ -45,6 +46,7 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanEntry
+import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import static io.seqera.wave.util.DataTimeUtils.formatDuration
@@ -408,7 +410,10 @@ class ViewController {
     }
 
     Map<String, Object> makeScanViewBinding(WaveScanRecord result, Map<String,Object> binding=new HashMap(10)) {
+        final color = getScanColor(result.vulnerabilities)
         binding.should_refresh = !result.done()
+        binding.scan_color_bg = color.background
+        binding.scan_color_fg = color.foreground
         binding.scan_id = result.id
         binding.scan_container_image = result.containerImage ?: '-'
         binding.scan_platform = result.platform?.toString()  ?: '-'
@@ -435,6 +440,26 @@ class ViewController {
             binding.vulnerabilities = result.vulnerabilities.toSorted().reverse()
 
         return binding
+    }
+
+    @Canonical
+    static class Colour {
+        final background
+        final foreground
+    }
+
+    protected static Colour getScanColor(List<ScanVulnerability> vulnerabilities){
+        boolean hasMedium = vulnerabilities.stream()
+                .anyMatch(v -> v.severity.equals("MEDIUM"))
+        boolean hasHighOrCritical = vulnerabilities.stream()
+                .anyMatch(v -> v.severity.equals("HIGH") || v.severity.equals("CRITICAL"))
+        if(hasHighOrCritical){
+            return new Colour('#ffe4e2', '#e00404')
+        }
+        else if(hasMedium){
+            return new Colour('#f7dc6f', "#000000")
+        }
+        return new Colour('#dff0d8', '#3c763d')
     }
 
 }
