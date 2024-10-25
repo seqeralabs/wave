@@ -20,6 +20,7 @@ package io.seqera.wave.controller
 
 import java.util.regex.Pattern
 
+import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
@@ -409,8 +410,10 @@ class ViewController {
     }
 
     Map<String, Object> makeScanViewBinding(WaveScanRecord result, Map<String,Object> binding=new HashMap(10)) {
+        final color = getScanColor(result.vulnerabilities)
         binding.should_refresh = !result.done()
-        binding.scan_color=getScanColor(result.vulnerabilities)
+        binding.scan_color_bg = color.background
+        binding.scan_color_fg = color.foreground
         binding.scan_id = result.id
         binding.scan_container_image = result.containerImage ?: '-'
         binding.scan_platform = result.platform?.toString()  ?: '-'
@@ -439,18 +442,24 @@ class ViewController {
         return binding
     }
 
-    protected static getScanColor(List<ScanVulnerability> vulnerabilities){
-        def scanColor='#dff0d8'
+    @Canonical
+    static class Colour {
+        final background
+        final foreground
+    }
+
+    protected static Colour getScanColor(List<ScanVulnerability> vulnerabilities){
         boolean hasMedium = vulnerabilities.stream()
                 .anyMatch(v -> v.severity.equals("MEDIUM"))
         boolean hasHighOrCritical = vulnerabilities.stream()
                 .anyMatch(v -> v.severity.equals("HIGH") || v.severity.equals("CRITICAL"))
         if(hasHighOrCritical){
-            scanColor = '#ffe4e2'
-        } else if(hasMedium){
-            scanColor = '#ffdbbb'
+            return new Colour('#ffe4e2', '#e00404')
         }
-        return scanColor
+        else if(hasMedium){
+            return new Colour('#f7dc6f', "#000000")
+        }
+        return new Colour('#dff0d8', '#3c763d')
     }
 
 }

@@ -55,6 +55,9 @@ import io.seqera.wave.tower.User
 import jakarta.inject.Inject
 import static io.seqera.wave.util.DataTimeUtils.formatDuration
 import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
+
+import static io.seqera.wave.controller.ViewController.Colour
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -751,13 +754,13 @@ class ViewControllerTest extends Specification {
 
         where:
         VULNERABILITIES                                                                             | EXPEXTED_COLOR
-        [new ScanVulnerability(severity: 'LOW')]                                                    | '#dff0d8'
-        [new ScanVulnerability(severity: 'MEDIUM')]                                                 | '#ffdbbb'
-        [new ScanVulnerability(severity: 'HIGH')]                                                   | '#ffe4e2'
-        [new ScanVulnerability(severity: 'CRITICAL')]                                               | '#ffe4e2'
-        [new ScanVulnerability(severity: 'LOW'), new ScanVulnerability(severity: 'MEDIUM')]         | '#ffdbbb'
-        [new ScanVulnerability(severity: 'LOW'), new ScanVulnerability(severity: 'HIGH')]           | '#ffe4e2'
-        [new ScanVulnerability(severity: 'MEDIUM'), new ScanVulnerability(severity: 'CRITICAL')]    | '#ffe4e2'
-        []                                                                                          | '#dff0d8'
+        [new ScanVulnerability(severity: 'LOW')]                                                    | new Colour('#dff0d8','#3c763d')
+        [new ScanVulnerability(severity: 'MEDIUM')]                                                 | new Colour('#f7dc6f','#000000')
+        [new ScanVulnerability(severity: 'HIGH')]                                                   | new Colour('#ffe4e2','#e00404')
+        [new ScanVulnerability(severity: 'CRITICAL')]                                               | new Colour('#ffe4e2','#e00404')
+        [new ScanVulnerability(severity: 'LOW'), new ScanVulnerability(severity: 'MEDIUM')]         | new Colour('#f7dc6f','#000000')
+        [new ScanVulnerability(severity: 'LOW'), new ScanVulnerability(severity: 'HIGH')]           | new Colour('#ffe4e2','#e00404')
+        [new ScanVulnerability(severity: 'MEDIUM'), new ScanVulnerability(severity: 'CRITICAL')]    | new Colour('#ffe4e2','#e00404')
+        []                                                                                          | new Colour('#dff0d8','#3c763d')
     }
 }
