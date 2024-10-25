@@ -45,6 +45,7 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanEntry
+import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import static io.seqera.wave.util.DataTimeUtils.formatDuration
@@ -409,6 +410,7 @@ class ViewController {
 
     Map<String, Object> makeScanViewBinding(WaveScanRecord result, Map<String,Object> binding=new HashMap(10)) {
         binding.should_refresh = !result.done()
+        binding.scan_color=getScanColor(result.vulnerabilities)
         binding.scan_id = result.id
         binding.scan_container_image = result.containerImage ?: '-'
         binding.scan_platform = result.platform?.toString()  ?: '-'
@@ -435,6 +437,20 @@ class ViewController {
             binding.vulnerabilities = result.vulnerabilities.toSorted().reverse()
 
         return binding
+    }
+
+    protected static getScanColor(List<ScanVulnerability> vulnerabilities){
+        def scanColor='#dff0d8'
+        boolean hasMedium = vulnerabilities.stream()
+                .anyMatch(v -> v.severity.equals("MEDIUM"))
+        boolean hasHighOrCritical = vulnerabilities.stream()
+                .anyMatch(v -> v.severity.equals("HIGH") || v.severity.equals("CRITICAL"))
+        if(hasHighOrCritical){
+            scanColor = 'e00404'
+        } else if(hasMedium){
+            scanColor = '#ffa500'
+        }
+        return scanColor
     }
 
 }

@@ -743,4 +743,21 @@ class ViewControllerTest extends Specification {
         null                    | false
         '1234567890abcdef'      | true
     }
+
+    @Unroll
+    def 'should return correct scan color based on vulnerabilities'() {
+        expect:
+        ViewController.getScanColor(VULNERABILITIES) == EXPEXTED_COLOR
+
+        where:
+        VULNERABILITIES                                                                             | EXPEXTED_COLOR
+        [new ScanVulnerability(severity: 'LOW')]                                                    | '#dff0d8'
+        [new ScanVulnerability(severity: 'MEDIUM')]                                                 | '#ffa500'
+        [new ScanVulnerability(severity: 'HIGH')]                                                   | 'e00404'
+        [new ScanVulnerability(severity: 'CRITICAL')]                                               | 'e00404'
+        [new ScanVulnerability(severity: 'LOW'), new ScanVulnerability(severity: 'MEDIUM')]         | '#ffa500'
+        [new ScanVulnerability(severity: 'LOW'), new ScanVulnerability(severity: 'HIGH')]           | 'e00404'
+        [new ScanVulnerability(severity: 'MEDIUM'), new ScanVulnerability(severity: 'CRITICAL')]    | 'e00404'
+        []                                                                                          | '#dff0d8'
+    }
 }
