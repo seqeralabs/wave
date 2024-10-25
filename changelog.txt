@@ -1,4 +1,7 @@
 # Wave changelog
+1.13.6 - 25 Oct 2024 
+- Add scan color for different vuls (#719) [ab81b6dc]
+
 1.13.5 - 23 Oct 2024
 - Fix Do not render inspect url on fail [d96275a1]
 - Fix inspect view empty nodes (#706) [b3473b7e]
