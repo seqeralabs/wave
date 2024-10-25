@@ -448,7 +448,7 @@ class ViewController {
         if(hasHighOrCritical){
             scanColor = '#ffe4e2'
         } else if(hasMedium){
-            scanColor = '#ffa500'
+            scanColor = '#ffdbbb'
         }
         return scanColor
     }
