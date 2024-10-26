@@ -371,7 +371,7 @@ class ContainerBuildServiceTest extends Specification {
 
         then:
         1 * scanService.scanOnBuild(_) >> null
-        then:
+        and:
         1 * buildStore.storeBuild(req.targetImage, _) >> null
         and:
         1 * proxyService.getImageDigest(_, _) >> 'digest'

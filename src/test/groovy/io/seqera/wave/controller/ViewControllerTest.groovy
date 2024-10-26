@@ -755,10 +755,10 @@ class ViewControllerTest extends Specification {
         where:
         VULNERABILITIES                                                                             | EXPEXTED_COLOR
         [new ScanVulnerability(severity: 'LOW')]                                                    | new Colour('#dff0d8','#3c763d')
-        [new ScanVulnerability(severity: 'MEDIUM')]                                                 | new Colour('#f7dc6f','#000000')
+        [new ScanVulnerability(severity: 'MEDIUM')]                                                 | new Colour('#ffeb3b75','#000000')
         [new ScanVulnerability(severity: 'HIGH')]                                                   | new Colour('#ffe4e2','#e00404')
         [new ScanVulnerability(severity: 'CRITICAL')]                                               | new Colour('#ffe4e2','#e00404')
-        [new ScanVulnerability(severity: 'LOW'), new ScanVulnerability(severity: 'MEDIUM')]         | new Colour('#f7dc6f','#000000')
+        [new ScanVulnerability(severity: 'LOW'), new ScanVulnerability(severity: 'MEDIUM')]         | new Colour('#ffeb3b75','#000000')
         [new ScanVulnerability(severity: 'LOW'), new ScanVulnerability(severity: 'HIGH')]           | new Colour('#ffe4e2','#e00404')
         [new ScanVulnerability(severity: 'MEDIUM'), new ScanVulnerability(severity: 'CRITICAL')]    | new Colour('#ffe4e2','#e00404')
         []                                                                                          | new Colour('#dff0d8','#3c763d')
