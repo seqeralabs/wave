@@ -29,7 +29,7 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.api.ScanMode
 import io.seqera.wave.configuration.ScanConfig
-import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.cleanup.CleanupService
 import io.seqera.wave.service.inspect.ContainerInspectService
@@ -106,14 +106,14 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     }
 
     @Override
-    void scanOnBuild(BuildEvent event) {
+    void scanOnBuild(BuildEntry entry) {
         try {
-            if( event.request.scanId && event.result.succeeded() && event.request.format == DOCKER ) {
-                scan(fromBuild(event.request))
+            if( entry.request.scanId && entry.result.succeeded() && entry.request.format == DOCKER ) {
+                scan(fromBuild(entry.request))
             }
         }
         catch (Exception e) {
-            log.warn "Unable to run the container scan - image=${event.request.targetImage}; reason=${e.message?:e}"
+            log.warn "Unable to run the container scan - image=${entry.request.targetImage}; reason=${e.message?:e}"
         }
     }
 
