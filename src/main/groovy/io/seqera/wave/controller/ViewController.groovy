@@ -457,7 +457,7 @@ class ViewController {
             return new Colour('#ffe4e2', '#e00404')
         }
         else if(hasMedium){
-            return new Colour('#f7dc6f', "#000000")
+            return new Colour('#fff8c5', "#000000")
         }
         return new Colour('#dff0d8', '#3c763d')
     }
