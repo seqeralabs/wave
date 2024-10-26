@@ -1,4 +1,6 @@
 # Wave changelog
+1.13.8 - 26 Oct 2024
+
 1.13.7 - 25 Oct 2024 
 - Add ability to configure trivy environment & DBs (#720) [0f600306]
 
