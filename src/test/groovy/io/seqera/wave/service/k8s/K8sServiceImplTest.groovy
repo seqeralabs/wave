@@ -754,7 +754,7 @@ class K8sServiceImplTest extends Specification {
             getCacheDirectory() >> workspace.resolve('cache/dir')
             getRequestsCpu() >> '2'
             getRequestsMemory() >> '4Gi'
-            getGithubToken() >> '123abc'
+            getEnvironmentAsTuples() >> [new Tuple2<String, String>('GITHUB_TOKEN', '123abc')]
         }
 
         when:

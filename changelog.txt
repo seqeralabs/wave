@@ -1,4 +1,23 @@
 # Wave changelog
+1.13.8 - 26 Oct 2024
+- Fix update scan status synchronously [e767c367]
+- Bump scan warn colour [705141f0]
+- Improve scan logging [f01e4dba]
+
+1.13.7 - 25 Oct 2024 
+- Add ability to configure trivy environment & DBs (#720) [0f600306]
+
+1.13.6 - 25 Oct 2024 
+- Add scan color for different vuls (#719) [ab81b6dc]
+
+1.13.5 - 23 Oct 2024
+- Fix Do not render inspect url on fail [d96275a1]
+- Fix inspect view empty nodes (#706) [b3473b7e]
+- Fix prevent scan on cached failed builds [4473fe8c]
+- Use JedisPool in place of generic connection pool (#711) [cd16cfd1]
+- Minor page title change [c3be9304]
+- GHA to submit dependency graph to Github (#715) [09c86627]
+
 1.13.4 - 20 Oct 2024
 - Add scan failure duration setting (#705) [372d6dec]
 - Change scan config log to info [f382c51a]

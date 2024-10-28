@@ -42,7 +42,7 @@ class DockerScanStrategyTest extends Specification {
         when:
         def scanDir = Path.of('/some/scan/dir')
         def config = Path.of("/user/test/build-workspace/config.json")
-        def command = dockerContainerStrategy.dockerWrapper('foo-123', scanDir, config, 'xyz')
+        def command = dockerContainerStrategy.dockerWrapper('foo-123', scanDir, config, ['FOO=1', 'BAR=2'])
 
         then:
         command == [
@@ -60,7 +60,9 @@ class DockerScanStrategyTest extends Specification {
                 '-v',
                 '/user/test/build-workspace/config.json:/root/.docker/config.json:ro',
                 '-e',
-                'GITHUB_TOKEN=xyz'
+                'FOO=1',
+                '-e',
+                'BAR=2'
         ]
 
         cleanup:
