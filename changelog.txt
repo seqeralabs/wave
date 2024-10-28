@@ -1,5 +1,8 @@
 # Wave changelog
 1.13.8 - 26 Oct 2024
+- Fix update scan status synchronously [e767c367]
+- Bump scan warn colour [705141f0]
+- Improve scan logging [f01e4dba]
 
 1.13.7 - 25 Oct 2024 
 - Add ability to configure trivy environment & DBs (#720) [0f600306]
