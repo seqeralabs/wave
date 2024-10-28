@@ -30,13 +30,13 @@ body {
 {{#if scan_exist}}
     {{#if scan_completed}}
     {{#if scan_failed}}
-    <div style="color: #e00404; background-color: #ffe4e2; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+    <div style="color: black; background-color: #d3d3d3; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
         <h4 style="margin-top:0; color: inherit;">
             Unable to complete the container security scan successfully
         </h4>
     </div>
     {{else}}
-    <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+    <div style="color: {{scan_color_fg}}; background-color: {{scan_color_bg}}; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
         <h4 style="margin-top:0; color: inherit;">
             Container security scan completed
         </h4>

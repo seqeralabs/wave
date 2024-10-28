@@ -1,4 +1,12 @@
 # Wave changelog
+1.13.8 - 26 Oct 2024
+
+1.13.7 - 25 Oct 2024 
+- Add ability to configure trivy environment & DBs (#720) [0f600306]
+
+1.13.6 - 25 Oct 2024 
+- Add scan color for different vuls (#719) [ab81b6dc]
+
 1.13.5 - 23 Oct 2024
 - Fix Do not render inspect url on fail [d96275a1]
 - Fix inspect view empty nodes (#706) [b3473b7e]
