@@ -1,4 +1,160 @@
 # Wave changelog
+1.13.8 - 26 Oct 2024
+- Fix update scan status synchronously [e767c367]
+- Bump scan warn colour [705141f0]
+- Improve scan logging [f01e4dba]
+
+1.13.7 - 25 Oct 2024 
+- Add ability to configure trivy environment & DBs (#720) [0f600306]
+
+1.13.6 - 25 Oct 2024 
+- Add scan color for different vuls (#719) [ab81b6dc]
+
+1.13.5 - 23 Oct 2024
+- Fix Do not render inspect url on fail [d96275a1]
+- Fix inspect view empty nodes (#706) [b3473b7e]
+- Fix prevent scan on cached failed builds [4473fe8c]
+- Use JedisPool in place of generic connection pool (#711) [cd16cfd1]
+- Minor page title change [c3be9304]
+- GHA to submit dependency graph to Github (#715) [09c86627]
+
+1.13.4 - 20 Oct 2024
+- Add scan failure duration setting (#705) [372d6dec]
+- Change scan config log to info [f382c51a]
+- Copy all tags on mirror request [20a5f7b5]
+- Fix dev scan failure dutation & GH token [f5711ff8]
+- Fix use of container platform in scan job [61df2424]
+- Fix Prevent rendering image names as uri in mail notification [f8d57921]
+- Fix Tune mirror config [f7290bd5]
+
+1.13.3 - 18 Oct 2024 
+- Add scan history page (#704) [89da55df]
+- Add Github token to scan job env (#703) [1394871e]
+- Improve build history view (#701) [27e316da]
+- Capture usage metrics for scan and mirrors (#699) [12c65721]
+- Fix lookup for partial build ids [f663c6c1]
+
+1.13.2 - 17 Oct 2024
+- Add build list view for containerId  (#696) [3cabb839]
+- Add link to inspect from build view (#695) [6fcd4922]
+- Fix empty array icon in inspect page (#697) [2bc9594b]
+- Propagate container platform when inferring entrypoint (#692) [0922cb3f]
+
+1.13.1 - 15 Oct 2024
+- Fix conda lock download [0e86c4a3]
+
+1.13.0 - 14 Oct 2024
+- Add cleanup for timeout jobs [87898328]
+- Add code coverage report to build (#661) [8f3de2a0]
+- Add copy button and scroll bars in views (#674) [c6d24386]
+- Add download icon and updated copy icon (#678) [aaf2a431]
+- Add failure duration to mirror store [4afb975e]
+- Add inspect view (#619) [b890564b]
+- Add pool handling for Jackson mapper objects (#666) [1e5c64ab]
+- Add support for Container mirroring (#646) [2f5a1fe6]
+- Add support for Conda lock file (#642) [497185ef]
+- Added Typespec for container mirror and status (#677) [c6de5dc2]
+- Fix Include cached only with build [0a16554b]
+- Fix build status completion of submit exception [19eceb10]
+- Fix build status failure with missing exit status [900c1e45]
+- Fix build succeeded & status response [9a1b7954]
+- Fix container scan on request [2a8e1c53]
+- Fix container view alignment (#686) [097f6628]
+- Fix entity too large when using conda file > 10k  (#658) [afeaf832]
+- Fix exception when there is no conda lockfile (#685) [893cca09]
+- Fix load last build succeed [5abce684]
+- Fix mirror typespec (#670) [5b5697f8]
+- Fix repository creds check (#665) [c77d49d1]
+- Fix retrieval of last succeeded mirror result [23cb0564]
+- Fix scan status of cache record [9ee87b5f]
+- Fix singularity build mounts [3d1e00e4]
+- Fix wave build redirect [863fa105]
+- Improve build status handling [0317736b]
+- Improve handling build id in view page (#651) [69f82dc6]
+- Improve inspect for multi platform container images (#660) [884274d7]
+- Improve mirror auth check [2dca96c1]
+- Improve mirror request validation [f23d409e]
+- Increase cleanup succeeded to 30mins [69051374]
+- Move MirrorConfig to config package (#668) [2b20eeed]
+- Normalize state key prefix [BREAKING] [2e120abe]
+- Params refactoring [24b91bd6]
+- Prevent deserialization error [beb605f3]
+- Prevent scans on dry-run [a8b6bc2c]
+- Refactor state prefix [3658cfed]
+- Refactor state store components  (#657) [9ace76e7]
+- Remove BiCacheStore data structure (#653) [6c968dff]
+- Remove deprecated keyId (#616) [64e55009]
+- Remove deprecated tests [b1abf961]
+- Remove ip address (#680) [86b41760]
+- Remove logs from mail config [7a497914]
+- Remove redis from dev config [40484561]
+- Remove support for spack build (#601) [3dff0192]
+- Remove unneeded log [9a52e606]
+- Replace mirrorRegistry with buildRepository [9d31246b]
+- Revert mail template to embedded logo file [a118fee1]
+- Scan v2 (#662) [ab7e2801]
+- Simulate xclaim delay with local stream [42c3f260]
+- Update container request typespec model [1a27aee9]
+- Update scan state duration to 5 days [6270b6c5]
+- Use 3-state succeed attribute in container response [d3ed2ba1]
+- Use gstring for lock file [e5364c21]
+
+1.12.4 - 26 Sep 2024
+- Fix build succeeded & status response [8a760b39]
+
+1.12.3 - 22 Sep 2024
+- Fix build status completion of submit exception [3c3af360]
+- Fix singularity build mounts [3b338b29]
+
+1.12.2 - 18 Sep 2024 
+- Fix Remove entries permanently from stream once consumed [adfad9d6]
+- Refactor container build service [1a858c12]
+- Remove unused code [268c76ea]
+
+1.12.1 - 17 Sep 2024 
+- Fix stream check for new messages [16a7e256]
+
+1.12.0 - 17 Sep 2024 
+- Add Job manager (#605) [00daf919]
+  - Add support for build and scan operation via Job manager (#620) [0e5e5ca4]
+  - Do not retry on build failure (#632) [e6568d1e]
+  - Fix Blob cache failure duration (#643) [ebf65adc]
+  - Fix K8s job status detection (#630) [d5b45d8d] [7a9046ed] [e26811dd]
+  - Fix Retry policy delay multiplier (#629) [80037565]
+  - Improve blob cache info (#644) [8b96173a]
+  - Improve blob cache logging [e4c75671]
+  - Improve blob cache reliability (#596) [dfb64bad]
+  - Improve build & scan logging [b086f3d8]
+  - Improve job dispatcher (#645) [fee3db9d]
+  - Remove unneeded timeout logic (#633) [5eabf285]
+  - Deferred resources cleanup (#636) [c6b3e9b8]
+  - Change k8s Job deletion to foreground pods propagation (#595) [b5baea03]
+  - Run Docker process in background (#647) [1fcb4c94]
+- Add build in progress status in build page (#607) [3d940e88]
+- Add container image name to container scan view  (#635) [7858b95f]
+- Add entropy to cron services (#640) [a6d1d884]
+- Add link to build Id in container request view [57129960]
+- Add rate limiter to container request [a05c1094]
+- Add trusted builds timeout (#600) [63b58088]
+- Add /v1alpha2/container/{containerId} endpoint (#609) [6c05498c]
+- Add /v1alpha2/container/{token} in typespec (#618) [5cbd67a8]
+- Fix failing type checks [bd704bea]
+- Fix too many requests error code (#610) [ec43fa0d]
+- Increase blob cache timeout to 10m and decrease status to 1h [cf4b7588]
+- Improve container view page (#615) [d9b8cab8]
+- Improve registry auth error handling (#628) [c9185730]
+- Increase cache-tower-client to 1min (#641) [df32b305]
+- Message queue name refactoring [861d0580]
+- Simplify tests (#627) [cf53cba2]
+- Update dev default logs [6b588f4c]
+- Update nextflow.mdx (#612) [fe9b4273]
+- Update scan model (#637) [94d37637]
+- Use public repo for s5cmd (#639) [c16c0959]
+- Bump Trivy 0.55 (#638) [b69d34c4]
+
+1.11.1 - 5 Sep 2024 
+- Add rate limiter to container request [a3c63525]
+
 1.11.0 - 23 Aug 2024
 - added /v1alpha2/container/{containerId} (#609) [5221b5a0]
 - Improve contaiener view page (#615) [9e15b455]

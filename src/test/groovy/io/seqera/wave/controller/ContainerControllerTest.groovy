@@ -24,20 +24,22 @@ import spock.lang.Unroll
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
+import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Property
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.server.util.HttpClientAddressResolver
+import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.ContainerStatusResponse
 import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.config.CondaOpts
-import io.seqera.wave.config.SpackOpts
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
@@ -50,12 +52,16 @@ import io.seqera.wave.service.builder.FreezeService
 import io.seqera.wave.service.builder.FreezeServiceImpl
 import io.seqera.wave.service.inclusion.ContainerInclusionService
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
+import io.seqera.wave.service.job.JobService
+import io.seqera.wave.service.job.JobServiceImpl
+import io.seqera.wave.service.mirror.ContainerMirrorService
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerRecord
-import io.seqera.wave.service.token.ContainerTokenService
-import io.seqera.wave.service.token.TokenData
+import io.seqera.wave.service.request.ContainerRequestService
+import io.seqera.wave.service.request.TokenData
+import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
@@ -81,13 +87,34 @@ class ContainerControllerTest extends Specification {
     @Inject
     JwtAuthStore jwtAuthStore
 
+    @Inject
+    ApplicationContext applicationContext
+
+    @Inject
+    RegistryProxyService proxyRegistry
+
+    @Inject
+    ValidationService validationService
+
+    @MockBean(JobServiceImpl)
+    JobService mockJobService() {
+        Mock(JobService)
+    }
+
+    @MockBean(RegistryProxyService)
+    RegistryProxyService mockProxy() {
+        Mock(RegistryProxyService) {
+            getImageDigest(_,_) >> 'sha256:mock-digest'
+        }
+    }
+
     def setup() {
         jwtAuthStore.clear()
     }
 
     def 'should create request data' () {
         given:
-        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService))
+        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry)
 
         when:
         def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest')
@@ -123,6 +150,7 @@ class ContainerControllerTest extends Specification {
     def 'should create request data with freeze mode' () {
         given:
         def freeze = Mock(FreezeService)
+        def containerImage = 'ubuntu:latest'
         and:
         def controller = Spy(new ContainerController(freezeService: freeze, inclusionService: Mock(ContainerInclusionService)))
         and:
@@ -131,16 +159,18 @@ class ContainerControllerTest extends Specification {
             getTargetImage() >> target
         }
         and:
-        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true, buildRepository: 'docker.io/foo/bar')
+        def req = new SubmitContainerTokenRequest(containerImage: containerImage, freeze: true, buildRepository: 'docker.io/foo/bar')
 
         when:
         def data = controller.makeRequestData(req, PlatformId.NULL, "")
         then:
         1 * freeze.freezeBuildRequest(req, _) >> req.copyWith(containerFile: 'FROM ubuntu:latest')
         1 * controller.makeBuildRequest(_,_,_) >> BUILD
-        1 * controller.checkBuild(BUILD,false) >> new BuildTrack('1', target, false)
+        1 * controller.checkBuild(BUILD,false) >> new BuildTrack('1', target, false, false)
+        1 * controller.getContainerDigest(containerImage, PlatformId.NULL) >> 'sha256:12345'
         and:
         data.containerImage == target
+        data.succeeded == false
 
     }
 
@@ -156,8 +186,7 @@ class ContainerControllerTest extends Specification {
         given:
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def proxyRegistry = Mock(RegistryProxyService)
-        def controller = new ContainerController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
+        def controller = new ContainerController(buildService: builder, inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
         def DOCKER = 'FROM foo'
         def user = new PlatformId(new User(id: 100))
         def cfg = new ContainerConfig()
@@ -170,22 +199,23 @@ class ContainerControllerTest extends Specification {
         def data = controller.makeRequestData(req, user, "")
         then:
         1 * proxyRegistry.getImageDigest(_) >> null
-        1 * builder.buildImage(_) >> new BuildTrack('1', 'wave/build:be9ee6ac1eeff4b5')
+        1 * builder.buildImage(_) >> new BuildTrack('1', 'wave/build:be9ee6ac1eeff4b5', false, true)
         and:
         data.containerFile == DOCKER
         data.identity.userId == 100
         data.containerImage ==  'wave/build:be9ee6ac1eeff4b5'
         data.containerConfig == cfg
         data.platform.toString() == 'linux/arm64'
+        data.buildNew == true
+        data.succeeded == true
     }
 
     def 'should not run a build request if manifest is present' () {
         given:
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def proxyRegistry = Mock(RegistryProxyService)
         def persistenceService = Mock(PersistenceService)
-        def controller = new ContainerController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, persistenceService:persistenceService, inclusionService: Mock(ContainerInclusionService))
+        def controller = new ContainerController(buildService: builder, inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, persistenceService:persistenceService, inclusionService: Mock(ContainerInclusionService))
         def DOCKER = 'FROM foo'
         def user = new PlatformId(new User(id: 100))
         def cfg = new ContainerConfig()
@@ -198,7 +228,7 @@ class ContainerControllerTest extends Specification {
         def data = controller.makeRequestData(req, user, "")
         then:
         1 * proxyRegistry.getImageDigest(_) >> 'abc'
-        1 * persistenceService.loadBuild(_,'abc')
+        1 * persistenceService.loadBuildSucceed(_,'abc')
         0 * builder.buildImage(_) >> null
         and:
         data.containerFile == DOCKER
@@ -212,8 +242,7 @@ class ContainerControllerTest extends Specification {
         given:
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def proxyRegistry = Mock(RegistryProxyService)
-        def controller = new ContainerController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig:buildConfig, inclusionService: Mock(ContainerInclusionService))
+        def controller = new ContainerController(buildService: builder, inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig:buildConfig, inclusionService: Mock(ContainerInclusionService))
         def DOCKER = 'FROM foo'
         def user = new PlatformId(new User(id: 100))
         def cfg = new ContainerConfig()
@@ -237,10 +266,44 @@ class ContainerControllerTest extends Specification {
         data.platform.toString() == 'linux/arm64'
     }
 
+    def 'should make a mirror request' () {
+        given:
+        def mirrorService = applicationContext.getBean(ContainerMirrorService)
+        def inspectService = Mock(ContainerInspectServiceImpl)
+        def controller = new ContainerController(mirrorService: mirrorService, inspectService: inspectService, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
+        def user = new PlatformId(new User(id: 100))
+        def req = new SubmitContainerTokenRequest(
+                containerImage: SOURCE,
+                containerPlatform: 'arm64',
+                buildRepository: BUILD,
+                mirror: true
+        )
+
+        when:
+        def data = controller.makeRequestData(req, user, "")
+        then:
+        1 * proxyRegistry.getImageDigest(SOURCE, user) >> 'sha256:12345'
+        1 * proxyRegistry.getImageDigest(TARGET, user) >> null
+        and:
+        data.identity.userId == 100
+        data.containerImage ==  TARGET
+        data.platform.toString() == 'linux/arm64'
+        data.buildId =~ /mr-.+/
+        data.buildNew
+        !data.freeze
+        data.mirror
+
+        where:
+        SOURCE                          | BUILD           | TARGET
+        'docker.io/source/image:latest' | 'quay.io'       | 'quay.io/source/image:latest'
+        'docker.io/source/image:latest' | 'quay.io/lib'   | 'quay.io/lib/source/image:latest'
+        'docker.io/source/image:latest' | 'quay.io/lib/'  | 'quay.io/lib/source/image:latest'
+    }
+
     def 'should create build request' () {
         given:
         def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def controller = new ContainerController(dockerAuthService: dockerAuth, buildConfig: buildConfig)
+        def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig)
 
         when:
         def submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'))
@@ -280,23 +343,12 @@ class ContainerControllerTest extends Specification {
         build.targetImage == 'wave/build:c6dac2e544419f71'
         build.platform == ContainerPlatform.of('arm64')
 
-        when:
-        submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), spackFile: encode('some::spack-recipe'), containerPlatform: 'arm64')
-        build = controller.makeBuildRequest(submit, PlatformId.NULL, "")
-        then:
-        build.containerId =~ /b7d730d274d1e057/
-        build.containerFile.endsWith('\nFROM foo')
-        build.containerFile.startsWith('# Builder image\n')
-        build.condaFile == null
-        build.spackFile == 'some::spack-recipe'
-        build.targetImage == 'wave/build:b7d730d274d1e057'
-        build.platform == ContainerPlatform.of('arm64')
     }
 
     def 'should return a bad request exception when field is not encoded' () {
         given:
         def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def controller = new ContainerController(dockerAuthService: dockerAuth, buildConfig: buildConfig)
+        def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig)
 
         // validate containerFile
         when:
@@ -318,22 +370,12 @@ class ContainerControllerTest extends Specification {
         e = thrown(BadRequestException)
         e.message == "Invalid 'condaFile' attribute - make sure it encoded as a base64 string"
 
-        // validate spackFile
-        when:
-        controller.makeBuildRequest(
-                new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), spackFile: 'spack@123'),
-                Mock(PlatformId),
-                null)
-        then:
-        e = thrown(BadRequestException)
-        e.message == "Invalid 'spackFile' attribute - make sure it encoded as a base64 string"
-
     }
 
     def 'should add library prefix' () {
         when:
         def body = new SubmitContainerTokenRequest(containerImage: 'docker.io/hello-world')
-        def req1 = HttpRequest.POST("/container-token", body)
+        def req1 = HttpRequest.POST("/v1alpha2/container", body)
         def resp1 = client.toBlocking().exchange(req1, SubmitContainerTokenResponse)
         then:
         resp1.status() == HttpStatus.OK
@@ -347,7 +389,7 @@ class ContainerControllerTest extends Specification {
     def 'should not add library prefix' () {
         when:
         def body = new SubmitContainerTokenRequest(containerImage: 'quay.io/hello-world')
-        def req1 = HttpRequest.POST("/container-token", body)
+        def req1 = HttpRequest.POST("/v1alpha2/container", body)
         def resp1 = client.toBlocking().exchange(req1, SubmitContainerTokenResponse)
         then:
         resp1.status() == HttpStatus.OK
@@ -361,7 +403,7 @@ class ContainerControllerTest extends Specification {
     def 'should record a container request' () {
         when:
         def body = new SubmitContainerTokenRequest(containerImage: 'hello-world')
-        def req1 = HttpRequest.POST("/container-token", body)
+        def req1 = HttpRequest.POST("/v1alpha2/container", body)
         def resp1 = client.toBlocking().exchange(req1, SubmitContainerTokenResponse)
         then:
         resp1.status() == HttpStatus.OK
@@ -391,7 +433,7 @@ class ContainerControllerTest extends Specification {
         def pairing = Mock(PairingService)
         def channel = Mock(PairingChannel)
         def controller = new ContainerController(validationService: validation, pairingService: pairing, pairingChannel: channel)
-        def msg
+        def err
 
         when:
         controller.validateContainerRequest(new SubmitContainerTokenRequest())
@@ -411,15 +453,83 @@ class ContainerControllerTest extends Specification {
         when:
         controller.validateContainerRequest(new SubmitContainerTokenRequest(containerImage: 'http://docker.io/foo:latest'))
         then:
-        msg = thrown(BadRequestException)
-        msg.message == 'Invalid container repository name — offending value: http://docker.io/foo:latest'
+        err = thrown(BadRequestException)
+        err.message == 'Invalid container repository name — offending value: http://docker.io/foo:latest'
 
         when:
         controller.validateContainerRequest(new SubmitContainerTokenRequest(containerImage: 'http:docker.io/foo:latest'))
         then:
-        msg = thrown(BadRequestException)
-        msg.message == 'Invalid container image name — offending value: http:docker.io/foo:latest'
+        err = thrown(BadRequestException)
+        err.message == 'Invalid container image name — offending value: http:docker.io/foo:latest'
 
+    }
+
+    def 'should validate mirror request' () {
+        given:
+        def pairing = Mock(PairingService)
+        def channel = Mock(PairingChannel)
+        def controller = new ContainerController(validationService: validationService, pairingService: pairing, pairingChannel: channel)
+        def err
+
+        when:
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirror: true, buildRepository: 'quay.io'), false)
+        then:
+        err = thrown(BadRequestException)
+        err.message == 'Container mirroring requires the use of v2 API'
+
+        when:
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirror: true, buildRepository: 'quay.io'), true)
+        then:
+        err = thrown(BadRequestException)
+        err.message == 'Attribute `containerImage` is required when specifying `mirror` mode'
+
+        when:
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirror: true, buildRepository: 'quay.io', containerImage: 'docker.io/foo'), true)
+        then:
+        err = thrown(BadRequestException)
+        err.message == 'Container mirroring requires an authenticated request - specify the tower token attribute'
+
+        when:
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirror: true, buildRepository: 'docker.io', containerImage: 'docker.io/foo', towerAccessToken: 'xyz'), true)
+        then:
+        err = thrown(BadRequestException)
+        err.message == "Source and target mirror registry are the same - offending value 'docker.io'"
+
+        when:
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirror: true, buildRepository: 'docker.io', containerImage: 'foo', towerAccessToken: 'xyz'), true)
+        then:
+        err = thrown(BadRequestException)
+        err.message == "Source and target mirror registry are the same - offending value 'docker.io'"
+
+        when:
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirror: true, buildRepository: 'quay.io', containerImage: 'docker.io/foo', towerAccessToken: 'xyz', containerFile: 'content'), true)
+        then:
+        err = thrown(BadRequestException)
+        err.message == "Attribute `mirror` and `containerFile` conflict each other"
+
+        when:
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirror: true, buildRepository: 'quay.io', containerImage: 'docker.io/foo', towerAccessToken: 'xyz', freeze: true), true)
+        then:
+        err = thrown(BadRequestException)
+        err.message == "Attribute `mirror` and `freeze` conflict each other"
+
+        when:
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirror: true, buildRepository: 'quay.io', containerImage: 'docker.io/foo', towerAccessToken: 'xyz', containerIncludes: ['include']), true)
+        then:
+        err = thrown(BadRequestException)
+        err.message == "Attribute `mirror` and `containerIncludes` conflict each other"
+
+        when:
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirror: true, buildRepository: 'quay.io', containerImage: 'docker.io/foo', towerAccessToken: 'xyz', containerConfig: new ContainerConfig(entrypoint: ['foo'])), true)
+        then:
+        err = thrown(BadRequestException)
+        err.message == "Attribute `mirror` and `containerConfig` conflict each other"
+
+        when:
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirror: true, buildRepository: 'community.wave.seqera.io', containerImage: 'docker.io/foo', towerAccessToken: 'xyz'), true)
+        then:
+        err = thrown(BadRequestException)
+        err.message == "Mirror registry not allowed - offending value 'community.wave.seqera.io'"
     }
 
     def 'should create response with conda packages' () {
@@ -429,11 +539,11 @@ class ContainerControllerTest extends Specification {
         def builder = Mock(ContainerBuildService)
         def proxyRegistry = Mock(RegistryProxyService)
         def addressResolver = Mock(HttpClientAddressResolver)
-        def tokenService = Mock(ContainerTokenService)
+        def tokenService = Mock(ContainerRequestService)
         def persistence = Mock(PersistenceService)
-        def controller = new ContainerController(freezeService:  freeze, buildService: builder, dockerAuthService: dockerAuth,
+        def controller = new ContainerController(freezeService:  freeze, buildService: builder, inspectService: dockerAuth,
                 registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService),
-                addressResolver: addressResolver, tokenService: tokenService, persistenceService: persistence, serverUrl: 'http://wave.com')
+                addressResolver: addressResolver, containerService: tokenService, persistenceService: persistence, validationService: validationService, serverUrl: 'http://wave.com')
 
         when:'packages with conda'
         def CHANNELS = ['conda-forge', 'defaults']
@@ -446,7 +556,7 @@ class ContainerControllerTest extends Specification {
         def response = controller.handleRequest(null, req, id, true)
 
         then:
-        1 * builder.buildImage(_) >> new BuildTrack('build123', 'oras://docker.io/foo:9b266d5b5c455fe0', true)
+        1 * builder.buildImage(_) >> new BuildTrack('build123', 'oras://docker.io/foo:9b266d5b5c455fe0', true, true)
         and:
         1 * tokenService.computeToken(_) >> new TokenData('wavetoken123', Instant.now().plus(1, ChronoUnit.HOURS))
         and:
@@ -456,48 +566,13 @@ class ContainerControllerTest extends Specification {
             buildId == 'build123'
             containerToken == null
             cached == true
-        }
-    }
-
-    def 'should create response with spack packages' () {
-        given:
-        def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def freeze = new FreezeServiceImpl( inspectService: dockerAuth)
-        def builder = Mock(ContainerBuildService)
-        def proxyRegistry = Mock(RegistryProxyService)
-        def addressResolver = Mock(HttpClientAddressResolver)
-        def tokenService = Mock(ContainerTokenService)
-        def persistence = Mock(PersistenceService)
-        def controller = new ContainerController(freezeService:  freeze, buildService: builder, dockerAuthService: dockerAuth,
-                registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService),
-                addressResolver: addressResolver, tokenService: tokenService, persistenceService: persistence, serverUrl: 'https://wave.seqera.io')
-
-        when:'packages with spack'
-        def SPACK_OPTS = new SpackOpts([
-                basePackages: 'foo bar',
-                commands: ['run','--this','--that']
-        ])
-        def packages = new PackagesSpec(type: PackagesSpec.Type.SPACK, spackOpts: SPACK_OPTS)
-        def req = new SubmitContainerTokenRequest(format: 'docker', packages: packages)
-        def response = controller.handleRequest(null, req, new PlatformId(new User(id: 100), 10), true)
-
-        then:
-        1 * builder.buildImage(_) >> new BuildTrack('build123', 'foo:1234', true)
-        and:
-        1 * tokenService.computeToken(_) >> new TokenData('wavetoken123', Instant.now().plus(1, ChronoUnit.HOURS))
-        and:
-        response.status.code == 200
-        verifyAll(response.body.get() as SubmitContainerTokenResponse) {
-            targetImage == 'wave.seqera.io/wt/wavetoken123/library/foo:1234'
-            buildId == 'build123'
-            containerToken == 'wavetoken123'
-            cached == true
+            succeeded == true
         }
     }
 
     def 'should throw BadRequestException when more than one artifact (container image, container file or packages) is provided in the request' () {
         given:
-        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), allowAnonymous: false)
+        def controller = new ContainerController(validationService: validationService, inclusionService: Mock(ContainerInclusionService), allowAnonymous: false)
 
         when: 'container access token is not provided'
         def req = new SubmitContainerTokenRequest(packages: new PackagesSpec())
@@ -613,18 +688,18 @@ class ContainerControllerTest extends Specification {
         noExceptionThrown()
     }
 
-    def '/v1alpha2/container/{containerId} should return a container record' () {
+    def 'should return the container record' () {
         given:
         def body = new SubmitContainerTokenRequest(containerImage: 'hello-world')
-        def req1 = HttpRequest.POST("/container-token", body)
+        def req1 = HttpRequest.POST("/v1alpha2/container", body)
         def resp1 = client.toBlocking().exchange(req1, SubmitContainerTokenResponse)
         and:
         resp1.status() == HttpStatus.OK
         and:
-        def containerId = resp1.body().containerToken
+        def requestId = resp1.body().requestId
 
         when:
-        def req2 = HttpRequest.GET("/v1alpha2/container/${containerId}")
+        def req2 = HttpRequest.GET("/v1alpha2/container/${requestId}")
         def resp2 = client.toBlocking().exchange(req2, WaveContainerRecord)
         then:
         resp2.status() == HttpStatus.OK
@@ -634,5 +709,29 @@ class ContainerControllerTest extends Specification {
         result.containerImage == 'hello-world'
         result.sourceImage == 'docker.io/library/hello-world:latest'
         result.waveImage == resp1.body().targetImage
+    }
+
+    def 'should return the container status' () {
+        given:
+        def body = new SubmitContainerTokenRequest(containerImage: 'hello-world')
+        def req1 = HttpRequest.POST("/v1alpha2/container", body)
+        def resp1 = client.toBlocking().exchange(req1, SubmitContainerTokenResponse)
+        and:
+        resp1.status() == HttpStatus.OK
+        and:
+        def requestId = resp1.body().requestId
+
+        when:
+        def req2 = HttpRequest.GET("/v1alpha2/container/${requestId}/status")
+        def resp2 = client.toBlocking().exchange(req2, ContainerStatusResponse)
+        then:
+        resp2.status() == HttpStatus.OK
+        and:
+        ContainerStatusResponse result = resp2.body()
+        and:
+        result.id == requestId
+        result.succeeded
+        result.creationTime
+        result.duration
     }
 }

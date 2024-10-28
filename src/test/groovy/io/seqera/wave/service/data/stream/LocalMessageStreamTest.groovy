@@ -36,6 +36,9 @@ class LocalMessageStreamTest extends Specification {
         def id2 = "stream-${LongRndKey.rndHex()}"
         and:
         def stream = new LocalMessageStream()
+        and:
+        stream.init(id1)
+        stream.init(id2)
         when:
         stream.offer(id1, 'one')
         and:
@@ -57,6 +60,7 @@ class LocalMessageStreamTest extends Specification {
         given:
         def id1 = "stream-${LongRndKey.rndHex()}"
         def stream = new LocalMessageStream()
+        stream.init(id1)
         when:
         stream.offer(id1, 'alpha')
         stream.offer(id1, 'delta')

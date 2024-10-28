@@ -47,16 +47,15 @@ class MailServiceImplTest extends Specification {
         def mail = service.buildCompletionMail(request, result, recipient)
         then:
         1* request.getContainerFile() >> 'from foo';
-        1* request.getTargetImage() >> 'wave/build:xyz'
+        1* request.getTargetImage() >> 'seqera.io/wave/build:xyz'
         1* request.getPlatform() >> ContainerPlatform.DEFAULT
         1* request.getCondaFile() >> null
-        1* request.getSpackFile() >> null
         and:
         mail.to == recipient
         mail.body.contains('from foo')
+        mail.body.contains('seqera&#8203;.io/wave/build:xyz')
         and:
         !mail.body.contains('Conda file')
-        !mail.body.contains('Spack file')
 
         // check it adds the Conda file content
         when:
@@ -70,17 +69,16 @@ class MailServiceImplTest extends Specification {
         mail.body.contains('Conda file')
         mail.body.contains('bioconda::foo')
 
-        // check it add the spack file content
-        when:
-        mail = service.buildCompletionMail(request, result, recipient)
-        then:
-        1* request.getTargetImage() >> 'wave/build:xyz'
-        1* request.getPlatform() >> ContainerPlatform.DEFAULT
-        1* request.getSpackFile() >> 'some-spac-recipe'
-        and:
-        mail.to == recipient
-        mail.body.contains('Spack file')
-        mail.body.contains('some-spac-recipe')
     }
 
+    def 'should replace dot with non breaking name' () {
+        expect:
+        MailServiceImpl.preventLinkFormatting(NAME) == EXPECTED
+
+        where:
+        NAME                         | EXPECTED
+        null                         | null
+        'foo'                        | 'foo'
+        'www.host.com/this/that'     | 'www&#8203;.host&#8203;.com/this/that'
+    }
 }

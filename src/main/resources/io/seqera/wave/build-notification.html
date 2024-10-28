@@ -32,8 +32,6 @@
         <img style="float:left; margin-top: 5px; margin-right: 10px; width: 30px;" src="cid:wave-logo">
         <h1>Wave container build completion</h1>
     </div>
-    <!--<h2>Run Name: xxx</h2>-->
-
     <% if (build_success) { %>
     <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
         <h4 style="margin-top:0; color: inherit;">
@@ -97,8 +95,8 @@
 
         <% if (scan_url) { %>
         <tr>
-        <td>Security</td>
-        <td><a href="${scan_url}">Image scan report</a></td>
+        <td>Security scan</td>
+        <td><a href="${scan_url}">${scan_id}</a></td>
         </tr>
         <% } %>
     </table>
@@ -110,14 +108,6 @@
     <h3>Conda file</h3>
     <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">${build_condafile}</pre>
     <% } %>
-
-    <% if (build_spackfile) { %>
-    <h3>Spack file</h3>
-    <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">${build_spackfile}</pre>
-    <% } %>
-
-    <h3>Build logs</h3>
-    <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">${build_log_data}</pre>
 
     <div class="footer" style="clear:both;width:100%;">
         <hr class="footer-hr" style="height:0;overflow:visible;margin-top:30px;border:0;border-top:1px solid #eee;color:#999999;font-size:12px;line-height:18px;margin-bottom:30px;">

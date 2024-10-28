@@ -30,6 +30,8 @@ import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.mirror.MirrorEntry
+import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
@@ -87,23 +89,33 @@ class SurrealPersistenceService implements PersistenceService {
         final ret4 = surrealDb.sqlAsMap(authorization, "define table wave_scan_vuln SCHEMALESS")
         if( ret4.status != "OK")
             throw new IllegalStateException("Unable to define SurrealDB table wave_scan_vuln - cause: $ret4")
+        // create wave_mirror table
+        final ret5 = surrealDb.sqlAsMap(authorization, "define table wave_mirror SCHEMALESS")
+        if( ret5.status != "OK")
+            throw new IllegalStateException("Unable to define SurrealDB table wave_mirror - cause: $ret5")
     }
 
-    private String getAuthorization() {
+    protected String getAuthorization() {
         "Basic "+"$user:$password".bytes.encodeBase64()
     }
 
     @Override
     void saveBuild(WaveBuildRecord build) {
-        surrealDb.insertBuildAsync(getAuthorization(), build).subscribe({ result->
-            log.trace "Build request with id '$build.buildId' saved record: ${result}"
-        }, {error->
-            def msg = error.message
-            if( error instanceof HttpClientResponseException ){
-                msg += ":\n $error.response.body"
-            }
-            log.error("Error saving Build request record ${msg}\n${build}", error)
-        })
+        // note: use surreal sql in order to by-pass issue with large payload
+        // see https://github.com/seqeralabs/wave/issues/559#issuecomment-2369412170
+        final query = "INSERT INTO wave_build ${JacksonHelper.toJson(build)}"
+        surrealDb
+                .sqlAsync(getAuthorization(), query)
+                .subscribe({result ->
+                    log.trace "Build request with id '$build.buildId' saved record: ${result}"
+                },
+                        {error->
+                            def msg = error.message
+                            if( error instanceof HttpClientResponseException ){
+                                msg += ":\n $error.response.body"
+                            }
+                            log.error("Error saving Build request record ${msg}\n${build}", error)
+                        })
     }
 
     @Override
@@ -137,8 +149,17 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    WaveBuildRecord loadBuild(String targetImage, String digest) {
-        final query = "select * from wave_build where targetImage = '$targetImage' and digest = '$digest'"
+    WaveBuildRecord loadBuildSucceed(String targetImage, String digest) {
+        final query = """\
+            select * from wave_build 
+            where   
+                targetImage = '$targetImage' 
+                and digest = '$digest'
+                and exitStatus = 0 
+                and duration is not null
+            order by 
+               startTime desc limit 1
+            """.stripIndent()
         final json = surrealDb.sqlAsString(getAuthorization(), query)
         final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
@@ -147,16 +168,52 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveContainerRequest(String token, WaveContainerRecord data) {
-        surrealDb.insertContainerRequestAsync(authorization, token, data).subscribe({ result->
-            log.trace "Container request with token '$token' saved record: ${result}"
-        }, {error->
-            def msg = error.message
-            if( error instanceof HttpClientResponseException ){
-                msg += ":\n $error.response.body"
-            }
-            log.error("Error saving container request record ${msg}\n${data}", error)
-        })
+    WaveBuildRecord latestBuild(String containerId) {
+        final query = """
+            select * 
+            from wave_build 
+            where buildId ~ '${containerId}${BuildRequest.SEP}'
+            order by startTime desc limit 1
+            """.stripIndent()
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result[0] : null
+        return result
+    }
+
+    @Override
+    List<WaveBuildRecord> allBuilds(String containerId) {
+        final query = """
+            select * 
+            from wave_build 
+            where string::matches(buildId, '^(bd-)?${containerId}_[0-9]+')
+            order by startTime desc
+            """.stripIndent()
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result : null
+        return result ? Arrays.asList(result) : null
+    }
+
+    @Override
+    void saveContainerRequest(WaveContainerRecord data) {
+        // note: use surreal sql in order to by-pass issue with large payload
+        // see https://github.com/seqeralabs/wave/issues/559#issuecomment-2369412170
+        final query = "INSERT INTO wave_request ${JacksonHelper.toJson(data)}"
+        surrealDb
+                .sqlAsync(getAuthorization(), query)
+                .subscribe({result ->
+                    log.trace "Container request with token '$data.id' saved record: ${result}"
+                },
+                        {error->
+                            def msg = error.message
+                            if( error instanceof HttpClientResponseException ){
+                                msg += ":\n $error.response.body"
+                            }
+                            log.error("Error saving container request record ${msg}\n${data}", error)
+                        })
     }
 
     void updateContainerRequest(String token, ContainerDigestPair digest) {
@@ -186,18 +243,17 @@ class SurrealPersistenceService implements PersistenceService {
         final json = surrealDb.getContainerRequest(getAuthorization(), token)
         log.trace "Container request with token '$token' loaded: ${json}"
         final type = new TypeReference<ArrayList<SurrealResult<WaveContainerRecord>>>() {}
-        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final data= json ? JacksonHelper.fromJson(patchSurrealId(json,"wave_request"), type) : null
         final result = data && data[0].result ? data[0].result[0] : null
         return result
     }
 
-    void createScanRecord(WaveScanRecord scanRecord) {
-        final result = surrealDb.insertScanRecord(authorization, scanRecord)
-        log.trace "Scan create result=$result"
+    static protected String patchSurrealId(String json, String table) {
+        return json.replaceFirst(/"id":\s*"${table}:(\w*)"/) { List<String> it-> /"id":"${it[1]}"/ }
     }
 
     @Override
-    void updateScanRecord(WaveScanRecord scanRecord) {
+    void saveScanRecord(WaveScanRecord scanRecord) {
         final vulnerabilities = scanRecord.vulnerabilities ?: List.<ScanVulnerability>of()
 
         // save all vulnerabilities
@@ -207,31 +263,122 @@ class SurrealPersistenceService implements PersistenceService {
 
         // compose the list of ids
         final ids = vulnerabilities
-                .collect(it-> "wave_scan_vuln:⟨$it.id⟩")
-                .join(', ')
+                .collect(it-> "wave_scan_vuln:⟨$it.id⟩".toString())
+
+
+        // scan object
+        final copy = scanRecord.clone()
+        copy.vulnerabilities = List.of()
+        final json = JacksonHelper.toJson(copy)
 
         // create the scan record
-        final statement = """\
-                                UPDATE wave_scan:${scanRecord.id} 
-                                SET 
-                                    status = '${scanRecord.status}',
-                                    duration = '${scanRecord.duration}',
-                                    vulnerabilities = ${ids ? "[$ids]" : "[]" } 
-                                """.stripIndent()
+        final statement = "INSERT INTO wave_scan ${patchScanVulnerabilities(json, ids)}".toString()
         final result = surrealDb.sqlAsMap(authorization, statement)
         log.trace "Scan update result=$result"
+    }
+
+    protected String patchScanVulnerabilities(String json, List<String> ids) {
+        final value = "\"vulnerabilities\":${ids.collect(it-> "\"$it\"").toString()}"
+        json.replaceFirst(/"vulnerabilities":\s*\[]/, value)
+    }
+
+    @Override
+    boolean existsScanRecord(String scanId) {
+        final statement = "SELECT count() FROM wave_scan where id == 'wave_scan:⟨$scanId⟩'"
+        final json = surrealDb.sqlAsString(getAuthorization(), statement)
+        final type = new TypeReference<ArrayList<SurrealResult<Map>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result[0].count==1 : false
+        return result
     }
 
     @Override
     WaveScanRecord loadScanRecord(String scanId) {
         if( !scanId )
             throw new IllegalArgumentException("Missing 'scanId' argument")
-        final statement = "SELECT * FROM wave_scan:$scanId FETCH vulnerabilities"
+        final statement = "SELECT * FROM wave_scan where id == 'wave_scan:⟨$scanId⟩' FETCH vulnerabilities"
         final json = surrealDb.sqlAsString(getAuthorization(), statement)
         final type = new TypeReference<ArrayList<SurrealResult<WaveScanRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
         return result
+    }
+
+    @Override
+    List<WaveScanRecord> allScans(String scanId) {
+        final query = """
+            select * 
+            from wave_scan
+            where string::matches(type::string(id), '^wave_scan:⟨(sc-)?${scanId}_[0-9]+')
+            order by startTime desc
+            FETCH vulnerabilities
+            """.stripIndent()
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveScanRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result : null
+        return result ? Arrays.asList(result) : null
+    }
+
+    // ===  mirror operations
+
+    /**
+     * Load a mirror state record
+     *
+     * @param mirrorId The ID of the mirror record
+     * @return The corresponding {@link MirrorEntry} object or null if it cannot be found
+     */
+    MirrorResult loadMirrorResult(String mirrorId) {
+        final query = "select * from wave_mirror where mirrorId = '$mirrorId'"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<MirrorResult>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result[0] : null
+        return result
+    }
+
+    /**
+     * Load a mirror state record given the target image name and the image digest.
+     * It returns the latest succeed mirror result.
+     *
+     * @param targetImage The target mirrored image name
+     * @param digest The image content SHA256 digest
+     * @return The corresponding {@link MirrorEntry} object or null if it cannot be found
+     */
+    MirrorResult loadMirrorSucceed(String targetImage, String digest) {
+        final query = """
+            select * from wave_mirror 
+            where 
+                targetImage = '$targetImage' 
+                and digest = '$digest'
+                and exitCode = 0
+                and status = '${MirrorResult.Status.COMPLETED}'
+            order by 
+                creationTime desc limit 1
+            """
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<MirrorResult>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result[0] : null
+        return result
+    }
+
+    /**
+     * Persists a {@link MirrorEntry} object
+     *
+     * @param mirror {@link MirrorEntry} object
+     */
+    @Override
+    void saveMirrorResult(MirrorResult mirror) {
+        surrealDb.insertMirrorAsync(getAuthorization(), mirror).subscribe({ result->
+            log.trace "Mirror request with id '$mirror.mirrorId' saved record: ${result}"
+        }, {error->
+            def msg = error.message
+            if( error instanceof HttpClientResponseException ){
+                msg += ":\n $error.response.body"
+            }
+            log.error("Error saving Mirror request record ${msg}\n${mirror}", error)
+        })
     }
 
 }

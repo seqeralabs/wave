@@ -16,9 +16,17 @@ namespace wave {
     @statusCode statusCode: 200;
     };
 
-    @route("/{token}")
-    @get op getContainerDetails(@path token: string): {
+    @route("/container/{requestId}")
+    @get op getContainerDetails(@path requestId: string): {
       @body response: WaveContainerRecord;
+      @statusCode statusCode: 200;
+    }|{
+      @statusCode statusCode: 404;
+      };
+
+    @route("/{requestId}/status")
+    @get op getContainerStatus(@path requestId: string): {
+      @body response: ContainerStatusResponse;
       @statusCode statusCode: 200;
     }|{
       @statusCode statusCode: 404;
@@ -101,5 +109,17 @@ namespace wave {
 
   @route("validate-creds")
     @post op validateCreds(@body request: ValidateRegistryCredsRequest):  boolean;
+
+  @route("/v1alpha1/mirrors")
+  interface getMirrorRecord {
+
+    @route("/{mirrorId}")
+    @get op containerMirror(@path mirrorId: string): {
+      @body response: ContainerMirrorResponse;
+      @statusCode statusCode: 200;
+     }|{
+      @statusCode statusCode: 404;
+    };
+  }
 
 }

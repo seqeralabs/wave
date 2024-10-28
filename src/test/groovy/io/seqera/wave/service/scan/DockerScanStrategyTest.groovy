@@ -42,21 +42,27 @@ class DockerScanStrategyTest extends Specification {
         when:
         def scanDir = Path.of('/some/scan/dir')
         def config = Path.of("/user/test/build-workspace/config.json")
-        def command = dockerContainerStrategy.dockerWrapper(scanDir, config)
+        def command = dockerContainerStrategy.dockerWrapper('foo-123', scanDir, config, ['FOO=1', 'BAR=2'])
 
         then:
         command == [
                 'docker',
                 'run',
-                '--rm',
+                '--detach',
+                '--name',
+                'foo-123',
                 '-w',
                 '/some/scan/dir',
                 '-v',
                 '/some/scan/dir:/some/scan/dir:rw',
                 '-v',
-                 "$workspace/.trivy-cache:/root/.cache/:rw",
+                "/build/scan/cache:/root/.cache/:rw",
                 '-v',
-                '/user/test/build-workspace/config.json:/root/.docker/config.json:ro'
+                '/user/test/build-workspace/config.json:/root/.docker/config.json:ro',
+                '-e',
+                'FOO=1',
+                '-e',
+                'BAR=2'
         ]
 
         cleanup:

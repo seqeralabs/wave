@@ -57,37 +57,6 @@ class BuildConfigTest extends Specification {
     }
 
     @Unroll
-    def 'should validate initial duration' () {
-        given:
-        def config = new BuildConfig(defaultTimeout:DEFAULT, trustedTimeout:TRUSTED)
-        expect:
-        config.statusInitialDelay == EXPECTED
-
-        where:
-        DEFAULT                     | TRUSTED                       | EXPECTED
-        Duration.ofMillis(1000)     | Duration.ofMillis(1000)       |  Duration.ofMillis(Math.round(1000 * 2.5))
-        Duration.ofMinutes(15)      | Duration.ofMinutes(15)        |  Duration.ofMillis(Math.round( 37.5 * 60 * 1000))
-        Duration.ofMinutes(15)      | Duration.ofMinutes(25)        |  Duration.ofMillis(Math.round( 2.5 * 15 * 60 * 1000))
-        Duration.ofMinutes(15)      | Duration.ofMinutes(25)        |  Duration.ofMillis(Math.round( 1.5 * 25 * 60 * 1000))
-        Duration.ofMinutes(15)      | Duration.ofMinutes(30)        |  Duration.ofMillis(Math.round( 1.5 * 30 * 60 * 1000))
-    }
-
-    @Unroll
-    def 'should validate await duration' () {
-        given:
-        def config = new BuildConfig(defaultTimeout:DEFAULT, trustedTimeout:TRUSTED)
-        expect:
-        config.statusAwaitDuration == EXPECTED
-
-        where:
-        DEFAULT                     | TRUSTED                       | EXPECTED
-        Duration.ofMillis(1000)     | Duration.ofMillis(1000)       |  Duration.ofMillis(Math.round(1000 * 2.1))
-        Duration.ofMinutes(15)      | Duration.ofMinutes(15)        |  Duration.ofMillis(Math.round( 2.1 * 15 * 60 * 1000))
-        Duration.ofMinutes(15)      | Duration.ofMinutes(25)        |  Duration.ofMillis(Math.round( 2.1 * 15 * 60 * 1000))
-        Duration.ofMinutes(15)      | Duration.ofMinutes(30)        |  Duration.ofMillis(Math.round( 1.1 * 30 * 60 * 1000))
-    }
-
-    @Unroll
     def 'should validate build max duration' () {
         given:
         def config = new BuildConfig(defaultTimeout: Duration.ofMinutes(DEFAULT), trustedTimeout: Duration.ofMinutes(TRUSTED))
@@ -102,6 +71,5 @@ class BuildConfigTest extends Specification {
         'xyz'       | false         | 5             | 10            | 5
         'xtz'       | true          | 5             | 10            | 10    // <-- pick "trusted" because both "freeze" and "token" are provided
         'xtz'       | true          | 20            | 10            | 20    // <-- pick "default" when it's greater than "trusted"
-
     }
 }

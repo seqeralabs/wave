@@ -7,7 +7,7 @@ micronaut:
     # Using `expire-after-read` can cause an entry to be retained in the cache more than expected if it is hit continuously
     # with a frequency shorter than the declared cache period.
     cache-tower-client:
-      expire-after-write: 20s
+      expire-after-write: 60s
       record-stats: true
     cache-registry-proxy:
       expire-after-write: 20s
@@ -71,11 +71,12 @@ wave:
     singularity-image-arm64: "quay.io/singularity/singularity:v3.11.4-slim-arm64"
     repo: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/dev"
     cache: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/cache"
+    public-repo: "community.wave.seqera.io"
     # note changing this should be matching the micronaut.server.idle-timeout (see above)
     timeout: 900s
     status:
       delay: 5s
-      duration: 1d
+      duration: 90m
   httpclient:
     retry:
       delay: '500ms'
@@ -83,9 +84,13 @@ wave:
       multiplier: '1.75'
   scan:
     image:
-      name: aquasec/trivy:0.53.0
+      name: aquasec/trivy:0.56.2
+    environment:
+      # see https://github.com/aquasecurity/trivy/discussions/7668#discussioncomment-11028887
+      - "TRIVY_DB_REPOSITORY=public.ecr.aws/aquasecurity/trivy-db"
+      - "TRIVY_JAVA_DB_REPOSITORY=public.ecr.aws/aquasecurity/trivy-java-db"
   blobCache:
-    s5cmdImage: cr.seqera.io/public/wave/s5cmd:v2.2.2
+    s5cmdImage: public.cr.seqera.io/wave/s5cmd:v2.2.2
 ---
 jackson:
   serialization:

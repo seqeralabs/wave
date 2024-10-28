@@ -20,109 +20,158 @@ package io.seqera.wave.service.job
 
 import spock.lang.Specification
 
+import java.nio.file.Path
 import java.time.Duration
+import java.time.Instant
+
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
+
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 class JobManagerTest extends Specification {
 
-    def "handle should process valid transferId"() {
+    def 'processJob should handle valid TransferJobSpec'() {
         given:
-        def jobStrategy = Mock(JobStrategy)
+        def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
-        def manager = new JobManager(jobStrategy: jobStrategy, dispatcher: jobDispatcher)
+        def config = new JobConfig(graceInterval: Duration.ofMillis(1))
+        def cache = Caffeine.newBuilder().build()
+        def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config: config, debounceCache: cache)
         and:
-        def job = JobId.transfer('foo')
+        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now(), Duration.ofMinutes(10))
 
         when:
-        def done = manager.processJob(job)
+        def result = manager.processJob0(jobSpec)
+
         then:
-        1 * jobStrategy.status(job) >> JobState.completed(0, 'My job logs')
-        and:
-        1 * jobDispatcher.onJobCompletion(job, _) >> { JobId id, JobState state ->
-            assert state.exitCode == 0
-            assert state.stdout == 'My job logs'
-        }
-        and:
-        1 * jobStrategy.cleanup(job,0)
-        and:
-        done
+        1 * jobService.status(jobSpec) >> JobState.completed(0, 'My job logs')
+        1 * jobDispatcher.notifyJobCompletion(jobSpec, _)
+        result
     }
 
-    def "handle should log error for unknown transferId"() {
+    def 'processJob should handle exception for TransferJobSpec'() {
         given:
-        def jobStrategy = Mock(JobStrategy)
+        def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
-        def manager = new JobManager(jobStrategy: jobStrategy, dispatcher: jobDispatcher)
+        def config = new JobConfig(graceInterval: Duration.ofMillis(1))
+        def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config: config)
         and:
-        def job = JobId.transfer('unknown')
+        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now(), Duration.ofMinutes(10))
 
         when:
-        def done = manager.processJob(job)
+        def result = manager.processJob(jobSpec)
+
         then:
-        1 * jobStrategy.status(job) >> null
-        and:
-        1 * jobDispatcher.onJobException(job,_) >> null
-        and:
-        done
+        1 * jobService.status(jobSpec) >> { throw new RuntimeException('Error') }
+        1 * jobDispatcher.notifyJobException(jobSpec, _)
+        result
     }
 
-    def "handle0 should fail transfer when status is unknown and duration exceeds grace period"() {
+    def 'processJob0 should timeout TransferJobSpec when duration exceeds max limit'() {
         given:
-        def jobStrategy = Mock(JobStrategy)
+        def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
-        def config = new JobConfig(graceInterval: Duration.ofMillis(500))
-        def manager = new JobManager(jobStrategy: jobStrategy, dispatcher: jobDispatcher, config:config)
+        def config = new JobConfig(graceInterval: Duration.ofMillis(1))
+        def cache = Caffeine.newBuilder().build()
+        def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config:config, debounceCache: cache)
         and:
-        def job = JobId.transfer('foo')
+        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now() - Duration.ofMinutes(5), Duration.ofMinutes(2))
 
         when:
-        sleep 1_000 //sleep longer than grace period
-        def done = manager.processJob(job)
+        def result = manager.processJob0(jobSpec)
 
         then:
-        1 * jobStrategy.status(job) >> JobState.unknown('logs')
-        1 * jobDispatcher.onJobCompletion(job, _)
-        1 * jobStrategy.cleanup(job, _)
-        and:
-        done
+        1 * jobService.status(jobSpec) >> JobState.running()
+        1 * jobDispatcher.notifyJobTimeout(jobSpec)
+        result
     }
 
-    def "should requeue transfer when duration is within limits"() {
+    def 'processJob0 should requeue TransferJobSpec when duration is within limits'() {
         given:
-        def jobStrategy = Mock(JobStrategy)
+        def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
-        def manager = new JobManager(jobStrategy: jobStrategy, dispatcher: jobDispatcher)
+        def config = new JobConfig(graceInterval: Duration.ofMillis(1))
+        def cache = Caffeine.newBuilder().build()
+        def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config: config, debounceCache: cache)
         and:
-        def job = JobId.transfer('foo')
+        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now().minus(Duration.ofMillis(500)), Duration.ofMinutes(10))
 
         when:
-        def done = manager.processJob(job)
+        def result = manager.processJob0(jobSpec)
+
         then:
-        1 * jobStrategy.status(job) >> JobState.running()
-        1 * jobDispatcher.jobMaxDuration(job) >> Duration.ofSeconds(10)
-        and:
-        !done
+        1 * jobService.status(jobSpec) >> JobState.running()
+        !result
     }
 
-    def "handle0 should timeout transfer when duration exceeds max limit"() {
+    def 'should validate unknown state cache' () {
         given:
-        def jobStrategy = Mock(JobStrategy)
-        def jobDispatcher = Mock(JobDispatcher)
-        def manager = new JobManager(jobStrategy: jobStrategy, dispatcher: jobDispatcher)
+        Cache<String,Instant> cache = Caffeine
+                .newBuilder()
+                .expireAfterWrite(Duration.ofMinutes(1))
+                .build()
         and:
-        def job = JobId.transfer('foo')
+        def jobService = Mock(JobService)
+        def manager = new JobManager(jobService: jobService)
+        and:
+        def job1 = new JobSpec('1', JobSpec.Type.Build, '1', '1', Instant.now(), Duration.ofMinutes(1), Mock(Path))
+        and:
+        def PENDING = new JobState(JobState.Status.PENDING, null, null)
+        def UNKNOWN = new JobState(JobState.Status.UNKNOWN, null, null)
+        def FAILED = new JobState(JobState.Status.FAILED, null, null)
+        def _100_ms = Duration.ofMillis(100)
+        def _1_sec = Duration.ofSeconds(1)
+        and:
+        JobState result
 
         when:
-        sleep 1_000 //await timeout
-        def done = manager.processJob(job)
+        result = manager.state0(job1, _1_sec, cache)
         then:
-        1 * jobStrategy.status(job) >> JobState.running()
-        1 * jobDispatcher.jobMaxDuration(job) >> Duration.ofMillis(100)
+        jobService.status(job1) >> PENDING
         and:
-        1 * jobDispatcher.onJobTimeout(job)
+        result == PENDING
+        cache.getIfPresent('1') == null
+
+        // now return an unknown status
+        when:
+        result = manager.state0(job1, _100_ms, cache)
+        then:
+        jobService.status(job1) >> UNKNOWN
         and:
-        done
+        result == UNKNOWN
+        cache.getIfPresent('1') != null
+
+        // the following state is pending, so unknown is cleared
+        when:
+        sleep 150
+        result = manager.state0(job1, _100_ms, cache)
+        then:
+        jobService.status(job1) >> PENDING
+        and:
+        result == PENDING
+        cache.getIfPresent('1') == null
+
+        // now two unknown for longer than the grace period
+        when:
+        result = manager.state0(job1, _100_ms, cache)
+        then:
+        jobService.status(job1) >> UNKNOWN
+        and:
+        result == UNKNOWN
+        cache.getIfPresent('1') != null
+
+        when:
+        sleep 150
+        and:
+        result = manager.state0(job1, _100_ms, cache)
+        then:
+        jobService.status(job1) >> UNKNOWN
+        and:
+        result == FAILED
+        cache.getIfPresent('1') == null
+
     }
 }
