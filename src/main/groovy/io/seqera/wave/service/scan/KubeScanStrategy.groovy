@@ -65,7 +65,7 @@ class KubeScanStrategy extends ScanStrategy {
 
     @Override
     void scanContainer(String jobName, ScanRequest req) {
-        log.info("Launching container scan for request: ${req.requestId} with scanId ${req.scanId}")
+        log.info("Launching container scan job: $jobName for request: ${req}")
         try{
             // create the scan dir
             try {

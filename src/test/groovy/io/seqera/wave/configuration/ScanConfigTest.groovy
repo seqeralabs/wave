@@ -16,35 +16,26 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.scan
+package io.seqera.wave.configuration
 
-import io.seqera.wave.api.ScanMode
-import io.seqera.wave.service.builder.BuildEntry
-import io.seqera.wave.service.mirror.MirrorEntry
-import io.seqera.wave.service.persistence.WaveScanRecord
-import io.seqera.wave.service.request.ContainerRequest
+import spock.lang.Specification
+
 /**
- * Declare operations to scan containers
  *
- * @author Munish Chouhan <munish.chouhan@seqera.io>
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface ContainerScanService {
+class ScanConfigTest extends Specification {
 
-    String getScanId(String targetImage, String digest, ScanMode mode, String format)
+    def 'should convert env to tuples' () {
+        given:
+        def config1 = new ScanConfig()
+        def config2 = new ScanConfig(environment: ['FOO=one','BAR=two'])
+        def config3 = new ScanConfig(environment: ['FOO','BAR='])
 
-    void scan(ScanRequest request)
+        expect:
+        config1.environmentAsTuples == []
+        config2.environmentAsTuples == [new Tuple2('FOO','one'), new Tuple2('BAR','two')]
+        config3.environmentAsTuples == [new Tuple2('FOO',''), new Tuple2('BAR','')]
 
-    void scanOnBuild(BuildEntry build)
-
-    void scanOnMirror(MirrorEntry entry)
-
-    void scanOnRequest(ContainerRequest request)
-
-    WaveScanRecord getScanRecord(String scanId)
-
-    ScanEntry getScanState(String scanId)
-
-    List<WaveScanRecord> getAllScans(String scanId)
-
+    }
 }

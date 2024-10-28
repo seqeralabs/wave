@@ -29,7 +29,7 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.api.ScanMode
 import io.seqera.wave.configuration.ScanConfig
-import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.cleanup.CleanupService
 import io.seqera.wave.service.inspect.ContainerInspectService
@@ -106,14 +106,14 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     }
 
     @Override
-    void scanOnBuild(BuildEvent event) {
+    void scanOnBuild(BuildEntry entry) {
         try {
-            if( event.request.scanId && event.result.succeeded() && event.request.format == DOCKER ) {
-                scan(fromBuild(event.request))
+            if( entry.request.scanId && entry.result.succeeded() && entry.request.format == DOCKER ) {
+                scan(fromBuild(entry.request))
             }
         }
         catch (Exception e) {
-            log.warn "Unable to run the container scan - image=${event.request.targetImage}; reason=${e.message?:e}"
+            log.warn "Unable to run the container scan - image=${entry.request.targetImage}; reason=${e.message?:e}"
         }
     }
 
@@ -151,9 +151,18 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
 
     @Override
     void scan(ScanRequest request) {
-        //start scanning of build container
-        CompletableFuture
-                .runAsync(() -> launch(request), executor)
+        try {
+            // create a record to mark the beginning
+            final scan = ScanEntry.create(request)
+            if( scanStore.putIfAbsent(scan.scanId, scan) ) {
+                //start scanning of build container
+                CompletableFuture.runAsync(() -> launch(request), executor)
+            }
+        }
+        catch (Throwable e){
+            log.warn "Unable to save scan result - id=${request.scanId}; cause=${e.message}", e
+            storeScanEntry(ScanEntry.failure(request))
+        }
     }
 
     @Override
@@ -181,14 +190,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
 
     protected void launch(ScanRequest request) {
         try {
-            // create a record to mark the beginning
-            final scan = ScanEntry.create(request)
-            if( scanStore.putIfAbsent(scan.scanId, scan) ) {
-                //increment metrics
-                CompletableFuture.supplyAsync(() -> metricsService.incrementScansCounter(request.identity), executor)
-                // launch container scan
-                jobService.launchScan(request)
-            }
+            incrScanMetrics(request)
+            jobService.launchScan(request)
         }
         catch (Throwable e){
             log.warn "Unable to save scan result - id=${request.scanId}; cause=${e.message}", e
@@ -196,6 +199,16 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         }
     }
 
+    protected void incrScanMetrics(ScanRequest request) {
+        try {
+            //increment metrics
+            metricsService.incrementScansCounter(request.identity)
+        }
+        catch (Throwable e) {
+            log.warn "Enable to increase scan metrics - cause: ${e.cause}", e
+        }
+    }
+    
     protected ScanRequest fromBuild(BuildRequest request) {
         final workDir = request.workDir.resolveSibling(request.scanId)
         return new ScanRequest(

@@ -124,9 +124,14 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
     @Override
     void onJobCompletion(JobSpec jobSpec, MirrorEntry entry, JobState jobState) {
         final result = entry.result.complete(jobState.exitCode, jobState.stdout)
-        store.putEntry(entry.withResult(result))
+        final updated = entry.withResult(result)
+        // since the underlying persistence is *not* transactional
+        // the scan request should be submitted *before* updating the record
+        // otherwise the scan status service can detect a complete build
+        // for which a scan is requested but not scan record exists
+        scanService?.scanOnMirror(updated)
+        store.putEntry(updated)
         persistence.saveMirrorResult(result)
-        scanService?.scanOnMirror(entry.withResult(result))
         log.debug "Mirror container completed - job=${jobSpec.operationName}; result=${result}; state=${jobState}"
     }
 

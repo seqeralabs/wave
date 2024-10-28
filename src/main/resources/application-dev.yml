@@ -4,7 +4,6 @@ wave:
     enabled: true
     failure:
       duration: '30s'
-    github-token: "${GITHUB_TOKEN:}"
   build:
     workspace: 'build-workspace'
   metrics:
