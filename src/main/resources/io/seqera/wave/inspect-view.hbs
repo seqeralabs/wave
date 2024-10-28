@@ -180,7 +180,7 @@
             if (data.hasOwnProperty(key)) {
                 const li = document.createElement('li');
 
-                if (typeof data[key] === 'object' && !Array.isArray(data[key]) && Object.keys(data[key]).length > 0) {
+                if (typeof data[key] === 'object' && !Array.isArray(data[key]) && Object.keys(data[key]).length > 0 && Object.keys(data[key]).length !== undefined) {
                     const details = document.createElement('details');
                     const summary = document.createElement('summary');
                     summary.textContent = key;
@@ -210,7 +210,7 @@
                     details.appendChild(nestedUl);
                     li.appendChild(details);
                 } else {
-                    li.textContent = `${key}: ${data[key]}`;
+                    li.textContent = `${key}: ${JSON.stringify(data[key])}`;
                 }
 
                 ul.appendChild(li);
