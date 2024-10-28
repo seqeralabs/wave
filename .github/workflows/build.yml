@@ -81,6 +81,7 @@ jobs:
         if: "contains(github.event.head_commit.message, '[release]')"
         run: |
           bash tag-and-push.sh
+          bash tag-and-push-docs.sh
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
           AWS_ACCESS_KEY_ID: ${{secrets.TOWER_CI_AWS_ACCESS}}
