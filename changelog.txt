@@ -1,4 +1,7 @@
 # Wave changelog
+1.13.9 - 29 Oct 2024
+- Fix inspect view (#725) [dcf41dea] [e38e2c44]
+
 1.13.8 - 26 Oct 2024
 - Fix update scan status synchronously [e767c367]
 - Bump scan warn colour [705141f0]
