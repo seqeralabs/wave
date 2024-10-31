@@ -66,7 +66,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{secrets.TOWER_CI_AWS_SECRET}}
           DOCKER_USER: ${{ secrets.DOCKER_USER }}
           DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
-          QUAY_USER: ${{ secrets.QUAY_USER }}
+          QUAY_USER: "pditommaso+wave_ci_tests"
           QUAY_PAT: ${{ secrets.QUAY_PAT }}
           AZURECR_USER: ${{ secrets.AZURECR_USER }}
           AZURECR_PAT: ${{ secrets.AZURECR_PAT }}
