@@ -70,8 +70,6 @@ class SurrealPersistenceService implements PersistenceService {
     @Inject
     private ScanConfig scanConfig
 
-    SurrealPersistenceService() {}
-
     @EventListener
     void onApplicationStartup(ApplicationStartupEvent event) {
         if (initDb)
