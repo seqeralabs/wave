@@ -38,6 +38,7 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ScanVulnerability
+import io.seqera.wave.service.scan.TrivyResultProcessor
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -258,14 +259,12 @@ class SurrealPersistenceService implements PersistenceService {
 
     @Override
     void saveScanRecord(WaveScanRecord scanRecord) {
-        final vulnerabilities = scanRecord.vulnerabilities ?: List.<ScanVulnerability>of()
+        final vulnerabilities = scanRecord.vulnerabilities
+                ? TrivyResultProcessor.filter(scanRecord.vulnerabilities, scanConfig.vulnerabilityLimit)
+                : List.<ScanVulnerability>of()
 
         // save all vulnerabilities
-        int count = 0
         for( ScanVulnerability it : vulnerabilities ) {
-            if ( ++count > scanConfig.vulnerabilityLimit )
-                break
-
             surrealDb
                     .insertScanVulnerabilityAsync(authorization, it)
                     .subscribe({result ->

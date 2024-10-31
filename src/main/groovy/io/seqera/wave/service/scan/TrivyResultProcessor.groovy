@@ -57,4 +57,9 @@ class TrivyResultProcessor {
             throw new ScanRuntimeException("Failed to parse the trivy result", e)
         }
     }
+
+    static List<ScanVulnerability> filter( List<ScanVulnerability> vulnerabilities, int limit){
+        Collections.sort(vulnerabilities, Collections.reverseOrder())
+        vulnerabilities.take(limit)
+    }
 }
