@@ -28,6 +28,7 @@ import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
+import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.mirror.MirrorEntry
@@ -65,6 +66,11 @@ class SurrealPersistenceService implements PersistenceService {
     @Nullable
     @Value('${surreal.default.init-db}')
     private Boolean initDb
+
+    @Inject
+    private ScanConfig scanConfig
+
+    SurrealPersistenceService() {}
 
     @EventListener
     void onApplicationStartup(ApplicationStartupEvent event) {
@@ -257,8 +263,23 @@ class SurrealPersistenceService implements PersistenceService {
         final vulnerabilities = scanRecord.vulnerabilities ?: List.<ScanVulnerability>of()
 
         // save all vulnerabilities
+        int count = 0
         for( ScanVulnerability it : vulnerabilities ) {
-            surrealDb.insertScanVulnerability(authorization, it)
+            if ( ++count > scanConfig.vulnerabilityLimit )
+                break
+
+            surrealDb
+                    .insertScanVulnerabilityAsync(authorization, it)
+                    .subscribe({result ->
+                        log.trace "vulnerability '$it' updated record: ${result}"
+                    },
+                            {error->
+                                def msg = error.message
+                                if( error instanceof HttpClientResponseException ){
+                                    msg += ":\n $error.response.body"
+                                }
+                                log.error("Error strogin vulnerability=$it => ${msg}\n", error)
+                            })
         }
 
         // compose the list of ids

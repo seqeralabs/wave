@@ -84,6 +84,9 @@ class ScanConfig {
     @Value('${wave.scan.environment}')
     List<String> environment
 
+    @Value('${wave.scan.vulnerability.limit:50}')
+    Integer vulnerabilityLimit
+
     String getScanImage() {
         return scanImage
     }
