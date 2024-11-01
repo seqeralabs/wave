@@ -28,7 +28,6 @@ import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
-import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.mirror.MirrorEntry
@@ -38,7 +37,6 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ScanVulnerability
-import io.seqera.wave.service.scan.TrivyResultProcessor
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -67,9 +65,6 @@ class SurrealPersistenceService implements PersistenceService {
     @Nullable
     @Value('${surreal.default.init-db}')
     private Boolean initDb
-
-    @Inject
-    private ScanConfig scanConfig
 
     @EventListener
     void onApplicationStartup(ApplicationStartupEvent event) {
@@ -259,24 +254,11 @@ class SurrealPersistenceService implements PersistenceService {
 
     @Override
     void saveScanRecord(WaveScanRecord scanRecord) {
-        final vulnerabilities = scanRecord.vulnerabilities
-                ? TrivyResultProcessor.filter(scanRecord.vulnerabilities, scanConfig.vulnerabilityLimit)
-                : List.<ScanVulnerability>of()
+        final vulnerabilities = scanRecord.vulnerabilities ?: List.<ScanVulnerability>of()
 
         // save all vulnerabilities
         for( ScanVulnerability it : vulnerabilities ) {
-            surrealDb
-                    .insertScanVulnerabilityAsync(authorization, it)
-                    .subscribe({result ->
-                        log.trace "vulnerability '$it' updated record: ${result}"
-                    },
-                            {error->
-                                def msg = error.message
-                                if( error instanceof HttpClientResponseException ){
-                                    msg += ":\n $error.response.body"
-                                }
-                                log.error("Error strogin vulnerability=$it => ${msg}\n", error)
-                            })
+            surrealDb.insertScanVulnerability(authorization, it)
         }
 
         // compose the list of ids

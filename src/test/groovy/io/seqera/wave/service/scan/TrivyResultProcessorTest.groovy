@@ -91,7 +91,7 @@ class TrivyResultProcessorTest extends Specification {
         """
 
         when:
-        def result = TrivyResultProcessor.process(trivyDockerResulJson)
+        def result = TrivyResultProcessor.parse(trivyDockerResulJson)
 
         then:
         def vulnerability = result[0]
@@ -170,7 +170,7 @@ class TrivyResultProcessorTest extends Specification {
         }""".stripIndent()
 
         when:
-        def result = TrivyResultProcessor.process(trivyDockerResulJson)
+        def result = TrivyResultProcessor.parse(trivyDockerResulJson)
         result = TrivyResultProcessor.filter(result, 4)
 
         then:
@@ -185,9 +185,14 @@ class TrivyResultProcessorTest extends Specification {
         result[3].id == "CVE-2023-0002"
     }
 
+    def 'should not fail with empty list' () {
+        expect:
+        TrivyResultProcessor.filter([], 10) == []
+    }
+
     def "process should throw exception if json is not correct"() {
         when:
-        TrivyResultProcessor.process("invalid json")
+        TrivyResultProcessor.parse("invalid json")
         then:
         thrown ScanRuntimeException
     }
