@@ -21,6 +21,8 @@ package io.seqera.wave.service.scan
 import java.nio.file.Path
 
 import groovy.json.JsonSlurper
+import groovy.transform.CompileDynamic
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.exception.ScanRuntimeException
 /**
@@ -30,16 +32,23 @@ import io.seqera.wave.exception.ScanRuntimeException
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
+@CompileStatic
 class TrivyResultProcessor {
 
-    static List<ScanVulnerability> process(Path reportFile) {
-        process(reportFile.getText())
+    static List<ScanVulnerability> parse(Path scanFile) {
+        return parse(scanFile.getText())
     }
 
-    static List<ScanVulnerability> process(String trivyResult) {
+    static List<ScanVulnerability> parse(Path scanFile, int maxEntries) {
+        final result = parse(scanFile)
+        return filter(result, maxEntries)
+    }
+
+    @CompileDynamic
+    static List<ScanVulnerability> parse(String scanJson) {
         final slurper = new JsonSlurper()
         try{
-            final jsonMap = slurper.parseText(trivyResult) as Map
+            final jsonMap = slurper.parseText(scanJson) as Map
             return jsonMap.Results.collect { result ->
                 result.Vulnerabilities.collect { vulnerability ->
                     new ScanVulnerability(
@@ -56,5 +65,9 @@ class TrivyResultProcessor {
         catch(Throwable e){
             throw new ScanRuntimeException("Failed to parse the trivy result", e)
         }
+    }
+
+    static protected List<ScanVulnerability> filter(List<ScanVulnerability> vulnerabilities, int limit){
+        vulnerabilities.toSorted((v,w) -> w.compareTo(v)).take(limit)
     }
 }
