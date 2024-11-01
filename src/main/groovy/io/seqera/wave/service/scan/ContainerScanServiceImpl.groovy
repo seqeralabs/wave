@@ -269,12 +269,14 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         ScanEntry result
         if( state.succeeded() ) {
             try {
-                result = entry.success(TrivyResultProcessor.process(job.workDir.resolve(Trivy.OUTPUT_FILE_NAME)))
+                final scanFile = job.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
+                final vulnerabilities = TrivyResultProcessor.parse(scanFile, config.vulnerabilityLimit)
+                result = entry.success(vulnerabilities)
                 log.info("Container scan succeeded - id=${entry.scanId}; exit=${state.exitCode}; stdout=${state.stdout}")
             }
             catch (NoSuchFileException e) {
                 result = entry.failure(0, "No such file: ${e.message}")
-                log.warn("Container scan failed - id=${entry.scanId}; exit=${state.exitCode}; stdout=${state.stdout}; exception: NoSuchFile=${e.message}")
+                log.warn("Container scan failed - id=${entry.scanId}; NoSuchFile=${e.message}")
             }
         }
         else{
