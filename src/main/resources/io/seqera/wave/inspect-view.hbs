@@ -127,7 +127,6 @@
                 </h4>
             </div>
         {{else}}
-        {{/if}}
         <h3>Container Specification</h3>
         <table>
             <tr>
@@ -210,7 +209,7 @@
                     details.appendChild(nestedUl);
                     li.appendChild(details);
                 } else {
-                    li.textContent = `${key}: ${data[key]}`;
+                    li.textContent = `${key}: ${JSON.stringify(data[key])}`;
                 }
 
                 ul.appendChild(li);
@@ -223,5 +222,6 @@
     document.getElementById('config-div').appendChild(createTreeView({{{config}}}));
     document.getElementById('manifest-div').appendChild(createTreeView({{{manifest}}}));
 </script>
+{{/if}}
 </body>
 </html>
