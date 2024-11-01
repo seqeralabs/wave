@@ -151,7 +151,7 @@ class ContainerScanServiceImplTest extends Specification {
         and:
         def KEY = 'scan-20'
         def jobService = Mock(JobService)
-        def service = new ContainerScanServiceImpl(scanStore: scanStore, persistenceService: persistenceService, jobService: jobService)
+        def service = new ContainerScanServiceImpl(scanStore: scanStore, persistenceService: persistenceService, jobService: jobService, config: new ScanConfig(vulnerabilityLimit: 100))
         def job = JobSpec.scan(KEY, 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), workDir)
         def scan = ScanEntry.of(scanId: KEY, buildId: 'build-20', containerImage: 'ubuntu:latest', startTime: Instant.now())
 
