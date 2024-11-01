@@ -269,9 +269,9 @@ class SurrealPersistenceService implements PersistenceService {
         copy.vulnerabilities = List.of()
         final json = JacksonHelper.toJson(copy)
 
-        // create the scan record
+        // add the wave_scan record
         statement += "INSERT INTO wave_scan ${patchScanVulnerabilities(json, ids)};\n".toString()
-
+        // store the statement using an async operation
         surrealDb
                 .sqlAsyncMany(getAuthorization(), statement)
                 .subscribe({result ->
