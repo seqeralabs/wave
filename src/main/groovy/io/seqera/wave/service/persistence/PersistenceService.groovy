@@ -40,7 +40,7 @@ interface PersistenceService {
      *
      * @param build A {@link WaveBuildRecord} object
      */
-    void saveBuild(WaveBuildRecord build)
+    void saveBuildAsync(WaveBuildRecord build)
 
     /**
      * Retrieve a {@link WaveBuildRecord} object for the given build id
@@ -80,7 +80,7 @@ interface PersistenceService {
      *
      * @param data A {@link WaveContainerRecord} object representing a Wave request record
      */
-    void saveContainerRequest(WaveContainerRecord data)
+    void saveContainerRequestAsync(WaveContainerRecord data)
 
     /**
      * Update a container request with the digest of the resolved request
@@ -88,7 +88,7 @@ interface PersistenceService {
      * @param token The request unique token
      * @param digest The resolved digest
      */
-    void updateContainerRequest(String token, ContainerDigestPair digest)
+    void updateContainerRequestAsync(String token, ContainerDigestPair digest)
 
     /**
      * Retrieve a {@link WaveContainerRecord} object corresponding to the a specified request token
@@ -103,7 +103,7 @@ interface PersistenceService {
      *
      * @param data A {@link WaveScanRecord} object representing the a container scan request
      */
-    void saveScanRecord(WaveScanRecord scanRecord)
+    void saveScanRecordAsync(WaveScanRecord scanRecord)
 
     /**
      * Retrieve a {@link WaveScanRecord} object for the specified build ID
@@ -144,7 +144,7 @@ interface PersistenceService {
      *
      * @param mirror {@link MirrorEntry} object
      */
-    void saveMirrorResult(MirrorResult mirror)
+    void saveMirrorResultAsync(MirrorResult mirror)
 
     /**
      * Retrieve all {@link WaveScanRecord} object for the given partial scan id
