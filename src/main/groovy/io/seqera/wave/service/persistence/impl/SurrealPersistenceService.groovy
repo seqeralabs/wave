@@ -256,7 +256,9 @@ class SurrealPersistenceService implements PersistenceService {
     void saveScanRecord(WaveScanRecord scanRecord) {
         final vulnerabilities = scanRecord.vulnerabilities ?: List.<ScanVulnerability>of()
 
-        List<String> ids = new ArrayList<>(100)
+        // create a multi-command surreal sql statement to insert all vulnerabilities
+        // and the scan record in a single operation
+        List<String> ids = new ArrayList<>(101)
         String statement = ''
         // save all vulnerabilities
         for( ScanVulnerability it : vulnerabilities ) {
@@ -275,16 +277,15 @@ class SurrealPersistenceService implements PersistenceService {
         surrealDb
                 .sqlAsyncMany(getAuthorization(), statement)
                 .subscribe({result ->
-                    log.trace "Scan update result=$result"
+                    log.trace "Scan record save result=$result"
                 },
-                        {error->
-                            def msg = error.message
-                            if( error instanceof HttpClientResponseException ){
-                                msg += ":\n $error.response.body"
-                            }
-                            log.error("Error updating scan record => ${msg}\n", error)
-                        })
-
+                {error->
+                    def msg = error.message
+                    if( error instanceof HttpClientResponseException ){
+                        msg += ":\n $error.response.body"
+                    }
+                    log.error("Error saving scan record => ${msg}\n", error)
+                })
     }
 
     protected String patchScanVulnerabilities(String json, List<String> ids) {
