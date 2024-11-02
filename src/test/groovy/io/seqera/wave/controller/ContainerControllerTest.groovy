@@ -21,7 +21,6 @@ package io.seqera.wave.controller
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import java.nio.file.Path
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -42,7 +41,6 @@ import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.config.CondaOpts
 import io.seqera.wave.configuration.BuildConfig
-import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
@@ -74,7 +72,6 @@ import jakarta.inject.Inject
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-@Property(name='wave.build.workspace', value='/some/wsp')
 @Property(name='wave.build.repo', value='wave/build')
 @Property(name='wave.build.cache', value='wave/build/cache')
 class ContainerControllerTest extends Specification {
@@ -101,13 +98,6 @@ class ContainerControllerTest extends Specification {
     @MockBean(JobServiceImpl)
     JobService mockJobService() {
         Mock(JobService)
-    }
-
-    @MockBean(ScanConfig)
-    ScanConfig mockScanConfig() {
-        Mock(ScanConfig) {
-            getCacheDirectory() >> Path.of('/build/cache/dir')
-        }
     }
 
     @MockBean(RegistryProxyService)

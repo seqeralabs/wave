@@ -21,13 +21,11 @@ package io.seqera.wave.service.builder
 import spock.lang.Specification
 
 import java.nio.file.Files
-import java.nio.file.Path
 import java.time.Duration
 
 import io.micronaut.context.annotation.Property
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.k8s.K8sService
 import io.seqera.wave.service.k8s.K8sServiceImpl
@@ -40,11 +38,9 @@ import jakarta.inject.Inject
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-@Property(name="wave.build.workspace",value="/build/work")
 @Property(name="wave.build.k8s.namespace",value="foo")
 @Property(name="wave.build.k8s.configPath",value="/home/kube.config")
 @Property(name="wave.build.k8s.storage.claimName",value="bar")
-@Property(name="wave.build.k8s.storage.mountPath",value="/build")
 @Property(name='wave.build.k8s.node-selector[linux/amd64]',value="service=wave-build")
 @Property(name='wave.build.k8s.node-selector[linux/arm64]',value="service=wave-build-arm64")
 class KubeBuildStrategyTest extends Specification {
@@ -60,12 +56,6 @@ class KubeBuildStrategyTest extends Specification {
         Mock(K8sService)
     }
 
-    @MockBean(ScanConfig)
-    ScanConfig mockScanConfig() {
-        Mock(ScanConfig) {
-            getCacheDirectory() >> Path.of('/build/cache/dir')
-        }
-    }
 
     def "request to build a container with right selector"(){
         given:

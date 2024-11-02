@@ -166,8 +166,7 @@ class CredentialsServiceTest extends Specification {
                 registry: 'docker.io'
         )
         and:
-
-        def identity = new PlatformId(new User(id:10), 11,"token",'tower.io', '101')
+        def identity = new PlatformId(new User(id:10), 100,"token",'tower.io', '101')
         def auth = JwtAuth.of(identity)
 
         when:
@@ -183,7 +182,7 @@ class CredentialsServiceTest extends Specification {
         )
 
         and: 'non matching credentials are listed'
-        1 * towerClient.listCredentials('tower.io',auth,11) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
+        1 * towerClient.listCredentials('tower.io',auth,100) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
                 credentials: [nonContainerRegistryCredentials,otherRegistryCredentials]
         ))
 
@@ -220,8 +219,8 @@ class CredentialsServiceTest extends Specification {
 
     def 'should get registry creds from compute creds when not found in tower credentials'() {
         given: 'a tower user in a workspace on a specific instance with a valid token'
-        def userId = 12
-        def workspaceId = 12
+        def userId = 10
+        def workspaceId = 100
         def token = "valid-token"
         def towerEndpoint = "http://tower.io:9090"
         def workflowId = "id123"
