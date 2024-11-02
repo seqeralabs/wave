@@ -270,7 +270,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         if( state.succeeded() ) {
             try {
                 final scanFile = job.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
-                final vulnerabilities = TrivyResultProcessor.parse(scanFile, config.vulnerabilityLimit)
+                final vulnerabilities = TrivyResultProcessor.parseFile(scanFile, config.vulnerabilityLimit)
                 result = entry.success(vulnerabilities)
                 log.info("Container scan succeeded - id=${entry.scanId}; exit=${state.exitCode}; stdout=${state.stdout}")
             }

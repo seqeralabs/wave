@@ -18,11 +18,11 @@
 
 package io.seqera.wave.service.scan
 
-
 import spock.lang.Specification
 
-import io.seqera.wave.exception.ScanRuntimeException
+import java.nio.file.Files
 
+import io.seqera.wave.exception.ScanRuntimeException
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
@@ -91,7 +91,7 @@ class TrivyResultProcessorTest extends Specification {
         """
 
         when:
-        def result = TrivyResultProcessor.parse(trivyDockerResulJson)
+        def result = TrivyResultProcessor.parseJson(trivyDockerResulJson)
 
         then:
         def vulnerability = result[0]
@@ -107,7 +107,10 @@ class TrivyResultProcessorTest extends Specification {
 
     def "should return a sorted map of vulnerabilities"() {
         given:
-        def trivyDockerResulJson = """
+        def folder = Files.createTempDirectory('test')
+        def scan = folder.resolve('scan.json')
+        and:
+        scan.text = """
             { "Results": [
                 {
                    "Target": "sample-application",
@@ -170,19 +173,22 @@ class TrivyResultProcessorTest extends Specification {
         }""".stripIndent()
 
         when:
-        def result = TrivyResultProcessor.parse(trivyDockerResulJson)
-        result = TrivyResultProcessor.filter(result, 4)
+        def topIssues = TrivyResultProcessor.parseFile(scan, 2)
 
         then:
-        result.size() == 4
-        result[0].severity == "CRITICAL"
-        result[0].id == "CVE-2023-0005"
-        result[1].severity == "HIGH"
-        result[1].id == "CVE-2023-0003"
-        result[2].severity == "HIGH"
-        result[2].id == "CVE-2023-0004"
-        result[3].severity == "MEDIUM"
-        result[3].id == "CVE-2023-0002"
+        topIssues.size() == 2
+        topIssues[0].severity == "CRITICAL"
+        topIssues[0].id == "CVE-2023-0005"
+        topIssues[1].severity == "HIGH"
+        topIssues[1].id == "CVE-2023-0003"
+
+        when:
+        def allIssues = TrivyResultProcessor.parseFile(scan)
+        then:
+        allIssues.size() == 5
+
+        cleanup:
+        folder?.deleteDir()
     }
 
     def 'should not fail with empty list' () {
@@ -192,7 +198,7 @@ class TrivyResultProcessorTest extends Specification {
 
     def "process should throw exception if json is not correct"() {
         when:
-        TrivyResultProcessor.parse("invalid json")
+        TrivyResultProcessor.parseJson("invalid json")
         then:
         thrown ScanRuntimeException
     }

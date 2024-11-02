@@ -84,6 +84,7 @@ class ScanConfig {
     @Value('${wave.scan.environment}')
     List<String> environment
 
+    @Nullable
     @Value('${wave.scan.vulnerability.limit:100}')
     Integer vulnerabilityLimit
 

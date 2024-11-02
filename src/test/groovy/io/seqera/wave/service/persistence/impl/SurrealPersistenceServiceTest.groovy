@@ -324,6 +324,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def scan = new WaveScanRecord(SCAN_ID, BUILD_ID, null, null, CONTAINER_IMAGE, PLATFORM, NOW, Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3], null, null)
         when:
         persistence.saveScanRecord(scan)
+        sleep 200
         then:
         def result = persistence.loadScanRecord(SCAN_ID)
         and:
@@ -343,6 +344,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         and:
         // should save the same CVE into another build
         persistence.saveScanRecord(scanRecord2)
+        sleep 200
         then:
         def result2 = persistence.loadScanRecord(SCAN_ID2)
         and:
@@ -372,6 +374,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         when:
         persistence.saveScanRecord(scan)
+        sleep 200
         then:
         persistence.existsScanRecord(SCAN_ID)
     }
@@ -566,7 +569,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.saveScanRecord(scan2)
         persistence.saveScanRecord(scan3)
         persistence.saveScanRecord(scan4)
-
+        and:
+        sleep 200
         then:
         persistence.allScans("1234567890abcdef") == [scan3, scan2, scan1]
         and:

@@ -256,25 +256,36 @@ class SurrealPersistenceService implements PersistenceService {
     void saveScanRecord(WaveScanRecord scanRecord) {
         final vulnerabilities = scanRecord.vulnerabilities ?: List.<ScanVulnerability>of()
 
+        // create a multi-command surreal sql statement to insert all vulnerabilities
+        // and the scan record in a single operation
+        List<String> ids = new ArrayList<>(101)
+        String statement = ''
         // save all vulnerabilities
         for( ScanVulnerability it : vulnerabilities ) {
-            surrealDb.insertScanVulnerability(authorization, it)
+            statement += "INSERT INTO wave_scan_vuln ${JacksonHelper.toJson(it)};\n"
+            ids << "wave_scan_vuln:⟨$it.id⟩".toString()
         }
-
-        // compose the list of ids
-        final ids = vulnerabilities
-                .collect(it-> "wave_scan_vuln:⟨$it.id⟩".toString())
-
 
         // scan object
         final copy = scanRecord.clone()
         copy.vulnerabilities = List.of()
         final json = JacksonHelper.toJson(copy)
 
-        // create the scan record
-        final statement = "INSERT INTO wave_scan ${patchScanVulnerabilities(json, ids)}".toString()
-        final result = surrealDb.sqlAsMap(authorization, statement)
-        log.trace "Scan update result=$result"
+        // add the wave_scan record
+        statement += "INSERT INTO wave_scan ${patchScanVulnerabilities(json, ids)};\n".toString()
+        // store the statement using an async operation
+        surrealDb
+                .sqlAsyncMany(getAuthorization(), statement)
+                .subscribe({result ->
+                    log.trace "Scan record save result=$result"
+                },
+                {error->
+                    def msg = error.message
+                    if( error instanceof HttpClientResponseException ){
+                        msg += ":\n $error.response.body"
+                    }
+                    log.error("Error saving scan record => ${msg}\n", error)
+                })
     }
 
     protected String patchScanVulnerabilities(String json, List<String> ids) {
