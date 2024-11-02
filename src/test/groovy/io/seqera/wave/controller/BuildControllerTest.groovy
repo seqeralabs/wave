@@ -122,7 +122,6 @@ class BuildControllerTest extends Specification {
         res.body() == LOGS
     }
 
-
     def 'should get container status' () {
         given:
         def build1 = new WaveBuildRecord(
