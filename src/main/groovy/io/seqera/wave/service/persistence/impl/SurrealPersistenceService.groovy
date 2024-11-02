@@ -100,7 +100,7 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveBuild(WaveBuildRecord build) {
+    void saveBuildAsync(WaveBuildRecord build) {
         // note: use surreal sql in order to by-pass issue with large payload
         // see https://github.com/seqeralabs/wave/issues/559#issuecomment-2369412170
         final query = "INSERT INTO wave_build ${JacksonHelper.toJson(build)}"
@@ -198,7 +198,7 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveContainerRequest(WaveContainerRecord data) {
+    void saveContainerRequestAsync(WaveContainerRecord data) {
         // note: use surreal sql in order to by-pass issue with large payload
         // see https://github.com/seqeralabs/wave/issues/559#issuecomment-2369412170
         final query = "INSERT INTO wave_request ${JacksonHelper.toJson(data)}"
@@ -216,7 +216,7 @@ class SurrealPersistenceService implements PersistenceService {
                         })
     }
 
-    void updateContainerRequest(String token, ContainerDigestPair digest) {
+    void updateContainerRequestAsync(String token, ContainerDigestPair digest) {
         final query = """\
                                 UPDATE wave_request:$token SET 
                                     sourceDigest = '$digest.source',
@@ -253,7 +253,7 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveScanRecord(WaveScanRecord scanRecord) {
+    void saveScanRecordAsync(WaveScanRecord scanRecord) {
         final vulnerabilities = scanRecord.vulnerabilities ?: List.<ScanVulnerability>of()
 
         // create a multi-command surreal sql statement to insert all vulnerabilities
@@ -380,7 +380,7 @@ class SurrealPersistenceService implements PersistenceService {
      * @param mirror {@link MirrorEntry} object
      */
     @Override
-    void saveMirrorResult(MirrorResult mirror) {
+    void saveMirrorResultAsync(MirrorResult mirror) {
         surrealDb.insertMirrorAsync(getAuthorization(), mirror).subscribe({ result->
             log.trace "Mirror request with id '$mirror.mirrorId' saved record: ${result}"
         }, {error->

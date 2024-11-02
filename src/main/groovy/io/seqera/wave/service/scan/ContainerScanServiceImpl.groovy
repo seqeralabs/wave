@@ -304,7 +304,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
             //save scan results in the redis cache
             scanStore.storeScan(scan)
             // save in the persistent layer
-            persistenceService.saveScanRecord(new WaveScanRecord(scan))
+            persistenceService.saveScanRecordAsync(new WaveScanRecord(scan))
             // when the scan fails delete the scanId via cleanup service
             // this is needed to prevent the caching of the scanId and
             // allow re-scanning the container in case of a job failure
