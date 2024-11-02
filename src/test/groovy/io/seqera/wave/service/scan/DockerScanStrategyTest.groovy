@@ -22,19 +22,26 @@ import spock.lang.Specification
 
 import java.nio.file.Path
 
-import io.micronaut.context.annotation.Property
+import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.configuration.ScanConfig
 import jakarta.inject.Inject
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @MicronautTest
-@Property(name="wave.build.workspace",value="/some/build/dir")
 class DockerScanStrategyTest extends Specification {
 
     @Inject
     DockerScanStrategy dockerContainerStrategy
+
+    @MockBean(ScanConfig)
+    ScanConfig mockConfig() {
+        Mock(ScanConfig) {
+            getCacheDirectory() >> Path.of('/some/scan/cache')
+        }
+    }
 
     def 'should get docker command' () {
 
@@ -55,7 +62,7 @@ class DockerScanStrategyTest extends Specification {
                 '-v',
                 '/some/scan/dir:/some/scan/dir:rw',
                 '-v',
-                '/some/build/dir/.trivy-cache:/root/.cache/:rw',
+                '/some/scan/cache:/root/.cache/:rw',
                 '-v',
                 '/user/test/build-workspace/config.json:/root/.docker/config.json:ro',
                 '-e',

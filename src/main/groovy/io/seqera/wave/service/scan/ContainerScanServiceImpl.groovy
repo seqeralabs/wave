@@ -18,12 +18,11 @@
 
 package io.seqera.wave.service.scan
 
-import java.nio.file.Files
+
 import java.nio.file.NoSuchFileException
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
-import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -91,15 +90,6 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     private CleanupService cleanupService
 
     ContainerScanServiceImpl() {}
-
-    @PostConstruct
-    private init() {
-        try {
-            Files.createDirectories(config.cacheDirectory)
-        } catch (IOException e) {
-            log.error "Unable to create scan cache directory=${config.cacheDirectory} - cause: ${e.message}"
-        }
-    }
 
     @Override
     String getScanId(String targetImage, String digest, ScanMode mode, String format) {

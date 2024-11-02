@@ -18,7 +18,7 @@
 
 package io.seqera.wave.configuration
 
-
+import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
 import javax.annotation.PostConstruct
@@ -94,7 +94,13 @@ class ScanConfig {
 
     @Memoized
     Path getCacheDirectory() {
-        return Path.of(buildDirectory).toAbsolutePath().resolve('.trivy-cache')
+        final result = Path.of(buildDirectory).toAbsolutePath().resolve('.trivy-cache')
+        try {
+            Files.createDirectories(result)
+        } catch (IOException e) {
+            log.error "Unable to create scan cache directory=${result} - cause: ${e.message}"
+        }
+        return result
     }
 
     @Memoized
