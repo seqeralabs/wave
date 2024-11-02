@@ -269,12 +269,14 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         ScanEntry result
         if( state.succeeded() ) {
             try {
-                result = entry.success(TrivyResultProcessor.process(job.workDir.resolve(Trivy.OUTPUT_FILE_NAME)))
+                final scanFile = job.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
+                final vulnerabilities = TrivyResultProcessor.parseFile(scanFile, config.vulnerabilityLimit)
+                result = entry.success(vulnerabilities)
                 log.info("Container scan succeeded - id=${entry.scanId}; exit=${state.exitCode}; stdout=${state.stdout}")
             }
             catch (NoSuchFileException e) {
                 result = entry.failure(0, "No such file: ${e.message}")
-                log.warn("Container scan failed - id=${entry.scanId}; exit=${state.exitCode}; stdout=${state.stdout}; exception: NoSuchFile=${e.message}")
+                log.warn("Container scan failed - id=${entry.scanId}; NoSuchFile=${e.message}")
             }
         }
         else{
@@ -302,7 +304,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
             //save scan results in the redis cache
             scanStore.storeScan(scan)
             // save in the persistent layer
-            persistenceService.saveScanRecord(new WaveScanRecord(scan))
+            persistenceService.saveScanRecordAsync(new WaveScanRecord(scan))
             // when the scan fails delete the scanId via cleanup service
             // this is needed to prevent the caching of the scanId and
             // allow re-scanning the container in case of a job failure

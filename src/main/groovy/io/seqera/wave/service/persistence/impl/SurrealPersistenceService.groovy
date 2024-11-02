@@ -100,7 +100,7 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveBuild(WaveBuildRecord build) {
+    void saveBuildAsync(WaveBuildRecord build) {
         // note: use surreal sql in order to by-pass issue with large payload
         // see https://github.com/seqeralabs/wave/issues/559#issuecomment-2369412170
         final query = "INSERT INTO wave_build ${JacksonHelper.toJson(build)}"
@@ -198,7 +198,7 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveContainerRequest(WaveContainerRecord data) {
+    void saveContainerRequestAsync(WaveContainerRecord data) {
         // note: use surreal sql in order to by-pass issue with large payload
         // see https://github.com/seqeralabs/wave/issues/559#issuecomment-2369412170
         final query = "INSERT INTO wave_request ${JacksonHelper.toJson(data)}"
@@ -216,7 +216,7 @@ class SurrealPersistenceService implements PersistenceService {
                         })
     }
 
-    void updateContainerRequest(String token, ContainerDigestPair digest) {
+    void updateContainerRequestAsync(String token, ContainerDigestPair digest) {
         final query = """\
                                 UPDATE wave_request:$token SET 
                                     sourceDigest = '$digest.source',
@@ -253,28 +253,39 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveScanRecord(WaveScanRecord scanRecord) {
+    void saveScanRecordAsync(WaveScanRecord scanRecord) {
         final vulnerabilities = scanRecord.vulnerabilities ?: List.<ScanVulnerability>of()
 
+        // create a multi-command surreal sql statement to insert all vulnerabilities
+        // and the scan record in a single operation
+        List<String> ids = new ArrayList<>(101)
+        String statement = ''
         // save all vulnerabilities
         for( ScanVulnerability it : vulnerabilities ) {
-            surrealDb.insertScanVulnerability(authorization, it)
+            statement += "INSERT INTO wave_scan_vuln ${JacksonHelper.toJson(it)};\n"
+            ids << "wave_scan_vuln:⟨$it.id⟩".toString()
         }
-
-        // compose the list of ids
-        final ids = vulnerabilities
-                .collect(it-> "wave_scan_vuln:⟨$it.id⟩".toString())
-
 
         // scan object
         final copy = scanRecord.clone()
         copy.vulnerabilities = List.of()
         final json = JacksonHelper.toJson(copy)
 
-        // create the scan record
-        final statement = "INSERT INTO wave_scan ${patchScanVulnerabilities(json, ids)}".toString()
-        final result = surrealDb.sqlAsMap(authorization, statement)
-        log.trace "Scan update result=$result"
+        // add the wave_scan record
+        statement += "INSERT INTO wave_scan ${patchScanVulnerabilities(json, ids)};\n".toString()
+        // store the statement using an async operation
+        surrealDb
+                .sqlAsyncMany(getAuthorization(), statement)
+                .subscribe({result ->
+                    log.trace "Scan record save result=$result"
+                },
+                {error->
+                    def msg = error.message
+                    if( error instanceof HttpClientResponseException ){
+                        msg += ":\n $error.response.body"
+                    }
+                    log.error("Error saving scan record => ${msg}\n", error)
+                })
     }
 
     protected String patchScanVulnerabilities(String json, List<String> ids) {
@@ -369,7 +380,7 @@ class SurrealPersistenceService implements PersistenceService {
      * @param mirror {@link MirrorEntry} object
      */
     @Override
-    void saveMirrorResult(MirrorResult mirror) {
+    void saveMirrorResultAsync(MirrorResult mirror) {
         surrealDb.insertMirrorAsync(getAuthorization(), mirror).subscribe({ result->
             log.trace "Mirror request with id '$mirror.mirrorId' saved record: ${result}"
         }, {error->

@@ -352,7 +352,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         // for which a scan is requested but not scan record exists
         scanService?.scanOnBuild(entry)
         buildStore.storeBuild(targetImage, entry)
-        persistenceService.saveBuild(WaveBuildRecord.fromEvent(event))
+        persistenceService.saveBuildAsync(WaveBuildRecord.fromEvent(event))
         eventPublisher.publishEvent(event)
     }
 

@@ -91,7 +91,7 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.5.3")
 
     // rate limit
-    implementation 'com.github.seqeralabs:spillway:7b72700293'
+    implementation 'com.coveo:spillway:3.0.0'
 
     // monitoring
     implementation "io.micronaut.micrometer:micronaut-micrometer-registry-prometheus"
