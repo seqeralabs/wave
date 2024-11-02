@@ -49,7 +49,8 @@ class BasicAuthenticationProvider<B> implements HttpRequestAuthenticationProvide
         if (accountService.isAuthorised(user, pass)) {
             log.trace "Auth request OK - user '$user'; password: '${StringUtils.redact(pass)}'"
             return AuthenticationResponse.success(authRequest.identity)
-        } else {
+        }
+        else {
             log.trace "Auth request FAILED - user '$user'; password: '${StringUtils.redact(pass)}'"
             return AuthenticationResponse.failure(AuthenticationFailureReason.CREDENTIALS_DO_NOT_MATCH)
         }
