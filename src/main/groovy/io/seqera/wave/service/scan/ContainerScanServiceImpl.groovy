@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.scan
 
-
 import java.nio.file.NoSuchFileException
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
