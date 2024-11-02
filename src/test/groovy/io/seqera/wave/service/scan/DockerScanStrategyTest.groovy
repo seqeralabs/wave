@@ -20,24 +20,23 @@ package io.seqera.wave.service.scan
 
 import spock.lang.Specification
 
-import java.nio.file.Files
 import java.nio.file.Path
 
-import io.micronaut.context.ApplicationContext
+import io.micronaut.context.annotation.Property
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import jakarta.inject.Inject
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
+@MicronautTest
+@Property(name="wave.build.workspace",value="/some/build/dir")
 class DockerScanStrategyTest extends Specification {
 
+    @Inject
+    DockerScanStrategy dockerContainerStrategy
+
     def 'should get docker command' () {
-        given:
-        def workspace = Files.createTempDirectory('test')
-        def props = ['wave.build.workspace': workspace.toString()]
-        and:
-        def ctx = ApplicationContext.run(props)
-        and:
-        def dockerContainerStrategy = ctx.getBean(DockerScanStrategy)
 
         when:
         def scanDir = Path.of('/some/scan/dir')
@@ -56,7 +55,7 @@ class DockerScanStrategyTest extends Specification {
                 '-v',
                 '/some/scan/dir:/some/scan/dir:rw',
                 '-v',
-                "$workspace/.trivy-cache:/root/.cache/:rw",
+                '/some/build/dir/.trivy-cache:/root/.cache/:rw',
                 '-v',
                 '/user/test/build-workspace/config.json:/root/.docker/config.json:ro',
                 '-e',
@@ -65,8 +64,5 @@ class DockerScanStrategyTest extends Specification {
                 'BAR=2'
         ]
 
-        cleanup:
-        ctx.close()
-        workspace?.deleteDir()
     }
 }
