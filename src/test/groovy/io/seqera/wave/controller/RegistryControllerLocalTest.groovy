@@ -142,17 +142,17 @@ class RegistryControllerLocalTest extends Specification implements DockerRegistr
                 h.add('Accept', it)
             }
         })
-        HttpResponse<Map> response = client.toBlocking().exchange(request, String)
+        HttpResponse<String> response = client.toBlocking().exchange(request, String)
 
         then:
         response.status() == HttpStatus.OK
 
         when:
-        def parsedBody = new JsonSlurper().parseText(response.body.get())
+        def parsedBody = new JsonSlurper().parseText(response.body.get()) as Map
         and:
         def list = parsedBody.manifests.collect {
             String type = it.mediaType.contains("manifest") ? "manifests" : "blobs"
-            "/v2/$IMAGE/$type/$it.digest"
+            return "/v2/$IMAGE/$type/$it.digest" as String
         }
         and:
         boolean fails = list.find{ url ->
