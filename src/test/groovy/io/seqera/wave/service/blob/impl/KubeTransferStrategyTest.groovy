@@ -25,7 +25,6 @@ import java.time.OffsetDateTime
 
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1Pod
-import io.kubernetes.client.openapi.models.V1PodList
 import io.kubernetes.client.openapi.models.V1PodStatus
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.service.blob.BlobEntry
@@ -48,11 +47,8 @@ class KubeTransferStrategyTest extends Specification {
         def podName = "$jobName-abc".toString()
         def pod = new V1Pod(metadata: [name: podName, creationTimestamp: OffsetDateTime.now()])
         pod.status = new V1PodStatus(phase: "Succeeded")
-        def podList = new V1PodList(items: [pod])
         k8sService.launchTransferJob(_, _, _, _) >> new V1Job(metadata: [name: jobName])
-        k8sService.waitJob(_, _) >> podList
         k8sService.getPod(_) >> pod
-        k8sService.waitPodCompletion(_, _) >> 0
         k8sService.logsPod(_) >> "transfer successful"
 
         when:
