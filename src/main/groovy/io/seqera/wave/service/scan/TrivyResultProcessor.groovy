@@ -35,17 +35,25 @@ import io.seqera.wave.exception.ScanRuntimeException
 @CompileStatic
 class TrivyResultProcessor {
 
-    static List<ScanVulnerability> parse(Path scanFile) {
-        return parse(scanFile.getText())
-    }
-
-    static List<ScanVulnerability> parse(Path scanFile, int maxEntries) {
-        final result = parse(scanFile)
-        return filter(result, maxEntries)
+    /**
+     * Parse a Trivy vulnerabilities JSON file and return a list of {@link ScanVulnerability} entries
+     *
+     * @param scanFile
+     *      The {@link Path} of the Trivy JSON file to be scanned
+     * @param maxEntries
+     *      The max number of vulnerabilities that should be returned giving precedence to the
+     *      most severe vulnerabilities e.g. one critical and one medium issues are found and
+     *      1 is specified as {@code maxEntries} only the critical issues is returned.
+     * @return
+     *      The list of {@link ScanVulnerability} entries as parsed in from the JSON file.
+     */
+    static List<ScanVulnerability> parseFile(Path scanFile, Integer maxEntries=null) {
+        final result = parseJson(scanFile.getText())
+        return maxEntries>0 ? filter(result, maxEntries) : result
     }
 
     @CompileDynamic
-    static List<ScanVulnerability> parse(String scanJson) {
+    static List<ScanVulnerability> parseJson(String scanJson) {
         final slurper = new JsonSlurper()
         try{
             final jsonMap = slurper.parseText(scanJson) as Map
