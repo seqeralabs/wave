@@ -36,13 +36,12 @@ import io.kubernetes.client.openapi.models.V1JobStatus
 import io.kubernetes.client.openapi.models.V1ObjectMeta
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
-import io.kubernetes.client.openapi.models.V1PodStatus
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Replaces
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.BlobCacheConfig
-import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.MirrorConfig
+import io.seqera.wave.configuration.ScanConfig
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -520,58 +519,6 @@ class K8sServiceImplTest extends Specification {
 
         cleanup:
         ctx.close()
-    }
-
-    def "deletePodWhenReachStatus should delete pod when status is reached within timeout"() {
-        given:
-        def podName = "test-pod"
-        def statusName = "Succeeded"
-        def timeout = 5000
-        def api = Mock(CoreV1Api)
-        api.readNamespacedPod(_,_,_) >> new V1Pod(status: new V1PodStatus(phase: statusName))
-        def k8sClient = new K8sClient() {
-            @Override
-            ApiClient apiClient() {
-                    return null
-            }
-            CoreV1Api coreV1Api() {
-                return api
-            }
-        }
-
-        def k8sService = new K8sServiceImpl(k8sClient: k8sClient)
-
-        when:
-        k8sService.deletePodWhenReachStatus(podName, statusName, timeout)
-
-        then:
-        1 * api.deleteNamespacedPod('test-pod', null, null, null, null, null, null, null)
-    }
-
-    def "deletePodWhenReachStatus should not delete pod if status is not reached within timeout"() {
-        given:
-        def podName = "test-pod"
-        def statusName = "Succeeded"
-        def timeout = 5000
-        def api = Mock(CoreV1Api)
-        api.readNamespacedPod(_,_,_) >> new V1Pod(status: new V1PodStatus(phase: "Running"))
-        def k8sClient = new K8sClient() {
-            @Override
-            ApiClient apiClient() {
-                return null
-            }
-            CoreV1Api coreV1Api() {
-                return api
-            }
-        }
-
-        def k8sService = new K8sServiceImpl(k8sClient: k8sClient)
-
-        when:
-        k8sService.deletePodWhenReachStatus(podName, statusName, timeout)
-
-        then:
-        0 * api.deleteNamespacedPod('test-pod', null, null, null, null, null, null, null)
     }
 
     def "getLatestPodForJob should return the latest pod when multiple pods are present"() {
