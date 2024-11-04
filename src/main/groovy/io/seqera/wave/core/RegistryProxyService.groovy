@@ -133,7 +133,7 @@ class RegistryProxyService {
             return
 
         try {
-            persistenceService.updateContainerRequest(route.token, digest)
+            persistenceService.updateContainerRequestAsync(route.token, digest)
         } catch (Throwable t) {
             log.error("Unable store container request for token: $route.token", t)
         }

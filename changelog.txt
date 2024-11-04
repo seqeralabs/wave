@@ -1,4 +1,14 @@
 # Wave changelog
+1.13.11 - 2 Nov 2024
+- Rename async methods for semantic consistency [38114d75]
+- Save scan record async (#730) [3ad82a3a]
+- Cap number of vulnerabilities reported in scan report to 100 (#728) [2f0d8f9f]
+- Bump org.apache.commons:commons-compress:1.27.1 (#722) [adb75007]
+
+1.13.10 - 29 Oct 2024 
+- Log slow processing stream messages [e8a6b7ee]
+- Prevent scan when mode is not defined [d42bcae1]
+
 1.13.9 - 29 Oct 2024
 - Fix inspect view (#725) [dcf41dea] [e38e2c44]
 
