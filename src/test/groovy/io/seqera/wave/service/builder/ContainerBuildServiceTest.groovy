@@ -376,7 +376,7 @@ class ContainerBuildServiceTest extends Specification {
         and:
         1 * proxyService.getImageDigest(_, _) >> 'digest'
         and:
-        1 * persistenceService.saveBuild(_) >> null
+        1 * persistenceService.saveBuildAsync(_) >> null
         and:
         1 * eventPublisher.publishEvent(_)
     }
@@ -406,7 +406,7 @@ class ContainerBuildServiceTest extends Specification {
         then:
         1 * buildStore.storeBuild(req.targetImage, _) >> null
         and:
-        1 * persistenceService.saveBuild(_) >> null
+        1 * persistenceService.saveBuildAsync(_) >> null
         and:
         1 * eventPublisher.publishEvent(_)
     }
@@ -435,7 +435,7 @@ class ContainerBuildServiceTest extends Specification {
         then:
         1 * buildStore.storeBuild(req.targetImage, _) >> null
         and:
-        1 * persistenceService.saveBuild(_) >> null
+        1 * persistenceService.saveBuildAsync(_) >> null
         and:
         1 * eventPublisher.publishEvent(_)
     }

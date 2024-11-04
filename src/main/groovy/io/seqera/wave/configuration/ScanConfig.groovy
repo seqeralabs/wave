@@ -84,6 +84,10 @@ class ScanConfig {
     @Value('${wave.scan.environment}')
     List<String> environment
 
+    @Nullable
+    @Value('${wave.scan.vulnerability.limit:100}')
+    Integer vulnerabilityLimit
+
     String getScanImage() {
         return scanImage
     }
@@ -133,6 +137,6 @@ class ScanConfig {
 
     @PostConstruct
     private void init() {
-        log.info("Scan config: docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}; severity: $severity; retry-attempts: $retryAttempts; env=${environment}")
+        log.info("Scan config: docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}; severity: $severity; vulnerability-limit: $vulnerabilityLimit; retry-attempts: $retryAttempts; env=${environment}")
     }
 }

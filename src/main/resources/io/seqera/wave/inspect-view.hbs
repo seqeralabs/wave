@@ -127,7 +127,6 @@
                 </h4>
             </div>
         {{else}}
-        {{/if}}
         <h3>Container Specification</h3>
         <table>
             <tr>
@@ -180,7 +179,7 @@
             if (data.hasOwnProperty(key)) {
                 const li = document.createElement('li');
 
-                if (typeof data[key] === 'object' && !Array.isArray(data[key]) && Object.keys(data[key]).length > 0 && Object.keys(data[key]).length !== undefined) {
+                if (typeof data[key] === 'object' && !Array.isArray(data[key]) && Object.keys(data[key]).length > 0) {
                     const details = document.createElement('details');
                     const summary = document.createElement('summary');
                     summary.textContent = key;
@@ -223,5 +222,6 @@
     document.getElementById('config-div').appendChild(createTreeView({{{config}}}));
     document.getElementById('manifest-div').appendChild(createTreeView({{{manifest}}}));
 </script>
+{{/if}}
 </body>
 </html>
