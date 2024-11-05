@@ -81,7 +81,6 @@ dependencies {
     // this sts dependency is require by micronaut-aws-parameter-store,
     // not directly used by the app, for this reason keeping `runtimeOnly`
     runtimeOnly "software.amazon.awssdk:sts"
-    runtimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.78'
     runtimeOnly("io.netty:netty-tcnative-boringssl-static:2.0.0.Final")
     runtimeOnly("javax.xml.bind:jaxb-api:2.3.1")
     testImplementation("org.testcontainers:testcontainers")
@@ -99,6 +98,10 @@ dependencies {
     implementation "io.micronaut:micronaut-management"
     //views
     implementation("io.micronaut.views:micronaut-views-handlebars")
+
+    // upgrade indirect dependencies 
+    runtimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.78'
+    runtimeOnly 'org.bitbucket.b_c:jose4j:0.9.4'
 }
 
 application {
