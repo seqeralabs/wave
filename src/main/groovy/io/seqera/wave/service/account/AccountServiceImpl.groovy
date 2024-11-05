@@ -36,7 +36,7 @@ import jakarta.annotation.PostConstruct
 @ConfigurationProperties('wave')
 class AccountServiceImpl implements AccountService {
 
-    private Map<String,String> accounts = Map.of()
+    Map<String,String> accounts = Map.of()
 
     @PostConstruct
     private dumpAccounts() {

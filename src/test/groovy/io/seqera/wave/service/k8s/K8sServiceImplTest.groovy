@@ -37,8 +37,6 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
 import io.micronaut.context.ApplicationContext
-import io.micronaut.context.annotation.Replaces
-import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.configuration.ScanConfig
@@ -46,16 +44,7 @@ import io.seqera.wave.configuration.ScanConfig
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@MicronautTest
 class K8sServiceImplTest extends Specification {
-
-    @Replaces(ScanConfig.class)
-    static class MockScanConfig extends ScanConfig {
-        @Override
-        Path getCacheDirectory() {
-            return Path.of('/build/scan/cache')
-        }
-    }
 
     def 'should validate context OK ' () {
         when:

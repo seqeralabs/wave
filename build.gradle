@@ -2,10 +2,10 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
 plugins {
-    id 'java-library'
+    id 'io.seqera.wave.java-library-conventions'
     id 'io.seqera.wave.groovy-application-conventions'
-    id "com.github.johnrengelman.shadow" version "7.1.1"
-    id "io.micronaut.minimal.application" version "3.7.0"
+    id "com.github.johnrengelman.shadow" version "8.1.1"
+    id "io.micronaut.minimal.application" version "4.1.1"
     id "com.google.cloud.tools.jib" version "3.4.2"
     id 'org.asciidoctor.jvm.convert' version '3.3.2'
     id 'jacoco'
@@ -29,12 +29,13 @@ repositories {
 }
 
 dependencies {
+    annotationProcessor("io.micronaut.validation:micronaut-validation-processor")
     annotationProcessor("io.micronaut:micronaut-http-validation")
     compileOnly("io.micronaut.data:micronaut-data-processor")
     compileOnly("io.micronaut:micronaut-inject-groovy")
     compileOnly("io.micronaut:micronaut-http-validation")
     implementation("jakarta.persistence:jakarta.persistence-api:3.0.0")
-    api 'io.seqera:lib-mail:1.0.0'
+    api 'io.seqera:lib-mail:1.1.0'
     api 'io.seqera:wave-api:0.13.3'
     api 'io.seqera:wave-utils:0.14.1'
     implementation("io.micronaut:micronaut-http-client")
@@ -43,13 +44,14 @@ dependencies {
     implementation("io.micronaut.reactor:micronaut-reactor")
     implementation("io.micronaut.reactor:micronaut-reactor-http-client")
     implementation("jakarta.annotation:jakarta.annotation-api")
-    implementation("io.micronaut:micronaut-validation")
+    implementation("io.micronaut.validation:micronaut-validation")
     implementation 'io.micronaut.security:micronaut-security'
-    implementation "org.codehaus.groovy:groovy-json"
-    implementation "org.codehaus.groovy:groovy-nio"
+    implementation "org.apache.groovy:groovy-json"
+    implementation "org.apache.groovy:groovy-nio"
     implementation 'com.google.guava:guava:32.1.2-jre'
     implementation 'dev.failsafe:failsafe:3.1.0'
-    implementation('io.projectreactor:reactor-core')
+    implementation 'io.micronaut.reactor:micronaut-reactor'
+    implementation 'io.micronaut.reactor:micronaut-reactor-http-client'
     implementation("io.seqera:tower-crypto:22.4.0-watson") { transitive = false }  // to be replaced with 22.4.0 once released
     implementation 'org.apache.commons:commons-compress:1.27.1'
     implementation 'org.apache.commons:commons-lang3:3.12.0'
@@ -62,6 +64,7 @@ dependencies {
     implementation 'com.squareup.moshi:moshi-adapters:1.14.0'
     implementation 'redis.clients:jedis:5.1.3'
     implementation "io.github.resilience4j:resilience4j-ratelimiter:0.17.0"
+    implementation("io.micronaut:micronaut-retry")
     // caching deps
     implementation("io.micronaut.cache:micronaut-cache-core")
     implementation("io.micronaut.cache:micronaut-cache-caffeine")
@@ -85,7 +88,7 @@ dependencies {
     testImplementation("org.testcontainers:mysql:1.17.3")
 
     // --
-    implementation("ch.qos.logback:logback-classic:1.4.8")
+    implementation("ch.qos.logback:logback-classic:1.5.3")
 
     // rate limit
     implementation 'com.coveo:spillway:3.0.0'

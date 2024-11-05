@@ -51,10 +51,8 @@ class CredentialsServiceTest extends Specification {
 
     @Inject CredentialsService credentialsService
 
-
     @MockBean(TowerClient)
     TowerClient towerClient = Mock(TowerClient)
-
 
     @MockBean(PairingService)
     PairingService securityService = Mock(PairingService)
@@ -121,7 +119,6 @@ class CredentialsServiceTest extends Specification {
         noExceptionThrown()
     }
 
-
     def 'should fail if keys where not registered for the tower endpoint'() {
         given:
         def identity = new PlatformId(new User(id:10), 10,"token",'endpoint')
@@ -169,7 +166,7 @@ class CredentialsServiceTest extends Specification {
                 registry: 'docker.io'
         )
         and:
-        def identity = new PlatformId(new User(id:10), 10,"token",'tower.io', '101')
+        def identity = new PlatformId(new User(id:10), 100, 'token', 'tower.io', '101')
         def auth = JwtAuth.of(identity)
 
         when:
@@ -185,7 +182,7 @@ class CredentialsServiceTest extends Specification {
         )
 
         and: 'non matching credentials are listed'
-        1 * towerClient.listCredentials('tower.io',auth,10) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
+        1 * towerClient.listCredentials('tower.io',auth,100) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
                 credentials: [nonContainerRegistryCredentials,otherRegistryCredentials]
         ))
 
@@ -223,7 +220,7 @@ class CredentialsServiceTest extends Specification {
     def 'should get registry creds from compute creds when not found in tower credentials'() {
         given: 'a tower user in a workspace on a specific instance with a valid token'
         def userId = 10
-        def workspaceId = 10
+        def workspaceId = 100
         def token = "valid-token"
         def towerEndpoint = "http://tower.io:9090"
         def workflowId = "id123"

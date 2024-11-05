@@ -90,17 +90,17 @@ class ErrResponse<T> implements HttpResponse<T> {
     }
 
     static ErrResponse<String> forString(String msg, HttpRequest request) {
-        final head = HttpHeaders.of('Content-Type': ['text/plain'], {true})
+        final head = HttpHeaders.of('Content-Type': ['text/plain'], (a, b) -> true)
         new ErrResponse<String>(statusCode: 400, body: msg, request: request, uri: request.uri(), headers: head)
     }
 
     static ErrResponse<InputStream> forStream(String msg, HttpRequest request) {
-        final head = HttpHeaders.of('Content-Type': ['text/plain'], {true})
+        final head = HttpHeaders.of('Content-Type': ['text/plain'], (a, b) -> true)
         new ErrResponse<InputStream>(statusCode: 400, body: new ByteArrayInputStream(msg.bytes), request: request, uri: request.uri(), headers: head)
     }
 
     static ErrResponse<byte[]> forByteArray(String msg, HttpRequest request) {
-        final head = HttpHeaders.of('Content-Type': ['text/plain'], {true})
+        final head = HttpHeaders.of('Content-Type': ['text/plain'], (a, b) -> true)
         new ErrResponse<byte[]>(statusCode: 400, body: msg.bytes, request: request, uri: request.uri(), headers: head)
     }
 }

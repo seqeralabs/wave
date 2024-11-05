@@ -18,12 +18,12 @@
 
 package io.seqera.wave.tower
 
-import javax.validation.constraints.NotNull
-import javax.validation.constraints.Size
-
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
+import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.Size
+
 /**
  * Model a tower user
  *

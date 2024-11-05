@@ -24,9 +24,9 @@ compileJava {
     options.release.set(11)
 }
 
-tasks.withType(GroovyCompile) {
-    sourceCompatibility = '11'
-    targetCompatibility = '11'
+tasks.withType(GroovyCompile).configureEach {
+    sourceCompatibility = '17'
+    targetCompatibility = '17'
 }
 
 test {
@@ -40,21 +40,21 @@ java {
 }
 
 dependencies {
-    implementation 'org.slf4j:slf4j-api:1.7.36'
+    implementation 'org.slf4j:slf4j-api:2.0.13'
 
-    testImplementation 'ch.qos.logback:logback-core:1.2.11'
-    testImplementation 'ch.qos.logback:logback-classic:1.2.11'
-    testImplementation "org.codehaus.groovy:groovy:3.0.15"
-    testImplementation "org.codehaus.groovy:groovy-nio:3.0.15"
-    testImplementation ("org.codehaus.groovy:groovy-test:3.0.17")
-    testImplementation ("cglib:cglib-nodep:3.3.0")
-    testImplementation ("org.objenesis:objenesis:3.2")
-    testImplementation ("org.spockframework:spock-core:2.3-groovy-3.0") { exclude group: 'org.codehaus.groovy'; exclude group: 'net.bytebuddy' }
-    testImplementation ('org.spockframework:spock-junit4:2.3-groovy-3.0') { exclude group: 'org.codehaus.groovy'; exclude group: 'net.bytebuddy' }
+    testImplementation 'ch.qos.logback:logback-core:1.4.11'
+    testImplementation 'ch.qos.logback:logback-classic:1.4.11'
+    testImplementation 'org.apache.groovy:groovy:4.0.15'
+    testImplementation 'org.apache.groovy:groovy-nio:4.0.15'
+    testImplementation 'org.apache.groovy:groovy-test:4.0.15'
+    testImplementation 'org.objenesis:objenesis:3.4'
+    testImplementation 'net.bytebuddy:byte-buddy:1.14.17'
+    testImplementation 'org.spockframework:spock-core:2.3-groovy-4.0'
+    testImplementation 'org.spockframework:spock-junit4:2.3-groovy-4.0'
 }
 
-tasks.withType(Test) {
-    jvmArgs ([
+tasks.withType(Test).configureEach {
+    jvmArgs([
             '--enable-preview',
             '--add-opens=java.base/java.lang=ALL-UNNAMED',
             '--add-opens=java.base/java.io=ALL-UNNAMED',
