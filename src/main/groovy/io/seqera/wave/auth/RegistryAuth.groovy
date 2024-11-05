@@ -48,13 +48,18 @@ class RegistryAuth {
         return type==Type.Bearer
     }
 
-    URI getEndpoint() {
+    URI getEndpoint(String account=null,String repository=null) {
         if( !realm )
             return null
         final uri = realm.toString()
         if( uri?.endsWith('.amazonaws.com/') )
             return new URI(uri + "v2/")
-        return new URI(service ? "$uri?service=${service}".toString() : uri)
+        def query = "service=${service}"
+        if( account )
+            query += "&account=$account"
+        if( repository )
+            query += "&scope=${URLEncoder.encode("repository:$repository:pull",'UTF-8')}"
+        return new URI(service ? "$uri?$query".toString() : uri)
     }
 
     static RegistryAuth parse(String auth) {

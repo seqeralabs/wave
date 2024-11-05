@@ -19,6 +19,7 @@
 package io.seqera.wave.service
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.security.PublicKey
 import java.time.Duration
@@ -28,6 +29,8 @@ import java.util.concurrent.CompletableFuture
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.tower.crypto.AsymmetricCipher
+import io.seqera.wave.core.ContainerPath
+import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.tower.PlatformId
@@ -101,7 +104,8 @@ class CredentialsServiceTest extends Specification {
         def auth = JwtAuth.of(identity)
 
         when: 'look those registry credentials from tower'
-        def credentials = credentialsService.findRegistryCreds("quay.io",identity)
+        def container = ContainerCoordinates.parse("quay.io/foo")
+        def credentials = credentialsService.findRegistryCreds(container, identity)
 
         then: 'the registered key is fetched correctly from the security service'
         1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, towerEndpoint) >> keyRecord
@@ -124,9 +128,10 @@ class CredentialsServiceTest extends Specification {
 
     def 'should fail if keys where not registered for the tower endpoint'() {
         given:
+        def container = ContainerCoordinates.parse('quay.io/foo')
         def identity = new PlatformId(new User(id:10), 10,"token",'endpoint')
         when:
-        credentialsService.findRegistryCreds('quay.io',identity)
+        credentialsService.findRegistryCreds(container,identity)
 
         then: 'the security service does not have the key for the hostname'
         1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE,'endpoint') >> null
@@ -137,10 +142,12 @@ class CredentialsServiceTest extends Specification {
 
     def 'should return no registry credentials if the user has no credentials in tower' () {
         given:
+        def container = ContainerCoordinates.parse('quay.io/foo')
         def identity = new PlatformId(new User(id:10), 10,"token",'tower.io')
         def auth = JwtAuth.of(identity)
         when:
-        def credentials = credentialsService.findRegistryCreds('quay.io', identity)
+        def credentials = credentialsService.findRegistryCreds(container,  identity)
+
         then: 'a key is found'
         1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, 'tower.io') >> new PairingRecord(
                 pairingId: 'a-key-id',
@@ -173,7 +180,8 @@ class CredentialsServiceTest extends Specification {
         def auth = JwtAuth.of(identity)
 
         when:
-        def credentials = credentialsService.findRegistryCreds('quay.io', identity)
+        def container = ContainerCoordinates.parse('quay.io/foo')
+        def credentials = credentialsService.findRegistryCreds(container, identity)
 
         then: 'a key is found'
         1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, 'tower.io') >> new PairingRecord(
@@ -206,6 +214,48 @@ class CredentialsServiceTest extends Specification {
         keys.registry == 'foo.io'
         keys.userName == 'me'
         keys.password == 'you'
+    }
+
+    def'should find the best registry match with exact match'(){
+        given:
+        def svc = new CredentialServiceImpl()
+        and:
+        def target = "host.com/foo/bar"
+        def choices = [
+                    new CredentialsDescription(registry:"host.com", provider: 'container-reg'),
+                    new CredentialsDescription(registry:"host.com/foo",provider: 'container-reg'),
+                    new CredentialsDescription(registry:"host.com/foo/bar", provider:'container-reg'),
+                    new CredentialsDescription(registry:"host.com/foo/bar", provider:'something-else'),
+                    new CredentialsDescription(registry:"host.com/foo/bar/baz",provider: 'container-reg') ]
+
+        when:
+        def match = svc.findBestMatchingCreds(target, choices)
+
+        then:
+        match.registry == "host.com/foo/bar"
+        match.provider == "container-reg"
+    }
+
+    def'should find the best registry match with partial match'(){
+        given:
+        def svc = new CredentialServiceImpl()
+        def target = TARGET
+        def choices = CHOICES.tokenize(' ').collect(it-> new CredentialsDescription(registry: it, provider: 'container-reg') )
+
+        when:
+        def match = svc.findBestMatchingCreds(target, choices)
+
+        then:
+        match.registry == EXPECTED
+
+        where:
+        TARGET                  | EXPECTED                  | CHOICES
+        "host.com"              | 'host.com'                | 'host.com host.com/foo host.com/foo/* host.com/foo/* host.com/fooo/* host.com/foo/bar/baz/*'
+        "host.com/fo"           | 'host.com'                | 'host.com host.com/foo host.com/foo/* host.com/foo/* host.com/fooo/* host.com/foo/bar/baz/*'
+        "host.com/bar"          | 'host.com'                | 'host.com host.com/foo host.com/foo/* host.com/foo/* host.com/fooo/* host.com/foo/bar/baz/*'
+        "host.com/foo"          | 'host.com/foo'            | 'host.com host.com/foo host.com/foo/* host.com/foo/* host.com/fooo/* host.com/foo/bar/baz/*'
+        "host.com/foo/bar"      | 'host.com/foo/*'          | 'host.com host.com/foo host.com/foo/* host.com/foo/* host.com/fooo/* host.com/foo/bar/baz/*'
+        "host.com/foo/bar/baz"  | 'host.com/foo/bar/baz/*'  | 'host.com host.com/foo host.com/foo/* host.com/foo/* host.com/fooo/* host.com/foo/bar/baz/*'
     }
 
     def 'should parse aws keys payload' () {
@@ -264,9 +314,10 @@ class CredentialsServiceTest extends Specification {
         and:
         def identity = new PlatformId(new User(id:userId), workspaceId,token,towerEndpoint,workflowId)
         def auth = JwtAuth.of(identity)
+        def containerPath = ContainerCoordinates.parse("$registryName/foo")
 
         when: 'look those registry credentials from tower'
-        def containerCredentials = credentialsService.findRegistryCreds(registryName,identity)
+        def containerCredentials = credentialsService.findRegistryCreds(containerPath, identity)
 
         then: 'the registered key is fetched correctly from the security service'
         1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, towerEndpoint) >> keyRecord
@@ -294,4 +345,51 @@ class CredentialsServiceTest extends Specification {
         return null
     }
 
+
+    @Unroll
+    def 'should get the repository score' () {
+        given:
+        def svc = new CredentialServiceImpl()
+
+        expect:
+        svc.matchingScore(TARGET, PATTERN) == EXPECTED
+
+        where:
+        TARGET              | PATTERN           | EXPECTED
+        null                | null              | 0
+        'quay.io'           | null              | 0
+        'quay.io'           | 'docker.io'       | 0
+        and:
+        'quay.io'           | 'quay.io'         | 'quay.io'.length()
+        'quay.io/foo'       | 'quay.io'         | 'quay.io'.length()
+        'quay.io/foo/bar'   | 'quay.io'         | 'quay.io'.length()
+        and:
+        'quay.io/foo/bar'   | 'quay.io/fo'      | 0
+        'quay.io/foo/bar'   | 'quay.io/fooo'    | 0
+        'quay.io/foo/bar'   | 'quay.io/*'       | 'quay.io'.length()
+        and:
+        'quay.io/foo'       | 'quay.io/foo/*'   | 'quay.io/foo'.length()
+        'quay.io/foo/bar'   | 'quay.io/foo/*'   | 'quay.io/foo'.length()
+        and:
+        // should should return 0 because the "authority" repository has
+        // a longer name of the target one. Therefore it cannot be used
+        // to authenticate the target
+        'quay.io'           | 'quay.io/foo/*'   | 0
+        'quay.io/fo/bar'    | 'quay.io/foo/*'   | 0
+    }
+
+
+    def 'should return the longest matching repository' () {
+        given:
+        def svc = new CredentialServiceImpl()
+
+        expect:
+        svc.matchingLongest(TARGET, new CredentialsDescription(registry: R1), new CredentialsDescription(registry: R2)).registry == EXPECTED
+        where:
+        TARGET                  | R1                | R2                | EXPECTED
+        'docker.io'             | 'docker.io'       | 'quay.io'         | 'docker.io'
+        'docker.io/foo'         | 'docker.io/foo'   | 'docker.io'       | 'docker.io/foo'
+        'docker.io/foo/bar'     | 'docker.io/foo/*' | 'docker.io'       | 'docker.io/foo/*'
+        'docker.io/foo/bar'     | 'docker.io/foo'   | 'docker.io'       | 'docker.io'
+    }
 }

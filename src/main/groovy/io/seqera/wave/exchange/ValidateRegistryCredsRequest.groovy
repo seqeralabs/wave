@@ -16,19 +16,34 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.controller
+package io.seqera.wave.exchange
 
-import io.micronaut.core.annotation.Nullable
 import javax.validation.constraints.NotBlank
 
 import io.micronaut.core.annotation.Introspected
 
+/**
+ * Request object to valide a container registry credentials
+ */
 @Introspected
 class ValidateRegistryCredsRequest {
+
+    /**
+     * The registry user name
+     */
     @NotBlank
     String userName
+
+    /**
+     * The registry password
+     */
     @NotBlank
     String password
+
+    /**
+     * The registry name e.g. @{code docker.io} or a registry including the repository
+     * name e.g. {@code docker.io/user/repository} (without tag extension)
+     */
     @NotBlank
     String registry
 }

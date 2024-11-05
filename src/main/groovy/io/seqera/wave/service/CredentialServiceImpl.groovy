@@ -22,8 +22,10 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.tower.crypto.AsymmetricCipher
 import io.seqera.tower.crypto.EncryptedPacket
+import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.service.aws.AwsEcrService
 import io.seqera.wave.service.pairing.PairingService
+import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.client.CredentialsDescription
@@ -31,6 +33,7 @@ import io.seqera.wave.tower.client.TowerClient
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
+
 /**
  * Define operations to access container registry credentials from Tower
  *
@@ -48,7 +51,7 @@ class CredentialServiceImpl implements CredentialsService {
     private PairingService keyService
 
     @Override
-    ContainerRegistryKeys findRegistryCreds(String registryName, PlatformId identity) {
+    ContainerRegistryKeys findRegistryCreds(ContainerPath container, PlatformId identity) {
         if (!identity.userId)
             throw new IllegalArgumentException("Missing userId parameter")
         if (!identity.accessToken)
@@ -77,20 +80,18 @@ class CredentialServiceImpl implements CredentialsService {
         //  the ones associated with docker.io.
         //  This cannot be implemented at the moment since, in tower, container registry
         //  credentials are associated to the whole registry
-        final matchingRegistryName = registryName ?: DOCKER_IO
-        def creds = all.find {
-            it.provider == 'container-reg'  && (it.registry ?: DOCKER_IO) == matchingRegistryName
-        }
-        if (!creds && identity.workflowId && AwsEcrService.isEcrHost(registryName) ) {
+        final repo = container.repository ?: DOCKER_IO
+        def creds = findBestMatchingCreds(repo,  all)
+        if (!creds && identity.workflowId && AwsEcrService.isEcrHost(container.registry) ) {
             creds = findComputeCreds(identity)
         }
         if (!creds) {
-            log.debug "No credentials matching criteria registryName=$registryName; userId=$identity.userId; workspaceId=$identity.workspaceId; workflowId=${identity.workflowId}; endpoint=$identity.towerEndpoint"
+            log.debug "No credentials matching criteria registryName=$container.registry; userId=$identity.userId; workspaceId=$identity.workspaceId; workflowId=${identity.workflowId}; endpoint=$identity.towerEndpoint"
             return null
         }
 
         // log for debugging purposes
-        log.debug "Credentials matching criteria registryName=$registryName; userId=$identity.userId; workspaceId=$identity.workspaceId; endpoint=$identity.towerEndpoint => $creds"
+        log.debug "Credentials matching criteria registryName=$container.registry; userId=$identity.userId; workspaceId=$identity.workspaceId; endpoint=$identity.towerEndpoint => $creds"
         // now fetch the encrypted key
         final encryptedCredentials = towerClient.fetchEncryptedCredentials(identity.towerEndpoint, JwtAuth.of(identity), creds.id, pairing.pairingId, identity.workspaceId).get()
         final privateKey = pairing.privateKey
@@ -98,6 +99,54 @@ class CredentialServiceImpl implements CredentialsService {
         return parsePayload(credentials)
     }
 
+    protected CredentialsDescription findBestMatchingCreds(String target, List<CredentialsDescription> all) {
+        assert target, "Missing 'target' container repository"
+        // take all container registry credentials
+        final creds = all
+                .findAll(it-> it.provider=='container-reg' )
+
+        // try to find an exact match
+        final match = creds.find(it-> it.registry==target )
+        if( match )
+            return match
+
+        // find the longest matching repository
+        creds.inject((CredentialsDescription)null) { best, it-> matchingLongest(target,best,it)}
+    }
+
+    protected CredentialsDescription matchingLongest(String target, CredentialsDescription best, CredentialsDescription candidate) {
+        final a = best ? matchingScore(target, best.registry) : 0
+        final b = matchingScore(target, candidate.registry)
+        return a >= b ? best : candidate
+    }
+
+    /**
+     * Return the longest matching path length of two container repositories
+     *
+     * @param target The target repository to be authenticated
+     * @param authority The authority repository against which the target repository should be authenticated
+     * @return An integer greater or equals to zero representing the long the path in the two repositories
+     */
+    protected int matchingScore(String target, String authority) {
+        if( !authority )
+            return 0
+        if( !authority.contains('/') && !authority.endsWith('/*') )
+            authority += '/*'
+        if( authority.endsWith('/*') ) {
+            final len = authority.length()-2
+            if( target.startsWith(authority.substring(0,len)) )
+                return len
+        }
+        else if( target==authority ) {
+            return target.length()
+        }
+        return 0
+    }
+
+    protected int repoLen(String repo) {
+        repo ? repo.tokenize('/').size() : 0
+    }
+      
     CredentialsDescription findComputeCreds(PlatformId identity) {
         try {
             return findComputeCreds0(identity)
