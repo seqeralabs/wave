@@ -1,4 +1,4 @@
-config ?= compileClasspath
+config ?= runtimeClasspath
 
 ifdef module
 mm = :${module}:
