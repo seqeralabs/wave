@@ -18,11 +18,11 @@
 
 package io.seqera.wave.service.scan
 
-
 import spock.lang.Specification
 
-import io.seqera.wave.exception.ScanRuntimeException
+import java.nio.file.Files
 
+import io.seqera.wave.exception.ScanRuntimeException
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
@@ -91,7 +91,7 @@ class TrivyResultProcessorTest extends Specification {
         """
 
         when:
-        def result = TrivyResultProcessor.process(trivyDockerResulJson)
+        def result = TrivyResultProcessor.parseJson(trivyDockerResulJson)
 
         then:
         def vulnerability = result[0]
@@ -105,9 +105,100 @@ class TrivyResultProcessorTest extends Specification {
 
     }
 
+    def "should return a sorted map of vulnerabilities"() {
+        given:
+        def folder = Files.createTempDirectory('test')
+        def scan = folder.resolve('scan.json')
+        and:
+        scan.text = """
+            { "Results": [
+                {
+                   "Target": "sample-application",
+                   "Class": "os-pkgs",
+                   "Type": "linux",
+                   "Vulnerabilities": [
+                      {
+                         "VulnerabilityID": "CVE-2023-0001",
+                         "PkgID": "example-lib@1.0.0",
+                         "PkgName": "example-lib",
+                         "InstalledVersion": "1.0.0",
+                         "FixedVersion": "1.0.1",
+                         "Severity": "LOW",
+                         "Description": "A minor vulnerability with low impact.",
+                         "PrimaryURL": "https://example.com/CVE-2023-0001"
+                      },
+                      {
+                         "VulnerabilityID": "CVE-2023-0002",
+                         "PkgID": "example-lib@1.2.3",
+                         "PkgName": "example-lib",
+                         "InstalledVersion": "1.2.3",
+                         "FixedVersion": "1.2.4",
+                         "Severity": "MEDIUM",
+                         "Description": "A vulnerability that allows unauthorized access.",
+                         "PrimaryURL": "https://example.com/CVE-2023-0002"
+                      },
+                      {
+                         "VulnerabilityID": "CVE-2023-0003",
+                         "PkgID": "example-lib@2.3.4",
+                         "PkgName": "example-lib",
+                         "InstalledVersion": "2.3.4",
+                         "FixedVersion": "2.3.5",
+                         "Severity": "HIGH",
+                         "Description": "A vulnerability that could lead to remote code execution.",
+                         "PrimaryURL": "https://example.com/CVE-2023-0003"
+                      },
+                        {
+                           "VulnerabilityID": "CVE-2023-0004",
+                           "PkgID": "example-lib@3.0.0",
+                           "PkgName": "example-lib",
+                           "InstalledVersion": "3.0.0",
+                           "FixedVersion": "3.0.1",
+                           "Severity": "HIGH",
+                           "Description": "A random test vulnerability with unspecified impact.",
+                           "PrimaryURL": "https://example.com/CVE-2023-0004"
+                        },
+                        {
+                           "VulnerabilityID": "CVE-2023-0005",
+                           "PkgID": "example-lib@3.1.0",
+                           "PkgName": "example-lib",
+                           "InstalledVersion": "3.1.0",
+                           "FixedVersion": "3.1.1",
+                           "Severity": "CRITICAL",
+                           "Description": "Another random test vulnerability for testing purposes.",
+                           "PrimaryURL": "https://example.com/CVE-2023-0005"
+                        }
+                   ]
+                }
+            ]
+        }""".stripIndent()
+
+        when:
+        def topIssues = TrivyResultProcessor.parseFile(scan, 2)
+
+        then:
+        topIssues.size() == 2
+        topIssues[0].severity == "CRITICAL"
+        topIssues[0].id == "CVE-2023-0005"
+        topIssues[1].severity == "HIGH"
+        topIssues[1].id == "CVE-2023-0003"
+
+        when:
+        def allIssues = TrivyResultProcessor.parseFile(scan)
+        then:
+        allIssues.size() == 5
+
+        cleanup:
+        folder?.deleteDir()
+    }
+
+    def 'should not fail with empty list' () {
+        expect:
+        TrivyResultProcessor.filter([], 10) == []
+    }
+
     def "process should throw exception if json is not correct"() {
         when:
-        TrivyResultProcessor.process("invalid json")
+        TrivyResultProcessor.parseJson("invalid json")
         then:
         thrown ScanRuntimeException
     }

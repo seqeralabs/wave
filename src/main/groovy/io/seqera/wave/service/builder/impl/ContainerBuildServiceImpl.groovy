@@ -29,7 +29,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.core.annotation.Nullable
-import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.auth.RegistryCredentialsProvider
@@ -191,8 +190,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         catch (Throwable e) {
             log.error "== Container build unexpected exception: ${e.message} - request=$req", e
             final result = BuildResult.failed(req.buildId, e.message, req.startTime)
-            buildStore.storeBuild(req.targetImage, new BuildEntry(req, result))
-            eventPublisher.publishEvent(new BuildEvent(req, result))
+            handleBuildCompletion(new BuildEntry(req, result))
         }
     }
 
@@ -326,16 +324,14 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         final result = state.completed()
                 ? BuildResult.completed(buildId, state.exitCode, state.stdout, job.creationTime, digest)
                 : BuildResult.failed(buildId, state.stdout, job.creationTime)
-        buildStore.storeBuild(job.entryKey, entry.withResult(result))
-        eventPublisher.publishEvent(new BuildEvent(entry.request, result))
+        handleBuildCompletion(entry.withResult(result))
         log.info "== Container build completed '${entry.request.targetImage}' - operation=${job.operationName}; exit=${state.exitCode}; status=${state.status}; duration=${result.duration}"
     }
 
     @Override
     void onJobException(JobSpec job, BuildEntry entry, Throwable error) {
         final result= BuildResult.failed(entry.request.buildId, error.message, job.creationTime)
-        buildStore.storeBuild(job.entryKey, entry.withResult(result))
-        eventPublisher.publishEvent(new BuildEvent(entry.request, result))
+        handleBuildCompletion(entry.withResult(result))
         log.error("== Container build exception '${entry.request.targetImage}' - operation=${job.operationName}; cause=${error.message}", error)
     }
 
@@ -343,21 +339,26 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     void onJobTimeout(JobSpec job, BuildEntry entry) {
         final buildId = entry.request.buildId
         final result= BuildResult.failed(buildId, "Container image build timed out '${entry.request.targetImage}'", job.creationTime)
-        buildStore.storeBuild(job.entryKey, entry.withResult(result))
-        eventPublisher.publishEvent(new BuildEvent(entry.request, result))
+        handleBuildCompletion(entry.withResult(result))
         log.warn "== Container build time out '${entry.request.targetImage}'; operation=${job.operationName}; duration=${result.duration}"
+    }
+
+    protected handleBuildCompletion(BuildEntry entry) {
+        final event = new BuildEvent(entry.request, entry.result)
+        final targetImage = entry.request.targetImage
+        // since the underlying persistence is *not* transactional
+        // the scan request should be submitted *before* updating the record
+        // otherwise the scan status service can detect a complete build
+        // for which a scan is requested but not scan record exists
+        scanService?.scanOnBuild(entry)
+        buildStore.storeBuild(targetImage, entry)
+        persistenceService.saveBuildAsync(WaveBuildRecord.fromEvent(event))
+        eventPublisher.publishEvent(event)
     }
 
     // **************************************************************
     // **               build record implementation
     // **************************************************************
-
-    @EventListener
-    protected void onBuildEvent(BuildEvent event) {
-        final record0 = WaveBuildRecord.fromEvent(event)
-        persistenceService.saveBuild(record0)
-        scanService?.scanOnBuild(event)
-    }
 
     /**
      * Retrieve the build record for the specified id.

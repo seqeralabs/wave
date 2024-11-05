@@ -105,7 +105,7 @@ class ContainerMirrorServiceTest extends Specification {
         and:
         def state = MirrorResult.of(request)
         and:
-        persistenceService.saveMirrorResult(state)
+        persistenceService.saveMirrorResultAsync(state)
         when:
         def copy = mirrorService.getMirrorResult(request.mirrorId)
         then:

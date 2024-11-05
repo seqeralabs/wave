@@ -21,6 +21,8 @@ package io.seqera.wave.service.scan
 import java.nio.file.Path
 
 import groovy.json.JsonSlurper
+import groovy.transform.CompileDynamic
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.exception.ScanRuntimeException
 /**
@@ -30,16 +32,31 @@ import io.seqera.wave.exception.ScanRuntimeException
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
+@CompileStatic
 class TrivyResultProcessor {
 
-    static List<ScanVulnerability> process(Path reportFile) {
-        process(reportFile.getText())
+    /**
+     * Parse a Trivy vulnerabilities JSON file and return a list of {@link ScanVulnerability} entries
+     *
+     * @param scanFile
+     *      The {@link Path} of the Trivy JSON file to be scanned
+     * @param maxEntries
+     *      The max number of vulnerabilities that should be returned giving precedence to the
+     *      most severe vulnerabilities e.g. one critical and one medium issues are found and
+     *      1 is specified as {@code maxEntries} only the critical issues is returned.
+     * @return
+     *      The list of {@link ScanVulnerability} entries as parsed in from the JSON file.
+     */
+    static List<ScanVulnerability> parseFile(Path scanFile, Integer maxEntries=null) {
+        final result = parseJson(scanFile.getText())
+        return maxEntries>0 ? filter(result, maxEntries) : result
     }
 
-    static List<ScanVulnerability> process(String trivyResult) {
+    @CompileDynamic
+    static List<ScanVulnerability> parseJson(String scanJson) {
         final slurper = new JsonSlurper()
         try{
-            final jsonMap = slurper.parseText(trivyResult) as Map
+            final jsonMap = slurper.parseText(scanJson) as Map
             return jsonMap.Results.collect { result ->
                 result.Vulnerabilities.collect { vulnerability ->
                     new ScanVulnerability(
@@ -56,5 +73,9 @@ class TrivyResultProcessor {
         catch(Throwable e){
             throw new ScanRuntimeException("Failed to parse the trivy result", e)
         }
+    }
+
+    static protected List<ScanVulnerability> filter(List<ScanVulnerability> vulnerabilities, int limit){
+        vulnerabilities.toSorted((v,w) -> w.compareTo(v)).take(limit)
     }
 }

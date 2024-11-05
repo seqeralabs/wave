@@ -128,7 +128,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         when:
         storage.initializeDb()
         and:
-        storage.saveBuild(build)
+        storage.saveBuildAsync(build)
         then:
         sleep 100
         def stored = storage.loadBuild(request.buildId)
@@ -160,7 +160,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def record = WaveBuildRecord.fromEvent(event)
 
         and:
-        persistence.saveBuild(record)
+        persistence.saveBuildAsync(record)
 
         when:
         sleep 100
@@ -248,7 +248,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def build1 = WaveBuildRecord.fromEvent(new BuildEvent(request, result))
 
         when:
-        persistence.saveBuild(build1)
+        persistence.saveBuildAsync(build1)
         sleep 100
         then:
         persistence.loadBuild(request.buildId) == build1
@@ -281,7 +281,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         and:
         def request = new WaveContainerRecord(req, data, wave, addr, exp)
         and:
-        persistence.saveContainerRequest(request)
+        persistence.saveContainerRequestAsync(request)
         and:
         sleep 200  // <-- the above request is async, give time to save it
         
@@ -293,7 +293,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         // should update the record
         when:
-        persistence.updateContainerRequest(TOKEN, new ContainerDigestPair('111', '222'))
+        persistence.updateContainerRequestAsync(TOKEN, new ContainerDigestPair('111', '222'))
         and:
         sleep 200
         then:
@@ -323,7 +323,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def CVE4 = new ScanVulnerability('cve-4', 'x4', 'title4', 'package4', 'version4', 'fixed4', 'url4')
         def scan = new WaveScanRecord(SCAN_ID, BUILD_ID, null, null, CONTAINER_IMAGE, PLATFORM, NOW, Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3], null, null)
         when:
-        persistence.saveScanRecord(scan)
+        persistence.saveScanRecordAsync(scan)
+        sleep 200
         then:
         def result = persistence.loadScanRecord(SCAN_ID)
         and:
@@ -342,7 +343,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def scanRecord2 = new WaveScanRecord(SCAN_ID2, BUILD_ID2, null, null, CONTAINER_IMAGE, PLATFORM, NOW, Duration.ofSeconds(20), 'FAILED', [CVE1, CVE4], 1, "Error 'quote'")
         and:
         // should save the same CVE into another build
-        persistence.saveScanRecord(scanRecord2)
+        persistence.saveScanRecordAsync(scanRecord2)
+        sleep 200
         then:
         def result2 = persistence.loadScanRecord(SCAN_ID2)
         and:
@@ -371,7 +373,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         !persistence.existsScanRecord(SCAN_ID)
 
         when:
-        persistence.saveScanRecord(scan)
+        persistence.saveScanRecordAsync(scan)
+        sleep 200
         then:
         persistence.existsScanRecord(SCAN_ID)
     }
@@ -398,7 +401,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         storage.initializeDb()
         and:
         def result = MirrorEntry.of(request).getResult()
-        storage.saveMirrorResult(result)
+        storage.saveMirrorResultAsync(result)
         sleep 100
 
         when:
@@ -458,9 +461,9 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def result1 = MirrorResult.of(request1).complete(1, 'err')
         def result2 = MirrorResult.of(request2).complete(0, 'ok')
         def result3 = MirrorResult.of(request3).complete(0, 'ok')
-        storage.saveMirrorResult(result1)
-        storage.saveMirrorResult(result2)
-        storage.saveMirrorResult(result3)
+        storage.saveMirrorResultAsync(result1)
+        storage.saveMirrorResultAsync(result2)
+        storage.saveMirrorResultAsync(result3)
         sleep 100
 
         when:
@@ -506,7 +509,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def build1 = WaveBuildRecord.fromEvent(new BuildEvent(request, result))
 
         when:
-        persistence.saveBuild(build1)
+        persistence.saveBuildAsync(build1)
         sleep 100
         then:
         persistence.loadBuild(request.buildId) == build1
@@ -562,11 +565,12 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def scan4 = new WaveScanRecord('sc-01234567890abcdef_4', '103', null, null, CONTAINER_IMAGE, PLATFORM,Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1], null, null)
 
         when:
-        persistence.saveScanRecord(scan1)
-        persistence.saveScanRecord(scan2)
-        persistence.saveScanRecord(scan3)
-        persistence.saveScanRecord(scan4)
-
+        persistence.saveScanRecordAsync(scan1)
+        persistence.saveScanRecordAsync(scan2)
+        persistence.saveScanRecordAsync(scan3)
+        persistence.saveScanRecordAsync(scan4)
+        and:
+        sleep 200
         then:
         persistence.allScans("1234567890abcdef") == [scan3, scan2, scan1]
         and:
