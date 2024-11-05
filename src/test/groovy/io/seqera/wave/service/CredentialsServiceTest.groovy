@@ -166,7 +166,7 @@ class CredentialsServiceTest extends Specification {
                 registry: 'docker.io'
         )
         and:
-        def identity = new PlatformId(new User(id:10), 100,"token",'tower.io', '101')
+        def identity = new PlatformId(new User(id:10), 100, 'token', 'tower.io', '101')
         def auth = JwtAuth.of(identity)
 
         when:
