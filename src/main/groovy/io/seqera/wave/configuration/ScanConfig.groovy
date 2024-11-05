@@ -21,16 +21,14 @@ package io.seqera.wave.configuration
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
-
-import io.micronaut.context.annotation.Requires
-import io.micronaut.core.annotation.Nullable
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
-import io.seqera.wave.util.StringUtils
+import io.micronaut.core.annotation.Nullable
 import jakarta.inject.Singleton
 /**
  * Container Scan service settings
@@ -83,8 +81,12 @@ class ScanConfig {
     Duration scanIdDuration
 
     @Nullable
-    @Value('${wave.scan.github-token}')
-    String githubToken
+    @Value('${wave.scan.environment}')
+    List<String> environment
+
+    @Nullable
+    @Value('${wave.scan.vulnerability.limit:100}')
+    Integer vulnerabilityLimit
 
     String getScanImage() {
         return scanImage
@@ -118,8 +120,23 @@ class ScanConfig {
         return severity
     }
 
+    List<Tuple2<String,String>> getEnvironmentAsTuples() {
+        if( !environment )
+            return List.of()
+        final result = new ArrayList<Tuple2<String,String>>()
+        for( String entry : environment ) {
+            final p=entry.indexOf('=')
+            final name = p!=-1 ? entry.substring(0,p) : entry
+            final value = p!=-1 ? entry.substring(p+1) : ''
+            if( !value )
+                log.warn "Invalid 'wave.scan.environment value' -- offending entry: '$entry'"
+            result.add(new Tuple2(name,value))
+        }
+        return result
+    }
+
     @PostConstruct
     private void init() {
-        log.info("Scanner config: docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}; severity: $severity; retry-attempts: $retryAttempts; github-token=${StringUtils.redact(githubToken)}")
+        log.info("Scan config: docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}; severity: $severity; vulnerability-limit: $vulnerabilityLimit; retry-attempts: $retryAttempts; env=${environment}")
     }
 }

@@ -49,6 +49,7 @@ import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanRequest
 import io.seqera.wave.service.scan.ScanStrategy
 import io.seqera.wave.test.TestHelper
@@ -328,10 +329,10 @@ class ContainerBuildServiceTest extends Specification {
 
         and:
         def result = new BuildResult(request.buildId, 0, "content", Instant.now(), Duration.ofSeconds(1), 'abc123')
-        def event = new BuildEvent(request, result)
+        def entry = new BuildEntry(request, result)
 
         when:
-        service.onBuildEvent(event)
+        service.handleBuildCompletion(entry)
 
         then:
         def record = service.getBuildRecord(request.buildId)
@@ -352,10 +353,12 @@ class ContainerBuildServiceTest extends Specification {
 
     def 'should handle job completion event and update build store'() {
         given:
-        def mockBuildStore = Mock(BuildStateStore)
-        def mockProxyService = Mock(RegistryProxyService)
-        def mockEventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
-        def service = new ContainerBuildServiceImpl(buildStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
+        def buildStore = Mock(BuildStateStore)
+        def proxyService = Mock(RegistryProxyService)
+        def persistenceService = Mock(PersistenceService)
+        def scanService = Mock(ContainerScanService)
+        def eventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
+        def service = new ContainerBuildServiceImpl(buildStore: buildStore, proxyService: proxyService, eventPublisher: eventPublisher, persistenceService: persistenceService, scanService:scanService, buildConfig: buildConfig)
         def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
         def state = JobState.succeeded('logs')
         def res = BuildResult.create('1')
@@ -363,7 +366,8 @@ class ContainerBuildServiceTest extends Specification {
                 targetImage: 'docker.io/foo:0',
                 buildId: '1',
                 startTime: Instant.now(),
-                maxDuration: Duration.ofMinutes(1)
+                maxDuration: Duration.ofMinutes(1),
+                identity: PlatformId.NULL
         )
         def build = new BuildEntry(req, res)
 
@@ -371,19 +375,24 @@ class ContainerBuildServiceTest extends Specification {
         service.onJobCompletion(job, build, state)
 
         then:
-        1 * mockBuildStore.storeBuild('1', _)
+        1 * scanService.scanOnBuild(_) >> null
         and:
-        1 * mockProxyService.getImageDigest(_, _) >> 'digest'
+        1 * buildStore.storeBuild(req.targetImage, _) >> null
         and:
-        1 * mockEventPublisher.publishEvent(_)
+        1 * proxyService.getImageDigest(_, _) >> 'digest'
+        and:
+        1 * persistenceService.saveBuildAsync(_) >> null
+        and:
+        1 * eventPublisher.publishEvent(_)
     }
 
     def 'should handle job error event and update build store'() {
         given:
-        def mockBuildStore = Mock(BuildStateStore)
-        def mockProxyService = Mock(RegistryProxyService)
-        def mockEventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
-        def service = new ContainerBuildServiceImpl(buildStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
+        def buildStore = Mock(BuildStateStore)
+        def proxyService = Mock(RegistryProxyService)
+        def persistenceService = Mock(PersistenceService)
+        def eventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
+        def service = new ContainerBuildServiceImpl(buildStore: buildStore, proxyService: proxyService, eventPublisher: eventPublisher, persistenceService:persistenceService, buildConfig: buildConfig)
         def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
         def error = new Exception('error')
         def res = BuildResult.create('1')
@@ -391,7 +400,8 @@ class ContainerBuildServiceTest extends Specification {
                 targetImage: 'docker.io/foo:0',
                 buildId: '1',
                 startTime: Instant.now(),
-                maxDuration: Duration.ofMinutes(1)
+                maxDuration: Duration.ofMinutes(1),
+                identity: PlatformId.NULL
         )
         def build = new BuildEntry(req, res)
 
@@ -399,24 +409,28 @@ class ContainerBuildServiceTest extends Specification {
         service.onJobException(job, build, error)
 
         then:
-        1 * mockBuildStore.storeBuild('1', _)
+        1 * buildStore.storeBuild(req.targetImage, _) >> null
         and:
-        1 * mockEventPublisher.publishEvent(_)
+        1 * persistenceService.saveBuildAsync(_) >> null
+        and:
+        1 * eventPublisher.publishEvent(_)
     }
 
     def 'should handle job timeout event and update build store'() {
         given:
-        def mockBuildStore = Mock(BuildStateStore)
-        def mockProxyService = Mock(RegistryProxyService)
-        def mockEventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
-        def service = new ContainerBuildServiceImpl(buildStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
+        def buildStore = Mock(BuildStateStore)
+        def proxyService = Mock(RegistryProxyService)
+        def persistenceService = Mock(PersistenceService)
+        def eventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
+        def service = new ContainerBuildServiceImpl(buildStore: buildStore, proxyService: proxyService, eventPublisher: eventPublisher, persistenceService:persistenceService, buildConfig: buildConfig)
         def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
         def res = BuildResult.create('1')
         def req = new BuildRequest(
                 targetImage: 'docker.io/foo:0',
                 buildId: '1',
                 startTime: Instant.now(),
-                maxDuration: Duration.ofMinutes(1)
+                maxDuration: Duration.ofMinutes(1),
+                identity: PlatformId.NULL
         )
         def build = new BuildEntry(req, res)
 
@@ -424,9 +438,11 @@ class ContainerBuildServiceTest extends Specification {
         service.onJobTimeout(job, build)
 
         then:
-        1 * mockBuildStore.storeBuild('1', _)
+        1 * buildStore.storeBuild(req.targetImage, _) >> null
         and:
-        1 * mockEventPublisher.publishEvent(_)
+        1 * persistenceService.saveBuildAsync(_) >> null
+        and:
+        1 * eventPublisher.publishEvent(_)
     }
 
 }

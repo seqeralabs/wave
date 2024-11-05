@@ -84,7 +84,11 @@ wave:
       multiplier: '1.75'
   scan:
     image:
-      name: aquasec/trivy:0.55.0
+      name: aquasec/trivy:0.56.2
+    environment:
+      # see https://github.com/aquasecurity/trivy/discussions/7668#discussioncomment-11028887
+      - "TRIVY_DB_REPOSITORY=public.ecr.aws/aquasecurity/trivy-db"
+      - "TRIVY_JAVA_DB_REPOSITORY=public.ecr.aws/aquasecurity/trivy-java-db"
   blobCache:
     s5cmdImage: public.cr.seqera.io/wave/s5cmd:v2.2.2
 ---
