@@ -131,7 +131,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
         // for which a scan is requested but not scan record exists
         scanService?.scanOnMirror(updated)
         store.putEntry(updated)
-        persistence.saveMirrorResult(result)
+        persistence.saveMirrorResultAsync(result)
         log.debug "Mirror container completed - job=${jobSpec.operationName}; result=${result}; state=${jobState}"
     }
 
@@ -142,7 +142,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
     void onJobTimeout(JobSpec jobSpec, MirrorEntry entry) {
         final result = entry.result.complete(null, "Container mirror timed out")
         store.putEntry(entry.withResult(result))
-        persistence.saveMirrorResult(result)
+        persistence.saveMirrorResultAsync(result)
         log.warn "Mirror container timed out - job=${jobSpec.operationName}; result=${result}"
     }
 
@@ -153,7 +153,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
     void onJobException(JobSpec job, MirrorEntry entry, Throwable error) {
         final result = entry.result.complete(null, error.message)
         store.putEntry(entry.withResult(result))
-        persistence.saveMirrorResult(result)
+        persistence.saveMirrorResultAsync(result)
         log.error("Mirror container errored - job=${job.operationName}; result=${result}", error)
     }
 

@@ -22,7 +22,6 @@ import java.nio.file.Path
 import java.time.Duration
 import javax.annotation.PostConstruct
 
-import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.custom.Quantity
@@ -36,7 +35,6 @@ import io.kubernetes.client.openapi.models.V1JobStatus
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
-import io.kubernetes.client.openapi.models.V1PodList
 import io.kubernetes.client.openapi.models.V1ResourceRequirements
 import io.kubernetes.client.openapi.models.V1Volume
 import io.kubernetes.client.openapi.models.V1VolumeMount
@@ -46,9 +44,9 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.service.scan.Trivy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -134,61 +132,6 @@ class K8sServiceImpl implements K8sService {
             log.debug "Checking container platform '$it.key'; selector '$it.value'"
             ContainerPlatform.of(it.key) // <-- if invalid it will throw an exception
         }
-    }
-
-    /**
-     * Create a K8s job with the specified name
-     *
-     * @param name
-     *      The K8s job name. It must be unique
-     * @param containerImage
-     *      The container image to be used to run the job
-     * @param args
-     *      The command to be executed by the job
-     * @return
-     *      An instance of {@link V1Job}
-     */
-    @Override
-    @CompileDynamic
-    @Deprecated
-    V1Job createJob(String name, String containerImage, List<String> args) {
-
-        V1Job body = new V1JobBuilder()
-                .withNewMetadata()
-                    .withNamespace(namespace)
-                    .withName(name)
-                .endMetadata()
-                .withNewSpec()
-                    .withBackoffLimit(0)
-                    .withNewTemplate()
-                    .editOrNewSpec()
-                    .addNewContainer()
-                        .withName(name)
-                        .withImage(containerImage)
-                        .withArgs(args)
-                    .endContainer()
-                    .withRestartPolicy("Never")
-                .endSpec()
-                .endTemplate()
-                .endSpec()
-                .build()
-
-        return k8sClient
-                .batchV1Api()
-                .createNamespacedJob(namespace, body, null, null, null,null)
-    }
-
-    /**
-     * Get a Jobs Job.
-     *
-     * @param name The job name
-     * @return An instance of {@link V1Job}
-     */
-    @Override
-    V1Job getJob(String name) {
-        k8sClient
-                .batchV1Api()
-                .readNamespacedJob(name, namespace, null)
     }
 
     /**
@@ -307,31 +250,7 @@ class K8sServiceImpl implements K8sService {
                 .subPath(rel)
     }
 
-    /**
-     * Create a container for container image building via buildkit
-     *
-     * @param name
-     *      The name of pod
-     * @param containerImage
-     *      The container image to be used
-     * @param args
-     *      The build command to be performed
-     * @param workDir
-     *      The build context directory
-     * @param creds
-     *      The target container repository credentials
-     * @return
-     *      The {@link V1Pod} description the submitted pod
-     */
-    @Override
     @Deprecated
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, Map<String,String> nodeSelector) {
-        final spec = buildSpec(name, containerImage, args, workDir, creds, timeout, nodeSelector)
-        return k8sClient
-                .coreV1Api()
-                .createNamespacedPod(namespace, spec, null, null, null,null)
-    }
-
     V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, Duration timeout, Map<String,String> nodeSelector) {
 
         // dirty dependency to avoid introducing another parameter
@@ -409,47 +328,6 @@ class K8sServiceImpl implements K8sService {
     }
 
     /**
-     * Wait for a pod a completion.
-     *
-     * NOTE: this method assumes the pod is running exactly *one* container.
-     *
-     * @param pod
-     *      The pod name
-     * @param timeout
-     *      Max wait time in milliseconds
-     * @return
-     *      An Integer value representing the container exit code or {@code null} if the state cannot be determined
-     *      or timeout was reached.
-     */
-    @Override
-    @Deprecated
-    Integer waitPodCompletion(V1Pod pod, long timeout) {
-        final start = System.currentTimeMillis()
-        // wait for termination
-        while( true ) {
-            final phase = pod.status?.phase
-            if(  phase && phase != 'Pending' ) {
-                final status = pod.status.containerStatuses.first()
-                if( !status )
-                    return null
-                if( !status.state )
-                    return null
-                if( status.state.terminated ) {
-                    return status.state.terminated.exitCode
-                }
-            }
-
-            if( phase == 'Failed' )
-                return null
-            final delta = System.currentTimeMillis()-start
-            if( delta > timeout )
-                return null
-            sleep 5_000
-            pod = getPod(pod.metadata.name)
-        }
-    }
-
-    /**
      * Fetch the logs of a pod.
      *
      * NOTE: this method assume the pod runs exactly *one* container.
@@ -479,36 +357,6 @@ class K8sServiceImpl implements K8sService {
         k8sClient
                 .coreV1Api()
                 .deleteNamespacedPod(name, namespace, (String)null, (String)null, (Integer)null, (Boolean)null, (String)null, (V1DeleteOptions)null)
-    }
-
-    /**
-     * Delete a pod where the status is reached
-     *
-     * @param name The name of the pod to be deleted
-     * @param statusName The status to be reached
-     * @param timeout The max wait time in milliseconds
-     */
-    @Override
-    @Deprecated
-    void deletePodWhenReachStatus(String podName, String statusName, long timeout){
-        final pod = getPod(podName)
-        final start = System.currentTimeMillis()
-        while( (System.currentTimeMillis() - start) < timeout ) {
-            if( pod?.status?.phase == statusName ) {
-                deletePod(podName)
-                return
-            }
-            sleep 5_000
-        }
-    }
-
-    @Override
-    @Deprecated
-    V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
-        final spec = scanSpec(name, containerImage, args, workDir, creds, scanConfig, nodeSelector)
-        return k8sClient
-                .coreV1Api()
-                .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
     @Deprecated
@@ -863,33 +711,6 @@ class K8sServiceImpl implements K8sService {
         for( Map.Entry<String,String> it : env )
             result.add( new V1EnvVar().name(it.key).value(it.value) )
         return result
-    }
-
-    /**
-     * Wait for a job to complete
-     *
-     * @param k8s job
-     * @param timeout
-     *      Max wait time in milliseconds
-     * @return list of pods created by the job
-     */
-    @Deprecated
-    @Override
-    V1PodList waitJob(V1Job job, Long timeout) {
-        sleep 5_000
-        final startTime = System.currentTimeMillis()
-        // wait for termination
-        while (System.currentTimeMillis() - startTime < timeout) {
-            final name = job.metadata.name
-            final status = getJobStatus(name)
-            if (status != JobStatus.Pending) {
-                return k8sClient
-                        .coreV1Api()
-                        .listNamespacedPod(namespace, null, null, null, null, "job-name=$name", null, null, null, null, null, null)
-            }
-            job = getJob(name)
-        }
-        return null
     }
 
     /**

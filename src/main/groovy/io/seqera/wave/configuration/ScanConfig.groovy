@@ -84,6 +84,10 @@ class ScanConfig {
     @Value('${wave.scan.environment}')
     List<String> environment
 
+    @Nullable
+    @Value('${wave.scan.vulnerability.limit:100}')
+    Integer vulnerabilityLimit
+
     String getScanImage() {
         return scanImage
     }
@@ -91,7 +95,11 @@ class ScanConfig {
     @Memoized
     Path getCacheDirectory() {
         final result = Path.of(buildDirectory).toAbsolutePath().resolve('.trivy-cache')
-        Files.createDirectories(result)
+        try {
+            Files.createDirectories(result)
+        } catch (IOException e) {
+            log.error "Unable to create scan cache directory=${result} - cause: ${e.message}"
+        }
         return result
     }
 
@@ -133,6 +141,6 @@ class ScanConfig {
 
     @PostConstruct
     private void init() {
-        log.info("Scan config: docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}; severity: $severity; retry-attempts: $retryAttempts; env=${environment}")
+        log.info("Scan config: docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}; severity: $severity; vulnerability-limit: $vulnerabilityLimit; retry-attempts: $retryAttempts; env=${environment}")
     }
 }
