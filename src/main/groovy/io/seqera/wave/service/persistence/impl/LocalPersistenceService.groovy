@@ -42,7 +42,7 @@ class LocalPersistenceService implements PersistenceService {
     private Map<String,MirrorResult> mirrorStore = new HashMap<>()
 
     @Override
-    void saveBuild(WaveBuildRecord record) {
+    void saveBuildAsync(WaveBuildRecord record) {
         buildStore[record.buildId] = record
     }
 
@@ -76,12 +76,12 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveContainerRequest(WaveContainerRecord data) {
+    void saveContainerRequestAsync(WaveContainerRecord data) {
         requestStore.put(data.id, data)
     }
 
     @Override
-    void updateContainerRequest(String token, ContainerDigestPair digest) {
+    void updateContainerRequestAsync(String token, ContainerDigestPair digest) {
         final data = requestStore.get(token)
         if( data ) {
             requestStore.put(token, new WaveContainerRecord(data, digest.source, digest.target))
@@ -99,7 +99,7 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveScanRecord(WaveScanRecord scanRecord) {
+    void saveScanRecordAsync(WaveScanRecord scanRecord) {
         scanStore.put(scanRecord.id, scanRecord)
     }
 
@@ -129,7 +129,7 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveMirrorResult(MirrorResult mirror) {
+    void saveMirrorResultAsync(MirrorResult mirror) {
         mirrorStore.put(mirror.mirrorId, mirror)
     }
 

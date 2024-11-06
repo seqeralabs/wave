@@ -29,7 +29,7 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.api.ScanMode
 import io.seqera.wave.configuration.ScanConfig
-import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.cleanup.CleanupService
 import io.seqera.wave.service.inspect.ContainerInspectService
@@ -106,14 +106,14 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     }
 
     @Override
-    void scanOnBuild(BuildEvent event) {
+    void scanOnBuild(BuildEntry entry) {
         try {
-            if( event.request.scanId && event.result.succeeded() && event.request.format == DOCKER ) {
-                scan(fromBuild(event.request))
+            if( entry.request.scanId && entry.result.succeeded() && entry.request.format == DOCKER ) {
+                scan(fromBuild(entry.request))
             }
         }
         catch (Exception e) {
-            log.warn "Unable to run the container scan - image=${event.request.targetImage}; reason=${e.message?:e}"
+            log.warn "Unable to run the container scan - image=${entry.request.targetImage}; reason=${e.message?:e}"
         }
     }
 
@@ -132,16 +132,16 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     @Override
     void scanOnRequest(ContainerRequest request) {
         try {
-            if( request.scanId && request.isContainer() && !request.dryRun ) {
+            if( request.scanId && request.scanMode && request.isContainer() && !request.dryRun ) {
                 log.debug "Container scan required by scanOnRequest=$request"
                 scan(fromContainer(request))
             }
-            else if( request.scanId && !request.isContainer() && request.buildNew==false && !request.dryRun && !existsScan(request.scanId) ) {
+            else if( request.scanId && request.scanMode && !request.isContainer() && request.buildNew==false && request.succeeded && !request.dryRun && !existsScan(request.scanId) ) {
                 log.debug "Container scan required by cached request=$request"
                 scan(fromContainer(request))
             }
             else {
-                log.debug "Container scan NOT required by scanOnRequest=$request"
+                log.debug "Container scan NOT required by request=$request"
             }
         }
         catch (Exception e) {
@@ -151,9 +151,18 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
 
     @Override
     void scan(ScanRequest request) {
-        //start scanning of build container
-        CompletableFuture
-                .runAsync(() -> launch(request), executor)
+        try {
+            // create a record to mark the beginning
+            final scan = ScanEntry.create(request)
+            if( scanStore.putIfAbsent(scan.scanId, scan) ) {
+                //start scanning of build container
+                CompletableFuture.runAsync(() -> launch(request), executor)
+            }
+        }
+        catch (Throwable e){
+            log.warn "Unable to save scan result - id=${request.scanId}; cause=${e.message}", e
+            storeScanEntry(ScanEntry.failure(request))
+        }
     }
 
     @Override
@@ -181,14 +190,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
 
     protected void launch(ScanRequest request) {
         try {
-            // create a record to mark the beginning
-            final scan = ScanEntry.create(request)
-            if( scanStore.putIfAbsent(scan.scanId, scan) ) {
-                //increment metrics
-                CompletableFuture.supplyAsync(() -> metricsService.incrementScansCounter(request.identity), executor)
-                // launch container scan
-                jobService.launchScan(request)
-            }
+            incrScanMetrics(request)
+            jobService.launchScan(request)
         }
         catch (Throwable e){
             log.warn "Unable to save scan result - id=${request.scanId}; cause=${e.message}", e
@@ -196,6 +199,16 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         }
     }
 
+    protected void incrScanMetrics(ScanRequest request) {
+        try {
+            //increment metrics
+            metricsService.incrementScansCounter(request.identity)
+        }
+        catch (Throwable e) {
+            log.warn "Enable to increase scan metrics - cause: ${e.cause}", e
+        }
+    }
+    
     protected ScanRequest fromBuild(BuildRequest request) {
         final workDir = request.workDir.resolveSibling(request.scanId)
         return new ScanRequest(
@@ -256,12 +269,14 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         ScanEntry result
         if( state.succeeded() ) {
             try {
-                result = entry.success(TrivyResultProcessor.process(job.workDir.resolve(Trivy.OUTPUT_FILE_NAME)))
+                final scanFile = job.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
+                final vulnerabilities = TrivyResultProcessor.parseFile(scanFile, config.vulnerabilityLimit)
+                result = entry.success(vulnerabilities)
                 log.info("Container scan succeeded - id=${entry.scanId}; exit=${state.exitCode}; stdout=${state.stdout}")
             }
             catch (NoSuchFileException e) {
                 result = entry.failure(0, "No such file: ${e.message}")
-                log.warn("Container scan failed - id=${entry.scanId}; exit=${state.exitCode}; stdout=${state.stdout}; exception: NoSuchFile=${e.message}")
+                log.warn("Container scan failed - id=${entry.scanId}; NoSuchFile=${e.message}")
             }
         }
         else{
@@ -289,7 +304,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
             //save scan results in the redis cache
             scanStore.storeScan(scan)
             // save in the persistent layer
-            persistenceService.saveScanRecord(new WaveScanRecord(scan))
+            persistenceService.saveScanRecordAsync(new WaveScanRecord(scan))
             // when the scan fails delete the scanId via cleanup service
             // this is needed to prevent the caching of the scanId and
             // allow re-scanning the container in case of a job failure

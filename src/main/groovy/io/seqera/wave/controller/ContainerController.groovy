@@ -29,6 +29,7 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
+import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Delete
 import io.micronaut.http.annotation.Error
@@ -181,13 +182,13 @@ class ContainerController {
     @Deprecated
     @Post('/container-token')
     @ExecuteOn(TaskExecutors.IO)
-    CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
+    CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, @Body SubmitContainerTokenRequest req) {
         return getContainerImpl(httpRequest, req, false)
     }
 
     @Post('/v1alpha2/container')
     @ExecuteOn(TaskExecutors.IO)
-    CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getTokenV2(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
+    CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getTokenV2(HttpRequest httpRequest, @Body SubmitContainerTokenRequest req) {
         return getContainerImpl(httpRequest, req, true)
     }
 
@@ -284,7 +285,7 @@ class ContainerController {
     protected void storeContainerRequest0(SubmitContainerTokenRequest req, ContainerRequest data, TokenData token, String target, String ip) {
         try {
             final recrd = new WaveContainerRecord(req, data, target, ip, token.expiration)
-            persistenceService.saveContainerRequest(recrd)
+            persistenceService.saveContainerRequestAsync(recrd)
         }
         catch (Throwable e) {
             log.error("Unable to store container request with token: ${token}", e)

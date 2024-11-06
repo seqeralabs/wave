@@ -55,7 +55,13 @@ interface SurrealClient {
     Flux<Map<String, Object>> sqlAsync(@Header String authorization, @Body String body)
 
     @Post("/sql")
+    Flux<List<Map<String, Object>>> sqlAsyncMany(@Header String authorization, @Body String body)
+
+    @Post("/sql")
     Map<String, Object> sqlAsMap(@Header String authorization, @Body String body)
+
+    @Post("/sql")
+    List<Map<String, Object>> sqlAsList(@Header String authorization, @Body String body)
 
     @Post("/sql")
     String sqlAsString(@Header String authorization, @Body String body)

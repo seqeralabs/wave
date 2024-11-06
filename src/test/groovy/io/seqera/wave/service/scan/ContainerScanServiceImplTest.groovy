@@ -27,6 +27,7 @@ import java.time.Duration
 import java.time.Instant
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.api.ScanMode
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildFormat
@@ -150,7 +151,7 @@ class ContainerScanServiceImplTest extends Specification {
         and:
         def KEY = 'scan-20'
         def jobService = Mock(JobService)
-        def service = new ContainerScanServiceImpl(scanStore: scanStore, persistenceService: persistenceService, jobService: jobService)
+        def service = new ContainerScanServiceImpl(scanStore: scanStore, persistenceService: persistenceService, jobService: jobService, config: new ScanConfig(vulnerabilityLimit: 100))
         def job = JobSpec.scan(KEY, 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), workDir)
         def scan = ScanEntry.of(scanId: KEY, buildId: 'build-20', containerImage: 'ubuntu:latest', startTime: Instant.now())
 
@@ -367,6 +368,7 @@ class ContainerScanServiceImplTest extends Specification {
         def scanService = Spy(new ContainerScanServiceImpl(inspectService: inspectService, config: config))
         def request = Mock(ContainerRequest)
         request.scanId >> SCAN_ID
+        request.scanMode >> MODE
         request.isContainer() >> CONTAINER
         request.dryRun >> DRY_RUN
         and:
@@ -379,12 +381,14 @@ class ContainerScanServiceImplTest extends Specification {
         RUN_TIMES * scanService.scan(scan) >> null
 
         where:
-        SCAN_ID | CONTAINER     | DRY_RUN   | RUN_TIMES
-        null    | false         | false     | 0
-        'sc-123'| false         | false     | 0
-        'sc-123'| true          | false     | 1
-        'sc-123'| true          | true      | 0
-        null    | true          | false     | 0
+        SCAN_ID | MODE              | CONTAINER     | DRY_RUN   | RUN_TIMES
+        null    | ScanMode.async    | false         | false     | 0
+        'sc-123'| ScanMode.async    | false         | false     | 0
+        'sc-123'| ScanMode.async    | true          | false     | 1
+        'sc-123'| ScanMode.required | true          | false     | 1
+        'sc-123'| ScanMode.none     | true          | false     | 0
+        'sc-123'| ScanMode.async    | true          | true      | 0
+        null    | ScanMode.async    | true          | false     | 0
 
     }
 
@@ -398,10 +402,12 @@ class ContainerScanServiceImplTest extends Specification {
         scanService.existsScan(SCAN_ID)  >> EXISTS_SCAN
         and:
         def request = Mock(ContainerRequest)
+        request.scanMode >> MODE
         request.scanId >> SCAN_ID
         request.buildId >> BUILD_ID
         request.buildNew >> BUILD_NEW
         request.dryRun >> DRY_RUN
+        request.succeeded >> SUCCEEDED
         and:
         def scan = Mock(ScanRequest)
 
@@ -412,15 +418,18 @@ class ContainerScanServiceImplTest extends Specification {
         RUN_TIMES * scanService.scan(scan) >> null
 
         where:
-        SCAN_ID | BUILD_ID  | BUILD_NEW | DRY_RUN   | EXISTS_SCAN   | RUN_TIMES
-        null    | null      | null      | null      | false         | 0
-        'sc-123'| null      | null      | null      | false         | 0
+        SCAN_ID | BUILD_ID  | BUILD_NEW | SUCCEEDED | MODE              | DRY_RUN | EXISTS_SCAN | RUN_TIMES
+        null    | null      | null      | null      | ScanMode.async    | null      | false         | 0
+        'sc-123'| null      | null      | null      | ScanMode.async    | null      | false         | 0
         and:
-        'sc-123'| 'bd-123'  | null      | null      | false         | 0
-        'sc-123'| 'bd-123'  | true      | null      | false         | 0
-        'sc-123'| 'bd-123'  | false     | null      | false         | 1
-        'sc-123'| 'bd-123'  | false     | null      | true          | 0
-        'sc-123'| 'bd-123'  | false     | true      | false         | 0
+        'sc-123'| 'bd-123'  | null      | null      | ScanMode.async    | null      | false         | 0
+        'sc-123'| 'bd-123'  | true      | null      | ScanMode.async    | null      | false         | 0
+        'sc-123'| 'bd-123'  | false     | true      | ScanMode.async    | null      | false         | 1
+        'sc-123'| 'bd-123'  | false     | true      | ScanMode.required | null      | false         | 1
+        'sc-123'| 'bd-123'  | false     | true      | ScanMode.none     | null      | false         | 0
+        'sc-123'| 'bd-123'  | false     | false     | ScanMode.async    | null      | false         | 0
+        'sc-123'| 'bd-123'  | false     | null      | ScanMode.async    | null      | true          | 0
+        'sc-123'| 'bd-123'  | false     | null      | ScanMode.async    | true      | false         | 0
     }
 
     def 'should store scan entry' () {
@@ -443,21 +452,21 @@ class ContainerScanServiceImplTest extends Specification {
         scanService.storeScanEntry(scanSucceeded)
         then:
         1 * scanStore.storeScan(scanSucceeded) >> null
-        1 * persistenceService.saveScanRecord(new WaveScanRecord(scanSucceeded)) >> null
+        1 * persistenceService.saveScanRecordAsync(new WaveScanRecord(scanSucceeded)) >> null
         0 * cleanupService.cleanupScanId(container) >> null
 
         when:
         scanService.storeScanEntry(scanNotDone)
         then:
         1 * scanStore.storeScan(scanNotDone) >> null
-        1 * persistenceService.saveScanRecord(new WaveScanRecord(scanNotDone)) >> null
+        1 * persistenceService.saveScanRecordAsync(new WaveScanRecord(scanNotDone)) >> null
         0 * cleanupService.cleanupScanId(container) >> null
 
         when:
         scanService.storeScanEntry(scanFailed)
         then:
         1 * scanStore.storeScan(scanFailed) >> null
-        1 * persistenceService.saveScanRecord(new WaveScanRecord(scanFailed)) >> null
+        1 * persistenceService.saveScanRecordAsync(new WaveScanRecord(scanFailed)) >> null
         1 * cleanupService.cleanupScanId(container) >> null
     }
 }
