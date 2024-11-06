@@ -45,7 +45,7 @@ import redis.clients.jedis.util.JedisURIHelper
 class RedisFactory {
 
     @Singleton
-    @Requires(property = "redis.mode", value = "standalone")
+    @Requires(property = "redis.mode", notEquals = "cluster")
     JedisPool createRedisPool(
             @Value('${redis.uri}') String uri,
             @Value('${redis.pool.minIdle:0}') int minIdle,

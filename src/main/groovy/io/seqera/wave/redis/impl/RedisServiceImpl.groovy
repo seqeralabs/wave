@@ -46,7 +46,7 @@ import redis.clients.jedis.resps.Tuple
 @Slf4j
 @Singleton
 @Requires(property = 'redis.uri')
-@Requires(property = "redis.mode", value = "standalone")
+@Requires(property = "redis.mode", notEquals = "cluster")
 @CompileStatic
 class RedisServiceImpl implements RedisService {
 
