@@ -27,7 +27,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.configuration.RateLimiterConfig
 import io.seqera.wave.configuration.RedisConfig
 import jakarta.inject.Singleton
 import redis.clients.jedis.JedisPool

@@ -22,12 +22,11 @@ import java.time.Duration
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
+import io.seqera.wave.redis.RedisService
 import io.seqera.wave.store.state.CountParams
 import io.seqera.wave.store.state.CountResult
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import redis.clients.jedis.Jedis
-import redis.clients.jedis.JedisPool
 import redis.clients.jedis.params.SetParams
 /**
  * Redis based implementation for a {@link StateProvider}
@@ -40,13 +39,11 @@ import redis.clients.jedis.params.SetParams
 class RedisStateProvider implements StateProvider<String,String> {
 
     @Inject
-    private JedisPool pool
+    RedisService redisService
 
     @Override
     String get(String key) {
-        try( Jedis conn=pool.getResource() ) {
-            return conn.get(key)
-        }
+        return redisService.get(key)
     }
 
     @Override
@@ -56,12 +53,10 @@ class RedisStateProvider implements StateProvider<String,String> {
 
     @Override
     void put(String key, String value, Duration ttl) {
-        try( Jedis conn=pool.getResource() ) {
-            final params = new SetParams()
-            if( ttl )
-                params.px(ttl.toMillis())
-            conn.set(key, value, params)
-        }
+        final params = new SetParams()
+        if( ttl )
+            params.px(ttl.toMillis())
+        redisService.set(key, value, params)
     }
 
     @Override
@@ -71,13 +66,11 @@ class RedisStateProvider implements StateProvider<String,String> {
 
     @Override
     boolean putIfAbsent(String key, String value, Duration ttl) {
-        try( Jedis conn=pool.getResource() ) {
-            final params = new SetParams().nx()
-            if( ttl )
-                params.px(ttl.toMillis())
-            final result = conn.set(key, value, params)
-            return result == 'OK'
-        }
+        final params = new SetParams().nx()
+        if( ttl )
+            params.px(ttl.toMillis())
+        final result = redisService.set(key, value, params)
+        return result == 'OK'
     }
 
     /*
@@ -111,27 +104,21 @@ class RedisStateProvider implements StateProvider<String,String> {
 
     @Override
     CountResult<String> putJsonIfAbsentAndIncreaseCount(String key, String json, Duration ttl, CountParams counter, String mapping) {
-        try( Jedis jedis=pool.getResource() )  {
-            final result = jedis.eval(putAndIncrement(mapping), 3, key, counter.key, counter.field, json, ttl.toMillis().toString())
-            return new CountResult<>(
-                    (result as List)[0] == 1,
-                    (result as List)[1] as String,
-                    (result as List)[2] as Integer)
-        }
+        final result = redisService.eval(putAndIncrement(mapping), 3, key, counter.key, counter.field, json, ttl.toMillis().toString())
+        return new CountResult<>(
+                (result as List)[0] == 1,
+                (result as List)[1] as String,
+                (result as List)[2] as Integer)
     }
 
     @Override
     void remove(String key) {
-        try( Jedis conn=pool.getResource() ) {
-            conn.del(key)
-        }
+        redisService.del(key)
     }
 
     @Override
     void clear() {
-        try( Jedis conn=pool.getResource() ) {
-            conn.flushAll()
-        }
+        redisService.flushAll()
     }
 
 }

@@ -21,10 +21,9 @@ package io.seqera.wave.store.range.impl
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
+import io.seqera.wave.redis.RedisService
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import redis.clients.jedis.Jedis
-import redis.clients.jedis.JedisPool
 import redis.clients.jedis.resps.Tuple
 
 /**
@@ -38,13 +37,11 @@ import redis.clients.jedis.resps.Tuple
 class RedisRangeProvider implements RangeProvider {
 
     @Inject
-    private JedisPool pool
+    RedisService redisService
 
     @Override
     void add(String key, String element, double score) {
-        try(Jedis conn = pool.getResource()) {
-            conn.zadd(key, score, element)
-        }
+        redisService.zadd(key, score, element)
     }
 
     private final static String SCRIPT = '''
@@ -57,20 +54,18 @@ class RedisRangeProvider implements RangeProvider {
 
     @Override
     List<String> getRange(String key, double min, double max, int count, boolean remove) {
-        try(Jedis conn = pool.getResource()) {
-            final result = new ArrayList<String>()
-            if( remove ) {
-                final entries = conn.eval(SCRIPT, 1, key, min.toString(), max.toString(), '0', count.toString())
-                if( entries instanceof List )
-                    result.addAll((List<String>) entries)
-            }
-            else {
-                List<Tuple> found = conn.zrangeByScoreWithScores(key, min, max, 0, count)
-                for( Tuple it : found ) {
-                    result.add(it.element)
-                }
-            }
-            return result
+        final result = new ArrayList<String>()
+        if( remove ) {
+            final entries = redisService.eval(SCRIPT, 1, key, min.toString(), max.toString(), '0', count.toString())
+            if( entries instanceof List )
+                result.addAll((List<String>) entries)
         }
+        else {
+            List<Tuple> found = redisService.zrangeByScoreWithScores(key, min, max, 0, count)
+            for( Tuple it : found ) {
+                result.add(it.element)
+            }
+        }
+        return result
     }
 }

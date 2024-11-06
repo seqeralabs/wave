@@ -20,8 +20,10 @@ package io.seqera.wave.redis
 
 import java.util.concurrent.TimeoutException
 
+import redis.clients.jedis.Connection
 import redis.clients.jedis.StreamEntryID
 import redis.clients.jedis.Transaction
+import redis.clients.jedis.params.ScanParams
 import redis.clients.jedis.params.SetParams
 import redis.clients.jedis.params.XAutoClaimParams
 import redis.clients.jedis.params.XReadGroupParams
@@ -35,11 +37,13 @@ import redis.clients.jedis.resps.Tuple
  */
 interface RedisService {
 
+    String get(final String key)
+
     long hincrBy(final String key, final String field, final long value)
 
     Long hget(final String key, final String field)
 
-    ScanResult<Map. Entry<String, String>> hscan(final String key, final String pattern)
+    ScanResult<Map.Entry<String, String>> hscan(String key, String cursor, ScanParams params)
 
     String set(final String key, final String value, final SetParams params)
 

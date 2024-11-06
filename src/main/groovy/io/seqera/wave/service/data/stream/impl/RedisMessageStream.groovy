@@ -24,14 +24,13 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.redis.RedisService
 import io.seqera.wave.service.data.stream.MessageConsumer
 import io.seqera.wave.service.data.stream.MessageStream
 import io.seqera.wave.util.LongRndKey
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import redis.clients.jedis.Jedis
-import redis.clients.jedis.JedisPool
 import redis.clients.jedis.StreamEntryID
 import redis.clients.jedis.exceptions.JedisDataException
 import redis.clients.jedis.params.XAutoClaimParams
@@ -57,7 +56,7 @@ class RedisMessageStream implements MessageStream<String> {
     private static final String DATA_FIELD = 'data'
 
     @Inject
-    private JedisPool pool
+    RedisService redisService
 
     @Value('${wave.message-stream.claim-timeout:5s}')
     private Duration claimTimeout
@@ -73,10 +72,10 @@ class RedisMessageStream implements MessageStream<String> {
         log.info "Creating Redis message stream - consumer=${consumerName}; claim-timeout=${claimTimeout}"
     }
 
-    protected boolean initGroup0(Jedis jedis, String streamId, String group) {
+    protected boolean initGroup0(String streamId, String group) {
         log.debug "Initializing Redis group='$group'; streamId='$streamId'"
         try {
-            jedis.xgroupCreate(streamId, group, STREAM_ENTRY_ZERO, true)
+            redisService.xgroupCreate(streamId, group, STREAM_ENTRY_ZERO, true)
             return true
         }
         catch (JedisDataException e) {
@@ -90,50 +89,44 @@ class RedisMessageStream implements MessageStream<String> {
     }
 
     void init(String streamId) {
-        try (Jedis jedis = pool.getResource()) {
-            initGroup0(jedis, streamId, CONSUMER_GROUP_NAME)
-        }
+        initGroup0(streamId, CONSUMER_GROUP_NAME)
     }
 
     @Override
     void offer(String streamId, String message) {
-        try (Jedis jedis = pool.getResource()) {
-            jedis.xadd(streamId, StreamEntryID.NEW_ENTRY, Map.of(DATA_FIELD, message))
-        }
+        redisService.xadd(streamId, StreamEntryID.NEW_ENTRY, Map.of(DATA_FIELD, message))
     }
 
     @Override
     boolean consume(String streamId, MessageConsumer<String> consumer) {
-        try (Jedis jedis = pool.getResource()) {
-            String msg
-            final long begin = System.currentTimeMillis()
-            final entry = claimMessage(jedis,streamId) ?: readMessage(jedis, streamId)
-            if( entry && consumer.accept(msg=entry.getFields().get(DATA_FIELD)) ) {
-                final tx = jedis.multi()
-                // acknowledge the entry has been processed so that it cannot be claimed anymore
-                tx.xack(streamId, CONSUMER_GROUP_NAME, entry.getID())
-                final delta = System.currentTimeMillis()-begin
-                if( delta>consumeWarnTimeoutMillis ) {
-                    log.warn "Redis message stream - consume processing took ${Duration.ofMillis(delta)} - offending entry=${entry.getID()}; message=${msg}"
-                }
-                // this remove permanently the entry from the stream
-                tx.xdel(streamId, entry.getID())
-                tx.exec()
-                return true
+        String msg
+        final long begin = System.currentTimeMillis()
+        final entry = claimMessage(streamId) ?: readMessage(streamId)
+        if( entry && consumer.accept(msg=entry.getFields().get(DATA_FIELD)) ) {
+            final tx = redisService.multi()
+            // acknowledge the entry has been processed so that it cannot be claimed anymore
+            tx.xack(streamId, CONSUMER_GROUP_NAME, entry.getID())
+            final delta = System.currentTimeMillis()-begin
+            if( delta>consumeWarnTimeoutMillis ) {
+                log.warn "Redis message stream - consume processing took ${Duration.ofMillis(delta)} - offending entry=${entry.getID()}; message=${msg}"
             }
-            else
-                return false
+            // this remove permanently the entry from the stream
+            tx.xdel(streamId, entry.getID())
+            tx.exec()
+            return true
         }
+        else
+            return false
     }
 
-    protected StreamEntry readMessage(Jedis jedis, String streamId) {
+    protected StreamEntry readMessage(String streamId) {
         // Create parameters for reading with a group
         final params = new XReadGroupParams()
                 // Read one message at a time
                 .count(1)
 
         // Read new messages from the stream using the correct xreadGroup signature
-        List<Map.Entry<String, List<StreamEntry>>> messages = jedis.xreadGroup(
+        List<Map.Entry<String, List<StreamEntry>>> messages = redisService.xreadGroup(
                 CONSUMER_GROUP_NAME,
                 consumerName,
                 params,
@@ -145,12 +138,12 @@ class RedisMessageStream implements MessageStream<String> {
         return entry
     }
 
-    protected StreamEntry claimMessage(Jedis jedis, String streamId) {
+    protected StreamEntry claimMessage(String streamId) {
         // Attempt to claim any pending messages that are idle for more than the threshold
         final params = new XAutoClaimParams()
                 // claim one entry at time
                 .count(1)
-        final messages = jedis.xautoclaim(
+        final messages = redisService.xautoclaim(
                 streamId,
                 CONSUMER_GROUP_NAME,
                 consumerName,
