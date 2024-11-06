@@ -18,8 +18,6 @@
 
 package io.seqera.wave.ratelimit.impl
 
-import javax.validation.constraints.NotNull
-
 import com.coveo.spillway.storage.InMemoryStorage
 import com.coveo.spillway.storage.LimitUsageStorage
 import com.coveo.spillway.storage.RedisStorage
@@ -29,6 +27,7 @@ import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.RedisConfig
 import jakarta.inject.Singleton
+import jakarta.validation.constraints.NotNull
 import redis.clients.jedis.JedisPool
 
 /**
