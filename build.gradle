@@ -46,6 +46,7 @@ dependencies {
     implementation("jakarta.annotation:jakarta.annotation-api")
     implementation("io.micronaut.validation:micronaut-validation")
     implementation 'io.micronaut.security:micronaut-security'
+    implementation 'io.micronaut:micronaut-websocket'
     implementation "org.apache.groovy:groovy-json"
     implementation "org.apache.groovy:groovy-nio"
     implementation 'com.google.guava:guava:32.1.2-jre'
