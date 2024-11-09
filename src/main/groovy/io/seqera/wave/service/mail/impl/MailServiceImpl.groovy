@@ -78,7 +78,7 @@ class MailServiceImpl implements MailService {
             spooler.sendMail(mail)
         }
         else {
-            log.debug "Missing email recipient from build id=$build.id - user=$user"
+            log.debug "Missing email recipient from build id=$build.buildId - user=$user"
         }
     }
 
@@ -86,21 +86,19 @@ class MailServiceImpl implements MailService {
         // create template binding
         final binding = new HashMap(20)
         final status = result.succeeded() ? 'DONE': 'FAILED'
-        binding.build_id = result.id
+        binding.build_id = result.buildId
         binding.build_user =  "${req.identity?.user ? req.identity.user.userName : '-'} (${req.ip})"
-        binding.build_success = result.exitStatus==0
+        binding.build_success = result.succeeded()
         binding.build_exit_status = result.exitStatus
         binding.build_time = formatTimestamp(result.startTime, req.offsetId) ?: '-'
         binding.build_duration = formatDuration(result.duration) ?: '-'
-        binding.build_image = req.targetImage
+        binding.build_image = preventLinkFormatting(req.targetImage)
         binding.build_format = req.format?.render() ?: 'Docker'
         binding.build_platform = req.platform
         binding.build_containerfile = req.containerFile ?: '-'
         binding.build_condafile = req.condaFile
-        binding.build_spackfile = req.spackFile
         binding.build_digest = result.digest ?: '-'
-        binding.put('build_log_data', result.logs)
-        binding.build_url = "$serverUrl/view/builds/${result.id}"
+        binding.build_url = "$serverUrl/view/builds/${result.buildId}"
         binding.scan_url = req.scanId && result.succeeded() ? "$serverUrl/view/scans/${req.scanId}" : null
         binding.scan_id = req.scanId
         binding.put('server_url', serverUrl)
@@ -114,4 +112,16 @@ class MailServiceImpl implements MailService {
         return mail
     }
 
+    /**
+     * Replaces dot characters in the image name with zero-with blank entity followed by a dot
+     * to prevent the mail client to render the container image name as a uri.
+     *
+     * @param name
+     *      The container image name as a string
+     * @return
+     *      The image string in which dot chars are replaced with {@code &#8203;.}
+     */
+    static protected String preventLinkFormatting(String name) {
+        name ? name.replaceAll(/\./,'&#8203;.') : null
+    }
 }

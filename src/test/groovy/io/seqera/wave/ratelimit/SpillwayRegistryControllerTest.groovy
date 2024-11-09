@@ -18,13 +18,12 @@
 
 package io.seqera.wave.ratelimit
 
-import spock.lang.Shared
+
 import spock.lang.Specification
 
 import java.util.concurrent.atomic.AtomicInteger
 
 import groovy.json.JsonSlurper
-import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
@@ -49,10 +48,6 @@ class SpillwayRegistryControllerTest extends Specification implements DockerRegi
     HttpClient client;
 
     @Inject
-    @Shared
-    ApplicationContext applicationContext
-
-    @Inject
     RateLimiterConfig configuration
 
     @MockBean(HttpClientAddressResolver)
@@ -66,7 +61,7 @@ class SpillwayRegistryControllerTest extends Specification implements DockerRegi
     }
 
     def setupSpec() {
-        initRegistryContainer(applicationContext)
+        initRegistryContainer()
     }
 
     void 'should check rate limit in ip of anonymous manifest'() {
@@ -90,7 +85,7 @@ class SpillwayRegistryControllerTest extends Specification implements DockerRegi
         e.message == "Client '/': Too Many Requests"
         def b = new JsonSlurper().parseText( e.response.body.get() as String)
         b.errors.size()
-        b.errors.first().code == 'DENIED'
+        b.errors.first().code == 'TOOMANYREQUESTS'
         b.errors.first().message.contains('Request exceeded pull rate limit for IP')
     }
 

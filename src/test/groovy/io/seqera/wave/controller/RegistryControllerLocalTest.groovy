@@ -18,11 +18,10 @@
 
 package io.seqera.wave.controller
 
-import spock.lang.Shared
+
 import spock.lang.Specification
 
 import groovy.json.JsonSlurper
-import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
@@ -43,17 +42,13 @@ class RegistryControllerLocalTest extends Specification implements DockerRegistr
 
     @Inject
     @Client("/")
-    HttpClient client;
-
-    @Inject
-    @Shared
-    ApplicationContext applicationContext
+    HttpClient client
 
     @Inject
     ManifestCacheStore storage
 
     def setupSpec() {
-        initRegistryContainer(applicationContext)
+        initRegistryContainer()
     }
 
     void 'should get manifest'() {
@@ -147,16 +142,19 @@ class RegistryControllerLocalTest extends Specification implements DockerRegistr
                 h.add('Accept', it)
             }
         })
-        HttpResponse<Map> response = client.toBlocking().exchange(request, Map)
+        HttpResponse<String> response = client.toBlocking().exchange(request, String)
 
         then:
         response.status() == HttpStatus.OK
 
         when:
-        def list = response.body().manifests.collect{
-            String type = it.mediaType.indexOf("manifest") ? "manifests" : "blobs"
-            "/v2/$IMAGE/$type/$it.digest"
+        def parsedBody = new JsonSlurper().parseText(response.body.get()) as Map
+        and:
+        def list = parsedBody.manifests.collect {
+            String type = it.mediaType.contains("manifest") ? "manifests" : "blobs"
+            return "/v2/$IMAGE/$type/$it.digest" as String
         }
+        and:
         boolean fails = list.find{ url ->
             HttpRequest requestGet = HttpRequest.GET(url).headers({ h ->
                 accept.each {

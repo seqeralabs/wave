@@ -69,4 +69,24 @@ class RetryableTest extends Specification {
         e.cause instanceof IOException
     }
 
+    def 'should validate config' () {
+        given:
+        def config = Mock(Retryable.Config){
+            getDelay() >> Duration.ofSeconds(1)
+            getMaxDelay() >> Duration.ofSeconds(10)
+            getMaxAttempts() >> 10
+            getJitter() >> 0.25
+            getMultiplier() >> 1.5
+        }
+
+        when:
+        def retry = Retryable.of(config).retryPolicy()
+        then:
+        retry.getConfig().getDelay() == Duration.ofSeconds(1)
+        retry.getConfig().getMaxDelay() == Duration.ofSeconds(10)
+        retry.getConfig().getMaxAttempts() == 10
+        retry.getConfig().getJitterFactor() == 0.25d
+        retry.getConfig().getDelayFactor() == 1.5d
+    }
+
 }

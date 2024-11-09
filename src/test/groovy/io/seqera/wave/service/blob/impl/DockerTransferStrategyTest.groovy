@@ -21,7 +21,6 @@ package io.seqera.wave.service.blob.impl
 import spock.lang.Specification
 
 import io.seqera.wave.configuration.BlobCacheConfig
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -39,14 +38,17 @@ class DockerTransferStrategyTest extends Specification {
                 s5Image: 'cr.seqera.io/public/s5cmd:latest'
         )
         def strategy = new DockerTransferStrategy(blobConfig: config)
-        and:
 
         when:
-        def result = strategy.createProcess(['s5cmd', 'run', '--this'])
+        def result = strategy.createProcess(['s5cmd', 'run', '--this'], "job-name")
+
         then:
         result.command() == [
                 'docker', 
                 'run',
+                '--detach',
+                '--name',
+                'job-name',
                 '-e', 'AWS_ACCESS_KEY_ID',
                 '-e', 'AWS_SECRET_ACCESS_KEY',
                 'cr.seqera.io/public/s5cmd:latest',
@@ -60,4 +62,5 @@ class DockerTransferStrategyTest extends Specification {
         and:
         result.redirectErrorStream()
     }
+
 }

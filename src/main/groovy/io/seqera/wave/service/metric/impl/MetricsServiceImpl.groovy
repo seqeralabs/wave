@@ -45,7 +45,7 @@ class MetricsServiceImpl implements MetricsService {
 
     static final private DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-    static final private Pattern ORG_DATE_KEY_PATTERN = Pattern.compile('(builds|pulls|fusion)/o/([^/]+)/d/\\d{4}-\\d{2}-\\d{2}')
+    static final private Pattern ORG_DATE_KEY_PATTERN = Pattern.compile('(builds|pulls|fusion|mirrors|scans)/o/([^/]+)/d/\\d{4}-\\d{2}-\\d{2}')
 
     @Inject
     private MetricsCounterStore metricsCounterStore
@@ -100,6 +100,16 @@ class MetricsServiceImpl implements MetricsService {
     @Override
     void incrementPullsCounter(PlatformId platformId) {
         incrementCounter(PREFIX_PULLS, platformId?.user?.email)
+    }
+
+    @Override
+    void incrementMirrorsCounter(PlatformId platformId){
+        incrementCounter(PREFIX_MIRRORS, platformId?.user?.email)
+    }
+
+    @Override
+    void incrementScansCounter(PlatformId platformId) {
+        incrementCounter(PREFIX_SCANS, platformId?.user?.email)
     }
 
     protected void incrementCounter(String prefix, String email) {

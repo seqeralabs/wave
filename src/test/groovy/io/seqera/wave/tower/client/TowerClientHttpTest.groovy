@@ -98,14 +98,14 @@ class TowerClientHttpTest extends Specification{
         }
 
         @Get('/credentials/{credentialsId}/keys')
-        HttpResponse<GetCredentialsKeysResponse> getCredentialsKeys(@Header('Authorization')String authorization, String credentialsId, @QueryValue String keyId) {
+        HttpResponse<GetCredentialsKeysResponse> getCredentialsKeys(@Header('Authorization')String authorization, String credentialsId, @QueryValue String pairingId) {
             if (authorization == 'Bearer foo') {
                 return HttpResponse.unauthorized()
             }
             if (authorization == 'Bearer refresh') {
                 return HttpResponse.unauthorized()
             }
-            if (credentialsId == '1' && keyId == '1') {
+            if (credentialsId == '1' && pairingId == '1') {
                 return HttpResponse.ok(new GetCredentialsKeysResponse(keys: 'keys'))
             } else {
                 throw new NotFoundException("Unable to find credentials with id: 1")

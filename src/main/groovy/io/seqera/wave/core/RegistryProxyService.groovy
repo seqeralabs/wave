@@ -40,6 +40,7 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -107,9 +108,7 @@ class RegistryProxyService {
     }
 
     protected RegistryCredentials getCredentials(RoutePath route) {
-        final result = !route.identity
-                ? credentialsProvider.getDefaultCredentials(route)
-                : credentialsProvider.getUserCredentials(route, route.identity)
+        final result = credentialsProvider.getCredentials(route, route.identity)
         log.debug "Credentials for route path=${route.targetContainer}; identity=${route.identity} => ${result}"
         return result
     }
@@ -134,7 +133,7 @@ class RegistryProxyService {
             return
 
         try {
-            persistenceService.updateContainerRequest(route.token, digest)
+            persistenceService.updateContainerRequestAsync(route.token, digest)
         } catch (Throwable t) {
             log.error("Unable store container request for token: $route.token", t)
         }
@@ -189,22 +188,25 @@ class RegistryProxyService {
     }
 
     String getImageDigest(BuildRequest request, boolean retryOnNotFound=false) {
+        return getImageDigest(request.targetImage, request.identity, retryOnNotFound)
+    }
+
+    String getImageDigest(String containerImage, PlatformId identity, boolean retryOnNotFound=false) {
         try {
-            return getImageDigest0(request, retryOnNotFound)
+            return getImageDigest0(containerImage, identity, retryOnNotFound)
         }
         catch(Exception e) {
-            log.warn "Unable to retrieve digest for image '${request.getTargetImage()}' -- cause: ${e.message}"
+            log.warn "Unable to retrieve digest for image '${containerImage}' -- cause: ${e.message}"
             return null
         }
     }
 
     static private List<Integer> RETRY_ON_NOT_FOUND = HTTP_RETRYABLE_ERRORS + 404
 
-    @Cacheable(value = 'cache-registry-proxy', atomic = true)
-    protected String getImageDigest0(BuildRequest request, boolean retryOnNotFound) {
-        final image = request.targetImage
+    @Cacheable(value = 'cache-registry-proxy', atomic = true, parameters = ['image'])
+    protected String getImageDigest0(String image, PlatformId identity, boolean retryOnNotFound) {
         final coords = ContainerCoordinates.parse(image)
-        final route = RoutePath.v2manifestPath(coords, request.identity)
+        final route = RoutePath.v2manifestPath(coords, identity)
         final proxyClient = client(route)
                 .withRetryableHttpErrors(retryOnNotFound ? RETRY_ON_NOT_FOUND : HTTP_RETRYABLE_ERRORS)
         final resp = proxyClient.head(route.path, WaveDefault.ACCEPT_HEADERS)

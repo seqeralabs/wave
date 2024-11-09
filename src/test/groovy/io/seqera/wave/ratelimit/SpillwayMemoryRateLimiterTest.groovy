@@ -42,6 +42,10 @@ class SpillwayMemoryRateLimiterTest extends Specification {
         rateLimiter = applicationContext.getBean(SpillwayRateLimiter)
     }
 
+    def cleanup() {
+        applicationContext.close()
+    }
+
     void "can acquire 1 auth resource"() {
         when:
         rateLimiter.acquireBuild(new AcquireRequest("test", null))

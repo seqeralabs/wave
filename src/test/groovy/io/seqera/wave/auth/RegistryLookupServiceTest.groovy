@@ -29,7 +29,8 @@ import jakarta.inject.Inject
 @MicronautTest
 class RegistryLookupServiceTest extends Specification {
 
-    @Inject RegistryLookupServiceImpl service
+    @Inject
+    RegistryLookupServiceImpl service
 
     def 'should find registry realm' () {
         given:

@@ -18,8 +18,6 @@
 
 package io.seqera.wave
 
-import java.util.function.BiFunction
-
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpRequest
@@ -32,6 +30,7 @@ import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.exception.ForbiddenException
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.exception.NotFoundException
+import io.seqera.wave.exception.RegistryForwardException
 import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.exception.UnauthorizedException
 import io.seqera.wave.exception.WaveException
@@ -46,10 +45,14 @@ import jakarta.inject.Singleton
 @Singleton
 class ErrorHandler {
 
+    static interface Mapper<T> {
+        T apply(String message, String errorCode)
+    }
+
     @Value('${wave.debug:false}')
     private Boolean debug
 
-    def <T> HttpResponse<T> handle(HttpRequest httpRequest, Throwable t, BiFunction<String,String,T> responseFactory) {
+    def <T> HttpResponse<T> handle(HttpRequest httpRequest, Throwable t, Mapper<T> responseFactory) {
         final errId = LongRndKey.rndHex()
         final request = httpRequest?.toString()
         def msg = t.message
@@ -78,6 +81,14 @@ class ErrorHandler {
             log.error(render, t)
         }
 
+        if( t instanceof RegistryForwardException ) {
+            // report this error as it has been returned by the target registry
+            return HttpResponse
+                    .status(HttpStatus.valueOf(t.statusCode))
+                    .body(t.response)
+                    .headers(t.headers)
+        }
+
         if( t instanceof DockerRegistryException ) {
             final resp = responseFactory.apply(msg, t.error)
             return HttpResponseFactory.INSTANCE.status(t.statusCode).body(resp)
@@ -95,7 +106,7 @@ class ErrorHandler {
         }
 
         if( t instanceof SlowDownException ) {
-            final resp = responseFactory.apply(msg, 'DENIED')
+            final resp = responseFactory.apply(msg, 'TOOMANYREQUESTS')
             return HttpResponseFactory.INSTANCE.status(HttpStatus.TOO_MANY_REQUESTS).body(resp)
         }
 

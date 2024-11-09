@@ -41,7 +41,7 @@ class ErrorController {
 
     @Error(global = true)
     HttpResponse<JsonError> handleException(HttpRequest request, Throwable exception) {
-        handler.handle(request, exception, (msg, id) -> { return new JsonError(msg) })
+        handler.handle(request, exception, (String message, String code)-> new JsonError(message))
     }
     
 }

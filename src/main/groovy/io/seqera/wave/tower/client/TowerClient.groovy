@@ -25,9 +25,11 @@ import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.client.connector.TowerConnector
+import io.seqera.wave.tower.compute.DescribeWorkflowLaunchResponse
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import org.apache.commons.lang3.StringUtils
+
 /**
  * Implement a client to interact with Tower services
  *
@@ -79,9 +81,7 @@ class TowerClient {
         if (!pairingId)
             throw new IllegalArgumentException("Missing encryptionKey argument")
 
-        // keep `keyId` only for backward compatibility
-        // it should be removed in a following version in favour of `pairingId`
-        def uri = "${checkEndpoint(towerEndpoint)}/credentials/$credentialsId/keys?pairingId=$pairingId&keyId=$pairingId"
+        def uri = "${checkEndpoint(towerEndpoint)}/credentials/$credentialsId/keys?pairingId=$pairingId"
         if( workspaceId!=null )
             uri += "&workspaceId=$workspaceId"
 
@@ -110,6 +110,16 @@ class TowerClient {
             throw new IllegalArgumentException("Endpoint should start with HTTP or HTTPS protocol — offending value: '$endpoint'")
 
         StringUtils.removeEnd(endpoint, "/")
+    }
+
+    @Cacheable(value = 'cache-tower-client', atomic = true)
+    CompletableFuture<DescribeWorkflowLaunchResponse> describeWorkflowLaunch(String towerEndpoint, JwtAuth authorization, String workflowId) {
+        final uri = workflowLaunchEndpoint(towerEndpoint,workflowId)
+        return getAsync(uri, towerEndpoint, authorization, DescribeWorkflowLaunchResponse.class)
+    }
+
+    protected static URI workflowLaunchEndpoint(String towerEndpoint, String workflowId) {
+        return URI.create("${checkEndpoint(towerEndpoint)}/workflow/${workflowId}/launch")
     }
 
 }

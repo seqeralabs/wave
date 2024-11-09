@@ -1,3 +1,5 @@
+import "./ContainerStatus.tsp";
+
 @doc("Response payload for container token creation.")
 model ContainerResponse {
   buildId: string;
@@ -5,6 +7,10 @@ model ContainerResponse {
   containerImage: string;
   containerToken: string;
   expiration: string;
-  freeze?: boolean;
+  freeze: boolean;
+  mirror: boolean;
+  requestId: string;
+  scanId: string;
+  status: ContainerStatus;
   targetImage: string;
 }

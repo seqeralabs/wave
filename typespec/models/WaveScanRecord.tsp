@@ -4,6 +4,7 @@ import "./Vulnerability.tsp";
 model WaveScanRecord {
     buildId: string;
     duration: int64;
+    containerImage: string;
     id: string;
     startTime: string;
     status: string;

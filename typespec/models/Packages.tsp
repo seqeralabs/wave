@@ -1,5 +1,4 @@
 import "./CondaOpts.tsp";
-import "./SpackOpts.tsp";
 
 @doc("Package configurations for container builds.")
 model Packages {
@@ -7,6 +6,5 @@ model Packages {
   condaOpts?: CondaOpts;
   entries: string[];
   environment: string;
-  spackOpts?: SpackOpts;
-  type: "CONDA" | "SPACK";
+  type: "CONDA";
 }

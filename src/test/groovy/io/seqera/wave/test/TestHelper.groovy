@@ -18,6 +18,8 @@
 
 package io.seqera.wave.test
 
+
+import io.seqera.wave.core.ContainerPlatform
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -39,6 +41,13 @@ class TestHelper {
         }
 
         return sb.toString();
+    }
+
+    static ContainerPlatform containerPlatform() {
+        final arm = System.getProperty("os.arch") in ['arm', 'aarch64']
+        return arm
+                ? ContainerPlatform.of('linux/arm64')
+                : ContainerPlatform.of('linux/amd64')
     }
 
 }

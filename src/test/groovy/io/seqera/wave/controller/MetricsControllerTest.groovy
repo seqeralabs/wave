@@ -191,6 +191,94 @@ class MetricsControllerTest extends Specification {
         res.status.code == 200
     }
 
+    def 'should get the correct scans count and http status code 200'() {
+        given:
+        def date = LocalDate.now().format(dateFormatter)
+        def user1 = new User(id: 1, userName: 'foo', email: 'user1@org1.com')
+        def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
+        def platformId1 = new PlatformId(user1, 101)
+        def platformId2 = new PlatformId(user2, 102)
+        metricsService.incrementScansCounter(platformId1)
+        metricsService.incrementScansCounter(platformId2)
+        metricsService.incrementScansCounter(null)
+
+        when: 'only date is provided'
+        def req = HttpRequest.GET("/v1alpha2/metrics/scans?date=$date").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'scans', count:3, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.status.code == 200
+
+        when: 'date and org is provided'
+        req = HttpRequest.GET("/v1alpha2/metrics/scans?date=$date&org=org1.com").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'scans', count:1, orgs:['org1.com': 1]]
+        res.status.code == 200
+
+        when: 'only org is provided'
+        req = HttpRequest.GET("/v1alpha2/metrics/scans?org=org2.com").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'scans', count:1, orgs:['org2.com': 1]]
+        res.status.code == 200
+
+        when: 'no param is provided'
+        req = HttpRequest.GET("/v1alpha2/metrics/scans").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct org count'
+        res.body() == [metric:'scans', count:2, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.status.code == 200
+    }
+
+    def 'should get the correct mirrors count and http status code 200'() {
+        given:
+        def date = LocalDate.now().format(dateFormatter)
+        def user1 = new User(id: 1, userName: 'foo', email: 'user1@org1.com')
+        def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
+        def platformId1 = new PlatformId(user1, 101)
+        def platformId2 = new PlatformId(user2, 102)
+        metricsService.incrementMirrorsCounter(platformId1)
+        metricsService.incrementMirrorsCounter(platformId2)
+        metricsService.incrementMirrorsCounter(null)
+
+        when: 'only date is provided'
+        def req = HttpRequest.GET("/v1alpha2/metrics/mirrors?date=$date").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'mirrors', count:3, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.status.code == 200
+
+        when: 'date and org is provided'
+        req = HttpRequest.GET("/v1alpha2/metrics/mirrors?date=$date&org=org1.com").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'mirrors', count:1, orgs:['org1.com': 1]]
+        res.status.code == 200
+
+        when: 'only org is provided'
+        req = HttpRequest.GET("/v1alpha2/metrics/mirrors?org=org2.com").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'mirrors', count:1, orgs:['org2.com': 1]]
+        res.status.code == 200
+
+        when: 'no param is provided'
+        req = HttpRequest.GET("/v1alpha2/metrics/mirrors").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct org count'
+        res.body() == [metric:'mirrors', count:2, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.status.code == 200
+    }
+
     def 'should validate query parameters'() {
         when: 'wrong date format is provided'
         def req = HttpRequest.GET("/v1alpha2/metrics/pulls?date=2024-03-2").basicAuth("username", "password")

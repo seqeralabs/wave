@@ -21,8 +21,12 @@ package io.seqera.wave.service.validation
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.configuration.BuildConfig
 import jakarta.inject.Inject
+
+import static io.seqera.wave.service.validation.ValidationServiceImpl.RepoType.*
 
 /**
  *
@@ -30,6 +34,13 @@ import jakarta.inject.Inject
  */
 @MicronautTest
 class ValidationServiceTest extends Specification {
+
+    @MockBean(BuildConfig)
+    BuildConfig buildConfig() {
+        Mock(BuildConfig) {
+            defaultPublicRepository >> 'public.repo.io'
+        }
+    }
 
     @Inject
     ValidationService validationService
@@ -81,17 +92,26 @@ class ValidationServiceTest extends Specification {
 
         where:
         CONTAINER                   | TYPE  | EXPECTED
-        null                        | false | null
-        'foo.com/ubuntu'            | false | null
-        'foo.com'                   | false | 'Container build repository is invalid or incomplete - offending value: foo.com'
-        'http://foo.com'            | false | 'Container build repository should not include any protocol prefix - offending value: http://foo.com'
-        'foo.com/ubuntu:latest'     | false | 'Container build repository should not include any tag suffix - offending value: foo.com/ubuntu:latest'
+        null                        | Build | null
+        'foo.com/ubuntu'            | Build | null
+        'foo.com'                   | Build | "Container build repository is invalid or incomplete - offending value: 'foo.com'"
+        'http://foo.com'            | Build | "Container build repository should not include any protocol prefix - offending value: 'http://foo.com'"
+        'foo.com/ubuntu:latest'     | Build | "Container build repository should not include any tag suffix - offending value: 'foo.com/ubuntu:latest'"
+
         and:
-        null                        | true | null
-        'foo.com/ubuntu'            | true | null
-        'foo.com'                   | true | 'Container build cache repository is invalid or incomplete - offending value: foo.com'
-        'http://foo.com'            | true | 'Container build cache repository should not include any protocol prefix - offending value: http://foo.com'
-        'foo.com/ubuntu:latest'     | true | 'Container build cache repository should not include any tag suffix - offending value: foo.com/ubuntu:latest'
+        null                        | Cache | null
+        'foo.com/ubuntu'            | Cache | null
+        'foo.com'                   | Cache | "Container build cache repository is invalid or incomplete - offending value: 'foo.com'"
+        'http://foo.com'            | Cache | "Container build cache repository should not include any protocol prefix - offending value: 'http://foo.com'"
+        'foo.com/ubuntu:latest'     | Cache | "Container build cache repository should not include any tag suffix - offending value: 'foo.com/ubuntu:latest'"
+
+        and:
+        null                        | Mirror | "Missing target build repository required by 'mirror' mode"
+        'foo.com'                   | Mirror | null
+        'foo.com/ubuntu'            | Mirror | null
+        'http://foo.com'            | Mirror | "Container build repository should not include any protocol prefix - offending value: 'http://foo.com'"
+        'foo.com/ubuntu:latest'     | Mirror | "Container build repository should not include any tag suffix - offending value: 'foo.com/ubuntu:latest'"
+        'public.repo.io'            | Mirror | "Mirror registry not allowed - offending value 'public.repo.io'"
 
     }
 

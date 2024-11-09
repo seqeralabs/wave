@@ -33,19 +33,22 @@ import io.seqera.wave.test.RedisTestContainer
 class RedisFutureHashTest extends Specification implements RedisTestContainer  {
 
     @Shared
-    ApplicationContext applicationContext
+    ApplicationContext context
 
     def setup() {
-        applicationContext = ApplicationContext.run([
+        context = ApplicationContext.run([
                 REDIS_HOST: redisHostName,
                 REDIS_PORT: redisPort
         ], 'test', 'redis')
+    }
 
+    def cleanup() {
+        context.stop()
     }
 
     def 'should set and get a value' () {
         given:
-        def queue = applicationContext.getBean(RedisFutureHash)
+        def queue = context.getBean(RedisFutureHash)
 
         expect:
         queue.take('xyz') == null

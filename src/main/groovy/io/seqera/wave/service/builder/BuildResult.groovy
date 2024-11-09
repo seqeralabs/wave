@@ -28,7 +28,7 @@ import groovy.transform.ToString
 /**
  * Model a container builder request
  *
- * WARNING: this class is stored as JSON serialized object in the {@link BuildStore}.
+ * WARNING: this class is stored as JSON serialized object in the {@link BuildStateStore}.
  * Make sure changes are backward compatible with previous object versions
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -38,16 +38,19 @@ import groovy.transform.ToString
 @CompileStatic
 class BuildResult {
 
-    final String id
-    final int exitStatus
+    final String buildId
+    final Integer exitStatus
     final String logs
     final Instant startTime
     final Duration duration
     final String digest
 
-    BuildResult(String id, int exitStatus, String content, Instant startTime, Duration duration, String digest) {
-        this.id = id
-        this.logs = content?.replaceAll("\u001B\\[[;\\d]*m", "") // strip ansi escape codes
+    // This field is deprecated. It's only used for de-serializing object objects
+    @Deprecated final private String id
+
+    BuildResult(String buildId, Integer exitStatus, String logs, Instant startTime, Duration duration, String digest) {
+        this.buildId = buildId
+        this.logs = logs?.replaceAll("\u001B\\[[;\\d]*m", "") // strip ansi escape codes
         this.exitStatus = exitStatus
         this.startTime = startTime
         this.duration = duration
@@ -57,11 +60,11 @@ class BuildResult {
     /* Do not remove - required by jackson de-ser */
     protected BuildResult() {}
 
-    String getId() { id }
+    String getBuildId() { buildId ?: id }
 
     Duration getDuration() { duration }
 
-    int getExitStatus() { exitStatus }
+    Integer getExitStatus() { exitStatus }
 
     Instant getStartTime() { startTime }
 
@@ -75,23 +78,23 @@ class BuildResult {
 
     @Override
     String toString() {
-        return "BuildRequest[id=$id; exitStatus=$exitStatus; duration=$duration]"
+        return "BuildResult[buildId=$buildId; exitStatus=$exitStatus; duration=$duration]"
     }
 
-    static BuildResult completed(String buildId, int exitStatus, String content, Instant startTime, String digest) {
-        new BuildResult(buildId, exitStatus, content, startTime, Duration.between(startTime, Instant.now()), digest)
+    static BuildResult completed(String buildId, Integer exitStatus, String logs, Instant startTime, String digest) {
+        new BuildResult(buildId, exitStatus, logs, startTime, Duration.between(startTime, Instant.now()), digest)
     }
 
-    static BuildResult failed(String buildId, String content, Instant startTime) {
-        new BuildResult(buildId, -1, content, startTime, Duration.between(startTime, Instant.now()), null)
+    static BuildResult failed(String buildId, String logs, Instant startTime) {
+        new BuildResult(buildId, -1, logs, startTime, Duration.between(startTime, Instant.now()), null)
     }
 
     static BuildResult create(BuildRequest req) {
-        new BuildResult(req.buildId, 0, null, req.startTime, null, null)
+        new BuildResult(req.buildId, null, null, req.startTime, null, null)
     }
 
     static BuildResult create(String buildId) {
-        new BuildResult(buildId, 0, null, Instant.now(), null, null)
+        new BuildResult(buildId, null, null, Instant.now(), null, null)
     }
 
     @Memoized

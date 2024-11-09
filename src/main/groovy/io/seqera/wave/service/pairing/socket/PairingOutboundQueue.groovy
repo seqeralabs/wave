@@ -24,7 +24,7 @@ import javax.annotation.PreDestroy
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.service.data.queue.AbstractMessageQueue
-import io.seqera.wave.service.data.queue.MessageBroker
+import io.seqera.wave.service.data.queue.MessageQueue
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import jakarta.inject.Singleton
 /**
@@ -39,7 +39,7 @@ class PairingOutboundQueue extends AbstractMessageQueue<PairingMessage> {
     final private Duration pollInterval
 
     PairingOutboundQueue(
-            MessageBroker<String> broker,
+            MessageQueue<String> broker,
             @Value('${wave.pairing.channel.awaitTimeout:100ms}') Duration pollInterval
     ) {
         super(broker)

@@ -37,11 +37,11 @@ import groovy.transform.CompileStatic
 @CompileStatic
 class JacksonHelper {
 
-    static private ObjectMapper DEFAULT_JSON_MAPPER = defaultJsonMapper()
+    static private SimplePool<ObjectMapper> defaultJsonMapper = new SimplePool<>(()-> defaultJsonMapper())
 
-    static private ObjectMapper PUBLIC_JSON_MAPPER = publicViewJsonMapper()
+    static private SimplePool<ObjectMapper> publicJsonMapper = new SimplePool<>(()-> publicViewJsonMapper())
 
-    static private ObjectMapper YAML_MAPPER = defaultYamlMapper() 
+    static private SimplePool<ObjectMapper> yamlMapper = new SimplePool<>(()-> defaultYamlMapper())
 
     static private ObjectMapper createMapper0(boolean yaml=false, boolean failOnUnknownProperties=false) {
         // GString serializer
@@ -77,11 +77,15 @@ class JacksonHelper {
      * @return A concrete instance of {@code T}
      */
     static <T> T fromJson(String str, Class<T> type) {
-        str != null ? DEFAULT_JSON_MAPPER.readValue(str, type) : null
+        if( str==null )
+            return null
+        return defaultJsonMapper.apply((mapper)-> mapper.readValue(str, type))
     }
 
     static <T> T fromJson(String str, TypeReference<T> type) {
-        str != null ? DEFAULT_JSON_MAPPER.readValue(str, type) : null
+        if( str==null )
+            return null
+        return defaultJsonMapper.apply((mapper)->mapper.readValue(str, type))
     }
 
     /**
@@ -92,11 +96,15 @@ class JacksonHelper {
      * @return A json representation of the specified object
      */
     static String toJson(Object config) {
-        config != null ? DEFAULT_JSON_MAPPER.writeValueAsString(config) : null
+        if( config==null )
+            return null
+        return defaultJsonMapper.apply((mapper)-> mapper.writeValueAsString(config))
     }
 
     static String toJsonWithPublicView(Object config) {
-        config != null ? PUBLIC_JSON_MAPPER.writerWithView(Views.Public).writeValueAsString(config) : null
+        if( config==null )
+            return null
+        return publicJsonMapper.apply((mapper)-> mapper.writerWithView(Views.Public).writeValueAsString(config))
     }
 
     /**
@@ -106,7 +114,9 @@ class JacksonHelper {
      * @return A concrete instance of {@code T}
      */
     static <T> T fromYaml(String str, Class<T> type) {
-        str != null ? YAML_MAPPER.readValue(str, type) : null
+        if( str==null )
+            return null
+        return yamlMapper.apply((mapper)->mapper.readValue(str, type))
     }
 
     /**
@@ -117,7 +127,9 @@ class JacksonHelper {
      * @return A yaml representation of the specified object
      */
     static String toYaml(Object config) {
-        config != null ? YAML_MAPPER.writeValueAsString(config) : null
+        if( config==null )
+            return null
+        return yamlMapper.apply((mapper)->mapper.writeValueAsString(config))
     }
 
 }

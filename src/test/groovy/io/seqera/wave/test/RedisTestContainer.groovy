@@ -34,7 +34,6 @@ trait RedisTestContainer {
 
     static GenericContainer redisContainer
 
-
     String getRedisHostName(){
         redisContainer.getHost()
     }
@@ -53,6 +52,7 @@ trait RedisTestContainer {
     }
 
     def cleanupSpec(){
+        log.debug "Stopping Redis test container"
         redisContainer.stop()
     }
 }

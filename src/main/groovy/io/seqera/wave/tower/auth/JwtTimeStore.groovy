@@ -22,8 +22,8 @@ import java.time.Instant
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.seqera.wave.memstore.range.AbstractRangeStore
-import io.seqera.wave.memstore.range.impl.RangeProvider
+import io.seqera.wave.store.range.AbstractRangeStore
+import io.seqera.wave.store.range.impl.RangeProvider
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**

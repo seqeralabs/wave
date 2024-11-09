@@ -34,6 +34,7 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
@@ -44,10 +45,8 @@ import io.seqera.wave.service.logs.BuildLogServiceImpl
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.tower.PlatformId
-import jakarta.inject.Inject
-import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.util.ContainerHelper
-
+import jakarta.inject.Inject
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -59,7 +58,6 @@ class BuildControllerTest extends Specification {
     BuildLogService logsService() {
         Mock(BuildLogService)
     }
-
 
     @Inject
     @Client("/")
@@ -77,31 +75,27 @@ class BuildControllerTest extends Specification {
         final containerFile = 'FROM foo:latest'
         final format = BuildFormat.DOCKER
         final platform = ContainerPlatform.of('amd64')
-        final containerId = ContainerHelper.makeContainerId(containerFile, null, null, platform, 'buildrepo', null)
-        final targetImage = ContainerHelper.makeTargetImage(format, repo, containerId, null, null, null)
+        final containerId = ContainerHelper.makeContainerId(containerFile, null, platform, 'buildrepo', null)
+        final targetImage = ContainerHelper.makeTargetImage(format, repo, containerId, null, null)
         final build = new BuildRequest(
-                containerId,
-                containerFile,
-                null,
-                null,
-                Path.of("/some/path"),
-                targetImage,
-                PlatformId.NULL,
-                platform,
-                'cacherepo',
-                "1.2.3.4",
-                '{"config":"json"}',
-                null,
-                null,
-                'scan12345',
-                null,
-                format)
-            .withBuildId('1')
+                containerId: containerId,
+                containerFile: containerFile,
+                workspace: Path.of("/some/path"),
+                targetImage: targetImage,
+                identity: PlatformId.NULL,
+                platform: platform,
+                cacheRepository: 'cacherepo',
+                ip: "1.2.3.4",
+                configJson: '{"config":"json"}',
+                scanId: 'scan12345',
+                format: format,
+                buildId: "bd-${containerId}_1"
+        )
         final result = new BuildResult(build.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         final event = new BuildEvent(build, result)
         final entry = WaveBuildRecord.fromEvent(event)
         and:
-        persistenceService.saveBuild(entry)
+        persistenceService.saveBuildAsync(entry)
         when:
         def req = HttpRequest.GET("/v1alpha1/builds/${build.buildId}")
         def res = client.toBlocking().exchange(req, WaveBuildRecord)
@@ -119,13 +113,13 @@ class BuildControllerTest extends Specification {
 
         when:
         def req = HttpRequest.GET("/v1alpha1/builds/${buildId}/logs")
-        def res = client.toBlocking().exchange(req, StreamedFile)
+        def res = client.toBlocking().exchange(req, String)
 
         then:
         1 * buildLogService.fetchLogStream(buildId) >> response
         and:
         res.code() == 200
-        new String(res.bodyBytes) == LOGS
+        res.body() == LOGS
     }
 
     def 'should get container status' () {
@@ -141,7 +135,7 @@ class BuildControllerTest extends Specification {
                 requestIp: '127.0.0.1',
                 startTime: Instant.now().minus(1, ChronoUnit.DAYS) )
         and:
-        persistenceService.saveBuild(build1)
+        persistenceService.saveBuildAsync(build1)
         sleep(500)
 
         when:
@@ -157,6 +151,23 @@ class BuildControllerTest extends Specification {
         then:
         HttpClientResponseException e = thrown(HttpClientResponseException)
         e.status == HttpStatus.NOT_FOUND
+    }
+
+    def 'should get conda lock file' () {
+        given:
+        def buildId = 'testbuildid1234'
+        def condaLock = "test conda lock"
+        def response = new StreamedFile(new ByteArrayInputStream(condaLock.bytes), MediaType.APPLICATION_OCTET_STREAM_TYPE)
+
+        when:
+        def req = HttpRequest.GET("/v1alpha1/builds/${buildId}/condalock")
+        def res = client.toBlocking().exchange(req, String)
+
+        then:
+        1 * buildLogService.fetchCondaLockStream(buildId) >> response
+        and:
+        res.code() == 200
+        res.body() == condaLock
     }
 
 }

@@ -114,8 +114,8 @@ class StreamServiceImpl implements StreamService {
         }
         else {
             // this approach should be avoided because it can put too much pressure on the wave backend
-            // this is only meant to be used when the 'BlobCacheService' is not aivalable
-            log.debug "Streaming flux<bytebuffer> for route: $route"
+            // this is only meant to be used when the 'BlobCacheService' is not available
+            log.warn "Streaming flux<bytebuffer> for route: $route - Streaming is not scalable. Blob cache service should be configured instead."
             final result = proxyService.streamBlob(route, Map.<String,List<String>>of())
             return fluxToInputStream(result);
         }

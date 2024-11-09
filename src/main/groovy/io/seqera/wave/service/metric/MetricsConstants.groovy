@@ -31,6 +31,10 @@ interface MetricsConstants {
 
     static final public String PREFIX_PULLS =  'pulls'
 
+    static final public String PREFIX_MIRRORS =  'mirrors'
+
+    static final public String PREFIX_SCANS =  'scans'
+
     static final public String PREFIX_ORG =  'o'
 
     static final public String PREFIX_DAY =  'd'
