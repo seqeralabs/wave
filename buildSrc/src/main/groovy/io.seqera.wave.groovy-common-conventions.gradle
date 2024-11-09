@@ -14,12 +14,12 @@ repositories {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(19)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
 compileJava {
-    options.release.set(11)
+    options.release.set(17)
 }
 
 tasks.withType(GroovyCompile).configureEach {
