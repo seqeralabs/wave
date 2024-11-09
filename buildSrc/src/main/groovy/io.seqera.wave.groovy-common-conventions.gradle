@@ -19,7 +19,7 @@ java {
 }
 
 compileJava {
-    options.release.set(11)
+    options.release.set(17)
 }
 
 tasks.withType(GroovyCompile).configureEach {

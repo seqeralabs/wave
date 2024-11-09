@@ -21,7 +21,7 @@ java {
 }
 
 compileJava {
-    options.release.set(11)
+    options.release.set(17)
 }
 
 tasks.withType(GroovyCompile).configureEach {
@@ -55,7 +55,6 @@ dependencies {
 
 tasks.withType(Test).configureEach {
     jvmArgs([
-            '--enable-preview',
             '--add-opens=java.base/java.lang=ALL-UNNAMED',
             '--add-opens=java.base/java.io=ALL-UNNAMED',
             '--add-opens=java.base/java.nio=ALL-UNNAMED',
