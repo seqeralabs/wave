@@ -28,8 +28,8 @@ import jakarta.inject.Inject
 import jakarta.validation.Valid
 import reactor.core.publisher.Mono
 
-@ExecuteOn(TaskExecutors.IO)
 @Controller("/validate-creds")
+@ExecuteOn(TaskExecutors.BLOCKING)
 class ValidateController {
 
     @Inject RegistryAuthService loginService
