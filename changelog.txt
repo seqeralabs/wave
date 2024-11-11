@@ -12,6 +12,7 @@
 - Bump snakeyaml 2.2 [6aeb3c33]
 - Bump spillway 3.0.0 (#731) [1502696d]
 - Bump explicit dep to websocket module [2e413ac2]
+- Enables EKS Pod identity via AWS SDK 2.27.8 
 
 1.13.11 - 2 Nov 2024
 - Rename async methods for semantic consistency [38114d75]
