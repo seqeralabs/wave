@@ -103,11 +103,11 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
 
     void 'test validateController valid login'() {
         given:
-        def req = [
+        def req = [request: [
                 userName: USER,
                 password: PWD,
                 registry: getTestRegistryUrl(REGISTRY_URL)
-        ]
+        ]]
         HttpRequest request = HttpRequest.POST("/validate-creds", req)
         when:
         HttpResponse<Boolean> response = client.toBlocking().exchange(request, Boolean)
