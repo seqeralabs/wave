@@ -1,4 +1,7 @@
 # Wave changelog
+1.14.1 - 14 Nov 2024
+- Fix creds validation endpoint (#740) [8c0f3a4c]
+
 1.14.0 - 10 Nov 2024
 - Fix K8s env propagation [76f0a456]
 - Remove deprecated K8s methods (#734) [481298bf]
