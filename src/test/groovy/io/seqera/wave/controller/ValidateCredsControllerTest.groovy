@@ -67,9 +67,9 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
 
     void 'should validate username required'() {
         when:
-        HttpRequest request = HttpRequest.POST("/validate-creds", [
+        HttpRequest request = HttpRequest.POST("/validate-creds", [request: [
                 password: 'test',
-        ])
+        ]])
         client.toBlocking().exchange(request, Boolean)
         then:
         def e = thrown(HttpClientResponseException)
@@ -77,9 +77,9 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
 
     void 'should validate pwd required'() {
         when:
-        HttpRequest request = HttpRequest.POST("/validate-creds", [
+        HttpRequest request = HttpRequest.POST("/validate-creds", [request:[
                 userName: 'test',
-        ])
+        ]])
         client.toBlocking().exchange(request, Boolean)
         then:
         def e = thrown(HttpClientResponseException)
@@ -87,10 +87,10 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
 
     void 'should validate the test user'() {
         given:
-        def req = [
+        def req = [request: [
                 userName:'test',
                 password:'test',
-                registry: getTestRegistryUrl('test') ]
+                registry: getTestRegistryUrl('test') ]]
         and:
         HttpRequest request = HttpRequest.POST("/validate-creds", req)
         when:
