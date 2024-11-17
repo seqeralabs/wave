@@ -59,7 +59,6 @@ class JobManager {
         queue.addConsumer((job)-> processJob(job))
     }
 
-
     protected boolean processJob(JobSpec jobSpec) {
         try {
             return processJob0(jobSpec)

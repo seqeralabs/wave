@@ -39,7 +39,7 @@ import jakarta.inject.Inject
 @CompileStatic
 @Requires(bean = ContainerScanService)
 @Controller("/")
-@ExecuteOn(TaskExecutors.IO)
+@ExecuteOn(TaskExecutors.BLOCKING)
 class ScanController {
     
     @Inject

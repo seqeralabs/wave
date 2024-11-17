@@ -103,7 +103,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture
 @Slf4j
 @CompileStatic
 @Controller("/")
-@ExecuteOn(TaskExecutors.IO)
+@ExecuteOn(TaskExecutors.BLOCKING)
 class ContainerController {
 
     @Inject
@@ -181,13 +181,13 @@ class ContainerController {
 
     @Deprecated
     @Post('/container-token')
-    @ExecuteOn(TaskExecutors.IO)
+    @ExecuteOn(TaskExecutors.BLOCKING)
     CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, @Body SubmitContainerTokenRequest req) {
         return getContainerImpl(httpRequest, req, false)
     }
 
     @Post('/v1alpha2/container')
-    @ExecuteOn(TaskExecutors.IO)
+    @ExecuteOn(TaskExecutors.BLOCKING)
     CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getTokenV2(HttpRequest httpRequest, @Body SubmitContainerTokenRequest req) {
         return getContainerImpl(httpRequest, req, true)
     }
