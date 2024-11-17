@@ -20,7 +20,7 @@ package io.seqera.wave.auth
 
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.util.concurrent.ExecutionException
+import java.util.concurrent.CompletionException
 import java.util.concurrent.TimeUnit
 
 import com.github.benmanes.caffeine.cache.CacheLoader
@@ -119,7 +119,7 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
             final auth = cache.get(endpoint)
             return new RegistryInfo(registry, endpoint, auth)
         }
-        catch (/* UncheckedExecutionException | */ ExecutionException e) {
+        catch (CompletionException e) {
             // this catches the exception thrown in the cache loader lookup
             // and throws the causing exception that should be `RegistryUnauthorizedAccessException`
             throw e.cause
