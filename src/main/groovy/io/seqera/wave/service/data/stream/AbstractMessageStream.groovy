@@ -42,7 +42,7 @@ abstract class AbstractMessageStream<M> implements Closeable {
     static final private AtomicInteger count = new AtomicInteger()
 
     final private Map<String,MessageConsumer<M>> listeners = new ConcurrentHashMap<>()
-    
+
     final private ExponentialAttempt attempt = new ExponentialAttempt()
 
     final private EncodingStrategy<M> encoder
@@ -98,6 +98,10 @@ abstract class AbstractMessageStream<M> implements Closeable {
      *      The {@link Predicate} to be invoked when a stream message is consumed (read from) the stream.
      */
     void addConsumer(String streamId, MessageConsumer<M> consumer) {
+        // the use of synchronized block is meant to prevent a race condition while
+        // updating the 'listeners' from concurrent invocations.
+        // however, considering the addConsumer is invoked during the initialization phase
+        // (and therefore in the same thread) in should not be really needed.
         synchronized (listeners) {
             if( listeners.containsKey(streamId))
                 throw new IllegalStateException("Only one consumer can be defined for each stream - offending streamId=$streamId; consumer=$consumer")
