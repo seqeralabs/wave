@@ -82,7 +82,7 @@ abstract class TowerConnector {
     private SpillwayRateLimiter limiter
 
     @Inject
-    @Named(TaskExecutors.IO)
+    @Named(TaskExecutors.BLOCKING)
     private volatile ExecutorService ioExecutor
 
     private CacheLoader<JwtRefreshParams, CompletableFuture<JwtAuth>> loader = new CacheLoader<JwtRefreshParams, CompletableFuture<JwtAuth>>() {
@@ -100,6 +100,10 @@ abstract class TowerConnector {
     /** Only for testing - do not use */
     Cache<JwtRefreshParams, CompletableFuture<JwtAuth>> refreshCache0() {
         return refreshCache
+    }
+
+    protected ExecutorService getIoExecutor() {
+        return ioExecutor
     }
 
     /**
