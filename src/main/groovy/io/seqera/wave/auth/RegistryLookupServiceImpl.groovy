@@ -23,9 +23,9 @@ import java.net.http.HttpResponse
 import java.util.concurrent.CompletionException
 import java.util.concurrent.TimeUnit
 
+import com.github.benmanes.caffeine.cache.AsyncLoadingCache
 import com.github.benmanes.caffeine.cache.CacheLoader
 import com.github.benmanes.caffeine.cache.Caffeine
-import com.github.benmanes.caffeine.cache.LoadingCache
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.configuration.HttpClientConfig
@@ -73,11 +73,12 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
         }
     }
 
-    private LoadingCache<URI, RegistryAuth> cache = Caffeine.newBuilder()
+    // FIXME https://github.com/seqeralabs/wave/issues/747
+    private AsyncLoadingCache<URI, RegistryAuth> cache = Caffeine.newBuilder()
                 .newBuilder()
                 .maximumSize(10_000)
                 .expireAfterAccess(1, TimeUnit.HOURS)
-                .build(loader)
+                .buildAsync(loader)
 
     protected RegistryAuth lookup0(URI endpoint) {
         final httpClient = HttpClientFactory.followRedirectsHttpClient()
@@ -116,7 +117,8 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
     RegistryInfo lookup(String registry) {
         try {
             final endpoint = registryEndpoint(registry)
-            final auth = cache.get(endpoint)
+            // FIXME https://github.com/seqeralabs/wave/issues/747
+            final auth = cache.synchronous().get(endpoint)
             return new RegistryInfo(registry, endpoint, auth)
         }
         catch (CompletionException e) {
