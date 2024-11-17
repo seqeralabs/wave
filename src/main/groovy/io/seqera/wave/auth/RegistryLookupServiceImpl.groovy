@@ -20,13 +20,12 @@ package io.seqera.wave.auth
 
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.util.concurrent.ExecutionException
+import java.util.concurrent.CompletionException
 import java.util.concurrent.TimeUnit
 
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
-import com.google.common.util.concurrent.UncheckedExecutionException
+import com.github.benmanes.caffeine.cache.CacheLoader
+import com.github.benmanes.caffeine.cache.Caffeine
+import com.github.benmanes.caffeine.cache.LoadingCache
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.configuration.HttpClientConfig
@@ -74,7 +73,7 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
         }
     }
 
-    private LoadingCache<URI, RegistryAuth> cache = CacheBuilder<URI, RegistryAuth>
+    private LoadingCache<URI, RegistryAuth> cache = Caffeine.newBuilder()
                 .newBuilder()
                 .maximumSize(10_000)
                 .expireAfterAccess(1, TimeUnit.HOURS)
@@ -120,7 +119,7 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
             final auth = cache.get(endpoint)
             return new RegistryInfo(registry, endpoint, auth)
         }
-        catch (UncheckedExecutionException | ExecutionException e) {
+        catch (CompletionException e) {
             // this catches the exception thrown in the cache loader lookup
             // and throws the causing exception that should be `RegistryUnauthorizedAccessException`
             throw e.cause

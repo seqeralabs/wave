@@ -23,8 +23,8 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-import com.google.common.cache.Cache
-import com.google.common.cache.CacheBuilder
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.websocket.exceptions.WebSocketSessionException
@@ -60,7 +60,7 @@ abstract class AbstractMessageQueue<M> implements Runnable {
 
     final private String name0
 
-    final private Cache<String,Boolean> closedClients = CacheBuilder<String, Boolean>
+    final private Cache<String,Boolean> closedClients = Caffeine.newBuilder()
                     .newBuilder()
                     .expireAfterWrite(10, TimeUnit.MINUTES)
                     .build()

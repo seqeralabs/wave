@@ -26,10 +26,10 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.function.Function
 
-import com.google.common.cache.Cache
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.CacheLoader
+import com.github.benmanes.caffeine.cache.Caffeine
+import com.github.benmanes.caffeine.cache.LoadingCache
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -92,7 +92,7 @@ abstract class TowerConnector {
         }
     }
 
-    private LoadingCache<JwtRefreshParams, CompletableFuture<JwtAuth>> refreshCache = CacheBuilder<JwtRefreshParams, CompletableFuture<JwtAuth>>
+    private LoadingCache<JwtRefreshParams, CompletableFuture<JwtAuth>> refreshCache = Caffeine.newBuilder()
             .newBuilder()
             .expireAfterWrite(1, TimeUnit.MINUTES)
             .build(loader)

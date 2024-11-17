@@ -21,13 +21,12 @@ package io.seqera.wave.auth
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
-import java.util.concurrent.ExecutionException
+import java.util.concurrent.CompletionException
 import java.util.concurrent.TimeUnit
 
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
-import com.google.common.util.concurrent.UncheckedExecutionException
+import com.github.benmanes.caffeine.cache.CacheLoader
+import com.github.benmanes.caffeine.cache.Caffeine
+import com.github.benmanes.caffeine.cache.LoadingCache
 import groovy.json.JsonSlurper
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
@@ -101,7 +100,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         return result
     }
 
-    private LoadingCache<CacheKey, String> cacheTokens = CacheBuilder<CacheKey, String>
+    private LoadingCache<CacheKey, String> cacheTokens = Caffeine.newBuilder()
                     .newBuilder()
                     .maximumSize(10_000)
                     .expireAfterAccess(_1_HOUR.toMillis(), TimeUnit.MILLISECONDS)
@@ -271,7 +270,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         try {
             return cacheTokens.get(key)
         }
-        catch (UncheckedExecutionException | ExecutionException e) {
+        catch (CompletionException e) {
             // this catches the exception thrown in the cache loader lookup
             // and throws the causing exception that should be `RegistryUnauthorizedAccessException`
             throw e.cause

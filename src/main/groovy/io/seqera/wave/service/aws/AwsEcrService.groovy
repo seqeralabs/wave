@@ -21,9 +21,9 @@ package io.seqera.wave.service.aws
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
+import com.github.benmanes.caffeine.cache.CacheLoader
+import com.github.benmanes.caffeine.cache.Caffeine
+import com.github.benmanes.caffeine.cache.LoadingCache
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -73,7 +73,7 @@ class AwsEcrService {
         }
     }
 
-    private LoadingCache<AwsCreds, String> cache = CacheBuilder<AwsCreds, String>
+    private LoadingCache<AwsCreds, String> cache = Caffeine.newBuilder()
             .newBuilder()
             .maximumSize(10_000)
             .expireAfterWrite(3, TimeUnit.HOURS)
