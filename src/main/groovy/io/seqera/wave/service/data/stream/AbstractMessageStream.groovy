@@ -42,7 +42,7 @@ abstract class AbstractMessageStream<M> implements Closeable {
     static final private AtomicInteger count = new AtomicInteger()
 
     final private Map<String,MessageConsumer<M>> listeners = new ConcurrentHashMap<>()
-
+    
     final private ExponentialAttempt attempt = new ExponentialAttempt()
 
     final private EncodingStrategy<M> encoder
