@@ -20,13 +20,12 @@ package io.seqera.wave.http
 
 import java.net.http.HttpClient
 import java.time.Duration
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.ThreadFactory
 import java.util.concurrent.locks.ReentrantLock
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.seqera.wave.util.CustomThreadFactory
 /**
  * Java HttpClient factory
  *
@@ -36,7 +35,9 @@ import io.seqera.wave.util.CustomThreadFactory
 @CompileStatic
 class HttpClientFactory {
 
-    static private ExecutorService threadPool = Executors.newCachedThreadPool(new CustomThreadFactory("HttpClientThread"))
+    static final private ThreadFactory customThreadFactory = Thread.ofVirtual()
+            .name("httpclient-virtual-thread-", 1)
+            .factory();
 
     static private Duration timeout = Duration.ofSeconds(20)
 
@@ -84,7 +85,7 @@ class HttpClientFactory {
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .connectTimeout(timeout)
-                .executor(threadPool)
+                .executor(Executors.newThreadPerTaskExecutor(customThreadFactory))
                 .build()
         log.debug "Creating new followRedirectsHttpClient: $result"
         return result
@@ -95,7 +96,7 @@ class HttpClientFactory {
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NEVER)
                 .connectTimeout(timeout)
-                .executor(threadPool)
+                .executor(Executors.newThreadPerTaskExecutor(customThreadFactory))
                 .build()
         log.debug "Creating new neverRedirectsHttpClient: $result"
         return result
