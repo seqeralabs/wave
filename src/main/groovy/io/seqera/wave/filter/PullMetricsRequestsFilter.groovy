@@ -68,7 +68,7 @@ class PullMetricsRequestsFilter implements HttpServerFilter {
     private RouteHandler routeHelper
 
     @Inject
-    @Named(TaskExecutors.IO)
+    @Named(TaskExecutors.BLOCKING)
     private ExecutorService executor
 
     @Override

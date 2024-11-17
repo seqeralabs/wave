@@ -46,7 +46,7 @@ class BuildStoreLocalTest extends Specification {
     private BuildConfig buildConfig
 
     @Inject
-    @Named(TaskExecutors.IO)
+    @Named(TaskExecutors.BLOCKING)
     ExecutorService ioExecutor
 
     BuildResult zeroResult = BuildResult.create('0')
