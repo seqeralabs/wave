@@ -26,6 +26,7 @@ import java.util.concurrent.TimeoutException
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.encoder.EncodingStrategy
 import jakarta.inject.Inject
 import jakarta.inject.Named
@@ -55,7 +56,7 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V> {
     private volatile Duration pollInterval
 
     @Inject
-    @Named('future-store-executor')
+    @Named(TaskExecutors.BLOCKING)
     private ExecutorService executor
 
     AbstractFutureStore(FutureHash<String> store, EncodingStrategy<V> encodingStrategy) {
