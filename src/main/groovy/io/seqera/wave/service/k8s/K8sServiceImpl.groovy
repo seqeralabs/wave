@@ -500,7 +500,8 @@ class K8sServiceImpl implements K8sService {
         final spec = buildJobSpec(name, containerImage, args, workDir, creds, timeout, nodeSelector)
         return k8sClient
                 .batchV1Api()
-                .createNamespacedJob(namespace, spec, null, null, null,null)
+                .createNamespacedJob(namespace, spec)
+                .execute()
     }
 
     V1Job buildJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, Duration timeout, Map<String,String> nodeSelector) {
@@ -589,7 +590,8 @@ class K8sServiceImpl implements K8sService {
         final spec = scanJobSpec(name, containerImage, args, workDir, creds, scanConfig)
         return k8sClient
                 .batchV1Api()
-                .createNamespacedJob(namespace, spec, null, null, null,null)
+                .createNamespacedJob(namespace, spec)
+                .execute()
     }
 
     V1Job scanJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig) {
@@ -656,7 +658,8 @@ class K8sServiceImpl implements K8sService {
         final spec = mirrorJobSpec(name, containerImage, args, workDir, creds, config)
         return k8sClient
                 .batchV1Api()
-                .createNamespacedJob(namespace, spec, null, null, null,null)
+                .createNamespacedJob(namespace, spec)
+                .execute()
     }
 
     V1Job mirrorJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, MirrorConfig config) {
