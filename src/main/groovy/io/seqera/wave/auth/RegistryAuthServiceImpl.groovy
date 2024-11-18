@@ -24,9 +24,9 @@ import java.time.Duration
 import java.util.concurrent.CompletionException
 import java.util.concurrent.TimeUnit
 
+import com.github.benmanes.caffeine.cache.AsyncLoadingCache
 import com.github.benmanes.caffeine.cache.CacheLoader
 import com.github.benmanes.caffeine.cache.Caffeine
-import com.github.benmanes.caffeine.cache.LoadingCache
 import groovy.json.JsonSlurper
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
@@ -100,11 +100,12 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         return result
     }
 
-    private LoadingCache<CacheKey, String> cacheTokens = Caffeine.newBuilder()
+    // FIXME https://github.com/seqeralabs/wave/issues/747
+    private AsyncLoadingCache<CacheKey, String> cacheTokens = Caffeine.newBuilder()
                     .newBuilder()
                     .maximumSize(10_000)
                     .expireAfterAccess(_1_HOUR.toMillis(), TimeUnit.MILLISECONDS)
-                    .build(loader)
+                    .buildAsync(loader)
 
     @Inject
     private RegistryLookupService lookupService
@@ -268,7 +269,8 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     protected String getAuthToken(String image, RegistryAuth auth, RegistryCredentials creds) {
         final key = new CacheKey(image, auth, creds)
         try {
-            return cacheTokens.get(key)
+            // FIXME https://github.com/seqeralabs/wave/issues/747
+            return cacheTokens.synchronous().get(key)
         }
         catch (CompletionException e) {
             // this catches the exception thrown in the cache loader lookup
@@ -286,7 +288,8 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
      */
     void invalidateAuthorization(String image, RegistryAuth auth, RegistryCredentials creds) {
         final key = new CacheKey(image, auth, creds)
-        cacheTokens.invalidate(key)
+        // FIXME https://github.com/seqeralabs/wave/issues/747
+        cacheTokens.synchronous().invalidate(key)
         tokenStore.remove(getStableKey(key))
     }
 

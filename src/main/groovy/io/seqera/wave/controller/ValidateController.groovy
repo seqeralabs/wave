@@ -26,8 +26,8 @@ import io.seqera.wave.auth.RegistryAuthService
 import jakarta.inject.Inject
 import jakarta.validation.Valid
 
-@ExecuteOn(TaskExecutors.IO)
 @Controller("/validate-creds")
+@ExecuteOn(TaskExecutors.BLOCKING)
 class ValidateController {
 
     @Inject RegistryAuthService loginService

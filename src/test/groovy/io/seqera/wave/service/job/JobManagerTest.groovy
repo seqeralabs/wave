@@ -26,7 +26,6 @@ import java.time.Instant
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
-
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
@@ -38,7 +37,7 @@ class JobManagerTest extends Specification {
         def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
         def config = new JobConfig(graceInterval: Duration.ofMillis(1))
-        def cache = Caffeine.newBuilder().build()
+        def cache = Caffeine.newBuilder().buildAsync()
         def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config: config, debounceCache: cache)
         and:
         def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now(), Duration.ofMinutes(10))
@@ -57,7 +56,8 @@ class JobManagerTest extends Specification {
         def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
         def config = new JobConfig(graceInterval: Duration.ofMillis(1))
-        def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config: config)
+        def cache = Caffeine.newBuilder().buildAsync()
+        def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config: config, debounceCache: cache)
         and:
         def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now(), Duration.ofMinutes(10))
 
@@ -75,7 +75,7 @@ class JobManagerTest extends Specification {
         def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
         def config = new JobConfig(graceInterval: Duration.ofMillis(1))
-        def cache = Caffeine.newBuilder().build()
+        def cache = Caffeine.newBuilder().buildAsync()
         def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config:config, debounceCache: cache)
         and:
         def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now() - Duration.ofMinutes(5), Duration.ofMinutes(2))
@@ -94,7 +94,7 @@ class JobManagerTest extends Specification {
         def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
         def config = new JobConfig(graceInterval: Duration.ofMillis(1))
-        def cache = Caffeine.newBuilder().build()
+        def cache = Caffeine.newBuilder().buildAsync()
         def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config: config, debounceCache: cache)
         and:
         def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now().minus(Duration.ofMillis(500)), Duration.ofMinutes(10))

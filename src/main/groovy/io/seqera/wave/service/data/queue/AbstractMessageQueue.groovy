@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.AsyncCache
 import com.github.benmanes.caffeine.cache.Caffeine
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -60,10 +60,11 @@ abstract class AbstractMessageQueue<M> implements Runnable {
 
     final private String name0
 
-    final private Cache<String,Boolean> closedClients = Caffeine.newBuilder()
+    // FIXME https://github.com/seqeralabs/wave/issues/747
+    final private AsyncCache<String,Boolean> closedClients = Caffeine.newBuilder()
                     .newBuilder()
                     .expireAfterWrite(10, TimeUnit.MINUTES)
-                    .build()
+                    .buildAsync()
 
     AbstractMessageQueue(MessageQueue<String> broker) {
         final type = TypeHelper.getGenericType(this, 0)
@@ -149,13 +150,15 @@ abstract class AbstractMessageQueue<M> implements Runnable {
 
     @Override
     void run() {
+        // FIXME https://github.com/seqeralabs/wave/issues/747
+        final clientsCache = closedClients.synchronous()
         while( !thread.isInterrupted() ) {
             try {
                 int sent=0
                 final clients = new HashMap<String,MessageSender<String>>(this.clients)
                 for( Map.Entry<String,MessageSender<String>> entry : clients ) {
                     // ignore clients marked as closed
-                    if( closedClients.getIfPresent(entry.key))
+                    if( clientsCache.getIfPresent(entry.key))
                         continue
                     // infer the target queue from the client key
                     final target = targetFromClientKey(entry.key)
@@ -173,7 +176,7 @@ abstract class AbstractMessageQueue<M> implements Runnable {
                             // offer back the value to be processed again
                             broker.offer(target, value)
                             if( e.message?.contains('close') ) {
-                                closedClients.put(entry.key, true)
+                                clientsCache.put(entry.key, true)
                             }
                         }
                     }
