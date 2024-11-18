@@ -18,7 +18,7 @@ images.
 * Push and cache built containers to a user-provided container repository;
 * Build Singularity native containers both using a Singularity spec file, Conda package(s);
 * Push Singularity native container images to OCI-compliant registries;
-
+* Scan container images for security vulnerabilities
 
 ### How it works
 
@@ -34,7 +34,7 @@ container registry where the image is stored, while the instrumented layers are 
 
 ### Requirements
 
-* Java 19 or later
+* Java 21 or later
 * Linux or macOS
 * Redis 6.2 (or later)
 * Docker engine (for development)

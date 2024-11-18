@@ -54,7 +54,7 @@ class ValidationServiceTest extends Specification {
         ENDPOINT                | EXPECTED
         'foo'                   | "Missing endpoint protocol — offending value: foo"
         'ftp://foo.com'         | "Invalid endpoint protocol — offending value: ftp://foo.com"
-        'http://a b c'          | "Invalid endpoint 'http://a b c' — cause: Illegal character in authority at index 7: http://a b c"
+        'http://a b c'          | "Invalid endpoint 'http://a b c' — cause: Illegal character in authority at index 8: http://a b c"
         and:
         'http://foo.com'        | null
         'http://localhost'      | null

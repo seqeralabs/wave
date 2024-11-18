@@ -95,7 +95,11 @@ class ScanConfig {
     @Memoized
     Path getCacheDirectory() {
         final result = Path.of(buildDirectory).toAbsolutePath().resolve('.trivy-cache')
-        Files.createDirectories(result)
+        try {
+            Files.createDirectories(result)
+        } catch (IOException e) {
+            log.error "Unable to create scan cache directory=${result} - cause: ${e.message}"
+        }
         return result
     }
 
@@ -129,7 +133,7 @@ class ScanConfig {
             final name = p!=-1 ? entry.substring(0,p) : entry
             final value = p!=-1 ? entry.substring(p+1) : ''
             if( !value )
-                log.warn "Invalid 'wave.scan.environment value' -- offending entry: '$entry'"
+                log.warn "Invalid 'wave.scan.environment' value -- offending entry: '$entry'"
             result.add(new Tuple2(name,value))
         }
         return result
