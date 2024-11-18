@@ -1,4 +1,14 @@
 # Wave changelog
+1.15.0 - 18 Nov 2024
+- Migration to virtual threads - phase 1 (#746) [aaf0420c]
+- Use runAsync instead supplyAsync [ffd0dacd]
+- Remove deprecated ThreadPoolBuilder [7af3046f]
+- Replace Guava cache with Caffeine (#745) [cf813e0a]
+- Update project deps [f24b684d]
+- Bump  guava to version 33.3.1-jre [328e9ea3]
+- Bump Netty version 4.1.115.Final [9ba433ce]
+- Bump gradle 8.10.2 [52272fe1]
+
 1.14.1 - 14 Nov 2024
 - Fix creds validation endpoint (#740) [8c0f3a4c]
 
