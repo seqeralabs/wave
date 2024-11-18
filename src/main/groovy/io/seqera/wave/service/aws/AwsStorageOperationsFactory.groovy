@@ -22,16 +22,17 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Requires
-import io.micronaut.context.annotation.Value
 import io.micronaut.objectstorage.InputStreamMapper
 import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.aws.AwsS3Configuration
 import io.micronaut.objectstorage.aws.AwsS3Operations
+import io.seqera.wave.configuration.LogsConfig
+import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 import software.amazon.awssdk.services.s3.S3Client
 /**
- * Factory implementation for ObjectStorageOperations
+ * Factory implementation for AWS ObjectStorageOperations
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
@@ -39,16 +40,16 @@ import software.amazon.awssdk.services.s3.S3Client
 @CompileStatic
 @Slf4j
 @Requires(property = 'wave.build.logs.bucket')
-class ObjectStorageOperationsFactory {
+class AwsStorageOperationsFactory {
 
-    @Value('${wave.build.logs.bucket}')
-    String storageBucket
+    @Inject
+    private LogsConfig logsConfig
 
     @Singleton
     @Named("build-logs")
     ObjectStorageOperations<?, ?, ?> awsStorageOperations(@Named("DefaultS3Client") S3Client s3Client, InputStreamMapper inputStreamMapper) {
-        AwsS3Configuration configuration = new AwsS3Configuration('build-logs')
-        configuration.setBucket(storageBucket)
+        final configuration = new AwsS3Configuration('build-logs')
+        configuration.setBucket(logsConfig.bucket)
         return new AwsS3Operations(configuration, s3Client, inputStreamMapper)
     }
 }
