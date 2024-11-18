@@ -252,6 +252,7 @@ class K8sServiceImpl implements K8sService {
                 .subPath(rel)
     }
 
+    @Deprecated
     V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, Duration timeout, Map<String,String> nodeSelector) {
 
         // dirty dependency to avoid introducing another parameter
@@ -449,7 +450,7 @@ class K8sServiceImpl implements K8sService {
                 .withName(name)
                 .withLabels(labels)
                 .endMetadata()
-               
+
         final requests = new V1ResourceRequirements()
         if( blobConfig.requestsCpu )
             requests.putRequestsItem('cpu', new Quantity(blobConfig.requestsCpu))
@@ -741,6 +742,7 @@ class K8sServiceImpl implements K8sService {
         final allPods = k8sClient
                 .coreV1Api()
                 .listNamespacedPod(namespace)
+                .labelSelector("job-name=${jobName}")
                 .execute()
 
         if( !allPods || !allPods.items )
