@@ -50,7 +50,7 @@ import static io.seqera.wave.util.ContainerHelper.patchPlatformEndpoint
 @Slf4j
 @CompileStatic
 @Controller("/")
-@ExecuteOn(TaskExecutors.IO)
+@ExecuteOn(TaskExecutors.BLOCKING)
 class InspectController {
 
     @Inject

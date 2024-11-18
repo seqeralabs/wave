@@ -42,7 +42,7 @@ import jakarta.inject.Inject
 @Slf4j
 @CompileStatic
 @Controller("/")
-@ExecuteOn(TaskExecutors.IO)
+@ExecuteOn(TaskExecutors.BLOCKING)
 class BuildController {
 
     @Inject

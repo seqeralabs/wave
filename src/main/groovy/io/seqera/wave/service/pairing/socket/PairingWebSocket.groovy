@@ -49,7 +49,7 @@ import static io.seqera.wave.util.LongRndKey.rndHex
 @Slf4j
 @CompileStatic
 @Singleton
-@ExecuteOn(TaskExecutors.IO)
+@ExecuteOn(TaskExecutors.BLOCKING)
 @ServerWebSocket("/pairing/{service}/token/{token}{?endpoint}")
 class PairingWebSocket {
 

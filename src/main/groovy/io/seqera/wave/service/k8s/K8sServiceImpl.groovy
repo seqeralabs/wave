@@ -636,7 +636,7 @@ class K8sServiceImpl implements K8sService {
         for( Tuple2 entry : env ) {
             final String k = entry.v1
             final String v = entry.v2
-            container.withEnv(new V1EnvVar().name(k).value(v))
+            container.addToEnv(new V1EnvVar().name(k).value(v))
         }
 
         // spec section

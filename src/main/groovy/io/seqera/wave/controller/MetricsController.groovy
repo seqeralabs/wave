@@ -52,7 +52,7 @@ import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
 @Requires(property = 'wave.metrics.enabled', value = 'true')
 @Secured(SecurityRule.IS_AUTHENTICATED)
 @Controller
-@ExecuteOn(TaskExecutors.IO)
+@ExecuteOn(TaskExecutors.BLOCKING)
 class MetricsController {
 
     @Inject
