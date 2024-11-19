@@ -59,7 +59,7 @@ import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
 @Slf4j
 @CompileStatic
 @Controller("/view")
-@ExecuteOn(TaskExecutors.IO)
+@ExecuteOn(TaskExecutors.BLOCKING)
 class ViewController {
 
     @Inject

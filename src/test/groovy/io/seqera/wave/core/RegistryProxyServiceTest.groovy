@@ -57,7 +57,7 @@ class RegistryProxyServiceTest extends Specification {
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should retrieve image digest on ECR' () {
         given:
-        def IMAGE = '195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/kaniko:0.1.0'
+        def IMAGE = '195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/app:1.0.0'
         def request = Mock(BuildRequest)
 
         when:
@@ -66,6 +66,6 @@ class RegistryProxyServiceTest extends Specification {
         request.getTargetImage() >> IMAGE
         request.getIdentity() >> new PlatformId()
         then:
-        resp1 == 'sha256:05f9dc67e6ec879773de726b800d4d5044f8bd8e67da728484fbdea56af1fdff'
+        resp1 == 'sha256:d5c169e210d6b789b2dc7eced66471cf4ce2c7260ac7299fbef464ff902086be'
     }
 }

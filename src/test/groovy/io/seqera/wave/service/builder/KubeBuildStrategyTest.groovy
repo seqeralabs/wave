@@ -38,11 +38,9 @@ import jakarta.inject.Inject
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-@Property(name="wave.build.workspace",value="/build/work")
 @Property(name="wave.build.k8s.namespace",value="foo")
 @Property(name="wave.build.k8s.configPath",value="/home/kube.config")
 @Property(name="wave.build.k8s.storage.claimName",value="bar")
-@Property(name="wave.build.k8s.storage.mountPath",value="/build")
 @Property(name='wave.build.k8s.node-selector[linux/amd64]',value="service=wave-build")
 @Property(name='wave.build.k8s.node-selector[linux/arm64]',value="service=wave-build-arm64")
 class KubeBuildStrategyTest extends Specification {
