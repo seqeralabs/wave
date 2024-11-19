@@ -55,7 +55,7 @@ class ValidationServiceImpl implements ValidationService {
             new URI(endpoint)
         }
         catch (URISyntaxException e) {
-            return "Invalid endpoint '${endpoint}' — cause: ${e.message}"
+            return "Invalid endpoint '${endpoint}' — cause: ${e.getMessage()}"
         }
 
         return null

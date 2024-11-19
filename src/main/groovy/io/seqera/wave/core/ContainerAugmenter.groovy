@@ -280,7 +280,7 @@ class ContainerAugmenter {
         return result
     }
 
-    synchronized protected Map layerBlob(String image, ContainerLayer layer) {
+    protected Map layerBlob(String image, ContainerLayer layer) {
         log.debug "Adding layer: $layer to image: $client.registry.name/$image"
         // store the layer blob in the cache
         final String path = "$client.registry.name/v2/$image/blobs/$layer.gzipDigest"
@@ -295,7 +295,6 @@ class ContainerAugmenter {
 
 
     protected Tuple2<String,Integer> updateImageManifest(String imageName, String imageManifest, String newImageConfigDigest, newImageConfigSize, boolean oci) {
-
         // turn the json string into a json map
         // and append the new layer
         final manifest = (Map) new JsonSlurper().parseText(imageManifest)

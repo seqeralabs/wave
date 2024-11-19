@@ -23,6 +23,7 @@ import java.time.Instant
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import groovy.transform.ToString
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 
@@ -32,6 +33,7 @@ import io.seqera.wave.tower.PlatformId
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Canonical
+@ToString(includeNames = true, includePackage = false)
 @CompileStatic
 class ScanRequest {
 
