@@ -243,7 +243,7 @@ class ViewController {
             and render the condalock file from latest successful build
             and replace with the current build's condalock file.
             */
-            if ( condaLock && condaLock.contains('cat environment.lock')) {
+            if ( condaLock && condaLock.contains('cat environment.lock') ) {
                 condaLock = null //if there is no conda lock file, don't show the conda lock data
                 def builds = persistenceService.allBuilds(result.buildId.split('-')[1].split('_')[0])
                 for (def build : builds) {
