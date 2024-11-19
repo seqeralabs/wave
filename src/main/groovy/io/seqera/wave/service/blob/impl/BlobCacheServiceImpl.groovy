@@ -17,7 +17,6 @@
  */
 package io.seqera.wave.service.blob.impl
 
-import java.net.http.HttpClient
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -27,7 +26,6 @@ import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RoutePath
-import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.service.blob.BlobCacheService
 import io.seqera.wave.service.blob.BlobEntry
 import io.seqera.wave.service.blob.BlobSigningService
@@ -46,7 +44,6 @@ import jakarta.inject.Singleton
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest
 import software.amazon.awssdk.services.s3.model.S3Exception
-
 /**
  * Implements cache for container image layer blobs
  *
@@ -81,13 +78,11 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobEntry> {
     private HttpClientConfig httpConfig
 
     @Inject
+    @Named('BlobS3Client')
     private S3Client s3Client
-
-    private HttpClient httpClient
 
     @PostConstruct
     private void init() {
-        httpClient = HttpClientFactory.followRedirectsHttpClient()
         log.info "Creating Blob cache service - $blobConfig"
     }
 
