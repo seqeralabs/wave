@@ -247,9 +247,11 @@ class ViewController {
                 condaLock = null //if there is no conda lock file, don't show the conda lock data
                 def builds = persistenceService.allBuilds(result.buildId.split('-')[1].split('_')[0])
                 for (def build : builds) {
-                    if (build.succeeded()){
+                    if ( build.succeeded() ){
                         buildId = build.buildId
                         condaLock = buildLogService.fetchCondaLockString(build.buildId)
+                        if ( !condaLock.contains('cat environment.lock') )
+                            break
                     }
                 }
             }
