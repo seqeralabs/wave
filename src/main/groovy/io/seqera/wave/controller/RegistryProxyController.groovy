@@ -67,7 +67,7 @@ import reactor.core.publisher.Mono
 @Slf4j
 @CompileStatic
 @Controller("/v2")
-@ExecuteOn(TaskExecutors.IO)
+@ExecuteOn(TaskExecutors.BLOCKING)
 class RegistryProxyController {
 
     @Inject

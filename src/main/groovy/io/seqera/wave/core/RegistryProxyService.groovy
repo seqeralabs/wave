@@ -18,6 +18,8 @@
 
 package io.seqera.wave.core
 
+import java.util.concurrent.CompletableFuture
+
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
@@ -133,7 +135,7 @@ class RegistryProxyService {
             return
 
         try {
-            persistenceService.updateContainerRequest(route.token, digest)
+            persistenceService.updateContainerRequestAsync(route.token, digest)
         } catch (Throwable t) {
             log.error("Unable store container request for token: $route.token", t)
         }
@@ -193,7 +195,7 @@ class RegistryProxyService {
 
     String getImageDigest(String containerImage, PlatformId identity, boolean retryOnNotFound=false) {
         try {
-            return getImageDigest0(containerImage, identity, retryOnNotFound)
+            return getImageDigest0(containerImage, identity, retryOnNotFound).get()
         }
         catch(Exception e) {
             log.warn "Unable to retrieve digest for image '${containerImage}' -- cause: ${e.message}"
@@ -203,8 +205,15 @@ class RegistryProxyService {
 
     static private List<Integer> RETRY_ON_NOT_FOUND = HTTP_RETRYABLE_ERRORS + 404
 
+    // note: return a CompletableFuture to force micronaut to use caffeine AsyncCache
+    // that provides a workaround about the use of virtual threads with SyncCache
+    // see https://github.com/ben-manes/caffeine/issues/1468#issuecomment-1906733926
     @Cacheable(value = 'cache-registry-proxy', atomic = true, parameters = ['image'])
-    protected String getImageDigest0(String image, PlatformId identity, boolean retryOnNotFound) {
+    protected CompletableFuture<String> getImageDigest0(String image, PlatformId identity, boolean retryOnNotFound) {
+        CompletableFuture.completedFuture(getImageDigest1(image, identity, retryOnNotFound))
+    }
+
+    protected String getImageDigest1(String image, PlatformId identity, boolean retryOnNotFound) {
         final coords = ContainerCoordinates.parse(image)
         final route = RoutePath.v2manifestPath(coords, identity)
         final proxyClient = client(route)

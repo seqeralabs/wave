@@ -20,29 +20,35 @@ package io.seqera.wave.service.scan
 
 import spock.lang.Specification
 
-import java.nio.file.Files
 import java.nio.file.Path
 
-import io.micronaut.context.ApplicationContext
+import io.micronaut.test.annotation.MockBean
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.configuration.ScanConfig
+import jakarta.inject.Inject
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
+@MicronautTest
 class DockerScanStrategyTest extends Specification {
 
+    @Inject
+    DockerScanStrategy dockerContainerStrategy
+
+    @MockBean(ScanConfig)
+    ScanConfig mockConfig() {
+        Mock(ScanConfig) {
+            getCacheDirectory() >> Path.of('/some/scan/cache')
+        }
+    }
+
     def 'should get docker command' () {
-        given:
-        def workspace = Files.createTempDirectory('test')
-        def props = ['wave.build.workspace': workspace.toString()]
-        and:
-        def ctx = ApplicationContext.run(props)
-        and:
-        def dockerContainerStrategy = ctx.getBean(DockerScanStrategy)
 
         when:
         def scanDir = Path.of('/some/scan/dir')
         def config = Path.of("/user/test/build-workspace/config.json")
-        def command = dockerContainerStrategy.dockerWrapper('foo-123', scanDir, config, 'xyz')
+        def command = dockerContainerStrategy.dockerWrapper('foo-123', scanDir, config, ['FOO=1', 'BAR=2'])
 
         then:
         command == [
@@ -56,15 +62,14 @@ class DockerScanStrategyTest extends Specification {
                 '-v',
                 '/some/scan/dir:/some/scan/dir:rw',
                 '-v',
-                "/build/scan/cache:/root/.cache/:rw",
+                '/some/scan/cache:/root/.cache/:rw',
                 '-v',
                 '/user/test/build-workspace/config.json:/root/.docker/config.json:ro',
                 '-e',
-                'GITHUB_TOKEN=xyz'
+                'FOO=1',
+                '-e',
+                'BAR=2'
         ]
 
-        cleanup:
-        ctx.close()
-        workspace?.deleteDir()
     }
 }
