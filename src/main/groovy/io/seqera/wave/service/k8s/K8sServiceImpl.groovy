@@ -36,6 +36,8 @@ import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
 import io.kubernetes.client.openapi.models.V1ResourceRequirements
+import io.kubernetes.client.openapi.models.V1Toleration
+import io.kubernetes.client.openapi.models.V1TolerationBuilder
 import io.kubernetes.client.openapi.models.V1Volume
 import io.kubernetes.client.openapi.models.V1VolumeMount
 import io.micronaut.context.annotation.Property
@@ -44,6 +46,7 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.configuration.K8sTolerationsConfig
 import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
@@ -101,6 +104,9 @@ class K8sServiceImpl implements K8sService {
 
     @Inject
     private BuildConfig buildConfig
+
+    @Inject
+    private K8sTolerationsConfig k8sTolerationsConfig
 
     // check this link to know more about these options https://github.com/moby/buildkit/tree/master/examples/kubernetes#kubernetes-manifests-for-buildkit
     private final static Map<String,String> BUILDKIT_FLAGS = ['BUILDKITD_FLAGS': '--oci-worker-no-process-sandbox']
@@ -292,7 +298,6 @@ class K8sServiceImpl implements K8sService {
                 .withActiveDeadlineSeconds( timeout.toSeconds() )
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
-
 
         final requests = new V1ResourceRequirements()
         if( requestsCpu )
@@ -490,14 +495,14 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Pod} description the submitted pod
      */
     @Override
-    V1Job launchBuildJob(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, Map<String,String> nodeSelector) {
-        final spec = buildJobSpec(name, containerImage, args, workDir, creds, timeout, nodeSelector)
+    V1Job launchBuildJob(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, Map<String,String> nodeSelector, ContainerPlatform platform) {
+        final spec = buildJobSpec(name, containerImage, args, workDir, creds, timeout, nodeSelector, platform)
         return k8sClient
                 .batchV1Api()
                 .createNamespacedJob(namespace, spec, null, null, null,null)
     }
 
-    V1Job buildJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, Duration timeout, Map<String,String> nodeSelector) {
+    V1Job buildJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, Duration timeout, Map<String,String> nodeSelector, ContainerPlatform platform) {
 
         // dirty dependency to avoid introducing another parameter
         final singularity = containerImage.contains('singularity')
@@ -543,6 +548,15 @@ class K8sServiceImpl implements K8sService {
                 .withActiveDeadlineSeconds( timeout.toSeconds() )
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
+
+        //set toleration for build pods
+        if( k8sTolerationsConfig.enabled && platform ) {
+            if ( platform.isARM64() ) {
+                spec.withTolerations(buildTolerations(k8sTolerationsConfig.arm64))
+            } else if ( platform.isAMD64() ) {
+                spec.withTolerations(buildTolerations(k8sTolerationsConfig.amd64))
+            }
+        }
 
         final requests = new V1ResourceRequirements()
         if( requestsCpu )
@@ -743,5 +757,23 @@ class K8sServiceImpl implements K8sService {
             }
         }
         return latest
+    }
+
+    /**
+     * Creates List of Tolerations
+     */
+    protected List<V1Toleration> buildTolerations(List<K8sTolerationsConfig.Toleration> tolerations){
+        if( !tolerations )
+            return null;
+        V1TolerationBuilder builder = new V1TolerationBuilder();
+        List<V1Toleration> v1Tolerations = new ArrayList<>();
+        for(def toleration: tolerations) {
+            v1Tolerations.add(builder.withKey(toleration.key)
+                    .withOperator(toleration.operator)
+                    .withValue(toleration.value)
+                    .withEffect(toleration.effect)
+                    .build())
+        }
+        return  v1Tolerations
     }
 }

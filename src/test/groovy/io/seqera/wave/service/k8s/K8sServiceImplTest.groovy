@@ -23,6 +23,7 @@ import spock.lang.Unroll
 
 import java.nio.file.Path
 import java.time.Duration
+import java.time.Instant
 import java.time.OffsetDateTime
 
 import io.kubernetes.client.custom.Quantity
@@ -40,6 +41,8 @@ import io.micronaut.context.ApplicationContext
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.core.ContainerPlatform
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -583,7 +586,7 @@ class K8sServiceImplTest extends Specification {
         def nodeSelector = [key: 'value']
 
         when:
-        def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, nodeSelector)
+        def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, nodeSelector, ContainerPlatform.of('arm64'))
 
         then:
         job.spec.backoffLimit == 3
@@ -635,7 +638,7 @@ class K8sServiceImplTest extends Specification {
         def nodeSelector = [key: 'value']
 
         when:
-        def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, nodeSelector)
+        def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, nodeSelector, ContainerPlatform.of('amd64'))
 
         then:
         job.spec.template.spec.containers[0].image == containerImage
@@ -991,5 +994,83 @@ class K8sServiceImplTest extends Specification {
         jobCompleted()            | K8sService.JobStatus.Failed
         jobStarted()              | K8sService.JobStatus.Pending
         jobUnknown()              | K8sService.JobStatus.Pending
+    }
+
+    def 'should add tolerations for arm64 in pod spec' () {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'foo',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.storage.claimName': 'bar',
+                'wave.build.k8s.storage.mountPath': '/build',
+                'wave.build.k8s.tolerations.enabled': true,
+                'wave.build.k8s.tolerations.arm64[0].key': 'arch',
+                'wave.build.k8s.tolerations.arm64[0].value': 'arm64',
+                'wave.build.k8s.tolerations.arm64[0].operator': 'Equal',
+                'wave.build.k8s.tolerations.arm64[0].effect': 'NoSchedule']
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+
+        when:
+        def result = k8sService.buildJobSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), Path.of('/build/work/xyz/config.json'), Duration.ofMinutes(1), [:], ContainerPlatform.of('arm64'))
+
+        then: 'should set the tolerations for arm64'
+        result.spec.template.spec.tolerations.get(0).key == 'arch'
+        result.spec.template.spec.tolerations.get(0).value == 'arm64'
+        result.spec.template.spec.tolerations.get(0).operator == 'Equal'
+        result.spec.template.spec.tolerations.get(0).effect == 'NoSchedule'
+
+        when:
+        result = k8sService.buildJobSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), Path.of('/build/work/xyz/config.json'), Duration.ofMinutes(1), [:], ContainerPlatform.of('amd64'))
+
+        then: 'should not set the toleration for amd64'
+        result.spec.template.spec.tolerations == null
+
+        when:
+        result = k8sService.buildJobSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), Path.of('/build/work/xyz/config.json'), Duration.ofMinutes(1), [:], null)
+
+        then: 'should not throw NPE'
+        result.spec.template.spec.tolerations == null
+    }
+
+    def 'should add tolerations for amd64 in pod spec' () {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'foo',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.storage.claimName': 'bar',
+                'wave.build.k8s.storage.mountPath': '/build',
+                'wave.build.k8s.tolerations.enabled': true,
+                'wave.build.k8s.tolerations.amd64[0].key': 'arch',
+                'wave.build.k8s.tolerations.amd64[0].value': 'amd64',
+                'wave.build.k8s.tolerations.amd64[0].operator': 'Equal',
+                'wave.build.k8s.tolerations.amd64[0].effect': 'NoSchedule']
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+
+        when:
+        def result = k8sService.buildJobSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), Path.of('/build/work/xyz/config.json'), Duration.ofMinutes(1), [:], ContainerPlatform.of('amd64'))
+
+        then: 'should set the tolerations for amd64'
+        result.spec.template.spec.tolerations.get(0).key == 'arch'
+        result.spec.template.spec.tolerations.get(0).value == 'amd64'
+        result.spec.template.spec.tolerations.get(0).operator == 'Equal'
+        result.spec.template.spec.tolerations.get(0).effect == 'NoSchedule'
+
+        when:
+        result = k8sService.buildJobSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), Path.of('/build/work/xyz/config.json'), Duration.ofMinutes(1), [:], ContainerPlatform.of('arm64'))
+
+        then: 'should not set the toleration for arm64'
+        result.spec.template.spec.tolerations == null
+
+        when:
+        result = k8sService.buildJobSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), Path.of('/build/work/xyz/config.json'), Duration.ofMinutes(1), [:], null)
+
+        then: 'should not throw NPE'
+        result.spec.template.spec.tolerations == null
     }
 }
