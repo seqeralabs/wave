@@ -108,7 +108,10 @@ namespace wave {
   }
 
   @route("validate-creds")
-    @post op validateCreds(@body request: ValidateRegistryCredsRequest):  boolean;
+  @post op validateCreds(@body request: ValidateRegistryCredsRequest):  boolean;
+
+  @route("/v1alpha2/validate-creds")
+  @post op validateCredsV2(@body request: ValidateRegistryCredsRequest):  boolean;
 
   @route("/v1alpha1/mirrors")
   interface getMirrorRecord {
