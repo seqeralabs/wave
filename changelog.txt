@@ -1,4 +1,9 @@
 # Wave changelog
+1.15.1 - 20 Nov 2024
+- Check block existence with object operation (#750) [86ef526c]
+- Add /v1alpha2/validate-creds (#752) [e24ec62c]
+- Switched env vars around (#748) [080d5cce]
+
 1.15.0 - 18 Nov 2024
 - Migration to virtual threads - phase 1 (#746) [aaf0420c]
 - Use runAsync instead supplyAsync [ffd0dacd]
