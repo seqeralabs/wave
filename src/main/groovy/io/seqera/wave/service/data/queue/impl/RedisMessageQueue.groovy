@@ -23,11 +23,10 @@ import java.time.Duration
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
+import io.seqera.wave.redis.RedisService
 import io.seqera.wave.service.data.queue.MessageQueue
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import redis.clients.jedis.Jedis
-import redis.clients.jedis.JedisPool
 /**
  * Implements a message broker using Redis list
  *
@@ -40,29 +39,22 @@ import redis.clients.jedis.JedisPool
 class RedisMessageQueue implements MessageQueue<String>  {
 
     @Inject
-    private JedisPool pool
+    RedisService redisService
 
     @Override
     void offer(String target, String message) {
-        try (Jedis conn = pool.getResource()) {
-            conn.lpush(target, message)
-        }
+        redisService.lpush(target, message)
     }
 
     @Override
     String poll(String target) {
-        try (Jedis conn = pool.getResource()) {
-            return conn.rpop(target)
-        }
+        return redisService.rpop(target)
     }
-
 
     @Override
     String poll(String target, Duration duration) {
-        try (Jedis conn = pool.getResource()) {
-            double d = duration.toMillis() / 1000.0
-            final entry = conn.brpop(d, target)
-            return entry ? entry.getValue() : null
-        }
+        double d = duration.toMillis() / 1000.0
+        final entry = redisService.brpop(d, target)
+        return entry ?: null
     }
 }

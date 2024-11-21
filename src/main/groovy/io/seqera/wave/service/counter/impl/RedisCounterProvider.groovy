@@ -21,10 +21,9 @@ package io.seqera.wave.service.counter.impl
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.redis.RedisService
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import redis.clients.jedis.Jedis
-import redis.clients.jedis.JedisPool
 import redis.clients.jedis.params.ScanParams
 /**
  * Implement a counter based on Redis cache
@@ -37,37 +36,31 @@ import redis.clients.jedis.params.ScanParams
 class RedisCounterProvider implements CounterProvider {
 
     @Inject
-    private JedisPool pool
+    RedisService redisService
 
     @Value('${redis.hscan.count:10000}')
     private Integer hscanCount
 
     @Override
     long inc(String key, String field, long value) {
-        try(Jedis conn=pool.getResource() ) {
-            return conn.hincrBy(key, field, value)
-        }
+        return redisService.hincrBy(key, field, value)
     }
 
     @Override
     Long get(String key, String field) {
-        try(Jedis conn=pool.getResource() ) {
-            return conn.hget(key, field) ? conn.hget(key, field).toLong() : null
-        }
+        return redisService.hget(key, field) ? redisService.hget(key, field).toLong() : null
     }
 
     @Override
     Map<String, Long> getAllMatchingEntries(String key, String pattern) {
-        try(Jedis conn=pool.getResource() ) {
-            final scanResult = conn.hscan(key, "0", new ScanParams().match(pattern).count(hscanCount))
-            if( !scanResult )
-                return Map.<String, Long>of()
-            final result = new HashMap<String, Long>()
-            for(String entry : scanResult.result) {
-                final parts = entry.tokenize('=')
-                result.put(parts[0], parts[1] as Long)
-            }
-            return result
+        final scanResult = redisService.hscan(key, "0", new ScanParams().match(pattern).count(hscanCount))
+        if( !scanResult )
+            return Map.<String, Long>of()
+        final result = new HashMap<String, Long>()
+        for(String entry : scanResult.result) {
+            final parts = entry.tokenize('=')
+            result.put(parts[0], parts[1] as Long)
         }
+        return result
     }
 }
