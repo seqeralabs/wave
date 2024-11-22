@@ -192,7 +192,7 @@ Rate limit configuration controls the limits of anonymous and authenticated user
 
 - **`redis.client.timeout`**: Defines the timeout duration (in milliseconds) for Redis client operations. The default value is `5000` (5 seconds).  *Optional*.
 
-- **`redis.password`**: Specifies the password used to authenticate with the Redis server. This is required if the server is configured to require authentication.  *Optional*.
+- **`redis.password`**: Specifies the password used to authenticate with the Redis server. This is needed when server authentication is configured.  *Optional*.
 
 - **`surreal.default.ns`**: the namespace for the Surreal database. It can be set using `${SURREALDB_NS}` environment variable. *Mandatory*.
 
