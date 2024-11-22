@@ -106,10 +106,6 @@ abstract class TowerConnector {
         return ioExecutor
     }
 
-    protected ExecutorService getIoExecutor() {
-        return ioExecutor
-    }
-
     /**
      * Generic async get with authorization
      * that converts to the provided json model T
