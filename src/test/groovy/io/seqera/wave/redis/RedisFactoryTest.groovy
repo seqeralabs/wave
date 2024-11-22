@@ -51,7 +51,7 @@ class RedisFactoryTest extends Specification {
 
         then:
         def e = thrown(InvalidURIException)
-        e.message.contains("Cannot open Redis connection due invalid URI")
+        e.message.contains("Invalid Redis connection URI: $URI_STRING")
 
         where:
         URI_STRING          | MIN_IDLE | MAX_IDLE  | MAX_TOTAL |  TIMEOUT
