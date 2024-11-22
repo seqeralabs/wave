@@ -184,6 +184,16 @@ Rate limit configuration controls the limits of anonymous and authenticated user
 
 - **`redis.pool.enabled`**: whether to enable the Redis pool. It is set to `true` by default, enabling the use of a connection pool for efficient management of connections to the Redis server. *Optional*.
 
+- **`redis.pool.minIdle`**: Specifies the minimum number of idle connections to maintain in the Redis connection pool. The default value is `0`. This ensures that connections are readily available for use.  *Optional*.
+
+- **`redis.pool.maxIdle`**: Specifies the maximum number of idle connections to maintain in the Redis connection pool. The default value is `10`.  *Optional*.
+
+- **`redis.pool.maxTotal`**: Specifies the maximum number of connections that can be maintained in the Redis connection pool. The default value is `50`. This helps to manage resource usage efficiently while supporting high demand.  *Optional*.
+
+- **`redis.client.timeout`**: Defines the timeout duration (in milliseconds) for Redis client operations. The default value is `5000` (5 seconds).  *Optional*.
+
+- **`redis.password`**: Specifies the password used to authenticate with the Redis server. This is required if the server is configured to require authentication.  *Optional*.
+
 - **`surreal.default.ns`**: the namespace for the Surreal database. It can be set using `${SURREALDB_NS}` environment variable. *Mandatory*.
 
 - **`surreal.default.db`**: the name of the Surreal database. It can be set using`${SURREALDB_DB}` environment variable. This setting defines the target database within the Surreal database system that Wave should interact with. *Mandatory*.
