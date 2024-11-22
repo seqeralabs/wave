@@ -49,7 +49,7 @@ dependencies {
     implementation 'io.micronaut:micronaut-websocket'
     implementation 'org.apache.groovy:groovy-json'
     implementation 'org.apache.groovy:groovy-nio'
-    implementation 'com.google.guava:guava:32.1.2-jre'
+    implementation 'com.google.guava:guava:33.3.1-jre'
     implementation 'dev.failsafe:failsafe:3.1.0'
     implementation 'io.micronaut.reactor:micronaut-reactor'
     implementation 'io.micronaut.reactor:micronaut-reactor-http-client'
@@ -156,8 +156,7 @@ jib {
 
 run{
     def envs = findProperty('micronautEnvs')
-    // note: "--enable-preview" is required to use virtual threads on Java 19 and 20
-    def args = ["-Dmicronaut.environments=$envs","--enable-preview"]
+    def args = ["-Dmicronaut.environments=$envs","-Djdk.tracePinnedThreads=short"]
     if( environment['JVM_OPTS'] ) args.add(environment['JVM_OPTS'])
     jvmArgs args
     systemProperties 'DOCKER_USER': project.findProperty('DOCKER_USER') ?: environment['DOCKER_USER'],
