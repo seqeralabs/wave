@@ -26,10 +26,10 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.function.Function
 
-import com.google.common.cache.Cache
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
+import com.github.benmanes.caffeine.cache.AsyncLoadingCache
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.CacheLoader
+import com.github.benmanes.caffeine.cache.Caffeine
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -92,14 +92,18 @@ abstract class TowerConnector {
         }
     }
 
-    private LoadingCache<JwtRefreshParams, CompletableFuture<JwtAuth>> refreshCache = CacheBuilder<JwtRefreshParams, CompletableFuture<JwtAuth>>
+    private AsyncLoadingCache<JwtRefreshParams, CompletableFuture<JwtAuth>> refreshCache = Caffeine
             .newBuilder()
             .expireAfterWrite(1, TimeUnit.MINUTES)
-            .build(loader)
+            .buildAsync(loader)
 
     /** Only for testing - do not use */
     Cache<JwtRefreshParams, CompletableFuture<JwtAuth>> refreshCache0() {
-        return refreshCache
+        return refreshCache.synchronous()
+    }
+
+    protected ExecutorService getIoExecutor() {
+        return ioExecutor
     }
 
     protected ExecutorService getIoExecutor() {
@@ -246,7 +250,7 @@ abstract class TowerConnector {
      * @return The refreshed {@link JwtAuth} object
      */
     protected CompletableFuture<JwtAuth> refreshJwtToken(String endpoint, JwtAuth auth) {
-        return refreshCache.get(new JwtRefreshParams(endpoint,auth))
+        return refreshCache.synchronous().get(new JwtRefreshParams(endpoint,auth))
     }
 
     protected CompletableFuture<JwtAuth> refreshJwtToken0(String endpoint, JwtAuth auth) {
