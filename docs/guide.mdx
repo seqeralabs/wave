@@ -61,7 +61,7 @@ If an access token isn't provided, the following rate limits apply:
 The Wave does not support the use of sha256 digest in the image name, e.g. `ubuntu@sha256:3235...ce8f`, when using
 the augmentation process to extend container images.
 
-Whilst using a digest directly isn't possible, Wave can generate image names which include a sha256 digest
+While using a digest directly isn't possible, Wave can generate image names which include a sha256 digest
 of the `Dockerfile` used to build the image within the tag.
 In order to reference a container via this sha256 digest tag, you will need to use the _freeze_ image mode.
 This will force the creation of a new container image, using the container you have specified as base image.
