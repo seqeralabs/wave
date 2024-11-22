@@ -21,6 +21,7 @@ package io.seqera.wave.service.job
 import java.time.Duration
 import java.time.Instant
 
+import com.github.benmanes.caffeine.cache.AsyncCache
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import groovy.transform.CompileStatic
@@ -50,12 +51,16 @@ class JobManager {
     @Inject
     private JobConfig config
 
-    private Cache<String,Instant> debounceCache
+    // FIXME https://github.com/seqeralabs/wave/issues/747
+    private AsyncCache<String,Instant> debounceCache
 
     @PostConstruct
     void init() {
         log.info "Creating job manager - config=$config"
-        debounceCache = Caffeine.newBuilder().expireAfterWrite(config.graceInterval.multipliedBy(2)).build()
+        debounceCache = Caffeine
+                .newBuilder()
+                .expireAfterWrite(config.graceInterval.multipliedBy(2))
+                .buildAsync()
         queue.addConsumer((job)-> processJob(job))
     }
 
@@ -72,7 +77,8 @@ class JobManager {
     }
 
     protected JobState state(JobSpec job) {
-        return state0(job, config.graceInterval, debounceCache)
+        // FIXME https://github.com/seqeralabs/wave/issues/747
+        return state0(job, config.graceInterval, debounceCache.synchronous())
     }
 
     protected JobState state0(final JobSpec job, final Duration graceInterval, final Cache<String,Instant> cache) {
