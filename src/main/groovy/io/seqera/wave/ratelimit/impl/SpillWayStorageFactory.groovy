@@ -52,8 +52,7 @@ class SpillWayStorageFactory {
 
     @Singleton
     @Requires(property = 'redis.uri')
-    LimitUsageStorage redisStorage(@NotNull RedisConfig redisConfig, JedisPool pool){
-        log.info "Using redis $redisConfig.uri as storage for rate limit"
+    LimitUsageStorage redisStorage(JedisPool pool){
         return RedisStorage.builder().withJedisPool(pool).build()
     }
 }
