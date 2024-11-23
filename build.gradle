@@ -58,7 +58,7 @@ dependencies {
     implementation 'org.apache.commons:commons-lang3:3.17.0'
     implementation 'io.kubernetes:client-java:19.0.0'
     implementation 'io.kubernetes:client-java-api-fluent:18.0.1'
-    implementation 'com.google.code.gson:gson:2.9.0'
+    implementation 'com.google.code.gson:gson:2.10.1'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
     implementation 'com.squareup.moshi:moshi:1.15.1'
