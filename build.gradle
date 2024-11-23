@@ -38,6 +38,7 @@ dependencies {
     api 'io.seqera:lib-mail:1.2.0'
     api 'io.seqera:wave-api:0.14.0'
     api 'io.seqera:wave-utils:0.15.0'
+    implementation 'io.seqera:lib-crypto:1.0.0'
     implementation 'io.micronaut:micronaut-http-client'
     implementation 'io.micronaut:micronaut-jackson-databind'
     implementation 'io.micronaut.groovy:micronaut-runtime-groovy'
@@ -53,7 +54,6 @@ dependencies {
     implementation 'dev.failsafe:failsafe:3.1.0'
     implementation 'io.micronaut.reactor:micronaut-reactor'
     implementation 'io.micronaut.reactor:micronaut-reactor-http-client'
-    implementation('io.seqera:tower-crypto:22.4.0-watson') { transitive = false }  // to be replaced with 22.4.0 once released
     implementation 'org.apache.commons:commons-compress:1.27.1'
     implementation 'org.apache.commons:commons-lang3:3.17.0'
     implementation 'io.kubernetes:client-java:19.0.0'
