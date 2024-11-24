@@ -733,6 +733,7 @@ class K8sServiceImpl implements K8sService {
         k8sClient
                 .batchV1Api()
                 .deleteNamespacedJob(name, namespace)
+                .propagationPolicy("Foreground")
                 .execute()
     }
 
