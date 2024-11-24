@@ -94,9 +94,11 @@ dependencies {
     implementation 'com.coveo:spillway:3.0.0'
 
     // monitoring
+    implementation 'io.micronaut.micrometer:micronaut-micrometer-core'
     implementation 'io.micronaut.micrometer:micronaut-micrometer-registry-prometheus'
     // Also required to enable endpoint
     implementation 'io.micronaut:micronaut-management'
+    implementation 'org.apache.commons:commons-pool2:2.12.0'
     //views
     implementation 'io.micronaut.views:micronaut-views-handlebars'
 
