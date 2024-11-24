@@ -74,7 +74,7 @@ class AwsEcrService {
     }
 
     // FIXME https://github.com/seqeralabs/wave/issues/747
-    private AsyncLoadingCache<AwsCreds, String> cache = Caffeine.newBuilder()
+    private AsyncLoadingCache<AwsCreds, String> cache = Caffeine
             .newBuilder()
             .maximumSize(10_000)
             .expireAfterWrite(3, TimeUnit.HOURS)

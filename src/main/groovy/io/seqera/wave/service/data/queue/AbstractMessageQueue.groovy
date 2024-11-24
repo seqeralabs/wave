@@ -61,7 +61,7 @@ abstract class AbstractMessageQueue<M> implements Runnable {
     final private String name0
 
     // FIXME https://github.com/seqeralabs/wave/issues/747
-    final private AsyncCache<String,Boolean> closedClients = Caffeine.newBuilder()
+    final private AsyncCache<String,Boolean> closedClients = Caffeine
                     .newBuilder()
                     .expireAfterWrite(10, TimeUnit.MINUTES)
                     .buildAsync()

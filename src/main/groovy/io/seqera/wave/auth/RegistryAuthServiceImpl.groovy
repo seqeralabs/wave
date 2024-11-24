@@ -101,7 +101,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     }
 
     // FIXME https://github.com/seqeralabs/wave/issues/747
-    private AsyncLoadingCache<CacheKey, String> cacheTokens = Caffeine.newBuilder()
+    private AsyncLoadingCache<CacheKey, String> cacheTokens = Caffeine
                     .newBuilder()
                     .maximumSize(10_000)
                     .expireAfterAccess(_1_HOUR.toMillis(), TimeUnit.MILLISECONDS)
