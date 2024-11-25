@@ -26,7 +26,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.openapi.models.V1ContainerBuilder
-import io.kubernetes.client.openapi.models.V1DeleteOptions
 import io.kubernetes.client.openapi.models.V1EnvVar
 import io.kubernetes.client.openapi.models.V1HostPathVolumeSource
 import io.kubernetes.client.openapi.models.V1Job
@@ -294,8 +293,6 @@ class K8sServiceImpl implements K8sService {
                 .withActiveDeadlineSeconds( timeout.toSeconds() )
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
-                .withOverhead(null)
-
 
         final requests = new V1ResourceRequirements()
         if( requestsCpu )
@@ -394,8 +391,6 @@ class K8sServiceImpl implements K8sService {
                 .withActiveDeadlineSeconds( scanConfig.timeout.toSeconds() )
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
-                .withOverhead(null)
-
 
         final requests = new V1ResourceRequirements()
         if( scanConfig.requestsCpu )
@@ -464,7 +459,6 @@ class K8sServiceImpl implements K8sService {
                     .editOrNewSpec()
                     .withServiceAccount(serviceAccount)
                     .withRestartPolicy("Never")
-                    .withOverhead(null)
         //container section
                     .addNewContainer()
                         .withName(name)
