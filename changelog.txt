@@ -1,5 +1,5 @@
 # Wave changelog
-1.15.2 - 25 Nov 2024
+1.15.3 - 25 Nov 2024
 - Add Support Redis support for SSL and password (#717) [bf63599d]
 - Bump MN 4.7.1 (#741) [203e5dd0]
 - Remove double cache builder invocation [994b722c]
@@ -8,6 +8,8 @@
 - Bump gson 2.10.1 [117703b9]
 - Bump protobuf-java version 4.27.5 [3ea758b4]
 - Bump k8s client to version 21.0.1 (#553) [51788578]
+
+1.15.2 [skipped] 
 
 1.15.1 - 20 Nov 2024
 - Check block existence with object operation (#750) [86ef526c]
