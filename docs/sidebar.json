@@ -18,7 +18,8 @@
       "items": [
         "cli/index",
         "cli/reference",
-        "api"
+        "api",
+        "api-limits"
       ]
     },
     "faq"
