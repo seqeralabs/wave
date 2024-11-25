@@ -74,7 +74,7 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
     }
 
     // FIXME https://github.com/seqeralabs/wave/issues/747
-    private AsyncLoadingCache<URI, RegistryAuth> cache = Caffeine.newBuilder()
+    private AsyncLoadingCache<URI, RegistryAuth> cache = Caffeine
                 .newBuilder()
                 .maximumSize(10_000)
                 .expireAfterAccess(1, TimeUnit.HOURS)
