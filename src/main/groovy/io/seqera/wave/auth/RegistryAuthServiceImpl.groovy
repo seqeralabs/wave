@@ -42,6 +42,7 @@ import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.util.RegHelper
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.StringUtils
+import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -69,7 +70,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
 
     @Inject
     @Named(TaskExecutors.BLOCKING)
-    private volatile ExecutorService ioExecutor
+    private ExecutorService ioExecutor
 
     @Canonical
     @ToString(includePackage = false, includeNames = true)
@@ -109,12 +110,14 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
 
     // FIXME https://github.com/seqeralabs/wave/issues/747
     private AsyncLoadingCache<CacheKey, String> cacheTokens
+
     @Inject
     private RegistryLookupService lookupService
 
     @Inject
     private RegistryCredentialsFactory credentialsFactory
 
+    @PostConstruct
     private void init() {
         cacheTokens = Caffeine
                 .newBuilder()

@@ -57,7 +57,7 @@ class JobManager {
 
     @Inject
     @Named(TaskExecutors.BLOCKING)
-    private volatile ExecutorService ioExecutor
+    private ExecutorService ioExecutor
 
     // FIXME https://github.com/seqeralabs/wave/issues/747
     private AsyncCache<String,Instant> debounceCache

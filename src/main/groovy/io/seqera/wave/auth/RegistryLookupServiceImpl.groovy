@@ -61,7 +61,7 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
 
     @Inject
     @Named(TaskExecutors.BLOCKING)
-    private volatile ExecutorService ioExecutor
+    private ExecutorService ioExecutor
 
     private CacheLoader<URI, RegistryAuth> loader = new CacheLoader<URI, RegistryAuth>() {
         @Override
