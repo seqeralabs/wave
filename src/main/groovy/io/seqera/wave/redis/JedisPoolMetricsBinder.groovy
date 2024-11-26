@@ -56,6 +56,5 @@ class JedisPoolMetricsBinder implements MeterBinder {
         registry.gauge("jedis.pool.mean.borrow.wait.millis", pool, (p)-> p.meanBorrowWaitDuration.toMillis() as double)
         registry.gauge("jedis.pool.mean.active.millis", pool, (p)-> p.meanActiveDuration.toMillis() as double)
         registry.gauge("jedis.pool.mean.idle.millis", pool, (p)-> p.meanIdleDuration.toMillis() as double)
-
     }
 }
