@@ -21,13 +21,12 @@ package io.seqera.wave.auth
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
-import java.util.concurrent.ExecutionException
+import java.util.concurrent.CompletionException
 import java.util.concurrent.TimeUnit
 
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
-import com.google.common.util.concurrent.UncheckedExecutionException
+import com.github.benmanes.caffeine.cache.AsyncLoadingCache
+import com.github.benmanes.caffeine.cache.CacheLoader
+import com.github.benmanes.caffeine.cache.Caffeine
 import groovy.json.JsonSlurper
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
@@ -101,11 +100,12 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         return result
     }
 
-    private LoadingCache<CacheKey, String> cacheTokens = CacheBuilder<CacheKey, String>
+    // FIXME https://github.com/seqeralabs/wave/issues/747
+    private AsyncLoadingCache<CacheKey, String> cacheTokens = Caffeine
                     .newBuilder()
                     .maximumSize(10_000)
                     .expireAfterAccess(_1_HOUR.toMillis(), TimeUnit.MILLISECONDS)
-                    .build(loader)
+                    .buildAsync(loader)
 
     @Inject
     private RegistryLookupService lookupService
@@ -269,9 +269,10 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     protected String getAuthToken(String image, RegistryAuth auth, RegistryCredentials creds) {
         final key = new CacheKey(image, auth, creds)
         try {
-            return cacheTokens.get(key)
+            // FIXME https://github.com/seqeralabs/wave/issues/747
+            return cacheTokens.synchronous().get(key)
         }
-        catch (UncheckedExecutionException | ExecutionException e) {
+        catch (CompletionException e) {
             // this catches the exception thrown in the cache loader lookup
             // and throws the causing exception that should be `RegistryUnauthorizedAccessException`
             throw e.cause
@@ -287,7 +288,8 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
      */
     void invalidateAuthorization(String image, RegistryAuth auth, RegistryCredentials creds) {
         final key = new CacheKey(image, auth, creds)
-        cacheTokens.invalidate(key)
+        // FIXME https://github.com/seqeralabs/wave/issues/747
+        cacheTokens.synchronous().invalidate(key)
         tokenStore.remove(getStableKey(key))
     }
 

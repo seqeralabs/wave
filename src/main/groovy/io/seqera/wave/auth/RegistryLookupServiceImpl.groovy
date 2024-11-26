@@ -20,13 +20,12 @@ package io.seqera.wave.auth
 
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.util.concurrent.ExecutionException
+import java.util.concurrent.CompletionException
 import java.util.concurrent.TimeUnit
 
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
-import com.google.common.util.concurrent.UncheckedExecutionException
+import com.github.benmanes.caffeine.cache.AsyncLoadingCache
+import com.github.benmanes.caffeine.cache.CacheLoader
+import com.github.benmanes.caffeine.cache.Caffeine
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.configuration.HttpClientConfig
@@ -74,11 +73,12 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
         }
     }
 
-    private LoadingCache<URI, RegistryAuth> cache = CacheBuilder<URI, RegistryAuth>
+    // FIXME https://github.com/seqeralabs/wave/issues/747
+    private AsyncLoadingCache<URI, RegistryAuth> cache = Caffeine
                 .newBuilder()
                 .maximumSize(10_000)
                 .expireAfterAccess(1, TimeUnit.HOURS)
-                .build(loader)
+                .buildAsync(loader)
 
     protected RegistryAuth lookup0(URI endpoint) {
         final httpClient = HttpClientFactory.followRedirectsHttpClient()
@@ -117,10 +117,11 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
     RegistryInfo lookup(String registry) {
         try {
             final endpoint = registryEndpoint(registry)
-            final auth = cache.get(endpoint)
+            // FIXME https://github.com/seqeralabs/wave/issues/747
+            final auth = cache.synchronous().get(endpoint)
             return new RegistryInfo(registry, endpoint, auth)
         }
-        catch (UncheckedExecutionException | ExecutionException e) {
+        catch (CompletionException e) {
             // this catches the exception thrown in the cache loader lookup
             // and throws the causing exception that should be `RegistryUnauthorizedAccessException`
             throw e.cause

@@ -26,7 +26,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.openapi.models.V1ContainerBuilder
-import io.kubernetes.client.openapi.models.V1DeleteOptions
 import io.kubernetes.client.openapi.models.V1EnvVar
 import io.kubernetes.client.openapi.models.V1HostPathVolumeSource
 import io.kubernetes.client.openapi.models.V1Job
@@ -144,7 +143,8 @@ class K8sServiceImpl implements K8sService {
     JobStatus getJobStatus(String name) {
         final job = k8sClient
                 .batchV1Api()
-                .readNamespacedJob(name, namespace, null)
+                .readNamespacedJob(name, namespace)
+                .execute()
         if( !job ) {
             log.warn "K8s job=$name - unknown"
             return null
@@ -178,7 +178,8 @@ class K8sServiceImpl implements K8sService {
     V1Pod getPod(String name) {
         return k8sClient
                 .coreV1Api()
-                .readNamespacedPod(name, namespace, null)
+                .readNamespacedPod(name, namespace)
+                .execute()
     }
 
     /**
@@ -293,7 +294,6 @@ class K8sServiceImpl implements K8sService {
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
 
-
         final requests = new V1ResourceRequirements()
         if( requestsCpu )
             requests.putRequestsItem('cpu', new Quantity(requestsCpu))
@@ -356,7 +356,8 @@ class K8sServiceImpl implements K8sService {
     void deletePod(String name) {
         k8sClient
                 .coreV1Api()
-                .deleteNamespacedPod(name, namespace, (String)null, (String)null, (Integer)null, (Boolean)null, (String)null, (V1DeleteOptions)null)
+                .deleteNamespacedPod(name, namespace)
+                .execute()
     }
 
     @Deprecated
@@ -390,7 +391,6 @@ class K8sServiceImpl implements K8sService {
                 .withActiveDeadlineSeconds( scanConfig.timeout.toSeconds() )
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
-
 
         final requests = new V1ResourceRequirements()
         if( scanConfig.requestsCpu )
@@ -431,7 +431,8 @@ class K8sServiceImpl implements K8sService {
 
         return k8sClient
                 .batchV1Api()
-                .createNamespacedJob(namespace, spec, null, null, null,null)
+                .createNamespacedJob(namespace, spec)
+                .execute()
     }
 
     V1Job createTransferJobSpec(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
@@ -494,7 +495,8 @@ class K8sServiceImpl implements K8sService {
         final spec = buildJobSpec(name, containerImage, args, workDir, creds, timeout, nodeSelector)
         return k8sClient
                 .batchV1Api()
-                .createNamespacedJob(namespace, spec, null, null, null,null)
+                .createNamespacedJob(namespace, spec)
+                .execute()
     }
 
     V1Job buildJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, Duration timeout, Map<String,String> nodeSelector) {
@@ -583,7 +585,8 @@ class K8sServiceImpl implements K8sService {
         final spec = scanJobSpec(name, containerImage, args, workDir, creds, scanConfig)
         return k8sClient
                 .batchV1Api()
-                .createNamespacedJob(namespace, spec, null, null, null,null)
+                .createNamespacedJob(namespace, spec)
+                .execute()
     }
 
     V1Job scanJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig) {
@@ -650,7 +653,8 @@ class K8sServiceImpl implements K8sService {
         final spec = mirrorJobSpec(name, containerImage, args, workDir, creds, config)
         return k8sClient
                 .batchV1Api()
-                .createNamespacedJob(namespace, spec, null, null, null,null)
+                .createNamespacedJob(namespace, spec)
+                .execute()
     }
 
     V1Job mirrorJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, MirrorConfig config) {
@@ -722,7 +726,9 @@ class K8sServiceImpl implements K8sService {
     void deleteJob(String name) {
         k8sClient
                 .batchV1Api()
-                .deleteNamespacedJob(name, namespace, null, null, null, null,"Foreground", null)
+                .deleteNamespacedJob(name, namespace)
+                .propagationPolicy("Foreground")
+                .execute()
     }
 
     @Override
@@ -730,7 +736,9 @@ class K8sServiceImpl implements K8sService {
         // list all pods for the given job
         final allPods = k8sClient
                 .coreV1Api()
-                .listNamespacedPod(namespace, null, null, null, null, "job-name=${jobName}", null, null, null, null, null, null)
+                .listNamespacedPod(namespace)
+                .labelSelector("job-name=${jobName}")
+                .execute()
 
         if( !allPods || !allPods.items )
             return null

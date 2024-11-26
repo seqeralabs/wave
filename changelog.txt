@@ -1,4 +1,31 @@
 # Wave changelog
+1.15.3 - 25 Nov 2024
+- Add Support Redis support for SSL and password (#717) [bf63599d]
+- Bump MN 4.7.1 (#741) [203e5dd0]
+- Remove double cache builder invocation [994b722c]
+- Bump lib-mail version 1.2.1 [4da98a23]
+- Bump io.seqera:lib-crypto [36f5b24d]
+- Bump gson 2.10.1 [117703b9]
+- Bump protobuf-java version 4.27.5 [3ea758b4]
+- Bump k8s client to version 21.0.1 (#553) [51788578]
+
+1.15.2 [skipped] 
+
+1.15.1 - 20 Nov 2024
+- Check block existence with object operation (#750) [86ef526c]
+- Add /v1alpha2/validate-creds (#752) [e24ec62c]
+- Switched env vars around (#748) [080d5cce]
+
+1.15.0 - 18 Nov 2024
+- Migration to virtual threads - phase 1 (#746) [aaf0420c]
+- Use runAsync instead supplyAsync [ffd0dacd]
+- Remove deprecated ThreadPoolBuilder [7af3046f]
+- Replace Guava cache with Caffeine (#745) [cf813e0a]
+- Update project deps [f24b684d]
+- Bump  guava to version 33.3.1-jre [328e9ea3]
+- Bump Netty version 4.1.115.Final [9ba433ce]
+- Bump gradle 8.10.2 [52272fe1]
+
 1.14.1 - 14 Nov 2024
 - Fix creds validation endpoint (#740) [8c0f3a4c]
 

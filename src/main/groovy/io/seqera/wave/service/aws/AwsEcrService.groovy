@@ -21,9 +21,9 @@ package io.seqera.wave.service.aws
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
+import com.github.benmanes.caffeine.cache.AsyncLoadingCache
+import com.github.benmanes.caffeine.cache.CacheLoader
+import com.github.benmanes.caffeine.cache.Caffeine
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -73,11 +73,12 @@ class AwsEcrService {
         }
     }
 
-    private LoadingCache<AwsCreds, String> cache = CacheBuilder<AwsCreds, String>
+    // FIXME https://github.com/seqeralabs/wave/issues/747
+    private AsyncLoadingCache<AwsCreds, String> cache = Caffeine
             .newBuilder()
             .maximumSize(10_000)
             .expireAfterWrite(3, TimeUnit.HOURS)
-            .build(loader)
+            .buildAsync(loader)
 
 
     private EcrClient ecrClient(String accessKey, String secretKey, String region) {
@@ -126,7 +127,8 @@ class AwsEcrService {
         try {
             // get the token from the cache, if missing the it's automatically
             // fetch using the AWS ECR client
-            return cache.get(new AwsCreds(accessKey,secretKey,region,isPublic))
+            // FIXME https://github.com/seqeralabs/wave/issues/747
+            return cache.synchronous().get(new AwsCreds(accessKey,secretKey,region,isPublic))
         }
         catch (Exception e) {
             final type = isPublic ? "ECR public" : "ECR"
