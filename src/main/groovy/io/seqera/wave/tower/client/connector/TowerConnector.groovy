@@ -100,7 +100,7 @@ abstract class TowerConnector {
         refreshCache = Caffeine
                 .newBuilder()
                 .expireAfterWrite(1, TimeUnit.MINUTES)
-                .executor(getIoExecutor())
+                .executor(ioExecutor)
                 .buildAsync(loader)
     }
 
