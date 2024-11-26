@@ -22,13 +22,17 @@ import spock.lang.Specification
 
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 
+import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.service.pairing.socket.PairingOutboundQueue
 import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import jakarta.inject.Inject
+import jakarta.inject.Named
+
 /**
  * Test class {@link AbstractMessageQueue} using a {@link io.seqera.wave.service.data.queue.impl.LocalMessageQueue}
  *
@@ -40,9 +44,12 @@ class AbstractMessageQueueLocalTest extends Specification {
     @Inject
     private MessageQueue<String> broker
 
+    @Named(TaskExecutors.BLOCKING)
+    private ExecutorService ioExecutor
+
     def 'should send and consume a request'() {
         given:
-        def queue = new PairingOutboundQueue(broker, Duration.ofMillis(100))
+        def queue = new PairingOutboundQueue(broker, Duration.ofMillis(100), ioExecutor)
 
         when:
         def result = new CompletableFuture<PairingMessage>()
@@ -58,7 +65,7 @@ class AbstractMessageQueueLocalTest extends Specification {
 
     def 'should validate '() {
         given:
-        def queue = new PairingOutboundQueue(broker, Duration.ofMillis(100))
+        def queue = new PairingOutboundQueue(broker, Duration.ofMillis(100), ioExecutor)
 
         expect:
         queue.targetKey('foo') == 'pairing-outbound-queue/v1:foo'
@@ -67,7 +74,5 @@ class AbstractMessageQueueLocalTest extends Specification {
         cleanup:
         queue.close()
     }
-
-
 
 }

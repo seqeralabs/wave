@@ -22,6 +22,8 @@ package io.seqera.wave.service.aws
 import spock.lang.Requires
 import spock.lang.Specification
 
+import java.util.concurrent.Executors
+
 
 /**
  *
@@ -35,7 +37,7 @@ class AwsEcrServiceTest extends Specification {
         def accessKey = System.getenv('AWS_ACCESS_KEY_ID')
         def secretKey = System.getenv('AWS_SECRET_ACCESS_KEY')
         def REGION = 'eu-west-1'
-        def provider = new AwsEcrService()
+        def provider = new AwsEcrService(ioExecutor: Executors.newCachedThreadPool())
 
         when:
         def creds = provider.getLoginToken(accessKey, secretKey, REGION, false).tokenize(":")
@@ -51,7 +53,7 @@ class AwsEcrServiceTest extends Specification {
 
     def 'should check registry info' () {
         given:
-        def provider = new AwsEcrService()
+        def provider = new AwsEcrService(ioExecutor: Executors.newCachedThreadPool())
         expect:
         provider.getEcrHostInfo(null) == null
         provider.getEcrHostInfo('foo') == null
