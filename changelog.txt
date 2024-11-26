@@ -1,4 +1,8 @@
 # Wave changelog
+1.15.4 - 27 Nov 2024 
+- Add blocking executor to async caches (#759) [86f7d3e3]
+- Add ExecutesOn annotation to error controller [a2db2b00]
+
 1.15.3 - 25 Nov 2024
 - Add Support Redis support for SSL and password (#717) [bf63599d]
 - Bump MN 4.7.1 (#741) [203e5dd0]
