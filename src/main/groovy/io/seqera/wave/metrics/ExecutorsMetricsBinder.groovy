@@ -29,7 +29,8 @@ import io.micronaut.context.annotation.Context
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 /**
- *
+ * Register Micrometer metrics for ForkJoin commonPool and virtual threads scheduler
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
