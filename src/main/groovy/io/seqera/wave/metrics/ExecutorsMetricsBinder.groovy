@@ -24,6 +24,7 @@ import java.util.concurrent.ForkJoinPool
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics
 import io.micronaut.context.annotation.Context
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
@@ -46,18 +47,12 @@ class ExecutorsMetricsBinder {
         registerVirtualThreadPoolMetrics(registry)
     }
 
-    void registerCommonPoolMetrics(MeterRegistry meterRegistry) {
-        ForkJoinPool commonPool = ForkJoinPool.commonPool();
-
-        meterRegistry.gauge("common.pool.size", commonPool, ForkJoinPool::getPoolSize);
-        meterRegistry.gauge("common.active.thread.count", commonPool, ForkJoinPool::getActiveThreadCount);
-        meterRegistry.gauge("common.queued.submissions", commonPool, ForkJoinPool::getQueuedSubmissionCount);
-        meterRegistry.gauge("common.queued.tasks", commonPool, ForkJoinPool::getQueuedTaskCount);
-        meterRegistry.gauge("common.parallelism", commonPool, ForkJoinPool::getParallelism);
-        meterRegistry.gauge("common.steal.count", commonPool, ForkJoinPool::getStealCount);
+    void registerCommonPoolMetrics(MeterRegistry registry) {
+        final commonPool = ForkJoinPool.commonPool()
+        ExecutorServiceMetrics.monitor(registry, commonPool, "ForkJoin.commonPool")
     }
 
-    void registerVirtualThreadPoolMetrics(MeterRegistry meterRegistry) {
+    void registerVirtualThreadPoolMetrics(MeterRegistry registry) {
         try {
             // Create a virtual thread executor
             Class<?> VirtualThread = Class.forName("java.lang.VirtualThread");
@@ -68,12 +63,7 @@ class ExecutorsMetricsBinder {
             ForkJoinPool virtualThreadPool = (ForkJoinPool) poolField.get(null);
 
             // Register metrics for the virtual thread pool
-            meterRegistry.gauge("virtual.pool.size", virtualThreadPool, ForkJoinPool::getPoolSize);
-            meterRegistry.gauge("virtual.active.thread.count", virtualThreadPool, ForkJoinPool::getActiveThreadCount);
-            meterRegistry.gauge("virtual.queued.submissions", virtualThreadPool, ForkJoinPool::getQueuedSubmissionCount);
-            meterRegistry.gauge("virtual.queued.tasks", virtualThreadPool, ForkJoinPool::getQueuedTaskCount);
-            meterRegistry.gauge("virtual.parallelism", virtualThreadPool, ForkJoinPool::getParallelism);
-            meterRegistry.gauge("virtual.steal.count", virtualThreadPool, ForkJoinPool::getStealCount);
+            ExecutorServiceMetrics.monitor(registry, virtualThreadPool, "ForkJoin.virtualPool")
         }
         catch (Exception e) {
             log.error "Unable to registry carrier threads pool metrics", e
