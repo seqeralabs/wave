@@ -73,6 +73,16 @@ class JobManager {
         queue.addConsumer((job)-> processJob(job))
     }
 
+    /**
+     * Process a job entry aorrding the state modelled by the {@link JobSpec} object.
+     *
+     * @param jobSpec
+     *      A {@link JobSpec} object representing the job to be processed
+     * @return
+     *      {@code true} to signal the process has been processed successfully and it should
+     *      be removed from the underlying queue, or {@code false} if the job execution has
+     *      not yet completed.
+     */
     protected boolean processJob(JobSpec jobSpec) {
         try {
             return processJob0(jobSpec)
