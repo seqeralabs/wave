@@ -37,20 +37,11 @@ micronaut:
         enabled: true
 # http client configuration
 # https://docs.micronaut.io/latest/guide/configurationreference.html#io.micronaut.http.client.DefaultHttpClientConfiguration
-  executors:
-    stream-executor:
-      type: FIXED
-      number-of-threads: 16
-  netty:
-    event-loops:
-      stream-pool:
-        executor: 'stream-executor'
   http:
     services:
       stream-client:
         read-timeout: '30s'
         read-idle-timeout: '120s'
-        event-loop-group: 'stream-pool'
   security:
     enabled: true
     intercept-url-map:
@@ -96,12 +87,5 @@ jackson:
 logger:
   levels:
     io.seqera: "DEBUG"
-    io.micronaut.retry.intercept.RecoveryInterceptor: "OFF"
-#   ^^^^^^^^^^^^^^^^^^^^^
-#   Disable logs of `RecoveryInterceptor`, as they have been found to be noisy.
-#   Declarative `io.micronaut.http.client.annotation.@Client`s are annotated with `io.micronaut.retry.annotation@Recoverable`
-#   and throw an exception on every error response by default. `RecoveryInterceptor` ends up logging those exceptions
-#   even if they are handled and no actual recovery/fallback logic gets to take place.
-#   TODO remove once the project is updated to Micronaut 4.x, as @Client won't be annotated with @Recoverable anymore
-#   See https://github.com/micronaut-projects/micronaut-core/issues/3719; https://github.com/micronaut-projects/micronaut-core/pull/8235
+    com.github.benmanes.caffeine.cache.LocalAsyncCache: "ERROR"
 ...
