@@ -24,6 +24,7 @@ import java.util.function.Consumer
 import java.util.function.Predicate
 
 import dev.failsafe.Failsafe
+import dev.failsafe.FailsafeException
 import dev.failsafe.RetryPolicy
 import dev.failsafe.RetryPolicyBuilder
 import dev.failsafe.event.EventListener
@@ -137,7 +138,11 @@ class Retryable<R> {
 
     R apply(CheckedSupplier<R> action) {
         final policy = retryPolicy()
-        return Failsafe.with(policy).get(action)
+        try {
+            return Failsafe.with(policy).get(action)
+        } catch (FailsafeException e) {
+            throw e.cause
+        }
     }
 
     static <T> Retryable<T> of(Config config) {

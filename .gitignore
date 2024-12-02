@@ -37,3 +37,6 @@ deployment-url.txt
 tsp-output/
 node_modules/
 package-lock.json
+
+# Seqera Docs clone
+seqeralabs-docs

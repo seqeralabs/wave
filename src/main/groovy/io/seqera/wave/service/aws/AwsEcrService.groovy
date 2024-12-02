@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.aws
 
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 
@@ -27,7 +28,11 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.util.StringUtils
+import jakarta.annotation.PostConstruct
+import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
@@ -73,13 +78,22 @@ class AwsEcrService {
         }
     }
 
-    // FIXME https://github.com/seqeralabs/wave/issues/747
-    private AsyncLoadingCache<AwsCreds, String> cache = Caffeine.newBuilder()
-            .newBuilder()
-            .maximumSize(10_000)
-            .expireAfterWrite(3, TimeUnit.HOURS)
-            .buildAsync(loader)
+    @Inject
+    @Named(TaskExecutors.BLOCKING)
+    private ExecutorService ioExecutor
 
+    // FIXME https://github.com/seqeralabs/wave/issues/747
+    private AsyncLoadingCache<AwsCreds, String> cache
+
+    @PostConstruct
+    private void init() {
+        cache = Caffeine
+                .newBuilder()
+                .maximumSize(10_000)
+                .expireAfterWrite(3, TimeUnit.HOURS)
+                .executor(ioExecutor)
+                .buildAsync(loader)
+    }
 
     private EcrClient ecrClient(String accessKey, String secretKey, String region) {
         EcrClient.builder()
