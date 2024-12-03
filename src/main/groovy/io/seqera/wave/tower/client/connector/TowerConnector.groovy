@@ -72,10 +72,10 @@ abstract class TowerConnector {
     @Value('${wave.pairing.channel.retryBackOffBase:3}')
     private int retryBackOffBase
 
-    @Value('${wave.pairing.channel.retryBackOffDelay:250}')
+    @Value('${wave.pairing.channel.retryBackOffDelay:325}')
     private int retryBackOffDelay
 
-    @Value('${wave.pairing.channel.retryMaxDelay:30s}')
+    @Value('${wave.pairing.channel.retryMaxDelay:40s}')
     private Duration retryMaxDelay
 
     @Inject
