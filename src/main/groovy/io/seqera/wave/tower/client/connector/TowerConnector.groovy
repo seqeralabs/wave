@@ -48,6 +48,7 @@ import io.seqera.wave.tower.client.TowerClient
 import io.seqera.wave.util.ExponentialAttempt
 import io.seqera.wave.util.JacksonHelper
 import io.seqera.wave.util.RegHelper
+import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import static io.seqera.wave.util.LongRndKey.rndHex
@@ -71,10 +72,10 @@ abstract class TowerConnector {
     @Value('${wave.pairing.channel.retryBackOffBase:3}')
     private int retryBackOffBase
 
-    @Value('${wave.pairing.channel.retryBackOffDelay:250}')
+    @Value('${wave.pairing.channel.retryBackOffDelay:325}')
     private int retryBackOffDelay
 
-    @Value('${wave.pairing.channel.retryMaxDelay:30s}')
+    @Value('${wave.pairing.channel.retryMaxDelay:40s}')
     private Duration retryMaxDelay
 
     @Inject
@@ -92,10 +93,16 @@ abstract class TowerConnector {
         }
     }
 
-    private AsyncLoadingCache<JwtRefreshParams, CompletableFuture<JwtAuth>> refreshCache = Caffeine
-            .newBuilder()
-            .expireAfterWrite(1, TimeUnit.MINUTES)
-            .buildAsync(loader)
+    private AsyncLoadingCache<JwtRefreshParams, CompletableFuture<JwtAuth>> refreshCache
+
+    @PostConstruct
+    void init() {
+        refreshCache = Caffeine
+                .newBuilder()
+                .expireAfterWrite(1, TimeUnit.MINUTES)
+                .executor(ioExecutor)
+                .buildAsync(loader)
+    }
 
     /** Only for testing - do not use */
     Cache<JwtRefreshParams, CompletableFuture<JwtAuth>> refreshCache0() {
