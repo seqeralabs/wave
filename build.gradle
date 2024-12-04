@@ -158,7 +158,7 @@ jib {
 
 run{
     def envs = findProperty('micronautEnvs')
-    def args = ["-Dmicronaut.environments=$envs","-Djdk.tracePinnedThreads=short"]
+    def args = ["-Dmicronaut.environments=$envs","-Djdk.tracePinnedThreads=short", "--add-opens","java.base/java.lang=ALL-UNNAMED"]
     if( environment['JVM_OPTS'] ) args.add(environment['JVM_OPTS'])
     jvmArgs args
     systemProperties 'DOCKER_USER': project.findProperty('DOCKER_USER') ?: environment['DOCKER_USER'],
