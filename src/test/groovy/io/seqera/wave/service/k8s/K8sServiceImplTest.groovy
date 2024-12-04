@@ -513,11 +513,16 @@ class K8sServiceImplTest extends Specification {
     def "getLatestPodForJob should return the latest pod when multiple pods are present"() {
         given:
         def jobName = "test-job"
+        def namespace = "test-ns"
         def pod1 = new V1Pod().metadata(new V1ObjectMeta().creationTimestamp(OffsetDateTime.now().minusDays(1)))
         def pod2 = new V1Pod().metadata(new V1ObjectMeta().creationTimestamp(OffsetDateTime.now()))
         def allPods = new V1PodList().items(Arrays.asList(pod1, pod2))
         def api = Mock(CoreV1Api)
-        api.listNamespacedPod(_, _, _, _, _, "job-name=${jobName}", _, _, _, _, _, _) >> allPods
+        def  podRequest2 = Mock(CoreV1Api. APIlistNamespacedPodRequest)
+        podRequest2.execute() >> allPods
+        def  podRequest1 = Mock(CoreV1Api. APIlistNamespacedPodRequest)
+        podRequest1.labelSelector("job-name=${jobName}") >> podRequest2
+        api.listNamespacedPod(namespace) >> podRequest1
         def k8sClient = new K8sClient() {
             @Override
             ApiClient apiClient() {
@@ -528,7 +533,7 @@ class K8sServiceImplTest extends Specification {
             }
         }
         and:
-        def k8sService = new K8sServiceImpl(k8sClient: k8sClient)
+        def k8sService = new K8sServiceImpl(k8sClient: k8sClient, namespace: namespace)
 
         when:
         def latestPod = k8sService.getLatestPodForJob(jobName)
@@ -540,8 +545,13 @@ class K8sServiceImplTest extends Specification {
     def "getLatestPodForJob should return null when no pod is present"() {
         given:
         def jobName = "test-job"
+        def namespace = "test-ns"
         def api = Mock(CoreV1Api)
-        api.listNamespacedPod(_, _, _, _, _, "job-name=${jobName}", _, _, _, _, _, _) >> null
+        def  podRequest2 = Mock(CoreV1Api. APIlistNamespacedPodRequest)
+        podRequest2.execute() >> null
+        def  podRequest1 = Mock(CoreV1Api. APIlistNamespacedPodRequest)
+        podRequest1.labelSelector("job-name=${jobName}") >> podRequest2
+        api.listNamespacedPod(namespace) >> podRequest1
         def k8sClient = new K8sClient() {
             @Override
             ApiClient apiClient() {
@@ -552,7 +562,7 @@ class K8sServiceImplTest extends Specification {
             }
         }
         and:
-        def k8sService = new K8sServiceImpl(k8sClient: k8sClient)
+        def k8sService = new K8sServiceImpl(k8sClient: k8sClient, namespace: namespace)
 
         when:
         def latestPod = k8sService.getLatestPodForJob(jobName)
@@ -826,7 +836,7 @@ class K8sServiceImplTest extends Specification {
         job.spec.backoffLimit == 3
         job.spec.template.spec.containers[0].image == containerImage
         job.spec.template.spec.containers[0].args == args
-        job.spec.template.spec.containers[0].resources.requests == null
+        job.spec.template.spec.containers[0].resources.requests == [:]
         job.spec.template.spec.containers[0].env == [new V1EnvVar().name('REGISTRY_AUTH_FILE').value('/tmp/config.json')]
         and:
         job.spec.template.spec.containers[0].volumeMounts.size() == 2
@@ -886,7 +896,7 @@ class K8sServiceImplTest extends Specification {
         job.spec.backoffLimit == 3
         job.spec.template.spec.containers[0].image == containerImage
         job.spec.template.spec.containers[0].args == args
-        job.spec.template.spec.containers[0].resources.requests == null
+        job.spec.template.spec.containers[0].resources.requests == [:]
         job.spec.template.spec.volumes.size() == 1
         job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
         job.spec.template.spec.restartPolicy == 'Never'
@@ -973,11 +983,14 @@ class K8sServiceImplTest extends Specification {
         def api = Mock(BatchV1Api)
         def client = Mock(K8sClient) { batchV1Api()>>api }
         def service = Spy(new K8sServiceImpl(namespace:NS, k8sClient: client))
+        def jobRequest = Mock(BatchV1Api. APIreadNamespacedJobRequest)
 
         when:
         def status = service.getJobStatus(NAME)
+
         then:
-        1 * api.readNamespacedJob(NAME, NS, null) >> JOB
+        jobRequest.execute() >> JOB
+        1 * api.readNamespacedJob(NAME, NS) >> jobRequest
         and:
         status == EXPECTED
 

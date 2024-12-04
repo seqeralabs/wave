@@ -18,16 +18,20 @@
 
 package io.seqera.wave.service.aws
 
-
 import spock.lang.Requires
 import spock.lang.Specification
 
-
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import jakarta.inject.Inject
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@MicronautTest
 class AwsEcrServiceTest extends Specification {
+
+    @Inject
+    AwsEcrService provider
 
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should get registry token' () {
@@ -35,7 +39,6 @@ class AwsEcrServiceTest extends Specification {
         def accessKey = System.getenv('AWS_ACCESS_KEY_ID')
         def secretKey = System.getenv('AWS_SECRET_ACCESS_KEY')
         def REGION = 'eu-west-1'
-        def provider = new AwsEcrService()
 
         when:
         def creds = provider.getLoginToken(accessKey, secretKey, REGION, false).tokenize(":")
@@ -49,9 +52,8 @@ class AwsEcrServiceTest extends Specification {
         thrown(Exception)
     }
 
+    @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should check registry info' () {
-        given:
-        def provider = new AwsEcrService()
         expect:
         provider.getEcrHostInfo(null) == null
         provider.getEcrHostInfo('foo') == null
@@ -59,7 +61,6 @@ class AwsEcrServiceTest extends Specification {
         provider.getEcrHostInfo('195996028523.dkr.ecr.eu-west-1.amazonaws.com/foo') == new AwsEcrService.AwsEcrHostInfo('195996028523', 'eu-west-1')
         and:
         provider.getEcrHostInfo('public.ecr.aws') == new AwsEcrService.AwsEcrHostInfo(null, 'us-east-1')
-
     }
 
     def 'should check ecr registry' () {

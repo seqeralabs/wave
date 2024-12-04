@@ -21,6 +21,7 @@ package io.seqera.wave.auth
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.concurrent.CompletionException
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 
 import com.github.benmanes.caffeine.cache.AsyncLoadingCache
@@ -28,11 +29,14 @@ import com.github.benmanes.caffeine.cache.CacheLoader
 import com.github.benmanes.caffeine.cache.Caffeine
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.exception.RegistryForwardException
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.util.Retryable
+import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
 import static io.seqera.wave.WaveDefault.DOCKER_REGISTRY_1
@@ -55,6 +59,10 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
     @Inject
     private RegistryAuthStore store
 
+    @Inject
+    @Named(TaskExecutors.BLOCKING)
+    private ExecutorService ioExecutor
+
     private CacheLoader<URI, RegistryAuth> loader = new CacheLoader<URI, RegistryAuth>() {
         @Override
         RegistryAuth load(URI endpoint) throws Exception {
@@ -74,11 +82,17 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
     }
 
     // FIXME https://github.com/seqeralabs/wave/issues/747
-    private AsyncLoadingCache<URI, RegistryAuth> cache = Caffeine
+    private AsyncLoadingCache<URI, RegistryAuth> cache
+
+    @PostConstruct
+    void init() {
+        cache = Caffeine
                 .newBuilder()
                 .maximumSize(10_000)
                 .expireAfterAccess(1, TimeUnit.HOURS)
+                .executor(ioExecutor)
                 .buildAsync(loader)
+    }
 
     protected RegistryAuth lookup0(URI endpoint) {
         final httpClient = HttpClientFactory.followRedirectsHttpClient()

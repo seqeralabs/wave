@@ -22,9 +22,7 @@ import spock.lang.Specification
 
 import java.time.Duration
 
-import dev.failsafe.FailsafeException
 import groovy.util.logging.Slf4j
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -65,8 +63,8 @@ class RetryableTest extends Specification {
         when:
         retryable.apply(()-> {throw new IOException("Oops failed!")})
         then:
-        def e = thrown(FailsafeException)
-        e.cause instanceof IOException
+        def e = thrown(IOException)
+        e.message == 'Oops failed!'
     }
 
     def 'should validate config' () {
