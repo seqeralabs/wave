@@ -20,6 +20,7 @@ package io.seqera.wave.redis
 
 import spock.lang.Specification
 
+import io.micrometer.core.instrument.MeterRegistry
 import redis.clients.jedis.exceptions.InvalidURIException
 /**
  *
@@ -28,7 +29,7 @@ import redis.clients.jedis.exceptions.InvalidURIException
 class RedisFactoryTest extends Specification {
     def 'should create redis pool with valid URI'() {
         given:
-        def factory = new RedisFactory()
+        def factory = new RedisFactory(meterRegistry: Mock(MeterRegistry))
 
         when:
         def pool = factory.createRedisPool(URI_STRING, MIN_IDLE, MAX_IDLE, MAX_TOTAL, TIMEOUT, 'password')
@@ -44,7 +45,7 @@ class RedisFactoryTest extends Specification {
 
     def 'should throw exception for invalid URI'() {
         given:
-        def factory = new RedisFactory()
+        def factory = new RedisFactory(meterRegistry: Mock(MeterRegistry))
 
         when:
         factory.createRedisPool(URI_STRING, MIN_IDLE, MAX_IDLE, MAX_TOTAL, TIMEOUT, null)
