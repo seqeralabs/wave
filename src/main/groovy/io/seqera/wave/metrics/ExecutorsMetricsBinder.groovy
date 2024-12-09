@@ -67,7 +67,7 @@ class ExecutorsMetricsBinder {
             ExecutorServiceMetrics.monitor(registry, virtualThreadPool, "ForkJoin.virtualPool")
         }
         catch (Exception e) {
-            log.error "Unable to registry carrier threads pool metrics", e
+            log.warn "Unable to registry carrier threads pool metrics", e
         }
     }
 }
