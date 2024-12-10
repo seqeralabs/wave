@@ -165,8 +165,11 @@ class BuildLogServiceImpl implements BuildLogService {
                     log.info "Container Image is already cached, uploading previously successful build's condalock file for buildId: $buildId"
                     def builds = persistenceService.allBuilds(buildId.split('-')[1].split('_')[0])
                     for (def build : builds) {
-                        if ( build.succeeded() && !condaLock.contains('cat environment.lock') ){
-                            condaLock = fetchCondaLockString(build.buildId)
+                        if ( build.succeeded() ){
+                            def curCondaLock = fetchCondaLockString(build.buildId)
+                            if( curCondaLock && !curCondaLock.contains('cat environment.lock') ){
+                                condaLock = curCondaLock
+                            }
                         }
                     }
                 }
