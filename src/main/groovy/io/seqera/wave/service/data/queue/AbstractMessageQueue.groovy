@@ -20,6 +20,7 @@ package io.seqera.wave.service.data.queue
 
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -61,19 +62,25 @@ abstract class AbstractMessageQueue<M> implements Runnable {
     final private String name0
 
     // FIXME https://github.com/seqeralabs/wave/issues/747
-    final private AsyncCache<String,Boolean> closedClients = Caffeine.newBuilder()
-                    .newBuilder()
-                    .expireAfterWrite(10, TimeUnit.MINUTES)
-                    .buildAsync()
+    final private AsyncCache<String,Boolean> closedClients
 
-    AbstractMessageQueue(MessageQueue<String> broker) {
+    AbstractMessageQueue(MessageQueue<String> broker, ExecutorService ioExecutor) {
         final type = TypeHelper.getGenericType(this, 0)
         this.encoder = new MoshiEncodeStrategy<M>(type) {}
         this.broker = broker
+        this.closedClients = createCache(ioExecutor)
         this.name0 = name() + '-thread-' + count.getAndIncrement()
         this.thread = new Thread(this, name0)
         this.thread.setDaemon(true)
         this.thread.start()
+    }
+
+    private AsyncCache<String,Boolean> createCache(ExecutorService ioExecutor) {
+        Caffeine
+                .newBuilder()
+                .executor(ioExecutor)
+                .expireAfterWrite(10, TimeUnit.MINUTES)
+                .buildAsync()
     }
 
     protected abstract String name()

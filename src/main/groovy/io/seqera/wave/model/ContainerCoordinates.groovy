@@ -53,7 +53,8 @@ class ContainerCoordinates implements ContainerPath {
     static ContainerCoordinates parse(String path) {
         if( !path )
             throw new IllegalArgumentException("Container image name is not provided")
-
+        if( path.contains(' ') )
+            throw new IllegalArgumentException("Invalid container name - offending image: '$path'")
         final scheme = StringUtils.getUrlProtocol(path)
         if( scheme ) {
             if( scheme!='oras') throw new IllegalArgumentException("Invalid container scheme: '$scheme' - offending image: '$path'")

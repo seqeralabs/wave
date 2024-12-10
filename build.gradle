@@ -35,9 +35,10 @@ dependencies {
     compileOnly 'io.micronaut:micronaut-inject-groovy'
     compileOnly 'io.micronaut:micronaut-http-validation'
     implementation 'jakarta.persistence:jakarta.persistence-api:3.0.0'
-    api 'io.seqera:lib-mail:1.2.0'
+    api 'io.seqera:lib-mail:1.2.1'
     api 'io.seqera:wave-api:0.14.0'
     api 'io.seqera:wave-utils:0.15.0'
+    implementation 'io.seqera:lib-crypto:1.0.0'
     implementation 'io.micronaut:micronaut-http-client'
     implementation 'io.micronaut:micronaut-jackson-databind'
     implementation 'io.micronaut.groovy:micronaut-runtime-groovy'
@@ -53,12 +54,11 @@ dependencies {
     implementation 'dev.failsafe:failsafe:3.1.0'
     implementation 'io.micronaut.reactor:micronaut-reactor'
     implementation 'io.micronaut.reactor:micronaut-reactor-http-client'
-    implementation('io.seqera:tower-crypto:22.4.0-watson') { transitive = false }  // to be replaced with 22.4.0 once released
     implementation 'org.apache.commons:commons-compress:1.27.1'
     implementation 'org.apache.commons:commons-lang3:3.17.0'
-    implementation 'io.kubernetes:client-java:19.0.0'
-    implementation 'io.kubernetes:client-java-api-fluent:18.0.1'
-    implementation 'com.google.code.gson:gson:2.9.0'
+    implementation 'io.kubernetes:client-java:21.0.1'
+    implementation 'io.kubernetes:client-java-api-fluent:21.0.1'
+    implementation 'com.google.code.gson:gson:2.10.1'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
     implementation 'com.squareup.moshi:moshi:1.15.1'
@@ -94,6 +94,7 @@ dependencies {
     implementation 'com.coveo:spillway:3.0.0'
 
     // monitoring
+    implementation 'io.micronaut.micrometer:micronaut-micrometer-core'
     implementation 'io.micronaut.micrometer:micronaut-micrometer-registry-prometheus'
     // Also required to enable endpoint
     implementation 'io.micronaut:micronaut-management'
@@ -104,6 +105,7 @@ dependencies {
     runtimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.78'
     runtimeOnly 'org.bitbucket.b_c:jose4j:0.9.4'
     runtimeOnly 'io.netty:netty-bom:4.1.115.Final'
+    runtimeOnly 'com.google.protobuf:protobuf-java:4.27.5'
 }
 
 application {
@@ -156,7 +158,7 @@ jib {
 
 run{
     def envs = findProperty('micronautEnvs')
-    def args = ["-Dmicronaut.environments=$envs","-Djdk.tracePinnedThreads=short"]
+    def args = ["-Dmicronaut.environments=$envs","-Djdk.tracePinnedThreads=short", "--add-opens","java.base/java.lang=ALL-UNNAMED"]
     if( environment['JVM_OPTS'] ) args.add(environment['JVM_OPTS'])
     jvmArgs args
     systemProperties 'DOCKER_USER': project.findProperty('DOCKER_USER') ?: environment['DOCKER_USER'],

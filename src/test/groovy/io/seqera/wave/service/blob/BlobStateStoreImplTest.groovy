@@ -23,10 +23,14 @@ import spock.lang.Specification
 import java.time.Duration
 
 import io.micronaut.context.annotation.Property
+import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Inject
+import jakarta.inject.Named
+import software.amazon.awssdk.services.s3.S3Client
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -36,6 +40,10 @@ import jakarta.inject.Inject
 @Property(name = 'wave.blobCache.storage.region', value='eu-west-1')
 @MicronautTest
 class BlobStateStoreImplTest extends Specification {
+
+    @MockBean(S3Client)
+    @Named('BlobS3Client')
+    S3Client mockS3Client() { Mock(S3Client) }
 
     @Inject
     BlobStoreImpl store
