@@ -233,31 +233,8 @@ class ViewController {
         }
         //add conda lock file when available
         if( buildLogService && result.condaFile ) {
-            def condaLock = buildLogService.fetchCondaLockString(result.buildId)
-            def buildId = result.buildId
-
-            /*
-            When a container image is cached, dockerfile does not get executed.
-            In that case condalock file will contain "cat environment.lock" because its not been executed.
-            So wave will check the previous builds of that container image
-            and render the condalock file from latest successful build
-            and replace with the current build's condalock file.
-            */
-            if ( condaLock && condaLock.contains('cat environment.lock') ) {
-                condaLock = null //if there is no conda lock file, don't show the conda lock data
-                def builds = persistenceService.allBuilds(result.buildId.split('-')[1].split('_')[0])
-                for (def build : builds) {
-                    if ( build.succeeded() ){
-                        buildId = build.buildId
-                        condaLock = buildLogService.fetchCondaLockString(build.buildId)
-                        if ( !condaLock.contains('cat environment.lock') )
-                            break
-                    }
-                }
-            }
-
-            binding.build_conda_lock_data = condaLock
-            binding.build_conda_lock_url = "$serverUrl/v1alpha1/builds/${buildId}/condalock"
+            binding.build_conda_lock_data = buildLogService.fetchCondaLockString(result.buildId)
+            binding.build_conda_lock_url = "$serverUrl/v1alpha1/builds/${result.buildId}/condalock"
         }
         // result the main object
         return binding
