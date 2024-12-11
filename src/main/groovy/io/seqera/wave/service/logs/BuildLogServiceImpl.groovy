@@ -152,27 +152,18 @@ class BuildLogServiceImpl implements BuildLogService {
         if( !logs ) return
         try {
             String condaLock = extractCondaLockFile(logs)
-            if ( condaLock ){
-                log.debug "Storing conda lock for buildId: $buildId"
-
-                /* When a container image is cached, dockerfile does not get executed.
+            /* When a container image is cached, dockerfile does not get executed.
                  In that case condalock file will contain "cat environment.lock" because its not been executed.
                  So wave will check the previous builds of that container image
                  and render the condalock file from latest successful build
                  and replace with the current build's condalock file.
                  */
-                if( condaLock.contains('cat environment.lock') ){
-                    log.info "Container Image is already cached, uploading previously successful build's condalock file for buildId: $buildId"
-                    def builds = persistenceService.allBuilds(buildId.split('-')[1].split('_')[0])
-                    for (def build : builds) {
-                        if ( build.succeeded() ){
-                            def curCondaLock = fetchCondaLockString(build.buildId)
-                            if( curCondaLock && !curCondaLock.contains('cat environment.lock') ){
-                                condaLock = curCondaLock
-                            }
-                        }
-                    }
-                }
+            if( condaLock && condaLock.contains('cat environment.lock') ){
+                condaLock = fetchValidCondaLock(buildId)
+            }
+
+            if ( condaLock ){
+                log.debug "Storing conda lock for buildId: $buildId"
                 final uploadRequest = UploadRequest.fromBytes(condaLock.bytes, condaLockKey(buildId))
                 objectStorageOperations.upload(uploadRequest)
             }
@@ -215,6 +206,20 @@ class BuildLogServiceImpl implements BuildLogService {
             }
             return logs.substring(start + CONDA_LOCK_START.length(), end)
                     .replaceAll(/#\d+ \d+\.\d+\s*/, '')
+    }
+
+    String fetchValidCondaLock(String buildId) {
+        log.info "Container Image is already cached, uploading previously successful build's condalock file for buildId: $buildId"
+        def builds = persistenceService.allBuilds(buildId.split('-')[1].split('_')[0])
+        for (def build : builds) {
+            if ( build.succeeded() ){
+                def curCondaLock = fetchCondaLockString(build.buildId)
+                if( curCondaLock && !curCondaLock.contains('cat environment.lock') ){
+                    return curCondaLock
+                }
+            }
+        }
+        return null
     }
 
 }
