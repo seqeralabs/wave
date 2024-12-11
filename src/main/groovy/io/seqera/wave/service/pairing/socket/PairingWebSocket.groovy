@@ -79,7 +79,7 @@ class PairingWebSocket {
         // Register the client and the sender callback that it's needed to deliver
         // the message to the remote client
         channel.registerClient(service, endpoint, session.id,(pairingMessage) -> {
-            log.trace "Websocket send message id=$pairingMessage.msgId"
+            log.trace "Sendind message=${pairingMessage} - endpoint: ${endpoint} [sessionId: $session.id]"
             session .sendAsync(pairingMessage)
         })
 
