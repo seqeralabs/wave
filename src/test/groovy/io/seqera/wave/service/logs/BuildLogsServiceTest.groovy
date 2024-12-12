@@ -22,13 +22,19 @@ import spock.lang.Specification
 import spock.lang.Unroll
 
 import io.micronaut.objectstorage.InputStreamMapper
+import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.aws.AwsS3Configuration
+import io.micronaut.objectstorage.aws.AwsS3ObjectStorageEntry
 import io.micronaut.objectstorage.aws.AwsS3Operations
+import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.test.AwsS3TestContainer
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
+import software.amazon.awssdk.core.ResponseInputStream
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.GetObjectResponse
 
 /**
  *
@@ -165,6 +171,76 @@ class BuildLogsServiceTest extends Specification implements AwsS3TestContainer {
 
         then:
         noExceptionThrown()
+    }
+
+    def 'should return valid conda lock from previous successful build'() {
+        given:
+        def persistenceService = Mock(PersistenceService)
+        def objectStorageOperations = Mock(ObjectStorageOperations)
+        def service = new BuildLogServiceImpl(persistenceService: persistenceService, objectStorageOperations: objectStorageOperations)
+        def build1 = Mock(WaveBuildRecord) {
+            succeeded() >> false
+            buildId >> 'bd-abc_1'
+        }
+        def build2 = Mock(WaveBuildRecord) {
+            succeeded() >> true
+            buildId >> 'bd-abc_2'
+        }
+        def build3 = Mock(WaveBuildRecord) {
+            succeeded() >> true
+            buildId >> 'bd-abc_3'
+        }
+        def responseMetadata = GetObjectResponse.builder()
+                .contentLength(1024L)
+                .contentType("text/plain")
+                .build()
+        def contentStream = new ByteArrayInputStream("valid conda lock".bytes);
+        def responseInputStream = new ResponseInputStream<>(responseMetadata, contentStream);
+        persistenceService.allBuilds(_) >> [build1, build2]
+        objectStorageOperations.retrieve(service.condaLockKey('bd-abc_2')) >> Optional.of(new AwsS3ObjectStorageEntry('bd-abc_2', responseInputStream))
+
+        expect:
+        service.fetchValidCondaLock('bd-abc_3') == 'valid conda lock'
+    }
+
+    def 'should return null when no successful build has valid conda lock'() {
+        given:
+        def persistenceService = Mock(PersistenceService)
+        def objectStorageOperations = Mock(ObjectStorageOperations)
+        def service = new BuildLogServiceImpl(persistenceService: persistenceService, objectStorageOperations: objectStorageOperations)
+        def build1 = Mock(WaveBuildRecord) {
+            succeeded() >> false
+            buildId >> 'bd-abc_1'
+        }
+        def build2 = Mock(WaveBuildRecord) {
+            succeeded() >> true
+            buildId >> 'bd-abc_2'
+        }
+        def build3 = Mock(WaveBuildRecord) {
+            succeeded() >> true
+            buildId >> 'bd-abc_3'
+        }
+        def responseMetadata = GetObjectResponse.builder()
+                .contentLength(1024L)
+                .contentType("text/plain")
+                .build()
+        def contentStream = new ByteArrayInputStream("cat environment.lock".bytes);
+        def responseInputStream = new ResponseInputStream<>(responseMetadata, contentStream);
+        persistenceService.allBuilds(_) >> [build1, build2]
+        objectStorageOperations.retrieve(service.condaLockKey('bd-abc_2')) >> Optional.of(new AwsS3ObjectStorageEntry('bd-abc_2', responseInputStream))
+
+        expect:
+        service.fetchValidCondaLock('bd-abc_3') == null
+    }
+
+    def 'should return null when no builds are available'() {
+        given:
+        def persistenceService = Mock(PersistenceService)
+        def service = new BuildLogServiceImpl(persistenceService: persistenceService)
+        persistenceService.allBuilds(_) >> []
+
+        expect:
+        service.fetchValidCondaLock('bd-abc_1') == null
     }
 
 }
