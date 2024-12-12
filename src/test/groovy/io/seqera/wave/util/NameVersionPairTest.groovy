@@ -55,4 +55,12 @@ class NameVersionPairTest extends Specification {
         ['a','b','c','d','e','f']   | ['1','2','3','4','5'] | 'a_b_c_d_pruned'
     }
 
+    def 'should validate truth' () {
+        expect:
+        new NameVersionPair(names:['foo'])
+        and:
+        !new NameVersionPair(names:null)
+        !new NameVersionPair(names:[])
+    }
+
 }
