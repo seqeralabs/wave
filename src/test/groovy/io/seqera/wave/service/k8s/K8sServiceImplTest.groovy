@@ -446,6 +446,7 @@ class K8sServiceImplTest extends Specification {
         def config = Mock(BlobCacheConfig) {
             getEnvironment() >> [:]
             getRetryAttempts() >> 5
+            getJobRetentionDuration() >> Duration.ofDays(1)
         }
 
         when:
@@ -455,6 +456,7 @@ class K8sServiceImplTest extends Specification {
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
         and:
+        result.spec.ttlSecondsAfterFinished == Duration.ofDays(1).toSeconds() as Integer
         result.spec.backoffLimit == 5
         and:
         verifyAll(result.spec.template.spec) {
@@ -484,6 +486,7 @@ class K8sServiceImplTest extends Specification {
             getRequestsCpu() >> '2'
             getRequestsMemory() >> '8Gi'
             getRetryAttempts() >> 3
+            getJobRetentionDuration() >> Duration.ofDays(1)
         }
 
         when:
@@ -492,6 +495,7 @@ class K8sServiceImplTest extends Specification {
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
         and:
+        result.spec.ttlSecondsAfterFinished == Duration.ofDays(1).toSeconds() as Integer
         result.spec.backoffLimit == 3
         and:
         verifyAll(result.spec.template.spec) {
@@ -579,7 +583,8 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'build-claim',
                 'wave.build.k8s.storage.mountPath': '/build',
-                'wave.build.retry-attempts': 3
+                'wave.build.retry-attempts': 3,
+                'wave.build.k8s.job.retention.duration': Duration.ofDays(1)
         ]
         and:
         def ctx = ApplicationContext.run(PROPS)
@@ -596,6 +601,7 @@ class K8sServiceImplTest extends Specification {
         def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, nodeSelector)
 
         then:
+        job.spec.ttlSecondsAfterFinished == Duration.ofDays(1).toSeconds() as Integer
         job.spec.backoffLimit == 3
         job.spec.template.spec.containers[0].image == containerImage
         job.spec.template.spec.containers[0].command == args
@@ -695,6 +701,7 @@ class K8sServiceImplTest extends Specification {
             getRequestsCpu() >> '2'
             getRequestsMemory() >> '4Gi'
             getEnvironmentAsTuples() >> [new Tuple2<String, String>('FOO', 'abc'), new Tuple2<String, String>('BAR', 'xyz')]
+            getJobRetentionDuration() >> Duration.ofDays(1)
         }
 
         when:
@@ -738,6 +745,7 @@ class K8sServiceImplTest extends Specification {
             getCacheDirectory() >> Path.of('/build/cache/dir')
             getRequestsCpu() >> '2'
             getRequestsMemory() >> '4Gi'
+            getJobRetentionDuration() >> Duration.ofDays(1)
         }
 
         when:
@@ -781,6 +789,7 @@ class K8sServiceImplTest extends Specification {
             getRequestsCpu() >> '2'
             getRequestsMemory() >> '4Gi'
             getRetryAttempts() >> 3
+            getJobRetentionDuration() >> Duration.ofDays(1)
         }
 
         when:
@@ -825,6 +834,7 @@ class K8sServiceImplTest extends Specification {
             getRequestsCpu() >> null
             getRequestsMemory() >> null
             getRetryAttempts() >> 3
+            getJobRetentionDuration() >> Duration.ofDays(1)
         }
 
         when:
@@ -833,6 +843,7 @@ class K8sServiceImplTest extends Specification {
         then:
         job.metadata.name == name
         job.metadata.namespace == 'foo'
+        job.spec.ttlSecondsAfterFinished == Duration.ofDays(1).toSeconds() as Integer
         job.spec.backoffLimit == 3
         job.spec.template.spec.containers[0].image == containerImage
         job.spec.template.spec.containers[0].args == args
@@ -885,6 +896,7 @@ class K8sServiceImplTest extends Specification {
             getRequestsCpu() >> null
             getRequestsMemory() >> null
             getRetryAttempts() >> 3
+            getJobRetentionDuration() >> Duration.ofDays(1)
         }
 
         when:
@@ -893,6 +905,7 @@ class K8sServiceImplTest extends Specification {
         then:
         job.metadata.name == name
         job.metadata.namespace == 'foo'
+        job.spec.ttlSecondsAfterFinished == Duration.ofDays(1).toSeconds() as Integer
         job.spec.backoffLimit == 3
         job.spec.template.spec.containers[0].image == containerImage
         job.spec.template.spec.containers[0].args == args

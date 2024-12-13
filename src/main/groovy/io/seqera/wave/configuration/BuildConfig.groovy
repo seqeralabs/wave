@@ -112,6 +112,9 @@ class BuildConfig {
     @Value('${wave.build.max-container-file-size:10000}')
     int maxContainerFileSize
 
+    @Value('${wave.build.k8s.job.retention.duration:30d}')
+    Duration jobRetentionDuration
+
     @PostConstruct
     private void init() {
         log.info("Builder config: " +

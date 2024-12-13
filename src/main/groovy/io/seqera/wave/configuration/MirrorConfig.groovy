@@ -59,4 +59,7 @@ class MirrorConfig {
     @Value('${wave.mirror.requestsMemory}')
     String requestsMemory
 
+    @Value('${wave.mirror.k8s.job.retention.duration:30d}')
+    Duration jobRetentionDuration
+
 }

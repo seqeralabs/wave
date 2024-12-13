@@ -88,6 +88,9 @@ class ScanConfig {
     @Value('${wave.scan.vulnerability.limit:100}')
     Integer vulnerabilityLimit
 
+    @Value('${wave.scan.k8s.job.retention.duration:30d}')
+    Duration jobRetentionDuration
+
     String getScanImage() {
         return scanImage
     }
