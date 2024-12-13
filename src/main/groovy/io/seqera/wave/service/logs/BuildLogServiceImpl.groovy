@@ -21,18 +21,16 @@ package io.seqera.wave.service.logs
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
-import io.micronaut.core.annotation.Nullable
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.micronaut.context.annotation.Value
 import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.objectstorage.ObjectStorageEntry
 import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.scheduling.TaskExecutors
+import io.seqera.wave.configuration.LogsConfig
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.persistence.PersistenceService
@@ -46,11 +44,12 @@ import static org.apache.commons.lang3.StringUtils.strip
  * Implements Service  to manage logs from an Object store
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @Singleton
 @CompileStatic
-@Requires(property = 'wave.build.logs.bucket')
+@Requires(bean = LogsConfig)
 class BuildLogServiceImpl implements BuildLogService {
 
     private static final String CONDA_LOCK_START = ">> CONDA_LOCK_START"
@@ -64,19 +63,8 @@ class BuildLogServiceImpl implements BuildLogService {
     @Inject
     private PersistenceService persistenceService
 
-    @Nullable
-    @Value('${wave.build.logs.prefix}')
-    private String prefix
-
-    @Value('${wave.build.logs.bucket}')
-    private String bucket
-
-    @Value('${wave.build.logs.maxLength:100000}')
-    private long maxLength
-
-    @Nullable
-    @Value('${wave.build.logs.conda-lock-prefix}')
-    private String condaLockPrefix
+    @Inject
+    private LogsConfig config
 
     @Inject
     @Named(TaskExecutors.IO)
@@ -84,15 +72,15 @@ class BuildLogServiceImpl implements BuildLogService {
 
     @PostConstruct
     private void init() {
-        log.info "Creating Build log service bucket=$bucket; logs prefix=$prefix; maxLength: ${maxLength}; condaLock prefix=$condaLockPrefix"
+        log.info "Creating Build log service - config=${config}"
     }
 
     protected String logKey(String buildId) {
         if( !buildId )
             return null
-        if( !prefix )
+        if( !config.prefix )
             return buildId + '.log'
-        final base = strip(prefix, '/')
+        final base = strip(config.prefix, '/')
         return "${base}/${buildId}.log"
     }
 
@@ -137,8 +125,8 @@ class BuildLogServiceImpl implements BuildLogService {
         final result = fetchLogStream(buildId)
         if( !result )
             return null
-        final logs = new BoundedInputStream(result.getInputStream(), maxLength).getText()
-        return new BuildLog(logs, logs.length()>=maxLength)
+        final logs = new BoundedInputStream(result.getInputStream(), config.maxLength).getText()
+        return new BuildLog(logs, logs.length()>=config.maxLength)
     }
 
     protected static removeCondaLockFile(String logs) {
@@ -166,9 +154,9 @@ class BuildLogServiceImpl implements BuildLogService {
     protected String condaLockKey(String buildId) {
         if( !buildId )
             return null
-        if( !condaLockPrefix )
+        if( !config.condaLockPrefix )
             return buildId + '.lock'
-        final base = strip(condaLockPrefix, '/')
+        final base = strip(config.condaLockPrefix, '/')
         return "${base}/${buildId}.lock"
     }
 
@@ -178,7 +166,6 @@ class BuildLogServiceImpl implements BuildLogService {
         if( !result )
             return null
         return result.getInputStream().getText()
-
     }
 
     @Override
