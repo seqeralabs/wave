@@ -33,8 +33,28 @@ class NameVersionPair {
     private static final String SUFFIX = 'pruned'
     private static final int MAX = 5
 
-    Collection<String> names
-    Collection<String> versions
+    private Collection<String> names
+
+    private Collection<String> versions
+
+    protected NameVersionPair() { }
+
+    NameVersionPair(Collection<String> names) {
+        this.names = names
+        if( names==null )
+            throw new IllegalArgumentException("Argument 'names' cannot be null")
+        if( !names )
+            throw new IllegalArgumentException("Argument 'names' cannot be empty")
+    }
+
+    NameVersionPair(Collection<String> names, Collection<String> versions) {
+        this(names)
+        this.versions = versions
+    }
+
+    Collection<String> getNames() { names }
+
+    Collection<String> getVersions() { versions }
 
     private List<String> both() {
         final result = new ArrayList()
@@ -46,8 +66,7 @@ class NameVersionPair {
     }
 
     String friendlyNames(String sep='_') {
-        if( !names )
-            return null
+        assert names
         if( names.size()<=MAX )
             return names.join(sep)
         else
@@ -62,5 +81,9 @@ class NameVersionPair {
             return ret.join(sep)
         else
             return new ArrayList<>(ret)[0..MAX-2].join(sep) + sep + SUFFIX
+    }
+
+    boolean asBoolean() {
+        return names
     }
 }

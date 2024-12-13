@@ -50,12 +50,12 @@ jobs:
           token: ${{ steps.generate-token.outputs.token }}
           branch-token: ${{ steps.generate-token.outputs.token }}
           path: seqeralabs-docs
-          commit-message: "Changelog: Wave ${{ github.event.release.name }}"
-          title: "Changelog: Wave ${{ github.event.release.name }}"
+          commit-message: "Changelog: Wave ${{ github.event.release.name || inputs.release_name }}"
+          title: "Changelog: Wave ${{ github.event.release.name || inputs.release_name }}"
           body: |
-            This PR adds the changelog for Wave ${{ github.event.release.name }} to the Seqera documentation.
+            This PR adds the changelog for Wave ${{ github.event.release.name || inputs.release_name }} to the Seqera documentation.
 
             This is an automated PR created from the Wave repository.
-          branch: changelog-wave-${{ github.event.release.name }}
+          branch: changelog-wave-${{ github.event.release.name || inputs.release_name }}
           base: master
           delete-branch: true

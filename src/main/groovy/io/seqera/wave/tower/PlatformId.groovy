@@ -49,6 +49,10 @@ class PlatformId {
         return user?.id
     }
 
+    String getUserEmail() {
+        return user?.email
+    }
+
     static PlatformId of(User user, SubmitContainerTokenRequest request) {
         new PlatformId(
                 user,

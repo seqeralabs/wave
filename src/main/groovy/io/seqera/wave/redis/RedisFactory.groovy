@@ -20,10 +20,12 @@ package io.seqera.wave.redis
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import redis.clients.jedis.DefaultJedisClientConfig
 import redis.clients.jedis.JedisClientConfig
@@ -41,6 +43,9 @@ import redis.clients.jedis.util.JedisURIHelper
 @Requires(property = 'redis.uri')
 @CompileStatic
 class RedisFactory {
+
+    @Inject
+    private MeterRegistry meterRegistry
 
     @Singleton
     JedisPool createRedisPool(
@@ -62,7 +67,11 @@ class RedisFactory {
         // client config
         final clientConfig = clientConfig(uri, password, timeout)
         // create the jedis pool
-        return new JedisPool(config, JedisURIHelper.getHostAndPort(uri), clientConfig)
+        final result = new JedisPool(config, JedisURIHelper.getHostAndPort(uri), clientConfig)
+        // Instrument the internal pool
+        new JedisPoolMetricsBinder(result).bindTo(meterRegistry);
+        // final return the jedis pool
+        return result
     }
 
     protected JedisClientConfig clientConfig(URI uri, String password, int timeout) {

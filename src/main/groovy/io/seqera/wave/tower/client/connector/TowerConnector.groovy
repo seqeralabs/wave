@@ -72,10 +72,10 @@ abstract class TowerConnector {
     @Value('${wave.pairing.channel.retryBackOffBase:3}')
     private int retryBackOffBase
 
-    @Value('${wave.pairing.channel.retryBackOffDelay:250}')
+    @Value('${wave.pairing.channel.retryBackOffDelay:325}')
     private int retryBackOffDelay
 
-    @Value('${wave.pairing.channel.retryMaxDelay:30s}')
+    @Value('${wave.pairing.channel.retryMaxDelay:40s}')
     private Duration retryMaxDelay
 
     @Inject
@@ -150,7 +150,10 @@ abstract class TowerConnector {
         final exec0 = this.ioExecutor
         return sendAsync1(endpoint, uri, auth, msgId, true)
                 .thenCompose { resp ->
-                    log.trace "Tower response for request GET '${uri}' => ${resp.status}"
+                    if( resp.status==200 )
+                        log.trace "Tower response for request GET '${uri}' => ${resp}"
+                    else
+                        log.debug "Tower response for request GET '${uri}' => ${resp}"
                     switch (resp.status) {
                         case 200:
                             return CompletableFuture.completedFuture(JacksonHelper.fromJson(resp.body, type))

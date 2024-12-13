@@ -225,7 +225,7 @@ class ContainerHelper {
             return null
         }
         catch (Exception e) {
-            log.warn "Unable to infer conda recipe name - cause: ${e.message}", e
+            log.warn "Unable to infer conda recipe name - offending content:\n---\n${condaFileContent}", e
             return null
         }
     }
