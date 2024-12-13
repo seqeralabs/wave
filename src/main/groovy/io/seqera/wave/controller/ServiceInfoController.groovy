@@ -39,7 +39,7 @@ import io.seqera.wave.util.BuildInfo
 @Slf4j
 @Controller("/")
 @CompileStatic
-@ExecuteOn(TaskExecutors.IO)
+@ExecuteOn(TaskExecutors.BLOCKING)
 class ServiceInfoController {
 
     @Value('${wave.landing.url}')

@@ -79,7 +79,7 @@ class ScanControllerTest extends Specification {
                                 'SUCCEEDED',
                                 results))
         and:
-        persistenceService.saveScanRecord(scan)
+        persistenceService.saveScanRecordAsync(scan)
 
         when:
         def req = HttpRequest.GET("/v1alpha1/scans/${scan.id}")

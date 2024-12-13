@@ -20,11 +20,12 @@ package io.seqera.wave.service.data.queue
 
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-import com.google.common.cache.Cache
-import com.google.common.cache.CacheBuilder
+import com.github.benmanes.caffeine.cache.AsyncCache
+import com.github.benmanes.caffeine.cache.Caffeine
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.websocket.exceptions.WebSocketSessionException
@@ -60,19 +61,26 @@ abstract class AbstractMessageQueue<M> implements Runnable {
 
     final private String name0
 
-    final private Cache<String,Boolean> closedClients = CacheBuilder<String, Boolean>
-                    .newBuilder()
-                    .expireAfterWrite(10, TimeUnit.MINUTES)
-                    .build()
+    // FIXME https://github.com/seqeralabs/wave/issues/747
+    final private AsyncCache<String,Boolean> closedClients
 
-    AbstractMessageQueue(MessageQueue<String> broker) {
+    AbstractMessageQueue(MessageQueue<String> broker, ExecutorService ioExecutor) {
         final type = TypeHelper.getGenericType(this, 0)
         this.encoder = new MoshiEncodeStrategy<M>(type) {}
         this.broker = broker
+        this.closedClients = createCache(ioExecutor)
         this.name0 = name() + '-thread-' + count.getAndIncrement()
         this.thread = new Thread(this, name0)
         this.thread.setDaemon(true)
         this.thread.start()
+    }
+
+    private AsyncCache<String,Boolean> createCache(ExecutorService ioExecutor) {
+        Caffeine
+                .newBuilder()
+                .executor(ioExecutor)
+                .expireAfterWrite(10, TimeUnit.MINUTES)
+                .buildAsync()
     }
 
     protected abstract String name()
@@ -149,13 +157,15 @@ abstract class AbstractMessageQueue<M> implements Runnable {
 
     @Override
     void run() {
+        // FIXME https://github.com/seqeralabs/wave/issues/747
+        final clientsCache = closedClients.synchronous()
         while( !thread.isInterrupted() ) {
             try {
                 int sent=0
                 final clients = new HashMap<String,MessageSender<String>>(this.clients)
                 for( Map.Entry<String,MessageSender<String>> entry : clients ) {
                     // ignore clients marked as closed
-                    if( closedClients.getIfPresent(entry.key))
+                    if( clientsCache.getIfPresent(entry.key))
                         continue
                     // infer the target queue from the client key
                     final target = targetFromClientKey(entry.key)
@@ -173,7 +183,7 @@ abstract class AbstractMessageQueue<M> implements Runnable {
                             // offer back the value to be processed again
                             broker.offer(target, value)
                             if( e.message?.contains('close') ) {
-                                closedClients.put(entry.key, true)
+                                clientsCache.put(entry.key, true)
                             }
                         }
                     }

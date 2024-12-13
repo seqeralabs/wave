@@ -26,10 +26,10 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.function.Function
 
-import com.google.common.cache.Cache
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
+import com.github.benmanes.caffeine.cache.AsyncLoadingCache
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.CacheLoader
+import com.github.benmanes.caffeine.cache.Caffeine
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -48,6 +48,7 @@ import io.seqera.wave.tower.client.TowerClient
 import io.seqera.wave.util.ExponentialAttempt
 import io.seqera.wave.util.JacksonHelper
 import io.seqera.wave.util.RegHelper
+import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import static io.seqera.wave.util.LongRndKey.rndHex
@@ -71,10 +72,10 @@ abstract class TowerConnector {
     @Value('${wave.pairing.channel.retryBackOffBase:3}')
     private int retryBackOffBase
 
-    @Value('${wave.pairing.channel.retryBackOffDelay:250}')
+    @Value('${wave.pairing.channel.retryBackOffDelay:325}')
     private int retryBackOffDelay
 
-    @Value('${wave.pairing.channel.retryMaxDelay:30s}')
+    @Value('${wave.pairing.channel.retryMaxDelay:40s}')
     private Duration retryMaxDelay
 
     @Inject
@@ -82,7 +83,7 @@ abstract class TowerConnector {
     private SpillwayRateLimiter limiter
 
     @Inject
-    @Named(TaskExecutors.IO)
+    @Named(TaskExecutors.BLOCKING)
     private volatile ExecutorService ioExecutor
 
     private CacheLoader<JwtRefreshParams, CompletableFuture<JwtAuth>> loader = new CacheLoader<JwtRefreshParams, CompletableFuture<JwtAuth>>() {
@@ -92,14 +93,24 @@ abstract class TowerConnector {
         }
     }
 
-    private LoadingCache<JwtRefreshParams, CompletableFuture<JwtAuth>> refreshCache = CacheBuilder<JwtRefreshParams, CompletableFuture<JwtAuth>>
-            .newBuilder()
-            .expireAfterWrite(1, TimeUnit.MINUTES)
-            .build(loader)
+    private AsyncLoadingCache<JwtRefreshParams, CompletableFuture<JwtAuth>> refreshCache
+
+    @PostConstruct
+    void init() {
+        refreshCache = Caffeine
+                .newBuilder()
+                .expireAfterWrite(1, TimeUnit.MINUTES)
+                .executor(ioExecutor)
+                .buildAsync(loader)
+    }
 
     /** Only for testing - do not use */
     Cache<JwtRefreshParams, CompletableFuture<JwtAuth>> refreshCache0() {
-        return refreshCache
+        return refreshCache.synchronous()
+    }
+
+    protected ExecutorService getIoExecutor() {
+        return ioExecutor
     }
 
     /**
@@ -139,7 +150,10 @@ abstract class TowerConnector {
         final exec0 = this.ioExecutor
         return sendAsync1(endpoint, uri, auth, msgId, true)
                 .thenCompose { resp ->
-                    log.trace "Tower response for request GET '${uri}' => ${resp.status}"
+                    if( resp.status==200 )
+                        log.trace "Tower response for request GET '${uri}' => ${resp}"
+                    else
+                        log.debug "Tower response for request GET '${uri}' => ${resp}"
                     switch (resp.status) {
                         case 200:
                             return CompletableFuture.completedFuture(JacksonHelper.fromJson(resp.body, type))
@@ -242,7 +256,7 @@ abstract class TowerConnector {
      * @return The refreshed {@link JwtAuth} object
      */
     protected CompletableFuture<JwtAuth> refreshJwtToken(String endpoint, JwtAuth auth) {
-        return refreshCache.get(new JwtRefreshParams(endpoint,auth))
+        return refreshCache.synchronous().get(new JwtRefreshParams(endpoint,auth))
     }
 
     protected CompletableFuture<JwtAuth> refreshJwtToken0(String endpoint, JwtAuth auth) {

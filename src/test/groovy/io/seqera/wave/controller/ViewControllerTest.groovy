@@ -55,6 +55,9 @@ import io.seqera.wave.tower.User
 import jakarta.inject.Inject
 import static io.seqera.wave.util.DataTimeUtils.formatDuration
 import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
+
+import static io.seqera.wave.controller.ViewController.Colour
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -147,7 +150,7 @@ class ViewControllerTest extends Specification {
                 exitStatus: 0 )
 
         when:
-        persistenceService.saveBuild(record1)
+        persistenceService.saveBuildAsync(record1)
         and:
         def request = HttpRequest.GET("/view/builds/${record1.buildId}")
         def response = client.toBlocking().exchange(request, String)
@@ -177,7 +180,7 @@ class ViewControllerTest extends Specification {
                 exitStatus: 0 )
 
         when:
-        persistenceService.saveBuild(record1)
+        persistenceService.saveBuildAsync(record1)
         and:
         def request = HttpRequest.GET("/view/builds/${record1.buildId}")
         def response = client.toBlocking().exchange(request, String)
@@ -219,7 +222,7 @@ class ViewControllerTest extends Specification {
         def container = new WaveContainerRecord(req, data, wave, addr, exp)
 
         when:
-        persistenceService.saveContainerRequest(container)
+        persistenceService.saveContainerRequestAsync(container)
         and:
         def request = HttpRequest.GET("/view/containers/${token}")
         def response = client.toBlocking().exchange(request, String)
@@ -395,7 +398,7 @@ class ViewControllerTest extends Specification {
         )
 
         when:
-        persistenceService.saveScanRecord(scan)
+        persistenceService.saveScanRecordAsync(scan)
         and:
         def request = HttpRequest.GET("/view/scans/${scan.id}")
         def response = client.toBlocking().exchange(request, String)
@@ -429,7 +432,7 @@ class ViewControllerTest extends Specification {
         )
 
         when:
-        persistenceService.saveMirrorResult(record1)
+        persistenceService.saveMirrorResultAsync(record1)
         and:
         def request = HttpRequest.GET("/view/mirrors/${record1.mirrorId}")
         def response = client.toBlocking().exchange(request, String)
@@ -488,9 +491,9 @@ class ViewControllerTest extends Specification {
                 exitStatus: 0 )
 
         and:
-        persistenceService.saveBuild(record1)
-        persistenceService.saveBuild(record2)
-        persistenceService.saveBuild(record3)
+        persistenceService.saveBuildAsync(record1)
+        persistenceService.saveBuildAsync(record2)
+        persistenceService.saveBuildAsync(record3)
 
         when:
         def request = HttpRequest.GET("/view/builds/0727765dc72cee24")
@@ -541,7 +544,7 @@ class ViewControllerTest extends Specification {
                 exitStatus: 0 )
 
         when:
-        persistenceService.saveBuild(record1)
+        persistenceService.saveBuildAsync(record1)
         and:
         def request = HttpRequest.GET("/view/builds/112233-1")
         def response = client.toBlocking().exchange(request, String)
@@ -715,8 +718,8 @@ class ViewControllerTest extends Specification {
         def scan2 = new WaveScanRecord('sc-1234567890abcde_2', '101', null, null, CONTAINER_IMAGE, PLATFORM, Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3], null, null)
 
         when:
-        persistenceService.saveScanRecord(scan1)
-        persistenceService.saveScanRecord(scan2)
+        persistenceService.saveScanRecordAsync(scan1)
+        persistenceService.saveScanRecordAsync(scan2)
         and:
         def request = HttpRequest.GET("/view/scans/1234567890abcde")
         def response = client.toBlocking().exchange(request, String)
@@ -742,5 +745,22 @@ class ViewControllerTest extends Specification {
         'sc-1234567890abcdef_01'| false
         null                    | false
         '1234567890abcdef'      | true
+    }
+
+    @Unroll
+    def 'should return correct scan color based on vulnerabilities'() {
+        expect:
+        ViewController.getScanColor(VULNERABILITIES) == EXPEXTED_COLOR
+
+        where:
+        VULNERABILITIES                                                                             | EXPEXTED_COLOR
+        [new ScanVulnerability(severity: 'LOW')]                                                    | new Colour('#dff0d8','#3c763d')
+        [new ScanVulnerability(severity: 'MEDIUM')]                                                 | new Colour('#fff8c5','#000000')
+        [new ScanVulnerability(severity: 'HIGH')]                                                   | new Colour('#ffe4e2','#e00404')
+        [new ScanVulnerability(severity: 'CRITICAL')]                                               | new Colour('#ffe4e2','#e00404')
+        [new ScanVulnerability(severity: 'LOW'), new ScanVulnerability(severity: 'MEDIUM')]         | new Colour('#fff8c5','#000000')
+        [new ScanVulnerability(severity: 'LOW'), new ScanVulnerability(severity: 'HIGH')]           | new Colour('#ffe4e2','#e00404')
+        [new ScanVulnerability(severity: 'MEDIUM'), new ScanVulnerability(severity: 'CRITICAL')]    | new Colour('#ffe4e2','#e00404')
+        []                                                                                          | new Colour('#dff0d8','#3c763d')
     }
 }

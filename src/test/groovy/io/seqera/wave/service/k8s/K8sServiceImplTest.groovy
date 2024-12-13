@@ -36,27 +36,15 @@ import io.kubernetes.client.openapi.models.V1JobStatus
 import io.kubernetes.client.openapi.models.V1ObjectMeta
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
-import io.kubernetes.client.openapi.models.V1PodStatus
 import io.micronaut.context.ApplicationContext
-import io.micronaut.context.annotation.Replaces
-import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.BlobCacheConfig
-import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.MirrorConfig
+import io.seqera.wave.configuration.ScanConfig
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@MicronautTest
 class K8sServiceImplTest extends Specification {
-
-    @Replaces(ScanConfig.class)
-    static class MockScanConfig extends ScanConfig {
-        @Override
-        Path getCacheDirectory() {
-            return Path.of('/build/scan/cache')
-        }
-    }
 
     def 'should validate context OK ' () {
         when:
@@ -522,66 +510,19 @@ class K8sServiceImplTest extends Specification {
         ctx.close()
     }
 
-    def "deletePodWhenReachStatus should delete pod when status is reached within timeout"() {
-        given:
-        def podName = "test-pod"
-        def statusName = "Succeeded"
-        def timeout = 5000
-        def api = Mock(CoreV1Api)
-        api.readNamespacedPod(_,_,_) >> new V1Pod(status: new V1PodStatus(phase: statusName))
-        def k8sClient = new K8sClient() {
-            @Override
-            ApiClient apiClient() {
-                    return null
-            }
-            CoreV1Api coreV1Api() {
-                return api
-            }
-        }
-
-        def k8sService = new K8sServiceImpl(k8sClient: k8sClient)
-
-        when:
-        k8sService.deletePodWhenReachStatus(podName, statusName, timeout)
-
-        then:
-        1 * api.deleteNamespacedPod('test-pod', null, null, null, null, null, null, null)
-    }
-
-    def "deletePodWhenReachStatus should not delete pod if status is not reached within timeout"() {
-        given:
-        def podName = "test-pod"
-        def statusName = "Succeeded"
-        def timeout = 5000
-        def api = Mock(CoreV1Api)
-        api.readNamespacedPod(_,_,_) >> new V1Pod(status: new V1PodStatus(phase: "Running"))
-        def k8sClient = new K8sClient() {
-            @Override
-            ApiClient apiClient() {
-                return null
-            }
-            CoreV1Api coreV1Api() {
-                return api
-            }
-        }
-
-        def k8sService = new K8sServiceImpl(k8sClient: k8sClient)
-
-        when:
-        k8sService.deletePodWhenReachStatus(podName, statusName, timeout)
-
-        then:
-        0 * api.deleteNamespacedPod('test-pod', null, null, null, null, null, null, null)
-    }
-
     def "getLatestPodForJob should return the latest pod when multiple pods are present"() {
         given:
         def jobName = "test-job"
+        def namespace = "test-ns"
         def pod1 = new V1Pod().metadata(new V1ObjectMeta().creationTimestamp(OffsetDateTime.now().minusDays(1)))
         def pod2 = new V1Pod().metadata(new V1ObjectMeta().creationTimestamp(OffsetDateTime.now()))
         def allPods = new V1PodList().items(Arrays.asList(pod1, pod2))
         def api = Mock(CoreV1Api)
-        api.listNamespacedPod(_, _, _, _, _, "job-name=${jobName}", _, _, _, _, _, _) >> allPods
+        def  podRequest2 = Mock(CoreV1Api. APIlistNamespacedPodRequest)
+        podRequest2.execute() >> allPods
+        def  podRequest1 = Mock(CoreV1Api. APIlistNamespacedPodRequest)
+        podRequest1.labelSelector("job-name=${jobName}") >> podRequest2
+        api.listNamespacedPod(namespace) >> podRequest1
         def k8sClient = new K8sClient() {
             @Override
             ApiClient apiClient() {
@@ -592,7 +533,7 @@ class K8sServiceImplTest extends Specification {
             }
         }
         and:
-        def k8sService = new K8sServiceImpl(k8sClient: k8sClient)
+        def k8sService = new K8sServiceImpl(k8sClient: k8sClient, namespace: namespace)
 
         when:
         def latestPod = k8sService.getLatestPodForJob(jobName)
@@ -604,8 +545,13 @@ class K8sServiceImplTest extends Specification {
     def "getLatestPodForJob should return null when no pod is present"() {
         given:
         def jobName = "test-job"
+        def namespace = "test-ns"
         def api = Mock(CoreV1Api)
-        api.listNamespacedPod(_, _, _, _, _, "job-name=${jobName}", _, _, _, _, _, _) >> null
+        def  podRequest2 = Mock(CoreV1Api. APIlistNamespacedPodRequest)
+        podRequest2.execute() >> null
+        def  podRequest1 = Mock(CoreV1Api. APIlistNamespacedPodRequest)
+        podRequest1.labelSelector("job-name=${jobName}") >> podRequest2
+        api.listNamespacedPod(namespace) >> podRequest1
         def k8sClient = new K8sClient() {
             @Override
             ApiClient apiClient() {
@@ -616,7 +562,7 @@ class K8sServiceImplTest extends Specification {
             }
         }
         and:
-        def k8sService = new K8sServiceImpl(k8sClient: k8sClient)
+        def k8sService = new K8sServiceImpl(k8sClient: k8sClient, namespace: namespace)
 
         when:
         def latestPod = k8sService.getLatestPodForJob(jobName)
@@ -748,7 +694,7 @@ class K8sServiceImplTest extends Specification {
             getCacheDirectory() >> Path.of('/build/cache/dir')
             getRequestsCpu() >> '2'
             getRequestsMemory() >> '4Gi'
-            getGithubToken() >> '123abc'
+            getEnvironmentAsTuples() >> [new Tuple2<String, String>('FOO', 'abc'), new Tuple2<String, String>('BAR', 'xyz')]
         }
 
         when:
@@ -761,7 +707,7 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.containers[0].args == args
         job.spec.template.spec.containers[0].resources.requests.get('cpu') == new Quantity('2')
         job.spec.template.spec.containers[0].resources.requests.get('memory') == new Quantity('4Gi')
-        job.spec.template.spec.containers[0].env == [ new V1EnvVar().name('GITHUB_TOKEN').value('123abc') ]
+        job.spec.template.spec.containers[0].env == [ new V1EnvVar().name('FOO').value('abc'), new V1EnvVar().name('BAR').value('xyz') ]
         job.spec.template.spec.volumes.size() == 1
         job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
         job.spec.template.spec.restartPolicy == 'Never'
@@ -890,7 +836,7 @@ class K8sServiceImplTest extends Specification {
         job.spec.backoffLimit == 3
         job.spec.template.spec.containers[0].image == containerImage
         job.spec.template.spec.containers[0].args == args
-        job.spec.template.spec.containers[0].resources.requests == null
+        job.spec.template.spec.containers[0].resources.requests == [:]
         job.spec.template.spec.containers[0].env == [new V1EnvVar().name('REGISTRY_AUTH_FILE').value('/tmp/config.json')]
         and:
         job.spec.template.spec.containers[0].volumeMounts.size() == 2
@@ -950,7 +896,7 @@ class K8sServiceImplTest extends Specification {
         job.spec.backoffLimit == 3
         job.spec.template.spec.containers[0].image == containerImage
         job.spec.template.spec.containers[0].args == args
-        job.spec.template.spec.containers[0].resources.requests == null
+        job.spec.template.spec.containers[0].resources.requests == [:]
         job.spec.template.spec.volumes.size() == 1
         job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
         job.spec.template.spec.restartPolicy == 'Never'
@@ -1037,11 +983,14 @@ class K8sServiceImplTest extends Specification {
         def api = Mock(BatchV1Api)
         def client = Mock(K8sClient) { batchV1Api()>>api }
         def service = Spy(new K8sServiceImpl(namespace:NS, k8sClient: client))
+        def jobRequest = Mock(BatchV1Api. APIreadNamespacedJobRequest)
 
         when:
         def status = service.getJobStatus(NAME)
+
         then:
-        1 * api.readNamespacedJob(NAME, NS, null) >> JOB
+        jobRequest.execute() >> JOB
+        1 * api.readNamespacedJob(NAME, NS) >> jobRequest
         and:
         status == EXPECTED
 

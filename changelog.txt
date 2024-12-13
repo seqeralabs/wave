@@ -1,4 +1,90 @@
 # Wave changelog
+1.15.5 - 9 Dec 2024 
+- Add Jedis pool metrics binder (#756) [a6b2833d]
+- Add jul-to-slf4j dependency [2874187b]
+- Add slf4j backend for Java sys logger [ec5c67fe]
+- Add support for common pool and virtual threads pool metrics (#762) [8aa9075c]
+- Add GH Workflow to sync changelog with Seqera docs (#761) [c8bb7b03]
+- Fix handling error for known http statuses [513a1ef2]
+- Improve container validation [1c36fd4c]
+- Remove unused stream-executor [61357048]
+- Suppress Caffeine log warnings [2fd351d3]
+- Tune Tower connector delay and retry [3fd5643f]
+- Unwrap Failsafe target exception [6fb214a4]
+
+1.15.4 - 27 Nov 2024 
+- Add blocking executor to async caches (#759) [86f7d3e3]
+- Add ExecutesOn annotation to error controller [a2db2b00]
+
+1.15.3 - 25 Nov 2024
+- Add Support Redis support for SSL and password (#717) [bf63599d]
+- Bump MN 4.7.1 (#741) [203e5dd0]
+- Remove double cache builder invocation [994b722c]
+- Bump lib-mail version 1.2.1 [4da98a23]
+- Bump io.seqera:lib-crypto [36f5b24d]
+- Bump gson 2.10.1 [117703b9]
+- Bump protobuf-java version 4.27.5 [3ea758b4]
+- Bump k8s client to version 21.0.1 (#553) [51788578]
+
+1.15.2 [skipped] 
+
+1.15.1 - 20 Nov 2024
+- Check block existence with object operation (#750) [86ef526c]
+- Add /v1alpha2/validate-creds (#752) [e24ec62c]
+- Switched env vars around (#748) [080d5cce]
+
+1.15.0 - 18 Nov 2024
+- Migration to virtual threads - phase 1 (#746) [aaf0420c]
+- Use runAsync instead supplyAsync [ffd0dacd]
+- Remove deprecated ThreadPoolBuilder [7af3046f]
+- Replace Guava cache with Caffeine (#745) [cf813e0a]
+- Update project deps [f24b684d]
+- Bump  guava to version 33.3.1-jre [328e9ea3]
+- Bump Netty version 4.1.115.Final [9ba433ce]
+- Bump gradle 8.10.2 [52272fe1]
+
+1.14.1 - 14 Nov 2024
+- Fix creds validation endpoint (#740) [8c0f3a4c]
+
+1.14.0 - 10 Nov 2024
+- Fix K8s env propagation [76f0a456]
+- Remove deprecated K8s methods (#734) [481298bf]
+- Bump to Micronaut 4.6 (#318) [f67e8556]
+- Bump Java 21 as build requirement (#519) [132f9491]
+- Bump bitbucket.b_c:jose4j:0.9.4 [2e10416a]
+- Bump bouncycastle:bcpkix-jdk18on:1.78 [ede22ce5]
+- Bump jedis 5.1.3 (#732) [2ee0854e]
+- Bump logback 1.5.12 [f5fe3fa4]
+- Bump make deps runtimeclasspath [2a342b18]
+- Bump snakeyaml 2.2 [6aeb3c33]
+- Bump spillway 3.0.0 (#731) [1502696d]
+- Bump explicit dep to websocket module [2e413ac2]
+- Enables EKS Pod identity via AWS SDK 2.27.8 
+
+1.13.11 - 2 Nov 2024
+- Rename async methods for semantic consistency [38114d75]
+- Save scan record async (#730) [3ad82a3a]
+- Cap number of vulnerabilities reported in scan report to 100 (#728) [2f0d8f9f]
+- Bump org.apache.commons:commons-compress:1.27.1 (#722) [adb75007]
+
+1.13.10 - 29 Oct 2024 
+- Log slow processing stream messages [e8a6b7ee]
+- Prevent scan when mode is not defined [d42bcae1]
+
+1.13.9 - 29 Oct 2024
+- Fix inspect view (#725) [dcf41dea] [e38e2c44]
+
+1.13.8 - 26 Oct 2024
+- Fix update scan status synchronously [e767c367]
+- Bump scan warn colour [705141f0]
+- Improve scan logging [f01e4dba]
+
+1.13.7 - 25 Oct 2024 
+- Add ability to configure trivy environment & DBs (#720) [0f600306]
+
+1.13.6 - 25 Oct 2024 
+- Add scan color for different vuls (#719) [ab81b6dc]
+
 1.13.5 - 23 Oct 2024
 - Fix Do not render inspect url on fail [d96275a1]
 - Fix inspect view empty nodes (#706) [b3473b7e]

@@ -145,7 +145,7 @@ class ProxyClientTest extends Specification {
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should call target manifest on amazon' () {
         given:
-        def IMAGE = 'wave/kaniko'
+        def IMAGE = 'wave/app'
         def REG = '195996028523.dkr.ecr.eu-west-1.amazonaws.com'
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
@@ -158,7 +158,7 @@ class ProxyClientTest extends Specification {
                 .withCredentials(creds)
 
         when:
-        def resp = proxy.getString("/v2/$IMAGE/manifests/0.1.0")
+        def resp = proxy.getString("/v2/$IMAGE/manifests/1.0.0")
         then:
         resp.statusCode() == 200
     }
@@ -166,7 +166,7 @@ class ProxyClientTest extends Specification {
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should call head manifest on amazon' () {
         given:
-        def IMAGE = 'wave/kaniko'
+        def IMAGE = 'wave/app'
         def REG = '195996028523.dkr.ecr.eu-west-1.amazonaws.com'
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
@@ -179,7 +179,7 @@ class ProxyClientTest extends Specification {
                 .withCredentials(creds)
 
         when:
-        def resp = proxy.head("/v2/$IMAGE/manifests/0.1.0")
+        def resp = proxy.head("/v2/$IMAGE/manifests/1.0.0")
         then:
         resp.statusCode() == 200
     }

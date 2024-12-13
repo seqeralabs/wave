@@ -67,7 +67,7 @@ import reactor.core.publisher.Mono
 @Slf4j
 @CompileStatic
 @Controller("/v2")
-@ExecuteOn(TaskExecutors.IO)
+@ExecuteOn(TaskExecutors.BLOCKING)
 class RegistryProxyController {
 
     @Inject
@@ -123,7 +123,7 @@ class RegistryProxyController {
 
         if( route.manifest && route.digest ){
             String ip = addressResolver.resolve(httpRequest)
-            rateLimiterService?.acquirePull( new AcquireRequest(route.identity.userId as String, ip) )
+            rateLimiterService?.acquirePull( new AcquireRequest(route.identity.userEmail, ip) )
         }
 
         // check if it's a container under build
