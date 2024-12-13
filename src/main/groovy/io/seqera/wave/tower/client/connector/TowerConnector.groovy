@@ -150,7 +150,10 @@ abstract class TowerConnector {
         final exec0 = this.ioExecutor
         return sendAsync1(endpoint, uri, auth, msgId, true)
                 .thenCompose { resp ->
-                    log.trace "Tower response for request GET '${uri}' => ${resp.status}"
+                    if( resp.status==200 )
+                        log.trace "Tower response for request GET '${uri}' => ${resp}"
+                    else
+                        log.debug "Tower response for request GET '${uri}' => ${resp}"
                     switch (resp.status) {
                         case 200:
                             return CompletableFuture.completedFuture(JacksonHelper.fromJson(resp.body, type))

@@ -50,7 +50,7 @@ class RedisFutureHash implements FutureHash<String>  {
     @Override
     void put(String key, String value, Duration expiration) {
         try (Jedis conn = pool.getResource()) {
-            final params = new SetParams().ex(expiration.toSeconds())
+            final params = new SetParams().px(expiration.toMillis())
             conn.set(key, value, params)
         }
     }
