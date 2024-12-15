@@ -27,7 +27,6 @@ import io.seqera.wave.service.data.future.AbstractFutureStore
 import io.seqera.wave.service.data.future.FutureHash
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import jakarta.inject.Singleton
-
 /**
  * Model an distribute store for completable future that
  * used to collect inbound messages
@@ -38,11 +37,17 @@ import jakarta.inject.Singleton
 @CompileStatic
 class PairingInboundStore extends AbstractFutureStore<PairingMessage> {
 
-    @Value('${wave.pairing.channel.timeout:5s}')
-    private volatile Duration timeout
+    private final Duration timeout
 
-    PairingInboundStore(FutureHash<String> publisher) {
+    private final Duration pollInterval
+
+    PairingInboundStore(FutureHash<String> publisher,
+                        @Value('${wave.pairing.channel.timeout:5s}') Duration timeout,
+                        @Value('${wave.pairing.channel.awaitTimeout:100ms}') Duration pollInterval )
+    {
         super(publisher, new MoshiEncodeStrategy<PairingMessage>() {})
+        this.timeout = timeout
+        this.pollInterval = pollInterval
     }
 
     @Override
@@ -55,5 +60,10 @@ class PairingInboundStore extends AbstractFutureStore<PairingMessage> {
     @Override
     Duration getTimeout() {
         return timeout
+    }
+
+    @Override
+    Duration getPollInterval() {
+        return pollInterval
     }
 }
