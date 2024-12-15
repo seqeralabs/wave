@@ -121,9 +121,14 @@ class RegistryProxyController {
         log.info "> Request [$httpRequest.method] $httpRequest.path"
         final route = routeHelper.parse("/v2/" + url)
 
-        if( route.manifest && route.digest ){
-            String ip = addressResolver.resolve(httpRequest)
-            rateLimiterService?.acquirePull( new AcquireRequest(route.identity.userEmail, ip) )
+        if( rateLimiterService ) {
+            final ip = addressResolver.resolve(httpRequest)
+            final id = new AcquireRequest(route.identity.userEmail, ip)
+            rateLimiterService.acquireRequest(id)
+
+            if( route.manifest && route.digest ){
+                rateLimiterService.acquirePull(id)
+            }
         }
 
         // check if it's a container under build
