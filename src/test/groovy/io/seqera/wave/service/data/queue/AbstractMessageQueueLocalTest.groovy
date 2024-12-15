@@ -63,7 +63,7 @@ class AbstractMessageQueueLocalTest extends Specification {
         queue.close()
     }
 
-    def 'should validate '() {
+    def 'should validate keys prefixes'() {
         given:
         def queue = new PairingOutboundQueue(broker, Duration.ofMillis(100), ioExecutor)
 

@@ -84,7 +84,7 @@ abstract class TowerConnector {
 
     @Inject
     @Named(TaskExecutors.BLOCKING)
-    private volatile ExecutorService ioExecutor
+    private ExecutorService ioExecutor
 
     private CacheLoader<JwtRefreshParams, CompletableFuture<JwtAuth>> loader = new CacheLoader<JwtRefreshParams, CompletableFuture<JwtAuth>>() {
         @Override
