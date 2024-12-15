@@ -57,7 +57,7 @@ class AbstractMessageQueueRedisTest extends Specification implements RedisTestCo
         given:
         def executor = Executors.newCachedThreadPool()
         def broker = context.getBean(RedisMessageQueue)
-        def queue = new PairingOutboundQueue(broker, Duration.ofMillis(100), executor)
+        def queue = new PairingOutboundQueue(broker, Duration.ofMillis(100), executor) .start()
         and:
         def result = new CompletableFuture<PairingMessage>()
         when:
@@ -76,10 +76,10 @@ class AbstractMessageQueueRedisTest extends Specification implements RedisTestCo
         given:
         def executor = Executors.newCachedThreadPool()
         def broker1 = context.getBean(RedisMessageQueue)
-        def queue1 = new PairingOutboundQueue(broker1, Duration.ofMillis(100), executor)
+        def queue1 = new PairingOutboundQueue(broker1, Duration.ofMillis(100), executor) .start()
         and:
         def broker2 = context.getBean(RedisMessageQueue)
-        def queue2 = new PairingOutboundQueue(broker2, Duration.ofMillis(100), executor)
+        def queue2 = new PairingOutboundQueue(broker2, Duration.ofMillis(100), executor) .start()
         and:
         def result = new CompletableFuture<PairingMessage>()
 
