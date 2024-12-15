@@ -49,7 +49,7 @@ class AbstractMessageQueueLocalTest extends Specification {
 
     def 'should send and consume a request'() {
         given:
-        def queue = new PairingOutboundQueue(broker, Duration.ofMillis(100), ioExecutor)
+        def queue = new PairingOutboundQueue(broker, Duration.ofMillis(100), ioExecutor) .start()
 
         when:
         def result = new CompletableFuture<PairingMessage>()
@@ -71,8 +71,6 @@ class AbstractMessageQueueLocalTest extends Specification {
         queue.targetKey('foo') == 'pairing-outbound-queue/v1:foo'
         queue.clientKey('foo','bar') == 'pairing-outbound-queue/v1:foo:client=bar/queue'
 
-        cleanup:
-        queue.close()
     }
 
 }
