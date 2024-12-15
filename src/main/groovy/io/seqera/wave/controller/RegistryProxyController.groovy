@@ -124,8 +124,9 @@ class RegistryProxyController {
         if( rateLimiterService ) {
             final ip = addressResolver.resolve(httpRequest)
             final id = new AcquireRequest(route.identity.userEmail, ip)
+            // check HTTP requests rate limit
             rateLimiterService.acquireRequest(id)
-
+            // check container pull requests rate limit
             if( route.manifest && route.digest ){
                 rateLimiterService.acquirePull(id)
             }
