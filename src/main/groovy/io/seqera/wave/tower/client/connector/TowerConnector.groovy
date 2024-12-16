@@ -221,7 +221,7 @@ abstract class TowerConnector {
     private CompletableFuture<ProxyHttpResponse> sendAsync1(String endpoint, final URI uri, final JwtAuth auth, String msgId, final boolean canRefresh) {
         // check the most updated JWT token
         final JwtAuth tokens = jwtAuthStore.refresh(auth) ?: auth
-        log.trace "Tower GET '$uri' - can refresh=$canRefresh; msgId=$msgId; tokens=$tokens"
+        log.trace "Tower request GET '$uri' - can refresh=$canRefresh; msgId=$msgId; tokens=$tokens"
         // submit the request
         final request = new ProxyHttpRequest(
                 msgId: msgId,
