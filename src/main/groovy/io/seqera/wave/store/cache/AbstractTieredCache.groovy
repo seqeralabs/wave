@@ -20,6 +20,7 @@ package io.seqera.wave.store.cache
 
 import java.time.Duration
 import java.util.concurrent.TimeUnit
+import java.util.function.Function
 
 import com.github.benmanes.caffeine.cache.AsyncCache
 import com.github.benmanes.caffeine.cache.Caffeine
@@ -33,7 +34,7 @@ import io.seqera.wave.encoder.MoshiEncodeStrategy
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-class AbstractTieredCache<V> implements TieredCache<String,V> {
+abstract class AbstractTieredCache<V> implements TieredCache<String,V> {
 
     @Canonical
     static class Payload {
@@ -59,6 +60,8 @@ class AbstractTieredCache<V> implements TieredCache<String,V> {
                 .buildAsync()
     }
 
+    abstract protected String getPrefix()
+
     @Override
     V get(String key) {
         // Try local cache first
@@ -77,6 +80,21 @@ class AbstractTieredCache<V> implements TieredCache<String,V> {
         return value
     }
 
+    V getOrCompute(String key, Function<String,V> loader) {
+        def result = get(key)
+        if( result!=null ) {
+            return result
+        }
+
+        result = loader.apply(key)
+        if( result!=null ) {
+            l1.synchronous().put(key,result)
+            l2Put(key,result)
+        }
+
+        return result
+    }
+
     @Override
     void put(String key, V value) {
         // Store in Caffeine
@@ -85,11 +103,13 @@ class AbstractTieredCache<V> implements TieredCache<String,V> {
         l2Put(key, value)
     }
 
+    protected String key0(String k) { return getPrefix() + ':' + k  }
+
     protected V l2Get(String key) {
         if( l2 == null )
             return null
 
-        final raw = l2.get(key)
+        final raw = l2.get(key0(key))
         if( raw == null )
             return null
 
@@ -102,8 +122,11 @@ class AbstractTieredCache<V> implements TieredCache<String,V> {
     protected void l2Put(String key, V value) {
         if( l2 != null ) {
             final raw = encoder.encode(new Payload(value, ttl.toMillis() + System.currentTimeMillis()))
-            l2.put(key, raw, ttl)
+            l2.put(key0(key), raw, ttl)
         }
     }
 
+    void invalidateAll() {
+        l1.synchronous().invalidateAll()
+    }
 }

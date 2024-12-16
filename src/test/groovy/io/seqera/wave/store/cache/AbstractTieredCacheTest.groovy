@@ -41,6 +41,9 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
         MyCache(L2TieredCache<String,String> l2, Duration ttl, long maxSize) {
             super(l2, ttl, maxSize)
         }
+
+        @Override
+        protected String getPrefix() { return 'foo' }
     }
 
     @Shared
@@ -75,7 +78,7 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
         then:
         cache.get(k) == new Entry('x','y')
         and:
-        (encoder.decode(l2.get(k)).value as Entry) == new Entry('x','y')
+        (encoder.decode(l2.get('foo:'+k)).value as Entry) == new Entry('x','y')
 
         when:
         sleep AWAIT *2

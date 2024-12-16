@@ -23,7 +23,6 @@ import spock.lang.Specification
 import java.security.PublicKey
 import java.time.Duration
 import java.time.Instant
-import java.util.concurrent.CompletableFuture
 
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
@@ -41,7 +40,6 @@ import io.seqera.wave.tower.compute.ComputeEnv
 import io.seqera.wave.tower.compute.DescribeWorkflowLaunchResponse
 import io.seqera.wave.tower.compute.WorkflowLaunchResponse
 import jakarta.inject.Inject
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -106,12 +104,12 @@ class CredentialsServiceTest extends Specification {
         1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, towerEndpoint) >> keyRecord
 
         and: 'credentials are listed once and return a potential match'
-        1 * towerClient.listCredentials(towerEndpoint,auth,workspaceId,workflowId) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
+        1 * towerClient.listCredentials(towerEndpoint,auth,workspaceId,workflowId) >> new ListCredentialsResponse(
                 credentials: [nonContainerRegistryCredentials, credentialsDescription, otherRegistryCredentials]
-        ))
+        )
 
         and: 'they match and the encrypted credentials are fetched'
-        1 * towerClient.fetchEncryptedCredentials(towerEndpoint, auth, credentialsId, keyId, workspaceId, workflowId) >> CompletableFuture.completedFuture(encryptedCredentialsFromTower(keypair.getPublic(), registryCredentials))
+        1 * towerClient.fetchEncryptedCredentials(towerEndpoint, auth, credentialsId, keyId, workspaceId, workflowId) >> encryptedCredentialsFromTower(keypair.getPublic(), registryCredentials)
 
         and:
         credentials.userName == 'me'
@@ -148,7 +146,7 @@ class CredentialsServiceTest extends Specification {
                 expiration: Instant.now() + Duration.ofSeconds(5)
         )
         and: 'credentials are listed but are empty'
-        1 * towerClient.listCredentials('tower.io',auth,10,'wf-10') >> CompletableFuture.completedFuture(new ListCredentialsResponse(credentials: []))
+        1 * towerClient.listCredentials('tower.io',auth,10,'wf-10') >> new ListCredentialsResponse(credentials: [])
 
         and: 'no registry credentials are returned'
         credentials == null
@@ -183,9 +181,9 @@ class CredentialsServiceTest extends Specification {
         )
 
         and: 'non matching credentials are listed'
-        1 * towerClient.listCredentials('tower.io',auth,100,'101') >> CompletableFuture.completedFuture(new ListCredentialsResponse(
+        1 * towerClient.listCredentials('tower.io',auth,100,'101') >> new ListCredentialsResponse(
                 credentials: [nonContainerRegistryCredentials,otherRegistryCredentials]
-        ))
+        )
 
         and:'no compute credentials'
         0 * towerClient.describeWorkflowLaunch('tower.io',auth,'101') >> null
@@ -270,15 +268,15 @@ class CredentialsServiceTest extends Specification {
         1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, towerEndpoint) >> keyRecord
 
         and: 'credentials are listed once and return a potential match'
-        1 * towerClient.listCredentials(towerEndpoint, auth, workspaceId, workflowId) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
-                credentials: [nonContainerRegistryCredentials]))
+        1 * towerClient.listCredentials(towerEndpoint, auth, workspaceId, workflowId) >> new ListCredentialsResponse(
+                credentials: [nonContainerRegistryCredentials]
+        )
 
         and:'fetched compute credentials'
-        1*towerClient.describeWorkflowLaunch(towerEndpoint, auth, workflowId) >> CompletableFuture.completedFuture(describeWorkflowLaunchResponse)
+        1*towerClient.describeWorkflowLaunch(towerEndpoint, auth, workflowId) >> describeWorkflowLaunchResponse
 
         and: 'they match and the encrypted credentials are fetched'
-        1 * towerClient.fetchEncryptedCredentials(towerEndpoint, auth, credentialsId, keyId, workspaceId, workflowId) >> CompletableFuture.completedFuture(
-                encryptedCredentialsFromTower(keypair.getPublic(), computeCredentials))
+        1 * towerClient.fetchEncryptedCredentials(towerEndpoint, auth, credentialsId, keyId, workspaceId, workflowId) >> encryptedCredentialsFromTower(keypair.getPublic(), computeCredentials)
 
         and:
         containerCredentials.userName == 'me'

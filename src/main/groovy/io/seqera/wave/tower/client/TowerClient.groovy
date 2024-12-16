@@ -22,9 +22,9 @@ import java.util.concurrent.CompletableFuture
 
 import com.google.common.hash.Hashing
 import groovy.transform.CompileStatic
-import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.tower.auth.JwtAuth
+import io.seqera.wave.tower.client.cache.ClientCacheShort
 import io.seqera.wave.tower.client.connector.TowerConnector
 import io.seqera.wave.tower.compute.DescribeWorkflowLaunchResponse
 import jakarta.inject.Inject
@@ -43,42 +43,46 @@ class TowerClient {
     @Inject
     private TowerConnector connector
 
+    @Inject
+    private ClientCacheShort cacheShort
+
+    @Inject
+    private ClientCacheShort cacheLong
+
     protected <T> CompletableFuture<T> getAsync(URI uri, String endpoint, @Nullable JwtAuth authorization, Class<T> type) {
         assert uri, "Missing uri argument"
         assert endpoint, "Missing endpoint argument"
         return connector.sendAsync(endpoint, uri, authorization, type)
     }
 
-    @Cacheable(value = 'cache-tower-client-short', atomic = true, parameters = ['cacheKey'])
-    protected <T> CompletableFuture<T> getCacheShort(URI uri, String endpoint, @Nullable JwtAuth authorization, Class<T> type, String cacheKey) {
-        return getAsync(uri, endpoint, authorization, type)
+    protected Object getCacheShort(URI uri, String endpoint, @Nullable JwtAuth authorization, Class type, String cacheKey) {
+        return cacheShort.getOrCompute(cacheKey, (k)-> getAsync(uri, endpoint, authorization, type).get())
     }
 
-    @Cacheable(value = 'cache-tower-client-long', atomic = true, parameters = ['cacheKey'])
-    protected <T> CompletableFuture<T> getCacheLong(URI uri, String endpoint, @Nullable JwtAuth authorization, Class<T> type, String cacheKey) {
-        return getAsync(uri, endpoint, authorization, type)
+    protected Object getCacheLong(URI uri, String endpoint, @Nullable JwtAuth authorization, Class type, String cacheKey) {
+        return cacheLong.getOrCompute(cacheKey, (k)-> getAsync(uri, endpoint, authorization, type).get())
     }
 
-    CompletableFuture<UserInfoResponse> userInfo(String towerEndpoint, JwtAuth authorization) {
+    UserInfoResponse userInfo(String towerEndpoint, JwtAuth authorization) {
         final uri = userInfoEndpoint(towerEndpoint)
         final k = makeKey(uri, authorization.key, null, null)
-        return getCacheLong(uri, towerEndpoint, authorization, UserInfoResponse, k)
+        getCacheLong(uri, towerEndpoint, authorization, UserInfoResponse, k) as UserInfoResponse
     }
 
-    CompletableFuture<ListCredentialsResponse> listCredentials(String towerEndpoint, JwtAuth authorization, Long workspaceId, String workflowId) {
+    ListCredentialsResponse listCredentials(String towerEndpoint, JwtAuth authorization, Long workspaceId, String workflowId) {
         final uri = listCredentialsEndpoint(towerEndpoint, workspaceId)
         final k = makeKey(uri, authorization.key, workspaceId, workflowId)
-        return workflowId
+        return (workflowId
                 ? getCacheLong(uri, towerEndpoint, authorization, ListCredentialsResponse, k)
-                : getCacheShort(uri, towerEndpoint, authorization, ListCredentialsResponse, k)
+                : getCacheShort(uri, towerEndpoint, authorization, ListCredentialsResponse, k)) as ListCredentialsResponse
     }
 
-    CompletableFuture<GetCredentialsKeysResponse> fetchEncryptedCredentials(String towerEndpoint, JwtAuth authorization, String credentialsId, String pairingId, Long workspaceId, String workflowId) {
+    GetCredentialsKeysResponse fetchEncryptedCredentials(String towerEndpoint, JwtAuth authorization, String credentialsId, String pairingId, Long workspaceId, String workflowId) {
         final uri = fetchCredentialsEndpoint(towerEndpoint, credentialsId, pairingId, workspaceId)
         final k = makeKey(uri, authorization.key, workspaceId, workflowId)
-        return workflowId
+        return (workflowId
                 ? getCacheLong(uri, towerEndpoint, authorization, GetCredentialsKeysResponse, k)
-                : getCacheShort(uri, towerEndpoint, authorization, GetCredentialsKeysResponse, k)
+                : getCacheShort(uri, towerEndpoint, authorization, GetCredentialsKeysResponse, k)) as GetCredentialsKeysResponse
     }
 
     protected static URI fetchCredentialsEndpoint(String towerEndpoint, String credentialsId, String pairingId, Long workspaceId) {
@@ -116,10 +120,10 @@ class TowerClient {
         StringUtils.removeEnd(endpoint, "/")
     }
 
-    CompletableFuture<DescribeWorkflowLaunchResponse> describeWorkflowLaunch(String towerEndpoint, JwtAuth authorization, String workflowId) {
+    DescribeWorkflowLaunchResponse describeWorkflowLaunch(String towerEndpoint, JwtAuth authorization, String workflowId) {
         final uri = workflowLaunchEndpoint(towerEndpoint,workflowId)
         final k = makeKey(uri, authorization.key, null, workflowId)
-        return getCacheShort(uri, towerEndpoint, authorization, DescribeWorkflowLaunchResponse.class, k)
+        return getCacheShort(uri, towerEndpoint, authorization, DescribeWorkflowLaunchResponse.class, k) as DescribeWorkflowLaunchResponse
     }
 
     protected static URI workflowLaunchEndpoint(String towerEndpoint, String workflowId) {
@@ -134,5 +138,11 @@ class TowerClient {
             h.putUnencodedChars('/')
         }
         return h.hash()
+    }
+
+    /** Only for testing - do not use */
+    protected void invalidateCache() {
+        cacheLong.invalidateAll()
+        cacheShort.invalidateAll()
     }
 }
