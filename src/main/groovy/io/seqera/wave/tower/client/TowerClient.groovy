@@ -127,8 +127,8 @@ class TowerClient {
     }
 
     protected String makeKey(Object... keys) {
-        final h = Hashing .sipHash24() .newHasher()
-        for( Object it :  keys) {
+        final h = Hashing.sipHash24().newHasher()
+        for( Object it :  keys ) {
             if( it!=null )
                 h.putUnencodedChars(it.toString())
             h.putUnencodedChars('/')
