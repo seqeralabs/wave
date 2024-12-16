@@ -20,6 +20,8 @@ package io.seqera.wave.store.cache
 
 import java.time.Duration
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.Lock
+import java.util.concurrent.locks.ReentrantLock
 import java.util.function.Function
 
 import com.github.benmanes.caffeine.cache.AsyncCache
@@ -50,6 +52,8 @@ abstract class AbstractTieredCache<V> implements TieredCache<String,V> {
 
     private L2TieredCache<String,String> l2
 
+    private final Lock sync = new ReentrantLock()
+
     AbstractTieredCache(L2TieredCache<String,String> l2, Duration ttl, long maxSize) {
         this.l2 = l2
         this.ttl = ttl
@@ -64,42 +68,52 @@ abstract class AbstractTieredCache<V> implements TieredCache<String,V> {
 
     @Override
     V get(String key) {
-        // Try local cache first
-        V value = l1.synchronous().getIfPresent(key)
-        if (value != null) {
-            return value;
-        }
-
-        // Fallback to L2 cache
-        value = l2Get(key)
-        if (value != null) {
-            // Rehydrate Caffeine cache
-            l1.synchronous().put(key, value)
-        }
-
-        return value
+        getOrCompute(key, null)
     }
 
     V getOrCompute(String key, Function<String,V> loader) {
-        def result = get(key)
-        if( result!=null ) {
-            return result
+        // Try L1 cache first
+        V value = l1.synchronous().getIfPresent(key)
+        if (value != null) {
+            return value
         }
 
-        result = loader.apply(key)
-        if( result!=null ) {
-            l1.synchronous().put(key,result)
-            l2Put(key,result)
-        }
+        sync.lock()
+        try {
+            value = l1.synchronous().getIfPresent(key)
+            if (value != null) {
+                return value
+            }
 
-        return result
+            // Fallback to L2 cache
+            value = l2Get(key)
+            if (value != null) {
+                // Rehydrate L1 cache
+                l1.synchronous().put(key, value)
+            }
+
+            // still not value found, use loader function to fetch the value
+            if( value==null && loader!=null ) {
+                value = loader.apply(key)
+                if( value!=null ) {
+                    l1.synchronous().put(key,value)
+                    l2Put(key,value)
+                }
+            }
+
+            // finally return the value
+            return value
+        }
+        finally {
+            sync.unlock()
+        }
     }
 
     @Override
     void put(String key, V value) {
-        // Store in Caffeine
+        assert key!=null, "Cache key argument cannot be null"
+        assert value!=null, "Cache value argument cannot be null"
         l1.synchronous().put(key, value)
-        // Store in Redis with a TTL
         l2Put(key, value)
     }
 

@@ -65,25 +65,65 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
         given:
         def AWAIT = 150
         def encoder = new MoshiEncodeStrategy<AbstractTieredCache.Payload>() {}
-        def l2 = applicationContext.getBean(RedisL2TieredCache)
-        def cache = new MyCache(l2, Duration.ofMillis(AWAIT), 100)
+        def store = applicationContext.getBean(RedisL2TieredCache)
+        def cache1 = new MyCache(store, Duration.ofMillis(AWAIT), 100)
+        def cache2 = new MyCache(store, Duration.ofMillis(AWAIT), 100)
         and:
         def k = UUID.randomUUID().toString()
+        def value = new Entry('x','y')
 
         expect:
-        cache.get(k) == null
+        cache1.get(k) == null
 
         when:
-        cache.put(k, new Entry('x','y'))
-        then:
-        cache.get(k) == new Entry('x','y')
+        cache1.put(k, value)
         and:
-        (encoder.decode(l2.get('foo:'+k)).value as Entry) == new Entry('x','y')
+        Entry r1 = cache1.get(k)
+        then:
+        r1 == value
+        
+        when:
+        Entry r2 = encoder.decode(store.get('foo:'+k)).value as Entry
+        then:
+        r2 == value
+
+        when:
+        Entry r3 = cache2.get(k)
+        then:
+        r3 == value
 
         when:
         sleep AWAIT *2
         then:
-        cache.get(k) == null
+        cache1.get(k) == null
+    }
+
+    def 'should get or compute a value' () {
+        given:
+        def AWAIT = 150
+        def store = applicationContext.getBean(RedisL2TieredCache)
+        def cache1 = new MyCache(store, Duration.ofMillis(AWAIT), 100)
+        def cache2 = new MyCache(store, Duration.ofMillis(AWAIT), 100)
+        and:
+        def k = UUID.randomUUID().toString()
+
+        expect:
+        cache1.get(k) == null
+
+        when:
+        Entry r1 = cache1.getOrCompute(k, (it)-> new Entry(it+'1', it+'2'))
+        then:
+        r1 == new Entry(k+'1', k+'2')
+
+        when:
+        Entry r2 = cache2.get(k)
+        then:
+        r2 == new Entry(k+'1', k+'2')
+
+        when:
+        sleep AWAIT *2
+        then:
+        cache2.get(k) == null
     }
 
 }
