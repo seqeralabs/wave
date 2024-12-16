@@ -27,6 +27,8 @@ import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.store.state.AbstractStateStore
 import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Inject
+import jakarta.inject.Singleton
+
 /**
  * Implement a distributed store for blob cache entry.
  *
@@ -37,6 +39,7 @@ import jakarta.inject.Inject
  */
 @Slf4j
 @CompileStatic
+@Singleton
 class BlobStoreImpl extends AbstractStateStore<BlobEntry> implements BlobStateStore {
 
     @Inject
