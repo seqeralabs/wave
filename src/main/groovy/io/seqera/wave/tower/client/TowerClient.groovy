@@ -43,6 +43,8 @@ import org.apache.commons.lang3.StringUtils
 @CompileStatic
 class TowerClient {
 
+    private enum CacheMode { SHORT, LONG }
+
     @Inject
     private TowerConnector connector
 
@@ -58,36 +60,30 @@ class TowerClient {
         return connector.sendAsync(endpoint, uri, authorization, type)
     }
 
-    protected Object getCacheShort(URI uri, String endpoint, @Nullable JwtAuth auth, Class type, String cacheKey) {
-        log.trace "Tower client cache short - key=$cacheKey; uri=$uri; auth=${auth}"
-        return cacheShort.getOrCompute(cacheKey, (k)-> getAsync(uri, endpoint, auth, type).get())
-    }
-
-    protected Object getCacheLong(URI uri, String endpoint, @Nullable JwtAuth auth, Class type, String cacheKey) {
-        log.trace "Tower client cache long - key=$cacheKey; uri=$uri; auth=${auth}"
-        return cacheLong.getOrCompute(cacheKey, (k)-> getAsync(uri, endpoint, auth, type).get())
+    protected Object get0(URI uri, String endpoint, @Nullable JwtAuth auth, Class type, String cacheKey, CacheMode mode) {
+        log.trace "Tower client cache ${mode} - key=$cacheKey; uri=$uri; auth=${auth}"
+        final cache = mode==CacheMode.SHORT ? cacheShort: cacheLong
+        return cache.getOrCompute(cacheKey, (k)-> getAsync(uri, endpoint, auth, type).get())
     }
 
     UserInfoResponse userInfo(String towerEndpoint, JwtAuth authorization) {
         final uri = userInfoEndpoint(towerEndpoint)
         final k = makeKey(uri, authorization.key, null, null)
-        getCacheLong(uri, towerEndpoint, authorization, UserInfoResponse, k) as UserInfoResponse
+        get0(uri, towerEndpoint, authorization, UserInfoResponse, k, CacheMode.LONG) as UserInfoResponse
     }
 
     ListCredentialsResponse listCredentials(String towerEndpoint, JwtAuth authorization, Long workspaceId, String workflowId) {
         final uri = listCredentialsEndpoint(towerEndpoint, workspaceId)
         final k = makeKey(uri, authorization.key, workspaceId, workflowId)
-        return (workflowId
-                ? getCacheLong(uri, towerEndpoint, authorization, ListCredentialsResponse, k)
-                : getCacheShort(uri, towerEndpoint, authorization, ListCredentialsResponse, k)) as ListCredentialsResponse
+        final mode = workflowId ? CacheMode.LONG : CacheMode.SHORT
+        return get0(uri, towerEndpoint, authorization, ListCredentialsResponse, k, mode) as ListCredentialsResponse
     }
 
     GetCredentialsKeysResponse fetchEncryptedCredentials(String towerEndpoint, JwtAuth authorization, String credentialsId, String pairingId, Long workspaceId, String workflowId) {
         final uri = fetchCredentialsEndpoint(towerEndpoint, credentialsId, pairingId, workspaceId)
         final k = makeKey(uri, authorization.key, workspaceId, workflowId)
-        return (workflowId
-                ? getCacheLong(uri, towerEndpoint, authorization, GetCredentialsKeysResponse, k)
-                : getCacheShort(uri, towerEndpoint, authorization, GetCredentialsKeysResponse, k)) as GetCredentialsKeysResponse
+        final mode = workflowId ? CacheMode.LONG : CacheMode.SHORT
+        return get0(uri, towerEndpoint, authorization, GetCredentialsKeysResponse, k, mode) as GetCredentialsKeysResponse
     }
 
     protected static URI fetchCredentialsEndpoint(String towerEndpoint, String credentialsId, String pairingId, Long workspaceId) {
@@ -128,7 +124,7 @@ class TowerClient {
     DescribeWorkflowLaunchResponse describeWorkflowLaunch(String towerEndpoint, JwtAuth authorization, String workflowId) {
         final uri = workflowLaunchEndpoint(towerEndpoint,workflowId)
         final k = makeKey(uri, authorization.key, null, workflowId)
-        return getCacheShort(uri, towerEndpoint, authorization, DescribeWorkflowLaunchResponse.class, k) as DescribeWorkflowLaunchResponse
+        return get0(uri, towerEndpoint, authorization, DescribeWorkflowLaunchResponse.class, k, CacheMode.LONG) as DescribeWorkflowLaunchResponse
     }
 
     protected static URI workflowLaunchEndpoint(String towerEndpoint, String workflowId) {

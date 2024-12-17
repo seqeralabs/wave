@@ -69,8 +69,8 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
         def AWAIT = 150
         def encoder = new MoshiEncodeStrategy<AbstractTieredCache.Payload>() {}
         def store = applicationContext.getBean(RedisL2TieredCache)
-        def cache1 = new MyCache(store, Duration.ofMillis(AWAIT), 100)
-        def cache2 = new MyCache(store, Duration.ofMillis(AWAIT), 100)
+        def cache1 = new MyCache(store, Duration.ofMillis(AWAIT), 350)
+        def cache2 = new MyCache(store, Duration.ofMillis(AWAIT), 350)
         and:
         def k = UUID.randomUUID().toString()
         def value = new Entry('x','y')
