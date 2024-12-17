@@ -32,7 +32,6 @@ import io.seqera.wave.tower.client.UserInfoResponse
 import io.seqera.wave.tower.compute.ComputeEnv
 import io.seqera.wave.tower.compute.DescribeWorkflowLaunchResponse
 import io.seqera.wave.tower.compute.WorkflowLaunchResponse
-
 /**
  * Implements a {@link MoshiEncodeStrategy} for pairing client caches
  * 
@@ -42,12 +41,12 @@ import io.seqera.wave.tower.compute.WorkflowLaunchResponse
 class ClientEncoder {
 
     static MoshiEncodeStrategy instance() {
-        new MoshiEncodeStrategy<AbstractTieredCache.Payload>(factory()) {}
+        new MoshiEncodeStrategy<AbstractTieredCache.Entry>(factory()) {}
     }
 
     static JsonAdapter.Factory factory() {
         PolymorphicJsonAdapterFactory.of(MoshiExchange.class, "@type")
-                .withSubtype(AbstractTieredCache.Payload.class, AbstractTieredCache.Payload.simpleName)
+                .withSubtype(AbstractTieredCache.Entry.class, AbstractTieredCache.Entry.name)
                 // add all exchange classes used by the tower client
                 .withSubtype(ComputeEnv.class, ComputeEnv.simpleName)
                 .withSubtype(CredentialsDescription.class, CredentialsDescription.simpleName)

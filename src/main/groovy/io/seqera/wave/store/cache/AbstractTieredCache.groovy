@@ -36,7 +36,10 @@ import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.encoder.MoshiExchange
 import org.jetbrains.annotations.Nullable
 /**
- * Abstract implementation for tiered-cache
+ * Implement a tiered-cache mechanism using a local caffeine cache as 1st level access
+ * and a 2nd-level cache backed on Redis.
+ *
+ * This allow the use in distributed deployment. Note however strong consistently is not guaranteed.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -45,12 +48,12 @@ import org.jetbrains.annotations.Nullable
 abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCache<String,V> {
 
     @Canonical
-    static class Payload implements MoshiExchange {
+    static class Entry implements MoshiExchange {
         MoshiExchange value
         long expiresAt
     }
 
-    private EncodingStrategy<Payload> encoder
+    private EncodingStrategy<Entry> encoder
 
     // FIXME https://github.com/seqeralabs/wave/issues/747
     private AsyncCache<String,V> l1
@@ -155,7 +158,7 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
         if( raw == null )
             return null
 
-        final Payload payload = encoder.decode(raw)
+        final Entry payload = encoder.decode(raw)
         if( System.currentTimeMillis() > payload.expiresAt ) {
             log.trace "Cache '${name}' L2 exipired - key=$key => value=${payload.value}"
             return null
@@ -165,7 +168,7 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
 
     protected void l2Put(String key, V value) {
         if( l2 != null ) {
-            final raw = encoder.encode(new Payload(value, ttl.toMillis() + System.currentTimeMillis()))
+            final raw = encoder.encode(new Entry(value, ttl.toMillis() + System.currentTimeMillis()))
             l2.put(key0(key), raw, ttl)
         }
     }

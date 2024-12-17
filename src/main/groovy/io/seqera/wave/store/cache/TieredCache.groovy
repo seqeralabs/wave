@@ -24,8 +24,21 @@ package io.seqera.wave.store.cache
  */
 interface TieredCache<K,V> {
 
+    /**
+     * Retrieve the value associated with the specified key
+     *
+     * @param key The key of the value to be retrieved
+     * @return The value associated with the specified key, or {@code null} otherwise
+     */
     V get(K key)
 
+    /**
+     * Add a value in the cache with the specified key. If a value already exists is overridden
+     * with the new value.
+     *
+     * @param key The key of the value to be added. {@code null} is not allowed.
+     * @param value The value to be added in the cache for the specified key.  {@code null} is not allowed.
+     */
     void put(K key, V value)
 
 }

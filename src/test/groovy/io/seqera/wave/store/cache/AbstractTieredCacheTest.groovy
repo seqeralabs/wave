@@ -42,10 +42,10 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
     @Memoized
     static MoshiEncodeStrategy encoder() {
         JsonAdapter.Factory factory = PolymorphicJsonAdapterFactory.of(MoshiExchange.class, "@type")
-                .withSubtype(AbstractTieredCache.Payload.class, AbstractTieredCache.Payload.simpleName)
+                .withSubtype(AbstractTieredCache.Entry.class, AbstractTieredCache.Entry.name)
                 .withSubtype(Entry.class, Entry.simpleName)
 
-        return new MoshiEncodeStrategy<AbstractTieredCache.Payload>(factory) {}
+        return new MoshiEncodeStrategy<AbstractTieredCache.Entry>(factory) {}
     }
 
     static class MyCache extends AbstractTieredCache<Entry> {
