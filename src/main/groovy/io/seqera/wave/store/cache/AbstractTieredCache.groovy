@@ -62,7 +62,7 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
     private final Lock sync = new ReentrantLock()
 
     AbstractTieredCache(L2TieredCache<String,String> l2, MoshiEncodeStrategy encoder, Duration duration, long maxSize) {
-        log.info "Cache configuring '${getName()}' - prefix=${getPrefix()}; ttl=${duration}; max-size: ${maxSize}; l2=${l2}"
+        log.info "Cache '${getName()}' config - prefix=${getPrefix()}; ttl=${duration}; max-size: ${maxSize}; l2=${l2}"
         this.l2 = l2
         this.ttl = duration
         this.encoder = encoder
