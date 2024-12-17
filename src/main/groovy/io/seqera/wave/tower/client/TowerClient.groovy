@@ -69,12 +69,16 @@ class TowerClient {
     UserInfoResponse userInfo(String towerEndpoint, JwtAuth authorization) {
         final uri = userInfoEndpoint(towerEndpoint)
         final k = makeKey(uri, authorization.key, null, null)
+        // NOTE: it assumes the user info metadata does nor change over time
+        // and therefore the *long* expiration cached is used
         get0(uri, towerEndpoint, authorization, UserInfoResponse, k, CacheMode.LONG) as UserInfoResponse
     }
 
     ListCredentialsResponse listCredentials(String towerEndpoint, JwtAuth authorization, Long workspaceId, String workflowId) {
         final uri = listCredentialsEndpoint(towerEndpoint, workspaceId)
         final k = makeKey(uri, authorization.key, workspaceId, workflowId)
+        // NOTE: when the 'workflowId' is provided it assumes credentials will not change during
+        // the workflow execution and therefore the *long* expiration cached is used
         final mode = workflowId ? CacheMode.LONG : CacheMode.SHORT
         return get0(uri, towerEndpoint, authorization, ListCredentialsResponse, k, mode) as ListCredentialsResponse
     }
@@ -82,6 +86,8 @@ class TowerClient {
     GetCredentialsKeysResponse fetchEncryptedCredentials(String towerEndpoint, JwtAuth authorization, String credentialsId, String pairingId, Long workspaceId, String workflowId) {
         final uri = fetchCredentialsEndpoint(towerEndpoint, credentialsId, pairingId, workspaceId)
         final k = makeKey(uri, authorization.key, workspaceId, workflowId)
+        // NOTE: when the 'workflowId' is provided it assumes credentials will not change during
+        // the workflow execution and therefore the *long* expiration cached is used
         final mode = workflowId ? CacheMode.LONG : CacheMode.SHORT
         return get0(uri, towerEndpoint, authorization, GetCredentialsKeysResponse, k, mode) as GetCredentialsKeysResponse
     }
@@ -124,6 +130,8 @@ class TowerClient {
     DescribeWorkflowLaunchResponse describeWorkflowLaunch(String towerEndpoint, JwtAuth authorization, String workflowId) {
         final uri = workflowLaunchEndpoint(towerEndpoint,workflowId)
         final k = makeKey(uri, authorization.key, null, workflowId)
+        // NOTE: it assumes the workflow launch definition cannot change for the specified 'workflowId'
+        // and therefore the *long* expiration cached is used
         return get0(uri, towerEndpoint, authorization, DescribeWorkflowLaunchResponse.class, k, CacheMode.LONG) as DescribeWorkflowLaunchResponse
     }
 

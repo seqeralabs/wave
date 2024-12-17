@@ -51,7 +51,7 @@ abstract class MoshiEncodeStrategy<V> implements EncodingStrategy<V> {
 
     MoshiEncodeStrategy() {
         this.type = TypeHelper.getGenericType(this, 0)
-        init(null)
+        init()
     }
 
     MoshiEncodeStrategy(JsonAdapter.Factory customFactory) {
@@ -61,10 +61,10 @@ abstract class MoshiEncodeStrategy<V> implements EncodingStrategy<V> {
 
     MoshiEncodeStrategy(Type type) {
         this.type = type
-        init(null)
+        init()
     }
 
-    private void init(JsonAdapter.Factory customFactory) {
+    private void init(JsonAdapter.Factory customFactory=null) {
         final builder = new Moshi.Builder()
                 .add(new ByteArrayAdapter())
                 .add(new DateTimeAdapter())
