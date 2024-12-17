@@ -19,7 +19,7 @@
 package io.seqera.wave.encoder
 
 /**
- * Marker interface for Moshi encoder objects
+ * Marker interface for Moshi encoded exchange objects
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
