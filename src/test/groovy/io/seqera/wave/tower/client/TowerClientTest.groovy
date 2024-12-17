@@ -18,18 +18,30 @@
 
 package io.seqera.wave.tower.client
 
-import groovy.transform.CompileStatic
-import groovy.transform.EqualsAndHashCode
-import groovy.transform.ToString
-import io.seqera.wave.encoder.MoshiExchange
-import io.seqera.wave.tower.User
+import spock.lang.Specification
+
 /**
- * Model a Tower user-info response
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@EqualsAndHashCode
-@ToString(includePackage = false, includeNames = true)
-@CompileStatic
-class UserInfoResponse implements MoshiExchange {
-    User user
+class TowerClientTest extends Specification {
+
+    def 'should create consistent hash' () {
+        given:
+        def client = new TowerClient()
+       
+        expect:
+        client.makeKey('a') == '92cf27ac76c18d8e'
+        and:
+        client.makeKey('a') == client.makeKey('a')
+        and:
+        client.makeKey('a','b','c') == client.makeKey('a','b','c')
+        and:
+        client.makeKey('a','b',null) == client.makeKey('a','b',null)
+        and:
+        client.makeKey(new URI('http://foo.com')) == client.makeKey('http://foo.com')
+        and:
+        client.makeKey(100l) == client.makeKey('100')
+    }
+
 }

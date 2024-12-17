@@ -20,12 +20,15 @@ package io.seqera.wave.tower.client
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import io.seqera.wave.WaveDefault
+import io.seqera.wave.encoder.MoshiExchange
 
+@EqualsAndHashCode
 @CompileStatic
 @ToString(includePackage = false, includeNames = true)
-class CredentialsDescription {
+class CredentialsDescription implements MoshiExchange {
 
     String id
     String provider
