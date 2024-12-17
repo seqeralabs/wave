@@ -43,7 +43,10 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
         }
 
         @Override
-        protected String getPrefix() { return 'foo' }
+        protected String getPrefix() { return 'foo/v1' }
+
+        @Override
+        protected getName() { return 'foo' }
     }
 
     @Shared
