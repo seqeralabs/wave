@@ -38,12 +38,14 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
 
     static class MyCache extends AbstractTieredCache<Entry> {
 
+        static String PREFIX = 'foo/v1'
+
         MyCache(L2TieredCache<String,String> l2, Duration ttl, long maxSize) {
             super(l2, ttl, maxSize)
         }
 
         @Override
-        protected String getPrefix() { return 'foo/v1' }
+        protected String getPrefix() { return PREFIX }
 
         @Override
         protected getName() { return 'foo' }
@@ -69,8 +71,8 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
         def AWAIT = 150
         def encoder = new MoshiEncodeStrategy<AbstractTieredCache.Payload>() {}
         def store = applicationContext.getBean(RedisL2TieredCache)
-        def cache1 = new MyCache(store, Duration.ofMillis(AWAIT), 350)
-        def cache2 = new MyCache(store, Duration.ofMillis(AWAIT), 350)
+        def cache1 = new MyCache(store, Duration.ofMillis(AWAIT), 150)
+        def cache2 = new MyCache(store, Duration.ofMillis(AWAIT), 150)
         and:
         def k = UUID.randomUUID().toString()
         def value = new Entry('x','y')
@@ -86,7 +88,7 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
         r1 == value
         
         when:
-        Entry r2 = encoder.decode(store.get('foo:'+k)).value as Entry
+        Entry r2 = encoder.decode(store.get(MyCache.PREFIX+':'+k))?.value as Entry
         then:
         r2 == value
 
