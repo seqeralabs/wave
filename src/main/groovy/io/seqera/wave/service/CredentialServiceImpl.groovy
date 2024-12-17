@@ -60,7 +60,7 @@ class CredentialServiceImpl implements CredentialsService {
         if (pairing.isExpired())
             log.debug("Exchange key registered for service ${PairingService.TOWER_SERVICE} at endpoint: ${identity.towerEndpoint} used after expiration, should be renewed soon")
 
-        final all = towerClient.listCredentials(identity.towerEndpoint, JwtAuth.of(identity), identity.workspaceId, identity.workflowId).get().credentials
+        final all = towerClient.listCredentials(identity.towerEndpoint, JwtAuth.of(identity), identity.workspaceId, identity.workflowId).credentials
 
         if (!all) {
             log.debug "No credentials found for userId=$identity.userId; workspaceId=$identity.workspaceId; endpoint=$identity.towerEndpoint"
@@ -92,7 +92,7 @@ class CredentialServiceImpl implements CredentialsService {
         // log for debugging purposes
         log.debug "Credentials matching criteria registryName=$registryName; userId=$identity.userId; workspaceId=$identity.workspaceId; endpoint=$identity.towerEndpoint => $creds"
         // now fetch the encrypted key
-        final encryptedCredentials = towerClient.fetchEncryptedCredentials(identity.towerEndpoint, JwtAuth.of(identity), creds.id, pairing.pairingId, identity.workspaceId, identity.workflowId).get()
+        final encryptedCredentials = towerClient.fetchEncryptedCredentials(identity.towerEndpoint, JwtAuth.of(identity), creds.id, pairing.pairingId, identity.workspaceId, identity.workflowId)
         final privateKey = pairing.privateKey
         final credentials = decryptCredentials(privateKey, encryptedCredentials.keys)
         return parsePayload(credentials)
@@ -112,7 +112,7 @@ class CredentialServiceImpl implements CredentialsService {
         final response = towerClient.describeWorkflowLaunch(identity.towerEndpoint, JwtAuth.of(identity), identity.workflowId)
         if( !response )
             return null
-        final computeEnv = response.get()?.launch?.computeEnv
+        final computeEnv = response?.launch?.computeEnv
         if( !computeEnv )
             return null
         if( computeEnv.platform != 'aws-batch' )

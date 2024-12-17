@@ -131,10 +131,9 @@ class TowerClientHttpTest extends Specification{
 
     def setup() {
         jwtAuthStore.clear()
-        cacheManager.getCache("cache-tower-client-short").invalidateAll()
-        cacheManager.getCache("cache-tower-client-long").invalidateAll()
         cacheManager.getCache("cache-registry-proxy").invalidateAll()
         towerConnector.refreshCache0().invalidateAll()
+        towerClient.invalidateCache()
     }
 
     private String getHostName() {
@@ -156,7 +155,7 @@ class TowerClientHttpTest extends Specification{
         given:
         def auth = JwtAuth.of(hostName, 'token')
         when: 'requesting user info with a valid token'
-        def resp = towerClient.userInfo(hostName,auth).get()
+        def resp = towerClient.userInfo(hostName,auth)
         then:
         resp.user.id == 1
     }
@@ -165,7 +164,7 @@ class TowerClientHttpTest extends Specification{
         given:
         def auth = JwtAuth.of(hostName, 'refresh', 'refresh')
         when:
-        def resp = towerClient.userInfo(hostName, auth).get()
+        def resp = towerClient.userInfo(hostName, auth)
         then:
         resp.user.id == 1
     }
@@ -194,7 +193,7 @@ class TowerClientHttpTest extends Specification{
         given:
         def auth = JwtAuth.of(hostName, 'token')
         when: 'requesting credentials'
-        def resp = towerClient.listCredentials(hostName, auth, null, null).get()
+        def resp = towerClient.listCredentials(hostName, auth, null, null)
         then:
         resp.credentials.size() == 2
         resp.credentials[0].id == 'id1'
@@ -205,7 +204,7 @@ class TowerClientHttpTest extends Specification{
         resp.credentials[1].registry == null
 
         when: 'requesting credentials in a workspace that exists'
-        resp = towerClient.listCredentials(hostName, auth, 1, null).get()
+        resp = towerClient.listCredentials(hostName, auth, 1, null)
         then:
         resp.credentials.size() == 1
         resp.credentials[0].id == 'id0'
@@ -217,7 +216,7 @@ class TowerClientHttpTest extends Specification{
         given:
         def auth = JwtAuth.of(hostName, 'refresh', 'refresh')
         when:
-        def resp = towerClient.listCredentials(hostName, auth, null, null).get()
+        def resp = towerClient.listCredentials(hostName, auth, null, null)
         then:
         resp.credentials.size() == 2
         resp.credentials[0].id == 'id1'
@@ -232,7 +231,7 @@ class TowerClientHttpTest extends Specification{
         given:
         def auth = JwtAuth.of(hostName, 'foo')
         when:
-        towerClient.listCredentials(hostName, auth, null, null).get()
+        towerClient.listCredentials(hostName, auth, null, null)
         then:
         def e = thrown(ExecutionException)
         (e.cause as HttpResponseException).statusCode() == HttpStatus.UNAUTHORIZED
@@ -242,7 +241,7 @@ class TowerClientHttpTest extends Specification{
         given:
         def auth = JwtAuth.of(hostName, 'refresh', 'unrefreshable')
         when:
-        towerClient.listCredentials(hostName, auth, null, null).get()
+        towerClient.listCredentials(hostName, auth, null, null)
         then:
         def e = thrown(ExecutionException)
         (e.cause as HttpResponseException).statusCode() == HttpStatus.BAD_REQUEST
@@ -252,7 +251,7 @@ class TowerClientHttpTest extends Specification{
         given:
         def auth = JwtAuth.of(hostName, 'token')
         when:
-        def resp = towerClient.fetchEncryptedCredentials(hostName, auth, '1', '1', null, null).get()
+        def resp = towerClient.fetchEncryptedCredentials(hostName, auth, '1', '1', null, null)
         then:
         resp.keys == 'keys'
     }
@@ -261,7 +260,7 @@ class TowerClientHttpTest extends Specification{
         given:
         def auth = JwtAuth.of(hostName, 'refresh', 'refresh')
         when:
-        def resp = towerClient.fetchEncryptedCredentials(hostName, auth, '1', '1', null, null).get()
+        def resp = towerClient.fetchEncryptedCredentials(hostName, auth, '1', '1', null, null)
         then:
         resp.keys == 'keys'
     }
@@ -270,7 +269,7 @@ class TowerClientHttpTest extends Specification{
         given:
         def auth = JwtAuth.of(hostName, 'foo')
         when:
-        towerClient.fetchEncryptedCredentials(hostName, auth, '1', '1',null,null).get()
+        towerClient.fetchEncryptedCredentials(hostName, auth, '1', '1',null,null)
         then:
         def e = thrown(ExecutionException)
         (e.cause as HttpResponseException).statusCode() == HttpStatus.UNAUTHORIZED
@@ -280,7 +279,7 @@ class TowerClientHttpTest extends Specification{
         given:
         def auth = JwtAuth.of(hostName, 'refresh', 'unrefreshable')
         when:
-        towerClient.fetchEncryptedCredentials(hostName, auth, '1', '1', null, null).get()
+        towerClient.fetchEncryptedCredentials(hostName, auth, '1', '1', null, null)
         then:
         def e = thrown(ExecutionException)
         (e.cause as HttpResponseException).statusCode() == HttpStatus.BAD_REQUEST
