@@ -19,11 +19,14 @@
 package io.seqera.wave.tower.client
 
 import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
+import io.seqera.wave.encoder.MoshiExchange
 
+@EqualsAndHashCode
 @ToString(includePackage = false, includeNames = true)
 @CompileStatic
-class ListCredentialsResponse {
+class ListCredentialsResponse implements MoshiExchange {
 
     List<CredentialsDescription> credentials
 

@@ -19,7 +19,9 @@
 package io.seqera.wave.tower.client
 
 import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
+import io.seqera.wave.encoder.MoshiExchange
 
 /**
  * Models an encrypted credentials keys response
@@ -27,8 +29,9 @@ import groovy.transform.ToString
  * @author Andrea Tortorella <andrea.tortorella@seqera.io>
  */
 @ToString(includePackage = false, includeNames = true)
+@EqualsAndHashCode
 @CompileStatic
-class GetCredentialsKeysResponse {
+class GetCredentialsKeysResponse implements MoshiExchange {
 
     /**
      * Secret keys associated with the credentials

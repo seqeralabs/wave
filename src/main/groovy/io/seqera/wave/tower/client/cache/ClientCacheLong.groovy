@@ -41,7 +41,7 @@ class ClientCacheLong extends AbstractTieredCache {
                     @Value('${wave.pairing.cache-long.duration:24h}') Duration duration,
                     @Value('${wave.pairing.cache-long.max-size:10000}') int maxSize)
     {
-        super(l2, duration, maxSize)
+        super(l2, ClientEncoder.instance(), duration, maxSize)
     }
 
     @Override

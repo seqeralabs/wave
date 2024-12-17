@@ -18,22 +18,34 @@
 
 package io.seqera.wave.store.cache
 
-import spock.lang.Shared
-import spock.lang.Specification
-
 import java.time.Duration
 
+import com.squareup.moshi.JsonAdapter
+import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import groovy.transform.Canonical
+import groovy.transform.Memoized
 import io.micronaut.context.ApplicationContext
 import io.seqera.wave.encoder.MoshiEncodeStrategy
+import io.seqera.wave.encoder.MoshiExchange
 import io.seqera.wave.test.RedisTestContainer
+import spock.lang.Shared
+import spock.lang.Specification
 
 class AbstractTieredCacheTest extends Specification implements RedisTestContainer {
 
     @Canonical
-    static class Entry {
+    static class Entry implements MoshiExchange {
         String foo
         String bar
+    }
+
+    @Memoized
+    static MoshiEncodeStrategy encoder() {
+        JsonAdapter.Factory factory = PolymorphicJsonAdapterFactory.of(MoshiExchange.class, "@type")
+                .withSubtype(AbstractTieredCache.Payload.class, AbstractTieredCache.Payload.simpleName)
+                .withSubtype(Entry.class, Entry.simpleName)
+
+        return new MoshiEncodeStrategy<AbstractTieredCache.Payload>(factory) {}
     }
 
     static class MyCache extends AbstractTieredCache<Entry> {
@@ -41,7 +53,7 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
         static String PREFIX = 'foo/v1'
 
         MyCache(L2TieredCache<String,String> l2, Duration ttl, long maxSize) {
-            super(l2, ttl, maxSize)
+            super(l2, encoder(), ttl, maxSize)
         }
 
         @Override
@@ -69,8 +81,8 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
     def 'should get and put a key-value pair' () {
         given:
         def AWAIT = 150
-        def encoder = new MoshiEncodeStrategy<AbstractTieredCache.Payload>() {}
         def store = applicationContext.getBean(RedisL2TieredCache)
+        def encoder = encoder()
         def cache1 = new MyCache(store, Duration.ofMillis(AWAIT), 150)
         def cache2 = new MyCache(store, Duration.ofMillis(AWAIT), 150)
         and:

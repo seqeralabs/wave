@@ -19,13 +19,19 @@
 package io.seqera.wave.tower.compute
 
 import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
+import groovy.transform.ToString
+import io.seqera.wave.encoder.MoshiExchange
+
 /**
  * Model the response of workflow launch describe request
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @CompileStatic
-class DescribeWorkflowLaunchResponse {
+@EqualsAndHashCode
+@ToString(includePackage = false, includeNames = true)
+class DescribeWorkflowLaunchResponse implements MoshiExchange {
 
     WorkflowLaunchResponse launch
 

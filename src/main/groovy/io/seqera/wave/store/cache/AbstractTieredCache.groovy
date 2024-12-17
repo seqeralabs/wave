@@ -33,6 +33,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.encoder.EncodingStrategy
 import io.seqera.wave.encoder.MoshiEncodeStrategy
+import io.seqera.wave.encoder.MoshiExchange
 import org.jetbrains.annotations.Nullable
 /**
  * Abstract implementation for tiered-cache
@@ -41,11 +42,11 @@ import org.jetbrains.annotations.Nullable
  */
 @Slf4j
 @CompileStatic
-abstract class AbstractTieredCache<V> implements TieredCache<String,V> {
+abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCache<String,V> {
 
     @Canonical
-    static class Payload {
-        Object value
+    static class Payload implements MoshiExchange {
+        MoshiExchange value
         long expiresAt
     }
 
@@ -60,11 +61,11 @@ abstract class AbstractTieredCache<V> implements TieredCache<String,V> {
 
     private final Lock sync = new ReentrantLock()
 
-    AbstractTieredCache(L2TieredCache<String,String> l2, Duration duration, long maxSize) {
+    AbstractTieredCache(L2TieredCache<String,String> l2, MoshiEncodeStrategy encoder, Duration duration, long maxSize) {
         log.info "Cache configuring '${getName()}' - prefix=${getPrefix()}; ttl=${duration}; max-size: ${maxSize}; l2=${l2}"
         this.l2 = l2
         this.ttl = duration
-        this.encoder = new MoshiEncodeStrategy<Payload>() {}
+        this.encoder = encoder
         this.l1 = Caffeine.newBuilder()
                 .expireAfterWrite(duration.toMillis(), TimeUnit.MILLISECONDS)
                 .maximumSize(maxSize)
