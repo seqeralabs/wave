@@ -51,6 +51,7 @@ abstract class AbstractTieredCache<V> implements TieredCache<String,V> {
 
     private EncodingStrategy<Payload> encoder
 
+    // FIXME https://github.com/seqeralabs/wave/issues/747
     private AsyncCache<String,V> l1
 
     private final Duration ttl
@@ -59,13 +60,13 @@ abstract class AbstractTieredCache<V> implements TieredCache<String,V> {
 
     private final Lock sync = new ReentrantLock()
 
-    AbstractTieredCache(L2TieredCache<String,String> l2, Duration ttl, long maxSize) {
-        log.info "Tiered-cache configuring '${getName()}' - prefix=${getPrefix()}; ttl=${ttl}; max-size: ${maxSize}; l2=${l2}"
+    AbstractTieredCache(L2TieredCache<String,String> l2, Duration duration, long maxSize) {
+        log.info "Tiered-cache configuring '${getName()}' - prefix=${getPrefix()}; ttl=${duration}; max-size: ${maxSize}; l2=${l2}"
         this.l2 = l2
-        this.ttl = ttl
+        this.ttl = duration
         this.encoder = new MoshiEncodeStrategy<Payload>() {}
         this.l1 = Caffeine.newBuilder()
-                .expireAfterWrite(ttl.toMillis(), TimeUnit.MILLISECONDS)
+                .expireAfterWrite(duration.toMillis(), TimeUnit.MILLISECONDS)
                 .maximumSize(maxSize)
                 .removalListener(removalListener0())
                 .buildAsync()

@@ -6,12 +6,6 @@ micronaut:
     # IMPORTANT: use `expire-after-write` strategy to guarantee cached entries are not retained more than the declared period.
     # Using `expire-after-read` can cause an entry to be retained in the cache more than expected if it is hit continuously
     # with a frequency shorter than the declared cache period.
-    cache-tower-client-short:
-      expire-after-write: 60s
-      record-stats: true
-    cache-tower-client-long:
-      expire-after-write: 24h
-      record-stats: true
     cache-registry-proxy:
       expire-after-write: 20s
       record-stats: true
