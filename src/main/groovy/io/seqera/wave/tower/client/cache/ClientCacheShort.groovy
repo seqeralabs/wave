@@ -21,6 +21,7 @@ package io.seqera.wave.tower.client.cache
 import java.time.Duration
 
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.store.cache.AbstractTieredCache
@@ -28,17 +29,24 @@ import io.seqera.wave.store.cache.L2TieredCache
 import jakarta.inject.Singleton
 
 /**
+ * Implement a client cache having short-term expiration policy
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @Singleton
 @CompileStatic
 class ClientCacheShort extends AbstractTieredCache {
     ClientCacheShort(@Nullable L2TieredCache l2,
-                     @Value('${wave.pairing.client.short.ttl:60s}') Duration ttl,
-                     @Value('${wave.pairing.client.short.max-size:10000}') int maxSize)
+                     @Value('${wave.pairing.cache-short.duration:60s}') Duration duration,
+                     @Value('${wave.pairing.cache-short.max-size:10000}') int maxSize)
     {
-        super(l2, ttl, maxSize)
+        super(l2, duration, maxSize)
+    }
+
+    @Override
+    protected getName() {
+        return 'pairing-cache-short'
     }
 
     @Override

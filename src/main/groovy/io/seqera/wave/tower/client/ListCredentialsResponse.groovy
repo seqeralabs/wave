@@ -19,7 +19,9 @@
 package io.seqera.wave.tower.client
 
 import groovy.transform.CompileStatic
+import groovy.transform.ToString
 
+@ToString(includePackage = false, includeNames = true)
 @CompileStatic
 class ListCredentialsResponse {
 

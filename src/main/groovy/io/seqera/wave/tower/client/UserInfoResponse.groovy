@@ -19,12 +19,13 @@
 package io.seqera.wave.tower.client
 
 import groovy.transform.CompileStatic
+import groovy.transform.ToString
 import io.seqera.wave.tower.User
-
 /**
  * Model a Tower user-info response
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@ToString(includePackage = false, includeNames = true)
 @CompileStatic
 class UserInfoResponse {
     User user

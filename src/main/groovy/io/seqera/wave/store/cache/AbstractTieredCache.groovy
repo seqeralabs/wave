@@ -26,15 +26,20 @@ import java.util.function.Function
 
 import com.github.benmanes.caffeine.cache.AsyncCache
 import com.github.benmanes.caffeine.cache.Caffeine
+import com.github.benmanes.caffeine.cache.RemovalCause
+import com.github.benmanes.caffeine.cache.RemovalListener
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.seqera.wave.encoder.EncodingStrategy
 import io.seqera.wave.encoder.MoshiEncodeStrategy
+import org.jetbrains.annotations.Nullable
 /**
  * Abstract implementation for tiered-cache
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @CompileStatic
 abstract class AbstractTieredCache<V> implements TieredCache<String,V> {
 
@@ -55,16 +60,29 @@ abstract class AbstractTieredCache<V> implements TieredCache<String,V> {
     private final Lock sync = new ReentrantLock()
 
     AbstractTieredCache(L2TieredCache<String,String> l2, Duration ttl, long maxSize) {
+        log.info "Tiered-cache configuring '${getName()}' - prefix=${getPrefix()}; ttl=${ttl}; max-size: ${maxSize}; l2=${l2}"
         this.l2 = l2
         this.ttl = ttl
         this.encoder = new MoshiEncodeStrategy<Payload>() {}
         this.l1 = Caffeine.newBuilder()
                 .expireAfterWrite(ttl.toMillis(), TimeUnit.MILLISECONDS)
                 .maximumSize(maxSize)
+                .removalListener(removalListener0())
                 .buildAsync()
     }
 
+    abstract protected getName()
+
     abstract protected String getPrefix()
+
+    private RemovalListener removalListener0() {
+        new RemovalListener() {
+            @Override
+            void onRemoval(@Nullable key, @Nullable value, RemovalCause cause) {
+                log.trace "Tiered-cache '${name}' removing key=$key; value=$value; cause=$cause"
+            }
+        }
+    }
 
     @Override
     V get(String key) {
@@ -72,9 +90,11 @@ abstract class AbstractTieredCache<V> implements TieredCache<String,V> {
     }
 
     V getOrCompute(String key, Function<String,V> loader) {
+        log.trace "Tiered-cache '${name}' checking key=$key"
         // Try L1 cache first
         V value = l1.synchronous().getIfPresent(key)
         if (value != null) {
+            log.trace "Cache L1 hit (a) - key=$key => value=$value"
             return value
         }
 
@@ -82,18 +102,22 @@ abstract class AbstractTieredCache<V> implements TieredCache<String,V> {
         try {
             value = l1.synchronous().getIfPresent(key)
             if (value != null) {
+                log.trace "Tiered-cache '${name}' L1 hit (b) - key=$key => value=$value"
                 return value
             }
 
             // Fallback to L2 cache
             value = l2Get(key)
             if (value != null) {
+                log.trace "Tiered-cache '${name}' L2 hit - key=$key => value=$value"
                 // Rehydrate L1 cache
                 l1.synchronous().put(key, value)
+                return value
             }
 
             // still not value found, use loader function to fetch the value
             if( value==null && loader!=null ) {
+                log.trace "Tiered-cache '${name}' invoking loader - key=$key"
                 value = loader.apply(key)
                 if( value!=null ) {
                     l1.synchronous().put(key,value)
@@ -101,6 +125,7 @@ abstract class AbstractTieredCache<V> implements TieredCache<String,V> {
                 }
             }
 
+            log.trace "Tiered-cache '${name}' missing value - key=$key => value=${value}"
             // finally return the value
             return value
         }
@@ -111,8 +136,9 @@ abstract class AbstractTieredCache<V> implements TieredCache<String,V> {
 
     @Override
     void put(String key, V value) {
-        assert key!=null, "Cache key argument cannot be null"
-        assert value!=null, "Cache value argument cannot be null"
+        assert key!=null, "Tiered-cache key argument cannot be null"
+        assert value!=null, "Tiered-cache value argument cannot be null"
+        log.trace "Tiered-cache '${name}' putting - key=$key; value=${value}"
         l1.synchronous().put(key, value)
         l2Put(key, value)
     }
@@ -128,9 +154,11 @@ abstract class AbstractTieredCache<V> implements TieredCache<String,V> {
             return null
 
         final Payload payload = encoder.decode(raw)
-        return System.currentTimeMillis() <= payload.expiresAt
-                ? (V) payload.value
-                : null
+        if( System.currentTimeMillis() > payload.expiresAt ) {
+            log.trace "Tiered-cache '${name}' L2 exipired - key=$key => value=${payload.value}"
+            return null
+        }
+        return (V) payload.value
     }
 
     protected void l2Put(String key, V value) {
@@ -143,4 +171,5 @@ abstract class AbstractTieredCache<V> implements TieredCache<String,V> {
     void invalidateAll() {
         l1.synchronous().invalidateAll()
     }
+
 }

@@ -19,12 +19,14 @@
 package io.seqera.wave.tower.client
 
 import groovy.transform.CompileStatic
+import groovy.transform.ToString
 
 /**
  * Models an encrypted credentials keys response
  *
  * @author Andrea Tortorella <andrea.tortorella@seqera.io>
  */
+@ToString(includePackage = false, includeNames = true)
 @CompileStatic
 class GetCredentialsKeysResponse {
 

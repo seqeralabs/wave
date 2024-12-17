@@ -22,8 +22,10 @@ import java.util.concurrent.CompletableFuture
 
 import com.google.common.hash.Hashing
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.tower.auth.JwtAuth
+import io.seqera.wave.tower.client.cache.ClientCacheLong
 import io.seqera.wave.tower.client.cache.ClientCacheShort
 import io.seqera.wave.tower.client.connector.TowerConnector
 import io.seqera.wave.tower.compute.DescribeWorkflowLaunchResponse
@@ -36,6 +38,7 @@ import org.apache.commons.lang3.StringUtils
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  * @author Jordi Deu-Pons <jordi@seqera.io>
  */
+@Slf4j
 @Singleton
 @CompileStatic
 class TowerClient {
@@ -47,7 +50,7 @@ class TowerClient {
     private ClientCacheShort cacheShort
 
     @Inject
-    private ClientCacheShort cacheLong
+    private ClientCacheLong cacheLong
 
     protected <T> CompletableFuture<T> getAsync(URI uri, String endpoint, @Nullable JwtAuth authorization, Class<T> type) {
         assert uri, "Missing uri argument"
@@ -55,12 +58,14 @@ class TowerClient {
         return connector.sendAsync(endpoint, uri, authorization, type)
     }
 
-    protected Object getCacheShort(URI uri, String endpoint, @Nullable JwtAuth authorization, Class type, String cacheKey) {
-        return cacheShort.getOrCompute(cacheKey, (k)-> getAsync(uri, endpoint, authorization, type).get())
+    protected Object getCacheShort(URI uri, String endpoint, @Nullable JwtAuth auth, Class type, String cacheKey) {
+        log.trace "Tower client cache short - key=$cacheKey; uri=$uri; auth=${auth}"
+        return cacheShort.getOrCompute(cacheKey, (k)-> getAsync(uri, endpoint, auth, type).get())
     }
 
-    protected Object getCacheLong(URI uri, String endpoint, @Nullable JwtAuth authorization, Class type, String cacheKey) {
-        return cacheLong.getOrCompute(cacheKey, (k)-> getAsync(uri, endpoint, authorization, type).get())
+    protected Object getCacheLong(URI uri, String endpoint, @Nullable JwtAuth auth, Class type, String cacheKey) {
+        log.trace "Tower client cache long - key=$cacheKey; uri=$uri; auth=${auth}"
+        return cacheLong.getOrCompute(cacheKey, (k)-> getAsync(uri, endpoint, auth, type).get())
     }
 
     UserInfoResponse userInfo(String towerEndpoint, JwtAuth authorization) {
