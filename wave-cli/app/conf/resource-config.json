@@ -27,7 +27,11 @@
   }, {
     "pattern":"\\Qio/seqera/wave/cli/usage-examples.txt\\E"
   }, {
+    "pattern":"\\Qlogback-test.scmo\\E"
+  }, {
     "pattern":"\\Qlogback-test.xml\\E"
+  }, {
+    "pattern":"\\Qlogback.scmo\\E"
   }, {
     "pattern":"\\Qlogback.xml\\E"
   }, {
