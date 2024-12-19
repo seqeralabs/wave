@@ -25,6 +25,7 @@ import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.trace.TraceElapsedTime
 import jakarta.inject.Singleton
 /**
  * Basic persistence for dev purpose
@@ -33,6 +34,7 @@ import jakarta.inject.Singleton
  */
 @Singleton
 @CompileStatic
+@TraceElapsedTime(thresholdMillis = 100)
 class LocalPersistenceService implements PersistenceService {
 
     private Map<String,WaveBuildRecord> buildStore = new HashMap<>()
