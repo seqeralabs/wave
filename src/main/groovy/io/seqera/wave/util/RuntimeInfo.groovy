@@ -18,7 +18,11 @@
 
 package io.seqera.wave.util
 
+import java.lang.management.ManagementFactory
+
+import com.sun.management.OperatingSystemMXBean
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.micronaut.core.version.VersionUtils;
 
 /**
@@ -26,6 +30,7 @@ import io.micronaut.core.version.VersionUtils;
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @CompileStatic
 class RuntimeInfo {
 
@@ -44,7 +49,57 @@ class RuntimeInfo {
         result << "Micronaut: ${getMicronautVersion()}" << newline
         result << "Runtime: Groovy ${groovyVersion} on ${jvmName} ${jvmVersion}" << newline
         result << "Encoding: ${fileEncoding} (${fileNameEncoding})" << newline
+        final os = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()
+        result << "Process: ${ManagementFactory.getRuntimeMXBean().getName()}" << newline
+        result << "CPUs: ${Runtime.runtime.availableProcessors()} - Mem: ${totMem(os)} (free: ${freeMem(os)}) - Swap: ${totSwap(os)} (free: ${freeSwap(os)})" << newline
+
         return result.toString()
     }
 
+    static private String totMem(OperatingSystemMXBean os) {
+        try {
+            return formatBytes(os.totalMemorySize)
+        }
+        catch (Throwable t) {
+            log.debug "Unable to fetch totalMemorySize - ${t.message ?: t}"
+            return '-'
+        }
+    }
+
+    static private String freeMem(OperatingSystemMXBean os) {
+        try {
+            return formatBytes(os.freeMemorySize)
+        }
+        catch (Throwable t) {
+            log.debug "Unable to fetch freeMemorySize - ${t.message ?: t}"
+            return '-'
+        }
+    }
+
+    static private String totSwap(OperatingSystemMXBean os) {
+        try {
+            formatBytes(os.totalSwapSpaceSize)
+        }
+        catch (Throwable t) {
+            log.debug "Unable to fetch totalSwapSpaceSize - ${t.message ?: t}"
+            return '-'
+        }
+    }
+
+    static private String freeSwap(OperatingSystemMXBean os) {
+        try {
+            return formatBytes(os.freeSwapSpaceSize)
+        }
+        catch (Throwable t) {
+            log.debug "Unable to fetch freeSwapSpaceSize - ${t.message ?: t}"
+            return '-'
+        }
+    }
+
+    static private String formatBytes(long bytes) {
+        if (bytes < 1024) return bytes + " B";
+        int exp = (int) (Math.log(bytes) / Math.log(1024));
+        String units = "KMGTPE"; // Kilobyte, Megabyte, Gigabyte, etc.
+        return String.format("%.2f %sB", bytes / Math.pow(1024, exp), units.charAt(exp - 1));
+    }
 }

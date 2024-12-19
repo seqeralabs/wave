@@ -20,28 +20,39 @@ package io.seqera.wave.tower.client
 
 import java.util.concurrent.CompletableFuture
 
+import com.google.common.hash.Hashing
 import groovy.transform.CompileStatic
-import io.micronaut.cache.annotation.Cacheable
+import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.tower.auth.JwtAuth
+import io.seqera.wave.tower.client.cache.ClientCacheLong
+import io.seqera.wave.tower.client.cache.ClientCacheShort
 import io.seqera.wave.tower.client.connector.TowerConnector
 import io.seqera.wave.tower.compute.DescribeWorkflowLaunchResponse
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import org.apache.commons.lang3.StringUtils
-
 /**
  * Implement a client to interact with Tower services
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  * @author Jordi Deu-Pons <jordi@seqera.io>
  */
+@Slf4j
 @Singleton
 @CompileStatic
 class TowerClient {
 
+    private enum CacheMode { SHORT, LONG }
+
     @Inject
     private TowerConnector connector
+
+    @Inject
+    private ClientCacheShort cacheShort
+
+    @Inject
+    private ClientCacheLong cacheLong
 
     protected <T> CompletableFuture<T> getAsync(URI uri, String endpoint, @Nullable JwtAuth authorization, Class<T> type) {
         assert uri, "Missing uri argument"
@@ -49,28 +60,36 @@ class TowerClient {
         return connector.sendAsync(endpoint, uri, authorization, type)
     }
 
-    @Cacheable(value = 'cache-tower-client', atomic = true)
-    CompletableFuture<ServiceInfoResponse> serviceInfo(String towerEndpoint) {
-        final uri = serviceInfoEndpoint(towerEndpoint)
-        return getAsync(uri, towerEndpoint, null, ServiceInfoResponse)
+    protected Object get0(URI uri, String endpoint, @Nullable JwtAuth auth, Class type, String cacheKey, CacheMode mode) {
+        log.trace "Tower client cache ${mode} - key=$cacheKey; uri=$uri; auth=${auth}"
+        final cache = mode==CacheMode.SHORT ? cacheShort: cacheLong
+        return cache.getOrCompute(cacheKey, (k)-> getAsync(uri, endpoint, auth, type).get())
     }
 
-    @Cacheable(value = 'cache-tower-client', atomic = true)
-    CompletableFuture<UserInfoResponse> userInfo(String towerEndpoint, JwtAuth authorization) {
+    UserInfoResponse userInfo(String towerEndpoint, JwtAuth authorization) {
         final uri = userInfoEndpoint(towerEndpoint)
-        return getAsync(uri, towerEndpoint, authorization, UserInfoResponse)
+        final k = makeKey(uri, authorization.key, null, null)
+        // NOTE: it assumes the user info metadata does nor change over time
+        // and therefore the *long* expiration cached is used
+        get0(uri, towerEndpoint, authorization, UserInfoResponse, k, CacheMode.LONG) as UserInfoResponse
     }
 
-    @Cacheable(value = 'cache-tower-client', atomic = true)
-    CompletableFuture<ListCredentialsResponse> listCredentials(String towerEndpoint, JwtAuth authorization, Long workspaceId) {
+    ListCredentialsResponse listCredentials(String towerEndpoint, JwtAuth authorization, Long workspaceId, String workflowId) {
         final uri = listCredentialsEndpoint(towerEndpoint, workspaceId)
-        return getAsync(uri, towerEndpoint, authorization, ListCredentialsResponse)
+        final k = makeKey(uri, authorization.key, workspaceId, workflowId)
+        // NOTE: when the 'workflowId' is provided it assumes credentials will not change during
+        // the workflow execution and therefore the *long* expiration cached is used
+        final mode = workflowId ? CacheMode.LONG : CacheMode.SHORT
+        return get0(uri, towerEndpoint, authorization, ListCredentialsResponse, k, mode) as ListCredentialsResponse
     }
 
-    @Cacheable(value = 'cache-tower-client', atomic = true)
-    CompletableFuture<GetCredentialsKeysResponse> fetchEncryptedCredentials(String towerEndpoint, JwtAuth authorization, String credentialsId, String pairingId, Long workspaceId) {
+    GetCredentialsKeysResponse fetchEncryptedCredentials(String towerEndpoint, JwtAuth authorization, String credentialsId, String pairingId, Long workspaceId, String workflowId) {
         final uri = fetchCredentialsEndpoint(towerEndpoint, credentialsId, pairingId, workspaceId)
-        return getAsync(uri, towerEndpoint, authorization, GetCredentialsKeysResponse)
+        final k = makeKey(uri, authorization.key, workspaceId, workflowId)
+        // NOTE: when the 'workflowId' is provided it assumes credentials will not change during
+        // the workflow execution and therefore the *long* expiration cached is used
+        final mode = workflowId ? CacheMode.LONG : CacheMode.SHORT
+        return get0(uri, towerEndpoint, authorization, GetCredentialsKeysResponse, k, mode) as GetCredentialsKeysResponse
     }
 
     protected static URI fetchCredentialsEndpoint(String towerEndpoint, String credentialsId, String pairingId, Long workspaceId) {
@@ -99,10 +118,6 @@ class TowerClient {
         return URI.create("${checkEndpoint(towerEndpoint)}/user-info")
     }
 
-    protected static URI serviceInfoEndpoint(String towerEndpoint) {
-        return URI.create("${checkEndpoint(towerEndpoint)}/service-info")
-    }
-
     static String checkEndpoint(String endpoint) {
         if( !endpoint )
             throw new IllegalArgumentException("Missing endpoint argument")
@@ -112,14 +127,31 @@ class TowerClient {
         StringUtils.removeEnd(endpoint, "/")
     }
 
-    @Cacheable(value = 'cache-tower-client', atomic = true)
-    CompletableFuture<DescribeWorkflowLaunchResponse> describeWorkflowLaunch(String towerEndpoint, JwtAuth authorization, String workflowId) {
+    DescribeWorkflowLaunchResponse describeWorkflowLaunch(String towerEndpoint, JwtAuth authorization, String workflowId) {
         final uri = workflowLaunchEndpoint(towerEndpoint,workflowId)
-        return getAsync(uri, towerEndpoint, authorization, DescribeWorkflowLaunchResponse.class)
+        final k = makeKey(uri, authorization.key, null, workflowId)
+        // NOTE: it assumes the workflow launch definition cannot change for the specified 'workflowId'
+        // and therefore the *long* expiration cached is used
+        return get0(uri, towerEndpoint, authorization, DescribeWorkflowLaunchResponse.class, k, CacheMode.LONG) as DescribeWorkflowLaunchResponse
     }
 
     protected static URI workflowLaunchEndpoint(String towerEndpoint, String workflowId) {
         return URI.create("${checkEndpoint(towerEndpoint)}/workflow/${workflowId}/launch")
     }
 
+    protected String makeKey(Object... keys) {
+        final h = Hashing.sipHash24().newHasher()
+        for( Object it :  keys ) {
+            if( it!=null )
+                h.putUnencodedChars(it.toString())
+            h.putUnencodedChars('/')
+        }
+        return h.hash()
+    }
+
+    /** Only for testing - do not use */
+    protected void invalidateCache() {
+        cacheLong.invalidateAll()
+        cacheShort.invalidateAll()
+    }
 }

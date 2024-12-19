@@ -25,7 +25,6 @@ repositories {
     mavenCentral()
     maven { url = 'https://s3-eu-west-1.amazonaws.com/maven.seqera.io/releases' }
     maven { url = 'https://s3-eu-west-1.amazonaws.com/maven.seqera.io/snapshots' }
-    maven { url = 'https://jitpack.io' }
 }
 
 dependencies {

@@ -39,11 +39,16 @@ class AbstractFutureStoreTest extends Specification{
     @Singleton
     static class TestFutureStore extends AbstractFutureStore<String> {
 
-        @Value('${wave.pairing.channel.timeout:1s}')
         Duration timeout
+        Duration pollInterval
 
-        TestFutureStore(FutureHash queue) {
+        TestFutureStore(FutureHash queue,
+            @Value('${wave.pairing.channel.timeout:1s}') Duration timeout,
+            @Value('${wave.pairing.channel.awaitTimeout:100ms}') Duration pollInterval )
+        {
             super(queue, new MoshiEncodeStrategy<String>() {})
+            this.timeout = timeout
+            this.pollInterval = pollInterval
         }
 
         @Override

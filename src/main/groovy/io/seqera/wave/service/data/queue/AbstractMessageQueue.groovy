@@ -34,6 +34,8 @@ import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.pairing.socket.MessageSender
 import io.seqera.wave.util.ExponentialAttempt
 import io.seqera.wave.util.TypeHelper
+import jakarta.annotation.PostConstruct
+
 /**
  * Implements a distributed message queue in which many listeners can register
  * to consume a message. A message instance can be consumed by one and only listener.
@@ -72,7 +74,6 @@ abstract class AbstractMessageQueue<M> implements Runnable {
         this.name0 = name() + '-thread-' + count.getAndIncrement()
         this.thread = new Thread(this, name0)
         this.thread.setDaemon(true)
-        this.thread.start()
     }
 
     private AsyncCache<String,Boolean> createCache(ExecutorService ioExecutor) {
@@ -81,6 +82,20 @@ abstract class AbstractMessageQueue<M> implements Runnable {
                 .executor(ioExecutor)
                 .expireAfterWrite(10, TimeUnit.MINUTES)
                 .buildAsync()
+    }
+
+    /**
+     * Start the listener thread after the class creation, to avoid race-condition accessing attributes
+     * initialised during the class creation.
+     *
+     * This method does not need to be invoked directly, other than for testing purposes
+     *
+     * @return The object queue itself.  
+     */
+    @PostConstruct
+    protected AbstractMessageQueue<M> start() {
+        thread.start()
+        return this
     }
 
     protected abstract String name()

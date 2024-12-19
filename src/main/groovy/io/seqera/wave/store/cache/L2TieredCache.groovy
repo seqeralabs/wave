@@ -16,20 +16,26 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.tower.client
+package io.seqera.wave.store.cache
 
-import groovy.transform.CompileStatic
-import groovy.transform.EqualsAndHashCode
-import groovy.transform.ToString
-import io.seqera.wave.encoder.MoshiExchange
-import io.seqera.wave.tower.User
+import java.time.Duration
+
 /**
- * Model a Tower user-info response
+ * Define the interface for 2nd level tired cache
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@EqualsAndHashCode
-@ToString(includePackage = false, includeNames = true)
-@CompileStatic
-class UserInfoResponse implements MoshiExchange {
-    User user
+interface L2TieredCache<K,V> extends TieredCache<K,V> {
+
+
+    /**
+     * Add a value in the cache with the specified key. If a value already exists is overridden
+     * with the new value.
+     *
+     * @param key The key of the value to be added. {@code null} is not allowed.
+     * @param value The value to be added in the cache for the specified key.  {@code null} is not allowed.
+     * @param ttl The value time-to-live, after which the value is automatically evicted.
+     */
+    void put(K key, V value, Duration ttl)
+
 }
