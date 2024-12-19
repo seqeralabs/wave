@@ -66,7 +66,7 @@ curl \
 
 ## Debugging
 
-* To debug http requests made proxy client add the following Jvm setting:
+To debug http requests made proxy client add the following Jvm setting:
 
 `'-Djdk.httpclient.HttpClient.log=requests,headers'`
 
@@ -74,7 +74,7 @@ curl \
 
 Build and augment container images for Nextflow workflows.
 
-## Requirements
+### Requirements
 
 * AWS EKS cluster
 * AWS OpenID Connect (OIDC) provider for EKS
@@ -88,18 +88,17 @@ Build and augment container images for Nextflow workflows.
 * AWS Elasticache
 * AWS Route53
 
-
-## AWS environment preparation
+### AWS EKS preparation
 
 * Create a EKS cluster instance following the [AWS documentation](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html). When the cluster is ready create a new Kubernetes namespace where the Wave service is going to be deployed e.g. `wave-production`.
 * Create an AWS S3 bucket in the same region where the EKS cluster is running. The bucket will host Wave logs, e.g. `wave-logs-prod`.
-* Create an EFS file system instance as described in the [AWS documentation](https://docs.aws.amazon.com/efs/latest/ug/gs-step-two-create-efs-resources.html). Make sure to use the same VPC used for the EKS cluster and [EFS CSI driver](https://docs.aws.amazon.com/eks/latest/userguide/efs-csi.html) for EKS. Also make sure Your EFS file system's security group must have an inbound and outbound rule that allows NFS traffic from the CIDR for your cluster's VPC.Allow port 2049 for inbound and outbound traffic.
+* Create an EFS file system instance as described in the [AWS documentation](https://docs.aws.amazon.com/efs/latest/ug/gs-step-two-create-efs-resources.html). Make sure to use the same VPC used for the EKS cluster and [EFS CSI driver](https://docs.aws.amazon.com/eks/latest/userguide/efs-csi.html) for EKS. Also make sure Your EFS file system's security group must have an inbound and outbound rule that allows NFS traffic from the CIDR for your cluster's VPC. Allow port 2049 for inbound and outbound traffic.
 * Create AWS Certificate to allow HTTPS traffic to your Wave service by using the AWS Certificate Manager. The certificate should be in the same region where the EKS cluster is running. See the [AWS documentation](https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-request-public.html) for further details.
 * Create two container repositories in the same region where the container is deployed. The first repository is used to host the container images built by Wave and the second one will be used for caching purposes. Make sure to create two repository have the same name prefix e.g. `wave/build` and `wave/cache`.
 * Create an AWS Elasticache instance used by Wave for caching purposes. It's required the use of a single-node cluster. For production deployment it's adviced the used of instance type `cache.t3.medium` and using Redis 6.2.x engine version or later (serverless is not supported). Make sure to use the same VPC used for the EKS cluster.
 * The AWS SES service is required by Wave to send email notification. Make sure to have configured a AWS SES service for production usage. See the [AWS documentation](https://docs.aws.amazon.com/ses/latest/dg/request-production-access.html) for further details.
 
-## AWS policy and role creation
+### AWS policy and role creation
 
 Create an AWS IAM policy that will grant access to the AWS infrastructure to the Wave application. This requires your cluster to have an existing AWS Identity and Access Management (IAM) OpenID Connect (OIDC) provider for your EKS cluster. To determine whether you already have one, or to create one, see [Creating an IAM OIDC provider for your cluster](https://docs.aws.amazon.com/eks/latest/userguide/enable-iam-roles-for-service-accounts.html).
 
@@ -124,14 +123,10 @@ aws \
   iam create-policy \
 
   --policy-name $WAVE_CONFIG_NAME \
+  --policy-document file://&lt;( cat policies/seqera-wave-policy.json | envsubst )
 ```
 
-
-3.   `--policy-document file://&lt;( cat policies/seqera-wave-policy.json | envsubst )`
-
-Take note of the policy Arn show in the command result.
-
-Find your cluster's OIDC provider URL using the command below:
+Take note of the policy Arn show in the command result. Find your cluster's OIDC provider URL using the command below:
 
 ```
 aws \
@@ -149,11 +144,10 @@ aws \
 
 An example output is as follows:
 
-```
-https://oidc.eks.region-code.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE
-```
+`https://oidc.eks.region-code.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE`
 
-Set the variable `AWS_EKS_OIDC_ID` in the `settings.sh` using the id value from your result. Then run the command below:
+
+Set the variable `AWS_EKS_OIDC_ID` in the `settings.sh` using the ID value from your result. Then run the command below:
 
 ```
 source settings.sh
@@ -166,7 +160,7 @@ aws \
 
 Take note of the Arn of the IAM role created and use it as value for the variable `AWS_IAM_ROLE` in the `settings.sh` file.
 
-Finally attach to the role the policy created in the previous step, using the command below:
+Finally, attach to the role the policy created in the previous step, using the command below:
 
 ```
 source settings.sh
@@ -184,7 +178,7 @@ aws \
 
 ## Deployment
 
-### **Kubernetes manifests preparation**
+### Kubernetes manifests preparation
 
 Update the variables in the file `settings.sh` with the values corresponding your AWS infrastructure created in the previous step. The following settings are required:
 
@@ -207,10 +201,15 @@ Update the variables in the file `settings.sh` with the values corresponding you
 Once the application manifest files have been updated replacing the above variables with the corresponding values, proceed with the application deployment following those steps:
 
 1. Export the content of the `settings.sh` file in your environment using this command:
-2. `source settings.sh`
-3. Create storage, app namespace and roles: `kubectl apply -f <(cat src/create.yml | envsubst)`
-4. `kubectl config set-context --current --namespace=${WAVE_NAMESPACE}`
-5. Setup the Container registry credentials to access the Wave container image:
+  
+  `source settings.sh`
+
+2. Create storage, app namespace and roles: 
+  
+  `kubectl apply -f <(cat src/create.yml | envsubst)`
+  `kubectl config set-context --current --namespace=${WAVE_NAMESPACE}`
+
+3. Set up the Container registry credentials to access the Wave container image:
 
 ```
 kubectl create secret \
@@ -222,50 +221,47 @@ kubectl create secret \
    --docker-server=cr.seqera.io \
 
    --docker-username="${SEQERA_CR_USER}" \
+  
+   --docker-password="${SEQERA_CR_PASSWORD}"
 ```
 
+4. Create build storage and namespace:
 
-6. `--docker-password="${SEQERA_CR_PASSWORD}"`
-7. Create build storage and namespace
-8. `kubectl apply -f &lt;(cat src/build.yml | envsubst)`
-9. Deploy Surreal DB
-10. `kubectl apply -f &lt;(cat src/surrealdb.yml | envsubst)`
-11. Deploy the main application resources:
-12. `kubectl apply -f &lt;(cat src/app.yml | envsubst)`
-13. Deploy the Ingress controller:
-14. `kubectl apply -f &lt;(cat src/ingress.yml | envsubst)`
+  `kubectl apply -f &lt;(cat src/build.yml | envsubst)`
 
-The ingress controller will create automatically an AWS application load balancer to serve the Wave service traffic. The Load balancer address can be retrieved using the following command:
+5. Deploy Surreal DB:
+
+  `kubectl apply -f &lt;(cat src/surrealdb.yml | envsubst)`
+
+6. Deploy the main application resources:
+  
+  `kubectl apply -f &lt;(cat src/app.yml | envsubst)`
+
+7. Deploy the Ingress controller:
+  
+  `kubectl apply -f &lt;(cat src/ingress.yml | envsubst)`
+
+The ingress controller will automatically create an AWS application load balancer to serve the Wave service traffic. The load balancer address can be retrieved using the following command:
 
 `kubectl get ingress wave-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'`
 
-Having the load balancer hostname, configure a *alias* record in your Route53 DNS so that the Wave service hostname is mapped to the load balancer hostname created by the ingress.
-
-See also [AWS documentation](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-to-elb-load-balancer.html) for details.
+Use the load balancerhostname to create an *alias* record in your Route53 DNS so that the Wave service hostname is mapped to the load balancer hostname created by the ingress. See the [AWS documentation](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-to-elb-load-balancer.html) for details.
 
 Once the DNS is configured verify the Wave API is accessible using this command:
 
 `curl https://${WAVE_HOSTNAME}/service-info | jq`
 
+8. Pair Seqera Platform with Wave
 
+Once the Wave service is ready, you will need to configure the Seqera Platform to pair with the Wave service in your infrastructure. Follow the documentation available at [this link](https://docs.seqera.io/platform/latest/enterprise/configuration/wave) replacing the Wave endpoint `https://wave.seqera.io` with the one defined in your installation.
 
-1. Pair Seqera Platform with Wave
-
-Once Wave service ready, you will need to configure the Seqera Platform (aka Tower) to pair with the Wave service in your infrastructure.
-
-Follow the documentation available at [this link](https://docs.seqera.io/platform/23.4.0/enterprise/configuration/wave) replacing replacing the Wave endpoint `https://wave.seqera.io` with the one defined in your installation.
-
-
-
-1. Verify the service is operating correctly
-
-Check the Wave pod logs. There should not be any errors and it should be reported the line:
+9. Verify the service is operating correctly. Check the Wave pod logs. There should not be any errors and it should be reported the line:
 
 `Opening pairing session - endpoint: <YOUR SEQERA PLATFORM URL>`
 
-2. Sign in to the Seqera Platform and create a Personal access token. Then and export the token value as shown below:
+10. Sign in to the Seqera Platform and create a Personal access token. Then export the token value as shown below:
 
-`export TOWER_ACCESS_TOKEN=&lt;TOKEN VALUE>`
+`export TOWER_ACCESS_TOKEN=<TOKEN VALUE>`
 
 3. Download the [Wave CLI](https://github.com/seqeralabs/wave-cli) tool, and use it request a Wave container using the command below:
 
@@ -279,7 +275,7 @@ wave \
     --image alpine:latest
 ```
 
-It will show the Wave container name for the request alpine image. You should be able to pull the container using a simple `docker pull &lt;wave container>` command. To verify Wave build is working as expected run:
+It will show the Wave container name for the requested `alpine` image. You should be able to pull the container using a simple `docker pull <wave container>` command. To verify the Wave build is working as expected run:
 
 ```
 wave \
