@@ -203,6 +203,16 @@ class RegHelper {
         return hasher.hash().toString()
     }
 
+    static String sipHash(Object... keys) {
+        final h = Hashing.sipHash24().newHasher()
+        for( Object it :  keys ) {
+            if( it!=null )
+                h.putUnencodedChars(it.toString())
+            h.putUnencodedChars('/')
+        }
+        return h.hash()
+    }
+
     static String layerName(ContainerLayer layer) {
         return "layer-${layer.gzipDigest.replace(/sha256:/,'')}.tar.gz"
     }

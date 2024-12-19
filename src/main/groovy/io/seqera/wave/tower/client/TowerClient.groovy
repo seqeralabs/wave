@@ -20,7 +20,6 @@ package io.seqera.wave.tower.client
 
 import java.util.concurrent.CompletableFuture
 
-import com.google.common.hash.Hashing
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Nullable
@@ -29,6 +28,7 @@ import io.seqera.wave.tower.client.cache.ClientCacheLong
 import io.seqera.wave.tower.client.cache.ClientCacheShort
 import io.seqera.wave.tower.client.connector.TowerConnector
 import io.seqera.wave.tower.compute.DescribeWorkflowLaunchResponse
+import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import org.apache.commons.lang3.StringUtils
@@ -68,7 +68,7 @@ class TowerClient {
 
     UserInfoResponse userInfo(String towerEndpoint, JwtAuth authorization) {
         final uri = userInfoEndpoint(towerEndpoint)
-        final k = makeKey(uri, authorization.key, null, null)
+        final k = RegHelper.sipHash(uri, authorization.key, null, null)
         // NOTE: it assumes the user info metadata does nor change over time
         // and therefore the *long* expiration cached is used
         get0(uri, towerEndpoint, authorization, UserInfoResponse, k, CacheMode.LONG) as UserInfoResponse
@@ -76,7 +76,7 @@ class TowerClient {
 
     ListCredentialsResponse listCredentials(String towerEndpoint, JwtAuth authorization, Long workspaceId, String workflowId) {
         final uri = listCredentialsEndpoint(towerEndpoint, workspaceId)
-        final k = makeKey(uri, authorization.key, workspaceId, workflowId)
+        final k = RegHelper.sipHash(uri, authorization.key, workspaceId, workflowId)
         // NOTE: when the 'workflowId' is provided it assumes credentials will not change during
         // the workflow execution and therefore the *long* expiration cached is used
         final mode = workflowId ? CacheMode.LONG : CacheMode.SHORT
@@ -85,7 +85,7 @@ class TowerClient {
 
     GetCredentialsKeysResponse fetchEncryptedCredentials(String towerEndpoint, JwtAuth authorization, String credentialsId, String pairingId, Long workspaceId, String workflowId) {
         final uri = fetchCredentialsEndpoint(towerEndpoint, credentialsId, pairingId, workspaceId)
-        final k = makeKey(uri, authorization.key, workspaceId, workflowId)
+        final k = RegHelper.sipHash(uri, authorization.key, workspaceId, workflowId)
         // NOTE: when the 'workflowId' is provided it assumes credentials will not change during
         // the workflow execution and therefore the *long* expiration cached is used
         final mode = workflowId ? CacheMode.LONG : CacheMode.SHORT
@@ -129,7 +129,7 @@ class TowerClient {
 
     DescribeWorkflowLaunchResponse describeWorkflowLaunch(String towerEndpoint, JwtAuth authorization, String workflowId) {
         final uri = workflowLaunchEndpoint(towerEndpoint,workflowId)
-        final k = makeKey(uri, authorization.key, null, workflowId)
+        final k = RegHelper.sipHash(uri, authorization.key, null, workflowId)
         // NOTE: it assumes the workflow launch definition cannot change for the specified 'workflowId'
         // and therefore the *long* expiration cached is used
         return get0(uri, towerEndpoint, authorization, DescribeWorkflowLaunchResponse.class, k, CacheMode.LONG) as DescribeWorkflowLaunchResponse
@@ -137,16 +137,6 @@ class TowerClient {
 
     protected static URI workflowLaunchEndpoint(String towerEndpoint, String workflowId) {
         return URI.create("${checkEndpoint(towerEndpoint)}/workflow/${workflowId}/launch")
-    }
-
-    protected String makeKey(Object... keys) {
-        final h = Hashing.sipHash24().newHasher()
-        for( Object it :  keys ) {
-            if( it!=null )
-                h.putUnencodedChars(it.toString())
-            h.putUnencodedChars('/')
-        }
-        return h.hash()
     }
 
     /** Only for testing - do not use */
