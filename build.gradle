@@ -25,7 +25,6 @@ repositories {
     mavenCentral()
     maven { url = 'https://s3-eu-west-1.amazonaws.com/maven.seqera.io/releases' }
     maven { url = 'https://s3-eu-west-1.amazonaws.com/maven.seqera.io/snapshots' }
-    maven { url = 'https://jitpack.io' }
 }
 
 dependencies {
@@ -94,6 +93,7 @@ dependencies {
     implementation 'com.coveo:spillway:3.0.0'
 
     // monitoring
+    implementation 'io.micronaut.micrometer:micronaut-micrometer-core'
     implementation 'io.micronaut.micrometer:micronaut-micrometer-registry-prometheus'
     // Also required to enable endpoint
     implementation 'io.micronaut:micronaut-management'
@@ -104,6 +104,7 @@ dependencies {
     runtimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.78'
     runtimeOnly 'org.bitbucket.b_c:jose4j:0.9.4'
     runtimeOnly 'io.netty:netty-bom:4.1.115.Final'
+    runtimeOnly 'com.google.protobuf:protobuf-java:4.27.5'
 }
 
 application {
@@ -156,7 +157,7 @@ jib {
 
 run{
     def envs = findProperty('micronautEnvs')
-    def args = ["-Dmicronaut.environments=$envs","-Djdk.tracePinnedThreads=short"]
+    def args = ["-Dmicronaut.environments=$envs","-Djdk.tracePinnedThreads=short", "--add-opens","java.base/java.lang=ALL-UNNAMED"]
     if( environment['JVM_OPTS'] ) args.add(environment['JVM_OPTS'])
     jvmArgs args
     systemProperties 'DOCKER_USER': project.findProperty('DOCKER_USER') ?: environment['DOCKER_USER'],

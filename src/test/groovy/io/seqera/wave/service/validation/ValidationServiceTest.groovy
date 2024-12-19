@@ -80,9 +80,12 @@ class ValidationServiceTest extends Specification {
         'quay.io:80/foo:latest'     | null
         'localhost:8000/foo:latest' | null
         and:
-        'docker:quay.io/foo:latest'  | 'Invalid container image name — offending value: docker:quay.io/foo:latest'
-        'http://quay.io/foo:latest'  | 'Invalid container repository name — offending value: http://quay.io/foo:latest'
-        'http://quay.io/foo:latest'  | 'Invalid container repository name — offending value: http://quay.io/foo:latest'
+        'docker:quay.io/foo:latest'  | "Invalid container image name — offending value: 'docker:quay.io/foo:latest'"
+        'http://quay.io/foo:latest'  | "Invalid container repository name — offending value: 'http://quay.io/foo:latest'"
+        'http://quay.io/foo:latest'  | "Invalid container repository name — offending value: 'http://quay.io/foo:latest'"
+        'ubuntu: latest'             | "Invalid container image name — offending value: 'ubuntu: latest'"
+        'ubuntu:latest '             | "Invalid container image name — offending value: 'ubuntu:latest '"
+        '   '                        | "Invalid container image name — offending value: '   '"
     }
 
     @Unroll

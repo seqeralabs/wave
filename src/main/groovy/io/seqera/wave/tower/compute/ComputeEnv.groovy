@@ -19,6 +19,9 @@
 package io.seqera.wave.tower.compute
 
 import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
+import groovy.transform.ToString
+import io.seqera.wave.encoder.MoshiExchange
 
 /**
  * Model the response of compute environment from seqera platform
@@ -26,7 +29,9 @@ import groovy.transform.CompileStatic
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @CompileStatic
-class ComputeEnv {
+@EqualsAndHashCode
+@ToString(includePackage = false, includeNames = true)
+class ComputeEnv implements MoshiExchange {
     String id
     String platform
     String credentialsId

@@ -22,6 +22,7 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
 import java.util.concurrent.CompletionException
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 
 import com.github.benmanes.caffeine.cache.AsyncLoadingCache
@@ -33,6 +34,7 @@ import groovy.transform.CompileStatic
 import groovy.transform.PackageScope
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
+import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.exception.RegistryForwardException
 import io.seqera.wave.exception.RegistryUnauthorizedAccessException
@@ -40,7 +42,9 @@ import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.util.RegHelper
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.StringUtils
+import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
 import static io.seqera.wave.auth.RegistryUtils.isServerError
@@ -63,6 +67,10 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
 
     @Inject
     private RegistryTokenStore tokenStore
+
+    @Inject
+    @Named(TaskExecutors.BLOCKING)
+    private ExecutorService ioExecutor
 
     @Canonical
     @ToString(includePackage = false, includeNames = true)
@@ -101,16 +109,23 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     }
 
     // FIXME https://github.com/seqeralabs/wave/issues/747
-    private AsyncLoadingCache<CacheKey, String> cacheTokens = Caffeine
-                    .newBuilder()
-                    .maximumSize(10_000)
-                    .expireAfterAccess(_1_HOUR.toMillis(), TimeUnit.MILLISECONDS)
-                    .buildAsync(loader)
+    private AsyncLoadingCache<CacheKey, String> cacheTokens
 
     @Inject
     private RegistryLookupService lookupService
 
-    @Inject RegistryCredentialsFactory credentialsFactory
+    @Inject
+    private RegistryCredentialsFactory credentialsFactory
+
+    @PostConstruct
+    private void init() {
+        cacheTokens = Caffeine
+                .newBuilder()
+                .maximumSize(10_000)
+                .expireAfterAccess(_1_HOUR.toMillis(), TimeUnit.MILLISECONDS)
+                .executor(ioExecutor)
+                .buildAsync(loader)
+    }
 
     /**
      * Implements container registry login
