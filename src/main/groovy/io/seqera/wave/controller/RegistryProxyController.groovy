@@ -274,7 +274,7 @@ class RegistryProxyController {
         final resp = proxyService.handleRequest(route, headers)
         HttpResponse
                 .status(HttpStatus.valueOf(resp.statusCode))
-                .body(resp.body.bytes)
+                .body(resp.body)
                 .headers(toMutableHeaders(resp.headers))
     }
 
@@ -348,14 +348,9 @@ class RegistryProxyController {
     }
 
     MutableHttpResponse<?> fromContentResponse(DelegateResponse resp, RoutePath route) {
-        // create the retry logic on error                                                              §
-        final retryable = Retryable
-                .<byte[]>of(httpConfig)
-                .onRetry((event) -> log.warn("Unable to read manifest body - request: $route; event: $event"))
-
         HttpResponse
                 .status(HttpStatus.valueOf(resp.statusCode))
-                .body(retryable.apply(()-> resp.body.bytes))
+                .body(resp.body)
                 .headers(toMutableHeaders(resp.headers))
     }
 

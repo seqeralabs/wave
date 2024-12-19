@@ -62,10 +62,12 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
 
     private L2TieredCache<String,String> l2
 
-    private final Lock sync = new ReentrantLock()
+    private final WeakHashMap<String,Lock> locks = new WeakHashMap<>()
 
     AbstractTieredCache(L2TieredCache<String,String> l2, MoshiEncodeStrategy encoder, Duration duration, long maxSize) {
-        log.info "Cache '${getName()}' config - prefix=${getPrefix()}; ttl=${duration}; max-size: ${maxSize}; l2=${l2}"
+        log.info "Cache '${getName()}' config - prefix=${getPrefix()}; ttl=${duration}; max-size: ${maxSize}"
+        if( l2==null )
+            log.warn "Missing L2 cache for tiered cache '${getName()}'"
         this.l2 = l2
         this.ttl = duration
         this.encoder = encoder
@@ -89,12 +91,49 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
         }
     }
 
+    /**
+     * Retrieve the value associated with the specified key
+     *
+     * @param key
+     *      The key of the value to be retrieved
+     * @return
+     *      The value associated with the specified key, or {@code null} otherwise
+     */
     @Override
     V get(String key) {
-        getOrCompute(key, null)
+        getOrCompute(key, null, (v)->true)
     }
 
+    /**
+     * Retrieve the value associated with the specified key
+     *
+     * @param key
+     *      The key of the value to be retrieved
+     * @param loader
+     *      A function invoked to load the value the entry with the specified key is not available
+     * @return
+     *      The value associated with the specified key, or {@code null} otherwise
+     */
     V getOrCompute(String key, Function<String,V> loader) {
+        getOrCompute(key, loader, (v)->true)
+    }
+
+     /**
+     * Retrieve the value associated with the specified key
+     *
+     * @param key
+     *      The key of the value to be retrieved
+     * @param loader
+     *      The function invoked to load the value the entry with the specified key is not available
+     * @param cacheCondition
+      *     The function to determine if the loaded value should be cached             
+     * @return
+      *     The value associated with the specified key, or #function result otherwsie
+     */
+    V getOrCompute(String key, Function<String,V> loader, Function<V,Boolean> cacheCondition) {
+        assert key!=null, "Argument key cannot be null"
+        assert cacheCondition!=null, "Argument condition cannot be null"
+
         log.trace "Cache '${name}' checking key=$key"
         // Try L1 cache first
         V value = l1.synchronous().getIfPresent(key)
@@ -103,6 +142,7 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
             return value
         }
 
+        final sync = locks.computeIfAbsent(key, (k)-> new ReentrantLock())
         sync.lock()
         try {
             value = l1.synchronous().getIfPresent(key)
@@ -124,7 +164,7 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
             if( value==null && loader!=null ) {
                 log.trace "Cache '${name}' invoking loader - key=$key"
                 value = loader.apply(key)
-                if( value!=null ) {
+                if( value!=null && cacheCondition.apply(value) ) {
                     l1.synchronous().put(key,value)
                     l2Put(key,value)
                 }

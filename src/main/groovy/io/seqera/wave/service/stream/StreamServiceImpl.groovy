@@ -100,7 +100,7 @@ class StreamServiceImpl implements StreamService {
         // when it's a response with a binary body, just return it
         if( resp.body!=null ) {
             log.debug "Streaming response body for route: $route"
-            return resp.body
+            return new ByteArrayInputStream(resp.body)
         }
         // otherwise cache the blob and stream the resulting uri
         if( blobCacheService ) {
