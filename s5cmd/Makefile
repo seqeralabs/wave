@@ -5,5 +5,5 @@ build:
 			--push \
 			--platform linux/amd64,linux/arm64 \
 			--build-arg version=${version} \
-			--tag cr.seqera.io/public/wave/s5cmd:v${version} \
+			--tag public.cr.seqera.io/wave/s5cmd:v${version} \
 			.

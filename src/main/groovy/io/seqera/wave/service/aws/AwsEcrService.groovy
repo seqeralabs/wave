@@ -18,16 +18,21 @@
 
 package io.seqera.wave.service.aws
 
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
+import com.github.benmanes.caffeine.cache.AsyncLoadingCache
+import com.github.benmanes.caffeine.cache.CacheLoader
+import com.github.benmanes.caffeine.cache.Caffeine
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.util.StringUtils
+import jakarta.annotation.PostConstruct
+import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
@@ -73,12 +78,22 @@ class AwsEcrService {
         }
     }
 
-    private LoadingCache<AwsCreds, String> cache = CacheBuilder<AwsCreds, String>
-            .newBuilder()
-            .maximumSize(10_000)
-            .expireAfterWrite(3, TimeUnit.HOURS)
-            .build(loader)
+    @Inject
+    @Named(TaskExecutors.BLOCKING)
+    private ExecutorService ioExecutor
 
+    // FIXME https://github.com/seqeralabs/wave/issues/747
+    private AsyncLoadingCache<AwsCreds, String> cache
+
+    @PostConstruct
+    private void init() {
+        cache = Caffeine
+                .newBuilder()
+                .maximumSize(10_000)
+                .expireAfterWrite(3, TimeUnit.HOURS)
+                .executor(ioExecutor)
+                .buildAsync(loader)
+    }
 
     private EcrClient ecrClient(String accessKey, String secretKey, String region) {
         EcrClient.builder()
@@ -126,7 +141,8 @@ class AwsEcrService {
         try {
             // get the token from the cache, if missing the it's automatically
             // fetch using the AWS ECR client
-            return cache.get(new AwsCreds(accessKey,secretKey,region,isPublic))
+            // FIXME https://github.com/seqeralabs/wave/issues/747
+            return cache.synchronous().get(new AwsCreds(accessKey,secretKey,region,isPublic))
         }
         catch (Exception e) {
             final type = isPublic ? "ECR public" : "ECR"

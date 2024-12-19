@@ -14,12 +14,11 @@ images.
 * Augment container images i.e. dynamically add one or more container layers to existing images;
 * Build container images on-demand for a given container file (aka Dockerfile);
 * Build container images on-demand based on one or more Conda packages;
-* Build container images on-demand based on one or more Spack packages;
 * Build container images for a specified target platform (currently linux/amd64 and linux/arm64);
 * Push and cache built containers to a user-provided container repository;
-* Build Singularity native containers both using a Singularity spec file, Conda package(s) and Spack package(s);
+* Build Singularity native containers both using a Singularity spec file, Conda package(s);
 * Push Singularity native container images to OCI-compliant registries;
-
+* Scan container images for security vulnerabilities
 
 ### How it works
 
@@ -35,8 +34,9 @@ container registry where the image is stored, while the instrumented layers are 
 
 ### Requirements
 
-* Java 19 or later
+* Java 21 or later
 * Linux or macOS
+* Redis 6.2 (or later)
 * Docker engine (for development)
 * Kubernetes cluster (for production)
 
@@ -108,6 +108,17 @@ container registry where the image is stored, while the instrumented layers are 
     '-Djdk.httpclient.HttpClient.log=requests,headers'
     ```
 
+## TypeSpec API Specifications
+
+- You can find the API specifications using (typespec)[https://github.com/microsoft/typespec] in typespec directory. Use following command to generate the API specifications.
+
+    ```bash
+    'cd typespec'
+    'tsp install'
+    'tsp compile .'
+    ```
+
+- Check `typespec/tsp-output` directory for the generated API specifications.
 
 ## Related links
 * [Wave command line tool](https://github.com/seqeralabs/wave-cli)

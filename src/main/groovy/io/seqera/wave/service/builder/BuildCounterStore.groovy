@@ -28,6 +28,7 @@ import jakarta.inject.Singleton
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Deprecated
 @Singleton
 @CompileStatic
 class BuildCounterStore extends AbstractCounterStore {

@@ -20,11 +20,22 @@ package io.seqera.wave.storage
 
 import spock.lang.Specification
 
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import jakarta.inject.Inject
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@MicronautTest
 class ManifestCacheStoreTest extends Specification {
 
+    @Inject
+    ManifestCacheStore store
+
+    def 'should return entry key' () {
+        expect:
+        store.key0('foo') == 'wave-blobs/v1:foo'
+    }
 
 }

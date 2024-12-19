@@ -22,10 +22,8 @@ import spock.lang.Specification
 import spock.lang.Unroll
 
 import io.seqera.wave.exception.NotFoundException
-import io.seqera.wave.service.ContainerRequestData
-import io.seqera.wave.service.token.ContainerTokenService
-import io.seqera.wave.tower.PlatformId
-
+import io.seqera.wave.service.request.ContainerRequest
+import io.seqera.wave.service.request.ContainerRequestService
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -68,7 +66,7 @@ class RouteHandlerTest extends Specification {
     @Unroll
     def 'should get manifests route #PATH'() {
         given:
-        def tokenService = Mock(ContainerTokenService)
+        def tokenService = Mock(ContainerRequestService)
         
         when:
         def route = new RouteHandler(tokenService).parse(PATH)
@@ -90,7 +88,7 @@ class RouteHandlerTest extends Specification {
 
     def 'should throw bad not found exception' () {
         given:
-        def tokenService = Mock(ContainerTokenService)
+        def tokenService = Mock(ContainerRequestService)
 
         when:
         new RouteHandler(tokenService).parse(PATH)
@@ -112,12 +110,12 @@ class RouteHandlerTest extends Specification {
     @Unroll
     def 'should find container name via token service' () {
         given:
-        def tokenService = Mock(ContainerTokenService)
+        def tokenService = Mock(ContainerRequestService)
 
         when:
         def route = new RouteHandler(tokenService).parse(REQ_PATH)
         then:
-        1 * tokenService.getRequest(ROUTE_TKN) >> new ContainerRequestData(PlatformId.NULL,REQ_IMAGE)
+        1 * tokenService.getRequest(ROUTE_TKN) >> ContainerRequest.of(containerImage: REQ_IMAGE)
         and:
         route.image == ROUTE_IMAGE
         route.type == ROUTE_TYPE

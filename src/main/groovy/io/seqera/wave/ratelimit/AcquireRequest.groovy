@@ -35,7 +35,7 @@ class AcquireRequest {
     /**
      * Principal key to use in the search. Can be null
      */
-    String userId
+    String user
 
     /**
      * Secondary key to use if principal is not present

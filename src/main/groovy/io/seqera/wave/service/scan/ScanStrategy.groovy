@@ -22,27 +22,35 @@ import java.nio.file.Path
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.core.ContainerPlatform
+
 /**
  * Implements ScanStrategy for Docker
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @CompileStatic
+@Requires(bean = ScanConfig)
 abstract class ScanStrategy {
 
-    abstract ScanResult scanContainer(ScanRequest request)
+    abstract void scanContainer(String jobName, ScanRequest request)
 
-    protected List<String> scanCommand(String targetImage, Path outputFile, ScanConfig config) {
-        def cmd = ['--quiet',
-                'image',
-                '--timeout',
-                "${config.timeout.toMinutes()}m".toString(),
-                '--format',
-                'json',
-                '--output',
-                outputFile.toString()]
+    protected List<String> scanCommand(String targetImage, Path outputFile, ContainerPlatform platform, ScanConfig config) {
+        List<String> cmd = ['--quiet', 'image']
+        if( platform ) {
+            cmd << '--platform'
+            cmd << platform.toString()
+        }
+        cmd << '--timeout'
+        cmd << "${config.timeout.toMinutes()}m".toString()
+        cmd << '--format'
+        cmd << 'json'
+        cmd << '--output'
+        cmd << outputFile.toString()
 
         if( config.severity ) {
             cmd << '--severity'

@@ -1,5 +1,5 @@
 ---
-title: Wave usage metrics
+title: Usage metrics
 ---
 
 Wave uses Redis to store its usage metrics for a specific date and/or a specific organization.
@@ -50,7 +50,7 @@ Then, if the pulled container uses fusion, it increments the values of following
 ## How keys are created
 
 - When a request is made to wave, first it increments the key with current date. e.g. `builds/d/2024-04-23`.
-- Keys with organisation are only incremented if the user is authenticated means there is Seqera platform token in the request.
+- Keys with organization are only incremented if the user is authenticated means there is Seqera platform token in the request.
 - Wave extract the domain from the user email id (For example: `test_metrics@seqera.io`), which it gets from Seqera platform using the access token.
-- In this case, The organisation value will be `seqera.io`.
-- Then it increments the key with organisation. For example: `builds/o/seqera.io/d/2024-04-23` and `builds/o/seqera.io`.
+- In this case, The organization value will be `seqera.io`.
+- Then it increments the key with organization. For example: `builds/o/seqera.io/d/2024-04-23` and `builds/o/seqera.io`.

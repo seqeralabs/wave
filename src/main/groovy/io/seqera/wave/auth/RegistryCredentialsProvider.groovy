@@ -40,6 +40,15 @@ interface RegistryCredentialsProvider {
      */
     RegistryCredentials getDefaultCredentials(String registry)
 
+    /**
+     * Provides the default credentials for the specified container
+     *
+     * @param container
+     *      A container name e.g. docker.io/library/ubuntu.
+     * @return
+     *      A {@link RegistryCredentials} object holding the credentials for the specified container or {@code null}
+     *      if not credentials can be found
+     */
     RegistryCredentials getDefaultCredentials(ContainerPath container)
 
     /**
@@ -56,4 +65,21 @@ interface RegistryCredentialsProvider {
      */
     RegistryCredentials getUserCredentials(ContainerPath container, PlatformId identity)
 
+    /**
+     * Provides the credentials for the specified container. When the platform identity is provider
+     * this is equivalent to #getUserCredentials.
+     *
+     * @param container
+     *      A container name e.g. docker.io/library/ubuntu.
+     * @param identity
+     *      The platform identity of the user submitting the request
+     * @return
+     *      A {@link RegistryCredentials} object holding the credentials for the specified container or {@code null}
+     *      if not credentials can be found
+     */
+    default RegistryCredentials getCredentials(ContainerPath container, PlatformId identity) {
+        return !identity
+                ? getDefaultCredentials(container)
+                : getUserCredentials(container, identity)
+    }
 }

@@ -25,6 +25,8 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Error
 import io.micronaut.http.hateoas.JsonError
+import io.micronaut.scheduling.TaskExecutors
+import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.ErrorHandler
 import jakarta.inject.Inject
 /**
@@ -35,13 +37,15 @@ import jakarta.inject.Inject
 @Slf4j
 @CompileStatic
 @Controller('/error')
+@ExecuteOn(TaskExecutors.BLOCKING)
 class ErrorController {
 
-    @Inject ErrorHandler handler
+    @Inject
+    private ErrorHandler handler
 
     @Error(global = true)
     HttpResponse<JsonError> handleException(HttpRequest request, Throwable exception) {
-        handler.handle(request, exception, (msg, id) -> { return new JsonError(msg) })
+        handler.handle(request, exception, (String message, String code)-> new JsonError(message))
     }
     
 }

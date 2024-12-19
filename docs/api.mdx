@@ -4,6 +4,20 @@ title: API reference
 
 This page summarizes the API provided by the Wave container service.
 
+**API limits**
+
+The Wave service implements API rate limits for API calls. Authenticated users have higher rate limits than anonymous users.
+
+If an access token is provided, the following rate limits apply:
+
+- 100 container builds per hour
+- 1,000 container pulls per minute
+
+If an access token isn't provided, the following rate limits apply:
+
+- 25 container builds per day
+- 250 container pulls per hour
+
 ## POST `/container-token`
 
 Deprecated endpoint allows you to submit a request to access a private container registry via Wave, or build a container image on-the-fly with a Dockerfile or Conda recipe file.
@@ -38,7 +52,6 @@ This API endpoint is deprecated in current versions of Wave.
         ]
     },
     condaFile: string,
-    spackFile: string,
     containerPlatform: string,
     buildRepository: string,
     cacheRepository: string,
@@ -67,7 +80,6 @@ This API endpoint is deprecated in current versions of Wave.
 | `containerConfig.layers.gzipSize`   | The size in bytes of the the provided layer tar gzip file.                                                                                         |
 | `containerFile`                     | Dockerfile used for building a new container encoded in base64 (optional). When provided, the attribute `containerImage` must be omitted.        |
 | `condaFile`                         | Conda environment file encoded as base64 string.                                                                                                   |
-| `spackFile`                         | Spack recipe file encoded as base64 string.                                                                                                        |
 | `containerPlatform`                 | Target container architecture of the built container, e.g., `linux/amd64` (optional). Currently only supporting amd64 and arm64.                     |
 | `buildRepository`                   | Container repository where container builds should be pushed, e.g., `docker.io/user/my-image` (optional).                                            |
 | `cacheRepository`                   | Container repository used to cache build layers `docker.io/user/my-cache` (optional).                                                              |
@@ -122,7 +134,6 @@ The endpoint returns the name of the container request made available by Wave.
         ]
     },
     condaFile: string,
-    spackFile: string,
     containerPlatform: string,
     buildRepository: string,
     cacheRepository: string,
@@ -143,10 +154,6 @@ The endpoint returns the name of the container request made available by Wave.
                                 commands: string[],
                                 basePackages: string
                               }
-                  spackOpts:{
-                                commands: string[],
-                                basePackages: string
-                            }
 
               },
     nameStrategy: string
@@ -168,7 +175,6 @@ The endpoint returns the name of the container request made available by Wave.
 | `containerConfig.layers.gzipSize`   | The size in bytes of the the provided layer tar gzip file.                                                                                         |
 | `containerFile`                     | Dockerfile used for building a new container encoded in base64 (optional). When provided, the attribute `containerImage` must be omitted.        |
 | `condaFile`                         | Conda environment file encoded as base64 string.                                                                                                   |
-| `spackFile`                         | Spack recipe file encoded as base64 string.                                                                                                        |
 | `containerPlatform`                 | Target container architecture of the built container, e.g., `linux/amd64` (optional). Currently only supporting amd64 and arm64.                     |
 | `buildRepository`                   | Container repository where container builds should be pushed, e.g., `docker.io/user/my-image` (optional).                                            |
 | `cacheRepository`                   | Container repository used to cache build layers `docker.io/user/my-cache` (optional).                                                              |
@@ -178,9 +184,9 @@ The endpoint returns the name of the container request made available by Wave.
 | `towerEndpoint`                     | Seqera Platform service endpoint from where container registry credentials are retrieved (optional). Default `https://api.cloud.seqera.io`.                       |
 | `towerAccessToken`                  | Access token of the user account granting access to the Seqera Platform service specified via `towerEndpoint` (optional).                      |
 | `towerWorkspaceId`                  | ID of the Seqera Platform workspace from where the container registry credentials are retrieved (optional). When omitted the personal workspace is used. |
-| `packages`                          | This object specifies Conda or Spack packages environment information.                                                                                         |
+| `packages`                          | This object specifies Conda packages environment information.                                                                                         |
 | `environment`                       | The package environment file encoded as a base64 string.                                                                                                       |
-| `type`                              | This represents the type of package builder. Use `SPACK` or `CONDA`.                                                                                   |
+| `type`                              | This represents the type of package builder. Use `CONDA`.                                                                                   |
 | `entries`                           | List of the packages names.                                                                                                                                    |
 | `channels`                          | List of Conda channels, which will be used to download packages.                                                                                               |
 | `mambaImage`                        | Name of the docker image used to build Conda containers.                                                                                              |

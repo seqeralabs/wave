@@ -18,16 +18,32 @@
 
 package io.seqera.wave.service.builder
 
-import groovy.transform.Canonical
 
+import groovy.transform.EqualsAndHashCode
+import groovy.transform.ToString
 /**
  * Model build tracking info
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Canonical
+@EqualsAndHashCode
+@ToString(includePackage = false, includeNames = true)
 class BuildTrack {
     String id
     String targetImage
     boolean cached
+    /**
+     * use Boolean type with three state meaning:
+     * - null: build is still in progress
+     * - false: completed with failure
+     * - true: completed with success
+     */
+    Boolean succeeded
+
+    BuildTrack(String id, String targetImage, boolean cached, Boolean succeeded) {
+        this.id = id
+        this.targetImage = targetImage
+        this.cached = cached
+        this.succeeded = succeeded
+    }
 }

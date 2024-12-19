@@ -19,6 +19,7 @@
 package io.seqera.wave.service.builder
 
 import java.nio.file.Path
+import java.time.Duration
 import java.time.Instant
 import java.time.OffsetDateTime
 
@@ -40,7 +41,9 @@ import static io.seqera.wave.util.StringUtils.trunc
 @CompileStatic
 class BuildRequest {
 
-    static final String SEP = '_'
+    static final public String SEP = '_'
+
+    static final public String ID_PREFIX = "bd-"
 
     /**
      * Unique request Id. This is computed as a consistent hash generated from
@@ -58,11 +61,6 @@ class BuildRequest {
      * The conda file recipe associated with this request
      */
     final String condaFile
-
-    /**
-     * The spock file recipe associated with this request
-     */
-    final String spackFile
 
     /**
      * The build context work directory
@@ -115,11 +113,6 @@ class BuildRequest {
     final ContainerConfig containerConfig
 
     /**
-     * Whenever is a spack build
-     */
-    final boolean isSpackBuild
-
-    /** 
      * The ID of the security scan triggered by this build 
      */
     final String scanId
@@ -133,16 +126,39 @@ class BuildRequest {
      * The target build format, either Docker or Singularity
      */
     final BuildFormat format
-    
-    volatile String buildId
 
-    volatile Path workDir
+    /**
+     * Max allow time duration for this build
+     */
+    final Duration maxDuration
 
-    BuildRequest(String containerId, String containerFile, String condaFile, String spackFile, Path workspace, String targetImage, PlatformId identity, ContainerPlatform platform, String cacheRepository, String ip, String configJson, String offsetId, ContainerConfig containerConfig, String scanId, BuildContext buildContext, BuildFormat format) {
+    /**
+     * The build unique request id
+     */
+    final String buildId
+
+    BuildRequest(
+            String containerId,
+            String containerFile,
+            String condaFile,
+            Path workspace,
+            String targetImage,
+            PlatformId identity,
+            ContainerPlatform platform,
+            String cacheRepository,
+            String ip,
+            String configJson,
+            String offsetId,
+            ContainerConfig containerConfig,
+            String scanId,
+            BuildContext buildContext,
+            BuildFormat format,
+            Duration maxDuration
+    )
+    {
         this.containerId = containerId
         this.containerFile = containerFile
         this.condaFile = condaFile
-        this.spackFile = spackFile
         this.workspace = workspace
         this.targetImage = targetImage
         this.identity = identity
@@ -153,17 +169,18 @@ class BuildRequest {
         this.configJson = configJson
         this.offsetId = offsetId ?: OffsetDateTime.now().offset.id
         this.containerConfig = containerConfig
-        this.isSpackBuild = spackFile
         this.scanId = scanId
         this.buildContext = buildContext
         this.format = format
+        this.maxDuration = maxDuration
+        // NOTE: this is meant to be updated - automatically - when the request is submitted
+        this.buildId = ID_PREFIX + containerId + SEP + '0'
     }
 
     BuildRequest(Map opts) {
-        this.containerId = opts.id
+        this.containerId = opts.containerId
         this.containerFile = opts.containerFile
         this.condaFile = opts.condaFile
-        this.spackFile = opts.spackFile
         this.workspace = opts.workspace as Path
         this.targetImage = opts.targetImage
         this.identity = opts.identity as PlatformId
@@ -174,17 +191,16 @@ class BuildRequest {
         this.configJson = opts.configJson
         this.offsetId = opts.offesetId
         this.containerConfig = opts.containerConfig as ContainerConfig
-        this.isSpackBuild = opts.isSpackBuild
         this.scanId = opts.scanId
         this.buildContext = opts.buildContext as BuildContext
         this.format = opts.format as BuildFormat
-        this.workDir = opts.workDir as Path
+        this.maxDuration = opts.maxDuration as Duration
         this.buildId = opts.buildId
     }
 
     @Override
     String toString() {
-        return "BuildRequest[containerId=$containerId; targetImage=$targetImage; identity=$identity; dockerFile=${trunc(containerFile)}; condaFile=${trunc(condaFile)}; spackFile=${trunc(spackFile)}; buildId=$buildId]"
+        return "BuildRequest[containerId=$containerId; targetImage=$targetImage; identity=$identity; dockerFile=${trunc(containerFile)}; condaFile=${trunc(condaFile)}; buildId=$buildId, maxDuration=$maxDuration]"
     }
 
     String getContainerId() {
@@ -204,12 +220,8 @@ class BuildRequest {
         return condaFile
     }
 
-    String getSpackFile() {
-        return spackFile
-    }
-
     Path getWorkDir() {
-        return workDir
+        return workspace.resolve(buildId).toAbsolutePath()
     }
 
     String getTargetImage() {
@@ -244,18 +256,16 @@ class BuildRequest {
         return offsetId
     }
 
+    Duration getMaxDuration() {
+        return maxDuration
+    }
+
     boolean formatDocker() {
         !format || format==DOCKER
     }
 
     boolean formatSingularity() {
         format==SINGULARITY
-    }
-
-    BuildRequest withBuildId(String id) {
-        this.buildId = containerId + SEP + id
-        this.workDir = workspace.resolve(buildId).toAbsolutePath()
-        return this
     }
 
     static String legacyBuildId(String id) {

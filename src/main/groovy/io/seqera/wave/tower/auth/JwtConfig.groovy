@@ -23,10 +23,12 @@ import java.time.Duration
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.util.DurationUtils
 import jakarta.inject.Singleton
 
 /**
- *
+ * Model JWT refreshing service config
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Singleton
@@ -58,5 +60,9 @@ class JwtConfig {
      */
     @Value('${wave.jwt.monitor.count:10}')
     int monitorCount
+
+    Duration getMonitorDelayRandomized() {
+        DurationUtils.randomDuration(monitorDelay, 0.4f)
+    }
 
 }

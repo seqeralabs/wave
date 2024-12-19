@@ -32,3 +32,11 @@ scan-workspace/
 .cache
 site/
 deployment-url.txt
+
+#typespec
+tsp-output/
+node_modules/
+package-lock.json
+
+# Seqera Docs clone
+seqeralabs-docs

@@ -24,17 +24,19 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
+import io.seqera.wave.api.BuildStatusResponse
+import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
-import io.seqera.wave.api.BuildStatusResponse
-
+import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.builder.BuildResult
 /**
  * A collection of request and response properties to be stored
  *
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
-@ToString
+@ToString(includePackage = false, includeNames = true)
 @CompileStatic
 @EqualsAndHashCode
 class WaveBuildRecord {
@@ -42,7 +44,6 @@ class WaveBuildRecord {
     String buildId
     String dockerFile
     String condaFile
-    String spackFile
     String targetImage
     String userName
     String userEmail
@@ -57,45 +58,56 @@ class WaveBuildRecord {
     BuildFormat format
     String digest
 
-    boolean succeeded() { exitStatus==0 }
-
-    static WaveBuildRecord fromEvent(BuildEvent event) {
-        if( event.result && event.request.buildId != event.result.id )
-            throw new IllegalStateException("Build id must match the result id")
-        return new WaveBuildRecord(
-                buildId: event.request.buildId,
-                dockerFile: event.request.containerFile,
-                condaFile: event.request.condaFile,
-                spackFile: event.request.spackFile,
-                targetImage: event.request.targetImage,
-                userName: event.request.identity.user?.userName,
-                userEmail: event.request.identity.user?.email,
-                userId: event.request.identity.user?.id,
-                requestIp: event.request.ip,
-                startTime: event.request.startTime,
-                platform: event.request.platform,
-                offsetId: event.request.offsetId,
-                scanId: event.request.scanId,
-                format: event.request.format,
-                duration: event.result?.duration,
-                exitStatus: event.result?.exitStatus,
-                digest: event.result?.digest
-        )
+    Boolean succeeded() {
+        return duration != null ? (exitStatus==0) : null
     }
 
+    Boolean done() {
+        return duration != null
+    }
+
+    static WaveBuildRecord fromEntry(BuildEntry entry) {
+        create0(entry.request, entry.result)
+    }
+    
+    static WaveBuildRecord fromEvent(BuildEvent event) {
+        create0(event.request, event.result)
+    }
+    
+    static private WaveBuildRecord create0(BuildRequest request, BuildResult result) {
+        if( result && request.buildId != result.buildId )
+            throw new IllegalStateException("Build id must match the result id")
+        return new WaveBuildRecord(
+                buildId: request.buildId,
+                dockerFile: request.containerFile,
+                condaFile: request.condaFile,
+                targetImage: request.targetImage,
+                userName: request.identity.user?.userName,
+                userEmail: request.identity.user?.email,
+                userId: request.identity.user?.id,
+                requestIp: request.ip,
+                startTime: request.startTime,
+                platform: request.platform,
+                offsetId: request.offsetId,
+                scanId: request.scanId,
+                format: request.format,
+                duration: result?.duration,
+                exitStatus: result?.exitStatus,
+                digest: result?.digest
+        )
+    }
+    
     BuildStatusResponse toStatusResponse() {
-        final status = exitStatus != null
+        final status = duration!=null
                 ? BuildStatusResponse.Status.COMPLETED
                 : BuildStatusResponse.Status.PENDING
-        final succeeded = exitStatus!=null
-                    ? exitStatus==0
-                    : null
+
         return new BuildStatusResponse(
                 buildId,
                 status,
                 startTime,
                 duration,
-                succeeded )
+                succeeded() )
     }
 
 }

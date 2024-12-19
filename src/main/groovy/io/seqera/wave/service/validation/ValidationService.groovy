@@ -29,6 +29,8 @@ interface ValidationService {
 
     String checkContainerName(String name)
 
-    String checkBuildRepository(String repo, boolean cache)
+    String checkBuildRepository(String repo, ValidationServiceImpl.RepoType type)
+
+    boolean isCustomRepo(String repo)
 
 }

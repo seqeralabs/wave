@@ -25,9 +25,8 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.service.cache.AbstractCacheStore
-import io.seqera.wave.service.cache.impl.CacheProvider
-import io.seqera.wave.storage.reader.ContentReader
+import io.seqera.wave.store.state.AbstractStateStore
+import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Singleton
 /**
  * Implements manifest cache for {@link DigestStore}
@@ -37,12 +36,12 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Storage {
+class ManifestCacheStore extends AbstractStateStore<DigestStore> implements Storage {
 
     final private Duration duration
 
     ManifestCacheStore(
-            CacheProvider<String, String> provider,
+            StateProvider<String, String> provider,
             @Value('${wave.storage.cache.duration:`1h`}') Duration duration)
     {
         super(provider, new MoshiEncodeStrategy<DigestStore>() {})
@@ -52,7 +51,7 @@ class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Stor
 
     @Override
     protected String getPrefix() {
-        return "wave-blobs/v1:"
+        return "wave-blobs/v1"
     }
 
     @Override
@@ -93,15 +92,6 @@ class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Stor
     DigestStore saveBlob(String path, byte[] content, String type, String digest) {
         log.trace "Save Blob [size: ${content.size()}] ==> $path"
         final result = ZippedDigestStore.fromUncompressed(content, type, digest, content.length)
-        this.put(path, result)
-        return result
-    }
-
-    @Override
-    @Deprecated
-    DigestStore saveBlob(String path, ContentReader content, String type, String digest, int size) {
-        log.trace "Save Blob ==> $path"
-        final result = new LazyDigestStore(content, type, digest, size)
         this.put(path, result)
         return result
     }

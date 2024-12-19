@@ -20,21 +20,27 @@ package io.seqera.wave.auth
 
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.util.concurrent.CompletionException
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
+import com.github.benmanes.caffeine.cache.AsyncLoadingCache
+import com.github.benmanes.caffeine.cache.CacheLoader
+import com.github.benmanes.caffeine.cache.Caffeine
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.HttpClientConfig
+import io.seqera.wave.exception.RegistryForwardException
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.util.Retryable
+import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
 import static io.seqera.wave.WaveDefault.DOCKER_REGISTRY_1
-import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
+import static io.seqera.wave.auth.RegistryUtils.isServerError
 /**
  * Lookup service for container registry. The role of this component
  * is to registry the retrieve the registry authentication realm
@@ -50,34 +56,57 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
     @Inject
     private HttpClientConfig httpConfig
 
+    @Inject
+    private RegistryAuthStore store
+
+    @Inject
+    @Named(TaskExecutors.BLOCKING)
+    private ExecutorService ioExecutor
 
     private CacheLoader<URI, RegistryAuth> loader = new CacheLoader<URI, RegistryAuth>() {
         @Override
         RegistryAuth load(URI endpoint) throws Exception {
-            final result = lookup0(endpoint)
+            // check if there's a record in the store cache (redis)
+            def result = store.get(endpoint.toString())
+            if( result ) {
+                log.debug "Authority lookup for endpoint: '$endpoint' => $result [from store]"
+               return result
+            }
+            // look-up using the corresponding API endpoint
+            result = lookup0(endpoint)
             log.debug "Authority lookup for endpoint: '$endpoint' => $result"
+            // save it in the store cache (redis)
+            store.put(endpoint.toString(), result)
             return result
         }
     }
 
-    private LoadingCache<URI, RegistryAuth> cache = CacheBuilder<URI, RegistryAuth>
+    // FIXME https://github.com/seqeralabs/wave/issues/747
+    private AsyncLoadingCache<URI, RegistryAuth> cache
+
+    @PostConstruct
+    void init() {
+        cache = Caffeine
                 .newBuilder()
                 .maximumSize(10_000)
                 .expireAfterAccess(1, TimeUnit.HOURS)
-                .build(loader)
-
+                .executor(ioExecutor)
+                .buildAsync(loader)
+    }
 
     protected RegistryAuth lookup0(URI endpoint) {
         final httpClient = HttpClientFactory.followRedirectsHttpClient()
         final request = HttpRequest.newBuilder() .uri(endpoint) .GET() .build()
         // retry strategy
+        // note: do not retry on 429 error code because it just continues to report the error
+        // for a while. better returning the error to the upstream client
+        // see also https://github.com/docker/hub-feedback/issues/1907#issuecomment-631028965
         final retryable = Retryable
                 .<HttpResponse<String>>of(httpConfig)
-                .retryIf((response) -> response.statusCode() in HTTP_SERVER_ERRORS)
-                .onRetry((event) -> log.warn("Unable to connect '$endpoint' - event: $event"))
+                .retryIf((response) -> isServerError(response))
+                .onRetry((event) -> log.warn("Unable to connect '$endpoint' - attempt: ${event.attempt} status: ${event.result?.statusCode()}; body: ${event.result?.body()}"))
         // submit the request
         final response = retryable.apply(()-> httpClient.send(request, HttpResponse.BodyHandlers.ofString()))
-        final body = response.body()
         // check response
         final code = response.statusCode()
         if( code == 401 ) {
@@ -92,9 +121,7 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
         else if( code == 200 ) {
             return new RegistryAuth(endpoint)
         }
-        else {
-            throw new IllegalArgumentException("Request '$endpoint' unexpected response code: $code; message: ${body} ")
-        }
+        throw new RegistryForwardException("Unexpected response for '$endpoint' [${response.statusCode()}]", response)
     }
 
     /**
@@ -104,11 +131,14 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
     RegistryInfo lookup(String registry) {
         try {
             final endpoint = registryEndpoint(registry)
-            final auth = cache.get(endpoint)
+            // FIXME https://github.com/seqeralabs/wave/issues/747
+            final auth = cache.synchronous().get(endpoint)
             return new RegistryInfo(registry, endpoint, auth)
         }
-        catch (Throwable t) {
-            throw new RegistryLookupException("Unable to lookup authority for registry '$registry'", t)
+        catch (CompletionException e) {
+            // this catches the exception thrown in the cache loader lookup
+            // and throws the causing exception that should be `RegistryUnauthorizedAccessException`
+            throw e.cause
         }
     }
 

@@ -30,9 +30,11 @@ import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.ContainerAugmenter
 import io.seqera.wave.core.ContainerPath
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.spec.ConfigSpec
 import io.seqera.wave.core.spec.ContainerSpec
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.proxy.ProxyClient
@@ -73,7 +75,6 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
     @Inject
     private RegistryProxyService proxyService
 
-
     @Inject
     private RegistryAuthService loginService
 
@@ -86,12 +87,24 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
     @Override
     String credentialsConfigJson(String containerFile, String buildRepo, String cacheRepo, PlatformId identity) {
         final repos = new HashSet(10)
-        repos.addAll(findRepositories(containerFile))
+        if( containerFile )
+            repos.addAll(findRepositories(containerFile))
         if( buildRepo )
             repos.add(buildRepo)
         if( cacheRepo )
             repos.add(cacheRepo)
-        return credsJson(repos, identity)
+        final result = credsJson(repos, identity)
+        if( buildRepo && result && !result.contains(host0(buildRepo)) )
+            throw new BadRequestException("Missing credentials for container repository: $buildRepo")
+        if( cacheRepo && result && !result.contains(host0(cacheRepo)) )
+            throw new BadRequestException("Missing credentials for container repository: $cacheRepo")
+        return result
+    }
+
+    static protected String host0(String repo) {
+        ContainerCoordinates
+                .parse(repo)
+                .registry
     }
 
     protected String credsJson(Set<String> repositories, PlatformId identity) {
@@ -105,9 +118,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
                 // skip this index host because it has already be added to the list
                 continue
             }
-            final creds = !identity
-                    ? credentialsProvider.getDefaultCredentials(path)
-                    : credentialsProvider.getUserCredentials(path, identity)
+            final creds = credentialsProvider.getCredentials(path, identity)
             log.debug "Build credentials for repository: $repo => $creds"
             if( !creds ) {
                 // skip this host because there are no credentials
@@ -159,7 +170,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
      * {@inheritDoc}
      */
     @Override
-    List<String> containerEntrypoint(String containerFile, PlatformId identity) {
+    List<String> containerEntrypoint(String containerFile, ContainerPlatform containerPlatform, PlatformId identity) {
         final repos = inspectItems(containerFile)
         if( !repos )
             return null
@@ -177,12 +188,10 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
             else if( item instanceof InspectRepository ) {
                 final path = ContainerCoordinates.parse(item.getImage())
 
-                final creds = !identity
-                        ? credentialsProvider.getDefaultCredentials(path)
-                        : credentialsProvider.getUserCredentials(path, identity)
+                final creds = credentialsProvider.getCredentials(path, identity)
                 log.debug "Config credentials for repository: ${item.getImage()} => $creds"
 
-                final entry = fetchConfig0(path, creds).config?.entrypoint
+                final entry = fetchConfig0(path, creds, containerPlatform).config?.entrypoint
                 if( entry )
                     return entry
             }
@@ -206,28 +215,28 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
                 .withLoginService(loginService)
     }
 
-    private ConfigSpec fetchConfig0(ContainerPath path, RegistryCredentials creds) {
+    private ConfigSpec fetchConfig0(ContainerPath path, RegistryCredentials creds, ContainerPlatform platform) {
         final client = client0(path, creds)
 
         return new ContainerAugmenter()
                 .withClient(client)
+                .withPlatform(platform)
                 .getContainerSpec(path.image, path.getReference(), WaveDefault.ACCEPT_HEADERS)
                 .getConfig()
     }
 
     @Override
-    ContainerSpec containerSpec(String containerImage, PlatformId identity) {
+    ContainerSpec containerSpec(String containerImage, String arch, PlatformId identity) {
         final path = ContainerCoordinates.parse(containerImage)
 
-        final creds = !identity
-                ? credentialsProvider.getDefaultCredentials(path)
-                : credentialsProvider.getUserCredentials(path, identity)
+        final creds = credentialsProvider.getCredentials(path, identity)
         log.debug "Inspect credentials for repository: ${containerImage} => $creds"
 
         final client = client0(path, creds)
 
         return new ContainerAugmenter()
                 .withClient(client)
+                .withPlatform(arch)
                 .getContainerSpec(path.image, path.getReference(), WaveDefault.ACCEPT_HEADERS)
     }
 }

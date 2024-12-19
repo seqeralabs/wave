@@ -20,11 +20,11 @@ package io.seqera.wave.util
 
 import java.net.http.HttpResponse
 import java.time.Duration
-import java.time.temporal.ChronoUnit
 import java.util.function.Consumer
 import java.util.function.Predicate
 
 import dev.failsafe.Failsafe
+import dev.failsafe.FailsafeException
 import dev.failsafe.RetryPolicy
 import dev.failsafe.RetryPolicyBuilder
 import dev.failsafe.event.EventListener
@@ -34,7 +34,6 @@ import dev.failsafe.function.CheckedSupplier
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-
 /**
  * Implements a retry strategy based on Fail safe
  * 
@@ -49,6 +48,7 @@ class Retryable<R> {
         Duration getMaxDelay()
         int getMaxAttempts()
         double getJitter()
+        double getMultiplier()
     }
 
     @Canonical
@@ -68,12 +68,13 @@ class Retryable<R> {
     static final private int DEFAULT_MAX_ATTEMPTS = 5
     static final private double DEFAULT_JITTER = 0.25d
     static final private Predicate<? extends Throwable> DEFAULT_CONDITION = (e -> e instanceof IOException) as Predicate<? extends Throwable>
+    static final private double DEFAULT_MULTIPLIER = 2.0
 
     private Config config
 
     private Predicate<? extends Throwable> condition
 
-    private Consumer<Event> retryEvent
+    private Consumer<Event<R>> retryEvent
 
     private Predicate<R> handleResult
 
@@ -92,7 +93,7 @@ class Retryable<R> {
         return this
     }
 
-    Retryable<R> onRetry(Consumer<Event> event) {
+    Retryable<R> onRetry(Consumer<Event<R>> event) {
         this.retryEvent = event
         return this
     }
@@ -121,10 +122,11 @@ class Retryable<R> {
         final a = config.maxAttempts ?: DEFAULT_MAX_ATTEMPTS
         final j = config.jitter ?: DEFAULT_JITTER
         final c = condition ?: DEFAULT_CONDITION
+        final r = config.multiplier ?: DEFAULT_MULTIPLIER
 
         final RetryPolicyBuilder<R> policy = RetryPolicy.<R>builder()
                 .handleIf(c)
-                .withBackoff(d.toMillis(), m.toMillis(), ChronoUnit.MILLIS)
+                .withBackoff(d, m, r)
                 .withMaxAttempts(a)
                 .withJitter(j)
                 .onRetry(retry0)
@@ -136,7 +138,11 @@ class Retryable<R> {
 
     R apply(CheckedSupplier<R> action) {
         final policy = retryPolicy()
-        return Failsafe.with(policy).get(action)
+        try {
+            return Failsafe.with(policy).get(action)
+        } catch (FailsafeException e) {
+            throw e.cause
+        }
     }
 
     static <T> Retryable<T> of(Config config) {

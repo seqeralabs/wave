@@ -32,6 +32,7 @@ import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.core.spec.ConfigSpec
 import io.seqera.wave.core.spec.ContainerSpec
 import io.seqera.wave.core.spec.ManifestSpec
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.storage.Storage
@@ -86,6 +87,11 @@ class ContainerAugmenter {
 
     ContainerAugmenter withPlatform(String value) {
         this.platform = ContainerPlatform.of(value)
+        return this
+    }
+
+    ContainerAugmenter withPlatform(ContainerPlatform platform) {
+        this.platform = platform
         return this
     }
 
@@ -274,7 +280,7 @@ class ContainerAugmenter {
         return result
     }
 
-    synchronized protected Map layerBlob(String image, ContainerLayer layer) {
+    protected Map layerBlob(String image, ContainerLayer layer) {
         log.debug "Adding layer: $layer to image: $client.registry.name/$image"
         // store the layer blob in the cache
         final String path = "$client.registry.name/v2/$image/blobs/$layer.gzipDigest"
@@ -289,7 +295,6 @@ class ContainerAugmenter {
 
 
     protected Tuple2<String,Integer> updateImageManifest(String imageName, String imageManifest, String newImageConfigDigest, newImageConfigSize, boolean oci) {
-
         // turn the json string into a json map
         // and append the new layer
         final manifest = (Map) new JsonSlurper().parseText(imageManifest)
@@ -397,7 +402,11 @@ class ContainerAugmenter {
 
     protected String findTargetDigest(Map json, boolean oci) {
         final record = (Map)json.manifests.find(oci ? this.&matchesOciManifest : this.&matchesDockerManifest)
+        if( !record )
+            throw new BadRequestException("Cannot find platform '${platform}' in the manifest: ${JsonOutput.toJson(json)}")
         final result = record.get('digest')
+        if( !result )
+            throw new BadRequestException("Cannot find digest entry for platform '${platform}' in the manifest: ${JsonOutput.toJson(json)}")
         log.trace "Find target digest platform: $platform ==> digest: $result"
         return result
     }

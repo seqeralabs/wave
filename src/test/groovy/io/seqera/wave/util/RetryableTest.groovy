@@ -22,9 +22,7 @@ import spock.lang.Specification
 
 import java.time.Duration
 
-import dev.failsafe.FailsafeException
 import groovy.util.logging.Slf4j
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -65,8 +63,28 @@ class RetryableTest extends Specification {
         when:
         retryable.apply(()-> {throw new IOException("Oops failed!")})
         then:
-        def e = thrown(FailsafeException)
-        e.cause instanceof IOException
+        def e = thrown(IOException)
+        e.message == 'Oops failed!'
+    }
+
+    def 'should validate config' () {
+        given:
+        def config = Mock(Retryable.Config){
+            getDelay() >> Duration.ofSeconds(1)
+            getMaxDelay() >> Duration.ofSeconds(10)
+            getMaxAttempts() >> 10
+            getJitter() >> 0.25
+            getMultiplier() >> 1.5
+        }
+
+        when:
+        def retry = Retryable.of(config).retryPolicy()
+        then:
+        retry.getConfig().getDelay() == Duration.ofSeconds(1)
+        retry.getConfig().getMaxDelay() == Duration.ofSeconds(10)
+        retry.getConfig().getMaxAttempts() == 10
+        retry.getConfig().getJitterFactor() == 0.25d
+        retry.getConfig().getDelayFactor() == 1.5d
     }
 
 }

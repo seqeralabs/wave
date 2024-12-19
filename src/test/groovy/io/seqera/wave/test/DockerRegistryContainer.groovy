@@ -20,7 +20,6 @@ package io.seqera.wave.test
 
 import spock.lang.Shared
 
-import io.micronaut.context.ApplicationContext
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.utility.DockerImageName
@@ -44,7 +43,7 @@ trait DockerRegistryContainer extends BaseTestContainerRegistry {
     @Override
     GenericContainer getTestcontainers() { testcontainers0 }
 
-    void initRegistryContainer(ApplicationContext applicationContext){
+    void initRegistryContainer(){
         testcontainers0.start()
         assert testcontainers0.execInContainer("apk","add", "docker","bash").exitCode==0
         assert testcontainers0.execInContainer("sh","-c","dockerd &").exitCode==0

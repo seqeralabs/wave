@@ -19,13 +19,16 @@
 package io.seqera.wave.service.pairing.socket
 
 import java.time.Duration
+import java.util.concurrent.ExecutorService
 import javax.annotation.PreDestroy
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
+import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.service.data.queue.AbstractMessageQueue
-import io.seqera.wave.service.data.queue.MessageBroker
+import io.seqera.wave.service.data.queue.MessageQueue
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 /**
  * Implement a distributed queue for Wave pairing messages
@@ -39,10 +42,11 @@ class PairingOutboundQueue extends AbstractMessageQueue<PairingMessage> {
     final private Duration pollInterval
 
     PairingOutboundQueue(
-            MessageBroker<String> broker,
-            @Value('${wave.pairing.channel.awaitTimeout:100ms}') Duration pollInterval
+            MessageQueue<String> broker,
+            @Value('${wave.pairing.channel.awaitTimeout:100ms}') Duration pollInterval,
+            @Named(TaskExecutors.BLOCKING) ExecutorService ioExecutor
     ) {
-        super(broker)
+        super(broker, ioExecutor)
         this.pollInterval = pollInterval
     }
 

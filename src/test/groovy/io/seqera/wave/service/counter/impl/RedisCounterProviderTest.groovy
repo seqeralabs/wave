@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.counter.impl
 
+import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
@@ -28,8 +29,10 @@ import io.seqera.wave.test.RedisTestContainer
  */
 class RedisCounterProviderTest extends Specification implements RedisTestContainer {
 
+    @Shared
     ApplicationContext applicationContext
 
+    @Shared
     RedisCounterProvider redisCounterProvider
 
     def setup() {
@@ -39,6 +42,10 @@ class RedisCounterProviderTest extends Specification implements RedisTestContain
         ], 'test', 'redis')
         redisCounterProvider = applicationContext.getBean(RedisCounterProvider)
         sleep(500) // workaround to wait for Redis connection
+    }
+
+    def cleanup() {
+        applicationContext.close()
     }
 
 
@@ -81,5 +88,27 @@ class RedisCounterProviderTest extends Specification implements RedisTestContain
         and:
         redisCounterProvider.getAllMatchingEntries('metrics/v1', 'pulls/o/*/d/2024-05-30') ==
                 ['pulls/o/abc.com.au/d/2024-05-30':1]
+    }
+
+    def 'should get correct org count for mirror and scan' () {
+        when:
+        redisCounterProvider.inc('metrics/v1', 'mirrors/o/foo.com', 1)
+        redisCounterProvider.inc('metrics/v1', 'mirrors/o/bar.io', 1)
+        redisCounterProvider.inc('metrics/v1', 'mirrors/o/abc.org', 2)
+        redisCounterProvider.inc('metrics/v1', 'scans/o/foo.it', 1)
+        redisCounterProvider.inc('metrics/v1', 'scans/o/bar.es', 2)
+        redisCounterProvider.inc('metrics/v1', 'scans/o/abc.in', 3)
+        redisCounterProvider.inc('metrics/v1', 'scans/o/abc.com.au/d/2024-05-30', 1)
+        redisCounterProvider.inc('metrics/v1', 'scans/o/abc.com.au/d/2024-05-31', 1)
+
+        then:
+        redisCounterProvider.getAllMatchingEntries('metrics/v1', 'scans/o/*') ==
+                ['scans/o/abc.in':3, 'scans/o/bar.es':2, 'scans/o/foo.it':1, 'scans/o/abc.com.au/d/2024-05-30':1, 'scans/o/abc.com.au/d/2024-05-31':1]
+        and:
+        redisCounterProvider.getAllMatchingEntries('metrics/v1', 'scans/o/*/d/2024-05-30') ==
+                ['scans/o/abc.com.au/d/2024-05-30':1]
+        and:
+        redisCounterProvider.getAllMatchingEntries('metrics/v1', 'mirrors/o/*') ==
+                ['mirrors/o/foo.com':1, 'mirrors/o/bar.io':1, 'mirrors/o/abc.org':2]
     }
 }

@@ -18,17 +18,15 @@
 
 package io.seqera.wave.proxy
 
-import spock.lang.Shared
+
 import spock.lang.Specification
 
-import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.http.HttpClientFactory
-import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.test.DockerRegistryContainer
 import jakarta.inject.Inject
 /**
@@ -38,10 +36,6 @@ import jakarta.inject.Inject
 @MicronautTest
 class ProxyClientWithLocalRegistryTest extends Specification implements DockerRegistryContainer{
 
-    @Inject
-    @Shared
-    ApplicationContext applicationContext
-
     @Inject RegistryLookupService lookupService
     @Inject RegistryAuthService loginService
     @Inject RegistryCredentialsProvider credentialsProvider
@@ -49,7 +43,7 @@ class ProxyClientWithLocalRegistryTest extends Specification implements DockerRe
     @Inject HttpClientConfig httpConfig
 
     def setupSpec() {
-        initRegistryContainer(applicationContext)
+        initRegistryContainer()
     }
 
     def 'should call target blob' () {

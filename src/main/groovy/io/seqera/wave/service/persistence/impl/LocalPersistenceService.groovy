@@ -20,6 +20,7 @@ package io.seqera.wave.service.persistence.impl
 
 import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerDigestPair
+import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
@@ -40,9 +41,10 @@ class LocalPersistenceService implements PersistenceService {
 
     private Map<String,WaveContainerRecord> requestStore = new HashMap<>()
     private Map<String,WaveScanRecord> scanStore = new HashMap<>()
+    private Map<String,MirrorResult> mirrorStore = new HashMap<>()
 
     @Override
-    void saveBuild(WaveBuildRecord record) {
+    void saveBuildAsync(WaveBuildRecord record) {
         buildStore[record.buildId] = record
     }
 
@@ -52,17 +54,36 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
-    WaveBuildRecord loadBuild(String targetImage, String digest) {
-        buildStore.values().find( (build) ->  build.targetImage==targetImage && build.digest==digest )
+    WaveBuildRecord latestBuild(String containerId) {
+        buildStore
+                .values()
+                .findAll( it-> it.buildId.startsWith(containerId) )
+                .sort( it-> it.startTime )
+                .reverse() [0]
     }
 
     @Override
-    void saveContainerRequest(String token, WaveContainerRecord data) {
-        requestStore.put(token, data)
+    List<WaveBuildRecord> allBuilds(String containerId) {
+        final pattern = ~/^(bd-)?${containerId}_[0-9]+/
+        buildStore
+                .values()
+                .findAll( it-> pattern.matcher(it.buildId).matches() )
+                .sort { it.startTime }
+                .reverse()
     }
 
     @Override
-    void updateContainerRequest(String token, ContainerDigestPair digest) {
+    WaveBuildRecord loadBuildSucceed(String targetImage, String digest) {
+        buildStore.values().find( (build) ->  build.targetImage==targetImage && build.digest==digest && build.succeeded() )
+    }
+
+    @Override
+    void saveContainerRequestAsync(WaveContainerRecord data) {
+        requestStore.put(data.id, data)
+    }
+
+    @Override
+    void updateContainerRequestAsync(String token, ContainerDigestPair digest) {
         final data = requestStore.get(token)
         if( data ) {
             requestStore.put(token, new WaveContainerRecord(data, digest.source, digest.target))
@@ -75,18 +96,43 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
-    void createScanRecord(WaveScanRecord scanRecord) {
-        scanStore.put(scanRecord.id, scanRecord)
+    boolean existsScanRecord(String scanId) {
+        scanStore.containsKey(scanId)
     }
 
     @Override
-    void updateScanRecord(WaveScanRecord scanRecord) {
+    void saveScanRecordAsync(WaveScanRecord scanRecord) {
         scanStore.put(scanRecord.id, scanRecord)
     }
 
     @Override
     WaveScanRecord loadScanRecord(String scanId) {
         scanStore.get(scanId)
+    }
+
+    @Override
+    List<WaveScanRecord> allScans(String scanId) {
+        final pattern = ~/^.*(sc-)?${scanId}_[0-9]+/
+        scanStore
+                .values()
+                .findAll( it-> pattern.matcher(it.id).matches() )
+                .sort { it.startTime }
+                .reverse()
+    }
+
+    @Override
+    MirrorResult loadMirrorResult(String mirrorId) {
+        mirrorStore.get(mirrorId)
+    }
+
+    @Override
+    MirrorResult loadMirrorSucceed(String targetImage, String digest) {
+        mirrorStore.values().find( (MirrorResult mirror) ->  mirror.targetImage==targetImage && mirror.digest==digest && mirror.succeeded() )
+    }
+
+    @Override
+    void saveMirrorResultAsync(MirrorResult mirror) {
+        mirrorStore.put(mirror.mirrorId, mirror)
     }
 
 }
