@@ -25,11 +25,10 @@ import java.util.concurrent.TimeoutException
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Value
+import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.encoder.EncodingStrategy
 import jakarta.inject.Inject
 import jakarta.inject.Named
-
 /**
  * Implements a {@link FutureStore} that allow handling {@link CompletableFuture} objects
  * in a distributed environment.
@@ -51,11 +50,8 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V> {
 
     private FutureHash<String> store
 
-    @Value('${wave.pairing.channel.awaitTimeout:100ms}')
-    private volatile Duration pollInterval
-
     @Inject
-    @Named('future-store-executor')
+    @Named(TaskExecutors.BLOCKING)
     private ExecutorService executor
 
     AbstractFutureStore(FutureHash<String> store, EncodingStrategy<V> encodingStrategy) {
@@ -66,6 +62,8 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V> {
     abstract String prefix()
 
     abstract Duration getTimeout()
+
+    abstract Duration getPollInterval()
 
     /**
      * Create a new {@link CompletableFuture} instance. The future can be "completed" by this or any other instance
@@ -91,7 +89,7 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V> {
                 if( System.currentTimeMillis()-start > max )
                     throw new TimeoutException("Unable to retrieve a value for key: $target")
                 // sleep for a while
-                sleep(pollInterval.toMillis())
+                sleep(getPollInterval().toMillis())
             }
         }, executor)
     }

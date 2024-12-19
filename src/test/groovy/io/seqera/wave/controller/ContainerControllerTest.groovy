@@ -453,13 +453,13 @@ class ContainerControllerTest extends Specification {
         controller.validateContainerRequest(new SubmitContainerTokenRequest(containerImage: 'http://docker.io/foo:latest'))
         then:
         err = thrown(BadRequestException)
-        err.message == 'Invalid container repository name — offending value: http://docker.io/foo:latest'
+        err.message == "Invalid container repository name — offending value: 'http://docker.io/foo:latest'"
 
         when:
         controller.validateContainerRequest(new SubmitContainerTokenRequest(containerImage: 'http:docker.io/foo:latest'))
         then:
         err = thrown(BadRequestException)
-        err.message == 'Invalid container image name — offending value: http:docker.io/foo:latest'
+        err.message == "Invalid container image name — offending value: 'http:docker.io/foo:latest'"
 
     }
 

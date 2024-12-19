@@ -1,4 +1,44 @@
 # Wave changelog
+1.16.0 - 9 Dec 2024 
+- Add support for mills resolution future store [252e0985]
+- Fix Condalock fetching for cached build layers (#727) [13a59373]
+- Fix NPE while creating PairingOutboundQueue (#770) [215f6da8]
+- Improve Tower client caching via Tiered cache (#772) [f0ca0f62]
+- Improve logging for connect response events [f94eb6fa]
+- Improving pairing tracing [b743c136]
+- Replace volatile with final (#771) [df2ddb96]
+- Strengthen conda naming strategy [d72b69c3]
+- User email as rate limiter key [eddc9ee9]
+
+1.15.5 - 9 Dec 2024 
+- Add Jedis pool metrics binder (#756) [a6b2833d]
+- Add jul-to-slf4j dependency [2874187b]
+- Add slf4j backend for Java sys logger [ec5c67fe]
+- Add support for common pool and virtual threads pool metrics (#762) [8aa9075c]
+- Add GH Workflow to sync changelog with Seqera docs (#761) [c8bb7b03]
+- Fix handling error for known http statuses [513a1ef2]
+- Improve container validation [1c36fd4c]
+- Remove unused stream-executor [61357048]
+- Suppress Caffeine log warnings [2fd351d3]
+- Tune Tower connector delay and retry [3fd5643f]
+- Unwrap Failsafe target exception [6fb214a4]
+
+1.15.4 - 27 Nov 2024 
+- Add blocking executor to async caches (#759) [86f7d3e3]
+- Add ExecutesOn annotation to error controller [a2db2b00]
+
+1.15.3 - 25 Nov 2024
+- Add Support Redis support for SSL and password (#717) [bf63599d]
+- Bump MN 4.7.1 (#741) [203e5dd0]
+- Remove double cache builder invocation [994b722c]
+- Bump lib-mail version 1.2.1 [4da98a23]
+- Bump io.seqera:lib-crypto [36f5b24d]
+- Bump gson 2.10.1 [117703b9]
+- Bump protobuf-java version 4.27.5 [3ea758b4]
+- Bump k8s client to version 21.0.1 (#553) [51788578]
+
+1.15.2 [skipped] 
+
 1.15.1 - 20 Nov 2024
 - Check block existence with object operation (#750) [86ef526c]
 - Add /v1alpha2/validate-creds (#752) [e24ec62c]

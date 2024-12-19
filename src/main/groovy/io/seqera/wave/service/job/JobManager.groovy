@@ -20,6 +20,7 @@ package io.seqera.wave.service.job
 
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.ExecutorService
 
 import com.github.benmanes.caffeine.cache.AsyncCache
 import com.github.benmanes.caffeine.cache.Cache
@@ -27,8 +28,11 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
+import io.micronaut.scheduling.TaskExecutors
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
+import jakarta.inject.Named
+
 /**
  * Implement the logic to handle Blob cache transfer (uploads)
  *
@@ -51,6 +55,10 @@ class JobManager {
     @Inject
     private JobConfig config
 
+    @Inject
+    @Named(TaskExecutors.BLOCKING)
+    private ExecutorService ioExecutor
+
     // FIXME https://github.com/seqeralabs/wave/issues/747
     private AsyncCache<String,Instant> debounceCache
 
@@ -60,10 +68,21 @@ class JobManager {
         debounceCache = Caffeine
                 .newBuilder()
                 .expireAfterWrite(config.graceInterval.multipliedBy(2))
+                .executor(ioExecutor)
                 .buildAsync()
         queue.addConsumer((job)-> processJob(job))
     }
 
+    /**
+     * Process a job entry aorrding the state modelled by the {@link JobSpec} object.
+     *
+     * @param jobSpec
+     *      A {@link JobSpec} object representing the job to be processed
+     * @return
+     *      {@code true} to signal the process has been processed successfully and it should
+     *      be removed from the underlying queue, or {@code false} if the job execution has
+     *      not yet completed.
+     */
     protected boolean processJob(JobSpec jobSpec) {
         try {
             return processJob0(jobSpec)

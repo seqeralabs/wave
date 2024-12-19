@@ -265,7 +265,7 @@ class ContainerController {
         final ip = addressResolver.resolve(httpRequest)
         // check the rate limit before continuing
         if( rateLimiterService )
-            rateLimiterService.acquirePull(new AcquireRequest(identity.userId as String, ip))
+            rateLimiterService.acquirePull(new AcquireRequest(identity.userEmail, ip))
         // create request data
         final data = makeRequestData(req, identity, ip)
         final token = containerService.computeToken(data)
