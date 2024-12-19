@@ -68,14 +68,14 @@ class ValidationServiceImpl implements ValidationService {
         // check does not start with a protocol prefix
         final prot = StringUtils.getUrlProtocol(name)
         if( prot ) {
-            return "Invalid container repository name — offending value: $name"
+            return "Invalid container repository name — offending value: '$name'"
         }
 
         try {
             ContainerCoordinates.parse(name)
         }
         catch (IllegalArgumentException e) {
-            return "Invalid container image name — offending value: $name"
+            return "Invalid container image name — offending value: '$name'"
         }
         return null
     }

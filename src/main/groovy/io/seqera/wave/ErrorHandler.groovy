@@ -24,6 +24,7 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpResponseFactory
 import io.micronaut.http.HttpStatus
+import io.micronaut.http.exceptions.HttpStatusException
 import io.micronaut.security.authentication.AuthorizationException
 import io.seqera.wave.exception.BuildTimeoutException
 import io.seqera.wave.exception.DockerRegistryException
@@ -55,8 +56,9 @@ class ErrorHandler {
     def <T> HttpResponse<T> handle(HttpRequest httpRequest, Throwable t, Mapper<T> responseFactory) {
         final errId = LongRndKey.rndHex()
         final request = httpRequest?.toString()
+        final knownException = t instanceof WaveException || t instanceof HttpStatusException
         def msg = t.message
-        if( t instanceof WaveException && msg ) {
+        if( knownException && msg ) {
             // the the error cause
             if( t.cause ) msg += " - Cause: ${t.cause.message ?: t.cause}".toString()
             // render the message for logging
@@ -79,6 +81,13 @@ class ErrorHandler {
             def render = msg
             if( request ) render += " - Request: ${request}"
             log.error(render, t)
+        }
+
+        if( t instanceof HttpStatusException ) {
+            final body = (t.body.isPresent() ? t.body.get() : t.message) as T
+            return HttpResponse
+                    .status(t.status)
+                    .body(body)
         }
 
         if( t instanceof RegistryForwardException ) {

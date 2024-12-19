@@ -20,8 +20,6 @@ package io.seqera.wave.controller
 
 import spock.lang.Specification
 
-import java.util.concurrent.CompletableFuture
-
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
@@ -36,17 +34,16 @@ import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.exchange.DescribeWaveContainerResponse
-import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.PairingServiceImpl
+import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.client.TowerClient
 import io.seqera.wave.tower.client.UserInfoResponse
 import jakarta.inject.Inject
 import static io.seqera.wave.service.pairing.PairingService.TOWER_SERVICE
-import static io.seqera.wave.util.FutureUtils.completeExceptionally
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  */
@@ -95,7 +92,7 @@ class ContainerControllerHttpTest extends Specification {
         def auth = JwtAuth.of(endpoint, token, refresh)
         and:
         pairingService.getPairingRecord(TOWER_SERVICE, endpoint) >> { new PairingRecord('tower', endpoint) }
-        towerClient.userInfo(endpoint,auth) >> CompletableFuture.completedFuture(new UserInfoResponse(user:new User(id:1)))
+        towerClient.userInfo(endpoint,auth) >> new UserInfoResponse(user:new User(id:1))
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
@@ -118,7 +115,7 @@ class ContainerControllerHttpTest extends Specification {
         def auth = JwtAuth.of(endpoint, token, refresh)
         and:
         pairingService.getPairingRecord(TOWER_SERVICE, endpoint) >> { new PairingRecord('tower', endpoint) }
-        towerClient.userInfo(endpoint, auth) >> completeExceptionally(new HttpResponseException(401, "Auth error"))
+        towerClient.userInfo(endpoint, auth) >> { throw new HttpResponseException(401, "Auth error") }
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
@@ -280,7 +277,7 @@ class ContainerControllerHttpTest extends Specification {
         def auth = JwtAuth.of(endpoint, token, refresh)
         and:
         pairingService.getPairingRecord(TOWER_SERVICE, endpoint) >> { new PairingRecord('tower', endpoint) }
-        towerClient.userInfo(endpoint, auth) >> CompletableFuture.completedFuture(new UserInfoResponse(user:new User(id:1)))
+        towerClient.userInfo(endpoint, auth) >> new UserInfoResponse(user:new User(id:1))
 
         and:
         def cfg = new ContainerConfig(workingDir: '/foo')
