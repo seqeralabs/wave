@@ -24,13 +24,11 @@ import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
-import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.encoder.MoshiExchange
 import io.seqera.wave.store.cache.AbstractTieredCache
 import io.seqera.wave.store.cache.L2TieredCache
 import jakarta.inject.Singleton
-
 /**
  * Implements a tiered cache for proxied http responses
  * 
@@ -38,7 +36,7 @@ import jakarta.inject.Singleton
  */
 @Singleton
 @CompileStatic
-class ProxyCache extends AbstractTieredCache<RegistryProxyService.DelegateResponse> {
+class ProxyCache extends AbstractTieredCache<DelegateResponse> {
     ProxyCache(@Nullable L2TieredCache l2,
                @Value('${wave.proxy-cache.duration:1h}') Duration duration,
                @Value('${wave.proxy-cache.max-size:10000}') long maxSize) {
@@ -49,9 +47,9 @@ class ProxyCache extends AbstractTieredCache<RegistryProxyService.DelegateRespon
         // json adapter factory
         final factory = PolymorphicJsonAdapterFactory.of(MoshiExchange.class, "@type")
                 .withSubtype(Entry.class, Entry.name)
-                .withSubtype(RegistryProxyService.DelegateResponse.class, RegistryProxyService.DelegateResponse.simpleName)
+                .withSubtype(DelegateResponse.class, DelegateResponse.simpleName)
         // the encoding strategy
-        return new MoshiEncodeStrategy<RegistryProxyService.DelegateResponse>(factory) {}
+        return new MoshiEncodeStrategy<AbstractTieredCache.Entry>(factory) {}
     }
 
     String getName() {

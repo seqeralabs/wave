@@ -38,8 +38,9 @@ import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.encoder.MoshiExchange
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
-import io.seqera.wave.proxy.ProxyClient
+import io.seqera.wave.proxy.DelegateResponse
 import io.seqera.wave.proxy.ProxyCache
+import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.service.CredentialsService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.persistence.PersistenceService
@@ -260,16 +261,6 @@ class RegistryProxyService {
             log.warn "Unable to retrieve digest for image '$image' -- response status=${resp.statusCode()}; headers:\n${RegHelper.dumpHeaders(resp.headers())}"
         }
         return result
-    }
-
-    @ToString(includeNames = true, includePackage = false)
-    static class DelegateResponse implements MoshiExchange {
-        int statusCode
-        Map<String,List<String>> headers
-        byte[] body
-        String location
-        boolean isRedirect() { location }
-        boolean isCacheable() { location!=null || (body!=null && statusCode>=200 && statusCode<400) }
     }
 
     Flux<ByteBuffer<?>> streamBlob(RoutePath route, Map<String,List<String>> headers) {
