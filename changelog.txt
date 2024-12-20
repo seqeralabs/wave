@@ -1,4 +1,7 @@
 # Wave changelog
+1.16.2 - 20 Dec 
+- Fix JWT token refresh [52a5ebd7]
+
 1.16.1 - 20 Dec 
 - Add tiered chache for HTTP proxied responses (#778) [00b6add7]
 - Improve boostrap info [d5c086da]
