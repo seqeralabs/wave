@@ -22,7 +22,6 @@ import java.util.concurrent.CompletableFuture
 
 import com.google.common.hash.Hashing
 import groovy.transform.CompileStatic
-import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.context.annotation.Context
@@ -35,7 +34,6 @@ import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.HttpClientConfig
-import io.seqera.wave.encoder.MoshiExchange
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.proxy.DelegateResponse
@@ -149,11 +147,11 @@ class RegistryProxyService {
         }
     }
 
-    private String requestKey(RoutePath route, Map<String,List<String>> headers) {
+    static protected String requestKey(RoutePath route, Map<String,List<String>> headers) {
         final hasher = Hashing.sipHash24().newHasher()
         hasher.putUnencodedChars(route.stableHash())
         hasher.putUnencodedChars('/')
-        for( Map.Entry<String,List<String>> entry : headers ) {
+        for( Map.Entry<String,List<String>> entry : (headers ?: Map.of()) ) {
             hasher.putUnencodedChars(entry.key)
             for( String it : entry.value ) {
                 if( it )
@@ -173,7 +171,7 @@ class RegistryProxyService {
         return resp
     }
 
-    DelegateResponse handleRequest0(RoutePath route, Map<String,List<String>> headers) {
+    private DelegateResponse handleRequest0(RoutePath route, Map<String,List<String>> headers) {
         ProxyClient proxyClient = client(route)
         final resp1 = proxyClient.getStream(route.path, headers, false)
         final redirect = resp1.headers().firstValue('Location').orElse(null)
@@ -217,7 +215,7 @@ class RegistryProxyService {
             // create the retry logic on error                                                              §
             final retryable = Retryable
                     .<byte[]>of(httpConfig)
-                    .onRetry((event) -> log.warn("Unable to read manifest body - request: $route; event: $event"))
+                    .onRetry((event) -> log.warn("Unable to read blob body - request: $route; event: $event"))
             // read the body and compose the response
             return new DelegateResponse(
                     statusCode: resp1.statusCode(),

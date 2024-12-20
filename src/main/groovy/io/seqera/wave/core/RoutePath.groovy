@@ -153,7 +153,7 @@ class RoutePath implements ContainerPath {
     }
 
     String stableHash() {
-        RegHelper.sipHash(getTargetContainer(), identity.stableHash())
+        RegHelper.sipHash(type, registry, path, image, reference, identity.stableHash())
     }
 
 }

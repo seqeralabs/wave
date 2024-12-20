@@ -204,13 +204,17 @@ class RegHelper {
     }
 
     static String sipHash(Object... keys) {
-        final h = Hashing.sipHash24().newHasher()
+        if( keys == null )
+            throw new IllegalArgumentException("Missing argument for sipHash method")
+
+        final hasher = Hashing.sipHash24().newHasher()
         for( Object it :  keys ) {
             if( it!=null )
-                h.putUnencodedChars(it.toString())
-            h.putUnencodedChars('/')
+                hasher.putUnencodedChars(it.toString())
+            hasher.putUnencodedChars(Character.toString(0x1C))
         }
-        return h.hash()
+        hasher.putUnencodedChars(Character.toString(0x1E))
+        return hasher.hash()
     }
 
     static String layerName(ContainerLayer layer) {

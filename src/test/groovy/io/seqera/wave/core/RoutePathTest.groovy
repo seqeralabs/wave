@@ -18,9 +18,11 @@
 
 package io.seqera.wave.core
 
+import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.tower.PlatformId
@@ -150,5 +152,27 @@ class RoutePathTest extends Specification {
         route2.path == '/v2/library/ubuntu/manifests/latest'
         route2.request.containerImage == 'ubuntu:latest'
         route2.identity == new PlatformId(new User(id: 100))
+    }
+
+    @Shared
+    def ID1 = PlatformId.of(new User(id:1), Mock(SubmitContainerTokenRequest))
+    @Shared
+    def ID2 = PlatformId.of(new User(id:2), Mock(SubmitContainerTokenRequest))
+
+    @Unroll
+    def 'should return immutable hash' () {
+        expect:
+        RoutePath.parse(GIVEN, ID).stableHash() == EXPECTED
+
+        where:
+        GIVEN                                   | ID                        | EXPECTED
+        '/v2/hello-world/manifests/latest'      | null                      | 'f565ecdba5885ced'
+        '/v2/hello-world/manifests/sha256:123'  | null                      | 'a5fd596b535678f0'
+        '/v2/hello-world/blobs/latest'          | null                      | '0baf67ef8cb144c2'
+        'docker.io/v2/hello-world/blobs/latest' | null                      | '0baf67ef8cb144c2' // <- same as above because default to docker.io when registry is omitted
+        'quay.io/v2/hello-world/blobs/latest'   | null                      | '52907f8c52f2fbe0'
+        'quay.io/v2/hello-world/blobs/latest'   | ID1                       | '9b3eb558c666828e'
+        'quay.io/v2/hello-world/blobs/latest'   | ID2                       | '492e93611079e4d9'
+
     }
 }

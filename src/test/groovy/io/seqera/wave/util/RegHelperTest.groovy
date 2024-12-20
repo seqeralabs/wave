@@ -213,7 +213,7 @@ class RegHelperTest extends Specification {
         def client = new TowerClient()
 
         expect:
-        RegHelper.sipHash('a') == '92cf27ac76c18d8e'
+        RegHelper.sipHash('a') == 'bcf5c2d233d23f0f'
         and:
         RegHelper.sipHash('a') == RegHelper.sipHash('a')
         and:
