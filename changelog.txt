@@ -1,5 +1,10 @@
 # Wave changelog
-1.16.0 - 9 Dec 2024 
+1.16.1 - 20 Dec 
+- Add tiered chache for HTTP proxied responses (#778) [00b6add7]
+- Improve boostrap info [d5c086da]
+- Remove jitpack [67f91c8b]
+
+1.16.0 - 17 Dec 2024 
 - Add support for mills resolution future store [252e0985]
 - Fix Condalock fetching for cached build layers (#727) [13a59373]
 - Fix NPE while creating PairingOutboundQueue (#770) [215f6da8]
