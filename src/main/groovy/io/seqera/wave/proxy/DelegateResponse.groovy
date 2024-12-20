@@ -16,32 +16,22 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.tower.client
+package io.seqera.wave.proxy
 
-import spock.lang.Specification
+import groovy.transform.ToString
+import io.seqera.wave.encoder.MoshiExchange
 
 /**
- *
+ * Model a response object to be forwarded to the client
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class TowerClientTest extends Specification {
-
-    def 'should create consistent hash' () {
-        given:
-        def client = new TowerClient()
-       
-        expect:
-        client.makeKey('a') == '92cf27ac76c18d8e'
-        and:
-        client.makeKey('a') == client.makeKey('a')
-        and:
-        client.makeKey('a','b','c') == client.makeKey('a','b','c')
-        and:
-        client.makeKey('a','b',null) == client.makeKey('a','b',null)
-        and:
-        client.makeKey(new URI('http://foo.com')) == client.makeKey('http://foo.com')
-        and:
-        client.makeKey(100l) == client.makeKey('100')
-    }
-
+@ToString(includeNames = true, includePackage = false)
+class DelegateResponse implements MoshiExchange {
+    int statusCode
+    Map<String,List<String>> headers
+    byte[] body
+    String location
+    boolean isRedirect() { location }
+    boolean isCacheable() { location!=null || (body!=null && statusCode>=200 && statusCode<400) }
 }

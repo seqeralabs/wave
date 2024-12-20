@@ -68,4 +68,31 @@ class RegistryProxyServiceTest extends Specification {
         then:
         resp1 == 'sha256:d5c169e210d6b789b2dc7eced66471cf4ce2c7260ac7299fbef464ff902086be'
     }
+
+    def 'should return a stable hash' () {
+        given:
+        def p1 = RoutePath.parse('quay.io/v2/ubuntu/blobs/sha256:123')
+
+        when:
+        def k1 = RegistryProxyService.requestKey(p1,  null)
+        then:
+        k1 == 'b133b45b6c64b652'
+
+        when:
+        def k2 = RegistryProxyService.requestKey(p1, [:])
+        then:
+        k2 == 'b133b45b6c64b652'
+
+        when:
+        def k3 = RegistryProxyService.requestKey(p1, ['Content-Type': ['text/1']])
+        then:
+        k3 == '654ce7450c0a9c35'
+
+        when:
+        def k4 = RegistryProxyService.requestKey(p1, ['Content-Type': ['text/1', 'text/2']])
+        then:
+        k4 == 'afabdb14b217efd4'
+
+    }
+
 }

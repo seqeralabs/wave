@@ -27,6 +27,7 @@ import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.util.RegHelper
 import static io.seqera.wave.WaveDefault.DOCKER_IO
 /**
  * Model a container registry route path
@@ -150,4 +151,9 @@ class RoutePath implements ContainerPath {
         else
             throw new IllegalArgumentException("Not a valid container path - offending value: '$location'")
     }
+
+    String stableHash() {
+        RegHelper.sipHash(type, registry, path, image, reference, identity.stableHash())
+    }
+
 }

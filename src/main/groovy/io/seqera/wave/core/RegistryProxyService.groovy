@@ -20,8 +20,8 @@ package io.seqera.wave.core
 
 import java.util.concurrent.CompletableFuture
 
+import com.google.common.hash.Hashing
 import groovy.transform.CompileStatic
-import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.context.annotation.Context
@@ -36,6 +36,8 @@ import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
+import io.seqera.wave.proxy.DelegateResponse
+import io.seqera.wave.proxy.ProxyCache
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.service.CredentialsService
 import io.seqera.wave.service.builder.BuildRequest
@@ -44,6 +46,7 @@ import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.RegHelper
+import io.seqera.wave.util.Retryable
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import reactor.core.publisher.Flux
@@ -90,6 +93,9 @@ class RegistryProxyService {
     @Inject
     @Client("stream-client")
     private ReactorStreamingHttpClient streamClient
+
+    @Inject
+    private ProxyCache cache
 
     private ContainerAugmenter scanner(ProxyClient proxyClient) {
         return new ContainerAugmenter()
@@ -141,7 +147,31 @@ class RegistryProxyService {
         }
     }
 
-    DelegateResponse handleRequest(RoutePath route, Map<String,List<String>> headers){
+    static protected String requestKey(RoutePath route, Map<String,List<String>> headers) {
+        final hasher = Hashing.sipHash24().newHasher()
+        hasher.putUnencodedChars(route.stableHash())
+        hasher.putUnencodedChars('/')
+        for( Map.Entry<String,List<String>> entry : (headers ?: Map.of()) ) {
+            hasher.putUnencodedChars(entry.key)
+            for( String it : entry.value ) {
+                if( it )
+                    hasher.putUnencodedChars(it)
+                hasher.putUnencodedChars('/')
+            }
+            hasher.putUnencodedChars('/')
+        }
+        return hasher.hash().toString()
+    }
+
+    DelegateResponse handleRequest(RoutePath route, Map<String,List<String>> headers) {
+        final resp = cache.getOrCompute(
+                requestKey(route, headers),
+                (it)-> handleRequest0(route, headers),
+                (resp)-> route.isDigest() && resp.isCacheable() )
+        return resp
+    }
+
+    private DelegateResponse handleRequest0(RoutePath route, Map<String,List<String>> headers) {
         ProxyClient proxyClient = client(route)
         final resp1 = proxyClient.getStream(route.path, headers, false)
         final redirect = resp1.headers().firstValue('Location').orElse(null)
@@ -182,10 +212,15 @@ class RegistryProxyService {
         // otherwise read it and include the body input stream in the response
         // the caller must consume and close the body to prevent memory leaks
         else {
+            // create the retry logic on error                                                              §
+            final retryable = Retryable
+                    .<byte[]>of(httpConfig)
+                    .onRetry((event) -> log.warn("Unable to read blob body - request: $route; event: $event"))
+            // read the body and compose the response
             return new DelegateResponse(
                     statusCode: resp1.statusCode(),
                     headers: resp1.headers().map(),
-                    body: resp1.body() )
+                    body: retryable.apply(()-> resp1.body().bytes) )
         }
     }
 
@@ -224,15 +259,6 @@ class RegistryProxyService {
             log.warn "Unable to retrieve digest for image '$image' -- response status=${resp.statusCode()}; headers:\n${RegHelper.dumpHeaders(resp.headers())}"
         }
         return result
-    }
-
-    @ToString(includeNames = true, includePackage = false)
-    static class DelegateResponse {
-        int statusCode
-        Map<String,List<String>> headers
-        InputStream body
-        String location
-        boolean isRedirect() { location }
     }
 
     Flux<ByteBuffer<?>> streamBlob(RoutePath route, Map<String,List<String>> headers) {

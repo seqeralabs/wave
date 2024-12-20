@@ -143,4 +143,31 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
         cache2.get(k) == null
     }
 
+    def 'should get or compute a value with condition' () {
+        given:
+        def AWAIT = 150
+        def store = applicationContext.getBean(RedisL2TieredCache)
+        def cache = new MyCache(store, Duration.ofMillis(AWAIT), 100)
+        and:
+        def k1 = UUID.randomUUID().toString()
+        def k2 = UUID.randomUUID().toString()
+
+        expect:
+        cache.get(k1) == null
+
+        when:
+        Entry r1 = cache.getOrCompute(k1, (it)-> new Entry(it+'1', it+'2'), (v)-> true)
+        then:
+        r1 == new Entry(k1+'1', k1+'2')
+        then:
+        cache.get(k1) == new Entry(k1+'1', k1+'2')
+
+        when:
+        Entry r2 = cache.getOrCompute(k2, (it)-> new Entry(it+'3', it+'4'), (v)-> false)
+        then:
+        r2 == new Entry(k2+'3', k2+'4')
+        then:
+        cache.get(k2) == null
+    }
+
 }
