@@ -128,7 +128,7 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
      * @param cacheCondition
       *     The function to determine if the loaded value should be cached             
      * @return
-      *     The value associated with the specified key, or #function result otherwsie
+      *     The value associated with the specified key, or #function result otherwise
      */
     V getOrCompute(String key, Function<String,V> loader, Function<V,Boolean> cacheCondition) {
         assert key!=null, "Argument key cannot be null"
