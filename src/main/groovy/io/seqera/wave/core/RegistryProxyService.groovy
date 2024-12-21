@@ -148,10 +148,13 @@ class RegistryProxyService {
     }
 
     static protected String requestKey(RoutePath route, Map<String,List<String>> headers) {
+        assert route!=null, "Argument route cannot be null"
         final hasher = Hashing.sipHash24().newHasher()
         hasher.putUnencodedChars(route.stableHash())
         hasher.putUnencodedChars('/')
-        for( Map.Entry<String,List<String>> entry : (headers ?: Map.of()) ) {
+        if( !headers )
+            headers = Map.of()
+        for( Map.Entry<String,List<String>> entry : headers ) {
             hasher.putUnencodedChars(entry.key)
             for( String it : entry.value ) {
                 if( it )
