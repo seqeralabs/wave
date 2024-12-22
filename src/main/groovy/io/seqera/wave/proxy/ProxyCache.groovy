@@ -38,7 +38,7 @@ import jakarta.inject.Singleton
 @CompileStatic
 class ProxyCache extends AbstractTieredCache<DelegateResponse> {
 
-    @Value('${wave.proxy-cache.duration:1h}')
+    @Value('${wave.proxy-cache.duration:30m}')
     private Duration duration
 
     @Value('${wave.proxy-cache.max-size:10000}')

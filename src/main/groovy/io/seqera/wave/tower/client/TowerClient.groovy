@@ -58,9 +58,6 @@ class TowerClient {
     @Value('${wave.pairing.cache.long.duration:24h}')
     private Duration cacheLongDuration
 
-    @Value('${wave.pairing.cache.long.duration:1h}')
-    private Duration cacheUserDuration
-
 
     protected <T> CompletableFuture<T> getAsync(URI uri, String endpoint, @Nullable JwtAuth authorization, Class<T> type) {
         assert uri, "Missing uri argument"
@@ -80,7 +77,7 @@ class TowerClient {
         final k = RegHelper.sipHash(uri, authorization.key, null, null)
         // NOTE: it assumes the user info metadata does nor change over time
         // and therefore the *long* expiration cached is used
-        get0(uri, towerEndpoint, authorization, UserInfoResponse, k, cacheUserDuration) as UserInfoResponse
+        get0(uri, towerEndpoint, authorization, UserInfoResponse, k, cacheLongDuration) as UserInfoResponse
     }
 
     ListCredentialsResponse listCredentials(String towerEndpoint, JwtAuth authorization, Long workspaceId, String workflowId) {
