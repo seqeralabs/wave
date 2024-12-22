@@ -149,7 +149,7 @@ class RegistryProxyService {
         }
     }
 
-    static private final List<String> CACHE_HEADERS = [
+    static private final List<String> CACHEABLE_HEADERS = [
             'Accept',
             'Accept-Encoding',
             'Authorization',
@@ -170,8 +170,8 @@ class RegistryProxyService {
     static protected boolean isCacheableHeader(String key) {
         if( !key )
             return false
-        for( int i=0; i<CACHE_HEADERS.size(); i++ ) {
-          if( key.equalsIgnoreCase(CACHE_HEADERS.get(i)))
+        for(int i=0; i<CACHEABLE_HEADERS.size(); i++ ) {
+          if( key.equalsIgnoreCase(CACHEABLE_HEADERS.get(i)))
               return true
         }
         return false
@@ -211,6 +211,7 @@ class RegistryProxyService {
                 requestKey(route, headers),
                 (it)-> {
                     final resp = handleRequest0(route, headers)
+                    // when the response is not cacheable, return null as TTL
                     final ttl = route.isDigest() && resp.isCacheable() ? cache.duration : null
                     return new Tuple2<DelegateResponse, Duration>(resp, ttl)
                 })
