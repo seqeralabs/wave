@@ -201,7 +201,7 @@ class RegistryProxyService {
                     'route', route.getTargetPath(),
                     'identity', route.identity,
                     'headers', headers )
-            log.trace "Request key: ${result}; values:\n${JsonOutput.prettyPrint(JsonOutput.toJson(m))}"
+            log.trace "Request key=${result}; values=${JsonOutput.toJson(m)}"
         }
         return result
     }
