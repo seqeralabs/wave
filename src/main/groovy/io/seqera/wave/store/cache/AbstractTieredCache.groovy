@@ -114,7 +114,7 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
      */
     @Override
     V get(String key) {
-        getOrCompute(key, null, null)
+        getOrCompute0(key, null)
     }
 
     /**
@@ -129,9 +129,9 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
      */
     V getOrCompute(String key, Function<String,V> loader, Duration ttl) {
         if( loader==null ) {
-            return getOrCompute(key, null, null)
+            return getOrCompute0(key, null)
         }
-        return getOrCompute(key, (String k)-> {
+        return getOrCompute0(key, (String k)-> {
             V v = loader.apply(key)
             return v != null ? new Tuple2<>(v, ttl) : null
         })
@@ -148,6 +148,10 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
       *     The value associated with the specified key, or #function result otherwise
      */
     V getOrCompute(String key, Function<String, Tuple2<V,Duration>> loader) {
+        return getOrCompute0(key, loader)
+    }
+
+    private V getOrCompute0(String key, Function<String, Tuple2<V,Duration>> loader) {
         assert key!=null, "Argument key cannot be null"
 
         log.trace "Cache '${name}' checking key=$key"
