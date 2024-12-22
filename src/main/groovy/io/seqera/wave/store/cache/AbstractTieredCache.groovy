@@ -218,7 +218,7 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
             return null
 
         if( System.currentTimeMillis() > entry.expiresAt ) {
-            log.trace "Cache '${name}' L1 exipired - key=$key => value=${entry.value}"
+            log.trace "Cache '${name}' L1 expired - key=$key => value=${entry.value}"
             return null
         }
         return (V) entry.value
@@ -238,7 +238,7 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
 
         final Entry entry = encoder.decode(raw)
         if( System.currentTimeMillis() > entry.expiresAt ) {
-            log.trace "Cache '${name}' L2 exipired - key=$key => value=${entry}"
+            log.trace "Cache '${name}' L2 expired - key=$key => value=${entry}"
             return null
         }
         return entry

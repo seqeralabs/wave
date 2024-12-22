@@ -22,6 +22,7 @@ import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
 import com.google.common.hash.Hashing
+import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.cache.annotation.Cacheable
@@ -148,6 +149,34 @@ class RegistryProxyService {
         }
     }
 
+    static private final List<String> CACHE_HEADERS = [
+            'Accept',
+            'Accept-Encoding',
+            'Authorization',
+            'Cache-Control',
+            'Content-Type',
+            'Content-Length',
+            'Content-Range',
+            'Docker-Distribution-API',
+            'If-Modified-Since',
+            'If-None-Match',
+            'If-None-Match',
+            'Etag',
+            'Location',
+            'Last-Modified',
+            'Range',
+    ]
+
+    static protected boolean isCacheableHeader(String key) {
+        if( !key )
+            return false
+        for( int i=0; i<CACHE_HEADERS.size(); i++ ) {
+          if( key.equalsIgnoreCase(CACHE_HEADERS.get(i)))
+              return true
+        }
+        return false
+    }
+
     static protected String requestKey(RoutePath route, Map<String,List<String>> headers) {
         assert route!=null, "Argument route cannot be null"
         final hasher = Hashing.sipHash24().newHasher()
@@ -156,6 +185,8 @@ class RegistryProxyService {
         if( !headers )
             headers = Map.of()
         for( Map.Entry<String,List<String>> entry : headers ) {
+            if( !isCacheableHeader(entry.key) )
+                continue
             hasher.putUnencodedChars(entry.key)
             for( String it : entry.value ) {
                 if( it )
@@ -164,18 +195,25 @@ class RegistryProxyService {
             }
             hasher.putUnencodedChars('/')
         }
-        return hasher.hash().toString()
+        final result = hasher.hash().toString()
+        if( log.isTraceEnabled() ) {
+            final m = Map.of(
+                    'route', route.getTargetPath(),
+                    'identity', route.identity,
+                    'headers', headers )
+            log.trace "Request key: ${result}; values:\n${JsonOutput.prettyPrint(JsonOutput.toJson(m))}"
+        }
+        return result
     }
 
     DelegateResponse handleRequest(RoutePath route, Map<String,List<String>> headers) {
-        final resp = cache.getOrCompute(
+        return cache.getOrCompute(
                 requestKey(route, headers),
                 (it)-> {
                     final resp = handleRequest0(route, headers)
                     final ttl = route.isDigest() && resp.isCacheable() ? cache.duration : null
                     return new Tuple2<DelegateResponse, Duration>(resp, ttl)
                 })
-        return resp
     }
 
     private DelegateResponse handleRequest0(RoutePath route, Map<String,List<String>> headers) {

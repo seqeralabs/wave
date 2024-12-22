@@ -72,6 +72,8 @@ class ProxyCache extends AbstractTieredCache<DelegateResponse> {
         return maxSize
     }
 
-    Duration getDuration() { duration }
+    Duration getDuration() {
+        return duration
+    }
 
 }
