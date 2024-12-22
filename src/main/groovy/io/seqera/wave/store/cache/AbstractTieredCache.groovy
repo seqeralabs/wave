@@ -128,13 +128,13 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
      *      The value associated with the specified key, or {@code null} otherwise
      */
     V getOrCompute(String key, Function<String,V> loader, Duration ttl) {
-
-        final provisioner = (String k)-> {
-            final v=loader.apply(k);
-            v!=null ? new Tuple2<V,Duration>(v,ttl) : null
+        if( loader==null ) {
+            return getOrCompute(key, null, null)
         }
-
-        getOrCompute(key, loader!=null ? provisioner : null)
+        return getOrCompute(key, (String k)-> {
+            V v = loader.apply(key)
+            return v != null ? new Tuple2<>(v, ttl) : null
+        })
     }
 
      /**
