@@ -44,8 +44,6 @@ import org.apache.commons.lang3.StringUtils
 @CompileStatic
 class TowerClient {
 
-    private enum CacheMode { SHORT, LONG }
-
     @Inject
     private TowerConnector connector
 
