@@ -72,11 +72,14 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
     }
 
     private Cache<String,Entry> getL1() {
-        if( _l1!=null ){
+        if( _l1!=null )
             return _l1.synchronous()
-        }
+
         sync.lock()
         try {
+            if( _l1!=null )
+                return _l1.synchronous()
+            
             log.info "Cache '${getName()}' config - prefix=${getPrefix()}; max-size: ${maxSize}"
             _l1 = Caffeine.newBuilder()
                     .maximumSize(maxSize)
