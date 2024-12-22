@@ -18,6 +18,7 @@
 
 package io.seqera.wave.core
 
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
 import com.google.common.hash.Hashing
@@ -169,8 +170,11 @@ class RegistryProxyService {
     DelegateResponse handleRequest(RoutePath route, Map<String,List<String>> headers) {
         final resp = cache.getOrCompute(
                 requestKey(route, headers),
-                (it)-> handleRequest0(route, headers),
-                (resp)-> route.isDigest() && resp.isCacheable() )
+                (it)-> {
+                    final resp = handleRequest0(route, headers)
+                    final ttl = route.isDigest() && resp.isCacheable() ? cache.duration : null
+                    return new Tuple2<DelegateResponse, Duration>(resp, ttl)
+                })
         return resp
     }
 

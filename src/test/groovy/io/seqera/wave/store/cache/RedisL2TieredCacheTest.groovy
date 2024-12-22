@@ -43,35 +43,21 @@ class RedisL2TieredCacheTest extends Specification implements RedisTestContainer
         applicationContext.close()
     }
 
-    def 'should get and put a key-value pair' () {
-        given:
-        def cache = applicationContext.getBean(RedisL2TieredCache)
-        def k = UUID.randomUUID().toString()
-
-        expect:
-        cache.get(k) == null
-
-        when:
-        cache.put(k, "hello")
-        then:
-        cache.get(k) == 'hello'
-    }
-
     def 'should get and put a key-value pair with ttl' () {
         given:
         def cache = applicationContext.getBean(RedisL2TieredCache)
-        def TTL = 100
+        def TTL = Duration.ofMillis(100)
         def k = UUID.randomUUID().toString()
 
         expect:
         cache.get(k) == null
 
         when:
-        cache.put(k, "hello", Duration.ofMillis(TTL))
+        cache.put(k, "hello", TTL)
         then:
         cache.get(k) == 'hello'
         then:
-        sleep(TTL *2)
+        sleep(TTL.toMillis() *2)
         and:
         cache.get(k) == null
     }
