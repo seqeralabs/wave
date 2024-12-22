@@ -18,6 +18,7 @@
 
 package io.seqera.wave.proxy
 
+import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import io.seqera.wave.encoder.MoshiExchange
 
@@ -26,6 +27,7 @@ import io.seqera.wave.encoder.MoshiExchange
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@EqualsAndHashCode
 @ToString(includeNames = true, includePackage = false)
 class DelegateResponse implements MoshiExchange {
     int statusCode

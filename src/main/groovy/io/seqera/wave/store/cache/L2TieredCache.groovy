@@ -17,25 +17,11 @@
  */
 
 package io.seqera.wave.store.cache
-
-import java.time.Duration
-
 /**
  * Define the interface for 2nd level tired cache
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 interface L2TieredCache<K,V> extends TieredCache<K,V> {
-
-
-    /**
-     * Add a value in the cache with the specified key. If a value already exists is overridden
-     * with the new value.
-     *
-     * @param key The key of the value to be added. {@code null} is not allowed.
-     * @param value The value to be added in the cache for the specified key.  {@code null} is not allowed.
-     * @param ttl The value time-to-live, after which the value is automatically evicted.
-     */
-    void put(K key, V value, Duration ttl)
 
 }

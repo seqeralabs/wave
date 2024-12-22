@@ -18,12 +18,17 @@
 
 package io.seqera.wave.tower.client.cache
 
+
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.encoder.MoshiExchange
 import io.seqera.wave.store.cache.AbstractTieredCache
+import io.seqera.wave.store.cache.L2TieredCache
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.client.GetCredentialsKeysResponse
@@ -32,22 +37,47 @@ import io.seqera.wave.tower.client.UserInfoResponse
 import io.seqera.wave.tower.compute.ComputeEnv
 import io.seqera.wave.tower.compute.DescribeWorkflowLaunchResponse
 import io.seqera.wave.tower.compute.WorkflowLaunchResponse
+import jakarta.inject.Singleton
 /**
- * Implements a {@link MoshiEncodeStrategy} for pairing client caches
- * 
+ * Implement a client cache having short-term expiration policy
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
+@Singleton
 @CompileStatic
-class ClientEncoder {
+class ClientCache extends AbstractTieredCache {
 
-    static MoshiEncodeStrategy instance() {
+    @Value('${wave.pairing.cache.max-size:10000}')
+    private int maxSize = 10000
+
+    ClientCache(@Nullable L2TieredCache l2) {
+        super(l2, encoder())
+    }
+
+    @Override
+    protected getName() {
+        return 'pairing-cache'
+    }
+
+    @Override
+    protected String getPrefix() {
+        return 'pairing-cache/v1'
+    }
+
+    @Override
+    int getMaxSize() {
+        return maxSize
+    }
+
+    static MoshiEncodeStrategy encoder() {
         new MoshiEncodeStrategy<AbstractTieredCache.Entry>(factory()) {}
     }
 
     static JsonAdapter.Factory factory() {
         PolymorphicJsonAdapterFactory.of(MoshiExchange.class, "@type")
                 .withSubtype(AbstractTieredCache.Entry.class, AbstractTieredCache.Entry.name)
-                // add all exchange classes used by the tower client
+        // add all exchange classes used by the tower client
                 .withSubtype(ComputeEnv.class, ComputeEnv.simpleName)
                 .withSubtype(CredentialsDescription.class, CredentialsDescription.simpleName)
                 .withSubtype(DescribeWorkflowLaunchResponse.class, DescribeWorkflowLaunchResponse.simpleName)

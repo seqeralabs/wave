@@ -49,20 +49,25 @@ class ProxyCacheTest extends Specification implements RedisTestContainer {
 
     def 'should cache user info response' () {
         given:
-        def AWAIT = 150
+        def TTL = Duration.ofMillis(150)
         def store = applicationContext.getBean(RedisL2TieredCache)
-        def cache = new ProxyCache(store, Duration.ofMillis(AWAIT), 100)
+        def cache = new ProxyCache(store)
         and:
         def k = UUID.randomUUID().toString()
-        def resp = new DelegateResponse(location: 'http://foo.com',
+        def resp = new DelegateResponse(
+                location: 'http://foo.com',
                 statusCode: 200,
-                body: new byte[] { 1,2,3 }
-        )
+                body: new byte[] { 1,2,3 } )
 
         when:
-        cache.put(k, resp)
+        cache.put(k, resp, TTL)
         then:
         cache.get(k) == resp
+
+        when:
+        sleep TTL.toMillis()*2
+        then:
+        cache.get(k) == null
     }
 
 }

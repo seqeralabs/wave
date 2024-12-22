@@ -166,13 +166,13 @@ class RoutePathTest extends Specification {
 
         where:
         GIVEN                                   | ID                        | EXPECTED
-        '/v2/hello-world/manifests/latest'      | null                      | 'f565ecdba5885ced'
-        '/v2/hello-world/manifests/sha256:123'  | null                      | 'a5fd596b535678f0'
-        '/v2/hello-world/blobs/latest'          | null                      | '0baf67ef8cb144c2'
-        'docker.io/v2/hello-world/blobs/latest' | null                      | '0baf67ef8cb144c2' // <- same as above because default to docker.io when registry is omitted
-        'quay.io/v2/hello-world/blobs/latest'   | null                      | '52907f8c52f2fbe0'
-        'quay.io/v2/hello-world/blobs/latest'   | ID1                       | '9b3eb558c666828e'
-        'quay.io/v2/hello-world/blobs/latest'   | ID2                       | '492e93611079e4d9'
+        '/v2/hello-world/manifests/latest'      | null                      | 'be6fd07e23f274ad'
+        '/v2/hello-world/manifests/sha256:123'  | null                      | '898374c25821d23a'
+        '/v2/hello-world/blobs/latest'          | null                      | 'b25b1e82515d2e36'
+        'docker.io/v2/hello-world/blobs/latest' | null                      | 'b25b1e82515d2e36' // <- same as above because default to docker.io when registry is omitted
+        'quay.io/v2/hello-world/blobs/latest'   | null                      | 'fe6919f2911429bd'
+        'quay.io/v2/hello-world/blobs/latest'   | ID1                       | 'e2b64069506321b8'
+        'quay.io/v2/hello-world/blobs/latest'   | ID2                       | '1170f763c5344958'
 
     }
 }

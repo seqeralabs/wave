@@ -37,10 +37,15 @@ import jakarta.inject.Singleton
 @Singleton
 @CompileStatic
 class ProxyCache extends AbstractTieredCache<DelegateResponse> {
-    ProxyCache(@Nullable L2TieredCache l2,
-               @Value('${wave.proxy-cache.duration:1h}') Duration duration,
-               @Value('${wave.proxy-cache.max-size:10000}') long maxSize) {
-        super(l2, encoder(), duration, maxSize)
+
+    @Value('${wave.proxy-cache.duration:30m}')
+    private Duration duration
+
+    @Value('${wave.proxy-cache.max-size:10000}')
+    private int maxSize
+
+    ProxyCache(@Nullable L2TieredCache l2) {
+        super(l2, encoder())
     }
 
     static MoshiEncodeStrategy encoder() {
@@ -52,11 +57,23 @@ class ProxyCache extends AbstractTieredCache<DelegateResponse> {
         return new MoshiEncodeStrategy<AbstractTieredCache.Entry>(factory) {}
     }
 
+    @Override
     String getName() {
         'proxy-cache'
     }
 
+    @Override
     String getPrefix() {
         'proxy-cache/v1'
     }
+
+    @Override
+    int getMaxSize() {
+        return maxSize
+    }
+
+    Duration getDuration() {
+        return duration
+    }
+
 }

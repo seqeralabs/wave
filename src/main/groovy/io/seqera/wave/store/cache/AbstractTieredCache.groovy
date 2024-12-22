@@ -19,12 +19,12 @@
 package io.seqera.wave.store.cache
 
 import java.time.Duration
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
 import java.util.function.Function
 
 import com.github.benmanes.caffeine.cache.AsyncCache
+import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.benmanes.caffeine.cache.RemovalCause
 import com.github.benmanes.caffeine.cache.RemovalListener
@@ -56,27 +56,43 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
     private EncodingStrategy<Entry> encoder
 
     // FIXME https://github.com/seqeralabs/wave/issues/747
-    private AsyncCache<String,V> l1
+    private volatile AsyncCache<String,Entry> _l1
 
-    private final Duration ttl
+    private Lock sync = new ReentrantLock()
 
     private L2TieredCache<String,String> l2
 
     private final WeakHashMap<String,Lock> locks = new WeakHashMap<>()
 
-    AbstractTieredCache(L2TieredCache<String,String> l2, MoshiEncodeStrategy encoder, Duration duration, long maxSize) {
-        log.info "Cache '${getName()}' config - prefix=${getPrefix()}; ttl=${duration}; max-size: ${maxSize}"
+    AbstractTieredCache(L2TieredCache<String,String> l2, MoshiEncodeStrategy encoder) {
         if( l2==null )
             log.warn "Missing L2 cache for tiered cache '${getName()}'"
         this.l2 = l2
-        this.ttl = duration
         this.encoder = encoder
-        this.l1 = Caffeine.newBuilder()
-                .expireAfterWrite(duration.toMillis(), TimeUnit.MILLISECONDS)
-                .maximumSize(maxSize)
-                .removalListener(removalListener0())
-                .buildAsync()
     }
+
+    private Cache<String,Entry> getL1() {
+        if( _l1!=null )
+            return _l1.synchronous()
+
+        sync.lock()
+        try {
+            if( _l1!=null )
+                return _l1.synchronous()
+            
+            log.info "Cache '${getName()}' config - prefix=${getPrefix()}; max-size: ${maxSize}"
+            _l1 = Caffeine.newBuilder()
+                    .maximumSize(maxSize)
+                    .removalListener(removalListener0())
+                    .buildAsync()
+            return _l1.synchronous()
+        }
+        finally {
+            sync.unlock()
+        }
+    }
+
+    abstract int getMaxSize()
 
     abstract protected getName()
 
@@ -101,7 +117,7 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
      */
     @Override
     V get(String key) {
-        getOrCompute(key, null, (v)->true)
+        getOrCompute0(key, null)
     }
 
     /**
@@ -114,8 +130,14 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
      * @return
      *      The value associated with the specified key, or {@code null} otherwise
      */
-    V getOrCompute(String key, Function<String,V> loader) {
-        getOrCompute(key, loader, (v)->true)
+    V getOrCompute(String key, Function<String,V> loader, Duration ttl) {
+        if( loader==null ) {
+            return getOrCompute0(key, null)
+        }
+        return getOrCompute0(key, (String k)-> {
+            V v = loader.apply(key)
+            return v != null ? new Tuple2<>(v, ttl) : null
+        })
     }
 
      /**
@@ -125,18 +147,19 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
      *      The key of the value to be retrieved
      * @param loader
      *      The function invoked to load the value the entry with the specified key is not available
-     * @param cacheCondition
-      *     The function to determine if the loaded value should be cached             
      * @return
       *     The value associated with the specified key, or #function result otherwise
      */
-    V getOrCompute(String key, Function<String,V> loader, Function<V,Boolean> cacheCondition) {
+    V getOrCompute(String key, Function<String, Tuple2<V,Duration>> loader) {
+        return getOrCompute0(key, loader)
+    }
+
+    private V getOrCompute0(String key, Function<String, Tuple2<V,Duration>> loader) {
         assert key!=null, "Argument key cannot be null"
-        assert cacheCondition!=null, "Argument condition cannot be null"
 
         log.trace "Cache '${name}' checking key=$key"
         // Try L1 cache first
-        V value = l1.synchronous().getIfPresent(key)
+        V value = l1Get(key)
         if (value != null) {
             log.trace "Cache '${name}' L1 hit (a) - key=$key => value=$value"
             return value
@@ -145,28 +168,30 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
         final sync = locks.computeIfAbsent(key, (k)-> new ReentrantLock())
         sync.lock()
         try {
-            value = l1.synchronous().getIfPresent(key)
+            value = l1Get(key)
             if (value != null) {
                 log.trace "Cache '${name}' L1 hit (b) - key=$key => value=$value"
                 return value
             }
 
             // Fallback to L2 cache
-            value = l2Get(key)
-            if (value != null) {
-                log.trace "Cache '${name}' L2 hit - key=$key => value=$value"
+            final entry = l2GetEntry(key)
+            if (entry != null) {
+                log.trace "Cache '${name}' L2 hit - key=$key => value=$entry.value"
                 // Rehydrate L1 cache
-                l1.synchronous().put(key, value)
-                return value
+                l1.put(key, entry)
+                return (V) entry.value
             }
 
             // still not value found, use loader function to fetch the value
             if( value==null && loader!=null ) {
                 log.trace "Cache '${name}' invoking loader - key=$key"
-                value = loader.apply(key)
-                if( value!=null && cacheCondition.apply(value) ) {
-                    l1.synchronous().put(key,value)
-                    l2Put(key,value)
+                final ret = loader.apply(key)
+                value = ret?.v1
+                Duration ttl = ret?.v2
+                if( value!=null && ttl!=null ) {
+                    l1Put(key, value, ttl)
+                    l2Put(key, value, ttl)
                 }
             }
 
@@ -180,17 +205,33 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
     }
 
     @Override
-    void put(String key, V value) {
+    void put(String key, V value, Duration ttl) {
         assert key!=null, "Cache key argument cannot be null"
         assert value!=null, "Cache value argument cannot be null"
         log.trace "Cache '${name}' putting - key=$key; value=${value}"
-        l1.synchronous().put(key, value)
-        l2Put(key, value)
+        l1Put(key, value, ttl)
+        l2Put(key, value, ttl)
     }
 
     protected String key0(String k) { return getPrefix() + ':' + k  }
 
-    protected V l2Get(String key) {
+    protected V l1Get(String key) {
+        final entry = l1.getIfPresent(key)
+        if( entry == null )
+            return null
+
+        if( System.currentTimeMillis() > entry.expiresAt ) {
+            log.trace "Cache '${name}' L1 expired - key=$key => value=${entry.value}"
+            return null
+        }
+        return (V) entry.value
+    }
+
+    protected void l1Put(String key, V value, Duration ttl) {
+        l1.put(key, new Entry(value,ttl.toMillis()))
+    }
+
+    protected Entry l2GetEntry(String key) {
         if( l2 == null )
             return null
 
@@ -198,15 +239,19 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
         if( raw == null )
             return null
 
-        final Entry payload = encoder.decode(raw)
-        if( System.currentTimeMillis() > payload.expiresAt ) {
-            log.trace "Cache '${name}' L2 exipired - key=$key => value=${payload.value}"
+        final Entry entry = encoder.decode(raw)
+        if( System.currentTimeMillis() > entry.expiresAt ) {
+            log.trace "Cache '${name}' L2 expired - key=$key => value=${entry}"
             return null
         }
-        return (V) payload.value
+        return entry
     }
 
-    protected void l2Put(String key, V value) {
+    protected V l2Get(String key) {
+       return (V) l2GetEntry(key)?.value
+    }
+
+    protected void l2Put(String key, V value, Duration ttl) {
         if( l2 != null ) {
             final raw = encoder.encode(new Entry(value, ttl.toMillis() + System.currentTimeMillis()))
             l2.put(key0(key), raw, ttl)
@@ -214,7 +259,7 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
     }
 
     void invalidateAll() {
-        l1.synchronous().invalidateAll()
+        l1.invalidateAll()
     }
 
 }
