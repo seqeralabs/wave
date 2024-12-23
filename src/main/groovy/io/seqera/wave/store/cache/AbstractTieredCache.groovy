@@ -58,8 +58,6 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
     // FIXME https://github.com/seqeralabs/wave/issues/747
     private volatile AsyncCache<String,Entry> _l1
 
-    private Lock sync = new ReentrantLock()
-
     private L2TieredCache<String,String> l2
 
     private final WeakHashMap<String,Lock> locks = new WeakHashMap<>()
@@ -75,6 +73,7 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
         if( _l1!=null )
             return _l1.synchronous()
 
+        final sync = locks.computeIfAbsent('sync-l1', (k)-> new ReentrantLock())
         sync.lock()
         try {
             if( _l1!=null )
