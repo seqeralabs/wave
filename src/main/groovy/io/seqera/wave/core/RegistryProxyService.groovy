@@ -209,7 +209,7 @@ class RegistryProxyService {
     DelegateResponse handleRequest(RoutePath route, Map<String,List<String>> headers) {
         return cache.getOrCompute(
                 requestKey(route, headers),
-                (it)-> {
+                (String k)-> {
                     final resp = handleRequest0(route, headers)
                     // when the response is not cacheable, return null as TTL
                     final ttl = route.isDigest() && resp.isCacheable() ? cache.duration : null
