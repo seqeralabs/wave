@@ -22,8 +22,8 @@ dependencies {
     implementation "org.slf4j:jcl-over-slf4j:2.0.16"
     implementation "org.slf4j:jul-to-slf4j:2.0.16"
     implementation "org.slf4j:log4j-over-slf4j:2.0.16"
-    implementation "ch.qos.logback:logback-classic:1.5.12"
-    implementation "ch.qos.logback:logback-core:1.5.12"
+    implementation "ch.qos.logback:logback-classic:1.5.15"
+    implementation "ch.qos.logback:logback-core:1.5.15"
 
     // Use JUnit Jupiter for testing.
     testImplementation 'org.junit.jupiter:junit-jupiter:5.9.1'
