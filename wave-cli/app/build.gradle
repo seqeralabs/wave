@@ -32,6 +32,8 @@ dependencies {
     implementation 'dev.langchain4j:langchain4j-open-ai:0.29.0'
     implementation 'org.semver4j:semver4j:5.4.0'
     annotationProcessor 'info.picocli:picocli-codegen:4.6.1'
+    // bump commons-io version to address security vulnerabilities
+    runtimeOnly 'commons-io:commons-io:2.18.0'
 
     testImplementation "org.codehaus.groovy:groovy:3.0.21"
     testImplementation "org.codehaus.groovy:groovy-nio:3.0.21"
