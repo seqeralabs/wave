@@ -1,8 +1,12 @@
 # Wave changelog
-1.16.2 - 20 Dec 
+1.16.3 - 22 Dec 2023
+- Improve tiered cache (#779) [01d5f183]
+- Bump logback 1.5.13 [1466c276]
+
+1.16.2 - 20 Dec 2024
 - Fix JWT token refresh [52a5ebd7]
 
-1.16.1 - 20 Dec 
+1.16.1 - 20 Dec 2024
 - Add tiered chache for HTTP proxied responses (#778) [00b6add7]
 - Improve boostrap info [d5c086da]
 - Remove jitpack [67f91c8b]
