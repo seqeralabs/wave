@@ -1,5 +1,13 @@
 WAVE CLI CHANGE-LOG
 ===================
+1.5.1 - 23 Dec 2024
+- Fix logback serialization vulnerability (#88) [6ae7be32]
+- Bump commons-io 2.18.0 [00b0ba28]
+- Bump logback 1.5.15 [74c8b85c]
+- Bump moshi 1.15.2 [23a2522f]
+- Bump wave deps (#89) [310f0ab9]
+- Updating mac runner for intel (#84) [d38295d0]
+
 1.5.0 - 15 Oct 2024 
 - [BREAKING] this version requires Wave backend 1.13.0 or later
 - Add required version info [fd01d1a5]
