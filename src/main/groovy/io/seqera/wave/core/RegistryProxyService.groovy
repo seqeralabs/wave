@@ -47,6 +47,7 @@ import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.tower.PlatformId
+import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.util.RegHelper
 import io.seqera.wave.util.Retryable
 import jakarta.inject.Inject
@@ -217,7 +218,8 @@ class RegistryProxyService {
                 })
     }
 
-    private DelegateResponse handleRequest0(RoutePath route, Map<String,List<String>> headers) {
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.proxy-service.threshold:750}')
+    protected DelegateResponse handleRequest0(RoutePath route, Map<String,List<String>> headers) {
         ProxyClient proxyClient = client(route)
         final resp1 = proxyClient.getStream(route.path, headers, false)
         final redirect = resp1.headers().firstValue('Location').orElse(null)
