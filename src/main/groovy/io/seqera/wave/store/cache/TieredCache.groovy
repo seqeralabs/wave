@@ -17,6 +17,9 @@
  */
 
 package io.seqera.wave.store.cache
+
+import java.time.Duration
+
 /**
  * Base interface for tiered-cache system
  *
@@ -38,7 +41,8 @@ interface TieredCache<K,V> {
      *
      * @param key The key of the value to be added. {@code null} is not allowed.
      * @param value The value to be added in the cache for the specified key.  {@code null} is not allowed.
+     * @param ttl The value time-to-live, after which the value is automatically evicted.
      */
-    void put(K key, V value)
+    void put(K key, V value, Duration ttl)
 
 }
