@@ -37,7 +37,7 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ScanVulnerability
-import io.seqera.wave.trace.TraceElapsedTime
+import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -52,7 +52,7 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-@TraceElapsedTime(thresholdMillis = 100)
+@TraceElapsedTime(thresholdMillis = '${wave.trace.surreal-persistence.threshold:200}')
 class SurrealPersistenceService implements PersistenceService {
 
     @Inject

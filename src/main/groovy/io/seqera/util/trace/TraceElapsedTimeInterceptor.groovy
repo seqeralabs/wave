@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.trace
+package io.seqera.util.trace
 
 import java.time.Duration
 
@@ -26,7 +26,6 @@ import io.micronaut.aop.InterceptorBean
 import io.micronaut.aop.MethodInterceptor
 import io.micronaut.aop.MethodInvocationContext
 import jakarta.inject.Singleton
-
 /**
  * Implements an method interceptor that logs the elapsed time to carry out the execution
  * of method invocation.
@@ -48,22 +47,28 @@ class TraceElapsedTimeInterceptor implements MethodInterceptor<Object,Object> {
         final threshold = annot.intValue('thresholdMillis').orElse(0)
 
         // apply it
+        Object result=null
         final begin = System.currentTimeMillis()
         try {
-            return context.proceed()
+            return result = context.proceed()
         }
         finally {
             final delta = System.currentTimeMillis() - begin
-            if( threshold==0 ) {
-                log.debug "Method ${trace(context)} elapsed time ${Duration.ofMillis(delta)}"
-            }
-            else if( delta>=threshold ) {
-                log.warn "Method ${trace(context)} elapsed time ${Duration.ofMillis(delta)}"
+            if( delta>=threshold ) {
+                log.warn(msg(delta,context,result))
             }
         }
     }
 
-    static private String trace(MethodInvocationContext<Object, Object> context) {
-        context.getDeclaringType().getSimpleName() + '.' + context.getMethodName() + '(' + context.getParameterValueMap().entrySet().join(',')  + ')'
+    static private String msg(long delta,MethodInvocationContext<Object, Object> context, Object result) {
+        final method = context.getDeclaringType().getSimpleName() + '.' + context.getMethodName()
+        def msg = "Slow method detected - elapsed time: ${Duration.ofMillis(delta)}"
+        msg += "\n - name     : ${method}"
+        for( Map.Entry entry : context.getParameterValueMap() ) {
+            msg += "\n - parameter: ${entry.key}=${entry.value}"
+        }
+        if( !context.getReturnType().isVoid() )
+            msg += "\n - result   : ${result}"
+        return msg
     }
 }

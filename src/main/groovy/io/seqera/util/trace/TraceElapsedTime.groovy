@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.trace
+package io.seqera.util.trace
 
 import java.lang.annotation.Documented
 import java.lang.annotation.Retention
@@ -37,5 +37,5 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME
 @Target([TYPE, METHOD])
 @Around
 @interface TraceElapsedTime {
-    int thresholdMillis() default 0
+    String thresholdMillis() default '0'
 }
