@@ -26,9 +26,8 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.store.cache.AbstractTieredCache
 import io.seqera.wave.store.cache.L2TieredCache
-import io.seqera.wave.tower.client.cache.ClientEncoder
+import io.seqera.wave.store.cache.TieredCacheKey
 import jakarta.inject.Singleton
-
 /**
  * Implement a tiered cache for AWS ECR client
  *
@@ -37,12 +36,21 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-class AwsEcrCache extends AbstractTieredCache {
-    AwsEcrCache(@Nullable L2TieredCache l2,
-                @Value('${wave.aws.ecr.cache.duration:3h}') Duration duration,
-                @Value('${wave.aws.ecr.cache.max-size:10000}') int maxSize)
-    {
-        super(l2, ClientEncoder.instance(), duration, maxSize)
+class AwsEcrCache extends AbstractTieredCache<TieredCacheKey, Token> {
+
+    @Value('${wave.aws.ecr.cache.duration:3h}')
+    private Duration duration
+
+    @Value('${wave.aws.ecr.cache.max-size:10000}')
+    private int maxSize
+
+    AwsEcrCache(@Nullable L2TieredCache l2) {
+        super(l2, null)
+    }
+
+    @Override
+    int getMaxSize() {
+        return maxSize
     }
 
     @Override
@@ -54,4 +62,5 @@ class AwsEcrCache extends AbstractTieredCache {
     protected String getPrefix() {
         return 'aws-ecr-cache/v1'
     }
+
 }
