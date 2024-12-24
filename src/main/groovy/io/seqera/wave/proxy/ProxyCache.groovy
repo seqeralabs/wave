@@ -28,6 +28,7 @@ import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.encoder.MoshiExchange
 import io.seqera.wave.store.cache.AbstractTieredCache
 import io.seqera.wave.store.cache.L2TieredCache
+import io.seqera.wave.store.cache.TieredCacheKey
 import jakarta.inject.Singleton
 /**
  * Implements a tiered cache for proxied http responses
@@ -36,7 +37,7 @@ import jakarta.inject.Singleton
  */
 @Singleton
 @CompileStatic
-class ProxyCache extends AbstractTieredCache<DelegateResponse> {
+class ProxyCache extends AbstractTieredCache<TieredCacheKey, DelegateResponse> {
 
     @Value('${wave.proxy-cache.duration:30m}')
     private Duration duration
