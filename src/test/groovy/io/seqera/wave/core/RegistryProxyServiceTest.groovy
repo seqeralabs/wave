@@ -68,4 +68,48 @@ class RegistryProxyServiceTest extends Specification {
         then:
         resp1 == 'sha256:d5c169e210d6b789b2dc7eced66471cf4ce2c7260ac7299fbef464ff902086be'
     }
+
+    def 'should return a stable hash' () {
+        given:
+        def p1 = RoutePath.parse('quay.io/v2/ubuntu/blobs/sha256:123')
+
+        when:
+        def k1 = RegistryProxyService.requestKey(p1,  null)
+        then:
+        k1 == 'a7e1706bf0024934'
+
+        when:
+        def k2 = RegistryProxyService.requestKey(p1, [:])
+        then:
+        k2 == 'a7e1706bf0024934'
+
+        when:
+        def k3 = RegistryProxyService.requestKey(p1, ['Content-Type': ['text/1']])
+        then:
+        k3 == '3a2d860dc46a1bc4'
+
+        when:
+        def k4 = RegistryProxyService.requestKey(p1, ['Content-Type': ['text/1', 'text/2']])
+        then:
+        k4 == 'f9fe81aed4d72cba'
+
+        when:
+        def k5 = RegistryProxyService.requestKey(p1, ['Content-Type': ['text/1', 'text/2'], 'X-Foo': ['bar']])
+        then:
+        k5 == 'f9fe81aed4d72cba'    // <-- the header 'X-Foo' does not alter the cache key
+    }
+
+    def 'check is cacheable header' () {
+        expect:
+        RegistryProxyService.isCacheableHeader(KEY) == EXPECTED
+        where:
+        KEY             | EXPECTED
+        null            | false
+        ''              | false
+        'Foo'           | false
+        'accept'        | true
+        'Accept'        | true
+        'Content-Type'  | true
+    }
+
 }

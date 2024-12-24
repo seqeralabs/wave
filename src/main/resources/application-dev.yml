@@ -49,4 +49,5 @@ logger:
 #    io.seqera.wave.tower.client: 'TRACE'
 #    io.seqera.wave.store.cache: 'TRACE'
 #    io.seqera.wave.tower.auth: 'TRACE'
+#    io.seqera.wave.core.RegistryProxyService: TRACE
 ...

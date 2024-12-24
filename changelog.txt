@@ -1,5 +1,17 @@
 # Wave changelog
-1.16.0 - 9 Dec 2024 
+1.16.3 - 22 Dec 2023
+- Improve tiered cache (#779) [01d5f183]
+- Bump logback 1.5.13 [1466c276]
+
+1.16.2 - 20 Dec 2024
+- Fix JWT token refresh [52a5ebd7]
+
+1.16.1 - 20 Dec 2024
+- Add tiered chache for HTTP proxied responses (#778) [00b6add7]
+- Improve boostrap info [d5c086da]
+- Remove jitpack [67f91c8b]
+
+1.16.0 - 17 Dec 2024 
 - Add support for mills resolution future store [252e0985]
 - Fix Condalock fetching for cached build layers (#727) [13a59373]
 - Fix NPE while creating PairingOutboundQueue (#770) [215f6da8]

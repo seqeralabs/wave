@@ -49,11 +49,6 @@ class RedisL2TieredCache implements L2TieredCache<String,String> {
     }
 
     @Override
-    void put(String key, String value) {
-        put(key, value, null)
-    }
-
-    @Override
     void put(String key, String value, Duration ttl) {
         try( Jedis conn=pool.getResource() ) {
             final params = new SetParams()
