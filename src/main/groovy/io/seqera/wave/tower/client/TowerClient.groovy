@@ -68,14 +68,14 @@ class TowerClient {
         return cache.getOrCompute(cacheKey, (k)-> getAsync(uri, endpoint, auth, type).get(), ttl)
     }
 
-    UserInfoResponse userInfo(String towerEndpoint, JwtAuth authorization, boolean force=false) {
+    GetUserInfoResponse userInfo(String towerEndpoint, JwtAuth authorization, boolean force=false) {
         final uri = userInfoEndpoint(towerEndpoint)
         if( force )
-            return getAsync(uri, towerEndpoint, authorization, UserInfoResponse).get()
+            return getAsync(uri, towerEndpoint, authorization, GetUserInfoResponse).get()
         final k = RegHelper.sipHash(uri, authorization.key, null, null)
         // NOTE: it assumes the user info metadata does nor change over time
         // and therefore the *long* expiration cached is used
-        get0(uri, towerEndpoint, authorization, UserInfoResponse, k, cacheLongDuration) as UserInfoResponse
+        get0(uri, towerEndpoint, authorization, GetUserInfoResponse, k, cacheLongDuration) as GetUserInfoResponse
     }
 
     ListCredentialsResponse listCredentials(String towerEndpoint, JwtAuth authorization, Long workspaceId, String workflowId) {

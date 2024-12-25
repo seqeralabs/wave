@@ -30,10 +30,10 @@ import io.seqera.wave.tower.User
 import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.client.GetCredentialsKeysResponse
 import io.seqera.wave.tower.client.ListCredentialsResponse
-import io.seqera.wave.tower.client.UserInfoResponse
+import io.seqera.wave.tower.client.GetUserInfoResponse
 import io.seqera.wave.tower.compute.ComputeEnv
 import io.seqera.wave.tower.compute.DescribeWorkflowLaunchResponse
-import io.seqera.wave.tower.compute.WorkflowLaunchResponse
+import io.seqera.wave.tower.compute.WorkflowLaunch
 
 class ClientCacheTest extends Specification implements RedisTestContainer {
 
@@ -60,7 +60,7 @@ class ClientCacheTest extends Specification implements RedisTestContainer {
         def cache2 = new ClientCache(store)
         and:
         def k = UUID.randomUUID().toString()
-        def resp = new UserInfoResponse(user:new User(id:1, userName: 'paolo', email: 'p@foo.com'))
+        def resp = new GetUserInfoResponse(user:new User(id:1, userName: 'paolo', email: 'p@foo.com'))
 
         when:
         cache1.put(k, resp, TTL)
@@ -109,7 +109,7 @@ class ClientCacheTest extends Specification implements RedisTestContainer {
         def cache2 = new ClientCache(store)
         and:
         def k = UUID.randomUUID().toString()
-        def launch = new WorkflowLaunchResponse(computeEnv: new ComputeEnv(id: '123', platform: 'aws', credentialsId:'cred-xyz'))
+        def launch = new WorkflowLaunch(computeEnv: new ComputeEnv(id: '123', platform: 'aws', credentialsId:'cred-xyz'))
         def resp = new DescribeWorkflowLaunchResponse(launch: launch)
 
         when:

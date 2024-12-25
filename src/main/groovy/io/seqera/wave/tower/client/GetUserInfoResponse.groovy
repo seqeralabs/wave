@@ -19,24 +19,17 @@
 package io.seqera.wave.tower.client
 
 import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-
+import io.seqera.wave.encoder.MoshiExchange
+import io.seqera.wave.tower.User
 /**
- * Model Tower service info response
- * 
+ * Model a Tower user-info response
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@EqualsAndHashCode
 @ToString(includePackage = false, includeNames = true)
 @CompileStatic
-class ServiceInfoResponse {
-
-    @ToString(includePackage = false, includeNames = true)
-    static class ServiceInfo {
-        String version
-        String apiVersion
-        String commitId
-        Boolean waveEnabled
-    }
-
-    ServiceInfo serviceInfo
+class GetUserInfoResponse implements MoshiExchange {
+    User user
 }
