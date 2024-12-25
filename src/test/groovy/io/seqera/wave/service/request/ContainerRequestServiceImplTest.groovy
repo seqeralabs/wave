@@ -40,7 +40,7 @@ class ContainerRequestServiceImplTest extends Specification {
 
     def 'should evict container request from cache'(){
         given:
-        def containerTokenService = new ContainerRequestServiceImpl( tokenCache: requestStore, config: config )
+        def containerTokenService = new ContainerRequestServiceImpl( containerRequestStore: requestStore, config: config )
         def TOKEN = '123abc'
         def user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
         def data = ContainerRequest.of(identity: new PlatformId(user,100), containerImage: 'hello-world')
