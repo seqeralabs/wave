@@ -186,7 +186,7 @@ class CredentialsServiceTest extends Specification {
         )
 
         and:'no compute credentials'
-        0 * towerClient.describeWorkflowLaunch('tower.io',auth,'101') >> null
+        0 * towerClient.describeWorkflowLaunch('tower.io',auth,100,'101') >> null
 
         then:
         credentials == null
@@ -273,7 +273,7 @@ class CredentialsServiceTest extends Specification {
         )
 
         and:'fetched compute credentials'
-        1*towerClient.describeWorkflowLaunch(towerEndpoint, auth, workflowId) >> describeWorkflowLaunchResponse
+        1*towerClient.describeWorkflowLaunch(towerEndpoint, auth, workspaceId, workflowId) >> describeWorkflowLaunchResponse
 
         and: 'they match and the encrypted credentials are fetched'
         1 * towerClient.fetchEncryptedCredentials(towerEndpoint, auth, credentialsId, keyId, workspaceId, workflowId) >> encryptedCredentialsFromTower(keypair.getPublic(), computeCredentials)
