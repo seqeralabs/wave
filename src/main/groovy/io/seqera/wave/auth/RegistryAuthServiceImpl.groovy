@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit
 import com.github.benmanes.caffeine.cache.AsyncLoadingCache
 import com.github.benmanes.caffeine.cache.CacheLoader
 import com.github.benmanes.caffeine.cache.Caffeine
+import com.google.common.hash.Hashing
 import groovy.json.JsonSlurper
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
@@ -35,10 +36,13 @@ import groovy.transform.PackageScope
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.micronaut.scheduling.TaskExecutors
+import io.seqera.wave.auth.cache.RegistryAuthCache
+import io.seqera.wave.auth.model.RegistryAuthToken
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.exception.RegistryForwardException
 import io.seqera.wave.exception.RegistryUnauthorizedAccessException
 import io.seqera.wave.http.HttpClientFactory
+import io.seqera.wave.store.cache.TieredCacheKey
 import io.seqera.wave.util.RegHelper
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.StringUtils
@@ -74,21 +78,19 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
 
     @Canonical
     @ToString(includePackage = false, includeNames = true)
-    static private class CacheKey {
+    static private class CacheKey implements TieredCacheKey{
         final String image
         final RegistryAuth auth
         final RegistryCredentials creds
 
-        String stableKey() {
+        @Override
+        String stableHash() {
             return RegHelper.sipHash(['content': toString()])
         }
     }
 
-    private CacheLoader<CacheKey, String> loader = new CacheLoader<CacheKey, String>() {
-        @Override
-        String load(CacheKey key) throws Exception {
-            return getToken(key)
-        }
+    RegistryAuthToken load(CacheKey key) throws Exception {
+        return new RegistryAuthToken(getToken(key))
     }
 
     protected String getToken(CacheKey key){
@@ -108,24 +110,14 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         return result
     }
 
-    // FIXME https://github.com/seqeralabs/wave/issues/747
-    private AsyncLoadingCache<CacheKey, String> cacheTokens
+    @Inject
+    private RegistryAuthCache cache
 
     @Inject
     private RegistryLookupService lookupService
 
     @Inject
     private RegistryCredentialsFactory credentialsFactory
-
-    @PostConstruct
-    private void init() {
-        cacheTokens = Caffeine
-                .newBuilder()
-                .maximumSize(10_000)
-                .expireAfterAccess(_1_HOUR.toMillis(), TimeUnit.MILLISECONDS)
-                .executor(ioExecutor)
-                .buildAsync(loader)
-    }
 
     /**
      * Implements container registry login
@@ -284,8 +276,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     protected String getAuthToken(String image, RegistryAuth auth, RegistryCredentials creds) {
         final key = new CacheKey(image, auth, creds)
         try {
-            // FIXME https://github.com/seqeralabs/wave/issues/747
-            return cacheTokens.synchronous().get(key)
+            return cache.getOrCompute(key, (k)->load(key), _1_HOUR)
         }
         catch (CompletionException e) {
             // this catches the exception thrown in the cache loader lookup
@@ -303,8 +294,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
      */
     void invalidateAuthorization(String image, RegistryAuth auth, RegistryCredentials creds) {
         final key = new CacheKey(image, auth, creds)
-        // FIXME https://github.com/seqeralabs/wave/issues/747
-        cacheTokens.synchronous().invalidate(key)
+        cache.invalidate(key)
         tokenStore.remove(getStableKey(key))
     }
 
@@ -312,6 +302,6 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
      * Invalidate all cached authorization tokens
      */
     private static String getStableKey(CacheKey key) {
-        return "key-" + key.stableKey()
+        return "key-" + key.stableHash()
     }
 }
