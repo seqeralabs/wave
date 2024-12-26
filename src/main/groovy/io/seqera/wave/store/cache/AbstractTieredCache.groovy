@@ -282,4 +282,8 @@ abstract class AbstractTieredCache<K extends  TieredCacheKey, V extends MoshiExc
         l1.invalidateAll()
     }
 
+    void invalidate(K key) {
+        l1.invalidate(key.stableHash())
+    }
+
 }
