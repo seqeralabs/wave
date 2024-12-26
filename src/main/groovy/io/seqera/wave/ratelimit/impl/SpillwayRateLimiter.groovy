@@ -31,6 +31,7 @@ import io.seqera.wave.configuration.RateLimiterConfig
 import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
+import io.seqera.wave.tower.auth.JwtAuth
 import jakarta.inject.Singleton
 import jakarta.validation.constraints.NotNull
 /**
@@ -55,6 +56,11 @@ class SpillwayRateLimiter implements RateLimiterService {
 
     Spillway<String> timeoutErrors
 
+    Spillway<String> anonymousRequests
+
+    Spillway<String> authsRequests
+
+
     SpillwayRateLimiter(@NotNull LimitUsageStorage storage, @NotNull RateLimiterConfig config) {
         init(storage, config)
     }
@@ -63,6 +69,7 @@ class SpillwayRateLimiter implements RateLimiterService {
         SpillwayFactory spillwayFactory = new SpillwayFactory(storage)
         initBuilds(spillwayFactory, config)
         initPulls(spillwayFactory, config)
+        initRequests(spillwayFactory, config)
         initTimeoutErrors(spillwayFactory, config)
     }
 
@@ -83,6 +90,16 @@ class SpillwayRateLimiter implements RateLimiterService {
         if (!resource.tryCall(key)) {
             final prefix = request.user ? 'user' : 'IP'
             throw new SlowDownException("Request exceeded pull rate limit for $prefix $key")
+        }
+    }
+
+    @Override
+    void acquireRequest(AcquireRequest request) throws SlowDownException {
+        Spillway<String> resource = request.user ? authsRequests : anonymousRequests
+        String key = request.user ?: request.ip
+        if (!resource.tryCall(key)) {
+            final prefix = request.user ? 'user' : 'IP'
+            throw new SlowDownException("Request exceeded HTTP rate limit for $prefix $key")
         }
     }
 
@@ -118,6 +135,14 @@ class SpillwayRateLimiter implements RateLimiterService {
     private void initTimeoutErrors(SpillwayFactory spillwayFactory, RateLimiterConfig config) {
         log.info "Timeout errors rate limit: max=$config.timeoutErrors.maxRate.max; duration:${config.timeoutErrors.maxRate.duration}"
         timeoutErrors = createLimit("timeoutErrors", spillwayFactory, config.timeoutErrors.getMaxRate())
+    }
+
+    private void initRequests(SpillwayFactory spillwayFactory, RateLimiterConfig config) {
+        log.info "Http requests anonymous rate limit: max=$config.request.anonymous.max; duration:$config.request.anonymous.duration"
+        anonymousRequests = createLimit("anonymousRequests", spillwayFactory, config.request.anonymous)
+
+        log.info "Builds auth rate limit: max=$config.request.authenticated.max; duration:$config.request.authenticated.duration"
+        authsRequests = createLimit("authenticatedRequests", spillwayFactory, config.request.authenticated)
     }
 
     private static Spillway<String> createLimit(String name, SpillwayFactory spillwayFactory, LimitConfig config) {

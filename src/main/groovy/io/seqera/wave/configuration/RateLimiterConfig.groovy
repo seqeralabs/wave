@@ -36,6 +36,9 @@ import io.micronaut.core.bind.annotation.Bindable
 @CompileStatic
 interface RateLimiterConfig {
 
+    /**
+     * @return The container build requests rate limit
+     */
     BuildLimit getBuild()
 
     @ConfigurationProperties('build')
@@ -47,6 +50,10 @@ interface RateLimiterConfig {
         @Bindable("10 / 1m")
         LimitConfig getAuthenticated()
     }
+
+    /**
+     * @return The container pull requests rate limit
+     */
 
     RequestLimit getPull()
 
@@ -60,6 +67,26 @@ interface RateLimiterConfig {
         LimitConfig getAuthenticated()
     }
 
+    /**
+     * @return The HTTP requests rate limit
+     */
+
+    RequestsLimit getRequest()
+
+    @ConfigurationProperties('requests')
+    static interface RequestsLimit {
+
+        @Bindable("10 / 1s")
+        LimitConfig getAnonymous()
+
+        @Bindable("100 / 1s")
+        LimitConfig getAuthenticated()
+
+    }
+
+    /**
+     * @return The request timeout errors rate limit
+     */
 
     TimeoutLimit getTimeoutErrors()
 
