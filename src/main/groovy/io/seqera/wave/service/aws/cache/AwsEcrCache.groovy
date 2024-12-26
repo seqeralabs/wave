@@ -20,13 +20,25 @@ package io.seqera.wave.service.aws.cache
 
 import java.time.Duration
 
+import com.squareup.moshi.JsonAdapter
+import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.seqera.wave.encoder.MoshiEncodeStrategy
+import io.seqera.wave.encoder.MoshiExchange
 import io.seqera.wave.store.cache.AbstractTieredCache
 import io.seqera.wave.store.cache.L2TieredCache
 import io.seqera.wave.store.cache.TieredCacheKey
+import io.seqera.wave.tower.User
+import io.seqera.wave.tower.client.CredentialsDescription
+import io.seqera.wave.tower.client.GetCredentialsKeysResponse
+import io.seqera.wave.tower.client.ListCredentialsResponse
+import io.seqera.wave.tower.client.UserInfoResponse
+import io.seqera.wave.tower.compute.ComputeEnv
+import io.seqera.wave.tower.compute.DescribeWorkflowLaunchResponse
+import io.seqera.wave.tower.compute.WorkflowLaunchResponse
 import jakarta.inject.Singleton
 /**
  * Implement a tiered cache for AWS ECR client
@@ -45,7 +57,7 @@ class AwsEcrCache extends AbstractTieredCache<TieredCacheKey, Token> {
     private int maxSize
 
     AwsEcrCache(@Nullable L2TieredCache l2) {
-        super(l2, null)
+        super(l2, encoder())
     }
 
     @Override
@@ -61,6 +73,16 @@ class AwsEcrCache extends AbstractTieredCache<TieredCacheKey, Token> {
     @Override
     protected String getPrefix() {
         return 'aws-ecr-cache/v1'
+    }
+
+    static MoshiEncodeStrategy encoder() {
+        new MoshiEncodeStrategy<AbstractTieredCache.Entry>(factory()) {}
+    }
+
+    static JsonAdapter.Factory factory() {
+        PolymorphicJsonAdapterFactory.of(MoshiExchange.class, "@type")
+                .withSubtype(AbstractTieredCache.Entry.class, AbstractTieredCache.Entry.name)
+                .withSubtype(Token.class, Token.simpleName)
     }
 
 }

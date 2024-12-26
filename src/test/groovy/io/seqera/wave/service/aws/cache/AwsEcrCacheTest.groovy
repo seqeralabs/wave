@@ -3,7 +3,10 @@ package io.seqera.wave.service.aws.cache
 import spock.lang.Shared
 import spock.lang.Specification
 
+import java.time.Duration
+
 import io.micronaut.context.ApplicationContext
+import io.seqera.wave.store.cache.RedisL2TieredCache
 import io.seqera.wave.test.RedisTestContainer
 
 class AwsEcrCacheTest extends Specification implements RedisTestContainer {
@@ -23,19 +26,19 @@ class AwsEcrCacheTest extends Specification implements RedisTestContainer {
         applicationContext.close()
     }
 
-    def 'should cache user info response'() {
+    def 'should cache ecr token response'() {
         given:
         def AWAIT = 150
         def store = applicationContext.getBean(RedisL2TieredCache)
-        def cache1 = new AwsEcrCache(store, Duration.ofMillis(AWAIT), 100)
-        def cache2 = new AwsEcrCache(store, Duration.ofMillis(AWAIT), 100)
+        def cache1 = new AwsEcrCache(store)
+        def cache2 = new AwsEcrCache(store)
         and:
         def k = UUID.randomUUID().toString()
-        def resp = "aaaa"
+        def token = new Token('token')
 
         when:
-        cache1.put(k, resp)
+        cache1.put(k, token, Duration.ofSeconds(30))
         then:
-        cache2.get(k) == resp
+        cache2.get(k) == token
     }
 }
