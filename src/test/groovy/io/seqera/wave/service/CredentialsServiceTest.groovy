@@ -38,7 +38,7 @@ import io.seqera.wave.tower.client.ListCredentialsResponse
 import io.seqera.wave.tower.client.TowerClient
 import io.seqera.wave.tower.compute.ComputeEnv
 import io.seqera.wave.tower.compute.DescribeWorkflowLaunchResponse
-import io.seqera.wave.tower.compute.WorkflowLaunchResponse
+import io.seqera.wave.tower.compute.WorkflowLaunch
 import jakarta.inject.Inject
 /**
  *
@@ -249,7 +249,7 @@ class CredentialsServiceTest extends Specification {
                 credentialsId: credentialsId,
                 platform: 'aws-batch'
         )
-        def launch = new WorkflowLaunchResponse(
+        def launch = new WorkflowLaunch(
                 computeEnv: computeEnv
         )
         def describeWorkflowLaunchResponse = new DescribeWorkflowLaunchResponse(

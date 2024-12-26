@@ -26,7 +26,7 @@ import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.client.TowerClient
-import io.seqera.wave.tower.client.UserInfoResponse
+import io.seqera.wave.tower.client.GetUserInfoResponse
 import jakarta.inject.Inject
 /**
  *
@@ -55,7 +55,7 @@ class UserServiceTest extends Specification {
         when: // a valid token
         def user = service.getUserByAccessToken(endpoint, auth)
         then:
-        1 * client.userInfo(endpoint,auth) >> new UserInfoResponse(user:new User(id: 1))
+        1 * client.userInfo(endpoint,auth) >> new GetUserInfoResponse(user:new User(id: 1))
         and:
         user.id == 1
 

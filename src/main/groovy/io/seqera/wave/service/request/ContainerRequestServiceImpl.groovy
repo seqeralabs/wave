@@ -38,27 +38,24 @@ import jakarta.inject.Singleton
 class ContainerRequestServiceImpl implements ContainerRequestService {
 
     @Inject
-    private ContainerRequestStore containerTokenStorage
+    private ContainerRequestStore containerRequestStore
 
     @Inject
     private TokenConfig config
-
-    @Inject
-    private ContainerRequestStoreImpl tokenCache
 
     @Inject
     private PersistenceService persistenceService
 
     @Override
     TokenData computeToken(ContainerRequest request) {
-        final expiration = Instant.now().plus(config.cache.duration);
-        containerTokenStorage.put(request.requestId, request)
+        final expiration = Instant.now().plus(config.cache.duration)
+        containerRequestStore.put(request.requestId, request)
         return new TokenData(request.requestId, expiration)
     }
 
     @Override
     ContainerRequest getRequest(String requestId) {
-        return containerTokenStorage.get(requestId)
+        return containerRequestStore.get(requestId)
     }
 
     @Override
@@ -66,13 +63,14 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
         if(!requestId)
             return null
 
-        final request = tokenCache.get(requestId)
+        final request = containerRequestStore.get(requestId)
         if( request ) {
-            tokenCache.remove(requestId)
+            containerRequestStore.remove(requestId)
         }
         return request
     }
 
+    @Override
     WaveContainerRecord loadContainerRecord(String requestId) {
         persistenceService.loadContainerRequest(requestId)
     }
