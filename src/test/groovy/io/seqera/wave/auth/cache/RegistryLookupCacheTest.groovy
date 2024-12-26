@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.aws.cache
+package io.seqera.wave.auth.cache
 
 import spock.lang.Shared
 import spock.lang.Specification
@@ -24,21 +24,22 @@ import spock.lang.Specification
 import java.time.Duration
 
 import io.micronaut.context.ApplicationContext
+import io.seqera.wave.auth.RegistryAuth
 import io.seqera.wave.store.cache.RedisL2TieredCache
 import io.seqera.wave.test.RedisTestContainer
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-class AwsEcrCacheTest extends Specification implements RedisTestContainer {
+class RegistryLookupCacheTest extends Specification implements RedisTestContainer {
 
     @Shared
     ApplicationContext applicationContext
 
     def setup() {
         applicationContext = ApplicationContext.run([
-                REDIS_HOST: redisHostName,
-                REDIS_PORT: redisPort
+                REDIS_HOST : redisHostName,
+                REDIS_PORT : redisPort
         ], 'test', 'redis')
         sleep(500) // workaround to wait for Redis connection
     }
@@ -47,18 +48,20 @@ class AwsEcrCacheTest extends Specification implements RedisTestContainer {
         applicationContext.close()
     }
 
-    def 'should cache ecr token response'() {
+    def 'should cache registry auth response' () {
         given:
+        def TTL = Duration.ofSeconds(1)
         def store = applicationContext.getBean(RedisL2TieredCache)
-        def cache1 = new AwsEcrCache(store)
-        def cache2 = new AwsEcrCache(store)
+        def cache1 = new RegistryLookupCache(store)
+        def cache2 = new RegistryLookupCache(store)
         and:
         def k = UUID.randomUUID().toString()
-        def token = new Token('token')
+        def resp = new RegistryAuth(URI.create('seqera.io/auth'), 'seqera', RegistryAuth.Type.Basic)
 
         when:
-        cache1.put(k, token, Duration.ofSeconds(30))
+        cache1.put(k, resp, TTL)
         then:
-        cache2.get(k) == token
+        cache2.get(k) == resp
     }
+
 }

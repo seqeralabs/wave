@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.aws.cache
+package io.seqera.wave.auth.cache
 
 import java.time.Duration
 
@@ -26,6 +26,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.seqera.wave.auth.RegistryAuth
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.encoder.MoshiExchange
 import io.seqera.wave.store.cache.AbstractTieredCache
@@ -33,22 +34,22 @@ import io.seqera.wave.store.cache.L2TieredCache
 import io.seqera.wave.store.cache.TieredCacheKey
 import jakarta.inject.Singleton
 /**
- * Implement a tiered cache for AWS ECR client
+ * Implement a tiered cache for Registry lookup
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @Slf4j
 @Singleton
 @CompileStatic
-class AwsEcrCache extends AbstractTieredCache<TieredCacheKey, Token> {
+class RegistryLookupCache extends AbstractTieredCache<TieredCacheKey, RegistryAuth> {
 
-    @Value('${wave.aws.ecr.cache.duration:3h}')
+    @Value('${wave.registry.cache.duration:1h}')
     private Duration duration
 
-    @Value('${wave.aws.ecr.cache.max-size:10000}')
+    @Value('${wave.registry.cache.max-size:10000}')
     private int maxSize
 
-    AwsEcrCache(@Nullable L2TieredCache l2) {
+    RegistryLookupCache(@Nullable L2TieredCache l2) {
         super(l2, encoder())
     }
 
@@ -59,12 +60,12 @@ class AwsEcrCache extends AbstractTieredCache<TieredCacheKey, Token> {
 
     @Override
     protected getName() {
-        return 'aws-ecr-cache'
+        return 'registry-cache'
     }
 
     @Override
     protected String getPrefix() {
-        return 'aws-ecr-cache/v1'
+        return 'registry-cache/v1'
     }
 
     static MoshiEncodeStrategy encoder() {
@@ -74,7 +75,7 @@ class AwsEcrCache extends AbstractTieredCache<TieredCacheKey, Token> {
     static JsonAdapter.Factory factory() {
         PolymorphicJsonAdapterFactory.of(MoshiExchange.class, "@type")
                 .withSubtype(AbstractTieredCache.Entry.class, AbstractTieredCache.Entry.name)
-                .withSubtype(Token.class, Token.simpleName)
+                .withSubtype(RegistryAuth.class, RegistryAuth.name)
     }
 
 }
