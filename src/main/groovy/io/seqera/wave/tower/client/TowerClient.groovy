@@ -68,14 +68,14 @@ class TowerClient {
         return cache.getOrCompute(cacheKey, (k)-> getAsync(uri, endpoint, auth, type).get(), ttl)
     }
 
-    UserInfoResponse userInfo(String towerEndpoint, JwtAuth authorization, boolean force=false) {
+    GetUserInfoResponse userInfo(String towerEndpoint, JwtAuth authorization, boolean force=false) {
         final uri = userInfoEndpoint(towerEndpoint)
         if( force )
-            return getAsync(uri, towerEndpoint, authorization, UserInfoResponse).get()
+            return getAsync(uri, towerEndpoint, authorization, GetUserInfoResponse).get()
         final k = RegHelper.sipHash(uri, authorization.key, null, null)
         // NOTE: it assumes the user info metadata does nor change over time
         // and therefore the *long* expiration cached is used
-        get0(uri, towerEndpoint, authorization, UserInfoResponse, k, cacheLongDuration) as UserInfoResponse
+        get0(uri, towerEndpoint, authorization, GetUserInfoResponse, k, cacheLongDuration) as GetUserInfoResponse
     }
 
     ListCredentialsResponse listCredentials(String towerEndpoint, JwtAuth authorization, Long workspaceId, String workflowId) {
@@ -131,16 +131,22 @@ class TowerClient {
         StringUtils.removeEnd(endpoint, "/")
     }
 
-    DescribeWorkflowLaunchResponse describeWorkflowLaunch(String towerEndpoint, JwtAuth authorization, String workflowId) {
-        final uri = workflowLaunchEndpoint(towerEndpoint,workflowId)
-        final k = RegHelper.sipHash(uri, authorization.key, null, workflowId)
+    DescribeWorkflowLaunchResponse describeWorkflowLaunch(String towerEndpoint, JwtAuth authorization, Long workspaceId, String workflowId) {
+        final uri = workflowLaunchEndpoint(towerEndpoint, workspaceId, workflowId)
+        final k = RegHelper.sipHash(uri, authorization.key, workspaceId, workflowId)
         // NOTE: it assumes the workflow launch definition cannot change for the specified 'workflowId'
         // and therefore the *long* expiration cached is used
         return get0(uri, towerEndpoint, authorization, DescribeWorkflowLaunchResponse.class, k, cacheLongDuration) as DescribeWorkflowLaunchResponse
     }
 
-    protected static URI workflowLaunchEndpoint(String towerEndpoint, String workflowId) {
-        return URI.create("${checkEndpoint(towerEndpoint)}/workflow/${workflowId}/launch")
+    protected static URI workflowLaunchEndpoint(String endpoint, Long workspaceId, String workflowId) {
+        assert endpoint
+        assert workflowId
+
+        def uri = "${checkEndpoint(endpoint)}/workflow/${workflowId}/launch"
+        if( workspaceId!=null )
+            uri += '?workspaceId=' + workspaceId
+        return URI.create(uri)
     }
 
     /** Only for testing - do not use */

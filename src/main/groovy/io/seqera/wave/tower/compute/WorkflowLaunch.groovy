@@ -31,6 +31,6 @@ import io.seqera.wave.encoder.MoshiExchange
 @CompileStatic
 @EqualsAndHashCode
 @ToString(includePackage = false, includeNames = true)
-class WorkflowLaunchResponse implements MoshiExchange {
+class WorkflowLaunch implements MoshiExchange {
     ComputeEnv computeEnv
 }

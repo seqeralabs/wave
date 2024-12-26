@@ -33,10 +33,10 @@ import io.seqera.wave.tower.User
 import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.client.GetCredentialsKeysResponse
 import io.seqera.wave.tower.client.ListCredentialsResponse
-import io.seqera.wave.tower.client.UserInfoResponse
+import io.seqera.wave.tower.client.GetUserInfoResponse
 import io.seqera.wave.tower.compute.ComputeEnv
 import io.seqera.wave.tower.compute.DescribeWorkflowLaunchResponse
-import io.seqera.wave.tower.compute.WorkflowLaunchResponse
+import io.seqera.wave.tower.compute.WorkflowLaunch
 import jakarta.inject.Singleton
 /**
  * Implement a client cache having short-term expiration policy
@@ -83,8 +83,8 @@ class ClientCache extends AbstractTieredCache {
                 .withSubtype(DescribeWorkflowLaunchResponse.class, DescribeWorkflowLaunchResponse.simpleName)
                 .withSubtype(GetCredentialsKeysResponse.class, GetCredentialsKeysResponse.simpleName)
                 .withSubtype(ListCredentialsResponse.class, ListCredentialsResponse.simpleName)
-                .withSubtype(UserInfoResponse.class, UserInfoResponse.simpleName)
+                .withSubtype(GetUserInfoResponse.class, GetUserInfoResponse.simpleName)
                 .withSubtype(User.class, User.simpleName)
-                .withSubtype(WorkflowLaunchResponse.class, WorkflowLaunchResponse.simpleName)
+                .withSubtype(WorkflowLaunch.class, WorkflowLaunch.simpleName)
     }
 }

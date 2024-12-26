@@ -33,11 +33,11 @@ import io.seqera.wave.encoder.MoshiExchange
 @ToString(includePackage = false, includeNames = true)
 class DescribeWorkflowLaunchResponse implements MoshiExchange {
 
-    WorkflowLaunchResponse launch
+    WorkflowLaunch launch
 
     DescribeWorkflowLaunchResponse() {}
 
-    DescribeWorkflowLaunchResponse(WorkflowLaunchResponse launch) {
+    DescribeWorkflowLaunchResponse(WorkflowLaunch launch) {
         this.launch = launch
     }
 }

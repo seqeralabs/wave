@@ -56,14 +56,14 @@ class TowerClientHttpTest extends Specification{
     static class TowerFakeController {
 
         @Get('/user-info')
-        HttpResponse<UserInfoResponse> userInfo(@Header('Authorization') String authorization) {
+        HttpResponse<GetUserInfoResponse> userInfo(@Header('Authorization') String authorization) {
             if (authorization == 'Bearer foo') {
                 return HttpResponse.unauthorized()
             }
             if (authorization == 'Bearer refresh') {
                 return HttpResponse.unauthorized()
             }
-            HttpResponse.ok(new UserInfoResponse(user: new User(id: 1)))
+            HttpResponse.ok(new GetUserInfoResponse(user: new User(id: 1)))
         }
 
         @Post('/oauth/access_token')
