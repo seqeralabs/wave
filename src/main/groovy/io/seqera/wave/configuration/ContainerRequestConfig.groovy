@@ -26,10 +26,9 @@ import io.seqera.wave.util.DurationUtils
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
- * Configuration to be used by a TokenService
+ * Configuration to be used by {@link io.seqera.wave.service.request.ContainerRequestService}
  *
  * @author: Paolo Di Tommaso <paolo.ditommaso@gmail.com>
- * @author: jorge <jorge.aguilera@seqera.io>
  *
  */
 @ToString(includePackage = false, includeNames = true)
