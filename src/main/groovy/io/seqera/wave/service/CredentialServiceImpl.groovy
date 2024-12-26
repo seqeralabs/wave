@@ -109,7 +109,7 @@ class CredentialServiceImpl implements CredentialsService {
     }
 
     protected CredentialsDescription findComputeCreds0(PlatformId identity) {
-        final response = towerClient.describeWorkflowLaunch(identity.towerEndpoint, JwtAuth.of(identity), identity.workflowId)
+        final response = towerClient.describeWorkflowLaunch(identity.towerEndpoint, JwtAuth.of(identity), identity.workspaceId, identity.workflowId)
         if( !response )
             return null
         final computeEnv = response?.launch?.computeEnv
