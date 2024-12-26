@@ -64,7 +64,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     private ScanConfig config
 
     @Inject
-    @Named(TaskExecutors.IO)
+    @Named(TaskExecutors.BLOCKING)
     private ExecutorService executor
 
     @Inject
