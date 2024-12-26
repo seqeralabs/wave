@@ -20,38 +20,43 @@ package io.seqera.wave.service.request
 
 import spock.lang.Specification
 
+import java.time.Duration
+import java.time.Instant
+
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.configuration.ContainerRequestConfig
-import io.seqera.wave.tower.PlatformId
-import io.seqera.wave.tower.User
 import jakarta.inject.Inject
+
 /**
  *
- * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-class ContainerRequestServiceImplTest extends Specification {
+class ContainerRequestRangeTest extends Specification {
 
     @Inject
-    private ContainerRequestConfig config
+    ContainerRequestRange range
 
-    @Inject
-    private ContainerRequestStoreImpl requestStore
+    def 'should return an empty list when no entries are avail' () {
+        expect:
+        range.getEntriesUntil(Instant.now(), 10) == []
+    }
 
-    def 'should evict container request from cache'(){
+    def 'should add and retrieve some values' () {
         given:
-        def containerTokenService = new ContainerRequestServiceImpl( containerRequestStore: requestStore, config: config )
-        def TOKEN = '123abc'
-        def user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
-        def data = ContainerRequest.of(identity: new PlatformId(user,100), containerImage: 'hello-world')
+        def now = Instant.now()
         and:
-        requestStore.put(TOKEN, data)
+        def e1 = new ContainerRequestRange.Entry('cr-1', 'wf-1',now)
+        def e2 = new ContainerRequestRange.Entry('cr-2', 'wf-2',now)
+        def e3 = new ContainerRequestRange.Entry('cr-3', 'wf-3',now)
+        and:
+        range.add(e1, now- Duration.ofSeconds(2))
+        range.add(e2, now- Duration.ofSeconds(1))
+        range.add(e3, now+ Duration.ofMillis(600))
 
-        when:
-        def request = containerTokenService.evictRequest(TOKEN)
-        then:
-        request == data
-        requestStore.get(TOKEN) == null
+        expect:
+        range.getEntriesUntil(now, 10) == [e1, e2]
+        and:
+        range.getEntriesUntil(now.plusSeconds(1), 10) == [e3]
     }
 
 }

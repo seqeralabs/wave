@@ -24,7 +24,27 @@ package io.seqera.wave.store.range
  */
 interface RangeStore {
 
-    void add(String member, double score)
+    /**
+     * Add an entry to the range with the specified score
+     *
+     * @param name
+     *      The name of the entry to be added
+     * @param score
+     *      The score of the entry as {@code double} value
+     */
+    void add(String entry, double score)
 
+    /**
+     * Get a list of entries having a score within the specified range
+     *
+     * @param min
+     *      The range lower bound
+     * @param max
+     *      The range upper bound
+     * @param count
+     *      The max number of entries that can be returned
+     * @return
+     *      The list of entries matching the specified range or an empty list if no entry matches the range specified
+     */
     List<String> getRange(double min, double max, int count)
 }

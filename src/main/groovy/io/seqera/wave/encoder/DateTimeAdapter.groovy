@@ -20,6 +20,7 @@ package io.seqera.wave.encoder
 
 import java.time.Duration
 import java.time.Instant
+import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
 import com.squareup.moshi.FromJson
@@ -57,5 +58,15 @@ class DateTimeAdapter {
         // instead of long (number of nanoseconds) as expected
         final val0 = value.contains('.') ? Math.round(value.toDouble() * 1_000_000_000) : value.toLong()
         return value != null ? Duration.ofNanos(val0) : null
+    }
+
+    @ToJson
+    String serializeOffsetDateTime(OffsetDateTime value) {
+        return value.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+    }
+
+    @FromJson
+    OffsetDateTime deserializeOffsetDateTime(String value) {
+        return OffsetDateTime.parse(value, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
     }
 }

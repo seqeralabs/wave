@@ -22,15 +22,20 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import java.time.Duration
+import java.time.Instant
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 
 import io.micronaut.context.ApplicationContext
 import io.seqera.wave.store.cache.RedisL2TieredCache
 import io.seqera.wave.test.RedisTestContainer
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.client.CredentialsDescription
+import io.seqera.wave.tower.client.DescribeWorkflowResponse
 import io.seqera.wave.tower.client.GetCredentialsKeysResponse
-import io.seqera.wave.tower.client.ListCredentialsResponse
 import io.seqera.wave.tower.client.GetUserInfoResponse
+import io.seqera.wave.tower.client.ListCredentialsResponse
+import io.seqera.wave.tower.client.Workflow
 import io.seqera.wave.tower.compute.ComputeEnv
 import io.seqera.wave.tower.compute.DescribeWorkflowLaunchResponse
 import io.seqera.wave.tower.compute.WorkflowLaunch
@@ -101,7 +106,7 @@ class ClientCacheTest extends Specification implements RedisTestContainer {
         cache2.get(k) == resp
     }
 
-    def 'should cache describe workflow response' () {
+    def 'should cache describe workflow launch response' () {
         given:
         def TTL = Duration.ofSeconds(1)
         def store = applicationContext.getBean(RedisL2TieredCache)
@@ -111,6 +116,27 @@ class ClientCacheTest extends Specification implements RedisTestContainer {
         def k = UUID.randomUUID().toString()
         def launch = new WorkflowLaunch(computeEnv: new ComputeEnv(id: '123', platform: 'aws', credentialsId:'cred-xyz'))
         def resp = new DescribeWorkflowLaunchResponse(launch: launch)
+
+        when:
+        cache1.put(k, resp, TTL)
+        then:
+        cache2.get(k) == resp
+    }
+
+    def 'should cache describe workflow response' () {
+        given:
+        def TTL = Duration.ofSeconds(1)
+        def store = applicationContext.getBean(RedisL2TieredCache)
+        def cache1 = new ClientCache(store)
+        def cache2 = new ClientCache(store)
+        and:
+        def k = UUID.randomUUID().toString()
+        def now = Instant.now()
+        def submit = OffsetDateTime.ofInstant(now.minusSeconds(500), ZoneOffset.UTC);
+        def start = OffsetDateTime.ofInstant(now.minusSeconds(400), ZoneOffset.UTC);
+        def done = OffsetDateTime.ofInstant(now.minusSeconds(100), ZoneOffset.UTC);
+        def workflow = new Workflow(id:'wf-123', submit: submit, start: start, complete: done, status: Workflow.WorkflowStatus.SUCCEEDED)
+        def resp = new DescribeWorkflowResponse(workflow: workflow)
 
         when:
         cache1.put(k, resp, TTL)
