@@ -49,6 +49,8 @@ import org.jetbrains.annotations.Nullable
 @CompileStatic
 abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCache<String,V> {
 
+    static final private double DEFAULT_REVAL_STEEPNESS = 1/300
+
     @Canonical
     @ToString(includePackage = false, includeNames = true)
     static class Entry implements MoshiExchange {
@@ -94,11 +96,19 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
         }
     }
 
-    abstract int getMaxSize()
+    abstract protected int getMaxSize()
 
     abstract protected getName()
 
     abstract protected String getPrefix()
+
+    protected Duration getCacheRevalidationInterval() {
+        return null
+    }
+
+    protected double getRevalidationSteepness() {
+        return DEFAULT_REVAL_STEEPNESS
+    }
 
     private RemovalListener removalListener0() {
         new RemovalListener() {
@@ -158,42 +168,51 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
 
     private V getOrCompute0(String key, Function<String, Tuple2<V,Duration>> loader) {
         assert key!=null, "Argument key cannot be null"
-
         log.trace "Cache '${name}' checking key=$key"
+        final now = Instant.now()
         // Try L1 cache first
-        V value = l1Get(key)
-        if (value != null) {
-            log.trace "Cache '${name}' L1 hit (a) - key=$key => value=$value"
-            return value
+        Entry entry = l1Get(key)
+        Boolean needsRevalidation = entry ? shouldRevalidate(entry.expiresAt, now) : null
+        if( entry && !needsRevalidation ) {
+            log.trace "Cache '${name}' L1 hit (a) - key=$key => entry=$entry"
+            return (V) entry.value
         }
 
         final sync = locks.computeIfAbsent(key, (k)-> new ReentrantLock())
         sync.lock()
         try {
-            value = l1Get(key)
-            if (value != null) {
-                log.trace "Cache '${name}' L1 hit (b) - key=$key => value=$value"
-                return value
+            // check again L1 cache once in the sync block
+            if( !entry ) {
+                entry = l1Get(key)
+                needsRevalidation = entry ? shouldRevalidate(entry.expiresAt, now) : null
+            }
+            if( entry && !needsRevalidation ) {
+                log.trace "Cache '${name}' L1 hit (b) - key=$key => entry=$entry"
+                return (V)entry.value
             }
 
             // Fallback to L2 cache
-            final entry = l2GetEntry(key)
-            if (entry != null) {
-                log.trace "Cache '${name}' L2 hit - key=$key => entry=$entry"
+            if( !entry ) {
+                entry = l2Get(key)
+                needsRevalidation = entry ? shouldRevalidate(entry.expiresAt, now) : null
+            }
+            if (entry && !needsRevalidation) {
+                log.trace "Cache '${name}' L2 hit (c) - key=$key => entry=$entry"
                 // Rehydrate L1 cache
                 l1.put(key, entry)
                 return (V) entry.value
             }
 
             // still not value found, use loader function to fetch the value
-            if( value==null && loader!=null ) {
+            V value = null
+            if( loader!=null ) {
                 log.trace "Cache '${name}' invoking loader - key=$key"
                 final ret = loader.apply(key)
                 value = ret?.v1
                 Duration ttl = ret?.v2
                 if( value!=null && ttl!=null ) {
                     final exp = Instant.now().plus(ttl).toEpochMilli()
-                    final newEntry = new Entry(value,exp)
+                    final newEntry = new Entry(value, exp)
                     l1Put(key, newEntry)
                     l2Put(key, newEntry, ttl)
                 }
@@ -221,27 +240,15 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
 
     protected String key0(String k) { return getPrefix() + ':' + k  }
 
-    protected V l1Get(String key) {
-        return (V) l1GetEntry(key)?.value
-    }
-
-    protected Entry l1GetEntry(String key) {
-        final entry = l1.getIfPresent(key)
-        if( entry == null )
-            return null
-
-        if( System.currentTimeMillis() > entry.expiresAt ) {
-            log.trace "Cache '${name}' L1 expired - key=$key => entry=$entry"
-            return null
-        }
-        return entry
+    protected Entry l1Get(String key) {
+        return l1.getIfPresent(key)
     }
 
     protected void l1Put(String key, Entry entry) {
         l1.put(key, entry)
     }
 
-    protected Entry l2GetEntry(String key) {
+    protected Entry l2Get(String key) {
         if( l2 == null )
             return null
 
@@ -249,17 +256,9 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
         if( raw == null )
             return null
 
-        final Entry entry = encoder.decode(raw)
-        if( System.currentTimeMillis() > entry.expiresAt ) {
-            log.trace "Cache '${name}' L2 expired - key=$key => value=${entry}"
-            return null
-        }
-        return entry
+        return encoder.decode(raw)
     }
 
-    protected V l2Get(String key) {
-       return (V) l2GetEntry(key)?.value
-    }
 
     protected void l2Put(String key, Entry entry, Duration ttl) {
         if( l2 != null ) {
@@ -270,6 +269,33 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
 
     void invalidateAll() {
         l1.invalidateAll()
+    }
+
+    protected boolean shouldRevalidate(long expiration, Instant time=Instant.now()) {
+
+        // when 'remainingCacheTime' is less than or equals to zero, it means
+        // the current time is beyond the expiration time, therefore a cache validation is needed
+        final remainingCacheTime = expiration - time.toEpochMilli()
+        if (remainingCacheTime <= 0) {
+            return true
+        }
+
+        // otherwise, when remaining is greater than the cache revalidation interval
+        // no revalidation is needed
+        final cacheRevalidationMills = cacheRevalidationInterval?.toMillis() ?: 0
+        if( remainingCacheTime > cacheRevalidationMills ) {
+            return false
+        }
+
+        // finally the remaining time is shorter the validation interval
+        // i.e. it's approaching the cache expiration, in this cache the needed
+        // for cache revalidation is determined in a probabilistic manner
+        // see https://blog.cloudflare.com/sometimes-i-cache/
+        return randomRevalidate((cacheRevalidationMills-remainingCacheTime) /1000 as long)
+    }
+
+    protected boolean randomRevalidate(long remainingTimeSecs) {
+        Math.random() < Math.exp(-revalidationSteepness * remainingTimeSecs)
     }
 
 }

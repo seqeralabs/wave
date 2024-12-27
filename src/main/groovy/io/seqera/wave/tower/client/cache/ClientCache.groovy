@@ -66,7 +66,7 @@ class ClientCache extends AbstractTieredCache {
     }
 
     @Override
-    int getMaxSize() {
+    protected int getMaxSize() {
         return maxSize
     }
 
