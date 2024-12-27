@@ -19,6 +19,7 @@
 package io.seqera.wave.store.cache
 
 import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
 import java.util.function.Function
@@ -30,6 +31,7 @@ import com.github.benmanes.caffeine.cache.RemovalCause
 import com.github.benmanes.caffeine.cache.RemovalListener
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.encoder.EncodingStrategy
 import io.seqera.wave.encoder.MoshiEncodeStrategy
@@ -48,6 +50,7 @@ import org.jetbrains.annotations.Nullable
 abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCache<String,V> {
 
     @Canonical
+    @ToString(includePackage = false, includeNames = true)
     static class Entry implements MoshiExchange {
         MoshiExchange value
         long expiresAt
@@ -176,7 +179,7 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
             // Fallback to L2 cache
             final entry = l2GetEntry(key)
             if (entry != null) {
-                log.trace "Cache '${name}' L2 hit - key=$key => value=$entry.value"
+                log.trace "Cache '${name}' L2 hit - key=$key => entry=$entry"
                 // Rehydrate L1 cache
                 l1.put(key, entry)
                 return (V) entry.value
@@ -189,8 +192,10 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
                 value = ret?.v1
                 Duration ttl = ret?.v2
                 if( value!=null && ttl!=null ) {
-                    l1Put(key, value, ttl)
-                    l2Put(key, value, ttl)
+                    final exp = Instant.now().plus(ttl).toEpochMilli()
+                    final newEntry = new Entry(value,exp)
+                    l1Put(key, newEntry)
+                    l2Put(key, newEntry, ttl)
                 }
             }
 
@@ -208,26 +213,32 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
         assert key!=null, "Cache key argument cannot be null"
         assert value!=null, "Cache value argument cannot be null"
         log.trace "Cache '${name}' putting - key=$key; value=${value}"
-        l1Put(key, value, ttl)
-        l2Put(key, value, ttl)
+        final exp = System.currentTimeMillis() + ttl.toMillis()
+        final entry = new Entry(value, exp)
+        l1Put(key, entry)
+        l2Put(key, entry, ttl)
     }
 
     protected String key0(String k) { return getPrefix() + ':' + k  }
 
     protected V l1Get(String key) {
+        return (V) l1GetEntry(key)?.value
+    }
+
+    protected Entry l1GetEntry(String key) {
         final entry = l1.getIfPresent(key)
         if( entry == null )
             return null
 
         if( System.currentTimeMillis() > entry.expiresAt ) {
-            log.trace "Cache '${name}' L1 expired - key=$key => value=${entry.value}"
+            log.trace "Cache '${name}' L1 expired - key=$key => entry=$entry"
             return null
         }
-        return (V) entry.value
+        return entry
     }
 
-    protected void l1Put(String key, V value, Duration ttl) {
-        l1.put(key, new Entry(value,ttl.toMillis()))
+    protected void l1Put(String key, Entry entry) {
+        l1.put(key, entry)
     }
 
     protected Entry l2GetEntry(String key) {
@@ -250,9 +261,9 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
        return (V) l2GetEntry(key)?.value
     }
 
-    protected void l2Put(String key, V value, Duration ttl) {
+    protected void l2Put(String key, Entry entry, Duration ttl) {
         if( l2 != null ) {
-            final raw = encoder.encode(new Entry(value, ttl.toMillis() + System.currentTimeMillis()))
+            final raw = encoder.encode(entry)
             l2.put(key0(key), raw, ttl)
         }
     }
