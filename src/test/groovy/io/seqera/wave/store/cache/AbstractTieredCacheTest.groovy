@@ -268,4 +268,13 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
         !revalidate
     }
 
+    def 'should validate random function' () {
+        given:
+        def now = Instant.now()
+        def cache = Spy(MyCache)
+        cache.getCacheRevalidationInterval() >> Duration.ofSeconds(10)
+        expect:
+        cache.randomRevalidate(0)
+    }
+
 }

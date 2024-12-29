@@ -49,8 +49,6 @@ import org.jetbrains.annotations.Nullable
 @CompileStatic
 abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCache<String,V> {
 
-    static final private double DEFAULT_REVAL_STEEPNESS = 1/300
-
     @Canonical
     @ToString(includePackage = false, includeNames = true)
     static class Entry implements MoshiExchange {
@@ -103,11 +101,11 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
     abstract protected String getPrefix()
 
     protected Duration getCacheRevalidationInterval() {
-        return null
+        return Duration.ZERO
     }
 
     protected double getRevalidationSteepness() {
-        return DEFAULT_REVAL_STEEPNESS
+        return 1 / getCacheRevalidationInterval().toMillis()
     }
 
     private RemovalListener removalListener0() {
@@ -196,14 +194,15 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
                 entry = l2Get(key)
                 needsRevalidation = entry ? shouldRevalidate(entry.expiresAt, now) : null
             }
-            if (entry && !needsRevalidation) {
+            if( entry && !needsRevalidation ) {
                 log.trace "Cache '${name}' L2 hit (c) - key=$key => entry=$entry"
                 // Rehydrate L1 cache
                 l1.put(key, entry)
                 return (V) entry.value
             }
 
-            // still not value found, use loader function to fetch the value
+            // still not entry found or cache revalidation needed
+            // use the loader function to fetch the value
             V value = null
             if( loader!=null ) {
                 log.trace "Cache '${name}' invoking loader - key=$key"
@@ -282,7 +281,7 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
 
         // otherwise, when remaining is greater than the cache revalidation interval
         // no revalidation is needed
-        final cacheRevalidationMills = cacheRevalidationInterval?.toMillis() ?: 0
+        final cacheRevalidationMills = cacheRevalidationInterval.toMillis()
         if( remainingCacheTime > cacheRevalidationMills ) {
             return false
         }
@@ -291,11 +290,11 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
         // i.e. it's approaching the cache expiration, in this cache the needed
         // for cache revalidation is determined in a probabilistic manner
         // see https://blog.cloudflare.com/sometimes-i-cache/
-        return randomRevalidate((cacheRevalidationMills-remainingCacheTime) /1000 as long)
+        return randomRevalidate(cacheRevalidationMills-remainingCacheTime)
     }
 
-    protected boolean randomRevalidate(long remainingTimeSecs) {
-        Math.random() < Math.exp(-revalidationSteepness * remainingTimeSecs)
+    protected boolean randomRevalidate(long remainingTime) {
+        Math.random() < Math.exp(-revalidationSteepness * remainingTime)
     }
 
 }
