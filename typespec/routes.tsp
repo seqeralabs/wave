@@ -5,8 +5,9 @@ using TypeSpec.Rest;
 
 @service({
   title: "Wave service",
+  version: "1.13.5"
 })
-@server("https://wave.seqera.io", "wave endopint")
+@server("https://wave.seqera.io", "wave endpoint")
 namespace wave {
   @route("/v1alpha2/container")
   interface  ContainerService {
