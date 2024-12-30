@@ -260,7 +260,7 @@ class RegistryProxyService {
         // otherwise read it and include the body input stream in the response
         // the caller must consume and close the body to prevent memory leaks
         else {
-            // create the retry logic on error                                                              §
+            // create the retry logic on error
             final retryable = Retryable
                     .<byte[]>of(httpConfig)
                     .onRetry((event) -> log.warn("Unable to read blob body - request: $route; event: $event"))
