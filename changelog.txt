@@ -1,4 +1,7 @@
 # Wave changelog
+1.16.5 - 30 Dec 2024
+- Fix Missing legacy classes deserialization [7687cd24]
+
 1.16.4 - 30 Dec 2024
 - Add custom toString method DelegateResponse class [6feb386a]
 - Add isTraceEnable if guard to log traces [166ca37f]
