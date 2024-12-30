@@ -19,16 +19,13 @@
 package io.seqera.wave.proxy
 
 import groovy.transform.EqualsAndHashCode
-import groovy.transform.ToString
 import io.seqera.wave.encoder.MoshiExchange
-
 /**
  * Model a response object to be forwarded to the client
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @EqualsAndHashCode
-@ToString(includeNames = true, includePackage = false)
 class DelegateResponse implements MoshiExchange {
     int statusCode
     Map<String,List<String>> headers
@@ -36,4 +33,14 @@ class DelegateResponse implements MoshiExchange {
     String location
     boolean isRedirect() { location }
     boolean isCacheable() { location!=null || (body!=null && statusCode>=200 && statusCode<400) }
+
+    @Override
+    public String toString() {
+        return "DelegateResponse[" +
+                "statusCode=" + statusCode +
+                ", location=" + (location ? "'${location}'" : "null") +
+                ", body=" + (body != null ? "[byte array: ${body.length}]" : "null") +
+                ", headers=" + headers +
+                "]";
+    }
 }
