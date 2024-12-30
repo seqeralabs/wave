@@ -104,7 +104,9 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
         new RemovalListener() {
             @Override
             void onRemoval(@Nullable key, @Nullable value, RemovalCause cause) {
-                log.trace "Cache '${name}' removing key=$key; value=$value; cause=$cause"
+                if( log.isTraceEnabled( )) {
+                    log.trace "Cache '${name}' removing key=$key; value=$value; cause=$cause"
+                }
             }
         }
     }
@@ -159,11 +161,13 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
     private V getOrCompute0(String key, Function<String, Tuple2<V,Duration>> loader) {
         assert key!=null, "Argument key cannot be null"
 
-        log.trace "Cache '${name}' checking key=$key"
+        if( log.isTraceEnabled() )
+            log.trace "Cache '${name}' checking key=$key"
         // Try L1 cache first
         V value = l1Get(key)
         if (value != null) {
-            log.trace "Cache '${name}' L1 hit (a) - key=$key => value=$value"
+            if( log.isTraceEnabled() )
+                log.trace "Cache '${name}' L1 hit (a) - key=$key => value=$value"
             return value
         }
 
@@ -172,14 +176,16 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
         try {
             value = l1Get(key)
             if (value != null) {
-                log.trace "Cache '${name}' L1 hit (b) - key=$key => value=$value"
+                if( log.isTraceEnabled() )
+                    log.trace "Cache '${name}' L1 hit (b) - key=$key => value=$value"
                 return value
             }
 
             // Fallback to L2 cache
             final entry = l2GetEntry(key)
             if (entry != null) {
-                log.trace "Cache '${name}' L2 hit - key=$key => entry=$entry"
+                if( log.isTraceEnabled() )
+                    log.trace "Cache '${name}' L2 hit - key=$key => entry=$entry"
                 // Rehydrate L1 cache
                 l1.put(key, entry)
                 return (V) entry.value
@@ -187,7 +193,8 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
 
             // still not value found, use loader function to fetch the value
             if( value==null && loader!=null ) {
-                log.trace "Cache '${name}' invoking loader - key=$key"
+                if( log.isTraceEnabled() )
+                    log.trace "Cache '${name}' invoking loader - key=$key"
                 final ret = loader.apply(key)
                 value = ret?.v1
                 Duration ttl = ret?.v2
@@ -199,7 +206,8 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
                 }
             }
 
-            log.trace "Cache '${name}' missing value - key=$key => value=${value}"
+            if( log.isTraceEnabled() )
+                log.trace "Cache '${name}' missing value - key=$key => value=${value}"
             // finally return the value
             return value
         }
@@ -212,7 +220,8 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
     void put(String key, V value, Duration ttl) {
         assert key!=null, "Cache key argument cannot be null"
         assert value!=null, "Cache value argument cannot be null"
-        log.trace "Cache '${name}' putting - key=$key; value=${value}"
+        if( log.isTraceEnabled() )
+            log.trace "Cache '${name}' putting - key=$key; value=${value}"
         final exp = System.currentTimeMillis() + ttl.toMillis()
         final entry = new Entry(value, exp)
         l1Put(key, entry)
@@ -231,7 +240,8 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
             return null
 
         if( System.currentTimeMillis() > entry.expiresAt ) {
-            log.trace "Cache '${name}' L1 expired - key=$key => entry=$entry"
+            if( log.isTraceEnabled() )
+                log.trace "Cache '${name}' L1 expired - key=$key => entry=$entry"
             return null
         }
         return entry
@@ -251,7 +261,8 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
 
         final Entry entry = encoder.decode(raw)
         if( System.currentTimeMillis() > entry.expiresAt ) {
-            log.trace "Cache '${name}' L2 expired - key=$key => value=${entry}"
+            if( log.isTraceEnabled() )
+                log.trace "Cache '${name}' L2 expired - key=$key => value=${entry}"
             return null
         }
         return entry
