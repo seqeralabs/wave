@@ -276,7 +276,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     protected String getAuthToken(String image, RegistryAuth auth, RegistryCredentials creds) {
         final key = new CacheKey(image, auth, creds)
         try {
-            return cache.getOrCompute(key, (k)->load(key), _1_HOUR)
+            return cache.getOrCompute(key, (k)->load(key), _1_HOUR).value
         }
         catch (CompletionException e) {
             // this catches the exception thrown in the cache loader lookup
