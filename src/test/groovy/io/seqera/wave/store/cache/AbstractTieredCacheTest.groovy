@@ -48,7 +48,7 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
         return new MoshiEncodeStrategy<AbstractTieredCache.Entry>(factory) {}
     }
 
-    static class MyCache extends AbstractTieredCache<TieredCacheKey, MyEntry> {
+    static class MyCache extends AbstractTieredCache<TieredCacheKey, MyBean> {
 
         static String PREFIX = 'foo/v1'
 
