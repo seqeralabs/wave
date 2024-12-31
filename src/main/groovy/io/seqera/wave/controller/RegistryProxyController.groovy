@@ -215,7 +215,7 @@ class RegistryProxyController {
         }
         else if( resp.body!=null ) {
             log.debug "Returning ${route.type} from repository: '${route.getTargetContainer()}'"
-            return fromContentResponse(resp, route)
+            return fromContentResponse(resp)
         }
         else if( blobCacheService ) {
             log.debug "Forwarding ${route.type} cache request '${route.getTargetContainer()}'"
@@ -346,7 +346,7 @@ class RegistryProxyController {
                 .headers(toMutableHeaders(response.headers))
     }
 
-    MutableHttpResponse<?> fromContentResponse(DelegateResponse resp, RoutePath route) {
+    MutableHttpResponse<?> fromContentResponse(DelegateResponse resp) {
         HttpResponse
                 .status(HttpStatus.valueOf(resp.statusCode))
                 .body(resp.body)

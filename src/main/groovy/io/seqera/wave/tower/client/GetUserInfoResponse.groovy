@@ -30,6 +30,6 @@ import io.seqera.wave.tower.User
 @EqualsAndHashCode
 @ToString(includePackage = false, includeNames = true)
 @CompileStatic
-class UserInfoResponse implements MoshiExchange {
+class GetUserInfoResponse implements MoshiExchange {
     User user
 }

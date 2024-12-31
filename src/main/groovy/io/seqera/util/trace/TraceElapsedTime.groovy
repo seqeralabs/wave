@@ -16,27 +16,26 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.tower.client
+package io.seqera.util.trace
 
-import groovy.transform.CompileStatic
-import groovy.transform.ToString
+import java.lang.annotation.Documented
+import java.lang.annotation.Retention
+import java.lang.annotation.Target
 
+import io.micronaut.aop.Around
+import static java.lang.annotation.ElementType.METHOD
+import static java.lang.annotation.ElementType.TYPE
+import static java.lang.annotation.RetentionPolicy.RUNTIME
 /**
- * Model Tower service info response
- * 
+ * When applied to a method or a class the elapsed time to carry out the method execution
+ * is reported in the application log file
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@ToString(includePackage = false, includeNames = true)
-@CompileStatic
-class ServiceInfoResponse {
-
-    @ToString(includePackage = false, includeNames = true)
-    static class ServiceInfo {
-        String version
-        String apiVersion
-        String commitId
-        Boolean waveEnabled
-    }
-
-    ServiceInfo serviceInfo
+@Documented
+@Retention(RUNTIME)
+@Target([TYPE, METHOD])
+@Around
+@interface TraceElapsedTime {
+    String thresholdMillis() default '0'
 }

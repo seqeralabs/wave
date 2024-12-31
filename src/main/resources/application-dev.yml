@@ -20,6 +20,13 @@ wave:
     succeeded: '10s'
     failed: '45s'
     strategy: 'onsuccess'
+  trace:
+    local-persistence:
+      threshold: 100
+    surreal-persistence:
+      threshold: 100
+    proxy-service:
+      threshold: 100
 ---
 endpoints:
   metrics:

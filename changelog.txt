@@ -1,5 +1,24 @@
 # Wave changelog
-1.16.3 - 22 Dec 2023
+1.16.5 - 30 Dec 2024
+- Fix Missing legacy classes deserialization [7687cd24]
+
+1.16.4 - 30 Dec 2024
+- Add custom toString method DelegateResponse class [6feb386a]
+- Add isTraceEnable if guard to log traces [166ca37f]
+- Add trace execution elapsed time logic (#497) [9e25687f]
+- Fix duplicate add-opens option in launch script [a2722115]
+- Fix invalid expiresAt time in L1 tiered cache [38737127]
+- Fix missing workspaceId in launch API (#780) [c0d41336]
+- Use look pool for cache sync [29db0360]
+- Use blocking executor with PullMetricsRequestsFilter class [e10f3275]
+- Use lib-pool library [33d9d4d3]
+- Use platform thread to read target request body [053ba8d9]
+- Refactor container request service [955d9894]
+- Refactor platform client model [8c7a9825]
+- Remove unneeded user async api (#781) [814c35ee]
+- Bump MN 4.7.2 [702658b2]
+
+1.16.3 - 22 Dec 2024
 - Improve tiered cache (#779) [01d5f183]
 - Bump logback 1.5.13 [1466c276]
 
@@ -7,8 +26,8 @@
 - Fix JWT token refresh [52a5ebd7]
 
 1.16.1 - 20 Dec 2024
-- Add tiered chache for HTTP proxied responses (#778) [00b6add7]
-- Improve boostrap info [d5c086da]
+- Add tiered cache for HTTP proxied responses (#778) [00b6add7]
+- Improve bootstrap info [d5c086da]
 - Remove jitpack [67f91c8b]
 
 1.16.0 - 17 Dec 2024 

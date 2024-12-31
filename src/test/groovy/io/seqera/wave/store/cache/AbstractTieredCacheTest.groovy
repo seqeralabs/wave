@@ -34,7 +34,7 @@ import spock.lang.Specification
 class AbstractTieredCacheTest extends Specification implements RedisTestContainer {
 
     @Canonical
-    static class MyEntry implements MoshiExchange {
+    static class MyBean implements MoshiExchange {
         String foo
         String bar
     }
@@ -43,7 +43,7 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
     static MoshiEncodeStrategy encoder() {
         JsonAdapter.Factory factory = PolymorphicJsonAdapterFactory.of(MoshiExchange.class, "@type")
                 .withSubtype(AbstractTieredCache.Entry.class, AbstractTieredCache.Entry.name)
-                .withSubtype(MyEntry.class, MyEntry.name)
+                .withSubtype(MyBean.class, MyBean.name)
 
         return new MoshiEncodeStrategy<AbstractTieredCache.Entry>(factory) {}
     }
@@ -85,26 +85,43 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
 
     def 'should get and put a key-value pair' () {
         given:
+        def begin = System.currentTimeMillis()
+        and:
         def TTL = Duration.ofMillis(150)
         def store = applicationContext.getBean(RedisL2TieredCache)
         def encoder = encoder()
         def cache1 = new MyCache(store)
         and:
         def k = UUID.randomUUID().toString()
-        def value = new MyEntry('x','y')
+        def value = new MyBean('x','y')
 
         expect:
         cache1.get(k) == null
 
         when:
         cache1.put(k, value, TTL)
+
+        then:
+        def entry1 = cache1.l1GetEntry(k)
         and:
-        MyEntry r1 = cache1.get(k)
+        entry1.expiresAt > begin
+        then:
+        entry1?.value == value
+
+        then:
+        def entry2 = encoder.decode(store.get(MyCache.PREFIX+':'+k))
+        then:
+        entry2.expiresAt > begin
+        then:
+        entry2?.value == value
+
+        and:
+        MyBean r1 = cache1.get(k)
         then:
         r1 == value
 
         when:
-        MyEntry r2 = encoder.decode(store.get(MyCache.PREFIX+':'+k))?.value as MyEntry
+        MyBean r2 = encoder.decode(store.get(MyCache.PREFIX+':'+k))?.value as MyBean
         then:
         r2 == value
 
@@ -123,7 +140,7 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
         def cache2 = new MyCache(store)
         and:
         def k = UUID.randomUUID().toString()
-        def value = new MyEntry('x','y')
+        def value = new MyBean('x','y')
 
         expect:
         cache1.get(k) == null
@@ -131,17 +148,17 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
         when:
         cache1.put(k, value, TTL)
         and:
-        MyEntry r1 = cache1.get(k)
+        MyBean r1 = cache1.get(k)
         then:
         r1 == value
         
         when:
-        MyEntry r2 = encoder.decode(store.get(MyCache.PREFIX+':'+k))?.value as MyEntry
+        MyBean r2 = encoder.decode(store.get(MyCache.PREFIX+':'+k))?.value as MyBean
         then:
         r2 == value
 
         when:
-        MyEntry r3 = cache2.get(k)
+        MyBean r3 = cache2.get(k)
         then:
         r3 == value
 
@@ -164,14 +181,14 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
         cache1.get(k) == null
 
         when:
-        MyEntry r1 = cache1.getOrCompute(k, (it)-> new MyEntry(it+'1', it+'2'), TTL)
+        MyBean r1 = cache1.getOrCompute(k, (it)-> new MyBean(it+'1', it+'2'), TTL)
         then:
-        r1 == new MyEntry(k+'1', k+'2')
+        r1 == new MyBean(k+'1', k+'2')
 
         when:
-        MyEntry r2 = cache2.get(k)
+        MyBean r2 = cache2.get(k)
         then:
-        r2 == new MyEntry(k+'1', k+'2')
+        r2 == new MyBean(k+'1', k+'2')
 
         when:
         sleep TTL.toMillis() *2
@@ -192,16 +209,16 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
         cache.get(k1) == null
 
         when:
-        MyEntry r1 = cache.getOrCompute(k1, (it)-> new Tuple2<MyEntry,Duration>(new MyEntry(it+'1', it+'2'), TTL))
+        MyBean r1 = cache.getOrCompute(k1, (it)-> new Tuple2<MyBean,Duration>(new MyBean(it+'1', it+'2'), TTL))
         then:
-        r1 == new MyEntry(k1+'1', k1+'2')
+        r1 == new MyBean(k1+'1', k1+'2')
         then:
-        cache.get(k1) == new MyEntry(k1+'1', k1+'2')
+        cache.get(k1) == new MyBean(k1+'1', k1+'2')
 
         when:
-        MyEntry r2 = cache.getOrCompute(k2, (it)-> new Tuple2<MyEntry,Duration>(new MyEntry(it+'3', it+'4'), null))
+        MyBean r2 = cache.getOrCompute(k2, (it)-> new Tuple2<MyBean,Duration>(new MyBean(it+'3', it+'4'), null))
         then:
-        r2 == new MyEntry(k2+'3', k2+'4')
+        r2 == new MyBean(k2+'3', k2+'4')
         then:
         cache.get(k2) == null
     }
