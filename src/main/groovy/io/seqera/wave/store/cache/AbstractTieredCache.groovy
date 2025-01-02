@@ -47,7 +47,7 @@ import org.jetbrains.annotations.Nullable
  */
 @Slf4j
 @CompileStatic
-abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCache<String,V> {
+abstract class AbstractTieredCache<K extends  TieredCacheKey, V extends MoshiExchange> implements TieredCache<String,V> {
 
     @Canonical
     @ToString(includePackage = false, includeNames = true)
@@ -131,6 +131,8 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
      *      The key of the value to be retrieved
      * @param loader
      *      A function invoked to load the value the entry with the specified key is not available
+     * @param ttl
+     *      time to live for the entry
      * @return
      *      The value associated with the specified key, or {@code null} otherwise
      */
@@ -140,6 +142,29 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
         }
         return getOrCompute0(key, (String k)-> {
             V v = loader.apply(key)
+            return v != null ? new Tuple2<>(v, ttl) : null
+        })
+    }
+
+    /**
+     * Retrieve the value associated with the specified key
+     *
+     * @param key
+     *      The key of the value to be retrieved
+     * @param loader
+     *      A function invoked to load the value the entry with the specified key is not available
+     * @param ttl
+     *      time to live for the entry
+     * @return
+     *      The value associated with the specified key, or {@code null} otherwise
+     */
+    V getOrCompute(K key, Function<String,V> loader, Duration ttl) {
+        final hash = key.stableHash()
+        if( loader==null ) {
+            return getOrCompute0(hash, null)
+        }
+        return getOrCompute0(hash, (String k)-> {
+            V v = loader.apply(k)
             return v != null ? new Tuple2<>(v, ttl) : null
         })
     }
@@ -281,6 +306,10 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
 
     void invalidateAll() {
         l1.invalidateAll()
+    }
+
+    void invalidate(K key) {
+        l1.invalidate(key.stableHash())
     }
 
 }
