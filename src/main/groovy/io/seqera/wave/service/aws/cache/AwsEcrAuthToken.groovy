@@ -30,10 +30,10 @@ import io.seqera.wave.encoder.MoshiExchange
 @CompileStatic
 @EqualsAndHashCode
 @ToString(includePackage = false, includeNames = true)
-class Token  implements MoshiExchange {
+class AwsEcrAuthToken implements MoshiExchange {
     String value
 
-    Token(String value) {
+    AwsEcrAuthToken(String value) {
         this.value = value
     }
 }

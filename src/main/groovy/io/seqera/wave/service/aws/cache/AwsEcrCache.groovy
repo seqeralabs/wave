@@ -40,7 +40,7 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-class AwsEcrCache extends AbstractTieredCache<TieredCacheKey, Token> {
+class AwsEcrCache extends AbstractTieredCache<TieredCacheKey, AwsEcrAuthToken> {
 
     @Value('${wave.aws.ecr.cache.duration:3h}')
     private Duration duration
@@ -74,7 +74,7 @@ class AwsEcrCache extends AbstractTieredCache<TieredCacheKey, Token> {
     static JsonAdapter.Factory factory() {
         PolymorphicJsonAdapterFactory.of(MoshiExchange.class, "@type")
                 .withSubtype(AbstractTieredCache.Entry.class, AbstractTieredCache.Entry.name)
-                .withSubtype(Token.class, Token.simpleName)
+                .withSubtype(AwsEcrAuthToken.class, AwsEcrAuthToken.simpleName)
     }
 
 }

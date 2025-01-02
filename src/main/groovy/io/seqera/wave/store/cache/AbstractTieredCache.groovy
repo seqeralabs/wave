@@ -131,6 +131,8 @@ abstract class AbstractTieredCache<K extends  TieredCacheKey, V extends MoshiExc
      *      The key of the value to be retrieved
      * @param loader
      *      A function invoked to load the value the entry with the specified key is not available
+     * @param ttl
+     *      time to live for the entry
      * @return
      *      The value associated with the specified key, or {@code null} otherwise
      */
@@ -151,6 +153,8 @@ abstract class AbstractTieredCache<K extends  TieredCacheKey, V extends MoshiExc
      *      The key of the value to be retrieved
      * @param loader
      *      A function invoked to load the value the entry with the specified key is not available
+     * @param ttl
+     *      time to live for the entry
      * @return
      *      The value associated with the specified key, or {@code null} otherwise
      */

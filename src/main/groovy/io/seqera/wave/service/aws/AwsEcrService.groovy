@@ -29,7 +29,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.service.aws.cache.AwsEcrCache
-import io.seqera.wave.service.aws.cache.Token
+import io.seqera.wave.service.aws.cache.AwsEcrAuthToken
 import io.seqera.wave.store.cache.TieredCacheKey
 import io.seqera.wave.util.RegHelper
 import io.seqera.wave.util.StringUtils
@@ -77,11 +77,11 @@ class AwsEcrService {
         String region
     }
 
-    Token load(AwsCreds creds) throws Exception {
+    AwsEcrAuthToken load(AwsCreds creds) throws Exception {
         def token = creds.ecrPublic
                 ? getLoginToken1(creds.accessKey, creds.secretKey, creds.region)
                 : getLoginToken0(creds.accessKey, creds.secretKey, creds.region)
-        return new Token(token)
+        return new AwsEcrAuthToken(token)
     }
 
     @Inject

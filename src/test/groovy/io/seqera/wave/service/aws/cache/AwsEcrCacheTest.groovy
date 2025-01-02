@@ -54,7 +54,7 @@ class AwsEcrCacheTest extends Specification implements RedisTestContainer {
         def cache2 = new AwsEcrCache(store)
         and:
         def k = UUID.randomUUID().toString()
-        def token = new Token('token')
+        def token = new AwsEcrAuthToken('token')
 
         when:
         cache1.put(k, token, Duration.ofSeconds(30))
