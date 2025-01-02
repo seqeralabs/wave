@@ -112,7 +112,9 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
         new RemovalListener() {
             @Override
             void onRemoval(@Nullable key, @Nullable value, RemovalCause cause) {
-                log.trace "Cache '${name}' removing key=$key; value=$value; cause=$cause"
+                if( log.isTraceEnabled() ) {
+                    log.trace "Cache '${name}' removing key=$key; value=$value; cause=$cause"
+                }
             }
         }
     }
@@ -166,13 +168,15 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
 
     private V getOrCompute0(String key, Function<String, Tuple2<V,Duration>> loader) {
         assert key!=null, "Argument key cannot be null"
-        log.trace "Cache '${name}' checking key=$key"
+        if( log.isTraceEnabled() )
+            log.trace "Cache '${name}' checking key=$key"
         final now = Instant.now()
         // Try L1 cache first
         Entry entry = l1Get(key)
         Boolean needsRevalidation = entry ? shouldRevalidate(entry.expiresAt, now) : null
         if( entry && !needsRevalidation ) {
-            log.trace "Cache '${name}' L1 hit (a) - key=$key => entry=$entry"
+            if( log.isTraceEnabled() )
+                log.trace "Cache '${name}' L1 hit (a) - key=$key => entry=$entry"
             return (V) entry.value
         }
 
@@ -185,7 +189,8 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
                 needsRevalidation = entry ? shouldRevalidate(entry.expiresAt, now) : null
             }
             if( entry && !needsRevalidation ) {
-                log.trace "Cache '${name}' L1 hit (b) - key=$key => entry=$entry"
+                if( log.isTraceEnabled() )
+                    log.trace "Cache '${name}' L1 hit (b) - key=$key => entry=$entry"
                 return (V)entry.value
             }
 
@@ -195,7 +200,8 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
                 needsRevalidation = entry ? shouldRevalidate(entry.expiresAt, now) : null
             }
             if( entry && !needsRevalidation ) {
-                log.trace "Cache '${name}' L2 hit (c) - key=$key => entry=$entry"
+                if( log.isTraceEnabled() )
+                    log.trace "Cache '${name}' L2 hit (c) - key=$key => entry=$entry"
                 // Rehydrate L1 cache
                 l1.put(key, entry)
                 return (V) entry.value
@@ -205,7 +211,8 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
             // use the loader function to fetch the value
             V value = null
             if( loader!=null ) {
-                log.trace "Cache '${name}' invoking loader - key=$key"
+                if( log.isTraceEnabled() )
+                    log.trace "Cache '${name}' invoking loader - key=$key"
                 final ret = loader.apply(key)
                 value = ret?.v1
                 Duration ttl = ret?.v2
@@ -217,7 +224,8 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
                 }
             }
 
-            log.trace "Cache '${name}' missing value - key=$key => value=${value}"
+            if( log.isTraceEnabled() )
+                log.trace "Cache '${name}' missing value - key=$key => value=${value}"
             // finally return the value
             return value
         }
@@ -230,7 +238,8 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
     void put(String key, V value, Duration ttl) {
         assert key!=null, "Cache key argument cannot be null"
         assert value!=null, "Cache value argument cannot be null"
-        log.trace "Cache '${name}' putting - key=$key; value=${value}"
+        if( log.isTraceEnabled() )
+            log.trace "Cache '${name}' putting - key=$key; value=${value}"
         final exp = System.currentTimeMillis() + ttl.toMillis()
         final entry = new Entry(value, exp)
         l1Put(key, entry)

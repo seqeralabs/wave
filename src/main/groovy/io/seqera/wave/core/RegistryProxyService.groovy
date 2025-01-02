@@ -20,6 +20,7 @@ package io.seqera.wave.core
 
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 
 import com.google.common.hash.Hashing
 import groovy.json.JsonOutput
@@ -30,6 +31,8 @@ import io.micronaut.context.annotation.Context
 import io.micronaut.core.io.buffer.ByteBuffer
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.reactor.http.client.ReactorStreamingHttpClient
+import io.micronaut.scheduling.TaskExecutors
+import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.WaveDefault
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
@@ -47,10 +50,10 @@ import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.tower.PlatformId
-import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.util.RegHelper
 import io.seqera.wave.util.Retryable
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 import reactor.core.publisher.Flux
 import static io.seqera.wave.WaveDefault.HTTP_REDIRECT_CODES
@@ -99,6 +102,13 @@ class RegistryProxyService {
 
     @Inject
     private ProxyCache cache
+
+    // note this use explicitly executors (instead of blocking) because it must be
+    // platform thread executor pool (not a virtual threads pool).
+    // See the details in comment where the executor is used below
+    @Inject
+    @Named(TaskExecutors.IO)
+    private ExecutorService httpClientExecutor
 
     private ContainerAugmenter scanner(ProxyClient proxyClient) {
         return new ContainerAugmenter()
@@ -220,6 +230,7 @@ class RegistryProxyService {
 
     @TraceElapsedTime(thresholdMillis = '${wave.trace.proxy-service.threshold:750}')
     protected DelegateResponse handleRequest0(RoutePath route, Map<String,List<String>> headers) {
+        log.debug "Request processing ${route}"
         ProxyClient proxyClient = client(route)
         final resp1 = proxyClient.getStream(route.path, headers, false)
         final redirect = resp1.headers().firstValue('Location').orElse(null)
@@ -260,15 +271,19 @@ class RegistryProxyService {
         // otherwise read it and include the body input stream in the response
         // the caller must consume and close the body to prevent memory leaks
         else {
-            // create the retry logic on error                                                              §
+            // create the retry logic on error
             final retryable = Retryable
                     .<byte[]>of(httpConfig)
                     .onRetry((event) -> log.warn("Unable to read blob body - request: $route; event: $event"))
-            // read the body and compose the response
+            // read the body - note this must use a separate *platform* thread to prevent a possible
+            // deep deadlock caused by the HttpClient implementation. See problem #4 in post
+            // https://medium.com/@phil_3582/java-virtual-threads-some-early-gotchas-to-look-out-for-f65df1bad0db#:~:text=The%20virtual%20threads%20can%20use,using%20complex%20constructs%20like%20CompletableFuture.
+            final bb = retryable.applyAsync(()-> resp1.body().bytes, httpClientExecutor).get()
+            // and compose the response
             return new DelegateResponse(
                     statusCode: resp1.statusCode(),
                     headers: resp1.headers().map(),
-                    body: retryable.apply(()-> resp1.body().bytes) )
+                    body: bb )
         }
     }
 
