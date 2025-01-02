@@ -28,7 +28,7 @@ import jakarta.inject.Inject
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-class RegistryAwsEcrAuthTokenStoreTest extends Specification {
+class RegistryTokenStoreTest extends Specification {
 
     @Inject RegistryTokenStore store
 
