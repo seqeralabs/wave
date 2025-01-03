@@ -90,7 +90,7 @@ distributions:
         platform: windows-x86_64
         extraProperties:
           graalVMNativeImage: true
-      - path: "nativeCompile-macos-12/wave"
+      - path: "nativeCompile-macos-latest-large/wave"
         transform: "wave-{{projectEffectiveVersion}}-macos-x86_64"
         platform: osx-x86_64
         extraProperties:
