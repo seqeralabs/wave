@@ -25,7 +25,9 @@ import java.util.concurrent.locks.ReentrantLock
 import java.util.function.Function
 
 import com.github.benmanes.caffeine.cache.AsyncCache
+import com.github.benmanes.caffeine.cache.AsyncLoadingCache
 import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.CacheLoader
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.benmanes.caffeine.cache.RemovalCause
 import com.github.benmanes.caffeine.cache.RemovalListener
@@ -63,7 +65,15 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
 
     private L2TieredCache<String,String> l2
 
-    private final WeakHashMap<String,Lock> locks = new WeakHashMap<>()
+    // FIXME https://github.com/seqeralabs/wave/issues/747
+    private AsyncLoadingCache<String,Lock> locks = Caffeine.newBuilder()
+            .maximumSize(5_000)
+            .weakKeys()
+            .buildAsync(loader())
+
+    CacheLoader<String,Lock> loader() {
+        (String key) -> new ReentrantLock()
+    }
 
     AbstractTieredCache(L2TieredCache<String,String> l2, MoshiEncodeStrategy encoder) {
         if( l2==null )
@@ -76,7 +86,7 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
         if( _l1!=null )
             return _l1.synchronous()
 
-        final sync = locks.computeIfAbsent('sync-l1', (k)-> new ReentrantLock())
+        final sync = locks.get('sync-l1').get()
         sync.lock()
         try {
             if( _l1!=null )
@@ -171,7 +181,7 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
             return value
         }
 
-        final sync = locks.computeIfAbsent(key, (k)-> new ReentrantLock())
+        final sync = locks.get(key).get()
         sync.lock()
         try {
             value = l1Get(key)
