@@ -228,7 +228,7 @@ class RegistryProxyService {
                 })
     }
 
-    @TraceElapsedTime(thresholdMillis = '${wave.trace.proxy-service.threshold:750}')
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.proxy-service.threshold:1000}')
     protected DelegateResponse handleRequest0(RoutePath route, Map<String,List<String>> headers) {
         log.debug "Request processing ${route}"
         ProxyClient proxyClient = client(route)
