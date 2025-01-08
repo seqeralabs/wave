@@ -14,7 +14,7 @@ project:
 release:
   github:
     overwrite: true
-    draft: true
+    draft: false
     prerelease:
       pattern: .*-beta
     changelog:
