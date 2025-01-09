@@ -16,16 +16,12 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.tower.client
-
-import groovy.transform.CompileStatic
-import io.seqera.wave.tower.User
-
+package io.seqera.wave.store.cache
 /**
- * Model a Tower user-info response
+ * Define the interface for 2nd level tired cache
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
-class UserInfoResponse {
-    User user
+interface L2TieredCache<K,V> extends TieredCache<K,V> {
+
 }

@@ -150,10 +150,6 @@ abstract class TowerConnector {
         final exec0 = this.ioExecutor
         return sendAsync1(endpoint, uri, auth, msgId, true)
                 .thenCompose { resp ->
-                    if( resp.status==200 )
-                        log.trace "Tower response for request GET '${uri}' => ${resp}"
-                    else
-                        log.debug "Tower response for request GET '${uri}' => ${resp}"
                     switch (resp.status) {
                         case 200:
                             return CompletableFuture.completedFuture(JacksonHelper.fromJson(resp.body, type))
@@ -221,23 +217,29 @@ abstract class TowerConnector {
     private CompletableFuture<ProxyHttpResponse> sendAsync1(String endpoint, final URI uri, final JwtAuth auth, String msgId, final boolean canRefresh) {
         // check the most updated JWT token
         final JwtAuth tokens = jwtAuthStore.refresh(auth) ?: auth
-        log.trace "Tower GET '$uri' - can refresh=$canRefresh; msgId=$msgId; tokens=$tokens"
+        log.trace "Tower request: GET '$uri' - can refresh=$canRefresh; msgId=$msgId; tokens=$tokens"
         // submit the request
         final request = new ProxyHttpRequest(
                 msgId: msgId,
                 method: HttpMethod.GET,
                 uri: uri,
-                auth: tokens && tokens.bearer ? "Bearer ${tokens.bearer}" : null
-        )
+                auth: tokens && tokens.bearer ? "Bearer ${tokens.bearer}" : null )
 
         final response = sendAsync(endpoint, request)
+                .thenComposeAsync({  resp ->
+                    // log the response
+                    if( resp.status==200 )
+                        log.trace "Tower response: GET '${uri}' => ${resp}"
+                    else
+                        log.debug "Tower response: GET '${uri}' => ${resp}"
+                    return CompletableFuture.completedFuture(resp)
+                }, ioExecutor)
         // when accessing unauthorised resources, token refresh is not needed
         if( !auth )
             return response
 
         return response
-                .thenCompose { resp ->
-                    log.trace "Tower GET '$uri' response => msgId:$msgId; status: ${resp.status}; content: ${resp.body}"
+                .thenComposeAsync({ resp ->
                     if (resp.status == 401 && tokens.refresh && canRefresh) {
                         final refreshId = rndHex()
                         return refreshJwtToken(endpoint, tokens)
@@ -245,7 +247,7 @@ abstract class TowerConnector {
                     } else {
                         return CompletableFuture.completedFuture(resp)
                     }
-                }
+                }, ioExecutor)
     }
 
     /**
@@ -274,7 +276,7 @@ abstract class TowerConnector {
         )
 
         return sendAsync(endpoint, request)
-                .thenApply { resp ->
+                .thenApplyAsync({ resp ->
                     if( resp==null )
                         throw new HttpResponseException(500, "Missing Tower response refreshing JWT token: ${request.uri}")
                     if ( resp.status >= 400 ) {
@@ -289,8 +291,7 @@ abstract class TowerConnector {
                     final newAuth = parseTokens(cookies, auth)
                     jwtAuthStore.store(newAuth)
                     return newAuth
-                }
-
+                }, ioExecutor)
     }
 
     protected static JwtAuth parseTokens(List<String> cookies, JwtAuth auth) {

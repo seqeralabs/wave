@@ -24,16 +24,13 @@ import groovy.transform.ToString
 import io.seqera.wave.encoder.MoshiExchange
 
 /**
- * Model the response of compute environment from seqera platform
+ * Model the response of workflow launch response from seqera platform
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @CompileStatic
 @EqualsAndHashCode
 @ToString(includePackage = false, includeNames = true)
-class ComputeEnv implements MoshiExchange {
-    String id
-    String platform
-    String credentialsId
+class WorkflowLaunch implements MoshiExchange {
+    ComputeEnv computeEnv
 }
-

@@ -16,38 +16,46 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service
+package io.seqera.wave.store.cache
 
+import java.time.Duration
 
 import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
-import io.micronaut.core.annotation.Nullable
-import io.seqera.wave.exception.UnauthorizedException
-import io.seqera.wave.tower.User
-import io.seqera.wave.tower.auth.JwtAuth
-import io.seqera.wave.tower.client.TowerClient
+import io.micronaut.context.annotation.Requires
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+import redis.clients.jedis.Jedis
+import redis.clients.jedis.JedisPool
+import redis.clients.jedis.params.SetParams
+
 /**
- * Define a service to access a Tower user
+ * Redis based implementation for {@link L2TieredCache} cache interface
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
-@Slf4j
+@Requires(property = 'redis.uri')
 @Singleton
-class UserServiceImpl implements UserService {
+@CompileStatic
+class RedisL2TieredCache implements L2TieredCache<String,String> {
 
     @Inject
-    @Nullable
-    private TowerClient towerClient
+    private JedisPool pool
 
     @Override
-    User getUserByAccessToken(String endpoint, JwtAuth auth) {
-        final resp = towerClient.userInfo(endpoint, auth)
-        if (!resp || !resp.user)
-            throw new UnauthorizedException("Unauthorized - Make sure you have provided a valid access token")
-        log.debug("Authorized user=$resp.user")
-        return resp.user
+    String get(String key) {
+        try(Jedis conn=pool.getResource()) {
+            return conn.get(key)
+        }
     }
+
+    @Override
+    void put(String key, String value, Duration ttl) {
+        try( Jedis conn=pool.getResource() ) {
+            final params = new SetParams()
+            if( ttl )
+                params.px(ttl.toMillis())
+            conn.set(key, value, params)
+        }
+    }
+
 }

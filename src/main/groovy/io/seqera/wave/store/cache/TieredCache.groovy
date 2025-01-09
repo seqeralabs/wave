@@ -16,18 +16,33 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service
+package io.seqera.wave.store.cache
 
+import java.time.Duration
 
-import io.seqera.wave.tower.User
-import io.seqera.wave.tower.auth.JwtAuth
 /**
- * Declare a service to access a Tower user
+ * Base interface for tiered-cache system
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface UserService {
+interface TieredCache<K,V> {
 
-    User getUserByAccessToken(String endpoint, JwtAuth auth)
+    /**
+     * Retrieve the value associated with the specified key
+     *
+     * @param key The key of the value to be retrieved
+     * @return The value associated with the specified key, or {@code null} otherwise
+     */
+    V get(K key)
+
+    /**
+     * Add a value in the cache with the specified key. If a value already exists is overridden
+     * with the new value.
+     *
+     * @param key The key of the value to be added. {@code null} is not allowed.
+     * @param value The value to be added in the cache for the specified key.  {@code null} is not allowed.
+     * @param ttl The value time-to-live, after which the value is automatically evicted.
+     */
+    void put(K key, V value, Duration ttl)
 
 }

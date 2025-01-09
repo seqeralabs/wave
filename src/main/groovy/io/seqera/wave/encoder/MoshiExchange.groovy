@@ -16,24 +16,12 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.tower.compute
-
-import groovy.transform.CompileStatic
-import groovy.transform.EqualsAndHashCode
-import groovy.transform.ToString
-import io.seqera.wave.encoder.MoshiExchange
+package io.seqera.wave.encoder
 
 /**
- * Model the response of compute environment from seqera platform
- *
- * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * Marker interface for Moshi encoded exchange objects
+ * 
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
-@EqualsAndHashCode
-@ToString(includePackage = false, includeNames = true)
-class ComputeEnv implements MoshiExchange {
-    String id
-    String platform
-    String credentialsId
+interface MoshiExchange {
 }
-
