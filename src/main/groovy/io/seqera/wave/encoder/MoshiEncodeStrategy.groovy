@@ -54,13 +54,18 @@ abstract class MoshiEncodeStrategy<V> implements EncodingStrategy<V> {
         init()
     }
 
+    MoshiEncodeStrategy(JsonAdapter.Factory customFactory) {
+        this.type = TypeHelper.getGenericType(this, 0)
+        init(customFactory)
+    }
+
     MoshiEncodeStrategy(Type type) {
         this.type = type
         init()
     }
 
-    private void init() {
-        this.moshi = new Moshi.Builder()
+    private void init(JsonAdapter.Factory customFactory=null) {
+        final builder = new Moshi.Builder()
                 .add(new ByteArrayAdapter())
                 .add(new DateTimeAdapter())
                 .add(new PathAdapter())
@@ -73,9 +78,11 @@ abstract class MoshiEncodeStrategy<V> implements EncodingStrategy<V> {
                         .withSubtype(ProxyHttpRequest.class, ProxyHttpRequest.simpleName)
                         .withSubtype(ProxyHttpResponse.class, ProxyHttpResponse.simpleName)
                         .withSubtype(PairingHeartbeat.class, PairingHeartbeat.simpleName)
-                        .withSubtype(PairingResponse.class, PairingResponse.simpleName)
-                )
-                .build()
+                        .withSubtype(PairingResponse.class, PairingResponse.simpleName) )
+        // add custom factory if provider
+        if( customFactory )
+            builder.add(customFactory)
+        this.moshi = builder.build()
         this.jsonAdapter = moshi.adapter(type)
 
     }

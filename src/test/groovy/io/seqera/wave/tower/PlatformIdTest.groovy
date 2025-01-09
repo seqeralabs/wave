@@ -42,7 +42,7 @@ class PlatformIdTest extends Specification {
 
     def 'should create form a container request' () {
         when:
-        def id = PlatformId.of(new User(id:1), new SubmitContainerTokenRequest(
+        def id = PlatformId.of(new User(id:1, email: 'p@foo.com'), new SubmitContainerTokenRequest(
                 towerWorkspaceId: 100,
                 towerEndpoint: 'http://foo.com',
                 towerAccessToken: 'token-123',
@@ -53,6 +53,7 @@ class PlatformIdTest extends Specification {
         id.workspaceId == 100
         id.towerEndpoint == 'http://foo.com'
         id.accessToken == 'token-123'
+        id.userEmail == 'p@foo.com'
     }
 
     def 'should create form a inspect request' () {
@@ -83,4 +84,57 @@ class PlatformIdTest extends Specification {
         id1.hashCode() != id2.hashCode()
         id3.hashCode() == id1.hashCode()
     }
+
+    def 'should return stable hash' () {
+        given:
+        def id1 = PlatformId.of(new User(id:1, email: 'p@foo.com'), Mock(SubmitContainerTokenRequest))
+
+        def id2 = PlatformId.of(new User(id:2, email: 'p@foo.com'), Mock(SubmitContainerTokenRequest))
+
+        def id3 = PlatformId.of(new User(id:1, email: 'p@foo.com'), new SubmitContainerTokenRequest(
+                towerEndpoint: 'http://foo.com',
+                towerAccessToken: 'token-123',
+                towerRefreshToken: 'refresh-123',
+                towerWorkspaceId: 100 ))
+        and:
+        def id4 = PlatformId.of(new User(id:1, email: 'p@foo.com'), new SubmitContainerTokenRequest(
+                towerEndpoint: 'http://bar.com', // <-- change endpoint
+                towerAccessToken: 'token-123',
+                towerRefreshToken: 'refresh-123',
+                towerWorkspaceId: 100 ))
+        and:
+        def id5 = PlatformId.of(new User(id:1, email: 'p@foo.com'), new SubmitContainerTokenRequest(
+                towerEndpoint: 'http://foo.com',
+                towerAccessToken: 'token-789',  // <-- change token
+                towerRefreshToken: 'refresh-123',
+                towerWorkspaceId: 100 ))
+
+        def id6 = PlatformId.of(new User(id:1, email: 'p@foo.com'), new SubmitContainerTokenRequest(
+                towerEndpoint: 'http://foo.com',
+                towerAccessToken: 'token-123',
+                towerRefreshToken: 'refresh-xxx',   // <-- change refresh, does not affect cache
+                towerWorkspaceId: 100 ))
+
+        def id7 = PlatformId.of(new User(id:1, email: 'p@foo.com'), new SubmitContainerTokenRequest(
+                towerEndpoint: 'http://foo.com',
+                towerAccessToken: 'token-123',
+                towerRefreshToken: 'refresh-123',
+                towerWorkspaceId: 200 ))        // <-- change workspace id
+     
+        expect:
+        id1.stableHash() == 'a81eac1325c75af4'
+        and:
+        id2.stableHash() == '0bdd37bce6961402'
+        and:
+        id3.stableHash() == '0a630e69cd59db4e'
+        and:
+        id4.stableHash() == 'bf4cd9423edd1a4e'
+        and:
+        id5.stableHash() == 'b1977315b3edd1fc'
+        and:
+        id6.stableHash() == '0a630e69cd59db4e'
+        and:
+        id7.stableHash() == 'bb346b2662dc1696'
+    }
+
 }

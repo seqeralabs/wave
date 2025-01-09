@@ -20,7 +20,6 @@ package io.seqera.wave.controller
 
 import java.nio.file.Path
 import java.time.Instant
-import java.util.concurrent.CompletableFuture
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
@@ -76,7 +75,6 @@ import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.PlatformId
-import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
@@ -94,7 +92,6 @@ import static io.seqera.wave.util.ContainerHelper.makeResponseV1
 import static io.seqera.wave.util.ContainerHelper.makeResponseV2
 import static io.seqera.wave.util.ContainerHelper.makeTargetImage
 import static io.seqera.wave.util.ContainerHelper.patchPlatformEndpoint
-import static java.util.concurrent.CompletableFuture.completedFuture
 /**
  * Implement a controller to receive container token requests
  * 
@@ -182,17 +179,17 @@ class ContainerController {
     @Deprecated
     @Post('/container-token')
     @ExecuteOn(TaskExecutors.BLOCKING)
-    CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, @Body SubmitContainerTokenRequest req) {
+    HttpResponse<SubmitContainerTokenResponse> getToken(HttpRequest httpRequest, @Body SubmitContainerTokenRequest req) {
         return getContainerImpl(httpRequest, req, false)
     }
 
     @Post('/v1alpha2/container')
     @ExecuteOn(TaskExecutors.BLOCKING)
-    CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getTokenV2(HttpRequest httpRequest, @Body SubmitContainerTokenRequest req) {
+    HttpResponse<SubmitContainerTokenResponse> getTokenV2(HttpRequest httpRequest, @Body SubmitContainerTokenRequest req) {
         return getContainerImpl(httpRequest, req, true)
     }
 
-    protected CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getContainerImpl(HttpRequest httpRequest, SubmitContainerTokenRequest req, boolean v2) {
+    protected HttpResponse<SubmitContainerTokenResponse> getContainerImpl(HttpRequest httpRequest, SubmitContainerTokenRequest req, boolean v2) {
         // patch platform endpoint
         req.towerEndpoint = patchPlatformEndpoint(req.towerEndpoint)
 
@@ -207,7 +204,7 @@ class ContainerController {
 
         // anonymous access
         if( !req.towerAccessToken ) {
-            return completedFuture(handleRequest(httpRequest, req, PlatformId.NULL, v2))
+            return handleRequest(httpRequest, req, PlatformId.NULL, v2)
         }
 
         // first check if the service is registered
@@ -222,9 +219,8 @@ class ContainerController {
             jwtAuthStore.storeIfAbsent(auth)
 
         // find out the user associated with the specified tower access token
-        return userService
-                .getUserByAccessTokenAsync(registration.endpoint, auth)
-                .thenApply((User user) -> handleRequest(httpRequest, req, PlatformId.of(user,req), v2))
+        final user = userService.getUserByAccessToken(registration.endpoint, auth)
+        return handleRequest(httpRequest, req, PlatformId.of(user,req), v2)
     }
 
     protected HttpResponse<SubmitContainerTokenResponse> handleRequest(HttpRequest httpRequest, SubmitContainerTokenRequest req, PlatformId identity, boolean v2) {
@@ -265,7 +261,7 @@ class ContainerController {
         final ip = addressResolver.resolve(httpRequest)
         // check the rate limit before continuing
         if( rateLimiterService )
-            rateLimiterService.acquirePull(new AcquireRequest(identity.userId as String, ip))
+            rateLimiterService.acquirePull(new AcquireRequest(identity.userEmail, ip))
         // create request data
         final data = makeRequestData(req, identity, ip)
         final token = containerService.computeToken(data)
