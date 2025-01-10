@@ -204,11 +204,9 @@ class ContainerHelper {
                     //strip `pip:` prefix
                     if( it.startsWith('pip:') && it.length()>4 && it[4]!=':')
                         it = it.substring(4)
-                    log.info("it: ${it}")
-                    // strip `https://` prefix
+                    // fix urls
                     if( it.startsWith('https://') || it.startsWith('http://'))
                         it = normaliseUrl(it)
-                    log.info("--it: ${it}")
                     // strip channel prefix
                     final int p=it.indexOf('::')
                     if( p!=-1 )
