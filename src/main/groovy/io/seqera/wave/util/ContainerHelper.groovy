@@ -204,6 +204,11 @@ class ContainerHelper {
                     //strip `pip:` prefix
                     if( it.startsWith('pip:') && it.length()>4 && it[4]!=':')
                         it = it.substring(4)
+                    log.info("it: ${it}")
+                    // strip `https://` prefix
+                    if( it.startsWith('https://') || it.startsWith('http://'))
+                        it = normaliseUrl(it)
+                    log.info("--it: ${it}")
                     // strip channel prefix
                     final int p=it.indexOf('::')
                     if( p!=-1 )
@@ -230,6 +235,16 @@ class ContainerHelper {
         }
     }
 
+    static String normaliseUrl(String dependency) {
+        if( !dependency )
+            return null
+        //remove protocol and www and domain name
+        return dependency.replaceAll(/^(https?:\/\/)?(www\.)?[^\/]+/,'')
+                .replaceAll(/[.\/]/, '_') // Replaces . and / with _
+                .replaceAll(/^_+|_+$/, '') // Removes leading and trailing _
+                .replaceAll(/_+/, '_') // Replaces multiple _ with single _
+    }
+    
     static Tuple2<String,String> splitVersion(String tool, String sep) {
         if( !tool )
             return null
@@ -251,7 +266,9 @@ class ContainerHelper {
         }
         else if( nameStrategy==ImageNameStrategy.imageSuffix )  {
             if( condaFile && (tools=guessCondaRecipeName(condaFile,true)) ) {
+                log.info "tags: ${tools.friendlyNames()}"
                 repo = StringUtils.pathConcat(repo, normaliseName(tools.friendlyNames()))
+                log.info("repo: ${repo}")
                 if( tools.versions?.size()==1 && tools.versions[0] )
                     tag = "${normaliseTag(tools.versions[0])}--${id}"
             }
