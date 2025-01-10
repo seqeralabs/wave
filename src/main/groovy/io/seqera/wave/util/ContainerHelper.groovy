@@ -266,9 +266,7 @@ class ContainerHelper {
         }
         else if( nameStrategy==ImageNameStrategy.imageSuffix )  {
             if( condaFile && (tools=guessCondaRecipeName(condaFile,true)) ) {
-                log.info "tags: ${tools.friendlyNames()}"
                 repo = StringUtils.pathConcat(repo, normaliseName(tools.friendlyNames()))
-                log.info("repo: ${repo}")
                 if( tools.versions?.size()==1 && tools.versions[0] )
                     tag = "${normaliseTag(tools.versions[0])}--${id}"
             }
