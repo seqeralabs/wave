@@ -51,7 +51,7 @@ class DockerBuildStrategyTest extends Specification {
                 '-v', '/work/foo:/work/foo',
                 '--entrypoint',
                 'buildctl-daemonless.sh',
-                'moby/buildkit:v0.14.1-rootless']
+                'moby/buildkit:v0.18.2-rootless']
 
         when:
         cmd = service.cmdForBuildkit('build-job-name', work, Path.of('/foo/creds.json'), ContainerPlatform.of('arm64'))
@@ -67,7 +67,7 @@ class DockerBuildStrategyTest extends Specification {
                 'buildctl-daemonless.sh',
                 '-v', '/foo/creds.json:/home/user/.docker/config.json:ro',
                 '--platform', 'linux/arm64',
-                'moby/buildkit:v0.14.1-rootless']
+                'moby/buildkit:v0.18.2-rootless']
 
         when:
         cmd = service.cmdForBuildkit('build-job-name', work, Path.of('/foo/creds.json'), null)
@@ -82,7 +82,7 @@ class DockerBuildStrategyTest extends Specification {
                 '--entrypoint',
                 'buildctl-daemonless.sh',
                 '-v', '/foo/creds.json:/home/user/.docker/config.json:ro',
-                'moby/buildkit:v0.14.1-rootless']
+                'moby/buildkit:v0.18.2-rootless']
 
         cleanup:
         ctx.close()
@@ -116,7 +116,7 @@ class DockerBuildStrategyTest extends Specification {
                 'buildctl-daemonless.sh',
                 '-v', '/work/creds.json:/home/user/.docker/config.json:ro',
                 '--platform', 'linux/amd64',
-                'moby/buildkit:v0.14.1-rootless',
+                'moby/buildkit:v0.18.2-rootless',
                 'build',
                 '--frontend',
                 'dockerfile.v0',
