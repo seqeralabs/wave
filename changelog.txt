@@ -1,4 +1,11 @@
 # Wave changelog
+1.16.7 - 10 Jan 2025
+- Improve logging on pairing websocket error [21861dbe]
+
+1.16.6 - 7 Jan 2025 
+- Fix Use caffeine for tiered cache lock cache (#785) [bb5f4dd0]
+- Tune trace timeouts [d6bf2236]
+
 1.16.5 - 30 Dec 2024
 - Fix Missing legacy classes deserialization [7687cd24]
 
