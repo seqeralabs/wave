@@ -16,41 +16,64 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.tower.client.cache
+package io.seqera.wave.proxy
 
 import java.time.Duration
 
+import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.seqera.wave.encoder.MoshiEncodeStrategy
+import io.seqera.wave.encoder.MoshiExchange
 import io.seqera.wave.store.cache.AbstractTieredCache
 import io.seqera.wave.store.cache.L2TieredCache
 import jakarta.inject.Singleton
-
 /**
- * Implement a client cache having short-term expiration policy
- *
+ * Implements a tiered cache for proxied http responses
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Slf4j
 @Singleton
 @CompileStatic
-class ClientCacheShort extends AbstractTieredCache {
-    ClientCacheShort(@Nullable L2TieredCache l2,
-                     @Value('${wave.pairing.cache-short.duration:60s}') Duration duration,
-                     @Value('${wave.pairing.cache-short.max-size:10000}') int maxSize)
-    {
-        super(l2, ClientEncoder.instance(), duration, maxSize)
+class ProxyCache extends AbstractTieredCache<DelegateResponse> {
+
+    @Value('${wave.proxy-cache.duration:30m}')
+    private Duration duration
+
+    @Value('${wave.proxy-cache.max-size:10000}')
+    private int maxSize
+
+    ProxyCache(@Nullable L2TieredCache l2) {
+        super(l2, encoder())
+    }
+
+    static MoshiEncodeStrategy encoder() {
+        // json adapter factory
+        final factory = PolymorphicJsonAdapterFactory.of(MoshiExchange.class, "@type")
+                .withSubtype(Entry.class, Entry.name)
+                .withSubtype(DelegateResponse.class, DelegateResponse.simpleName)
+        // the encoding strategy
+        return new MoshiEncodeStrategy<AbstractTieredCache.Entry>(factory) {}
     }
 
     @Override
-    protected getName() {
-        return 'pairing-cache-short'
+    String getName() {
+        'proxy-cache'
     }
 
     @Override
-    protected String getPrefix() {
-        return 'pairing-cache-short/v1'
+    String getPrefix() {
+        'proxy-cache/v1'
     }
+
+    @Override
+    int getMaxSize() {
+        return maxSize
+    }
+
+    Duration getDuration() {
+        return duration
+    }
+
 }

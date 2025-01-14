@@ -16,21 +16,31 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.tower.compute
+package io.seqera.wave.proxy
 
-import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
-import groovy.transform.ToString
 import io.seqera.wave.encoder.MoshiExchange
-
 /**
- * Model the response of workflow launch response from seqera platform
- *
- * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * Model a response object to be forwarded to the client
+ * 
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
 @EqualsAndHashCode
-@ToString(includePackage = false, includeNames = true)
-class WorkflowLaunchResponse implements MoshiExchange {
-    ComputeEnv computeEnv
+class DelegateResponse implements MoshiExchange {
+    int statusCode
+    Map<String,List<String>> headers
+    byte[] body
+    String location
+    boolean isRedirect() { location }
+    boolean isCacheable() { location!=null || (body!=null && statusCode>=200 && statusCode<400) }
+
+    @Override
+    public String toString() {
+        return "DelegateResponse[" +
+                "statusCode=" + statusCode +
+                ", location=" + (location ? "'${location}'" : "null") +
+                ", body=" + (body != null ? "[byte array: ${body.length}]" : "null") +
+                ", headers=" + headers +
+                "]";
+    }
 }
