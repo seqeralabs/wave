@@ -23,7 +23,6 @@ import spock.lang.Specification
 import java.security.PublicKey
 import java.time.Duration
 import java.time.Instant
-import java.util.concurrent.CompletableFuture
 
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
@@ -39,9 +38,8 @@ import io.seqera.wave.tower.client.ListCredentialsResponse
 import io.seqera.wave.tower.client.TowerClient
 import io.seqera.wave.tower.compute.ComputeEnv
 import io.seqera.wave.tower.compute.DescribeWorkflowLaunchResponse
-import io.seqera.wave.tower.compute.WorkflowLaunchResponse
+import io.seqera.wave.tower.compute.WorkflowLaunch
 import jakarta.inject.Inject
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -65,6 +63,7 @@ class CredentialsServiceTest extends Specification {
         def workspaceId = 10
         def token = "valid-token"
         def towerEndpoint = "http://tower.io:9090"
+        def workflowId = 'wf-101'
 
         and: 'a previously registered key'
         def keypair = TEST_CIPHER.generateKeyPair()
@@ -95,7 +94,7 @@ class CredentialsServiceTest extends Specification {
                 provider: 'container-reg',
                 registry: 'docker.io' )
         and:
-        def identity = new PlatformId(new User(id:userId), workspaceId,token,towerEndpoint)
+        def identity = new PlatformId(new User(id:userId), workspaceId,token,towerEndpoint,workflowId)
         def auth = JwtAuth.of(identity)
 
         when: 'look those registry credentials from tower'
@@ -105,12 +104,12 @@ class CredentialsServiceTest extends Specification {
         1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, towerEndpoint) >> keyRecord
 
         and: 'credentials are listed once and return a potential match'
-        1 * towerClient.listCredentials(towerEndpoint,auth,workspaceId) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
-                credentials: [nonContainerRegistryCredentials, credentialsDescription,otherRegistryCredentials]
-        ))
+        1 * towerClient.listCredentials(towerEndpoint,auth,workspaceId,workflowId) >> new ListCredentialsResponse(
+                credentials: [nonContainerRegistryCredentials, credentialsDescription, otherRegistryCredentials]
+        )
 
         and: 'they match and the encrypted credentials are fetched'
-        1 * towerClient.fetchEncryptedCredentials(towerEndpoint, auth, credentialsId, keyId, workspaceId) >> CompletableFuture.completedFuture(encryptedCredentialsFromTower(keypair.getPublic(), registryCredentials))
+        1 * towerClient.fetchEncryptedCredentials(towerEndpoint, auth, credentialsId, keyId, workspaceId, workflowId) >> encryptedCredentialsFromTower(keypair.getPublic(), registryCredentials)
 
         and:
         credentials.userName == 'me'
@@ -134,7 +133,7 @@ class CredentialsServiceTest extends Specification {
 
     def 'should return no registry credentials if the user has no credentials in tower' () {
         given:
-        def identity = new PlatformId(new User(id:10), 10,"token",'tower.io')
+        def identity = new PlatformId(new User(id:10), 10,"token",'tower.io', 'wf-10')
         def auth = JwtAuth.of(identity)
         when:
         def credentials = credentialsService.findRegistryCreds('quay.io', identity)
@@ -147,7 +146,7 @@ class CredentialsServiceTest extends Specification {
                 expiration: Instant.now() + Duration.ofSeconds(5)
         )
         and: 'credentials are listed but are empty'
-        1 * towerClient.listCredentials('tower.io',auth,10) >> CompletableFuture.completedFuture(new ListCredentialsResponse(credentials: []))
+        1 * towerClient.listCredentials('tower.io',auth,10,'wf-10') >> new ListCredentialsResponse(credentials: [])
 
         and: 'no registry credentials are returned'
         credentials == null
@@ -182,12 +181,12 @@ class CredentialsServiceTest extends Specification {
         )
 
         and: 'non matching credentials are listed'
-        1 * towerClient.listCredentials('tower.io',auth,100) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
+        1 * towerClient.listCredentials('tower.io',auth,100,'101') >> new ListCredentialsResponse(
                 credentials: [nonContainerRegistryCredentials,otherRegistryCredentials]
-        ))
+        )
 
         and:'no compute credentials'
-        0 * towerClient.describeWorkflowLaunch('tower.io',auth,'101') >> null
+        0 * towerClient.describeWorkflowLaunch('tower.io',auth,100,'101') >> null
 
         then:
         credentials == null
@@ -250,7 +249,7 @@ class CredentialsServiceTest extends Specification {
                 credentialsId: credentialsId,
                 platform: 'aws-batch'
         )
-        def launch = new WorkflowLaunchResponse(
+        def launch = new WorkflowLaunch(
                 computeEnv: computeEnv
         )
         def describeWorkflowLaunchResponse = new DescribeWorkflowLaunchResponse(
@@ -259,25 +258,25 @@ class CredentialsServiceTest extends Specification {
         and: 'compute credentials'
         def computeCredentials = '{"accessKey":"me", "secretKey": "you", "discriminator":"aws"}'
         and:
-        def identity = new PlatformId(new User(id:userId), workspaceId,token,towerEndpoint,workflowId)
+        def identity = new PlatformId(new User(id:userId), workspaceId, token, towerEndpoint, workflowId)
         def auth = JwtAuth.of(identity)
 
         when: 'look those registry credentials from tower'
-        def containerCredentials = credentialsService.findRegistryCreds(registryName,identity)
+        def containerCredentials = credentialsService.findRegistryCreds(registryName, identity)
 
         then: 'the registered key is fetched correctly from the security service'
         1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, towerEndpoint) >> keyRecord
 
         and: 'credentials are listed once and return a potential match'
-        1 * towerClient.listCredentials(towerEndpoint,auth,workspaceId) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
-                credentials: [nonContainerRegistryCredentials]))
+        1 * towerClient.listCredentials(towerEndpoint, auth, workspaceId, workflowId) >> new ListCredentialsResponse(
+                credentials: [nonContainerRegistryCredentials]
+        )
 
         and:'fetched compute credentials'
-        1*towerClient.describeWorkflowLaunch(towerEndpoint, auth, workflowId) >> CompletableFuture.completedFuture(describeWorkflowLaunchResponse)
+        1*towerClient.describeWorkflowLaunch(towerEndpoint, auth, workspaceId, workflowId) >> describeWorkflowLaunchResponse
 
         and: 'they match and the encrypted credentials are fetched'
-        1 * towerClient.fetchEncryptedCredentials(towerEndpoint, auth, credentialsId, keyId, workspaceId) >> CompletableFuture.completedFuture(
-                encryptedCredentialsFromTower(keypair.getPublic(), computeCredentials))
+        1 * towerClient.fetchEncryptedCredentials(towerEndpoint, auth, credentialsId, keyId, workspaceId, workflowId) >> encryptedCredentialsFromTower(keypair.getPublic(), computeCredentials)
 
         and:
         containerCredentials.userName == 'me'

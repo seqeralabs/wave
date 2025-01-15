@@ -29,6 +29,8 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import groovy.transform.CompileStatic
+import io.seqera.util.pool.SimplePool
+
 /**
  * Helper class to handle JSON rendering and parsing
  *

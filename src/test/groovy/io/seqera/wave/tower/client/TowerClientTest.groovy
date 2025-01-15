@@ -20,8 +20,9 @@ package io.seqera.wave.tower.client
 
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
-class TowerClientUrlCompositionTest extends Specification{
+class TowerClientTest extends Specification{
 
     def 'compose user info endpoint'() {
         expect:
@@ -37,7 +38,6 @@ class TowerClientUrlCompositionTest extends Specification{
         'https://tower.io'       || 'https://tower.io/user-info'
     }
 
-
     def 'fail compose userInfo with invalid towerEndpoint'() {
         when:
         TowerClient.userInfoEndpoint(endpoint)
@@ -52,9 +52,7 @@ class TowerClientUrlCompositionTest extends Specification{
         "foo bar"   || _
         "tower.io"   || _
         "ftp://xyz"  || _
-
     }
-
 
     def 'compose list credentials endpoint'() {
         expect:
@@ -140,8 +138,16 @@ class TowerClientUrlCompositionTest extends Specification{
         "http://xyz" |  "10"    | ""    |  1
         "http://xyz" |  "10"    | null  |  null
         "http://xyz" |  "10"    | ""    |  null
-
-
     }
 
+    @Unroll
+    def 'should get workflow launch endpoint' () {
+        expect:
+        TowerClient.workflowLaunchEndpoint(ENDPOINT, WORKSPACE, WORKFLOW) == new URI(EXPECTED)
+
+        where:
+        ENDPOINT                | WORKSPACE         | WORKFLOW  | EXPECTED
+        'http://foo.com'        | null              | 'abc'     | 'http://foo.com/workflow/abc/launch'
+        'http://foo.com'        | 12345             | 'abc'     | 'http://foo.com/workflow/abc/launch?workspaceId=12345'
+    }
 }

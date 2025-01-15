@@ -60,4 +60,22 @@ class RedisFutureHashTest extends Specification implements RedisTestContainer  {
         and:
         queue.take('xyz') == null
     }
+
+    def 'should validate expiration' () {
+        given:
+        def uid = UUID.randomUUID().toString()
+        def queue = context.getBean(RedisFutureHash)
+
+        when:
+        queue.put(uid, 'foo', Duration.ofMillis(500))
+        then:
+        queue.take(uid) == 'foo'
+
+        when:
+        queue.put(uid, 'bar', Duration.ofMillis(100))
+        and:
+        sleep 500
+        then:
+        queue.take(uid) == null
+    }
 }
