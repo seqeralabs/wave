@@ -21,20 +21,22 @@
 
 set -e
 set -x
+
 SED=sed
 [[ $(uname) == Darwin ]] && SED=gsed
 
-RELEASE=${RELEASE:-$(git show -s --format='%s' | $SED -rn 's/.*\[(release)\].*/\1/p')}
+RELEASE=${RELEASE:-$(git show -s --format='%s' | $SED -rn 's/.*\[(release docs)\].*/\1/p')}
+
 if [[ $RELEASE ]]; then
+  TAG=v$(cat VERSION)
+
   npm install -g @typespec/compiler
 
   cd typespec
-
   tsp install
-
   tsp compile .
 
-  docker build -t 195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/wave-docs:$VERSION .
 
-  docker push 195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/wave-docs:$VERSION
+  docker build -t 195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/openapi:$TAG .
+  docker push 195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/openapi:$TAG
 fi

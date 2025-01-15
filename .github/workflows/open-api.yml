@@ -1,0 +1,45 @@
+name: Wave API CI
+on:
+  push:
+    branches:
+      - '**'
+      - '!refs/tags/.*'
+    tags-ignore:
+      - '**'
+    paths-ignore:
+      - 'docs/**'
+      - mkdocs.yml
+      - '*.md'
+      - .github/workflows/website_preview.yml
+      - .github/workflows/website_deploy.yml
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths-ignore:
+      - 'docs/**'
+      - mkdocs.yml
+      - '*.md'
+      - .github/workflows/website_preview.yml
+      - .github/workflows/website_deploy.yml
+jobs:
+  release-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up AWS CLI
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET }}
+          aws-region: eu-west-2
+
+      - name: Log in to AWS ECR
+        run: |
+          aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 128997144437.dkr.ecr.eu-west-2.amazonaws.com/wave/openapi
+
+      - name: Release docs
+        if: "contains(github.event.head_commit.message, '[release docs]')"
+        run: |
+          bash typespec/tag-and-push-docs.sh
