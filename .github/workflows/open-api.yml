@@ -31,13 +31,13 @@ jobs:
       - name: Set up AWS CLI
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET }}
-          aws-region: eu-west-2
+          aws-access-key-id: ${{secrets.TOWER_CI_AWS_ACCESS}}
+          aws-secret-access-key: ${{secrets.secrets.TOWER_CI_AWS_SECRET}}
+          aws-region: eu-west-1
 
       - name: Log in to AWS ECR
         run: |
-          aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 128997144437.dkr.ecr.eu-west-2.amazonaws.com/wave/openapi
+          aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/openapi
 
       - name: Release docs
         if: "contains(github.event.head_commit.message, '[release docs]')"
