@@ -39,7 +39,7 @@ jobs:
           tsp compile .
 
       - name: Release
-        if: "contains(github.event.head_commit.message, '[release]')"
+        if: "contains(github.event.head_commit.message, '[release-docs]')"
         run: |
           bash typespec/tag-and-push-docs.sh
         env:
