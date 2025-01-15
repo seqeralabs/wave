@@ -4,18 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wave API Documentation</title>
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css">
 </head>
 <body>
-<rapi-doc
-        spec-url="openapi.yaml"
-        theme="light"
-        render-style="read"
-        show-header="true"
-        show-info="true"
-        show-methods-in-nav="true"
-></rapi-doc>
-
-<!-- Include RapiDoc script -->
-<script src="https://unpkg.com/rapidoc/dist/rapidoc-min.js"></script>
+<div id="swagger-ui"></div>
+<script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
+<script src="https://unpkg.com/swagger-ui-dist/swagger-ui-standalone-preset.js"></script>
+<script>
+    window.onload = function() {
+        const ui = SwaggerUIBundle({
+            url: "tsp-output/@typespec/openapi3/openapi.yaml",
+            dom_id: '#swagger-ui',
+            presets: [
+                SwaggerUIBundle.presets.apis,
+                SwaggerUIStandalonePreset
+            ],
+            layout: "BaseLayout"
+        });
+        window.ui = ui;
+    };
+</script>
 </body>
 </html>
