@@ -41,7 +41,7 @@ import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.client.TowerClient
-import io.seqera.wave.tower.client.UserInfoResponse
+import io.seqera.wave.tower.client.GetUserInfoResponse
 import jakarta.inject.Inject
 import static io.seqera.wave.service.pairing.PairingService.TOWER_SERVICE
 /**
@@ -92,7 +92,7 @@ class ContainerControllerHttpTest extends Specification {
         def auth = JwtAuth.of(endpoint, token, refresh)
         and:
         pairingService.getPairingRecord(TOWER_SERVICE, endpoint) >> { new PairingRecord('tower', endpoint) }
-        towerClient.userInfo(endpoint,auth) >> new UserInfoResponse(user:new User(id:1))
+        towerClient.userInfo(endpoint,auth) >> new GetUserInfoResponse(user:new User(id:1))
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
@@ -277,7 +277,7 @@ class ContainerControllerHttpTest extends Specification {
         def auth = JwtAuth.of(endpoint, token, refresh)
         and:
         pairingService.getPairingRecord(TOWER_SERVICE, endpoint) >> { new PairingRecord('tower', endpoint) }
-        towerClient.userInfo(endpoint, auth) >> new UserInfoResponse(user:new User(id:1))
+        towerClient.userInfo(endpoint, auth) >> new GetUserInfoResponse(user:new User(id:1))
 
         and:
         def cfg = new ContainerConfig(workingDir: '/foo')

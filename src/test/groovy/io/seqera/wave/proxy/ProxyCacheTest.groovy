@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.store.cache
+package io.seqera.wave.proxy
 
 import spock.lang.Shared
 import spock.lang.Specification
@@ -24,9 +24,13 @@ import spock.lang.Specification
 import java.time.Duration
 
 import io.micronaut.context.ApplicationContext
+import io.seqera.wave.store.cache.RedisL2TieredCache
 import io.seqera.wave.test.RedisTestContainer
-
-class RedisL2TieredCacheTest extends Specification implements RedisTestContainer {
+/**
+ *
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ */
+class ProxyCacheTest extends Specification implements RedisTestContainer {
 
     @Shared
     ApplicationContext applicationContext
@@ -43,22 +47,26 @@ class RedisL2TieredCacheTest extends Specification implements RedisTestContainer
         applicationContext.close()
     }
 
-    def 'should get and put a key-value pair with ttl' () {
+    def 'should cache user info response' () {
         given:
-        def cache = applicationContext.getBean(RedisL2TieredCache)
-        def TTL = Duration.ofMillis(100)
+        def TTL = Duration.ofMillis(150)
+        def store = applicationContext.getBean(RedisL2TieredCache)
+        def cache = new ProxyCache(store)
+        and:
         def k = UUID.randomUUID().toString()
-
-        expect:
-        cache.get(k) == null
+        def resp = new DelegateResponse(
+                location: 'http://foo.com',
+                statusCode: 200,
+                body: new byte[] { 1,2,3 } )
 
         when:
-        cache.put(k, "hello", TTL)
+        cache.put(k, resp, TTL)
         then:
-        cache.get(k) == 'hello'
+        cache.get(k) == resp
+
+        when:
+        sleep TTL.toMillis()*2
         then:
-        sleep(TTL.toMillis() *2)
-        and:
         cache.get(k) == null
     }
 

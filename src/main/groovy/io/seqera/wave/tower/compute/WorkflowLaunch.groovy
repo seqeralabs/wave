@@ -16,12 +16,21 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.store.cache
-/**
- * Define the interface for 2nd level tired cache
- *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
- */
-interface L2TieredCache<K,V> extends TieredCache<K,V> {
+package io.seqera.wave.tower.compute
 
+import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
+import groovy.transform.ToString
+import io.seqera.wave.encoder.MoshiExchange
+
+/**
+ * Model the response of workflow launch response from seqera platform
+ *
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
+ */
+@CompileStatic
+@EqualsAndHashCode
+@ToString(includePackage = false, includeNames = true)
+class WorkflowLaunch implements MoshiExchange {
+    ComputeEnv computeEnv
 }
