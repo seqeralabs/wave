@@ -37,3 +37,13 @@ jobs:
           cd typespec
           tsp install
           tsp compile .
+
+      - name: Release
+        if: "contains(github.event.head_commit.message, '[release-docs]')"
+        run: |
+          bash typespec/tag-and-push-docs.sh
+        env:
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false'
+          AWS_ACCESS_KEY_ID: ${{secrets.TOWER_CI_AWS_ACCESS}}
+          AWS_SECRET_ACCESS_KEY: ${{secrets.TOWER_CI_AWS_SECRET}}
+          GITHUB_TOKEN: ${{ secrets.GH_SEQERA_TOKEN }}
