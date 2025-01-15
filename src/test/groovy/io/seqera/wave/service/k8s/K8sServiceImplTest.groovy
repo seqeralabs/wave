@@ -517,12 +517,19 @@ class K8sServiceImplTest extends Specification {
         def name = "builder-pod"
         def logs = "\u001B[31mINFO: Build is in progress"
 
+        def logRequest = Mock(CoreV1Api. APIreadNamespacedPodLogRequest)
+        def api = Mock(CoreV1Api)
+
         when:
         InputStream result = k8sService.getCurrentLogsPod(name)
 
         then:
-        2 * k8sClient.coreV1Api() >> Mock(CoreV1Api)
-        1 * k8sClient.coreV1Api().readNamespacedPodLog(_, _, _, _, _, _, _, _, _, _, _) >> logs
+        1 * k8sClient.coreV1Api() >> api
+        1 * api.readNamespacedPodLog(name, _) >> logRequest
+        1 * logRequest.container(_) >> logRequest
+        1 * logRequest.follow(false) >> logRequest
+        1 * logRequest.execute() >> logs
+
         and:
         result instanceof ByteArrayInputStream
         String resultString = result.text
