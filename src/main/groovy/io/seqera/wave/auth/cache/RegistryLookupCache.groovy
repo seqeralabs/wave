@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023-2024, Seqera Labs
+ *  Copyright (c) 2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,14 +16,17 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.proxy
+package io.seqera.wave.auth.cache
 
 import java.time.Duration
 
+import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.seqera.wave.auth.RegistryAuth
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.encoder.MoshiExchange
 import io.seqera.wave.store.cache.AbstractTieredCache
@@ -31,41 +34,23 @@ import io.seqera.wave.store.cache.L2TieredCache
 import io.seqera.wave.store.cache.TieredCacheKey
 import jakarta.inject.Singleton
 /**
- * Implements a tiered cache for proxied http responses
- * 
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * Implement a tiered cache for Registry lookup
+ *
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
+@Slf4j
 @Singleton
 @CompileStatic
-class ProxyCache extends AbstractTieredCache<TieredCacheKey, DelegateResponse> {
+class RegistryLookupCache extends AbstractTieredCache<TieredCacheKey, RegistryAuth> {
 
-    @Value('${wave.proxy-cache.duration:30m}')
+    @Value('${wave.registry.cache.duration:1h}')
     private Duration duration
 
-    @Value('${wave.proxy-cache.max-size:10000}')
+    @Value('${wave.registry.cache.max-size:10000}')
     private int maxSize
 
-    ProxyCache(@Nullable L2TieredCache l2) {
+    RegistryLookupCache(@Nullable L2TieredCache l2) {
         super(l2, encoder())
-    }
-
-    static MoshiEncodeStrategy encoder() {
-        // json adapter factory
-        final factory = PolymorphicJsonAdapterFactory.of(MoshiExchange.class, "@type")
-                .withSubtype(Entry.class, Entry.name)
-                .withSubtype(DelegateResponse.class, DelegateResponse.simpleName)
-        // the encoding strategy
-        return new MoshiEncodeStrategy<AbstractTieredCache.Entry>(factory) {}
-    }
-
-    @Override
-    String getName() {
-        'proxy-cache'
-    }
-
-    @Override
-    String getPrefix() {
-        'proxy-cache/v1'
     }
 
     @Override
@@ -73,8 +58,24 @@ class ProxyCache extends AbstractTieredCache<TieredCacheKey, DelegateResponse> {
         return maxSize
     }
 
-    Duration getDuration() {
-        return duration
+    @Override
+    protected getName() {
+        return 'registry-cache'
+    }
+
+    @Override
+    protected String getPrefix() {
+        return 'registry-cache/v1'
+    }
+
+    static MoshiEncodeStrategy encoder() {
+        new MoshiEncodeStrategy<AbstractTieredCache.Entry>(factory()) {}
+    }
+
+    static JsonAdapter.Factory factory() {
+        PolymorphicJsonAdapterFactory.of(MoshiExchange.class, "@type")
+                .withSubtype(AbstractTieredCache.Entry.class, AbstractTieredCache.Entry.name)
+                .withSubtype(RegistryAuth.class, RegistryAuth.name)
     }
 
 }
