@@ -356,7 +356,11 @@ class K8sServiceImpl implements K8sService {
     @Override
     InputStream getCurrentLogsPod(String name) {
         try {
-            def logs = k8sClient.coreV1Api().readNamespacedPodLog(name, namespace, name, false, null, null, "false", false, null, null, null)
+            def logs = k8sClient.coreV1Api()
+                    .readNamespacedPodLog(name, namespace)
+                    .container(name)
+                    .follow(false)
+                    .execute()
             logs = logs ? logs.replaceAll("\u001B\\[[;\\d]*m", "") : null // strip ansi escape codes
             return new ByteArrayInputStream(logs.getBytes())
         } catch (Exception e) {
