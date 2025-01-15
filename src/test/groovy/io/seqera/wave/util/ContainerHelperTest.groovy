@@ -571,4 +571,55 @@ class ContainerHelperTest extends Specification {
         thrown(BadRequestException)
 
     }
+
+    @Unroll
+    def 'should return null for null dependency'() {
+        expect:
+        ContainerHelper.normaliseUrl(null) == null
+    }
+
+    @Unroll
+    def 'should return null for empty dependency'() {
+        expect:
+        ContainerHelper.normaliseUrl('') == null
+    }
+
+    @Unroll
+    def 'should normalise URL by removing protocol and domain'() {
+        expect:
+        ContainerHelper.normaliseUrl(dependency) == expected
+
+        where:
+        dependency                                | expected
+        'http://example.com/path/to/resource'     | 'path_to_resource'
+        'https://www.example.com/path/to/resource'| 'path_to_resource'
+        'http://example.com'                      | ''
+        'https://example.com/'                    | ''
+    }
+
+    @Unroll
+    def 'should normalise URL by replacing special characters'() {
+        expect:
+        ContainerHelper.normaliseUrl(dependency) == expected
+
+        where:
+        dependency                                | expected
+        'http://example.com/path.to/resource'     | 'path_to_resource'
+        'https://example.com/path/to/resource'    | 'path_to_resource'
+        'http://example.com/path/to/resource/'    | 'path_to_resource'
+        'https://example.com/path//to//resource'  | 'path_to_resource'
+    }
+
+    @Unroll
+    def 'should normalise URL by removing leading and trailing underscores'() {
+        expect:
+        ContainerHelper.normaliseUrl(dependency) == expected
+
+        where:
+        dependency                                | expected
+        'http://example.com/_path/to/resource_'   | 'path_to_resource'
+        'https://example.com/__path/to/resource__'| 'path_to_resource'
+        'http://example.com/___'                  | ''
+        'https://example.com/____'                | ''
+    }
 }
