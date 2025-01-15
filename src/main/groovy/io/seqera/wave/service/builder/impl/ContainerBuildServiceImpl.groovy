@@ -198,7 +198,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         // check the build rate limit
         try {
             if( rateLimiterService )
-                rateLimiterService.acquireBuild(new AcquireRequest(request.identity.userId as String, request.ip))
+                rateLimiterService.acquireBuild(new AcquireRequest(request.identity.userEmail, request.ip))
         }
         catch (Exception e) {
             buildStore.removeBuild(request.targetImage)
@@ -206,7 +206,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         }
 
         //increment metrics
-        CompletableFuture.supplyAsync(() -> metricsService.incrementBuildsCounter(request.identity), executor)
+        CompletableFuture
+                .runAsync(() -> metricsService.incrementBuildsCounter(request.identity), executor)
 
         // launch the build async
         CompletableFuture

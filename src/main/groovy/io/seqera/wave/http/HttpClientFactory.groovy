@@ -22,6 +22,7 @@ import java.net.http.HttpClient
 import java.time.Duration
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.locks.ReentrantLock
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -39,9 +40,9 @@ class HttpClientFactory {
 
     static private Duration timeout = Duration.ofSeconds(20)
 
-    static private final Object l1 = new Object()
+    static private final ReentrantLock l1 = new ReentrantLock()
 
-    static private final Object l2 = new Object()
+    static private final ReentrantLock l2 = new ReentrantLock()
 
     private static HttpClient client1
 
@@ -51,20 +52,26 @@ class HttpClientFactory {
     static HttpClient followRedirectsHttpClient() {
         if( client1!=null )
             return client1
-        synchronized (l1) {
+        l1.lock()
+        try {
             if( client1!=null )
                 return client1
             return client1=followRedirectsHttpClient0()
+        } finally {
+            l1.unlock()
         }
     }
 
     static HttpClient neverRedirectsHttpClient() {
         if( client2!=null )
             return client2
-        synchronized (l2) {
+        l2.lock()
+        try {
             if( client2!=null )
                 return client2
             return client2=neverRedirectsHttpClient0()
+        } finally {
+            l2.unlock()
         }
     }
 

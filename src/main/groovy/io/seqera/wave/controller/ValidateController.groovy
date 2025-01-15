@@ -18,27 +18,30 @@
 
 package io.seqera.wave.controller
 
-import javax.validation.Valid
-
+import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Post
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.auth.RegistryAuthService
 import jakarta.inject.Inject
-import reactor.core.publisher.Mono
+import jakarta.validation.Valid
 
-@ExecuteOn(TaskExecutors.IO)
-@Controller("/validate-creds")
+@Controller("/")
+@ExecuteOn(TaskExecutors.BLOCKING)
 class ValidateController {
 
     @Inject RegistryAuthService loginService
 
-    @Post
-    Mono<Boolean> validateCreds(@Valid ValidateRegistryCredsRequest request){
-        Mono.just(
-            loginService.validateUser(request.registry, request.userName, request.password)
-        )
+    @Deprecated
+    @Post("/validate-creds")
+    Boolean validateCreds(@Valid ValidateRegistryCredsRequest request){
+        loginService.validateUser(request.registry, request.userName, request.password)
+    }
+
+    @Post("/v1alpha2/validate-creds")
+    Boolean validateCredsV2(@Valid @Body ValidateRegistryCredsRequest request){
+        loginService.validateUser(request.registry, request.userName, request.password)
     }
 
 }

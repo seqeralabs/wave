@@ -72,7 +72,6 @@ import jakarta.inject.Inject
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-@Property(name='wave.build.workspace', value='/some/wsp')
 @Property(name='wave.build.repo', value='wave/build')
 @Property(name='wave.build.cache', value='wave/build/cache')
 class ContainerControllerTest extends Specification {
@@ -454,13 +453,13 @@ class ContainerControllerTest extends Specification {
         controller.validateContainerRequest(new SubmitContainerTokenRequest(containerImage: 'http://docker.io/foo:latest'))
         then:
         err = thrown(BadRequestException)
-        err.message == 'Invalid container repository name — offending value: http://docker.io/foo:latest'
+        err.message == "Invalid container repository name — offending value: 'http://docker.io/foo:latest'"
 
         when:
         controller.validateContainerRequest(new SubmitContainerTokenRequest(containerImage: 'http:docker.io/foo:latest'))
         then:
         err = thrown(BadRequestException)
-        err.message == 'Invalid container image name — offending value: http:docker.io/foo:latest'
+        err.message == "Invalid container image name — offending value: 'http:docker.io/foo:latest'"
 
     }
 

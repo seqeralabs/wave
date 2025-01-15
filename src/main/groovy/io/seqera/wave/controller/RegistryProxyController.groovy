@@ -41,11 +41,11 @@ import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.ErrorHandler
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.RegistryProxyService
-import io.seqera.wave.core.RegistryProxyService.DelegateResponse
 import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.exchange.RegistryErrorResponse
+import io.seqera.wave.proxy.DelegateResponse
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.blob.BlobCacheService
@@ -54,7 +54,6 @@ import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.DockerDigestStore
 import io.seqera.wave.storage.HttpDigestStore
 import io.seqera.wave.storage.Storage
-import io.seqera.wave.util.Retryable
 import jakarta.inject.Inject
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Mono
@@ -67,7 +66,7 @@ import reactor.core.publisher.Mono
 @Slf4j
 @CompileStatic
 @Controller("/v2")
-@ExecuteOn(TaskExecutors.IO)
+@ExecuteOn(TaskExecutors.BLOCKING)
 class RegistryProxyController {
 
     @Inject
@@ -123,7 +122,7 @@ class RegistryProxyController {
 
         if( route.manifest && route.digest ){
             String ip = addressResolver.resolve(httpRequest)
-            rateLimiterService?.acquirePull( new AcquireRequest(route.identity.userId as String, ip) )
+            rateLimiterService?.acquirePull( new AcquireRequest(route.identity.userEmail, ip) )
         }
 
         // check if it's a container under build
@@ -216,7 +215,7 @@ class RegistryProxyController {
         }
         else if( resp.body!=null ) {
             log.debug "Returning ${route.type} from repository: '${route.getTargetContainer()}'"
-            return fromContentResponse(resp, route)
+            return fromContentResponse(resp)
         }
         else if( blobCacheService ) {
             log.debug "Forwarding ${route.type} cache request '${route.getTargetContainer()}'"
@@ -274,7 +273,7 @@ class RegistryProxyController {
         final resp = proxyService.handleRequest(route, headers)
         HttpResponse
                 .status(HttpStatus.valueOf(resp.statusCode))
-                .body(resp.body.bytes)
+                .body(resp.body)
                 .headers(toMutableHeaders(resp.headers))
     }
 
@@ -347,15 +346,10 @@ class RegistryProxyController {
                 .headers(toMutableHeaders(response.headers))
     }
 
-    MutableHttpResponse<?> fromContentResponse(DelegateResponse resp, RoutePath route) {
-        // create the retry logic on error                                                              §
-        final retryable = Retryable
-                .<byte[]>of(httpConfig)
-                .onRetry((event) -> log.warn("Unable to read manifest body - request: $route; event: $event"))
-
+    MutableHttpResponse<?> fromContentResponse(DelegateResponse resp) {
         HttpResponse
                 .status(HttpStatus.valueOf(resp.statusCode))
-                .body(retryable.apply(()-> resp.body.bytes))
+                .body(resp.body)
                 .headers(toMutableHeaders(resp.headers))
     }
 

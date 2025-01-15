@@ -22,6 +22,7 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import io.seqera.wave.api.ContainerInspectRequest
 import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.util.RegHelper
 import io.seqera.wave.util.StringUtils
 
 /**
@@ -47,6 +48,10 @@ class PlatformId {
 
     Long getUserId() {
         return user?.id
+    }
+
+    String getUserEmail() {
+        return user?.email
     }
 
     static PlatformId of(User user, SubmitContainerTokenRequest request) {
@@ -75,5 +80,15 @@ class PlatformId {
                 ", towerEndpoint=" + towerEndpoint +
                 ", workflowId=" + workflowId +
                 ')';
+    }
+
+    String stableHash() {
+        RegHelper.sipHash(
+                getUserId(),
+                getUserEmail(),
+                workspaceId,
+                accessToken,
+                towerEndpoint,
+                workflowId )
     }
 }

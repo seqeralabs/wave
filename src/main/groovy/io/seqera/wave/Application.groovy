@@ -36,7 +36,7 @@ import io.seqera.wave.util.RuntimeInfo
 class Application {
 
     static void main(String[] args) {
-        log.info( "Starting ${BuildInfo.name} - version: ${BuildInfo.fullVersion} - ${RuntimeInfo.info('; ')} - CPUs ${Runtime.runtime.availableProcessors()}" )
+        log.info( "Starting ${BuildInfo.name} - version: ${BuildInfo.fullVersion} - ${RuntimeInfo.info('; ')}" )
         setupConfig()
         Micronaut.build(args)
                 .banner(false)

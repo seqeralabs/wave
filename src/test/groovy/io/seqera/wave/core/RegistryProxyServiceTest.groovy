@@ -57,7 +57,7 @@ class RegistryProxyServiceTest extends Specification {
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should retrieve image digest on ECR' () {
         given:
-        def IMAGE = '195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/kaniko:0.1.0'
+        def IMAGE = '195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/app:1.0.0'
         def request = Mock(BuildRequest)
 
         when:
@@ -66,6 +66,50 @@ class RegistryProxyServiceTest extends Specification {
         request.getTargetImage() >> IMAGE
         request.getIdentity() >> new PlatformId()
         then:
-        resp1 == 'sha256:05f9dc67e6ec879773de726b800d4d5044f8bd8e67da728484fbdea56af1fdff'
+        resp1 == 'sha256:d5c169e210d6b789b2dc7eced66471cf4ce2c7260ac7299fbef464ff902086be'
     }
+
+    def 'should return a stable hash' () {
+        given:
+        def p1 = RoutePath.parse('quay.io/v2/ubuntu/blobs/sha256:123')
+
+        when:
+        def k1 = RegistryProxyService.requestKey(p1,  null)
+        then:
+        k1 == 'a7e1706bf0024934'
+
+        when:
+        def k2 = RegistryProxyService.requestKey(p1, [:])
+        then:
+        k2 == 'a7e1706bf0024934'
+
+        when:
+        def k3 = RegistryProxyService.requestKey(p1, ['Content-Type': ['text/1']])
+        then:
+        k3 == '3a2d860dc46a1bc4'
+
+        when:
+        def k4 = RegistryProxyService.requestKey(p1, ['Content-Type': ['text/1', 'text/2']])
+        then:
+        k4 == 'f9fe81aed4d72cba'
+
+        when:
+        def k5 = RegistryProxyService.requestKey(p1, ['Content-Type': ['text/1', 'text/2'], 'X-Foo': ['bar']])
+        then:
+        k5 == 'f9fe81aed4d72cba'    // <-- the header 'X-Foo' does not alter the cache key
+    }
+
+    def 'check is cacheable header' () {
+        expect:
+        RegistryProxyService.isCacheableHeader(KEY) == EXPECTED
+        where:
+        KEY             | EXPECTED
+        null            | false
+        ''              | false
+        'Foo'           | false
+        'accept'        | true
+        'Accept'        | true
+        'Content-Type'  | true
+    }
+
 }

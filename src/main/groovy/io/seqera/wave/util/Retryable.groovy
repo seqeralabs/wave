@@ -20,10 +20,13 @@ package io.seqera.wave.util
 
 import java.net.http.HttpResponse
 import java.time.Duration
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executor
 import java.util.function.Consumer
 import java.util.function.Predicate
 
 import dev.failsafe.Failsafe
+import dev.failsafe.FailsafeException
 import dev.failsafe.RetryPolicy
 import dev.failsafe.RetryPolicyBuilder
 import dev.failsafe.event.EventListener
@@ -137,7 +140,23 @@ class Retryable<R> {
 
     R apply(CheckedSupplier<R> action) {
         final policy = retryPolicy()
-        return Failsafe.with(policy).get(action)
+        try {
+            return Failsafe.with(policy).get(action)
+        } catch (FailsafeException e) {
+            throw e.cause
+        }
+    }
+
+    CompletableFuture<R> applyAsync(CheckedSupplier<R> action, Executor executor) {
+        final policy = retryPolicy()
+        try {
+            return Failsafe
+                    .with(policy)
+                    .with(executor)
+                    .getAsync(action)
+        } catch (FailsafeException e) {
+            throw e.cause
+        }
     }
 
     static <T> Retryable<T> of(Config config) {

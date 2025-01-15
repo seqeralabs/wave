@@ -68,7 +68,7 @@ class PullMetricsRequestsFilter implements HttpServerFilter {
     private RouteHandler routeHelper
 
     @Inject
-    @Named(TaskExecutors.IO)
+    @Named(TaskExecutors.BLOCKING)
     private ExecutorService executor
 
     @Override
@@ -83,10 +83,10 @@ class PullMetricsRequestsFilter implements HttpServerFilter {
         final contentType = response.headers.get(HttpHeaders.CONTENT_TYPE)
         if( contentType && contentType in MANIFEST_TYPES ) {
             final route = routeHelper.parse(request.path)
-            CompletableFuture.supplyAsync(() -> metricsService.incrementPullsCounter(route.identity), executor)
+            CompletableFuture.runAsync(() -> metricsService.incrementPullsCounter(route.identity), executor)
             final version = route.request?.containerConfig?.fusionVersion()
             if (version) {
-                CompletableFuture.supplyAsync(() -> metricsService.incrementFusionPullsCounter(route.identity), executor)
+                CompletableFuture.runAsync(() -> metricsService.incrementFusionPullsCounter(route.identity), executor)
             }
         }
     }

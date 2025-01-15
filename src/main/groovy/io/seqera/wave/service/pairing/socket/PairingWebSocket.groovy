@@ -25,6 +25,8 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.client.exceptions.HttpClientResponseException
+import io.micronaut.scheduling.TaskExecutors
+import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.websocket.CloseReason
 import io.micronaut.websocket.WebSocketSession
 import io.micronaut.websocket.annotation.OnClose
@@ -47,6 +49,7 @@ import static io.seqera.wave.util.LongRndKey.rndHex
 @Slf4j
 @CompileStatic
 @Singleton
+@ExecuteOn(TaskExecutors.BLOCKING)
 @ServerWebSocket("/pairing/{service}/token/{token}{?endpoint}")
 class PairingWebSocket {
 
@@ -75,18 +78,22 @@ class PairingWebSocket {
 
         // Register the client and the sender callback that it's needed to deliver
         // the message to the remote client
-        channel.registerClient(service, endpoint, session.id,(pairingMessage) -> {
-            log.trace "Websocket send message id=$pairingMessage.msgId"
-            session .sendAsync(pairingMessage)
+        channel.registerClient(service, endpoint, session.id,(msg) -> {
+            log.trace "Sending message=${msg} - endpoint: ${endpoint} [sessionId: $session.id]"
+            session
+                .sendAsync(msg)
+                .exceptionally(ex-> log.error("Failed to send message=${msg} - endpoint: ${endpoint} [sessionId: $session.id]"))
         })
 
         // acquire a pairing key and send it to the remote client
         final resp = this.pairingService.acquirePairingKey(service, endpoint)
-        session.sendAsync(new PairingResponse(
+        final msg = new PairingResponse(
                 msgId: rndHex(),
                 pairingId: resp.pairingId,
-                publicKey: resp.publicKey
-        ))
+                publicKey: resp.publicKey )
+        session
+            .sendAsync(msg)
+            .exceptionally(ex-> log.error("Failed to send message=${msg} - endpoint: ${endpoint} [sessionId: $session.id]"))
     }
 
     @OnMessage
@@ -94,8 +101,11 @@ class PairingWebSocket {
         if( message instanceof PairingHeartbeat ) {
             log.trace "Receiving heartbeat - endpoint: ${endpoint} [sessionId: $session.id]"
             // send pong message
-            final pong = new PairingHeartbeat(msgId:rndHex())
-            session.sendAsync(pong)
+            final msg = new PairingHeartbeat(msgId:rndHex())
+            session
+                .sendAsync(msg)
+                .exceptionally(ex-> log.error("Failed to send message=${msg} - endpoint: ${endpoint} [sessionId: $session.id]"))
+
         }
         else {
             // Collect a reply from the client and takes care to dispatch it

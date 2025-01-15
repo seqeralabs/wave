@@ -16,16 +16,20 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.tower.compute
+package io.seqera.wave.tower.client
 
 import groovy.transform.CompileStatic
-
+import groovy.transform.EqualsAndHashCode
+import groovy.transform.ToString
+import io.seqera.wave.encoder.MoshiExchange
+import io.seqera.wave.tower.User
 /**
- * Model the response of workflow launch response from seqera platform
- *
- * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * Model a Tower user-info response
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@EqualsAndHashCode
+@ToString(includePackage = false, includeNames = true)
 @CompileStatic
-class WorkflowLaunchResponse {
-    ComputeEnv computeEnv
+class GetUserInfoResponse implements MoshiExchange {
+    User user
 }

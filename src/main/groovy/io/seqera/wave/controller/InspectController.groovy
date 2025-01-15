@@ -18,13 +18,13 @@
 
 package io.seqera.wave.controller
 
-import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpResponse
+import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Post
 import io.micronaut.http.annotation.QueryValue
@@ -37,7 +37,6 @@ import io.seqera.wave.service.UserService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.tower.PlatformId
-import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuth
 import jakarta.inject.Inject
 import static io.seqera.wave.util.ContainerHelper.patchPlatformEndpoint
@@ -49,7 +48,7 @@ import static io.seqera.wave.util.ContainerHelper.patchPlatformEndpoint
 @Slf4j
 @CompileStatic
 @Controller("/")
-@ExecuteOn(TaskExecutors.IO)
+@ExecuteOn(TaskExecutors.BLOCKING)
 class InspectController {
 
     @Inject
@@ -70,7 +69,7 @@ class InspectController {
     private String serverUrl
 
     @Post("/v1alpha1/inspect")
-    CompletableFuture<HttpResponse<ContainerInspectResponse>> inspect(ContainerInspectRequest req, @Nullable @QueryValue String platform) {
+    HttpResponse<ContainerInspectResponse> inspect(@Body ContainerInspectRequest req, @Nullable @QueryValue String platform) {
 
         if( !req.containerImage )
             throw new BadRequestException("Missing 'containerImage' attribute")
@@ -85,7 +84,7 @@ class InspectController {
 
         // anonymous access
         if( !req.towerAccessToken ) {
-            return CompletableFuture.completedFuture(makeResponse(req, platform, PlatformId.NULL))
+            return makeResponse(req, platform, PlatformId.NULL)
         }
 
         // We first check if the service is registered
@@ -94,10 +93,8 @@ class InspectController {
             throw new BadRequestException("Tower instance '${req.towerEndpoint}' has not enabled to connect Wave service '$serverUrl'")
 
         // find out the user associated with the specified tower access token
-        return userService
-                .getUserByAccessTokenAsync(registration.endpoint, JwtAuth.of(req))
-                .thenApply((User user) -> makeResponse(req, platform, PlatformId.of(user,req)) )
-
+        final user = userService .getUserByAccessToken(registration.endpoint, JwtAuth.of(req))
+        return makeResponse(req, platform, PlatformId.of(user,req))
     }
 
     protected HttpResponse<ContainerInspectResponse> makeResponse(ContainerInspectRequest req, String platform, PlatformId identity) {
