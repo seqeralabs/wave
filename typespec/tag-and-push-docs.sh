@@ -34,7 +34,7 @@ if [[ $RELEASE ]]; then
 
   tsp compile .
 
-  docker build -t 195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/wave-docs:$VERSION .
+  docker build -t 195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/wave-docs:$VERSION .
 
-  docker push 195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/wave-docs:$VERSION
+  docker push 195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/wave-docs:$VERSION
 fi
