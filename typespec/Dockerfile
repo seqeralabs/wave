@@ -4,8 +4,8 @@ FROM nginx:alpine
 COPY index.html /usr/share/nginx/html/
 COPY tsp-output/@typespec/openapi3/openapi.yaml /usr/share/nginx/html/tsp-output/@typespec/openapi3/
 
-# Expose port 80
-EXPOSE 80
+# Expose port 9080
+EXPOSE 9080
 
 # Start Nginx when the container starts
 CMD ["nginx", "-g", "daemon off;"]
