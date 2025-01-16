@@ -3,10 +3,10 @@
   "version": "1.16.7",
   "type": "module",
   "dependencies": {
-    "@typespec/compiler": "latest",
-    "@typespec/http": "latest",
-    "@typespec/openapi3": "latest",
-    "@typespec/rest": "latest"
+    "@typespec/compiler": "0.64.0",
+    "@typespec/http": "0.64.0",
+    "@typespec/openapi3": "0.64.0",
+    "@typespec/rest": "0.64.0"
   },
   "private": true
 }

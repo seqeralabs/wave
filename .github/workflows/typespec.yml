@@ -30,7 +30,7 @@ jobs:
           node-version : '20.9.0'
 
       - name : Install tsp
-        run : npm install -g @typespec/compiler
+        run : npm install -g @typespec/compiler@0.64.0
 
       - name : Validate tsp files
         run : |
