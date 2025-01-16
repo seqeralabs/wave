@@ -3,7 +3,7 @@
   "version": "1.16.7",
   "type": "module",
   "dependencies": {
-    "@typespec/compiler": "^0.63.0",
+    "@typespec/compiler": "latest",
     "@typespec/http": "latest",
     "@typespec/openapi3": "latest",
     "@typespec/rest": "latest"
