@@ -8,7 +8,9 @@ using TypeSpec.Versioning;
 @service({
   title: "Wave service"
 })
-@server("https://wave.seqera.io", "wave endpoint")
+@server("https://wave.dev-tower.net", "wave dev endpoint")
+@server("https://wave.stage-seqera.io", "wave stage endpoint")
+@server("https://wave.seqera.io", "wave prod endpoint")
 namespace wave {
     enum Versions {
       v1: "1.16.7",
