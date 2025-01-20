@@ -227,6 +227,9 @@ class RegistryProxyService {
     }
 
     DelegateResponse handleRequest(RoutePath route, Map<String,List<String>> headers) {
+        if( !cache.enabled ) {
+            return handleRequest0(route, headers)
+        }
         final key = requestKey(route, headers)
         if( !key ) {
             log.debug "Bypass cache for requrst route=${route}; headers=${headers}"
