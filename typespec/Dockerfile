@@ -1,11 +1,10 @@
 FROM nginx:alpine
 
-# Copy the index.html and openapi.yaml to the Nginx html directory
-COPY index.html /usr/share/nginx/html/
-COPY tsp-output/@typespec/openapi3/openapi.yaml /usr/share/nginx/html/tsp-output/@typespec/openapi3/
+# Copy index.html and openapi.yaml to the Nginx html directory
+COPY index.html /usr/share/nginx/html/openapi/index.html
+COPY tsp-output/@typespec/openapi3/openapi.yaml /usr/share/nginx/html/openapi/openapi.yaml
 
 # Expose port 9080
-EXPOSE 9080
+EXPOSE 80
 
-# Start Nginx when the container starts
 CMD ["nginx", "-g", "daemon off;"]
