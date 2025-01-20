@@ -24,7 +24,7 @@
         <!-- ansi escape mess-up with non-ansi terminal and loggers -->
         <withJansi>false</withJansi>
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg >> wt=%X{requestId}%n</pattern>
         </encoder>
 <!--        <filter class="io.seqera.wave.util.LoggerLevelFilter">-->
 <!--            <level>${WAVE_LOG_LEVEL:-INFO}</level>-->
@@ -43,7 +43,7 @@
             <totalSizeCap>200MB</totalSizeCap>
         </rollingPolicy>
         <encoder>
-            <pattern>%d{MMM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{MMM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n >> wt=%X{requestId}%n</pattern>
         </encoder>
     </appender>
 
