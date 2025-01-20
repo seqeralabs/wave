@@ -221,7 +221,9 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
             // use the loader function to fetch the value
             V value = null
             if( loader!=null ) {
-                if( log.isTraceEnabled() )
+                if( entry && needsRevalidation )
+                    log.debug "Cache '${name}' invoking loader - entry=$entry needs refresh"
+                else if( log.isTraceEnabled() )
                     log.trace "Cache '${name}' invoking loader - key=$key"
                 final ret = loader.apply(key)
                 value = ret?.v1
@@ -290,7 +292,6 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
     }
 
     protected boolean shouldRevalidate(long expiration, Instant time=Instant.now()) {
-
         // when 'remainingCacheTime' is less than or equals to zero, it means
         // the current time is beyond the expiration time, therefore a cache validation is needed
         final remainingCacheTime = expiration - time.toEpochMilli()
