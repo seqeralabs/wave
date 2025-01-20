@@ -22,8 +22,9 @@ import java.time.Duration
 
 import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import groovy.transform.CompileStatic
-import io.micronaut.context.annotation.Value
+import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Nullable
+import io.seqera.wave.configuration.ProxyCacheConfig
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.encoder.MoshiExchange
 import io.seqera.wave.store.cache.AbstractTieredCache
@@ -35,18 +36,17 @@ import jakarta.inject.Singleton
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @Singleton
 @CompileStatic
 class ProxyCache extends AbstractTieredCache<TieredCacheKey, DelegateResponse> {
 
-    @Value('${wave.proxy-cache.duration:30m}')
-    private Duration duration
+    private ProxyCacheConfig config
 
-    @Value('${wave.proxy-cache.max-size:10000}')
-    private int maxSize
-
-    ProxyCache(@Nullable L2TieredCache l2) {
+    ProxyCache(@Nullable L2TieredCache l2, ProxyCacheConfig config) {
         super(l2, encoder())
+        this.config = config
+        log.info "+ Creating Proxy-cache - config=${config}"
     }
 
     static MoshiEncodeStrategy encoder() {
@@ -70,11 +70,15 @@ class ProxyCache extends AbstractTieredCache<TieredCacheKey, DelegateResponse> {
 
     @Override
     int getMaxSize() {
-        return maxSize
+        return config.maxSize
     }
 
     Duration getDuration() {
-        return duration
+        return config.duration
+    }
+
+    boolean getEnabled() {
+        return config.enabled
     }
 
 }

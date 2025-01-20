@@ -165,6 +165,7 @@ class RegistryProxyService {
             'Accept-Encoding',
             'Authorization',
             'Cache-Control',
+            'Connection',
             'Content-Type',
             'Content-Length',
             'Content-Range',
@@ -173,9 +174,12 @@ class RegistryProxyService {
             'If-None-Match',
             'If-None-Match',
             'Etag',
+            'Host',
             'Location',
             'Last-Modified',
+            'User-Agent',
             'Range',
+            'X-Registry-Auth'
     ]
 
     static protected boolean isCacheableHeader(String key) {
@@ -196,8 +200,13 @@ class RegistryProxyService {
         if( !headers )
             headers = Map.of()
         for( Map.Entry<String,List<String>> entry : headers ) {
-            if( !isCacheableHeader(entry.key) )
+            if( "Cache-Control".equalsIgnoreCase(entry.key) ) {
+                // ignore caching when cache-control header is provided
+                return null
+            }
+            if( !isCacheableHeader(entry.key) ) {
                 continue
+            }
             hasher.putUnencodedChars(entry.key)
             for( String it : entry.value ) {
                 if( it )
@@ -218,17 +227,25 @@ class RegistryProxyService {
     }
 
     DelegateResponse handleRequest(RoutePath route, Map<String,List<String>> headers) {
-        return cache.getOrCompute(
-                requestKey(route, headers),
-                (String k)-> {
-                    final resp = handleRequest0(route, headers)
-                    // when the response is not cacheable, return null as TTL
-                    final ttl = route.isDigest() && resp.isCacheable() ? cache.duration : null
-                    return new Tuple2<DelegateResponse, Duration>(resp, ttl)
-                })
+        if( !cache.enabled ) {
+            return handleRequest0(route, headers)
+        }
+        final key = requestKey(route, headers)
+        if( !key ) {
+            log.debug "Bypass cache for requrst route=${route}; headers=${headers}"
+            return handleRequest0(route, headers)
+        }
+        else {
+            return cache.getOrCompute(key,(String k)-> {
+                        final resp = handleRequest0(route, headers)
+                        // when the response is not cacheable, return null as TTL
+                        final ttl = route.isDigest() && resp.isCacheable() ? cache.duration : null
+                        return new Tuple2<DelegateResponse, Duration>(resp, ttl)
+                    })
+        }
     }
 
-    @TraceElapsedTime(thresholdMillis = '${wave.trace.proxy-service.threshold:750}')
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.proxy-service.threshold:1000}')
     protected DelegateResponse handleRequest0(RoutePath route, Map<String,List<String>> headers) {
         log.debug "Request processing ${route}"
         ProxyClient proxyClient = client(route)
