@@ -49,7 +49,7 @@ jobs:
         id : login-ecr
         uses : aws-actions/amazon-ecr-login@v1
 
-      - name: Release docs
-        if: "contains(github.event.head_commit.message, '[release docs]')"
+      - name: Release OpenAPI docs
+        if: "contains(github.event.head_commit.message, '[release]')"
         run: |
           bash typespec/tag-and-push-docs.sh
