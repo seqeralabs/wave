@@ -97,6 +97,11 @@ class RegistryProxyServiceTest extends Specification {
         def k5 = RegistryProxyService.requestKey(p1, ['Content-Type': ['text/1', 'text/2'], 'X-Foo': ['bar']])
         then:
         k5 == 'f9fe81aed4d72cba'    // <-- the header 'X-Foo' does not alter the cache key
+
+        when:
+        def k6 = RegistryProxyService.requestKey(p1, ["cache-control":["none"]])
+        then:
+        k6 == null
     }
 
     def 'check is cacheable header' () {
