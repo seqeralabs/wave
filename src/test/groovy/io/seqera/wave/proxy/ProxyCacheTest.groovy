@@ -24,6 +24,7 @@ import spock.lang.Specification
 import java.time.Duration
 
 import io.micronaut.context.ApplicationContext
+import io.seqera.wave.configuration.ProxyCacheConfig
 import io.seqera.wave.store.cache.RedisL2TieredCache
 import io.seqera.wave.test.RedisTestContainer
 /**
@@ -51,7 +52,7 @@ class ProxyCacheTest extends Specification implements RedisTestContainer {
         given:
         def TTL = Duration.ofMillis(150)
         def store = applicationContext.getBean(RedisL2TieredCache)
-        def cache = new ProxyCache(store)
+        def cache = new ProxyCache(store, Mock(ProxyCacheConfig))
         and:
         def k = UUID.randomUUID().toString()
         def resp = new DelegateResponse(
