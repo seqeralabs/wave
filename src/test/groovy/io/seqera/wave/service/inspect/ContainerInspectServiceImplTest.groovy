@@ -91,11 +91,11 @@ class ContainerInspectServiceImplTest extends Specification {
 
         and:
         ContainerInspectServiceImpl.findRepositories('''
-                FROM moby/buildkit:v0.14.1-rootless AS bkt
+                FROM moby/buildkit:v0.18.2-rootless AS bkt
                 RUN this and that
                 FROM amazoncorretto:17.0.4
                 COPY --from=bkt /usr/bin/buildctl /usr/bin/buildctl
-                ''') == ['moby/buildkit:v0.14.1-rootless', 'amazoncorretto:17.0.4']
+                ''') == ['moby/buildkit:v0.18.2-rootless', 'amazoncorretto:17.0.4']
 
     }
 
