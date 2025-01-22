@@ -180,10 +180,10 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
         assert key!=null, "Argument key cannot be null"
         if( log.isTraceEnabled() )
             log.trace "Cache '${name}' checking key=$key"
-        final now = Instant.now()
+        final ts = Instant.now()
         // Try L1 cache first
         Entry entry = l1Get(key)
-        Boolean needsRevalidation = entry ? shouldRevalidate(entry.expiresAt, now) : null
+        Boolean needsRevalidation = entry ? shouldRevalidate(entry.expiresAt, ts) : null
         if( entry && !needsRevalidation ) {
             if( log.isTraceEnabled() )
                 log.trace "Cache '${name}' L1 hit (a) - key=$key => entry=$entry"
@@ -196,7 +196,7 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
             // check again L1 cache once in the sync block
             if( !entry ) {
                 entry = l1Get(key)
-                needsRevalidation = entry ? shouldRevalidate(entry.expiresAt, now) : null
+                needsRevalidation = entry ? shouldRevalidate(entry.expiresAt, ts) : null
             }
             if( entry && !needsRevalidation ) {
                 if( log.isTraceEnabled() )
@@ -207,7 +207,7 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
             // Fallback to L2 cache
             if( !entry ) {
                 entry = l2Get(key)
-                needsRevalidation = entry ? shouldRevalidate(entry.expiresAt, now) : null
+                needsRevalidation = entry ? shouldRevalidate(entry.expiresAt, ts) : null
             }
             if( entry && !needsRevalidation ) {
                 if( log.isTraceEnabled() )
@@ -314,7 +314,7 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
     }
 
     protected boolean randomRevalidate(long remainingTime) {
-        Math.random() < Math.exp(-revalidationSteepness * remainingTime)
+        return Math.random() < Math.exp(-revalidationSteepness * remainingTime)
     }
 
 }

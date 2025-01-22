@@ -18,6 +18,8 @@
 
 package io.seqera.wave.store.cache
 
+import spock.lang.Retry
+
 import java.time.Duration
 import java.time.Instant
 
@@ -277,4 +279,41 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
         cache.randomRevalidate(0)
     }
 
+    @Retry(count = 5)
+    def 'should validate random revalidate with interval 10s' () {
+        given:
+        def now = Instant.now()
+        def cache = Spy(MyCache)
+        cache.getCacheRevalidationInterval() >> Duration.ofSeconds(10)
+        expect:
+        // when remaining time is approaching 0
+        // the function should return true
+        cache.randomRevalidate(10)  // 10 millis
+        cache.randomRevalidate(100) // 100 millis
+        and:
+        // when it's mostly the same as the revalidation interval
+        // it should return false
+        !cache.randomRevalidate(9_000)
+        !cache.randomRevalidate(10_000)
+    }
+
+    @Retry(count = 5)
+    def 'should validate random revalidate with interval 300s' () {
+        given:
+        def now = Instant.now()
+        def cache = Spy(MyCache)
+        cache.getCacheRevalidationInterval() >> Duration.ofSeconds(300)
+        expect:
+        // when remaining time is approaching 0
+        // the function should return true
+        cache.randomRevalidate(10)  // 10 millis
+        cache.randomRevalidate(100) // 100 millis
+        cache.randomRevalidate(500) // 100 millis
+        and:
+        // when it's mostly the same as the revalidation interval
+        // it should return false
+        !cache.randomRevalidate(250_000)
+        !cache.randomRevalidate(290_000)
+        !cache.randomRevalidate(300_000)
+    }
 }
