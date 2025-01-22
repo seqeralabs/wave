@@ -206,7 +206,7 @@ class ContainerHelper {
                         it = it.substring(4)
                     // fix urls
                     if( it.startsWith('https://') || it.startsWith('http://'))
-                        it = normaliseUrl(it)
+                        continue
                     // strip channel prefix
                     final int p=it.indexOf('::')
                     if( p!=-1 )
@@ -231,16 +231,6 @@ class ContainerHelper {
             log.warn "Unable to infer conda recipe name - offending content:\n---\n${condaFileContent}", e
             return null
         }
-    }
-
-    static String normaliseUrl(String dependency) {
-        if( !dependency )
-            return null
-        //remove protocol and www and domain name
-        return dependency.replaceAll(/^(https?:\/\/)?(www\.)?[^\/]+/,'')
-                .replaceAll(/[.\/]/, '_') // Replaces . and / with _
-                .replaceAll(/^_+|_+$/, '') // Removes leading and trailing _
-                .replaceAll(/_+/, '_') // Replaces multiple _ with single _
     }
     
     static Tuple2<String,String> splitVersion(String tool, String sep) {

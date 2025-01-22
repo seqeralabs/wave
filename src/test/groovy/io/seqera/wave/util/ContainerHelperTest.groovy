@@ -508,6 +508,7 @@ class ContainerHelperTest extends Specification {
                 - bioconda
                 - conda-forge
                 dependencies:
+                - bwa
                 - pip
                 - pip:
                   - "https://github.com/seqeralabs/seqera-kit/archive/dev.zip"
@@ -567,14 +568,14 @@ class ContainerHelperTest extends Specification {
         'DOCKER'      | 'foo.com/build'   | '123'     | PIP2 | 'imageSuffix' | 'foo.com/build/pip_pandas_numpy:123'
         'DOCKER'      | 'foo.com/build'   | '123'     | PIP2 | 'none'        | 'foo.com/build:123'
         and:
-        'DOCKER'      | 'foo.com/build'   | '123'     | GIT1 | null          | 'foo.com/build:pip_seqeralabs_seqera-kit_archive_dev_zip--123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | GIT1 | 'tagPrefix'   | 'foo.com/build:pip_seqeralabs_seqera-kit_archive_dev_zip--123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | GIT1 | 'imageSuffix' | 'foo.com/build/pip_seqeralabs_seqera-kit_archive_dev_zip:123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | GIT1 | null          | 'foo.com/build:pip--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | GIT1 | 'tagPrefix'   | 'foo.com/build:pip--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | GIT1 | 'imageSuffix' | 'foo.com/build/pip:123'
         'DOCKER'      | 'foo.com/build'   | '123'     | GIT1 | 'none'        | 'foo.com/build:123'
         and:
-        'DOCKER'      | 'foo.com/build'   | '123'     | GIT2 | null          | 'foo.com/build:pip_seqeralabs_seqera-kit_archive_dev_zip_seqeralabs_seqera-kit_archive_dev2_zip--123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | GIT2 | 'tagPrefix'   | 'foo.com/build:pip_seqeralabs_seqera-kit_archive_dev_zip_seqeralabs_seqera-kit_archive_dev2_zip--123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | GIT2 | 'imageSuffix' | 'foo.com/build/pip_seqeralabs_seqera-kit_archive_dev_zip_seqeralabs_seqera-kit_archive_dev2_zip_seqeralabs_seqera-kit_archive_dev3_zip:123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | GIT2 | null          | 'foo.com/build:bwa_pip--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | GIT2 | 'tagPrefix'   | 'foo.com/build:bwa_pip--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | GIT2 | 'imageSuffix' | 'foo.com/build/bwa_pip:123'
         'DOCKER'      | 'foo.com/build'   | '123'     | GIT2 | 'none'        | 'foo.com/build:123'
 
     }
@@ -602,54 +603,4 @@ class ContainerHelperTest extends Specification {
 
     }
 
-    @Unroll
-    def 'should return null for null dependency'() {
-        expect:
-        ContainerHelper.normaliseUrl(null) == null
-    }
-
-    @Unroll
-    def 'should return null for empty dependency'() {
-        expect:
-        ContainerHelper.normaliseUrl('') == null
-    }
-
-    @Unroll
-    def 'should normalise URL by removing protocol and domain'() {
-        expect:
-        ContainerHelper.normaliseUrl(dependency) == expected
-
-        where:
-        dependency                                | expected
-        'http://example.com/path/to/resource'     | 'path_to_resource'
-        'https://www.example.com/path/to/resource'| 'path_to_resource'
-        'http://example.com'                      | ''
-        'https://example.com/'                    | ''
-    }
-
-    @Unroll
-    def 'should normalise URL by replacing special characters'() {
-        expect:
-        ContainerHelper.normaliseUrl(dependency) == expected
-
-        where:
-        dependency                                | expected
-        'http://example.com/path.to/resource'     | 'path_to_resource'
-        'https://example.com/path/to/resource'    | 'path_to_resource'
-        'http://example.com/path/to/resource/'    | 'path_to_resource'
-        'https://example.com/path//to//resource'  | 'path_to_resource'
-    }
-
-    @Unroll
-    def 'should normalise URL by removing leading and trailing underscores'() {
-        expect:
-        ContainerHelper.normaliseUrl(dependency) == expected
-
-        where:
-        dependency                                | expected
-        'http://example.com/_path/to/resource_'   | 'path_to_resource'
-        'https://example.com/__path/to/resource__'| 'path_to_resource'
-        'http://example.com/___'                  | ''
-        'https://example.com/____'                | ''
-    }
 }
