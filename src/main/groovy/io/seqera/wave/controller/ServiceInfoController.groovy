@@ -59,4 +59,10 @@ class ServiceInfoController {
                 : HttpResponse.badRequest()
     }
 
+    @Get(uri = "/openapi")
+    HttpResponse getOpenAPI() {
+        println("Redirecting to /openapi/")
+        HttpResponse.redirect(URI.create("/openapi/"))
+    }
+
 }
