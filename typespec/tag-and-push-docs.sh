@@ -25,7 +25,7 @@ set -x
 SED=sed
 [[ $(uname) == Darwin ]] && SED=gsed
 
-RELEASE=${RELEASE:-$(git show -s --format='%s' | $SED -rn 's/.*\[(release docs)\].*/\1/p')}
+RELEASE=${RELEASE:-$(git show -s --format='%s' | $SED -rn 's/.*\[(release)\].*/\1/p')}
 
 if [[ $RELEASE ]]; then
   TAG=v$(cat VERSION)
