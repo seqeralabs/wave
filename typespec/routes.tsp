@@ -13,7 +13,7 @@ using TypeSpec.Versioning;
 @server("https://wave.seqera.io", "wave prod endpoint")
 namespace wave {
     enum Versions {
-      v1: "1.16.8",
+      v1: "0.0.0",
     }
   @route("/v1alpha2/container")
   interface  ContainerService {

@@ -36,6 +36,7 @@ if [[ $RELEASE ]]; then
   tsp install
   tsp compile .
 
+  sed -i "" "s/version: 0.0.0/version: $VERSION/g" "tsp-output/@typespec/openapi3/openapi.yaml"
 
   docker build -t 195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/openapi:$TAG .
   docker push 195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/openapi:$TAG

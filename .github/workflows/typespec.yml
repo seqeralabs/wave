@@ -11,6 +11,7 @@ on:
     types: [opened, reopened, synchronize]
     paths:
       - 'typespec/**'
+      - VERSION
 
 permissions:
   contents: read
