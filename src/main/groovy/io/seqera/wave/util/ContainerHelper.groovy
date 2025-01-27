@@ -204,7 +204,7 @@ class ContainerHelper {
                     //strip `pip:` prefix
                     if( it.startsWith('pip:') && it.length()>4 && it[4]!=':')
                         it = it.substring(4)
-                    // fix urls
+                    // ignore http based dependencies
                     if( it.startsWith('https://') || it.startsWith('http://'))
                         continue
                     // strip channel prefix
