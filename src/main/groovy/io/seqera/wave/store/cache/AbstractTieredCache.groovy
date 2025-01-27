@@ -45,11 +45,17 @@ import org.jetbrains.annotations.Nullable
  *
  * This allow the use in distributed deployment. Note however strong consistently is not guaranteed.
  *
+ * @param <K>
+ *      The type of keys maintained by this cache. Note it must be either a
+ *      subtype of {@link CharSequence} or an implementation of {@link TieredCacheKey} interface.
+ * @param <V>
+ *      The type of values maintained by this cache, which must extend {@link MoshiExchange}.
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @CompileStatic
-abstract class AbstractTieredCache<K extends  TieredCacheKey, V extends MoshiExchange> implements TieredCache<String,V> {
+abstract class AbstractTieredCache<K, V extends MoshiExchange> implements TieredCache<K,V> {
 
     @Canonical
     @ToString(includePackage = false, includeNames = true)
@@ -121,6 +127,17 @@ abstract class AbstractTieredCache<K extends  TieredCacheKey, V extends MoshiExc
         }
     }
 
+    protected static String k0(K key) {
+        if( key instanceof CharSequence )
+            return key.toString()
+        if( key instanceof TieredCacheKey )
+            return key.stableHash()
+        if( key==null )
+            throw new IllegalArgumentException("Tiered cache key cannot be null")
+        else
+            throw new IllegalArgumentException("Tiered cache key type - offending value: ${key}; type: ${key.getClass()}")
+    }
+
     /**
      * Retrieve the value associated with the specified key
      *
@@ -130,30 +147,8 @@ abstract class AbstractTieredCache<K extends  TieredCacheKey, V extends MoshiExc
      *      The value associated with the specified key, or {@code null} otherwise
      */
     @Override
-    V get(String key) {
-        getOrCompute0(key, null)
-    }
-
-    /**
-     * Retrieve the value associated with the specified key
-     *
-     * @param key
-     *      The key of the value to be retrieved
-     * @param loader
-     *      A function invoked to load the value the entry with the specified key is not available
-     * @param ttl
-     *      time to live for the entry
-     * @return
-     *      The value associated with the specified key, or {@code null} otherwise
-     */
-    V getOrCompute(String key, Function<String,V> loader, Duration ttl) {
-        if( loader==null ) {
-            return getOrCompute0(key, null)
-        }
-        return getOrCompute0(key, (String k)-> {
-            V v = loader.apply(key)
-            return v != null ? new Tuple2<>(v, ttl) : null
-        })
+    V get(K key) {
+        getOrCompute0(k0(key), null)
     }
 
     /**
@@ -169,11 +164,10 @@ abstract class AbstractTieredCache<K extends  TieredCacheKey, V extends MoshiExc
      *      The value associated with the specified key, or {@code null} otherwise
      */
     V getOrCompute(K key, Function<String,V> loader, Duration ttl) {
-        final hash = key.stableHash()
         if( loader==null ) {
-            return getOrCompute0(hash, null)
+            return getOrCompute0(k0(key), null)
         }
-        return getOrCompute0(hash, (String k)-> {
+        return getOrCompute0(k0(key), (String k)-> {
             V v = loader.apply(k)
             return v != null ? new Tuple2<>(v, ttl) : null
         })
@@ -189,8 +183,8 @@ abstract class AbstractTieredCache<K extends  TieredCacheKey, V extends MoshiExc
      * @return
       *     The value associated with the specified key, or #function result otherwise
      */
-    V getOrCompute(String key, Function<String, Tuple2<V,Duration>> loader) {
-        return getOrCompute0(key, loader)
+    V getOrCompute(K key, Function<String, Tuple2<V,Duration>> loader) {
+        return getOrCompute0(k0(key), loader)
     }
 
     private V getOrCompute0(String key, Function<String, Tuple2<V,Duration>> loader) {
@@ -252,15 +246,15 @@ abstract class AbstractTieredCache<K extends  TieredCacheKey, V extends MoshiExc
     }
 
     @Override
-    void put(String key, V value, Duration ttl) {
+    void put(K key, V value, Duration ttl) {
         assert key!=null, "Cache key argument cannot be null"
         assert value!=null, "Cache value argument cannot be null"
         if( log.isTraceEnabled() )
             log.trace "Cache '${name}' putting - key=$key; value=${value}"
         final exp = System.currentTimeMillis() + ttl.toMillis()
         final entry = new Entry(value, exp)
-        l1Put(key, entry)
-        l2Put(key, entry, ttl)
+        l1Put(k0(key), entry)
+        l2Put(k0(key), entry, ttl)
     }
 
     protected String key0(String k) { return getPrefix() + ':' + k  }
@@ -319,7 +313,7 @@ abstract class AbstractTieredCache<K extends  TieredCacheKey, V extends MoshiExc
     }
 
     void invalidate(K key) {
-        l1.invalidate(key.stableHash())
+        l1.invalidate(k0(key))
     }
 
 }

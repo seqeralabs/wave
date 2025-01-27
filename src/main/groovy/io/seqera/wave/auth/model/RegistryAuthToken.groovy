@@ -18,6 +18,7 @@
 
 package io.seqera.wave.auth.model
 
+import groovy.transform.CompileStatic
 import io.seqera.wave.encoder.MoshiExchange
 
 /**
@@ -25,9 +26,10 @@ import io.seqera.wave.encoder.MoshiExchange
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
+@CompileStatic
 class RegistryAuthToken implements MoshiExchange{
 
-    String value
+    final String value
 
     RegistryAuthToken(String value) {
         this.value = value
