@@ -13,18 +13,12 @@ repositories {
 }
 
 java {
+    // these settings apply to all jvm tooling, including groovy
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
-}
-
-compileJava {
-    options.release.set(17)
-}
-
-tasks.withType(GroovyCompile).configureEach {
-    sourceCompatibility = '17'
-    targetCompatibility = '17'
+    sourceCompatibility = 17
+    targetCompatibility = 17
 }
 
 group = 'io.seqera'
