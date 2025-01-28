@@ -312,8 +312,4 @@ abstract class AbstractTieredCache<K, V extends MoshiExchange> implements Tiered
         l1.invalidateAll()
     }
 
-    void invalidate(K key) {
-        l1.invalidate(k0(key))
-    }
-
 }
