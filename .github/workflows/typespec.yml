@@ -54,4 +54,4 @@ jobs:
       - name: Release OpenAPI docs
         if: "contains(github.event.head_commit.message, '[release]')"
         run: |
-          bash typespec/tag-and-push-docs.sh
+          bash typespec/tag-and-push-openapi.sh
