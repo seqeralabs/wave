@@ -41,7 +41,7 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-class RegistryLookupCache extends AbstractTieredCache<TieredCacheKey, RegistryAuth> {
+class RegistryLookupCache extends AbstractTieredCache<String, RegistryAuth> {
 
     @Value('${wave.registry.cache.duration:1h}')
     private Duration duration

@@ -39,7 +39,7 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-class ProxyCache extends AbstractTieredCache<TieredCacheKey, DelegateResponse> {
+class ProxyCache extends AbstractTieredCache<String, DelegateResponse> {
 
     private ProxyCacheConfig config
 
