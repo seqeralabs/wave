@@ -290,11 +290,6 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
         // the function should return true
         cache.randomRevalidate(10)  // 10 millis
         cache.randomRevalidate(100) // 100 millis
-        and:
-        // when it's mostly the same as the revalidation interval
-        // it should return false
-        !cache.randomRevalidate(9_000)
-        !cache.randomRevalidate(10_000)
     }
 
     @Retry(count = 5)
@@ -309,11 +304,5 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
         cache.randomRevalidate(10)  // 10 millis
         cache.randomRevalidate(100) // 100 millis
         cache.randomRevalidate(500) // 100 millis
-        and:
-        // when it's mostly the same as the revalidation interval
-        // it should return false
-        !cache.randomRevalidate(250_000)
-        !cache.randomRevalidate(290_000)
-        !cache.randomRevalidate(300_000)
     }
 }

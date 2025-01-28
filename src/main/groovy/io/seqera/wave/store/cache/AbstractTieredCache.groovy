@@ -33,6 +33,7 @@ import com.github.benmanes.caffeine.cache.RemovalCause
 import com.github.benmanes.caffeine.cache.RemovalListener
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import groovy.transform.Memoized
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.encoder.EncodingStrategy
@@ -110,10 +111,30 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
 
     abstract protected String getPrefix()
 
+    /**
+     * The cache probabilistic revalidation internal.
+     *
+     * See  https://blog.cloudflare.com/sometimes-i-cache/
+     *
+     * @return
+     *      The cache cache revalidation internal as a {@link Duration} value.
+     *      When {@link Duration#ZERO} probabilistic revalidation is disabled.
+     */
     protected Duration getCacheRevalidationInterval() {
         return Duration.ZERO
     }
 
+    /**
+     * The cache probabilistic revalidation steepness value.
+     *
+     * By default is implemented as 1 / {@link #getCacheRevalidationInterval()} (as millis).
+     * Subclasses can override this method to provide a different value.
+     *
+     * See https://blog.cloudflare.com/sometimes-i-cache/
+     *
+     * @return Returns the revalidation steepness value.
+     */
+    @Memoized
     protected double getRevalidationSteepness() {
         return 1 / getCacheRevalidationInterval().toMillis()
     }
@@ -302,7 +323,7 @@ abstract class AbstractTieredCache<V extends MoshiExchange> implements TieredCac
         // otherwise, when remaining is greater than the cache revalidation interval
         // no revalidation is needed
         final cacheRevalidationMills = cacheRevalidationInterval.toMillis()
-        if( remainingCacheTime > cacheRevalidationMills ) {
+        if( cacheRevalidationMills < remainingCacheTime ) {
             return false
         }
 
