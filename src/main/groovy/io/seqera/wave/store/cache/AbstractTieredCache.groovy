@@ -127,7 +127,7 @@ abstract class AbstractTieredCache<K, V extends MoshiExchange> implements Tiered
         }
     }
 
-    protected static String k0(K key) {
+    protected String k0(K key) {
         if( key instanceof CharSequence )
             return key.toString()
         if( key instanceof TieredCacheKey )
