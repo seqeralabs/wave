@@ -173,7 +173,7 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
         def key = Mock(RegistryAuthServiceImpl.CacheKey)
         def expectedToken = "cachedToken"
         and:
-        tokenStore.put("key-" + key.stableHash(), expectedToken)
+        tokenStore.put("key-" + key.stableKey(), expectedToken)
 
         when:
         def result = impl.getToken(key)
