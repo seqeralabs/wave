@@ -1,10 +1,10 @@
 # Wave Application Configuration
 
-Set Wave configuration values using environment variables or in [`config.yml`](./config.yml) configuration file
+Set Wave configuration values using environment variables or in [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml) configuration file
 
 ### config.yml configuration
 
-Declare YAML configuration values in [`config.yml`](./config.yml)
+Declare YAML configuration values in [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml)
 ```
 wave:
     mail:
@@ -39,7 +39,7 @@ The generic format for the attributes is `wave.registries.<registry_name>.userna
 You need to specify all the repositories you will use in the respective wave installation.
 Below are the standard format for known registries, but you can change registry name `(azurecr.io)` to specific one like `seqeralabs.azurecr.io `.
 
-**Note**: Container registry credentials can be defined in [`config.yml`](./config.yml) too. These configurations are important for the wave authentication to the repositories used to push or pull artifacts.
+**Note**: Container registry credentials can be defined in [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml) too. These configurations are important for the wave authentication to the repositories used to push or pull artifacts.
 
 - **`wave.registries.default`**: the default Docker registry for Wave. The default is `docker.io`, and it represents the Docker Hub. *Optional*.
 
