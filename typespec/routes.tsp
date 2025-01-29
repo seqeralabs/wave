@@ -2,12 +2,19 @@ import "./models/models.tsp";
 
 using TypeSpec.Http;
 using TypeSpec.Rest;
+using TypeSpec.Versioning;
 
+@versioned(wave.Versions)
 @service({
-  title: "Wave service",
+  title: "Wave service"
 })
-@server("https://wave.seqera.io", "wave endopint")
+@server("https://wave.dev-tower.net", "wave dev endpoint")
+@server("https://wave.stage-seqera.io", "wave stage endpoint")
+@server("https://wave.seqera.io", "wave prod endpoint")
 namespace wave {
+    enum Versions {
+      v1: "0.0.0",
+    }
   @route("/v1alpha2/container")
   interface  ContainerService {
 
