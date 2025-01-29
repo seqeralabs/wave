@@ -16,31 +16,43 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.proxy
+package io.seqera.wave.configuration
 
-import groovy.transform.EqualsAndHashCode
-import io.seqera.wave.encoder.MoshiExchange
+import java.time.Duration
+
+import groovy.transform.CompileStatic
+import groovy.transform.ToString
+import io.micronaut.context.annotation.Value
+import jakarta.inject.Singleton
+
 /**
- * Model a response object to be forwarded to the client
- * 
+ * Model {@link io.seqera.wave.proxy.ProxyCache} configuration settings
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@EqualsAndHashCode
-class DelegateResponse implements MoshiExchange {
-    int statusCode
-    Map<String,List<String>> headers
-    byte[] body
-    String location
-    boolean isRedirect() { location }
-    boolean isCacheable() { location!=null || (body!=null && statusCode>=200 && statusCode<400) }
+@Singleton
+@CompileStatic
+@ToString(includeNames = true, includePackage = false)
+class ProxyCacheConfig {
 
-    @Override
-    public String toString() {
-        return "DelegateResponse[" +
-                "statusCode=" + statusCode +
-                ", location=" + (location ? "'${location}'" : "null") +
-                ", body=" + (body != null ? "[byte array: ${body.length}]" : "null") +
-                ", headers=" + headers +
-                "]";
+    @Value('${wave.proxy-cache.duration:4m}')
+    private Duration duration
+
+    @Value('${wave.proxy-cache.max-size:10000}')
+    private int maxSize
+
+    @Value('${wave.proxy-cache.enabled:true}')
+    private boolean enabled
+
+    Duration getDuration() {
+        return duration
+    }
+
+    int getMaxSize() {
+        return maxSize
+    }
+
+    boolean getEnabled() {
+        return enabled
     }
 }

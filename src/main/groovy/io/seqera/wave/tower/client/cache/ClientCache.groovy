@@ -90,5 +90,8 @@ class ClientCache extends AbstractTieredCache {
                 .withSubtype(WorkflowLaunch.class, WorkflowLaunch.simpleName)
                 .withSubtype(DescribeWorkflowResponse.class, DescribeWorkflowResponse.simpleName)
                 .withSubtype(Workflow.class, Workflow.simpleName)
+        // add legacy classes
+                .withSubtype(GetUserInfoResponse.class, 'UserInfoResponse')
+                .withSubtype(WorkflowLaunch.class, 'WorkflowLaunchResponse')
     }
 }

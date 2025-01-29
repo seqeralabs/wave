@@ -52,7 +52,7 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-@TraceElapsedTime(thresholdMillis = '${wave.trace.surreal-persistence.threshold:200}')
+@TraceElapsedTime(thresholdMillis = '${wave.trace.surreal-persistence.threshold:500}')
 class SurrealPersistenceService implements PersistenceService {
 
     @Inject

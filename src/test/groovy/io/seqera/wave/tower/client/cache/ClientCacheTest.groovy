@@ -143,4 +143,20 @@ class ClientCacheTest extends Specification implements RedisTestContainer {
         then:
         cache2.get(k) == resp
     }
+
+    def 'should de-serialize legacy UserInfoResponse' () {
+        given:
+        def LEGACY = '{"expiresAt":1735599710424,"value":{"@type":"UserInfoResponse","user":{"email":"foo@bar.com","id":37,"userName":"foo"}}}'
+        and:
+        def encoder =  ClientCache.encoder()
+
+        when:
+        def entry = encoder.decode(LEGACY)
+        then:
+        entry.expiresAt == 1735599710424
+        entry.value instanceof GetUserInfoResponse
+        and:
+        def resp = entry.value as GetUserInfoResponse
+        resp.user == new User(id:37, email: "foo@bar.com", userName: "foo")
+    }
 }
