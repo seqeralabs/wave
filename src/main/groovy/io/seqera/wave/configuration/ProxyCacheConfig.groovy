@@ -16,16 +16,43 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.tower.client
+package io.seqera.wave.configuration
+
+import java.time.Duration
 
 import groovy.transform.CompileStatic
-import io.seqera.wave.tower.User
+import groovy.transform.ToString
+import io.micronaut.context.annotation.Value
+import jakarta.inject.Singleton
 
 /**
- * Model a Tower user-info response
+ * Model {@link io.seqera.wave.proxy.ProxyCache} configuration settings
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Singleton
 @CompileStatic
-class UserInfoResponse {
-    User user
+@ToString(includeNames = true, includePackage = false)
+class ProxyCacheConfig {
+
+    @Value('${wave.proxy-cache.duration:4m}')
+    private Duration duration
+
+    @Value('${wave.proxy-cache.max-size:10000}')
+    private int maxSize
+
+    @Value('${wave.proxy-cache.enabled:true}')
+    private boolean enabled
+
+    Duration getDuration() {
+        return duration
+    }
+
+    int getMaxSize() {
+        return maxSize
+    }
+
+    boolean getEnabled() {
+        return enabled
+    }
 }

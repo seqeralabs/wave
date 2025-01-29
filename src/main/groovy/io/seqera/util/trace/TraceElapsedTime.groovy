@@ -16,16 +16,26 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.tower.compute
+package io.seqera.util.trace
 
-import groovy.transform.CompileStatic
+import java.lang.annotation.Documented
+import java.lang.annotation.Retention
+import java.lang.annotation.Target
 
+import io.micronaut.aop.Around
+import static java.lang.annotation.ElementType.METHOD
+import static java.lang.annotation.ElementType.TYPE
+import static java.lang.annotation.RetentionPolicy.RUNTIME
 /**
- * Model the response of workflow launch response from seqera platform
+ * When applied to a method or a class the elapsed time to carry out the method execution
+ * is reported in the application log file
  *
- * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
-class WorkflowLaunchResponse {
-    ComputeEnv computeEnv
+@Documented
+@Retention(RUNTIME)
+@Target([TYPE, METHOD])
+@Around
+@interface TraceElapsedTime {
+    String thresholdMillis() default '0'
 }

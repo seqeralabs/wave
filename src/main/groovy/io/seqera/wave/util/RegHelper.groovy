@@ -203,6 +203,20 @@ class RegHelper {
         return hasher.hash().toString()
     }
 
+    static String sipHash(Object... keys) {
+        if( keys == null )
+            throw new IllegalArgumentException("Missing argument for sipHash method")
+
+        final hasher = Hashing.sipHash24().newHasher()
+        for( Object it :  keys ) {
+            if( it!=null )
+                hasher.putUnencodedChars(it.toString())
+            hasher.putUnencodedChars(Character.toString(0x1C))
+        }
+        hasher.putUnencodedChars(Character.toString(0x1E))
+        return hasher.hash()
+    }
+
     static String layerName(ContainerLayer layer) {
         return "layer-${layer.gzipDigest.replace(/sha256:/,'')}.tar.gz"
     }

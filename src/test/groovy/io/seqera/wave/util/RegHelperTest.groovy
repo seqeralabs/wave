@@ -26,6 +26,8 @@ import java.util.concurrent.CompletableFuture
 import com.google.common.hash.Hashing
 import groovy.util.logging.Slf4j
 import io.seqera.wave.test.ManifestConst
+import io.seqera.wave.tower.client.TowerClient
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -203,5 +205,24 @@ class RegHelperTest extends Specification {
                         .putUnencodedChars(Character.toString(0x1E))
                 .hash()
                 .toString()
+    }
+
+
+    def 'should create consistent hash for open array' () {
+        given:
+        def client = new TowerClient()
+
+        expect:
+        RegHelper.sipHash('a') == 'bcf5c2d233d23f0f'
+        and:
+        RegHelper.sipHash('a') == RegHelper.sipHash('a')
+        and:
+        RegHelper.sipHash('a','b','c') == RegHelper.sipHash('a','b','c')
+        and:
+        RegHelper.sipHash('a','b',null) == RegHelper.sipHash('a','b',null)
+        and:
+        RegHelper.sipHash(new URI('http://foo.com')) == RegHelper.sipHash('http://foo.com')
+        and:
+        RegHelper.sipHash(100l) == RegHelper.sipHash('100')
     }
 }

@@ -16,27 +16,12 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.tower.client
-
-import groovy.transform.CompileStatic
-import groovy.transform.ToString
-
+package io.seqera.wave.store.cache
 /**
- * Model Tower service info response
- * 
+ * Define the interface for 2nd level tired cache
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@ToString(includePackage = false, includeNames = true)
-@CompileStatic
-class ServiceInfoResponse {
+interface L2TieredCache<K,V> extends TieredCache<K,V> {
 
-    @ToString(includePackage = false, includeNames = true)
-    static class ServiceInfo {
-        String version
-        String apiVersion
-        String commitId
-        Boolean waveEnabled
-    }
-
-    ServiceInfo serviceInfo
 }
