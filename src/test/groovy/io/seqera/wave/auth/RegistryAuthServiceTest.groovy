@@ -199,19 +199,19 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
         def c5 = new RegistryAuthServiceImpl.CacheKey(i1, a1, k3)
 
         expect:
-        c1.stableHash() == '23476a51c7b6216a'
-        c1.stableHash() == c2.stableHash()
-        c1.stableHash() == c3.stableHash()
+        c1.stableKey() == '23476a51c7b6216a'
+        c1.stableKey() == c2.stableKey()
+        c1.stableKey() == c3.stableKey()
         and:
-        c1.stableHash() != c4.stableHash()
-        c1.stableHash() != c5.stableHash()
+        c1.stableKey() != c4.stableKey()
+        c1.stableKey() != c5.stableKey()
     }
 
     void 'invalidateAuthorization should remove token from cache'() {
         given:
         RegistryAuthServiceImpl impl = loginService as RegistryAuthServiceImpl
         def key = new RegistryAuthServiceImpl.CacheKey("image", Mock(RegistryAuth), Mock(RegistryCredentials))
-        def stableKey = "key-" + key.stableHash()
+        def stableKey = "key-" + key.stableKey()
         tokenStore.put(stableKey, "token")
 
         when:
