@@ -55,7 +55,7 @@ class TraceElapsedTimeInterceptor implements MethodInterceptor<Object,Object> {
         finally {
             final delta = System.currentTimeMillis() - begin
             if( delta>=threshold ) {
-                log.warn(msg(delta,context,result))
+                log.debug(msg(delta,context,result))
             }
         }
     }
