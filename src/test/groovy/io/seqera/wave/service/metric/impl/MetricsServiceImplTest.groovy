@@ -51,9 +51,9 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         def platformId2 = new PlatformId(user2, 102)
 
         when:
-        metricsService.incrementBuildsCounter(platformId1)
-        metricsService.incrementBuildsCounter(platformId2)
-        metricsService.incrementBuildsCounter(null)
+        metricsService.incrementBuildsCounter(platformId1, 'amd64')
+        metricsService.incrementBuildsCounter(platformId2, 'arm64')
+        metricsService.incrementBuildsCounter(null, null)
 
         then:
         def res1 = metricsService.getOrgCount(PREFIX_BUILDS, date, null)
@@ -85,9 +85,9 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         def platformId2 = new PlatformId(user2, 102)
 
         when:
-        metricsService.incrementPullsCounter(platformId1)
-        metricsService.incrementPullsCounter(platformId2)
-        metricsService.incrementPullsCounter(null)
+        metricsService.incrementPullsCounter(platformId1, 'amd64')
+        metricsService.incrementPullsCounter(platformId2, 'arm64')
+        metricsService.incrementPullsCounter(null, null)
 
         then:
         def res1 = metricsService.getOrgCount(PREFIX_PULLS, null, 'org1.com')
@@ -115,9 +115,9 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         def platformId2 = new PlatformId(user2, 102)
 
         when:
-        metricsService.incrementFusionPullsCounter(platformId1)
-        metricsService.incrementFusionPullsCounter(platformId2)
-        metricsService.incrementFusionPullsCounter(null)
+        metricsService.incrementFusionPullsCounter(platformId1, 'amd64')
+        metricsService.incrementFusionPullsCounter(platformId2, 'arm64')
+        metricsService.incrementFusionPullsCounter(null, null)
 
         then:
         def res1 = metricsService.getOrgCount(PREFIX_FUSION,null, 'org1.com')
@@ -134,25 +134,30 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
     }
 
     @Unroll
-    def'should get correct metrics key'() {
+    def 'should get correct metrics key'() {
         expect:
-        MetricsServiceImpl.getKey(PREFIX, DAY, ORG) == KEY
+        MetricsServiceImpl.getKey(PREFIX, DAY, ORG, ARCH) == KEY
 
         where:
-        PREFIX                          | DAY           | ORG       | KEY
-        PREFIX_BUILDS | null         | null   | null
-        PREFIX_BUILDS | null         | 'wave' | 'builds/o/wave'
-        PREFIX_BUILDS | '2024-03-25' | 'wave' | 'builds/o/wave/d/2024-03-25'
-        PREFIX_BUILDS | '2024-03-25' | null   | 'builds/d/2024-03-25'
-        PREFIX_PULLS  | null         | null   | null
-        PREFIX_PULLS  | null         | 'wave' | 'pulls/o/wave'
-        PREFIX_PULLS  | '2024-03-25' | 'wave' | 'pulls/o/wave/d/2024-03-25'
-        PREFIX_PULLS  | '2024-03-25' | null   | 'pulls/d/2024-03-25'
-        PREFIX_FUSION | null         | null   | null
-        PREFIX_FUSION | null         | 'wave' | 'fusion/o/wave'
-        PREFIX_FUSION | '2024-03-25' | 'wave' | 'fusion/o/wave/d/2024-03-25'
-        PREFIX_FUSION | '2024-03-25' | null   | 'fusion/d/2024-03-25'
+        PREFIX        | DAY          | ORG    | ARCH        | KEY
+        PREFIX_BUILDS | null         | null   | null        | null
+        PREFIX_BUILDS | null         | 'wave' | null        | 'builds/o/wave'
+        PREFIX_BUILDS | '2024-03-25' | 'wave' | null        | 'builds/o/wave/d/2024-03-25'
+        PREFIX_BUILDS | '2024-03-25' | null   | null        | 'builds/d/2024-03-25'
+        PREFIX_PULLS  | null         | null   | null        | null
+        PREFIX_PULLS  | null         | 'wave' | null        | 'pulls/o/wave'
+        PREFIX_PULLS  | '2024-03-25' | 'wave' | null        | 'pulls/o/wave/d/2024-03-25'
+        PREFIX_PULLS  | '2024-03-25' | null   | null        | 'pulls/d/2024-03-25'
+        PREFIX_FUSION | null         | null   | null        | null
+        PREFIX_FUSION | null         | 'wave' | null        | 'fusion/o/wave'
+        PREFIX_FUSION | '2024-03-25' | 'wave' | null        | 'fusion/o/wave/d/2024-03-25'
+        PREFIX_FUSION | '2024-03-25' | null   | null        | 'fusion/d/2024-03-25'
+        PREFIX_BUILDS | '2024-03-25' | 'wave' | 'amd64'     | 'builds/o/wave/a/amd64/d/2024-03-25'
+        PREFIX_BUILDS | '2024-03-25' | null   | 'arm64'     | 'builds/a/arm64/d/2024-03-25'
+        PREFIX_PULLS  | null         | 'wave' | 'amd64'     | 'pulls/o/wave/a/amd64'
+        PREFIX_FUSION | '2024-03-25' | 'wave' | 'arm64'     | 'fusion/o/wave/a/arm64/d/2024-03-25'
     }
+
 
     @Unroll
     def'should get correct org name'(){
@@ -179,21 +184,21 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         def platformId2 = new PlatformId(user2, 102)
 
         when:
-        metricsService.incrementBuildsCounter(platformId1)
-        metricsService.incrementBuildsCounter(platformId2)
-        metricsService.incrementBuildsCounter(null)
-        metricsService.incrementPullsCounter(platformId1)
-        metricsService.incrementPullsCounter(platformId2)
-        metricsService.incrementPullsCounter(null)
-        metricsService.incrementFusionPullsCounter(platformId1)
-        metricsService.incrementFusionPullsCounter(platformId2)
-        metricsService.incrementFusionPullsCounter(null)
-        metricsService.incrementMirrorsCounter(platformId1)
-        metricsService.incrementMirrorsCounter(platformId2)
-        metricsService.incrementMirrorsCounter(null)
-        metricsService.incrementScansCounter(platformId1)
-        metricsService.incrementScansCounter(platformId2)
-        metricsService.incrementScansCounter(null)
+        metricsService.incrementBuildsCounter(platformId1, 'amd64')
+        metricsService.incrementBuildsCounter(platformId2, 'arm64')
+        metricsService.incrementBuildsCounter(null, null)
+        metricsService.incrementPullsCounter(platformId1, 'amd64')
+        metricsService.incrementPullsCounter(platformId2, 'arm64')
+        metricsService.incrementPullsCounter(null, null)
+        metricsService.incrementFusionPullsCounter(platformId1, 'amd64')
+        metricsService.incrementFusionPullsCounter(platformId2, 'arm64')
+        metricsService.incrementFusionPullsCounter(null, null)
+        metricsService.incrementMirrorsCounter(platformId1, 'amd64')
+        metricsService.incrementMirrorsCounter(platformId2, 'arm64')
+        metricsService.incrementMirrorsCounter(null, null)
+        metricsService.incrementScansCounter(platformId1, 'amd64')
+        metricsService.incrementScansCounter(platformId2, 'arm64')
+        metricsService.incrementScansCounter(null, null)
         and:
         def buildOrgCounts = metricsService.getAllOrgCount(PREFIX_BUILDS)
         def pullOrgCounts = metricsService.getAllOrgCount(PREFIX_PULLS)
@@ -240,21 +245,21 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         def platformId2 = new PlatformId(user2, 102)
 
         when:
-        metricsService.incrementBuildsCounter(platformId1)
-        metricsService.incrementBuildsCounter(platformId2)
-        metricsService.incrementBuildsCounter(null)
-        metricsService.incrementPullsCounter(platformId1)
-        metricsService.incrementPullsCounter(platformId2)
-        metricsService.incrementPullsCounter(null)
-        metricsService.incrementFusionPullsCounter(platformId1)
-        metricsService.incrementFusionPullsCounter(platformId2)
-        metricsService.incrementFusionPullsCounter(null)
-        metricsService.incrementMirrorsCounter(platformId1)
-        metricsService.incrementMirrorsCounter(platformId2)
-        metricsService.incrementMirrorsCounter(null)
-        metricsService.incrementScansCounter(platformId1)
-        metricsService.incrementScansCounter(platformId2)
-        metricsService.incrementScansCounter(null)
+        metricsService.incrementBuildsCounter(platformId1, 'amd64')
+        metricsService.incrementBuildsCounter(platformId2, 'arm64')
+        metricsService.incrementBuildsCounter(null, null)
+        metricsService.incrementPullsCounter(platformId1, 'amd64')
+        metricsService.incrementPullsCounter(platformId2, 'arm64')
+        metricsService.incrementPullsCounter(null, null)
+        metricsService.incrementFusionPullsCounter(platformId1, 'amd64')
+        metricsService.incrementFusionPullsCounter(platformId2, 'arm64')
+        metricsService.incrementFusionPullsCounter(null, null)
+        metricsService.incrementMirrorsCounter(platformId1, 'amd64')
+        metricsService.incrementMirrorsCounter(platformId2, 'arm64')
+        metricsService.incrementMirrorsCounter(null, null)
+        metricsService.incrementScansCounter(platformId1, 'amd64')
+        metricsService.incrementScansCounter(platformId2, 'arm64')
+        metricsService.incrementScansCounter(null, null)
         and:
         def buildOrgCounts = metricsService.getOrgCount(PREFIX_BUILDS, date, null)
         def pullOrgCounts = metricsService.getOrgCount(PREFIX_PULLS, date, null)

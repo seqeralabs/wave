@@ -66,9 +66,9 @@ class MetricsControllerTest extends Specification {
         def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
         def platformId1 = new PlatformId(user1, 101)
         def platformId2 = new PlatformId(user2, 102)
-        metricsService.incrementBuildsCounter(platformId1)
-        metricsService.incrementBuildsCounter(platformId2)
-        metricsService.incrementBuildsCounter(null)
+        metricsService.incrementBuildsCounter(platformId1, 'amd64')
+        metricsService.incrementBuildsCounter(platformId2, 'arm64')
+        metricsService.incrementBuildsCounter(null, null)
 
         when: 'only date is provided'
         def req = HttpRequest.GET("/v1alpha2/metrics/builds?date=$date").basicAuth("username", "password")
@@ -110,9 +110,9 @@ class MetricsControllerTest extends Specification {
         def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
         def platformId1 = new PlatformId(user1, 101)
         def platformId2 = new PlatformId(user2, 102)
-        metricsService.incrementPullsCounter(platformId1)
-        metricsService.incrementPullsCounter(platformId2)
-        metricsService.incrementPullsCounter(null)
+        metricsService.incrementPullsCounter(platformId1, 'amd64')
+        metricsService.incrementPullsCounter(platformId2, 'arm64')
+        metricsService.incrementPullsCounter(null, null)
 
         when: 'only date is provided'
         def req = HttpRequest.GET("/v1alpha2/metrics/pulls?date=$date").basicAuth("username", "password")
@@ -145,6 +145,7 @@ class MetricsControllerTest extends Specification {
         then: 'should get the correct org count'
         res.body() == [metric:'pulls', count:2, orgs:['org1.com': 1, 'org2.com': 1]]
         res.status.code == 200
+
     }
 
     def 'should get the correct fusion pulls count and http status code 200'() {
@@ -154,9 +155,9 @@ class MetricsControllerTest extends Specification {
         def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
         def platformId1 = new PlatformId(user1, 101)
         def platformId2 = new PlatformId(user2, 102)
-        metricsService.incrementFusionPullsCounter(platformId1)
-        metricsService.incrementFusionPullsCounter(platformId2)
-        metricsService.incrementFusionPullsCounter(null)
+        metricsService.incrementFusionPullsCounter(platformId1, 'amd64')
+        metricsService.incrementFusionPullsCounter(platformId2, 'arm64')
+        metricsService.incrementFusionPullsCounter(null, null)
 
         when:'only date is provided'
         def req = HttpRequest.GET("/v1alpha2/metrics/fusion/pulls?date=$date").basicAuth("username", "password")
@@ -198,9 +199,9 @@ class MetricsControllerTest extends Specification {
         def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
         def platformId1 = new PlatformId(user1, 101)
         def platformId2 = new PlatformId(user2, 102)
-        metricsService.incrementScansCounter(platformId1)
-        metricsService.incrementScansCounter(platformId2)
-        metricsService.incrementScansCounter(null)
+        metricsService.incrementScansCounter(platformId1, 'amd64')
+        metricsService.incrementScansCounter(platformId2, 'arm64')
+        metricsService.incrementScansCounter(null, null)
 
         when: 'only date is provided'
         def req = HttpRequest.GET("/v1alpha2/metrics/scans?date=$date").basicAuth("username", "password")
@@ -242,9 +243,9 @@ class MetricsControllerTest extends Specification {
         def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
         def platformId1 = new PlatformId(user1, 101)
         def platformId2 = new PlatformId(user2, 102)
-        metricsService.incrementMirrorsCounter(platformId1)
-        metricsService.incrementMirrorsCounter(platformId2)
-        metricsService.incrementMirrorsCounter(null)
+        metricsService.incrementMirrorsCounter(platformId1, 'amd64')
+        metricsService.incrementMirrorsCounter(platformId2, 'arm64')
+        metricsService.incrementMirrorsCounter(null, null)
 
         when: 'only date is provided'
         def req = HttpRequest.GET("/v1alpha2/metrics/mirrors?date=$date").basicAuth("username", "password")
