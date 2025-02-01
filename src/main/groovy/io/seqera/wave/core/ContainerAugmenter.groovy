@@ -146,7 +146,8 @@ class ContainerAugmenter {
         // resolve image tag to digest
         final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
         final digest = resp1.headers().firstValue('docker-content-digest').orElse(null)
-        log.trace "Resolve (1): image $imageName:$tag => digest=$digest; response code=${resp1.statusCode()}"
+        if( log.isTraceEnabled() )
+            log.trace "Resolve (1): image $imageName:$tag => digest=$digest; response code=${resp1.statusCode()}"
         checkResponseCode(resp1, client.route, false)
 
         // get manifest list for digest
@@ -154,12 +155,14 @@ class ContainerAugmenter {
         final type = resp2.headers().firstValue('content-type').orElse(null)
         checkResponseCode(resp2, client.route, false)
         final manifestsList = resp2.body()
-        log.trace "Resolve (2): image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"
+        if( log.isTraceEnabled() )
+            log.trace "Resolve (2): image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"
 
         // when there's no container config, not much to do
         // just cache the manifest content and return the digest
         if( !containerConfig ) {
-            log.trace "Resolve (3): container config provided for image=$imageName:$tag"
+            if( log.isTraceEnabled() )
+                log.trace "Resolve (3): container config provided for image=$imageName:$tag"
             final target = "$client.registry.name/v2/$imageName/manifests/$digest"
             storage.saveManifest(target, manifestsList, type, digest)
             return new ContainerDigestPair(digest,digest)
@@ -188,20 +191,23 @@ class ContainerAugmenter {
         final resp5 = client.getString("/v2/$imageName/blobs/$manifestResult.configDigest", headers)
         checkResponseCode(resp5, client.route, true)
         final imageConfig = resp5.body()
-        log.trace "Resolve (5): image $imageName:$tag => image config=\n${JsonOutput.prettyPrint(imageConfig)}"
+        if( log.isTraceEnabled() )
+            log.trace "Resolve (5): image $imageName:$tag => image config=\n${JsonOutput.prettyPrint(imageConfig)}"
 
         // update the image config adding the new layer
         final newConfigResult = updateImageConfig(imageName, imageConfig, manifestResult.oci)
         final newConfigDigest = newConfigResult[0]
         final newConfigJson = newConfigResult[1]
-        log.trace "Resolve (6) ==> new config digest: $newConfigDigest => new config=\n${JsonOutput.prettyPrint(newConfigJson)} "
+        if( log.isTraceEnabled() )
+            log.trace "Resolve (6) ==> new config digest: $newConfigDigest => new config=\n${JsonOutput.prettyPrint(newConfigJson)} "
 
         // update the image manifest adding a new layer
         // returns the updated image manifest digest
         final newManifestResult = updateImageManifest(imageName, manifestResult.imageManifest, newConfigDigest, newConfigJson.size(), manifestResult.oci)
         final newManifestDigest = newManifestResult.v1
         final newManifestSize = newManifestResult.v2
-        log.trace "Resolve (7) ==> new image digest: $newManifestDigest"
+        if( log.isTraceEnabled() )
+            log.trace "Resolve (7) ==> new image digest: $newManifestDigest"
 
         if( !manifestResult.targetDigest ) {
             return new ContainerDigestPair(digest, newManifestDigest)
@@ -210,10 +216,10 @@ class ContainerAugmenter {
             // update the manifests list with the new digest
             // returns the manifests list digest
             final newListDigest = updateImageIndex(imageName, manifestsList, manifestResult.targetDigest, newManifestDigest, newManifestSize, manifestResult.oci)
-            log.trace "Resolve (8) ==> new list digest: $newListDigest"
+            if( log.isTraceEnabled() )
+                log.trace "Resolve (8) ==> new list digest: $newListDigest"
             return new ContainerDigestPair(digest, newListDigest)
         }
-
     }
 
     protected ManifestInfo parseManifest(String media, String manifest, String targetDigest) {
@@ -240,7 +246,8 @@ class ContainerAugmenter {
             targetDigest = findTargetDigest(json, oci)
             final resp3 = client.getString("/v2/$imageName/manifests/$targetDigest", headers)
             manifest = resp3.body()
-            log.trace("Image $imageName:$tag => image manifest=\n${JsonOutput.prettyPrint(manifest)}")
+            if( log.isTraceEnabled() )
+                log.trace("Image $imageName:$tag => image manifest=\n${JsonOutput.prettyPrint(manifest)}")
             // parse the new manifest
             json = new JsonSlurper().parseText(manifest) as Map
             media = json.mediaType
@@ -407,7 +414,8 @@ class ContainerAugmenter {
         final result = record.get('digest')
         if( !result )
             throw new BadRequestException("Cannot find digest entry for platform '${platform}' in the manifest: ${JsonOutput.toJson(json)}")
-        log.trace "Find target digest platform: $platform ==> digest: $result"
+        if( log.isTraceEnabled() )
+            log.trace "Find target digest platform: $platform ==> digest: $result"
         return result
     }
 
@@ -508,7 +516,8 @@ class ContainerAugmenter {
         // resolve image tag to digest
         final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
         final digest = resp1.headers().firstValue('docker-content-digest').orElse(null)
-        log.trace "Config (1): image $imageName:$tag => digest=$digest"
+        if( log.isTraceEnabled() )
+            log.trace "Config (1): image $imageName:$tag => digest=$digest"
         checkResponseCode(resp1, client.route, false)
 
         // get manifest list for digest
@@ -516,7 +525,8 @@ class ContainerAugmenter {
         final type = resp2.headers().firstValue('content-type').orElse(null)
         checkResponseCode(resp2, client.route, false)
         final manifestsList = resp2.body()
-        log.trace "Config (2): image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"
+        if( log.isTraceEnabled() )
+            log.trace "Config (2): image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"
 
         if( type==DOCKER_MANIFEST_V1_JWS_TYPE || type==DOCKER_MANIFEST_V1_TYPE ) {
             final json = new JsonSlurper().parseText(manifestsList) as Map
@@ -540,7 +550,8 @@ class ContainerAugmenter {
         final resp5 = client.getString("/v2/$imageName/blobs/$manifestResult.configDigest", headers)
         checkResponseCode(resp5, client.route, true)
         final imageConfig = resp5.body()
-        log.trace "Config (4): image $imageName:$tag => image config=\n${JsonOutput.prettyPrint(imageConfig)}"
+        if( log.isTraceEnabled() )
+            log.trace "Config (4): image $imageName:$tag => image config=\n${JsonOutput.prettyPrint(imageConfig)}"
 
         final config = ConfigSpec.parse(imageConfig)
         final manifest = manifestResult.manifestSpec
