@@ -773,6 +773,36 @@ class ContainerAugmenterTest extends Specification {
         storage.getManifest("$REGISTRY/v2/$IMAGE/manifests/${digest.target}")
     }
 
+    def 'should fetch container index' () {
+        given:
+        def REGISTRY = 'docker.io'
+        def IMAGE = 'library/busybox'
+        def REFERENCE = 'latest'
+        def registry = lookupService.lookup(REGISTRY)
+        def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
+        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
+        and:
+
+        def client = new ProxyClient(httpClient, httpConfig)
+                .withRoute(Mock(RoutePath))
+                .withImage(IMAGE)
+                .withRegistry(registry)
+                .withCredentials(creds)
+                .withLoginService(loginService)
+        and:
+        def scanner = new ContainerAugmenter()
+                .withClient(client)
+
+        when:
+        def spec = scanner
+                .getContainerSpec(IMAGE, REFERENCE, WaveDefault.ACCEPT_HEADERS)
+                .getIndex()
+        then:
+        spec.schemaVersion == 2
+        spec.mediaType == 'application/vnd.oci.image.index.v1+json'
+        spec.manifests.size()>0
+    }
+
     def 'should fetch container manifest' () {
         given:
         def REGISTRY = 'docker.io'
@@ -795,7 +825,9 @@ class ContainerAugmenterTest extends Specification {
                 .withPlatform('amd64')
 
         when:
-        def spec = scanner.getContainerSpec(IMAGE, REFERENCE, WaveDefault.ACCEPT_HEADERS)
+        def spec = scanner
+                .getContainerSpec(IMAGE, REFERENCE, WaveDefault.ACCEPT_HEADERS)
+                .getContainer()
         then:
         spec.registry == 'docker.io'
         spec.imageName == 'library/busybox'
@@ -858,7 +890,9 @@ class ContainerAugmenterTest extends Specification {
                 .withPlatform('amd64')
 
         when:
-        def spec = scanner.getContainerSpec(IMAGE, TAG, WaveDefault.ACCEPT_HEADERS)
+        def spec = scanner
+                .getContainerSpec(IMAGE, TAG, WaveDefault.ACCEPT_HEADERS)
+                .getContainer()
 
         then:
         client.head("/v2/$IMAGE/manifests/$TAG", _) >> response1

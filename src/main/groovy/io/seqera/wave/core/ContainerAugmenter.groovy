@@ -31,9 +31,11 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.core.spec.ConfigSpec
 import io.seqera.wave.core.spec.ContainerSpec
+import io.seqera.wave.core.spec.IndexSpec
 import io.seqera.wave.core.spec.ManifestSpec
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.exception.DockerRegistryException
+import io.seqera.wave.model.ContainerOrIndexSpec
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.util.JacksonHelper
@@ -67,9 +69,8 @@ class ContainerAugmenter {
     
     private ProxyClient client
     private ContainerConfig containerConfig
-    private ContainerPlatform platform = ContainerPlatform.DEFAULT
+    private ContainerPlatform platform
     private Storage storage
-
 
     ContainerConfig getContainerConfig() {
         return containerConfig
@@ -86,7 +87,7 @@ class ContainerAugmenter {
     }
 
     ContainerAugmenter withPlatform(String value) {
-        this.platform = ContainerPlatform.of(value)
+        this.platform = value ? ContainerPlatform.of(value) : null
         return this
     }
 
@@ -106,8 +107,7 @@ class ContainerAugmenter {
 
     ContainerDigestPair resolve(RoutePath route, Map<String,List<String>> headers) {
         assert route, "Missing route"
-        if( route.request?.platform )
-            this.platform = route.request.platform
+        this.platform = route.request?.platform ?: ContainerPlatform.DEFAULT
         // note: do not propagate container config when "freeze" mode is enabled, because it has been already
         // applied during the container build phase, and therefore it should be ignored by the augmenter
         if( route.request?.containerConfig && !route.request.freeze )
@@ -509,9 +509,8 @@ class ContainerAugmenter {
         return newManifestDigest
     }
 
-    ContainerSpec getContainerSpec(String imageName, String tag, Map<String,List<String>> headers) {
+    ContainerOrIndexSpec getContainerSpec(String imageName, String tag, Map<String,List<String>> headers) {
         assert client, "Missing client"
-        assert platform, "Missing 'platform' parameter"
 
         // resolve image tag to digest
         final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
@@ -528,22 +527,31 @@ class ContainerAugmenter {
         if( log.isTraceEnabled() )
             log.trace "Config (2): image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"
 
+        // check for legacy docker manifest type
         if( type==DOCKER_MANIFEST_V1_JWS_TYPE || type==DOCKER_MANIFEST_V1_TYPE ) {
             final json = new JsonSlurper().parseText(manifestsList) as Map
             final config = ConfigSpec.parseV1(json)
             final manifest = ManifestSpec.parseV1(json)
-            return new ContainerSpec(
+            final spec = new ContainerSpec(
                     client.registry.name,
                     client.registry.host.toString(),
                     imageName,
                     tag,
                     digest,
                     config,
-                    manifest )
+                    manifest)
+            return new ContainerOrIndexSpec(spec)
         }
 
-        final manifestResult
-                = parseManifest(type, manifestsList,digest)
+        // when the target platform is not specific and it's a index media type
+        // return the container index specification
+        if( !platform && (type==DOCKER_IMAGE_INDEX_V2 || type==OCI_IMAGE_INDEX_V1) ) {
+            final spec = IndexSpec.parse(manifestsList)
+            return new ContainerOrIndexSpec(spec)
+        }
+
+        final ManifestInfo manifestResult
+                = parseManifest(type, manifestsList, digest)
                 ?: findImageManifestAndDigest(manifestsList, imageName, tag, headers)
 
         // fetch the image config
@@ -555,13 +563,14 @@ class ContainerAugmenter {
 
         final config = ConfigSpec.parse(imageConfig)
         final manifest = manifestResult.manifestSpec
-        return new ContainerSpec(
+        final spec = new ContainerSpec(
                 client.registry.name,
                 client.registry.host.toString(),
                 imageName,
                 tag,
                 digest,
                 config,
-                manifest )
+                manifest)
+        return new ContainerOrIndexSpec(spec)
     }
 }
