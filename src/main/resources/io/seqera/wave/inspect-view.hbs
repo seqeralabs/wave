@@ -189,7 +189,6 @@ function createManifestTreeView(data, divId, serverUrl, imageName) {
         const summary = document.createElement("summary");
         summary.textContent = `Manifest ${index + 1}`;
         details.appendChild(summary);
-        details.after()
 
         const subTree = createNestedTree(item, serverUrl, imageName);
         if (subTree) {
