@@ -215,7 +215,7 @@ function createNestedTree(data, serverUrl, imageName) {
 
         if (key === "digest") {
             const link = document.createElement("a");
-            link.href = `${serverUrl}/view/inspect?image=${imageName}&platform=${data.platform.architecture}`;
+            link.href = `${serverUrl}/view/inspect?image=${imageName}@${value}&platform=${data.platform.architecture}`;
             link.textContent = `${value}`;
 
             li.textContent = `${key}: `;
