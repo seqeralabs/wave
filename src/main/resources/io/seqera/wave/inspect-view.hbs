@@ -188,8 +188,8 @@ function createManifestTreeView(data, divId, serverUrl, imageName) {
         const details = document.createElement("details");
         const summary = document.createElement("summary");
         summary.textContent = `Manifest ${index + 1}`;
-
         details.appendChild(summary);
+        details.after()
 
         const subTree = createNestedTree(item, serverUrl, imageName);
         if (subTree) {
@@ -198,6 +198,7 @@ function createManifestTreeView(data, divId, serverUrl, imageName) {
 
         li.appendChild(details);
         ul.appendChild(li);
+        setTimeout(() => summary.click(), 10);
     });
 
     div.appendChild(ul);
@@ -217,7 +218,6 @@ function createNestedTree(data, serverUrl, imageName) {
             const link = document.createElement("a");
             link.href = `${serverUrl}/view/inspect?image=${imageName}&platform=${data.platform.architecture}`;
             link.textContent = `${value}`;
-            link.target = "_blank";
 
             li.textContent = `${key}: `;
             li.appendChild(link);
