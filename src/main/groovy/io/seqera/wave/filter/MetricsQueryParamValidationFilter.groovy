@@ -14,7 +14,7 @@ import io.seqera.wave.exception.BadRequestException
 import org.reactivestreams.Publisher
 
 @CompileStatic
-@Filter(["/v1alpha2/metrics/**", "/v1alpha3/metrics/**/**"])
+@Filter(["/v1alpha2/metrics/**", "/v1alpha3/metrics/**"])
 @Requires(property = 'wave.metrics.enabled', value = 'true')
 class MetricsQueryParamValidationFilter implements HttpServerFilter {
 
