@@ -19,7 +19,6 @@
 package io.seqera.wave.controller
 
 import java.util.regex.Pattern
-import java.util.stream.Collectors
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
