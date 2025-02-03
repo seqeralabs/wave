@@ -410,8 +410,9 @@ class ViewController {
                 binding.imageName = image
                 binding.schemaVersion = spec.index.schemaVersion
                 binding.mediaType = spec.index.mediaType
-                binding.manifests = spec.index.manifests
+                def manifests = spec.index.manifests
                                         .findAll{ ContainerPlatform.ALLOWED_ARCH.contains(it.platform.architecture)}
+                binding.manifests = JacksonHelper.toJson(manifests)
             }
         }
         catch (Exception e){
