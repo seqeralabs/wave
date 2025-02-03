@@ -235,7 +235,7 @@ class ViewControllerTest extends Specification {
 
     def 'should render inspect view'() {
         when:
-        def request = HttpRequest.GET('/view/inspect?image=ubuntu')
+        def request = HttpRequest.GET('/view/inspect?image=ubuntu&platform=linux/amd64')
         def response = client.toBlocking().exchange(request, String)
 
         then:
@@ -244,6 +244,16 @@ class ViewControllerTest extends Specification {
         response.body().contains('latest')
         response.body().contains('https://registry-1.docker.io')
         response.body().contains('amd64')
+    }
+
+    def 'should render inspect view for multi platform container'() {
+        when:
+        def request = HttpRequest.GET('/view/inspect?image=ubuntu')
+        def response = client.toBlocking().exchange(request, String)
+
+        then:
+        response.status == HttpStatus.OK
+        response.body().contains('Schema Version')
     }
 
     def 'should render inspect view with platform'() {

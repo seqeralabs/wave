@@ -230,8 +230,6 @@ class ContainerController {
             throw new BadRequestException("Attribute `containerFile` and `packages` conflicts each other")
         if( v2 && req.condaFile )
             throw new BadRequestException("Attribute `condaFile` is deprecated - use `packages` instead")
-        if( v2 && req.spackFile )
-            throw new BadRequestException("Attribute `spackFile` is deprecated - use `packages` instead")
         if( !v2 && req.packages )
             throw new BadRequestException("Attribute `packages` is not allowed")
         if( !v2 && req.nameStrategy )
@@ -252,10 +250,6 @@ class ContainerController {
             // generate the container file required to assemble the container
             final generated = containerFileFromPackages(req.packages, req.formatSingularity())
             req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
-        }
-
-        if( req.spackFile ) {
-            throw new BadRequestException("Spack packages are not supported any more")
         }
 
         final ip = addressResolver.resolve(httpRequest)
