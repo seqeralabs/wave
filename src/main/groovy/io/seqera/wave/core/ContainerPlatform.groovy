@@ -34,7 +34,7 @@ class ContainerPlatform {
     private static List<String> ARM64 = ['arm64', 'aarch64']
     private static List<String> V8 = ['8','v8']
     private static List<String> AMD64 = ['amd64', 'x86_64', 'x86-64']
-    private static List<String> ALLOWED_ARCH = AMD64 + ARM64 + ['arm']
+    final static List<String> ALLOWED_ARCH = AMD64 + ARM64 + ['arm']
     public static final String DEFAULT_ARCH = 'amd64'
     public static final String DEFAULT_OS = 'linux'
 

@@ -19,6 +19,7 @@
 package io.seqera.wave.controller
 
 import java.util.regex.Pattern
+import java.util.stream.Collectors
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
@@ -34,6 +35,7 @@ import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.views.ModelAndView
 import io.micronaut.views.View
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.service.builder.ContainerBuildService
@@ -391,14 +393,27 @@ class ViewController {
     HttpResponse<Map<String,Object>> viewInspect(@QueryValue String image, @Nullable @QueryValue String platform) {
         final binding = new HashMap(10)
         try {
-            final spec = inspectService.containerSpec(image, platform, null)
-            binding.imageName = spec.imageName
-            binding.reference = spec.reference
-            binding.digest = spec.digest
-            binding.registry = spec.registry
-            binding.hostName = spec.hostName
-            binding.config = JacksonHelper.toJson(spec.config)
-            binding.manifest = JacksonHelper.toJson(spec.manifest)
+            def containerSpec
+            if ( platform ){
+                final spec = inspectService.containerSpec(image, platform, null)
+                binding.imageName = spec.imageName
+                binding.reference = spec.reference
+                binding.digest = spec.digest
+                binding.registry = spec.registry
+                binding.hostName = spec.hostName
+                binding.config = JacksonHelper.toJson(spec.config)
+                binding.manifest = JacksonHelper.toJson(spec.manifest)
+            } else {
+                final spec = inspectService.containerOrIndexSpec(image, null, null)
+                if ( !spec.index ){
+                    return viewInspect(image, ContainerPlatform.DEFAULT_ARCH)
+                }
+                binding.imageName = image
+                binding.schemaVersion = spec.index.schemaVersion
+                binding.mediaType = spec.index.mediaType
+                binding.manifests = spec.index.manifests
+                                        .findAll{ ContainerPlatform.ALLOWED_ARCH.contains(it.platform.architecture)}
+            }
         }
         catch (Exception e){
             binding.error_message = e.getMessage()

@@ -126,38 +126,63 @@
                     {{error_message}}
                 </h4>
             </div>
+        {{else if schemaVersion}}
+            <h3>Index Specification</h3>
+            <table>
+                <tr>
+                    <td>Schema Version</td>
+                    <td>{{schemaVersion}}</td>
+                </tr>
+                <tr>
+                    <td>Media Type</td>
+                    <td>{{mediaType}}</td>
+                </tr>
+                <tr>
+                    <td>Manifest</td>
+                    <td>
+                    <ul>
+                        {{#each manifests}}
+                                <li>
+                                    <a href="{{server_url}}/view/inspect?image={{imageName}}&platform={{platform.architecture}}">
+                                        {{platform.architecture}}
+                                    </a>
+                                </li>
+                        {{/each}}
+                    </ul>
+                    </td>
+                </tr>
         {{else}}
-        <h3>Container Specification</h3>
-        <table>
-            <tr>
-                <td>Image Name</td>
-                <td>{{imageName}}</td>
-            </tr>
-            <tr>
-                <td>Reference (tag)</td>
-                <td>{{reference}}</td>
-            </tr>
-            <tr>
-                <td>Digest</td>
-                <td>{{digest}}</td>
-            </tr>
-            <tr>
-                <td>Registry</td>
-                <td>{{registry}}</td>
-            </tr>
-            <tr>
-                <td>Host Name</td>
-                <td>{{hostName}}</td>
-            </tr>
-            <tr>
-                <td>Config</td>
-                <td><div id="config-div"></div></td>
-            </tr>
-            <tr>
-                <td>Manifest</td>
-                <td><div id="manifest-div"></div></td>
-            </tr>
-        </table>
+            <h3>Container Specification</h3>
+            <table>
+                <tr>
+                    <td>Image Name</td>
+                    <td>{{imageName}}</td>
+                </tr>
+                <tr>
+                    <td>Reference (tag)</td>
+                    <td>{{reference}}</td>
+                </tr>
+                <tr>
+                    <td>Digest</td>
+                    <td>{{digest}}</td>
+                </tr>
+                <tr>
+                    <td>Registry</td>
+                    <td>{{registry}}</td>
+                </tr>
+                <tr>
+                    <td>Host Name</td>
+                    <td>{{hostName}}</td>
+                </tr>
+                <tr>
+                    <td>Config</td>
+                    <td><div id="config-div"></div></td>
+                </tr>
+                <tr>
+                    <td>Manifest</td>
+                    <td><div id="manifest-div"></div></td>
+                </tr>
+            </table>
     </div>
     <div class="footer" style="clear:both;width:100%;">
         <hr class="footer-hr" style="height:0;overflow:visible;margin-top:30px;border:0;border-top:1px solid #eee;color:#999999;font-size:12px;line-height:18px;margin-bottom:30px;">
