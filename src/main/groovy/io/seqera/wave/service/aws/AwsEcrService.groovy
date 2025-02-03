@@ -18,19 +18,20 @@
 
 package io.seqera.wave.service.aws
 
+import java.time.Duration
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 
-import com.github.benmanes.caffeine.cache.AsyncLoadingCache
-import com.github.benmanes.caffeine.cache.CacheLoader
-import com.github.benmanes.caffeine.cache.Caffeine
+import com.google.common.hash.Hashing
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Value
 import io.micronaut.scheduling.TaskExecutors
+import io.seqera.wave.service.aws.cache.AwsEcrCache
+import io.seqera.wave.service.aws.cache.AwsEcrAuthToken
+import io.seqera.wave.store.cache.TieredCacheKey
 import io.seqera.wave.util.StringUtils
-import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -56,11 +57,22 @@ class AwsEcrService {
     static final private Pattern AWS_ECR_PUBLIC = ~/public\.ecr\.aws/
 
     @Canonical
-    private static class AwsCreds {
+    private static class AwsCreds implements TieredCacheKey {
         String accessKey
         String secretKey
         String region
         boolean ecrPublic
+
+        @Override
+        String stableHash() {
+            final h = Hashing.sipHash24().newHasher()
+            for( Object it : [accessKey, secretKey, region, ecrPublic] ) {
+                if( it!=null )
+                    h.putUnencodedChars(it.toString())
+                h.putUnencodedChars('/')
+            }
+            return h.hash()
+        }
     }
 
     @Canonical
@@ -69,31 +81,22 @@ class AwsEcrService {
         String region
     }
 
-    private CacheLoader<AwsCreds, String> loader = new CacheLoader<AwsCreds, String>() {
-        @Override
-        String load(AwsCreds creds) throws Exception {
-            return creds.ecrPublic
-                    ? getLoginToken1(creds.accessKey, creds.secretKey, creds.region)
-                    : getLoginToken0(creds.accessKey, creds.secretKey, creds.region)
-        }
+    AwsEcrAuthToken load(AwsCreds creds) throws Exception {
+        def token = creds.ecrPublic
+                ? getLoginToken1(creds.accessKey, creds.secretKey, creds.region)
+                : getLoginToken0(creds.accessKey, creds.secretKey, creds.region)
+        return new AwsEcrAuthToken(token)
     }
 
     @Inject
     @Named(TaskExecutors.BLOCKING)
     private ExecutorService ioExecutor
 
-    // FIXME https://github.com/seqeralabs/wave/issues/747
-    private AsyncLoadingCache<AwsCreds, String> cache
+    @Inject
+    AwsEcrCache cache
 
-    @PostConstruct
-    private void init() {
-        cache = Caffeine
-                .newBuilder()
-                .maximumSize(10_000)
-                .expireAfterWrite(3, TimeUnit.HOURS)
-                .executor(ioExecutor)
-                .buildAsync(loader)
-    }
+    @Value('${wave.aws.ecr.cache.duration:24h}')
+    private Duration cacheDuration
 
     private EcrClient ecrClient(String accessKey, String secretKey, String region) {
         EcrClient.builder()
@@ -139,10 +142,8 @@ class AwsEcrService {
         assert region, "Missing AWS region argument"
 
         try {
-            // get the token from the cache, if missing the it's automatically
-            // fetch using the AWS ECR client
-            // FIXME https://github.com/seqeralabs/wave/issues/747
-            return cache.synchronous().get(new AwsCreds(accessKey,secretKey,region,isPublic))
+            final key = new AwsCreds(accessKey,secretKey,region,isPublic)
+            return cache.getOrCompute(key, (k) -> load(key), cacheDuration).value
         }
         catch (Exception e) {
             final type = isPublic ? "ECR public" : "ECR"
