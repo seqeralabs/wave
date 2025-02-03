@@ -568,7 +568,7 @@ class ContainerAugmenter {
                 client.registry.host.toString(),
                 imageName,
                 tag,
-                digest,
+                manifestResult.targetDigest,
                 config,
                 manifest)
         return new ContainerOrIndexSpec(spec)
