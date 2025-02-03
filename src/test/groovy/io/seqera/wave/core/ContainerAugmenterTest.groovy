@@ -803,11 +803,42 @@ class ContainerAugmenterTest extends Specification {
         spec.manifests.size()>0
     }
 
+    def 'should fetch container index with digest' () {
+        given:
+        def REGISTRY = 'docker.io'
+        def IMAGE = 'library/busybox'
+        def REFERENCE = 'sha256:a5d0ce49aa801d475da48f8cb163c354ab95cab073cd3c138bd458fc8257fbf1'
+        def registry = lookupService.lookup(REGISTRY)
+        def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
+        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
+        and:
+
+        def client = new ProxyClient(httpClient, httpConfig)
+                .withRoute(Mock(RoutePath))
+                .withImage(IMAGE)
+                .withRegistry(registry)
+                .withCredentials(creds)
+                .withLoginService(loginService)
+        and:
+        def scanner = new ContainerAugmenter()
+                .withClient(client)
+
+        when:
+        def spec = scanner
+                .getContainerSpec(IMAGE, REFERENCE, WaveDefault.ACCEPT_HEADERS)
+                .getIndex()
+        then:
+        spec.digest == 'sha256:a5d0ce49aa801d475da48f8cb163c354ab95cab073cd3c138bd458fc8257fbf1'
+        spec.schemaVersion == 2
+        spec.mediaType == 'application/vnd.oci.image.index.v1+json'
+        spec.manifests.size()>0
+    }
+
     def 'should fetch container manifest' () {
         given:
         def REGISTRY = 'docker.io'
         def IMAGE = 'library/busybox'
-        def REFERENCE = 'sha256:6d9ac9237a84afe1516540f40a0fafdc86859b2141954b4d643af7066d598b74'
+        def REFERENCE = 'sha256:79c9716db559ffde1170a4faf04910a08d930f511e6904c4899a1f7be2abfb34'
         def registry = lookupService.lookup(REGISTRY)
         def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
         def httpClient = HttpClientFactory.neverRedirectsHttpClient()
@@ -831,8 +862,8 @@ class ContainerAugmenterTest extends Specification {
         then:
         spec.registry == 'docker.io'
         spec.imageName == 'library/busybox'
-        spec.reference == 'sha256:6d9ac9237a84afe1516540f40a0fafdc86859b2141954b4d643af7066d598b74'
-        spec.digest == 'sha256:6d9ac9237a84afe1516540f40a0fafdc86859b2141954b4d643af7066d598b74'
+        spec.reference == 'sha256:79c9716db559ffde1170a4faf04910a08d930f511e6904c4899a1f7be2abfb34'
+        spec.digest == 'sha256:79c9716db559ffde1170a4faf04910a08d930f511e6904c4899a1f7be2abfb34'
         and:
         !spec.isV1()
         spec.isV2()
@@ -844,8 +875,8 @@ class ContainerAugmenterTest extends Specification {
         spec.manifest.schemaVersion == 2
         spec.manifest.mediaType == 'application/vnd.oci.image.manifest.v1+json'
         spec.manifest.config.mediaType == 'application/vnd.oci.image.config.v1+json'
-        spec.manifest.config.digest == 'sha256:3f57d9401f8d42f986df300f0c69192fc41da28ccc8d797829467780db3dd741'
-        spec.manifest.config.size == 581
+        spec.manifest.config.digest == 'sha256:af47096251092caf59498806ab8d58e8173ecf5a182f024ce9d635b5b4a55d66'
+        spec.manifest.config.size == 372
     }
 
 

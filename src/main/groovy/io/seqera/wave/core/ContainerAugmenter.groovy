@@ -546,7 +546,9 @@ class ContainerAugmenter {
         // when the target platform is not specific and it's a index media type
         // return the container index specification
         if( !platform && (type==DOCKER_IMAGE_INDEX_V2 || type==OCI_IMAGE_INDEX_V1) ) {
-            final spec = IndexSpec.parse(manifestsList)
+            final spec = IndexSpec
+                    .parse(manifestsList)
+                    .withDigest(digest)
             return new ContainerOrIndexSpec(spec)
         }
 

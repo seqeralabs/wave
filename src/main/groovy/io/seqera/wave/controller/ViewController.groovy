@@ -34,7 +34,6 @@ import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.views.ModelAndView
 import io.micronaut.views.View
-import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.service.builder.ContainerBuildService
@@ -392,27 +391,22 @@ class ViewController {
     HttpResponse<Map<String,Object>> viewInspect(@QueryValue String image, @Nullable @QueryValue String platform) {
         final binding = new HashMap(10)
         try {
-            def containerSpec
-            if ( platform ){
-                final spec = inspectService.containerSpec(image, platform, null)
-                binding.imageName = spec.imageName
-                binding.reference = spec.reference
-                binding.digest = spec.digest
-                binding.registry = spec.registry
-                binding.hostName = spec.hostName
-                binding.config = JacksonHelper.toJson(spec.config)
-                binding.manifest = JacksonHelper.toJson(spec.manifest)
-            } else {
-                final spec = inspectService.containerOrIndexSpec(image, null, null)
-                if ( !spec.index ){
-                    return viewInspect(image, ContainerPlatform.DEFAULT_ARCH)
-                }
+            final spec = inspectService.containerOrIndexSpec(image, platform, null)
+            if ( spec.container ){
+                binding.imageName = spec.container.imageName
+                binding.reference = spec.container.reference
+                binding.digest = spec.container.digest
+                binding.registry = spec.container.registry
+                binding.hostName = spec.container.hostName
+                binding.config = JacksonHelper.toJson(spec.container.config)
+                binding.manifest = JacksonHelper.toJson(spec.container.manifest)
+            }
+            else {
                 binding.imageName = image
+                binding.digest = spec.index.digest
                 binding.schemaVersion = spec.index.schemaVersion
                 binding.mediaType = spec.index.mediaType
-                def manifests = spec.index.manifests
-                                        .findAll{ ContainerPlatform.ALLOWED_ARCH.contains(it.platform.architecture)}
-                binding.manifests = JacksonHelper.toJson(manifests)
+                binding.manifests = JacksonHelper.toJson(spec.index.manifests)
             }
         }
         catch (Exception e){
