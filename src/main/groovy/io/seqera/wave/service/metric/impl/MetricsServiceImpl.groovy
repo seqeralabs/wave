@@ -49,8 +49,9 @@ class MetricsServiceImpl implements MetricsService {
 
     static final private Pattern ORG_DATE_KEY_PATTERN = Pattern.compile('(builds|pulls|fusion|mirrors|scans)/o/([^/]+).*')
 
-    private static final Pattern ORG_ARCH_KEY_PATTERN = Pattern.compile("(?:^|/)o/(?<org>[^/]+)|(?:^|/)a/(?<arch>[^/]+)")
+    static final private Pattern ARCH_KEY_PATTERN = Pattern.compile('(builds|pulls|fusion|mirrors|scans).*/a/([^/]+).*')
 
+    static final private Pattern ORG_ARCH_KEY_PATTERN = Pattern.compile('(builds|pulls|fusion|mirrors|scans)/o/([^/]+)/a/([^/]+).*')
 
     @Inject
     private MetricsCounterStore metricsCounterStore
@@ -72,22 +73,28 @@ class MetricsServiceImpl implements MetricsService {
 
     @Override
     GetOrgArchCountResponse getAllOrgCount(String metric, String arch){
-        final orgCounts
-        if (arch) {
-            arch = resolveArch(arch)
-            orgCounts = metricsCounterStore.getAllMatchingEntries("$metric/$PREFIX_ORG/*/$PREFIX_ARCH/$arch/*")
-        } else {
-            orgCounts = metricsCounterStore.getAllMatchingEntries("$metric/$PREFIX_ORG/*")
-        }
-
+        arch = resolveArch(arch)
         final response = new GetOrgArchCountResponse(metric, arch, 0, [:])
-
-        for(def entry : orgCounts) {
-            // orgCounts also contains the records with arch and date, so here it filter out the records with date and arch
-            if(!entry.key.contains("/$PREFIX_DAY/") && !entry.key.contains("/$PREFIX_ARCH/")) {
-                response.count += entry.value
-                //split is used to extract the org name from the key like "metrics/o/seqera.io" => seqera.io
-                response.orgs.put(entry.key.split("/$PREFIX_ORG/").last(), entry.value)
+        if ( arch ) {
+            arch = resolveArch(arch)
+            final orgCounts = metricsCounterStore.getAllMatchingEntries("$metric/$PREFIX_ORG/*/$PREFIX_ARCH/$arch*")
+            for(def entry : orgCounts) {
+                // orgCounts also contains the records with date, so here it filter out the records with date
+                if(!entry.key.contains("/$PREFIX_DAY/") && arch == extractArchFromKey(entry.key)) {
+                    response.count += entry.value
+                    //split is used to extract the org name from the key like "metrics/o/seqera.io" => seqera.io
+                    response.orgs.put(extractOrgFromArchKey(entry.key), entry.value)
+                }
+            }
+        } else {
+            final orgCounts = metricsCounterStore.getAllMatchingEntries("$metric/$PREFIX_ORG/*")
+            for(def entry : orgCounts) {
+                // orgCounts also contains the records with arch and date, so here it filter out the records with date and arch
+                if(!entry.key.contains("/$PREFIX_DAY/") && !entry.key.contains("/$PREFIX_ARCH/")) {
+                    response.count += entry.value
+                    //split is used to extract the org name from the key like "metrics/o/seqera.io" => seqera.io
+                    response.orgs.put(entry.key.split("/$PREFIX_ORG/").last(), entry.value)
+                }
             }
         }
         return response
@@ -196,15 +203,17 @@ class MetricsServiceImpl implements MetricsService {
             metricsCounterStore.inc(key)
             log.trace("increment metrics count of: $key")
 
-            //increment the count for the org and arch
-            key = getKey(prefix, null, org, arch)
-            metricsCounterStore.inc(key)
-            log.trace("increment metrics count of: $key")
+            if ( arch ) {
+                //increment the count for the org and arch
+                key = getKey(prefix, null, org, arch)
+                metricsCounterStore.inc(key)
+                log.trace("increment metrics count of: $key")
 
-            //increment the count for the org and arch and current date
-            key = getKey(prefix, day, org, arch)
-            metricsCounterStore.inc(key)
-            log.trace("increment metrics count of: $key")
+                //increment the count for the org and arch and current date
+                key = getKey(prefix, day, org, arch)
+                metricsCounterStore.inc(key)
+                log.trace("increment metrics count of: $key")
+            }
         }
     }
 
@@ -218,25 +227,40 @@ class MetricsServiceImpl implements MetricsService {
     }
 
     protected static String getKey(String prefix, String day, String org, String arch){
-        def key = "$prefix"
-        if( org )
-            key += "/$PREFIX_ORG/$org"
+        if ( !prefix )
+            throw new IllegalArgumentException("prefix is required to construct a key")
+
+        def key = new StringBuilder(prefix)
+        if( org ) {
+            key.append("/$PREFIX_ORG/$org")
+        }
 
         if (arch) {
             if (ContainerPlatform.AMD64.contains(arch))
-                key += "/$PREFIX_ARCH/$AMD64"
+                key.append("/$PREFIX_ARCH/$AMD64")
             else if (ContainerPlatform.ARM64.contains(arch))
-                key += "/$PREFIX_ARCH/$ARM64"
+                key.append("/$PREFIX_ARCH/$ARM64")
         }
 
-        if( day )
-            key += "/$PREFIX_DAY/$day"
+        if( day ) {
+            key.append("/$PREFIX_DAY/$day")
+        }
 
-        return key != prefix ? key : null
+        return key.toString() != prefix ? key.toString() : null
     }
 
     protected static String extractOrgFromKey(String key) {
         Matcher matcher = ORG_DATE_KEY_PATTERN.matcher(key)
+        return matcher.matches() ? matcher.group(2) : "unknown"
+    }
+
+    protected static String extractArchFromKey(String key) {
+        Matcher matcher = ARCH_KEY_PATTERN.matcher(key)
+        return matcher.matches() ? matcher.group(2) : "unknown"
+    }
+
+    protected static String extractOrgFromArchKey(String key) {
+        Matcher matcher = ORG_ARCH_KEY_PATTERN.matcher(key)
         return matcher.matches() ? matcher.group(2) : "unknown"
     }
 
