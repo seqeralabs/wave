@@ -130,6 +130,10 @@
             <h3>Index Specification</h3>
             <table>
                 <tr>
+                    <td>Image Name</td>
+                    <td>{{imageName}}</td>
+                </tr>
+                <tr>
                     <td>Digest</td>
                     <td>{{digest}}</td>
                 </tr>
@@ -219,9 +223,9 @@ function createNestedTree(data, serverUrl, imageName) {
 
         if (key === "digest") {
             const link = document.createElement("a");
-            link.href = `${serverUrl}/view/inspect?image=${imageName}@${value}&platform=${data.platform.architecture}`;
+            const name = imageName.split(':')[0];
+            link.href = `${serverUrl}/view/inspect?image=${name}@${value}&platform=${data.platform.architecture}`;
             link.textContent = `${value}`;
-
             li.textContent = `${key}: `;
             li.appendChild(link);
         } else if (typeof value === "object" && value !== null) {
@@ -233,6 +237,7 @@ function createNestedTree(data, serverUrl, imageName) {
             details.appendChild(createNestedTree(value, serverUrl, imageName));
 
             li.appendChild(details);
+            setTimeout(() => summary.click(), 10);
         } else {
             li.textContent = `${key}: ${value}`;
         }
