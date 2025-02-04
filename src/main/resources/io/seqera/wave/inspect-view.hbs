@@ -226,7 +226,6 @@ function createNestedTree(data, serverUrl, imageName) {
             const name = imageName.split(':')[0];
             link.href = `${serverUrl}/view/inspect?image=${name}@${value}&platform=${data.platform.architecture}`;
             link.textContent = `${value}`;
-
             li.textContent = `${key}: `;
             li.appendChild(link);
         } else if (typeof value === "object" && value !== null) {
