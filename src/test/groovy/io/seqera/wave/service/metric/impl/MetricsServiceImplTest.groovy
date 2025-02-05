@@ -434,97 +434,6 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         res6.arch == null
     }
 
-    def 'should get correct org count with arch'(){
-        given:
-        def localCounterProvider = new LocalCounterProvider()
-        def metricsCounterStore = new MetricsCounterStore(localCounterProvider)
-        def metricsService = new MetricsServiceImpl(metricsCounterStore: metricsCounterStore)
-        def user1 = new User(id: 1, userName: 'foo', email: 'user1@org1.com')
-        def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
-        def platformId1 = new PlatformId(user1, 101)
-        def platformId2 = new PlatformId(user2, 102)
-
-        when:
-        metricsService.incrementBuildsCounter(platformId1, 'amd64')
-        metricsService.incrementBuildsCounter(platformId2, 'arm64')
-        metricsService.incrementBuildsCounter(null, null)
-        metricsService.incrementPullsCounter(platformId1, 'amd64')
-        metricsService.incrementPullsCounter(platformId2, 'arm64')
-        metricsService.incrementPullsCounter(null, null)
-        metricsService.incrementFusionPullsCounter(platformId1, 'amd64')
-        metricsService.incrementFusionPullsCounter(platformId2, 'arm64')
-        metricsService.incrementFusionPullsCounter(null, null)
-        metricsService.incrementMirrorsCounter(platformId1, 'amd64')
-        metricsService.incrementMirrorsCounter(platformId2, 'arm64')
-        metricsService.incrementMirrorsCounter(null, null)
-        metricsService.incrementScansCounter(platformId1, 'amd64')
-        metricsService.incrementScansCounter(platformId2, 'arm64')
-        metricsService.incrementScansCounter(null, null)
-        and:
-        def buildOrgAndArchCounts = metricsService.getAllOrgCount(PREFIX_BUILDS, 'amd64')
-        def buildOrgCounts = metricsService.getAllOrgCount(PREFIX_BUILDS, null)
-        def pullOrgCounts = metricsService.getAllOrgCount(PREFIX_PULLS, null)
-        def fusionOrgCounts = metricsService.getAllOrgCount(PREFIX_FUSION, null)
-        def mirrorOrgCounts = metricsService.getAllOrgCount(PREFIX_MIRRORS, null)
-        def scanOrgCounts = metricsService.getAllOrgCount(PREFIX_SCANS, null)
-        def emptyOrgCounts = metricsService.getAllOrgCount(null, null)
-
-        def pullOrgAndArchCounts = metricsService.getAllOrgCount(PREFIX_PULLS, 'arm64')
-        def fusionOrgAndArchCounts = metricsService.getAllOrgCount(PREFIX_FUSION, 'amd64')
-        def mirrorOrgAndArchCounts = metricsService.getAllOrgCount(PREFIX_MIRRORS, 'arm64')
-        def scanOrgAndArchCounts = metricsService.getAllOrgCount(PREFIX_SCANS, 'amd64')
-        def emptyOrgAndArchCounts = metricsService.getAllOrgCount(null, 'arm64')
-
-        then:
-        buildOrgCounts.metric == PREFIX_BUILDS
-        buildOrgCounts.count == 2
-        buildOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
-        and:
-        pullOrgCounts.metric == PREFIX_PULLS
-        pullOrgCounts.count == 2
-        pullOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
-        and:
-        fusionOrgCounts.metric == PREFIX_FUSION
-        fusionOrgCounts.count == 2
-        fusionOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
-        and:
-        mirrorOrgCounts.metric == PREFIX_MIRRORS
-        mirrorOrgCounts.count == 2
-        mirrorOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
-        and:
-        scanOrgCounts.metric == PREFIX_SCANS
-        scanOrgCounts.count == 2
-        scanOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
-        and:
-        emptyOrgCounts.metric == null
-        emptyOrgCounts.count == 0
-        emptyOrgCounts.orgs == [:]
-        and:
-        buildOrgAndArchCounts.metric == PREFIX_BUILDS
-        buildOrgAndArchCounts.count == 1
-        buildOrgAndArchCounts.orgs == ['org1.com': 1]
-        and:
-        pullOrgAndArchCounts.metric == PREFIX_PULLS
-        pullOrgAndArchCounts.count == 1
-        pullOrgAndArchCounts.orgs == ['org2.com': 1]
-        and:
-        fusionOrgAndArchCounts.metric == PREFIX_FUSION
-        fusionOrgAndArchCounts.count == 1
-        fusionOrgAndArchCounts.orgs == ['org1.com': 1]
-        and:
-        mirrorOrgAndArchCounts.metric == PREFIX_MIRRORS
-        mirrorOrgAndArchCounts.count == 1
-        mirrorOrgAndArchCounts.orgs == ['org2.com': 1]
-        and:
-        scanOrgAndArchCounts.metric == PREFIX_SCANS
-        scanOrgAndArchCounts.count == 1
-        scanOrgAndArchCounts.orgs == ['org1.com': 1]
-        and:
-        emptyOrgAndArchCounts.metric == null
-        emptyOrgAndArchCounts.count == 0
-        emptyOrgAndArchCounts.orgs == [:]
-    }
-
     def 'should get correct org count per date and arch'(){
         given:
         def date = LocalDate.now().format(dateFormatter)
@@ -604,6 +513,67 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         scanOrgAndArchCounts.metric == PREFIX_SCANS
         scanOrgAndArchCounts.count == 1
         scanOrgAndArchCounts.orgs == ['org2.com': 1]
+    }
+
+    def 'should get correct org count per arch'(){
+        given:
+        def date = LocalDate.now().format(dateFormatter)
+        def localCounterProvider = new LocalCounterProvider()
+        def metricsCounterStore = new MetricsCounterStore(localCounterProvider)
+        def metricsService = new MetricsServiceImpl(metricsCounterStore: metricsCounterStore)
+        def user1 = new User(id: 1, userName: 'foo', email: 'user1@org1.com')
+        def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
+        def platformId1 = new PlatformId(user1, 101)
+        def platformId2 = new PlatformId(user2, 102)
+
+        when:
+        metricsService.incrementBuildsCounter(platformId1, 'amd64')
+        metricsService.incrementBuildsCounter(platformId2, 'arm64')
+        metricsService.incrementBuildsCounter(null, null)
+        metricsService.incrementPullsCounter(platformId1, 'amd64')
+        metricsService.incrementPullsCounter(platformId2, 'arm64')
+        metricsService.incrementPullsCounter(null, null)
+        metricsService.incrementFusionPullsCounter(platformId1, 'amd64')
+        metricsService.incrementFusionPullsCounter(platformId2, 'arm64')
+        metricsService.incrementFusionPullsCounter(null, null)
+        metricsService.incrementMirrorsCounter(platformId1, 'amd64')
+        metricsService.incrementMirrorsCounter(platformId2, 'arm64')
+        metricsService.incrementMirrorsCounter(null, null)
+        metricsService.incrementScansCounter(platformId1, 'amd64')
+        metricsService.incrementScansCounter(platformId2, 'arm64')
+        metricsService.incrementScansCounter(null, null)
+        and:
+        def buildOrgAndArchCounts = metricsService.getOrgCount(PREFIX_BUILDS, null, null, 'arm64')
+        def pullOrgAndArchCounts = metricsService.getOrgCount(PREFIX_PULLS, null, null, 'amd64')
+        def fusionOrgAndArchCounts = metricsService.getOrgCount(PREFIX_FUSION, null, null, 'arm64')
+        def mirrorOrgAndArchCounts = metricsService.getOrgCount(PREFIX_MIRRORS, null, null, 'amd64')
+        def scanOrgAndArchCounts = metricsService.getOrgCount(PREFIX_SCANS, null, null, 'arm64')
+
+        then:
+        buildOrgAndArchCounts.metric == PREFIX_BUILDS
+        buildOrgAndArchCounts.count == 1
+        buildOrgAndArchCounts.orgs == ['org2.com': 1]
+        buildOrgAndArchCounts.arch == 'arm64'
+        and:
+        pullOrgAndArchCounts.metric == PREFIX_PULLS
+        pullOrgAndArchCounts.count == 1
+        pullOrgAndArchCounts.orgs == ['org1.com': 1]
+        pullOrgAndArchCounts.arch == 'amd64'
+        and:
+        fusionOrgAndArchCounts.metric == PREFIX_FUSION
+        fusionOrgAndArchCounts.count == 1
+        fusionOrgAndArchCounts.orgs == ['org2.com': 1]
+        fusionOrgAndArchCounts.arch == 'arm64'
+        and:
+        mirrorOrgAndArchCounts.metric == PREFIX_MIRRORS
+        mirrorOrgAndArchCounts.count == 1
+        mirrorOrgAndArchCounts.orgs == ['org1.com': 1]
+        mirrorOrgAndArchCounts.arch == 'amd64'
+        and:
+        scanOrgAndArchCounts.metric == PREFIX_SCANS
+        scanOrgAndArchCounts.count == 1
+        scanOrgAndArchCounts.orgs == ['org2.com': 1]
+        scanOrgAndArchCounts.arch == 'arm64'
     }
 
     @Unroll

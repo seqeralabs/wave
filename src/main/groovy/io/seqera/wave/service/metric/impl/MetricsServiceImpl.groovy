@@ -72,28 +72,6 @@ class MetricsServiceImpl implements MetricsService {
     }
 
     @Override
-    GetOrgArchCountResponse getAllOrgCount(String metric, String arch){
-        if ( arch ) {
-            arch = resolveArch(arch)
-            final response = new GetOrgArchCountResponse(metric, arch, 0, [:])
-            final orgCounts = metricsCounterStore.getAllMatchingEntries("$metric/$PREFIX_ORG/*/$PREFIX_ARCH/$arch*")
-            for(def entry : orgCounts) {
-                // orgCounts also contains the records with date, so here it filter out the records with date
-                if(!entry.key.contains("/$PREFIX_DAY/") && arch == extractArchFromKey(entry.key)) {
-                    response.count += entry.value
-                    //split is used to extract the org name from the key like "metrics/o/seqera.io" => seqera.io
-                    response.orgs.put(extractOrgFromArchKey(entry.key), entry.value)
-                }
-            }
-            return response
-        } else {
-            def response = getAllOrgCount(metric)
-            return new GetOrgArchCountResponse(response.metric, null, response.count, response.orgs)
-        }
-
-    }
-
-    @Override
     GetOrgCountResponse getOrgCount(String metric, String date, String org) {
         final response = new GetOrgCountResponse(metric, 0, [:])
 
@@ -125,13 +103,21 @@ class MetricsServiceImpl implements MetricsService {
             // count is stored per date and per org, so it can be extracted from get method
             response.count = metricsCounterStore.get(getKey(metric, date, org, arch)) ?: 0L
             //when org and date is provided, return the org count for given date
-            if (org) {
+            if ( org ) {
                 response.orgs.put(org, response.count)
-            }else {
+            } else if ( date ){
                 // when date and arch are provide, scan the store and return the  count for all orgs with given arch and date
                 final orgCounts = metricsCounterStore.getAllMatchingEntries("$metric/$PREFIX_ORG/*/$PREFIX_ARCH/$arch/$PREFIX_DAY/$date")
                 for (def entry : orgCounts) {
                     response.orgs.put(extractOrgFromKey(entry.key), entry.value)
+                }
+            } else {
+                // when only arch is provide, scan the store and return the  count for all orgs with given arch
+                final orgCounts = metricsCounterStore.getAllMatchingEntries("$metric/$PREFIX_ORG/*/$PREFIX_ARCH/$arch*")
+                for (def entry : orgCounts) {
+                    if (!entry.key.contains("/$PREFIX_DAY/")) {
+                        response.orgs.put(extractOrgFromKey(entry.key), entry.value)
+                    }
                 }
             }
             return response
@@ -175,9 +161,15 @@ class MetricsServiceImpl implements MetricsService {
         metricsCounterStore.inc(key)
         log.trace("increment metrics count of: $key")
 
-        //increment the count for the current day and arch
+
         if ( arch ) {
+            //increment the count for the current day and arch
             key = getKey(prefix, day, null, arch)
+            metricsCounterStore.inc(key)
+            log.trace("increment metrics count of: $key")
+
+            //increment the count for the current arch
+            key = getKey(prefix, null, null, arch)
             metricsCounterStore.inc(key)
             log.trace("increment metrics count of: $key")
         }

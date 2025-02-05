@@ -98,37 +98,37 @@ class MetricsController {
 
     @Get(uri = "/v1alpha3/metrics/builds", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getBuildsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org, @Nullable @QueryValue String arch) {
-        if(!date && !org)
-            return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_BUILDS, arch))
+        if(!date && !org && !arch)
+            return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_BUILDS))
         return HttpResponse.ok(metricsService.getOrgCount(MetricsConstants.PREFIX_BUILDS, date, org, arch))
     }
 
     @Get(uri = "/v1alpha3/metrics/pulls", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org, @Nullable @QueryValue String arch) {
-        if(!date && !org)
-            return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_PULLS, arch))
+        if(!date && !org && !arch)
+            return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_PULLS))
         return HttpResponse.ok(metricsService.getOrgCount(MetricsConstants.PREFIX_PULLS, date, org, arch))
     }
 
     @Get(uri = "/v1alpha3/metrics/fusion/pulls", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getFusionPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org, @Nullable @QueryValue String arch) {
-        if(!date && !org)
-            return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_FUSION, arch))
+        if(!date && !org && !arch)
+            return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_FUSION))
         return HttpResponse.ok(metricsService.getOrgCount(MetricsConstants.PREFIX_FUSION, date, org, arch))
 
     }
 
     @Get(uri = "/v1alpha3/metrics/mirrors", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getMirrorsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org, @Nullable @QueryValue String arch) {
-        if(!date && !org)
-            return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_MIRRORS, arch))
+        if(!date && !org && !arch)
+            return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_MIRRORS))
         return HttpResponse.ok(metricsService.getOrgCount(MetricsConstants.PREFIX_MIRRORS, date, org, arch))
     }
 
     @Get(uri = "/v1alpha3/metrics/scans", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getScansMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org, @Nullable @QueryValue String arch) {
-        if(!date && !org)
-            return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_SCANS, arch))
+        if(!date && !org && !arch)
+            return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_SCANS))
         return HttpResponse.ok(metricsService.getOrgCount(MetricsConstants.PREFIX_SCANS, date, org, arch))
     }
 

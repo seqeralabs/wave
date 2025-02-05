@@ -85,12 +85,4 @@ interface MetricsService {
      * @return GetOrgCountResponse
      */
     GetOrgArchCountResponse getOrgCount(String metric, String date, String org, String arch)
-
-    /**
-     * Get counts of all organisations by arch
-     *
-     * @param metric
-     * @return GetOrgCountResponse
-     */
-    GetOrgArchCountResponse getAllOrgCount(String metric, String arch)
 }
