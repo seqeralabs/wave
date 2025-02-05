@@ -98,7 +98,7 @@ class InspectController {
     }
 
     protected HttpResponse<ContainerInspectResponse> makeResponse(ContainerInspectRequest req, String platform, PlatformId identity) {
-        final spec = inspectService.containerSpec(req.containerImage, platform, identity)
+        final spec = inspectService.containerOrIndexSpec(req.containerImage, platform, identity)
         return spec
                 ? HttpResponse.ok(new ContainerInspectResponse(spec))
                 : HttpResponse.<ContainerInspectResponse>notFound()
