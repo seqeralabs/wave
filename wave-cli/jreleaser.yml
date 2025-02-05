@@ -85,6 +85,11 @@ distributions:
         platform: linux-x86_64
         extraProperties:
           graalVMNativeImage: true
+      - path: "nativeCompile-ubuntu-24.04-arm/wave"
+        transform: "wave-{{projectEffectiveVersion}}-linux-arm64"
+        platform: linux-aarch_64
+        extraProperties:
+          graalVMNativeImage: true
       - path: "nativeCompile-windows-latest/wave.exe"
         transform: "wave-{{projectEffectiveVersion}}-windows-x86_64.exe"
         platform: windows-x86_64
