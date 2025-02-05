@@ -1,3 +1,21 @@
+/*
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2024, Seqera Labs
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package io.seqera.wave.filter
 
 import java.util.regex.Pattern
@@ -12,7 +30,11 @@ import io.micronaut.http.filter.ServerFilterChain
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 import org.reactivestreams.Publisher
-
+/**
+ * Implements a filter to validate metrics query parameters
+ *
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
+ */
 @CompileStatic
 @Filter(["/v1alpha2/metrics/**", "/v1alpha3/metrics/**"])
 @Requires(property = 'wave.metrics.enabled', value = 'true')
