@@ -48,7 +48,7 @@ import org.apache.commons.io.FilenameUtils
 @CompileStatic
 class ThreadMonitorCron {
 
-    @Value('${wave.thread-monitor.dump-threshold:500}')
+    @Value('${wave.thread-monitor.dump-threshold:200}')
     private Integer dumpThreshold
 
     @Value('${wave.thread-monitor.dump-file}')
