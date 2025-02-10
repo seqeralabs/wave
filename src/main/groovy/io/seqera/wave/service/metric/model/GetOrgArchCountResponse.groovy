@@ -15,23 +15,26 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package io.seqera.wave.service.metric.model
 
 import groovy.transform.CompileStatic
 
 /**
- * Model organisations counts response
+ * Model organisations counts with architecture response
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @CompileStatic
-class GetOrgCountResponse {
+class GetOrgArchCountResponse {
     String metric
+    String arch
     Long count
     Map<String, Long> orgs
 
-    GetOrgCountResponse(String metric, Long count, Map<String, Long> orgs) {
+    GetOrgArchCountResponse(String metric, String arch, Long count, Map<String, Long> orgs) {
         this.metric = metric
+        this.arch = arch
         this.count = count
         this.orgs = orgs
     }
