@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 #  Wave, containers provisioning service
 #  Copyright (c) 2023-2024, Seqera Labs
@@ -16,5 +17,23 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-micronautVersion=4.7.5
-micronautEnvs=dev,h2,mail,aws-ses
+# Tag and and push the the GitHub repo and Docker images
+
+set -e
+set -x
+
+SED=sed
+[[ $(uname) == Darwin ]] && SED=gsed
+
+RELEASE=${RELEASE:-$(git show -s --format='%s' | $SED -rn 's/.*\[(release)\].*/\1/p')}
+
+if [[ $RELEASE ]]; then
+  TAG=v$(cat VERSION)
+  version=$(cat VERSION)
+
+  cd typespec
+  sed -i "s/version: 0.0.0/version: $version/" "tsp-output/@typespec/openapi3/openapi.yaml"
+
+  docker build -t 195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/openapi:$TAG .
+  docker push 195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/openapi:$TAG
+fi
