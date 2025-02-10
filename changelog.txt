@@ -1,4 +1,10 @@
 # Wave changelog
+1.17.2 - 10 Feb 2025
+- Change threads dump-threshold default to 200 [5d136e45]
+- Minor inspect view improvements (#795) [242822fd]
+- Bump gradle 8.12.1 [6b85565e]
+- Bump MN version 4.7.5 [03febd69]
+
 1.17.1 - 4 Feb 2025
 - Add container index support to inspect view (#792) [34428d25]
 - Remove server from openapi spec (#793) [9cbdec1d]
