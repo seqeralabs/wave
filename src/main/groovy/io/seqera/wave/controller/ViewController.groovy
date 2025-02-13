@@ -24,16 +24,24 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.NonNull
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.QueryValue
+import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.annotation.Client
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.views.ModelAndView
 import io.micronaut.views.View
+import io.seqera.wave.api.ScanMode
+import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.api.SubmitContainerTokenResponse
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.service.builder.ContainerBuildService
@@ -49,6 +57,10 @@ import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+import org.reactivestreams.Subscription
+import reactor.core.publisher.Mono
 import static io.seqera.wave.util.DataTimeUtils.formatDuration
 import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
 /**
@@ -85,6 +97,10 @@ class ViewController {
 
     @Inject
     private ContainerMirrorService mirrorService
+
+    @Inject
+    @Client("/")
+    private HttpClient httpClient
 
     @View("mirror-view")
     @Get('/mirrors/{mirrorId}')
@@ -290,6 +306,54 @@ class ViewController {
         return HttpResponse.<Map<String,Object>>ok(binding)
     }
 
+    /**
+     * Get a container image name name and create a container scan request for it, redirecting
+     * to the corresponding scan view image
+     *
+     * @param image
+     *      The container image to be scanned
+     * @return
+     *      The redirect response to the scan view for the requested container image
+     */
+    @Get('/scans')
+    Publisher<HttpResponse> requestScan(@NonNull String image) {
+        final req = new SubmitContainerTokenRequest(containerImage: image, scanMode: ScanMode.required)
+        final post = HttpRequest.POST("/v1alpha2/container", req)
+        final resp = httpClient.retrieve(post, SubmitContainerTokenResponse)
+
+        // Use Mono to handle the Publisher and create a Publisher<HttpResponse>
+        return Mono.create { sink ->
+            resp.subscribe(new Subscriber<SubmitContainerTokenResponse>() {
+
+                @Override
+                void onSubscribe(Subscription subscription) {
+                    subscription.request(1) // Request one item
+                }
+
+                @Override
+                void onNext(SubmitContainerTokenResponse response) {
+                    // Create the redirect response
+                    final redirect = HttpResponse.redirect(URI.create("/view/scans/${response.scanId}"))
+                    sink.success(redirect)
+                }
+
+                @Override
+                void onError(Throwable t) {
+                    final msg = "Error processing scan request - cause: ${t.message}"
+                    final err = t instanceof BadRequestException
+                            ? HttpResponse.badRequest(msg)
+                            : HttpResponse.serverError(msg)
+                    sink.success(err)
+                }
+
+                @Override
+                void onComplete() {
+                    // No-op
+                }
+            })
+        }
+    }
+
     @Get('/scans/{scanId}')
     HttpResponse viewScan(String scanId) {
         // check redirection for invalid suffix in the form `-nn`
@@ -368,7 +432,6 @@ class ViewController {
                 ? SCAN_ID_REGEX.matcher(scanId).matches()
                 : false
     }
-
 
     /**
      * Retrieve a {@link ScanEntry} object for the specified scan ID
