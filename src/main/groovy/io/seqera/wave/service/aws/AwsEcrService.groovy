@@ -22,15 +22,15 @@ import java.time.Duration
 import java.util.concurrent.ExecutorService
 import java.util.regex.Pattern
 
-import com.google.common.hash.Hashing
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.scheduling.TaskExecutors
-import io.seqera.wave.service.aws.cache.AwsEcrCache
 import io.seqera.wave.service.aws.cache.AwsEcrAuthToken
-import io.seqera.wave.store.cache.TieredCacheKey
+import io.seqera.wave.service.aws.cache.AwsEcrCache
+import io.seqera.wave.store.cache.TieredKey
+import io.seqera.wave.util.RegHelper
 import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
 import jakarta.inject.Named
@@ -57,7 +57,7 @@ class AwsEcrService {
     static final private Pattern AWS_ECR_PUBLIC = ~/public\.ecr\.aws/
 
     @Canonical
-    private static class AwsCreds implements TieredCacheKey {
+    private static class AwsCreds implements TieredKey {
         String accessKey
         String secretKey
         String region
@@ -65,13 +65,7 @@ class AwsEcrService {
 
         @Override
         String stableHash() {
-            final h = Hashing.sipHash24().newHasher()
-            for( Object it : [accessKey, secretKey, region, ecrPublic] ) {
-                if( it!=null )
-                    h.putUnencodedChars(it.toString())
-                h.putUnencodedChars('/')
-            }
-            return h.hash()
+            RegHelper.sipHash(accessKey, secretKey, region, ecrPublic)
         }
     }
 
@@ -93,7 +87,7 @@ class AwsEcrService {
     private ExecutorService ioExecutor
 
     @Inject
-    AwsEcrCache cache
+    private AwsEcrCache cache
 
     @Value('${wave.aws.ecr.cache.duration:24h}')
     private Duration cacheDuration

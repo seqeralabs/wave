@@ -30,7 +30,7 @@ import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.encoder.MoshiExchange
 import io.seqera.wave.store.cache.AbstractTieredCache
 import io.seqera.wave.store.cache.L2TieredCache
-import io.seqera.wave.store.cache.TieredCacheKey
+import io.seqera.wave.store.cache.TieredKey
 import jakarta.inject.Singleton
 /**
  * Implement a tiered cache for AWS ECR client
@@ -40,7 +40,7 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-class AwsEcrCache extends AbstractTieredCache<TieredCacheKey, AwsEcrAuthToken> {
+class AwsEcrCache extends AbstractTieredCache<TieredKey, AwsEcrAuthToken> {
 
     @Value('${wave.aws.ecr.cache.duration:3h}')
     private Duration duration

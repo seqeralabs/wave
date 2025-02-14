@@ -19,11 +19,11 @@
 package io.seqera.wave.store.cache
 
 /**
- * Implement a tiered cache for AWS ECR client
+ * Define the contract for key used by {@link TieredCache} caches
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-interface TieredCacheKey {
+interface TieredKey {
 
     String stableHash()
 

@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2024, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.auth.cache
+package io.seqera.wave.auth
 
 import java.time.Duration
 
@@ -26,15 +26,13 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
-import io.seqera.wave.auth.RegistryAuth
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.encoder.MoshiExchange
 import io.seqera.wave.store.cache.AbstractTieredCache
 import io.seqera.wave.store.cache.L2TieredCache
-import io.seqera.wave.store.cache.TieredCacheKey
 import jakarta.inject.Singleton
 /**
- * Implement a tiered cache for Registry lookup
+ * Implement a tiered cache for {@link RegistryLookupService}
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
@@ -43,10 +41,10 @@ import jakarta.inject.Singleton
 @CompileStatic
 class RegistryLookupCache extends AbstractTieredCache<String, RegistryAuth> {
 
-    @Value('${wave.registry.cache.duration:1h}')
+    @Value('${wave.registry-lookup.cache.duration:1h}')
     private Duration duration
 
-    @Value('${wave.registry.cache.max-size:10000}')
+    @Value('${wave.registry-lookup.cache.max-size:10000}')
     private int maxSize
 
     RegistryLookupCache(@Nullable L2TieredCache l2) {
@@ -60,12 +58,16 @@ class RegistryLookupCache extends AbstractTieredCache<String, RegistryAuth> {
 
     @Override
     protected getName() {
-        return 'registry-cache'
+        return 'registry-lookup-cache'
+    }
+
+    Duration getDuration() {
+        return duration
     }
 
     @Override
     protected String getPrefix() {
-        return 'registry-cache/v1'
+        return 'registry-lookup-cache/v1'
     }
 
     static MoshiEncodeStrategy encoder() {

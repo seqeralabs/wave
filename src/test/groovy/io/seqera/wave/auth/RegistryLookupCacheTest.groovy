@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2024, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.auth.cache
+package io.seqera.wave.auth
 
 import spock.lang.Shared
 import spock.lang.Specification
@@ -24,7 +24,6 @@ import spock.lang.Specification
 import java.time.Duration
 
 import io.micronaut.context.ApplicationContext
-import io.seqera.wave.auth.RegistryAuth
 import io.seqera.wave.store.cache.RedisL2TieredCache
 import io.seqera.wave.test.RedisTestContainer
 /**

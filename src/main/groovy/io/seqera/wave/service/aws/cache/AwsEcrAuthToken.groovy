@@ -23,7 +23,7 @@ import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import io.seqera.wave.encoder.MoshiExchange
 /**
- * Implement a tiered cache for AWS ECR client
+ * Model a tiered cache value for {@link AwsEcrCache}
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */

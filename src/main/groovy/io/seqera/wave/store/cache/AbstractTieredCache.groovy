@@ -47,7 +47,7 @@ import org.jetbrains.annotations.Nullable
  *
  * @param <K>
  *      The type of keys maintained by this cache. Note it must be either a
- *      subtype of {@link CharSequence} or an implementation of {@link TieredCacheKey} interface.
+ *      subtype of {@link CharSequence} or an implementation of {@link TieredKey} interface.
  * @param <V>
  *      The type of values maintained by this cache, which must extend {@link MoshiExchange}.
  *
@@ -130,7 +130,7 @@ abstract class AbstractTieredCache<K, V extends MoshiExchange> implements Tiered
     protected String k0(K key) {
         if( key instanceof CharSequence )
             return key.toString()
-        if( key instanceof TieredCacheKey )
+        if( key instanceof TieredKey )
             return key.stableHash()
         if( key==null )
             throw new IllegalArgumentException("Tiered cache key cannot be null")

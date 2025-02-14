@@ -29,7 +29,6 @@ import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.encoder.MoshiExchange
 import io.seqera.wave.store.cache.AbstractTieredCache
 import io.seqera.wave.store.cache.L2TieredCache
-import io.seqera.wave.store.cache.TieredCacheKey
 import jakarta.inject.Singleton
 /**
  * Implements a tiered cache for proxied http responses

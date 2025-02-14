@@ -20,15 +20,12 @@ package io.seqera.wave.auth
 
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.time.Duration
 import java.util.concurrent.CompletionException
 import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Value
 import io.micronaut.scheduling.TaskExecutors
-import io.seqera.wave.auth.cache.RegistryLookupCache
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.exception.RegistryForwardException
 import io.seqera.wave.http.HttpClientFactory
@@ -55,32 +52,11 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
     private HttpClientConfig httpConfig
 
     @Inject
-    private RegistryAuthStore store
-
-    @Inject
     @Named(TaskExecutors.BLOCKING)
     private ExecutorService ioExecutor
 
-    RegistryAuth load(URI endpoint) throws Exception {
-        // check if there's a record in the store cache (redis)
-        def result = store.get(endpoint.toString())
-        if( result ) {
-            log.debug "Authority lookup for endpoint: '$endpoint' => $result [from store]"
-            return result
-        }
-        // look-up using the corresponding API endpoint
-        result = lookup0(endpoint)
-        log.debug "Authority lookup for endpoint: '$endpoint' => $result"
-        // save it in the store cache (redis)
-        store.put(endpoint.toString(), result)
-        return result
-    }
-
     @Inject
     private RegistryLookupCache cache
-
-    @Value('${wave.registry.cache.duration:24h}')
-    private Duration cacheDuration
 
     protected RegistryAuth lookup0(URI endpoint) {
         final httpClient = HttpClientFactory.followRedirectsHttpClient()
@@ -119,7 +95,7 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
     RegistryInfo lookup(String registry) {
         try {
             final endpoint = registryEndpoint(registry)
-            final auth = cache.getOrCompute(endpoint.toString(), (key) -> load(endpoint), cacheDuration)
+            final auth = cache.getOrCompute(endpoint.toString(), (k) -> lookup0(endpoint), cache.duration)
             return new RegistryInfo(registry, endpoint, auth)
         }
         catch (CompletionException e) {
