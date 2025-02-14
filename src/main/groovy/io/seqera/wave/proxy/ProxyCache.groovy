@@ -26,7 +26,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.configuration.ProxyCacheConfig
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.encoder.MoshiExchange
+import io.seqera.wave.encoder.MoshiSerializable
 import io.seqera.wave.store.cache.AbstractTieredCache
 import io.seqera.wave.store.cache.L2TieredCache
 import jakarta.inject.Singleton
@@ -50,7 +50,7 @@ class ProxyCache extends AbstractTieredCache<String, DelegateResponse> {
 
     static MoshiEncodeStrategy encoder() {
         // json adapter factory
-        final factory = PolymorphicJsonAdapterFactory.of(MoshiExchange.class, "@type")
+        final factory = PolymorphicJsonAdapterFactory.of(MoshiSerializable.class, "@type")
                 .withSubtype(Entry.class, Entry.name)
                 .withSubtype(DelegateResponse.class, DelegateResponse.simpleName)
         // the encoding strategy

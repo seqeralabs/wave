@@ -23,7 +23,7 @@ import java.util.regex.Pattern
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
-import io.seqera.wave.encoder.MoshiExchange
+import io.seqera.wave.encoder.MoshiSerializable
 
 /**
  * Model container registry authentication meta-info
@@ -33,7 +33,7 @@ import io.seqera.wave.encoder.MoshiExchange
 @Canonical
 @CompileStatic
 @ToString(includePackage = false, includeNames = true)
-class RegistryAuth implements MoshiExchange {
+class RegistryAuth implements MoshiSerializable {
 
     private static final Pattern AUTH = ~/(?i)(?<type>.+) realm="(?<realm>[^"]+)",service="(?<service>[^"]+)"/
     // some registries doesn't send the service

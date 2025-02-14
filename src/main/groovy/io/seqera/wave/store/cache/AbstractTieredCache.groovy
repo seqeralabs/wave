@@ -37,7 +37,7 @@ import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.encoder.EncodingStrategy
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.encoder.MoshiExchange
+import io.seqera.wave.encoder.MoshiSerializable
 import org.jetbrains.annotations.Nullable
 /**
  * Implement a tiered-cache mechanism using a local caffeine cache as 1st level access
@@ -49,18 +49,18 @@ import org.jetbrains.annotations.Nullable
  *      The type of keys maintained by this cache. Note it must be either a
  *      subtype of {@link CharSequence} or an implementation of {@link TieredKey} interface.
  * @param <V>
- *      The type of values maintained by this cache, which must extend {@link MoshiExchange}.
+ *      The type of values maintained by this cache, which must extend {@link MoshiSerializable}.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @CompileStatic
-abstract class AbstractTieredCache<K, V extends MoshiExchange> implements TieredCache<K,V> {
+abstract class AbstractTieredCache<K, V extends MoshiSerializable> implements TieredCache<K,V> {
 
     @Canonical
     @ToString(includePackage = false, includeNames = true)
-    static class Entry implements MoshiExchange {
-        MoshiExchange value
+    static class Entry implements MoshiSerializable {
+        MoshiSerializable value
         long expiresAt
     }
 

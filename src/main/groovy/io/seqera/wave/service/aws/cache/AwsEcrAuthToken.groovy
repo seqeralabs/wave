@@ -21,7 +21,7 @@ package io.seqera.wave.service.aws.cache
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-import io.seqera.wave.encoder.MoshiExchange
+import io.seqera.wave.encoder.MoshiSerializable
 /**
  * Model a tiered cache value for {@link AwsEcrCache}
  *
@@ -30,7 +30,7 @@ import io.seqera.wave.encoder.MoshiExchange
 @CompileStatic
 @EqualsAndHashCode
 @ToString(includePackage = false, includeNames = true)
-class AwsEcrAuthToken implements MoshiExchange {
+class AwsEcrAuthToken implements MoshiSerializable {
     String value
 
     AwsEcrAuthToken(String value) {
