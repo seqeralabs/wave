@@ -21,7 +21,7 @@ package io.seqera.wave.tower.compute
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-import io.seqera.wave.encoder.MoshiExchange
+import io.seqera.wave.encoder.MoshiSerializable
 
 /**
  * Model the response of compute environment from seqera platform
@@ -31,7 +31,7 @@ import io.seqera.wave.encoder.MoshiExchange
 @CompileStatic
 @EqualsAndHashCode
 @ToString(includePackage = false, includeNames = true)
-class ComputeEnv implements MoshiExchange {
+class ComputeEnv implements MoshiSerializable {
     String id
     String platform
     String credentialsId

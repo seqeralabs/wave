@@ -21,7 +21,7 @@ package io.seqera.wave.tower
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-import io.seqera.wave.encoder.MoshiExchange
+import io.seqera.wave.encoder.MoshiSerializable
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 
@@ -33,7 +33,7 @@ import jakarta.validation.constraints.Size
 @ToString(includeNames = true, includePackage = false, includes = 'id,userName,email')
 @EqualsAndHashCode
 @CompileStatic
-class User implements MoshiExchange {
+class User implements MoshiSerializable {
 
     Long id
 

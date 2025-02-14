@@ -19,9 +19,9 @@
 package io.seqera.wave.encoder
 
 /**
- * Marker interface for Moshi encoded exchange objects
+ * Marker interface for Moshi serializable objects
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface MoshiExchange {
+interface MoshiSerializable {
 }

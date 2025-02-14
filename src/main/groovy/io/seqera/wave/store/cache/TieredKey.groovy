@@ -16,21 +16,15 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.tower.compute
-
-import groovy.transform.CompileStatic
-import groovy.transform.EqualsAndHashCode
-import groovy.transform.ToString
-import io.seqera.wave.encoder.MoshiSerializable
+package io.seqera.wave.store.cache
 
 /**
- * Model the response of workflow launch response from seqera platform
+ * Define the contract for key used by {@link TieredCache} caches
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-@CompileStatic
-@EqualsAndHashCode
-@ToString(includePackage = false, includeNames = true)
-class WorkflowLaunch implements MoshiSerializable {
-    ComputeEnv computeEnv
+interface TieredKey {
+
+    String stableHash()
+
 }

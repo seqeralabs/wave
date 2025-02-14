@@ -26,7 +26,7 @@ import groovy.transform.Canonical
 import groovy.transform.Memoized
 import io.micronaut.context.ApplicationContext
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.encoder.MoshiExchange
+import io.seqera.wave.encoder.MoshiSerializable
 import io.seqera.wave.test.RedisTestContainer
 import spock.lang.Shared
 import spock.lang.Specification
@@ -34,21 +34,21 @@ import spock.lang.Specification
 class AbstractTieredCacheTest extends Specification implements RedisTestContainer {
 
     @Canonical
-    static class MyBean implements MoshiExchange {
+    static class MyBean implements MoshiSerializable {
         String foo
         String bar
     }
 
     @Memoized
     static MoshiEncodeStrategy encoder() {
-        JsonAdapter.Factory factory = PolymorphicJsonAdapterFactory.of(MoshiExchange.class, "@type")
+        JsonAdapter.Factory factory = PolymorphicJsonAdapterFactory.of(MoshiSerializable.class, "@type")
                 .withSubtype(AbstractTieredCache.Entry.class, AbstractTieredCache.Entry.name)
                 .withSubtype(MyBean.class, MyBean.name)
 
         return new MoshiEncodeStrategy<AbstractTieredCache.Entry>(factory) {}
     }
 
-    static class MyCache extends AbstractTieredCache<MyBean> {
+    static class MyCache extends AbstractTieredCache<TieredKey, MyBean> {
 
         static String PREFIX = 'foo/v1'
 
