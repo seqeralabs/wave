@@ -279,13 +279,10 @@ abstract class TowerConnector {
                 .thenApplyAsync({ resp ->
                     if( resp==null )
                         throw new HttpResponseException(500, "Missing Tower response refreshing JWT token: ${request.uri}")
+                    log.debug "Tower Refresh '$uri' response; msgId=${msgId}\n- status : ${resp.status}\n- headers: ${RegHelper.dumpHeaders(resp.headers)}\n- content: ${resp.body}"
                     if ( resp.status >= 400 ) {
-                        log.debug "Tower Refresh '$uri' response; msgId=${msgId}\n- status : ${resp.status}\n- headers: ${RegHelper.dumpHeaders(resp.headers)}\n- content: ${resp.body}"
                         final msg = "Unexpected Tower response refreshing JWT token: ${request.uri}"
                         throw new HttpResponseException(resp.status, msg, resp.body)
-                    }
-                    else if( log.isTraceEnabled() ) {
-                        log.trace "Tower Refresh '$uri' response; msgId=${msgId}\n- status : ${resp.status}\n- headers: ${RegHelper.dumpHeaders(resp.headers)}\n- content: ${resp.body}"
                     }
                     final cookies = resp.headers?['set-cookie'] ?: List.<String>of()
                     final newAuth = parseTokens(cookies, auth)
