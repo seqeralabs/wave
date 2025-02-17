@@ -1,4 +1,10 @@
 # Wave changelog
+1.17.3 - 17 Feb 2025
+- Use route target path as proxy cache key (#788) [1133c348]
+- Improve jwt debug logs [086837e9]
+- Bump changelog [ci skip] [a80d7185]
+- Bump io.netty:netty-bom:4.1.118.Final [5a861f51]
+
 1.17.2 - 10 Feb 2025
 - Change threads dump-threshold default to 200 [5d136e45]
 - Minor inspect view improvements (#795) [242822fd]
