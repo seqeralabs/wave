@@ -18,14 +18,13 @@
 
 package io.seqera.wave.service.aws
 
-import java.time.Duration
+
 import java.util.concurrent.ExecutorService
 import java.util.regex.Pattern
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Value
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.service.aws.cache.AwsEcrAuthToken
 import io.seqera.wave.service.aws.cache.AwsEcrCache
@@ -89,9 +88,6 @@ class AwsEcrService {
     @Inject
     private AwsEcrCache cache
 
-    @Value('${wave.aws.ecr.cache.duration:24h}')
-    private Duration cacheDuration
-
     private EcrClient ecrClient(String accessKey, String secretKey, String region) {
         EcrClient.builder()
                 .region( Region.of(region))
@@ -137,7 +133,7 @@ class AwsEcrService {
 
         try {
             final key = new AwsCreds(accessKey,secretKey,region,isPublic)
-            return cache.getOrCompute(key, (k) -> load(key), cacheDuration).value
+            return cache.getOrCompute(key, (k) -> load(key), cache.duration).value
         }
         catch (Exception e) {
             final type = isPublic ? "ECR public" : "ECR"

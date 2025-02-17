@@ -67,6 +67,10 @@ class AwsEcrCache extends AbstractTieredCache<TieredKey, AwsEcrAuthToken> {
         return 'aws-ecr-cache/v1'
     }
 
+    Duration getDuration() {
+        return duration
+    }
+
     static MoshiEncodeStrategy encoder() {
         new MoshiEncodeStrategy<AbstractTieredCache.Entry>(factory()) {}
     }
