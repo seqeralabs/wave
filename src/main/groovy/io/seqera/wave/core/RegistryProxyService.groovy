@@ -192,6 +192,7 @@ class RegistryProxyService {
         return false
     }
 
+    @Deprecated
     static protected String requestKey(RoutePath route, Map<String,List<String>> headers) {
         assert route!=null, "Argument route cannot be null"
         final hasher = Hashing.sipHash24().newHasher()
@@ -227,22 +228,16 @@ class RegistryProxyService {
     }
 
     DelegateResponse handleRequest(RoutePath route, Map<String,List<String>> headers) {
-        if( !cache.enabled ) {
+        if( !cache.enabled || !route.isBlob() ) {
             return handleRequest0(route, headers)
         }
-        final key = requestKey(route, headers)
-        if( !key ) {
-            log.debug "Bypass cache for requrst route=${route}; headers=${headers}"
-            return handleRequest0(route, headers)
-        }
-        else {
-            return cache.getOrCompute(key,(String k)-> {
-                        final resp = handleRequest0(route, headers)
-                        // when the response is not cacheable, return null as TTL
-                        final ttl = route.isDigest() && resp.isCacheable() ? cache.duration : null
-                        return new Tuple2<DelegateResponse, Duration>(resp, ttl)
-                    })
-        }
+        final key = route.getTargetPath()
+        return cache.getOrCompute(key,(String k)-> {
+            final resp = handleRequest0(route, headers)
+            // when the response is not cacheable, return null as TTL
+            final ttl = route.isDigest() && resp.isCacheable() ? cache.duration : null
+            return new Tuple2<DelegateResponse, Duration>(resp, ttl)
+        })
     }
 
     @TraceElapsedTime(thresholdMillis = '${wave.trace.proxy-service.threshold:1000}')
