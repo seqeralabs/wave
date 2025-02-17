@@ -20,7 +20,6 @@ package io.seqera.wave.auth
 
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.util.concurrent.CompletionException
 import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
@@ -93,16 +92,9 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
      */
     @Override
     RegistryInfo lookup(String registry) {
-        try {
-            final endpoint = registryEndpoint(registry)
-            final auth = cache.getOrCompute(endpoint.toString(), (k) -> lookup0(endpoint), cache.duration)
-            return new RegistryInfo(registry, endpoint, auth)
-        }
-        catch (CompletionException e) {
-            // this catches the exception thrown in the cache loader lookup
-            // and throws the causing exception that should be `RegistryUnauthorizedAccessException`
-            throw e.cause
-        }
+        final endpoint = registryEndpoint(registry)
+        final auth = cache.getOrCompute(endpoint.toString(), (k) -> lookup0(endpoint), cache.duration)
+        return new RegistryInfo(registry, endpoint, auth)
     }
 
     /**
