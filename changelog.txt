@@ -1,4 +1,18 @@
 # Wave changelog
+1.18.0 - 18 Feb 2025
+- Add Scan image request (#796) [a950d1cf]
+- Improve caching for AWS ECR and Auth lookup (#783) [b1a76d15]
+- Improve jwt debug logs [086837e9]
+- Use route target path as proxy cache key (#788) [1133c348]
+- Bump Micronaut to version 4.7.6 [97544609]
+- Bump io.netty:netty-bom:4.1.118.Final [5a861f51]
+
+1.17.2 - 10 Feb 2025
+- Change threads dump-threshold default to 200 [5d136e45]
+- Minor inspect view improvements (#795) [242822fd]
+- Bump gradle 8.12.1 [6b85565e]
+- Bump MN version 4.7.5 [03febd69]
+
 1.17.1 - 4 Feb 2025
 - Add container index support to inspect view (#792) [34428d25]
 - Remove server from openapi spec (#793) [9cbdec1d]

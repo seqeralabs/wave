@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023-2024, Seqera Labs
+ *  Copyright (c) 2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,26 +16,24 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.auth
+package io.seqera.wave.service.aws.cache
 
-import spock.lang.Specification
-
-import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import jakarta.inject.Inject
-
+import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
+import groovy.transform.ToString
+import io.seqera.wave.encoder.MoshiSerializable
 /**
+ * Model a tiered cache value for {@link AwsEcrCache}
  *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-@MicronautTest
-class RegistryAuthStoreTest extends Specification {
+@CompileStatic
+@EqualsAndHashCode
+@ToString(includePackage = false, includeNames = true)
+class AwsEcrAuthToken implements MoshiSerializable {
+    String value
 
-    @Inject RegistryAuthStore store
-
-    def 'should return entry key' () {
-        expect:
-        store.key0('foo') == 'registry-auth/v1:foo'
+    AwsEcrAuthToken(String value) {
+        this.value = value
     }
-
-
 }

@@ -19,14 +19,14 @@
 package io.seqera.wave.proxy
 
 import groovy.transform.EqualsAndHashCode
-import io.seqera.wave.encoder.MoshiExchange
+import io.seqera.wave.encoder.MoshiSerializable
 /**
  * Model a response object to be forwarded to the client
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @EqualsAndHashCode
-class DelegateResponse implements MoshiExchange {
+class DelegateResponse implements MoshiSerializable {
     int statusCode
     Map<String,List<String>> headers
     byte[] body
