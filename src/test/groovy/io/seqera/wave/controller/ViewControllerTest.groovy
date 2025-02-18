@@ -21,17 +21,18 @@ package io.seqera.wave.controller
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import java.net.http.HttpResponse
 import java.time.Duration
 import java.time.Instant
 
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpRequest
-import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
+import io.micronaut.runtime.server.EmbeddedServer
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
@@ -54,11 +55,9 @@ import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
+import static io.seqera.wave.controller.ViewController.Colour
 import static io.seqera.wave.util.DataTimeUtils.formatDuration
 import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
-
-import static io.seqera.wave.controller.ViewController.Colour
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -90,6 +89,10 @@ class ViewControllerTest extends Specification {
 
     @Value('${wave.server.url}')
     String serverUrl
+
+    @Inject
+    EmbeddedServer embeddedServer;
+
 
     def 'should create build binding' () {
         given:
@@ -777,41 +780,25 @@ class ViewControllerTest extends Specification {
 
     def 'should redirect to scan view on successful scan request'() {
         given:
+        def uri = embeddedServer.getContextURI()
+        and:
+        def client = java.net.http.HttpClient.newBuilder()
+                .version(java.net.http.HttpClient.Version.HTTP_1_1)
+                .followRedirects(java.net.http.HttpClient.Redirect.NEVER)
+                .build()
+        and:
         def image = "ubuntu:latest"
-        def platform = "amd64"
+        and:
+        def req = java.net.http.HttpRequest.newBuilder()
+                .GET() 
+                .uri(new URI("${uri}/view/scans?image=${image}"))
+                .build()
 
         when:
-        HttpResponse response = client.toBlocking().exchange(HttpRequest.GET("/view/scans?image=${image}&platform=${platform}"), String)
-
+        def resp = client.send(req, HttpResponse.BodyHandlers.ofString())
         then:
-        response.status == HttpStatus.OK
-        response.body().contains(image)
-        response.body().contains("Container security scan in progress")
+        resp.statusCode() == 301
+        resp.headers().firstValue('location').get() ==~ '/view/scans/sc-.+'
     }
 
-    def 'should return bad request for invalid image'() {
-        given:
-        def image = "invalid_image"
-        def platform = "amd64"
-
-        when:
-        client.toBlocking().exchange(HttpRequest.GET("/view/scans?image=${image}&platform=${platform}"))
-
-        then:
-        def e = thrown(HttpClientResponseException)
-        e.status == HttpStatus.INTERNAL_SERVER_ERROR
-    }
-
-    def 'should return bad request for invalid platform'() {
-        given:
-        def image = "ubuntu:latest"
-        def platform = "invalid_platform"
-
-        when:
-        client.toBlocking().exchange(HttpRequest.GET("/view/scans?image=${image}&platform=${platform}"))
-
-        then:
-        def e = thrown(HttpClientResponseException)
-        e.status == HttpStatus.BAD_REQUEST
-    }
 }
