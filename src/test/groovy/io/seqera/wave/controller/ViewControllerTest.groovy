@@ -27,6 +27,7 @@ import java.time.Instant
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
@@ -772,5 +773,45 @@ class ViewControllerTest extends Specification {
         [new ScanVulnerability(severity: 'LOW'), new ScanVulnerability(severity: 'HIGH')]           | new Colour('#ffe4e2','#e00404')
         [new ScanVulnerability(severity: 'MEDIUM'), new ScanVulnerability(severity: 'CRITICAL')]    | new Colour('#ffe4e2','#e00404')
         []                                                                                          | new Colour('#dff0d8','#3c763d')
+    }
+
+    def 'should redirect to scan view on successful scan request'() {
+        given:
+        def image = "ubuntu:latest"
+        def platform = "amd64"
+
+        when:
+        HttpResponse response = client.toBlocking().exchange(HttpRequest.GET("/view/scans?image=${image}&platform=${platform}"), String)
+
+        then:
+        response.status == HttpStatus.OK
+        response.body().contains(image)
+        response.body().contains("Container security scan in progress")
+    }
+
+    def 'should return bad request for invalid image'() {
+        given:
+        def image = "invalid_image"
+        def platform = "amd64"
+
+        when:
+        client.toBlocking().exchange(HttpRequest.GET("/view/scans?image=${image}&platform=${platform}"))
+
+        then:
+        def e = thrown(HttpClientResponseException)
+        e.status == HttpStatus.INTERNAL_SERVER_ERROR
+    }
+
+    def 'should return bad request for invalid platform'() {
+        given:
+        def image = "ubuntu:latest"
+        def platform = "invalid_platform"
+
+        when:
+        client.toBlocking().exchange(HttpRequest.GET("/view/scans?image=${image}&platform=${platform}"))
+
+        then:
+        def e = thrown(HttpClientResponseException)
+        e.status == HttpStatus.BAD_REQUEST
     }
 }
