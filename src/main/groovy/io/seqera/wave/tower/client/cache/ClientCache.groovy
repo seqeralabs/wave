@@ -26,7 +26,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.encoder.MoshiExchange
+import io.seqera.wave.encoder.MoshiSerializable
 import io.seqera.wave.store.cache.AbstractTieredCache
 import io.seqera.wave.store.cache.L2TieredCache
 import io.seqera.wave.tower.User
@@ -75,7 +75,7 @@ class ClientCache extends AbstractTieredCache {
     }
 
     static JsonAdapter.Factory factory() {
-        PolymorphicJsonAdapterFactory.of(MoshiExchange.class, "@type")
+        PolymorphicJsonAdapterFactory.of(MoshiSerializable.class, "@type")
                 .withSubtype(AbstractTieredCache.Entry.class, AbstractTieredCache.Entry.name)
         // add all exchange classes used by the tower client
                 .withSubtype(ComputeEnv.class, ComputeEnv.simpleName)

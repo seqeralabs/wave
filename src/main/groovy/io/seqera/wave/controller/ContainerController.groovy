@@ -212,8 +212,8 @@ class ContainerController {
         if( !registration )
             throw new BadRequestException("Missing pairing record for Tower endpoint '$req.towerEndpoint'")
 
-        // store the jwt record only the very first time it has been
-        // to avoid overridden a newer refresh token that may have 
+        // store the jwt record only the very first time to avoid
+        // overriding a newer jwt token that may have refreshed
         final auth = JwtAuth.of(req)
         if( auth.refresh )
             jwtAuthStore.storeIfAbsent(auth)
