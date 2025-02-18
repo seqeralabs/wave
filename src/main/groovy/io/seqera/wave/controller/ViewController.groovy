@@ -41,6 +41,7 @@ import io.micronaut.views.View
 import io.seqera.wave.api.ScanMode
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.exception.NotFoundException
@@ -57,6 +58,7 @@ import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
+import jakarta.ws.rs.QueryParam
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
@@ -316,8 +318,9 @@ class ViewController {
      *      The redirect response to the scan view for the requested container image
      */
     @Get('/scans')
-    Publisher<HttpResponse> requestScan(@NonNull String image) {
-        final req = new SubmitContainerTokenRequest(containerImage: image, scanMode: ScanMode.required)
+    Publisher<HttpResponse> requestScan(@QueryParam String image, @Nullable @QueryParam String platform) {
+        def containerPlatform = platform ? ContainerPlatform.of(platform) : ContainerPlatform.DEFAULT
+        final req = new SubmitContainerTokenRequest(containerImage: image, scanMode: ScanMode.required, containerPlatform: containerPlatform.toString())
         final post = HttpRequest.POST("/v1alpha2/container", req)
         final resp = httpClient.retrieve(post, SubmitContainerTokenResponse)
 
