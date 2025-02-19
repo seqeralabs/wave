@@ -56,6 +56,8 @@ class TowerClient {
     @Value('${wave.pairing.cache.long.duration:24h}')
     private Duration cacheLongDuration
 
+    @Value('${wave.pairing.cache.workflow.duration:10m}')
+    private Duration cacheWorkflowDuration
 
     protected <T> CompletableFuture<T> getAsync(URI uri, String endpoint, @Nullable JwtAuth authorization, Class<T> type) {
         assert uri, "Missing uri argument"
@@ -146,6 +148,21 @@ class TowerClient {
         def uri = "${checkEndpoint(endpoint)}/workflow/${workflowId}/launch"
         if( workspaceId!=null )
             uri += '?workspaceId=' + workspaceId
+        return URI.create(uri)
+    }
+
+    DescribeWorkflowResponse describeWorkflow(String endpoint, JwtAuth authorization, Long workspaceId, String workflowId) {
+        final uri = workflowDescribeEndpoint(endpoint,workspaceId,workflowId)
+        final k = RegHelper.sipHash(uri, authorization.key, workspaceId, workflowId)
+        // NOTE: it assumes the workflow  definition cannot change for the specified 'workflowId'
+        // and therefore the *long* expiration cached is used
+        return get0(uri, endpoint, authorization, DescribeWorkflowResponse.class, k, cacheWorkflowDuration) as DescribeWorkflowResponse
+    }
+
+    protected static URI workflowDescribeEndpoint(String endpoint, Long workspaceId, String workflowId) {
+        def uri = "${checkEndpoint(endpoint)}/workflow/${workflowId}"
+        if( workspaceId!=null )
+            uri += "?workspaceId=$workspaceId"
         return URI.create(uri)
     }
 
