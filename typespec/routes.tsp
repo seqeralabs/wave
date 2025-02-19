@@ -20,7 +20,7 @@ namespace wave {
     @statusCode statusCode: 200;
     };
 
-    @route("/container/{requestId}")
+    @route("/{requestId}")
     @get op getContainerDetails(@path requestId: string): {
       @body response: WaveContainerRecord;
       @statusCode statusCode: 200;
@@ -87,28 +87,6 @@ namespace wave {
       @statusCode statusCode: 404;
      };
 
-  }
-
-  @route("/v1alpha2/metrics")
-  interface MetricsService {
-
-    @route("/builds")
-    @get op getBuildMetrics(@query date?: string, @query org?: string): {
-      @body response: MetricsResponse;
-      @statusCode statusCode: 200;
-    };
-
-    @route("/pulls")
-    @get op getPullMetrics(@query date?: string, @query org?: string):  {
-      @body response: MetricsResponse;
-      @statusCode statusCode: 200;
-    };
-
-    @route("/fusion/pulls")
-    @get op getFusionPullMetrics(@query date?: string, @query org?: string):  {
-      @body response: MetricsResponse;
-      @statusCode statusCode: 200;
-    };
   }
 
   @route("/v1alpha2/validate-creds")
