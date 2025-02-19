@@ -3,7 +3,6 @@ import "./ContainerResponse.tsp";
 import "./BuildStatusResponse.tsp";
 import "./ContainerInspectRequest.tsp";
 import "./ContainerInspectResponse.tsp";
-import "./MetricsResponse.tsp";
 import "./WaveScanRecord.tsp";
 import "./WaveBuildRecord.tsp";
 import "./ValidateRegistryCredsRequest.tsp";
