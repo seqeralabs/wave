@@ -88,7 +88,7 @@ dependencies {
     testImplementation 'org.testcontainers:mysql:1.17.3'
 
     // --
-    implementation 'ch.qos.logback:logback-classic:1.5.13'
+    implementation 'ch.qos.logback:logback-classic:1.5.15'
 
     // rate limit
     implementation 'com.coveo:spillway:3.0.0'
