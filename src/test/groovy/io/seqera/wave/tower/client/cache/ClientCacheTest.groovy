@@ -29,11 +29,11 @@ import io.seqera.wave.test.RedisTestContainer
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.client.GetCredentialsKeysResponse
+import io.seqera.wave.tower.client.GetUserInfoResponse
 import io.seqera.wave.tower.client.ListCredentialsResponse
-import io.seqera.wave.tower.client.UserInfoResponse
 import io.seqera.wave.tower.compute.ComputeEnv
 import io.seqera.wave.tower.compute.DescribeWorkflowLaunchResponse
-import io.seqera.wave.tower.compute.WorkflowLaunchResponse
+import io.seqera.wave.tower.compute.WorkflowLaunch
 
 class ClientCacheTest extends Specification implements RedisTestContainer {
 
@@ -54,67 +54,84 @@ class ClientCacheTest extends Specification implements RedisTestContainer {
 
     def 'should cache user info response' () {
         given:
-        def AWAIT = 150
+        def TTL = Duration.ofSeconds(1)
         def store = applicationContext.getBean(RedisL2TieredCache)
-        def cache1 = new ClientCacheShort(store, Duration.ofMillis(AWAIT), 100)
-        def cache2= new ClientCacheShort(store, Duration.ofMillis(AWAIT), 100)
+        def cache1 = new ClientCache(store)
+        def cache2 = new ClientCache(store)
         and:
         def k = UUID.randomUUID().toString()
-        def resp = new UserInfoResponse(user:new User(id:1, userName: 'paolo', email: 'p@foo.com'))
+        def resp = new GetUserInfoResponse(user:new User(id:1, userName: 'paolo', email: 'p@foo.com'))
 
         when:
-        cache1.put(k, resp)
+        cache1.put(k, resp, TTL)
         then:
         cache2.get(k) == resp
     }
 
     def 'should cache list credentials response' () {
         given:
-        def AWAIT = 150
+        def TTL = Duration.ofSeconds(1)
         def store = applicationContext.getBean(RedisL2TieredCache)
-        def cache1 = new ClientCacheShort(store, Duration.ofMillis(AWAIT), 100)
-        def cache2 = new ClientCacheShort(store, Duration.ofMillis(AWAIT), 100)
+        def cache1 = new ClientCache(store)
+        def cache2 = new ClientCache(store)
         and:
         def k = UUID.randomUUID().toString()
         def c1 = new CredentialsDescription(id: '123', provider: 'container-reg' ,registry: 'docker.io')
         def resp = new ListCredentialsResponse(credentials: [c1])
 
         when:
-        cache1.put(k, resp)
+        cache1.put(k, resp, TTL)
         then:
         cache2.get(k) == resp
     }
 
     def 'should cache credentials keys response' () {
         given:
-        def AWAIT = 150
+        def TTL = Duration.ofSeconds(1)
         def store = applicationContext.getBean(RedisL2TieredCache)
-        def cache1 = new ClientCacheShort(store, Duration.ofMillis(AWAIT), 100)
-        def cache2 = new ClientCacheShort(store, Duration.ofMillis(AWAIT), 100)
+        def cache1 = new ClientCache(store)
+        def cache2 = new ClientCache(store)
         and:
         def k = UUID.randomUUID().toString()
         def resp = new GetCredentialsKeysResponse(keys: 'xyz')
 
         when:
-        cache1.put(k, resp)
+        cache1.put(k, resp, TTL)
         then:
         cache2.get(k) == resp
     }
 
     def 'should cache describe workflow response' () {
         given:
-        def AWAIT = 150
+        def TTL = Duration.ofSeconds(1)
         def store = applicationContext.getBean(RedisL2TieredCache)
-        def cache1 = new ClientCacheShort(store, Duration.ofMillis(AWAIT), 100)
-        def cache2 = new ClientCacheShort(store, Duration.ofMillis(AWAIT), 100)
+        def cache1 = new ClientCache(store)
+        def cache2 = new ClientCache(store)
         and:
         def k = UUID.randomUUID().toString()
-        def launch = new WorkflowLaunchResponse(computeEnv: new ComputeEnv(id: '123', platform: 'aws', credentialsId:'cred-xyz'))
+        def launch = new WorkflowLaunch(computeEnv: new ComputeEnv(id: '123', platform: 'aws', credentialsId:'cred-xyz'))
         def resp = new DescribeWorkflowLaunchResponse(launch: launch)
 
         when:
-        cache1.put(k, resp)
+        cache1.put(k, resp, TTL)
         then:
         cache2.get(k) == resp
     }
+
+    def 'should de-serialize legacy UserInfoResponse' () {
+        given:
+        def LEGACY = '{"expiresAt":1735599710424,"value":{"@type":"UserInfoResponse","user":{"email":"foo@bar.com","id":37,"userName":"foo"}}}'
+        and:
+        def encoder =  ClientCache.encoder()
+
+        when:
+        def entry = encoder.decode(LEGACY)
+        then:
+        entry.expiresAt == 1735599710424
+        entry.value instanceof GetUserInfoResponse
+        and:
+        def resp = entry.value as GetUserInfoResponse
+        resp.user == new User(id:37, email: "foo@bar.com", userName: "foo")
+    }
+
 }

@@ -21,6 +21,7 @@ package io.seqera.wave.controller
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import java.net.http.HttpResponse
 import java.time.Duration
 import java.time.Instant
 
@@ -31,6 +32,7 @@ import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
+import io.micronaut.runtime.server.EmbeddedServer
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
@@ -53,11 +55,9 @@ import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
+import static io.seqera.wave.controller.ViewController.Colour
 import static io.seqera.wave.util.DataTimeUtils.formatDuration
 import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
-
-import static io.seqera.wave.controller.ViewController.Colour
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -89,6 +89,10 @@ class ViewControllerTest extends Specification {
 
     @Value('${wave.server.url}')
     String serverUrl
+
+    @Inject
+    EmbeddedServer embeddedServer;
+
 
     def 'should create build binding' () {
         given:
@@ -235,7 +239,7 @@ class ViewControllerTest extends Specification {
 
     def 'should render inspect view'() {
         when:
-        def request = HttpRequest.GET('/view/inspect?image=ubuntu')
+        def request = HttpRequest.GET('/view/inspect?image=ubuntu&platform=linux/amd64')
         def response = client.toBlocking().exchange(request, String)
 
         then:
@@ -244,6 +248,16 @@ class ViewControllerTest extends Specification {
         response.body().contains('latest')
         response.body().contains('https://registry-1.docker.io')
         response.body().contains('amd64')
+    }
+
+    def 'should render inspect view for multi platform container'() {
+        when:
+        def request = HttpRequest.GET('/view/inspect?image=ubuntu')
+        def response = client.toBlocking().exchange(request, String)
+
+        then:
+        response.status == HttpStatus.OK
+        response.body().contains('Schema Version')
     }
 
     def 'should render inspect view with platform'() {
@@ -763,4 +777,28 @@ class ViewControllerTest extends Specification {
         [new ScanVulnerability(severity: 'MEDIUM'), new ScanVulnerability(severity: 'CRITICAL')]    | new Colour('#ffe4e2','#e00404')
         []                                                                                          | new Colour('#dff0d8','#3c763d')
     }
+
+    def 'should redirect to scan view on successful scan request'() {
+        given:
+        def uri = embeddedServer.getContextURI()
+        and:
+        def client = java.net.http.HttpClient.newBuilder()
+                .version(java.net.http.HttpClient.Version.HTTP_1_1)
+                .followRedirects(java.net.http.HttpClient.Redirect.NEVER)
+                .build()
+        and:
+        def image = "ubuntu:latest"
+        and:
+        def req = java.net.http.HttpRequest.newBuilder()
+                .GET() 
+                .uri(new URI("${uri}/view/scans?image=${image}"))
+                .build()
+
+        when:
+        def resp = client.send(req, HttpResponse.BodyHandlers.ofString())
+        then:
+        resp.statusCode() == 301
+        resp.headers().firstValue('location').get() ==~ '/view/scans/sc-.+'
+    }
+
 }

@@ -16,21 +16,12 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.tower.compute
-
-import groovy.transform.CompileStatic
-import groovy.transform.EqualsAndHashCode
-import groovy.transform.ToString
-import io.seqera.wave.encoder.MoshiExchange
+package io.seqera.wave.encoder
 
 /**
- * Model the response of workflow launch response from seqera platform
- *
- * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * Marker interface for Moshi serializable objects
+ * 
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
-@EqualsAndHashCode
-@ToString(includePackage = false, includeNames = true)
-class WorkflowLaunchResponse implements MoshiExchange {
-    ComputeEnv computeEnv
+interface MoshiSerializable {
 }

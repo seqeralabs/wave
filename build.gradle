@@ -25,7 +25,6 @@ repositories {
     mavenCentral()
     maven { url = 'https://s3-eu-west-1.amazonaws.com/maven.seqera.io/releases' }
     maven { url = 'https://s3-eu-west-1.amazonaws.com/maven.seqera.io/snapshots' }
-    maven { url = 'https://jitpack.io' }
 }
 
 dependencies {
@@ -35,9 +34,10 @@ dependencies {
     compileOnly 'io.micronaut:micronaut-inject-groovy'
     compileOnly 'io.micronaut:micronaut-http-validation'
     implementation 'jakarta.persistence:jakarta.persistence-api:3.0.0'
-    api 'io.seqera:lib-mail:1.2.1'
-    api 'io.seqera:wave-api:0.14.0'
-    api 'io.seqera:wave-utils:0.15.0'
+    implementation 'io.seqera:lib-mail:1.2.1'
+    implementation 'io.seqera:lib-pool:1.0.0'
+    implementation 'io.seqera:wave-api:0.15.1'
+    implementation 'io.seqera:wave-utils:0.15.1'
     implementation 'io.seqera:lib-crypto:1.0.0'
     implementation 'io.micronaut:micronaut-http-client'
     implementation 'io.micronaut:micronaut-jackson-databind'
@@ -88,7 +88,7 @@ dependencies {
     testImplementation 'org.testcontainers:mysql:1.17.3'
 
     // --
-    implementation 'ch.qos.logback:logback-classic:1.5.12'
+    implementation 'ch.qos.logback:logback-classic:1.5.16'
 
     // rate limit
     implementation 'com.coveo:spillway:3.0.0'
@@ -104,7 +104,7 @@ dependencies {
     // upgrade indirect dependencies 
     runtimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.78'
     runtimeOnly 'org.bitbucket.b_c:jose4j:0.9.4'
-    runtimeOnly 'io.netty:netty-bom:4.1.115.Final'
+    runtimeOnly 'io.netty:netty-bom:4.1.118.Final'
     runtimeOnly 'com.google.protobuf:protobuf-java:4.27.5'
 }
 

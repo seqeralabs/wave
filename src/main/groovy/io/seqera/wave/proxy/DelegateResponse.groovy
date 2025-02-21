@@ -16,27 +16,31 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.tower.client
+package io.seqera.wave.proxy
 
-import groovy.transform.CompileStatic
-import groovy.transform.ToString
-
+import groovy.transform.EqualsAndHashCode
+import io.seqera.wave.encoder.MoshiSerializable
 /**
- * Model Tower service info response
+ * Model a response object to be forwarded to the client
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@ToString(includePackage = false, includeNames = true)
-@CompileStatic
-class ServiceInfoResponse {
+@EqualsAndHashCode
+class DelegateResponse implements MoshiSerializable {
+    int statusCode
+    Map<String,List<String>> headers
+    byte[] body
+    String location
+    boolean isRedirect() { location }
+    boolean isCacheable() { location!=null || (body!=null && statusCode>=200 && statusCode<400) }
 
-    @ToString(includePackage = false, includeNames = true)
-    static class ServiceInfo {
-        String version
-        String apiVersion
-        String commitId
-        Boolean waveEnabled
+    @Override
+    public String toString() {
+        return "DelegateResponse[" +
+                "statusCode=" + statusCode +
+                ", location=" + (location ? "'${location}'" : "null") +
+                ", body=" + (body != null ? "[byte array: ${body.length}]" : "null") +
+                ", headers=" + headers +
+                "]";
     }
-
-    ServiceInfo serviceInfo
 }

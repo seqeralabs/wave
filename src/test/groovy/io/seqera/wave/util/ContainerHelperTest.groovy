@@ -494,6 +494,27 @@ class ContainerHelperTest extends Specification {
                   - pandas==2.2.2
                   - numpy=1.0
             '''.stripIndent(true)
+    @Shared def GIT1 = '''\
+                channels:
+                - bioconda
+                - conda-forge
+                dependencies:
+                - pip
+                - pip:
+                  - "https://github.com/seqeralabs/seqera-kit/archive/dev.zip"
+            '''.stripIndent(true)
+    @Shared def GIT2 = '''\
+                channels:
+                - bioconda
+                - conda-forge
+                dependencies:
+                - bwa
+                - pip
+                - pip:
+                  - "https://github.com/seqeralabs/seqera-kit/archive/dev.zip"
+                  - "https://github.com/seqeralabs/seqera-kit/archive/dev2.zip"
+                  - "https://github.com/seqeralabs/seqera-kit/archive/dev3.zip"
+            '''.stripIndent(true)
 
     @Unroll
     def 'should make request target with name strategy' () {
@@ -546,6 +567,16 @@ class ContainerHelperTest extends Specification {
         'DOCKER'      | 'foo.com/build'   | '123'     | PIP2 | 'tagPrefix'   | 'foo.com/build:pip_pandas-2.2.2_numpy-1.0--123'
         'DOCKER'      | 'foo.com/build'   | '123'     | PIP2 | 'imageSuffix' | 'foo.com/build/pip_pandas_numpy:123'
         'DOCKER'      | 'foo.com/build'   | '123'     | PIP2 | 'none'        | 'foo.com/build:123'
+        and:
+        'DOCKER'      | 'foo.com/build'   | '123'     | GIT1 | null          | 'foo.com/build:pip--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | GIT1 | 'tagPrefix'   | 'foo.com/build:pip--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | GIT1 | 'imageSuffix' | 'foo.com/build/pip:123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | GIT1 | 'none'        | 'foo.com/build:123'
+        and:
+        'DOCKER'      | 'foo.com/build'   | '123'     | GIT2 | null          | 'foo.com/build:bwa_pip--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | GIT2 | 'tagPrefix'   | 'foo.com/build:bwa_pip--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | GIT2 | 'imageSuffix' | 'foo.com/build/bwa_pip:123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | GIT2 | 'none'        | 'foo.com/build:123'
 
     }
 
@@ -571,4 +602,5 @@ class ContainerHelperTest extends Specification {
         thrown(BadRequestException)
 
     }
+
 }

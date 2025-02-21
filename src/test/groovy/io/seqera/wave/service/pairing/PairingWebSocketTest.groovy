@@ -16,26 +16,47 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.auth
+package io.seqera.wave.service.pairing
 
 import spock.lang.Specification
 
+import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import jakarta.inject.Inject
+import io.seqera.wave.service.pairing.socket.PairingWebSocket
 
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-class RegistryAuthStoreTest extends Specification {
+class PairingWebSocketTest extends Specification {
 
-    @Inject RegistryAuthStore store
+    def 'should allow any host' () {
+        given:
+        def ctx = ApplicationContext.run()
+        def pairing = ctx.getBean(PairingWebSocket)
 
-    def 'should return entry key' () {
         expect:
-        store.key0('foo') == 'registry-auth/v1:foo'
+        !pairing.isDenyHost('foo')
+        !pairing.isDenyHost('seqera.io')
+        !pairing.isDenyHost('ngrok')
+
+        cleanup:
+        ctx.close()
     }
 
+    def 'should disallowed deny hosts' () {
+        given:
+        def ctx = ApplicationContext.run(['wave.denyHosts': ['ngrok','hctal']])
+        def pairing = ctx.getBean(PairingWebSocket)
 
+        expect:
+        pairing.isDenyHost('ngrok')
+        pairing.isDenyHost('hctal')
+        and:
+        !pairing.isDenyHost('seqera.io')
+
+        cleanup:
+        ctx.close()
+    }
 }

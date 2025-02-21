@@ -16,41 +16,43 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.tower.client.cache
+package io.seqera.wave.configuration
 
 import java.time.Duration
 
 import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
+import groovy.transform.ToString
 import io.micronaut.context.annotation.Value
-import io.micronaut.core.annotation.Nullable
-import io.seqera.wave.store.cache.AbstractTieredCache
-import io.seqera.wave.store.cache.L2TieredCache
 import jakarta.inject.Singleton
 
 /**
- * Implement a client cache having short-term expiration policy
+ * Model {@link io.seqera.wave.proxy.ProxyCache} configuration settings
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Slf4j
 @Singleton
 @CompileStatic
-class ClientCacheShort extends AbstractTieredCache {
-    ClientCacheShort(@Nullable L2TieredCache l2,
-                     @Value('${wave.pairing.cache-short.duration:60s}') Duration duration,
-                     @Value('${wave.pairing.cache-short.max-size:10000}') int maxSize)
-    {
-        super(l2, ClientEncoder.instance(), duration, maxSize)
+@ToString(includeNames = true, includePackage = false)
+class ProxyCacheConfig {
+
+    @Value('${wave.proxy-cache.duration:120s}')
+    private Duration duration
+
+    @Value('${wave.proxy-cache.max-size:10000}')
+    private int maxSize
+
+    @Value('${wave.proxy-cache.enabled:false}')
+    private boolean enabled
+
+    Duration getDuration() {
+        return duration
     }
 
-    @Override
-    protected getName() {
-        return 'pairing-cache-short'
+    int getMaxSize() {
+        return maxSize
     }
 
-    @Override
-    protected String getPrefix() {
-        return 'pairing-cache-short/v1'
+    boolean getEnabled() {
+        return enabled
     }
 }

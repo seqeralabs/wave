@@ -18,16 +18,21 @@
 
 package io.seqera.wave.core
 
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 
+import com.google.common.hash.Hashing
+import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
-import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.context.annotation.Context
 import io.micronaut.core.io.buffer.ByteBuffer
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.reactor.http.client.ReactorStreamingHttpClient
+import io.micronaut.scheduling.TaskExecutors
+import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.WaveDefault
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
@@ -36,6 +41,8 @@ import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
+import io.seqera.wave.proxy.DelegateResponse
+import io.seqera.wave.proxy.ProxyCache
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.service.CredentialsService
 import io.seqera.wave.service.builder.BuildRequest
@@ -44,7 +51,9 @@ import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.RegHelper
+import io.seqera.wave.util.Retryable
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 import reactor.core.publisher.Flux
 import static io.seqera.wave.WaveDefault.HTTP_REDIRECT_CODES
@@ -90,6 +99,16 @@ class RegistryProxyService {
     @Inject
     @Client("stream-client")
     private ReactorStreamingHttpClient streamClient
+
+    @Inject
+    private ProxyCache cache
+
+    // note this use explicitly executors (instead of blocking) because it must be
+    // platform thread executor pool (not a virtual threads pool).
+    // See the details in comment where the executor is used below
+    @Inject
+    @Named(TaskExecutors.IO)
+    private ExecutorService httpClientExecutor
 
     private ContainerAugmenter scanner(ProxyClient proxyClient) {
         return new ContainerAugmenter()
@@ -141,7 +160,89 @@ class RegistryProxyService {
         }
     }
 
-    DelegateResponse handleRequest(RoutePath route, Map<String,List<String>> headers){
+    static private final List<String> CACHEABLE_HEADERS = [
+            'Accept',
+            'Accept-Encoding',
+            'Authorization',
+            'Cache-Control',
+            'Connection',
+            'Content-Type',
+            'Content-Length',
+            'Content-Range',
+            'Docker-Distribution-API',
+            'If-Modified-Since',
+            'If-None-Match',
+            'If-None-Match',
+            'Etag',
+            'Host',
+            'Location',
+            'Last-Modified',
+            'User-Agent',
+            'Range',
+            'X-Registry-Auth'
+    ]
+
+    static protected boolean isCacheableHeader(String key) {
+        if( !key )
+            return false
+        for(int i=0; i<CACHEABLE_HEADERS.size(); i++ ) {
+          if( key.equalsIgnoreCase(CACHEABLE_HEADERS.get(i)))
+              return true
+        }
+        return false
+    }
+
+    @Deprecated
+    static protected String requestKey(RoutePath route, Map<String,List<String>> headers) {
+        assert route!=null, "Argument route cannot be null"
+        final hasher = Hashing.sipHash24().newHasher()
+        hasher.putUnencodedChars(route.stableHash())
+        hasher.putUnencodedChars('/')
+        if( !headers )
+            headers = Map.of()
+        for( Map.Entry<String,List<String>> entry : headers ) {
+            if( "Cache-Control".equalsIgnoreCase(entry.key) ) {
+                // ignore caching when cache-control header is provided
+                return null
+            }
+            if( !isCacheableHeader(entry.key) ) {
+                continue
+            }
+            hasher.putUnencodedChars(entry.key)
+            for( String it : entry.value ) {
+                if( it )
+                    hasher.putUnencodedChars(it)
+                hasher.putUnencodedChars('/')
+            }
+            hasher.putUnencodedChars('/')
+        }
+        final result = hasher.hash().toString()
+        if( log.isTraceEnabled() ) {
+            final m = Map.of(
+                    'route', route.getTargetPath(),
+                    'identity', route.identity,
+                    'headers', headers )
+            log.trace "Proxy cache key=${result}; values=${JsonOutput.toJson(m)}"
+        }
+        return result
+    }
+
+    DelegateResponse handleRequest(RoutePath route, Map<String,List<String>> headers) {
+        if( !cache.enabled || !route.isBlob() ) {
+            return handleRequest0(route, headers)
+        }
+        final key = route.getTargetPath()
+        return cache.getOrCompute(key,(String k)-> {
+            final resp = handleRequest0(route, headers)
+            // when the response is not cacheable, return null as TTL
+            final ttl = route.isDigest() && resp.isCacheable() ? cache.duration : null
+            return new Tuple2<DelegateResponse, Duration>(resp, ttl)
+        })
+    }
+
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.proxy-service.threshold:1000}')
+    protected DelegateResponse handleRequest0(RoutePath route, Map<String,List<String>> headers) {
+        log.debug "Request processing ${route}"
         ProxyClient proxyClient = client(route)
         final resp1 = proxyClient.getStream(route.path, headers, false)
         final redirect = resp1.headers().firstValue('Location').orElse(null)
@@ -182,10 +283,19 @@ class RegistryProxyService {
         // otherwise read it and include the body input stream in the response
         // the caller must consume and close the body to prevent memory leaks
         else {
+            // create the retry logic on error
+            final retryable = Retryable
+                    .<byte[]>of(httpConfig)
+                    .onRetry((event) -> log.warn("Unable to read blob body - request: $route; event: $event"))
+            // read the body - note this must use a separate *platform* thread to prevent a possible
+            // deep deadlock caused by the HttpClient implementation. See problem #4 in post
+            // https://medium.com/@phil_3582/java-virtual-threads-some-early-gotchas-to-look-out-for-f65df1bad0db#:~:text=The%20virtual%20threads%20can%20use,using%20complex%20constructs%20like%20CompletableFuture.
+            final bb = retryable.applyAsync(()-> resp1.body().bytes, httpClientExecutor).get()
+            // and compose the response
             return new DelegateResponse(
                     statusCode: resp1.statusCode(),
                     headers: resp1.headers().map(),
-                    body: resp1.body() )
+                    body: bb )
         }
     }
 
@@ -224,15 +334,6 @@ class RegistryProxyService {
             log.warn "Unable to retrieve digest for image '$image' -- response status=${resp.statusCode()}; headers:\n${RegHelper.dumpHeaders(resp.headers())}"
         }
         return result
-    }
-
-    @ToString(includeNames = true, includePackage = false)
-    static class DelegateResponse {
-        int statusCode
-        Map<String,List<String>> headers
-        InputStream body
-        String location
-        boolean isRedirect() { location }
     }
 
     Flux<ByteBuffer<?>> streamBlob(RoutePath route, Map<String,List<String>> headers) {
