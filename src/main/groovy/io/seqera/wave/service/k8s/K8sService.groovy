@@ -53,6 +53,8 @@ interface K8sService {
 
     V1Job launchMirrorJob(String name, String containerImage, List<String> args, Path workDir, Path creds, MirrorConfig config)
 
+    InputStream getCurrentLogsPod(String name)
+
     V1Pod getLatestPodForJob(String jobName)
 
 }
