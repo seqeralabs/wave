@@ -1,4 +1,10 @@
 # Wave changelog
+1.18.1 - 21 Feb 2025
+- Add denyHosts to pairing websocket [f5369eed]
+- Use virtual threads for build, scan and mirror jobs (#742) [9dfce1f7]
+- removed metrics from open-api (#798) [740831aa]
+- Bump ch.qos.logback:logback-classic 1.5.16 (#799) [7bf703d6]
+
 1.18.0 - 18 Feb 2025
 - Add Scan image request (#796) [a950d1cf]
 - Improve caching for AWS ECR and Auth lookup (#783) [b1a76d15]
