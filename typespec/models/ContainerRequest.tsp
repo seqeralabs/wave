@@ -1,31 +1,40 @@
 import "./ContainerConfig.tsp";
-import "./Packages.tsp";
+import "./CondaPackages.tsp";
 import "./ScanMode.tsp";
 import "./ScanLevel.tsp";
 
 @doc("Request payload for creating a container token.")
+@example(#{
+    packages:#{
+            type: "CONDA",
+            entries: #["salmon", "bwa"],
+            channels: #["conda-forge", "bioconda"]
+        },
+        format: "docker",
+        containerPlatform:"linux/amd64"
+})
 model ContainerRequest {
-  buildContext: ContainerLayer;
+  buildContext?: ContainerLayer;
   buildRepository?: string;
   cacheRepository?: string;
-  containerConfig: ContainerConfig;
+  containerConfig?: ContainerConfig;
   containerFile?: string;
-  containerImage: string;
-  containerIncludes: string[];
+  containerImage?: string;
+  containerIncludes?: string[];
   containerPlatform: string;
-  dryRun: boolean;
+  dryRun?: boolean;
   fingerprint?: string;
   format: "sif" | "docker";
   freeze?: boolean;
   nameStrategy?: "none" | "tagPrefix" | "imageSuffix";
   mirror?: boolean;
-  packages?: Packages;
+  packages?: CondaPackages;
   scanMode?: ScanMode;
   scanLevels?: ScanLevel[];
-  timestamp: string;
+  timestamp?: string;
   towerAccessToken?: string;
   towerEndpoint?: string;
   towerRefreshToken?: string;
   towerWorkspaceId?: int32;
-  workflowId: string;
+  workflowId?: string;
 }

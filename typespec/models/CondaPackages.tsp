@@ -1,10 +1,10 @@
 import "./CondaOpts.tsp";
 
 @doc("Package configurations for container builds.")
-model Packages {
+model CondaPackages {
   channels: string[];
   condaOpts?: CondaOpts;
   entries: string[];
-  environment: string;
+  environment?: string;
   type: "CONDA";
 }
