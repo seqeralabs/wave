@@ -79,7 +79,7 @@ class BuildLogServiceImpl implements BuildLogService {
     private String condaLockPrefix
 
     @Inject
-    @Named(TaskExecutors.IO)
+    @Named(TaskExecutors.BLOCKING)
     private ExecutorService ioExecutor
 
     @PostConstruct

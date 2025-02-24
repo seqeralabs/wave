@@ -87,7 +87,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     private BuildStateStore buildStore
 
     @Inject
-    @Named(TaskExecutors.IO)
+    @Named(TaskExecutors.BLOCKING)
     private ExecutorService executor
 
     @Inject

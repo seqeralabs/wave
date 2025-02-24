@@ -54,7 +54,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
     private JobService jobService
 
     @Inject
-    @Named(TaskExecutors.IO)
+    @Named(TaskExecutors.BLOCKING)
     private ExecutorService ioExecutor
 
     @Inject
