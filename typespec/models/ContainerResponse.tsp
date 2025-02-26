@@ -15,15 +15,26 @@ import "./ContainerStatus.tsp";
     status:ContainerStatus.PENDING
     })
 model ContainerResponse {
+  @doc("Unique identifier for the build.")
   buildId: string;
+  @doc("Indicates if the build is cached.")
   cached: boolean;
+  @doc("Container image to be used.")
   containerImage: string;
+  @doc("Token to access the container.")
   containerToken: string;
+  @doc("The expiration timestamp of the Wave container using ISO-8601 format.")
   expiration: string;
+  @doc("Indicates if the build is pushed to user container registry.")
   freeze: boolean;
+  @doc("Indicates if its a mirror request.")
   mirror: boolean;
+  @doc("Unique identifier for the request.")
   requestId: string;
+  @doc("Unique identifier for the scan.")
   scanId: string;
+  @doc("Status of the container build.")
   status: ContainerStatus;
+  @doc("The Wave container image name")
   targetImage: string;
 }

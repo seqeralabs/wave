@@ -17,9 +17,13 @@ import "./ContainerLayer.tsp";
       workingDir: "/app"
 })
 model ContainerConfig {
+  @doc("The launch command to be used by the Wave container, e.g., `['echo', 'Hello world']` (optional).")
   cmd: string[];
+  @doc("The container entrypoint command, e.g., `['/bin/bash']`.")
   entrypoint: string[];
+  @doc("The environment variables to be defined in the Wave container, e.g., `['FOO=one','BAR=two']` (optional).")
   env: string[];
   layers: ContainerLayer[];
+  @doc("The work directory to be used in the Wave container, e.g., `/some/work/dir` (optional).")
   workingDir: string;
 }
