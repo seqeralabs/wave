@@ -1,4 +1,9 @@
 @doc("Represents os platform of a container.")
+@example(#{
+  os: "linux",
+  arch: "amd64",
+  variant: "v1"
+})
 model ContainerPlatform {
   os: string;
   arch: string;
