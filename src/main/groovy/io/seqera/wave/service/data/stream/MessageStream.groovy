@@ -28,7 +28,7 @@ interface MessageStream<M> {
     /**
      * Initialize the stream with the given Id
      *
-     * @param streamId The uniqur ID of the stream to be initialized
+     * @param streamId The unique ID of the stream to be initialized
      */
     void init(String streamId)
 

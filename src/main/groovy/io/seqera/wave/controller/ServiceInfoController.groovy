@@ -59,7 +59,7 @@ class ServiceInfoController {
                 : HttpResponse.badRequest()
     }
 
-    @Get(uri = "/openapi")
+    @Get("/openapi")
     HttpResponse getOpenAPI() {
         HttpResponse.redirect(URI.create("/openapi/"))
     }
