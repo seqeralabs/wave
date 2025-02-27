@@ -58,7 +58,6 @@ import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
-import jakarta.ws.rs.QueryParam
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
