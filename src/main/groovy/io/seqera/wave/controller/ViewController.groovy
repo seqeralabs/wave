@@ -28,8 +28,10 @@ import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
+import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
+import io.micronaut.http.annotation.Post
 import io.micronaut.http.annotation.QueryValue
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
@@ -315,8 +317,8 @@ class ViewController {
      * @return
      *      The redirect response to the scan view for the requested container image
      */
-    @Get('/scans')
-    Publisher<HttpResponse> requestScan(@QueryParam String image) {
+    @Post('/scans')
+    Publisher<HttpResponse> requestScan(@Body String image) {
         final req = new SubmitContainerTokenRequest(containerImage: image, scanMode: ScanMode.required)
         final post = HttpRequest.POST("/v1alpha2/container", req)
         final resp = httpClient.retrieve(post, SubmitContainerTokenResponse)
