@@ -1,4 +1,7 @@
 # Wave changelog
+1.18.3 - 28 Feb 2025
+- Add DenyCrawlerFilter (#803) [edfae007]
+
 1.18.2 - 27 Feb 2025
 - Use post for container scan (#802) [1d4bc194]
 - Wv 102 merge https docs.seqera.io wave api into openapi (#800) [206881ec]
