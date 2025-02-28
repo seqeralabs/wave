@@ -25,6 +25,7 @@ import java.nio.file.StandardCopyOption
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
+import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.event.ApplicationEventPublisher
@@ -56,6 +57,7 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.stream.StreamService
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.util.RegHelper
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.TarUtils
 import jakarta.inject.Inject
@@ -66,6 +68,8 @@ import static io.seqera.wave.util.RegHelper.layerName
 import static java.nio.file.StandardOpenOption.CREATE
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import static java.nio.file.StandardOpenOption.WRITE
+import static java.nio.file.attribute.PosixFilePermission.OWNER_READ
+import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
 /**
  * Implements container build service
  *
@@ -179,6 +183,21 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
             if( req.condaFile ) {
                 final condaFile = context.resolve('conda.yml')
                 Files.write(condaFile, req.condaFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            }
+            // save docker config for creds
+            Path configFile = null
+            if( req.configJson ) {
+                configFile = req.workDir.resolve('config.json')
+                Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            }
+            // save remote files for singularity
+            if( configFile && req.formatSingularity()) {
+                final remoteFile = req.workDir.resolve('singularity-remote.yaml')
+                final content = RegHelper.singularityRemoteFile(req.targetImage)
+                Files.write(remoteFile, content.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+                // set permissions 600 as required by Singularity
+                Files.setPosixFilePermissions(configFile, Set.of(OWNER_READ, OWNER_WRITE))
+                Files.setPosixFilePermissions(remoteFile, Set.of(OWNER_READ, OWNER_WRITE))
             }
             // save layers provided via the container config
             if( req.containerConfig ) {

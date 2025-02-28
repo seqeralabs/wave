@@ -18,8 +18,11 @@
 
 package io.seqera.wave.service.job
 
+import java.nio.file.Files
+import java.nio.file.Path
 import javax.annotation.Nullable
 
+import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.service.blob.BlobEntry
@@ -33,6 +36,10 @@ import io.seqera.wave.service.scan.ScanRequest
 import io.seqera.wave.service.scan.ScanStrategy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+import static java.nio.file.StandardOpenOption.CREATE
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
+import static java.nio.file.StandardOpenOption.WRITE
+
 /**
  * Implement a service for job creation and execution
  *
@@ -97,7 +104,8 @@ class JobServiceImpl implements JobService {
     JobSpec launchScan(ScanRequest request) {
         if( !scanStrategy )
             throw new IllegalStateException("Container scan service is not available - check configuration setting 'wave.scan.enabled'")
-
+        // save docker auth file
+        saveDockerAuth(request.workDir, request.configJson)
         // create the unique job id for the build
         final job = jobFactory.scan(request)
         // launch the scan job
@@ -109,6 +117,8 @@ class JobServiceImpl implements JobService {
 
     @Override
     JobSpec launchMirror(MirrorRequest request) {
+        // save docker auth file
+        saveDockerAuth(request.workDir, request.authJson)
         // create the unique job id for the build
         final job = jobFactory.mirror(request)
         // launch the scan job
@@ -116,6 +126,17 @@ class JobServiceImpl implements JobService {
         // signal the build has been submitted
         jobQueue.offer(job)
         return job
+    }
+
+    protected void saveDockerAuth(Path workDir, String authJson) {
+        Path configFile = null
+        // create the work directory
+        Files.createDirectories(workDir)
+        // save docker config for creds
+        if( authJson ) {
+            configFile = workDir.resolve('config.json')
+            Files.write(configFile, JsonOutput.prettyPrint(authJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+        }
     }
 
     @Override
