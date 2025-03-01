@@ -77,4 +77,19 @@ class ServiceInfoControllerTest extends Specification {
         resp.headers.get("Location") == "/openapi/" // Validate redirect location
     }
 
+    def 'should get favicon' () {
+        when:
+        def request = HttpRequest.GET("/favicon.ico")
+        def resp = client.toBlocking().exchange(request, String)
+        then:
+        resp.status.code == 200
+    }
+
+    def 'should get robots' () {
+        when:
+        def request = HttpRequest.GET("/robots.txt")
+        def resp = client.toBlocking().exchange(request, String)
+        then:
+        resp.status.code == 200
+    }
 }

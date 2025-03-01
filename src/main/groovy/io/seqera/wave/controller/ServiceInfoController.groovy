@@ -24,6 +24,7 @@ import io.micronaut.core.annotation.Nullable
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpResponse
+import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.scheduling.TaskExecutors
@@ -64,4 +65,15 @@ class ServiceInfoController {
         HttpResponse.redirect(URI.create("/openapi/"))
     }
 
+    @Get(uri = "/favicon.ico", produces = MediaType.IMAGE_X_ICON)
+    HttpResponse getFavicon() {
+        final inputStream = getClass().getResourceAsStream("/io/seqera/wave/assets/wave.ico");
+        return inputStream != null ? HttpResponse.ok(inputStream) : HttpResponse.notFound();
+    }
+
+    @Get(uri = "/robots.txt", produces = MediaType.TEXT_PLAIN)
+    HttpResponse getRobotsTxt() {
+        final inputStream = getClass().getResourceAsStream("/io/seqera/wave/assets/robots.txt");
+        return inputStream != null ? HttpResponse.ok(inputStream) : HttpResponse.notFound();
+    }
 }
