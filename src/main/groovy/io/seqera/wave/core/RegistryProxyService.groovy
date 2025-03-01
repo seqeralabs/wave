@@ -265,7 +265,7 @@ class RegistryProxyService {
             log.warn "Unexpected redirect location '${redirect}' with status code: ${status}"
         }
         else if( status>=300 && status<400 ) {
-            log.warn "Unexpected redirect status code: ${status}; headers: ${RegHelper.dumpHeaders(resp1.headers())}"
+            log.warn "Unexpected redirect status code: ${status}; headers: ${RegHelper.dumpHeaders(resp1)}"
         }
 
         final len = resp1.headers().firstValueAsLong('Content-Length').orElse(0)
@@ -331,7 +331,7 @@ class RegistryProxyService {
         final resp = proxyClient.head(route.path, WaveDefault.ACCEPT_HEADERS)
         final result = resp.headers().firstValue('docker-content-digest').orElse(null)
         if( !result && (resp.statusCode()!=404 || retryOnNotFound) ) {
-            log.warn "Unable to retrieve digest for image '$image' -- response status=${resp.statusCode()}; headers:\n${RegHelper.dumpHeaders(resp.headers())}"
+            log.warn "Unable to retrieve digest for image '$image' -- response status=${resp.statusCode()}; headers:\n${RegHelper.dumpHeaders(resp)}"
         }
         return result
     }
