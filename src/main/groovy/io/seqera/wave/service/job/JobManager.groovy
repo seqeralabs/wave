@@ -47,7 +47,7 @@ class JobManager {
     private JobService jobService
 
     @Inject
-    private JobQueue queue
+    private JobRunningQueue runningQueue
 
     @Inject
     private JobDispatcher dispatcher
@@ -70,7 +70,7 @@ class JobManager {
                 .expireAfterWrite(config.graceInterval.multipliedBy(2))
                 .executor(ioExecutor)
                 .buildAsync()
-        queue.addConsumer((job)-> processJob(job))
+        runningQueue.addConsumer((job)-> processJob(job))
     }
 
     /**

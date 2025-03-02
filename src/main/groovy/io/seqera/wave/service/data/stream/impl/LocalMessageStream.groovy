@@ -41,11 +41,17 @@ class LocalMessageStream implements MessageStream<String> {
 
     private ConcurrentHashMap<String, LinkedBlockingQueue<String>> delegate = new ConcurrentHashMap<>()
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     void init(String streamId) {
         delegate.put(streamId, new LinkedBlockingQueue<>())
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     void offer(String streamId, String message) {
         delegate
@@ -53,6 +59,9 @@ class LocalMessageStream implements MessageStream<String> {
                 .offer(message)
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     boolean consume(String streamId, MessageConsumer<String> consumer) {
         final message = delegate
@@ -80,6 +89,9 @@ class LocalMessageStream implements MessageStream<String> {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     int length(String streamId) {
         return delegate.get(streamId).size()

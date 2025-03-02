@@ -20,20 +20,15 @@ package io.seqera.wave.service.job
 
 import java.nio.file.Files
 import java.nio.file.Path
-import javax.annotation.Nullable
 
 import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.service.blob.BlobEntry
-import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.builder.BuildStrategy
 import io.seqera.wave.service.cleanup.CleanupService
 import io.seqera.wave.service.mirror.MirrorRequest
-import io.seqera.wave.service.mirror.strategy.MirrorStrategy
 import io.seqera.wave.service.scan.ScanRequest
-import io.seqera.wave.service.scan.ScanStrategy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static java.nio.file.StandardOpenOption.CREATE
@@ -56,36 +51,33 @@ class JobServiceImpl implements JobService {
     @Inject
     private JobOperation operations
 
-    @Inject
-    @Nullable
-    private TransferStrategy transferStrategy
+//    @Inject
+//    @Nullable
+//    private TransferStrategy transferStrategy
+//
+//    @Inject
+//    private BuildStrategy buildStrategy
+//
+//    @Inject
+//    @Nullable
+//    private ScanStrategy scanStrategy
+//
+//    @Inject
+//    private MirrorStrategy mirrorStrategy
 
     @Inject
-    private BuildStrategy buildStrategy
-
-    @Inject
-    @Nullable
-    private ScanStrategy scanStrategy
-
-    @Inject
-    private JobQueue jobQueue
+    private JobPendingQueue jobQueue
 
     @Inject
     private JobFactory jobFactory
 
-    @Inject
-    private MirrorStrategy mirrorStrategy
-
     @Override
     JobSpec launchTransfer(BlobEntry blob, List<String> command) {
-        if( !transferStrategy )
-            throw new IllegalStateException("Blob cache service is not available - check configuration setting 'wave.blobCache.enabled'")
         // create the ID for the job transfer
         final job = jobFactory.transfer(blob.getKey())
         // submit the job execution
-        transferStrategy.launchJob(job.operationName, command)
-        // signal the transfer has been submitted
-        jobQueue.offer(job)
+//        transferStrategy.launchJob(job.operationName, command)
+        jobQueue.submit(new JobRequest(job,command))
         return job
     }
 
@@ -94,24 +86,20 @@ class JobServiceImpl implements JobService {
         // create the unique job id for the build
         final job = jobFactory.build(request)
         // launch the build job
-        buildStrategy.build(job.operationName, request)
-        // signal the build has been submitted
-        jobQueue.offer(job)
+//        buildStrategy.build(job.operationName, request)
+        jobQueue.submit(new JobRequest(job,request))
         return job
     }
 
     @Override
     JobSpec launchScan(ScanRequest request) {
-        if( !scanStrategy )
-            throw new IllegalStateException("Container scan service is not available - check configuration setting 'wave.scan.enabled'")
         // save docker auth file
         saveDockerAuth(request.workDir, request.configJson)
         // create the unique job id for the build
         final job = jobFactory.scan(request)
-        // launch the scan job
-        scanStrategy.scanContainer(job.operationName, request)
-        // signal the build has been submitted
-        jobQueue.offer(job)
+//        // launch the scan job
+//        scanStrategy.scanContainer(job.operationName, request)
+        jobQueue.submit(new JobRequest(job,request))
         return job
     }
 
@@ -122,19 +110,18 @@ class JobServiceImpl implements JobService {
         // create the unique job id for the build
         final job = jobFactory.mirror(request)
         // launch the scan job
-        mirrorStrategy.mirrorJob(job.operationName, request)
+//        mirrorStrategy.mirrorJob(job.operationName, request)
         // signal the build has been submitted
-        jobQueue.offer(job)
+        jobQueue.submit(new JobRequest(job,request))
         return job
     }
 
     protected void saveDockerAuth(Path workDir, String authJson) {
-        Path configFile = null
         // create the work directory
         Files.createDirectories(workDir)
         // save docker config for creds
         if( authJson ) {
-            configFile = workDir.resolve('config.json')
+            Path configFile = workDir.resolve('config.json')
             Files.write(configFile, JsonOutput.prettyPrint(authJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
         }
     }

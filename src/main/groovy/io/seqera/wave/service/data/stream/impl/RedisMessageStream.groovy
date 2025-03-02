@@ -89,12 +89,19 @@ class RedisMessageStream implements MessageStream<String> {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     void init(String streamId) {
         try (Jedis jedis = pool.getResource()) {
             initGroup0(jedis, streamId, CONSUMER_GROUP_NAME)
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     void offer(String streamId, String message) {
         try (Jedis jedis = pool.getResource()) {
@@ -102,6 +109,9 @@ class RedisMessageStream implements MessageStream<String> {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     boolean consume(String streamId, MessageConsumer<String> consumer) {
         try (Jedis jedis = pool.getResource()) {
@@ -164,6 +174,9 @@ class RedisMessageStream implements MessageStream<String> {
         return entry
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     int length(String streamId) {
         try (Jedis jedis = pool.getResource()) {
