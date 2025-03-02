@@ -53,4 +53,11 @@ interface MessageStream<M> {
      */
     boolean consume(String streamId, MessageConsumer<M> consumer)
 
+    /**
+     * The current number of entries in the stream
+     *
+     * @return The number of entries in the stream
+     */
+    int length(String streamId)
+
 }

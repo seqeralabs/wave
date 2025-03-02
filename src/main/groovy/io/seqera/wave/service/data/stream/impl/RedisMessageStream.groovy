@@ -164,4 +164,10 @@ class RedisMessageStream implements MessageStream<String> {
         return entry
     }
 
+    @Override
+    int length(String streamId) {
+        try (Jedis jedis = pool.getResource()) {
+            jedis.xlen(streamId)
+        }
+    }
 }

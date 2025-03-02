@@ -80,4 +80,8 @@ class LocalMessageStream implements MessageStream<String> {
         }
     }
 
+    @Override
+    int length(String streamId) {
+        return delegate.get(streamId).size()
+    }
 }
