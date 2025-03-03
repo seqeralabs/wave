@@ -63,7 +63,7 @@ class DenyCrawlerFilter implements HttpServerFilter {
     Publisher<MutableHttpResponse<?>> doFilter(HttpRequest<?> request, ServerFilterChain chain) {
         final userAgent = request.getHeaders().get("User-Agent")?.toLowerCase()
         // Check if the request path matches any of the ignored paths
-        if (isCrawler(userAgent)) {
+        if (isCrawler(userAgent) && request.path!='/robots.txt') {
             // Return immediately without processing the request
             log.warn("Request denied [${request.methodName}] ${request.uri}\n- Headers:${RegHelper.dumpHeaders(request)}")
             return Flux.just(HttpResponse.status(HttpStatus.METHOD_NOT_ALLOWED))
