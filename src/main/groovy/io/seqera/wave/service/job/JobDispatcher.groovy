@@ -88,4 +88,8 @@ class JobDispatcher {
         apply(job, (handler, entry)-> handler.onJobTimeout(job, entry))
     }
 
+    JobSpec launchJob(JobSpec job, Object value) {
+        final handler = dispatch.get(job.type)
+        return handler.launchJob(job, value)
+    }
 }

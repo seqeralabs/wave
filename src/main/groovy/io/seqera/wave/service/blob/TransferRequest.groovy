@@ -16,27 +16,19 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job
+package io.seqera.wave.service.blob
 
-import java.time.Duration
-
-import groovy.transform.ToString
-import io.micronaut.context.annotation.Value
-import jakarta.inject.Singleton
+import groovy.transform.Canonical
+import groovy.transform.CompileStatic
+import io.seqera.wave.encoder.MoshiSerializable
 
 /**
- * Model Job manager configuration settings
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@ToString(includeNames = true, includePackage = false)
-@Singleton
-class JobConfig {
-
-    @Value('${wave.job-manager.grace-interval:30s}')
-    Duration graceInterval
-
-    @Value('${wave.job-manager.poll-interval:400ms}')
-    Duration pollInterval
-
+@Canonical
+@CompileStatic
+class TransferRequest implements MoshiSerializable {
+    String key
+    List<String> command
 }

@@ -18,27 +18,30 @@
 
 package io.seqera.wave.service.job
 
-import io.seqera.wave.service.blob.TransferRequest
-import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.mirror.MirrorRequest
-import io.seqera.wave.service.scan.ScanRequest
+import java.time.Duration
+
+import groovy.transform.ToString
+import io.micronaut.context.annotation.Value
+import jakarta.inject.Singleton
+
 /**
- * Define the contract for submitting and monitoring jobs
+ * Model Job manager configuration settings
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface JobService {
+@ToString(includeNames = true, includePackage = false)
+@Singleton
+class JobManagerConfig {
 
-    JobSpec launchTransfer(TransferRequest request)
+    @Value('${wave.job-manager.grace-interval:30s}')
+    Duration graceInterval
 
-    JobSpec launchBuild(BuildRequest request)
+    @Value('${wave.job-manager.poll-interval:1s}')
+    Duration pollInterval
 
-    JobSpec launchScan(ScanRequest request)
+    @Value('${wave.job-manager.scheduler-interval:400ms}')
+    Duration schedulerInterval
 
-    JobSpec launchMirror(MirrorRequest request)
-
-    JobState status(JobSpec jobSpec)
-
-    void cleanup(JobSpec jobSpec, Integer exitStatus)
-
+    @Value('${wave.job-manager.maxRunningJobs:20}')
+    int maxRunningJobs
 }

@@ -20,6 +20,7 @@ package io.seqera.wave.service.job
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import io.seqera.wave.encoder.MoshiSerializable
 
 /**
  * Model a generic job request
@@ -30,5 +31,5 @@ import groovy.transform.CompileStatic
 @CompileStatic
 class JobRequest {
     JobSpec job
-    Object value
+    MoshiSerializable value
 }

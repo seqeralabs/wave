@@ -36,7 +36,7 @@ class JobManagerTest extends Specification {
         given:
         def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
-        def config = new JobConfig(graceInterval: Duration.ofMillis(1))
+        def config = new JobManagerConfig(graceInterval: Duration.ofMillis(1))
         def cache = Caffeine.newBuilder().buildAsync()
         def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config: config, debounceCache: cache)
         and:
@@ -55,7 +55,7 @@ class JobManagerTest extends Specification {
         given:
         def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
-        def config = new JobConfig(graceInterval: Duration.ofMillis(1))
+        def config = new JobManagerConfig(graceInterval: Duration.ofMillis(1))
         def cache = Caffeine.newBuilder().buildAsync()
         def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config: config, debounceCache: cache)
         and:
@@ -74,7 +74,7 @@ class JobManagerTest extends Specification {
         given:
         def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
-        def config = new JobConfig(graceInterval: Duration.ofMillis(1))
+        def config = new JobManagerConfig(graceInterval: Duration.ofMillis(1))
         def cache = Caffeine.newBuilder().buildAsync()
         def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config:config, debounceCache: cache)
         and:
@@ -93,7 +93,7 @@ class JobManagerTest extends Specification {
         given:
         def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
-        def config = new JobConfig(graceInterval: Duration.ofMillis(1))
+        def config = new JobManagerConfig(graceInterval: Duration.ofMillis(1))
         def cache = Caffeine.newBuilder().buildAsync()
         def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config: config, debounceCache: cache)
         and:

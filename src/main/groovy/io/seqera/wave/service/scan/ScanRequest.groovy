@@ -25,6 +25,7 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.encoder.MoshiSerializable
 import io.seqera.wave.tower.PlatformId
 
 /**
@@ -35,7 +36,7 @@ import io.seqera.wave.tower.PlatformId
 @Canonical
 @ToString(includeNames = true, includePackage = false)
 @CompileStatic
-class ScanRequest {
+class ScanRequest implements MoshiSerializable {
 
     /**
      * The scan unique id
@@ -86,7 +87,6 @@ class ScanRequest {
      * Scan request platform identity
      */
     final PlatformId identity
-
 
     static ScanRequest of(Map opts) {
         new ScanRequest(

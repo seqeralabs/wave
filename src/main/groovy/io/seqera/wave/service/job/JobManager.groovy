@@ -21,6 +21,7 @@ package io.seqera.wave.service.job
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ExecutorService
+import javax.annotation.PreDestroy
 
 import com.github.benmanes.caffeine.cache.AsyncCache
 import com.github.benmanes.caffeine.cache.Cache
@@ -32,7 +33,6 @@ import io.micronaut.scheduling.TaskExecutors
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
-
 /**
  * Implement the logic to handle Blob cache transfer (uploads)
  *
@@ -50,10 +50,13 @@ class JobManager {
     private JobRunningQueue runningQueue
 
     @Inject
+    private JobPendingQueue pendingQueue
+
+    @Inject
     private JobDispatcher dispatcher
 
     @Inject
-    private JobConfig config
+    private JobManagerConfig config
 
     @Inject
     @Named(TaskExecutors.BLOCKING)
@@ -61,6 +64,8 @@ class JobManager {
 
     // FIXME https://github.com/seqeralabs/wave/issues/747
     private AsyncCache<String,Instant> debounceCache
+
+    private Thread scheduleJobThread
 
     @PostConstruct
     void init() {
@@ -71,10 +76,38 @@ class JobManager {
                 .executor(ioExecutor)
                 .buildAsync()
         runningQueue.addConsumer((job)-> processJob(job))
+        //
+        scheduleJobThread = Thread.ofVirtual().start(new Runnable() {
+            @Override
+            void run() {
+                scheduleJob()
+            }
+        })
+    }
+
+    protected void scheduleJob() {
+        while( !scheduleJobThread.isInterrupted() ) {
+            log.debug "Checking jobs"
+            if( pendingQueue.length()==0 ) {
+                log.debug "No pending jobs to schedule"
+                // wait for new jobs
+                sleep config.schedulerInterval.toMillis()
+            }
+            else {
+                final canLaunchNewJobs = runningQueue.length()<config.maxRunningJobs
+                final request = canLaunchNewJobs ? pendingQueue.poll() : null
+                log.debug "Getting job request=$request"
+                final job = dispatcher.launchJob(request.job, request.value)
+                if( job )
+                    runningQueue.offer(job)
+                if( !canLaunchNewJobs )
+                    sleep config.schedulerInterval.toMillis()
+            }
+        }
     }
 
     /**
-     * Process a job entry aorrding the state modelled by the {@link JobSpec} object.
+     * Process a job entry according the state modelled by the {@link JobSpec} object.
      *
      * @param jobSpec
      *      A {@link JobSpec} object representing the job to be processed
@@ -146,4 +179,9 @@ class JobManager {
         }
     }
 
+    @PreDestroy
+    void destroy() {
+        scheduleJobThread.interrupt()
+        scheduleJobThread.join()
+    }
 }

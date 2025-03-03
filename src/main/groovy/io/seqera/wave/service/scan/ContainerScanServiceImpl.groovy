@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutorService
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.api.ScanMode
 import io.seqera.wave.configuration.ScanConfig
@@ -87,6 +88,10 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
 
     @Inject
     private CleanupService cleanupService
+
+    @Inject
+    @Nullable
+    private ScanStrategy scanStrategy
 
     ContainerScanServiceImpl() {}
 
@@ -322,4 +327,11 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         persistenceService.allScans(scanId)
     }
 
+    @Override
+    JobSpec launchJob(JobSpec job, Object value) {
+        if( !scanStrategy )
+            throw new IllegalStateException("Security scan service is not available - check configuration setting 'wave.scan.enabled'")
+        scanStrategy.scanContainer(job.operationName, value as ScanRequest)
+        return job
+    }
 }

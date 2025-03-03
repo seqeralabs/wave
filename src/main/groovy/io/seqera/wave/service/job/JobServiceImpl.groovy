@@ -24,7 +24,7 @@ import java.nio.file.Path
 import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.seqera.wave.service.blob.BlobEntry
+import io.seqera.wave.service.blob.TransferRequest
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.cleanup.CleanupService
 import io.seqera.wave.service.mirror.MirrorRequest
@@ -34,7 +34,6 @@ import jakarta.inject.Singleton
 import static java.nio.file.StandardOpenOption.CREATE
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import static java.nio.file.StandardOpenOption.WRITE
-
 /**
  * Implement a service for job creation and execution
  *
@@ -51,20 +50,6 @@ class JobServiceImpl implements JobService {
     @Inject
     private JobOperation operations
 
-//    @Inject
-//    @Nullable
-//    private TransferStrategy transferStrategy
-//
-//    @Inject
-//    private BuildStrategy buildStrategy
-//
-//    @Inject
-//    @Nullable
-//    private ScanStrategy scanStrategy
-//
-//    @Inject
-//    private MirrorStrategy mirrorStrategy
-
     @Inject
     private JobPendingQueue jobQueue
 
@@ -72,12 +57,11 @@ class JobServiceImpl implements JobService {
     private JobFactory jobFactory
 
     @Override
-    JobSpec launchTransfer(BlobEntry blob, List<String> command) {
+    JobSpec launchTransfer(TransferRequest request) {
         // create the ID for the job transfer
-        final job = jobFactory.transfer(blob.getKey())
+        final job = jobFactory.transfer(request.key)
         // submit the job execution
-//        transferStrategy.launchJob(job.operationName, command)
-        jobQueue.submit(new JobRequest(job,command))
+        jobQueue.submit(new JobRequest(job, request))
         return job
     }
 
@@ -86,7 +70,6 @@ class JobServiceImpl implements JobService {
         // create the unique job id for the build
         final job = jobFactory.build(request)
         // launch the build job
-//        buildStrategy.build(job.operationName, request)
         jobQueue.submit(new JobRequest(job,request))
         return job
     }
@@ -97,8 +80,7 @@ class JobServiceImpl implements JobService {
         saveDockerAuth(request.workDir, request.configJson)
         // create the unique job id for the build
         final job = jobFactory.scan(request)
-//        // launch the scan job
-//        scanStrategy.scanContainer(job.operationName, request)
+        // launch the scan job
         jobQueue.submit(new JobRequest(job,request))
         return job
     }
@@ -110,8 +92,6 @@ class JobServiceImpl implements JobService {
         // create the unique job id for the build
         final job = jobFactory.mirror(request)
         // launch the scan job
-//        mirrorStrategy.mirrorJob(job.operationName, request)
-        // signal the build has been submitted
         jobQueue.submit(new JobRequest(job,request))
         return job
     }

@@ -45,6 +45,7 @@ import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildStateStore
+import io.seqera.wave.service.builder.BuildStrategy
 import io.seqera.wave.service.builder.BuildTrack
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.job.JobHandler
@@ -125,7 +126,10 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     @Inject
     @Nullable
     private ContainerScanService scanService
-    
+
+    @Inject
+    private BuildStrategy buildStrategy
+
     /**
      * Build a container image for the given {@link io.seqera.wave.service.builder.BuildRequest}
      *
@@ -410,4 +414,12 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         return persistenceService.allBuilds(containerId)
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    JobSpec launchJob(JobSpec job, Object value) {
+        buildStrategy.build(job.operationName, value as BuildRequest)
+        return job
+    }
 }

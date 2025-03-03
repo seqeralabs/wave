@@ -22,6 +22,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.RegistryProxyService
@@ -30,6 +31,8 @@ import io.seqera.wave.service.blob.BlobCacheService
 import io.seqera.wave.service.blob.BlobEntry
 import io.seqera.wave.service.blob.BlobSigningService
 import io.seqera.wave.service.blob.BlobStateStore
+import io.seqera.wave.service.blob.TransferRequest
+import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
@@ -80,6 +83,10 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobEntry> {
     @Inject
     @Named('BlobS3Client')
     private S3Client s3Client
+
+    @Inject
+    @Nullable
+    private TransferStrategy transferStrategy
 
     @PostConstruct
     private void init() {
@@ -186,7 +193,7 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobEntry> {
         try {
             // the transfer command to be executed
             final cli = transferCommand(route, blob)
-            jobService.launchTransfer(blob, cli)
+            jobService.launchTransfer(new TransferRequest(blob.objectUri, cli))
         }
         catch (Throwable t) {
             log.warn "== Blob cache failed for object '${blob.objectUri}' - cause: ${t.message}", t
@@ -296,5 +303,17 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobEntry> {
         final result = entry.errored("Blob cache transfer timed out ${entry.objectUri}")
         log.warn "== Blob cache timed out for object '${entry.objectUri}'; operation=${job.operationName}; duration=${result.duration()}"
         blobStore.storeBlob(entry.key, result)
+    }
+
+    @Override
+    JobSpec launchJob(JobSpec job, Object value) {
+        if( !transferStrategy )
+            throw new IllegalStateException("Blob cache service is not available - check configuration setting 'wave.blobCache.enabled'")
+        if( value !instanceof List<String> )
+            throw new IllegalStateException("Expected transfer value - offending value=$value")
+
+        final command = value as List<String>
+        transferStrategy.launchJob(job.operationName, command)
+        return job
     }
 }
