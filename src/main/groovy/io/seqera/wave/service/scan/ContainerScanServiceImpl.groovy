@@ -48,6 +48,8 @@ import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
+import static io.seqera.wave.service.job.JobHelper.saveDockerAuth
+
 /**
  * Implements ContainerScanService
  *
@@ -331,7 +333,11 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     JobSpec launchJob(JobSpec job, Object value) {
         if( !scanStrategy )
             throw new IllegalStateException("Security scan service is not available - check configuration setting 'wave.scan.enabled'")
-        scanStrategy.scanContainer(job.operationName, value as ScanRequest)
+        final request = value as ScanRequest
+        // save docker auth file
+        saveDockerAuth(request.workDir, request.configJson)
+        // launch scan job
+        scanStrategy.scanContainer(job.operationName, request)
         return job
     }
 }

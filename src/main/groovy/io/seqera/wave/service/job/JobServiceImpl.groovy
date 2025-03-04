@@ -18,10 +18,7 @@
 
 package io.seqera.wave.service.job
 
-import java.nio.file.Files
-import java.nio.file.Path
 
-import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.service.blob.TransferRequest
@@ -31,9 +28,6 @@ import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.scan.ScanRequest
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import static java.nio.file.StandardOpenOption.CREATE
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
-import static java.nio.file.StandardOpenOption.WRITE
 /**
  * Implement a service for job creation and execution
  *
@@ -76,8 +70,6 @@ class JobServiceImpl implements JobService {
 
     @Override
     JobSpec launchScan(ScanRequest request) {
-        // save docker auth file
-        saveDockerAuth(request.workDir, request.configJson)
         // create the unique job id for the build
         final job = jobFactory.scan(request)
         // launch the scan job
@@ -87,23 +79,11 @@ class JobServiceImpl implements JobService {
 
     @Override
     JobSpec launchMirror(MirrorRequest request) {
-        // save docker auth file
-        saveDockerAuth(request.workDir, request.authJson)
         // create the unique job id for the build
         final job = jobFactory.mirror(request)
         // launch the scan job
         jobQueue.submit(new JobRequest(job,request))
         return job
-    }
-
-    protected void saveDockerAuth(Path workDir, String authJson) {
-        // create the work directory
-        Files.createDirectories(workDir)
-        // save docker config for creds
-        if( authJson ) {
-            Path configFile = workDir.resolve('config.json')
-            Files.write(configFile, JsonOutput.prettyPrint(authJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
-        }
     }
 
     @Override
