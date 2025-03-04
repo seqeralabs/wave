@@ -92,11 +92,10 @@ class ScanControllerTest extends Specification {
         res.body().requestId == scan.requestId
     }
 
-
     def "should return 404 and null"() {
         when:
         def req = HttpRequest.GET("/v1alpha1/scans/unknown")
-        def res = client.toBlocking().exchange(req, WaveScanRecord)
+        client.toBlocking().exchange(req, WaveScanRecord)
 
         then:
         def e = thrown(HttpClientResponseException)

@@ -20,39 +20,50 @@ package io.seqera.wave.filter
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Requires
-import io.micronaut.context.annotation.Value
-import io.micronaut.http.HttpRequest;
+import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.MutableHttpResponse
 import io.micronaut.http.annotation.Filter
-import io.micronaut.http.filter.HttpServerFilter;
-import  io.micronaut.http.filter.ServerFilterChain
+import io.micronaut.http.filter.HttpServerFilter
+import io.micronaut.http.filter.ServerFilterChain
 import io.seqera.wave.util.RegHelper
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Flux
-
 /**
- * Block any HTTP request whose target path is included in the {@code wave.denyPaths}
- * configuration attribute
+ * Block the access to known crawler bots
  *
- * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-
 @Slf4j
 @CompileStatic
 @Filter("/**")
-@Requires(property = 'wave.denyPaths')
-class DenyPathsFilter implements HttpServerFilter {
+class DenyCrawlerFilter implements HttpServerFilter {
 
-    @Value('${wave.denyPaths}')
-    private List<String> deniedPaths
+    private static final List<String> CRAWLER_AGENTS = Arrays.asList(
+            "googlebot",
+            "bingbot",
+            "yandexbot",
+            "baiduspider",
+            "duckduckbot",
+            "slurp",
+            "facebot",
+            "twitterbot",
+            "mj12bot",
+            "ahrefsbot"
+    )
+
+    static boolean isCrawler(String userAgent) {
+        return userAgent
+                ? CRAWLER_AGENTS.stream().anyMatch(userAgent::contains)
+                : false
+    }
 
     @Override
     Publisher<MutableHttpResponse<?>> doFilter(HttpRequest<?> request, ServerFilterChain chain) {
+        final userAgent = request.getHeaders().get("User-Agent")?.toLowerCase()
         // Check if the request path matches any of the ignored paths
-        if (isDeniedPath(request.path, deniedPaths)) {
+        if (isCrawler(userAgent) && request.path!='/robots.txt') {
             // Return immediately without processing the request
             log.warn("Request denied [${request.methodName}] ${request.uri}\n- Headers:${RegHelper.dumpHeaders(request)}")
             return Flux.just(HttpResponse.status(HttpStatus.METHOD_NOT_ALLOWED))
@@ -61,13 +72,8 @@ class DenyPathsFilter implements HttpServerFilter {
         return chain.proceed(request)
     }
 
-    protected boolean isDeniedPath(String path, List<String> paths) {
-        return paths.contains(path)
-    }
-
     @Override
     int getOrder() {
-        return FilterOrder.DENY_PATHS
+        return FilterOrder.DENY_CRAWLER
     }
 }
-

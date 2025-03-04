@@ -195,7 +195,7 @@ class ProxyClient {
             }
             if( result.statusCode() in HTTP_REDIRECT_CODES && followRedirect ) {
                 final redirect = result.headers().firstValue('location').orElse(null)
-                log.trace "Redirecting (${++redirectCount}) $target ==> $redirect ${RegHelper.dumpHeaders(result.headers())}"
+                log.trace "Redirecting (${++redirectCount}) $target ==> $redirect ${RegHelper.dumpHeaders(result)}"
                 if( !redirect ) {
                     final msg = "Missing `Location` header for request URI '$target' ― origin request '$origin'"
                     throw new ClientResponseException(msg, result.request())

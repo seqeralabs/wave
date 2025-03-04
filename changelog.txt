@@ -1,4 +1,15 @@
 # Wave changelog
+1.18.4 - 3 Mar 2025
+- Add robots and favicon files [40c91f5f]
+- Improve errors and warns logging [216b8227]
+
+1.18.3 - 28 Feb 2025
+- Add DenyCrawlerFilter (#803) [edfae007]
+
+1.18.2 - 27 Feb 2025
+- Use post for container scan (#802) [1d4bc194]
+- Wv 102 merge https docs.seqera.io wave api into openapi (#800) [206881ec]
+
 1.18.1 - 21 Feb 2025
 - Add denyHosts to pairing websocket [f5369eed]
 - Use virtual threads for build, scan and mirror jobs (#742) [9dfce1f7]

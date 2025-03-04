@@ -790,8 +790,8 @@ class ViewControllerTest extends Specification {
         def image = "ubuntu:latest"
         and:
         def req = java.net.http.HttpRequest.newBuilder()
-                .GET() 
-                .uri(new URI("${uri}/view/scans?image=${image}"))
+                .POST(java.net.http.HttpRequest.BodyPublishers.ofByteArray(image.bytes))
+                .uri(new URI("${uri}/view/scans"))
                 .build()
 
         when:

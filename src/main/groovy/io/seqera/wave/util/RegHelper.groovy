@@ -18,7 +18,6 @@
 
 package io.seqera.wave.util
 
-import java.net.http.HttpHeaders
 import java.net.http.HttpResponse
 import java.nio.charset.Charset
 import java.nio.file.Files
@@ -105,8 +104,20 @@ class RegHelper {
         }
     }
 
-    static String dumpHeaders(HttpHeaders headers) {
-        return dumpHeaders(headers.map())
+    static String dumpHeaders(io.micronaut.http.HttpRequest request) {
+        dumpHeaders(request.getHeaders().asMap())
+    }
+
+    static String dumpHeaders(io.micronaut.http.HttpResponse response) {
+        dumpHeaders(response.getHeaders().asMap())
+    }
+
+    static String dumpHeaders(java.net.http.HttpRequest request) {
+        return dumpHeaders(request.headers().map())
+    }
+
+    static String dumpHeaders(java.net.http.HttpResponse response) {
+        return dumpHeaders(response.headers().map())
     }
 
     static String dumpHeaders(Map<String, List<String>> headers) {
