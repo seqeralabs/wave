@@ -207,7 +207,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
 
         //increment metrics
         CompletableFuture
-                .runAsync(() -> metricsService.incrementBuildsCounter(request.identity), executor)
+                .runAsync(() -> metricsService.incrementBuildsCounter(request.identity, request.platform.arch), executor)
 
         // launch the build async
         CompletableFuture
