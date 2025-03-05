@@ -24,7 +24,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
 import io.micronaut.scheduling.TaskScheduler
-import io.seqera.wave.configuration.TokenConfig
+import io.seqera.wave.configuration.ContainerRequestConfig
 import io.seqera.wave.tower.client.TowerClient
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
@@ -58,7 +58,7 @@ class JwtMonitor implements Runnable {
     private JwtConfig jwtConfig
 
     @Inject
-    private TokenConfig tokenConfig
+    private ContainerRequestConfig tokenConfig
 
     @PostConstruct
     private init() {
