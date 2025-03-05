@@ -6,6 +6,11 @@ wave:
       duration: '30s'
   build:
     workspace: 'build-workspace'
+    logs:
+      local:
+        path: "build-workspace"
+      prefix: 'wave-build/logs'
+      conda-lock-prefix: 'wave-build/conda-locks'
   metrics:
     enabled: true
   accounts:
