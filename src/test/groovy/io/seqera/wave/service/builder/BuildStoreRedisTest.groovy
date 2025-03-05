@@ -31,7 +31,7 @@ import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.impl.BuildStateStoreImpl
 import io.seqera.wave.service.job.JobFactory
-import io.seqera.wave.service.job.JobQueue
+import io.seqera.wave.service.job.JobRunningQueue
 import io.seqera.wave.store.state.impl.RedisStateProvider
 import io.seqera.wave.test.RedisTestContainer
 import io.seqera.wave.tower.PlatformId
@@ -220,7 +220,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
     def 'should abort an await if build never finish' () {
         given:
         def buildCacheStore = applicationContext.getBean(BuildStateStoreImpl)
-        def jobQueue = applicationContext.getBean(JobQueue)
+        def jobQueue = applicationContext.getBean(JobRunningQueue)
         def jobFactory = applicationContext.getBean(JobFactory)
         def res = BuildResult.create('1')
         def req = new BuildRequest(

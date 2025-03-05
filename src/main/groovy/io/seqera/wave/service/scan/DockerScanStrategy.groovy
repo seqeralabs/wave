@@ -18,20 +18,15 @@
 
 package io.seqera.wave.service.scan
 
-import java.nio.file.FileAlreadyExistsException
-import java.nio.file.Files
+
 import java.nio.file.Path
 
-import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.ScanConfig
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import static java.nio.file.StandardOpenOption.CREATE
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
-import static java.nio.file.StandardOpenOption.WRITE
 /**
  * Implements ScanStrategy for Docker
  *
@@ -54,22 +49,8 @@ class DockerScanStrategy extends ScanStrategy {
     @Override
     void scanContainer(String jobName, ScanRequest req) {
         log.info("Launching container scan job: $jobName for request: ${req}")
-
-        // create the scan dir
-        try {
-            Files.createDirectory(req.workDir)
-        }
-        catch (FileAlreadyExistsException e) {
-            log.warn("Container scan directory already exists: $e")
-        }
-
-        // save the config file with docker auth credentials
-        Path configFile = null
-        if( req.configJson ) {
-            configFile = req.workDir.resolve('config.json')
-            Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
-        }
-
+        // config (docker auth) file name
+        final Path configFile = req.configJson ? req.workDir.resolve('config.json') : null
         // outfile file name
         final reportFile = req.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
         // create the launch command

@@ -18,21 +18,22 @@
 
 package io.seqera.wave.service.job
 
-import javax.annotation.Nullable
+import java.nio.file.Files
+import java.nio.file.Path
 
+import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.seqera.wave.service.blob.BlobEntry
-import io.seqera.wave.service.blob.TransferStrategy
+import io.seqera.wave.service.blob.TransferRequest
 import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.builder.BuildStrategy
 import io.seqera.wave.service.cleanup.CleanupService
 import io.seqera.wave.service.mirror.MirrorRequest
-import io.seqera.wave.service.mirror.strategy.MirrorStrategy
 import io.seqera.wave.service.scan.ScanRequest
-import io.seqera.wave.service.scan.ScanStrategy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+import static java.nio.file.StandardOpenOption.CREATE
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
+import static java.nio.file.StandardOpenOption.WRITE
 /**
  * Implement a service for job creation and execution
  *
@@ -50,35 +51,17 @@ class JobServiceImpl implements JobService {
     private JobOperation operations
 
     @Inject
-    @Nullable
-    private TransferStrategy transferStrategy
-
-    @Inject
-    private BuildStrategy buildStrategy
-
-    @Inject
-    @Nullable
-    private ScanStrategy scanStrategy
-
-    @Inject
-    private JobQueue jobQueue
+    private JobPendingQueue jobQueue
 
     @Inject
     private JobFactory jobFactory
 
-    @Inject
-    private MirrorStrategy mirrorStrategy
-
     @Override
-    JobSpec launchTransfer(BlobEntry blob, List<String> command) {
-        if( !transferStrategy )
-            throw new IllegalStateException("Blob cache service is not available - check configuration setting 'wave.blobCache.enabled'")
+    JobSpec launchTransfer(TransferRequest request) {
         // create the ID for the job transfer
-        final job = jobFactory.transfer(blob.getKey())
+        final job = jobFactory.transfer(request.key)
         // submit the job execution
-        transferStrategy.launchJob(job.operationName, command)
-        // signal the transfer has been submitted
-        jobQueue.offer(job)
+        jobQueue.submit(new JobRequest(job, request))
         return job
     }
 
@@ -87,35 +70,40 @@ class JobServiceImpl implements JobService {
         // create the unique job id for the build
         final job = jobFactory.build(request)
         // launch the build job
-        buildStrategy.build(job.operationName, request)
-        // signal the build has been submitted
-        jobQueue.offer(job)
+        jobQueue.submit(new JobRequest(job,request))
         return job
     }
 
     @Override
     JobSpec launchScan(ScanRequest request) {
-        if( !scanStrategy )
-            throw new IllegalStateException("Container scan service is not available - check configuration setting 'wave.scan.enabled'")
-
+        // save docker auth file
+        saveDockerAuth(request.workDir, request.configJson)
         // create the unique job id for the build
         final job = jobFactory.scan(request)
         // launch the scan job
-        scanStrategy.scanContainer(job.operationName, request)
-        // signal the build has been submitted
-        jobQueue.offer(job)
+        jobQueue.submit(new JobRequest(job,request))
         return job
     }
 
     @Override
     JobSpec launchMirror(MirrorRequest request) {
+        // save docker auth file
+        saveDockerAuth(request.workDir, request.authJson)
         // create the unique job id for the build
         final job = jobFactory.mirror(request)
         // launch the scan job
-        mirrorStrategy.mirrorJob(job.operationName, request)
-        // signal the build has been submitted
-        jobQueue.offer(job)
+        jobQueue.submit(new JobRequest(job,request))
         return job
+    }
+
+    protected void saveDockerAuth(Path workDir, String authJson) {
+        // create the work directory
+        Files.createDirectories(workDir)
+        // save docker config for creds
+        if( authJson ) {
+            Path configFile = workDir.resolve('config.json')
+            Files.write(configFile, JsonOutput.prettyPrint(authJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+        }
     }
 
     @Override

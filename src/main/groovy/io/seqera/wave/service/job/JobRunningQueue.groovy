@@ -35,13 +35,13 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-class JobQueue extends AbstractMessageStream<JobSpec> {
+class JobRunningQueue extends AbstractMessageStream<JobSpec> {
 
     private final static String STREAM_NAME = 'jobs-queue/v1'
 
-    private final JobConfig config
+    private final JobManagerConfig config
 
-    JobQueue(MessageStream<String> target, JobConfig config) {
+    JobRunningQueue(MessageStream<String> target, JobManagerConfig config) {
         super(target)
         this.config = config
         log.debug "Created job queue"
@@ -63,6 +63,10 @@ class JobQueue extends AbstractMessageStream<JobSpec> {
 
     final void addConsumer(MessageConsumer<JobSpec> consumer) {
         super.addConsumer(STREAM_NAME, consumer)
+    }
+
+    final int length() {
+        return super.length(STREAM_NAME)
     }
 
     @PreDestroy

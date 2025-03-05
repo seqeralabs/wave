@@ -18,27 +18,18 @@
 
 package io.seqera.wave.service.job
 
-import io.seqera.wave.service.blob.TransferRequest
-import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.mirror.MirrorRequest
-import io.seqera.wave.service.scan.ScanRequest
+import groovy.transform.Canonical
+import groovy.transform.CompileStatic
+import io.seqera.wave.encoder.MoshiSerializable
+
 /**
- * Define the contract for submitting and monitoring jobs
+ * Model a generic job request
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface JobService {
-
-    JobSpec launchTransfer(TransferRequest request)
-
-    JobSpec launchBuild(BuildRequest request)
-
-    JobSpec launchScan(ScanRequest request)
-
-    JobSpec launchMirror(MirrorRequest request)
-
-    JobState status(JobSpec jobSpec)
-
-    void cleanup(JobSpec jobSpec, Integer exitStatus)
-
+@Canonical
+@CompileStatic
+class JobRequest {
+    JobSpec job
+    MoshiSerializable value
 }

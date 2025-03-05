@@ -46,8 +46,6 @@ interface MessageQueue<M> {
      *
      * @param target
      *      The queue unique identifier
-     * @param timeout
-     *      How long to wait before giving up, in units of unit unit – a TimeUnit determining how to interpret the timeout parameter
      * @return
      *      The head of this queue, or null if queue is empty
      */
@@ -65,6 +63,10 @@ interface MessageQueue<M> {
      */
     M poll(String target, Duration timeout)
 
+    /**
+     * @return The number of entries in the stream
+     */
+    int length(String target)
 }
 
 

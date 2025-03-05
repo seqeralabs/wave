@@ -18,10 +18,9 @@
 
 package io.seqera.wave.service.builder
 
-import java.nio.file.Files
+
 import java.nio.file.Path
 
-import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.openapi.ApiException
@@ -33,15 +32,9 @@ import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
-import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.util.K8sHelper.getSelectorLabel
-import static java.nio.file.StandardOpenOption.CREATE
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
-import static java.nio.file.StandardOpenOption.WRITE
-import static java.nio.file.attribute.PosixFilePermission.OWNER_READ
-import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
 /**
  * Build a container image using running a K8s pod
  *
@@ -71,20 +64,7 @@ class KubeBuildStrategy extends BuildStrategy {
     @Override
     void build(String jobName, BuildRequest req) {
 
-        Path configFile = null
-        if( req.configJson ) {
-            configFile = req.workDir.resolve('config.json')
-            Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
-        }
-        // save remote files for singularity
-        if( req.configJson && req.formatSingularity()) {
-            final remoteFile = req.workDir.resolve('singularity-remote.yaml')
-            final content = RegHelper.singularityRemoteFile(req.targetImage)
-            Files.write(remoteFile, content.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
-            // set permissions 600 as required by Singularity
-            Files.setPosixFilePermissions(configFile, Set.of(OWNER_READ, OWNER_WRITE))
-            Files.setPosixFilePermissions(remoteFile, Set.of(OWNER_READ, OWNER_WRITE))
-        }
+        final Path configFile = req.configJson ? req.workDir.resolve('config.json') : null
 
         try {
             final buildImage = getBuildImage(req)

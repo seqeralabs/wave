@@ -31,6 +31,7 @@ import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.metric.MetricsService
+import io.seqera.wave.service.mirror.strategy.MirrorStrategy
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.scan.ContainerScanService
 import jakarta.inject.Inject
@@ -66,6 +67,9 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
 
     @Inject
     private MetricsService metricsService
+
+    @Inject
+    private MirrorStrategy mirrorStrategy
 
     /**
      * {@inheritDoc}
@@ -157,4 +161,9 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
         log.error("Mirror container errored - job=${job.operationName}; result=${result}", error)
     }
 
+    @Override
+    JobSpec launchJob(JobSpec job, Object value) {
+        mirrorStrategy.mirrorJob(job.operationName, value as MirrorRequest)
+        return job
+    }
 }
