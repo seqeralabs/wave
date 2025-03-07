@@ -21,7 +21,9 @@ package io.seqera.wave.service.job
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.seqera.wave.service.blob.TransferRequest
+import io.micronaut.core.annotation.Nullable
+import io.seqera.wave.service.blob.BlobEntry
+import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.cleanup.CleanupService
 import io.seqera.wave.service.mirror.MirrorRequest
@@ -45,17 +47,27 @@ class JobServiceImpl implements JobService {
     private JobOperation operations
 
     @Inject
-    private JobPendingQueue jobQueue
+    private JobPendingQueue pendingJobs
+
+    private JobRunningQueue runningQueue
 
     @Inject
     private JobFactory jobFactory
 
+    @Inject
+    @Nullable
+    private TransferStrategy transferStrategy
+
     @Override
-    JobSpec launchTransfer(TransferRequest request) {
+    JobSpec launchTransfer(BlobEntry blob, List<String> command) {
+        if( !transferStrategy )
+            throw new IllegalStateException("Blob cache service is not available - check configuration setting 'wave.blobCache.enabled'")
         // create the ID for the job transfer
-        final job = jobFactory.transfer(request.key)
+        final job = jobFactory.transfer(blob.getKey())
         // submit the job execution
-        jobQueue.submit(new JobRequest(job, request))
+        transferStrategy.launchJob(job.operationName, command)
+        // signal the transfer has been submitted
+        runningQueue.offer(job)
         return job
     }
 
@@ -64,7 +76,7 @@ class JobServiceImpl implements JobService {
         // create the unique job id for the build
         final job = jobFactory.build(request)
         // launch the build job
-        jobQueue.submit(new JobRequest(job,request))
+        pendingJobs.submit(job)
         return job
     }
 
@@ -73,7 +85,7 @@ class JobServiceImpl implements JobService {
         // create the unique job id for the build
         final job = jobFactory.scan(request)
         // launch the scan job
-        jobQueue.submit(new JobRequest(job,request))
+        pendingJobs.submit(job)
         return job
     }
 
@@ -82,7 +94,7 @@ class JobServiceImpl implements JobService {
         // create the unique job id for the build
         final job = jobFactory.mirror(request)
         // launch the scan job
-        jobQueue.submit(new JobRequest(job,request))
+        pendingJobs.submit(job)
         return job
     }
 

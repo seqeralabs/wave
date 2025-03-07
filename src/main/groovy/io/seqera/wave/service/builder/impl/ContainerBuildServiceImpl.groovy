@@ -380,6 +380,15 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         eventPublisher.publishEvent(event)
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    JobSpec launchJob(JobSpec job, BuildEntry entry) {
+        buildStrategy.build(job.operationName, entry.request)
+        return job
+    }
+
     // **************************************************************
     // **               build record implementation
     // **************************************************************
@@ -414,12 +423,4 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         return persistenceService.allBuilds(containerId)
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    JobSpec launchJob(JobSpec job, Object value) {
-        buildStrategy.build(job.operationName, value as BuildRequest)
-        return job
-    }
 }

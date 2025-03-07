@@ -47,15 +47,15 @@ class DockerScanStrategy extends ScanStrategy {
     }
 
     @Override
-    void scanContainer(String jobName, ScanRequest req) {
-        log.info("Launching container scan job: $jobName for request: ${req}")
+    void scanContainer(String jobName, ScanEntry entry) {
+        log.info("Launching container scan job: $jobName for entry: $entry}")
         // config (docker auth) file name
-        final Path configFile = req.configJson ? req.workDir.resolve('config.json') : null
+        final Path configFile = entry.configJson ? entry.workDir.resolve('config.json') : null
         // outfile file name
-        final reportFile = req.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
+        final reportFile = entry.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
         // create the launch command
-        final dockerCommand = dockerWrapper(jobName, req.workDir, configFile, scanConfig.environment)
-        final trivyCommand = List.of(scanConfig.scanImage) + scanCommand(req.targetImage, reportFile, req.platform, scanConfig)
+        final dockerCommand = dockerWrapper(jobName, entry.workDir, configFile, scanConfig.environment)
+        final trivyCommand = List.of(scanConfig.scanImage) + scanCommand(entry.containerImage, reportFile, entry.platform, scanConfig)
         final command = dockerCommand + trivyCommand
 
         //launch scanning

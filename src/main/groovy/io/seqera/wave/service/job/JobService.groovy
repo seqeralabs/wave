@@ -18,10 +18,11 @@
 
 package io.seqera.wave.service.job
 
-import io.seqera.wave.service.blob.TransferRequest
+import io.seqera.wave.service.blob.BlobEntry
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.scan.ScanRequest
+
 /**
  * Define the contract for submitting and monitoring jobs
  *
@@ -29,7 +30,7 @@ import io.seqera.wave.service.scan.ScanRequest
  */
 interface JobService {
 
-    JobSpec launchTransfer(TransferRequest request)
+    JobSpec launchTransfer(BlobEntry blob, List<String> command)
 
     JobSpec launchBuild(BuildRequest request)
 

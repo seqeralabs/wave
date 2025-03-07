@@ -18,17 +18,11 @@
 
 package io.seqera.wave.service.job
 
-import com.squareup.moshi.JsonAdapter
-import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
+
 import groovy.transform.CompileStatic
 import io.seqera.wave.encoder.EncodingStrategy
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.encoder.MoshiSerializable
-import io.seqera.wave.service.blob.TransferRequest
-import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.data.queue.MessageQueue
-import io.seqera.wave.service.mirror.MirrorRequest
-import io.seqera.wave.service.scan.ScanRequest
 import jakarta.inject.Singleton
 /**
  *
@@ -42,18 +36,18 @@ class JobPendingQueue {
 
     private MessageQueue<String> delegate
 
-    private EncodingStrategy<JobRequest> encoder
+    private EncodingStrategy<JobSpec> encoder
 
     JobPendingQueue(MessageQueue<String> queue) {
         this.delegate = queue
-        this.encoder = encoder()
+        this.encoder = new MoshiEncodeStrategy<JobSpec>() {}
     }
 
-    void submit(JobRequest request) {
+    void submit(JobSpec request) {
         delegate.offer(QUEUE_NAME, encoder.encode(request))
     }
 
-    JobRequest poll() {
+    JobSpec poll() {
         final result = delegate.poll(QUEUE_NAME)
         return result!=null ? encoder.decode(result) : null
     }
@@ -62,15 +56,4 @@ class JobPendingQueue {
         return delegate.length(QUEUE_NAME)
     }
 
-    static MoshiEncodeStrategy<JobRequest> encoder() {
-        new MoshiEncodeStrategy<JobRequest>(factory()) {}
-    }
-
-    static private JsonAdapter.Factory factory() {
-        PolymorphicJsonAdapterFactory.of(MoshiSerializable.class, "@type")
-                .withSubtype(BuildRequest.class, BuildRequest.simpleName)
-                .withSubtype(ScanRequest.class, ScanRequest.simpleName)
-                .withSubtype(MirrorRequest.class, MirrorRequest.simpleName)
-                .withSubtype(TransferRequest.class, TransferRequest.simpleName)
-    }
 }

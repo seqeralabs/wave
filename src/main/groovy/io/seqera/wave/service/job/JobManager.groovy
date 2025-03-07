@@ -97,7 +97,7 @@ class JobManager {
                 final canLaunchNewJobs = runningQueue.length()<config.maxRunningJobs
                 final request = canLaunchNewJobs ? pendingQueue.poll() : null
                 log.debug "Getting job request=$request"
-                final job = dispatcher.launchJob(request.job, request.value)
+                final job = dispatcher.launchJob(request)
                 if( job )
                     runningQueue.offer(job)
                 if( !canLaunchNewJobs )

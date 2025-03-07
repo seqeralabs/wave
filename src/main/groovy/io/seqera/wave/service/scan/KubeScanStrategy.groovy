@@ -59,13 +59,13 @@ class KubeScanStrategy extends ScanStrategy {
     }
 
     @Override
-    void scanContainer(String jobName, ScanRequest req) {
-        log.info("Launching container scan job: $jobName for request: ${req}")
+    void scanContainer(String jobName, ScanEntry entry) {
+        log.info("Launching container scan job: $jobName for entry: ${entry}")
         try{
-            final Path configFile = req.configJson ? req.workDir.resolve('config.json') : null
-            final reportFile = req.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
-            final trivyCommand = scanCommand(req.targetImage, reportFile, req.platform, scanConfig)
-            k8sService.launchScanJob(jobName, scanConfig.scanImage, trivyCommand, req.workDir, configFile, scanConfig)
+            final Path configFile = entry.configJson ? entry.workDir.resolve('config.json') : null
+            final reportFile = entry.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
+            final trivyCommand = scanCommand(entry.containerImage, reportFile, entry.platform, scanConfig)
+            k8sService.launchScanJob(jobName, scanConfig.scanImage, trivyCommand, entry.workDir, configFile, scanConfig)
         }
         catch (ApiException e) {
             throw new BadRequestException("Unexpected scan failure: ${e.responseBody}", e)

@@ -272,6 +272,17 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     }
 
     @Override
+    JobSpec launchJob(JobSpec job, ScanEntry entry) {
+        if( !scanStrategy )
+            throw new IllegalStateException("Security scan service is not available - check configuration setting 'wave.scan.enabled'")
+        // save docker auth file
+        saveDockerAuth(entry.workDir, entry.configJson)
+        // launch scan job
+        scanStrategy.scanContainer(job.operationName, entry)
+        return job
+    }
+
+    @Override
     void onJobCompletion(JobSpec job, ScanEntry entry, JobState state) {
         ScanEntry result
         if( state.succeeded() ) {
@@ -329,15 +340,4 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         persistenceService.allScans(scanId)
     }
 
-    @Override
-    JobSpec launchJob(JobSpec job, Object value) {
-        if( !scanStrategy )
-            throw new IllegalStateException("Security scan service is not available - check configuration setting 'wave.scan.enabled'")
-        final request = value as ScanRequest
-        // save docker auth file
-        saveDockerAuth(request.workDir, request.configJson)
-        // launch scan job
-        scanStrategy.scanContainer(job.operationName, request)
-        return job
-    }
 }

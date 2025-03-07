@@ -68,5 +68,5 @@ interface JobHandler<R extends JobEntry> {
      */
     void onJobTimeout(JobSpec job, R entry)
 
-    JobSpec launchJob(JobSpec job, Object value)
+    JobSpec launchJob(JobSpec job, R entry)
 }

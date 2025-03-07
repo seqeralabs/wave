@@ -17,7 +17,6 @@
  */
 package io.seqera.wave.service.blob.impl
 
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
@@ -31,7 +30,6 @@ import io.seqera.wave.service.blob.BlobCacheService
 import io.seqera.wave.service.blob.BlobEntry
 import io.seqera.wave.service.blob.BlobSigningService
 import io.seqera.wave.service.blob.BlobStateStore
-import io.seqera.wave.service.blob.TransferRequest
 import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
@@ -193,7 +191,7 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobEntry> {
         try {
             // the transfer command to be executed
             final cli = transferCommand(route, blob)
-            jobService.launchTransfer(new TransferRequest(blob.objectUri, cli))
+            jobService.launchTransfer(blob, cli)
         }
         catch (Throwable t) {
             log.warn "== Blob cache failed for object '${blob.objectUri}' - cause: ${t.message}", t
@@ -306,14 +304,7 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobEntry> {
     }
 
     @Override
-    JobSpec launchJob(JobSpec job, Object value) {
-        if( !transferStrategy )
-            throw new IllegalStateException("Blob cache service is not available - check configuration setting 'wave.blobCache.enabled'")
-        if( value !instanceof List<String> )
-            throw new IllegalStateException("Expected transfer value - offending value=$value")
-
-        final command = value as List<String>
-        transferStrategy.launchJob(job.operationName, command)
-        return job
+    JobSpec launchJob(JobSpec job, BlobEntry entry) {
+        throw new UnsupportedOperationException("Operation launchJob not support by ${this.class.simpleName}")
     }
 }

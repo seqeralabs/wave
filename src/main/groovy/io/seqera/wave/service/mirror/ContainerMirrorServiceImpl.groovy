@@ -164,8 +164,8 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
     }
 
     @Override
-    JobSpec launchJob(JobSpec job, Object value) {
-        final request = value as MirrorRequest
+    JobSpec launchJob(JobSpec job, MirrorEntry entry) {
+        final request = entry.request
         // save docker auth file
         saveDockerAuth(request.workDir, request.authJson)
         // launch mirror job
