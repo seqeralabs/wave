@@ -21,7 +21,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
-import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.RegistryProxyService
@@ -30,7 +29,6 @@ import io.seqera.wave.service.blob.BlobCacheService
 import io.seqera.wave.service.blob.BlobEntry
 import io.seqera.wave.service.blob.BlobSigningService
 import io.seqera.wave.service.blob.BlobStateStore
-import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
@@ -81,10 +79,6 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobEntry> {
     @Inject
     @Named('BlobS3Client')
     private S3Client s3Client
-
-    @Inject
-    @Nullable
-    private TransferStrategy transferStrategy
 
     @PostConstruct
     private void init() {

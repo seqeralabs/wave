@@ -25,7 +25,6 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.encoder.MoshiSerializable
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.LongRndKey
 /**
@@ -36,7 +35,7 @@ import io.seqera.wave.util.LongRndKey
 @ToString(includeNames = true, includePackage = false)
 @Canonical
 @CompileStatic
-class MirrorRequest implements MoshiSerializable {
+class MirrorRequest {
 
     static final String ID_PREFIX = 'mr-'
 

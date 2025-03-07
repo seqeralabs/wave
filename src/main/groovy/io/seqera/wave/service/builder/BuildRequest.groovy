@@ -40,7 +40,7 @@ import static io.seqera.wave.util.StringUtils.trunc
  */
 @EqualsAndHashCode(includes = 'containerId,targetImage,buildId')
 @CompileStatic
-class BuildRequest implements MoshiSerializable {
+class BuildRequest {
 
     static final public String SEP = '_'
 
