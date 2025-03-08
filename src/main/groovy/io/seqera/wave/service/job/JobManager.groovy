@@ -76,33 +76,56 @@ class JobManager {
                 .executor(ioExecutor)
                 .buildAsync()
         processingQueue.addConsumer((job)-> processJob(job))
-        //
-        scheduleJobThread = Thread.ofVirtual().start(new Runnable() {
-            @Override
-            void run() {
-                scheduleJob()
-            }
-        })
+        // run the scheduler thread
+        scheduleJobThread = Thread.ofVirtual().name("jobs-scheduler-thread").start(()->scheduleJobs())
     }
 
-    protected void scheduleJob() {
-        while( !scheduleJobThread.isInterrupted() ) {
-            log.debug "Checking jobs"
-            if( pendingQueue.length()==0 ) {
-                log.debug "No pending jobs to schedule"
-                // wait for new jobs
-                sleep config.schedulerInterval.toMillis()
+    protected void scheduleJobs() {
+        try {
+            scheduleJobs0()
+        }
+        catch (InterruptedException e) {
+            log.debug "Got interrupted exception"
+        }
+        finally {
+            log.debug "Exiting job scheduler thread"
+        }
+
+    }
+    protected void scheduleJobs0() {
+        int errors=0
+        while( !Thread.currentThread().isInterrupted() ) {
+            try {
+                schedule0()
+                errors=0
             }
-            else {
-                final canLaunchNewJobs = processingQueue.length()<config.maxRunningJobs
-                final request = canLaunchNewJobs ? pendingQueue.poll() : null
-                log.debug "Getting job request=$request"
-                final job = dispatcher.launchJob(request)
-                if( job )
-                    processingQueue.offer(job)
-                if( !canLaunchNewJobs )
-                    sleep config.schedulerInterval.toMillis()
+            catch (InterruptedException e) {
+                log.debug "Got interrupted exception"
+                break
             }
+            catch (Throwable e) {
+                final delay = Math.min(Math.pow(2, errors++) * config.schedulerInterval.toMillis() as long, config.schedulerMaxDelay.toMillis())
+                log.debug "Unexpected error while scheduling scheduling job [awaiting ${Duration.ofMillis(delay)}] - cause: ${e.message}", e
+                Thread.sleep(delay)
+            }
+        }
+    }
+
+    protected void schedule0() {
+        if( pendingQueue.length()==0 ) {
+            log.trace "No pending jobs to schedule"
+            // wait for new jobs
+            sleep config.schedulerInterval.toMillis()
+        }
+        else {
+            final canLaunchNewJobs = processingQueue.length()<config.maxRunningJobs
+            final request = canLaunchNewJobs ? pendingQueue.poll() : null
+            log.trace "Getting job request=$request"
+            final job = dispatcher.launchJob(request)
+            if( job )
+                processingQueue.offer(job)
+            if( !canLaunchNewJobs )
+                Thread.sleep(config.schedulerInterval.toMillis())
         }
     }
 
