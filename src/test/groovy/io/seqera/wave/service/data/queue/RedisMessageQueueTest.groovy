@@ -36,10 +36,7 @@ class RedisMessageQueueTest extends Specification implements RedisTestContainer 
     ApplicationContext context
 
     def setup() {
-        context = ApplicationContext.run([
-                REDIS_HOST: redisHostName,
-                REDIS_PORT: redisPort
-        ], 'test', 'redis')
+        context = ApplicationContext.run('test', 'redis')
     }
 
     def cleanup() {
