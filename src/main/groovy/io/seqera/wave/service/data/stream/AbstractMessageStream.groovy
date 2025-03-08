@@ -138,7 +138,7 @@ abstract class AbstractMessageStream<M> implements Closeable {
      */
     protected void processMessages() {
         log.trace "Message stream - starting listener thread"
-        while( !thread.interrupted() ) {
+        while( !Thread.currentThread().isInterrupted() ) {
             try {
                 final count=new AtomicInteger()
                 for( Map.Entry<String,MessageConsumer<M>> entry : listeners.entrySet() ) {
@@ -151,7 +151,7 @@ abstract class AbstractMessageStream<M> implements Closeable {
                 // if no message was sent, sleep for a while before retrying
                 if( count.get()==0 ) {
                     log.trace "Message stream - await before checking for new messages"
-                    sleep(pollInterval().toMillis())
+                    Thread.sleep(pollInterval().toMillis())
                 }
             }
             catch (InterruptedException e) {
@@ -162,7 +162,7 @@ abstract class AbstractMessageStream<M> implements Closeable {
             catch (Throwable e) {
                 final d0 = attempt.delay()
                 log.error("Unexpected error on message stream ${name0} (await: ${d0}) - cause: ${e.message}", e)
-                sleep(d0.toMillis())
+                Thread.sleep(d0.toMillis())
             }
         }
         log.trace "Message stream - exiting listener thread"

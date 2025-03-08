@@ -1,4 +1,8 @@
 # Wave changelog
+1.18.4 - 3 Mar 2025
+- Add robots and favicon files [40c91f5f]
+- Improve errors and warns logging [216b8227]
+
 1.18.3 - 28 Feb 2025
 - Add DenyCrawlerFilter (#803) [edfae007]
 
