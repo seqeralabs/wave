@@ -205,6 +205,11 @@ class JobManager {
     @PreDestroy
     void destroy() {
         scheduleJobThread.interrupt()
-        scheduleJobThread.join()
+        try {
+            scheduleJobThread.join(1_000)
+        }
+        catch (Exception e) {
+            log.warn "Unable to join scheduler thread - cause: ${e.message}", e
+        }
     }
 }
