@@ -63,8 +63,6 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
 
     def setup() {
         EmbeddedServer server = ApplicationContext.run(EmbeddedServer, [
-                REDIS_HOST   : redisHostName,
-                REDIS_PORT   : redisPort,
                 'wave.build.timeout':'2s',
                 'wave.build.trusted-timeout':'2s'
         ], 'test', 'redis')
