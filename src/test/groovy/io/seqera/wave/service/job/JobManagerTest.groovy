@@ -117,7 +117,7 @@ class JobManagerTest extends Specification {
         def jobService = Mock(JobService)
         def manager = new JobManager(jobService: jobService)
         and:
-        def job1 = new JobSpec('1', JobSpec.Type.Build, '1', '1', Instant.now(), Duration.ofMinutes(1), Mock(Path))
+        def job1 = new JobSpec('1', JobSpec.Type.Build, '1', '1', Instant.now(), Instant.now(), Duration.ofMinutes(1), Mock(Path))
         and:
         def PENDING = new JobState(JobState.Status.PENDING, null, null)
         def UNKNOWN = new JobState(JobState.Status.UNKNOWN, null, null)

@@ -228,12 +228,14 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
                 buildId: '1',
                 startTime: Instant.now(),
                 maxDuration: Duration.ofSeconds(5),
-                workspace: Path.of('/some/work/dir')
+                workspace: Path.of('/some/work/dir'),
+                identity: PlatformId.NULL
         )
         def entry = new BuildEntry(req, res)
+        def job = jobFactory.build(req).withSubmissionTime(Instant.now())
         and:
         buildCacheStore.storeIfAbsent(req.targetImage, entry)
-        jobQueue.offer(jobFactory.build(req))
+        jobQueue.offer(job)
 
         when: "wait for an update never will arrive"
         buildCacheStore.awaitBuild(req.targetImage).get()
