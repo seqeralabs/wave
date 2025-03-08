@@ -42,7 +42,7 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.job.JobFactory
-import io.seqera.wave.service.job.JobRunningQueue
+import io.seqera.wave.service.job.JobProcessingQueue
 import io.seqera.wave.service.request.ContainerRequestStoreImpl
 import io.seqera.wave.storage.ManifestCacheStore
 import io.seqera.wave.test.DockerRegistryContainer
@@ -105,7 +105,7 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         def client = applicationContext.createBean(HttpClient)
         def buildCacheStore = applicationContext.getBean(BuildStateStoreImpl)
         def tokenCacheStore = applicationContext.getBean(ContainerRequestStoreImpl)
-        def jobQueue = applicationContext.getBean(JobRunningQueue)
+        def jobQueue = applicationContext.getBean(JobProcessingQueue)
         def jobFactory = applicationContext.getBean(JobFactory)
         def res = BuildResult.create('1')
         def req = new BuildRequest(

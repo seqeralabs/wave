@@ -47,9 +47,10 @@ class JobServiceImpl implements JobService {
     private JobOperation operations
 
     @Inject
-    private JobPendingQueue pendingJobs
+    private JobPendingQueue pendingQueue
 
-    private JobRunningQueue runningQueue
+    @Inject
+    private JobProcessingQueue processingQueue
 
     @Inject
     private JobFactory jobFactory
@@ -65,9 +66,14 @@ class JobServiceImpl implements JobService {
         // create the ID for the job transfer
         final job = jobFactory.transfer(blob.getKey())
         // submit the job execution
+        // note: transfer jobs asre submitted immediately for execution to the underlying
+        // system and added directly to the processingQueue (instead of pending jobs queue)
+        // because the should be executed with priority over other jobs.
+        // This is required because the job to be executed holds a short lived auth token,
+        // keeping to long in the pending queue could lead to the expiration of such token
         transferStrategy.launchJob(job.operationName, command)
         // signal the transfer has been submitted
-        runningQueue.offer(job)
+        processingQueue.offer(job)
         return job
     }
 
@@ -76,7 +82,7 @@ class JobServiceImpl implements JobService {
         // create the unique job id for the build
         final job = jobFactory.build(request)
         // launch the build job
-        pendingJobs.submit(job)
+        pendingQueue.submit(job)
         return job
     }
 
@@ -85,7 +91,7 @@ class JobServiceImpl implements JobService {
         // create the unique job id for the build
         final job = jobFactory.scan(request)
         // launch the scan job
-        pendingJobs.submit(job)
+        pendingQueue.submit(job)
         return job
     }
 
@@ -94,7 +100,7 @@ class JobServiceImpl implements JobService {
         // create the unique job id for the build
         final job = jobFactory.mirror(request)
         // launch the scan job
-        pendingJobs.submit(job)
+        pendingQueue.submit(job)
         return job
     }
 

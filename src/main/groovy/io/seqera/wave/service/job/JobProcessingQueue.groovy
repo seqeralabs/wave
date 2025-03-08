@@ -35,21 +35,23 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-class JobRunningQueue extends AbstractMessageStream<JobSpec> {
+class JobProcessingQueue extends AbstractMessageStream<JobSpec> {
 
-    private final static String STREAM_NAME = 'jobs-queue/v1'
+    private final static String QUEUE_NAME = "jobs-queue"
+
+    private final static String STREAM_NAME = "jobs-queue/v1"
 
     private final JobManagerConfig config
 
-    JobRunningQueue(MessageStream<String> target, JobManagerConfig config) {
+    JobProcessingQueue(MessageStream<String> target, JobManagerConfig config) {
         super(target)
         this.config = config
-        log.debug "Created job queue"
+        log.debug "Created jobs processing queue"
     }
 
     @Override
     protected String name() {
-        return 'jobs-queue'
+        return QUEUE_NAME
     }
 
     @Override
@@ -71,7 +73,7 @@ class JobRunningQueue extends AbstractMessageStream<JobSpec> {
 
     @PreDestroy
     void destroy() {
-        log.debug "Shutting down job queue"
+        log.debug "Shutting down jobs processing queue"
         this.close()
     }
 }

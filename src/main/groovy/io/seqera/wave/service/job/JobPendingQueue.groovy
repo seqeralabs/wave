@@ -20,14 +20,18 @@ package io.seqera.wave.service.job
 
 
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.seqera.wave.encoder.EncodingStrategy
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.data.queue.MessageQueue
 import jakarta.inject.Singleton
 /**
+ * Model a FIFO queue that accumulates job requests waiting to be submitted
+ * to the {@link JobProcessingQueue} accordingly the availability of the latter.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @Singleton
 @CompileStatic
 class JobPendingQueue {
@@ -41,6 +45,7 @@ class JobPendingQueue {
     JobPendingQueue(MessageQueue<String> queue) {
         this.delegate = queue
         this.encoder = new MoshiEncodeStrategy<JobSpec>() {}
+        log.debug "Created jobs processing queue"
     }
 
     void submit(JobSpec request) {

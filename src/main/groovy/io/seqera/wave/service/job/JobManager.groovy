@@ -47,7 +47,7 @@ class JobManager {
     private JobService jobService
 
     @Inject
-    private JobRunningQueue runningQueue
+    private JobProcessingQueue processingQueue
 
     @Inject
     private JobPendingQueue pendingQueue
@@ -75,7 +75,7 @@ class JobManager {
                 .expireAfterWrite(config.graceInterval.multipliedBy(2))
                 .executor(ioExecutor)
                 .buildAsync()
-        runningQueue.addConsumer((job)-> processJob(job))
+        processingQueue.addConsumer((job)-> processJob(job))
         //
         scheduleJobThread = Thread.ofVirtual().start(new Runnable() {
             @Override
@@ -94,12 +94,12 @@ class JobManager {
                 sleep config.schedulerInterval.toMillis()
             }
             else {
-                final canLaunchNewJobs = runningQueue.length()<config.maxRunningJobs
+                final canLaunchNewJobs = processingQueue.length()<config.maxRunningJobs
                 final request = canLaunchNewJobs ? pendingQueue.poll() : null
                 log.debug "Getting job request=$request"
                 final job = dispatcher.launchJob(request)
                 if( job )
-                    runningQueue.offer(job)
+                    processingQueue.offer(job)
                 if( !canLaunchNewJobs )
                     sleep config.schedulerInterval.toMillis()
             }
