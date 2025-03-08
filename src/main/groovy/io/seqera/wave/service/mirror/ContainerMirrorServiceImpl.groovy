@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.mirror
 
+import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
@@ -170,6 +171,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
         saveDockerAuth(request.workDir, request.authJson)
         // launch mirror job
         mirrorStrategy.mirrorJob(job.operationName, request)
-        return job
+        // return the update job
+        return job.withSubmissionTime(Instant.now())
     }
 }

@@ -66,6 +66,11 @@ class JobSpec {
     final Instant creationTime
 
     /**
+     * The instant when the job was submitted for execution in the processing queue
+     */
+    final Instant submissionTime
+
+    /**
      * The max time to live of the job
      */
     final Duration maxDuration
@@ -76,13 +81,14 @@ class JobSpec {
      */
     final Path workDir
 
-    protected JobSpec(String id, Type type, String entryKey, String operationName, Instant createdAt, Duration maxDuration, Path dir) {
+    protected JobSpec(String id, Type type, String entryKey, String operationName, Instant createdAt, Instant submittedAt, Duration maxDuration, Path dir) {
         this.id = id
         this.type = type
         this.entryKey = entryKey
         this.operationName = operationName
         this.maxDuration = maxDuration
         this.creationTime = createdAt
+        this.submissionTime = submittedAt
         this.workDir = dir
     }
 
@@ -92,6 +98,7 @@ class JobSpec {
                 Type.Transfer,
                 recordId,
                 operationName,
+                creationTime,
                 creationTime,
                 maxDuration,
                 null
@@ -105,6 +112,7 @@ class JobSpec {
                 recordId,
                 operationName,
                 creationTime,
+                null,
                 maxDuration,
                 dir
         )
@@ -117,6 +125,7 @@ class JobSpec {
                 recordId,
                 operationName,
                 creationTime,
+                null,
                 maxDuration,
                 dir
         )
@@ -129,8 +138,22 @@ class JobSpec {
                 recordId,
                 operationName,
                 creationTime,
+                null,
                 maxDuration,
                 workDir
+        )
+    }
+
+    JobSpec withSubmissionTime(Instant instant) {
+        new JobSpec(
+                this.id,
+                this.type,
+                this.entryKey,
+                this.operationName,
+                this.creationTime,
+                instant,
+                this.maxDuration,
+                this.workDir
         )
     }
 }

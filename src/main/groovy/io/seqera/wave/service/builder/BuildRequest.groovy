@@ -28,7 +28,6 @@ import groovy.transform.EqualsAndHashCode
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.encoder.MoshiSerializable
 import io.seqera.wave.tower.PlatformId
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY

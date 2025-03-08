@@ -279,7 +279,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         saveDockerAuth(entry.workDir, entry.configJson)
         // launch scan job
         scanStrategy.scanContainer(job.operationName, entry)
-        return job
+        // return the update job
+        return job.withSubmissionTime(Instant.now())
     }
 
     @Override

@@ -27,7 +27,8 @@ import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import static java.nio.file.StandardOpenOption.WRITE
 
 /**
- *
+ * Helper class to handle jobs execution common logic
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 class JobHelper {
