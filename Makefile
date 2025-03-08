@@ -11,7 +11,7 @@ compile:
 	 ./gradlew assemble
 
 check:
-	./gradlew check
+	./gradlew --debug check
 
 image:
 	./gradlew jibDockerBuild
