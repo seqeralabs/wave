@@ -280,7 +280,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         // launch scan job
         scanStrategy.scanContainer(job.operationName, entry)
         // return the update job
-        return job.withSubmissionTime(Instant.now())
+        return job.withLaunchTime(Instant.now())
     }
 
     @Override

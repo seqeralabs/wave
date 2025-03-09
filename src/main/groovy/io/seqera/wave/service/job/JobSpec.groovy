@@ -68,7 +68,7 @@ class JobSpec {
     /**
      * The instant when the job was submitted for execution in the processing queue
      */
-    final Instant submissionTime
+    final Instant launchTime
 
     /**
      * The max time to live of the job
@@ -88,7 +88,7 @@ class JobSpec {
         this.operationName = operationName
         this.maxDuration = maxDuration
         this.creationTime = createdAt
-        this.submissionTime = submittedAt
+        this.launchTime = submittedAt
         this.workDir = dir
     }
 
@@ -144,7 +144,7 @@ class JobSpec {
         )
     }
 
-    JobSpec withSubmissionTime(Instant instant) {
+    JobSpec withLaunchTime(Instant instant) {
         new JobSpec(
                 this.id,
                 this.type,

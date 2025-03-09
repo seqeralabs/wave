@@ -50,18 +50,18 @@ class JobSpecTest extends Specification {
         job.entryKey == 'record-123'
         job.operationName == 'oper-123'
         job.creationTime == creation
-        job.submissionTime == submission
+        job.launchTime == submission
         job.maxDuration == Duration.ofMinutes(1)
         job.workDir == Path.of('/some/path')
 
         when:
-        def newJob = job.withSubmissionTime(creation.plusSeconds(100))
+        def newJob = job.withLaunchTime(creation.plusSeconds(100))
         then:
         newJob.id == '1234'
         newJob.entryKey == 'record-123'
         newJob.operationName == 'oper-123'
         newJob.creationTime == creation
-        newJob.submissionTime == creation.plusSeconds(100)
+        newJob.launchTime == creation.plusSeconds(100)
         newJob.maxDuration == Duration.ofMinutes(1)
         newJob.workDir == Path.of('/some/path')
     }

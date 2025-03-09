@@ -229,7 +229,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
                 identity: PlatformId.NULL
         )
         def entry = new BuildEntry(req, res)
-        def job = jobFactory.build(req).withSubmissionTime(Instant.now())
+        def job = jobFactory.build(req).withLaunchTime(Instant.now())
         and:
         buildCacheStore.storeIfAbsent(req.targetImage, entry)
         jobQueue.offer(job)

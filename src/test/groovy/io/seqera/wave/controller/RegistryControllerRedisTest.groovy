@@ -115,7 +115,7 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         )
         def entry = new BuildEntry(req, res)
         def containerRequestData = ContainerRequest.of(identity: new PlatformId(new User(id:1)), containerImage: "library/hello-world")
-        def job = jobFactory.build(req).withSubmissionTime(Instant.now())
+        def job = jobFactory.build(req).withLaunchTime(Instant.now())
         and:
         tokenCacheStore.put("1234", containerRequestData)
         buildCacheStore.put("library/hello-world", entry)

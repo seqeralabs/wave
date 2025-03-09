@@ -172,6 +172,6 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
         // launch mirror job
         mirrorStrategy.mirrorJob(job.operationName, request)
         // return the update job
-        return job.withSubmissionTime(Instant.now())
+        return job.withLaunchTime(Instant.now())
     }
 }

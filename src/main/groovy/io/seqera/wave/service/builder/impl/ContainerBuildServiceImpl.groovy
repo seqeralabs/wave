@@ -347,15 +347,15 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
                         : null
         // update build status store
         final result = state.completed()
-                ? BuildResult.completed(buildId, state.exitCode, state.stdout, job.submissionTime, digest)
-                : BuildResult.failed(buildId, state.stdout, job.submissionTime)
+                ? BuildResult.completed(buildId, state.exitCode, state.stdout, job.launchTime, digest)
+                : BuildResult.failed(buildId, state.stdout, job.launchTime)
         handleBuildCompletion(entry.withResult(result))
         log.info "== Container build completed '${entry.request.targetImage}' - operation=${job.operationName}; exit=${state.exitCode}; status=${state.status}; duration=${result.duration}"
     }
 
     @Override
     void onJobException(JobSpec job, BuildEntry entry, Throwable error) {
-        final result= BuildResult.failed(entry.request.buildId, error.message, job.submissionTime)
+        final result= BuildResult.failed(entry.request.buildId, error.message, job.launchTime)
         handleBuildCompletion(entry.withResult(result))
         log.error("== Container build exception '${entry.request.targetImage}' - operation=${job.operationName}; cause=${error.message}", error)
     }
@@ -363,7 +363,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     @Override
     void onJobTimeout(JobSpec job, BuildEntry entry) {
         final buildId = entry.request.buildId
-        final result= BuildResult.failed(buildId, "Container image build timed out '${entry.request.targetImage}'", job.submissionTime)
+        final result= BuildResult.failed(buildId, "Container image build timed out '${entry.request.targetImage}'", job.launchTime)
         handleBuildCompletion(entry.withResult(result))
         log.warn "== Container build time out '${entry.request.targetImage}'; operation=${job.operationName}; duration=${result.duration}"
     }
@@ -388,7 +388,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     JobSpec launchJob(JobSpec job, BuildEntry entry) {
         buildStrategy.build(job.operationName, entry.request)
         // return the update job
-        return job.withSubmissionTime(Instant.now())
+        return job.withLaunchTime(Instant.now())
     }
 
     // **************************************************************

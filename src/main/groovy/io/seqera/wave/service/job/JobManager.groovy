@@ -177,7 +177,7 @@ class JobManager {
     }
 
     protected boolean processJob0(JobSpec jobSpec) {
-        final duration = Duration.between(jobSpec.submissionTime, Instant.now())
+        final duration = Duration.between(jobSpec.launchTime, Instant.now())
         final state = state(jobSpec)
         log.trace "Job status id=${jobSpec.operationName}; state=${state}"
         if( state.completed() ) {
