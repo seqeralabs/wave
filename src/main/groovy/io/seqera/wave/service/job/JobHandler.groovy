@@ -35,6 +35,19 @@ interface JobHandler<R extends JobEntry> {
     R getJobEntry(JobSpec job)
 
     /**
+     * Launch a job execution to the underlying execution platform
+     *
+     * @param job
+     *      A {@link JobSpec} object modelling the job to be executed
+     * @param entry
+     *      A {@link JobEntry} object modelling the state of the job to be executed
+     * @return
+     *      A {@link JobSpec} object modelling the submitted job or {@code null} if
+     *      the job could not be executed.
+     */
+    JobSpec launchJob(JobSpec job, R entry)
+
+    /**
      * Event invoked when a job complete either successfully or with a failure
      *
      * @param job

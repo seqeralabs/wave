@@ -50,7 +50,7 @@ logger:
   levels:
     io.seqera.wave.service.data: DEBUG
     io.seqera.wave.service.pairing: TRACE
-    io.seqera.wave.service.job: TRACE
+    io.seqera.wave.service.job: DEBUG
     io.seqera.wave.service.k8s.K8sServiceImpl: TRACE
     io.seqera.wave.tower.client.connector: TRACE
 #    io.seqera.wave.tower.client: 'TRACE'

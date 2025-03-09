@@ -26,7 +26,6 @@ import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
-
 /**
  * Model a container scan request
  * 
@@ -86,7 +85,6 @@ class ScanRequest {
      * Scan request platform identity
      */
     final PlatformId identity
-
 
     static ScanRequest of(Map opts) {
         new ScanRequest(

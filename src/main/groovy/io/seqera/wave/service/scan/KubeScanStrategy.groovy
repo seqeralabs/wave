@@ -18,11 +18,9 @@
 
 package io.seqera.wave.service.scan
 
-import java.nio.file.FileAlreadyExistsException
-import java.nio.file.Files
+
 import java.nio.file.Path
 
-import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.openapi.ApiException
@@ -34,9 +32,6 @@ import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Singleton
-import static java.nio.file.StandardOpenOption.CREATE
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
-import static java.nio.file.StandardOpenOption.WRITE
 /**
  * Implements ScanStrategy for Kubernetes
  *
@@ -64,28 +59,13 @@ class KubeScanStrategy extends ScanStrategy {
     }
 
     @Override
-    void scanContainer(String jobName, ScanRequest req) {
-        log.info("Launching container scan job: $jobName for request: ${req}")
+    void scanContainer(String jobName, ScanEntry entry) {
+        log.info("Launching container scan job: $jobName for entry: ${entry}")
         try{
-            // create the scan dir
-            try {
-                Files.createDirectory(req.workDir)
-            }
-            catch (FileAlreadyExistsException e) {
-                log.warn("Container scan directory already exists: $e")
-            }
-
-            // save the config file with docker auth credentials
-            Path configFile = null
-            if( req.configJson ) {
-                configFile = req.workDir.resolve('config.json')
-                Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
-            }
-
-            final reportFile = req.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
-
-            final trivyCommand = scanCommand(req.targetImage, reportFile, req.platform, scanConfig)
-            k8sService.launchScanJob(jobName, scanConfig.scanImage, trivyCommand, req.workDir, configFile, scanConfig)
+            final Path configFile = entry.configJson ? entry.workDir.resolve('config.json') : null
+            final reportFile = entry.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
+            final trivyCommand = scanCommand(entry.containerImage, reportFile, entry.platform, scanConfig)
+            k8sService.launchScanJob(jobName, scanConfig.scanImage, trivyCommand, entry.workDir, configFile, scanConfig)
         }
         catch (ApiException e) {
             throw new BadRequestException("Unexpected scan failure: ${e.responseBody}", e)

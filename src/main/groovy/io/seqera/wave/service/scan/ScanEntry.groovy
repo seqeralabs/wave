@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.scan
 
+import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
@@ -28,7 +29,6 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.job.JobEntry
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.store.state.StateEntry
-
 /**
  * Model for scan result
  *
@@ -73,6 +73,16 @@ class ScanEntry implements StateEntry<String>, JobEntry {
      * The target container platform for which the scan is required
      */
     ContainerPlatform platform
+
+    /**
+     * Container scan work dir
+     */
+    Path workDir
+
+    /**
+     * Container auth metadata (aka Docker config json)
+     */
+    String configJson
 
     /**
      * The request creation time
@@ -127,6 +137,8 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 request.requestId,
                 request.targetImage,
                 request.platform,
+                request.workDir,
+                request.configJson,
                 request.creationTime,
                 null,
                 PENDING,
@@ -141,6 +153,8 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 this.requestId,
                 this.containerImage,
                 this.platform,
+                this.workDir,
+                null, // <-- clear json auth
                 this.startTime,
                 Duration.between(this.startTime, Instant.now()),
                 SUCCEEDED,
@@ -156,6 +170,8 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 this.requestId,
                 this.containerImage,
                 this.platform,
+                this.workDir,
+                null, // <-- clear json auth
                 this.startTime,
                 Duration.between(this.startTime, Instant.now()),
                 FAILED,
@@ -172,6 +188,8 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 request.requestId,
                 request.targetImage,
                 request.platform,
+                request.workDir,
+                null, // <-- clear json auth
                 request.creationTime,
                 Duration.between(request.creationTime, Instant.now()),
                 FAILED,
@@ -198,6 +216,8 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 opts.requestId as String,
                 opts.containerImage as String,
                 opts.platform as ContainerPlatform,
+                opts.workDir as Path,
+                opts.configJson as String,
                 opts.startTime as Instant,
                 opts.duration as Duration,
                 opts.status as String,
@@ -215,6 +235,8 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 record.requestId,
                 record.containerImage,
                 record.platform,
+                record.workDir,
+                null,
                 record.startTime,
                 record.duration,
                 record.status,

@@ -17,7 +17,6 @@
  */
 package io.seqera.wave.service.blob.impl
 
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
@@ -296,5 +295,10 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobEntry> {
         final result = entry.errored("Blob cache transfer timed out ${entry.objectUri}")
         log.warn "== Blob cache timed out for object '${entry.objectUri}'; operation=${job.operationName}; duration=${result.duration()}"
         blobStore.storeBlob(entry.key, result)
+    }
+
+    @Override
+    JobSpec launchJob(JobSpec job, BlobEntry entry) {
+        throw new UnsupportedOperationException("Operation launchJob not support by ${this.class.simpleName}")
     }
 }

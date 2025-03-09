@@ -18,19 +18,16 @@
 
 package io.seqera.wave.service.job
 
-import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.service.blob.BlobEntry
 import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.builder.BuildStrategy
 import io.seqera.wave.service.cleanup.CleanupService
 import io.seqera.wave.service.mirror.MirrorRequest
-import io.seqera.wave.service.mirror.strategy.MirrorStrategy
 import io.seqera.wave.service.scan.ScanRequest
-import io.seqera.wave.service.scan.ScanStrategy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -50,24 +47,17 @@ class JobServiceImpl implements JobService {
     private JobOperation operations
 
     @Inject
-    @Nullable
-    private TransferStrategy transferStrategy
+    private JobPendingQueue pendingQueue
 
     @Inject
-    private BuildStrategy buildStrategy
-
-    @Inject
-    @Nullable
-    private ScanStrategy scanStrategy
-
-    @Inject
-    private JobQueue jobQueue
+    private JobProcessingQueue processingQueue
 
     @Inject
     private JobFactory jobFactory
 
     @Inject
-    private MirrorStrategy mirrorStrategy
+    @Nullable
+    private TransferStrategy transferStrategy
 
     @Override
     JobSpec launchTransfer(BlobEntry blob, List<String> command) {
@@ -76,9 +66,14 @@ class JobServiceImpl implements JobService {
         // create the ID for the job transfer
         final job = jobFactory.transfer(blob.getKey())
         // submit the job execution
+        // note: transfer jobs asre submitted immediately for execution to the underlying
+        // system and added directly to the processingQueue (instead of pending jobs queue)
+        // because the should be executed with priority over other jobs.
+        // This is required because the job to be executed holds a short lived auth token,
+        // keeping to long in the pending queue could lead to the expiration of such token
         transferStrategy.launchJob(job.operationName, command)
         // signal the transfer has been submitted
-        jobQueue.offer(job)
+        processingQueue.offer(job)
         return job
     }
 
@@ -87,23 +82,16 @@ class JobServiceImpl implements JobService {
         // create the unique job id for the build
         final job = jobFactory.build(request)
         // launch the build job
-        buildStrategy.build(job.operationName, request)
-        // signal the build has been submitted
-        jobQueue.offer(job)
+        pendingQueue.submit(job)
         return job
     }
 
     @Override
     JobSpec launchScan(ScanRequest request) {
-        if( !scanStrategy )
-            throw new IllegalStateException("Container scan service is not available - check configuration setting 'wave.scan.enabled'")
-
         // create the unique job id for the build
         final job = jobFactory.scan(request)
         // launch the scan job
-        scanStrategy.scanContainer(job.operationName, request)
-        // signal the build has been submitted
-        jobQueue.offer(job)
+        pendingQueue.submit(job)
         return job
     }
 
@@ -112,9 +100,7 @@ class JobServiceImpl implements JobService {
         // create the unique job id for the build
         final job = jobFactory.mirror(request)
         // launch the scan job
-        mirrorStrategy.mirrorJob(job.operationName, request)
-        // signal the build has been submitted
-        jobQueue.offer(job)
+        pendingQueue.submit(job)
         return job
     }
 

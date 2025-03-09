@@ -20,6 +20,7 @@ package io.seqera.wave.service.persistence
 
 import spock.lang.Specification
 
+import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
@@ -41,6 +42,8 @@ class WaveScanRecordTest extends Specification {
         def mirrorId = 'mr-1234'
         def requestId = 'cr-1234'
         def containerImage = "testcontainerimage"
+        def workDir = Path.of('/some/work/dir')
+        def authJson = '{auth}'
         def scanVulnerability = new ScanVulnerability(
                                 "id1",
                                 "low",
@@ -59,6 +62,8 @@ class WaveScanRecordTest extends Specification {
                 requestId,
                 containerImage,
                 ContainerPlatform.DEFAULT,
+                workDir,
+                authJson,
                 startTime,
                 duration,
                 'SUCCEEDED',

@@ -18,7 +18,8 @@
 
 package io.seqera.wave.service.job
 
-import java.util.function.BiConsumer
+
+import java.util.function.BiFunction
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -62,7 +63,7 @@ class JobDispatcher {
         }
     }
 
-    protected void apply(JobSpec job, BiConsumer<JobHandler, JobEntry> consumer) {
+    protected <T> T apply(JobSpec job, BiFunction<JobHandler, JobEntry, T> consumer) {
         final handler = dispatch.get(job.type)
         final record = handler.getJobEntry(job)
         if( !record ) {
@@ -72,8 +73,9 @@ class JobDispatcher {
             log.warn "== ${job.type} record already marked as completed for job=${job.entryKey}"
         }
         else {
-            consumer.accept(handler, record)
+            return (T) consumer.apply(handler, record)
         }
+        return null
     }
 
     void notifyJobCompletion(JobSpec job, JobState state) {
@@ -88,4 +90,13 @@ class JobDispatcher {
         apply(job, (handler, entry)-> handler.onJobTimeout(job, entry))
     }
 
+    JobSpec launchJob(JobSpec job) {
+        try {
+            return apply(job, (handler, entry)-> handler.launchJob(job, entry))
+        }
+        catch (Throwable error) {
+            notifyJobException(job, error)
+            return null
+        }
+    }
 }

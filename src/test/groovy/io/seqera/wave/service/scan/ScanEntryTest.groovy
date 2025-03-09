@@ -139,6 +139,8 @@ class ScanEntryTest extends Specification {
                 buildId: 'build-12345',
                 containerImage: 'docker.io/some:image',
                 platform: ContainerPlatform.DEFAULT,
+                workDir: Path.of('/some/work/dir'),
+                configJson: '{this and that}',
                 startTime: ts,
                 duration: elapsed,
                 status: ScanEntry.SUCCEEDED,
@@ -154,6 +156,8 @@ class ScanEntryTest extends Specification {
         result.platform == ContainerPlatform.DEFAULT
         result.status == ScanEntry.SUCCEEDED
         result.vulnerabilities == [cve1]
+        result.workDir == Path.of('/some/work/dir')
+        result.configJson == null
     }
 
     def 'should create failed result from record' () {
@@ -166,6 +170,8 @@ class ScanEntryTest extends Specification {
                 buildId: 'build-12345',
                 containerImage: 'docker.io/some:image',
                 platform: ContainerPlatform.DEFAULT,
+                workDir: Path.of('/some/work/dir'),
+                configJson: '{this and that}',
                 startTime:  ts,
                 duration: elapsed,
                 status: ScanEntry.FAILED,
@@ -183,6 +189,8 @@ class ScanEntryTest extends Specification {
         result.vulnerabilities == []
         result.exitCode == 1
         result.logs == "Oops something has failed"
+        result.workDir == Path.of('/some/work/dir')
+        result.configJson == null
     }
 
     def 'should create failed result from request' () {
@@ -214,7 +222,16 @@ class ScanEntryTest extends Specification {
     def 'should create scan pending' () {
         given:
         def ts = Instant.now()
-        def request = ScanRequest.of(scanId: 'sc-123', buildId: 'bd-345', mirrorId: 'mr-1234', requestId: 'rq-123', targetImage: 'docker.io/foo/bar', platform: ContainerPlatform.DEFAULT, creationTime: ts)
+        def request = ScanRequest.of(
+                scanId: 'sc-123',
+                buildId: 'bd-345',
+                mirrorId: 'mr-1234',
+                requestId: 'rq-123',
+                targetImage: 'docker.io/foo/bar',
+                platform: ContainerPlatform.DEFAULT,
+                workDir: Path.of('/some/work/dir'),
+                configJson: '{some:auth}',
+                creationTime: ts )
         when:
         def scan = ScanEntry.create(request)
         then:
@@ -224,6 +241,8 @@ class ScanEntryTest extends Specification {
         scan.requestId == 'rq-123'
         scan.containerImage == 'docker.io/foo/bar'
         scan.platform ==  ContainerPlatform.DEFAULT
+        scan.workDir == Path.of('/some/work/dir')
+        scan.configJson == '{some:auth}'
         scan.startTime == ts
         scan.status == ScanEntry.PENDING
         scan.vulnerabilities == []
@@ -261,7 +280,8 @@ class ScanEntryTest extends Specification {
                 ScanEntry.SUCCEEDED,
                 [new ScanVulnerability('cve-1', 'HIGH', 'test vul', 'testpkg', '1.0.0', '1.1.0', 'http://vul/cve-1')],
                 0,
-                "Some scan logs"
+                "Some scan logs",
+                Path.of('/some/work/dir')
         )
 
         when:
@@ -279,5 +299,6 @@ class ScanEntryTest extends Specification {
         entry.vulnerabilities == recrd.vulnerabilities
         entry.exitCode == recrd.exitCode
         entry.logs == recrd.logs
+        entry.workDir == Path.of('/some/work/dir')
     }
 }

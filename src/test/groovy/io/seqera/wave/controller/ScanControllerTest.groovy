@@ -20,6 +20,7 @@ package io.seqera.wave.controller
 
 import spock.lang.Specification
 
+import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
@@ -57,6 +58,8 @@ class ScanControllerTest extends Specification {
         def mirrorId = 'mr-123'
         def requestId = 'rq-123'
         def containerImage = "testcontainerimage"
+        def workDir = Path.of('/some/work/dir')
+        def configJson = '{auth}'
         def scanVulnerability = new ScanVulnerability(
                 "id1",
                 "low",
@@ -74,6 +77,8 @@ class ScanControllerTest extends Specification {
                                 requestId,
                                 containerImage,
                                 platform,
+                                workDir,
+                                configJson,
                                 startTime,
                                 duration,
                                 'SUCCEEDED',

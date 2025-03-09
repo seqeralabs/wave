@@ -31,12 +31,20 @@ import jakarta.inject.Singleton
  */
 @ToString(includeNames = true, includePackage = false)
 @Singleton
-class JobConfig {
+class JobManagerConfig {
 
     @Value('${wave.job-manager.grace-interval:30s}')
     Duration graceInterval
 
-    @Value('${wave.job-manager.poll-interval:400ms}')
+    @Value('${wave.job-manager.poll-interval:1s}')
     Duration pollInterval
 
+    @Value('${wave.job-manager.scheduler-interval:400ms}')
+    Duration schedulerInterval
+
+    @Value('${wave.job-manager.scheduler-max-delay:1m}')
+    Duration schedulerMaxDelay
+
+    @Value('${wave.job-manager.max-running-jobs:20}')
+    int maxRunningJobs
 }

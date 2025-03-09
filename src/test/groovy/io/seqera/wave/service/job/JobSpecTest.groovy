@@ -32,14 +32,16 @@ class JobSpecTest extends Specification {
 
     def 'should validate constructor' () {
         given:
-        def ts = Instant.now()
+        def creation = Instant.now()
+        def submission = creation.plusSeconds(10)
         when:
         def job = new JobSpec(
                 '1234',
                 JobSpec.Type.Build,
                 'record-123',
                 'oper-123',
-                ts,
+                creation,
+                submission,
                 Duration.ofMinutes(1),
                 Path.of('/some/path')
         )
@@ -47,10 +49,21 @@ class JobSpecTest extends Specification {
         job.id == '1234'
         job.entryKey == 'record-123'
         job.operationName == 'oper-123'
-        job.creationTime == ts
+        job.creationTime == creation
+        job.launchTime == submission
         job.maxDuration == Duration.ofMinutes(1)
         job.workDir == Path.of('/some/path')
 
+        when:
+        def newJob = job.withLaunchTime(creation.plusSeconds(100))
+        then:
+        newJob.id == '1234'
+        newJob.entryKey == 'record-123'
+        newJob.operationName == 'oper-123'
+        newJob.creationTime == creation
+        newJob.launchTime == creation.plusSeconds(100)
+        newJob.maxDuration == Duration.ofMinutes(1)
+        newJob.workDir == Path.of('/some/path')
     }
 
     def 'should create transfer job' () {

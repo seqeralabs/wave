@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutorService
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.api.ScanMode
 import io.seqera.wave.configuration.ScanConfig
@@ -47,6 +48,8 @@ import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
+import static io.seqera.wave.service.job.JobHelper.saveDockerAuth
+
 /**
  * Implements ContainerScanService
  *
@@ -87,6 +90,10 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
 
     @Inject
     private CleanupService cleanupService
+
+    @Inject
+    @Nullable
+    private ScanStrategy scanStrategy
 
     ContainerScanServiceImpl() {}
 
@@ -262,6 +269,18 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     @Override
     ScanEntry getJobEntry(JobSpec job) {
         scanStore.getScan(job.entryKey)
+    }
+
+    @Override
+    JobSpec launchJob(JobSpec job, ScanEntry entry) {
+        if( !scanStrategy )
+            throw new IllegalStateException("Security scan service is not available - check configuration setting 'wave.scan.enabled'")
+        // save docker auth file
+        saveDockerAuth(entry.workDir, entry.configJson)
+        // launch scan job
+        scanStrategy.scanContainer(job.operationName, entry)
+        // return the update job
+        return job.withLaunchTime(Instant.now())
     }
 
     @Override

@@ -159,4 +159,20 @@ class MirrorRequest {
     PlatformId getIdentity() {
         return identity
     }
+
+    static MirrorRequest of(Map opts) {
+        new MirrorRequest(
+                opts.mirrorId as String,
+                opts.sourceImage as String,
+                opts.targetImage as String,
+                opts.digest as String,
+                opts.platform as ContainerPlatform,
+                opts.workDir as Path,
+                opts.authJson as String,
+                opts.scanId as String,
+                opts.creationTime as Instant,
+                opts.offsetId as String,
+                opts.identity as PlatformId
+        )
+    }
 }
