@@ -45,6 +45,6 @@ class JobManagerConfig {
     @Value('${wave.job-manager.scheduler-max-delay:1m}')
     Duration schedulerMaxDelay
 
-    @Value('${wave.job-manager.maxRunningJobs:20}')
+    @Value('${wave.job-manager.max-running-jobs:20}')
     int maxRunningJobs
 }

@@ -154,7 +154,7 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 this.containerImage,
                 this.platform,
                 this.workDir,
-                null,
+                null, // <-- clear json auth
                 this.startTime,
                 Duration.between(this.startTime, Instant.now()),
                 SUCCEEDED,
@@ -171,7 +171,7 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 this.containerImage,
                 this.platform,
                 this.workDir,
-                null,
+                null, // <-- clear json auth
                 this.startTime,
                 Duration.between(this.startTime, Instant.now()),
                 FAILED,
@@ -189,7 +189,7 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 request.targetImage,
                 request.platform,
                 request.workDir,
-                null,
+                null, // <-- clear json auth
                 request.creationTime,
                 Duration.between(request.creationTime, Instant.now()),
                 FAILED,

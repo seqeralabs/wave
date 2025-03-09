@@ -118,12 +118,14 @@ class JobManager {
             sleep config.schedulerInterval.toMillis()
         }
         else {
-            final canLaunchNewJobs = processingQueue.length()<config.maxRunningJobs
-            final request = canLaunchNewJobs ? pendingQueue.poll() : null
-            log.trace "Getting job request=$request"
-            final job = dispatcher.launchJob(request)
-            if( job )
-                processingQueue.offer(job)
+            final processingQueueLen = processingQueue.length()
+            final canLaunchNewJobs = processingQueueLen<config.maxRunningJobs
+            final jobSpec = canLaunchNewJobs ? pendingQueue.poll() : null
+            final submitted = jobSpec ? dispatcher.launchJob(jobSpec) : null
+            if( log.isTraceEnabled() )
+                log.trace "Processing queue len=${processingQueueLen}; job=${jobSpec}; submitted=${submitted}"
+            if( submitted )
+                processingQueue.offer(submitted)
             if( !canLaunchNewJobs )
                 Thread.sleep(config.schedulerInterval.toMillis())
         }

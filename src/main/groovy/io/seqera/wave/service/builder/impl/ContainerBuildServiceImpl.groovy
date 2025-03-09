@@ -355,7 +355,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
 
     @Override
     void onJobException(JobSpec job, BuildEntry entry, Throwable error) {
-        final result= BuildResult.failed(entry.request.buildId, error.message, job.launchTime)
+        final result= BuildResult.failed(entry.request.buildId, error.message, job.launchTime ?: job.creationTime)
         handleBuildCompletion(entry.withResult(result))
         log.error("== Container build exception '${entry.request.targetImage}' - operation=${job.operationName}; cause=${error.message}", error)
     }
