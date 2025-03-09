@@ -202,7 +202,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     protected void incrScanMetrics(ScanRequest request) {
         try {
             //increment metrics
-            metricsService.incrementScansCounter(request.identity)
+            metricsService.incrementScansCounter(request.identity, request.platform.arch)
         }
         catch (Throwable e) {
             log.warn "Enable to increase scan metrics - cause: ${e.cause}", e
