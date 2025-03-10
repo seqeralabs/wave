@@ -42,6 +42,9 @@ class RedisMessageQueue implements MessageQueue<String>  {
     @Inject
     private JedisPool pool
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     void offer(String target, String message) {
         try (Jedis conn = pool.getResource()) {
@@ -49,6 +52,9 @@ class RedisMessageQueue implements MessageQueue<String>  {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     String poll(String target) {
         try (Jedis conn = pool.getResource()) {
@@ -56,13 +62,24 @@ class RedisMessageQueue implements MessageQueue<String>  {
         }
     }
 
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     String poll(String target, Duration duration) {
         try (Jedis conn = pool.getResource()) {
             double d = duration.toMillis() / 1000.0
             final entry = conn.brpop(d, target)
             return entry ? entry.getValue() : null
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    int length(String target) {
+        try (Jedis conn = pool.getResource()) {
+            return conn.llen(target)
         }
     }
 }

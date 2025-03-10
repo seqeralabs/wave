@@ -18,9 +18,12 @@
 
 package io.seqera.wave.service.job
 
+import io.seqera.wave.configuration.JobManagerConfig
+
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ExecutorService
+import javax.annotation.PreDestroy
 
 import com.github.benmanes.caffeine.cache.AsyncCache
 import com.github.benmanes.caffeine.cache.Cache
@@ -32,7 +35,6 @@ import io.micronaut.scheduling.TaskExecutors
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
-
 /**
  * Implement the logic to handle Blob cache transfer (uploads)
  *
@@ -47,13 +49,16 @@ class JobManager {
     private JobService jobService
 
     @Inject
-    private JobQueue queue
+    private JobProcessingQueue processingQueue
+
+    @Inject
+    private JobPendingQueue pendingQueue
 
     @Inject
     private JobDispatcher dispatcher
 
     @Inject
-    private JobConfig config
+    private JobManagerConfig config
 
     @Inject
     @Named(TaskExecutors.BLOCKING)
@@ -61,6 +66,8 @@ class JobManager {
 
     // FIXME https://github.com/seqeralabs/wave/issues/747
     private AsyncCache<String,Instant> debounceCache
+
+    private Thread scheduleJobThread
 
     @PostConstruct
     void init() {
@@ -70,11 +77,67 @@ class JobManager {
                 .expireAfterWrite(config.graceInterval.multipliedBy(2))
                 .executor(ioExecutor)
                 .buildAsync()
-        queue.addConsumer((job)-> processJob(job))
+        processingQueue.addConsumer((job)-> processJob(job))
+        // run the scheduler thread
+        scheduleJobThread = Thread.ofPlatform()
+                .name("jobs-scheduler-thread")
+                .daemon(true)
+                .start(()->scheduleJobs())
+    }
+
+    protected void scheduleJobs() {
+        try {
+            scheduleJobs0()
+        }
+        catch (InterruptedException e) {
+            log.debug "Got interrupted exception"
+        }
+        finally {
+            log.debug "Exiting job scheduler thread"
+        }
+
+    }
+    protected void scheduleJobs0() {
+        int errors=0
+        while( !Thread.currentThread().isInterrupted() ) {
+            try {
+                schedule0()
+                errors=0
+            }
+            catch (InterruptedException e) {
+                log.debug "Got interrupted exception"
+                break
+            }
+            catch (Throwable e) {
+                final delay = Math.min(Math.pow(2, errors++) * config.schedulerInterval.toMillis() as long, config.schedulerMaxDelay.toMillis())
+                log.debug "Unexpected error while scheduling scheduling job [awaiting ${Duration.ofMillis(delay)}] - cause: ${e.message}", e
+                Thread.sleep(delay)
+            }
+        }
+    }
+
+    protected void schedule0() {
+        if( pendingQueue.length()==0 ) {
+            log.trace "No pending jobs to schedule"
+            // wait for new jobs
+            sleep config.schedulerInterval.toMillis()
+        }
+        else {
+            final processingQueueLen = processingQueue.length()
+            final canLaunchNewJobs = processingQueueLen<config.maxRunningJobs
+            final jobSpec = canLaunchNewJobs ? pendingQueue.poll() : null
+            final submitted = jobSpec ? dispatcher.launchJob(jobSpec) : null
+            if( log.isTraceEnabled() )
+                log.trace "Processing queue len=${processingQueueLen}; job=${jobSpec}; submitted=${submitted}"
+            if( submitted )
+                processingQueue.offer(submitted)
+            if( !canLaunchNewJobs )
+                Thread.sleep(config.schedulerInterval.toMillis())
+        }
     }
 
     /**
-     * Process a job entry aorrding the state modelled by the {@link JobSpec} object.
+     * Process a job entry according the state modelled by the {@link JobSpec} object.
      *
      * @param jobSpec
      *      A {@link JobSpec} object representing the job to be processed
@@ -121,7 +184,7 @@ class JobManager {
     }
 
     protected boolean processJob0(JobSpec jobSpec) {
-        final duration = Duration.between(jobSpec.creationTime, Instant.now())
+        final duration = Duration.between(jobSpec.launchTime, Instant.now())
         final state = state(jobSpec)
         log.trace "Job status id=${jobSpec.operationName}; state=${state}"
         if( state.completed() ) {
@@ -146,4 +209,14 @@ class JobManager {
         }
     }
 
+    @PreDestroy
+    void destroy() {
+        scheduleJobThread.interrupt()
+        try {
+            scheduleJobThread.join(1_000)
+        }
+        catch (Exception e) {
+            log.warn "Unable to join scheduler thread - cause: ${e.message}", e
+        }
+    }
 }

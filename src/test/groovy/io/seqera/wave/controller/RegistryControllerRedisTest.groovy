@@ -42,7 +42,7 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.job.JobFactory
-import io.seqera.wave.service.job.JobQueue
+import io.seqera.wave.service.job.JobProcessingQueue
 import io.seqera.wave.service.request.ContainerRequestStoreImpl
 import io.seqera.wave.storage.ManifestCacheStore
 import io.seqera.wave.test.DockerRegistryContainer
@@ -94,7 +94,6 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         response.getContentType().get().getName() ==  'application/vnd.oci.image.index.v1+json'
         response.header('docker-content-digest') == 'sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6'
         response.getContentLength() == 10242
-        
     }
 
     @Timeout(30)
@@ -103,7 +102,7 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         def client = applicationContext.createBean(HttpClient)
         def buildCacheStore = applicationContext.getBean(BuildStateStoreImpl)
         def tokenCacheStore = applicationContext.getBean(ContainerRequestStoreImpl)
-        def jobQueue = applicationContext.getBean(JobQueue)
+        def jobQueue = applicationContext.getBean(JobProcessingQueue)
         def jobFactory = applicationContext.getBean(JobFactory)
         def res = BuildResult.create('1')
         def req = new BuildRequest(
@@ -116,10 +115,11 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         )
         def entry = new BuildEntry(req, res)
         def containerRequestData = ContainerRequest.of(identity: new PlatformId(new User(id:1)), containerImage: "library/hello-world")
+        def job = jobFactory.build(req).withLaunchTime(Instant.now())
         and:
         tokenCacheStore.put("1234", containerRequestData)
         buildCacheStore.put("library/hello-world", entry)
-        jobQueue.offer(jobFactory.build(req))
+        jobQueue.offer(job)
 
         when:
         HttpRequest request = HttpRequest.GET("http://localhost:${port}/v2/wt/1234/library/hello-world/manifests/latest").headers({h->

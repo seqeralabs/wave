@@ -18,25 +18,29 @@
 
 package io.seqera.wave.service.job
 
-import java.time.Duration
+import java.nio.file.Files
+import java.nio.file.Path
 
-import groovy.transform.ToString
-import io.micronaut.context.annotation.Value
-import jakarta.inject.Singleton
+import groovy.json.JsonOutput
+import static java.nio.file.StandardOpenOption.CREATE
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
+import static java.nio.file.StandardOpenOption.WRITE
 
 /**
- * Model Job manager configuration settings
- *
+ * Helper class to handle jobs execution common logic
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@ToString(includeNames = true, includePackage = false)
-@Singleton
-class JobConfig {
+class JobHelper {
 
-    @Value('${wave.job-manager.grace-interval:30s}')
-    Duration graceInterval
-
-    @Value('${wave.job-manager.poll-interval:400ms}')
-    Duration pollInterval
+    static void saveDockerAuth(Path workDir, String authJson) {
+        // create the work directory
+        Files.createDirectories(workDir)
+        // save docker config for creds
+        if( authJson ) {
+            Path configFile = workDir.resolve('config.json')
+            Files.write(configFile, JsonOutput.prettyPrint(authJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+        }
+    }
 
 }

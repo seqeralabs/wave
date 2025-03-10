@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.job
 
+import io.seqera.wave.configuration.JobManagerConfig
 import spock.lang.Specification
 
 import java.nio.file.Path
@@ -36,7 +37,7 @@ class JobManagerTest extends Specification {
         given:
         def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
-        def config = new JobConfig(graceInterval: Duration.ofMillis(1))
+        def config = new JobManagerConfig(graceInterval: Duration.ofMillis(1))
         def cache = Caffeine.newBuilder().buildAsync()
         def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config: config, debounceCache: cache)
         and:
@@ -55,7 +56,7 @@ class JobManagerTest extends Specification {
         given:
         def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
-        def config = new JobConfig(graceInterval: Duration.ofMillis(1))
+        def config = new JobManagerConfig(graceInterval: Duration.ofMillis(1))
         def cache = Caffeine.newBuilder().buildAsync()
         def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config: config, debounceCache: cache)
         and:
@@ -74,7 +75,7 @@ class JobManagerTest extends Specification {
         given:
         def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
-        def config = new JobConfig(graceInterval: Duration.ofMillis(1))
+        def config = new JobManagerConfig(graceInterval: Duration.ofMillis(1))
         def cache = Caffeine.newBuilder().buildAsync()
         def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config:config, debounceCache: cache)
         and:
@@ -93,7 +94,7 @@ class JobManagerTest extends Specification {
         given:
         def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
-        def config = new JobConfig(graceInterval: Duration.ofMillis(1))
+        def config = new JobManagerConfig(graceInterval: Duration.ofMillis(1))
         def cache = Caffeine.newBuilder().buildAsync()
         def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config: config, debounceCache: cache)
         and:
@@ -117,7 +118,7 @@ class JobManagerTest extends Specification {
         def jobService = Mock(JobService)
         def manager = new JobManager(jobService: jobService)
         and:
-        def job1 = new JobSpec('1', JobSpec.Type.Build, '1', '1', Instant.now(), Duration.ofMinutes(1), Mock(Path))
+        def job1 = new JobSpec('1', JobSpec.Type.Build, '1', '1', Instant.now(), Instant.now(), Duration.ofMinutes(1), Mock(Path))
         and:
         def PENDING = new JobState(JobState.Status.PENDING, null, null)
         def UNKNOWN = new JobState(JobState.Status.UNKNOWN, null, null)

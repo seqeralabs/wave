@@ -185,4 +185,9 @@ abstract class AbstractMessageStream<M> implements Closeable {
             log.debug "Unexpected error while terminating ${name0} - cause: ${e.message}"
         }
     }
+
+    int length(String streamId) {
+        stream.length(streamId)
+    }
+
 }
