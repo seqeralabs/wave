@@ -1,4 +1,12 @@
 # Wave changelog
+1.19.0 - 10 Mar 2025
+- Add arch in wave metrics (#791) [f03a1f1f]
+- Add submission queue to Job manager (#805) [3b71558e]
+- Improve Redis tests [6e90f71c]
+- Improve thread interruption logic [0e70924c]
+- Improve debug logging [5d5980b1]
+- Fix robots file for crawlers [1cf23c9c]
+
 1.18.4 - 3 Mar 2025
 - Add robots and favicon files [40c91f5f]
 - Improve errors and warns logging [216b8227]
