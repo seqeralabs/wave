@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.job
 
+import io.seqera.wave.configuration.JobManagerConfig
 import spock.lang.Specification
 
 import java.nio.file.Path

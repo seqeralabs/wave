@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.job
 
+import io.seqera.wave.configuration.JobManagerConfig
+
 import java.time.Duration
 
 import groovy.transform.CompileStatic
