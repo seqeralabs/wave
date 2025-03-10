@@ -77,7 +77,10 @@ class JobManager {
                 .buildAsync()
         processingQueue.addConsumer((job)-> processJob(job))
         // run the scheduler thread
-        scheduleJobThread = Thread.ofVirtual().name("jobs-scheduler-thread").start(()->scheduleJobs())
+        scheduleJobThread = Thread.ofPlatform()
+                .name("jobs-scheduler-thread")
+                .daemon(true)
+                .start(()->scheduleJobs())
     }
 
     protected void scheduleJobs() {
