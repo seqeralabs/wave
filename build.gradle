@@ -176,6 +176,9 @@ test {
     environment 'DOCKER_PAT', project.findProperty('DOCKER_PAT') ?: environment['DOCKER_PAT']
     environment 'QUAY_USER', project.findProperty('QUAY_USER') ?: environment['QUAY_USER']
     environment 'QUAY_PAT', project.findProperty('QUAY_PAT') ?: environment['QUAY_PAT']
+
+    systemProperty 'logback.configurationFile', 'src/test/resources/logback-test.xml'
+
 }
 
 /** Update version number for backend app and modules */

@@ -35,11 +35,7 @@ class RedisMessageStreamTest extends Specification implements RedisTestContainer
     ApplicationContext context
 
     def setup() {
-        context = ApplicationContext.run([
-                'wave.message-stream.claim-timeout': '1s',
-                REDIS_HOST: redisHostName,
-                REDIS_PORT: redisPort,
-        ], 'test', 'redis')
+        context = ApplicationContext.run(['wave.message-stream.claim-timeout': '1s'], 'test', 'redis')
     }
 
     def cleanup() {
@@ -109,6 +105,28 @@ class RedisMessageStreamTest extends Specification implements RedisTestContainer
         stream.offer(id1, 'something')
         then:
         stream.consume(id1, { it-> it=='something'})
+    }
+
+    def 'should validate length method' () {
+        given:
+        def id1 = "stream-${LongRndKey.rndHex()}"
+        def stream = context.getBean(RedisMessageStream)
+        stream.init(id1)
+
+        expect:
+        stream.length(id1) == 0
+
+        when:
+        stream.offer(id1, 'alpha')
+        stream.offer(id1, 'delta')
+        stream.offer(id1, 'gamma')
+        then:
+        stream.length(id1) == 3
+
+        when:
+        stream.consume(id1, { it-> true})
+        then:
+        stream.length(id1) == 2
     }
 
 }

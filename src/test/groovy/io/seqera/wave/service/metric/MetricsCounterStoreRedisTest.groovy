@@ -38,11 +38,7 @@ class MetricsCounterStoreRedisTest  extends Specification implements RedisTestCo
     Jedis jedis
 
     def setup() {
-        applicationContext = ApplicationContext.run([
-                wave:[ build:[ timeout: '5s' ]],
-                REDIS_HOST: redisHostName,
-                REDIS_PORT: redisPort
-        ], 'test', 'redis')
+        applicationContext = ApplicationContext.run('test', 'redis')
         jedis = new Jedis(redisHostName, redisPort as int)
     }
 
