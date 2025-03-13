@@ -1,4 +1,7 @@
 # Wave changelog
+1.19.1 - 13 Mar 2025
+- Revert "Add arch in wave metrics (#791)" [0fd2eefa]
+
 1.19.0 - 10 Mar 2025
 - Add arch in wave metrics (#791) [f03a1f1f]
 - Add submission queue to Job manager (#805) [3b71558e]
