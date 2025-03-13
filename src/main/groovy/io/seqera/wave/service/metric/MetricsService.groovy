@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.metric
 
-import io.seqera.wave.service.metric.model.GetOrgArchCountResponse
 import io.seqera.wave.service.metric.model.GetOrgCountResponse
 import io.seqera.wave.tower.PlatformId
 /**
@@ -32,35 +31,35 @@ interface MetricsService {
      *
      * @param seqera platform id
      */
-    void incrementFusionPullsCounter(PlatformId platformId, String arch)
+    void incrementFusionPullsCounter(PlatformId platformId)
 
     /**
      * increment wave builds count
      *
      * @param seqera platform id
      */
-    void incrementBuildsCounter(PlatformId platformId, String arch)
+    void incrementBuildsCounter(PlatformId platformId)
 
     /**
      * increment wave pulls count
      *
      * @param seqera platform id
      */
-    void incrementPullsCounter(PlatformId platformId, String arch)
+    void incrementPullsCounter(PlatformId platformId)
 
     /**
      * increment wave mirrors count
      *
      * @param seqera platform id
      */
-    void incrementMirrorsCounter(PlatformId platformId, String arch)
+    void incrementMirrorsCounter(PlatformId platformId)
 
     /**
      * increment wave scans count
      *
      * @param seqera platform id
      */
-    void incrementScansCounter(PlatformId platformId, String arch)
+    void incrementScansCounter(PlatformId platformId)
 
     /**
      * Get counts of all organisations
@@ -77,12 +76,4 @@ interface MetricsService {
      * @return GetOrgCountResponse
      */
     GetOrgCountResponse getOrgCount(String metric, String date, String org)
-
-    /**
-     * Get counts by organisations or by date or by arch or by all
-     *
-     * @param metric
-     * @return GetOrgCountResponse
-     */
-    GetOrgArchCountResponse getOrgCount(String metric, String date, String org, String arch)
 }

@@ -18,6 +18,7 @@
 
 package io.seqera.wave.controller
 
+import java.util.regex.Pattern
 import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
@@ -34,8 +35,10 @@ import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.security.annotation.Secured
 import io.micronaut.security.authentication.AuthorizationException
 import io.micronaut.security.rules.SecurityRule
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.metric.MetricsConstants
 import io.seqera.wave.service.metric.MetricsService
+
 import jakarta.inject.Inject
 
 import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
@@ -55,81 +58,47 @@ class MetricsController {
     @Inject
     private MetricsService metricsService
 
-    @Deprecated
+    static final private Pattern DATE_PATTERN = Pattern.compile("\\d{4}-\\d{2}-\\d{2}");
+
     @Get(uri = "/v1alpha2/metrics/builds", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getBuildsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
         if(!date && !org)
             return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_BUILDS))
+        validateQueryParams(date)
         return HttpResponse.ok(metricsService.getOrgCount(MetricsConstants.PREFIX_BUILDS, date, org))
     }
 
-    @Deprecated
     @Get(uri = "/v1alpha2/metrics/pulls", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
         if(!date && !org)
             return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_PULLS))
+        validateQueryParams(date)
         return HttpResponse.ok(metricsService.getOrgCount(MetricsConstants.PREFIX_PULLS, date, org))
     }
 
-    @Deprecated
     @Get(uri = "/v1alpha2/metrics/fusion/pulls", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getFusionPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
         if(!date && !org)
             return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_FUSION))
+        validateQueryParams(date)
         return HttpResponse.ok(metricsService.getOrgCount(MetricsConstants.PREFIX_FUSION, date, org))
 
     }
 
-    @Deprecated
     @Get(uri = "/v1alpha2/metrics/mirrors", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getMirrorsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
         if(!date && !org)
             return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_MIRRORS))
+        validateQueryParams(date)
         return HttpResponse.ok(metricsService.getOrgCount(MetricsConstants.PREFIX_MIRRORS, date, org))
     }
 
-    @Deprecated
     @Get(uri = "/v1alpha2/metrics/scans", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getScansMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
         if(!date && !org)
             return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_SCANS))
+        validateQueryParams(date)
         return HttpResponse.ok(metricsService.getOrgCount(MetricsConstants.PREFIX_SCANS, date, org))
-    }
-
-    @Get(uri = "/v1alpha3/metrics/builds", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<?> getBuildsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org, @Nullable @QueryValue String arch) {
-        if(!date && !org && !arch)
-            return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_BUILDS))
-        return HttpResponse.ok(metricsService.getOrgCount(MetricsConstants.PREFIX_BUILDS, date, org, arch))
-    }
-
-    @Get(uri = "/v1alpha3/metrics/pulls", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<?> getPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org, @Nullable @QueryValue String arch) {
-        if(!date && !org && !arch)
-            return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_PULLS))
-        return HttpResponse.ok(metricsService.getOrgCount(MetricsConstants.PREFIX_PULLS, date, org, arch))
-    }
-
-    @Get(uri = "/v1alpha3/metrics/fusion/pulls", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<?> getFusionPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org, @Nullable @QueryValue String arch) {
-        if(!date && !org && !arch)
-            return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_FUSION))
-        return HttpResponse.ok(metricsService.getOrgCount(MetricsConstants.PREFIX_FUSION, date, org, arch))
-
-    }
-
-    @Get(uri = "/v1alpha3/metrics/mirrors", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<?> getMirrorsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org, @Nullable @QueryValue String arch) {
-        if(!date && !org && !arch)
-            return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_MIRRORS))
-        return HttpResponse.ok(metricsService.getOrgCount(MetricsConstants.PREFIX_MIRRORS, date, org, arch))
-    }
-
-    @Get(uri = "/v1alpha3/metrics/scans", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<?> getScansMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org, @Nullable @QueryValue String arch) {
-        if(!date && !org && !arch)
-            return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_SCANS))
-        return HttpResponse.ok(metricsService.getOrgCount(MetricsConstants.PREFIX_SCANS, date, org, arch))
     }
 
 
@@ -139,4 +108,9 @@ class MetricsController {
                 .header(WWW_AUTHENTICATE, "Basic realm=Wave Authentication")
     }
 
+    static void validateQueryParams(String date) {
+        if(date && !DATE_PATTERN.matcher(date).matches()) {
+            throw new BadRequestException('date format should be yyyy-MM-dd')
+        }
+    }
 }

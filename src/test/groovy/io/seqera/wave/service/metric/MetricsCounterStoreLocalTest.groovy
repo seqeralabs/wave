@@ -57,27 +57,13 @@ class MetricsCounterStoreLocalTest extends Specification {
         metricsCounterStore.inc('builds/o/bar.org/d/2024-05-30')
         metricsCounterStore.inc('fusion/o/bar.in/d/2024-05-30')
         metricsCounterStore.inc('pulls/o/bar.in/d/2024-05-31')
-        metricsCounterStore.inc('builds/a/arm64')
-        metricsCounterStore.inc('builds/a/amd64')
-        metricsCounterStore.inc('builds/a/arm64/d/2024-05-30')
-        metricsCounterStore.inc('pulls/o/bar.in/a/amd64')
-        metricsCounterStore.inc('pulls/o/foo.com/a/arm64')
-        metricsCounterStore.inc('pulls/o/foo.com/a/amd64/d/2024-05-29')
-        metricsCounterStore.inc('builds/o/bar.org/a/arm64/d/2024-05-30')
-        metricsCounterStore.inc('fusion/o/bar.in/a/amd64/d/2024-05-30')
-        metricsCounterStore.inc('pulls/o/bar.in/a/arm64/d/2024-05-31')
 
         then:
-        metricsCounterStore.getAllMatchingEntries('builds/o/*') == ['builds/o/foo.com':1, 'builds/o/bar.org':1, 'builds/o/bar.org/d/2024-05-30':1, 'builds/o/bar.org/a/arm64/d/2024-05-30':1]
-        metricsCounterStore.getAllMatchingEntries('pulls/o/*') == ['pulls/o/bar.in/a/amd64':1, 'pulls/o/bar.in':1, 'pulls/o/bar.in/a/arm64/d/2024-05-31':1, 'pulls/o/foo.com/a/arm64':1,
-                                                                   'pulls/o/foo.com/d/2024-05-29':1, 'pulls/o/bar.in/d/2024-05-31':1, 'pulls/o/foo.com/a/amd64/d/2024-05-29':1]
-        metricsCounterStore.getAllMatchingEntries('fusion/o/*') == ['fusion/o/bar.in/a/amd64/d/2024-05-30':1, 'fusion/o/bar.in/d/2024-05-30':1]
-        metricsCounterStore.getAllMatchingEntries('builds/o/*/d/2024-05-30') == ['builds/o/bar.org/d/2024-05-30':1, 'builds/o/bar.org/a/arm64/d/2024-05-30':1]
+        metricsCounterStore.getAllMatchingEntries('builds/o/*') == ['builds/o/foo.com':1, 'builds/o/bar.org':1, 'builds/o/bar.org/d/2024-05-30':1]
+        metricsCounterStore.getAllMatchingEntries('pulls/o/*') == ['pulls/o/bar.in':1, 'pulls/o/foo.com/d/2024-05-29':1, 'pulls/o/bar.in/d/2024-05-31':1]
+        metricsCounterStore.getAllMatchingEntries('fusion/o/*') == ['fusion/o/bar.in/d/2024-05-30':1]
+        metricsCounterStore.getAllMatchingEntries('builds/o/*/d/2024-05-30') == ['builds/o/bar.org/d/2024-05-30':1]
         metricsCounterStore.getAllMatchingEntries('pulls/o/bar.in/d/2024-05-31') == ['pulls/o/bar.in/d/2024-05-31':1]
-        metricsCounterStore.getAllMatchingEntries('builds/a/arm64') == ['builds/a/arm64':1]
-        metricsCounterStore.getAllMatchingEntries('builds/a/arm64*') == ['builds/a/arm64':1, 'builds/a/arm64/d/2024-05-30':1]
-        metricsCounterStore.getAllMatchingEntries('pulls/o/*/a/amd64') == ['pulls/o/bar.in/a/amd64':1]
-        metricsCounterStore.getAllMatchingEntries('fusion/o/*/a/amd64/d/2024-05-30') == ['fusion/o/bar.in/a/amd64/d/2024-05-30':1]
     }
 
     def 'should get correct org count value for mirror and scan' () {
@@ -88,18 +74,11 @@ class MetricsCounterStoreLocalTest extends Specification {
         metricsCounterStore.inc('scans/o/foo.com/d/2024-05-29')
         metricsCounterStore.inc('mirrors/o/bar.org/d/2024-05-30')
         metricsCounterStore.inc('scans/o/bar.in/d/2024-05-31')
-        metricsCounterStore.inc('scans/a/arm64')
-        metricsCounterStore.inc('mirrors/o/foo.com/a/arm64')
-        metricsCounterStore.inc('scans/o/foo.com/a/arm64/d/2024-05-29')
-        metricsCounterStore.inc('mirrors/o/bar.org/a/arm64/d/2024-05-30')
 
         then:
-        metricsCounterStore.getAllMatchingEntries('mirrors/o/*') == ['mirrors/o/foo.com':1, 'mirrors/o/bar.org':1, 'mirrors/o/foo.com/a/arm64':1, 'mirrors/o/bar.org/d/2024-05-30':1, 'mirrors/o/bar.org/a/arm64/d/2024-05-30':1]
-        metricsCounterStore.getAllMatchingEntries('scans/o/*') == ['scans/o/bar.in':1, 'scans/o/foo.com/d/2024-05-29':1, 'scans/o/foo.com/a/arm64/d/2024-05-29':1, 'scans/o/bar.in/d/2024-05-31':1]
-        metricsCounterStore.getAllMatchingEntries('mirrors/o/*/d/2024-05-30') == ['mirrors/o/bar.org/d/2024-05-30':1, 'mirrors/o/bar.org/a/arm64/d/2024-05-30':1]
+        metricsCounterStore.getAllMatchingEntries('mirrors/o/*') == ['mirrors/o/foo.com':1, 'mirrors/o/bar.org':1, 'mirrors/o/bar.org/d/2024-05-30':1]
+        metricsCounterStore.getAllMatchingEntries('scans/o/*') == ['scans/o/bar.in':1, 'scans/o/foo.com/d/2024-05-29':1, 'scans/o/bar.in/d/2024-05-31':1]
+        metricsCounterStore.getAllMatchingEntries('mirrors/o/*/d/2024-05-30') == ['mirrors/o/bar.org/d/2024-05-30':1]
         metricsCounterStore.getAllMatchingEntries('scans/o/bar.in/d/2024-05-31') == ['scans/o/bar.in/d/2024-05-31':1]
-        metricsCounterStore.getAllMatchingEntries('scans/a/arm64') == ['scans/a/arm64':1]
-        metricsCounterStore.getAllMatchingEntries('mirrors/o/bar.org/a/arm64/d/2024-05-30') == ['mirrors/o/bar.org/a/arm64/d/2024-05-30':1]
-        metricsCounterStore.getAllMatchingEntries('mirrors/o/foo.com/a/arm64*') == ['mirrors/o/foo.com/a/arm64':1]
     }
 }
