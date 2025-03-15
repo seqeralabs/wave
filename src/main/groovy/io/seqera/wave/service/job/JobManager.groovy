@@ -18,12 +18,9 @@
 
 package io.seqera.wave.service.job
 
-import io.seqera.wave.configuration.JobManagerConfig
-
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ExecutorService
-import javax.annotation.PreDestroy
 
 import com.github.benmanes.caffeine.cache.AsyncCache
 import com.github.benmanes.caffeine.cache.Cache
@@ -32,6 +29,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
 import io.micronaut.scheduling.TaskExecutors
+import io.seqera.wave.configuration.JobManagerConfig
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
@@ -67,8 +65,6 @@ class JobManager {
     // FIXME https://github.com/seqeralabs/wave/issues/747
     private AsyncCache<String,Instant> debounceCache
 
-    private Thread scheduleJobThread
-
     @PostConstruct
     void init() {
         log.info "Creating job manager - config=$config"
@@ -77,62 +73,45 @@ class JobManager {
                 .expireAfterWrite(config.graceInterval.multipliedBy(2))
                 .executor(ioExecutor)
                 .buildAsync()
+        pendingQueue.addConsumer((job)-> launchJob(job))
         processingQueue.addConsumer((job)-> processJob(job))
-        // run the scheduler thread
-        scheduleJobThread = Thread.ofPlatform()
-                .name("jobs-scheduler-thread")
-                .daemon(true)
-                .start(()->scheduleJobs())
     }
 
-    protected void scheduleJobs() {
-        try {
-            scheduleJobs0()
-        }
-        catch (InterruptedException e) {
-            log.debug "Got interrupted exception"
-        }
-        finally {
-            log.debug "Exiting job scheduler thread"
-        }
-
-    }
-    protected void scheduleJobs0() {
-        int errors=0
-        while( !Thread.currentThread().isInterrupted() ) {
-            try {
-                schedule0()
-                errors=0
-            }
-            catch (InterruptedException e) {
-                log.debug "Got interrupted exception"
-                break
-            }
-            catch (Throwable e) {
-                final delay = Math.min(Math.pow(2, errors++) * config.schedulerInterval.toMillis() as long, config.schedulerMaxDelay.toMillis())
-                log.debug "Unexpected error while scheduling scheduling job [awaiting ${Duration.ofMillis(delay)}] - cause: ${e.message}", e
-                Thread.sleep(delay)
-            }
-        }
-    }
-
-    protected void schedule0() {
-        if( pendingQueue.length()==0 ) {
-            log.trace "No pending jobs to schedule"
-            // wait for new jobs
-            sleep config.schedulerInterval.toMillis()
-        }
-        else {
-            final processingQueueLen = processingQueue.length()
-            final canLaunchNewJobs = processingQueueLen<config.maxRunningJobs
-            final jobSpec = canLaunchNewJobs ? pendingQueue.poll() : null
-            final submitted = jobSpec ? dispatcher.launchJob(jobSpec) : null
+    protected boolean launchJob0(JobSpec job) {
+        final processingQueueLen = processingQueue.length()
+        final canLaunchNewJobs = processingQueueLen < config.maxRunningJobs
+        if( canLaunchNewJobs ) {
+            final submitted = dispatcher.launchJob(job)
             if( log.isTraceEnabled() )
-                log.trace "Processing queue len=${processingQueueLen}; job=${jobSpec}; submitted=${submitted}"
+                log.trace "Processing queue len=${processingQueueLen}; job=${job}; submitted=${submitted}"
             if( submitted )
                 processingQueue.offer(submitted)
-            if( !canLaunchNewJobs )
-                Thread.sleep(config.schedulerInterval.toMillis())
+        }
+        else {
+            log.debug "Processing queue is full (${processingQueueLen}) - delaying submission of job=$job"
+        }
+        return canLaunchNewJobs
+    }
+
+    /**
+     * Launch a job execution adding it to the {@link JobProcessingQueue} queue
+     *
+     * @param jobSpec
+     *      A {@link JobSpec} object representing the job to be launched
+     * @return
+     *      {@code true} to signal the process has been launched successfully and it should
+     *      be removed from the underlying pending queue, or {@code false} if the job cannot be
+     *      launched because the processing queue is full.
+     */
+    protected boolean launchJob(JobSpec jobSpec) {
+        try {
+            return launchJob0(jobSpec)
+        }
+        catch (Throwable err) {
+            // in the case of an expected exception report the error condition by using `onJobException`
+            dispatcher.notifyJobException(jobSpec, err)
+            // note: return `true` to mark the entry as consumed so that the job is not processed anymore
+            return true
         }
     }
 
@@ -153,7 +132,7 @@ class JobManager {
         catch (Throwable err) {
             // in the case of an expected exception report the error condition by using `onJobException`
             dispatcher.notifyJobException(jobSpec, err)
-            // note: return `true` to signal the job should not be processed anymore
+            // note: return `true` to mark the entry as consumed so that the job is not processed anymore
             return true
         }
     }
@@ -209,14 +188,4 @@ class JobManager {
         }
     }
 
-    @PreDestroy
-    void destroy() {
-        scheduleJobThread.interrupt()
-        try {
-            scheduleJobThread.join(1_000)
-        }
-        catch (Exception e) {
-            log.warn "Unable to join scheduler thread - cause: ${e.message}", e
-        }
-    }
 }
