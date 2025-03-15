@@ -1,4 +1,8 @@
 # Wave changelog
+1.19.2 - 15 Mar 2025
+- Implement pending queue as stream (#809) [ec847d24]
+- Restore "Add arch in wave metrics (#791)" [a8e84291]
+
 1.19.1 - 13 Mar 2025
 - Revert "Add arch in wave metrics (#791)" [0fd2eefa]
 
