@@ -18,7 +18,10 @@
 
 package io.seqera.wave.store.cache
 
+import spock.lang.Retry
+
 import java.time.Duration
+import java.time.Instant
 
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
@@ -99,7 +102,7 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
         cache1.put(k, value, TTL)
 
         then:
-        def entry1 = cache1.l1GetEntry(k)
+        def entry1 = cache1.l1Get(k)
         and:
         entry1.expiresAt > begin
         then:
@@ -220,4 +223,83 @@ class AbstractTieredCacheTest extends Specification implements RedisTestContaine
         cache.get(k2) == null
     }
 
+    def 'should validate revalidation logic' () {
+        given:
+        def REVALIDATION_INTERVAL_SECS = 10
+        def now = Instant.now()
+        def cache = Spy(MyCache)
+        cache.getCacheRevalidationInterval() >> Duration.ofSeconds(REVALIDATION_INTERVAL_SECS)
+
+        when:
+        // when expiration is past, then 'revalidate' should be true
+        def expiration = now.minusSeconds(1)
+        def revalidate = cache.shouldRevalidate(expiration.toEpochMilli(), now)
+        then:
+        0 * cache.randomRevalidate(_) >> null
+        and:
+        revalidate
+
+        when:
+        // when expiration is longer than the revalidation internal, then 'revalidate' is false
+        expiration = now.plusSeconds(REVALIDATION_INTERVAL_SECS +1)
+        revalidate = cache.shouldRevalidate(expiration.toEpochMilli(), now)
+        then:
+        0 * cache.randomRevalidate(_) >> null
+        and:
+        !revalidate
+
+        when:
+        // when expiration is less than or equal the revalidation internal, then 'revalidate' is computed randomly
+        expiration = now.plusSeconds(REVALIDATION_INTERVAL_SECS)
+        revalidate = cache.shouldRevalidate(expiration.toEpochMilli(), now)
+        then:
+        1 * cache.randomRevalidate(_) >> true
+        and:
+        revalidate
+
+        when:
+        // when expiration is less than or equal the revalidation internal, then 'revalidate' is computed randomly
+        expiration = now.plusSeconds(REVALIDATION_INTERVAL_SECS -1)
+        revalidate = cache.shouldRevalidate(expiration.toEpochMilli(), now)
+        then:
+        1 * cache.randomRevalidate(_) >> false
+        and:
+        !revalidate
+    }
+
+    def 'should validate random function' () {
+        given:
+        def now = Instant.now()
+        def cache = Spy(MyCache)
+        cache.getCacheRevalidationInterval() >> Duration.ofSeconds(10)
+        expect:
+        cache.randomRevalidate(0)
+    }
+
+    @Retry(count = 5)
+    def 'should validate random revalidate with interval 10s' () {
+        given:
+        def now = Instant.now()
+        def cache = Spy(MyCache)
+        cache.getCacheRevalidationInterval() >> Duration.ofSeconds(10)
+        expect:
+        // when remaining time is approaching 0
+        // the function should return true
+        cache.randomRevalidate(10)  // 10 millis
+        cache.randomRevalidate(100) // 100 millis
+    }
+
+    @Retry(count = 5)
+    def 'should validate random revalidate with interval 300s' () {
+        given:
+        def now = Instant.now()
+        def cache = Spy(MyCache)
+        cache.getCacheRevalidationInterval() >> Duration.ofSeconds(300)
+        expect:
+        // when remaining time is approaching 0
+        // the function should return true
+        cache.randomRevalidate(10)  // 10 millis
+        cache.randomRevalidate(100) // 100 millis
+        cache.randomRevalidate(500) // 100 millis
+    }
 }
