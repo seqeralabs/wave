@@ -105,7 +105,6 @@ class BuildLogServiceImpl implements BuildLogService {
 
     @Override
     void storeLog(String buildId, String content) {
-
         try {
             final String logs = removeCondaLockFile(content)
             log.debug "Storing logs for buildId: $buildId"

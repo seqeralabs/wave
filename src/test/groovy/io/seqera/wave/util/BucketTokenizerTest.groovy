@@ -29,6 +29,7 @@ class BucketTokenizerTest extends Specification {
         BucketTokenizer.from(STR) == EXPECTED
         where:
         STR             | EXPECTED
+        'some/path'     | new BucketTokenizer(null, null, null)
         '/'             | new BucketTokenizer(null, null, null)
         's3://foo'      | new BucketTokenizer('s3','foo','')
         's3://foo/'     | new BucketTokenizer('s3','foo','', true)
