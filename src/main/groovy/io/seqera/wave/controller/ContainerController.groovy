@@ -501,9 +501,6 @@ class ContainerController {
         // in fact, the absence of creds in the docker file is tolerated because it may be a
         // public accessible repo. With build and cache repo, the creds needs to be available
         final configJson = inspectService.credentialsConfigJson("FROM ${request.containerImage}", targetImage, null, identity)
-        final platform = request.containerPlatform
-                ? ContainerPlatform.of(request.containerPlatform)
-                : ContainerPlatform.DEFAULT
 
         final offset = DataTimeUtils.offsetId(request.timestamp)
         final scanId = scanService?.getScanId(targetImage, digest, request.scanMode, request.format)
