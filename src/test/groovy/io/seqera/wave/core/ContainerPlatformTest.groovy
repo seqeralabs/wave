@@ -21,6 +21,8 @@ package io.seqera.wave.core
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import io.seqera.wave.exception.BadRequestException
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -35,7 +37,6 @@ class ContainerPlatformTest extends Specification {
 
         where:
         PLATFORM        | EXPECTED                                      | STRING
-        null            | new ContainerPlatform('linux','amd64')        | 'linux/amd64'
         'x86_64'        | new ContainerPlatform('linux','amd64')        | 'linux/amd64'
         'amd64'         | new ContainerPlatform('linux','amd64')        | 'linux/amd64'
         'linux/amd64'   | new ContainerPlatform('linux','amd64')        | 'linux/amd64'
@@ -53,7 +54,30 @@ class ContainerPlatformTest extends Specification {
         and:
         'linux/arm64/v8'| new ContainerPlatform('linux','arm64')        | 'linux/arm64'
         'linux/arm64/v7'| new ContainerPlatform('linux','arm64','v7')   | 'linux/arm64/v7'
+    }
 
+    def 'should return an exception' () {
+        when:
+        ContainerPlatform.of(null)
+        then:
+        thrown(BadRequestException)
+
+        when:
+        ContainerPlatform.of('foo')
+        then:
+        thrown(BadRequestException)
+    }
+
+    def 'should parse the platform or return default' () {
+        expect:
+        ContainerPlatform.parseOrDefault(PLATFORM) == EXPECTED
+        ContainerPlatform.parseOrDefault(PLATFORM).toString() == STRING
+
+        where:
+        PLATFORM        | EXPECTED                                      | STRING
+        null            | new ContainerPlatform('linux','amd64')        | 'linux/amd64'
+        'x86_64'        | new ContainerPlatform('linux','amd64')        | 'linux/amd64'
+        'arm64'         | new ContainerPlatform('linux','arm64')        | 'linux/arm64'
     }
 
     @Unroll
