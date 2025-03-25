@@ -309,7 +309,7 @@ class K8sServiceImpl implements K8sService {
                 .withVolumeMounts(mounts)
                 .withResources(requests)
         final dnsPolicy = new V1PodDNSConfigBuilder()
-                                            .withNameservers("1.1.1.1")
+                                            .withNameservers("1.1.1.1").build()
 
         spec.withDnsConfig(dnsPolicy)
         .withDnsPolicy("None")
@@ -414,10 +414,11 @@ class K8sServiceImpl implements K8sService {
                 .withResources(requests)
                 .endContainer()
                 .endSpec()
-        final dnsPolicy = new V1PodDNSConfigBuilder()
+        final dnsConfig = new V1PodDNSConfigBuilder()
                 .withNameservers("1.1.1.1")
+        .build()
 
-        spec.withDnsConfig(dnsPolicy)
+        spec.withDnsConfig(dnsConfig)
                 .withDnsPolicy("None")
         builder.build()
     }
