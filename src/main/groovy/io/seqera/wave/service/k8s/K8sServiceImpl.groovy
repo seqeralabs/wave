@@ -63,6 +63,9 @@ import static io.seqera.wave.service.builder.BuildStrategy.BUILDKIT_ENTRYPOINT
 @CompileStatic
 class K8sServiceImpl implements K8sService {
 
+    @Value('${wave.build.k8s.dns.servers}')
+    private List<String> dnsServers
+
     @Value('${wave.build.k8s.namespace}')
     private String namespace
 
@@ -309,7 +312,7 @@ class K8sServiceImpl implements K8sService {
                 .withVolumeMounts(mounts)
                 .withResources(requests)
         final dnsPolicy = new V1PodDNSConfigBuilder()
-                                            .withNameservers("1.1.1.1").build()
+                                            .withNameservers(dnsServers).build()
 
         spec.withDnsConfig(dnsPolicy)
         .withDnsPolicy("None")
@@ -415,7 +418,7 @@ class K8sServiceImpl implements K8sService {
                 .endContainer()
                 .endSpec()
         final dnsConfig = new V1PodDNSConfigBuilder()
-                .withNameservers("1.1.1.1")
+                .withNameservers(dnsServers)
         .build()
 
         spec.withDnsConfig(dnsConfig)
