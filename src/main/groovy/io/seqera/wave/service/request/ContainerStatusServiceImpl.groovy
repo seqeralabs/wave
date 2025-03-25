@@ -105,8 +105,8 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
             }
             else {
                 final newState = state
-                        ? new ContainerState(state.startTime, state.duration+scan.duration, scan.succeeded())
-                        : new ContainerState(scan.startTime, scan.duration, scan.succeeded())
+                        ? new ContainerState(state.startTime, state.duration+scan.duration, scan.succeeded(), scan.exitCode)
+                        : new ContainerState(scan.startTime, scan.duration, scan.succeeded(), scan.exitCode)
                 return createScanResponse(request, newState, scan)
             }
         }
@@ -134,7 +134,7 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
     }
 
     protected ContainerStatusResponse createResponse0(ContainerStatus status, ContainerRequest request, ContainerState state, StageResult result=null) {
-        new ContainerStatusResponse(
+        def res = new ContainerStatusResponse(
                 request.requestId,
                 status,
                 !request.mirror ? request.buildId : null,
@@ -146,7 +146,10 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
                 result?.detailsUri,
                 state.startTime,
                 state.duration,
+                state.exitCode
         )
+        log.info("++++++> ${res.exitCode}")
+        return res
     }
 
     protected ContainerStatusResponse createScanResponse(ContainerRequest request, ContainerState state, ScanEntry scan) {
@@ -164,6 +167,7 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
                 result.detailsUri,
                 state.startTime,
                 state.duration,
+                state.exitCode
         )
     }
 

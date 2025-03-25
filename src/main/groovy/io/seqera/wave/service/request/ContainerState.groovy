@@ -41,6 +41,7 @@ class ContainerState {
     final Instant startTime
     final Duration duration
     final Boolean succeeded
+    final Integer exitCode
 
     boolean isRunning() {
         return duration==null
@@ -51,7 +52,8 @@ class ContainerState {
         return new ContainerState(
                 build.request.startTime,
                 build.result?.duration,
-                build.result?.succeeded()
+                build.result?.succeeded(),
+                build.result?.exitStatus
         )
     }
 
@@ -60,7 +62,8 @@ class ContainerState {
         return new ContainerState(
                 build.startTime,
                 build.duration,
-                build.succeeded()
+                build.succeeded(),
+                build.exitStatus
         )
     }
 
@@ -69,7 +72,8 @@ class ContainerState {
         return new ContainerState(
                 mirror.request.creationTime,
                 mirror.result?.duration,
-                mirror.result?.succeeded()
+                mirror.result?.succeeded(),
+                mirror.result?.exitCode
         )
     }
 
@@ -77,7 +81,8 @@ class ContainerState {
         return new ContainerState(
                 mirror.creationTime,
                 mirror.duration,
-                mirror.succeeded()
+                mirror.succeeded(),
+                mirror.exitCode
         )
     }
 }
