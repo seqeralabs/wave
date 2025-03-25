@@ -34,6 +34,8 @@ import io.kubernetes.client.openapi.models.V1JobStatus
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
+import io.kubernetes.client.openapi.models.V1PodDNSConfig
+import io.kubernetes.client.openapi.models.V1PodDNSConfigBuilder
 import io.kubernetes.client.openapi.models.V1ResourceRequirements
 import io.kubernetes.client.openapi.models.V1Volume
 import io.kubernetes.client.openapi.models.V1VolumeMount
@@ -306,6 +308,11 @@ class K8sServiceImpl implements K8sService {
                 .withImage(containerImage)
                 .withVolumeMounts(mounts)
                 .withResources(requests)
+        final dnsPolicy = new V1PodDNSConfigBuilder()
+                                            .withNameservers("1.1.1.1")
+
+        spec.withDnsConfig(dnsPolicy)
+        .withDnsPolicy("None")
 
         if( singularity ) {
             container
@@ -407,7 +414,11 @@ class K8sServiceImpl implements K8sService {
                 .withResources(requests)
                 .endContainer()
                 .endSpec()
+        final dnsPolicy = new V1PodDNSConfigBuilder()
+                .withNameservers("1.1.1.1")
 
+        spec.withDnsConfig(dnsPolicy)
+                .withDnsPolicy("None")
         builder.build()
     }
 
