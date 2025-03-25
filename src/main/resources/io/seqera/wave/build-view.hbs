@@ -1,8 +1,9 @@
 <html>
 <head>
-    {{#if build_in_progress}}
+
+    {{!-- {{#if build_in_progress}}
         <meta http-equiv="refresh" content="5">
-    {{/if}}
+    {{/if}} --}}
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -63,13 +64,13 @@
     </div>
 
     {{#if build_success}}
-        <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+        <div id="build-success" class="build-status" style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
             <h4 style="margin-top:0; color: inherit;">
                 Container build completed successfully!
             </h4>
         </div>
     {{else build_failed}}
-        <div style="color: #a94442; background-color: #f2dede; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+        <div id="build-failed" class="build-status" style="color: #a94442; background-color: #f2dede; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
             <h4 style="margin-top:0; color: inherit;">
                 Container build failed
             </h4>
@@ -260,6 +261,20 @@
         }).catch(err => {
             console.error('Failed to copy text: ', err);
         });
+    }
+
+    function fetchStatusData() {
+        const buildId = '{{build_id}}';
+
+        fetch(`https://wave.seqera.io/v1alpha1/builds/${buildId}/status`)
+            .then(response => response.json())
+            .then(data => {
+                // Re-render DOM elements with the new data
+                
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
     }
 </script>
 </body>
