@@ -277,19 +277,15 @@
             });
     }
 
-    function formatTimeDuration(minutes) {
-        if (minutes === null || minutes === undefined || isNaN(minutes)) {
-            return "0:00";
-        }
-        
-        const totalSeconds = Math.round(minutes * 60);
-        
-        const mins = Math.floor(totalSeconds / 60);
-        const secs = totalSeconds % 60;
-        
-        const formattedSeconds = secs < 10 ? `0${secs}` : `${secs}`;
-        
-        return `${mins}:${formattedSeconds}`;
+    function formatTimeDuration(durationMS) {
+        if(!durationMS) return '?';
+        const time = durationMS / 1000;
+        const timeString =
+            (time >= 3600) ? (('00' + Math.floor(time / 3600)).slice(-2) + ':') : '' +
+            ('00' + ((time % 3600) / 60).toFixed(0)).slice(-2) +
+            ':' +
+            ('00' + (time % 60).toFixed(0)).slice(-2);
+        return timeString;
     }
 
     function rearrangeDOM(data) {
@@ -309,7 +305,7 @@
         }
 
         if (data?.duration) {
-            const duration = formatTimeDuration(data.duration);
+            const duration = formatTimeDuration(data.duration * 1000);
             document.getElementById('build-duration').innerHTML = duration;
         }
         if (data?.exitCode) {
