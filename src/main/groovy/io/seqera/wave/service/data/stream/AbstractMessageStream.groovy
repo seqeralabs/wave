@@ -58,9 +58,13 @@ abstract class AbstractMessageStream<M> implements Closeable {
         this.encoder = new MoshiEncodeStrategy<M>(type) {}
         this.stream = target
         this.name0 = name() + '-thread-' + count.getAndIncrement()
-        this.thread = new Thread(()-> processMessages(), name0)
-        this.thread.setDaemon(true)
-        this.thread.start()
+    }
+
+    protected Thread createListenerThread() {
+        final thread = new Thread(()-> processMessages(), name0)
+        thread.setDaemon(true)
+        thread.start()
+        return thread
     }
 
     /**
@@ -109,6 +113,9 @@ abstract class AbstractMessageStream<M> implements Closeable {
             stream.init(streamId)
             // then add the consumer to the listeners
             listeners.put(streamId, consumer)
+            // finally start the listener thread
+            if( !thread )
+                thread = createListenerThread()
         }
     }
 
