@@ -298,11 +298,13 @@
             elements[i].style.display = 'none';
         }
 
-        if (buildSuccess) {
+        const buildCompleted = data?.status === 'COMPLETED';
+
+        if (buildSuccess || buildCompleted && data.succeeded) {
             document.getElementById('build-success').style.display = 'block';
-        } else if (buildFailed) {
+        } else if (buildFailed || buildCompleted && !data.succeeded) {
             document.getElementById('build-failed').style.display = 'block';
-        } else if (buildInProgress) {
+        } else if (buildInProgress || !buildCompleted) {
             document.getElementById('build-in-progress').style.display = 'block';
         }
 
@@ -318,15 +320,17 @@
 
     rearrangeDOM();
 
-    interval = setInterval(async () => {
-        const data = await fetchStatusData();
+    if (buildInProgress) {
+        interval = setInterval(async () => {
+            const data = await fetchStatusData();
 
-        rearrangeDOM(data);
+            rearrangeDOM(data);
 
-        if (data.status !== 'PENDING') {
-            clearInterval(interval);
-        }
-    }, 5000);
+            if (data.status !== 'PENDING') {
+                clearInterval(interval);
+            }
+        }, 5000);
+    }
 </script>
 </body>
 </html>
