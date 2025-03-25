@@ -155,12 +155,12 @@
 
         <tr>
             <td>Duration</td>
-            <td>{{build_duration}}</td>
+            <td id="build-duration">{{build_duration}}</td>
         </tr>
 
         <tr>
             <td>Exit status</td>
-            <td>{{build_exit_status}}</td>
+            <td id="exit-status">{{build_exit_status}}</td>
         </tr>
         {{#if scan_url}}
             <tr>
@@ -277,6 +277,21 @@
             });
     }
 
+    function formatTimeDuration(minutes) {
+        if (minutes === null || minutes === undefined || isNaN(minutes)) {
+            return "0:00";
+        }
+        
+        const roundedMinutes = Math.round(minutes * 60) / 60;
+        
+        const hours = Math.floor(roundedMinutes / 60);
+        const mins = Math.floor(roundedMinutes % 60);
+        
+        const formattedMinutes = mins < 10 ? `0${mins}` : `${mins}`;
+        
+        return `${hours}:${formattedMinutes}`;
+    }
+
     function rearrangeDOM(data) {
         const elements = document.getElementsByClassName('build-status');
         for (let i = 0; i < elements.length; i++) {
@@ -290,6 +305,15 @@
         } else if (buildInProgress) {
             document.getElementById('build-in-progress').style.display = 'block';
         }
+
+        if (data?.duration) {
+            const duration = formatTimeDuration(data.duration);
+            document.getElementById('build-duration').innerHTML = duration;
+        }
+        if (data?.exitCode) {
+            const exitStatus = data.exitCode;
+            document.getElementById('exit-status').innerHTML = exitStatus;
+        }
     }
 
     rearrangeDOM();
@@ -299,7 +323,7 @@
 
         rearrangeDOM(data);
 
-        if (data.status !== 'PENDING') {
+        if (data.status !== 'PENDING' && false) {
             clearInterval(interval);
         }
     }, 5000);
