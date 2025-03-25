@@ -34,7 +34,6 @@ import io.kubernetes.client.openapi.models.V1JobStatus
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
-import io.kubernetes.client.openapi.models.V1PodDNSConfig
 import io.kubernetes.client.openapi.models.V1PodDNSConfigBuilder
 import io.kubernetes.client.openapi.models.V1ResourceRequirements
 import io.kubernetes.client.openapi.models.V1Volume
@@ -290,6 +289,9 @@ class K8sServiceImpl implements K8sService {
                 .addToAnnotations(getBuildkitAnnotations(name,singularity))
                 .endMetadata()
 
+        final dnsConfig = new V1PodDNSConfigBuilder()
+                .withNameservers(dnsServers).build()
+
         //spec section
         def spec = builder
                 .withNewSpec()
@@ -298,6 +300,8 @@ class K8sServiceImpl implements K8sService {
                 .withActiveDeadlineSeconds( timeout.toSeconds() )
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
+                .withDnsConfig(dnsConfig)
+                .withDnsPolicy("None")
 
         final requests = new V1ResourceRequirements()
         if( requestsCpu )
@@ -311,11 +315,6 @@ class K8sServiceImpl implements K8sService {
                 .withImage(containerImage)
                 .withVolumeMounts(mounts)
                 .withResources(requests)
-        final dnsPolicy = new V1PodDNSConfigBuilder()
-                                            .withNameservers(dnsServers).build()
-
-        spec.withDnsConfig(dnsPolicy)
-        .withDnsPolicy("None")
 
         if( singularity ) {
             container
@@ -393,6 +392,9 @@ class K8sServiceImpl implements K8sService {
                 .addToLabels(labels)
                 .endMetadata()
 
+        final dnsConfig = new V1PodDNSConfigBuilder()
+                .withNameservers(dnsServers)
+                .build()
         //spec section
         def spec = builder
                 .withNewSpec()
@@ -401,13 +403,14 @@ class K8sServiceImpl implements K8sService {
                 .withActiveDeadlineSeconds( scanConfig.timeout.toSeconds() )
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
+                .withDnsConfig(dnsConfig)
+                .withDnsPolicy("None")
 
         final requests = new V1ResourceRequirements()
         if( scanConfig.requestsCpu )
             requests.putRequestsItem('cpu', new Quantity(scanConfig.requestsCpu))
         if( scanConfig.requestsMemory )
             requests.putRequestsItem('memory', new Quantity(scanConfig.requestsMemory))
-
         //container section
         spec.addNewContainer()
                 .withName(name)
@@ -417,12 +420,6 @@ class K8sServiceImpl implements K8sService {
                 .withResources(requests)
                 .endContainer()
                 .endSpec()
-        final dnsConfig = new V1PodDNSConfigBuilder()
-                .withNameservers(dnsServers)
-        .build()
-
-        spec.withDnsConfig(dnsConfig)
-                .withDnsPolicy("None")
         builder.build()
     }
 
