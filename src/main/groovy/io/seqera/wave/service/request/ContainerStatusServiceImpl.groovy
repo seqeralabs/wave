@@ -148,7 +148,6 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
                 state.duration,
                 state.exitCode
         )
-        log.info("++++++> ${res.exitCode}")
         return res
     }
 
