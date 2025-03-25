@@ -63,19 +63,19 @@
         <h1>Wave container build completion</h1>
     </div>
 
-    {{#if build_success}}
-        <div id="build-success" class="build-status" style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+    {{!-- {{#if build_success}} --}}
+        <div hidden="{{!build_success}}" id="build-success" class="build-status" style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
             <h4 style="margin-top:0; color: inherit;">
                 Container build completed successfully!
             </h4>
         </div>
-    {{else build_failed}}
-        <div id="build-failed" class="build-status" style="color: #a94442; background-color: #f2dede; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+    {{!-- {{else build_failed}} --}}
+        <div hidden="{{!build_failed}}" id="build-failed" class="build-status" style="color: #a94442; background-color: #f2dede; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
             <h4 style="margin-top:0; color: inherit;">
                 Container build failed
             </h4>
         </div>
-    {{else build_in_progress}}
+    {{!-- {{else build_in_progress}} --}}
     {{! build is not completed, show a spinning icon }}
         <style>
         .lds-dual-ring {
@@ -103,7 +103,7 @@
             }
         }
         </style>
-        <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+        <div hidden="{{build_in_progress}}" style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
             <h4 style="margin-top:0; color: inherit;">
                 <div class="lds-dual-ring"></div> Container build in progress
             </h4>
@@ -240,6 +240,11 @@
 
 </div>
 <script>
+    let interval;
+    const buildSuccess = {{build_success}};
+    const buildInProgress = {{build_in_progress}};
+    const buildId = '{{build_id}}';
+
     function copyToClipboard(preId, buttonId) {
         const textToCopy = document.getElementById(preId).innerText;
         navigator.clipboard.writeText(textToCopy).then(() => {
@@ -264,18 +269,26 @@
     }
 
     function fetchStatusData() {
-        const buildId = '{{build_id}}';
-
-        fetch(`https://wave.seqera.io/v1alpha1/builds/${buildId}/status`)
+        return fetch(`https://wave.seqera.io/v1alpha1/builds/${buildId}/status`)
             .then(response => response.json())
-            .then(data => {
-                // Re-render DOM elements with the new data
-                
-            })
             .catch(error => {
                 console.error('Error:', error);
             });
     }
+
+    function rearrangeDOM(data) {
+
+    }
+
+    const interval = setInterval(async () => {
+        const data = await fetchStatusData();
+
+        rearrangeDOM(data);
+
+        if (data.status !== 'PENDING') {
+            clearInterval(interval);
+        }
+    }, 5000);
 </script>
 </body>
 </html>
