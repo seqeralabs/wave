@@ -62,7 +62,7 @@ import static io.seqera.wave.service.builder.BuildStrategy.BUILDKIT_ENTRYPOINT
 @CompileStatic
 class K8sServiceImpl implements K8sService {
 
-    @Value('${wave.build.k8s.dns.servers}')
+    @Value('${wave.build.k8s.dns.servers:`1.1.1.1`}')
     private List<String> dnsServers
 
     @Value('${wave.build.k8s.namespace}')
