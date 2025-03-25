@@ -282,14 +282,14 @@
             return "0:00";
         }
         
-        const roundedMinutes = Math.round(minutes * 60) / 60;
+        const totalSeconds = Math.round(minutes * 60);
         
-        const hours = Math.floor(roundedMinutes / 60);
-        const mins = Math.floor(roundedMinutes % 60);
+        const mins = Math.floor(totalSeconds / 60);
+        const secs = totalSeconds % 60;
         
-        const formattedMinutes = mins < 10 ? `0${mins}` : `${mins}`;
+        const formattedSeconds = secs < 10 ? `0${secs}` : `${secs}`;
         
-        return `${hours}:${formattedMinutes}`;
+        return `${mins}:${formattedSeconds}`;
     }
 
     function rearrangeDOM(data) {
