@@ -64,13 +64,13 @@
     </div>
 
     {{!-- {{#if build_success}} --}}
-        <div hidden="{{!build_success}}" id="build-success" class="build-status" style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+        <div id="build-success" class="build-status" style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
             <h4 style="margin-top:0; color: inherit;">
                 Container build completed successfully!
             </h4>
         </div>
     {{!-- {{else build_failed}} --}}
-        <div hidden="{{!build_failed}}" id="build-failed" class="build-status" style="color: #a94442; background-color: #f2dede; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+        <div id="build-failed" class="build-status" style="color: #a94442; background-color: #f2dede; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
             <h4 style="margin-top:0; color: inherit;">
                 Container build failed
             </h4>
@@ -103,12 +103,12 @@
             }
         }
         </style>
-        <div hidden="{{build_in_progress}}" style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+        <div id="build-in-progress" class="build-status" style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
             <h4 style="margin-top:0; color: inherit;">
                 <div class="lds-dual-ring"></div> Container build in progress
             </h4>
         </div>
-    {{/if}}
+    {{!-- {{/if}} --}}
 
     <h3>Summary</h3>
     <table cellpadding="4" >
@@ -242,6 +242,7 @@
 <script>
     let interval;
     const buildSuccess = {{build_success}};
+    const buildFailed = {{build_failed}};
     const buildInProgress = {{build_in_progress}};
     const buildId = '{{build_id}}';
 
@@ -269,7 +270,7 @@
     }
 
     function fetchStatusData() {
-        return fetch(`https://wave.seqera.io/v1alpha1/builds/${buildId}/status`)
+        return fetch(`http://localhost:9090/v1alpha1/builds/${buildId}/status`)
             .then(response => response.json())
             .catch(error => {
                 console.error('Error:', error);
@@ -277,10 +278,23 @@
     }
 
     function rearrangeDOM(data) {
+        const elements = document.getElementsByClassName('build-status');
+        for (let i = 0; i < elements.length; i++) {
+            elements[i].style.display = 'none';
+        }
 
+        if (buildSuccess) {
+            document.getElementById('build-success').style.display = 'block';
+        } else if (buildFailed) {
+            document.getElementById('build-failed').style.display = 'block';
+        } else if (buildInProgress) {
+            document.getElementById('build-in-progress').style.display = 'block';
+        }
     }
 
-    const interval = setInterval(async () => {
+    rearrangeDOM();
+
+    interval = setInterval(async () => {
         const data = await fetchStatusData();
 
         rearrangeDOM(data);
