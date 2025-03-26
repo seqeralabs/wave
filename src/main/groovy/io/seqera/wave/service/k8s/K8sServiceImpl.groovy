@@ -34,6 +34,8 @@ import io.kubernetes.client.openapi.models.V1JobStatus
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
+import io.kubernetes.client.openapi.models.V1PodDNSConfig
+import io.kubernetes.client.openapi.models.V1PodDNSConfigBuilder
 import io.kubernetes.client.openapi.models.V1ResourceRequirements
 import io.kubernetes.client.openapi.models.V1Volume
 import io.kubernetes.client.openapi.models.V1VolumeMount
@@ -60,6 +62,14 @@ import static io.seqera.wave.service.builder.BuildStrategy.BUILDKIT_ENTRYPOINT
 @Requires(property = 'wave.build.k8s')
 @CompileStatic
 class K8sServiceImpl implements K8sService {
+
+    @Value('${wave.build.k8s.dns.servers}')
+    @Nullable
+    private List<String> dnsServers
+
+    @Value('${wave.build.k8s.dns.policy}')
+    @Nullable
+    private String dnsPolicy
 
     @Value('${wave.build.k8s.namespace}')
     private String namespace
@@ -443,6 +453,12 @@ class K8sServiceImpl implements K8sService {
                 .execute()
     }
 
+    protected V1PodDNSConfig dnsConfig() {
+        return dnsServers
+                ? new V1PodDNSConfigBuilder().withNameservers(dnsServers).build()
+                : null
+    }
+
     V1Job createTransferJobSpec(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
 
         V1JobBuilder builder = new V1JobBuilder()
@@ -467,6 +483,8 @@ class K8sServiceImpl implements K8sService {
                     .editOrNewSpec()
                     .withServiceAccount(serviceAccount)
                     .withRestartPolicy("Never")
+                    .withDnsConfig(dnsConfig())
+                    .withDnsPolicy(dnsPolicy)
         //container section
                     .addNewContainer()
                         .withName(name)
@@ -548,6 +566,8 @@ class K8sServiceImpl implements K8sService {
                 .addToAnnotations(getBuildkitAnnotations(name,singularity))
                 .endMetadata()
                 .editOrNewSpec()
+                .withDnsConfig(dnsConfig())
+                .withDnsPolicy(dnsPolicy)
                 .withNodeSelector(nodeSelector)
                 .withServiceAccount(serviceAccount)
                 .withActiveDeadlineSeconds( timeout.toSeconds() )
@@ -633,6 +653,8 @@ class K8sServiceImpl implements K8sService {
                 .withServiceAccount(serviceAccount)
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
+                .withDnsConfig(dnsConfig())
+                .withDnsPolicy(dnsPolicy)
 
         final requests = new V1ResourceRequirements()
         if( scanConfig.requestsCpu )
@@ -701,6 +723,8 @@ class K8sServiceImpl implements K8sService {
                 .withServiceAccount(serviceAccount)
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
+                .withDnsConfig(dnsConfig())
+                .withDnsPolicy(dnsPolicy)
 
         final requests = new V1ResourceRequirements()
         if( config.requestsCpu )
