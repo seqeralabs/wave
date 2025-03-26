@@ -455,7 +455,7 @@ class K8sServiceImpl implements K8sService {
 
     protected V1PodDNSConfig dnsConfig() {
         return dnsServers
-                ? new V1PodDNSConfigBuilder() .withNameservers(dnsServers).build()
+                ? new V1PodDNSConfigBuilder().withNameservers(dnsServers).build()
                 : null
     }
 
