@@ -475,6 +475,10 @@ class K8sServiceImpl implements K8sService {
             requests.putRequestsItem('cpu', new Quantity(blobConfig.requestsCpu))
         if( blobConfig.requestsMemory )
             requests.putRequestsItem('memory', new Quantity(blobConfig.requestsMemory))
+        if( blobConfig.limitsCpu )
+            requests.putLimitsItem('cpu', new Quantity(blobConfig.limitsCpu))
+        if( blobConfig.limitsMemory )
+            requests.putLimitsItem('memory', new Quantity(blobConfig.limitsMemory))
 
         //spec section
         def spec = builder.withNewSpec()
@@ -661,6 +665,10 @@ class K8sServiceImpl implements K8sService {
             requests.putRequestsItem('cpu', new Quantity(scanConfig.requestsCpu))
         if( scanConfig.requestsMemory )
             requests.putRequestsItem('memory', new Quantity(scanConfig.requestsMemory))
+        if( scanConfig.limitsCpu )
+            requests.putLimitsItem('cpu', new Quantity(scanConfig.limitsCpu))
+        if( scanConfig.limitsMemory )
+            requests.putLimitsItem('memory', new Quantity(scanConfig.limitsMemory))
 
         // container section
         final container = new V1ContainerBuilder()
@@ -731,6 +739,10 @@ class K8sServiceImpl implements K8sService {
             requests.putRequestsItem('cpu', new Quantity(config.requestsCpu))
         if( config.requestsMemory )
             requests.putRequestsItem('memory', new Quantity(config.requestsMemory))
+        if( config.limitsCpu )
+            requests.putLimitsItem('cpu', new Quantity(config.limitsCpu))
+        if( config.limitsMemory )
+            requests.putLimitsItem('memory', new Quantity(config.limitsMemory))
 
         // container section
         final container = new V1ContainerBuilder()

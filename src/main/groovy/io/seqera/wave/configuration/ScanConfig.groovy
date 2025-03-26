@@ -55,6 +55,14 @@ class ScanConfig {
     @Nullable
     private String requestsMemory
 
+    @Value('${wave.scan.k8s.resources.limits.cpu}')
+    @Nullable
+    private String limitsCpu
+
+    @Value('${wave.scan.k8s.resources.limits.memory}')
+    @Nullable
+    private String limitsMemory
+
     /**
      * The host path where cache DB stored
      */
@@ -116,6 +124,14 @@ class ScanConfig {
         return requestsMemory
     }
 
+    String getLimitsCpu() {
+        return limitsCpu
+    }
+
+    String getLimitsMemory() {
+        return limitsMemory
+    }
+
     Duration getTimeout() {
         return timeout
     }
@@ -141,6 +157,6 @@ class ScanConfig {
 
     @PostConstruct
     private void init() {
-        log.info("Scan config: docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}; severity: $severity; vulnerability-limit: $vulnerabilityLimit; retry-attempts: $retryAttempts; env=${environment}")
+        log.info("Scan config: docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}; limits-cpu: ${limitsCpu}; limits-memory: ${limitsMemory}; severity: $severity; vulnerability-limit: $vulnerabilityLimit; retry-attempts: $retryAttempts; env=${environment}")
     }
 }
