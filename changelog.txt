@@ -1,4 +1,8 @@
 # Wave changelog
+1.19.3 - 26 Mar 2025
+- Added dns configuration in k8s job (#816) [0458e667]
+- Add support for cpu and mem limits (#817) [eb0fa3fe]
+
 1.19.2 - 15 Mar 2025
 - Implement pending queue as stream (#809) [ec847d24]
 - Restore "Add arch in wave metrics (#791)" [a8e84291]
