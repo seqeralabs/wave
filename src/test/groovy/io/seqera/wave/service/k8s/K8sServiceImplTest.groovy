@@ -618,6 +618,9 @@ class K8sServiceImplTest extends Specification {
         and:
         job.spec.template.spec.volumes.get(0).name == 'build-data'
         job.spec.template.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
+        and:
+        job.spec.template.spec.dnsPolicy == null
+        job.spec.template.spec.dnsConfig == null
 
         cleanup:
         ctx.close()
@@ -667,6 +670,9 @@ class K8sServiceImplTest extends Specification {
         and:
         job.spec.template.spec.volumes.get(0).name == 'build-data'
         job.spec.template.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
+        and:
+        job.spec.template.spec.dnsPolicy == null
+        job.spec.template.spec.dnsConfig == null
 
         cleanup:
         ctx.close()
@@ -770,6 +776,9 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.volumes.size() == 1
         job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
         job.spec.template.spec.restartPolicy == 'Never'
+        and:
+        job.spec.template.spec.dnsPolicy == null
+        job.spec.template.spec.dnsConfig == null
 
         cleanup:
         ctx.close()
@@ -915,6 +924,9 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.volumes.size() == 1
         job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
         job.spec.template.spec.restartPolicy == 'Never'
+        and:
+        job.spec.template.spec.dnsPolicy == null
+        job.spec.template.spec.dnsConfig == null
 
         cleanup:
         ctx.close()
@@ -1075,7 +1087,8 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.storage.mountPath': '/build',
                 'wave.build.k8s.service-account': 'theAdminAccount',
                 'wave.scan.retry-attempts': 3,
-                'wave.build.k8s.dns.servers': ['1.1.1.1', '8.8.8.8']
+                'wave.build.k8s.dns.servers': ['1.1.1.1', '8.8.8.8'],
+                'wave.build.k8s.dns.policy': 'None'
         ]
         and:
         def ctx = ApplicationContext.run(PROPS)
@@ -1108,6 +1121,7 @@ class K8sServiceImplTest extends Specification {
             volumes[0].persistentVolumeClaim.claimName == 'bar'
             restartPolicy == 'Never'
             dnsConfig.nameservers == ['1.1.1.1', '8.8.8.8']
+            dnsPolicy == 'None'
         }
 
         cleanup:
@@ -1121,7 +1135,8 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.namespace': 'my-ns',
                 'wave.build.k8s.service-account': 'foo-sa',
                 'wave.build.k8s.configPath': '/home/kube.config',
-                'wave.build.k8s.dns.servers': ['1.1.1.1', '8.8.8.8']
+                'wave.build.k8s.dns.servers': ['1.1.1.1', '8.8.8.8'],
+                'wave.build.k8s.dns.policy': 'None'
         ]
         and:
         def ctx = ApplicationContext.run(PROPS)
@@ -1152,6 +1167,7 @@ class K8sServiceImplTest extends Specification {
             containers.get(0).getResources().requests.get('memory') == new Quantity('8Gi')
             !containers.get(0).getResources().limits
             dnsConfig.nameservers == ['1.1.1.1', '8.8.8.8']
+            dnsPolicy == 'None'
         }
 
         cleanup:
@@ -1165,7 +1181,8 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.namespace': 'my-ns',
                 'wave.build.k8s.service-account': 'foo-sa',
                 'wave.build.k8s.configPath': '/home/kube.config',
-                'wave.build.k8s.dns.servers': ['1.1.1.1', '8.8.8.8']
+                'wave.build.k8s.dns.servers': ['1.1.1.1', '8.8.8.8'],
+                'wave.build.k8s.dns.policy': 'None'
         ]
         and:
         def ctx = ApplicationContext.run(PROPS)
@@ -1196,6 +1213,7 @@ class K8sServiceImplTest extends Specification {
             containers.get(0).getResources().requests.get('memory') == new Quantity('8Gi')
             !containers.get(0).getResources().limits
             dnsConfig.nameservers == ['1.1.1.1', '8.8.8.8']
+            dnsPolicy == 'None'
         }
 
         cleanup:
