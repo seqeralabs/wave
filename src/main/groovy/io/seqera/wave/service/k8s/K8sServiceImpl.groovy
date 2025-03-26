@@ -95,6 +95,14 @@ class K8sServiceImpl implements K8sService {
     @Nullable
     private String requestsMemory
 
+    @Value('${wave.build.k8s.resources.limits.cpu}')
+    @Nullable
+    private String limitsCpu
+
+    @Value('${wave.build.k8s.resources.limits.memory}')
+    @Nullable
+    private String limitsMemory
+
     @Inject
     private K8sClient k8sClient
 
@@ -551,6 +559,11 @@ class K8sServiceImpl implements K8sService {
             requests.putRequestsItem('cpu', new Quantity(requestsCpu))
         if( requestsMemory )
             requests.putRequestsItem('memory', new Quantity(requestsMemory))
+
+        if( limitsCpu )
+            requests.putLimitsItem('cpu', new Quantity(limitsCpu))
+        if( limitsMemory )
+            requests.putLimitsItem('memory', new Quantity(limitsMemory))
 
         // container section
         final container = new V1ContainerBuilder()
