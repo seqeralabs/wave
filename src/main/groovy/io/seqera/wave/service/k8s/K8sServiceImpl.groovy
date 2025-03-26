@@ -401,6 +401,7 @@ class K8sServiceImpl implements K8sService {
             requests.putRequestsItem('cpu', new Quantity(scanConfig.requestsCpu))
         if( scanConfig.requestsMemory )
             requests.putRequestsItem('memory', new Quantity(scanConfig.requestsMemory))
+
         //container section
         spec.addNewContainer()
                 .withName(name)
@@ -410,6 +411,7 @@ class K8sServiceImpl implements K8sService {
                 .withResources(requests)
                 .endContainer()
                 .endSpec()
+
         builder.build()
     }
 
@@ -691,6 +693,9 @@ class K8sServiceImpl implements K8sService {
                 .addToLabels(labels)
                 .endMetadata()
 
+        final dnsConfig = new V1PodDNSConfigBuilder()
+                .withNameservers(dnsServers).build()
+
         //spec section
         def spec = builder
                 .withNewSpec()
@@ -700,6 +705,8 @@ class K8sServiceImpl implements K8sService {
                 .withServiceAccount(serviceAccount)
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
+                .withDnsConfig(dnsConfig)
+                .withDnsPolicy("None")
 
         final requests = new V1ResourceRequirements()
         if( config.requestsCpu )
