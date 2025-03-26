@@ -464,6 +464,9 @@ class K8sServiceImpl implements K8sService {
         if( blobConfig.requestsMemory )
             requests.putRequestsItem('memory', new Quantity(blobConfig.requestsMemory))
 
+        final dnsConfig = new V1PodDNSConfigBuilder()
+                .withNameservers(dnsServers).build()
+
         //spec section
         def spec = builder.withNewSpec()
                 .withBackoffLimit(blobConfig.retryAttempts)
@@ -471,6 +474,8 @@ class K8sServiceImpl implements K8sService {
                     .editOrNewSpec()
                     .withServiceAccount(serviceAccount)
                     .withRestartPolicy("Never")
+                    .withDnsConfig(dnsConfig)
+                    .withDnsPolicy("None")
         //container section
                     .addNewContainer()
                         .withName(name)
