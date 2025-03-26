@@ -31,8 +31,8 @@ jobs:
       fail-fast: false
       matrix:
         java_version: [21]
-    permissions :
-      contents : write
+    permissions:
+      contents: write
 
     steps:
       - name: Environment
