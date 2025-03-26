@@ -289,9 +289,6 @@ class K8sServiceImpl implements K8sService {
                 .addToAnnotations(getBuildkitAnnotations(name,singularity))
                 .endMetadata()
 
-        final dnsConfig = new V1PodDNSConfigBuilder()
-                .withNameservers(dnsServers).build()
-
         //spec section
         def spec = builder
                 .withNewSpec()
@@ -300,8 +297,6 @@ class K8sServiceImpl implements K8sService {
                 .withActiveDeadlineSeconds( timeout.toSeconds() )
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
-                .withDnsConfig(dnsConfig)
-                .withDnsPolicy("None")
 
         final requests = new V1ResourceRequirements()
         if( requestsCpu )
@@ -392,9 +387,6 @@ class K8sServiceImpl implements K8sService {
                 .addToLabels(labels)
                 .endMetadata()
 
-        final dnsConfig = new V1PodDNSConfigBuilder()
-                .withNameservers(dnsServers)
-                .build()
         //spec section
         def spec = builder
                 .withNewSpec()
@@ -403,8 +395,6 @@ class K8sServiceImpl implements K8sService {
                 .withActiveDeadlineSeconds( scanConfig.timeout.toSeconds() )
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
-                .withDnsConfig(dnsConfig)
-                .withDnsPolicy("None")
 
         final requests = new V1ResourceRequirements()
         if( scanConfig.requestsCpu )
@@ -543,6 +533,9 @@ class K8sServiceImpl implements K8sService {
                 .addToLabels(labels)
                 .endMetadata()
 
+        final dnsConfig = new V1PodDNSConfigBuilder()
+                .withNameservers(dnsServers).build()
+
         //spec section
         def spec = builder
                 .withNewSpec()
@@ -552,6 +545,8 @@ class K8sServiceImpl implements K8sService {
                 .addToAnnotations(getBuildkitAnnotations(name,singularity))
                 .endMetadata()
                 .editOrNewSpec()
+                .withDnsConfig(dnsConfig)
+                .withDnsPolicy("None")
                 .withNodeSelector(nodeSelector)
                 .withServiceAccount(serviceAccount)
                 .withActiveDeadlineSeconds( timeout.toSeconds() )
@@ -623,6 +618,9 @@ class K8sServiceImpl implements K8sService {
                 .addToLabels(labels)
                 .endMetadata()
 
+        final dnsConfig = new V1PodDNSConfigBuilder()
+                .withNameservers(dnsServers).build()
+
         //spec section
         def spec = builder
                 .withNewSpec()
@@ -632,6 +630,8 @@ class K8sServiceImpl implements K8sService {
                 .withServiceAccount(serviceAccount)
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
+                .withDnsConfig(dnsConfig)
+                .withDnsPolicy("None")
 
         final requests = new V1ResourceRequirements()
         if( scanConfig.requestsCpu )
