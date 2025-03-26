@@ -737,7 +737,7 @@ class K8sServiceImplTest extends Specification {
         ctx.close()
     }
 
-    def 'should create job request with resoure limits'() {
+    def 'should create job request with resource limits'() {
         given:
         def PROPS = [
                 'wave.build.workspace': '/build/work',
