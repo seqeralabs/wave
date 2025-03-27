@@ -6,6 +6,8 @@ wave:
       duration: '30s'
   build:
     workspace: 'build-workspace'
+    logs:
+      bucket: "build-workspace/logs"
   metrics:
     enabled: true
   accounts:
