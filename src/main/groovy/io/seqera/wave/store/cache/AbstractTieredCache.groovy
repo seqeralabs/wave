@@ -24,11 +24,10 @@ import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
 import java.util.function.Function
 
-import com.github.benmanes.caffeine.cache.AsyncCache
-import com.github.benmanes.caffeine.cache.AsyncLoadingCache
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.CacheLoader
 import com.github.benmanes.caffeine.cache.Caffeine
+import com.github.benmanes.caffeine.cache.LoadingCache
 import com.github.benmanes.caffeine.cache.RemovalCause
 import com.github.benmanes.caffeine.cache.RemovalListener
 import groovy.transform.Canonical
@@ -66,16 +65,14 @@ abstract class AbstractTieredCache<K, V extends MoshiSerializable> implements Ti
 
     private EncodingStrategy<Entry> encoder
 
-    // FIXME https://github.com/seqeralabs/wave/issues/747
-    private volatile AsyncCache<String,Entry> _l1
+    private volatile Cache<String,Entry> _l1
 
     private L2TieredCache<String,String> l2
 
-    // FIXME https://github.com/seqeralabs/wave/issues/747
-    private AsyncLoadingCache<String,Lock> locks = Caffeine.newBuilder()
+    private LoadingCache<String,Lock> locks = Caffeine.newBuilder()
             .maximumSize(5_000)
             .weakKeys()
-            .buildAsync(loader())
+            .build(loader())
 
     CacheLoader<String,Lock> loader() {
         (String key) -> new ReentrantLock()
@@ -90,20 +87,20 @@ abstract class AbstractTieredCache<K, V extends MoshiSerializable> implements Ti
 
     private Cache<String,Entry> getL1() {
         if( _l1!=null )
-            return _l1.synchronous()
+            return _l1
 
-        final sync = locks.get('sync-l1').get()
+        final sync = locks.get('sync-l1')
         sync.lock()
         try {
             if( _l1!=null )
-                return _l1.synchronous()
+                return _l1
             
             log.info "Cache '${getName()}' config - prefix=${getPrefix()}; max-size: ${maxSize}"
             _l1 = Caffeine.newBuilder()
                     .maximumSize(maxSize)
                     .removalListener(removalListener0())
-                    .buildAsync()
-            return _l1.synchronous()
+                    .build()
+            return _l1
         }
         finally {
             sync.unlock()
@@ -200,7 +197,7 @@ abstract class AbstractTieredCache<K, V extends MoshiSerializable> implements Ti
             return value
         }
 
-        final sync = locks.get(key).get()
+        final sync = locks.get(key)
         sync.lock()
         try {
             value = l1Get(key)
