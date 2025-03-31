@@ -52,6 +52,7 @@ wave:
       username: 'foo'
       password: 'bar'
   build:
+    enabled: true
     workspace: 'build-workspace'
     logs :
       enabled : true
@@ -59,6 +60,8 @@ wave:
       prefix : 'wave-build/logs'
       conda-lock-prefix: 'wave-build/conda-locks'
   scan:
+    enabled: true
+  mirror:
     enabled: true
 ---
 logger:
