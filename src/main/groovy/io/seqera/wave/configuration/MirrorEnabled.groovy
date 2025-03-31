@@ -31,6 +31,6 @@ import jakarta.inject.Singleton
  */
 @Singleton
 @CompileStatic
-@Requires(property = 'wave.mirror.enabled', value = 'true', defaultValue = 'false')
+@Requires(property = 'wave.mirror.enabled', value = 'true', defaultValue = 'true')
 class MirrorEnabled {
 }
