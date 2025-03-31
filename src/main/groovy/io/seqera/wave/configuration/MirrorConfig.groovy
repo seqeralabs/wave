@@ -52,18 +52,18 @@ class MirrorConfig {
     Integer retryAttempts
 
     @Nullable
-    @Value('${wave.mirror.requestsCpu}')
+    @Value('${wave.mirror.k8s.resources.requests.cpu}')
     String requestsCpu
 
     @Nullable
-    @Value('${wave.mirror.requestsMemory}')
+    @Value('${wave.mirror.k8s.resources.requests.memory}')
     String requestsMemory
 
-    @Value('${wave.mirror.limitsCpu}')
+    @Value('${wave.mirror.k8s.resources.limits.cpu}')
     @Nullable
     String limitsCpu
 
-    @Value('${wave.mirror.limitsMemory}')
+    @Value('${wave.mirror.k8s.resources.limits.memory}')
     @Nullable
     String limitsMemory
 
