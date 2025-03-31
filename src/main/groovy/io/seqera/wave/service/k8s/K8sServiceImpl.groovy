@@ -34,6 +34,8 @@ import io.kubernetes.client.openapi.models.V1JobStatus
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
+import io.kubernetes.client.openapi.models.V1PodDNSConfig
+import io.kubernetes.client.openapi.models.V1PodDNSConfigBuilder
 import io.kubernetes.client.openapi.models.V1ResourceRequirements
 import io.kubernetes.client.openapi.models.V1Volume
 import io.kubernetes.client.openapi.models.V1VolumeMount
@@ -60,6 +62,14 @@ import static io.seqera.wave.service.builder.BuildStrategy.BUILDKIT_ENTRYPOINT
 @Requires(property = 'wave.build.k8s')
 @CompileStatic
 class K8sServiceImpl implements K8sService {
+
+    @Value('${wave.build.k8s.dns.servers}')
+    @Nullable
+    private List<String> dnsServers
+
+    @Value('${wave.build.k8s.dns.policy}')
+    @Nullable
+    private String dnsPolicy
 
     @Value('${wave.build.k8s.namespace}')
     private String namespace
@@ -94,6 +104,14 @@ class K8sServiceImpl implements K8sService {
     @Value('${wave.build.k8s.resources.requests.memory}')
     @Nullable
     private String requestsMemory
+
+    @Value('${wave.build.k8s.resources.limits.cpu}')
+    @Nullable
+    private String limitsCpu
+
+    @Value('${wave.build.k8s.resources.limits.memory}')
+    @Nullable
+    private String limitsMemory
 
     @Inject
     private K8sClient k8sClient
@@ -435,6 +453,12 @@ class K8sServiceImpl implements K8sService {
                 .execute()
     }
 
+    protected V1PodDNSConfig dnsConfig() {
+        return dnsServers
+                ? new V1PodDNSConfigBuilder().withNameservers(dnsServers).build()
+                : null
+    }
+
     V1Job createTransferJobSpec(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
 
         V1JobBuilder builder = new V1JobBuilder()
@@ -451,6 +475,10 @@ class K8sServiceImpl implements K8sService {
             requests.putRequestsItem('cpu', new Quantity(blobConfig.requestsCpu))
         if( blobConfig.requestsMemory )
             requests.putRequestsItem('memory', new Quantity(blobConfig.requestsMemory))
+        if( blobConfig.limitsCpu )
+            requests.putLimitsItem('cpu', new Quantity(blobConfig.limitsCpu))
+        if( blobConfig.limitsMemory )
+            requests.putLimitsItem('memory', new Quantity(blobConfig.limitsMemory))
 
         //spec section
         def spec = builder.withNewSpec()
@@ -459,6 +487,8 @@ class K8sServiceImpl implements K8sService {
                     .editOrNewSpec()
                     .withServiceAccount(serviceAccount)
                     .withRestartPolicy("Never")
+                    .withDnsConfig(dnsConfig())
+                    .withDnsPolicy(dnsPolicy)
         //container section
                     .addNewContainer()
                         .withName(name)
@@ -540,6 +570,8 @@ class K8sServiceImpl implements K8sService {
                 .addToAnnotations(getBuildkitAnnotations(name,singularity))
                 .endMetadata()
                 .editOrNewSpec()
+                .withDnsConfig(dnsConfig())
+                .withDnsPolicy(dnsPolicy)
                 .withNodeSelector(nodeSelector)
                 .withServiceAccount(serviceAccount)
                 .withActiveDeadlineSeconds( timeout.toSeconds() )
@@ -551,6 +583,11 @@ class K8sServiceImpl implements K8sService {
             requests.putRequestsItem('cpu', new Quantity(requestsCpu))
         if( requestsMemory )
             requests.putRequestsItem('memory', new Quantity(requestsMemory))
+
+        if( limitsCpu )
+            requests.putLimitsItem('cpu', new Quantity(limitsCpu))
+        if( limitsMemory )
+            requests.putLimitsItem('memory', new Quantity(limitsMemory))
 
         // container section
         final container = new V1ContainerBuilder()
@@ -620,12 +657,18 @@ class K8sServiceImpl implements K8sService {
                 .withServiceAccount(serviceAccount)
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
+                .withDnsConfig(dnsConfig())
+                .withDnsPolicy(dnsPolicy)
 
         final requests = new V1ResourceRequirements()
         if( scanConfig.requestsCpu )
             requests.putRequestsItem('cpu', new Quantity(scanConfig.requestsCpu))
         if( scanConfig.requestsMemory )
             requests.putRequestsItem('memory', new Quantity(scanConfig.requestsMemory))
+        if( scanConfig.limitsCpu )
+            requests.putLimitsItem('cpu', new Quantity(scanConfig.limitsCpu))
+        if( scanConfig.limitsMemory )
+            requests.putLimitsItem('memory', new Quantity(scanConfig.limitsMemory))
 
         // container section
         final container = new V1ContainerBuilder()
@@ -688,12 +731,18 @@ class K8sServiceImpl implements K8sService {
                 .withServiceAccount(serviceAccount)
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
+                .withDnsConfig(dnsConfig())
+                .withDnsPolicy(dnsPolicy)
 
         final requests = new V1ResourceRequirements()
         if( config.requestsCpu )
             requests.putRequestsItem('cpu', new Quantity(config.requestsCpu))
         if( config.requestsMemory )
             requests.putRequestsItem('memory', new Quantity(config.requestsMemory))
+        if( config.limitsCpu )
+            requests.putLimitsItem('cpu', new Quantity(config.limitsCpu))
+        if( config.limitsMemory )
+            requests.putLimitsItem('memory', new Quantity(config.limitsMemory))
 
         // container section
         final container = new V1ContainerBuilder()

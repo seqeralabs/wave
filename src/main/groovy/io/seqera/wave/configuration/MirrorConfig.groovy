@@ -59,4 +59,12 @@ class MirrorConfig {
     @Value('${wave.mirror.requestsMemory}')
     String requestsMemory
 
+    @Value('${wave.mirror.limitsCpu}')
+    @Nullable
+    String limitsCpu
+
+    @Value('${wave.mirror.limitsMemory}')
+    @Nullable
+    String limitsMemory
+
 }

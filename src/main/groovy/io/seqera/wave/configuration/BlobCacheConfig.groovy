@@ -93,6 +93,14 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.requestsMemory}')
     String requestsMemory
 
+    @Value('${wave.blobCache.limitsCpu}')
+    @Nullable
+    String limitsCpu
+
+    @Value('${wave.blobCache.limitsMemory}')
+    @Nullable
+    String limitsMemory
+
     @Nullable
     @Value('${wave.blobCache.url-signature-duration:30m}')
     Duration urlSignatureDuration
