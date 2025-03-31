@@ -26,8 +26,8 @@ import io.micronaut.http.HttpStatus
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-class MirrorServiceUnavailableException extends HttpResponseException {
-    MirrorServiceUnavailableException() {
-        super(HttpStatus.SERVICE_UNAVAILABLE, "Mirror service is not enabled - Check Wave configuration setting 'wave.mirror.enabled'")
+class UnsupportedMirrorServiceException extends HttpResponseException {
+    UnsupportedMirrorServiceException() {
+        super(HttpStatus.NOT_IMPLEMENTED, "Mirror service is not enabled - Check Wave configuration setting 'wave.mirror.enabled'")
     }
 }

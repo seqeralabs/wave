@@ -26,7 +26,7 @@ import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
-import io.seqera.wave.exception.MirrorServiceUnavailableException
+import io.seqera.wave.exception.UnsupportedMirrorServiceException
 import io.seqera.wave.service.mirror.ContainerMirrorService
 import io.seqera.wave.service.mirror.MirrorResult
 import jakarta.inject.Inject
@@ -48,7 +48,7 @@ class MirrorController {
     @Get("/v1alpha1/mirrors/{mirrorId}")
     HttpResponse<MirrorResult> getMirrorRecord(String mirrorId) {
         if( !mirrorService )
-            throw new MirrorServiceUnavailableException()
+            throw new UnsupportedMirrorServiceException()
         final result = mirrorService.getMirrorResult(mirrorId)
         return result
                 ? HttpResponse.ok(result)

@@ -27,7 +27,6 @@ import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
-import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
@@ -41,7 +40,6 @@ import jakarta.inject.Singleton
 @Slf4j
 @Primary
 @Requires(property = 'wave.build.k8s')
-@Requires(bean = BuildEnabled)
 @Singleton
 @CompileStatic
 class KubeScanStrategy extends ScanStrategy {

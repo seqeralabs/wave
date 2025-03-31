@@ -26,8 +26,8 @@ import io.micronaut.http.HttpStatus
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-class BuildServiceUnavailableException extends HttpResponseException {
-    BuildServiceUnavailableException() {
-        super(HttpStatus.SERVICE_UNAVAILABLE, "Build service is not enabled - Check Wave configuration setting 'wave.build.enabled'")
+class UnsupportedBuildServiceException extends HttpResponseException {
+    UnsupportedBuildServiceException() {
+        super(HttpStatus.NOT_IMPLEMENTED, "Build service is not enabled - Check Wave configuration setting 'wave.build.enabled'")
     }
 }

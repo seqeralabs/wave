@@ -26,8 +26,8 @@ import io.micronaut.http.HttpStatus
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-class ScanServiceUnavailableException extends HttpResponseException {
-    ScanServiceUnavailableException() {
-        super(HttpStatus.SERVICE_UNAVAILABLE, "Security scan service is not enabled - Check Wave configuration setting 'wave.scan.enabled'")
+class UnsupportedScanServiceException extends HttpResponseException {
+    UnsupportedScanServiceException() {
+        super(HttpStatus.NOT_IMPLEMENTED, "Security scan service is not enabled - Check Wave configuration setting 'wave.scan.enabled'")
     }
 }
