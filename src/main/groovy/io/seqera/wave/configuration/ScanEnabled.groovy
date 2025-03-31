@@ -31,6 +31,6 @@ import jakarta.inject.Singleton
  */
 @CompileStatic
 @Singleton
-@Requires(property = 'wave.scan.enabled', value = 'true')
+@Requires(property = 'wave.scan.enabled', value = 'true', defaultValue = 'false')
 class ScanEnabled {
 }

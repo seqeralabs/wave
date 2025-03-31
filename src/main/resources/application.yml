@@ -51,7 +51,6 @@ wave:
   server:
       url: "${WAVE_SERVER_URL:`http://localhost:9090`}"
   build:
-    enabled: true
     buildkit-image: "moby/buildkit:v0.18.2-rootless"
     singularity-image: "quay.io/singularity/singularity:v3.11.4-slim"
     singularity-image-arm64: "quay.io/singularity/singularity:v3.11.4-slim-arm64"
@@ -69,7 +68,6 @@ wave:
       attempts: 5
       multiplier: '1.75'
   scan:
-    enabled: false
     image:
       name: aquasec/trivy:0.56.2
     environment:
@@ -77,10 +75,7 @@ wave:
       - "TRIVY_DB_REPOSITORY=public.ecr.aws/aquasecurity/trivy-db"
       - "TRIVY_JAVA_DB_REPOSITORY=public.ecr.aws/aquasecurity/trivy-java-db"
   blobCache:
-    enabled: false
     s5cmdImage: public.cr.seqera.io/wave/s5cmd:v2.2.2
-  mirror:
-    enabled: false
 ---
 jackson:
   serialization:

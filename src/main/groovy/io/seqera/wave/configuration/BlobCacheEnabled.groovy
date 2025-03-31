@@ -31,6 +31,6 @@ import jakarta.inject.Singleton
  */
 @Singleton
 @CompileStatic
-@Requires(property = 'wave.blobCache.enabled', value = 'true')
+@Requires(property = 'wave.blobCache.enabled', value = 'true', defaultValue = 'false')
 class BlobCacheEnabled {
 }

@@ -33,6 +33,6 @@ import jakarta.inject.Singleton
 @CompileStatic
 @Singleton
 @Slf4j
-@Requires(property = 'wave.build.enabled', value = 'true')
+@Requires(property = 'wave.build.enabled', value = 'true', defaultValue = 'true')
 class BuildEnabled {
 }
