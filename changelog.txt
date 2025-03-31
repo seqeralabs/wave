@@ -1,4 +1,14 @@
 # Wave changelog
+1.19.4 - 31 Mar 2025 
+- Add enable-native-access=ALL-UNNAMED to launch opts [4f0525da]
+- Default request containerPlatform to linux/adm64 [dcdb7cf4]
+- Fix NPE accessing job manager config (#812) [da8d101e]
+- Normalize arch argument to platform [f2a3db7b]
+- Remove unused platform variable [77bbb416]
+- Revert use of async Caffeine cache (#811) [95fb3204]
+- Use uniform notation for resources requests & limits (#819) [8bfa1126]
+- Bump nf-jdk:corretto-24-al2023-jemalloc [bcb14150]
+
 1.19.3 - 26 Mar 2025
 - Added dns configuration in k8s job (#816) [0458e667]
 - Add support for cpu and mem limits (#817) [eb0fa3fe]
