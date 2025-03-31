@@ -37,9 +37,6 @@ import io.micronaut.core.annotation.Nullable
 @CompileStatic
 class BlobCacheConfig {
 
-    @Value('${wave.blobCache.enabled:false}')
-    boolean enabled
-
     /**
      * The time interval every when the status of the blob transfer is checked
      */
