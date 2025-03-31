@@ -24,6 +24,9 @@ import io.micronaut.context.annotation.Requires
 import jakarta.inject.Singleton
 
 /**
+ * Marker object only accessible when the build service is enabled.
+ * Service can declare it as a requirement to enable or disable the
+ * corresponding service.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

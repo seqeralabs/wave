@@ -22,6 +22,17 @@ import groovy.transform.CompileStatic
 import io.micronaut.http.HttpStatus
 
 /**
+ * Exception thrown when the container scan service is not enabled.
+ * <p>
+ * This exception extends {@link HttpResponseException} and is used to indicate that
+ * the requested build operation cannot proceed because the build service is disabled.
+ * It responds with an HTTP status of {@link HttpStatus#NOT_IMPLEMENTED}.
+ * </p>
+ *
+ * <p>
+ * To enable the build service, ensure that the Wave configuration setting
+ * {@code wave.scan.enabled} is properly configured.
+ * </p>
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
