@@ -22,6 +22,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.configuration.BlobCacheConfig
+import io.seqera.wave.configuration.BlobCacheEnabled
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RoutePath
@@ -51,7 +52,7 @@ import software.amazon.awssdk.services.s3.model.S3Exception
 @Slf4j
 @Named('Transfer')
 @Singleton
-@Requires(property = 'wave.blobCache.enabled', value = 'true')
+@Requires(bean = BlobCacheEnabled)
 @CompileStatic
 class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobEntry> {
 

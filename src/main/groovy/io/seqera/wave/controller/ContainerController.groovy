@@ -49,6 +49,8 @@ import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
+import io.seqera.wave.exception.BuildServiceUnavailableException
+import io.seqera.wave.exception.MirrorServiceUnavailableException
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.exchange.DescribeWaveContainerResponse
 import io.seqera.wave.model.ContainerCoordinates
@@ -131,6 +133,7 @@ class ContainerController {
     private BuildConfig buildConfig
 
     @Inject
+    @Nullable
     private ContainerBuildService buildService
 
     @Inject
@@ -162,6 +165,7 @@ class ContainerController {
     private RateLimiterService rateLimiterService
 
     @Inject
+    @Nullable
     private ContainerMirrorService mirrorService
 
     @Inject
@@ -427,6 +431,7 @@ class ContainerController {
         String scanId
         Boolean succeeded
         if( req.containerFile ) {
+            if( !buildService ) throw new BuildServiceUnavailableException()
             final build = makeBuildRequest(req, identity, ip)
             final track = checkBuild(build, req.dryRun)
             targetImage = track.targetImage
@@ -439,6 +444,7 @@ class ContainerController {
             type = ContainerRequest.Type.Build
         }
         else if( req.mirror ) {
+            if( !mirrorService ) throw new MirrorServiceUnavailableException()
             final mirror = makeMirrorRequest(req, identity, digest)
             final track = checkMirror(mirror, identity, req.dryRun)
             targetImage = track.targetImage

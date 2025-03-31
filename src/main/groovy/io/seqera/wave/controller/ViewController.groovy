@@ -43,8 +43,11 @@ import io.seqera.wave.api.ScanMode
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.exception.BadRequestException
+import io.seqera.wave.exception.BuildServiceUnavailableException
 import io.seqera.wave.exception.HttpResponseException
+import io.seqera.wave.exception.MirrorServiceUnavailableException
 import io.seqera.wave.exception.NotFoundException
+import io.seqera.wave.exception.ScanServiceUnavailableException
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.logs.BuildLogService
@@ -83,6 +86,7 @@ class ViewController {
     private PersistenceService persistenceService
 
     @Inject
+    @Nullable
     private ContainerBuildService buildService
 
     @Inject
@@ -97,6 +101,7 @@ class ViewController {
     private ContainerScanService scanService
 
     @Inject
+    @Nullable
     private ContainerMirrorService mirrorService
 
     @Inject
@@ -106,6 +111,8 @@ class ViewController {
     @View("mirror-view")
     @Get('/mirrors/{mirrorId}')
     HttpResponse viewMirror(String mirrorId) {
+        if( !mirrorService )
+            throw new MirrorServiceUnavailableException()
         final result = mirrorService.getMirrorResult(mirrorId)
         if( !result )
             throw new NotFoundException("Unknown container mirror id '$mirrorId'")
@@ -136,6 +143,8 @@ class ViewController {
 
     @Get('/builds/{buildId}')
     HttpResponse viewBuild(String buildId) {
+        if( !buildService )
+            throw new BuildServiceUnavailableException()
         // check redirection for invalid suffix in the form `-nn`
         final r1 = isBuildInvalidSuffix(buildId)
         if( r1 ) {
@@ -357,6 +366,8 @@ class ViewController {
 
     @Get('/scans/{scanId}')
     HttpResponse viewScan(String scanId) {
+        if( !scanService )
+            throw new ScanServiceUnavailableException()
         // check redirection for invalid suffix in the form `-nn`
         final r1 = isScanInvalidSuffix(scanId)
         if( r1 ) {
