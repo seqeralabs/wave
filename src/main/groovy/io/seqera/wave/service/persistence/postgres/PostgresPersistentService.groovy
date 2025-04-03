@@ -39,10 +39,9 @@ import io.seqera.wave.service.persistence.postgres.data.RequestRepository
 import io.seqera.wave.service.persistence.postgres.data.RequestRow
 import io.seqera.wave.service.persistence.postgres.data.ScanRepository
 import io.seqera.wave.service.persistence.postgres.data.ScanRow
-import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
-
 /**
+ * Implements the {@link PersistenceService} using a PostgreSQL database
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -74,41 +73,41 @@ class PostgresPersistentService implements PersistenceService {
     // ===== --- build records ---- =====
 
     @Override
-    void saveBuildAsync(WaveBuildRecord build) {
-        final json = JacksonHelper.toJson(build)
-        final entity = new BuildRow(id:build.buildId, data:json, createdAt: Instant.now())
-        buildRepository.save(entity)
+    void saveBuildAsync(WaveBuildRecord data) {
+        final json = Mapper.toJson(data)
+        final row = new BuildRow(id:data.buildId, data:json, createdAt: Instant.now())
+        buildRepository.save(row)
     }
 
     @Override
     WaveBuildRecord loadBuild(String buildId) {
-        final entity = buildRepository.findById(buildId).orElse(null)
-        if( !entity )
+        final row = buildRepository.findById(buildId).orElse(null)
+        if( !row )
             return null
-        return JacksonHelper.fromJson(entity.data, WaveBuildRecord)
+        return Mapper.fromJson( WaveBuildRecord, row.data, [buildId: buildId] )
     }
 
     @Override
     WaveBuildRecord loadBuildSucceed(String targetImage, String digest) {
-        final entity = buildRepository.findByTargetAndDigest(targetImage, digest)
-        if( !entity )
+        final row = buildRepository.findByTargetAndDigest(targetImage, digest)
+        if( !row )
             return null
-        return JacksonHelper.fromJson(entity.data, WaveBuildRecord)
+        return Mapper.fromJson( WaveBuildRecord, row.data, [buildId: row.id] )
     }
 
     @Override
     WaveBuildRecord latestBuild(String containerId) {
-        final entity = buildRepository.findLatestByBuildId(containerId)
-        if( !entity )
+        final row = buildRepository.findLatestByBuildId(containerId)
+        if( !row )
             return null
-        return JacksonHelper.fromJson(entity.data, WaveBuildRecord)
+        return Mapper.fromJson( WaveBuildRecord, row.data, [buildId: row.id] )
     }
 
     @Override
     List<WaveBuildRecord> allBuilds(String containerId) {
         final result = buildRepository.findAllByBuildId(containerId)
         return result
-                ? result.collect((it)-> JacksonHelper.fromJson(it.data, WaveBuildRecord))
+                ? result.collect((it)-> Mapper.fromJson(WaveBuildRecord, it.data, [buildId: it.id]))
                 : null
     }
 
@@ -116,7 +115,7 @@ class PostgresPersistentService implements PersistenceService {
 
     @Override
     void saveContainerRequestAsync(WaveContainerRecord data) {
-        final json = JacksonHelper.toJson(data)
+        final json = Mapper.toJson(data)
         final entity = new RequestRow(id: data.id, data:json, createdAt: Instant.now())
         requestRepository.save(entity)
     }
@@ -131,15 +130,15 @@ class PostgresPersistentService implements PersistenceService {
         final row = requestRepository.findById(token).orElse(null)
         if( !row || !row.data )
             return null
-        return JacksonHelper.fromJson(row.data, WaveContainerRecord)
+        return Mapper.fromJson(WaveContainerRecord, row.data, [id: token])
     }
 
     // ===== --- scan records ---- =====
 
     @Override
-    void saveScanRecordAsync(WaveScanRecord scanRecord) {
-        final json = JacksonHelper.toJson(scanRecord)
-        final entity = new ScanRow(id: scanRecord.id, data:json, createdAt: Instant.now())
+    void saveScanRecordAsync(WaveScanRecord data) {
+        final json = Mapper.toJson(data)
+        final entity = new ScanRow(id: data.id, data:json, createdAt: Instant.now())
         scanRepository.save(entity)
     }
 
@@ -148,7 +147,7 @@ class PostgresPersistentService implements PersistenceService {
         final row = scanRepository.findById(scanId).orElse(null)
         if( !row || !row.data )
             return null
-        return JacksonHelper.fromJson(row.data, WaveScanRecord)
+        return Mapper.fromJson(WaveScanRecord, row.data, [id: scanId])
     }
 
     @Override
@@ -160,7 +159,7 @@ class PostgresPersistentService implements PersistenceService {
     List<WaveScanRecord> allScans(String scanId) {
         final result = scanRepository.findAllByScanId(scanId)
         return result
-                ? result.collect((it)-> JacksonHelper.fromJson(it.data, WaveScanRecord))
+                ? result.collect((it)-> Mapper.fromJson(WaveScanRecord, it.data, [id: it.id]))
                 : null
     }
 
@@ -168,24 +167,24 @@ class PostgresPersistentService implements PersistenceService {
 
     @Override
     MirrorResult loadMirrorResult(String mirrorId) {
-        final entity = mirrorRepository.findById(mirrorId).orElse(null)
-        if( !entity )
+        final row = mirrorRepository.findById(mirrorId).orElse(null)
+        if( !row )
             return null
-        return JacksonHelper.fromJson(entity.data, MirrorResult)
+        return Mapper.fromJson(MirrorResult, row.data, [mirrorId: mirrorId])
     }
 
     @Override
     MirrorResult loadMirrorSucceed(String targetImage, String digest) {
-        final entity = mirrorRepository.findByTargetAndDigest(targetImage, digest, MirrorResult.Status.COMPLETED)
-        if( !entity )
+        final row = mirrorRepository.findByTargetAndDigest(targetImage, digest, MirrorResult.Status.COMPLETED)
+        if( !row )
             return null
-        return JacksonHelper.fromJson(entity.data, MirrorResult)
+        return Mapper.fromJson(MirrorResult, row.data, [mirrorId: row.id])
     }
 
     @Override
-    void saveMirrorResultAsync(MirrorResult mirror) {
-        final json = JacksonHelper.toJson(mirror)
-        final entity = new MirrorRow(id: mirror.mirrorId, data:json, createdAt: Instant.now())
+    void saveMirrorResultAsync(MirrorResult data) {
+        final json = Mapper.toJson(data)
+        final entity = new MirrorRow(id: data.mirrorId, data:json, createdAt: Instant.now())
         mirrorRepository.save(entity)
     }
 }

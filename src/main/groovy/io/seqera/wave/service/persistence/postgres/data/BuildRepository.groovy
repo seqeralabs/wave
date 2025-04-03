@@ -71,7 +71,7 @@ interface BuildRepository extends CrudRepository<BuildRow, String> {
     @Query('''
         SELECT w.* 
         FROM wave_build w 
-        WHERE data->>'buildId' ~ :buildId
+        WHERE w.id ~ :buildId
         ORDER BY (data->>'startTime')::timestamp DESC 
         LIMIT 1    
         ''')
@@ -89,7 +89,7 @@ interface BuildRepository extends CrudRepository<BuildRow, String> {
     @Query('''
         SELECT w.* 
         FROM wave_build w
-        WHERE (data->>'buildId') ~ ('^(bd-)?' || :buildId || '_[0-9]+')
+        WHERE w.id ~ ('^(bd-)?' || :buildId || '_[0-9]+')
         ORDER BY (data->>'startTime')::timestamp DESC
         ''')
     List<BuildRow> findAllByBuildId(String buildId)

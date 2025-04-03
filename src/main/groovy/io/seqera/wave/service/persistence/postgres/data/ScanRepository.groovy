@@ -42,7 +42,7 @@ interface ScanRepository extends CrudRepository<ScanRow, String> {
     @Query('''
         SELECT s.* 
         FROM wave_scan s
-        WHERE (data->>'id') ~ ('^(sc-)?' || :scanId || '_[0-9]+')
+        WHERE s.id ~ ('^(sc-)?' || :scanId || '_[0-9]+')
         ORDER BY (data->>'startTime')::timestamp DESC
         ''')
     List<ScanRow> findAllByScanId(String scanId)

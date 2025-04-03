@@ -26,6 +26,7 @@ import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
 /**
+ * Implements the PostgreSQL schema initialization
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
