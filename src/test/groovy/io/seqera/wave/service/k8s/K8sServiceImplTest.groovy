@@ -256,7 +256,7 @@ class K8sServiceImplTest extends Specification {
             volumeMounts.get(2).mountPath == '/build/work/xyz'
             volumeMounts.get(2).subPath == 'work/xyz'
             getWorkingDir() == null
-            getSecurityContext().privileged
+            !getSecurityContext().privileged
         }
         and:
         result.spec.volumes.get(0).name == 'build-data'
@@ -599,7 +599,7 @@ class K8sServiceImplTest extends Specification {
         job.spec.backoffLimit == 3
         job.spec.template.spec.containers[0].image == containerImage
         job.spec.template.spec.containers[0].command == args
-        job.spec.template.spec.containers[0].securityContext.privileged
+        !job.spec.template.spec.containers[0].securityContext.privileged
         and:
         job.spec.template.spec.containers.get(0).getWorkingDir() == '/tmp'
         and:
