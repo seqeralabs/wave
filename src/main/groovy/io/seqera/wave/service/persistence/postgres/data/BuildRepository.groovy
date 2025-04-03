@@ -75,7 +75,7 @@ interface BuildRepository extends CrudRepository<BuildRow, String> {
         ORDER BY (data->>'startTime')::timestamp DESC 
         LIMIT 1    
         ''')
-    BuildRow findByBuildId(String buildId)
+    BuildRow findLatestByBuildId(String buildId)
 
     /**
      * Find all builds records for the given build ID or a partial ID.

@@ -98,7 +98,7 @@ class PostgresPersistentService implements PersistenceService {
 
     @Override
     WaveBuildRecord latestBuild(String containerId) {
-        final entity = buildRepository.findByBuildId(containerId)
+        final entity = buildRepository.findLatestByBuildId(containerId)
         if( !entity )
             return null
         return JacksonHelper.fromJson(entity.data, WaveBuildRecord)
