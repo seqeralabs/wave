@@ -32,13 +32,13 @@ import jakarta.inject.Inject
 @MicronautTest(environments = 'postgres', startApplication = false)
 @Property(name = "datasources.default.driver-class-name", value = "org.testcontainers.jdbc.ContainerDatabaseDriver")
 @Property(name = "datasources.default.url", value = "jdbc:tc:postgresql:///db")
-class DbInitServiceTest extends Specification {
+class PostgresSchemaServiceTest extends Specification {
 
     @Inject
     JdbcOperations jdbcOperations
 
     @Inject
-    DbInitService dbInitService
+    PostgresSchemaService dbInitService
 
 
     def "should create tables successfully"() {

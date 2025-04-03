@@ -52,7 +52,7 @@ import jakarta.inject.Inject
 class PostgresPersistentService implements PersistenceService {
 
     @Inject
-    private DbInitService dbInitService
+    private PostgresSchemaService dbInitService
 
     @Inject
     private BuildRepository buildRepository

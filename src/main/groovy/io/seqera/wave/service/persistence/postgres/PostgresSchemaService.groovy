@@ -31,7 +31,7 @@ import jakarta.inject.Singleton
  */
 @Singleton
 @CompileStatic
-class DbInitService {
+class PostgresSchemaService {
 
     @Inject
     private JdbcOperations jdbcOperations
