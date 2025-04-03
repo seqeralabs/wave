@@ -329,7 +329,7 @@ class K8sServiceImpl implements K8sService {
             container
             // use 'command' to override the entrypoint of the container
                     .withCommand(args)
-                    .withNewSecurityContext().withPrivileged(true).endSecurityContext()
+                    .withNewSecurityContext().withPrivileged(false).endSecurityContext()
         } else {
             container
                     //required by buildkit rootless container
@@ -601,7 +601,7 @@ class K8sServiceImpl implements K8sService {
             container
             // use 'command' to override the entrypoint of the container
                     .withCommand(args)
-                    .withNewSecurityContext().withPrivileged(true).endSecurityContext()
+                    .withNewSecurityContext().withPrivileged(false).endSecurityContext()
         } else {
             container
             //required by buildkit rootless container
