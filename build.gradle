@@ -89,6 +89,7 @@ dependencies {
     runtimeOnly 'javax.xml.bind:jaxb-api:2.3.1'
     testImplementation 'org.testcontainers:testcontainers'
     testImplementation 'org.testcontainers:postgresql'
+    testRuntimeOnly 'com.h2database:h2'
     
     // --
     implementation 'ch.qos.logback:logback-classic:1.5.16'
