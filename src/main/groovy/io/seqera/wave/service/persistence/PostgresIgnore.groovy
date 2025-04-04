@@ -24,7 +24,8 @@ import java.lang.annotation.RetentionPolicy
 import java.lang.annotation.Target
 
 /**
- *
+ * Marker annotation to ignore a field when serializing for PostgreSQL database
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Retention(RetentionPolicy.RUNTIME)
