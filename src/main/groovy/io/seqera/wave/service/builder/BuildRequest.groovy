@@ -26,6 +26,7 @@ import java.time.OffsetDateTime
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import io.seqera.wave.api.BuildContext
+import io.seqera.wave.api.CompressionMode
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
@@ -133,6 +134,12 @@ class BuildRequest {
     final Duration maxDuration
 
     /**
+     * The compression mode for the  container build
+     */
+    final CompressionMode compressionMode
+
+
+    /**
      * The build unique request id
      */
     final String buildId
@@ -153,7 +160,8 @@ class BuildRequest {
             String scanId,
             BuildContext buildContext,
             BuildFormat format,
-            Duration maxDuration
+            Duration maxDuration,
+            CompressionMode compressionMode
     )
     {
         this.containerId = containerId
@@ -173,6 +181,7 @@ class BuildRequest {
         this.buildContext = buildContext
         this.format = format
         this.maxDuration = maxDuration
+        this.compressionMode = compressionMode
         // NOTE: this is meant to be updated - automatically - when the request is submitted
         this.buildId = ID_PREFIX + containerId + SEP + '0'
     }
@@ -195,6 +204,7 @@ class BuildRequest {
         this.buildContext = opts.buildContext as BuildContext
         this.format = opts.format as BuildFormat
         this.maxDuration = opts.maxDuration as Duration
+        this.compressionMode = opts.compressionMode as CompressionMode
         this.buildId = opts.buildId
     }
 
@@ -258,6 +268,10 @@ class BuildRequest {
 
     Duration getMaxDuration() {
         return maxDuration
+    }
+
+    CompressionMode getCompressionMode() {
+        return compressionMode
     }
 
     boolean formatDocker() {
