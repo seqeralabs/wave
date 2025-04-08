@@ -109,7 +109,7 @@ class BuildStrategyTest extends Specification {
         ]
     }
 
-    def 'should get singularity command' () {
+    def 'should get singularity build command' () {
         given:
         def req = new BuildRequest(
                 containerId: 'c168dba125e28777',
@@ -125,8 +125,48 @@ class BuildStrategyTest extends Specification {
         cmd == [
                 "sh",
                 "-c",
-                "singularity build image.sif /work/foo/bd-c168dba125e28777_1/Containerfile && singularity push image.sif oras://quay.io/wave:c168dba125e28777"
+                "singularity build --force /work/foo/bd-c168dba125e28777_1/image.sif /work/foo/bd-c168dba125e28777_1/Containerfile_Build"
             ]
+    }
+
+    def 'should get singularity pull command' () {
+        given:
+        def req = new BuildRequest(
+                containerId: 'c168dba125e28777',
+                buildId: 'bd-c168dba125e28777_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'oras://quay.io/wave:c168dba125e28777',
+                format: BuildFormat.SINGULARITY,
+                cacheRepository: 'reg.io/wave/build/cache' )
+        when:
+        def cmd = BuildStrategy.singularityPullCmd(req)
+        then:
+        cmd == [
+                "sh",
+                "-c",
+                "singularity build --force /work/foo/bd-c168dba125e28777_1/base_image.sif /work/foo/bd-c168dba125e28777_1/Containerfile_Pull"
+        ]
+    }
+
+    def 'should get singularity push command' () {
+        given:
+        def req = new BuildRequest(
+                containerId: 'c168dba125e28777',
+                buildId: 'bd-c168dba125e28777_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'oras://quay.io/wave:c168dba125e28777',
+                format: BuildFormat.SINGULARITY,
+                cacheRepository: 'reg.io/wave/build/cache' )
+        when:
+        def cmd = BuildStrategy.singularityPushCmd(req)
+        then:
+        cmd == [
+                "sh",
+                "-c",
+                "singularity push /work/foo/bd-c168dba125e28777_1/image.sif oras://quay.io/wave:c168dba125e28777"
+        ]
     }
 
     def 'should create request' () {

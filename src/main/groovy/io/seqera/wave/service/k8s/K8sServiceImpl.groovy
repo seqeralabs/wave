@@ -122,7 +122,9 @@ class K8sServiceImpl implements K8sService {
     // check this link to know more about these options https://github.com/moby/buildkit/tree/master/examples/kubernetes#kubernetes-manifests-for-buildkit
     private final static Map<String,String> BUILDKIT_FLAGS = ['BUILDKITD_FLAGS': '--oci-worker-no-process-sandbox']
 
-    private Map<String, String> getBuildkitAnnotations(String containerName) {
+    private Map<String, String> getBuildkitAnnotations(String containerName, boolean singularity) {
+        if( singularity )
+            return null
         final key = "container.apparmor.security.beta.kubernetes.io/${containerName}".toString()
         return Map.of(key, "unconfined")
     }
@@ -265,6 +267,82 @@ class K8sServiceImpl implements K8sService {
                 .name('build-data')
                 .mountPath( Trivy.CACHE_MOUNT_PATH )
                 .subPath(rel)
+    }
+
+    @Deprecated
+    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, Duration timeout, Map<String,String> nodeSelector) {
+
+        // dirty dependency to avoid introducing another parameter
+        final singularity = containerImage.contains('singularity')
+
+        // required volumes
+        final mounts = new ArrayList<V1VolumeMount>(5)
+        mounts.add(mountBuildStorage(workDir, storageMountPath, true))
+
+        final volumes = new ArrayList<V1Volume>(5)
+        volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
+
+        if( credsFile ){
+            if( !singularity ) {
+                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/home/user/.docker/config.json'))
+            }
+            else {
+                final remoteFile = credsFile.resolveSibling('singularity-remote.yaml')
+                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/root/.singularity/docker-config.json'))
+                mounts.add(1, mountHostPath(remoteFile, storageMountPath, '/root/.singularity/remote.yaml'))
+            }
+        }
+
+        V1PodBuilder builder = new V1PodBuilder()
+
+        //metadata section
+        builder.withNewMetadata()
+                .withNamespace(namespace)
+                .withName(name)
+                .addToLabels(labels)
+                .addToAnnotations(getBuildkitAnnotations(name,singularity))
+                .endMetadata()
+
+        //spec section
+        def spec = builder
+                .withNewSpec()
+                .withNodeSelector(nodeSelector)
+                .withServiceAccount(serviceAccount)
+                .withActiveDeadlineSeconds( timeout.toSeconds() )
+                .withRestartPolicy("Never")
+                .addAllToVolumes(volumes)
+
+        final requests = new V1ResourceRequirements()
+        if( requestsCpu )
+            requests.putRequestsItem('cpu', new Quantity(requestsCpu))
+        if( requestsMemory )
+            requests.putRequestsItem('memory', new Quantity(requestsMemory))
+
+        // container section
+        final container = new V1ContainerBuilder()
+                .withName(name)
+                .withImage(containerImage)
+                .withVolumeMounts(mounts)
+                .withResources(requests)
+
+        if( singularity ) {
+            container
+            // use 'command' to override the entrypoint of the container
+                    .withCommand(args)
+                    .withNewSecurityContext().withPrivileged(true).endSecurityContext()
+        } else {
+            container
+            //required by buildkit rootless container
+                    .withEnv(toEnvList(BUILDKIT_FLAGS))
+            // buildCommand is to set entrypoint for buildkit
+                    .withCommand(BUILDKIT_ENTRYPOINT)
+                    .withArgs(args)
+        }
+
+        // spec section
+        spec.withContainers(container.build()).endSpec()
+
+        builder.build()
     }
 
     /**
@@ -461,9 +539,7 @@ class K8sServiceImpl implements K8sService {
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
         if( credsFile ){
-            final remoteFile = credsFile.resolveSibling('singularity-remote.yaml')
-            mounts.add(0, mountHostPath(credsFile, storageMountPath, '/root/.singularity/docker-config.json'))
-            mounts.add(1, mountHostPath(remoteFile, storageMountPath, '/root/.singularity/remote.yaml'))
+            mounts.add(0, mountHostPath(credsFile, "$storageMountPath", '/home/user/.docker/config.json'))
         }
 
         V1JobBuilder builder = new V1JobBuilder()
@@ -481,7 +557,7 @@ class K8sServiceImpl implements K8sService {
                 .withBackoffLimit(buildConfig.retryAttempts)
                 .withNewTemplate()
                 .withNewMetadata()
-                .addToAnnotations(getBuildkitAnnotations(name))
+                .addToAnnotations(getBuildkitAnnotations(name, false))
                 .endMetadata()
                 .editOrNewSpec()
                 .withDnsConfig(dnsConfig())
@@ -708,14 +784,14 @@ class K8sServiceImpl implements K8sService {
     }
 
     /**
-     * Create a container for container image building via buildkit
+     * Create a container for container image building via singularity
      *
      * @param name
      *      The name of pod
      * @param containerImage
      *      The container image to be used
      * @param args
-     *      The build command to be performed
+     *      The pull, build, and push commands to be performed
      * @param workDir
      *      The build context directory
      * @param creds
@@ -738,13 +814,15 @@ class K8sServiceImpl implements K8sService {
         mounts.add(mountBuildStorage(workDir, storageMountPath, false))
 
         final credMounts = new ArrayList<V1VolumeMount>(5)
-        credMounts.add(mountBuildStorage(workDir, "$storageMountPath", false))
+        credMounts.add(mountBuildStorage(workDir, storageMountPath, false))
 
         final volumes = new ArrayList<V1Volume>(5)
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
         if( credsFile ) {
-            credMounts.add(0, mountHostPath(credsFile, "$storageMountPath", '/home/user/.docker/config.json'))
+            final remoteFile = credsFile.resolveSibling('singularity-remote.yaml')
+            credMounts.add(0, mountHostPath(credsFile, storageMountPath, '/root/.singularity/docker-config.json'))
+            credMounts.add(1, mountHostPath(remoteFile, storageMountPath, '/root/.singularity/remote.yaml'))
         }
         V1JobBuilder builder = new V1JobBuilder()
 

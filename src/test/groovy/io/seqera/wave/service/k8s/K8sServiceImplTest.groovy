@@ -571,61 +571,6 @@ class K8sServiceImplTest extends Specification {
         latestPod == null
     }
 
-    def 'buildJobSpec should create job with singularity image'() {
-        given:
-        def PROPS = [
-                'wave.build.workspace': '/build/work',
-                'wave.build.k8s.namespace': 'my-ns',
-                'wave.build.k8s.configPath': '/home/kube.config',
-                'wave.build.k8s.storage.claimName': 'build-claim',
-                'wave.build.k8s.storage.mountPath': '/build',
-                'wave.build.retry-attempts': 3
-        ]
-        and:
-        def ctx = ApplicationContext.run(PROPS)
-        def k8sService = ctx.getBean(K8sServiceImpl)
-        def name = 'the-job-name'
-        def containerImage = 'singularity:latest'
-        def args = ['singularity', '--this', '--that']
-        def workDir = Path.of('/build/work/xyz')
-        def credsFile = workDir.resolve('config.json')
-        def timeout = Duration.ofMinutes(10)
-        def nodeSelector = [key: 'value']
-
-        when:
-        def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, nodeSelector)
-
-        then:
-        job.spec.backoffLimit == 3
-        job.spec.template.spec.containers[0].image == containerImage
-        job.spec.template.spec.containers[0].command == args
-        job.spec.template.spec.containers[0].securityContext.privileged
-        and:
-        job.spec.template.spec.containers.get(0).getWorkingDir() == '/tmp'
-        and:
-        job.spec.template.spec.containers.get(0).volumeMounts.size() == 3
-        job.spec.template.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(0).mountPath == '/root/.singularity/docker-config.json'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz/config.json'
-        and:
-        job.spec.template.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(1).mountPath == '/root/.singularity/remote.yaml'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz/singularity-remote.yaml'
-        and:
-        job.spec.template.spec.containers.get(0).volumeMounts.get(2).name == 'build-data'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(2).mountPath == '/build/work/xyz'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(2).subPath == 'work/xyz'
-        and:
-        job.spec.template.spec.volumes.get(0).name == 'build-data'
-        job.spec.template.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
-        and:
-        job.spec.template.spec.dnsPolicy == null
-        job.spec.template.spec.dnsConfig == null
-
-        cleanup:
-        ctx.close()
-    }
-
     def 'buildJobSpec should create job with docker image'() {
         given:
         def PROPS = [

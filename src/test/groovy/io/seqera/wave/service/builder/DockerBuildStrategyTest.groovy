@@ -171,7 +171,7 @@ class DockerBuildStrategyTest extends Specification {
                 'quay.io/singularity/singularity:v3.11.4-slim',
                 'sh',
                 '-c',
-                'singularity build image.sif /work/foo/bd-d4869cc39b8d7d55_1/Containerfile && singularity push image.sif oras://repo:d4869cc39b8d7d55'
+                'singularity build --force /work/foo/bd-d4869cc39b8d7d55_1/image.sif /work/foo/bd-d4869cc39b8d7d55_1/Containerfile_Build'
         ]
 
         cleanup:
@@ -210,7 +210,7 @@ class DockerBuildStrategyTest extends Specification {
                 'quay.io/singularity/singularity:v3.11.4-slim-arm64',
                 'sh',
                 '-c',
-                'singularity build image.sif /work/foo/bd-9c68af894bb2419c_1/Containerfile && singularity push image.sif oras://repo:9c68af894bb2419c'
+                'singularity build --force /work/foo/bd-9c68af894bb2419c_1/image.sif /work/foo/bd-9c68af894bb2419c_1/Containerfile_Build'
         ]
 
         cleanup:
