@@ -18,9 +18,17 @@
 
 package io.seqera.wave.service.builder
 
+import java.nio.file.Files
+import java.nio.file.Path
+
 import groovy.transform.CompileStatic
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.util.SingularityHelper
 import jakarta.inject.Inject
+import static java.nio.file.StandardOpenOption.CREATE
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
+import static java.nio.file.StandardOpenOption.WRITE
+
 /**
  * Defines an abstract container build strategy.
  *
@@ -44,7 +52,7 @@ abstract class BuildStrategy {
             dockerLaunchCmd(req)
         }
         else if(req.formatSingularity()) {
-            singularityLaunchCmd(req)
+            singularityBuildCmd(req)
         }
         else
             throw new IllegalStateException("Unknown build format: $req.format")
@@ -87,13 +95,41 @@ abstract class BuildStrategy {
         return result
     }
 
-    protected List<String> singularityLaunchCmd(BuildRequest req) {
+    protected static List<String> singularityPullCmd(BuildRequest req) {
+        final result = new ArrayList(10)
+        result
+                << 'sh'
+                << '-c'
+                << "singularity build --force ${req.workDir}/base_image.sif ${req.workDir}/Containerfile_Pull".toString()
+        return result
+    }
+
+    protected static List<String> singularityBuildCmd(BuildRequest req) {
         final result = new ArrayList(10)
         result
             << 'sh'
             << '-c'
-            << "singularity build image.sif ${req.workDir}/Containerfile && singularity push image.sif ${req.targetImage}".toString()
+            << "singularity build --force ${req.workDir}/image.sif ${req.workDir}/Containerfile_Build".toString()
         return result
     }
 
+    protected static List<String> singularityPushCmd(BuildRequest req) {
+        final result = new ArrayList(10)
+        result
+                << 'sh'
+                << '-c'
+                << "singularity push ${req.workDir}/image.sif ${req.targetImage}".toString()
+        return result
+    }
+
+    static List<List<String>> processSingularityContainerFile(BuildRequest req){
+        def singularityTypeAndBaseImage = SingularityHelper.modifyContainerFileForLocalImage(req)
+
+        Files.write(Path.of("$req.workDir/Containerfile_Pull"),
+                singularityTypeAndBaseImage.pullContainerFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+        Files.write(Path.of("$req.workDir/Containerfile_Build"),
+                singularityTypeAndBaseImage.buildContainerFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+
+        return List.of(singularityPullCmd(req), singularityPushCmd(req))
+    }
 }

@@ -55,4 +55,6 @@ interface K8sService {
 
     V1Pod getLatestPodForJob(String jobName)
 
+    V1Job launchSingularityBuildJob(String name, String containerImage, List<List<String>> args, Path workDir, Path creds, Duration timeout, Map<String,String> nodeSelector)
+
 }
