@@ -30,11 +30,31 @@ import io.seqera.wave.service.builder.BuildRequest
 @Slf4j
 @CompileStatic
 class SingularityHelper {
+
     static class SingularityTypeAndBaseImage {
         String pullContainerFile
         String buildContainerFile
     }
 
+    /**
+     * Modifies the container file to use local image for Singularity build
+     *
+     * Singularity definition file is split into two parts:
+     * - pullContainerFile: This is the original container file with 'Bootstrap:' and 'From:' lines
+     * - buildContainerFile: This is the modified container file with 'Bootstrap: localimage' and 'From: <workDir>/base_image.sif'
+     * This is done to make sure that the credentials are not exposed in the build process, where user script will run
+     *
+     * pullContainerFile will be used to pull the image into the local directory
+     * buildContainerFile will be used to build the image
+     *
+     * Then the third step is to push the image to the registry
+     *
+     * These will be done in three separate containers in a pod
+     *
+     * @param req Build request
+     * @return Modified container file with local image
+     * @throws IllegalArgumentException if the container file does not contain 'Bootstrap:' or 'From:' lines
+     */
     static SingularityTypeAndBaseImage modifyContainerFileForLocalImage(BuildRequest req) throws IllegalArgumentException{
         def pullLines = []
         def buildLines = []
