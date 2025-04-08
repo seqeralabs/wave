@@ -71,7 +71,7 @@ abstract class BuildStrategy {
                 << "--local"
                 << "context=$req.workDir/context".toString()
                 << "--output"
-                << "type=image,name=$req.targetImage,push=true,oci-mediatypes=${buildConfig.ociMediatypes}".toString()
+                << outputOpts(req, buildConfig)
                 << "--opt"
                 << "platform=$req.platform".toString()
 
@@ -132,4 +132,19 @@ abstract class BuildStrategy {
 
         return List.of(singularityPullCmd(req), singularityPushCmd(req))
     }
+
+    static protected String outputOpts(BuildRequest req, BuildConfig config) {
+        final result = new StringBuilder()
+        result << "type=image"
+        result << ",name=${req.targetImage}"
+        result << ",push=true"
+        result << ",oci-mediatypes=${config.ociMediatypes}"
+        if( config.compression && config.compression != 'gzip' )
+            result << ",compression=${config.compression}"
+        if( config.forceCompression )
+            result << ",force-compression=${config.forceCompression}"
+
+        return result.toString()
+    }
+
 }
