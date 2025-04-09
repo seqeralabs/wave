@@ -49,6 +49,17 @@ abstract class BuildStrategy {
 
     static final public String BUILDKIT_ENTRYPOINT = 'buildctl-daemonless.sh'
 
+    List<String> launchCmd(BuildRequest req) {
+        if(req.formatDocker()) {
+            dockerLaunchCmd(req)
+        }
+        else if(req.formatSingularity()) {
+            singularityLaunchCmd(req)
+        }
+        else
+            throw new IllegalStateException("Unknown build format: $req.format")
+    }
+
     protected List<String> dockerLaunchCmd(BuildRequest req) {
         final result = new ArrayList(10)
         result
@@ -84,17 +95,6 @@ abstract class BuildStrategy {
         }
 
         return result
-    }
-
-    List<String> launchCmd(BuildRequest req) {
-        if(req.formatDocker()) {
-            dockerLaunchCmd(req)
-        }
-        else if(req.formatSingularity()) {
-            singularityLaunchCmd(req)
-        }
-        else
-            throw new IllegalStateException("Unknown build format: $req.format")
     }
 
     protected static List<String> singularityPullCmd(BuildRequest req) {
