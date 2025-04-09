@@ -34,7 +34,6 @@ import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.util.K8sHelper.getSelectorLabel
-
 /**
  * Build a container image using running a K8s pod
  *
@@ -59,7 +58,6 @@ class KubeBuildStrategy extends BuildStrategy {
 
     @Inject
     private RegistryProxyService proxyService
-
 
 
     @Override

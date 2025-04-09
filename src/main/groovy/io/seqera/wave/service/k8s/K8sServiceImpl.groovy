@@ -327,14 +327,14 @@ class K8sServiceImpl implements K8sService {
 
         if( singularity ) {
             container
-            // use 'command' to override the entrypoint of the container
+                    // use 'command' to override the entrypoint of the container
                     .withCommand(args)
                     .withNewSecurityContext().withPrivileged(true).endSecurityContext()
         } else {
             container
-            //required by buildkit rootless container
+                    //required by buildkit rootless container
                     .withEnv(toEnvList(BUILDKIT_FLAGS))
-            // buildCommand is to set entrypoint for buildkit
+                    // buildCommand is to set entrypoint for buildkit
                     .withCommand(BUILDKIT_ENTRYPOINT)
                     .withArgs(args)
         }
