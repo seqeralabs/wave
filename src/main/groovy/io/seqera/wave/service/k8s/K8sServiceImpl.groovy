@@ -539,7 +539,7 @@ class K8sServiceImpl implements K8sService {
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
         if( credsFile ){
-            mounts.add(0, mountHostPath(credsFile, "$storageMountPath", '/home/user/.docker/config.json'))
+            mounts.add(0, mountHostPath(credsFile, storageMountPath, '/home/user/.docker/config.json'))
         }
 
         V1JobBuilder builder = new V1JobBuilder()
