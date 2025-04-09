@@ -60,6 +60,17 @@ class KubeBuildStrategy extends BuildStrategy {
     @Inject
     private RegistryProxyService proxyService
 
+    @Override
+    List<String> launchCmd(BuildRequest req) {
+        if(req.formatDocker()) {
+            dockerLaunchCmd(req)
+        }
+        else if(req.formatSingularity()) {
+            singularityBuildCmd(req)
+        }
+        else
+            throw new IllegalStateException("Unknown build format: $req.format")
+    }
 
     @Override
     void build(String jobName, BuildRequest req) {

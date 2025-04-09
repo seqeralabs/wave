@@ -77,6 +77,11 @@ class ContainerBuildServiceTest extends Specification {
             // do nothing
             log.debug "Running fake build job=$jobName - request=$request"
         }
+
+        @Override
+        List<String> launchCmd(BuildRequest req){
+            return ["fake", "build", "cmd"]
+        }
     }
 
     @Primary

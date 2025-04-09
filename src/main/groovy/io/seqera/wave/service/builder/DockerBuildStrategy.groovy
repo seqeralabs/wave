@@ -52,6 +52,18 @@ class DockerBuildStrategy extends BuildStrategy {
     RegistryProxyService proxyService
 
     @Override
+    List<String> launchCmd(BuildRequest req) {
+        if(req.formatDocker()) {
+            dockerLaunchCmd(req)
+        }
+        else if(req.formatSingularity()) {
+            singularityLaunchCmd(req)
+        }
+        else
+            throw new IllegalStateException("Unknown build format: $req.format")
+    }
+
+    @Override
     void build(String jobName, BuildRequest req) {
 
         final Path configFile = req.configJson ? req.workDir.resolve('config.json') : null

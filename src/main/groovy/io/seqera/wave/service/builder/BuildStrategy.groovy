@@ -45,18 +45,9 @@ abstract class BuildStrategy {
 
     abstract void build(String jobName, BuildRequest req)
 
-    static final public String BUILDKIT_ENTRYPOINT = 'buildctl-daemonless.sh'
+    abstract List<String> launchCmd(BuildRequest req)
 
-    List<String> launchCmd(BuildRequest req) {
-        if(req.formatDocker()) {
-            dockerLaunchCmd(req)
-        }
-        else if(req.formatSingularity()) {
-            singularityBuildCmd(req)
-        }
-        else
-            throw new IllegalStateException("Unknown build format: $req.format")
-    }
+    static final public String BUILDKIT_ENTRYPOINT = 'buildctl-daemonless.sh'
 
     protected List<String> dockerLaunchCmd(BuildRequest req) {
         final result = new ArrayList(10)
@@ -119,6 +110,15 @@ abstract class BuildStrategy {
                 << 'sh'
                 << '-c'
                 << "singularity push ${req.workDir}/image.sif ${req.targetImage}".toString()
+        return result
+    }
+
+    protected static List<String> singularityLaunchCmd(BuildRequest req) {
+        final result = new ArrayList(10)
+        result
+                << 'sh'
+                << '-c'
+                << "singularity build image.sif ${req.workDir}/Containerfile && singularity push image.sif ${req.targetImage}".toString()
         return result
     }
 

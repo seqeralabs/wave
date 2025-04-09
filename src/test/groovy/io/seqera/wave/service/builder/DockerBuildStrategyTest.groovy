@@ -171,7 +171,7 @@ class DockerBuildStrategyTest extends Specification {
                 'quay.io/singularity/singularity:v3.11.4-slim',
                 'sh',
                 '-c',
-                'singularity build --force /work/foo/bd-d4869cc39b8d7d55_1/image.sif /work/foo/bd-d4869cc39b8d7d55_1/Containerfile_Build'
+                'singularity build image.sif /work/foo/bd-d4869cc39b8d7d55_1/Containerfile && singularity push image.sif oras://repo:d4869cc39b8d7d55'
         ]
 
         cleanup:
@@ -210,10 +210,33 @@ class DockerBuildStrategyTest extends Specification {
                 'quay.io/singularity/singularity:v3.11.4-slim-arm64',
                 'sh',
                 '-c',
-                'singularity build --force /work/foo/bd-9c68af894bb2419c_1/image.sif /work/foo/bd-9c68af894bb2419c_1/Containerfile_Build'
+                'singularity build image.sif /work/foo/bd-9c68af894bb2419c_1/Containerfile && singularity push image.sif oras://repo:9c68af894bb2419c'
         ]
 
         cleanup:
         ctx.close()
+    }
+
+    def 'should get singularity build command' () {
+        given:
+        def ctx = ApplicationContext.run()
+        def service = ctx.getBean(DockerBuildStrategy)
+        and:
+        def req = new BuildRequest(
+                containerId: 'c168dba125e28777',
+                buildId: 'bd-c168dba125e28777_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'oras://quay.io/wave:c168dba125e28777',
+                format: BuildFormat.SINGULARITY,
+                cacheRepository: 'reg.io/wave/build/cache' )
+        when:
+        def cmd = service.launchCmd(req)
+        then:
+        cmd == [
+                "sh",
+                "-c",
+                "singularity build image.sif /work/foo/bd-c168dba125e28777_1/Containerfile && singularity push image.sif oras://quay.io/wave:c168dba125e28777"
+        ]
     }
 }
