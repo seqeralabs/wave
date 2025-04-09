@@ -20,6 +20,7 @@ package io.seqera.wave.service.builder
 
 import spock.lang.Specification
 
+import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
 
@@ -240,5 +241,110 @@ class BuildStrategyTest extends Specification {
         result = BuildStrategy.outputOpts(req, config)
         then:
         result == 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=estargz,force-compression=true'
+    }
+
+    def 'should generate singularity pull command with valid work directory and container file'() {
+        given:
+        def folder = Files.createTempDirectory('test')
+        def req = new BuildRequest(
+                buildId: 1,
+                workspace: folder
+        )
+
+        when:
+        def cmd = BuildStrategy.singularityPullCmd(req)
+
+        then:
+        cmd == [
+                'sh',
+                '-c',
+                "singularity build --force $folder/1/base_image.sif $folder/1/Containerfile_Pull"
+        ]
+
+        cleanup:
+        folder?.deleteDir()
+    }
+
+    def 'should generate singularity push command with valid work directory and target image'() {
+        given:
+        def folder = Files.createTempDirectory('test')
+        def req = new BuildRequest(
+                buildId: 1,
+                targetImage: 'oras://quay.io/wave:c168dba125e28777',
+                workspace: folder
+        )
+
+        when:
+        def cmd = BuildStrategy.singularityPushCmd(req)
+
+        then:
+        cmd == [
+                'sh',
+                '-c',
+                "singularity push $folder/1/image.sif oras://quay.io/wave:c168dba125e28777"
+        ]
+
+        cleanup:
+        folder?.deleteDir()
+    }
+
+    def 'should process singularity container file and generate pull and push commands'() {
+        given:
+        def folder = Files.createTempDirectory('test')
+        def req = new BuildRequest(
+                buildId:1,
+                workspace: folder,
+                buildRepo: "cr.seqera.io",
+                targetImage: "oras://cr.seqera.io/wave:c168dba125e28777",
+                freeze: true,
+                containerFile: """
+                Bootstrap: docker
+                From: ubuntu:latest
+                %post
+                echo "Hello World"
+            """
+        )
+        and:
+        def worDir = Files.createDirectories(req.workDir)
+        when:
+        def commands = BuildStrategy.processSingularityContainerFile(req)
+
+        then:
+        commands.size() == 2
+        commands[0] == [
+                'sh',
+                '-c',
+                "singularity build --force $folder/1/base_image.sif $folder/1/Containerfile_Pull"
+        ]
+        commands[1] == [
+                'sh',
+                '-c',
+                "singularity push $folder/1/image.sif oras://cr.seqera.io/wave:c168dba125e28777"
+        ]
+        and:
+        req.workDir.resolve('Containerfile_Pull').text.contains('Bootstrap: docker')
+        req.workDir.resolve('Containerfile_Build').text .contains('Bootstrap: localimage')
+
+        cleanup:
+        folder?.deleteDir()
+        worDir?.deleteDir()
+    }
+
+    def 'should throw exception when container file is missing required fields'() {
+        given:
+        def req = new BuildRequest(
+                buildId: 'bd-c168dba125e28777_1',
+                containerFile: """
+                %post
+                echo "Hello World"
+            """
+        )
+
+        when:
+        BuildStrategy.processSingularityContainerFile(req)
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message == "Container file does not contain 'Bootstrap:' or 'From:' lines for buildId: bd-c168dba125e28777_1"
     }
 }

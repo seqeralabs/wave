@@ -60,17 +60,7 @@ class KubeBuildStrategy extends BuildStrategy {
     @Inject
     private RegistryProxyService proxyService
 
-    @Override
-    List<String> launchCmd(BuildRequest req) {
-        if(req.formatDocker()) {
-            dockerLaunchCmd(req)
-        }
-        else if(req.formatSingularity()) {
-            singularityBuildCmd(req)
-        }
-        else
-            throw new IllegalStateException("Unknown build format: $req.format")
-    }
+
 
     @Override
     void build(String jobName, BuildRequest req) {
@@ -104,6 +94,16 @@ class KubeBuildStrategy extends BuildStrategy {
         }
 
         throw new IllegalArgumentException("Unexpected container platform: ${buildRequest.platform}")
+    }
+
+    @Override
+    protected List<String> singularityLaunchCmd(BuildRequest req) {
+        final result = new ArrayList(10)
+        result
+                << 'sh'
+                << '-c'
+                << "singularity build --force ${req.workDir}/image.sif ${req.workDir}/Containerfile_Build".toString()
+        return result
     }
 
 }

@@ -45,7 +45,7 @@ abstract class BuildStrategy {
 
     abstract void build(String jobName, BuildRequest req)
 
-    abstract List<String> launchCmd(BuildRequest req)
+    protected abstract List<String> singularityLaunchCmd(BuildRequest req)
 
     static final public String BUILDKIT_ENTRYPOINT = 'buildctl-daemonless.sh'
 
@@ -86,21 +86,23 @@ abstract class BuildStrategy {
         return result
     }
 
+    List<String> launchCmd(BuildRequest req) {
+        if(req.formatDocker()) {
+            dockerLaunchCmd(req)
+        }
+        else if(req.formatSingularity()) {
+            singularityLaunchCmd(req)
+        }
+        else
+            throw new IllegalStateException("Unknown build format: $req.format")
+    }
+
     protected static List<String> singularityPullCmd(BuildRequest req) {
         final result = new ArrayList(10)
         result
                 << 'sh'
                 << '-c'
                 << "singularity build --force ${req.workDir}/base_image.sif ${req.workDir}/Containerfile_Pull".toString()
-        return result
-    }
-
-    protected static List<String> singularityBuildCmd(BuildRequest req) {
-        final result = new ArrayList(10)
-        result
-            << 'sh'
-            << '-c'
-            << "singularity build --force ${req.workDir}/image.sif ${req.workDir}/Containerfile_Build".toString()
         return result
     }
 
@@ -113,21 +115,14 @@ abstract class BuildStrategy {
         return result
     }
 
-    protected static List<String> singularityLaunchCmd(BuildRequest req) {
-        final result = new ArrayList(10)
-        result
-                << 'sh'
-                << '-c'
-                << "singularity build image.sif ${req.workDir}/Containerfile && singularity push image.sif ${req.targetImage}".toString()
-        return result
-    }
-
-    static List<List<String>> processSingularityContainerFile(BuildRequest req){
+    protected static List<List<String>> processSingularityContainerFile(BuildRequest req){
         def singularityTypeAndBaseImage = SingularityHelper.modifyContainerFileForLocalImage(req)
 
-        Files.write(Path.of("$req.workDir/Containerfile_Pull"),
+        final containerFilePull = req.workDir.resolve('Containerfile_Pull')
+        final containerFileBuild = req.workDir.resolve('Containerfile_Build')
+        Files.write(containerFilePull,
                 singularityTypeAndBaseImage.pullContainerFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
-        Files.write(Path.of("$req.workDir/Containerfile_Build"),
+        Files.write(containerFileBuild,
                 singularityTypeAndBaseImage.buildContainerFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
 
         return List.of(singularityPullCmd(req), singularityPushCmd(req))

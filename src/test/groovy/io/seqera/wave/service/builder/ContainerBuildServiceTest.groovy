@@ -79,8 +79,8 @@ class ContainerBuildServiceTest extends Specification {
         }
 
         @Override
-        List<String> launchCmd(BuildRequest req){
-            return ["fake", "build", "cmd"]
+        protected List<String> singularityLaunchCmd(BuildRequest req) {
+            return ["singularity", "build", "fake"]
         }
     }
 
