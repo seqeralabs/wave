@@ -1224,86 +1224,7 @@ class K8sServiceImplTest extends Specification {
         ctx.close()
     }
 
-    def 'should build singularity job spec with valid inputs'() {
-        given:
-        def PROPS = [
-                'wave.build.workspace': '/build/work',
-                'wave.build.k8s.namespace': 'my-ns',
-                'wave.build.k8s.configPath': '/home/kube.config',
-                'wave.build.k8s.storage.claimName': 'build-claim',
-                'wave.build.k8s.storage.mountPath': '/build' ]
-        and:
-        def ctx = ApplicationContext.run(PROPS)
-        def k8sService = ctx.getBean(K8sServiceImpl)
-        and:
-        def name = 'singularity-job'
-        def containerImage = 'singularity:latest'
-        def args = [['pull', 'arg1'], ['build', 'arg2'], ['push', 'arg3']]
-        def workDir = Path.of('/work/dir')
-        def credsFile = workDir.resolve('config.json')
-        def timeout = Duration.ofMinutes(15)
-        def nodeSelector = [key: 'value']
-
-        when:
-        def job = k8sService.buildSingularityJobSpec(name, containerImage, args, workDir, credsFile, timeout, nodeSelector)
-
-        then:
-        job.metadata.name == name
-        job.metadata.namespace == 'my-ns'
-        and:
-        verifyAll(job.spec.template.spec) {
-            initContainers.size() == 2
-            initContainers[0].name == "${name}-pull"
-            initContainers[1].name == "${name}-build"
-            containers[0].name == "${name}-push"
-            volumes.size() == 1
-            volumes[0].persistentVolumeClaim.claimName == 'build-claim'
-            containers[0].volumeMounts.size() == 3
-            containers[0].volumeMounts[0].mountPath == '/root/.singularity/docker-config.json'
-            containers[0].volumeMounts[1].mountPath == '/root/.singularity/remote.yaml'
-        }
-    }
-
-    def 'should build singularity job spec without credentials file'() {
-        given:
-        def PROPS = [
-                'wave.build.workspace': '/build/work',
-                'wave.build.k8s.namespace': 'my-ns',
-                'wave.build.k8s.configPath': '/home/kube.config',
-                'wave.build.k8s.storage.claimName': 'build-claim',
-                'wave.build.k8s.storage.mountPath': '/build' ]
-        and:
-        def ctx = ApplicationContext.run(PROPS)
-        def k8sService = ctx.getBean(K8sServiceImpl)
-        and:
-        def name = 'singularity-job'
-        def containerImage = 'singularity:latest'
-        def args = [['pull', 'arg1'], ['build', 'arg2'], ['push', 'arg3']]
-        def workDir = Path.of('/work/dir')
-        def credsFile = null
-        def timeout = Duration.ofMinutes(15)
-        def nodeSelector = [key: 'value']
-
-        when:
-        def job = k8sService.buildSingularityJobSpec(name, containerImage, args, workDir, credsFile, timeout, nodeSelector)
-
-        then:
-        job.metadata.name == name
-        job.metadata.namespace == 'my-ns'
-        and:
-        verifyAll(job.spec.template.spec) {
-            initContainers.size() == 2
-            initContainers[0].name == "${name}-pull"
-            initContainers[1].name == "${name}-build"
-            containers[0].name == "${name}-push"
-            volumes.size() == 1
-            volumes[0].persistentVolumeClaim.claimName == 'build-claim'
-            containers[0].volumeMounts.size() == 1
-            containers[0].volumeMounts[0].mountPath == '/work/dir'
-        }
-    }
-
-    def 'should build singularity job spec with resource limits'() {
+    def 'should build singularity step job spec with null step'() {
         given:
         def PROPS = [
                 'wave.build.workspace': '/build/work',
@@ -1317,28 +1238,29 @@ class K8sServiceImplTest extends Specification {
         and:
         def ctx = ApplicationContext.run(PROPS)
         def k8sService = ctx.getBean(K8sServiceImpl)
-        and:
-        def name = 'singularity-job'
+        def step = null
+        def name = 'test-job'
         def containerImage = 'singularity:latest'
-        def args = [['pull', 'arg1'], ['build', 'arg2'], ['push', 'arg3']]
+        def args = ['arg1', 'arg2']
         def workDir = Path.of('/work/dir')
-        def credsFile = workDir.resolve('config.json')
-        def timeout = Duration.ofMinutes(15)
+        def credsFile = Path.of('/work/dir/creds.json')
+        def timeout = Duration.ofMinutes(10)
         def nodeSelector = [key: 'value']
 
         when:
-        def job = k8sService.buildSingularityJobSpec(name, containerImage, args, workDir, credsFile, timeout, nodeSelector)
+        def job = k8sService.buildSingularityStepJobSpec(step, name, containerImage, args, workDir, credsFile, timeout, nodeSelector)
 
         then:
-        job.metadata.name == name
+        job.metadata.name == 'test-job'
         job.metadata.namespace == 'my-ns'
         and:
         verifyAll(job.spec.template.spec) {
-            initContainers.size() == 2
-            initContainers[0].resources.limits.get('cpu') == new Quantity('2')
-            initContainers[0].resources.limits.get('memory') == new Quantity('4Gi')
-            containers[0].resources.limits.get('cpu') == new Quantity('2')
-            containers[0].resources.limits.get('memory') == new Quantity('4Gi')
+            containers[0].image == containerImage
+            containers[0].command == args
+            containers[0].volumeMounts.size() == 3
+            volumes.size() == 1
+            activeDeadlineSeconds == timeout.toSeconds()
+            nodeSelector == nodeSelector
         }
     }
 }

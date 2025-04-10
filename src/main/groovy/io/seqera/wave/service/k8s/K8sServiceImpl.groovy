@@ -113,6 +113,14 @@ class K8sServiceImpl implements K8sService {
     @Nullable
     private String limitsMemory
 
+    @Value('${wave.build.k8s.singularity.pull.timeout:300s}')
+    @Nullable
+    private Duration singularityPullTimeout
+
+    @Value('${wave.build.k8s.singularity.build.timeout:1080s}')
+    @Nullable
+    private Duration singularityBuildTimeout
+
     @Inject
     private K8sClient k8sClient
 
@@ -232,8 +240,12 @@ class K8sServiceImpl implements K8sService {
      * @return An instance of {@link V1Volume} representing the build storage volume
      */
     protected V1Volume volumeBuildStorage(String mountPath, @Nullable String claimName) {
+        return volumeBuildStorage(mountPath, claimName, 'build-data')
+    }
+
+    protected V1Volume volumeBuildStorage(String mountPath, @Nullable String claimName, String name) {
         final vol= new V1Volume()
-                .name('build-data')
+                .name(name)
         if( claimName ) {
             vol.persistentVolumeClaim( new V1PersistentVolumeClaimVolumeSource().claimName(claimName) )
         }
@@ -800,32 +812,56 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Pod} description the submitted pod
      */
     @Override
-    V1Job launchSingularityBuildJob(String name, String containerImage, List<List<String>> args, Path workDir, Path creds, Duration timeout, Map<String,String> nodeSelector) {
-        final spec = buildSingularityJobSpec(name, containerImage, args, workDir, creds, timeout, nodeSelector)
-        return k8sClient
-                .batchV1Api()
-                .createNamespacedJob(namespace, spec)
-                .execute()
+    List<V1Job> launchSingularityBuildJob(String name, String containerImage, List<List<String>> args, Path workDir, Path creds, Duration timeout, Map<String,String> nodeSelector) {
+        return launchSingularityBuildJob0(name, containerImage, args, workDir, creds, timeout, nodeSelector)
     }
 
-    V1Job buildSingularityJobSpec(String name, String containerImage, List<List<String>> args, Path workDir, Path credsFile, Duration timeout, Map<String,String> nodeSelector) {
-        // required volumes
+    List<V1Job> launchSingularityBuildJob0(String name, String containerImage, List<List<String>> args, Path workDir, Path creds, Duration timeout, Map<String,String> nodeSelector) {
+        log.debug("Launching singularity pull job with name: $name-pull")
+        //pull job
+        final pullJobSpec = buildSingularityStepJobSpec('pull', name, containerImage, args[0], workDir, creds, timeout, nodeSelector)
+        def pullJob = k8sClient
+                .batchV1Api()
+                .createNamespacedJob(namespace, pullJobSpec)
+                .execute()
+        waitForJobCompletion("$name-pull", singularityPullTimeout)
+
+        log.debug("Launching singularity build job with name: $name-build")
+        //build job
+        final buildJobSpec = buildSingularityStepJobSpec('build', name, containerImage, args[1], workDir, null, timeout, nodeSelector)
+        def buildJob = k8sClient
+                .batchV1Api()
+                .createNamespacedJob(namespace, buildJobSpec)
+                .execute()
+        waitForJobCompletion("$name-build", singularityBuildTimeout)
+
+        log.debug("Launching singularity push job with name: $name")
+        //push job, name is empty to make it the main job of the pipeline, wave can check its status
+        final pushJobSpec = buildSingularityStepJobSpec(null, name, containerImage, args[2], workDir, creds, timeout, nodeSelector)
+        def pushJob = k8sClient
+                .batchV1Api()
+                .createNamespacedJob(namespace, pushJobSpec)
+                .execute()
+
+        return List.of(pullJob, buildJob, pushJob)
+    }
+
+    V1Job buildSingularityStepJobSpec(String step, String name, String containerImage, List<String> args, Path workDir, Path credsFile, Duration timeout, Map<String,String> nodeSelector) {
         final mounts = new ArrayList<V1VolumeMount>(5)
-        mounts.add(mountBuildStorage(workDir, storageMountPath, false))
-
-        final credMounts = new ArrayList<V1VolumeMount>(5)
-        credMounts.add(mountBuildStorage(workDir, storageMountPath, false))
-
         final volumes = new ArrayList<V1Volume>(5)
+
+        mounts.add(mountBuildStorage(workDir, storageMountPath, false))
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
+        // Mount credentials ONLY for pull and push jobs
         if( credsFile ) {
             final remoteFile = credsFile.resolveSibling('singularity-remote.yaml')
-            credMounts.add(0, mountHostPath(credsFile, storageMountPath, '/root/.singularity/docker-config.json'))
-            credMounts.add(1, mountHostPath(remoteFile, storageMountPath, '/root/.singularity/remote.yaml'))
+            mounts.add(0, mountHostPath(credsFile, storageMountPath, '/root/.singularity/docker-config.json'))
+            mounts.add(1, mountHostPath(remoteFile, storageMountPath, '/root/.singularity/remote.yaml'))
         }
-        V1JobBuilder builder = new V1JobBuilder()
 
+        V1JobBuilder builder = new V1JobBuilder()
+        name = step ? "$name-$step" : name
         //metadata section
         builder.withNewMetadata()
                 .withNamespace(namespace)
@@ -847,58 +883,46 @@ class K8sServiceImpl implements K8sService {
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
 
-        final requests = new V1ResourceRequirements()
-        if( requestsCpu )
-            requests.putRequestsItem('cpu', new Quantity(requestsCpu))
-        if( requestsMemory )
-            requests.putRequestsItem('memory', new Quantity(requestsMemory))
-
-        if( limitsCpu )
-            requests.putLimitsItem('cpu', new Quantity(limitsCpu))
-        if( limitsMemory )
-            requests.putLimitsItem('memory', new Quantity(limitsMemory))
-
-        // container section
-        final pullContainer = new V1ContainerBuilder()
-                .withName("$name-pull")
-                .withImage(containerImage)
-                .withVolumeMounts(credMounts)
-                .withResources(requests)
-                .withWorkingDir('/tmp')
-                .withCommand(args[0])
-                .withNewSecurityContext().withPrivileged(true).endSecurityContext()
-                .build()
-
-        final buildContainer = new V1ContainerBuilder()
-                .withName("$name-build")
+        final container = new V1ContainerBuilder()
+                .withName(name)
                 .withImage(containerImage)
                 .withVolumeMounts(mounts)
-                .withResources(requests)
+                .withResources(buildResourceRequirements())
                 .withWorkingDir('/tmp')
-                .withCommand(args[1])
+                .withCommand(args)
                 .withNewSecurityContext().withPrivileged(true).endSecurityContext()
                 .build()
-
-        final pushContainer = new V1ContainerBuilder()
-                .withName("$name-push")
-                .withImage(containerImage)
-                .withVolumeMounts(credMounts)
-                .withResources(requests)
-                .withWorkingDir('/tmp')
-                .withCommand(args[2])
-                .withNewSecurityContext().withPrivileged(true).endSecurityContext()
-                .build()
-
-        final containers = [pullContainer, buildContainer]
 
         // spec section
         spec
-                .addAllToInitContainers(containers)
-                .withContainers(pushContainer)
+                .withContainers(container)
                 .endSpec()
                 .endTemplate()
                 .endSpec()
 
         return builder.build()
+    }
+
+    void waitForJobCompletion(String jobName, Duration timeout) {
+        long deadline = System.currentTimeMillis() + timeout.toMillis()
+        while (System.currentTimeMillis() < deadline) {
+            if (getJobStatus(jobName) == JobStatus.Succeeded) return
+            if (getJobStatus(jobName) == JobStatus.Failed) {
+                log.error("Job failed with name $jobName")
+                throw new RuntimeException("Job failed with name $jobName")
+            }
+            sleep(5000)
+        }
+        log.error("Job timed out with name $jobName")
+        throw new RuntimeException("Job timed out with name $jobName")
+    }
+
+    V1ResourceRequirements buildResourceRequirements() {
+        final reqs = new V1ResourceRequirements()
+        if (requestsCpu) reqs.putRequestsItem("cpu", new Quantity(requestsCpu))
+        if (requestsMemory) reqs.putRequestsItem("memory", new Quantity(requestsMemory))
+        if (limitsCpu) reqs.putLimitsItem("cpu", new Quantity(limitsCpu))
+        if (limitsMemory) reqs.putLimitsItem("memory", new Quantity(limitsMemory))
+        return reqs
     }
 }
