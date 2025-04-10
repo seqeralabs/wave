@@ -41,6 +41,7 @@ import io.seqera.wave.util.StringUtils
 @CompileStatic
 class WaveScanRecord implements Cloneable {
 
+    @PostgresIgnore
     String id
     String buildId
     String mirrorId
