@@ -72,7 +72,7 @@ class KubeBuildStrategy extends BuildStrategy {
             final selector = getSelectorLabel(req.platform, nodeSelectorMap)
             if (req.formatSingularity()){
                 final cmds = processSingularityContainerFile(req)
-                k8sService.launchSingularityBuildJob(jobName, buildImage, List.of(cmds[0], buildCmd, cmds[1]), req.workDir, configFile, timeout, selector)
+                k8sService.launchSingularityBuildJob(jobName, buildImage, List.of(cmds[0], buildCmd, cmds[1]), req.workDir, req.configJson, timeout, selector)
             } else {
                 k8sService.launchBuildJob(jobName, buildImage, buildCmd, req.workDir, configFile, timeout, selector)
             }

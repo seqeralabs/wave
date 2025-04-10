@@ -191,7 +191,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
             }
             // save docker config for creds
             Path configFile = null
-            if( req.configJson ) {
+            if( req.configJson && !req.formatSingularity()) {
                 configFile = req.workDir.resolve('config.json')
                 Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             }

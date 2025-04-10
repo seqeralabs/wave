@@ -25,18 +25,23 @@ import javax.annotation.PostConstruct
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.custom.Quantity
+import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.openapi.models.V1ContainerBuilder
 import io.kubernetes.client.openapi.models.V1EnvVar
 import io.kubernetes.client.openapi.models.V1HostPathVolumeSource
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1JobBuilder
 import io.kubernetes.client.openapi.models.V1JobStatus
+import io.kubernetes.client.openapi.models.V1KeyToPath
+import io.kubernetes.client.openapi.models.V1ObjectMeta
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
 import io.kubernetes.client.openapi.models.V1PodDNSConfig
 import io.kubernetes.client.openapi.models.V1PodDNSConfigBuilder
 import io.kubernetes.client.openapi.models.V1ResourceRequirements
+import io.kubernetes.client.openapi.models.V1Secret
+import io.kubernetes.client.openapi.models.V1SecretVolumeSource
 import io.kubernetes.client.openapi.models.V1Volume
 import io.kubernetes.client.openapi.models.V1VolumeMount
 import io.micronaut.context.annotation.Property
@@ -812,11 +817,11 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Pod} description the submitted pod
      */
     @Override
-    List<V1Job> launchSingularityBuildJob(String name, String containerImage, List<List<String>> args, Path workDir, Path creds, Duration timeout, Map<String,String> nodeSelector) {
+    List<V1Job> launchSingularityBuildJob(String name, String containerImage, List<List<String>> args, Path workDir, String creds, Duration timeout, Map<String,String> nodeSelector) {
         return launchSingularityBuildJob0(name, containerImage, args, workDir, creds, timeout, nodeSelector)
     }
 
-    List<V1Job> launchSingularityBuildJob0(String name, String containerImage, List<List<String>> args, Path workDir, Path creds, Duration timeout, Map<String,String> nodeSelector) {
+    List<V1Job> launchSingularityBuildJob0(String name, String containerImage, List<List<String>> args, Path workDir, String creds, Duration timeout, Map<String,String> nodeSelector) {
         log.debug("Launching singularity pull job with name: $name-pull")
         //pull job
         final pullJobSpec = buildSingularityStepJobSpec('pull', name, containerImage, args[0], workDir, creds, timeout, nodeSelector)
@@ -846,7 +851,9 @@ class K8sServiceImpl implements K8sService {
         return List.of(pullJob, buildJob, pushJob)
     }
 
-    V1Job buildSingularityStepJobSpec(String step, String name, String containerImage, List<String> args, Path workDir, Path credsFile, Duration timeout, Map<String,String> nodeSelector) {
+    V1Job buildSingularityStepJobSpec(String step, String name, String containerImage, List<String> args, Path workDir, String credsFile, Duration timeout, Map<String,String> nodeSelector) {
+        name = step ? "$name-$step" : name
+
         final mounts = new ArrayList<V1VolumeMount>(5)
         final volumes = new ArrayList<V1Volume>(5)
 
@@ -855,13 +862,30 @@ class K8sServiceImpl implements K8sService {
 
         // Mount credentials ONLY for pull and push jobs
         if( credsFile ) {
-            final remoteFile = credsFile.resolveSibling('singularity-remote.yaml')
-            mounts.add(0, mountHostPath(credsFile, storageMountPath, '/root/.singularity/docker-config.json'))
+            def secret = createSecret(name + "-docker-config", credsFile, "docker-config.json", "Opaque")
+            volumes.add(new V1Volume()
+                    .name("docker-config")
+                    .secret(new V1SecretVolumeSource()
+                            .secretName(name + "-docker-config")
+                            .defaultMode(420)
+                            .items(Collections.singletonList(
+                                    new V1KeyToPath()
+                                            .key("docker-config.json")
+                                            .path("docker-config.json")
+                            ))
+                    ));
+
+            mounts.add(0, new V1VolumeMount()
+                    .name("docker-config")
+                    .mountPath("/root/.singularity/docker-config.json")
+                    .subPath("docker-config.json")
+                    .readOnly(true))
+
+            final remoteFile = workDir.resolve('singularity-remote.yaml')
             mounts.add(1, mountHostPath(remoteFile, storageMountPath, '/root/.singularity/remote.yaml'))
         }
 
         V1JobBuilder builder = new V1JobBuilder()
-        name = step ? "$name-$step" : name
         //metadata section
         builder.withNewMetadata()
                 .withNamespace(namespace)
@@ -924,5 +948,43 @@ class K8sServiceImpl implements K8sService {
         if (limitsCpu) reqs.putLimitsItem("cpu", new Quantity(limitsCpu))
         if (limitsMemory) reqs.putLimitsItem("memory", new Quantity(limitsMemory))
         return reqs
+    }
+
+    @Override
+    void deleteSecret(String name) {
+        try {
+            k8sClient
+                    .coreV1Api()
+                    .deleteNamespacedSecret(name, namespace)
+                    .propagationPolicy("Foreground")
+                    .execute()
+        } catch (ApiException e) {
+            log.error("Failed to delete secret $name: ${e.message}")
+        }
+    }
+
+    @Override
+    V1Secret createSecret(String name, String data, String key, String type) {
+        def secret = new V1Secret()
+                .metadata(new V1ObjectMeta().name(name))
+                .type(type)
+                .putStringDataItem(key, data)
+
+        try {
+            k8sClient
+                    .coreV1Api()
+                    .createNamespacedSecret(namespace, secret)
+                    .execute()
+        } catch (ApiException e) {
+            if (e.getCode() == 409) {
+                k8sClient
+                        .coreV1Api()
+                        .replaceNamespacedSecret(name, namespace, secret)
+                        .execute()
+            } else {
+                throw e
+            }
+        }
+        return secret
     }
 }

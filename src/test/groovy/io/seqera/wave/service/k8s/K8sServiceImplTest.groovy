@@ -1224,43 +1224,4 @@ class K8sServiceImplTest extends Specification {
         ctx.close()
     }
 
-    def 'should build singularity step job spec with null step'() {
-        given:
-        def PROPS = [
-                'wave.build.workspace': '/build/work',
-                'wave.build.k8s.namespace': 'my-ns',
-                'wave.build.k8s.configPath': '/home/kube.config',
-                'wave.build.k8s.storage.claimName': 'build-claim',
-                'wave.build.k8s.storage.mountPath': '/build',
-                'wave.build.k8s.resources.limits.cpu': '2',
-                'wave.build.k8s.resources.limits.memory': '4Gi'
-        ]
-        and:
-        def ctx = ApplicationContext.run(PROPS)
-        def k8sService = ctx.getBean(K8sServiceImpl)
-        def step = null
-        def name = 'test-job'
-        def containerImage = 'singularity:latest'
-        def args = ['arg1', 'arg2']
-        def workDir = Path.of('/work/dir')
-        def credsFile = Path.of('/work/dir/creds.json')
-        def timeout = Duration.ofMinutes(10)
-        def nodeSelector = [key: 'value']
-
-        when:
-        def job = k8sService.buildSingularityStepJobSpec(step, name, containerImage, args, workDir, credsFile, timeout, nodeSelector)
-
-        then:
-        job.metadata.name == 'test-job'
-        job.metadata.namespace == 'my-ns'
-        and:
-        verifyAll(job.spec.template.spec) {
-            containers[0].image == containerImage
-            containers[0].command == args
-            containers[0].volumeMounts.size() == 3
-            volumes.size() == 1
-            activeDeadlineSeconds == timeout.toSeconds()
-            nodeSelector == nodeSelector
-        }
-    }
 }

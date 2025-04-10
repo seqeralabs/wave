@@ -46,6 +46,8 @@ class CleanupServiceImpl implements Runnable, CleanupService {
 
     static final private String JOB_PREFIX = 'job:'
 
+    static final private String SECRET_PREFIX = 'sec:'
+
     static final private String SCANID_PREFIX = 'scanid:'
 
     @Inject
@@ -108,6 +110,9 @@ class CleanupServiceImpl implements Runnable, CleanupService {
         else if( entry.startsWith(SCANID_PREFIX) ) {
             cleanupScanId0(entry.substring(SCANID_PREFIX.length()))
         }
+        else if( entry.startsWith(SECRET_PREFIX)){
+            cleanupSecret0(entry.substring(SECRET_PREFIX.length()))
+        }
         else {
             log.error "Unknown cleanup entry - offending value: $entry"
         }
@@ -119,6 +124,15 @@ class CleanupServiceImpl implements Runnable, CleanupService {
         }
         catch (Throwable t) {
             log.error("Unexpected error deleting job=$jobName - cause: ${t.message}", t)
+        }
+    }
+
+    protected void cleanupSecret0(String secretName) {
+        try {
+            operation.cleanupSecret(secretName)
+        }
+        catch (Throwable t) {
+            log.error("Unexpected error deleting secret=$secretName - cause: ${t.message}", t)
         }
     }
 
@@ -150,6 +164,8 @@ class CleanupServiceImpl implements Runnable, CleanupService {
             store.add(JOB_PREFIX + job.operationName, expirationSecs)
             store.add(JOB_PREFIX + "$job.operationName-pull", expirationSecs)
             store.add(JOB_PREFIX + "$job.operationName-push", expirationSecs)
+            store.add(SECRET_PREFIX+ "$job.operationName-pull-docker-config", expirationSecs)
+            store.add(SECRET_PREFIX+ "$job.operationName-push-docker-config", expirationSecs)
         }
         else
             store.add(JOB_PREFIX + job.operationName, expirationSecs)

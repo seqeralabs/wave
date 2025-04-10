@@ -23,6 +23,7 @@ import java.time.Duration
 
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1Pod
+import io.kubernetes.client.openapi.models.V1Secret
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.configuration.ScanConfig
@@ -55,6 +56,10 @@ interface K8sService {
 
     V1Pod getLatestPodForJob(String jobName)
 
-    List<V1Job> launchSingularityBuildJob(String name, String containerImage, List<List<String>> args, Path workDir, Path creds, Duration timeout, Map<String,String> nodeSelector)
+    List<V1Job> launchSingularityBuildJob(String name, String containerImage, List<List<String>> args, Path workDir, String creds, Duration timeout, Map<String,String> nodeSelector)
+
+    void deleteSecret(String name)
+
+    V1Secret createSecret(String name, String data, String key, String type)
 
 }

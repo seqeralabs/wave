@@ -30,4 +30,6 @@ interface JobOperation {
 
     void cleanup(String jobName)
 
+    default void cleanupSecret(String secretName){}
+
 }
