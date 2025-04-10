@@ -104,7 +104,7 @@ dependencies {
     // upgrade indirect dependencies 
     runtimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.78'
     runtimeOnly 'org.bitbucket.b_c:jose4j:0.9.4'
-    runtimeOnly 'io.netty:netty-bom:4.1.118.Final'
+    runtimeOnly 'io.netty:netty-bom:4.1.119.Final'
     runtimeOnly 'com.google.protobuf:protobuf-java:4.27.5'
 }
 
@@ -128,7 +128,7 @@ micronaut {
 //
 jib {
     from {
-        image = 'cr.seqera.io/public/nf-jdk:corretto-21-al2023-jemalloc'
+        image = 'cr.seqera.io/public/nf-jdk:corretto-24-al2023-jemalloc'
         platforms {
             platform { architecture = 'amd64'; os = 'linux' }
         }
@@ -176,6 +176,9 @@ test {
     environment 'DOCKER_PAT', project.findProperty('DOCKER_PAT') ?: environment['DOCKER_PAT']
     environment 'QUAY_USER', project.findProperty('QUAY_USER') ?: environment['QUAY_USER']
     environment 'QUAY_PAT', project.findProperty('QUAY_PAT') ?: environment['QUAY_PAT']
+
+    systemProperty 'logback.configurationFile', 'src/test/resources/logback-test.xml'
+
 }
 
 /** Update version number for backend app and modules */

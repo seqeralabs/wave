@@ -321,7 +321,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def CVE2 = new ScanVulnerability('cve-2', 'x2', 'title2', 'package2', 'version2', 'fixed2', 'url2')
         def CVE3 = new ScanVulnerability('cve-3', 'x3', 'title3', 'package3', 'version3', 'fixed3', 'url3')
         def CVE4 = new ScanVulnerability('cve-4', 'x4', 'title4', 'package4', 'version4', 'fixed4', 'url4')
-        def scan = new WaveScanRecord(SCAN_ID, BUILD_ID, null, null, CONTAINER_IMAGE, PLATFORM, NOW, Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3], null, null)
+        def scan = new WaveScanRecord(SCAN_ID, BUILD_ID, null, null, CONTAINER_IMAGE, PLATFORM, NOW, Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3], null, null, null)
         when:
         persistence.saveScanRecordAsync(scan)
         sleep 200
@@ -340,7 +340,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         when:
         def SCAN_ID2 = 'b2'
         def BUILD_ID2 = '102'
-        def scanRecord2 = new WaveScanRecord(SCAN_ID2, BUILD_ID2, null, null, CONTAINER_IMAGE, PLATFORM, NOW, Duration.ofSeconds(20), 'FAILED', [CVE1, CVE4], 1, "Error 'quote'")
+        def scanRecord2 = new WaveScanRecord(SCAN_ID2, BUILD_ID2, null, null, CONTAINER_IMAGE, PLATFORM, NOW, Duration.ofSeconds(20), 'FAILED', [CVE1, CVE4], 1, "Error 'quote'", null)
         and:
         // should save the same CVE into another build
         persistence.saveScanRecordAsync(scanRecord2)
@@ -367,7 +367,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def CONTAINER_IMAGE = 'docker.io/my/repo:container1234'
         def PLATFORM = ContainerPlatform.of('linux/amd64')
         def CVE1 = new ScanVulnerability('cve-1', 'x1', 'title1', 'package1', 'version1', 'fixed1', 'url1')
-        def scan = new WaveScanRecord(SCAN_ID, BUILD_ID, null, null, CONTAINER_IMAGE, PLATFORM, NOW, Duration.ofSeconds(10), 'SUCCEEDED', [CVE1], null, null)
+        def scan = new WaveScanRecord(SCAN_ID, BUILD_ID, null, null, CONTAINER_IMAGE, PLATFORM, NOW, Duration.ofSeconds(10), 'SUCCEEDED', [CVE1], null, null, null)
 
         expect:
         !persistence.existsScanRecord(SCAN_ID)
@@ -559,10 +559,10 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def CVE2 = new ScanVulnerability('cve-2', 'x2', 'title2', 'package2', 'version2', 'fixed2', 'url2')
         def CVE3 = new ScanVulnerability('cve-3', 'x3', 'title3', 'package3', 'version3', 'fixed3', 'url3')
         def CVE4 = new ScanVulnerability('cve-4', 'x4', 'title4', 'package4', 'version4', 'fixed4', 'url4')
-        def scan1 = new WaveScanRecord('sc-1234567890abcdef_1', '100', null, null, CONTAINER_IMAGE, PLATFORM, Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3, CVE4], null, null)
-        def scan2 = new WaveScanRecord('sc-1234567890abcdef_2', '101', null, null, CONTAINER_IMAGE, PLATFORM,Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3], null, null)
-        def scan3 = new WaveScanRecord('sc-1234567890abcdef_3', '102', null, null, CONTAINER_IMAGE, PLATFORM,Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2], null, null)
-        def scan4 = new WaveScanRecord('sc-01234567890abcdef_4', '103', null, null, CONTAINER_IMAGE, PLATFORM,Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1], null, null)
+        def scan1 = new WaveScanRecord('sc-1234567890abcdef_1', '100', null, null, CONTAINER_IMAGE, PLATFORM, Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3, CVE4], null, null, null)
+        def scan2 = new WaveScanRecord('sc-1234567890abcdef_2', '101', null, null, CONTAINER_IMAGE, PLATFORM,Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3], null, null, null)
+        def scan3 = new WaveScanRecord('sc-1234567890abcdef_3', '102', null, null, CONTAINER_IMAGE, PLATFORM,Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2], null, null, null)
+        def scan4 = new WaveScanRecord('sc-01234567890abcdef_4', '103', null, null, CONTAINER_IMAGE, PLATFORM,Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1], null, null, null)
 
         when:
         persistence.saveScanRecordAsync(scan1)

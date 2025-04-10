@@ -22,17 +22,16 @@ import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ExecutorService
 
-import com.github.benmanes.caffeine.cache.AsyncCache
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
 import io.micronaut.scheduling.TaskExecutors
+import io.seqera.wave.configuration.JobManagerConfig
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
-
 /**
  * Implement the logic to handle Blob cache transfer (uploads)
  *
@@ -47,20 +46,22 @@ class JobManager {
     private JobService jobService
 
     @Inject
-    private JobQueue queue
+    private JobProcessingQueue processingQueue
+
+    @Inject
+    private JobPendingQueue pendingQueue
 
     @Inject
     private JobDispatcher dispatcher
 
     @Inject
-    private JobConfig config
+    private JobManagerConfig config
 
     @Inject
     @Named(TaskExecutors.BLOCKING)
     private ExecutorService ioExecutor
 
-    // FIXME https://github.com/seqeralabs/wave/issues/747
-    private AsyncCache<String,Instant> debounceCache
+    private Cache<String,Instant> debounceCache
 
     @PostConstruct
     void init() {
@@ -69,12 +70,51 @@ class JobManager {
                 .newBuilder()
                 .expireAfterWrite(config.graceInterval.multipliedBy(2))
                 .executor(ioExecutor)
-                .buildAsync()
-        queue.addConsumer((job)-> processJob(job))
+                .build()
+        pendingQueue.addConsumer((job)-> launchJob(job))
+        processingQueue.addConsumer((job)-> processJob(job))
+    }
+
+    protected boolean launchJob0(JobSpec job) {
+        final processingQueueLen = processingQueue.length()
+        final canLaunchNewJobs = processingQueueLen < config.maxRunningJobs
+        if( canLaunchNewJobs ) {
+            final submitted = dispatcher.launchJob(job)
+            if( log.isTraceEnabled() )
+                log.trace "Processing queue len=${processingQueueLen}; job=${job}; submitted=${submitted}"
+            if( submitted )
+                processingQueue.offer(submitted)
+        }
+        else {
+            log.debug "Processing queue is full (${processingQueueLen}) - delaying submission of job=$job"
+        }
+        return canLaunchNewJobs
     }
 
     /**
-     * Process a job entry aorrding the state modelled by the {@link JobSpec} object.
+     * Launch a job execution adding it to the {@link JobProcessingQueue} queue
+     *
+     * @param jobSpec
+     *      A {@link JobSpec} object representing the job to be launched
+     * @return
+     *      {@code true} to signal the process has been launched successfully and it should
+     *      be removed from the underlying pending queue, or {@code false} if the job cannot be
+     *      launched because the processing queue is full.
+     */
+    protected boolean launchJob(JobSpec jobSpec) {
+        try {
+            return launchJob0(jobSpec)
+        }
+        catch (Throwable err) {
+            // in the case of an expected exception report the error condition by using `onJobException`
+            dispatcher.notifyJobException(jobSpec, err)
+            // note: return `true` to mark the entry as consumed so that the job is not processed anymore
+            return true
+        }
+    }
+
+    /**
+     * Process a job entry according the state modelled by the {@link JobSpec} object.
      *
      * @param jobSpec
      *      A {@link JobSpec} object representing the job to be processed
@@ -90,14 +130,13 @@ class JobManager {
         catch (Throwable err) {
             // in the case of an expected exception report the error condition by using `onJobException`
             dispatcher.notifyJobException(jobSpec, err)
-            // note: return `true` to signal the job should not be processed anymore
+            // note: return `true` to mark the entry as consumed so that the job is not processed anymore
             return true
         }
     }
 
     protected JobState state(JobSpec job) {
-        // FIXME https://github.com/seqeralabs/wave/issues/747
-        return state0(job, config.graceInterval, debounceCache.synchronous())
+        return state0(job, config.graceInterval, debounceCache)
     }
 
     protected JobState state0(final JobSpec job, final Duration graceInterval, final Cache<String,Instant> cache) {
@@ -121,7 +160,7 @@ class JobManager {
     }
 
     protected boolean processJob0(JobSpec jobSpec) {
-        final duration = Duration.between(jobSpec.creationTime, Instant.now())
+        final duration = Duration.between(jobSpec.launchTime, Instant.now())
         final state = state(jobSpec)
         log.trace "Job status id=${jobSpec.operationName}; state=${state}"
         if( state.completed() ) {

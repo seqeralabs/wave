@@ -16,35 +16,35 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.metric
+package io.seqera.wave.configuration
 
-import io.seqera.wave.core.ContainerPlatform
+import java.time.Duration
+
+import groovy.transform.ToString
+import io.micronaut.context.annotation.Value
+import jakarta.inject.Singleton
 
 /**
- * Metric constants
+ * Model Job manager configuration settings
  *
- * @author Munish Chouhan <munish.chouhan@seqera.io>
-*/
-interface MetricsConstants {
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ */
+@ToString(includeNames = true, includePackage = false)
+@Singleton
+class JobManagerConfig {
 
-    static final public String PREFIX_FUSION =  'fusion'
+    @Value('${wave.job-manager.grace-interval:30s}')
+    Duration graceInterval
 
-    static final public String PREFIX_BUILDS =  'builds'
+    @Value('${wave.job-manager.poll-interval:1s}')
+    Duration pollInterval
 
-    static final public String PREFIX_PULLS =  'pulls'
+    @Value('${wave.job-manager.scheduler-interval:1s}')
+    Duration schedulerInterval
 
-    static final public String PREFIX_MIRRORS =  'mirrors'
+    @Value('${wave.job-manager.scheduler-max-delay:1m}')
+    Duration schedulerMaxDelay
 
-    static final public String PREFIX_SCANS =  'scans'
-
-    static final public String PREFIX_ORG =  'o'
-
-    static final public String PREFIX_DAY =  'd'
-
-    static final public String PREFIX_ARCH =  'a'
-
-    static final public String ARM64 =  'arm64'
-
-    static final public String AMD64 =  'amd64'
-
+    @Value('${wave.job-manager.max-running-jobs:20}')
+    int maxRunningJobs
 }

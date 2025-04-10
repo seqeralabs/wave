@@ -50,7 +50,7 @@ import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.scan.ContainerScanService
-import io.seqera.wave.service.scan.ScanRequest
+import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanStrategy
 import io.seqera.wave.test.TestHelper
 import io.seqera.wave.tower.PlatformId
@@ -85,7 +85,7 @@ class ContainerBuildServiceTest extends Specification {
     static class FakeScanStrategy extends ScanStrategy {
 
         @Override
-        void scanContainer(String jobName, ScanRequest request) {
+        void scanContainer(String jobName, ScanEntry request) {
             // do nothing
             log.debug "Running fake scan job=$jobName - request=$request"
         }
@@ -354,7 +354,9 @@ class ContainerBuildServiceTest extends Specification {
         def scanService = Mock(ContainerScanService)
         def eventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
         def service = new ContainerBuildServiceImpl(buildStore: buildStore, proxyService: proxyService, eventPublisher: eventPublisher, persistenceService: persistenceService, scanService:scanService, buildConfig: buildConfig)
-        def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
+        def job = JobSpec
+                .build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
+                .withLaunchTime(Instant.now())
         def state = JobState.succeeded('logs')
         def res = BuildResult.create('1')
         def req = new BuildRequest(

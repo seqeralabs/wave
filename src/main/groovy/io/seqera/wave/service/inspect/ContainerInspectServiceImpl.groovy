@@ -232,10 +232,10 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
      * {@inheritDoc}
      */
     @Override
-    ContainerSpec containerSpec(String containerImage, String arch, @Nullable PlatformId identity) {
-        if( !arch )
-            throw new BadRequestException("Missing container 'arch' argument")
-        return containerOrIndexSpec(containerImage, arch, identity) .getContainer()
+    ContainerSpec containerSpec(String containerImage, String platform, @Nullable PlatformId identity) {
+        if( !platform )
+            throw new BadRequestException("Missing container 'platform' argument")
+        return containerOrIndexSpec(containerImage, platform, identity) .getContainer()
     }
 
     /**

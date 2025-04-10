@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023-2024, Seqera Labs
+ *  Copyright (c) 2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,27 +16,26 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job
+package io.seqera.wave.service.metric.model
 
-import java.time.Duration
-
-import groovy.transform.ToString
-import io.micronaut.context.annotation.Value
-import jakarta.inject.Singleton
+import groovy.transform.CompileStatic
 
 /**
- * Model Job manager configuration settings
+ * Model organisations counts with architecture response
  *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-@ToString(includeNames = true, includePackage = false)
-@Singleton
-class JobConfig {
+@CompileStatic
+class GetOrgArchCountResponse {
+    String metric
+    String arch
+    Long count
+    Map<String, Long> orgs
 
-    @Value('${wave.job-manager.grace-interval:30s}')
-    Duration graceInterval
-
-    @Value('${wave.job-manager.poll-interval:400ms}')
-    Duration pollInterval
-
+    GetOrgArchCountResponse(String metric, String arch, Long count, Map<String, Long> orgs) {
+        this.metric = metric
+        this.arch = arch
+        this.count = count
+        this.orgs = orgs
+    }
 }

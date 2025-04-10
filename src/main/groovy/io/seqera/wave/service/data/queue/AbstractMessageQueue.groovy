@@ -24,7 +24,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-import com.github.benmanes.caffeine.cache.AsyncCache
+import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -35,7 +35,6 @@ import io.seqera.wave.service.pairing.socket.MessageSender
 import io.seqera.wave.util.ExponentialAttempt
 import io.seqera.wave.util.TypeHelper
 import jakarta.annotation.PostConstruct
-
 /**
  * Implements a distributed message queue in which many listeners can register
  * to consume a message. A message instance can be consumed by one and only listener.
@@ -63,8 +62,7 @@ abstract class AbstractMessageQueue<M> implements Runnable {
 
     final private String name0
 
-    // FIXME https://github.com/seqeralabs/wave/issues/747
-    final private AsyncCache<String,Boolean> closedClients
+    final private Cache<String,Boolean> closedClients
 
     AbstractMessageQueue(MessageQueue<String> broker, ExecutorService ioExecutor) {
         final type = TypeHelper.getGenericType(this, 0)
@@ -76,12 +74,12 @@ abstract class AbstractMessageQueue<M> implements Runnable {
         this.thread.setDaemon(true)
     }
 
-    private AsyncCache<String,Boolean> createCache(ExecutorService ioExecutor) {
+    private Cache<String,Boolean> createCache(ExecutorService ioExecutor) {
         Caffeine
                 .newBuilder()
                 .executor(ioExecutor)
                 .expireAfterWrite(10, TimeUnit.MINUTES)
-                .buildAsync()
+                .build()
     }
 
     /**
@@ -172,8 +170,7 @@ abstract class AbstractMessageQueue<M> implements Runnable {
 
     @Override
     void run() {
-        // FIXME https://github.com/seqeralabs/wave/issues/747
-        final clientsCache = closedClients.synchronous()
+        final clientsCache = closedClients
         while( !thread.isInterrupted() ) {
             try {
                 int sent=0
