@@ -32,6 +32,7 @@ import io.seqera.wave.auth.RegistryAuth
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.job.JobSpec
@@ -401,7 +402,8 @@ class MoshiEncodingStrategyTest extends Specification {
                 '12345',
                 ts,
                 Duration.ofMinutes(1),
-                Path.of('/some/path') )
+                Path.of('/some/path'),
+                BuildFormat.DOCKER)
 
         when:
         def json = encoder.encode(build)

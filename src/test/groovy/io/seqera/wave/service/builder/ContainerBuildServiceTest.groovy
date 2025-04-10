@@ -360,7 +360,7 @@ class ContainerBuildServiceTest extends Specification {
         def eventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
         def service = new ContainerBuildServiceImpl(buildStore: buildStore, proxyService: proxyService, eventPublisher: eventPublisher, persistenceService: persistenceService, scanService:scanService, buildConfig: buildConfig)
         def job = JobSpec
-                .build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
+                .build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'), BuildFormat.DOCKER)
                 .withLaunchTime(Instant.now())
         def state = JobState.succeeded('logs')
         def res = BuildResult.create('1')
@@ -395,7 +395,8 @@ class ContainerBuildServiceTest extends Specification {
         def persistenceService = Mock(PersistenceService)
         def eventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
         def service = new ContainerBuildServiceImpl(buildStore: buildStore, proxyService: proxyService, eventPublisher: eventPublisher, persistenceService:persistenceService, buildConfig: buildConfig)
-        def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
+        def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'), BuildFormat.DOCKER)
+                .withLaunchTime(Instant.now())
         def error = new Exception('error')
         def res = BuildResult.create('1')
         def req = new BuildRequest(
@@ -425,7 +426,8 @@ class ContainerBuildServiceTest extends Specification {
         def persistenceService = Mock(PersistenceService)
         def eventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
         def service = new ContainerBuildServiceImpl(buildStore: buildStore, proxyService: proxyService, eventPublisher: eventPublisher, persistenceService:persistenceService, buildConfig: buildConfig)
-        def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
+        def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'), BuildFormat.DOCKER)
+                .withLaunchTime(Instant.now())
         def res = BuildResult.create('1')
         def req = new BuildRequest(
                 targetImage: 'docker.io/foo:0',

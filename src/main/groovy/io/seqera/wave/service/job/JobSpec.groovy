@@ -25,6 +25,7 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
+import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.util.LongRndKey
 
 /**
@@ -81,7 +82,12 @@ class JobSpec {
      */
     final Path workDir
 
-    protected JobSpec(String id, Type type, String entryKey, String operationName, Instant createdAt, Instant submittedAt, Duration maxDuration, Path dir) {
+    /**
+     * The type of the build system used to build the container image docker or singularity
+     */
+    final BuildFormat buildFormat
+
+    protected JobSpec(String id, Type type, String entryKey, String operationName, Instant createdAt, Instant submittedAt, Duration maxDuration, Path dir, BuildFormat buildFormat = null) {
         this.id = id
         this.type = type
         this.entryKey = entryKey
@@ -90,6 +96,7 @@ class JobSpec {
         this.creationTime = createdAt
         this.launchTime = submittedAt
         this.workDir = dir
+        this.buildFormat = buildFormat
     }
 
     static JobSpec transfer(String recordId, String operationName, Instant creationTime, Duration maxDuration) {
@@ -101,6 +108,7 @@ class JobSpec {
                 creationTime,
                 creationTime,
                 maxDuration,
+                null,
                 null
         )
     }
@@ -114,11 +122,12 @@ class JobSpec {
                 creationTime,
                 null,
                 maxDuration,
-                dir
+                dir,
+                null
         )
     }
 
-    static JobSpec build(String recordId, String operationName, Instant creationTime, Duration maxDuration,  Path dir) {
+    static JobSpec build(String recordId, String operationName, Instant creationTime, Duration maxDuration,  Path dir, BuildFormat buildFormat) {
         new JobSpec(
                 LongRndKey.rndHex(),
                 Type.Build,
@@ -127,7 +136,8 @@ class JobSpec {
                 creationTime,
                 null,
                 maxDuration,
-                dir
+                dir,
+                buildFormat
         )
     }
 
@@ -140,7 +150,8 @@ class JobSpec {
                 creationTime,
                 null,
                 maxDuration,
-                workDir
+                workDir,
+                null
         )
     }
 
@@ -153,7 +164,8 @@ class JobSpec {
                 this.creationTime,
                 instant,
                 this.maxDuration,
-                this.workDir
+                this.workDir,
+                this.buildFormat
         )
     }
 }

@@ -26,6 +26,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
 import io.micronaut.scheduling.TaskScheduler
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.job.JobOperation
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.scan.ScanIdStore
@@ -145,7 +146,13 @@ class CleanupServiceImpl implements Runnable, CleanupService {
                 : config.failedDuration
         final expirationSecs = Instant.now().plus(ttl).epochSecond
         // schedule the job deletion
-        store.add(JOB_PREFIX + job.operationName, expirationSecs)
+        if(job.buildFormat == BuildFormat.SINGULARITY) {
+            store.add(JOB_PREFIX + job.operationName, expirationSecs)
+            store.add(JOB_PREFIX + "$job.operationName-pull", expirationSecs)
+            store.add(JOB_PREFIX + "$job.operationName-push", expirationSecs)
+        }
+        else
+            store.add(JOB_PREFIX + job.operationName, expirationSecs)
         // schedule work dir path deletion
         if( job.workDir ) {
             store.add(DIR_PREFIX + job.workDir, expirationSecs)

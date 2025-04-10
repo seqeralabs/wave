@@ -828,16 +828,16 @@ class K8sServiceImpl implements K8sService {
 
         log.debug("Launching singularity build job with name: $name-build")
         //build job
-        final buildJobSpec = buildSingularityStepJobSpec('build', name, containerImage, args[1], workDir, null, timeout, nodeSelector)
+        final buildJobSpec = buildSingularityStepJobSpec(null, name, containerImage, args[1], workDir, null, timeout, nodeSelector)
         def buildJob = k8sClient
                 .batchV1Api()
                 .createNamespacedJob(namespace, buildJobSpec)
                 .execute()
-        waitForJobCompletion("$name-build", singularityBuildTimeout)
+        waitForJobCompletion(name, singularityBuildTimeout)
 
         log.debug("Launching singularity push job with name: $name")
         //push job, name is empty to make it the main job of the pipeline, wave can check its status
-        final pushJobSpec = buildSingularityStepJobSpec(null, name, containerImage, args[2], workDir, creds, timeout, nodeSelector)
+        final pushJobSpec = buildSingularityStepJobSpec("push", name, containerImage, args[2], workDir, creds, timeout, nodeSelector)
         def pushJob = k8sClient
                 .batchV1Api()
                 .createNamespacedJob(namespace, pushJobSpec)
