@@ -174,7 +174,7 @@ Rate limit configuration controls the limits of anonymous and authenticated user
 
 - **`rate-limit.pull.anonymous`**: the rate limit for anonymous pull requests. It is set to allow up to 250 pull requests per hour (`250/1h`) from anonymous users by default. This setting controls how frequently anonymous users can perform pull operations in Wave. *Mandatory*.
 
-- **`rate-limit.pull.authenticated`**: the rate limit for authenticated pull requests. By default, it allows up to 200k pull requests per minute (`200000/1m`) from authenticated users. This setting governs the rate at which authenticated users can perform pull operations in Wave. *Mandatory*.
+- **`rate-limit.pull.authenticated`**: the rate limit for authenticated pull requests. By default, it allows up to 2k pull requests per minute (`2000/1m`) from authenticated users. This setting governs the rate at which authenticated users can perform pull operations in Wave. *Mandatory*.
 
 - **`wave.denyPaths`**: user to filter out API calls for specific artifacts like manifests, which doesn't exist. *Optional*.
 
