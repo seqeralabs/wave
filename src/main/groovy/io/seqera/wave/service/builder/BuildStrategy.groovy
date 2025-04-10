@@ -69,17 +69,7 @@ abstract class BuildStrategy {
 
         if( req.cacheRepository ) {
             result << "--export-cache"
-            def exportCache = new StringBuilder()
-            exportCache << "type=registry,"
-            exportCache << "image-manifest=true,"
-            exportCache << "ref=${req.cacheRepository}:${req.containerId},"
-            exportCache << "mode=max,"
-            exportCache << "ignore-error=true,"
-            exportCache << "oci-mediatypes=${buildConfig.ociMediatypes},"
-            exportCache << "compression=${buildConfig.compression},"
-            exportCache << "force-compression=${buildConfig.forceCompression}"
-            result << exportCache.toString()
-
+            result << cacheOpts(req, buildConfig)
             result << "--import-cache"
             result << "type=registry,ref=$req.cacheRepository:$req.containerId".toString()
         }
@@ -102,11 +92,28 @@ abstract class BuildStrategy {
         result << ",name=${req.targetImage}"
         result << ",push=true"
         result << ",oci-mediatypes=${config.ociMediatypes}"
-        if( config.compression && config.compression != 'gzip' )
-            result << ",compression=${config.compression}"
+        final compression = req.compressionMode?.toString() ?: config.compression
+        if( compression )
+            result << ",compression=${compression}"
         if( config.forceCompression )
             result << ",force-compression=${config.forceCompression}"
 
+        return result.toString()
+    }
+
+    static protected String cacheOpts(BuildRequest req, BuildConfig config) {
+        final result = new StringBuilder()
+        result << "type=registry"
+        result << ",image-manifest=true"
+        result << ",ref=${req.cacheRepository}:${req.containerId}"
+        result << ",mode=max"
+        result << ",ignore-error=true"
+        result << ",oci-mediatypes=${config.ociMediatypes}"
+        final compression = req.compressionMode?.toString() ?: config.compression
+        if( compression )
+            result << ",compression=${compression}"
+        if( config.forceCompression )
+            result << ",force-compression=${config.forceCompression}"
         return result.toString()
     }
 

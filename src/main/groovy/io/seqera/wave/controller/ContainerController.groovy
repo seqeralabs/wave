@@ -363,7 +363,8 @@ class ContainerController {
                 scanId,
                 req.buildContext,
                 format,
-                maxDuration
+                maxDuration,
+                req.buildCompression
         )
     }
 

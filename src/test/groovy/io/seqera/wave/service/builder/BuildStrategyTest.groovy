@@ -19,12 +19,14 @@
 package io.seqera.wave.service.builder
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.nio.file.Path
 import java.time.Duration
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.BuildContext
+import io.seqera.wave.api.CompressionMode
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
@@ -70,7 +72,7 @@ class BuildStrategyTest extends Specification {
                 '--opt',
                 'platform=linux/amd64',
                 '--export-cache',
-                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip,force-compression=false',
+                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true',
                 '--import-cache',
                 'type=registry,ref=reg.io/wave/build/cache:c168dba125e28777'
         ]
@@ -104,7 +106,7 @@ class BuildStrategyTest extends Specification {
                 '--opt',
                 'platform=linux/amd64',
                 '--export-cache',
-                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip,force-compression=false',
+                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true',
                 '--import-cache',
                 'type=registry,ref=reg.io/wave/build/cache:c168dba125e28777'
         ]
@@ -154,7 +156,8 @@ class BuildStrategyTest extends Specification {
                 'sc-12345',
                 Mock(BuildContext),
                 BuildFormat.DOCKER,
-                timeout
+                timeout,
+                CompressionMode.gzip
         )
 
         then:
@@ -169,6 +172,7 @@ class BuildStrategyTest extends Specification {
         build.maxDuration == timeout
     }
 
+    @Unroll
     def 'should create output options' () {
         given:
         def req = new BuildRequest(
@@ -177,28 +181,65 @@ class BuildStrategyTest extends Specification {
                 workspace: Path.of('/work/foo'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'quay.io/wave:c168dba125e28777',
-                cacheRepository: 'reg.io/wave/build/cache' )
+                cacheRepository: 'reg.io/wave/build/cache',
+                compressionMode: REQ_COMPRESS,
+        )
 
         when:
         def config = new BuildConfig(
                 ociMediatypes: true,
-                compression: 'gzip',
-                forceCompression: false,
+                compression: CONFIG_COMPRESS,
+                forceCompression: FORCE,
                 buildkitImage: 'moby/buildkit:v0.18.2-rootless')
         and:
         def result = BuildStrategy.outputOpts(req, config)
         then:
-        result == 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true'
+        result == EXPECTED
+
+        where:
+        REQ_COMPRESS    | CONFIG_COMPRESS   | FORCE     | EXPECTED
+        null            | null              | false     | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true'
+        null            | 'gzip'            | false     | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=gzip'
+        'gzip'          | null              | false     | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=gzip'
+        'gzip'          | null              | true      | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=gzip,force-compression=true'
+        'gzip'          | 'estargz'         | true      | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=gzip,force-compression=true'
+        null            | 'estargz'         | true      | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=estargz,force-compression=true'
+        'estargz'       | 'gzip'            | true      | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=estargz,force-compression=true'
+    }
+
+
+    @Unroll
+    def 'should create cache options' () {
+        given:
+        def req = new BuildRequest(
+                containerId: 'c168dba125e28777',
+                buildId: 'bd-c168dba125e28777_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'quay.io/wave:c168dba125e28777',
+                cacheRepository: 'reg.io/wave/build/cache',
+                compressionMode: REQ_COMPRESS,
+        )
 
         when:
-        config = new BuildConfig(
+        def config = new BuildConfig(
                 ociMediatypes: true,
-                compression: 'estargz',
-                forceCompression: true,
+                compression: CONFIG_COMPRESS,
+                forceCompression: FORCE,
                 buildkitImage: 'moby/buildkit:v0.18.2-rootless')
         and:
-        result = BuildStrategy.outputOpts(req, config)
+        def result = BuildStrategy.cacheOpts(req, config)
         then:
-        result == 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=estargz,force-compression=true'
+        result == EXPECTED
+
+        where:
+        REQ_COMPRESS    | CONFIG_COMPRESS   | FORCE     | EXPECTED
+        null            | null              | false     | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true'
+        null            | 'gzip'            | false     | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip'
+        'gzip'          | null              | false     | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip'
+        'gzip'          | null              | true      | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip,force-compression=true'
+        'gzip'          | 'estargz'         | true      | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip,force-compression=true'
+        null            | 'estargz'         | true      | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=estargz,force-compression=true'
+        'estargz'       | 'gzip'            | true      | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=estargz,force-compression=true'
     }
 }
