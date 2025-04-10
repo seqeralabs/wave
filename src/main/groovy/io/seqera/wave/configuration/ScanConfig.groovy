@@ -26,7 +26,6 @@ import javax.annotation.PostConstruct
 import groovy.transform.CompileStatic
 import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import jakarta.inject.Singleton
@@ -38,7 +37,6 @@ import jakarta.inject.Singleton
 @CompileStatic
 @Singleton
 @Slf4j
-@Requires(property = 'wave.scan.enabled', value = 'true')
 class ScanConfig {
 
     /**
