@@ -150,4 +150,15 @@ class TowerClientTest extends Specification{
         'http://foo.com'        | null              | 'abc'     | 'http://foo.com/workflow/abc/launch'
         'http://foo.com'        | 12345             | 'abc'     | 'http://foo.com/workflow/abc/launch?workspaceId=12345'
     }
+
+    @Unroll
+    def 'should get workflow describe endpoint' () {
+        expect:
+        TowerClient.workflowDescribeEndpoint(ENDPOINT, WORKSPACE, WORKFLOW) == new URI(EXPECTED)
+
+        where:
+        ENDPOINT                | WORKSPACE         | WORKFLOW  | EXPECTED
+        'http://foo.com'        | null              | 'abc'     | 'http://foo.com/workflow/abc'
+        'http://foo.com'        | 12345             | 'abc'     | 'http://foo.com/workflow/abc?workspaceId=12345'
+    }
 }
