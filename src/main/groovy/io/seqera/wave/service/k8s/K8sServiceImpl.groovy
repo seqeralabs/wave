@@ -245,12 +245,8 @@ class K8sServiceImpl implements K8sService {
      * @return An instance of {@link V1Volume} representing the build storage volume
      */
     protected V1Volume volumeBuildStorage(String mountPath, @Nullable String claimName) {
-        return volumeBuildStorage(mountPath, claimName, 'build-data')
-    }
-
-    protected V1Volume volumeBuildStorage(String mountPath, @Nullable String claimName, String name) {
         final vol= new V1Volume()
-                .name(name)
+                .name('build-data')
         if( claimName ) {
             vol.persistentVolumeClaim( new V1PersistentVolumeClaimVolumeSource().claimName(claimName) )
         }
@@ -259,6 +255,10 @@ class K8sServiceImpl implements K8sService {
         }
 
         return vol
+    }
+
+    protected V1Volume volumeBuildStorage(String mountPath, @Nullable String claimName, String name) {
+
     }
 
     /**
