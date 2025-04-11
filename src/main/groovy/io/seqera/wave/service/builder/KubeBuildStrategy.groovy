@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.builder
 
-
 import java.nio.file.Path
 
 import groovy.transform.CompileStatic
@@ -70,8 +69,13 @@ class KubeBuildStrategy extends BuildStrategy {
             final buildImage = getBuildImage(req)
             final buildCmd = launchCmd(req)
             final timeout = req.maxDuration ?: buildConfig.defaultTimeout
-            final selector= getSelectorLabel(req.platform, nodeSelectorMap)
-            k8sService.launchBuildJob(jobName, buildImage, buildCmd, req.workDir, configFile, timeout, selector)
+            final selector = getSelectorLabel(req.platform, nodeSelectorMap)
+            if (req.formatSingularity()){
+                final cmds = processSingularityContainerFile(req)
+                k8sService.launchSingularityBuildJob(jobName, buildImage, List.of(cmds[0], buildCmd, cmds[1]), req.workDir, req.configJson, timeout, selector)
+            } else {
+                k8sService.launchBuildJob(jobName, buildImage, buildCmd, req.workDir, configFile, timeout, selector)
+            }
         }
         catch (ApiException e) {
             throw new BadRequestException("Unexpected build failure - ${e.responseBody}", e)
@@ -88,6 +92,16 @@ class KubeBuildStrategy extends BuildStrategy {
         }
 
         throw new IllegalArgumentException("Unexpected container platform: ${buildRequest.platform}")
+    }
+
+    @Override
+    protected List<String> singularityLaunchCmd(BuildRequest req) {
+        final result = new ArrayList(10)
+        result
+                << 'sh'
+                << '-c'
+                << "singularity build --force ${req.workDir}/image.sif ${req.workDir}/Containerfile_Build".toString()
+        return result
     }
 
 }

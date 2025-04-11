@@ -25,18 +25,23 @@ import javax.annotation.PostConstruct
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.custom.Quantity
+import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.openapi.models.V1ContainerBuilder
 import io.kubernetes.client.openapi.models.V1EnvVar
 import io.kubernetes.client.openapi.models.V1HostPathVolumeSource
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1JobBuilder
 import io.kubernetes.client.openapi.models.V1JobStatus
+import io.kubernetes.client.openapi.models.V1KeyToPath
+import io.kubernetes.client.openapi.models.V1ObjectMeta
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
 import io.kubernetes.client.openapi.models.V1PodDNSConfig
 import io.kubernetes.client.openapi.models.V1PodDNSConfigBuilder
 import io.kubernetes.client.openapi.models.V1ResourceRequirements
+import io.kubernetes.client.openapi.models.V1Secret
+import io.kubernetes.client.openapi.models.V1SecretVolumeSource
 import io.kubernetes.client.openapi.models.V1Volume
 import io.kubernetes.client.openapi.models.V1VolumeMount
 import io.micronaut.context.annotation.Property
@@ -112,6 +117,14 @@ class K8sServiceImpl implements K8sService {
     @Value('${wave.build.k8s.resources.limits.memory}')
     @Nullable
     private String limitsMemory
+
+    @Value('${wave.build.k8s.singularity.pull.timeout:5m}')
+    @Nullable
+    private Duration singularityPullTimeout
+
+    @Value('${wave.build.k8s.singularity.build.timeout:20m}')
+    @Nullable
+    private Duration singularityBuildTimeout
 
     @Inject
     private K8sClient k8sClient
@@ -244,6 +257,10 @@ class K8sServiceImpl implements K8sService {
         return vol
     }
 
+    protected V1Volume volumeBuildStorage(String mountPath, @Nullable String claimName, String name) {
+
+    }
+
     /**
      * Defines the volume mount for the  docker config
      *
@@ -327,7 +344,7 @@ class K8sServiceImpl implements K8sService {
 
         if( singularity ) {
             container
-            // use 'command' to override the entrypoint of the container
+                    // use 'command' to override the entrypoint of the container
                     .withCommand(args)
                     .withNewSecurityContext().withPrivileged(true).endSecurityContext()
         } else {
@@ -531,9 +548,6 @@ class K8sServiceImpl implements K8sService {
 
     V1Job buildJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, Duration timeout, Map<String,String> nodeSelector) {
 
-        // dirty dependency to avoid introducing another parameter
-        final singularity = containerImage.contains('singularity')
-
         // required volumes
         final mounts = new ArrayList<V1VolumeMount>(5)
         mounts.add(mountBuildStorage(workDir, storageMountPath, true))
@@ -542,14 +556,7 @@ class K8sServiceImpl implements K8sService {
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
         if( credsFile ){
-            if( !singularity ) {
-                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/home/user/.docker/config.json'))
-            }
-            else {
-                final remoteFile = credsFile.resolveSibling('singularity-remote.yaml')
-                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/root/.singularity/docker-config.json'))
-                mounts.add(1, mountHostPath(remoteFile, storageMountPath, '/root/.singularity/remote.yaml'))
-            }
+            mounts.add(0, mountHostPath(credsFile, storageMountPath, '/home/user/.docker/config.json'))
         }
 
         V1JobBuilder builder = new V1JobBuilder()
@@ -567,7 +574,7 @@ class K8sServiceImpl implements K8sService {
                 .withBackoffLimit(buildConfig.retryAttempts)
                 .withNewTemplate()
                 .withNewMetadata()
-                .addToAnnotations(getBuildkitAnnotations(name,singularity))
+                .addToAnnotations(getBuildkitAnnotations(name, false))
                 .endMetadata()
                 .editOrNewSpec()
                 .withDnsConfig(dnsConfig())
@@ -596,20 +603,11 @@ class K8sServiceImpl implements K8sService {
                 .withVolumeMounts(mounts)
                 .withResources(requests)
                 .withWorkingDir('/tmp')
-
-        if( singularity ) {
-            container
-            // use 'command' to override the entrypoint of the container
-                    .withCommand(args)
-                    .withNewSecurityContext().withPrivileged(true).endSecurityContext()
-        } else {
-            container
-            //required by buildkit rootless container
-                    .withEnv(toEnvList(BUILDKIT_FLAGS))
-            // buildCommand is to set entrypoint for buildkit
-                    .withCommand(BUILDKIT_ENTRYPOINT)
-                    .withArgs(args)
-        }
+                //required by buildkit rootless container
+                .withEnv(toEnvList(BUILDKIT_FLAGS))
+                // buildCommand is to set entrypoint for buildkit
+                .withCommand(BUILDKIT_ENTRYPOINT)
+                .withArgs(args)
 
         // spec section
         spec.withContainers(container.build()).endSpec().endTemplate().endSpec()
@@ -800,5 +798,195 @@ class K8sServiceImpl implements K8sService {
             }
         }
         return latest
+    }
+
+    /**
+     * Create a container for container image building via singularity
+     *
+     * @param name
+     *      The name of pod
+     * @param containerImage
+     *      The container image to be used
+     * @param args
+     *      The pull, build, and push commands to be performed
+     * @param workDir
+     *      The build context directory
+     * @param creds
+     *      The target container repository credentials
+     * @return
+     *      The {@link V1Pod} description the submitted pod
+     */
+    @Override
+    List<V1Job> launchSingularityBuildJob(String name, String containerImage, List<List<String>> args, Path workDir, String creds, Duration timeout, Map<String,String> nodeSelector) {
+        return launchSingularityBuildJob0(name, containerImage, args, workDir, creds, timeout, nodeSelector)
+    }
+
+    List<V1Job> launchSingularityBuildJob0(String name, String containerImage, List<List<String>> args, Path workDir, String creds, Duration timeout, Map<String,String> nodeSelector) {
+        log.debug("Launching singularity pull job with name: $name-pull")
+        def secret = createSecret(name + "-docker-config", creds, "docker-config.json", "Opaque")
+        //pull job
+        final pullJobSpec = buildSingularityStepJobSpec('pull', name, containerImage, args[0], workDir, secret, timeout, nodeSelector)
+        def pullJob = k8sClient
+                .batchV1Api()
+                .createNamespacedJob(namespace, pullJobSpec)
+                .execute()
+        waitForJobCompletion("$name-pull", singularityPullTimeout)
+
+        log.debug("Launching singularity build job with name: $name-build")
+        //build job
+        final buildJobSpec = buildSingularityStepJobSpec(null, name, containerImage, args[1], workDir, null, timeout, nodeSelector)
+        def buildJob = k8sClient
+                .batchV1Api()
+                .createNamespacedJob(namespace, buildJobSpec)
+                .execute()
+        waitForJobCompletion(name, singularityBuildTimeout)
+
+        log.debug("Launching singularity push job with name: $name")
+        //push job, name is empty to make it the main job of the pipeline, wave can check its status
+        final pushJobSpec = buildSingularityStepJobSpec("push", name, containerImage, args[2], workDir, secret, timeout, nodeSelector)
+        def pushJob = k8sClient
+                .batchV1Api()
+                .createNamespacedJob(namespace, pushJobSpec)
+                .execute()
+
+        return List.of(pullJob, buildJob, pushJob)
+    }
+
+    V1Job buildSingularityStepJobSpec(String step, String name, String containerImage, List<String> args, Path workDir, V1Secret secret, Duration timeout, Map<String,String> nodeSelector) {
+
+        final mounts = new ArrayList<V1VolumeMount>(5)
+        final volumes = new ArrayList<V1Volume>(5)
+
+        mounts.add(mountBuildStorage(workDir, storageMountPath, false))
+        volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
+
+        // Mount credentials
+        if( secret ) {
+
+            volumes.add(new V1Volume()
+                    .name("docker-config")
+                    .secret(new V1SecretVolumeSource()
+                            .secretName(name + "-docker-config")
+                            .defaultMode(420)
+                            .items(Collections.singletonList(
+                                    new V1KeyToPath()
+                                            .key("docker-config.json")
+                                            .path("docker-config.json")
+                            ))
+                    ));
+
+            mounts.add(0, new V1VolumeMount()
+                    .name("docker-config")
+                    .mountPath("/root/.singularity/docker-config.json")
+                    .subPath("docker-config.json")
+                    .readOnly(true))
+
+            final remoteFile = workDir.resolve('singularity-remote.yaml')
+            mounts.add(1, mountHostPath(remoteFile, storageMountPath, '/root/.singularity/remote.yaml'))
+        }
+
+        //create job name
+        name = step ? "$name-$step" : name
+        V1JobBuilder builder = new V1JobBuilder()
+        //metadata section
+        builder.withNewMetadata()
+                .withNamespace(namespace)
+                .withName(name)
+                .addToLabels(labels)
+                .endMetadata()
+
+        //spec section
+        def spec = builder
+                .withNewSpec()
+                .withBackoffLimit(buildConfig.retryAttempts)
+                .withNewTemplate()
+                .editOrNewSpec()
+                .withDnsConfig(dnsConfig())
+                .withDnsPolicy(dnsPolicy)
+                .withNodeSelector(nodeSelector)
+                .withServiceAccount(serviceAccount)
+                .withActiveDeadlineSeconds( timeout.toSeconds() )
+                .withRestartPolicy("Never")
+                .addAllToVolumes(volumes)
+
+        final container = new V1ContainerBuilder()
+                .withName(name)
+                .withImage(containerImage)
+                .withVolumeMounts(mounts)
+                .withResources(buildResourceRequirements())
+                .withWorkingDir('/tmp')
+                .withCommand(args)
+                .withNewSecurityContext().withPrivileged(true).endSecurityContext()
+                .build()
+
+        // spec section
+        spec
+                .withContainers(container)
+                .endSpec()
+                .endTemplate()
+                .endSpec()
+
+        return builder.build()
+    }
+
+    void waitForJobCompletion(String jobName, Duration timeout) {
+        long deadline = System.currentTimeMillis() + timeout.toMillis()
+        while (System.currentTimeMillis() < deadline) {
+            if (getJobStatus(jobName) == JobStatus.Succeeded) return
+            if (getJobStatus(jobName) == JobStatus.Failed) {
+                log.error("Job failed with name $jobName")
+                throw new RuntimeException("Job failed with name $jobName")
+            }
+            sleep(5000)
+        }
+        log.error("Job timed out with name $jobName")
+        throw new RuntimeException("Job timed out with name $jobName")
+    }
+
+    V1ResourceRequirements buildResourceRequirements() {
+        final reqs = new V1ResourceRequirements()
+        if (requestsCpu) reqs.putRequestsItem("cpu", new Quantity(requestsCpu))
+        if (requestsMemory) reqs.putRequestsItem("memory", new Quantity(requestsMemory))
+        if (limitsCpu) reqs.putLimitsItem("cpu", new Quantity(limitsCpu))
+        if (limitsMemory) reqs.putLimitsItem("memory", new Quantity(limitsMemory))
+        return reqs
+    }
+
+    @Override
+    void deleteSecret(String name) {
+        try {
+            k8sClient
+                    .coreV1Api()
+                    .deleteNamespacedSecret(name, namespace)
+                    .propagationPolicy("Foreground")
+                    .execute()
+        } catch (ApiException e) {
+            log.error("Failed to delete secret $name: ${e.message}")
+        }
+    }
+
+    @Override
+    V1Secret createSecret(String name, String data, String key, String type) {
+        def secret = new V1Secret()
+                .metadata(new V1ObjectMeta().name(name))
+                .type(type)
+                .putStringDataItem(key, data)
+
+        try {
+            k8sClient
+                    .coreV1Api()
+                    .createNamespacedSecret(namespace, secret)
+                    .execute()
+        } catch (ApiException e) {
+            if (e.getCode() == 409) {
+                k8sClient
+                        .coreV1Api()
+                        .replaceNamespacedSecret(name, namespace, secret)
+                        .execute()
+            } else {
+                throw e
+            }
+        }
+        return secret
     }
 }

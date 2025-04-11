@@ -21,6 +21,7 @@ package io.seqera.wave.service.builder
 import java.nio.file.Files
 import java.nio.file.Path
 
+import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
@@ -54,7 +55,17 @@ class DockerBuildStrategy extends BuildStrategy {
     @Override
     void build(String jobName, BuildRequest req) {
 
-        final Path configFile = req.configJson ? req.workDir.resolve('config.json') : null
+        // save docker config for creds
+        Path configFile = null
+        if( req.configJson ) {
+            if ( req.formatSingularity() ) {
+                configFile = req.workDir.resolve('config.json')
+                Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            } else {
+                configFile = req.workDir.resolve('config.json')
+            }
+        }
+
         // command the docker build command
         final buildCmd= buildCmd(jobName, req, configFile)
         log.debug "Build run command: ${buildCmd.join(' ')}"
@@ -136,5 +147,15 @@ class DockerBuildStrategy extends BuildStrategy {
 
         wrapper.add(buildConfig.singularityImage(platform))
         return wrapper
+    }
+
+    @Override
+    protected List<String> singularityLaunchCmd(BuildRequest req) {
+        final result = new ArrayList(10)
+        result
+                << 'sh'
+                << '-c'
+                << "singularity build image.sif ${req.workDir}/Containerfile && singularity push image.sif ${req.targetImage}".toString()
+        return result
     }
 }

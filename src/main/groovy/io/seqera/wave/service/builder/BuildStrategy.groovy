@@ -18,9 +18,17 @@
 
 package io.seqera.wave.service.builder
 
+import java.nio.file.Files
+import java.nio.file.Path
+
 import groovy.transform.CompileStatic
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.util.SingularityHelper
 import jakarta.inject.Inject
+import static java.nio.file.StandardOpenOption.CREATE
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
+import static java.nio.file.StandardOpenOption.WRITE
+
 /**
  * Defines an abstract container build strategy.
  *
@@ -36,6 +44,8 @@ abstract class BuildStrategy {
     private BuildConfig buildConfig
 
     abstract void build(String jobName, BuildRequest req)
+
+    protected abstract List<String> singularityLaunchCmd(BuildRequest req)
 
     static final public String BUILDKIT_ENTRYPOINT = 'buildctl-daemonless.sh'
 
@@ -87,13 +97,35 @@ abstract class BuildStrategy {
         return result
     }
 
-    protected List<String> singularityLaunchCmd(BuildRequest req) {
+    protected static List<String> singularityPullCmd(BuildRequest req) {
         final result = new ArrayList(10)
         result
-            << 'sh'
-            << '-c'
-            << "singularity build image.sif ${req.workDir}/Containerfile && singularity push image.sif ${req.targetImage}".toString()
+                << 'sh'
+                << '-c'
+                << "singularity build --force ${req.workDir}/base_image.sif ${req.workDir}/Containerfile_Pull".toString()
         return result
+    }
+
+    protected static List<String> singularityPushCmd(BuildRequest req) {
+        final result = new ArrayList(10)
+        result
+                << 'sh'
+                << '-c'
+                << "singularity push ${req.workDir}/image.sif ${req.targetImage}".toString()
+        return result
+    }
+
+    protected static List<List<String>> processSingularityContainerFile(BuildRequest req){
+        def singularityTypeAndBaseImage = SingularityHelper.modifyContainerFileForLocalImage(req)
+
+        final containerFilePull = req.workDir.resolve('Containerfile_Pull')
+        final containerFileBuild = req.workDir.resolve('Containerfile_Build')
+        Files.write(containerFilePull,
+                singularityTypeAndBaseImage.pullContainerFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+        Files.write(containerFileBuild,
+                singularityTypeAndBaseImage.buildContainerFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+
+        return List.of(singularityPullCmd(req), singularityPushCmd(req))
     }
 
     static protected String outputOpts(BuildRequest req, BuildConfig config) {

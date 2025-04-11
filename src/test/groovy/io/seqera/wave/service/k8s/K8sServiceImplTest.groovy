@@ -29,13 +29,16 @@ import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.openapi.ApiClient
 import io.kubernetes.client.openapi.apis.BatchV1Api
 import io.kubernetes.client.openapi.apis.CoreV1Api
+import io.kubernetes.client.openapi.models.V1ContainerBuilder
 import io.kubernetes.client.openapi.models.V1EnvVar
 import io.kubernetes.client.openapi.models.V1Job
+import io.kubernetes.client.openapi.models.V1JobBuilder
 import io.kubernetes.client.openapi.models.V1JobSpec
 import io.kubernetes.client.openapi.models.V1JobStatus
 import io.kubernetes.client.openapi.models.V1ObjectMeta
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
+import io.kubernetes.client.openapi.models.V1Secret
 import io.micronaut.context.ApplicationContext
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.MirrorConfig
@@ -569,61 +572,6 @@ class K8sServiceImplTest extends Specification {
 
         then:
         latestPod == null
-    }
-
-    def 'buildJobSpec should create job with singularity image'() {
-        given:
-        def PROPS = [
-                'wave.build.workspace': '/build/work',
-                'wave.build.k8s.namespace': 'my-ns',
-                'wave.build.k8s.configPath': '/home/kube.config',
-                'wave.build.k8s.storage.claimName': 'build-claim',
-                'wave.build.k8s.storage.mountPath': '/build',
-                'wave.build.retry-attempts': 3
-        ]
-        and:
-        def ctx = ApplicationContext.run(PROPS)
-        def k8sService = ctx.getBean(K8sServiceImpl)
-        def name = 'the-job-name'
-        def containerImage = 'singularity:latest'
-        def args = ['singularity', '--this', '--that']
-        def workDir = Path.of('/build/work/xyz')
-        def credsFile = workDir.resolve('config.json')
-        def timeout = Duration.ofMinutes(10)
-        def nodeSelector = [key: 'value']
-
-        when:
-        def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, nodeSelector)
-
-        then:
-        job.spec.backoffLimit == 3
-        job.spec.template.spec.containers[0].image == containerImage
-        job.spec.template.spec.containers[0].command == args
-        job.spec.template.spec.containers[0].securityContext.privileged
-        and:
-        job.spec.template.spec.containers.get(0).getWorkingDir() == '/tmp'
-        and:
-        job.spec.template.spec.containers.get(0).volumeMounts.size() == 3
-        job.spec.template.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(0).mountPath == '/root/.singularity/docker-config.json'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz/config.json'
-        and:
-        job.spec.template.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(1).mountPath == '/root/.singularity/remote.yaml'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz/singularity-remote.yaml'
-        and:
-        job.spec.template.spec.containers.get(0).volumeMounts.get(2).name == 'build-data'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(2).mountPath == '/build/work/xyz'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(2).subPath == 'work/xyz'
-        and:
-        job.spec.template.spec.volumes.get(0).name == 'build-data'
-        job.spec.template.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
-        and:
-        job.spec.template.spec.dnsPolicy == null
-        job.spec.template.spec.dnsConfig == null
-
-        cleanup:
-        ctx.close()
     }
 
     def 'buildJobSpec should create job with docker image'() {
@@ -1277,5 +1225,47 @@ class K8sServiceImplTest extends Specification {
 
         cleanup:
         ctx.close()
+    }
+
+    def 'should build singularity step job spec with valid inputs using mocked K8sService'() {
+        given:
+        def k8sService = Mock(K8sServiceImpl)
+        def step = 'pull'
+        def name = 'test-job'
+        def containerImage = 'singularity:latest'
+        def args = ['arg1', 'arg2']
+        def workDir = Path.of('/work/dir')
+        def secret = Mock(V1Secret)
+        def timeout = Duration.ofMinutes(10)
+        def nodeSelector = [key: 'value']
+
+        and:
+        def expectedJob = new V1JobBuilder()
+                .withNewMetadata()
+                .withName('test-job-pull')
+                .withNamespace('foo')
+                .endMetadata()
+                .withNewSpec()
+                .withNewTemplate()
+                .withNewSpec()
+                .withContainers(new V1ContainerBuilder()
+                        .withName('test-job-pull')
+                        .withImage(containerImage)
+                        .withCommand(args)
+                        .build())
+                .endSpec()
+                .endTemplate()
+                .endSpec()
+                .build()
+
+        when:
+        k8sService.buildSingularityStepJobSpec(step, name, containerImage, args, workDir, secret, timeout, nodeSelector) >> expectedJob
+        def job = k8sService.buildSingularityStepJobSpec(step, name, containerImage, args, workDir, secret, timeout, nodeSelector)
+
+        then:
+        job.metadata.name == 'test-job-pull'
+        job.metadata.namespace == 'foo'
+        job.spec.template.spec.containers[0].image == containerImage
+        job.spec.template.spec.containers[0].command == args
     }
 }

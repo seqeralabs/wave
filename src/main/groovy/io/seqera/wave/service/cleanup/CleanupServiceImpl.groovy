@@ -26,6 +26,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
 import io.micronaut.scheduling.TaskScheduler
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.job.JobOperation
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.scan.ScanIdStore
@@ -44,6 +45,8 @@ class CleanupServiceImpl implements Runnable, CleanupService {
     static final private String DIR_PREFIX = 'dir:'
 
     static final private String JOB_PREFIX = 'job:'
+
+    static final private String SECRET_PREFIX = 'sec:'
 
     static final private String SCANID_PREFIX = 'scanid:'
 
@@ -107,6 +110,9 @@ class CleanupServiceImpl implements Runnable, CleanupService {
         else if( entry.startsWith(SCANID_PREFIX) ) {
             cleanupScanId0(entry.substring(SCANID_PREFIX.length()))
         }
+        else if( entry.startsWith(SECRET_PREFIX)){
+            cleanupSecret0(entry.substring(SECRET_PREFIX.length()))
+        }
         else {
             log.error "Unknown cleanup entry - offending value: $entry"
         }
@@ -118,6 +124,15 @@ class CleanupServiceImpl implements Runnable, CleanupService {
         }
         catch (Throwable t) {
             log.error("Unexpected error deleting job=$jobName - cause: ${t.message}", t)
+        }
+    }
+
+    protected void cleanupSecret0(String secretName) {
+        try {
+            operation.cleanupSecret(secretName)
+        }
+        catch (Throwable t) {
+            log.error("Unexpected error deleting secret=$secretName - cause: ${t.message}", t)
         }
     }
 
@@ -145,7 +160,14 @@ class CleanupServiceImpl implements Runnable, CleanupService {
                 : config.failedDuration
         final expirationSecs = Instant.now().plus(ttl).epochSecond
         // schedule the job deletion
-        store.add(JOB_PREFIX + job.operationName, expirationSecs)
+        if(job.buildFormat == BuildFormat.SINGULARITY) {
+            store.add(JOB_PREFIX + job.operationName, expirationSecs)
+            store.add(JOB_PREFIX + "$job.operationName-pull", expirationSecs)
+            store.add(JOB_PREFIX + "$job.operationName-push", expirationSecs)
+            store.add(SECRET_PREFIX+ "$job.operationName-docker-config", expirationSecs)
+        }
+        else
+            store.add(JOB_PREFIX + job.operationName, expirationSecs)
         // schedule work dir path deletion
         if( job.workDir ) {
             store.add(DIR_PREFIX + job.workDir, expirationSecs)

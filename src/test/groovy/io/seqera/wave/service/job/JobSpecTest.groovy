@@ -24,6 +24,8 @@ import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
+import io.seqera.wave.service.builder.BuildFormat
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -82,7 +84,7 @@ class JobSpecTest extends Specification {
     def 'should create build job' () {
         given:
         def now = Instant.now()
-        def job = JobSpec.build('12345','xyz', now, Duration.ofMinutes(1), Path.of('/some/path'))
+        def job = JobSpec.build('12345','xyz', now, Duration.ofMinutes(1), Path.of('/some/path'), BuildFormat.SINGULARITY)
         expect:
         job.id
         job.entryKey == '12345'
@@ -91,6 +93,7 @@ class JobSpecTest extends Specification {
         job.maxDuration == Duration.ofMinutes(1)
         job.operationName == 'xyz'
         job.workDir == Path.of('/some/path')
+        job.buildFormat == BuildFormat.SINGULARITY
     }
 
     def 'should create scan job' () {

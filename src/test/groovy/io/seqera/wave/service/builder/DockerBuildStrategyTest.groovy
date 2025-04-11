@@ -216,4 +216,27 @@ class DockerBuildStrategyTest extends Specification {
         cleanup:
         ctx.close()
     }
+
+    def 'should get singularity build command' () {
+        given:
+        def ctx = ApplicationContext.run()
+        def service = ctx.getBean(DockerBuildStrategy)
+        and:
+        def req = new BuildRequest(
+                containerId: 'c168dba125e28777',
+                buildId: 'bd-c168dba125e28777_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'oras://quay.io/wave:c168dba125e28777',
+                format: BuildFormat.SINGULARITY,
+                cacheRepository: 'reg.io/wave/build/cache' )
+        when:
+        def cmd = service.launchCmd(req)
+        then:
+        cmd == [
+                "sh",
+                "-c",
+                "singularity build image.sif /work/foo/bd-c168dba125e28777_1/Containerfile && singularity push image.sif oras://quay.io/wave:c168dba125e28777"
+        ]
+    }
 }
