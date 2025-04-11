@@ -29,13 +29,16 @@ import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.openapi.ApiClient
 import io.kubernetes.client.openapi.apis.BatchV1Api
 import io.kubernetes.client.openapi.apis.CoreV1Api
+import io.kubernetes.client.openapi.models.V1ContainerBuilder
 import io.kubernetes.client.openapi.models.V1EnvVar
 import io.kubernetes.client.openapi.models.V1Job
+import io.kubernetes.client.openapi.models.V1JobBuilder
 import io.kubernetes.client.openapi.models.V1JobSpec
 import io.kubernetes.client.openapi.models.V1JobStatus
 import io.kubernetes.client.openapi.models.V1ObjectMeta
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
+import io.kubernetes.client.openapi.models.V1Secret
 import io.micronaut.context.ApplicationContext
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.MirrorConfig
@@ -1224,4 +1227,45 @@ class K8sServiceImplTest extends Specification {
         ctx.close()
     }
 
+    def 'should build singularity step job spec with valid inputs using mocked K8sService'() {
+        given:
+        def k8sService = Mock(K8sServiceImpl)
+        def step = 'pull'
+        def name = 'test-job'
+        def containerImage = 'singularity:latest'
+        def args = ['arg1', 'arg2']
+        def workDir = Path.of('/work/dir')
+        def secret = Mock(V1Secret)
+        def timeout = Duration.ofMinutes(10)
+        def nodeSelector = [key: 'value']
+
+        and:
+        def expectedJob = new V1JobBuilder()
+                .withNewMetadata()
+                .withName('test-job-pull')
+                .withNamespace('foo')
+                .endMetadata()
+                .withNewSpec()
+                .withNewTemplate()
+                .withNewSpec()
+                .withContainers(new V1ContainerBuilder()
+                        .withName('test-job-pull')
+                        .withImage(containerImage)
+                        .withCommand(args)
+                        .build())
+                .endSpec()
+                .endTemplate()
+                .endSpec()
+                .build()
+
+        when:
+        k8sService.buildSingularityStepJobSpec(step, name, containerImage, args, workDir, secret, timeout, nodeSelector) >> expectedJob
+        def job = k8sService.buildSingularityStepJobSpec(step, name, containerImage, args, workDir, secret, timeout, nodeSelector)
+
+        then:
+        job.metadata.name == 'test-job-pull'
+        job.metadata.namespace == 'foo'
+        job.spec.template.spec.containers[0].image == containerImage
+        job.spec.template.spec.containers[0].command == args
+    }
 }
