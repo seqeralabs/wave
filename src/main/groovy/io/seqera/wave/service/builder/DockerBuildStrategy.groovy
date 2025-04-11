@@ -57,9 +57,13 @@ class DockerBuildStrategy extends BuildStrategy {
 
         // save docker config for creds
         Path configFile = null
-        if( req.configJson && req.formatSingularity()) {
-            configFile = req.workDir.resolve('config.json')
-            Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+        if( req.configJson ) {
+            if ( req.formatSingularity() ) {
+                configFile = req.workDir.resolve('config.json')
+                Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            } else {
+                configFile = req.workDir.resolve('config.json')
+            }
         }
 
         // command the docker build command
