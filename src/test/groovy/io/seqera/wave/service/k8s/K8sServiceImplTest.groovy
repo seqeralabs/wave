@@ -510,6 +510,32 @@ class K8sServiceImplTest extends Specification {
         ctx.close()
     }
 
+    def "should get pod logs"() {
+        given:
+        def k8sClient = Mock(K8sClient)
+        def k8sService = new K8sServiceImpl(k8sClient: k8sClient)
+        def name = "builder-pod"
+        def logs = "\u001B[31mINFO: Build is in progress"
+
+        def logRequest = Mock(CoreV1Api. APIreadNamespacedPodLogRequest)
+        def api = Mock(CoreV1Api)
+
+        when:
+        InputStream result = k8sService.getCurrentLogsPod(name)
+
+        then:
+        1 * k8sClient.coreV1Api() >> api
+        1 * api.readNamespacedPodLog(name, _) >> logRequest
+        1 * logRequest.container(_) >> logRequest
+        1 * logRequest.follow(false) >> logRequest
+        1 * logRequest.execute() >> logs
+
+        and:
+        result instanceof ByteArrayInputStream
+        String resultString = result.text
+        resultString == "INFO: Build is in progress"
+    }
+
     def "getLatestPodForJob should return the latest pod when multiple pods are present"() {
         given:
         def jobName = "test-job"
