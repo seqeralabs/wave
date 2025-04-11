@@ -164,8 +164,7 @@ class CleanupServiceImpl implements Runnable, CleanupService {
             store.add(JOB_PREFIX + job.operationName, expirationSecs)
             store.add(JOB_PREFIX + "$job.operationName-pull", expirationSecs)
             store.add(JOB_PREFIX + "$job.operationName-push", expirationSecs)
-            store.add(SECRET_PREFIX+ "$job.operationName-pull-docker-config", expirationSecs)
-            store.add(SECRET_PREFIX+ "$job.operationName-push-docker-config", expirationSecs)
+            store.add(SECRET_PREFIX+ "$job.operationName-docker-config", expirationSecs)
         }
         else
             store.add(JOB_PREFIX + job.operationName, expirationSecs)

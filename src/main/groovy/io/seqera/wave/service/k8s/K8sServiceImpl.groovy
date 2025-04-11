@@ -118,11 +118,11 @@ class K8sServiceImpl implements K8sService {
     @Nullable
     private String limitsMemory
 
-    @Value('${wave.build.k8s.singularity.pull.timeout:300s}')
+    @Value('${wave.build.k8s.singularity.pull.timeout:5m}')
     @Nullable
     private Duration singularityPullTimeout
 
-    @Value('${wave.build.k8s.singularity.build.timeout:1080s}')
+    @Value('${wave.build.k8s.singularity.build.timeout:20m}')
     @Nullable
     private Duration singularityBuildTimeout
 
@@ -823,8 +823,9 @@ class K8sServiceImpl implements K8sService {
 
     List<V1Job> launchSingularityBuildJob0(String name, String containerImage, List<List<String>> args, Path workDir, String creds, Duration timeout, Map<String,String> nodeSelector) {
         log.debug("Launching singularity pull job with name: $name-pull")
+        def secret = createSecret(name + "-docker-config", creds, "docker-config.json", "Opaque")
         //pull job
-        final pullJobSpec = buildSingularityStepJobSpec('pull', name, containerImage, args[0], workDir, creds, timeout, nodeSelector)
+        final pullJobSpec = buildSingularityStepJobSpec('pull', name, containerImage, args[0], workDir, secret, timeout, nodeSelector)
         def pullJob = k8sClient
                 .batchV1Api()
                 .createNamespacedJob(namespace, pullJobSpec)
@@ -842,7 +843,7 @@ class K8sServiceImpl implements K8sService {
 
         log.debug("Launching singularity push job with name: $name")
         //push job, name is empty to make it the main job of the pipeline, wave can check its status
-        final pushJobSpec = buildSingularityStepJobSpec("push", name, containerImage, args[2], workDir, creds, timeout, nodeSelector)
+        final pushJobSpec = buildSingularityStepJobSpec("push", name, containerImage, args[2], workDir, secret, timeout, nodeSelector)
         def pushJob = k8sClient
                 .batchV1Api()
                 .createNamespacedJob(namespace, pushJobSpec)
@@ -851,8 +852,7 @@ class K8sServiceImpl implements K8sService {
         return List.of(pullJob, buildJob, pushJob)
     }
 
-    V1Job buildSingularityStepJobSpec(String step, String name, String containerImage, List<String> args, Path workDir, String credsFile, Duration timeout, Map<String,String> nodeSelector) {
-        name = step ? "$name-$step" : name
+    V1Job buildSingularityStepJobSpec(String step, String name, String containerImage, List<String> args, Path workDir, V1Secret secret, Duration timeout, Map<String,String> nodeSelector) {
 
         final mounts = new ArrayList<V1VolumeMount>(5)
         final volumes = new ArrayList<V1Volume>(5)
@@ -860,9 +860,9 @@ class K8sServiceImpl implements K8sService {
         mounts.add(mountBuildStorage(workDir, storageMountPath, false))
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
-        // Mount credentials ONLY for pull and push jobs
-        if( credsFile ) {
-            def secret = createSecret(name + "-docker-config", credsFile, "docker-config.json", "Opaque")
+        // Mount credentials
+        if( secret ) {
+
             volumes.add(new V1Volume()
                     .name("docker-config")
                     .secret(new V1SecretVolumeSource()
@@ -885,6 +885,8 @@ class K8sServiceImpl implements K8sService {
             mounts.add(1, mountHostPath(remoteFile, storageMountPath, '/root/.singularity/remote.yaml'))
         }
 
+        //create job name
+        name = step ? "$name-$step" : name
         V1JobBuilder builder = new V1JobBuilder()
         //metadata section
         builder.withNewMetadata()
