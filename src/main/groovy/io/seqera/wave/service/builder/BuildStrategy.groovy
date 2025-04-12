@@ -86,18 +86,31 @@ abstract class BuildStrategy {
         return result
     }
 
+    static protected String compressOpts(BuildRequest req, BuildConfig config) {
+        final result = new StringBuilder()
+        final compression = req.compression?.mode?.toString() ?: config.compression
+        final level = req.compression?.level
+        final force = req.compression?.force!=null
+                ? req.compression.force
+                : ( config.forceCompression != null
+                ? config.forceCompression
+                : (compression=='estargz' ? true : null) )
+        if( compression )
+            result << ",compression=${compression}"
+        if( level!=null )
+            result << ",compression-level=${level}"
+        if( force!=null )
+            result << ",force-compression=${force}"
+        return result.toString()
+    }
+
     static protected String outputOpts(BuildRequest req, BuildConfig config) {
         final result = new StringBuilder()
         result << "type=image"
         result << ",name=${req.targetImage}"
         result << ",push=true"
         result << ",oci-mediatypes=${config.ociMediatypes}"
-        final compression = req.compressionMode?.toString() ?: config.compression
-        if( compression )
-            result << ",compression=${compression}"
-        if( config.forceCompression )
-            result << ",force-compression=${config.forceCompression}"
-
+        result << compressOpts(req, config)
         return result.toString()
     }
 
@@ -109,11 +122,7 @@ abstract class BuildStrategy {
         result << ",mode=max"
         result << ",ignore-error=true"
         result << ",oci-mediatypes=${config.ociMediatypes}"
-        final compression = req.compressionMode?.toString() ?: config.compression
-        if( compression )
-            result << ",compression=${compression}"
-        if( config.forceCompression )
-            result << ",force-compression=${config.forceCompression}"
+        result << compressOpts(req, config)
         return result.toString()
     }
 

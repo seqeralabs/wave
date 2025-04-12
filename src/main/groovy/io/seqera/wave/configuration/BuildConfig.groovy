@@ -97,7 +97,8 @@ class BuildConfig {
     @Nullable
     String compression
 
-    @Value('${wave.build.force-compression:false}')
+    @Value('${wave.build.force-compression}')
+    @Nullable
     Boolean forceCompression
 
     /**
