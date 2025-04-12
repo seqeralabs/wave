@@ -19,7 +19,6 @@
 package io.seqera.wave.service.builder
 
 import java.nio.file.Files
-import java.nio.file.Path
 
 import groovy.transform.CompileStatic
 import io.seqera.wave.configuration.BuildConfig
@@ -28,7 +27,6 @@ import jakarta.inject.Inject
 import static java.nio.file.StandardOpenOption.CREATE
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import static java.nio.file.StandardOpenOption.WRITE
-
 /**
  * Defines an abstract container build strategy.
  *
@@ -100,18 +98,18 @@ abstract class BuildStrategy {
     protected static List<String> singularityPullCmd(BuildRequest req) {
         final result = new ArrayList(10)
         result
-                << 'sh'
-                << '-c'
-                << "singularity build --force ${req.workDir}/base_image.sif ${req.workDir}/Containerfile_Pull".toString()
+            << 'sh'
+            << '-c'
+            << "singularity build --force ${req.workDir}/base_image.sif ${req.workDir}/Containerfile_Pull".toString()
         return result
     }
 
     protected static List<String> singularityPushCmd(BuildRequest req) {
         final result = new ArrayList(10)
         result
-                << 'sh'
-                << '-c'
-                << "singularity push ${req.workDir}/image.sif ${req.targetImage}".toString()
+            << 'sh'
+            << '-c'
+            << "singularity push ${req.workDir}/image.sif ${req.targetImage}".toString()
         return result
     }
 

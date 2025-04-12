@@ -98,9 +98,9 @@ class KubeBuildStrategy extends BuildStrategy {
     protected List<String> singularityLaunchCmd(BuildRequest req) {
         final result = new ArrayList(10)
         result
-                << 'sh'
-                << '-c'
-                << "singularity build --force ${req.workDir}/image.sif ${req.workDir}/Containerfile_Build".toString()
+            << 'sh'
+            << '-c'
+            << "singularity build --force ${req.workDir}/image.sif ${req.workDir}/Containerfile_Build".toString()
         return result
     }
 
