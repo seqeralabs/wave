@@ -138,7 +138,6 @@ class BuildRequest {
      */
     final BuildCompression compression
 
-
     /**
      * The build unique request id
      */
