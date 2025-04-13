@@ -618,6 +618,9 @@ class K8sServiceImplTest extends Specification {
         and:
         job.spec.template.spec.volumes.get(0).name == 'build-data'
         job.spec.template.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
+        and:
+        job.spec.template.spec.dnsPolicy == null
+        job.spec.template.spec.dnsConfig == null
 
         cleanup:
         ctx.close()
@@ -667,6 +670,127 @@ class K8sServiceImplTest extends Specification {
         and:
         job.spec.template.spec.volumes.get(0).name == 'build-data'
         job.spec.template.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
+        and:
+        job.spec.template.spec.dnsPolicy == null
+        job.spec.template.spec.dnsConfig == null
+
+        cleanup:
+        ctx.close()
+    }
+
+    def 'should create job request with resource limits'() {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'my-ns',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.storage.claimName': 'build-claim',
+                'wave.build.k8s.storage.mountPath': '/build',
+                'wave.build.retry-attempts': 3,
+                'wave.build.k8s.resources.requests.cpu': '2',
+                'wave.build.k8s.resources.requests.memory': '8Gi',
+                'wave.build.k8s.resources.limits.cpu': '4',
+                'wave.build.k8s.resources.limits.memory': '16Gi'
+        ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def name = 'test-job'
+        def containerImage = 'docker://test-image'
+        def args = ['arg1', 'arg2']
+        def workDir = Path.of('/build/work/xyz')
+        def credsFile = workDir.resolve('config.json')
+        def timeout = Duration.ofMinutes(10)
+        def nodeSelector = [key: 'value']
+
+        when:
+        def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, nodeSelector)
+
+        then:
+        job.spec.template.spec.containers[0].image == containerImage
+        job.spec.template.spec.containers[0].env.find { it.name == 'BUILDKITD_FLAGS' }
+        job.spec.template.spec.containers[0].command == ['buildctl-daemonless.sh']
+        job.spec.template.spec.containers[0].args == args
+
+        and:
+        job.spec.template.spec.containers.get(0).getWorkingDir() == '/tmp'
+        and:
+        job.spec.template.spec.containers.get(0).volumeMounts.size() == 2
+        job.spec.template.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(0).mountPath == '/home/user/.docker/config.json'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz/config.json'
+        and:
+        job.spec.template.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(1).mountPath == '/build/work/xyz'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz'
+        and:
+        job.spec.template.spec.volumes.get(0).name == 'build-data'
+        job.spec.template.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
+        and:
+        job.spec.template.spec.containers.get(0).resources.requests.get('cpu') == new Quantity('2')
+        job.spec.template.spec.containers.get(0).resources.requests.get('memory') == new Quantity('8Gi')
+        and:
+        job.spec.template.spec.containers.get(0).resources.limits.get('cpu') == new Quantity('4')
+        job.spec.template.spec.containers.get(0).resources.limits.get('memory') == new Quantity('16Gi')
+
+        cleanup:
+        ctx.close()
+    }
+
+    def 'should create job request with resource limits'() {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'my-ns',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.storage.claimName': 'build-claim',
+                'wave.build.k8s.storage.mountPath': '/build',
+                'wave.build.retry-attempts': 3,
+                'wave.build.k8s.resources.requests.cpu': '2',
+                'wave.build.k8s.resources.requests.memory': '8Gi',
+                'wave.build.k8s.resources.limits.cpu': '4',
+                'wave.build.k8s.resources.limits.memory': '16Gi'
+        ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def name = 'test-job'
+        def containerImage = 'docker://test-image'
+        def args = ['arg1', 'arg2']
+        def workDir = Path.of('/build/work/xyz')
+        def credsFile = workDir.resolve('config.json')
+        def timeout = Duration.ofMinutes(10)
+        def nodeSelector = [key: 'value']
+
+        when:
+        def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, nodeSelector)
+
+        then:
+        job.spec.template.spec.containers[0].image == containerImage
+        job.spec.template.spec.containers[0].env.find { it.name == 'BUILDKITD_FLAGS' }
+        job.spec.template.spec.containers[0].command == ['buildctl-daemonless.sh']
+        job.spec.template.spec.containers[0].args == args
+
+        and:
+        job.spec.template.spec.containers.get(0).getWorkingDir() == '/tmp'
+        and:
+        job.spec.template.spec.containers.get(0).volumeMounts.size() == 2
+        job.spec.template.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(0).mountPath == '/home/user/.docker/config.json'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz/config.json'
+        and:
+        job.spec.template.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(1).mountPath == '/build/work/xyz'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz'
+        and:
+        job.spec.template.spec.volumes.get(0).name == 'build-data'
+        job.spec.template.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
+        and:
+        job.spec.template.spec.containers.get(0).resources.requests.get('cpu') == new Quantity('2')
+        job.spec.template.spec.containers.get(0).resources.requests.get('memory') == new Quantity('8Gi')
+        and:
+        job.spec.template.spec.containers.get(0).resources.limits.get('cpu') == new Quantity('4')
+        job.spec.template.spec.containers.get(0).resources.limits.get('memory') == new Quantity('16Gi')
 
         cleanup:
         ctx.close()
@@ -711,6 +835,9 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.volumes.size() == 1
         job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
         job.spec.template.spec.restartPolicy == 'Never'
+        and:
+        job.spec.template.spec.dnsPolicy == null
+        job.spec.template.spec.dnsConfig == null
 
         cleanup:
         ctx.close()
@@ -856,6 +983,9 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.volumes.size() == 1
         job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
         job.spec.template.spec.restartPolicy == 'Never'
+        and:
+        job.spec.template.spec.dnsPolicy == null
+        job.spec.template.spec.dnsConfig == null
 
         cleanup:
         ctx.close()
@@ -1004,5 +1134,148 @@ class K8sServiceImplTest extends Specification {
         jobCompleted()            | K8sService.JobStatus.Failed
         jobStarted()              | K8sService.JobStatus.Pending
         jobUnknown()              | K8sService.JobStatus.Pending
+    }
+
+    def 'should create scan job spec with dns config'() {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'foo',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.storage.claimName': 'bar',
+                'wave.build.k8s.storage.mountPath': '/build',
+                'wave.build.k8s.service-account': 'theAdminAccount',
+                'wave.scan.retry-attempts': 3,
+                'wave.build.k8s.dns.servers': ['1.1.1.1', '8.8.8.8'],
+                'wave.build.k8s.dns.policy': 'None'
+        ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def name = 'scan-job'
+        def containerImage = 'scan-image:latest'
+        def args = ['arg1', 'arg2']
+        def workDir = Path.of('/work/dir')
+        def credsFile = Path.of('/creds/file')
+        def scanConfig = Mock(ScanConfig) {
+            getCacheDirectory() >> Path.of('/build/cache/dir')
+            getRequestsCpu() >> null
+            getRequestsMemory() >> null
+            getRetryAttempts() >> 3
+        }
+
+        when:
+        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig)
+
+        then:
+        job.metadata.name == name
+        job.metadata.namespace == 'foo'
+        job.spec.backoffLimit == 3
+        and:
+        verifyAll(job.spec.template.spec) {
+            containers[0].image == containerImage
+            containers[0].args == args
+            containers[0].resources.requests == [:]
+            volumes.size() == 1
+            volumes[0].persistentVolumeClaim.claimName == 'bar'
+            restartPolicy == 'Never'
+            dnsConfig.nameservers == ['1.1.1.1', '8.8.8.8']
+            dnsPolicy == 'None'
+        }
+
+        cleanup:
+        ctx.close()
+    }
+
+    def 'should create transfer job with dns config' () {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'my-ns',
+                'wave.build.k8s.service-account': 'foo-sa',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.dns.servers': ['1.1.1.1', '8.8.8.8'],
+                'wave.build.k8s.dns.policy': 'None'
+        ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def config = Mock(BlobCacheConfig) {
+            getEnvironment() >> ['FOO':'one', 'BAR':'two']
+            getRequestsCpu() >> '2'
+            getRequestsMemory() >> '8Gi'
+            getRetryAttempts() >> 3
+        }
+
+        when:
+        def result = k8sService.createTransferJobSpec('foo', 'my-image:latest', ['this','that'], config)
+        then:
+        result.metadata.name == 'foo'
+        result.metadata.namespace == 'my-ns'
+        and:
+        result.spec.backoffLimit == 3
+        and:
+        verifyAll(result.spec.template.spec) {
+            serviceAccount == 'foo-sa'
+            containers.get(0).name == 'foo'
+            containers.get(0).image == 'my-image:latest'
+            containers.get(0).args ==  ['this','that']
+            containers.get(0).getEnv().get(0) == new V1EnvVar().name('FOO').value('one')
+            containers.get(0).getEnv().get(1) == new V1EnvVar().name('BAR').value('two')
+            containers.get(0).getResources().requests.get('cpu') == new Quantity('2')
+            containers.get(0).getResources().requests.get('memory') == new Quantity('8Gi')
+            !containers.get(0).getResources().limits
+            dnsConfig.nameservers == ['1.1.1.1', '8.8.8.8']
+            dnsPolicy == 'None'
+        }
+
+        cleanup:
+        ctx.close()
+    }
+
+    def 'should create transfer job with dns config' () {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'my-ns',
+                'wave.build.k8s.service-account': 'foo-sa',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.dns.servers': ['1.1.1.1', '8.8.8.8'],
+                'wave.build.k8s.dns.policy': 'None'
+        ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def config = Mock(BlobCacheConfig) {
+            getEnvironment() >> ['FOO':'one', 'BAR':'two']
+            getRequestsCpu() >> '2'
+            getRequestsMemory() >> '8Gi'
+            getRetryAttempts() >> 3
+        }
+
+        when:
+        def result = k8sService.createTransferJobSpec('foo', 'my-image:latest', ['this','that'], config)
+        then:
+        result.metadata.name == 'foo'
+        result.metadata.namespace == 'my-ns'
+        and:
+        result.spec.backoffLimit == 3
+        and:
+        verifyAll(result.spec.template.spec) {
+            serviceAccount == 'foo-sa'
+            containers.get(0).name == 'foo'
+            containers.get(0).image == 'my-image:latest'
+            containers.get(0).args ==  ['this','that']
+            containers.get(0).getEnv().get(0) == new V1EnvVar().name('FOO').value('one')
+            containers.get(0).getEnv().get(1) == new V1EnvVar().name('BAR').value('two')
+            containers.get(0).getResources().requests.get('cpu') == new Quantity('2')
+            containers.get(0).getResources().requests.get('memory') == new Quantity('8Gi')
+            !containers.get(0).getResources().limits
+            dnsConfig.nameservers == ['1.1.1.1', '8.8.8.8']
+            dnsPolicy == 'None'
+        }
+
+        cleanup:
+        ctx.close()
     }
 }

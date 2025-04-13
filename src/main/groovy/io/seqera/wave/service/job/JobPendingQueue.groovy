@@ -18,12 +18,17 @@
 
 package io.seqera.wave.service.job
 
+import java.time.Duration
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.wave.configuration.JobManagerConfig
 import io.seqera.wave.encoder.EncodingStrategy
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.service.data.queue.MessageQueue
+import io.seqera.wave.service.data.stream.AbstractMessageStream
+import io.seqera.wave.service.data.stream.MessageConsumer
+import io.seqera.wave.service.data.stream.MessageStream
+import jakarta.annotation.PreDestroy
 import jakarta.inject.Singleton
 /**
  * Model a FIFO queue that accumulates job requests waiting to be submitted
@@ -34,31 +39,46 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-class JobPendingQueue {
+class JobPendingQueue extends AbstractMessageStream<JobSpec> {
 
-    private final static String QUEUE_NAME = 'jobs-pending/v1'
-
-    private MessageQueue<String> delegate
+    private final static String STREAM_NAME = 'jobs-pending/v2'
 
     private EncodingStrategy<JobSpec> encoder
 
-    JobPendingQueue(MessageQueue<String> queue) {
-        this.delegate = queue
+    private JobManagerConfig config
+
+    JobPendingQueue(MessageStream<String> target, JobManagerConfig config) {
+        super(target)
         this.encoder = new MoshiEncodeStrategy<JobSpec>() {}
-        log.debug "Created jobs processing queue"
+        this.config = config
+        log.debug "Created jobs pending queue - config=${config}"
     }
 
-    void submit(JobSpec request) {
-        delegate.offer(QUEUE_NAME, encoder.encode(request))
+    @Override
+    protected String name() {
+        return "jobs-pending"
     }
 
-    JobSpec poll() {
-        final result = delegate.poll(QUEUE_NAME)
-        return result!=null ? encoder.decode(result) : null
+    @Override
+    protected Duration pollInterval() {
+        return config.schedulerInterval
     }
 
-    int length() {
-        return delegate.length(QUEUE_NAME)
+    final void submit(JobSpec jobSpec) {
+        super.offer(STREAM_NAME, jobSpec)
     }
 
+    final void addConsumer(MessageConsumer<JobSpec> consumer) {
+        super.addConsumer(STREAM_NAME, consumer)
+    }
+
+    final int length() {
+        return super.length(STREAM_NAME)
+    }
+
+    @PreDestroy
+    void destroy() {
+        log.debug "Shutting down jobs pending queue"
+        this.close()
+    }
 }

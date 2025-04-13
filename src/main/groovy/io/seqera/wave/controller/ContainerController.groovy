@@ -402,6 +402,8 @@ class ContainerController {
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
         if( req.formatSingularity() && !req.freeze )
             throw new BadRequestException("Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting")
+        if( !req.containerPlatform )
+            req.containerPlatform = ContainerPlatform.DEFAULT.toString()
 
         // expand inclusions
         inclusionService.addContainerInclusions(req, identity)
@@ -501,9 +503,6 @@ class ContainerController {
         // in fact, the absence of creds in the docker file is tolerated because it may be a
         // public accessible repo. With build and cache repo, the creds needs to be available
         final configJson = inspectService.credentialsConfigJson("FROM ${request.containerImage}", targetImage, null, identity)
-        final platform = request.containerPlatform
-                ? ContainerPlatform.of(request.containerPlatform)
-                : ContainerPlatform.DEFAULT
 
         final offset = DataTimeUtils.offsetId(request.timestamp)
         final scanId = scanService?.getScanId(targetImage, digest, request.scanMode, request.format)

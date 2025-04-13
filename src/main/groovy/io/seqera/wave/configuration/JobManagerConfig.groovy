@@ -39,7 +39,7 @@ class JobManagerConfig {
     @Value('${wave.job-manager.poll-interval:1s}')
     Duration pollInterval
 
-    @Value('${wave.job-manager.scheduler-interval:400ms}')
+    @Value('${wave.job-manager.scheduler-interval:1s}')
     Duration schedulerInterval
 
     @Value('${wave.job-manager.scheduler-max-delay:1m}')

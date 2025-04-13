@@ -91,12 +91,6 @@ class JobDispatcher {
     }
 
     JobSpec launchJob(JobSpec job) {
-        try {
-            return apply(job, (handler, entry)-> handler.launchJob(job, entry))
-        }
-        catch (Throwable error) {
-            notifyJobException(job, error)
-            return null
-        }
+        return apply(job, (handler, entry)-> handler.launchJob(job, entry))
     }
 }
