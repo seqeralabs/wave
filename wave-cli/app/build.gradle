@@ -9,10 +9,8 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
-}
-
-compileJava {
-    options.release.set(11)
+    sourceCompatibility = 17
+    targetCompatibility = 17
 }
 
 repositories {
