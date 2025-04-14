@@ -257,10 +257,6 @@ class K8sServiceImpl implements K8sService {
         return vol
     }
 
-    protected V1Volume volumeBuildStorage(String mountPath, @Nullable String claimName, String name) {
-
-    }
-
     /**
      * Defines the volume mount for the  docker config
      *
@@ -546,6 +542,10 @@ class K8sServiceImpl implements K8sService {
                 .execute()
     }
 
+    /**
+     * Create a job spec for container image building via buildkit
+     *
+     */
     V1Job buildJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, Duration timeout, Map<String,String> nodeSelector) {
 
         // required volumes
@@ -852,6 +852,10 @@ class K8sServiceImpl implements K8sService {
         return List.of(pullJob, buildJob, pushJob)
     }
 
+    /**
+     * Create a job spec for container image building via singularity
+     *
+     */
     V1Job buildSingularityStepJobSpec(String step, String name, String containerImage, List<String> args, Path workDir, V1Secret secret, Duration timeout, Map<String,String> nodeSelector) {
 
         final mounts = new ArrayList<V1VolumeMount>(5)
