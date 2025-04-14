@@ -22,7 +22,6 @@ import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ExecutorService
 
-import com.github.benmanes.caffeine.cache.AsyncCache
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import groovy.transform.CompileStatic
@@ -64,8 +63,7 @@ class JobManager {
     @Named(TaskExecutors.BLOCKING)
     private ExecutorService ioExecutor
 
-    // FIXME https://github.com/seqeralabs/wave/issues/747
-    private AsyncCache<String,Instant> debounceCache
+    private Cache<String,Instant> debounceCache
 
     @PostConstruct
     void init() {
@@ -74,7 +72,7 @@ class JobManager {
                 .newBuilder()
                 .expireAfterWrite(config.graceInterval.multipliedBy(2))
                 .executor(ioExecutor)
-                .buildAsync()
+                .build()
         pendingQueue.addConsumer((job)-> launchJob(job))
         processingQueue.addConsumer((job)-> processJob(job))
     }
@@ -140,8 +138,7 @@ class JobManager {
     }
 
     protected JobState state(JobSpec job) {
-        // FIXME https://github.com/seqeralabs/wave/issues/747
-        return state0(job, config.graceInterval, debounceCache.synchronous())
+        return state0(job, config.graceInterval, debounceCache)
     }
 
     protected JobState state0(final JobSpec job, final Duration graceInterval, final Cache<String,Instant> cache) {

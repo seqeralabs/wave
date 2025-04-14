@@ -26,6 +26,7 @@ import java.time.Duration
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.ContainerHelper
@@ -166,5 +167,38 @@ class BuildStrategyTest extends Specification {
         build.buildId == 'bd-af15cb0a413a2d48_0'
         build.workDir == Path.of('.').toRealPath().resolve('some/path/bd-af15cb0a413a2d48_0')
         build.maxDuration == timeout
+    }
+
+    def 'should create output options' () {
+        given:
+        def req = new BuildRequest(
+                containerId: 'c168dba125e28777',
+                buildId: 'bd-c168dba125e28777_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'quay.io/wave:c168dba125e28777',
+                cacheRepository: 'reg.io/wave/build/cache' )
+
+        when:
+        def config = new BuildConfig(
+                ociMediatypes: true,
+                compression: 'gzip',
+                forceCompression: false,
+                buildkitImage: 'moby/buildkit:v0.18.2-rootless')
+        and:
+        def result = BuildStrategy.outputOpts(req, config)
+        then:
+        result == 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true'
+
+        when:
+        config = new BuildConfig(
+                ociMediatypes: true,
+                compression: 'estargz',
+                forceCompression: true,
+                buildkitImage: 'moby/buildkit:v0.18.2-rootless')
+        and:
+        result = BuildStrategy.outputOpts(req, config)
+        then:
+        result == 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=estargz,force-compression=true'
     }
 }
