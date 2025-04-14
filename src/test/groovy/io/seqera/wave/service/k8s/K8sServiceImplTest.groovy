@@ -605,11 +605,11 @@ class K8sServiceImplTest extends Specification {
         and:
         job.spec.template.spec.containers.get(0).volumeMounts.size() == 3
         job.spec.template.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(0).mountPath == '/root/.singularity/docker-config.json'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(0).mountPath == '/home/builder/.singularity/docker-config.json'
         job.spec.template.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz/config.json'
         and:
         job.spec.template.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(1).mountPath == '/root/.singularity/remote.yaml'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(1).mountPath == '/home/builder/.singularity/remote.yaml'
         job.spec.template.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz/singularity-remote.yaml'
         and:
         job.spec.template.spec.containers.get(0).volumeMounts.get(2).name == 'build-data'
