@@ -547,8 +547,8 @@ class K8sServiceImpl implements K8sService {
             }
             else {
                 final remoteFile = credsFile.resolveSibling('singularity-remote.yaml')
-                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/home/builder/.singularity/docker-config.json'))
-                mounts.add(1, mountHostPath(remoteFile, storageMountPath, '/home/builder/.singularity/remote.yaml'))
+                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/root/.singularity/docker-config.json'))
+                mounts.add(1, mountHostPath(remoteFile, storageMountPath, '/root/.singularity/remote.yaml'))
             }
         }
 
