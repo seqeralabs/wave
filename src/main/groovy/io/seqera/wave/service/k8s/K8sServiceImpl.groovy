@@ -866,15 +866,13 @@ class K8sServiceImpl implements K8sService {
                                         .path("docker-config.json")
                         ))
                 ));
-
-        mounts.add(0, new V1VolumeMount()
+        mounts.add(1, new V1VolumeMount()
                 .name("docker-config")
-                .mountPath("/home/builder/.singularity/docker-config.json")
+                .mountPath("/root/.singularity/docker-config.json")
                 .subPath("docker-config.json")
                 .readOnly(true))
-
         final remoteFile = workDir.resolve('singularity-remote.yaml')
-        mounts.add(1, mountHostPath(remoteFile, storageMountPath, '/home/builder/.singularity/remote.yaml'))
+        mounts.add(2, mountHostPath(remoteFile, storageMountPath, '/root/.singularity/remote.yaml'))
 
         //create job name
         V1JobBuilder builder = new V1JobBuilder()
