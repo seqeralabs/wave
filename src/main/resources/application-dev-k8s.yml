@@ -11,6 +11,10 @@ wave:
     debug: true
     workspace: "${HOME}/.wave/build-workspace"
     k8s:
+      dns :
+        servers :
+          - "1.1.1.1"
+          - "8.8.8.8"
       configPath: "${HOME}/.kube/config"
       context: 'docker-desktop'
       namespace: 'wave-local'
