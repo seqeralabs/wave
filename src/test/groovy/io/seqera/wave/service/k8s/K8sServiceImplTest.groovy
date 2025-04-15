@@ -599,7 +599,7 @@ class K8sServiceImplTest extends Specification {
         job.spec.backoffLimit == 3
         job.spec.template.spec.containers[0].image == containerImage
         job.spec.template.spec.containers[0].command == args
-        job.spec.template.spec.containers[0].securityContext.privileged
+        !job.spec.template.spec.containers[0].securityContext.privileged
         and:
         job.spec.template.spec.containers.get(0).getWorkingDir() == '/tmp'
         and:
