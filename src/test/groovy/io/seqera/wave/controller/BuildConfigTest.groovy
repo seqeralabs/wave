@@ -41,19 +41,11 @@ class BuildConfigTest extends Specification {
         config = new BuildConfig(singularityImage: 'foo')
         then:
         config.singularityImage == 'foo'
-        config.singularityImageArm64 == 'foo-arm64'
-        and:
-        config.singularityImage( ContainerPlatform.of('amd64') ) == 'foo'
-        config.singularityImage( ContainerPlatform.of('arm64') ) == 'foo-arm64'
 
         when:
-        config = new BuildConfig(singularityImage: 'foo', singularityImageArm64: 'bar')
+        config = new BuildConfig(singularityImage: 'foo')
         then:
         config.singularityImage == 'foo'
-        config.singularityImageArm64 == 'bar'
-        and:
-        config.singularityImage( ContainerPlatform.of('amd64') ) == 'foo'
-        config.singularityImage( ContainerPlatform.of('arm64') ) == 'bar'
     }
 
     @Unroll
