@@ -1,7 +1,7 @@
-FROM alpine:edge
-
+FROM alpine:3.21.3
+ARG version
 RUN apk update
-RUN apk add singularity
+RUN apk add singularity=${version}
 RUN apk add proot-static --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing/
 
 RUN ln -s /usr/bin/proot.static /usr/bin/proot
