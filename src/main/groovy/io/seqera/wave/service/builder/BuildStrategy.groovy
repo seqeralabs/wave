@@ -37,6 +37,8 @@ abstract class BuildStrategy {
 
     abstract void build(String jobName, BuildRequest req)
 
+    abstract List<String> singularityLaunchCmd(BuildRequest req)
+
     static final public String BUILDKIT_ENTRYPOINT = 'buildctl-daemonless.sh'
 
     List<String> launchCmd(BuildRequest req) {
@@ -87,14 +89,7 @@ abstract class BuildStrategy {
         return result
     }
 
-    protected List<String> singularityLaunchCmd(BuildRequest req) {
-        final result = new ArrayList(10)
-        result
-            << 'sh'
-            << '-c'
-            << "singularity build image.sif ${req.workDir}/Containerfile && singularity push image.sif ${req.targetImage}".toString()
-        return result
-    }
+
 
     static protected String outputOpts(BuildRequest req, BuildConfig config) {
         final result = new StringBuilder()
