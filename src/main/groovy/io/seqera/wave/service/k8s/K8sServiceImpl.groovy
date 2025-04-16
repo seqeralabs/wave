@@ -621,6 +621,7 @@ class K8sServiceImpl implements K8sService {
                     .withCommand(args)
                     .withNewSecurityContext().withPrivileged(false).endSecurityContext()
             if( credsFile) {
+                // init container to copy change owner of docker config and remote.yaml
                 spec.withInitContainers(new V1ContainerBuilder()
                         .withName("permissions-fix")
                         .withImage("busybox")
