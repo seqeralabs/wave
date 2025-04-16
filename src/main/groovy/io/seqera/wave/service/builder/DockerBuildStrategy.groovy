@@ -137,4 +137,16 @@ class DockerBuildStrategy extends BuildStrategy {
         wrapper.add(buildConfig.singularityImage(platform))
         return wrapper
     }
+
+
+    @Override
+    InputStream getLogs(String jobName) {
+        def logCmd = ['docker', 'logs'] + jobName
+        log.info("Get build logs: ${logCmd.join(' ')}")
+        final proc = new ProcessBuilder()
+                .command(logCmd)
+                .redirectErrorStream(true)
+                .start()
+        return proc.inputStream
+    }
 }
