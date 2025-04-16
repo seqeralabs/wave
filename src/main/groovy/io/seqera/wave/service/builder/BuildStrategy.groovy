@@ -90,7 +90,6 @@ abstract class BuildStrategy {
     }
 
 
-
     static protected String outputOpts(BuildRequest req, BuildConfig config) {
         final result = new StringBuilder()
         result << "type=image"
