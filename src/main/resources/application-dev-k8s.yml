@@ -11,8 +11,8 @@ wave:
     debug: true
     workspace: "${HOME}/.wave/build-workspace"
     k8s:
-      dns :
-        servers :
+      dns:
+        servers:
           - "1.1.1.1"
           - "8.8.8.8"
       configPath: "${HOME}/.kube/config"
