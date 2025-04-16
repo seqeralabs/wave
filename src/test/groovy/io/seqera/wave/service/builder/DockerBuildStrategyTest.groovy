@@ -168,7 +168,7 @@ class DockerBuildStrategyTest extends Specification {
                 '-v', '/work/creds.json:/root/.singularity/docker-config.json:ro',
                 '-v', '/work/singularity-remote.yaml:/root/.singularity/remote.yaml:ro',
                 '--platform', 'linux/amd64',
-                'quay.io/singularity/singularity:v3.11.4-slim',
+                'public.cr.seqera.io/wave/singularity:v4.2.1-r4',
                 'sh',
                 '-c',
                 'singularity build image.sif /work/foo/bd-d4869cc39b8d7d55_1/Containerfile && singularity push image.sif oras://repo:d4869cc39b8d7d55'
@@ -207,7 +207,7 @@ class DockerBuildStrategyTest extends Specification {
                 '-v', '/work/creds.json:/root/.singularity/docker-config.json:ro',
                 '-v', '/work/singularity-remote.yaml:/root/.singularity/remote.yaml:ro',
                 '--platform', 'linux/arm64',
-                'quay.io/singularity/singularity:v3.11.4-slim-arm64',
+                'public.cr.seqera.io/wave/singularity:v4.2.1-r4',
                 'sh',
                 '-c',
                 'singularity build image.sif /work/foo/bd-9c68af894bb2419c_1/Containerfile && singularity push image.sif oras://repo:9c68af894bb2419c'
