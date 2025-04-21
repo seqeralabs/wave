@@ -40,25 +40,21 @@ class PostgresSchemaService {
     private JdbcOperations jdbcOperations
 
     final static private String ddl = '''
+            -- BUILD entity 
             CREATE TABLE IF NOT EXISTS wave_build (
                 id TEXT PRIMARY KEY,
                 data JSONB NOT NULL,
                 created_at TIMESTAMP DEFAULT NOW()
             );
 
-            CREATE TABLE IF NOT EXISTS wave_request (
-                id TEXT PRIMARY KEY,
-                data JSONB NOT NULL,
-                created_at TIMESTAMP DEFAULT NOW()
-            );
+            CREATE INDEX IF NOT EXISTS wave_build_data_gin_idx 
+            ON wave_build USING GIN (data);
 
-            CREATE TABLE IF NOT EXISTS wave_scan (
-                id TEXT PRIMARY KEY,
-                data JSONB NOT NULL,
-                created_at TIMESTAMP DEFAULT NOW()
-            );
-            
-            CREATE TABLE IF NOT EXISTS wave_mirror (
+            CREATE INDEX IF NOT EXISTS wave_build_created_at_idx
+            ON wave_build (created_at);
+
+            -- REQUEST entity 
+            CREATE TABLE IF NOT EXISTS wave_request (
                 id TEXT PRIMARY KEY,
                 data JSONB NOT NULL,
                 created_at TIMESTAMP DEFAULT NOW()
@@ -67,14 +63,35 @@ class PostgresSchemaService {
             CREATE INDEX IF NOT EXISTS wave_request_data_gin_idx 
             ON wave_request USING GIN (data);
 
-            CREATE INDEX IF NOT EXISTS wave_build_data_gin_idx 
-            ON wave_build USING GIN (data);
+            CREATE INDEX IF NOT EXISTS wave_request_created_at_idx
+            ON wave_request (created_at);
 
-            CREATE INDEX IF NOT EXISTS wave_scan_data_gin_idx
-            ON wave_scan USING GIN (data);
+            -- MIRROR entity 
+            CREATE TABLE IF NOT EXISTS wave_mirror (
+                id TEXT PRIMARY KEY,
+                data JSONB NOT NULL,
+                created_at TIMESTAMP DEFAULT NOW()
+            );
 
             CREATE INDEX IF NOT EXISTS wave_mirror_data_gin_idx
             ON wave_mirror USING GIN (data);
+
+            CREATE INDEX IF NOT EXISTS wave_mirror_created_at_idx
+            ON wave_mirror (created_at);
+
+            -- SCAN entity 
+            CREATE TABLE IF NOT EXISTS wave_scan (
+                id TEXT PRIMARY KEY,
+                data JSONB NOT NULL,
+                created_at TIMESTAMP DEFAULT NOW()
+            );
+
+            CREATE INDEX IF NOT EXISTS wave_scan_start_time_idx
+            ON wave_scan ((data->>'startTime'));
+
+            CREATE INDEX IF NOT EXISTS wave_scan_created_at_idx
+            ON wave_scan (created_at);
+
             '''.stripIndent()
 
 
