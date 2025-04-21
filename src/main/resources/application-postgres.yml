@@ -12,4 +12,3 @@ datasources:
     url: jdbc:postgresql://localhost:5432/wave
     username: postgres
     password: postgres
-    schema-generate: CREATE_DROP
