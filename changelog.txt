@@ -1,4 +1,12 @@
 # Wave changelog
+1.19.5 - 17 Apr 2025
+- Add multi arch singularity image (#826) [cf4f97ff]
+- Add proot and init container to singularity build (#825) [6d995d4c]
+- Add compress options to image output [c25496b5]
+- Bump Micronaut to version 4.8.0 [6e4b6031]
+- Bump Netty to version 4.1.119 [f2147953]
+- Bump Gradle 8.13 [8bdd2adc]
+
 1.19.4 - 31 Mar 2025 
 - Add enable-native-access=ALL-UNNAMED to launch opts [4f0525da]
 - Default request containerPlatform to linux/adm64 [dcdb7cf4]

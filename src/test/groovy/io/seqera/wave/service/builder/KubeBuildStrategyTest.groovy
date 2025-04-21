@@ -106,13 +106,13 @@ class KubeBuildStrategyTest extends Specification {
         req = new BuildRequest(containerId, dockerfile, null, PATH, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.SINGULARITY,Duration.ofMinutes(1), BuildCompression.gzip)
 
         then:'should return singularity amd64 image'
-        strategy.getBuildImage(req) == 'quay.io/singularity/singularity:v3.11.4-slim'
+        strategy.getBuildImage(req) == 'public.cr.seqera.io/wave/singularity:v4.2.1-r4'
 
         when:'getting singularity with arm64 arch in build request'
         req = new BuildRequest(containerId, dockerfile, null, PATH, targetImage, USER, ContainerPlatform.of('arm64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.SINGULARITY, Duration.ofMinutes(1), BuildCompression.gzip)
 
         then:'should return singularity arm64 image'
-        strategy.getBuildImage(req) == 'quay.io/singularity/singularity:v3.11.4-slim-arm64'
+        strategy.getBuildImage(req) == 'public.cr.seqera.io/wave/singularity:v4.2.1-r4'
     }
 
 }
