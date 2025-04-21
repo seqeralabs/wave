@@ -599,25 +599,25 @@ class K8sServiceImplTest extends Specification {
         job.spec.backoffLimit == 3
         job.spec.template.spec.containers[0].image == containerImage
         job.spec.template.spec.containers[0].command == args
-        job.spec.template.spec.containers[0].securityContext.privileged
+        !job.spec.template.spec.containers[0].securityContext.privileged
         and:
         job.spec.template.spec.containers.get(0).getWorkingDir() == '/tmp'
         and:
-        job.spec.template.spec.containers.get(0).volumeMounts.size() == 3
-        job.spec.template.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(0).mountPath == '/root/.singularity/docker-config.json'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz/config.json'
+        job.spec.template.spec.containers.get(0).volumeMounts.size() == 2
+        job.spec.template.spec.containers.get(0).volumeMounts.get(0).name == 'singularity'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(0).mountPath == '/singularity'
         and:
         job.spec.template.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(1).mountPath == '/root/.singularity/remote.yaml'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz/singularity-remote.yaml'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(1).mountPath == '/build/work/xyz'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz'
         and:
-        job.spec.template.spec.containers.get(0).volumeMounts.get(2).name == 'build-data'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(2).mountPath == '/build/work/xyz'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(2).subPath == 'work/xyz'
+        job.spec.template.spec.volumes.size() == 2
         and:
         job.spec.template.spec.volumes.get(0).name == 'build-data'
         job.spec.template.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
+        and:
+        job.spec.template.spec.volumes.get(1).name == 'singularity'
+        job.spec.template.spec.volumes.get(1).emptyDir != null
         and:
         job.spec.template.spec.dnsPolicy == null
         job.spec.template.spec.dnsConfig == null

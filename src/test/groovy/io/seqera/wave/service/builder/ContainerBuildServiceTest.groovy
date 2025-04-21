@@ -77,6 +77,11 @@ class ContainerBuildServiceTest extends Specification {
             // do nothing
             log.debug "Running fake build job=$jobName - request=$request"
         }
+
+        @Override
+        List<String> singularityLaunchCmd(BuildRequest req) {
+            return ['singularity', 'fake', 'cmd']
+        }
     }
 
     @Primary
