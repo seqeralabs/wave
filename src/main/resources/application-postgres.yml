@@ -9,3 +9,7 @@ datasources:
     db-type: postgres
     dialect: POSTGRES
     driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/wave
+    username: postgres
+    password: postgres
+    schema-generate: CREATE_DROP
