@@ -323,8 +323,7 @@ class ContainerController {
             throw new BadRequestException("Missing build repository attribute")
         if( !buildConfig.defaultCacheRepository )
             throw new BadRequestException("Missing build cache repository attribute")
-        if( req.scanMode && !scanService )
-            throw new UnsupportedScanServiceException()
+
 
         final containerSpec = decodeBase64OrFail(req.containerFile, 'containerFile')
         final condaContent = condaFileFromRequest(req)
@@ -409,6 +408,8 @@ class ContainerController {
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
         if( req.formatSingularity() && !req.freeze )
             throw new BadRequestException("Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting")
+        if( req.scanMode && !scanService )
+            throw new UnsupportedScanServiceException()
         if( !req.containerPlatform )
             req.containerPlatform = ContainerPlatform.DEFAULT.toString()
 
