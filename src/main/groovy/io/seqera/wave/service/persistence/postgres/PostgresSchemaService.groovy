@@ -21,6 +21,7 @@ package io.seqera.wave.service.persistence.postgres
 import java.sql.SQLException
 
 import groovy.transform.CompileStatic
+import io.micronaut.context.annotation.Requires
 import io.micronaut.data.jdbc.runtime.JdbcOperations
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -30,6 +31,7 @@ import jakarta.inject.Singleton
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Requires(env='postgres')
 @Singleton
 @CompileStatic
 class PostgresSchemaService {
