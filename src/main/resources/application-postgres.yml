@@ -9,3 +9,6 @@ datasources:
     db-type: postgres
     dialect: POSTGRES
     driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://${POSTGRES_DB_HOST:localhost}:${POSTGRES_DB_PORT:5432}/${POSTGRES_DB_NAME:wave}
+    username: ${POSTGRES_DB_USERNAME}
+    password: ${POSTGRES_DB_PASSWORD}
