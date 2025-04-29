@@ -368,9 +368,9 @@ class ContainerController {
     }
 
     protected String resolveCacheRepository(SubmitContainerTokenRequest req){
-        //when the request is freeze and not for a public repo, use the build repository as cache
+        //when the request is freeze and not for a public repo, avoid cache repo
         if (req.freeze && !req.cacheRepository && req.buildRepository != buildConfig.defaultPublicRepository) {
-            return req.buildRepository
+            return null
         }else {
             return req.cacheRepository ?: buildConfig.defaultCacheRepository
         }

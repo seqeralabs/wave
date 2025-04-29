@@ -743,7 +743,7 @@ class ContainerControllerTest extends Specification {
         def result = controller.resolveCacheRepository(req)
 
         then:
-        result == 'custom/repo'
+        result == null
     }
 
     def 'should return default cache repository when freeze is disabled'() {
