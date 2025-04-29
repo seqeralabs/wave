@@ -733,5 +733,4 @@ class ContainerControllerTest extends Specification {
         result.creationTime
         result.duration
     }
-
 }
