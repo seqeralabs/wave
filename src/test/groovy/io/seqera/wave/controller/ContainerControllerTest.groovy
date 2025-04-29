@@ -734,9 +734,9 @@ class ContainerControllerTest extends Specification {
         result.duration
     }
 
-    def 'should return build repository as cache when freeze is enabled and not a public repo'() {
+    def 'should return null when build repository is provided and cache repository is not specified'() {
         given:
-        def req = new SubmitContainerTokenRequest(freeze: true, buildRepository: 'custom/repo', cacheRepository: null)
+        def req = new SubmitContainerTokenRequest(buildRepository: 'custom/repo', cacheRepository: null)
         def controller = new ContainerController(buildConfig: buildConfig)
 
         when:
@@ -746,21 +746,9 @@ class ContainerControllerTest extends Specification {
         result == null
     }
 
-    def 'should return default cache repository when freeze is disabled'() {
+    def 'should return cache repository when it is explicitly specified'() {
         given:
-        def req = new SubmitContainerTokenRequest(freeze: false, cacheRepository: null)
-        def controller = new ContainerController(buildConfig: buildConfig)
-
-        when:
-        def result = controller.resolveCacheRepository(req)
-
-        then:
-        result == buildConfig.defaultCacheRepository
-    }
-
-    def 'should return provided cache repository when specified'() {
-        given:
-        def req = new SubmitContainerTokenRequest(freeze: true, cacheRepository: 'custom/cache')
+        def req = new SubmitContainerTokenRequest(buildRepository: 'custom/repo', cacheRepository: 'custom/cache')
         def controller = new ContainerController(buildConfig: buildConfig)
 
         when:
@@ -770,9 +758,21 @@ class ContainerControllerTest extends Specification {
         result == 'custom/cache'
     }
 
-    def 'should return default cache repository when build repository is a public repo'() {
+    def 'should return default cache repository when build repository is not provided and cache repository is not specified'() {
         given:
-        def req = new SubmitContainerTokenRequest(freeze: true, buildRepository: buildConfig.defaultPublicRepository, cacheRepository: null)
+        def req = new SubmitContainerTokenRequest(buildRepository: null, cacheRepository: null)
+        def controller = new ContainerController(buildConfig: buildConfig)
+
+        when:
+        def result = controller.resolveCacheRepository(req)
+
+        then:
+        result == buildConfig.defaultCacheRepository
+    }
+
+    def 'should return default cache repository when build repository is provided but cache repository is not specified'() {
+        given:
+        def req = new SubmitContainerTokenRequest(buildRepository: null, cacheRepository: null)
         def controller = new ContainerController(buildConfig: buildConfig)
 
         when:
