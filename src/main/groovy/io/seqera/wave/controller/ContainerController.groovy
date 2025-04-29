@@ -326,7 +326,9 @@ class ContainerController {
         final buildRepository = targetRepo( req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository
                 ? buildConfig.defaultPublicRepository
                 : buildConfig.defaultBuildRepository), req.nameStrategy)
-        final cacheRepository = resolveCacheRepository(req)
+        final cacheRepository = !validationService.isCustomRepo(req.buildRepository)
+                ? (req.cacheRepository ?: buildConfig.defaultCacheRepository)
+                : req.cacheRepository   // use custom cache repo, when is a custom build repo
         final configJson = inspectService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
@@ -365,15 +367,6 @@ class ContainerController {
                 format,
                 maxDuration
         )
-    }
-
-    protected String resolveCacheRepository(SubmitContainerTokenRequest req){
-        //when the build repository is provided by user and no cache is provided, set it to null
-        if (req.buildRepository && !req.cacheRepository) {
-            return null
-        }else {
-            return req.cacheRepository ?: buildConfig.defaultCacheRepository
-        }
     }
 
     protected BuildTrack checkBuild(BuildRequest build, boolean dryRun) {
