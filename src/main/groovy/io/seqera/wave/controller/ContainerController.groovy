@@ -326,7 +326,7 @@ class ContainerController {
         final buildRepository = targetRepo( req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository
                 ? buildConfig.defaultPublicRepository
                 : buildConfig.defaultBuildRepository), req.nameStrategy)
-        final cacheRepository = req.cacheRepository ?: buildConfig.defaultCacheRepository
+        final cacheRepository = resolveCacheRepository(req)
         final configJson = inspectService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
@@ -365,6 +365,15 @@ class ContainerController {
                 format,
                 maxDuration
         )
+    }
+
+    protected String resolveCacheRepository(SubmitContainerTokenRequest req){
+        //when the request is freeze and not for a public repo, use the build repository as cache
+        if (req.freeze && !req.cacheRepository && req.buildRepository != buildConfig.defaultPublicRepository) {
+            return req.buildRepository
+        }else {
+            return req.cacheRepository ?: buildConfig.defaultCacheRepository
+        }
     }
 
     protected BuildTrack checkBuild(BuildRequest build, boolean dryRun) {
