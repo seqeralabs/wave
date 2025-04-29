@@ -733,4 +733,56 @@ class ContainerControllerTest extends Specification {
         result.creationTime
         result.duration
     }
+
+    def 'should use default cache repository when no custom cache repository is provided'() {
+        given:
+        def req = new SubmitContainerTokenRequest(
+                containerFile: encode('FROM ubuntu:latest'),
+                buildRepository: null,
+                cacheRepository: null
+        )
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig, validationService: validationService)
+
+        when:
+        def buildRequest = controller.makeBuildRequest(req, PlatformId.NULL, "127.0.0.1")
+
+        then:
+        buildRequest.cacheRepository == buildConfig.defaultCacheRepository
+    }
+
+    def 'should use custom cache repository when provided'() {
+        given:
+        def req = new SubmitContainerTokenRequest(
+                containerFile: encode('FROM ubuntu:latest'),
+                buildRepository: 'custom/repo',
+                cacheRepository: 'custom/cache'
+        )
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig, validationService: validationService)
+
+        when:
+        def buildRequest = controller.makeBuildRequest(req, PlatformId.NULL, "127.0.0.1")
+
+        then:
+        buildRequest.cacheRepository == 'custom/cache'
+    }
+
+    def 'should use default cache repository for non-custom build repository'() {
+        given:
+        def req = new SubmitContainerTokenRequest(
+                containerFile: encode('FROM ubuntu:latest'),
+                buildRepository: null,
+                cacheRepository: null
+        )
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig, validationService: validationService)
+
+        when:
+        def buildRequest = controller.makeBuildRequest(req, PlatformId.NULL, "127.0.0.1")
+
+        then:
+        buildRequest.cacheRepository == buildConfig.defaultCacheRepository
+    }
+    
 }
