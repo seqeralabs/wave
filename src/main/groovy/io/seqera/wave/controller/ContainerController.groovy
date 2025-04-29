@@ -368,7 +368,7 @@ class ContainerController {
     }
 
     protected String resolveCacheRepository(SubmitContainerTokenRequest req){
-        //when the build repository is provided by user and no cache is provided don't use cache repository
+        //when the build repository is provided by user and no cache is provided, set it to null
         if (req.buildRepository && !req.cacheRepository) {
             return null
         }else {
