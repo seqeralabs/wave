@@ -734,55 +734,36 @@ class ContainerControllerTest extends Specification {
         result.duration
     }
 
-    def 'should use default cache repository when no custom cache repository is provided'() {
+    @Unroll
+    def 'should validate build cache repository'() {
         given:
         def req = new SubmitContainerTokenRequest(
                 containerFile: encode('FROM ubuntu:latest'),
-                buildRepository: null,
-                cacheRepository: null
+                buildRepository: BUILD,
+                cacheRepository: CACHE
         )
+        def config = Mock(BuildConfig) {
+            getBuildWorkspace() >> '/some/path'
+            getDefaultBuildRepository() >> 'default/build'
+            getDefaultCacheRepository() >> 'default/cache'
+        }
+        def validation = new ValidationServiceImpl(buildConfig:config)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig, validationService: validationService)
+        def controller = new ContainerController(inspectService: dockerAuth, buildConfig: config, validationService: validation)
 
         when:
         def buildRequest = controller.makeBuildRequest(req, PlatformId.NULL, "127.0.0.1")
 
         then:
-        buildRequest.cacheRepository == buildConfig.defaultCacheRepository
+        buildRequest.cacheRepository == EXPECTED
+
+        where:
+        BUILD           | CACHE             | EXPECTED
+        null            | null              | 'default/cache'
+        'default/build' | null              | 'default/cache'
+        'default/build' | 'default/cache'   | 'default/cache'
+        and:
+        'custom/repo'   | null              | null
+        'custom/repo'   | 'custom/cache'    | 'custom/cache'
     }
-
-    def 'should use custom cache repository when provided'() {
-        given:
-        def req = new SubmitContainerTokenRequest(
-                containerFile: encode('FROM ubuntu:latest'),
-                buildRepository: 'custom/repo',
-                cacheRepository: 'custom/cache'
-        )
-        def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig, validationService: validationService)
-
-        when:
-        def buildRequest = controller.makeBuildRequest(req, PlatformId.NULL, "127.0.0.1")
-
-        then:
-        buildRequest.cacheRepository == 'custom/cache'
-    }
-
-    def 'should use default cache repository for non-custom build repository'() {
-        given:
-        def req = new SubmitContainerTokenRequest(
-                containerFile: encode('FROM ubuntu:latest'),
-                buildRepository: null,
-                cacheRepository: null
-        )
-        def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig, validationService: validationService)
-
-        when:
-        def buildRequest = controller.makeBuildRequest(req, PlatformId.NULL, "127.0.0.1")
-
-        then:
-        buildRequest.cacheRepository == buildConfig.defaultCacheRepository
-    }
-    
 }
