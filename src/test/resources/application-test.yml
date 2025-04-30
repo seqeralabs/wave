@@ -16,13 +16,11 @@ micronaut:
         bucket: "${wave.build.logs.bucket}"
 ---
 datasources:
-  default:
-    url: "jdbc:h2:mem:test_mem"
-    driverClassName: "org.h2.Driver"
-    username: "sq"
-    password: ""
-    dialect: H2
-    schema-generate: CREATE_DROP
+  default :
+    url : "jdbc:h2:file:./.db/h2/scms;AUTO_SERVER=TRUE;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH"
+    driver-class-name : org.h2.Driver
+    username : wave
+    password : wave
 ---
 wave:
   accounts:
