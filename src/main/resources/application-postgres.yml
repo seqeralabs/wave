@@ -1,14 +1,14 @@
 wave:
-  persistence:
-    url: "jdbc:postgresql://localhost:5432/postgres"
-    username: "postgres"
+  db:
+    uri: "jdbc:postgresql://localhost:5432/postgres"
+    user: "postgres"
     password: "postgres"
 datasources:
   default:
     db-type: postgres
     dialect: POSTGRES
     driver-class-name: org.postgresql.Driver
-    url: "${wave.persistence.url}"
-    username: "${wave.persistence.username}"
-    password: "${wave.persistence.password}"
+    url: "${wave.db.uri}"
+    username: "${wave.db.user}"
+    password: "${wave.db.password}"
 
