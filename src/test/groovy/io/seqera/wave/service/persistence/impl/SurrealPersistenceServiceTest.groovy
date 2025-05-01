@@ -27,6 +27,7 @@ import java.time.Instant
 import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
+import io.seqera.wave.api.BuildCompression
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.SubmitContainerTokenRequest
@@ -500,7 +501,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'scan12345',
                 null,
                 BuildFormat.DOCKER,
-                Duration.ofMinutes(1)
+                Duration.ofMinutes(1),
+                BuildCompression.gzip
         )
         and:
         def result = BuildResult.completed(request.buildId, 1, 'Hello', Instant.now().minusSeconds(60), 'xyz')
