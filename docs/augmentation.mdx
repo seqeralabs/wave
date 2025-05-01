@@ -41,7 +41,9 @@ The Docker client downloads image blobs directly from the target registry, not f
 
 The Docker client uses the return image name to pull the container binary content of the upstream image directly from the target registry. Wave adds one or more layer extensions and ships the container.
 
+<!--
 // TODO Add diagram
+-->
 
 **Key points:**
 
@@ -59,4 +61,6 @@ This behavior relies on a common pattern among container registries, such as Doc
 
 However, when using a custom container registry installation that serves the image binary directly (not via a CDN service), Wave caches and serves the image binaries via the Cloudflare CDN, [using the identical approach used by the Docker Hub](https://www.cloudflare.com/case-studies/docker/).
 
+<!--
 // TODO Add learn more
+-->
