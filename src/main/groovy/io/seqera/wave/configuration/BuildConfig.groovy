@@ -43,10 +43,6 @@ class BuildConfig {
     @Value('${wave.build.singularity-image}')
     String singularityImage
 
-    @Nullable
-    @Value('${wave.build.singularity-image-arm64}')
-    String singularityImageArm64
-
     @Value('${wave.build.repo}')
      String defaultBuildRepository
 
@@ -93,10 +89,12 @@ class BuildConfig {
     Boolean ociMediatypes
 
     //check here for other options https://github.com/moby/buildkit?tab=readme-ov-file#registry-push-image-and-cache-separately
-    @Value('${wave.build.compression:gzip}')
+    @Value('${wave.build.compression}')
+    @Nullable
     String compression
 
-    @Value('${wave.build.force-compression:false}')
+    @Value('${wave.build.force-compression}')
+    @Nullable
     Boolean forceCompression
 
     /**
@@ -117,7 +115,6 @@ class BuildConfig {
         log.info("Builder config: " +
                 "buildkit-image=${buildkitImage}; " +
                 "singularity-image=${singularityImage}; " +
-                "singularity-image-amr64=${singularityImageArm64}; " +
                 "default-build-repository=${defaultBuildRepository}; " +
                 "default-cache-repository=${defaultCacheRepository}; " +
                 "default-public-repository=${defaultPublicRepository}; " +
@@ -136,16 +133,6 @@ class BuildConfig {
         if( trustedTimeout < defaultTimeout ) {
             log.warn "Trusted build timeout should be longer than default timeout - check configuration setting 'wave.build.trusted-timeout'"
         }
-    }
-
-    String singularityImage(ContainerPlatform containerPlatform){
-        return containerPlatform.arch == "arm64"
-                ? getSingularityImageArm64()
-                : singularityImage
-    }
-
-    String getSingularityImageArm64(){
-        return singularityImageArm64 ?: singularityImage + "-arm64"
     }
 
     Duration buildMaxDuration(SubmitContainerTokenRequest request) {

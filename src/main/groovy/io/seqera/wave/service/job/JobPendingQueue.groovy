@@ -51,7 +51,7 @@ class JobPendingQueue extends AbstractMessageStream<JobSpec> {
         super(target)
         this.encoder = new MoshiEncodeStrategy<JobSpec>() {}
         this.config = config
-        log.debug "Created jobs pending queue"
+        log.debug "Created jobs pending queue - config=${config}"
     }
 
     @Override

@@ -84,10 +84,24 @@ class KubeBuildStrategy extends BuildStrategy {
         }
 
         if( buildRequest.formatSingularity() ) {
-            return buildConfig.singularityImage(buildRequest.platform)
+            return buildConfig.singularityImage
         }
 
         throw new IllegalArgumentException("Unexpected container platform: ${buildRequest.platform}")
     }
 
+    List<String> singularityLaunchCmd(BuildRequest req) {
+        final result = new ArrayList(10)
+        result
+                << 'sh'
+                << '-c'
+                << """
+                  mkdir -p /home/builder/.singularity \
+                  && cp /singularity/docker-config.json /home/builder/.singularity/docker-config.json \
+                  && cp /singularity/remote.yaml /home/builder/.singularity/remote.yaml \
+                  && singularity build image.sif ${req.workDir}/Containerfile \
+                  && singularity push image.sif ${req.targetImage}
+                """.stripIndent().trim()
+        return result
+    }
 }

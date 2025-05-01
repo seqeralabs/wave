@@ -37,6 +37,8 @@ abstract class BuildStrategy {
 
     abstract void build(String jobName, BuildRequest req)
 
+    abstract List<String> singularityLaunchCmd(BuildRequest req)
+
     static final public String BUILDKIT_ENTRYPOINT = 'buildctl-daemonless.sh'
 
     List<String> launchCmd(BuildRequest req) {
@@ -63,23 +65,13 @@ abstract class BuildStrategy {
                 << "--local"
                 << "context=$req.workDir/context".toString()
                 << "--output"
-                << "type=image,name=$req.targetImage,push=true,oci-mediatypes=${buildConfig.ociMediatypes}".toString()
+                << outputOpts(req, buildConfig)
                 << "--opt"
                 << "platform=$req.platform".toString()
 
         if( req.cacheRepository ) {
             result << "--export-cache"
-            def exportCache = new StringBuilder()
-            exportCache << "type=registry,"
-            exportCache << "image-manifest=true,"
-            exportCache << "ref=${req.cacheRepository}:${req.containerId},"
-            exportCache << "mode=max,"
-            exportCache << "ignore-error=true,"
-            exportCache << "oci-mediatypes=${buildConfig.ociMediatypes},"
-            exportCache << "compression=${buildConfig.compression},"
-            exportCache << "force-compression=${buildConfig.forceCompression}"
-            result << exportCache.toString()
-
+            result << cacheOpts(req, buildConfig)
             result << "--import-cache"
             result << "type=registry,ref=$req.cacheRepository:$req.containerId".toString()
         }
@@ -87,13 +79,45 @@ abstract class BuildStrategy {
         return result
     }
 
-    protected List<String> singularityLaunchCmd(BuildRequest req) {
-        final result = new ArrayList(10)
-        result
-            << 'sh'
-            << '-c'
-            << "singularity build image.sif ${req.workDir}/Containerfile && singularity push image.sif ${req.targetImage}".toString()
-        return result
+
+    static protected String compressOpts(BuildRequest req, BuildConfig config) {
+        final result = new StringBuilder()
+        final compression = req.compression?.mode?.toString() ?: config.compression
+        final level = req.compression?.level
+        final force = req.compression?.force!=null
+                ? req.compression.force
+                : ( config.forceCompression != null
+                ? config.forceCompression
+                : (compression=='estargz' ? true : null) )
+        if( compression )
+            result << ",compression=${compression}"
+        if( level!=null )
+            result << ",compression-level=${level}"
+        if( force!=null )
+            result << ",force-compression=${force}"
+        return result.toString()
+    }
+
+    static protected String outputOpts(BuildRequest req, BuildConfig config) {
+        final result = new StringBuilder()
+        result << "type=image"
+        result << ",name=${req.targetImage}"
+        result << ",push=true"
+        result << ",oci-mediatypes=${config.ociMediatypes}"
+        result << compressOpts(req, config)
+        return result.toString()
+    }
+
+    static protected String cacheOpts(BuildRequest req, BuildConfig config) {
+        final result = new StringBuilder()
+        result << "type=registry"
+        result << ",image-manifest=true"
+        result << ",ref=${req.cacheRepository}:${req.containerId}"
+        result << ",mode=max"
+        result << ",ignore-error=true"
+        result << ",oci-mediatypes=${config.ociMediatypes}"
+        result << compressOpts(req, config)
+        return result.toString()
     }
 
 }

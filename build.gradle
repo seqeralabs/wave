@@ -36,7 +36,7 @@ dependencies {
     implementation 'jakarta.persistence:jakarta.persistence-api:3.0.0'
     implementation 'io.seqera:lib-mail:1.2.1'
     implementation 'io.seqera:lib-pool:1.0.0'
-    implementation 'io.seqera:wave-api:0.15.1'
+    implementation 'io.seqera:wave-api:0.16.0'
     implementation 'io.seqera:wave-utils:0.15.1'
     implementation 'io.seqera:lib-crypto:1.0.0'
     implementation 'io.micronaut:micronaut-http-client'
@@ -104,7 +104,7 @@ dependencies {
     // upgrade indirect dependencies 
     runtimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.78'
     runtimeOnly 'org.bitbucket.b_c:jose4j:0.9.4'
-    runtimeOnly 'io.netty:netty-bom:4.1.118.Final'
+    runtimeOnly 'io.netty:netty-bom:4.1.119.Final'
     runtimeOnly 'com.google.protobuf:protobuf-java:4.27.5'
 }
 
@@ -128,7 +128,7 @@ micronaut {
 //
 jib {
     from {
-        image = 'cr.seqera.io/public/nf-jdk:corretto-21-al2023-jemalloc'
+        image = 'cr.seqera.io/public/nf-jdk:corretto-24-al2023-jemalloc'
         platforms {
             platform { architecture = 'amd64'; os = 'linux' }
         }

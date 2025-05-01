@@ -1,4 +1,30 @@
 # Wave changelog
+1.19.6 - 30 Apr 2025
+- Bypass cache repo for custom build repos  (#828) [29a93053]
+
+1.19.5 - 17 Apr 2025
+- Add multi arch singularity image (#826) [cf4f97ff]
+- Add proot and init container to singularity build (#825) [6d995d4c]
+- Add compress options to image output [c25496b5]
+- Bump Micronaut to version 4.8.0 [6e4b6031]
+- Bump Netty to version 4.1.119 [f2147953]
+- Bump Gradle 8.13 [8bdd2adc]
+
+1.19.4 - 31 Mar 2025 
+- Add enable-native-access=ALL-UNNAMED to launch opts [4f0525da]
+- Default request containerPlatform to linux/adm64 [dcdb7cf4]
+- Fix NPE accessing job manager config (#812) [da8d101e]
+- Normalize arch argument to platform [f2a3db7b]
+- Remove unused platform variable [77bbb416]
+- Revert use of async Caffeine cache (#811) [95fb3204]
+- Use uniform notation for resources requests & limits (#819) [8bfa1126]
+- Bump nf-jdk:corretto-24-al2023-jemalloc [bcb14150]
+
+1.19.3 - 26 Mar 2025
+- Added dns configuration in k8s job (#816) [0458e667]
+- Add support for cpu and mem limits (#817) [eb0fa3fe]
+- Add limits for scan, mirror and transfer [9b9bc5f2]
+
 1.19.2 - 15 Mar 2025
 - Implement pending queue as stream (#809) [ec847d24]
 - Restore "Add arch in wave metrics (#791)" [a8e84291]
