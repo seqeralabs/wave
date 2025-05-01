@@ -23,6 +23,7 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
@@ -31,6 +32,7 @@ import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.persistence.impl.SurrealPersistenceService
 import io.seqera.wave.service.persistence.postgres.data.BuildRepository
 import io.seqera.wave.service.persistence.postgres.data.BuildRow
 import io.seqera.wave.service.persistence.postgres.data.MirrorRepository
@@ -65,6 +67,10 @@ class PostgresPersistentService implements PersistenceService {
     @Inject
     private ScanRepository scanRepository
 
+    @Inject
+    @Nullable
+    private SurrealPersistenceService surrealPersistenceService
+
     @EventListener
     void onApplicationStartup(ApplicationStartupEvent event) {
         dbInitService.create()
@@ -82,24 +88,27 @@ class PostgresPersistentService implements PersistenceService {
     @Override
     WaveBuildRecord loadBuild(String buildId) {
         final row = buildRepository.findById(buildId).orElse(null)
-        if( !row )
-            return null
+        if( !row ) {
+            return surrealPersistenceService?.loadBuild(buildId)
+        }
         return Mapper.fromJson( WaveBuildRecord, row.data, [buildId: buildId] )
     }
 
     @Override
     WaveBuildRecord loadBuildSucceed(String targetImage, String digest) {
         final row = buildRepository.findByTargetAndDigest(targetImage, digest)
-        if( !row )
-            return null
+        if( !row ){
+            return surrealPersistenceService?.loadBuildSucceed(targetImage, digest)
+        }
         return Mapper.fromJson( WaveBuildRecord, row.data, [buildId: row.id] )
     }
 
     @Override
     WaveBuildRecord latestBuild(String containerId) {
         final row = buildRepository.findLatestByBuildId(containerId)
-        if( !row )
-            return null
+        if( !row ){
+            return surrealPersistenceService?.latestBuild(containerId)
+        }
         return Mapper.fromJson( WaveBuildRecord, row.data, [buildId: row.id] )
     }
 
@@ -108,7 +117,7 @@ class PostgresPersistentService implements PersistenceService {
         final result = buildRepository.findAllByBuildId(containerId)
         return result
                 ? result.collect((it)-> Mapper.fromJson(WaveBuildRecord, it.data, [buildId: it.id]))
-                : null
+                : surrealPersistenceService?.allBuilds(containerId)
     }
 
     // ===== --- container records ---- =====
@@ -129,7 +138,7 @@ class PostgresPersistentService implements PersistenceService {
     WaveContainerRecord loadContainerRequest(String token) {
         final row = requestRepository.findById(token).orElse(null)
         if( !row || !row.data )
-            return null
+            return surrealPersistenceService?.loadContainerRequest(token)
         return Mapper.fromJson(WaveContainerRecord, row.data, [id: token])
     }
 
@@ -146,13 +155,13 @@ class PostgresPersistentService implements PersistenceService {
     WaveScanRecord loadScanRecord(String scanId) {
         final row = scanRepository.findById(scanId).orElse(null)
         if( !row || !row.data )
-            return null
+            return surrealPersistenceService?.loadScanRecord(scanId)
         return Mapper.fromJson(WaveScanRecord, row.data, [id: scanId])
     }
 
     @Override
     boolean existsScanRecord(String scanId) {
-        return scanRepository.existsById(scanId)
+        return scanRepository.existsById(scanId) ?: surrealPersistenceService?.existsScanRecord(scanId)
     }
 
     @Override
@@ -160,7 +169,7 @@ class PostgresPersistentService implements PersistenceService {
         final result = scanRepository.findAllByScanId(scanId)
         return result
                 ? result.collect((it)-> Mapper.fromJson(WaveScanRecord, it.data, [id: it.id]))
-                : null
+                : surrealPersistenceService?.allScans(scanId)
     }
 
     // ===== --- mirror records ---- =====
@@ -169,7 +178,7 @@ class PostgresPersistentService implements PersistenceService {
     MirrorResult loadMirrorResult(String mirrorId) {
         final row = mirrorRepository.findById(mirrorId).orElse(null)
         if( !row )
-            return null
+            return surrealPersistenceService?.loadMirrorResult(mirrorId)
         return Mapper.fromJson(MirrorResult, row.data, [mirrorId: mirrorId])
     }
 
@@ -177,7 +186,7 @@ class PostgresPersistentService implements PersistenceService {
     MirrorResult loadMirrorSucceed(String targetImage, String digest) {
         final row = mirrorRepository.findByTargetAndDigest(targetImage, digest, MirrorResult.Status.COMPLETED)
         if( !row )
-            return null
+            return surrealPersistenceService?.loadMirrorSucceed(targetImage, digest)
         return Mapper.fromJson(MirrorResult, row.data, [mirrorId: row.id])
     }
 

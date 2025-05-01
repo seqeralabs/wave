@@ -21,13 +21,14 @@ package io.seqera.wave.service.persistence.impl
 import com.fasterxml.jackson.core.type.TypeReference
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
+import io.micronaut.context.annotation.Secondary
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
+import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.mirror.MirrorEntry
@@ -37,7 +38,6 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ScanVulnerability
-import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -48,8 +48,8 @@ import jakarta.inject.Singleton
  * @author : Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Requires(env='surrealdb')
-@Primary
 @Slf4j
+@Secondary
 @Singleton
 @CompileStatic
 @TraceElapsedTime(thresholdMillis = '${wave.trace.surreal-persistence.threshold:500}')
