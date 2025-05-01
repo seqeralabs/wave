@@ -1,4 +1,7 @@
 # Wave changelog
+1.19.6 - 30 Apr 2025
+- Bypass cache repo for custom build repos  (#828) [29a93053]
+
 1.19.5 - 17 Apr 2025
 - Add multi arch singularity image (#826) [cf4f97ff]
 - Add proot and init container to singularity build (#825) [6d995d4c]
