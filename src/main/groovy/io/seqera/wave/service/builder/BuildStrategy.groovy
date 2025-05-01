@@ -71,17 +71,7 @@ abstract class BuildStrategy {
 
         if( req.cacheRepository ) {
             result << "--export-cache"
-            def exportCache = new StringBuilder()
-            exportCache << "type=registry,"
-            exportCache << "image-manifest=true,"
-            exportCache << "ref=${req.cacheRepository}:${req.containerId},"
-            exportCache << "mode=max,"
-            exportCache << "ignore-error=true,"
-            exportCache << "oci-mediatypes=${buildConfig.ociMediatypes},"
-            exportCache << "compression=${buildConfig.compression},"
-            exportCache << "force-compression=${buildConfig.forceCompression}"
-            result << exportCache.toString()
-
+            result << cacheOpts(req, buildConfig)
             result << "--import-cache"
             result << "type=registry,ref=$req.cacheRepository:$req.containerId".toString()
         }
@@ -90,17 +80,43 @@ abstract class BuildStrategy {
     }
 
 
+    static protected String compressOpts(BuildRequest req, BuildConfig config) {
+        final result = new StringBuilder()
+        final compression = req.compression?.mode?.toString() ?: config.compression
+        final level = req.compression?.level
+        final force = req.compression?.force!=null
+                ? req.compression.force
+                : ( config.forceCompression != null
+                ? config.forceCompression
+                : (compression=='estargz' ? true : null) )
+        if( compression )
+            result << ",compression=${compression}"
+        if( level!=null )
+            result << ",compression-level=${level}"
+        if( force!=null )
+            result << ",force-compression=${force}"
+        return result.toString()
+    }
+
     static protected String outputOpts(BuildRequest req, BuildConfig config) {
         final result = new StringBuilder()
         result << "type=image"
         result << ",name=${req.targetImage}"
         result << ",push=true"
         result << ",oci-mediatypes=${config.ociMediatypes}"
-        if( config.compression && config.compression != 'gzip' )
-            result << ",compression=${config.compression}"
-        if( config.forceCompression )
-            result << ",force-compression=${config.forceCompression}"
+        result << compressOpts(req, config)
+        return result.toString()
+    }
 
+    static protected String cacheOpts(BuildRequest req, BuildConfig config) {
+        final result = new StringBuilder()
+        result << "type=registry"
+        result << ",image-manifest=true"
+        result << ",ref=${req.cacheRepository}:${req.containerId}"
+        result << ",mode=max"
+        result << ",ignore-error=true"
+        result << ",oci-mediatypes=${config.ociMediatypes}"
+        result << compressOpts(req, config)
         return result.toString()
     }
 
