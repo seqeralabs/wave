@@ -110,7 +110,6 @@ dependencies {
     runtimeOnly 'org.bitbucket.b_c:jose4j:0.9.4'
     runtimeOnly 'io.netty:netty-bom:4.1.119.Final'
     runtimeOnly 'com.google.protobuf:protobuf-java:4.27.5'
-    runtimeOnly 'com.h2database:h2:2.3.232'
 }
 
 application {

@@ -37,13 +37,6 @@ endpoints:
 mail:
   from: "${TOWER_CONTACT_EMAIL:wave-app+dev@seqera.io}"
 ---
-datasources:
-  default:
-    url: "jdbc:h2:file:./.db/h2/scms;AUTO_SERVER=TRUE;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH"
-    driver-class-name: org.h2.Driver
-    username: wave
-    password: wave
----
 logger:
   levels:
     io.seqera.wave.service.data: DEBUG
