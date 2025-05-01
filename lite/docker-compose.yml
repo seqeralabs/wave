@@ -2,7 +2,7 @@ services:
   wave:
     image: wave-app # replace with the actual image name
     ports:
-      - 9090:9090
+      - "9090:9090"
     volumes:
       - $PWD:/work
     environment:
@@ -10,3 +10,6 @@ services:
       - WAVE_JVM_OPTS=-Djdk.traceVirtualThreadInThreadDump=full -XX:InitialRAMPercentage=65 -XX:MaxRAMPercentage=65 -XX:+HeapDumpOnOutOfMemoryError -XX:MaxDirectMemorySize=200m -Dio.netty.maxDirectMemory=0 -Djdk.httpclient.keepalive.timeout=10 -Djdk.tracePinnedThreads=short
       - WAVE_BUILD_WORKSPACE=/work/build-workspace
     working_dir: /work
+    deploy:
+      mode: replicated
+      replicas: 2
