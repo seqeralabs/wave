@@ -1,0 +1,62 @@
+---
+title: Augment existing containers
+---
+
+Wave enables dynamic extension of existing Docker images, allowing greater flexibility and personalization. With this feature, you can modify containers to meet specific requirements without rebuilding them entirely. User-provided content, such as custom scripts, configuration files, and logging agents, can seamlessly integrate into pre-existing container images and enhance their functionality.
+
+Augmentation of containers is designed to simplify challenges faced by modern bioinformatics and data science workflows. For example:
+
+- Using adding the Fusion software to existing containers
+- Using Nextflow's [module binaries](https://nextflow.io/docs/latest/module.html#module-binaries) in cloud environments
+- Adding analysis scripts to existing Docker containers
+- Adding tunneling software to securely connect to Studios
+
+## How it works
+
+1. Provide the base container image to be augmented. This image can be any Docker image, including public images from Docker Hub or private images from a personal registry.
+2. Provide the additional content to include in the container. This content can include:
+    - Custom scripts for preprocessing or monitoring
+    - Configuration files for environment-specific settings
+    - Logging agents or other runtime tools to capture metrics and logs
+3. Wave dynamically applies the additional layers to the container `manifest`, creating a new customized image. The original image stays untouched, preserving its integrity for other workflows.
+4. The augmented container image becomes immediately available for use in your pipeline, with a unique image reference for seamless integration. Wave acts as a proxy between the Docker client and the target registry that hosts the container image. The Docker client uses the returned image name to pull the binary content of the upstream image directly from the target registry.
+5. The Wave service delivers the content it adds as one or more layer extensions.
+
+Augmented containers are ephemeral unless they are frozen by pushing to a registry. They are not stored in a container repository and can only be accessed for a short time (26 hours). The extended content added by Wave is served from a CDN. The augmentation process does not perform any hidden build operations.
+
+When needed, Wave updates the container manifest to include the requested content. However, it does not modify the underlying container layer blob files, preserving their original checksums.
+
+The Docker client downloads image blobs directly from the target registry, not from Wave. For more information, see [Container layer caching exception](#container-layer-caching-exception) for more information.
+
+## Detailed augmentation flow
+
+1. The client—either Nextflow or the Wave CLI—submits a container request that specifies:
+    - The target container architecture (AMD64 or ARM64)
+    - The user identity
+    - The name of the container image to be augmented
+    - The container extension configuration, which may include a custom payload, one or more extension layers, or additional container images
+2. Wave validates the request and authorizes the user with the Seqera Platform service..   
+3. Wave responds with an ephemeral container image name. For example, `wave.seqera.io/wt/<ID_TOKEN>/library/alpine:latest`.
+4. The `ID_TOKEN` is uniquely assigned. It's used to identify and authorize the container request that follows.
+
+The Docker client uses the return image name to pull the container binary content of the upstream image directly from the target registry. Wave adds one or more layer extensions and ships the container.
+
+// TODO Add diagram
+
+**Key points:**
+
+- Wave acts as a proxy between the Docker client and the target registry that hosts the container image.
+- Wave modifies the container manifest, if needed, to include the extended content specified in the request. However, it does not, and cannot, alter the container layer blob files, which retain their unique checksums.
+- The image blobs are downloaded directly from the target registry, not from Wave*. The extended content added by Wave is served via Cloudflare CDN.
+- The augmentation process does not perform any hidden build operations.
+- Augmented containers are ephemeral. They are not stored in a container repository and are only for a limited time.
+
+## Container layer caching exception
+
+When using container augmentation, Wave functions as an HTTP proxy service. It forwards the requests received by a Docker client to the target (customer) container registry and returns the corresponding HTTP responses.
+
+This behavior relies on a common pattern among container registries, such as Docker.io, Quay.io, and AWS ECR, which host only metadata directly and offload image binary storage to third-party services like AWS S3, AWS CloudFront, or Cloudflare.  In these cases, Wave does not handle the actual container binary layer responses. Instead, it returns HTTP redirect responses.
+
+However, when using a custom container registry installation that serves the image binary directly (not via a CDN service), Wave caches and serves the image binaries via the Cloudflare CDN, [using the identical approach used by the Docker Hub](https://www.cloudflare.com/case-studies/docker/).
+
+// TODO Add learn more

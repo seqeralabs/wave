@@ -1,0 +1,26 @@
+---
+title: Security
+---
+
+Security scanning of Docker containers reduces the risk of breaches by helping to identify vulnerabilities, outdated software, and malicious code. It also improves system integrity and trust by ensuring compliance with best practices and regulations.
+
+Requests for Docker images via Wave are automatically scanned for known security vulnerabilities, for both images built by Wave and also those accessed through external sources. Wave conducts a vulnerability scan using the Trivy security scanner. 
+
+The user who requested the image receives an email that includes a link to the security report that lists any vulnerabilities. Wave clients can be configured to trigger an execution error and halt any ongoing progress if vulnerabilities are detected.
+
+## Use cases
+
+- **Securing workflows**: Prevent insecure containers from being used, ensuring your workflows meet security and compliance requirements.
+- **Audit and compliance**: Generate detailed vulnerability reports as part of your organization's compliance efforts.
+- **Dynamic pipelines**: Securely run pipelines with containers from varied sources while maintaining consistent security standards. Halt execution automatically if new vulnerabilities are published that affect your docker images.
+
+## How it works
+
+1. Containers are automatically scanned for vulnerabilities using the Trivy security scanner. Wave-built containers and externally sourced containers are subject to this process, ensuring comprehensive coverage.
+2. If vulnerabilities exceeding the defined thresholds are detected, Wave halts execution and generates an error. A security report is provided to identify and address the issues.
+3. Scans automatically expire after one week. If a container is accessed again after seven days or more, Wave will re-execute the security scan to ensure up-to-date protection.
+
+Users can define acceptable levels of vulnerabilities based on their security requirements.
+Supported levels align with industry-standard scoring systems and include `low`, `medium`, `high`, and `critical`.
+
+// TODO Add learn more

@@ -48,3 +48,41 @@ Wave has been tested with the following container registries:
 - [Gitea Container Registry](https://docs.gitea.io/en-us/packages/container/)
 - [GitHub Container Registry](https://github.blog/2020-09-01-introducing-github-container-registry/)
 - [Google Artifactory Registry](https://cloud.google.com/artifact-registry)
+
+### What data does Nextflow send to Wave for an augmentation request?
+
+Nextflow (or the Wave CLI) sends the following data to Wave:
+
+- Information about the container to be augmented
+- The user's identity
+- The user's Platform access token
+
+The request and response structure are documented in the `POST /v1alpha2/container` endpoint of the [Wave API documentation](https://wave.seqera.io/openapi/).
+
+### How long can an augmented container (also known as an ephemeral container) remain accessible?
+
+An augmented container remains accessible for 36 hours from the time of the initial request.
+
+### Is the augmented container accessible or published through Seqera container registry or by any other means?
+
+No. Augmented containers are not stored or published in any container registry managed by Seqera. They are only accessible via the unique, temporary name assigned to them. 
+
+### Can the container be accessed once the unique name associated with it expires by other means?
+
+No. Once the unique name expires, the container is no longer accessible by any means.
+
+### Can the unique name of an augmented container be predicted? 
+
+No. Each ephemeral container name includes a 6-byte randomly generated component, making it unpredictable. For example:
+
+```
+wave.seqera.io/wt/<RANDOM>/some/library:tag
+```
+
+## Can access to a container image be revoked ahead of its expiration?
+
+Yes. A system administrator can revoke access using the following URL format: 
+
+```
+https://<WAVE_URL>/view/containers/<ID_TOKEN> 
+```

@@ -1,0 +1,54 @@
+---
+title: How it works
+---
+
+Wave operates as an API for dynamic container requests and a registry-compliant service for serving container images. Wave can be self-hosted or used as a free service provided by Seqera.
+
+## Requesting and serving images
+
+Wave provides an API for requesting containers, which is used by Wave clients such as Nextflow and the Wave CLI. Users can specify either an existing container image or build instructions, such as a Dockerfile, Singularity recipe, conda packages, or Conda environment file, for a new container image.
+When the Wave client makes a request:
+
+- A unique URI is returned, enabling access to the container through standard container clients.
+- The request is processed asynchronously, with the image being built or augmented if necessary.
+
+Wave operates as a fully OCI-compliant container registry by implementing the Docker Registry v2 API. Once a container is requested, Wave manages the pull and delivery process by:
+
+- Supporting client wait times while tasks, such as image builds, augmentations, and security scans, are completed.
+- Retrieving the base layers directly from the source registry while serving any newly added or modified layers.
+- Making containers accessible as if they were served from a standard registry
+- Ensuring compatibility with existing workflows and tooling.
+
+Wave's ability to dynamically modify container images on demand allows users to customize containers for specific workflows or environments without complete rebuilds, saving time and resources.
+
+## Wave image URIs
+
+### Ephemeral containers
+
+By default, Wave returns ephemeral containers, which are temporary URLs designed for single use and expire after 26 hours. Ephemeral container image names use the following format:
+
+```
+wave.seqera.io/wt/<ACCESS_TOKEN>/wave/build:<CHECKSUM>
+```
+
+In the above example:
+- `<ACCESS_TOKEN>` is a 12-character unique access token that acts as a one-time access key to the image. It enables the retrieval of images using authentications stored within Seqera Platform without using Docker pull authentication.
+- `<CHECKSUM>` is a 16-character unique checksum identifier for the build. It ensures correct caching by the Wave back-end and your local client and will change if anything in the recipe for creating or fetching the container changes.
+
+### Stable containers
+
+Wave can be instructed to persist, or freeze, a container build within a container registry. Wave will then return the registry URI instead of the ephemeral URI. These URI identifiers are stable and persistent. When freezing an image, the image URI no longer has the unique access token and there is no expiry. The URL will depend on the registry used. The local client pulls the image directly from that registry. Stable container image names use the following format:
+
+```
+your.registry.com/library/imagename:<CHECKSUM>
+```
+
+In the above example, `<CHECKSUM>` is a 12-character unique access token that acts as a key to the image. It works the same way as for ephemeral containers and facilitates reproducibility and effective caching by ensuring that images are tied to their build method.
+
+### Seqera Containers
+
+Seqera Containers is a` special case of stable (frozen) containers. It is a free service powered by Wave and provided by Seqera and AWS. This service allows anyone to request container images to be built from Conda packages, which are then freely hosted and made available for community use. Images from Seqera Containers can be accessed at [community.wave.seqera.io](https://community.wave.seqera.io/). See [Seqera Containers](./seqera-containers.mdx) for more information.
+
+### Mirroring
+
+Wave can also provide access to images in private container registries without changing the container image name. See [Wave Mirroring](./wave-mirroring.mdx) for more information.

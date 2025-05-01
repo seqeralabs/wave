@@ -6,15 +6,24 @@
       "collapsed": false,
       "items": [
         "index",
-        "get-started",
-        "provisioning"
+        "how-it-works",
+        "build-custom-images",
+        "docker-singularity",
+        "architectures",
+        "authentication",
+        "augmentation",
+        "container-freezes",
+        "mirroring",
+        "security"
       ]
     },
+    "get-started",
+    "seqera-containers.mdx",
     "nextflow",
     {
       "type": "category",
       "label": "Developer tools",
-      "collapsed": false,
+      "collapsed": true,
       "items": [
         "cli/index",
         "cli/reference",

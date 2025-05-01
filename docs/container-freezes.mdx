@@ -1,0 +1,32 @@
+---
+title: Container freezes
+---
+
+*Freeze mode* allows you to provision non-ephemeral containers by storing them permanently in a container registry of your choice.
+
+When a container is requested for the first time, Wave performs the build, fetch, and augmentation as normal. In addition, it pushes the resulting image to the specified Docker registry and returns the final container URI. Subsequent image pulls target the registry directly, without accessing the Wave service for docker manifests.
+
+For future requests, Wave recognizes that the container already exists and returns the URI immediately, without rebuilding or reapplying augmentations.
+
+:::tip
+To store an existing image in a different registry without modifying or renaming it, use [Wave Mirroring](./wave-mirroring.mdx). This allows you to replicate images across registries while preserving their original identity.
+:::
+
+## Use cases
+
+**Reproducibility and collaboration**: Finalized containers are saved to a permanent registry, ensuring that collaborators or future workflows use the exact same environment without relying on ephemeral builds.
+**Reuseability**: Pre-existing images stored in a central registry to avoid repeated builds, reduce overhead, and speed up pipeline execution.
+Archiving for compliance: Containers can be stored permanently for compliance or auditing purposes, ensuring a traceable and unaltered record of the environment used for specific analyses.
+**Portability**: Container images can be delivered to the same region where the compute is performed.
+
+## How it works
+
+1. The client (Nextflow or the Wave CLI / API) submits a container request specifying:
+    - The user's Seqera Platform identity
+    - The base image to augment, or instructions to build a container
+    - The container extension configuration, which can either be a custom payload, one or more extension layers, or container images
+    - The target repository where the new container should be uploaded
+2. The Wave service validates the request and authorizes the user via a request to the Seqera Platform service.
+3. The Wave service checks if the container image already exists in the target registry.
+4. If the image does not exist, Wave launches a container build job and pushes the resulting image to the target registry.
+5. The Wave service responds with the frozen container image name, For example, `your.registry.com/some/image/build:1234567`

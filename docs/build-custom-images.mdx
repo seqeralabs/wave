@@ -1,0 +1,71 @@
+---
+title: Building custom images on demand
+---
+
+Wave can dynamically build container images from a Dockerfile or Singularity build file. This *just-in-time (JIT)* build strategy ensures that images are created on demand, thereby reducing overhead and enhancing workflow efficiency. By immediately providing an image URI while continuing the build process in the background, Wave integrates seamlessly into pipeline execution.
+
+## Use cases
+
+Wave's on-demand image-building capability is designed to address the practical challenges encountered by modern bioinformatics and data science workflows. It offers several key advantages:
+
+- **Rapid development**: Containerized environments can be generated instantly for analysis workflows. Developers can iterate on software dependencies simply by modifying the Dockerfile or Singularity definition, without the need for manual builds. Container images become available immediately upon the release of new software.
+- **Optimized resource usage**: Wave builds and stores only the required images, significantly reducing storage demands by eliminating the need for large pre-built image libraries.
+- **Simplicity**: Users can specify the necessary tools in a Conda environment file, and Wave will automatically generate a container image tailored to those requirements, without requiring boilerplate pipeline code.
+- **Portability**: Image build instructions are embedded directly within the pipeline code, enabling pipelines originally designed for Conda to be seamlessly adapted to any container technology or platform, without manual modifications.
+- **Reproducibility**: Wave automatically stores image build logs and precise Conda lock files for Conda-based builds, ensuring consistent, shareable, and fully reproducible environments.
+
+Wave's approach enables teams to adopt agile development practices and focus on results rather than infrastructure management.
+
+## How it works
+
+1. Wave initiates the build process when it receives instructions to build a container. The Nextflow pipeline codebase or the CLI/API can provide these instructions as input.
+2. If the requested image exists in the local cache or remote registry, Wave returns it immediately. Otherwise, Wave builds the image on demand. When it initiates a build, Wave promptly returns a unique image URI to the requesting client and simultaneously runs the image build and security scanning processes in the background.
+3. The local Docker client (or any compatible tool) immediately attempts to pull the image using the provided URI. If the image is still building, the pull operation automatically waits until the build completes.
+
+By supporting real-time image building, Wave transforms container management into a streamlined, on-demand process, effectively reducing delays and complexity.
+
+## Build from a container file
+
+Wave supports building containers from standard definitions, including Dockerfiles and Singularity build files. This enables users to define custom container environments without needing to build images locally. Wave automatically manages the build process, selecting the appropriate infrastructure and CPU architecture as required.
+
+The CLI includes an optional flag to specify a build context directory, allowing Dockerfiles to use `ADD` and `COPY` instructions. The build context is provided automatically when requested from Nextflow. See [Module binaries](https://www.nextflow.io/docs/latest/module.html#module-binaries) for more information.
+
+## Build from conda packages
+
+Conda is a widely used package and environment manager in the bioinformatics community, offering streamlined installation and dependency management through repositories such as Bioconda and conda-forge. Wave extends this capability by enabling dynamic provisioning of container images from either individual Conda package names or environment.yml files. It allows users to create containerized environments directly from conda specifications, removing the need for pre-built images or manual container management.
+
+When only Conda package names are specified, Wave automatically generates an environment.yml file using the `conda-forge` and `bioconda` channels by default. It then creates the image using a Dockerfile based on `mambaorg`/`micro mamba`. Every part of this process, including the conda channels, the `environment.yml` file, the conda base image, and the entire Dockerfile, is customizable.
+
+If a Singularity image is requested, a Singularity build file gives native Singularity builds instead.
+
+:::note
+Anaconda Inc., the company behind conda, has introduced commercial licensing requirements for certain components of its ecosystem, including the `default` conda package channel. These licensing requirements apply to organizations with over 200 employees. However, the conda package manager itself remains open-source, and widely adopted community-driven build repositories like `conda-forge` and `bioconda` continue to provide free access to packages. Wave does not use the `default` channel by default, and as such, these licensing restrictions should not affect Wave users.
+:::
+
+## Conda lock files
+
+Conda lock files are generated as part of the environment creation process to ensure reproducibility. These files record the exact versions of all dependencies, including their build specifications, the channels from which they were sourced, and the md5sum of the tarball download. Using a lock file, the same environment can be consistently recreated across different systems. Conda lock files also enable the environment resolution step to be skipped, which can save a significant amount of time during environment setup.
+
+Wave automatically generates Conda lock files during the build process. With a lock file, any container image built through Wave can be reproduced exactly. Lock files also provide a valuable record of the environment used and can be useful for debugging, sharing, or archiving pipelines.
+Container images can also be generated by Wave using a Conda lock file as input.
+
+## Build from the Python Package Index
+
+Wave supports the inclusion of Python packages from the [Python Package Index (PyPI)](https://pypi.org/) when building container images. PyPI packages can be integrated into conda-based builds by specifying them in a conda environment file.
+
+To include PyPI packages, the `pip` package must be declared as a dependency. Additionally, a `pip` section listing the required PyPI packages should be included within the environment file. For example:
+
+```
+name: my-env
+dependencies:
+  - python=3.9
+  - pip
+  - pip:
+    - numpy
+    - pandas==1.5.0
+    - matplotlib
+```
+
+This configuration ensures that both Conda and PyPI packages are installed during the container build process.
+
+// TODO Add read more secton

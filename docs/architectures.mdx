@@ -1,0 +1,36 @@
+---
+title: Architectures
+---
+
+Computational workloads can be executed across a variety of CPU hardware architectures. The two most commonly used architectures in modern computing environments are `linux/amd64` and `linux/arm64`. These architectures are based on distinct CPU instruction sets, each offering specific benefits and suited for different use cases:
+
+`linux/amd64`:
+
+- Traditional x86-64 architecture.
+- Widely adopted in traditional server, desktop, and high-performance computing environments.
+
+`linux/arm64`:
+
+- 64-bit extension of the ARM architecture.
+- Increasingly popular in modern computing environments.
+
+[ARM architectures](https://en.wikipedia.org/wiki/ARM_architecture_family) (`arm64`) have gained significant popularity in recent years due to their inherent advantages in energy efficiency and cost-effectiveness. ARM processors are designed to deliver high performance per watt, making them attractive for cloud providers and organizations aiming to optimize operational costs and reduce their environmental impact.
+
+Leading cloud providers have embraced ARM architectures as part of their infrastructure offerings:
+
+- AWS Graviton
+- Azure Cobalt
+- Google Cloud Axion
+
+ARM adoption is rapidly expanding in fields such as bioinformatics and data science, where workloads are computationally intensive and cost-sensitive.
+Wave supports the on-demand provisioning of container images for both `linux/amd64` and `linux/arm64` architectures. This multi-architecture support ensures broad compatibility across heterogeneous execution environments and allows users to:
+
+- Optimize pipeline execution for specific hardware platforms.
+- Reduce infrastructure costs by leveraging ARM-based instances.
+- Improve energy efficiency and sustainability in large-scale data processing workflows.
+
+:::note
+`linux/arm64` is distinct from Apple Silicon, for example, M1/M2 chips, despite both being based on ARM architectures. Apple Silicon leverages a unique system-on-chip design optimized for macOS environments, whereas `linux/arm64` is a broader specification used across various Linux distributions in server and cloud contexts.  Wave does not currently support building images for `macos/arm64`.
+:::
+
+// TODO Add read more secton

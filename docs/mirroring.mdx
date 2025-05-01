@@ -1,0 +1,25 @@
+---
+title: Wave mirroring
+---
+
+Storing container images in a private registry enhances security, ensures policy compliance, and provides faster, more reliable access. It also offers greater control and flexibility over image management. Wave simplifies this process by dynamically provisioning the required containers to the target registry on-demand during pipeline executions.
+
+Mirroring is similar to Container Freezes except for the container URL. Wave uses a container URI structure that includes an image name and a tag with a 16-character checksum that uniquely identifies the build. See [Wave image URIs](./how-it-works.mdx#wave-image-uris) for more information about URI generation.
+
+Container manifests may also be modified, which means the original image name and hash can no longer be used. If images must remain completely unmodified and accessible via the original build hash, use Wave Mirroring. This feature authenticates and relocates images to a chosen registry while keeping the manifest and image name plus hash exactly the same as the source image.
+
+## Use cases
+
+**Region-specific deployments**: Ensure containers are available in the correct geographic region to comply with data residency requirements or minimize latency.
+**Enhanced security**: Use a secured container registry behind a firewall or tight networking restrictions to ensure secure code.
+**Cost and performance Optimization**: Utilize cloud-native registries for faster container pulls and reduced egress costs compared to pulling from remote, centralized registries.
+**Multi-cloud pipelines**: Deploy workflows across multiple cloud accounts or even multiple cloud providers (e.g., AWS, Google Cloud, and Azure) with consistent container images stored in each provider's integrated registry.
+
+## How it works
+
+1. When a pipeline is executed, Wave identifies the target cloud environment and the associated integrated container registry.
+2. If the required container image is not already available in the target registry, Wave dynamically mirrors the container. The container is pulled from its source registry and pushed to the appropriate destination registry for the cloud region or provider.
+3. Future requests for the same image within the same region or account use the already mirrored container, eliminating repeated transfers.
+
+// TODO Add learn more
+
