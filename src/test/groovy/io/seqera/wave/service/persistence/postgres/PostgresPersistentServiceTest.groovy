@@ -27,6 +27,7 @@ import java.time.temporal.ChronoUnit
 
 import io.micronaut.context.annotation.Property
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.api.BuildCompression
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.SubmitContainerTokenRequest
@@ -103,7 +104,8 @@ class PostgresPersistentServiceTest extends Specification {
                 'scan12345',
                 null,
                 BuildFormat.DOCKER,
-                Duration.ofMinutes(1)
+                Duration.ofMinutes(1),
+                BuildCompression.estargz
         )
         and:
         def result = BuildResult.completed(request.buildId, 1, 'Hello', Instant.now().minusSeconds(60), 'xyz')
