@@ -24,6 +24,7 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
+import io.seqera.wave.api.BuildCompression
 import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildEvent
@@ -58,6 +59,7 @@ class WaveBuildRecord {
     String scanId
     BuildFormat format
     String digest
+    BuildCompression compression
 
     Boolean succeeded() {
         return duration != null ? (exitStatus==0) : null
@@ -94,7 +96,8 @@ class WaveBuildRecord {
                 format: request.format,
                 duration: result?.duration,
                 exitStatus: result?.exitStatus,
-                digest: result?.digest
+                digest: result?.digest,
+                compression: request?.compression
         )
     }
     
