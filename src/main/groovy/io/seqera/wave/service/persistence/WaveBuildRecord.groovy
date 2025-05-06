@@ -42,6 +42,7 @@ import io.seqera.wave.service.builder.BuildResult
 @EqualsAndHashCode
 class WaveBuildRecord {
 
+    @PostgresIgnore
     String buildId
     String dockerFile
     String condaFile
