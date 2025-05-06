@@ -46,6 +46,7 @@ import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.MirrorConfig
@@ -161,6 +162,7 @@ class K8sServiceImpl implements K8sService {
      * @return  An instance of {@link JobStatus}
      */
     @Override
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
     JobStatus getJobStatus(String name) {
         final job = k8sClient
                 .batchV1Api()
@@ -357,6 +359,7 @@ class K8sServiceImpl implements K8sService {
      * @return The logs as a string or when logs are not available or cannot be accessed
      */
     @Override
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
     String logsPod(V1Pod pod) {
         try {
             final logs = k8sClient.podLogs()
@@ -524,6 +527,7 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Pod} description the submitted pod
      */
     @Override
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
     V1Job launchBuildJob(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, Map<String,String> nodeSelector) {
         final spec = buildJobSpec(name, containerImage, args, workDir, creds, timeout, nodeSelector)
         return k8sClient
@@ -809,6 +813,7 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
     V1Pod getLatestPodForJob(String jobName) {
         // list all pods for the given job
         final allPods = k8sClient
