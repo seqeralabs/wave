@@ -766,4 +766,19 @@ class ContainerControllerTest extends Specification {
         'custom/repo'   | null              | null
         'custom/repo'   | 'custom/cache'    | 'custom/cache'
     }
+
+    def 'should create different build Id for different request' () {
+        given:
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig, validationService: validationService)
+
+        when:
+        def request1 = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerConfig: new ContainerConfig(env: ["FOO=one"]))
+        def build1 = controller.makeBuildRequest(request1, PlatformId.NULL, "")
+
+        def request2 = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerConfig: new ContainerConfig(env: ["FOO=two"]))
+        def build2 = controller.makeBuildRequest(request2, PlatformId.NULL,"")
+        then:
+        build1.buildId != build2.buildId
+    }
 }
