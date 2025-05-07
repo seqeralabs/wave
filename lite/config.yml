@@ -7,6 +7,10 @@ wave:
       duration: "36h"
   metrics:
     enabled: true
+  db :
+    uri : "jdbc:postgresql://localhost:5432/postgres"
+    user : "postgres"
+    password : "postgres"
 redis:
   uri: "redis://redis:6379"
 mail:
