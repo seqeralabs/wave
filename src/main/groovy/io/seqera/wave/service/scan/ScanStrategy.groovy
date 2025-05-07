@@ -24,6 +24,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.configuration.ScanEnabled
 import io.seqera.wave.core.ContainerPlatform
 
 /**
@@ -34,7 +35,7 @@ import io.seqera.wave.core.ContainerPlatform
  */
 @Slf4j
 @CompileStatic
-@Requires(bean = ScanConfig)
+@Requires(bean = ScanEnabled)
 abstract class ScanStrategy {
 
     abstract void scanContainer(String jobName, ScanEntry entry)
