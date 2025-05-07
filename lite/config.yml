@@ -8,7 +8,7 @@ wave:
   metrics:
     enabled: true
   db :
-    uri : "jdbc:postgresql://localhost:5432/postgres"
+    uri : "jdbc:postgresql://localhost:5432/wave"
     user : "postgres"
     password : "postgres"
 redis:
