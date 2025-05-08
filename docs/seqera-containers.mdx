@@ -16,15 +16,25 @@ Containers from Seqera Containers can be used as a base image for Wave augmentat
 
 ## Web interface
 
-An image can be requested from Seqera Containers without any software or registration prerequisites.
+An image can be requested from Seqera Containers without any software or registration prerequisites. To request an container:
 
-Visit [https://seqera.io/containers](https://seqera.io/containers) and use the web interface to search for conda packages, or packages on the Python Package Index. Conda package names are searched for on the `bioconda` and `conda-forge` channels by default, but prepending a channel name with `::` will search specific channels, for example, `nvidia::cuda`.
+1. Visit [https://seqera.io/containers](https://seqera.io/containers).
 
-Use **Container settings** to select between Docker and Singularity, and `linux/amd64` and `linux/arm64` platforms.
+2. Search for conda packages or packages on the Python Package Index.
 
-Select **Get Container** to show the resulting container URI immediately. A spinner will show the build progress. If Singularity was selected, a checkbox below the URI to toggle is displayed.
+    :::note
+    Conda package names are searched for on the `bioconda` and `conda-forge` channels by default, but prepending a channel name with `::` will search specific channels, for example, `nvidia::cuda`.
+    :::
 
-Select V**iew build details** to show information about the container, the build, and the security scan.
+3. Use **Container settings** to select between Docker and Singularity, and `linux/amd64` and `linux/arm64` platforms.
+
+4. Select **Get Container** to show the resulting container URI immediately.
+
+    :::note
+    A spinner will show the build progress. If Singularity was selected, a checkbox below the URI to toggle is displayed.
+    :::
+
+5. Select **View build details** to show information about the container, the build, and the security scan.
 
 ## Wave CLI/Nextflow integration
 

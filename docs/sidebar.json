@@ -3,7 +3,8 @@
     {
       "type": "category",
       "label": "Wave",
-      "collapsed": false,
+      "collapsed": true,
+      "link": {"type": "doc", "id": "index"},
       "items": [
         "index",
         "how-it-works",
@@ -14,11 +15,11 @@
         "augmentation",
         "container-freezes",
         "mirroring",
-        "security"
+        "security",
+        "seqera-containers.mdx"
       ]
     },
     "get-started",
-    "seqera-containers.mdx",
     "nextflow",
     {
       "type": "category",

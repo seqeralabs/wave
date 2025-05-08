@@ -1,8 +1,13 @@
 ---
 title: Architectures
+description: ''
 ---
 
-Computational workloads can be executed across a variety of CPU hardware architectures. The two most commonly used architectures in modern computing environments are `linux/amd64` and `linux/arm64`. These architectures are based on distinct CPU instruction sets, each offering specific benefits and suited for different use cases:
+Computational workloads can be executed across a variety of CPU hardware architectures.
+
+## Common Architecture Types
+
+The two most commonly used architectures in modern computing environments are `linux/amd64` and `linux/arm64`. These architectures are based on distinct CPU instruction sets, each offering specific benefits and suited for different use cases:
 
 `linux/amd64`:
 
@@ -14,7 +19,11 @@ Computational workloads can be executed across a variety of CPU hardware archite
 - 64-bit extension of the ARM architecture.
 - Increasingly popular in modern computing environments.
 
+## ARM architecture benefits
+
 [ARM architectures](https://en.wikipedia.org/wiki/ARM_architecture_family) (`arm64`) have gained significant popularity in recent years due to their inherent advantages in energy efficiency and cost-effectiveness. ARM processors are designed to deliver high performance per watt, making them attractive for cloud providers and organizations aiming to optimize operational costs and reduce their environmental impact.
+
+## Cloud Provider Support
 
 Leading cloud providers have embraced ARM architectures as part of their infrastructure offerings:
 
@@ -23,6 +32,9 @@ Leading cloud providers have embraced ARM architectures as part of their infrast
 - Google Cloud Axion
 
 ARM adoption is rapidly expanding in fields such as bioinformatics and data science, where workloads are computationally intensive and cost-sensitive.
+
+## Wave's Multi-Architecture Support
+
 Wave supports the on-demand provisioning of container images for both `linux/amd64` and `linux/arm64` architectures. This multi-architecture support ensures broad compatibility across heterogeneous execution environments and allows users to:
 
 - Optimize pipeline execution for specific hardware platforms.
