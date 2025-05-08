@@ -1,0 +1,38 @@
+---
+title: Wave authentication
+---
+
+Wave supports seamless integration with private container registries, enabling secure pull and push operations for container images. Authentication credentials are managed through Seqera Platform, ensuring that sensitive information is never exposed to users or embedded in configuration files.
+To enable access to private registries, repository access keys must be configured using [Seqera Platform credentials](https://docs.seqera.io/platform/latest/credentials/overview/). This approach offers several key benefits:
+
+- **Centralized credential management**: Credentials are stored and managed securely within the Seqera Platform, providing a single source of truth.
+- **Simplified configuration**: Users are not required to manually authenticate or manage credentials for each registry.
+- **Enhanced security**: Eliminates the need to hardcode secrets, reducing the risk of credential leakage and improving compliance with security best practices.
+
+This integration ensures both operational efficiency and robust security when working with private container registries in Wave.
+
+:::note
+See [Credentials overview](https://docs.seqera.io/platform/latest/credentials/overview/) for more information about setting up Platform credentials.å
+:::
+
+## How it works
+
+1. The Wave client (such as Nextflow or the Wave CLI) submits a container request that specifies the private image URI and the user identity.
+2. Wave validates the request and authorizes the user submitting the request to the Seqera Platform service.
+3. Wave responds with an ephemeral container image name. For example, `wave.seqera.io/wt/<ID_TOKEN>/library/alpine:latest`.
+
+    :::note
+    The `ID_TOKEN` is uniquely assigned. It acts as a temporary, single-use access key, allowing the image to be retrieved without requiring Docker client authentication.
+    :::
+
+4. The Docker client uses the return image name to request the image manifest from the Wave registry endpoint, without providing credentials for the original source image registry.
+5. Wave caches the underlying image blobs and serves them to the Docker client via the Cloudflare CDN.
+6. After 26 hours, the layer cache and ephemeral image token expire and are deleted.
+
+<!--
+// TODO Add Detailed authentication flow
+-->
+
+<!--
+// TODO Add read more section
+-->
