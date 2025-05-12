@@ -7,6 +7,9 @@ wave:
       duration: "36h"
   metrics:
     enabled: true
+  accounts :
+    ### password checksum 'bar'
+    foo : "fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9"
   db :
     uri : "jdbc:postgresql://localhost:5432/wave"
     user : "postgres"
