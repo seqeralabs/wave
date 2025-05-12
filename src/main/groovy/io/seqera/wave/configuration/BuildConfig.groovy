@@ -57,6 +57,7 @@ class BuildConfig {
      * File system path there the dockerfile is save
      */
     @Value('${wave.build.workspace}')
+    @Nullable
     String buildWorkspace
 
     @Value('${wave.build.status.delay}')

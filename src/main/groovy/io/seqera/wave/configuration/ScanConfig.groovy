@@ -65,6 +65,7 @@ class ScanConfig {
      * The host path where cache DB stored
      */
     @Value('${wave.build.workspace}')
+    @Nullable
     private String buildDirectory
 
     @Value('${wave.scan.timeout:15m}')
@@ -100,6 +101,8 @@ class ScanConfig {
 
     @Memoized
     Path getCacheDirectory() {
+        if  ( !buildDirectory )
+            return null
         final result = Path.of(buildDirectory).toAbsolutePath().resolve('.trivy-cache')
         try {
             Files.createDirectories(result)
@@ -111,7 +114,7 @@ class ScanConfig {
 
     @Memoized
     Path getWorkspace() {
-        Path.of(buildDirectory).toAbsolutePath()
+        buildDirectory ? Path.of(buildDirectory).toAbsolutePath() : null
     }
 
     String getRequestsCpu() {
