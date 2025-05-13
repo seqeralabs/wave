@@ -394,4 +394,40 @@ class SurrealPersistenceService implements PersistenceService {
         })
     }
 
+    List<WaveBuildRecord> getAllBuilds() {
+        final query = "select * from wave_build"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result : null
+        return result ? Arrays.asList(result) : null
+    }
+
+    List<WaveContainerRecord> getAllRequests(){
+        final query = "select * from wave_request"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveContainerRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result : null
+        return result ? Arrays.asList(result) : null
+    }
+
+    List<WaveScanRecord> getAllScans(){
+        final query = "select * from wave_scan"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveScanRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result : null
+        return result ? Arrays.asList(result) : null
+    }
+
+    List<MirrorResult> getAllMirrors(){
+        final query = "select * from wave_mirror"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<MirrorResult>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result : null
+        return result ? Arrays.asList(result) : null
+    }
+
 }

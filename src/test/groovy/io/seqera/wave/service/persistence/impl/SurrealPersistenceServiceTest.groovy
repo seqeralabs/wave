@@ -579,4 +579,105 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.allScans("1234567890") == null
     }
 
+    void 'should get all mirror results'() {
+        given:
+        def digest = 'sha256:12345'
+        def timestamp = Instant.now()
+        def source = 'source.io/foo'
+        def target = 'target.io/foo'
+        and:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        and:
+        def request1 = MirrorRequest.create(
+                source,
+                target,
+                digest,
+                ContainerPlatform.DEFAULT,
+                Path.of('/workspace'),
+                '{auth json}',
+                'scan-1',
+                timestamp.minusSeconds(180),
+                "GMT",
+                Mock(PlatformId) )
+        and:
+        def request2 = MirrorRequest.create(
+                source,
+                target,
+                digest,
+                ContainerPlatform.DEFAULT,
+                Path.of('/workspace'),
+                '{auth json}',
+                'scan-2',
+                timestamp.minusSeconds(120),
+                "GMT",
+                Mock(PlatformId) )
+        and:
+        def request3 = MirrorRequest.create(
+                source,
+                target,
+                digest,
+                ContainerPlatform.DEFAULT,
+                Path.of('/workspace'),
+                '{auth json}',
+                'scan-3',
+                timestamp.minusSeconds(60),
+                "GMT",
+                Mock(PlatformId) )
+        and:
+        def result1 = MirrorResult.of(request1).complete(1, 'err')
+        def result2 = MirrorResult.of(request2).complete(0, 'ok')
+        def result3 = MirrorResult.of(request3).complete(0, 'ok')
+        and:
+        persistence.saveMirrorResultAsync(result1)
+        persistence.saveMirrorResultAsync(result2)
+        persistence.saveMirrorResultAsync(result3)
+        sleep(300)
+
+        when:
+        def mirrors = persistence.getAllMirrors()
+
+        then:
+        mirrors.size() == 3
+        and:
+        mirrors.contains(result2)
+        mirrors.contains(result2)
+        mirrors.contains(result3)
+    }
+
+    void 'should retrieve all container requests'() {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        and:
+        def TOKEN = '123abc'
+        def cfg = new ContainerConfig(entrypoint: ['/opt/fusion'],
+                layers: [ new ContainerLayer(location: 'https://fusionfs.seqera.io/releases/v2.2.8-amd64.json')])
+        def req = new SubmitContainerTokenRequest(
+                towerEndpoint: 'https://tower.nf',
+                towerWorkspaceId: 100,
+                containerConfig: cfg,
+                containerPlatform: ContainerPlatform.of('amd64'),
+                buildRepository: 'build.docker.io',
+                cacheRepository: 'cache.docker.io',
+                fingerprint: 'xyz',
+                timestamp: Instant.now().toString()
+        )
+        def user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
+        def data = ContainerRequest.of(requestId: TOKEN, identity: new PlatformId(user,100), containerImage: 'hello-world', containerFile: "from ubuntu" )
+        def wave = "wave.io/wt/$TOKEN/hello-world"
+        def addr = "100.200.300.400"
+        def exp = Instant.now().plusSeconds(3600)
+        and:
+        def request = new WaveContainerRecord(req, data, wave, addr, exp)
+        and:
+        persistence.saveContainerRequestAsync(request)
+        sleep(100)
+
+        when:
+        def requests = persistence.getAllRequests()
+
+        then:
+        requests.size() == 1
+        and:
+        requests[0].waveImage == 'wave.io/wt/123abc/hello-world'
+    }
 }
