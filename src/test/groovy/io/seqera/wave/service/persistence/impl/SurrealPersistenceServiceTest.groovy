@@ -579,7 +579,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.allScans("1234567890") == null
     }
 
-    void 'should get all mirror results'() {
+    void 'should get  paginated mirror results'() {
         given:
         def digest = 'sha256:12345'
         def timestamp = Instant.now()
@@ -634,16 +634,17 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         sleep(300)
 
         when:
-        def mirrors = persistence.getMirrorsPaginated(3,1)
+        def mirrors = persistence.getMirrorsPaginated(3,0)
 
         then:
-        mirrors.size() == 2
+        mirrors.size() == 3
         and:
+        mirrors.contains(result1)
         mirrors.contains(result2)
         mirrors.contains(result3)
     }
 
-    void 'should retrieve all container requests'() {
+    void 'should retrieve paginated container requests'() {
         given:
         def persistence = applicationContext.getBean(SurrealPersistenceService)
         and:
