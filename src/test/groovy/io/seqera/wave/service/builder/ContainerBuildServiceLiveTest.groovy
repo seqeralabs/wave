@@ -159,7 +159,7 @@ class ContainerBuildServiceLiveTest extends Specification {
         given:
         def folder = Files.createTempDirectory('test')
         def cacheRepo = buildConfig.defaultCacheRepository
-        def duration = Duration.ofMinutes(1)
+        def duration = Duration.ofSeconds(90)
         and:
         def dockerFile = '''
         FROM busybox
