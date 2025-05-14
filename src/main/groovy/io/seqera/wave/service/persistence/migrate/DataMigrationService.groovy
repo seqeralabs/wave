@@ -35,7 +35,6 @@ import jakarta.inject.Singleton
  */
 @Requires(env=['surrealdb', 'postgresql', 'migrate'])
 @Slf4j
-@Secondary
 @Singleton
 @CompileStatic
 class DataMigrationService {
