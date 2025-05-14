@@ -22,6 +22,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Secondary
+import io.micronaut.context.annotation.Value
 import io.seqera.wave.service.persistence.impl.SurrealClient
 import io.seqera.wave.service.persistence.impl.SurrealPersistenceService
 import io.seqera.wave.service.persistence.postgres.PostgresPersistentService
@@ -47,7 +48,8 @@ class DataMigrationService {
     @Inject
     private SurrealClient surrealDb
 
-    final static int pageSize = 1000
+    @Value('${wave.db.migrate.page-size:1000}')
+    int pageSize
 
     @PostConstruct
     void init() {

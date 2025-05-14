@@ -27,7 +27,6 @@ import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.persistence.impl.SurrealPersistenceService
 import io.seqera.wave.service.persistence.postgres.PostgresPersistentService
 import io.seqera.wave.service.persistence.impl.SurrealClient
-import static io.seqera.wave.service.persistence.migrate.DataMigrationService.pageSize
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
@@ -39,12 +38,14 @@ class DataMigrationServiceTest extends Specification {
     def surrealClient = Mock(SurrealClient)
 
     def service
+    int pageSize = 1000
 
     void setup() {
         service = new DataMigrationService()
         service.surrealService = surrealService
         service.postgresService = postgresService
         service.surrealDb = surrealClient
+        service.pageSize = pageSize
     }
 
     def "should not migrate if build records are empty"() {
