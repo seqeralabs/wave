@@ -634,12 +634,11 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         sleep(300)
 
         when:
-        def mirrors = persistence.getAllMirrors()
+        def mirrors = persistence.getMirrorsPaginated(3,1)
 
         then:
-        mirrors.size() == 3
+        mirrors.size() == 2
         and:
-        mirrors.contains(result2)
         mirrors.contains(result2)
         mirrors.contains(result3)
     }
@@ -673,11 +672,62 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         sleep(100)
 
         when:
-        def requests = persistence.getAllRequests()
+        def requests = persistence.getRequestsPaginated(1,0)
 
         then:
         requests.size() == 1
         and:
         requests[0].waveImage == 'wave.io/wt/123abc/hello-world'
+    }
+
+    void 'should retrieve paginated scan records when data exists'() {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        and:
+        def scan1 = new WaveScanRecord(id: 'scan1', containerImage: 'image1', status: 'SUCCEEDED', vulnerabilities:[])
+        def scan2 = new WaveScanRecord(id: 'scan2', containerImage: 'image2', status: 'FAILED', vulnerabilities:[])
+        persistence.saveScanRecordAsync(scan1)
+        persistence.saveScanRecordAsync(scan2)
+        sleep(200)
+
+        when:
+        def scans = persistence.getScansPaginated(2, 0)
+
+        then:
+        scans.size() == 2
+        and:
+        scans.contains(scan1)
+        scans.contains(scan2)
+    }
+
+    void 'should return null when no scan records exist for pagination'() {
+        when:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        and:
+        def scans = persistence.getScansPaginated(2, 0)
+
+        then:
+        scans == null
+    }
+
+    void 'should handle pagination offset correctly for scan records'() {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        and:
+        def scan1 = new WaveScanRecord(id: 'scan1', containerImage: 'image1', status: 'SUCCEEDED', vulnerabilities:[])
+        def scan2 = new WaveScanRecord(id: 'scan2', containerImage: 'image2', status: 'FAILED', vulnerabilities:[])
+        def scan3 = new WaveScanRecord(id: 'scan3', containerImage: 'image3', status: 'PENDING', vulnerabilities:[])
+        persistence.saveScanRecordAsync(scan1)
+        persistence.saveScanRecordAsync(scan2)
+        persistence.saveScanRecordAsync(scan3)
+        sleep(200)
+
+        when:
+        def scans = persistence.getScansPaginated(2, 1)
+
+        then:
+        scans.size() == 2
+        scans.contains(scan2)
+        scans.contains(scan3)
     }
 }

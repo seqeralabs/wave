@@ -394,8 +394,8 @@ class SurrealPersistenceService implements PersistenceService {
         })
     }
 
-    List<WaveBuildRecord> getAllBuilds() {
-        final query = "select * from wave_build"
+    List<WaveBuildRecord> getBuildsPaginated(int limit, int offset) {
+        final query = "select * from wave_build limit $limit start $offset"
         final json = surrealDb.sqlAsString(getAuthorization(), query)
         final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
@@ -403,8 +403,8 @@ class SurrealPersistenceService implements PersistenceService {
         return result ? Arrays.asList(result) : null
     }
 
-    List<WaveContainerRecord> getAllRequests(){
-        final query = "select * from wave_request"
+    List<WaveContainerRecord> getRequestsPaginated(int limit, int offset){
+        final query = "select * from wave_request limit $limit start $offset"
         final json = surrealDb.sqlAsString(getAuthorization(), query)
         final type = new TypeReference<ArrayList<SurrealResult<WaveContainerRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
@@ -412,8 +412,8 @@ class SurrealPersistenceService implements PersistenceService {
         return result ? Arrays.asList(result) : null
     }
 
-    List<WaveScanRecord> getAllScans(){
-        final query = "select * from wave_scan"
+    List<WaveScanRecord> getScansPaginated(int limit, int offset){
+        final query = "select * from wave_scan limit $limit start $offset"
         final json = surrealDb.sqlAsString(getAuthorization(), query)
         final type = new TypeReference<ArrayList<SurrealResult<WaveScanRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
@@ -421,8 +421,8 @@ class SurrealPersistenceService implements PersistenceService {
         return result ? Arrays.asList(result) : null
     }
 
-    List<MirrorResult> getAllMirrors(){
-        final query = "select * from wave_mirror"
+    List<MirrorResult> getMirrorsPaginated(int limit, int offset){
+        final query = "select * from wave_mirror limit $limit start $offset"
         final json = surrealDb.sqlAsString(getAuthorization(), query)
         final type = new TypeReference<ArrayList<SurrealResult<MirrorResult>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null

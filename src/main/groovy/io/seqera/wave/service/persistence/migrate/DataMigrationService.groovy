@@ -48,6 +48,8 @@ class DataMigrationService {
     @Inject
     private SurrealClient surrealDb
 
+    final static int pageSize = 1000
+
     @PostConstruct
     void init() {
         migrateSurrealToPostgres()
@@ -62,121 +64,125 @@ class DataMigrationService {
 
         log.info("Migration completed.")
     }
-
     void migrateBuildRecords() {
-        def builds = surrealService.getAllBuilds()
-        if (!builds) {
-            log.info("No build records found to migrate.")
-            return
-        }
-        log.info("Migrating ${builds.size()} build records")
-        try{
-            int batchSize = 100
-            int total = builds.size()
-            int index = 0
+        int offset = 0
+        List builds
+        try {
+            do {
+                builds = surrealService.getBuildsPaginated(pageSize, offset)
+                if (!builds || builds.isEmpty()) {
+                    break
+                }
 
-            while (index < total) {
-                def batch = builds.subList(index, Math.min(index + batchSize, total))
-                log.info("Migrating batch of ${batch.size()} build records (index $index)")
+                log.info("Migrating batch of ${builds.size()} build records (offset $offset)")
+                builds.each { build ->
+                    try {
+                        postgresService.saveBuildAsync(build)
+                    } catch (Exception e) {
+                        log.error("Error saving build record: ${e.message}", e)
+                    }
+                }
 
-                batch.each { postgresService.saveBuildAsync(it) }
-
-                index += batchSize
+                offset += pageSize
                 log.info("Sleeping for 2 seconds between batches...")
                 sleep(2000)
-            }
+            } while (builds.size() == pageSize)
 
-            log.info("Completed migrating all ${total} build records.")
+            log.info("Completed migrating all build records.")
         } catch (Exception e) {
-            log.error("Error migrating build records: ${e.message}", e)
+            log.error("Error during build record migration: ${e.message}", e)
         }
     }
 
     void migrateContainerRequests() {
-        def request = surrealService.getAllRequests()
-        if (!request) {
-            log.info("No request records found to migrate.")
-            return
-        }
-        log.info("Migrating ${request.size()} request records")
-        try{
-            int batchSize = 100
-            int total = request.size()
-            int index = 0
+        int offset = 0
+        List requests
+        try {
+            do {
+                requests = surrealService.getRequestsPaginated(pageSize, offset)
+                if (!requests || requests.isEmpty()) {
+                    break
+                }
 
-            while (index < total) {
-                def batch = request.subList(index, Math.min(index + batchSize, total))
-                log.info("Migrating batch of ${batch.size()} request records (index $index)")
+                log.info("Migrating batch of ${requests.size()} container request records (offset $offset)")
+                requests.each { request ->
+                    try {
+                        postgresService.saveContainerRequestAsync(request)
+                    } catch (Exception e) {
+                        log.error("Error saving container request: ${e.message}", e)
+                    }
+                }
 
-                batch.each { postgresService.saveContainerRequestAsync(it) }
-
-                index += batchSize
+                offset += pageSize
                 log.info("Sleeping for 2 seconds between batches...")
                 sleep(2000)
-            }
+            } while (requests.size() == pageSize)
 
-            log.info("Completed migrating all ${total} request records.")
+            log.info("Completed migrating all container request records.")
         } catch (Exception e) {
-            log.error("Error migrating request records: ${e.message}", e)
+            log.error("Error during container request migration: ${e.message}", e)
         }
     }
 
     void migrateScanRecords() {
-        def scans = surrealService.getAllScans()
-        if (!scans) {
-            log.info("No scan records found to migrate.")
-            return
-        }
-        log.info("Migrating ${scans.size()} scan records")
-        try{
-            int batchSize = 100
-            int total = scans.size()
-            int index = 0
+        int offset = 0
+        List scans
+        try {
+            do {
+                scans = surrealService.getScansPaginated(pageSize, offset)
+                if (!scans || scans.isEmpty()) {
+                    break
+                }
 
-            while (index < total) {
-                def batch = scans.subList(index, Math.min(index + batchSize, total))
-                log.info("Migrating batch of ${batch.size()} scan records (index $index)")
+                log.info("Migrating batch of ${scans.size()} scan records (offset $offset)")
+                scans.each { scan ->
+                    try {
+                        postgresService.saveScanRecordAsync(scan)
+                    } catch (Exception e) {
+                        log.error("Error saving scan record: ${e.message}", e)
+                    }
+                }
 
-                batch.each { postgresService.saveScanRecordAsync(it) }
-
-                index += batchSize
+                offset += pageSize
                 log.info("Sleeping for 2 seconds between batches...")
                 sleep(2000)
-            }
+            } while (scans.size() == pageSize)
 
-            log.info("Completed migrating all ${total} scan records.")
+            log.info("Completed migrating all scan records.")
         } catch (Exception e) {
-            log.error("Error migrating scan records: ${e.message}", e)
+            log.error("Error during scan record migration: ${e.message}", e)
         }
     }
 
     void migrateMirrorRecords() {
-        def mirrors = surrealService.getAllMirrors()
-        if (!mirrors) {
-            log.info("No mirror records found to migrate.")
-            return
-        }
-        log.info("Migrating ${mirrors.size()} mirror records")
-        try{
-            int batchSize = 100
-            int total = mirrors.size()
-            int index = 0
+        int offset = 0
+        List mirrors
+        try {
+            do {
+                mirrors = surrealService.getMirrorsPaginated(pageSize, offset)
+                if (!mirrors || mirrors.isEmpty()) {
+                    break
+                }
 
-            while (index < total) {
-                def batch = mirrors.subList(index, Math.min(index + batchSize, total))
-                log.info("Migrating batch of ${batch.size()} mirror records (index $index)")
+                log.info("Migrating batch of ${mirrors.size()} mirror records (offset $offset)")
+                mirrors.each { mirror ->
+                    try {
+                        postgresService.saveMirrorResultAsync(mirror)
+                    } catch (Exception e) {
+                        log.error("Error saving mirror record: ${e.message}", e)
+                    }
+                }
 
-                batch.each { postgresService.saveMirrorResultAsync(it) }
-
-                index += batchSize
+                offset += pageSize
                 log.info("Sleeping for 2 seconds between batches...")
                 sleep(2000)
-            }
+            } while (mirrors.size() == pageSize)
 
-            log.info("Completed migrating all ${total} mirror records.")
+            log.info("Completed migrating all mirror records.")
         } catch (Exception e) {
-            log.error("Error migrating mirror records: ${e.message}", e)
+            log.error("Error during mirror record migration: ${e.message}", e)
         }
     }
+
 
 }

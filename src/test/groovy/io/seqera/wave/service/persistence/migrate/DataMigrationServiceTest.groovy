@@ -27,11 +27,12 @@ import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.persistence.impl.SurrealPersistenceService
 import io.seqera.wave.service.persistence.postgres.PostgresPersistentService
 import io.seqera.wave.service.persistence.impl.SurrealClient
+import static io.seqera.wave.service.persistence.migrate.DataMigrationService.pageSize
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-class DataMigrationServiceSpec extends Specification {
+class DataMigrationServiceTest extends Specification {
 
     def surrealService = Mock(SurrealPersistenceService)
     def postgresService = Mock(PostgresPersistentService)
@@ -48,7 +49,7 @@ class DataMigrationServiceSpec extends Specification {
 
     def "should not migrate if build records are empty"() {
         given:
-        surrealService.getAllBuilds() >> []
+        surrealService.getBuildsPaginated(pageSize,0) >> []
 
         when:
         service.migrateBuildRecords()
@@ -60,7 +61,7 @@ class DataMigrationServiceSpec extends Specification {
     def "should migrate build records in batches of 100"() {
         given:
         def builds = (1..100).collect { new WaveBuildRecord(buildId: it) }
-        surrealService.getAllBuilds() >> builds
+        surrealService.getBuildsPaginated(pageSize,0) >> builds
 
         when:
         service.migrateBuildRecords()
@@ -71,7 +72,7 @@ class DataMigrationServiceSpec extends Specification {
 
     def "should catch and log exception during build migration"() {
         given:
-        surrealService.getAllBuilds() >> [[id: 1]]
+        surrealService.getBuildsPaginated(pageSize,0) >> [[id: 1]]
         postgresService.saveBuildAsync(_) >> { throw new RuntimeException("DB error") }
 
         when:
@@ -83,7 +84,7 @@ class DataMigrationServiceSpec extends Specification {
 
     def "should not migrate if request records are empty"() {
         given:
-        surrealService.getAllRequests() >> []
+        surrealService.getRequestsPaginated(pageSize,0) >> []
 
         when:
         service.migrateContainerRequests()
@@ -95,7 +96,7 @@ class DataMigrationServiceSpec extends Specification {
     def "should migrate request records in batches"() {
         given:
         def requests = (1..101).collect { new WaveContainerRecord() }
-        surrealService.getAllRequests() >> requests
+        surrealService.getRequestsPaginated(pageSize,0) >> requests
 
         when:
         service.migrateContainerRequests()
@@ -107,7 +108,7 @@ class DataMigrationServiceSpec extends Specification {
     def "should migrate scan records in batches"() {
         given:
         def scans = (1..99).collect { new WaveScanRecord(id: it) }
-        surrealService.getAllScans() >> scans
+        surrealService.getScansPaginated(pageSize, 0) >> scans
 
         when:
         service.migrateScanRecords()
@@ -119,7 +120,7 @@ class DataMigrationServiceSpec extends Specification {
     def "should migrate mirror records in batches"() {
         given:
         def mirrors = (1..15).collect { new MirrorResult() }
-        surrealService.getAllMirrors() >> mirrors
+        surrealService.getMirrorsPaginated(pageSize, 0) >> mirrors
 
         when:
         service.migrateMirrorRecords()
@@ -130,10 +131,10 @@ class DataMigrationServiceSpec extends Specification {
 
     def "init should trigger migration process"() {
         given:
-        1 * surrealService.getAllBuilds() >> []
-        1 * surrealService.getAllRequests() >> []
-        1 * surrealService.getAllScans() >> []
-        1 * surrealService.getAllMirrors() >> []
+        1 * surrealService.getBuildsPaginated(pageSize, _) >> []
+        1 * surrealService.getRequestsPaginated(pageSize, _) >> []
+        1 * surrealService.getScansPaginated(pageSize, _) >> []
+        1 * surrealService.getMirrorsPaginated(pageSize, _) >> []
 
         when:
         service.init()
