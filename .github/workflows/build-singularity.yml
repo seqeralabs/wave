@@ -2,6 +2,11 @@ name: Build and publish Singularity container image
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Image version (e.g., 4.2.1-r4)'
+        required: true
+        default: '4.2.1-r4'
 
 jobs:
   build-and-push:
@@ -24,4 +29,4 @@ jobs:
       - name: Build and Push Image to public.cr.seqera.io
         run: |
           cd singularity
-          make build
+          make build version=${{ github.event.inputs.version }}
