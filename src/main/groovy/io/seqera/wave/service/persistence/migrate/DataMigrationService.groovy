@@ -21,10 +21,11 @@ package io.seqera.wave.service.persistence.migrate
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.micronaut.context.annotation.Secondary
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.service.persistence.impl.SurrealClient
 import io.seqera.wave.service.persistence.impl.SurrealPersistenceService
+import io.seqera.wave.service.persistence.migrate.cache.DataMigrateCache
+import io.seqera.wave.service.persistence.migrate.cache.DataMigrateEntry
 import io.seqera.wave.service.persistence.postgres.PostgresPersistentService
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
@@ -48,6 +49,14 @@ class DataMigrationService {
     @Inject
     private SurrealClient surrealDb
 
+    @Inject
+    DataMigrateCache dataMigrateCache
+
+    static final String TABLE_NAME_BUILD = 'wave_build'
+    static final String TABLE_NAME_CONTAINER_REQUEST = 'wave_container_request'
+    static final String TABLE_NAME_SCAN = 'wave_scan'
+    static final String TABLE_NAME_MIRROR = 'wave_mirror'
+
     @Value('${wave.db.migrate.page-size:1000}')
     int pageSize
 
@@ -57,6 +66,10 @@ class DataMigrationService {
     }
     void migrateSurrealToPostgres() {
         log.info("Starting SurrealDB to Postgres migration...")
+        dataMigrateCache.putIfAbsent(TABLE_NAME_BUILD, new DataMigrateEntry(TABLE_NAME_BUILD, 0))
+        dataMigrateCache.putIfAbsent(TABLE_NAME_CONTAINER_REQUEST, new DataMigrateEntry(TABLE_NAME_CONTAINER_REQUEST, 0))
+        dataMigrateCache.putIfAbsent(TABLE_NAME_SCAN, new DataMigrateEntry(TABLE_NAME_SCAN, 0))
+        dataMigrateCache.putIfAbsent(TABLE_NAME_MIRROR, new DataMigrateEntry(TABLE_NAME_MIRROR, 0))
 
         migrateBuildRecords()
         migrateContainerRequests()
@@ -66,7 +79,7 @@ class DataMigrationService {
         log.info("Migration completed.")
     }
     void migrateBuildRecords() {
-        int offset = 0
+        int offset = dataMigrateCache.get(TABLE_NAME_BUILD).offset
         List builds
         try {
             do {
@@ -87,6 +100,7 @@ class DataMigrationService {
                 offset += pageSize
                 log.info("Sleeping for 2 seconds between batches...")
                 sleep(2000)
+                dataMigrateCache.put(TABLE_NAME_BUILD, new DataMigrateEntry(TABLE_NAME_BUILD, offset))
             } while (builds.size() == pageSize)
 
             log.info("Completed migrating all build records.")
@@ -96,7 +110,7 @@ class DataMigrationService {
     }
 
     void migrateContainerRequests() {
-        int offset = 0
+        int offset = dataMigrateCache.get(TABLE_NAME_CONTAINER_REQUEST).offset
         List requests
         try {
             do {
@@ -117,6 +131,7 @@ class DataMigrationService {
                 offset += pageSize
                 log.info("Sleeping for 2 seconds between batches...")
                 sleep(2000)
+                dataMigrateCache.put(TABLE_NAME_CONTAINER_REQUEST, new DataMigrateEntry(TABLE_NAME_CONTAINER_REQUEST, offset))
             } while (requests.size() == pageSize)
 
             log.info("Completed migrating all container request records.")
@@ -126,7 +141,7 @@ class DataMigrationService {
     }
 
     void migrateScanRecords() {
-        int offset = 0
+        int offset = dataMigrateCache.get(TABLE_NAME_SCAN).offset
         List scans
         try {
             do {
@@ -147,6 +162,7 @@ class DataMigrationService {
                 offset += pageSize
                 log.info("Sleeping for 2 seconds between batches...")
                 sleep(2000)
+                dataMigrateCache.put(TABLE_NAME_SCAN, new DataMigrateEntry(TABLE_NAME_SCAN, offset))
             } while (scans.size() == pageSize)
 
             log.info("Completed migrating all scan records.")
@@ -156,7 +172,7 @@ class DataMigrationService {
     }
 
     void migrateMirrorRecords() {
-        int offset = 0
+        int offset = dataMigrateCache.get(TABLE_NAME_MIRROR).offset
         List mirrors
         try {
             do {
@@ -177,6 +193,7 @@ class DataMigrationService {
                 offset += pageSize
                 log.info("Sleeping for 2 seconds between batches...")
                 sleep(2000)
+                dataMigrateCache.put(TABLE_NAME_MIRROR, new DataMigrateEntry(TABLE_NAME_MIRROR, offset))
             } while (mirrors.size() == pageSize)
 
             log.info("Completed migrating all mirror records.")
