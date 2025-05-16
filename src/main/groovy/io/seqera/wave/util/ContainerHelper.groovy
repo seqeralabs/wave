@@ -27,6 +27,7 @@ import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.config.CondaOpts
+import io.seqera.wave.config.PixiOpts
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.builder.BuildFormat
@@ -36,6 +37,7 @@ import org.yaml.snakeyaml.Yaml
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static io.seqera.wave.util.DockerHelper.condaEnvironmentToCondaYaml
 import static io.seqera.wave.util.DockerHelper.condaFileToDockerFile
+import static io.seqera.wave.util.DockerHelper.condaFileToDockerFileUsingPixi
 import static io.seqera.wave.util.DockerHelper.condaFileToSingularityFile
 import static io.seqera.wave.util.DockerHelper.condaPackagesToCondaYaml
 import static io.seqera.wave.util.DockerHelper.condaPackagesToDockerFile
@@ -76,8 +78,32 @@ class ContainerHelper {
             }
             return result
         }
-
         throw new BadRequestException("Unexpected packages spec type: $spec.type")
+    }
+
+    static String containerFileFromRequest(SubmitContainerTokenRequest req) {
+        if( !req.buildTemplate )
+            return containerFileFromPackages(req.packages, req.formatSingularity())
+        // build the container using the pixi template
+        if( req.buildTemplate=='pixi/v1') {
+            // check the type of the packages and apply
+            if( req.packages.type == PackagesSpec.Type.CONDA ) {
+                final lockFile = condaLockFile(req.packages.entries)
+                final opts = req.packages.pixiOpts ?: new PixiOpts()
+                if( req.containerImage )
+                    opts.baseImage = req.containerImage
+                if( lockFile )
+                    throw new BadRequestException("Conda lock file is not supported by '${req}' template")
+                if( req.formatSingularity() )
+                    throw new BadRequestException("Singularity is not supported by '${req.buildTemplate}' template")
+                final result = condaFileToDockerFileUsingPixi(opts)
+                return result
+            }
+            else
+                throw new BadRequestException("Package type '${req.packages.type}' not supported by build template: ${req.buildTemplate}")
+
+        }
+        throw new BadRequestException("Unexpected build template: ${req.buildTemplate}")
     }
 
     static String condaFileFromRequest(SubmitContainerTokenRequest req) {

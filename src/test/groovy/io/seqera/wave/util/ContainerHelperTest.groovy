@@ -28,6 +28,7 @@ import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.config.CondaOpts
+import io.seqera.wave.config.PixiOpts
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.builder.BuildFormat
@@ -603,4 +604,97 @@ class ContainerHelperTest extends Specification {
 
     }
 
+
+    // === build with pixi tests
+
+    def 'should create conda docker file with packages and pixi'() {
+        given:
+        def CHANNELS = ['conda-forge', 'defaults']
+        def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
+        def packages = new PackagesSpec(
+                type: PackagesSpec.Type.CONDA,
+                entries:  PACKAGES,
+                channels: CHANNELS)
+        and:
+        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: 'pixi/v1')
+        when:
+        def result = ContainerHelper.containerFileFromRequest(req)
+
+        then:
+        result =='''\
+                FROM ghcr.io/prefix-dev/pixi:latest AS build
+                 
+                COPY conda.yml /opt/wave/conda.yml
+                WORKDIR /opt/wave
+                 
+                RUN pixi init --import /opt/wave/conda.yml \\
+                    && pixi add conda-forge::procps-ng \\
+                    && pixi shell-hook > /shell-hook.sh \\
+                    && echo 'exec "$@"' >> /shell-hook.sh \\
+                    && echo ">> CONDA_LOCK_START" \\
+                    && cat /opt/wave/pixi.lock \\
+                    && echo "<< CONDA_LOCK_END"
+                 
+                FROM ubuntu:24.04 AS prod
+                 
+                # copy the pixi environment in the final container
+                COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
+                COPY --from=build /shell-hook.sh /shell-hook.sh
+                 
+                # set the entrypoint to the shell-hook script (activate the environment and run the command)
+                # no more pixi needed in the prod container
+                ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]
+                 
+                # Default command for "docker run"
+                CMD ["/bin/bash"]
+                '''.stripIndent()
+    }
+
+    def 'should create conda docker file with packages and pixi custom image'() {
+        given:
+        def CHANNELS = ['conda-forge', 'defaults']
+        def PIXI_OPTS = new PixiOpts(
+                basePackages: 'foo::one bar::two',
+                baseImage: 'base/image',
+                pixiImage: 'ghcr.io/prefix-dev/pixi:0.47.0-jammy-cuda-12.8.1')
+        def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
+        def packages = new PackagesSpec(
+                type: PackagesSpec.Type.CONDA,
+                entries:  PACKAGES,
+                channels: CHANNELS,
+                pixiOpts: PIXI_OPTS)
+        and:
+        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: 'pixi/v1')
+        when:
+        def result = ContainerHelper.containerFileFromRequest(req)
+
+        then:
+        result =='''\
+                FROM ghcr.io/prefix-dev/pixi:0.47.0-jammy-cuda-12.8.1 AS build
+                 
+                COPY conda.yml /opt/wave/conda.yml
+                WORKDIR /opt/wave
+                 
+                RUN pixi init --import /opt/wave/conda.yml \\
+                    && pixi add foo::one bar::two \\
+                    && pixi shell-hook > /shell-hook.sh \\
+                    && echo 'exec "$@"' >> /shell-hook.sh \\
+                    && echo ">> CONDA_LOCK_START" \\
+                    && cat /opt/wave/pixi.lock \\
+                    && echo "<< CONDA_LOCK_END"
+                 
+                FROM base/image AS prod
+                 
+                # copy the pixi environment in the final container
+                COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
+                COPY --from=build /shell-hook.sh /shell-hook.sh
+                 
+                # set the entrypoint to the shell-hook script (activate the environment and run the command)
+                # no more pixi needed in the prod container
+                ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]
+                 
+                # Default command for "docker run"
+                CMD ["/bin/bash"]
+                '''.stripIndent()
+    }
 }
