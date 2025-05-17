@@ -394,4 +394,40 @@ class SurrealPersistenceService implements PersistenceService {
         })
     }
 
+    List<WaveBuildRecord> getBuildsPaginated(int limit, int offset) {
+        final query = "select * from wave_build limit $limit start $offset"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result : null
+        return result ? Arrays.asList(result) : null
+    }
+
+    List<WaveContainerRecord> getRequestsPaginated(int limit, int offset){
+        final query = "select * from wave_request limit $limit start $offset"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveContainerRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result : null
+        return result ? Arrays.asList(result) : null
+    }
+
+    List<WaveScanRecord> getScansPaginated(int limit, int offset){
+        final query = "select * from wave_scan limit $limit start $offset"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveScanRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result : null
+        return result ? Arrays.asList(result) : null
+    }
+
+    List<MirrorResult> getMirrorsPaginated(int limit, int offset){
+        final query = "select * from wave_mirror limit $limit start $offset"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<MirrorResult>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result : null
+        return result ? Arrays.asList(result) : null
+    }
+
 }
