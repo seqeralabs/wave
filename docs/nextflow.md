@@ -27,7 +27,7 @@ For the entire list of configuration options, see [Configuration options](#confi
 
 The following sections describe several common usage cases. To get started by creating an example pipeline that uses Wave, see [Get started][start].
 
-[start]: ./get-started.mdx#nextflow
+[start]: ./get-started#nextflow
 
 ### Access private container repositories
 
