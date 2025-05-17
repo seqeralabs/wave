@@ -22,6 +22,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.api.BuildContext
+import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
@@ -308,6 +309,17 @@ class ContainerHelper {
         attrs.condaFile = condaFile
         attrs.platform = platform?.toString()
         attrs.repository = repository
+        if( buildContext ) attrs.buildContext = buildContext.tarDigest
+        return RegHelper.sipHash(attrs)
+    }
+
+    static String makeContainerId(String containerFile, String condaFile, ContainerPlatform platform, String repository, BuildContext buildContext, ContainerConfig config) {
+        final attrs = new LinkedHashMap<String,String>(10)
+        attrs.containerFile = containerFile
+        attrs.condaFile = condaFile
+        attrs.platform = platform?.toString()
+        attrs.repository = repository
+        attrs.config = config?.toString()
         if( buildContext ) attrs.buildContext = buildContext.tarDigest
         return RegHelper.sipHash(attrs)
     }

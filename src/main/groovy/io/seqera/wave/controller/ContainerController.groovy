@@ -341,7 +341,9 @@ class ContainerController {
         checkContainerSpec(containerSpec)
 
         // create a unique digest to identify the build req
-        final containerId = makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext)
+        final containerId = req.freeze ?
+                makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext)
+                : makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext, req.containerConfig)
         final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, nameStrategy)
         final maxDuration = buildConfig.buildMaxDuration(req)
         // default to async scan for build req for backward compatibility
