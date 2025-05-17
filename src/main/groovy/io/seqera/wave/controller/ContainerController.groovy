@@ -85,7 +85,7 @@ import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static io.seqera.wave.service.pairing.PairingService.TOWER_SERVICE
 import static io.seqera.wave.util.ContainerHelper.checkContainerSpec
 import static io.seqera.wave.util.ContainerHelper.condaFileFromRequest
-import static io.seqera.wave.util.ContainerHelper.containerFileFromPackages
+import static io.seqera.wave.util.ContainerHelper.containerFileFromRequest
 import static io.seqera.wave.util.ContainerHelper.decodeBase64OrFail
 import static io.seqera.wave.util.ContainerHelper.makeContainerId
 import static io.seqera.wave.util.ContainerHelper.makeResponseV1
@@ -248,7 +248,7 @@ class ContainerController {
 
         if( v2 && req.packages ) {
             // generate the container file required to assemble the container
-            final generated = containerFileFromPackages(req.packages, req.formatSingularity())
+            final generated = containerFileFromRequest(req)
             req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
         }
 
