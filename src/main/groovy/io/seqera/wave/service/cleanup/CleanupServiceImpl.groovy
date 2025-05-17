@@ -24,6 +24,7 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
+import io.micronaut.context.annotation.Requires
 import io.micronaut.scheduling.TaskScheduler
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.service.job.JobOperation
@@ -38,6 +39,7 @@ import jakarta.inject.Inject
  */
 @Slf4j
 @Context
+@Requires(notEnv = 'lite')
 @CompileStatic
 class CleanupServiceImpl implements Runnable, CleanupService {
 

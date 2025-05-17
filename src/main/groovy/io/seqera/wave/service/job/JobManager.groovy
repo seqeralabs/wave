@@ -27,6 +27,7 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
+import io.micronaut.context.annotation.Requires
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.configuration.JobManagerConfig
@@ -40,6 +41,7 @@ import jakarta.inject.Named
  */
 @Slf4j
 @Context
+@Requires(notEnv = 'lite')
 @CompileStatic
 class JobManager {
 
