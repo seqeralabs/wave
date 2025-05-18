@@ -37,11 +37,17 @@ import org.yaml.snakeyaml.Yaml
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static io.seqera.wave.util.DockerHelper.condaEnvironmentToCondaYaml
 import static io.seqera.wave.util.DockerHelper.condaFileToDockerFile
+import static io.seqera.wave.util.DockerHelper.condaFileToDockerFileUsingMicromamba
 import static io.seqera.wave.util.DockerHelper.condaFileToDockerFileUsingPixi
 import static io.seqera.wave.util.DockerHelper.condaFileToSingularityFile
+import static io.seqera.wave.util.DockerHelper.condaFileToSingularityFileUsingMicromamba
+import static io.seqera.wave.util.DockerHelper.condaFileToSingularityFileUsingPixi
 import static io.seqera.wave.util.DockerHelper.condaPackagesToCondaYaml
 import static io.seqera.wave.util.DockerHelper.condaPackagesToDockerFile
+import static io.seqera.wave.util.DockerHelper.condaPackagesToDockerFileUsingMicromamba
 import static io.seqera.wave.util.DockerHelper.condaPackagesToSingularityFile
+import static io.seqera.wave.util.DockerHelper.condaPackagesToSingularityFileUsingMicromamba
+
 /**
  * Container helper methods
  *
@@ -94,14 +100,34 @@ class ContainerHelper {
                     opts.baseImage = req.containerImage
                 if( lockFile )
                     throw new BadRequestException("Conda lock file is not supported by '${req}' template")
-                if( req.formatSingularity() )
-                    throw new BadRequestException("Singularity is not supported by '${req.buildTemplate}' template")
-                final result = condaFileToDockerFileUsingPixi(opts)
+                final result = req.formatSingularity()
+                        ? condaFileToSingularityFileUsingPixi(opts)
+                        : condaFileToDockerFileUsingPixi(opts)
                 return result
             }
             else
                 throw new BadRequestException("Package type '${req.packages.type}' not supported by build template: ${req.buildTemplate}")
-
+        }
+        if( req.buildTemplate=='micromamba/v2') {
+            if( req.packages.type == PackagesSpec.Type.CONDA ) {
+                final lockFile = condaLockFile(req.packages.entries)
+                final opts = req.packages.condaOpts ?: CondaOpts.v2()
+                if( req.containerImage )
+                    opts.baseImage = req.containerImage
+                def result
+                if ( lockFile ) {
+                    result = req.formatSingularity()
+                            ? condaPackagesToSingularityFileUsingMicromamba(lockFile, req.packages.channels, opts)
+                            : condaPackagesToDockerFileUsingMicromamba(lockFile, req.packages.channels, opts)
+                } else {
+                    result = req.formatSingularity()
+                            ? condaFileToSingularityFileUsingMicromamba(opts)
+                            : condaFileToDockerFileUsingMicromamba(opts)
+                }
+                return result
+            }
+            else
+                throw new BadRequestException("Package type '${req.packages.type}' not supported by build template: ${req.buildTemplate}")
         }
         throw new BadRequestException("Unexpected build template: ${req.buildTemplate}")
     }

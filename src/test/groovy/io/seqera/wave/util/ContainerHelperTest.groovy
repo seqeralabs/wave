@@ -635,14 +635,14 @@ class ContainerHelperTest extends Specification {
                     && cat /opt/wave/pixi.lock \\
                     && echo "<< CONDA_LOCK_END"
                  
-                FROM ubuntu:24.04 AS prod
+                FROM ubuntu:24.04 AS final
                  
                 # copy the pixi environment in the final container
                 COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
                 COPY --from=build /shell-hook.sh /shell-hook.sh
                  
                 # set the entrypoint to the shell-hook script (activate the environment and run the command)
-                # no more pixi needed in the prod container
+                # no more pixi needed in the final container
                 ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]
                  
                 # Default command for "docker run"
@@ -683,14 +683,14 @@ class ContainerHelperTest extends Specification {
                     && cat /opt/wave/pixi.lock \\
                     && echo "<< CONDA_LOCK_END"
                  
-                FROM base/image AS prod
+                FROM base/image AS final
                  
                 # copy the pixi environment in the final container
                 COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
                 COPY --from=build /shell-hook.sh /shell-hook.sh
                  
                 # set the entrypoint to the shell-hook script (activate the environment and run the command)
-                # no more pixi needed in the prod container
+                # no more pixi needed in the final container
                 ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]
                  
                 # Default command for "docker run"
