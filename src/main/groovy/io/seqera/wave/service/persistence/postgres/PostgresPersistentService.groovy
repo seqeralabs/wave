@@ -21,6 +21,7 @@ package io.seqera.wave.service.persistence.postgres
 import java.time.Instant
 
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
@@ -47,6 +48,7 @@ import jakarta.inject.Inject
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @Requires(env='postgres')
 @Primary
 @CompileStatic
@@ -80,6 +82,7 @@ class PostgresPersistentService implements PersistenceService {
 
     @Override
     void saveBuildAsync(WaveBuildRecord data) {
+        log.trace "Saving build record=$data"
         final json = Mapper.toJson(data)
         final row = new BuildRow(id:data.buildId, data:json, createdAt: Instant.now())
         buildRepository.save(row)
@@ -87,6 +90,7 @@ class PostgresPersistentService implements PersistenceService {
 
     @Override
     WaveBuildRecord loadBuild(String buildId) {
+        log.trace "Loading build record id=${buildId}"
         final row = buildRepository.findById(buildId).orElse(null)
         if( !row ) {
             return surrealPersistenceService?.loadBuild(buildId)
@@ -96,6 +100,7 @@ class PostgresPersistentService implements PersistenceService {
 
     @Override
     WaveBuildRecord loadBuildSucceed(String targetImage, String digest) {
+        log.trace "Loading build record with image=${targetImage}; digest=${digest}"
         final row = buildRepository.findByTargetAndDigest(targetImage, digest)
         if( !row ){
             return surrealPersistenceService?.loadBuildSucceed(targetImage, digest)
@@ -105,6 +110,7 @@ class PostgresPersistentService implements PersistenceService {
 
     @Override
     WaveBuildRecord latestBuild(String containerId) {
+        log.trace "Loading latest build with containerId=${containerId}"
         final row = buildRepository.findLatestByBuildId(containerId)
         if( !row ){
             return surrealPersistenceService?.latestBuild(containerId)
@@ -114,6 +120,7 @@ class PostgresPersistentService implements PersistenceService {
 
     @Override
     List<WaveBuildRecord> allBuilds(String containerId) {
+        log.trace "Loading all builds for containerId=${containerId}"
         final result = buildRepository.findAllByBuildId(containerId)
         return result
                 ? result.collect((it)-> Mapper.fromJson(WaveBuildRecord, it.data, [buildId: it.id]))
@@ -124,6 +131,7 @@ class PostgresPersistentService implements PersistenceService {
 
     @Override
     void saveContainerRequestAsync(WaveContainerRecord data) {
+        log.trace "Saving container request data=${data}"
         final json = Mapper.toJson(data)
         final entity = new RequestRow(id: data.id, data:json, createdAt: Instant.now())
         requestRepository.save(entity)
@@ -131,11 +139,13 @@ class PostgresPersistentService implements PersistenceService {
 
     @Override
     void updateContainerRequestAsync(String token, ContainerDigestPair digest) {
+        log.trace "Updating container request token=${token}; digest=${digest}"
         requestRepository.updateContainerDigests(token, digest.source, digest.target)
     }
 
     @Override
     WaveContainerRecord loadContainerRequest(String token) {
+        log.trace "Loading container request token=${token}"
         final row = requestRepository.findById(token).orElse(null)
         if( !row || !row.data )
             return surrealPersistenceService?.loadContainerRequest(token)
@@ -146,6 +156,7 @@ class PostgresPersistentService implements PersistenceService {
 
     @Override
     void saveScanRecordAsync(WaveScanRecord data) {
+        log.trace "Saving scan record data=${data}"
         final json = Mapper.toJson(data)
         final entity = new ScanRow(id: data.id, data:json, createdAt: Instant.now())
         scanRepository.save(entity)
@@ -153,6 +164,7 @@ class PostgresPersistentService implements PersistenceService {
 
     @Override
     WaveScanRecord loadScanRecord(String scanId) {
+        log.trace "Loading scan record id=${scanId}"
         final row = scanRepository.findById(scanId).orElse(null)
         if( !row || !row.data )
             return surrealPersistenceService?.loadScanRecord(scanId)
@@ -161,11 +173,13 @@ class PostgresPersistentService implements PersistenceService {
 
     @Override
     boolean existsScanRecord(String scanId) {
+        log.trace "Exist scan record id=${scanId}"
         return scanRepository.existsById(scanId) ?: surrealPersistenceService?.existsScanRecord(scanId)
     }
 
     @Override
     List<WaveScanRecord> allScans(String scanId) {
+        log.trace "Loading all scans with record=${scanId}"
         final result = scanRepository.findAllByScanId(scanId)
         return result
                 ? result.collect((it)-> Mapper.fromJson(WaveScanRecord, it.data, [id: it.id]))
@@ -176,6 +190,7 @@ class PostgresPersistentService implements PersistenceService {
 
     @Override
     MirrorResult loadMirrorResult(String mirrorId) {
+        log.trace "Loading mirror result with id=${mirrorId}"
         final row = mirrorRepository.findById(mirrorId).orElse(null)
         if( !row )
             return surrealPersistenceService?.loadMirrorResult(mirrorId)
@@ -184,6 +199,7 @@ class PostgresPersistentService implements PersistenceService {
 
     @Override
     MirrorResult loadMirrorSucceed(String targetImage, String digest) {
+        log.trace "Loading mirror succeed with image=${targetImage}; digest=${digest}"
         final row = mirrorRepository.findByTargetAndDigest(targetImage, digest, MirrorResult.Status.COMPLETED)
         if( !row )
             return surrealPersistenceService?.loadMirrorSucceed(targetImage, digest)
@@ -192,6 +208,7 @@ class PostgresPersistentService implements PersistenceService {
 
     @Override
     void saveMirrorResultAsync(MirrorResult data) {
+        log.trace "Saving mirror result data=${data}"
         final json = Mapper.toJson(data)
         final entity = new MirrorRow(id: data.mirrorId, data:json, createdAt: Instant.now())
         mirrorRepository.save(entity)
