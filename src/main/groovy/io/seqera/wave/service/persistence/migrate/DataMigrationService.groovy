@@ -22,6 +22,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.micronaut.context.env.Environment
 import io.seqera.wave.service.persistence.impl.SurrealClient
 import io.seqera.wave.service.persistence.impl.SurrealPersistenceService
 import io.seqera.wave.service.persistence.migrate.cache.DataMigrateCache
@@ -35,7 +36,7 @@ import jakarta.inject.Singleton
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-@Requires(env=['surrealdb', 'postgresql', 'migrate'])
+@Requires(env=['migrate'])
 @Slf4j
 @Singleton
 @CompileStatic
@@ -60,8 +61,14 @@ class DataMigrationService {
     @Value('${wave.db.migrate.page-size:1000}')
     int pageSize
 
+    @Inject
+    private Environment environment
+
     @PostConstruct
     void init() {
+        if (!environment.activeNames.contains("surrealdb") || !environment.activeNames.contains("postgres")) {
+            throw new IllegalStateException("Both 'surrealdb' and 'postgresql' environments must be active.");
+        }
         migrateSurrealToPostgres()
     }
     void migrateSurrealToPostgres() {
