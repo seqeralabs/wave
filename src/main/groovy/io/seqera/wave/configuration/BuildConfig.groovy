@@ -25,7 +25,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.api.SubmitContainerTokenRequest
-import io.seqera.wave.core.ContainerPlatform
 import jakarta.inject.Singleton
 /**
  * Model Wave build config settings
@@ -97,11 +96,7 @@ class BuildConfig {
     @Nullable
     Boolean forceCompression
 
-    /**
-     * The number of times a build job should be retries. Since failures are expected due to
-     * invalid Dockerfile or Conda environment, retry is disabled.
-     */
-    @Value('${wave.build.retry-attempts:0}')
+    @Value('${wave.build.retry-attempts:1}')
     int retryAttempts
 
     @Value('${wave.build.max-conda-file-size:50000}')
