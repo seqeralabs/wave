@@ -5,8 +5,7 @@ plugins {
     id 'io.seqera.wave.java-library-conventions'
     id 'io.seqera.wave.groovy-application-conventions'
     id "io.micronaut.minimal.application" version "4.1.1"
-    id "com.google.cloud.tools.jib" version "3.4.2"
-    id 'org.asciidoctor.jvm.convert' version '3.3.2'
+    id "com.google.cloud.tools.jib" version "3.4.5"
     id 'jacoco'
 }
 

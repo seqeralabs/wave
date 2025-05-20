@@ -579,7 +579,6 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'build-claim',
                 'wave.build.k8s.storage.mountPath': '/build',
-                'wave.build.retry-attempts': 3
         ]
         and:
         def ctx = ApplicationContext.run(PROPS)
@@ -596,7 +595,7 @@ class K8sServiceImplTest extends Specification {
         def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, nodeSelector)
 
         then:
-        job.spec.backoffLimit == 3
+        job.spec.backoffLimit == 1
         job.spec.template.spec.containers[0].image == containerImage
         job.spec.template.spec.containers[0].command == args
         !job.spec.template.spec.containers[0].securityContext.privileged
@@ -907,7 +906,6 @@ class K8sServiceImplTest extends Specification {
             getCacheDirectory() >> Path.of('/build/cache/dir')
             getRequestsCpu() >> '2'
             getRequestsMemory() >> '4Gi'
-            getRetryAttempts() >> 3
         }
 
         when:
@@ -916,7 +914,7 @@ class K8sServiceImplTest extends Specification {
         then:
         job.metadata.name == name
         job.metadata.namespace == 'foo'
-        job.spec.backoffLimit == 3
+        job.spec.backoffLimit == 1
         job.spec.template.spec.containers[0].image == containerImage
         job.spec.template.spec.containers[0].args == args
         job.spec.template.spec.containers[0].resources.requests.get('cpu') == new Quantity('2')
@@ -951,7 +949,6 @@ class K8sServiceImplTest extends Specification {
         def mirrorConfig = Mock(MirrorConfig) {
             getRequestsCpu() >> null
             getRequestsMemory() >> null
-            getRetryAttempts() >> 3
         }
 
         when:
@@ -960,7 +957,7 @@ class K8sServiceImplTest extends Specification {
         then:
         job.metadata.name == name
         job.metadata.namespace == 'foo'
-        job.spec.backoffLimit == 3
+        job.spec.backoffLimit == 1
         job.spec.template.spec.containers[0].image == containerImage
         job.spec.template.spec.containers[0].args == args
         job.spec.template.spec.containers[0].resources.requests == [:]
@@ -1014,7 +1011,6 @@ class K8sServiceImplTest extends Specification {
             getCacheDirectory() >> Path.of('/build/cache/dir')
             getRequestsCpu() >> null
             getRequestsMemory() >> null
-            getRetryAttempts() >> 3
         }
 
         when:
@@ -1023,7 +1019,7 @@ class K8sServiceImplTest extends Specification {
         then:
         job.metadata.name == name
         job.metadata.namespace == 'foo'
-        job.spec.backoffLimit == 3
+        job.spec.backoffLimit == 1
         job.spec.template.spec.containers[0].image == containerImage
         job.spec.template.spec.containers[0].args == args
         job.spec.template.spec.containers[0].resources.requests == [:]
@@ -1161,7 +1157,6 @@ class K8sServiceImplTest extends Specification {
             getCacheDirectory() >> Path.of('/build/cache/dir')
             getRequestsCpu() >> null
             getRequestsMemory() >> null
-            getRetryAttempts() >> 3
         }
 
         when:
@@ -1170,7 +1165,7 @@ class K8sServiceImplTest extends Specification {
         then:
         job.metadata.name == name
         job.metadata.namespace == 'foo'
-        job.spec.backoffLimit == 3
+        job.spec.backoffLimit == 1
         and:
         verifyAll(job.spec.template.spec) {
             containers[0].image == containerImage

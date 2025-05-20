@@ -37,6 +37,10 @@ import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
 import io.kubernetes.client.openapi.models.V1PodDNSConfig
 import io.kubernetes.client.openapi.models.V1PodDNSConfigBuilder
+import io.kubernetes.client.openapi.models.V1PodFailurePolicy
+import io.kubernetes.client.openapi.models.V1PodFailurePolicyOnExitCodesRequirement
+import io.kubernetes.client.openapi.models.V1PodFailurePolicyOnPodConditionsPattern
+import io.kubernetes.client.openapi.models.V1PodFailurePolicyRule
 import io.kubernetes.client.openapi.models.V1ResourceRequirements
 import io.kubernetes.client.openapi.models.V1Volume
 import io.kubernetes.client.openapi.models.V1VolumeBuilder
@@ -584,9 +588,10 @@ class K8sServiceImpl implements K8sService {
                 .endMetadata()
 
         //spec section
-        def spec = builder
+        final spec = builder
                 .withNewSpec()
                 .withBackoffLimit(buildConfig.retryAttempts)
+                .withPodFailurePolicy(failurePolicy())
                 .withNewTemplate()
                 .withNewMetadata()
                 .addToAnnotations(getBuildkitAnnotations(name,singularity))
@@ -683,7 +688,8 @@ class K8sServiceImpl implements K8sService {
         //spec section
         def spec = builder
                 .withNewSpec()
-                .withBackoffLimit(scanConfig.retryAttempts)
+                .withBackoffLimit(buildConfig.retryAttempts)
+                .withPodFailurePolicy(failurePolicy())
                 .withNewTemplate()
                 .editOrNewSpec()
                 .withServiceAccount(serviceAccount)
@@ -757,7 +763,8 @@ class K8sServiceImpl implements K8sService {
         //spec section
         def spec = builder
                 .withNewSpec()
-                .withBackoffLimit(config.retryAttempts)
+                .withBackoffLimit(buildConfig.retryAttempts)
+                .withPodFailurePolicy(failurePolicy())
                 .withNewTemplate()
                 .editOrNewSpec()
                 .withServiceAccount(serviceAccount)
@@ -833,6 +840,31 @@ class K8sServiceImpl implements K8sService {
             }
         }
         return latest
+    }
+
+    protected V1PodFailurePolicy failurePolicy() {
+        // retry policy
+        // read more here
+        // https://kubernetes.io/blog/2024/08/19/kubernetes-1-31-pod-failure-policy-for-jobs-goes-ga/
+        //
+        return new V1PodFailurePolicy()
+                // not count the failure towards the backoffLimit
+                // for pod failure due to "DisruptionTarget" reason
+                // this cause the pod to be retried. NOTE this requires "backoffLimit" > 0
+                .addRulesItem(new V1PodFailurePolicyRule()
+                        .action("Ignore")
+                        .addOnPodConditionsItem( new V1PodFailurePolicyOnPodConditionsPattern()
+                                .type("DisruptionTarget")) )
+                // fail to job for any configuration issue
+                .addRulesItem(new V1PodFailurePolicyRule()
+                        .action("FailJob")
+                        .addOnPodConditionsItem( new V1PodFailurePolicyOnPodConditionsPattern()
+                                .type("ConfigIssue")) )
+                // fail the job for any non-zero exit status
+                .addRulesItem(new V1PodFailurePolicyRule()
+                        .action("FailJob")
+                        .onExitCodes(new V1PodFailurePolicyOnExitCodesRequirement()
+                                .operator("NotIn").values([0]) ))
     }
 
 }

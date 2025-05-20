@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.persistence.impl
 
+import java.util.concurrent.CompletableFuture
+
 import com.fasterxml.jackson.core.type.TypeReference
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -102,14 +104,16 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveBuildAsync(WaveBuildRecord build) {
+    CompletableFuture<Void> saveBuildAsync(WaveBuildRecord build) {
         // note: use surreal sql in order to by-pass issue with large payload
         // see https://github.com/seqeralabs/wave/issues/559#issuecomment-2369412170
         final query = "INSERT INTO wave_build ${JacksonHelper.toJson(build)}"
+        final future = new CompletableFuture<Void>()
         surrealDb
                 .sqlAsync(getAuthorization(), query)
                 .subscribe({result ->
                     log.trace "Build request with id '$build.buildId' saved record: ${result}"
+                    future.complete(null)
                 },
                         {error->
                             def msg = error.message
@@ -117,7 +121,9 @@ class SurrealPersistenceService implements PersistenceService {
                                 msg += ":\n $error.response.body"
                             }
                             log.error("Error saving Build request record ${msg}\n${build}", error)
+                            future.complete(null)
                         })
+        return future
     }
 
     @Override
@@ -200,14 +206,16 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveContainerRequestAsync(WaveContainerRecord data) {
+    CompletableFuture<Void> saveContainerRequestAsync(WaveContainerRecord data) {
         // note: use surreal sql in order to by-pass issue with large payload
         // see https://github.com/seqeralabs/wave/issues/559#issuecomment-2369412170
         final query = "INSERT INTO wave_request ${JacksonHelper.toJson(data)}"
+        final future = new CompletableFuture<Void>()
         surrealDb
                 .sqlAsync(getAuthorization(), query)
                 .subscribe({result ->
                     log.trace "Container request with token '$data.id' saved record: ${result}"
+                    future.complete(null)
                 },
                         {error->
                             def msg = error.message
@@ -215,19 +223,23 @@ class SurrealPersistenceService implements PersistenceService {
                                 msg += ":\n $error.response.body"
                             }
                             log.error("Error saving container request record ${msg}\n${data}", error)
+                            future.complete(null)
                         })
+        return future
     }
 
-    void updateContainerRequestAsync(String token, ContainerDigestPair digest) {
+    CompletableFuture<Void> updateContainerRequestAsync(String token, ContainerDigestPair digest) {
         final query = """\
                                 UPDATE wave_request:$token SET 
                                     sourceDigest = '$digest.source',
                                     waveDigest = '${digest.target}'
                                 """.stripIndent()
+        final future = new CompletableFuture()
         surrealDb
                 .sqlAsync(getAuthorization(), query)
                 .subscribe({result ->
                     log.trace "Container request with token '$token' updated record: ${result}"
+                    return future.complete(null)
                 },
                 {error->
                     def msg = error.message
@@ -235,7 +247,9 @@ class SurrealPersistenceService implements PersistenceService {
                         msg += ":\n $error.response.body"
                     }
                     log.error("Error update container record=$token => ${msg}\ndigest=${digest}\n", error)
+                    return future.complete(null)
                 })
+        return future
     }
 
     @Override
@@ -255,7 +269,7 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveScanRecordAsync(WaveScanRecord scanRecord) {
+    CompletableFuture<Void> saveScanRecordAsync(WaveScanRecord scanRecord) {
         final vulnerabilities = scanRecord.vulnerabilities ?: List.<ScanVulnerability>of()
 
         // create a multi-command surreal sql statement to insert all vulnerabilities
@@ -275,11 +289,13 @@ class SurrealPersistenceService implements PersistenceService {
 
         // add the wave_scan record
         statement += "INSERT INTO wave_scan ${patchScanVulnerabilities(json, ids)};\n".toString()
+        final future = new CompletableFuture<Void>()
         // store the statement using an async operation
         surrealDb
                 .sqlAsyncMany(getAuthorization(), statement)
                 .subscribe({result ->
                     log.trace "Scan record save result=$result"
+                    future.complete(null)
                 },
                 {error->
                     def msg = error.message
@@ -287,7 +303,9 @@ class SurrealPersistenceService implements PersistenceService {
                         msg += ":\n $error.response.body"
                     }
                     log.error("Error saving scan record => ${msg}\n", error)
+                    future.complete(null)
                 })
+        return future
     }
 
     protected String patchScanVulnerabilities(String json, List<String> ids) {
@@ -382,16 +400,20 @@ class SurrealPersistenceService implements PersistenceService {
      * @param mirror {@link MirrorEntry} object
      */
     @Override
-    void saveMirrorResultAsync(MirrorResult mirror) {
+    CompletableFuture<Void> saveMirrorResultAsync(MirrorResult mirror) {
+        final future = new CompletableFuture<Void>()
         surrealDb.insertMirrorAsync(getAuthorization(), mirror).subscribe({ result->
             log.trace "Mirror request with id '$mirror.mirrorId' saved record: ${result}"
+            return future.complete(null)
         }, {error->
             def msg = error.message
             if( error instanceof HttpClientResponseException ){
                 msg += ":\n $error.response.body"
             }
             log.error("Error saving Mirror request record ${msg}\n${mirror}", error)
+            return future.complete(null)
         })
+        return future
     }
 
 }

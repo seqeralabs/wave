@@ -61,7 +61,7 @@ class DockerBuildStrategy extends BuildStrategy {
         // save docker cli for debugging purpose
         if( debug ) {
             Files.write(req.workDir.resolve('docker.sh'),
-                    buildCmd.join(' ').bytes,
+                    cmdToStr(buildCmd).bytes,
                     CREATE, WRITE, TRUNCATE_EXISTING)
         }
         
@@ -74,6 +74,13 @@ class DockerBuildStrategy extends BuildStrategy {
         if( process.waitFor()!=0 ) {
             throw new IllegalStateException("Unable to launch build container - exitCode=${process.exitValue()}; output=${process.text}")
         }
+    }
+
+    private String cmdToStr(List<String> cmd) {
+        return cmd
+                .collect(it-> !it || it.contains(' ') ? "\"$it\"".toString() : it)
+                .collect(it-> it.startsWith('-') ? "\\\n  $it".toString() : it)
+                .join(' ')
     }
 
     protected List<String> buildCmd(String jobName, BuildRequest req, Path credsFile) {
