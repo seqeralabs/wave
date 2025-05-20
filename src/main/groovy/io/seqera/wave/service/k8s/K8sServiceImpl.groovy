@@ -37,6 +37,10 @@ import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
 import io.kubernetes.client.openapi.models.V1PodDNSConfig
 import io.kubernetes.client.openapi.models.V1PodDNSConfigBuilder
+import io.kubernetes.client.openapi.models.V1PodFailurePolicy
+import io.kubernetes.client.openapi.models.V1PodFailurePolicyOnExitCodesRequirement
+import io.kubernetes.client.openapi.models.V1PodFailurePolicyOnPodConditionsPattern
+import io.kubernetes.client.openapi.models.V1PodFailurePolicyRule
 import io.kubernetes.client.openapi.models.V1ResourceRequirements
 import io.kubernetes.client.openapi.models.V1Volume
 import io.kubernetes.client.openapi.models.V1VolumeBuilder
@@ -46,6 +50,7 @@ import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.MirrorConfig
@@ -161,6 +166,7 @@ class K8sServiceImpl implements K8sService {
      * @return  An instance of {@link JobStatus}
      */
     @Override
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
     JobStatus getJobStatus(String name) {
         final job = k8sClient
                 .batchV1Api()
@@ -357,6 +363,7 @@ class K8sServiceImpl implements K8sService {
      * @return The logs as a string or when logs are not available or cannot be accessed
      */
     @Override
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
     String logsPod(V1Pod pod) {
         try {
             final logs = k8sClient.podLogs()
@@ -524,6 +531,7 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Pod} description the submitted pod
      */
     @Override
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
     V1Job launchBuildJob(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, Map<String,String> nodeSelector) {
         final spec = buildJobSpec(name, containerImage, args, workDir, creds, timeout, nodeSelector)
         return k8sClient
@@ -580,9 +588,10 @@ class K8sServiceImpl implements K8sService {
                 .endMetadata()
 
         //spec section
-        def spec = builder
+        final spec = builder
                 .withNewSpec()
                 .withBackoffLimit(buildConfig.retryAttempts)
+                .withPodFailurePolicy(failurePolicy())
                 .withNewTemplate()
                 .withNewMetadata()
                 .addToAnnotations(getBuildkitAnnotations(name,singularity))
@@ -679,7 +688,8 @@ class K8sServiceImpl implements K8sService {
         //spec section
         def spec = builder
                 .withNewSpec()
-                .withBackoffLimit(scanConfig.retryAttempts)
+                .withBackoffLimit(buildConfig.retryAttempts)
+                .withPodFailurePolicy(failurePolicy())
                 .withNewTemplate()
                 .editOrNewSpec()
                 .withServiceAccount(serviceAccount)
@@ -753,7 +763,8 @@ class K8sServiceImpl implements K8sService {
         //spec section
         def spec = builder
                 .withNewSpec()
-                .withBackoffLimit(config.retryAttempts)
+                .withBackoffLimit(buildConfig.retryAttempts)
+                .withPodFailurePolicy(failurePolicy())
                 .withNewTemplate()
                 .editOrNewSpec()
                 .withServiceAccount(serviceAccount)
@@ -809,6 +820,7 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
     V1Pod getLatestPodForJob(String jobName) {
         // list all pods for the given job
         final allPods = k8sClient
@@ -828,6 +840,31 @@ class K8sServiceImpl implements K8sService {
             }
         }
         return latest
+    }
+
+    protected V1PodFailurePolicy failurePolicy() {
+        // retry policy
+        // read more here
+        // https://kubernetes.io/blog/2024/08/19/kubernetes-1-31-pod-failure-policy-for-jobs-goes-ga/
+        //
+        return new V1PodFailurePolicy()
+                // not count the failure towards the backoffLimit
+                // for pod failure due to "DisruptionTarget" reason
+                // this cause the pod to be retried. NOTE this requires "backoffLimit" > 0
+                .addRulesItem(new V1PodFailurePolicyRule()
+                        .action("Ignore")
+                        .addOnPodConditionsItem( new V1PodFailurePolicyOnPodConditionsPattern()
+                                .type("DisruptionTarget")) )
+                // fail to job for any configuration issue
+                .addRulesItem(new V1PodFailurePolicyRule()
+                        .action("FailJob")
+                        .addOnPodConditionsItem( new V1PodFailurePolicyOnPodConditionsPattern()
+                                .type("ConfigIssue")) )
+                // fail the job for any non-zero exit status
+                .addRulesItem(new V1PodFailurePolicyRule()
+                        .action("FailJob")
+                        .onExitCodes(new V1PodFailurePolicyOnExitCodesRequirement()
+                                .operator("NotIn").values([0]) ))
     }
 
 }

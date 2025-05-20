@@ -27,6 +27,7 @@ import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
+import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
@@ -61,6 +62,7 @@ class KubeBuildStrategy extends BuildStrategy {
 
 
     @Override
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
     void build(String jobName, BuildRequest req) {
 
         final Path configFile = req.configJson ? req.workDir.resolve('config.json') : null

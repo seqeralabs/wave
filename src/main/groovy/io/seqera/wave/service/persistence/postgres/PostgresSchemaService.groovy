@@ -43,8 +43,8 @@ class PostgresSchemaService {
             -- BUILD entity 
             CREATE TABLE IF NOT EXISTS wave_build (
                 id TEXT PRIMARY KEY,
-                data JSONB NOT NULL,
-                created_at TIMESTAMP DEFAULT NOW()
+                created_at TIMESTAMP DEFAULT NOW(),
+                data JSONB NOT NULL
             );
 
             CREATE INDEX IF NOT EXISTS wave_build_data_gin_idx 
@@ -56,8 +56,8 @@ class PostgresSchemaService {
             -- REQUEST entity 
             CREATE TABLE IF NOT EXISTS wave_request (
                 id TEXT PRIMARY KEY,
-                data JSONB NOT NULL,
-                created_at TIMESTAMP DEFAULT NOW()
+                created_at TIMESTAMP DEFAULT NOW(),
+                data JSONB NOT NULL
             );
 
             CREATE INDEX IF NOT EXISTS wave_request_data_gin_idx 
@@ -69,8 +69,8 @@ class PostgresSchemaService {
             -- MIRROR entity 
             CREATE TABLE IF NOT EXISTS wave_mirror (
                 id TEXT PRIMARY KEY,
-                data JSONB NOT NULL,
-                created_at TIMESTAMP DEFAULT NOW()
+                created_at TIMESTAMP DEFAULT NOW(),
+                data JSONB NOT NULL
             );
 
             CREATE INDEX IF NOT EXISTS wave_mirror_data_gin_idx
@@ -82,8 +82,8 @@ class PostgresSchemaService {
             -- SCAN entity 
             CREATE TABLE IF NOT EXISTS wave_scan (
                 id TEXT PRIMARY KEY,
-                data JSONB NOT NULL,
-                created_at TIMESTAMP DEFAULT NOW()
+                created_at TIMESTAMP DEFAULT NOW(),
+                data JSONB NOT NULL
             );
 
             CREATE INDEX IF NOT EXISTS wave_scan_start_time_idx
@@ -102,6 +102,24 @@ class PostgresSchemaService {
             }
             catch (SQLException e) {
                 throw new RuntimeException("Failed to initialize PostgreSQL tables", e)
+            }
+        })
+    }
+
+    void deleteAll() {
+        final stm = '''\
+        DELETE FROM wave_build;
+        DELETE FROM wave_request;
+        DELETE FROM wave_mirror;
+        DELETE FROM wave_scan;
+        '''.stripIndent()
+
+        jdbcOperations.execute((conn)-> {
+            try(final stmt = conn.createStatement()) {
+                stmt.execute(stm)
+            }
+            catch (SQLException e) {
+                throw new RuntimeException("Failed to truncate PostgreSQL tables", e)
             }
         })
     }
