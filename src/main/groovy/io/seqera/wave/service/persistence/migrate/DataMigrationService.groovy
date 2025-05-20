@@ -71,6 +71,9 @@ class DataMigrationService {
         }
         migrateSurrealToPostgres()
     }
+    /**
+     * Migrate data from SurrealDB to Postgres
+     */
     void migrateSurrealToPostgres() {
         log.info("Starting SurrealDB to Postgres migration...")
         dataMigrateCache.putIfAbsent(TABLE_NAME_BUILD, new DataMigrateEntry(TABLE_NAME_BUILD, 0))
@@ -85,6 +88,9 @@ class DataMigrationService {
 
         log.info("Migration completed.")
     }
+    /**
+     * Migrate build records from SurrealDB to Postgres
+     */
     void migrateBuildRecords() {
         int offset = dataMigrateCache.get(TABLE_NAME_BUILD).offset
         List builds
@@ -116,6 +122,9 @@ class DataMigrationService {
         }
     }
 
+    /**
+     * Migrate container requests from SurrealDB to Postgres
+     */
     void migrateContainerRequests() {
         int offset = dataMigrateCache.get(TABLE_NAME_CONTAINER_REQUEST).offset
         List requests
@@ -129,7 +138,10 @@ class DataMigrationService {
                 log.info("Migrating batch of ${requests.size()} container request records (offset $offset)")
                 requests.each { request ->
                     try {
-                        postgresService.saveContainerRequestAsync(request)
+                        def id = request.id.contains("wave_request:") ?
+                                request.id.takeAfter("wave_request:") :
+                                request.id
+                        postgresService.saveContainerRequestAsync(id, request)
                     } catch (Exception e) {
                         log.error("Error saving container request: ${e.message}", e)
                     }
@@ -147,6 +159,9 @@ class DataMigrationService {
         }
     }
 
+    /**
+     * Migrate scan records from SurrealDB to Postgres
+     */
     void migrateScanRecords() {
         int offset = dataMigrateCache.get(TABLE_NAME_SCAN).offset
         List scans
@@ -178,6 +193,9 @@ class DataMigrationService {
         }
     }
 
+    /**
+     * Migrate mirror records from SurrealDB to Postgres
+     */
     void migrateMirrorRecords() {
         int offset = dataMigrateCache.get(TABLE_NAME_MIRROR).offset
         List mirrors
@@ -208,6 +226,5 @@ class DataMigrationService {
             log.error("Error during mirror record migration: ${e.message}", e)
         }
     }
-
 
 }

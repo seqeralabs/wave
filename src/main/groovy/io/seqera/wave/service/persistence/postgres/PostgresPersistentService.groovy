@@ -122,6 +122,12 @@ class PostgresPersistentService implements PersistenceService {
 
     // ===== --- container records ---- =====
 
+    void saveContainerRequestAsync(String id, WaveContainerRecord data) {
+        final json = Mapper.toJson(data)
+        final entity = new RequestRow(id: id, data:json, createdAt: Instant.now())
+        requestRepository.save(entity)
+    }
+
     @Override
     void saveContainerRequestAsync(WaveContainerRecord data) {
         final json = Mapper.toJson(data)
