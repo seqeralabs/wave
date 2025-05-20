@@ -1,5 +1,8 @@
 # Wave changelog
-1.20.0 - 20 May 2025
+1.20.1 - 20 May 2025
+- Bump Jib to version 3.4.5
+
+1.20.0 - [skipped]
 - Add PostgreSQL based implementation for PersistenceService (#821) [2c5b25f0]
 - Add k8s tracing info [69769b13]
 - Add log trace to postgres service [6e939580]
