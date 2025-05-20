@@ -105,4 +105,22 @@ class PostgresSchemaService {
             }
         })
     }
+
+    void deleteAll() {
+        final stm = '''\
+        DELETE FROM wave_build;
+        DELETE FROM wave_request;
+        DELETE FROM wave_mirror;
+        DELETE FROM wave_scan;
+        '''.stripIndent()
+
+        jdbcOperations.execute((conn)-> {
+            try(final stmt = conn.createStatement()) {
+                stmt.execute(stm)
+            }
+            catch (SQLException e) {
+                throw new RuntimeException("Failed to truncate PostgreSQL tables", e)
+            }
+        })
+    }
 }

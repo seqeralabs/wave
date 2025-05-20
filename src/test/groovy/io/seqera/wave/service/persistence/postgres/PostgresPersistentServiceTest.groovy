@@ -53,13 +53,20 @@ import org.apache.commons.lang3.RandomStringUtils
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@MicronautTest(environments = 'postgres', startApplication = true)
+@MicronautTest(environments = 'postgres', startApplication = true, transactional = false)
 @Property(name = "datasources.default.driver-class-name", value = "org.testcontainers.jdbc.ContainerDatabaseDriver")
 @Property(name = "datasources.default.url", value = "jdbc:tc:postgresql:///db")
 class PostgresPersistentServiceTest extends Specification {
 
     @Inject
     PostgresPersistentService persistentService
+
+    @Inject
+    private PostgresSchemaService schemaService
+
+    def setup() {
+        schemaService.deleteAll()
+    }
 
     def 'should save and load a build record' () {
         given:
@@ -75,7 +82,7 @@ class PostgresPersistentServiceTest extends Specification {
                 startTime: Instant.now().minus(1, ChronoUnit.DAYS) )
 
         when:
-        persistentService.saveBuildAsync(build1)
+        persistentService.saveBuildAsync(build1) .join()
         then:
         noExceptionThrown()
         
@@ -114,7 +121,7 @@ class PostgresPersistentServiceTest extends Specification {
         def build1 = WaveBuildRecord.fromEvent(new BuildEvent(request, result))
 
         when:
-        persistentService.saveBuildAsync(build1)
+        persistentService.saveBuildAsync(build1) .join()
         then:
         persistentService.loadBuild(request.buildId) == build1
     }
@@ -130,15 +137,15 @@ class PostgresPersistentServiceTest extends Specification {
         and:
         def result1 = new BuildResult(request1.buildId, 1, "err", request1.startTime, Duration.ofSeconds(2), digest)
         def rec1 = WaveBuildRecord.fromEvent(new BuildEvent(request1, result1))
-        persistentService.saveBuildAsync(rec1)
+        persistentService.saveBuildAsync(rec1) .join()
         and:
         def result2 = new BuildResult(request2.buildId, 0, "ok", request2.startTime, Duration.ofSeconds(2), digest)
         def rec2 = WaveBuildRecord.fromEvent(new BuildEvent(request2, result2))
-        persistentService.saveBuildAsync(rec2)
+        persistentService.saveBuildAsync(rec2) .join()
         and:
         def result3 = new BuildResult(request3.buildId, 0, "ok", request3.startTime, Duration.ofSeconds(2), digest)
         def rec3 = WaveBuildRecord.fromEvent(new BuildEvent(request3, result3))
-        persistentService.saveBuildAsync(rec3)
+        persistentService.saveBuildAsync(rec3) .join()
 
         expect:
         persistentService.loadBuildSucceed(target, digest) == rec3
@@ -151,13 +158,13 @@ class PostgresPersistentServiceTest extends Specification {
         def request3 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_3' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(10), identity: PlatformId.NULL)
 
         def result1 = new BuildResult(request1.buildId, -1, "ok", request1.startTime, Duration.ofSeconds(2), null)
-        persistentService.saveBuildAsync(WaveBuildRecord.fromEvent(new BuildEvent(request1, result1)))
+        persistentService.saveBuildAsync(WaveBuildRecord.fromEvent(new BuildEvent(request1, result1))) .join()
         and:
         def result2 = new BuildResult(request2.buildId, -1, "ok", request2.startTime, Duration.ofSeconds(2), null)
-        persistentService.saveBuildAsync(WaveBuildRecord.fromEvent(new BuildEvent(request2, result2)))
+        persistentService.saveBuildAsync(WaveBuildRecord.fromEvent(new BuildEvent(request2, result2))) .join()
         and:
         def result3 = new BuildResult(request3.buildId, -1, "ok", request3.startTime, Duration.ofSeconds(2), null)
-        persistentService.saveBuildAsync(WaveBuildRecord.fromEvent(new BuildEvent(request3, result3)))
+        persistentService.saveBuildAsync(WaveBuildRecord.fromEvent(new BuildEvent(request3, result3))) .join()
 
         expect:
         persistentService.latestBuild('abc').buildId == 'bd-abc_3'
@@ -174,19 +181,19 @@ class PostgresPersistentServiceTest extends Specification {
 
         def result1 = new BuildResult(request1.buildId, -1, "ok", request1.startTime, Duration.ofSeconds(2), null)
         def record1 = WaveBuildRecord.fromEvent(new BuildEvent(request1, result1))
-        persistentService.saveBuildAsync(record1)
+        persistentService.saveBuildAsync(record1) .join()
         and:
         def result2 = new BuildResult(request2.buildId, -1, "ok", request2.startTime, Duration.ofSeconds(2), null)
         def record2 = WaveBuildRecord.fromEvent(new BuildEvent(request2, result2))
-        persistentService.saveBuildAsync(record2)
+        persistentService.saveBuildAsync(record2) .join()
         and:
         def result3 = new BuildResult(request3.buildId, -1, "ok", request3.startTime, Duration.ofSeconds(2), null)
         def record3 = WaveBuildRecord.fromEvent(new BuildEvent(request3, result3))
-        persistentService.saveBuildAsync(record3)
+        persistentService.saveBuildAsync(record3) .join()
         and:
         def result4 = new BuildResult(request4.buildId, -1, "ok", request4.startTime, Duration.ofSeconds(2), null)
         def record4 = WaveBuildRecord.fromEvent(new BuildEvent(request4, result4))
-        persistentService.saveBuildAsync(record4)
+        persistentService.saveBuildAsync(record4) .join()
 
         expect:
         persistentService.allBuilds('abc') == [record3, record2, record1]
@@ -223,7 +230,7 @@ class PostgresPersistentServiceTest extends Specification {
         and:
         def request = new WaveContainerRecord(req, data, wave, addr, exp)
         and:
-        persistentService.saveContainerRequestAsync(request)
+        persistentService.saveContainerRequestAsync(request) .join()
 
         when:
         def loaded = persistentService.loadContainerRequest(TOKEN)
@@ -233,7 +240,7 @@ class PostgresPersistentServiceTest extends Specification {
 
         // should update the record
         when:
-        persistentService.updateContainerRequestAsync(TOKEN, new ContainerDigestPair('111', '222'))
+        persistentService.updateContainerRequestAsync(TOKEN, new ContainerDigestPair('111', '222')) .join()
         then:
         def updated = persistentService.loadContainerRequest(TOKEN)
         and:
@@ -263,7 +270,7 @@ class PostgresPersistentServiceTest extends Specification {
         )
         and:
         def result = MirrorEntry.of(request).getResult()
-        persistentService.saveMirrorResultAsync(result)
+        persistentService.saveMirrorResultAsync(result) .join()
 
         when:
         def stored = persistentService.loadMirrorResult(request.mirrorId)
@@ -318,9 +325,9 @@ class PostgresPersistentServiceTest extends Specification {
         def result1 = MirrorResult.of(request1).complete(1, 'err')
         def result2 = MirrorResult.of(request2).complete(0, 'ok')
         def result3 = MirrorResult.of(request3).complete(0, 'ok')
-        persistentService.saveMirrorResultAsync(result1)
-        persistentService.saveMirrorResultAsync(result2)
-        persistentService.saveMirrorResultAsync(result3)
+        persistentService.saveMirrorResultAsync(result1) .join()
+        persistentService.saveMirrorResultAsync(result2) .join()
+        persistentService.saveMirrorResultAsync(result3) .join()
 
         when:
         def stored = persistentService.loadMirrorSucceed(target, digest)
@@ -343,7 +350,7 @@ class PostgresPersistentServiceTest extends Specification {
         def CVE4 = new ScanVulnerability('cve-4', 'x4', 'title4', 'package4', 'version4', 'fixed4', 'url4')
         def scan = new WaveScanRecord(SCAN_ID, BUILD_ID, null, null, CONTAINER_IMAGE, PLATFORM, NOW, Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3], null, null, null)
         when:
-        persistentService.saveScanRecordAsync(scan)
+        persistentService.saveScanRecordAsync(scan).join()
         then:
         def result = persistentService.loadScanRecord(SCAN_ID)
         and:
@@ -357,7 +364,7 @@ class PostgresPersistentServiceTest extends Specification {
         def scanRecord2 = new WaveScanRecord(SCAN_ID2, BUILD_ID2, null, null, CONTAINER_IMAGE, PLATFORM, NOW, Duration.ofSeconds(20), 'FAILED', [CVE1, CVE4], 1, "Error 'quote'", null)
         and:
         // should save the same CVE into another build
-        persistentService.saveScanRecordAsync(scanRecord2)
+        persistentService.saveScanRecordAsync(scanRecord2) .join()
         then:
         def result2 = persistentService.loadScanRecord(SCAN_ID2)
         and:
@@ -378,7 +385,7 @@ class PostgresPersistentServiceTest extends Specification {
         !persistentService.existsScanRecord(SCAN_ID)
 
         when:
-        persistentService.saveScanRecordAsync(scan)
+        persistentService.saveScanRecordAsync(scan).join()
         then:
         persistentService.existsScanRecord(SCAN_ID)
     }
@@ -397,10 +404,10 @@ class PostgresPersistentServiceTest extends Specification {
         def scan4 = new WaveScanRecord('sc-01234567890abcdef_4', '103', null, null, CONTAINER_IMAGE, PLATFORM,Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1], null, null, null)
 
         when:
-        persistentService.saveScanRecordAsync(scan1)
-        persistentService.saveScanRecordAsync(scan2)
-        persistentService.saveScanRecordAsync(scan3)
-        persistentService.saveScanRecordAsync(scan4)
+        persistentService.saveScanRecordAsync(scan1) .join()
+        persistentService.saveScanRecordAsync(scan2) .join()
+        persistentService.saveScanRecordAsync(scan3) .join()
+        persistentService.saveScanRecordAsync(scan4) .join()
 
         then:
         persistentService.allScans("1234567890abcdef") == [scan3, scan2, scan1]

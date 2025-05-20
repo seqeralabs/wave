@@ -19,6 +19,8 @@
 package io.seqera.wave.service.persistence.postgres
 
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -27,6 +29,7 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
+import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.PersistenceService
@@ -43,6 +46,8 @@ import io.seqera.wave.service.persistence.postgres.data.RequestRow
 import io.seqera.wave.service.persistence.postgres.data.ScanRepository
 import io.seqera.wave.service.persistence.postgres.data.ScanRow
 import jakarta.inject.Inject
+import jakarta.inject.Named
+
 /**
  * Implements the {@link PersistenceService} using a PostgreSQL database
  *
@@ -73,19 +78,41 @@ class PostgresPersistentService implements PersistenceService {
     @Nullable
     private SurrealPersistenceService surrealPersistenceService
 
+    @Inject
+    @Named(TaskExecutors.BLOCKING)
+    private ExecutorService ioExecutor
+
     @EventListener
     void onApplicationStartup(ApplicationStartupEvent event) {
         dbInitService.create()
     }
 
     // ===== --- build records ---- =====
+    private Runnable safeRun(Runnable action, GString msg) {
+       new Runnable() {
+           @Override
+           void run() {
+               try {
+                   action.run()
+               }
+               catch (InstantiationException e) {
+                   Thread.interrupted()
+               }
+               catch (Throwable e) {
+                   log.error(msg.toString(), e)
+               }
+           }
+       }
+    }
 
     @Override
-    void saveBuildAsync(WaveBuildRecord data) {
+    CompletableFuture<Void> saveBuildAsync(WaveBuildRecord data) {
         log.trace "Saving build record=$data"
         final json = Mapper.toJson(data)
         final row = new BuildRow(id:data.buildId, data:json, createdAt: Instant.now())
-        buildRepository.save(row)
+        CompletableFuture.runAsync(safeRun(()->
+                buildRepository.save(row),
+                "Unable to save build record=$data"))
     }
 
     @Override
@@ -130,17 +157,21 @@ class PostgresPersistentService implements PersistenceService {
     // ===== --- container records ---- =====
 
     @Override
-    void saveContainerRequestAsync(WaveContainerRecord data) {
+    CompletableFuture<Void> saveContainerRequestAsync(WaveContainerRecord data) {
         log.trace "Saving container request data=${data}"
         final json = Mapper.toJson(data)
         final entity = new RequestRow(id: data.id, data:json, createdAt: Instant.now())
-        requestRepository.save(entity)
+        CompletableFuture.runAsync(safeRun(()->
+                requestRepository.save(entity),
+                "Unable to save container request data=$data"))
     }
 
     @Override
-    void updateContainerRequestAsync(String token, ContainerDigestPair digest) {
+    CompletableFuture<Void> updateContainerRequestAsync(String token, ContainerDigestPair digest) {
         log.trace "Updating container request token=${token}; digest=${digest}"
-        requestRepository.updateContainerDigests(token, digest.source, digest.target)
+        CompletableFuture.runAsync(safeRun(()->
+                requestRepository.updateContainerDigests(token, digest.source, digest.target),
+                "Unable to update container request token=${token}; digest=${digest}"))
     }
 
     @Override
@@ -155,11 +186,13 @@ class PostgresPersistentService implements PersistenceService {
     // ===== --- scan records ---- =====
 
     @Override
-    void saveScanRecordAsync(WaveScanRecord data) {
+    CompletableFuture<Void> saveScanRecordAsync(WaveScanRecord data) {
         log.trace "Saving scan record data=${data}"
         final json = Mapper.toJson(data)
         final entity = new ScanRow(id: data.id, data:json, createdAt: Instant.now())
-        scanRepository.save(entity)
+        CompletableFuture.runAsync(safeRun(()->
+                scanRepository.save(entity),
+                "Unable to save scan record data=${data}"))
     }
 
     @Override
@@ -207,10 +240,12 @@ class PostgresPersistentService implements PersistenceService {
     }
 
     @Override
-    void saveMirrorResultAsync(MirrorResult data) {
+    CompletableFuture<Void> saveMirrorResultAsync(MirrorResult data) {
         log.trace "Saving mirror result data=${data}"
         final json = Mapper.toJson(data)
         final entity = new MirrorRow(id: data.mirrorId, data:json, createdAt: Instant.now())
-        mirrorRepository.save(entity)
+        CompletableFuture.runAsync(safeRun(()->
+                mirrorRepository.save(entity),
+                "Unable to save mirror result data=${data}"))
     }
 }
