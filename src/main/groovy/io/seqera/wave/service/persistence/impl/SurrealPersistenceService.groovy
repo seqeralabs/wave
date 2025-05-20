@@ -413,7 +413,12 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     List<WaveScanRecord> getScansPaginated(int limit, int offset){
-        final query = "select * from wave_scan limit $limit start $offset"
+        final query = """
+            select * 
+            from wave_scan
+            limit $limit start $offset
+            FETCH vulnerabilities
+            """.stripIndent()
         final json = surrealDb.sqlAsString(getAuthorization(), query)
         final type = new TypeReference<ArrayList<SurrealResult<WaveScanRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
