@@ -22,6 +22,7 @@ package io.seqera.wave.service.job.impl
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
+import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.service.job.JobOperation
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
@@ -51,6 +52,7 @@ class K8sJobOperation implements JobOperation {
     }
 
     @Override
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
     JobState status(JobSpec job) {
         final status = k8sService.getJobStatus(job.operationName)
         if( !status || !status.completed() ) {

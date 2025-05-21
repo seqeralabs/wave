@@ -94,6 +94,7 @@ class MailServiceImpl implements MailService {
         binding.build_duration = formatDuration(result.duration) ?: '-'
         binding.build_image = preventLinkFormatting(req.targetImage)
         binding.build_format = req.format?.render() ?: 'Docker'
+        binding.build_compression = req.compression?.mode ?: '(default)'
         binding.build_platform = req.platform
         binding.build_containerfile = req.containerFile ?: '-'
         binding.build_condafile = req.condaFile

@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.persistence.impl
 
+import java.util.concurrent.CompletableFuture
+
 import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.mirror.MirrorResult
@@ -44,8 +46,9 @@ class LocalPersistenceService implements PersistenceService {
     private Map<String,MirrorResult> mirrorStore = new HashMap<>()
 
     @Override
-    void saveBuildAsync(WaveBuildRecord record) {
+    CompletableFuture<Void> saveBuildAsync(WaveBuildRecord record) {
         buildStore[record.buildId] = record
+        CompletableFuture.<Void>completedFuture(null)
     }
 
     @Override
@@ -78,16 +81,18 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveContainerRequestAsync(WaveContainerRecord data) {
+    CompletableFuture<Void> saveContainerRequestAsync(WaveContainerRecord data) {
         requestStore.put(data.id, data)
+        CompletableFuture.<Void>completedFuture(null)
     }
 
     @Override
-    void updateContainerRequestAsync(String token, ContainerDigestPair digest) {
+    CompletableFuture<Void> updateContainerRequestAsync(String token, ContainerDigestPair digest) {
         final data = requestStore.get(token)
         if( data ) {
             requestStore.put(token, new WaveContainerRecord(data, digest.source, digest.target))
         }
+        CompletableFuture.<Void>completedFuture(null)
     }
 
     @Override
@@ -101,8 +106,9 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveScanRecordAsync(WaveScanRecord scanRecord) {
+    CompletableFuture<Void> saveScanRecordAsync(WaveScanRecord scanRecord) {
         scanStore.put(scanRecord.id, scanRecord)
+        CompletableFuture.<Void>completedFuture(null)
     }
 
     @Override
@@ -131,8 +137,9 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveMirrorResultAsync(MirrorResult mirror) {
+    CompletableFuture<Void> saveMirrorResultAsync(MirrorResult mirror) {
         mirrorStore.put(mirror.mirrorId, mirror)
+        CompletableFuture.<Void>completedFuture(null)
     }
 
 }

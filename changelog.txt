@@ -1,4 +1,33 @@
 # Wave changelog
+1.20.2 - 21 May 2025
+- Fix K8s failure detection on pod error [1c76cd96]
+
+1.20.1 - 20 May 2025
+- Bump Jib to version 3.4.5
+
+1.20.0 - [skipped]
+- Add PostgreSQL based implementation for PersistenceService (#821) [2c5b25f0]
+- Add k8s tracing info [69769b13]
+- Add log trace to postgres service [6e939580]
+- Add pod failure policy [2ce4a998]
+- Add progres async impl [de5f7237]
+- Add support for compression settings (#822) [72566c0d]
+- Improve docker debug command [0a59ec26]
+- Promote job queues config logs to info [d8e3d9f0]
+- Remove unused h2 env [e4422b1e]
+- added jdbc binder for promethues metrics (#840) [7094a366]
+
+1.19.6 - 30 Apr 2025
+- Bypass cache repo for custom build repos  (#828) [29a93053]
+
+1.19.5 - 17 Apr 2025
+- Add multi arch singularity image (#826) [cf4f97ff]
+- Add proot and init container to singularity build (#825) [6d995d4c]
+- Add compress options to image output [c25496b5]
+- Bump Micronaut to version 4.8.0 [6e4b6031]
+- Bump Netty to version 4.1.119 [f2147953]
+- Bump Gradle 8.13 [8bdd2adc]
+
 1.19.4 - 31 Mar 2025 
 - Add enable-native-access=ALL-UNNAMED to launch opts [4f0525da]
 - Default request containerPlatform to linux/adm64 [dcdb7cf4]
