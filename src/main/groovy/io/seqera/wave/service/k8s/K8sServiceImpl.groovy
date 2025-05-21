@@ -20,6 +20,7 @@ package io.seqera.wave.service.k8s
 
 import java.nio.file.Path
 import java.time.Duration
+import java.util.regex.Pattern
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
@@ -31,6 +32,7 @@ import io.kubernetes.client.openapi.models.V1EnvVar
 import io.kubernetes.client.openapi.models.V1HostPathVolumeSource
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1JobBuilder
+import io.kubernetes.client.openapi.models.V1JobCondition
 import io.kubernetes.client.openapi.models.V1JobStatus
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource
 import io.kubernetes.client.openapi.models.V1Pod
@@ -192,9 +194,26 @@ class K8sServiceImpl implements K8sService {
                 return JobStatus.Failed
             if( backoffLimit!=null && status.failed > backoffLimit )
                 return JobStatus.Failed
+            if( status.conditions?.any( c-> isPodFailCondition(c)) )
+                return JobStatus.Failed
         }
         return JobStatus.Pending
     }
+
+    /**
+     * Determines if the job has failed due the rules defined by {@link #failurePolicy()}
+     *
+     * @param condition The job condition to be evaluated
+     * @return {@code true} if the job condition identifies a failure, {@code false otherwise}
+     */
+    static final private Pattern FAIL_MESSAGE = ~/Container .+ failed .+ matching FailJob rule at index 2/
+
+    static protected boolean isPodFailCondition(V1JobCondition condition) {
+        return condition.reason=='PodFailurePolicy'
+                && condition.message
+                && FAIL_MESSAGE.matcher(condition.message).matches()
+    }
+
     /**
      * Get pod description
      *
