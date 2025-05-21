@@ -23,16 +23,16 @@ package io.seqera.wave.service.scan
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-enum ScanMode {
+enum ScanType {
 
-    Default("json", Trivy.OUTPUT_FILE_NAME),
+    Default("json", "report.json"),
     Spdx("spdx-json", "spdx.json"),
     CycloneDx("cyclonedx", "cyclonedx.json"),
 
     final private String format;
     final private String output;
 
-    ScanMode(String format, String output) {
+    ScanType(String format, String output) {
         this.format = format
         this.output = output
     }

@@ -41,7 +41,7 @@ class ContainerScanStrategyTest extends Specification {
         def platform = ContainerPlatform.DEFAULT
 
         when:
-        def command = containerScanStrategy.scanCommand(targetImage, workDir, platform, config, ScanMode.Default)
+        def command = containerScanStrategy.scanCommand(targetImage, workDir, platform, config, ScanType.Default)
         then:
         command == [ 'trivy',
                      '--quiet',
@@ -69,7 +69,7 @@ class ContainerScanStrategyTest extends Specification {
         }
 
         when:
-        def command = containerScanStrategy.scanCommand(targetImage, workDir, platform, config, ScanMode.Default)
+        def command = containerScanStrategy.scanCommand(targetImage, workDir, platform, config, ScanType.Default)
         then:
         command == [ 'trivy',
                      '--quiet',
@@ -99,7 +99,7 @@ class ContainerScanStrategyTest extends Specification {
         }
 
         when:
-        def command = containerScanStrategy.scanCommand(targetImage, workDir, platform, config, ScanMode.Spdx)
+        def command = containerScanStrategy.scanCommand(targetImage, workDir, platform, config, ScanType.Spdx)
         then:
         command == [ 'trivy',
                      '--quiet',

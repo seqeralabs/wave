@@ -39,7 +39,7 @@ abstract class ScanStrategy {
 
     abstract void scanContainer(String jobName, ScanEntry entry)
 
-    protected List<String> scanCommand(String targetImage, Path workDir, ContainerPlatform platform, ScanConfig config, ScanMode mode) {
+    protected List<String> scanCommand(String targetImage, Path workDir, ContainerPlatform platform, ScanConfig config, ScanType mode) {
         List<String> cmd = ['trivy', '--quiet', 'image']
         if( platform ) {
             cmd << '--platform'
@@ -52,7 +52,7 @@ abstract class ScanStrategy {
         cmd << '--output'
         cmd << workDir.resolve(mode.output).toString()
 
-        if( config.severity && mode==ScanMode.Default ) {
+        if( config.severity && mode==ScanType.Default ) {
             cmd << '--severity'
             cmd << config.severity
         }
@@ -63,11 +63,11 @@ abstract class ScanStrategy {
     protected List<String> trivyCommand(String containerImage, Path workDir, ContainerPlatform platform, ScanConfig scanConfig) {
         final cmd = new ArrayList<String>(50)
         // the vulnerability scan command
-        cmd.addAll(scanCommand(containerImage, workDir, platform, scanConfig, ScanMode.Default) )
+        cmd.addAll(scanCommand(containerImage, workDir, platform, scanConfig, ScanType.Default) )
         // command separator
         cmd.add("&&")
         // the SBOM spdx scan
-        cmd.addAll(scanCommand(containerImage, workDir, platform, scanConfig, ScanMode.Spdx) )
+        cmd.addAll(scanCommand(containerImage, workDir, platform, scanConfig, ScanType.Spdx) )
         return List.of("-c", cmd.join(' '))
     }
 }
