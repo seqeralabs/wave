@@ -117,7 +117,7 @@ class DataMigrationService {
 
         builds.each {
             try {
-                postgresService.saveBuildAsync(it)
+                postgresService.saveBuildAsync(it).join()
                 offset++
             } catch (Exception e) {
                 log.error("Error saving build record: ${e.message}", e)
@@ -173,7 +173,7 @@ class DataMigrationService {
 
         scans.each {
             try {
-                postgresService.saveScanRecordAsync(it)
+                postgresService.saveScanRecordAsync(it).join()
                 offset++
             } catch (Exception e) {
                 log.error("Error saving scan record: ${e.message}", e)
@@ -201,7 +201,7 @@ class DataMigrationService {
 
         mirrors.each {
             try {
-                postgresService.saveMirrorResultAsync(it)
+                postgresService.saveMirrorResultAsync(it).join()
                 offset++
             } catch (Exception e) {
                 log.error("Error saving mirror record: ${e.message}", e)
