@@ -18,11 +18,15 @@
 
 package io.seqera.wave.service.persistence.migrate
 
+import java.time.Duration
+import java.util.concurrent.atomic.AtomicBoolean
+
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.context.env.Environment
+import io.micronaut.scheduling.TaskScheduler
 import io.seqera.wave.service.persistence.impl.SurrealClient
 import io.seqera.wave.service.persistence.impl.SurrealPersistenceService
 import io.seqera.wave.service.persistence.migrate.cache.DataMigrateCache
@@ -41,190 +45,170 @@ import jakarta.inject.Singleton
 @Singleton
 @CompileStatic
 class DataMigrationService {
-    @Inject
-    private SurrealPersistenceService surrealService
+
+    @Value('${wave.db.migrate.page-size:1000}')
+    int pageSize
+
+    @Value('${wave.db.migrate.delay:2s}')
+    Duration delay
+
+    @Value('${wave.db.migrate.initial-delay:2s}')
+    Duration initialDelay
 
     @Inject
-    private PostgresPersistentService postgresService
+    SurrealPersistenceService surrealService
 
     @Inject
-    private SurrealClient surrealDb
+    PostgresPersistentService postgresService
+
+    @Inject
+    SurrealClient surrealDb
 
     @Inject
     DataMigrateCache dataMigrateCache
+
+    @Inject
+    TaskScheduler taskScheduler
+
+    @Inject
+    Environment environment
 
     public static final String TABLE_NAME_BUILD = 'wave_build'
     public static final String TABLE_NAME_CONTAINER_REQUEST = 'wave_container_request'
     public static final String TABLE_NAME_SCAN = 'wave_scan'
     public static final String TABLE_NAME_MIRROR = 'wave_mirror'
 
-    @Value('${wave.db.migrate.page-size:1000}')
-    int pageSize
-
-    @Inject
-    private Environment environment
+    private final AtomicBoolean buildDone = new AtomicBoolean(false)
+    private final AtomicBoolean requestDone = new AtomicBoolean(false)
+    private final AtomicBoolean scanDone = new AtomicBoolean(false)
+    private final AtomicBoolean mirrorDone = new AtomicBoolean(false)
 
     @PostConstruct
     void init() {
         if (!environment.activeNames.contains("surrealdb") || !environment.activeNames.contains("postgres")) {
-            throw new IllegalStateException("Both 'surrealdb' and 'postgresql' environments must be active.");
+            throw new IllegalStateException("Both 'surrealdb' and 'postgres' environments must be active.")
         }
-        migrateSurrealToPostgres()
-    }
-    /**
-     * Migrate data from SurrealDB to Postgres
-     */
-    void migrateSurrealToPostgres() {
-        log.info("Starting SurrealDB to Postgres migration...")
+
         dataMigrateCache.putIfAbsent(TABLE_NAME_BUILD, new DataMigrateEntry(TABLE_NAME_BUILD, 0))
         dataMigrateCache.putIfAbsent(TABLE_NAME_CONTAINER_REQUEST, new DataMigrateEntry(TABLE_NAME_CONTAINER_REQUEST, 0))
         dataMigrateCache.putIfAbsent(TABLE_NAME_SCAN, new DataMigrateEntry(TABLE_NAME_SCAN, 0))
         dataMigrateCache.putIfAbsent(TABLE_NAME_MIRROR, new DataMigrateEntry(TABLE_NAME_MIRROR, 0))
 
-        migrateBuildRecords()
-        migrateContainerRequests()
-        migrateScanRecords()
-        migrateMirrorRecords()
-
-        log.info("Migration completed.")
+        taskScheduler.scheduleWithFixedDelay(initialDelay, delay, this::migrateBuildRecords)
+        taskScheduler.scheduleWithFixedDelay(initialDelay, delay, this::migrateContainerRequests)
+        taskScheduler.scheduleWithFixedDelay(initialDelay, delay, this::migrateScanRecords)
+        taskScheduler.scheduleWithFixedDelay(initialDelay, delay, this::migrateMirrorRecords)
     }
+
     /**
-     * Migrate build records from SurrealDB to Postgres
+     * Migrate data from SurrealDB to Postgres
      */
     void migrateBuildRecords() {
+        if (buildDone.get()) return
+
         int offset = dataMigrateCache.get(TABLE_NAME_BUILD).offset
-        List builds
-        try {
-            do {
-                builds = surrealService.getBuildsPaginated(pageSize, offset)
-                if (!builds || builds.isEmpty()) {
-                    break
-                }
+        def builds = surrealService.getBuildsPaginated(pageSize, offset)
 
-                log.info("Migrating batch of ${builds.size()} build records (offset $offset)")
-                builds.each { build ->
-                    try {
-                        postgresService.saveBuildAsync(build)
-                    } catch (Exception e) {
-                        log.error("Error saving build record: ${e.message}", e)
-                    }
-                }
-
-                offset += pageSize
-                log.info("Sleeping for 2 seconds between batches...")
-                sleep(2000)
-                dataMigrateCache.put(TABLE_NAME_BUILD, new DataMigrateEntry(TABLE_NAME_BUILD, offset))
-            } while (builds.size() == pageSize)
-
-            log.info("Completed migrating all build records.")
-        } catch (Exception e) {
-            log.error("Error during build record migration: ${e.message}", e)
+        if (!builds || builds.isEmpty()) {
+            log.info("All build records migrated.")
+            buildDone.set(true)
+            return
         }
+
+        builds.each {
+            try {
+                postgresService.saveBuildAsync(it)
+                offset++
+            } catch (Exception e) {
+                log.error("Error saving build record: ${e.message}", e)
+            }
+        }
+        dataMigrateCache.put(TABLE_NAME_BUILD, new DataMigrateEntry(TABLE_NAME_BUILD, offset))
+        log.info("Migrated ${builds.size()} build records (offset $offset)")
     }
 
     /**
      * Migrate container requests from SurrealDB to Postgres
      */
     void migrateContainerRequests() {
+        if (requestDone.get()) return
+
         int offset = dataMigrateCache.get(TABLE_NAME_CONTAINER_REQUEST).offset
-        List requests
-        try {
-            do {
-                requests = surrealService.getRequestsPaginated(pageSize, offset)
-                if (!requests || requests.isEmpty()) {
-                    break
-                }
+        def requests = surrealService.getRequestsPaginated(pageSize, offset)
 
-                log.info("Migrating batch of ${requests.size()} container request records (offset $offset)")
-                requests.each { request ->
-                    try {
-                        def id = request.id.contains("wave_request:") ?
-                                request.id.takeAfter("wave_request:") :
-                                request.id
-                        postgresService.saveContainerRequestAsync(id, request)
-                    } catch (Exception e) {
-                        log.error("Error saving container request: ${e.message}", e)
-                    }
-                }
-
-                offset += pageSize
-                log.info("Sleeping for 2 seconds between batches...")
-                sleep(2000)
-                dataMigrateCache.put(TABLE_NAME_CONTAINER_REQUEST, new DataMigrateEntry(TABLE_NAME_CONTAINER_REQUEST, offset))
-            } while (requests.size() == pageSize)
-
-            log.info("Completed migrating all container request records.")
-        } catch (Exception e) {
-            log.error("Error during container request migration: ${e.message}", e)
+        if (!requests || requests.isEmpty()) {
+            log.info("All container request records migrated.")
+            requestDone.set(true)
+            return
         }
+
+        requests.each {
+            try {
+                def id = it.id.contains("wave_request:") ? it.id.takeAfter("wave_request:") : it.id
+                postgresService.saveContainerRequestAsync(id, it)
+                offset++
+            } catch (Exception e) {
+                log.error("Error saving container request: ${e.message}", e)
+            }
+        }
+
+        dataMigrateCache.put(TABLE_NAME_CONTAINER_REQUEST, new DataMigrateEntry(TABLE_NAME_CONTAINER_REQUEST, offset))
+        log.info("Migrated ${requests.size()} container request records (offset $offset)")
     }
 
     /**
      * Migrate scan records from SurrealDB to Postgres
      */
     void migrateScanRecords() {
+        if (scanDone.get()) return
+
         int offset = dataMigrateCache.get(TABLE_NAME_SCAN).offset
-        List scans
-        try {
-            do {
-                scans = surrealService.getScansPaginated(pageSize, offset)
-                if (!scans || scans.isEmpty()) {
-                    break
-                }
+        def scans = surrealService.getScansPaginated(pageSize, offset)
 
-                log.info("Migrating batch of ${scans.size()} scan records (offset $offset)")
-                scans.each { scan ->
-                    try {
-                        postgresService.saveScanRecordAsync(scan)
-                    } catch (Exception e) {
-                        log.error("Error saving scan record: ${e.message}", e)
-                    }
-                }
-
-                offset += pageSize
-                log.info("Sleeping for 2 seconds between batches...")
-                sleep(2000)
-                dataMigrateCache.put(TABLE_NAME_SCAN, new DataMigrateEntry(TABLE_NAME_SCAN, offset))
-            } while (scans.size() == pageSize)
-
-            log.info("Completed migrating all scan records.")
-        } catch (Exception e) {
-            log.error("Error during scan record migration: ${e.message}", e)
+        if (!scans || scans.isEmpty()) {
+            log.info("All scan records migrated.")
+            scanDone.set(true)
+            return
         }
+
+        scans.each {
+            try {
+                postgresService.saveScanRecordAsync(it)
+                offset++
+            } catch (Exception e) {
+                log.error("Error saving scan record: ${e.message}", e)
+            }
+        }
+
+        dataMigrateCache.put(TABLE_NAME_SCAN, new DataMigrateEntry(TABLE_NAME_SCAN, offset))
+        log.info("Migrated ${scans.size()} scan records (offset $offset)")
     }
 
     /**
      * Migrate mirror records from SurrealDB to Postgres
      */
     void migrateMirrorRecords() {
+        if (mirrorDone.get()) return
+
         int offset = dataMigrateCache.get(TABLE_NAME_MIRROR).offset
-        List mirrors
-        try {
-            do {
-                mirrors = surrealService.getMirrorsPaginated(pageSize, offset)
-                if (!mirrors || mirrors.isEmpty()) {
-                    break
-                }
+        def mirrors = surrealService.getMirrorsPaginated(pageSize, offset)
 
-                log.info("Migrating batch of ${mirrors.size()} mirror records (offset $offset)")
-                mirrors.each { mirror ->
-                    try {
-                        postgresService.saveMirrorResultAsync(mirror)
-                    } catch (Exception e) {
-                        log.error("Error saving mirror record: ${e.message}", e)
-                    }
-                }
-
-                offset += pageSize
-                log.info("Sleeping for 2 seconds between batches...")
-                sleep(2000)
-                dataMigrateCache.put(TABLE_NAME_MIRROR, new DataMigrateEntry(TABLE_NAME_MIRROR, offset))
-            } while (mirrors.size() == pageSize)
-
-            log.info("Completed migrating all mirror records.")
-        } catch (Exception e) {
-            log.error("Error during mirror record migration: ${e.message}", e)
+        if (!mirrors || mirrors.isEmpty()) {
+            log.info("All mirror records migrated.")
+            mirrorDone.set(true)
+            return
         }
-    }
 
+        mirrors.each {
+            try {
+                postgresService.saveMirrorResultAsync(it)
+                offset++
+            } catch (Exception e) {
+                log.error("Error saving mirror record: ${e.message}", e)
+            }
+        }
+
+        dataMigrateCache.put(TABLE_NAME_MIRROR, new DataMigrateEntry(TABLE_NAME_MIRROR, offset))
+        log.info("Migrated ${mirrors.size()} mirror records (offset $offset)")
+    }
 }

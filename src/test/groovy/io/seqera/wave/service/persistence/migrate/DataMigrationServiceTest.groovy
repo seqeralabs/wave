@@ -113,7 +113,7 @@ class DataMigrationServiceTest extends Specification {
 
     def "should migrate request records in batches"() {
         given:
-        def requests = (1..101).collect { new WaveContainerRecord() }
+        def requests = (1..101).collect { new WaveContainerRecord(id: it) }
         surrealService.getRequestsPaginated(pageSize,0) >> requests
         dataMigrateCache.get(DataMigrationService.TABLE_NAME_CONTAINER_REQUEST) >>
                 new DataMigrateEntry(DataMigrationService.TABLE_NAME_CONTAINER_REQUEST, 0)
@@ -122,7 +122,7 @@ class DataMigrationServiceTest extends Specification {
         service.migrateContainerRequests()
 
         then:
-        101 * postgresService.saveContainerRequestAsync(_)
+        101 * postgresService.saveContainerRequestAsync(_,_)
         and:
         1 * dataMigrateCache.put(DataMigrationService.TABLE_NAME_CONTAINER_REQUEST, new DataMigrateEntry(DataMigrationService.TABLE_NAME_CONTAINER_REQUEST, pageSize))
     }
