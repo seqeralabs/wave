@@ -48,7 +48,7 @@ class JobProcessingQueue extends AbstractMessageStream<JobSpec> {
     JobProcessingQueue(MessageStream<String> target, JobManagerConfig config) {
         super(target)
         this.config = config
-        log.debug "Created jobs processing queue - config=${config}"
+        log.info "Created jobs processing queue - config=${config}"
     }
 
     @Override
