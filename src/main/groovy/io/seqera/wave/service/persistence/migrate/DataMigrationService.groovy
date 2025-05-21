@@ -53,10 +53,10 @@ class DataMigrationService {
     @Inject
     DataMigrateCache dataMigrateCache
 
-    static final String TABLE_NAME_BUILD = 'wave_build'
-    static final String TABLE_NAME_CONTAINER_REQUEST = 'wave_container_request'
-    static final String TABLE_NAME_SCAN = 'wave_scan'
-    static final String TABLE_NAME_MIRROR = 'wave_mirror'
+    public static final String TABLE_NAME_BUILD = 'wave_build'
+    public static final String TABLE_NAME_CONTAINER_REQUEST = 'wave_container_request'
+    public static final String TABLE_NAME_SCAN = 'wave_scan'
+    public static final String TABLE_NAME_MIRROR = 'wave_mirror'
 
     @Value('${wave.db.migrate.page-size:1000}')
     int pageSize
