@@ -36,14 +36,15 @@ class ContainerScanStrategyTest extends Specification {
         given:
         def targetImage = "repository/scantool"
         def containerScanStrategy = Spy(ScanStrategy)
-        def outFile = Path.of('/some/out.json')
+        def workDir = Path.of('/work/dir')
         def config = Mock(ScanConfig) { getTimeout() >> Duration.ofMinutes(100) }
         def platform = ContainerPlatform.DEFAULT
 
         when:
-        def command = containerScanStrategy.scanCommand(targetImage, outFile, platform, config)
+        def command = containerScanStrategy.scanCommand(targetImage, workDir, platform, config, ScanMode.Default)
         then:
-        command == [ '--quiet',
+        command == [ 'trivy',
+                     '--quiet',
                      'image',
                      '--platform',
                      'linux/amd64',
@@ -52,7 +53,7 @@ class ContainerScanStrategyTest extends Specification {
                      '--format',
                      'json',
                      '--output',
-                     '/some/out.json',
+                     '/work/dir/report.json',
                      targetImage]
     }
 
@@ -60,7 +61,7 @@ class ContainerScanStrategyTest extends Specification {
         given:
         def targetImage = "repository/scantool"
         def containerScanStrategy = Spy(ScanStrategy)
-        def outFile = Path.of('/some/out.json')
+        def workDir = Path.of('/work/dir')
         def platform = ContainerPlatform.DEFAULT
         def config = Mock(ScanConfig) {
             getTimeout() >> Duration.ofMinutes(100)
@@ -68,9 +69,10 @@ class ContainerScanStrategyTest extends Specification {
         }
 
         when:
-        def command = containerScanStrategy.scanCommand(targetImage, outFile, platform, config)
+        def command = containerScanStrategy.scanCommand(targetImage, workDir, platform, config, ScanMode.Default)
         then:
-        command == [ '--quiet',
+        command == [ 'trivy',
+                     '--quiet',
                      'image',
                      '--platform',
                      'linux/amd64',
@@ -79,9 +81,54 @@ class ContainerScanStrategyTest extends Specification {
                      '--format',
                      'json',
                      '--output',
-                     '/some/out.json',
+                     '/work/dir/report.json',
                      '--severity',
                      'low,high',
                      targetImage]
+    }
+
+    def "should return trivy command with spdx"() {
+        given:
+        def targetImage = "repository/scantool"
+        def containerScanStrategy = Spy(ScanStrategy)
+        def workDir = Path.of('/work/dir')
+        def platform = ContainerPlatform.DEFAULT
+        def config = Mock(ScanConfig) {
+            getTimeout() >> Duration.ofMinutes(100)
+            getSeverity() >> 'low,high'
+        }
+
+        when:
+        def command = containerScanStrategy.scanCommand(targetImage, workDir, platform, config, ScanMode.Spdx)
+        then:
+        command == [ 'trivy',
+                     '--quiet',
+                     'image',
+                     '--platform',
+                     'linux/amd64',
+                     '--timeout',
+                     '100m',
+                     '--format',
+                     'spdx-json',
+                     '--output',
+                     '/work/dir/spdx.json',
+                     targetImage]
+    }
+
+    def "should return trivy run command"() {
+        given:
+        def targetImage = "repository/scantool"
+        def containerScanStrategy = Spy(ScanStrategy)
+        def workDir = Path.of('/work/dir')
+        def platform = ContainerPlatform.DEFAULT
+        def config = Mock(ScanConfig) {
+            getTimeout() >> Duration.ofMinutes(100)
+            getSeverity() >> 'low,high'
+        }
+
+        when:
+        def command = containerScanStrategy.trivyCommand(targetImage, workDir, platform, config)
+        then:
+        command == [ '-c', 'trivy --quiet image --platform linux/amd64 --timeout 100m --format json --output /work/dir/report.json --severity low,high repository/scantool && trivy --quiet image --platform linux/amd64 --timeout 100m --format spdx-json --output /work/dir/spdx.json repository/scantool' ]
     }
 }

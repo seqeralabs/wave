@@ -57,6 +57,8 @@ class DockerScanStrategyTest extends Specification {
                 '--detach',
                 '--name',
                 'foo-123',
+                '--entrypoint',
+                '/bin/sh',
                 '-w',
                 '/some/scan/dir',
                 '-v',
