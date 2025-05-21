@@ -53,11 +53,11 @@ wave:
       password: 'bar'
   build:
     workspace: 'build-workspace'
-    logs :
-      enabled : true
-      bucket : 'nextflow-ci'
-      prefix : 'wave-build/logs'
-      conda-lock-prefix: 'wave-build/conda-locks'
+    logs:
+      enabled: true
+      path: "s3://nextflow-ci/wave-build/logs"
+    locks:
+      path: 's3://nextflow-ci/wave-build/conda-locks'
   scan:
     enabled: true
 ---

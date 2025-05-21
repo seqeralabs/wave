@@ -7,7 +7,9 @@ wave:
   build:
     workspace: 'build-workspace'
     logs:
-      bucket: "build-workspace/logs"
+      path: "${PWD}/build-workspace/logs"
+    locks:
+      path: "${PWD}/build-workspace/locks"
   metrics:
     enabled: true
   accounts:

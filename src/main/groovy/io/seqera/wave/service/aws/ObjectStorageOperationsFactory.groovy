@@ -24,8 +24,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Factory
-import io.micronaut.context.annotation.Requires
-import io.micronaut.context.annotation.Value
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.micronaut.objectstorage.InputStreamMapper
 import io.micronaut.objectstorage.ObjectStorageOperations
@@ -33,7 +31,9 @@ import io.micronaut.objectstorage.aws.AwsS3Configuration
 import io.micronaut.objectstorage.aws.AwsS3Operations
 import io.micronaut.objectstorage.local.LocalStorageConfiguration
 import io.micronaut.objectstorage.local.LocalStorageOperations
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.util.BucketTokenizer
+import jakarta.annotation.Nullable
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -46,39 +46,57 @@ import software.amazon.awssdk.services.s3.S3Client
 @Factory
 @CompileStatic
 @Slf4j
-@Requires(property = 'wave.build.logs.bucket')
 class ObjectStorageOperationsFactory {
-
-    @Value('${wave.build.logs.bucket}')
-    private String storageBucket
 
     @Inject
     private ApplicationContext context
 
+    @Inject
+    @Nullable
+    private BuildConfig buildConfig
+
     @Singleton
     @Named("build-logs")
-    ObjectStorageOperations<?, ?, ?> createStorageOps(@Named("DefaultS3Client") S3Client s3Client, InputStreamMapper inputStreamMapper) {
-        final scheme = storageBucket ? BucketTokenizer.from(storageBucket)?.getScheme() : null
-        if( !scheme ) {
-            return localFactory(storageBucket, inputStreamMapper)
-        }
-        if( scheme=='s3' ) {
-            return awsFactory(storageBucket, inputStreamMapper)
-        }
-        throw new IllegalArgumentException("Unsupported storage scheme: '$scheme' - offneding setting 'wave.build.logs.bucket': ${storageBucket}" )
+    ObjectStorageOperations<?, ?, ?> createLogsStorageOps() {
+        if( !buildConfig )
+            throw new IllegalStateException("Build configuration is not defined")
+        return create0("build-logs", buildConfig.logsPath,  "wave.build.logs.path")
     }
 
-    protected ObjectStorageOperations<?, ?, ?> localFactory(String storageBucket, InputStreamMapper inputStreamMapper) {
+    @Singleton
+    @Named("build-locks")
+    ObjectStorageOperations<?, ?, ?> createLocksStorageOpts() {
+        if( !buildConfig )
+            throw new IllegalStateException("Build configuration is not defined")
+        return create0("build-locks", buildConfig.locksPath, "wave.build.locks.path")
+    }
+
+    protected ObjectStorageOperations<?, ?, ?> create0(String scope, String path, String setting) {
+        if( !path )
+            throw new IllegalStateException("Missing config setting '${setting}' in the wave config")
+        final store = BucketTokenizer.from(path)
+        if( !store.scheme ) {
+            return localFactory(scope, path)
+        }
+        if( store.scheme=='s3' ) {
+            return awsFactory(scope, store.bucket)
+        }
+        throw new IllegalArgumentException("Unsupported storage scheme: '${store.scheme}' - offending setting '${setting}': ${path}" )
+    }
+
+    protected ObjectStorageOperations<?, ?, ?> localFactory(String scope, String storageBucket) {
+        log.debug "Using local ObjectStorageOperations scope='${scope}'; storageBucket='${storageBucket}'"
         final localPath = Path.of(storageBucket)
-        log.info "Using local build logs path: $localPath"
-        LocalStorageConfiguration configuration = new LocalStorageConfiguration('build-logs')
+        LocalStorageConfiguration configuration = new LocalStorageConfiguration(scope)
         configuration.setPath(localPath)
         return new LocalStorageOperations(configuration)
     }
 
-    protected ObjectStorageOperations<?, ?, ?> awsFactory(String storageBucket, InputStreamMapper inputStreamMapper) {
-        final s3Client = context.getBean(S3Client.class, Qualifiers.byName("DefaultS3Client"));
-        AwsS3Configuration configuration = new AwsS3Configuration('build-logs')
+    protected ObjectStorageOperations<?, ?, ?> awsFactory(String scope, String storageBucket) {
+        log.debug "Using AWS S3 ObjectStorageOperations scope='${scope}'; storageBucket='${storageBucket}'"
+        final s3Client = context.getBean(S3Client, Qualifiers.byName("DefaultS3Client"))
+        final inputStreamMapper = context.getBean(InputStreamMapper)
+        AwsS3Configuration configuration = new AwsS3Configuration(scope)
         configuration.setBucket(storageBucket)
         return new AwsS3Operations(configuration, s3Client, inputStreamMapper)
     }

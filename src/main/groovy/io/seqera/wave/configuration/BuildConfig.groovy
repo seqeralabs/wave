@@ -22,9 +22,11 @@ import javax.annotation.Nullable
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
+import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.util.BucketTokenizer
 import jakarta.inject.Singleton
 /**
  * Model Wave build config settings
@@ -105,6 +107,15 @@ class BuildConfig {
     @Value('${wave.build.max-container-file-size:10000}')
     int maxContainerFileSize
 
+    @Value('${wave.build.logs.path}')
+    String logsPath
+
+    @Value('${wave.build.locks.path}')
+    String locksPath
+
+    @Value('${wave.build.logs.maxLength:100000}')
+    long maxLength
+
     @PostConstruct
     private void init() {
         log.info("Builder config: " +
@@ -116,6 +127,8 @@ class BuildConfig {
                 "build-workspace=${buildWorkspace}; " +
                 "build-timeout=${defaultTimeout}; " +
                 "build-trusted-timeout=${trustedTimeout}; " +
+                "build-logs-path=${logsPath}; " +
+                "build-locks-path=${locksPath}; " +
                 "status-delay=${statusDelay}; " +
                 "status-duration=${statusDuration}; " +
                 "failure-duration=${getFailureDuration()}; " +
@@ -136,5 +149,21 @@ class BuildConfig {
         return request.towerAccessToken && request.freeze && trustedTimeout>defaultTimeout
                 ? trustedTimeout
                 : defaultTimeout
+    }
+
+    @Memoized
+    String getLogsPrefix() {
+        if( !logsPath )
+            return null
+        final store = BucketTokenizer.from(logsPath)
+        return store.scheme ? store.getKey() : null
+    }
+
+    @Memoized
+    String getLocksPrefix() {
+        if( !locksPath )
+            return null
+        final store = BucketTokenizer.from(locksPath)
+        return store.scheme ? store.getKey() : null
     }
 }
