@@ -116,11 +116,11 @@ class DataMigrationService {
         }
 
         for (def build : builds) {
-            if( Thread.currentThread().isInterrupted() ) {
-                log.debug "Thread is interrupted - exiting migrateBuildRecords method"
-                break
-            }
             try {
+                if( Thread.currentThread().isInterrupted() ) {
+                    log.debug "Thread is interrupted - exiting migrateBuildRecords method"
+                    break
+                }
                 postgresService.saveBuildAsync(build).join()
                 offset++
             } catch (Exception e) {
@@ -147,11 +147,11 @@ class DataMigrationService {
         }
 
         for (def request : requests) {
-            if( Thread.currentThread().isInterrupted() ) {
-                log.debug "Thread is interrupted - exiting migrateContainerRequests method"
-                break
-            }
             try {
+                if( Thread.currentThread().isInterrupted() ) {
+                    log.debug "Thread is interrupted - exiting migrateContainerRequests method"
+                    break
+                }
                 def id = request.id.contains("wave_request:") ? request.id.takeAfter("wave_request:") : request.id
                 postgresService.saveContainerRequestAsync(id, request)
                 offset++
@@ -180,11 +180,11 @@ class DataMigrationService {
         }
 
         for (def scan : scans) {
-            if( Thread.currentThread().isInterrupted() ) {
-                log.debug "Thread is interrupted - exiting migrateScanRecords method"
-                break
-            }
             try {
+                if( Thread.currentThread().isInterrupted() ) {
+                    log.debug "Thread is interrupted - exiting migrateScanRecords method"
+                    break
+                }
                 postgresService.saveScanRecordAsync(scan).join()
                 offset++
             } catch (Exception e) {
@@ -212,11 +212,11 @@ class DataMigrationService {
         }
 
         for (def mirror : mirrors) {
-            if( Thread.currentThread().isInterrupted() ) {
-                log.debug "Thread is interrupted - exiting migrateMirrorRecords method"
-                break
-            }
             try {
+                if( Thread.currentThread().isInterrupted() ) {
+                    log.debug "Thread is interrupted - exiting migrateMirrorRecords method"
+                    break
+                }
                 postgresService.saveMirrorResultAsync(mirror).join()
                 offset++
             } catch (Exception e) {
