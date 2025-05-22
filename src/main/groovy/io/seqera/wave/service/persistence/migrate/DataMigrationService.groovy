@@ -25,6 +25,7 @@ import java.util.function.Function
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.context.env.Environment
@@ -108,6 +109,7 @@ class DataMigrationService {
         taskScheduler.scheduleWithFixedDelay(initialDelay, delay, this::migrateContainerRequests)
         taskScheduler.scheduleWithFixedDelay(initialDelay, delay, this::migrateScanRecords)
         taskScheduler.scheduleWithFixedDelay(initialDelay, delay, this::migrateMirrorRecords)
+        taskScheduler.scheduleWithFixedDelay(initialDelay, delay, this::shutdown)
     }
 
     /**
@@ -187,6 +189,17 @@ class DataMigrationService {
         }
 
         log.info("Migrated ${records.size()} $tableName records (offset $offset)")
+    }
+
+    /**
+     * Shutdown the service
+     */
+    void shutdown() {
+        log.info("Shutting down data migration service")
+        if (buildDone.get() && requestDone.get() && scanDone.get() && mirrorDone.get()) {
+            log.info("All records migrated. Stopping migration.")
+            applicationContext.close()
+        }
     }
 
 }
