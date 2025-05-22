@@ -48,6 +48,10 @@ import software.amazon.awssdk.services.s3.S3Client
 @Slf4j
 class ObjectStorageOperationsFactory {
 
+    public static final String BUILD_LOGS = "build-logs"
+
+    public static final String BUILD_LOCKS = "build-locks"
+
     @Inject
     private ApplicationContext context
 
@@ -56,19 +60,19 @@ class ObjectStorageOperationsFactory {
     private BuildConfig buildConfig
 
     @Singleton
-    @Named("build-logs")
+    @Named(BUILD_LOGS)
     ObjectStorageOperations<?, ?, ?> createLogsStorageOps() {
         if( !buildConfig )
             throw new IllegalStateException("Build configuration is not defined")
-        return create0("build-logs", buildConfig.logsPath,  "wave.build.logs.path")
+        return create0(BUILD_LOGS, buildConfig.logsPath,  "wave.build.logs.path")
     }
 
     @Singleton
-    @Named("build-locks")
+    @Named(BUILD_LOCKS)
     ObjectStorageOperations<?, ?, ?> createLocksStorageOpts() {
         if( !buildConfig )
             throw new IllegalStateException("Build configuration is not defined")
-        return create0("build-locks", buildConfig.locksPath, "wave.build.locks.path")
+        return create0(BUILD_LOCKS, buildConfig.locksPath, "wave.build.locks.path")
     }
 
     protected ObjectStorageOperations<?, ?, ?> create0(String scope, String path, String setting) {

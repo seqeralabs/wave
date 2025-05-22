@@ -38,6 +38,9 @@ import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 import org.apache.commons.io.input.BoundedInputStream
+
+import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.* 
+
 /**
  * Implements Service  to manage logs from an Object store
  *
@@ -54,11 +57,11 @@ class BuildLogServiceImpl implements BuildLogService {
     private static final String CONDA_LOCK_END = "<< CONDA_LOCK_END"
 
     @Inject
-    @Named("build-logs")
+    @Named(BUILD_LOGS)
     private ObjectStorageOperations<?, ?, ?> logsStoreOps
 
     @Inject
-    @Named("build-locks")
+    @Named(BUILD_LOCKS)
     private ObjectStorageOperations<?, ?, ?> locksStoreOps
 
     @Inject

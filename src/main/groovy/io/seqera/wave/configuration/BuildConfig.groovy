@@ -107,12 +107,25 @@ class BuildConfig {
     @Value('${wave.build.max-container-file-size:10000}')
     int maxContainerFileSize
 
+    /**
+     * The path where build logs locks files are stored. Can be either
+     * a S3 path e.g. {@code s3://some-bucket/data/path} or a local file system
+     * path e.g. {@code /some/data/path}
+     */
     @Value('${wave.build.logs.path}')
     String logsPath
 
+    /**
+     * The path where Conda locks files are stored. Can be either
+     * a S3 path e.g. {@code s3://some-bucket/data/path} or a local file system
+     * path e.g. {@code /some/data/path}
+     */
     @Value('${wave.build.locks.path}')
     String locksPath
 
+    /**
+     * Max length allowed for build logs download
+     */
     @Value('${wave.build.logs.maxLength:100000}')
     long maxLength
 
@@ -151,6 +164,15 @@ class BuildConfig {
                 : defaultTimeout
     }
 
+    /**
+     * The file name prefix applied when storing a build logs file into an object storage.
+     * For example having {@link #logsPath} as {@code s3://bucket-name/foo/bar} the
+     * value returned by this method is {@code foo/bar}.
+     *
+     * When using a local path the prefix is {@code null}.
+     *
+     * @return the log file name prefix
+     */
     @Memoized
     String getLogsPrefix() {
         if( !logsPath )
@@ -159,6 +181,15 @@ class BuildConfig {
         return store.scheme ? store.getKey() : null
     }
 
+    /**
+     * The file name prefix applied when storing a Conda lock file into an object storage.
+     * For example having {@link #logsPath} as {@code s3://bucket-name/foo/bar} the
+     * value returned by this method is {@code foo/bar}.
+     *
+     * When using a local path the prefix is {@code null}.
+     *
+     * @return the log file name prefix
+     */
     @Memoized
     String getLocksPrefix() {
         if( !locksPath )
