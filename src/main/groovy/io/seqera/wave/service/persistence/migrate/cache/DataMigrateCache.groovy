@@ -45,6 +45,6 @@ class DataMigrateCache extends AbstractStateStore<DataMigrateEntry> {
 
     @Override
     protected Duration getDuration() {
-        return Duration.ofHours(1)
+        return Duration.ofDays(30)
     }
 }
