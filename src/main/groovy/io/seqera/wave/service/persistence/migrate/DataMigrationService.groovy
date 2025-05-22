@@ -85,6 +85,7 @@ class DataMigrationService {
 
     @PostConstruct
     void init() {
+        log.info("Data migration service initialized with page size: $pageSize, delay: $delay, initial delay: $initialDelay")
         if (!environment.activeNames.contains("surrealdb") || !environment.activeNames.contains("postgres")) {
             throw new IllegalStateException("Both 'surrealdb' and 'postgres' environments must be active.")
         }
