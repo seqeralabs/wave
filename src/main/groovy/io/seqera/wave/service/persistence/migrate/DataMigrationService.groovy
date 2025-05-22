@@ -125,7 +125,10 @@ class DataMigrationService {
     void migrateContainerRequests() {
         migrateRecords(TABLE_NAME_CONTAINER_REQUEST,
                 (int offset)-> surrealService.getRequestsPaginated(pageSize, offset),
-                (WaveContainerRecord it)-> postgresService.saveContainerRequestAsync(it).join(),
+                (WaveContainerRecord request)-> {
+                    final id = request.id.contains("wave_request:") ? request.id.takeAfter("wave_request:") : request.id
+                    postgresService.saveContainerRequestAsync(id, request)
+                },
                 requestDone )
     }
 
