@@ -115,7 +115,7 @@ class DataMigrationService {
      */
     void migrateBuildRecords() {
         migrateRecords(TABLE_NAME_BUILD,
-                (int offset)-> surrealService.getBuildsPaginated(pageSize, offset),
+                (Integer offset)-> surrealService.getBuildsPaginated(pageSize, offset),
                 (WaveBuildRecord it)-> postgresService.saveBuildAsync(it).join(),
                 buildDone )
     }
@@ -125,7 +125,7 @@ class DataMigrationService {
      */
     void migrateContainerRequests() {
         migrateRecords(TABLE_NAME_CONTAINER_REQUEST,
-                (int offset)-> surrealService.getRequestsPaginated(pageSize, offset),
+                (Integer offset)-> surrealService.getRequestsPaginated(pageSize, offset),
                 (WaveContainerRecord request)-> {
                     final id = request.id.contains("wave_request:") ? request.id.takeAfter("wave_request:") : request.id
                     postgresService.saveContainerRequestAsync(id, request)
@@ -138,7 +138,7 @@ class DataMigrationService {
      */
     void migrateScanRecords() {
         migrateRecords(TABLE_NAME_SCAN,
-                (int offset)-> surrealService.getScansPaginated(pageSize, offset),
+                (Integer offset)-> surrealService.getScansPaginated(pageSize, offset),
                 (WaveScanRecord it)-> postgresService.saveScanRecordAsync(it).join(),
                 scanDone )
     }
@@ -148,7 +148,7 @@ class DataMigrationService {
      */
     void migrateMirrorRecords() {
         migrateRecords(TABLE_NAME_MIRROR,
-                (int offset)-> surrealService.getMirrorsPaginated(pageSize, offset),
+                (Integer offset)-> surrealService.getMirrorsPaginated(pageSize, offset),
                 (MirrorResult it)-> postgresService.saveMirrorResultAsync(it).join(),
                 mirrorDone )
     }
