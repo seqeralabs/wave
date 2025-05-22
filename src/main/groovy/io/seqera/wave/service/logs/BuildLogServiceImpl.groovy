@@ -180,7 +180,15 @@ class BuildLogServiceImpl implements BuildLogService {
     StreamedFile fetchCondaLockStream(String buildId) {
         if( !buildId ) return null
         final Optional<ObjectStorageEntry<?>> result = locksStoreOps.retrieve(condaLockKey(buildId))
-        return result.isPresent() ? result.get().toStreamedFile() : null
+        if( result.isPresent() )
+            return result.get().toStreamedFile()
+        // implements a fallback to retrieve Conda locks from bucket root 
+        if( buildConfig.locksFallback ) {
+            final Optional<ObjectStorageEntry<?>> fallback = locksStoreOps.retrieve(buildId)
+            if( fallback.isPresent() )
+                return fallback.get().toStreamedFile()
+        }
+        return null
     }
 
     protected static String extractCondaLockFile(String logs) {

@@ -123,6 +123,9 @@ class BuildConfig {
     @Value('${wave.build.locks.path}')
     String locksPath
 
+    @Value('${wave.build.locks.fallback}')
+    Boolean locksFallback
+
     /**
      * Max length allowed for build logs download
      */
