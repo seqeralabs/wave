@@ -66,7 +66,7 @@ class DataMigrationService {
     @Value('${wave.db.migrate.initial-delay:5s}')
     private Duration initialDelay
 
-    @Value('${wave.db.migrate.delay:100ms}')
+    @Value('${wave.db.migrate.iteration-delay:100ms}')
     private Duration iterationDelay
 
     @Inject
