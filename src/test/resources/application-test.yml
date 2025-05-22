@@ -10,10 +10,6 @@ micronaut:
     json:
       additionalTypes:
         - application/vnd.docker.distribution.manifest.list.v2+json
-  object-storage:
-    aws:
-      build-logs:
-        bucket: "${wave.build.logs.bucket}"
 ---
 datasources:
   default:
