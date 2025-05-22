@@ -132,7 +132,7 @@ class DataMigrationServiceTest extends Specification {
         service.migrateContainerRequests()
 
         then:
-        101 * postgresService.saveContainerRequestAsync(_,_)
+        101 * postgresService.saveContainerRequest(_,_)
         and:
         1 * dataMigrateCache.put(DataMigrationService.TABLE_NAME_CONTAINER_REQUEST, new DataMigrateEntry(DataMigrationService.TABLE_NAME_CONTAINER_REQUEST, 101))
     }

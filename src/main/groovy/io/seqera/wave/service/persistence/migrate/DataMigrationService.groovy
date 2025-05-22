@@ -52,6 +52,7 @@ import jakarta.inject.Inject
 @Slf4j
 @Context
 @CompileStatic
+@MigrationOnly
 class DataMigrationService {
 
     public static final String TABLE_NAME_BUILD = 'wave_build'
@@ -134,7 +135,7 @@ class DataMigrationService {
                 (Integer offset)-> surrealService.getRequestsPaginated(pageSize, offset),
                 (WaveContainerRecord request)-> {
                     final id = request.id.contains("wave_request:") ? request.id.takeAfter("wave_request:") : request.id
-                    postgresService.saveContainerRequestAsync(id, request)
+                    postgresService.saveContainerRequest(id, request)
                 },
                 requestDone )
     }
