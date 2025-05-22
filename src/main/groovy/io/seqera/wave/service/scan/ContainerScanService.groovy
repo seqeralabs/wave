@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.scan
 
+import io.micronaut.http.server.types.files.StreamedFile
 import io.seqera.wave.api.ScanMode
 import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.mirror.MirrorEntry
@@ -47,4 +48,5 @@ interface ContainerScanService {
 
     List<WaveScanRecord> getAllScans(String scanId)
 
+    StreamedFile fetchLogStream(String scanId, ScanType type)
 }

@@ -32,6 +32,7 @@ import io.micronaut.objectstorage.aws.AwsS3Operations
 import io.micronaut.objectstorage.local.LocalStorageConfiguration
 import io.micronaut.objectstorage.local.LocalStorageOperations
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.util.BucketTokenizer
 import jakarta.annotation.Nullable
 import jakarta.inject.Inject
@@ -52,12 +53,20 @@ class ObjectStorageOperationsFactory {
 
     public static final String BUILD_LOCKS = "build-locks"
 
+    public static final String SCAN_REPORTS = "scan-reports"
+
     @Inject
     private ApplicationContext context
 
     @Inject
     @Nullable
     private BuildConfig buildConfig
+
+    @Inject
+    @Nullable
+    private ScanConfig scanConfig
+
+    ObjectStorageOperationsFactory() {}
 
     @Singleton
     @Named(BUILD_LOGS)
@@ -73,6 +82,14 @@ class ObjectStorageOperationsFactory {
         if( !buildConfig )
             throw new IllegalStateException("Build configuration is not defined")
         return create0(BUILD_LOCKS, buildConfig.locksPath, "wave.build.locks.path")
+    }
+
+    @Singleton
+    @Named(SCAN_REPORTS)
+    ObjectStorageOperations<?, ?, ?> createScanStorageOpts() {
+        if( !scanConfig )
+            throw new IllegalStateException("Scan configuration is not defined")
+        return create0(SCAN_REPORTS, scanConfig.reportsPath, "wave.scan.reports.path")
     }
 
     protected ObjectStorageOperations<?, ?, ?> create0(String scope, String path, String setting) {
