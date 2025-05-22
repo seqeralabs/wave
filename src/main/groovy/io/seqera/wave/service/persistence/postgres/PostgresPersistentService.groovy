@@ -37,6 +37,7 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.persistence.impl.SurrealPersistenceService
+import io.seqera.wave.service.persistence.migrate.MigrationOnly
 import io.seqera.wave.service.persistence.postgres.data.BuildRepository
 import io.seqera.wave.service.persistence.postgres.data.BuildRow
 import io.seqera.wave.service.persistence.postgres.data.MirrorRepository
@@ -155,6 +156,12 @@ class PostgresPersistentService implements PersistenceService {
     }
 
     // ===== --- container records ---- =====
+    @MigrationOnly
+    void saveContainerRequest(String id, WaveContainerRecord data) {
+        final json = Mapper.toJson(data)
+        final entity = new RequestRow(id: id, data:json, createdAt: Instant.now())
+        requestRepository.save(entity)
+    }
 
     @Override
     CompletableFuture<Void> saveContainerRequestAsync(WaveContainerRecord data) {
