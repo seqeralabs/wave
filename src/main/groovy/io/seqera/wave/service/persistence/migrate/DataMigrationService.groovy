@@ -29,6 +29,7 @@ import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.context.env.Environment
+import io.micronaut.data.exceptions.DataAccessException
 import io.micronaut.scheduling.TaskScheduler
 import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.WaveBuildRecord
@@ -87,6 +88,9 @@ class DataMigrationService {
 
     @Inject
     private Environment environment
+
+    @Inject
+    private ApplicationContext applicationContext
 
     private final AtomicBoolean buildDone = new AtomicBoolean(false)
     private final AtomicBoolean requestDone = new AtomicBoolean(false)
@@ -182,6 +186,14 @@ class DataMigrationService {
             catch (InterruptedException e) {
                 log.info "Migration $tableName has been interrupted"
                 Thread.currentThread().interrupt()
+            }
+            catch (DataAccessException dataAccessException) {
+                if (dataAccessException.message.contains("duplicate key value violates unique constraint")) {
+                    log.warn("Duplicate key error for $tableName record: ${dataAccessException.message}")
+                    dataMigrateCache.put(tableName, new DataMigrateEntry(tableName, ++offset))
+                } else {
+                    log.error("Error saving=> $tableName record: ${dataAccessException.message}")
+                }
             }
             catch (Exception e) {
                 log.error("Error saving $tableName record: ${e.message}", e)
