@@ -7,10 +7,12 @@ on:
       - '**'
     paths :
       - 'typespec/**'
+      - VERSION
   pull_request:
     types: [opened, reopened, synchronize]
     paths:
       - 'typespec/**'
+      - VERSION
 
 permissions:
   contents: read
@@ -30,7 +32,7 @@ jobs:
           node-version : '20.9.0'
 
       - name : Install tsp
-        run : npm install -g @typespec/compiler
+        run : npm install -g @typespec/compiler@0.64.0
 
       - name : Validate tsp files
         run : |
@@ -38,3 +40,18 @@ jobs:
           tsp install
           tsp compile .
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{secrets.TOWER_CI_AWS_ACCESS}}
+          aws-secret-access-key: ${{secrets.TOWER_CI_AWS_SECRET}}
+          aws-region: eu-west-1
+
+      - name : Login to Amazon ECR
+        id : login-ecr
+        uses : aws-actions/amazon-ecr-login@v1
+
+      - name: Release OpenAPI docs
+        if: "contains(github.event.head_commit.message, '[release]')"
+        run: |
+          bash typespec/tag-and-push-openapi.sh

@@ -24,6 +24,7 @@ import java.time.Duration
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.service.data.queue.impl.LocalMessageQueue
+import io.seqera.wave.util.LongRndKey
 import jakarta.inject.Inject
 
 /**
@@ -34,16 +35,16 @@ import jakarta.inject.Inject
 class LocalMessageQueueTest extends Specification {
 
     @Inject
-    private LocalMessageQueue broker
+    private LocalMessageQueue queue
 
     def 'should return null if empty' () {
         expect:
-        broker.poll('foo') == null
+        queue.poll('foo') == null
 
         when:
         def start = System.currentTimeMillis()
         and:
-        broker.poll('foo', Duration.ofMillis(500)) == null
+        queue.poll('foo', Duration.ofMillis(500)) == null
         and:
         def delta = System.currentTimeMillis()-start
         then:
@@ -53,13 +54,34 @@ class LocalMessageQueueTest extends Specification {
 
     def 'should offer and poll a value' () {
         given:
-        broker.offer('bar', 'alpha')
-        broker.offer('bar', 'beta')
+        queue.offer('bar', 'alpha')
+        queue.offer('bar', 'beta')
 
         expect:
-        broker.poll('foo') == null
-        broker.poll('bar') == 'alpha'
-        broker.poll('bar') == 'beta'
+        queue.poll('foo') == null
+        queue.poll('bar') == 'alpha'
+        queue.poll('bar') == 'beta'
     }
 
+    def 'should validate queue length' () {
+        given:
+        def id1 = "queue-${LongRndKey.rndHex()}"
+        def id2 = "queue-${LongRndKey.rndHex()}"
+
+        expect:
+        queue.length('foo') == 0
+
+        when:
+        queue.offer(id1, 'one')
+        queue.offer(id1, 'two')
+        queue.offer(id2, 'three')
+        then:
+        queue.length(id1) == 2
+        queue.length(id2) == 1
+
+        when:
+        queue.poll(id1)
+        then:
+        queue.length(id1) == 1
+    }
 }

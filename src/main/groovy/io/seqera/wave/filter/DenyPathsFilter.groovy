@@ -29,6 +29,7 @@ import io.micronaut.http.MutableHttpResponse
 import io.micronaut.http.annotation.Filter
 import io.micronaut.http.filter.HttpServerFilter;
 import  io.micronaut.http.filter.ServerFilterChain
+import io.seqera.wave.util.RegHelper
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Flux
 
@@ -53,7 +54,7 @@ class DenyPathsFilter implements HttpServerFilter {
         // Check if the request path matches any of the ignored paths
         if (isDeniedPath(request.path, deniedPaths)) {
             // Return immediately without processing the request
-            log.debug("Request denied: ${request}")
+            log.warn("Request denied [${request.methodName}] ${request.uri}\n- Headers:${RegHelper.dumpHeaders(request)}")
             return Flux.just(HttpResponse.status(HttpStatus.METHOD_NOT_ALLOWED))
         }
         // Continue processing the request

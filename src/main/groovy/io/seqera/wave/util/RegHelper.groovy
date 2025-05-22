@@ -18,7 +18,6 @@
 
 package io.seqera.wave.util
 
-import java.net.http.HttpHeaders
 import java.net.http.HttpResponse
 import java.nio.charset.Charset
 import java.nio.file.Files
@@ -105,8 +104,20 @@ class RegHelper {
         }
     }
 
-    static String dumpHeaders(HttpHeaders headers) {
-        return dumpHeaders(headers.map())
+    static String dumpHeaders(io.micronaut.http.HttpRequest request) {
+        dumpHeaders(request.getHeaders().asMap())
+    }
+
+    static String dumpHeaders(io.micronaut.http.HttpResponse response) {
+        dumpHeaders(response.getHeaders().asMap())
+    }
+
+    static String dumpHeaders(java.net.http.HttpRequest request) {
+        return dumpHeaders(request.headers().map())
+    }
+
+    static String dumpHeaders(java.net.http.HttpResponse response) {
+        return dumpHeaders(response.headers().map())
     }
 
     static String dumpHeaders(Map<String, List<String>> headers) {
@@ -201,6 +212,20 @@ class RegHelper {
         }
 
         return hasher.hash().toString()
+    }
+
+    static String sipHash(Object... keys) {
+        if( keys == null )
+            throw new IllegalArgumentException("Missing argument for sipHash method")
+
+        final hasher = Hashing.sipHash24().newHasher()
+        for( Object it :  keys ) {
+            if( it!=null )
+                hasher.putUnencodedChars(it.toString())
+            hasher.putUnencodedChars(Character.toString(0x1C))
+        }
+        hasher.putUnencodedChars(Character.toString(0x1E))
+        return hasher.hash()
     }
 
     static String layerName(ContainerLayer layer) {

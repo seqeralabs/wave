@@ -80,7 +80,7 @@ class BuildLogServiceImpl implements BuildLogService {
 
     @Inject
     @Named(TaskExecutors.BLOCKING)
-    private volatile ExecutorService ioExecutor
+    private ExecutorService ioExecutor
 
     @PostConstruct
     private void init() {

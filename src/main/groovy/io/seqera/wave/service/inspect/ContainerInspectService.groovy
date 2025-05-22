@@ -18,8 +18,10 @@
 
 package io.seqera.wave.service.inspect
 
+import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.spec.ContainerSpec
+import io.seqera.wave.model.ContainerOrIndexSpec
 import io.seqera.wave.tower.PlatformId
 /**
  * Define container inspect service
@@ -65,17 +67,34 @@ interface ContainerInspectService {
     List<String> containerEntrypoint(String containerFile, ContainerPlatform containerPlatform, PlatformId identity)
 
     /**
-     * Inspect a container image
+     * Inspect a container image for the given architecture.
      *
      * @param containerImage
      *      The container image to be inspect e.g. ubuntu:latest or docker.io/library/ubuntu:22.04
      * @param arch
-     *      The  CPU arch a.k.a. container platform e.g. {@code linux/amd64}, {@code linux/arm64}, etc
+     *      The  CPU arch a.k.a. container platform e.g. {@code linux/amd64}, {@code linux/arm64}, etc.
      * @param identity
      *      The platform identity of the user submitting the request
      * @return
      *      The {@link ContainerSpec} object modelling the container image inspect metadata
      */
-    ContainerSpec containerSpec(String containerImage, String arch, PlatformId identity)
+    ContainerSpec containerSpec(String containerImage, String arch, @Nullable PlatformId identity)
+
+    /**
+     * Inspect a container image. If the specified container is a multi-architecture image and not
+     * architecture is specified, this method return the container index description, otherwise the
+     * container description is returned.
+     *
+     * @param containerImage
+     *      The container image to be inspect e.g. ubuntu:latest or docker.io/library/ubuntu:22.04
+     * @param arch
+     *      The  CPU arch a.k.a. container platform e.g. {@code linux/amd64}, {@code linux/arm64}, etc.
+     * @param identity
+     *      The platform identity of the user submitting the request
+     * @return
+     *      The {@link ContainerOrIndexSpec} object holding either a {@link io.seqera.wave.core.spec.IndexSpec}
+     *      or {@link ContainerSpec} object.
+     */
+    ContainerOrIndexSpec containerOrIndexSpec(String containerImage, @Nullable String arch, @Nullable PlatformId identity)
 
 }

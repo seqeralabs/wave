@@ -20,7 +20,6 @@ package io.seqera.wave.controller
 
 import java.nio.file.Path
 import java.time.Instant
-import java.util.concurrent.CompletableFuture
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
@@ -76,7 +75,6 @@ import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.PlatformId
-import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
@@ -94,7 +92,6 @@ import static io.seqera.wave.util.ContainerHelper.makeResponseV1
 import static io.seqera.wave.util.ContainerHelper.makeResponseV2
 import static io.seqera.wave.util.ContainerHelper.makeTargetImage
 import static io.seqera.wave.util.ContainerHelper.patchPlatformEndpoint
-import static java.util.concurrent.CompletableFuture.completedFuture
 /**
  * Implement a controller to receive container token requests
  * 
@@ -182,17 +179,17 @@ class ContainerController {
     @Deprecated
     @Post('/container-token')
     @ExecuteOn(TaskExecutors.BLOCKING)
-    CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, @Body SubmitContainerTokenRequest req) {
+    HttpResponse<SubmitContainerTokenResponse> getToken(HttpRequest httpRequest, @Body SubmitContainerTokenRequest req) {
         return getContainerImpl(httpRequest, req, false)
     }
 
     @Post('/v1alpha2/container')
     @ExecuteOn(TaskExecutors.BLOCKING)
-    CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getTokenV2(HttpRequest httpRequest, @Body SubmitContainerTokenRequest req) {
+    HttpResponse<SubmitContainerTokenResponse> getTokenV2(HttpRequest httpRequest, @Body SubmitContainerTokenRequest req) {
         return getContainerImpl(httpRequest, req, true)
     }
 
-    protected CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getContainerImpl(HttpRequest httpRequest, SubmitContainerTokenRequest req, boolean v2) {
+    protected HttpResponse<SubmitContainerTokenResponse> getContainerImpl(HttpRequest httpRequest, SubmitContainerTokenRequest req, boolean v2) {
         // patch platform endpoint
         req.towerEndpoint = patchPlatformEndpoint(req.towerEndpoint)
 
@@ -207,7 +204,7 @@ class ContainerController {
 
         // anonymous access
         if( !req.towerAccessToken ) {
-            return completedFuture(handleRequest(httpRequest, req, PlatformId.NULL, v2))
+            return handleRequest(httpRequest, req, PlatformId.NULL, v2)
         }
 
         // first check if the service is registered
@@ -215,16 +212,15 @@ class ContainerController {
         if( !registration )
             throw new BadRequestException("Missing pairing record for Tower endpoint '$req.towerEndpoint'")
 
-        // store the jwt record only the very first time it has been
-        // to avoid overridden a newer refresh token that may have 
+        // store the jwt record only the very first time to avoid
+        // overriding a newer jwt token that may have refreshed
         final auth = JwtAuth.of(req)
         if( auth.refresh )
             jwtAuthStore.storeIfAbsent(auth)
 
         // find out the user associated with the specified tower access token
-        return userService
-                .getUserByAccessTokenAsync(registration.endpoint, auth)
-                .thenApply((User user) -> handleRequest(httpRequest, req, PlatformId.of(user,req), v2))
+        final user = userService.getUserByAccessToken(registration.endpoint, auth)
+        return handleRequest(httpRequest, req, PlatformId.of(user,req), v2)
     }
 
     protected HttpResponse<SubmitContainerTokenResponse> handleRequest(HttpRequest httpRequest, SubmitContainerTokenRequest req, PlatformId identity, boolean v2) {
@@ -234,8 +230,6 @@ class ContainerController {
             throw new BadRequestException("Attribute `containerFile` and `packages` conflicts each other")
         if( v2 && req.condaFile )
             throw new BadRequestException("Attribute `condaFile` is deprecated - use `packages` instead")
-        if( v2 && req.spackFile )
-            throw new BadRequestException("Attribute `spackFile` is deprecated - use `packages` instead")
         if( !v2 && req.packages )
             throw new BadRequestException("Attribute `packages` is not allowed")
         if( !v2 && req.nameStrategy )
@@ -256,10 +250,6 @@ class ContainerController {
             // generate the container file required to assemble the container
             final generated = containerFileFromPackages(req.packages, req.formatSingularity())
             req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
-        }
-
-        if( req.spackFile ) {
-            throw new BadRequestException("Spack packages are not supported any more")
         }
 
         final ip = addressResolver.resolve(httpRequest)
@@ -336,7 +326,9 @@ class ContainerController {
         final buildRepository = targetRepo( req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository
                 ? buildConfig.defaultPublicRepository
                 : buildConfig.defaultBuildRepository), req.nameStrategy)
-        final cacheRepository = req.cacheRepository ?: buildConfig.defaultCacheRepository
+        final cacheRepository = !validationService.isCustomRepo(req.buildRepository)
+                ? (req.cacheRepository ?: buildConfig.defaultCacheRepository)
+                : req.cacheRepository   // use custom cache repo, when is a custom build repo
         final configJson = inspectService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
@@ -373,7 +365,8 @@ class ContainerController {
                 scanId,
                 req.buildContext,
                 format,
-                maxDuration
+                maxDuration,
+                req.buildCompression
         )
     }
 
@@ -412,6 +405,8 @@ class ContainerController {
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
         if( req.formatSingularity() && !req.freeze )
             throw new BadRequestException("Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting")
+        if( !req.containerPlatform )
+            req.containerPlatform = ContainerPlatform.DEFAULT.toString()
 
         // expand inclusions
         inclusionService.addContainerInclusions(req, identity)
@@ -511,9 +506,6 @@ class ContainerController {
         // in fact, the absence of creds in the docker file is tolerated because it may be a
         // public accessible repo. With build and cache repo, the creds needs to be available
         final configJson = inspectService.credentialsConfigJson("FROM ${request.containerImage}", targetImage, null, identity)
-        final platform = request.containerPlatform
-                ? ContainerPlatform.of(request.containerPlatform)
-                : ContainerPlatform.DEFAULT
 
         final offset = DataTimeUtils.offsetId(request.timestamp)
         final scanId = scanService?.getScanId(targetImage, digest, request.scanMode, request.format)

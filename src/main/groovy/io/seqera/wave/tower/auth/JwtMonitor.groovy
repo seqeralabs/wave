@@ -79,7 +79,7 @@ class JwtMonitor implements Runnable {
                 check0(it, now)
             }
             catch (InterruptedException e) {
-                Thread.interrupted()
+                throw new InterruptedException()
             }
             catch (Throwable t) {
                 log.error("Unexpected error in JWT heartbeat while processing key: $it", t)
@@ -118,7 +118,12 @@ class JwtMonitor implements Runnable {
         }
 
         log.trace "JWT refresh request - entry=$entry; deadline=$deadline"
-        towerClient.userInfo(entry.endpoint, entry)
+        try {
+            // note: use 'force' to ignore client cache and refresh the jwt token 
+            towerClient.userInfo(entry.endpoint, entry, true)
+        } catch (Throwable t) {
+            log.error("Unexpected error in JWT heartbeat while processing entry: ${entry}", t)
+        }
         jwtTimeStore.setRefreshTimer(key)
     }
 

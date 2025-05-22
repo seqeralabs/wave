@@ -20,6 +20,13 @@ wave:
     succeeded: '10s'
     failed: '45s'
     strategy: 'onsuccess'
+  trace:
+    local-persistence:
+      threshold: 100
+    surreal-persistence:
+      threshold: 100
+    proxy-service:
+      threshold: 100
 ---
 endpoints:
   metrics:
@@ -30,23 +37,15 @@ endpoints:
 mail:
   from: "${TOWER_CONTACT_EMAIL:wave-app+dev@seqera.io}"
 ---
-datasources:
-  default:
-    url: "jdbc:h2:mem:test_mem"
-    driverClassName: "org.h2.Driver"
-    username: "sq"
-    password: ""
-    dialect: H2
-    schema-generate: CREATE_DROP
----
 logger:
   levels:
     io.seqera.wave.service.data: DEBUG
     io.seqera.wave.service.pairing: TRACE
-    io.seqera.wave.service.job: TRACE
+    io.seqera.wave.service.job: DEBUG
     io.seqera.wave.service.k8s.K8sServiceImpl: TRACE
     io.seqera.wave.tower.client.connector: TRACE
 #    io.seqera.wave.tower.client: 'TRACE'
 #    io.seqera.wave.store.cache: 'TRACE'
 #    io.seqera.wave.tower.auth: 'TRACE'
+#    io.seqera.wave.core.RegistryProxyService: TRACE
 ...

@@ -38,7 +38,7 @@ import io.seqera.wave.tower.client.ListCredentialsResponse
 import io.seqera.wave.tower.client.TowerClient
 import io.seqera.wave.tower.compute.ComputeEnv
 import io.seqera.wave.tower.compute.DescribeWorkflowLaunchResponse
-import io.seqera.wave.tower.compute.WorkflowLaunchResponse
+import io.seqera.wave.tower.compute.WorkflowLaunch
 import jakarta.inject.Inject
 /**
  *
@@ -186,7 +186,7 @@ class CredentialsServiceTest extends Specification {
         )
 
         and:'no compute credentials'
-        0 * towerClient.describeWorkflowLaunch('tower.io',auth,'101') >> null
+        0 * towerClient.describeWorkflowLaunch('tower.io',auth,100,'101') >> null
 
         then:
         credentials == null
@@ -249,7 +249,7 @@ class CredentialsServiceTest extends Specification {
                 credentialsId: credentialsId,
                 platform: 'aws-batch'
         )
-        def launch = new WorkflowLaunchResponse(
+        def launch = new WorkflowLaunch(
                 computeEnv: computeEnv
         )
         def describeWorkflowLaunchResponse = new DescribeWorkflowLaunchResponse(
@@ -273,7 +273,7 @@ class CredentialsServiceTest extends Specification {
         )
 
         and:'fetched compute credentials'
-        1*towerClient.describeWorkflowLaunch(towerEndpoint, auth, workflowId) >> describeWorkflowLaunchResponse
+        1*towerClient.describeWorkflowLaunch(towerEndpoint, auth, workspaceId, workflowId) >> describeWorkflowLaunchResponse
 
         and: 'they match and the encrypted credentials are fetched'
         1 * towerClient.fetchEncryptedCredentials(towerEndpoint, auth, credentialsId, keyId, workspaceId, workflowId) >> encryptedCredentialsFromTower(keypair.getPublic(), computeCredentials)

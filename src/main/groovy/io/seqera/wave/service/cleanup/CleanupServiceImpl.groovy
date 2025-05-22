@@ -88,7 +88,7 @@ class CleanupServiceImpl implements Runnable, CleanupService {
                 cleanupEntry(it)
             }
             catch (InterruptedException e) {
-                Thread.interrupted()
+                throw new InterruptedException()
             }
             catch (Throwable t) {
                 log.error("Unexpected error in JWT heartbeat while processing key: $it", t)

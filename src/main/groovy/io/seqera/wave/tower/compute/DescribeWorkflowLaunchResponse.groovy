@@ -21,7 +21,7 @@ package io.seqera.wave.tower.compute
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-import io.seqera.wave.encoder.MoshiExchange
+import io.seqera.wave.encoder.MoshiSerializable
 
 /**
  * Model the response of workflow launch describe request
@@ -31,13 +31,13 @@ import io.seqera.wave.encoder.MoshiExchange
 @CompileStatic
 @EqualsAndHashCode
 @ToString(includePackage = false, includeNames = true)
-class DescribeWorkflowLaunchResponse implements MoshiExchange {
+class DescribeWorkflowLaunchResponse implements MoshiSerializable {
 
-    WorkflowLaunchResponse launch
+    WorkflowLaunch launch
 
     DescribeWorkflowLaunchResponse() {}
 
-    DescribeWorkflowLaunchResponse(WorkflowLaunchResponse launch) {
+    DescribeWorkflowLaunchResponse(WorkflowLaunch launch) {
         this.launch = launch
     }
 }

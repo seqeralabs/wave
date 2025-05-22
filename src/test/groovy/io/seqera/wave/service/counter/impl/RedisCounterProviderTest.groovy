@@ -36,10 +36,7 @@ class RedisCounterProviderTest extends Specification implements RedisTestContain
     RedisCounterProvider redisCounterProvider
 
     def setup() {
-        applicationContext = ApplicationContext.run([
-                REDIS_HOST : redisHostName,
-                REDIS_PORT : redisPort
-        ], 'test', 'redis')
+        applicationContext = ApplicationContext.run('test', 'redis')
         redisCounterProvider = applicationContext.getBean(RedisCounterProvider)
         sleep(500) // workaround to wait for Redis connection
     }

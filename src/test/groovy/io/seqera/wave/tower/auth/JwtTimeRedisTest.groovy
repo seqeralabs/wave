@@ -39,10 +39,7 @@ class JwtTimeRedisTest extends Specification implements RedisTestContainer{
     JwtTimeStore timer
 
     def setup() {
-        applicationContext = ApplicationContext.run([
-                REDIS_HOST: redisHostName,
-                REDIS_PORT: redisPort
-        ], 'test', 'redis')
+        applicationContext = ApplicationContext.run('test', 'redis')
         and:
         timer = applicationContext.getBean(JwtTimeStore)
     }

@@ -27,9 +27,9 @@ exec java \
   --add-opens java.base/java.text=ALL-UNNAMED \
   --add-opens java.base/java.util=ALL-UNNAMED \
   --add-opens java.base/java.util.concurrent=ALL-UNNAMED \
-  --add-opens=java.base/java.io=ALL-UNNAMED \
-  --add-opens=java.base/java.nio=ALL-UNNAMED \
-  --add-opens=java.base/java.util=ALL-UNNAMED \
+  --add-opens java.base/java.io=ALL-UNNAMED \
+  --add-opens java.base/java.nio=ALL-UNNAMED \
+  --enable-native-access=ALL-UNNAMED \
   ${WAVE_JVM_OPTS} \
   -cp /app/resources:/app/classes:/app/libs/* \
   io.seqera.wave.Application

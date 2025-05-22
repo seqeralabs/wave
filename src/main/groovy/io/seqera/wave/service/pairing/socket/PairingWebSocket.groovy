@@ -66,9 +66,19 @@ class PairingWebSocket {
     @Value('${wave.closeSessionOnInvalidLicenseToken:false}')
     private boolean closeSessionOnInvalidLicenseToken
 
+    @Nullable
+    @Value('${wave.denyHosts}')
+    private List<String> denyHosts
+
     @OnOpen
     void onOpen(String service, String token, String endpoint, WebSocketSession session) {
         log.debug "Opening pairing session - endpoint: ${endpoint} [sessionId: $session.id]"
+
+        if( isDenyHost(endpoint) ) {
+            log.warn "Pairing not allowed for endpoint: ${endpoint}"
+            session.close(CloseReason.POLICY_VIOLATION)
+            return
+        }
 
         // check for a valid connection token
         if( licenseManager && !isLicenseTokenValid(token, endpoint) && closeSessionOnInvalidLicenseToken ) {
@@ -78,18 +88,22 @@ class PairingWebSocket {
 
         // Register the client and the sender callback that it's needed to deliver
         // the message to the remote client
-        channel.registerClient(service, endpoint, session.id,(pairingMessage) -> {
-            log.trace "Sending message=${pairingMessage} - endpoint: ${endpoint} [sessionId: $session.id]"
-            session .sendAsync(pairingMessage)
+        channel.registerClient(service, endpoint, session.id,(msg) -> {
+            log.trace "Sending message=${msg} - endpoint: ${endpoint} [sessionId: $session.id]"
+            session
+                .sendAsync(msg)
+                .exceptionally(ex-> log.error("Failed to send message=${msg} - endpoint: ${endpoint} [sessionId: $session.id]"))
         })
 
         // acquire a pairing key and send it to the remote client
         final resp = this.pairingService.acquirePairingKey(service, endpoint)
-        session.sendAsync(new PairingResponse(
+        final msg = new PairingResponse(
                 msgId: rndHex(),
                 pairingId: resp.pairingId,
-                publicKey: resp.publicKey
-        ))
+                publicKey: resp.publicKey )
+        session
+            .sendAsync(msg)
+            .exceptionally(ex-> log.error("Failed to send message=${msg} - endpoint: ${endpoint} [sessionId: $session.id]"))
     }
 
     @OnMessage
@@ -97,8 +111,11 @@ class PairingWebSocket {
         if( message instanceof PairingHeartbeat ) {
             log.trace "Receiving heartbeat - endpoint: ${endpoint} [sessionId: $session.id]"
             // send pong message
-            final pong = new PairingHeartbeat(msgId:rndHex())
-            session.sendAsync(pong)
+            final msg = new PairingHeartbeat(msgId:rndHex())
+            session
+                .sendAsync(msg)
+                .exceptionally(ex-> log.error("Failed to send message=${msg} - endpoint: ${endpoint} [sessionId: $session.id]"))
+
         }
         else {
             // Collect a reply from the client and takes care to dispatch it
@@ -143,4 +160,11 @@ class PairingWebSocket {
         return true
     }
 
+    protected boolean isDenyHost(String endpoint) {
+        for( String it : (denyHosts ?: List.of()) ) {
+            if( endpoint.contains(it) )
+                return true
+        }
+        return false
+    }
 }

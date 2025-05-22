@@ -58,9 +58,13 @@ abstract class AbstractMessageStream<M> implements Closeable {
         this.encoder = new MoshiEncodeStrategy<M>(type) {}
         this.stream = target
         this.name0 = name() + '-thread-' + count.getAndIncrement()
-        this.thread = new Thread(()-> processMessages(), name0)
-        this.thread.setDaemon(true)
-        this.thread.start()
+    }
+
+    protected Thread createListenerThread() {
+        final thread = new Thread(()-> processMessages(), name0)
+        thread.setDaemon(true)
+        thread.start()
+        return thread
     }
 
     /**
@@ -109,6 +113,9 @@ abstract class AbstractMessageStream<M> implements Closeable {
             stream.init(streamId)
             // then add the consumer to the listeners
             listeners.put(streamId, consumer)
+            // finally start the listener thread
+            if( !thread )
+                thread = createListenerThread()
         }
     }
 
@@ -138,7 +145,7 @@ abstract class AbstractMessageStream<M> implements Closeable {
      */
     protected void processMessages() {
         log.trace "Message stream - starting listener thread"
-        while( !thread.interrupted() ) {
+        while( !Thread.currentThread().isInterrupted() ) {
             try {
                 final count=new AtomicInteger()
                 for( Map.Entry<String,MessageConsumer<M>> entry : listeners.entrySet() ) {
@@ -151,7 +158,7 @@ abstract class AbstractMessageStream<M> implements Closeable {
                 // if no message was sent, sleep for a while before retrying
                 if( count.get()==0 ) {
                     log.trace "Message stream - await before checking for new messages"
-                    sleep(pollInterval().toMillis())
+                    Thread.sleep(pollInterval().toMillis())
                 }
             }
             catch (InterruptedException e) {
@@ -162,7 +169,7 @@ abstract class AbstractMessageStream<M> implements Closeable {
             catch (Throwable e) {
                 final d0 = attempt.delay()
                 log.error("Unexpected error on message stream ${name0} (await: ${d0}) - cause: ${e.message}", e)
-                sleep(d0.toMillis())
+                Thread.sleep(d0.toMillis())
             }
         }
         log.trace "Message stream - exiting listener thread"
@@ -185,4 +192,9 @@ abstract class AbstractMessageStream<M> implements Closeable {
             log.debug "Unexpected error while terminating ${name0} - cause: ${e.message}"
         }
     }
+
+    int length(String streamId) {
+        stream.length(streamId)
+    }
+
 }

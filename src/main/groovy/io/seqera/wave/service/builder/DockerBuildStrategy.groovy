@@ -21,21 +21,17 @@ package io.seqera.wave.service.builder
 import java.nio.file.Files
 import java.nio.file.Path
 
-import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
-import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static java.nio.file.StandardOpenOption.CREATE
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import static java.nio.file.StandardOpenOption.WRITE
-import static java.nio.file.attribute.PosixFilePermission.OWNER_READ
-import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
 /**
  *  Build a container image using a Docker CLI tool
  *
@@ -58,29 +54,14 @@ class DockerBuildStrategy extends BuildStrategy {
     @Override
     void build(String jobName, BuildRequest req) {
 
-        Path configFile = null
-        // save docker config for creds
-        if( req.configJson ) {
-            configFile = req.workDir.resolve('config.json')
-            Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
-        }
-        // save remote files for singularity
-        if( req.configJson && req.formatSingularity()) {
-            final remoteFile = req.workDir.resolve('singularity-remote.yaml')
-            final content = RegHelper.singularityRemoteFile(req.targetImage)
-            Files.write(remoteFile, content.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
-            // set permissions 600 as required by Singularity
-            Files.setPosixFilePermissions(configFile, Set.of(OWNER_READ, OWNER_WRITE))
-            Files.setPosixFilePermissions(remoteFile, Set.of(OWNER_READ, OWNER_WRITE))
-        }
-
+        final Path configFile = req.configJson ? req.workDir.resolve('config.json') : null
         // command the docker build command
         final buildCmd= buildCmd(jobName, req, configFile)
         log.debug "Build run command: ${buildCmd.join(' ')}"
         // save docker cli for debugging purpose
         if( debug ) {
             Files.write(req.workDir.resolve('docker.sh'),
-                    buildCmd.join(' ').bytes,
+                    cmdToStr(buildCmd).bytes,
                     CREATE, WRITE, TRUNCATE_EXISTING)
         }
         
@@ -93,6 +74,13 @@ class DockerBuildStrategy extends BuildStrategy {
         if( process.waitFor()!=0 ) {
             throw new IllegalStateException("Unable to launch build container - exitCode=${process.exitValue()}; output=${process.text}")
         }
+    }
+
+    private String cmdToStr(List<String> cmd) {
+        return cmd
+                .collect(it-> !it || it.contains(' ') ? "\"$it\"".toString() : it)
+                .collect(it-> it.startsWith('-') ? "\\\n  $it".toString() : it)
+                .join(' ')
     }
 
     protected List<String> buildCmd(String jobName, BuildRequest req, Path credsFile) {
@@ -153,7 +141,16 @@ class DockerBuildStrategy extends BuildStrategy {
             wrapper.add(platform.toString())
         }
 
-        wrapper.add(buildConfig.singularityImage(platform))
+        wrapper.add(buildConfig.singularityImage)
         return wrapper
+    }
+
+    List<String> singularityLaunchCmd(BuildRequest req) {
+        final result = new ArrayList(10)
+        result
+                << 'sh'
+                << '-c'
+                << "singularity build image.sif ${req.workDir}/Containerfile && singularity push image.sif ${req.targetImage}".toString()
+        return result
     }
 }

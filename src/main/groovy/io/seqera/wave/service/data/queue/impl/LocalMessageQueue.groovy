@@ -42,6 +42,9 @@ class LocalMessageQueue implements MessageQueue<String> {
 
     private ConcurrentHashMap<String, LinkedBlockingQueue<String>> store = new ConcurrentHashMap<>()
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     void offer(String target, String message) {
         store
@@ -49,6 +52,9 @@ class LocalMessageQueue implements MessageQueue<String> {
             .offer(message)
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     String poll(String target) {
         store
@@ -56,11 +62,21 @@ class LocalMessageQueue implements MessageQueue<String> {
             .poll()
     }
 
+    /**
+     * {@inheritDoc}
+     */
     String poll(String target, Duration timeout) {
         final q =  store .computeIfAbsent(target, (it)->new LinkedBlockingQueue<String>())
         final millis = timeout.toMillis()
         return millis>0
                 ? q.poll(millis, TimeUnit.MILLISECONDS)
                 : q.take()
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    int length(String target) {
+        store.get(target)?.size() ?: 0
     }
 }
