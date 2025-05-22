@@ -1,4 +1,7 @@
 # Wave changelog
+1.20.2 - 21 May 2025
+- Fix K8s failure detection on pod error [1c76cd96]
+
 1.20.1 - 20 May 2025
 - Bump Jib to version 3.4.5
 
