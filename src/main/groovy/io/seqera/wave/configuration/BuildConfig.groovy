@@ -123,7 +123,7 @@ class BuildConfig {
     @Value('${wave.build.locks.path}')
     String locksPath
 
-    @Value('${wave.build.locks.fallback}')
+    @Value('${wave.build.locks.fallback:false}')
     Boolean locksFallback
 
     /**
