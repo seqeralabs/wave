@@ -20,6 +20,9 @@ package io.seqera.wave.service.persistence.migrate
 
 import spock.lang.Specification
 
+import java.util.concurrent.CompletableFuture
+
+import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
@@ -29,6 +32,10 @@ import io.seqera.wave.service.persistence.migrate.cache.DataMigrateCache
 import io.seqera.wave.service.persistence.migrate.cache.DataMigrateEntry
 import io.seqera.wave.service.persistence.postgres.PostgresPersistentService
 import io.seqera.wave.service.persistence.impl.SurrealClient
+import io.seqera.wave.service.request.ContainerRequest
+import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.User
+
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
@@ -77,9 +84,9 @@ class DataMigrationServiceTest extends Specification {
         service.migrateBuildRecords()
 
         then:
-        100 * postgresService.saveBuildAsync(_)
+        100 * postgresService.saveBuildAsync(_) >> Mock(CompletableFuture<WaveBuildRecord>)
         and:
-        1 * dataMigrateCache.put(DataMigrationService.TABLE_NAME_BUILD, new DataMigrateEntry(DataMigrationService.TABLE_NAME_BUILD, pageSize))
+        1 * dataMigrateCache.put(DataMigrationService.TABLE_NAME_BUILD, new DataMigrateEntry(DataMigrationService.TABLE_NAME_BUILD, 100))
     }
 
     def "should catch and log exception during build migration"() {
@@ -113,7 +120,10 @@ class DataMigrationServiceTest extends Specification {
 
     def "should migrate request records in batches"() {
         given:
-        def requests = (1..101).collect { new WaveContainerRecord(id: it) }
+        def requests = (1..101).collect { new WaveContainerRecord(
+                new SubmitContainerTokenRequest(towerWorkspaceId: it),
+                new ContainerRequest(requestId: it, identity: PlatformId.of(new User(id: it), Mock(SubmitContainerTokenRequest))),
+                null, null, null) }
         surrealService.getRequestsPaginated(pageSize,0) >> requests
         dataMigrateCache.get(DataMigrationService.TABLE_NAME_CONTAINER_REQUEST) >>
                 new DataMigrateEntry(DataMigrationService.TABLE_NAME_CONTAINER_REQUEST, 0)
@@ -124,7 +134,7 @@ class DataMigrationServiceTest extends Specification {
         then:
         101 * postgresService.saveContainerRequestAsync(_,_)
         and:
-        1 * dataMigrateCache.put(DataMigrationService.TABLE_NAME_CONTAINER_REQUEST, new DataMigrateEntry(DataMigrationService.TABLE_NAME_CONTAINER_REQUEST, pageSize))
+        1 * dataMigrateCache.put(DataMigrationService.TABLE_NAME_CONTAINER_REQUEST, new DataMigrateEntry(DataMigrationService.TABLE_NAME_CONTAINER_REQUEST, 101))
     }
 
     def "should migrate scan records in batches"() {
@@ -138,9 +148,9 @@ class DataMigrationServiceTest extends Specification {
         service.migrateScanRecords()
 
         then:
-        99 * postgresService.saveScanRecordAsync(_)
+        99 * postgresService.saveScanRecordAsync(_) >> Mock(CompletableFuture<WaveScanRecord>)
         and:
-        1 * dataMigrateCache.put(DataMigrationService.TABLE_NAME_SCAN, new DataMigrateEntry(DataMigrationService.TABLE_NAME_SCAN, pageSize))
+        1 * dataMigrateCache.put(DataMigrationService.TABLE_NAME_SCAN, new DataMigrateEntry(DataMigrationService.TABLE_NAME_SCAN, 99))
     }
 
     def "should migrate mirror records in batches"() {
@@ -154,8 +164,8 @@ class DataMigrationServiceTest extends Specification {
         service.migrateMirrorRecords()
 
         then:
-        15 * postgresService.saveMirrorResultAsync(_)
+        15 * postgresService.saveMirrorResultAsync(_) >> Mock(CompletableFuture<MirrorResult>)
         and:
-        1 * dataMigrateCache.put(DataMigrationService.TABLE_NAME_MIRROR, new DataMigrateEntry(DataMigrationService.TABLE_NAME_MIRROR, pageSize))
+        1 * dataMigrateCache.put(DataMigrationService.TABLE_NAME_MIRROR, new DataMigrateEntry(DataMigrationService.TABLE_NAME_MIRROR, 15))
     }
 }
