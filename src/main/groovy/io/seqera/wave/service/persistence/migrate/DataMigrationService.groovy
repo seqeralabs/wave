@@ -26,6 +26,7 @@ import java.util.function.Function
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
+import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.context.env.Environment
@@ -42,8 +43,6 @@ import io.seqera.wave.service.persistence.migrate.cache.DataMigrateEntry
 import io.seqera.wave.service.persistence.postgres.PostgresPersistentService
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
-import jakarta.inject.Singleton
-
 /**
  * Service to migrate data from SurrealDB to Postgres
  *
@@ -51,7 +50,7 @@ import jakarta.inject.Singleton
  */
 @Requires(env=['migrate'])
 @Slf4j
-@Singleton
+@Context
 @CompileStatic
 @MigrationOnly
 class DataMigrationService {
