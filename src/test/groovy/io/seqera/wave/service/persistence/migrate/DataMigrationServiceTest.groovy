@@ -84,7 +84,7 @@ class DataMigrationServiceTest extends Specification {
         service.migrateBuildRecords()
 
         then:
-        100 * postgresService.saveBuildAsync(_) >> Mock(CompletableFuture<WaveBuildRecord>)
+        100 * postgresService.saveBuild(_)
         and:
         1 * dataMigrateCache.put(DataMigrationService.TABLE_NAME_BUILD, new DataMigrateEntry(DataMigrationService.TABLE_NAME_BUILD, 100))
     }
@@ -113,7 +113,7 @@ class DataMigrationServiceTest extends Specification {
         service.migrateContainerRequests()
 
         then:
-        0 * postgresService.saveContainerRequestAsync(_)
+        0 * postgresService.saveContainerRequest(_)
         and:
         0 * dataMigrateCache.put(DataMigrationService.TABLE_NAME_CONTAINER_REQUEST, pageSize)
     }
@@ -148,7 +148,7 @@ class DataMigrationServiceTest extends Specification {
         service.migrateScanRecords()
 
         then:
-        99 * postgresService.saveScanRecordAsync(_) >> Mock(CompletableFuture<WaveScanRecord>)
+        99 * postgresService.saveScanRecord(_)
         and:
         1 * dataMigrateCache.put(DataMigrationService.TABLE_NAME_SCAN, new DataMigrateEntry(DataMigrationService.TABLE_NAME_SCAN, 99))
     }
@@ -164,7 +164,7 @@ class DataMigrationServiceTest extends Specification {
         service.migrateMirrorRecords()
 
         then:
-        15 * postgresService.saveMirrorResultAsync(_) >> Mock(CompletableFuture<MirrorResult>)
+        15 * postgresService.saveMirrorResult(_)
         and:
         1 * dataMigrateCache.put(DataMigrationService.TABLE_NAME_MIRROR, new DataMigrateEntry(DataMigrationService.TABLE_NAME_MIRROR, 15))
     }

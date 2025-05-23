@@ -26,7 +26,6 @@ import java.util.function.Function
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
-import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.context.env.Environment
@@ -43,6 +42,8 @@ import io.seqera.wave.service.persistence.migrate.cache.DataMigrateEntry
 import io.seqera.wave.service.persistence.postgres.PostgresPersistentService
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
+import jakarta.inject.Singleton
+
 /**
  * Service to migrate data from SurrealDB to Postgres
  *
@@ -50,7 +51,7 @@ import jakarta.inject.Inject
  */
 @Requires(env=['migrate'])
 @Slf4j
-@Context
+@Singleton
 @CompileStatic
 @MigrationOnly
 class DataMigrationService {
@@ -123,7 +124,7 @@ class DataMigrationService {
     void migrateBuildRecords() {
         migrateRecords(TABLE_NAME_BUILD,
                 (Integer offset)-> surrealService.getBuildsPaginated(pageSize, offset),
-                (WaveBuildRecord it)-> postgresService.saveBuildAsync(it).join(),
+                (WaveBuildRecord it)-> postgresService.saveBuild(it),
                 buildDone )
     }
 
@@ -146,7 +147,7 @@ class DataMigrationService {
     void migrateScanRecords() {
         migrateRecords(TABLE_NAME_SCAN,
                 (Integer offset)-> surrealService.getScansPaginated(pageSize, offset),
-                (WaveScanRecord it)-> postgresService.saveScanRecordAsync(it).join(),
+                (WaveScanRecord it)-> postgresService.saveScanRecord(it),
                 scanDone )
     }
 
@@ -156,7 +157,7 @@ class DataMigrationService {
     void migrateMirrorRecords() {
         migrateRecords(TABLE_NAME_MIRROR,
                 (Integer offset)-> surrealService.getMirrorsPaginated(pageSize, offset),
-                (MirrorResult it)-> postgresService.saveMirrorResultAsync(it).join(),
+                (MirrorResult it)-> postgresService.saveMirrorResult(it),
                 mirrorDone )
     }
 
