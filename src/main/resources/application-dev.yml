@@ -6,6 +6,10 @@ wave:
       duration: '30s'
   build:
     workspace: 'build-workspace'
+    logs:
+      path: "${PWD}/build-workspace/logs"
+    locks:
+      path: "${PWD}/build-workspace/locks"
   metrics:
     enabled: true
   accounts:

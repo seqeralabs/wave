@@ -31,6 +31,7 @@ import io.kubernetes.client.openapi.apis.BatchV1Api
 import io.kubernetes.client.openapi.apis.CoreV1Api
 import io.kubernetes.client.openapi.models.V1EnvVar
 import io.kubernetes.client.openapi.models.V1Job
+import io.kubernetes.client.openapi.models.V1JobCondition
 import io.kubernetes.client.openapi.models.V1JobSpec
 import io.kubernetes.client.openapi.models.V1JobStatus
 import io.kubernetes.client.openapi.models.V1ObjectMeta
@@ -1101,6 +1102,19 @@ class K8sServiceImplTest extends Specification {
         return result
     }
 
+    private V1Job jobConditionFailed() {
+        def failure = new V1JobCondition().reason('PodFailurePolicy').message("Container bd-53e3f909446988d1-1 for pod wave-build/bd-53e3f909446988d1-1-m9plq failed with exit code 1 matching FailJob rule at index 2")
+        def status = new V1JobStatus()
+        status.setFailed(1) // <-- failed 1 times
+        def spec = new V1JobSpec()
+        spec.setBackoffLimit(1) // <-- max 1 retries
+        status.conditions([failure])
+        def result = new V1Job()
+        result.setStatus(status)
+        result.setSpec(spec)
+        return result
+    }
+
     @Unroll
     def 'should validate get status' () {
         given:
@@ -1130,6 +1144,7 @@ class K8sServiceImplTest extends Specification {
         jobCompleted()            | K8sService.JobStatus.Failed
         jobStarted()              | K8sService.JobStatus.Pending
         jobUnknown()              | K8sService.JobStatus.Pending
+        jobConditionFailed()      | K8sService.JobStatus.Failed
     }
 
     def 'should create scan job spec with dns config'() {
@@ -1272,5 +1287,21 @@ class K8sServiceImplTest extends Specification {
 
         cleanup:
         ctx.close()
+    }
+
+    @Unroll
+    def 'should validate failure condition' () {
+        expect:
+        K8sServiceImpl.isPodFailCondition(COND) == EXPECTED
+
+        where:
+        EXPECTED        | COND
+        false           | new V1JobCondition()
+        false           | new V1JobCondition().reason('foo')
+        false           | new V1JobCondition().reason('PodFailurePolicy').message('foo')
+        false           | new V1JobCondition().reason('PodFailurePolicy').message("Container bd-53e3f909446988d1-1 for pod wave-build/bd-53e3f909446988d1-1-m9plq succeed with exit code 1 matching FailJob rule at index 2")
+        and:
+        true            | new V1JobCondition().reason('PodFailurePolicy').message("Container bd-53e3f909446988d1-1 for pod wave-build/bd-53e3f909446988d1-1-m9plq failed with exit code 1 matching FailJob rule at index 2")
+
     }
 }
