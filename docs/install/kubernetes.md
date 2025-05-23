@@ -10,7 +10,7 @@ Containers provisioned by Wave can be both disposable, i.e. ephemeral containers
 
 Waves build capabilities such rely on a specific integrations with Kubernetes and AWS EFS Storage making EKS & AWS a hard dependancy for a fully featuered deployment. 
 
-Wave also supports Augmentation only mode commonly reffered to as "wave-lite" which does not require these cloud provider specific integrations as such this instalation guide will initially focus on the installation on Generic Kubernetes in Augmentation only-mode which can be used across all Kubernetes distubutions
+Wave also supports Augmentation only mode commonly referred to as "wave-lite" which does not require these cloud provider-specific integrations as such this installation guide will initially focus on the installation on generic Kubernetes in Augmentation only-mode which can be used across all Kubernetes distributions.
 
 see ../configuring-wave-build.md for details on how to extend your installation. 
  
