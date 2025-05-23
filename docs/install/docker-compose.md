@@ -1,17 +1,14 @@
 ---
-title: Compose Installation
+title: Docker Compose installation
 ---
 
 :::warning
+Wave features supported in Docker Compose installations are limited to: 
 
-Docker compose installations does not suppot all wave specific features however are suitable as such only 
+- Container inspection
+- Container augmentation 
 
-- inspect
-- augment 
-
-will work 
-
-the following features will not work.
+The following features are not available in self-hosted Wave installations in Docker Compose:
 
 - Container Freeze
 - Container Build service
@@ -22,33 +19,32 @@ the following features will not work.
 
 For full Wave functionality, consider using Kubernetes.
 
-
 ## Prequesisites
 
-Before installing Wave, ensure you have the following infrastructure components available:
+Before installing Wave, you require the following infrastructure components:
 
-- **PostgreSQL instance** - Version 12 or higher 
-- **Redis instance** - Version 6.2+ 
+- **PostgreSQL instance** - Version 12, or higher 
+- **Redis instance** - Version 6.2, or higher
 
-## System Requirements:
+## System requirements:
 
-The following system requirements are the minimum recommended to get started:
+The minimum system requirements for self-hosted Wave in Docker COmpose are:
 
-- An to date supported version of **Docker Engine** and **Docker Compose** 
-- **Memory**: Minimum 4GB RAM available on the host system and available to be used by the Wave Application. 
+- Current, supported versions of **Docker Engine** and **Docker Compose**.
+- **Memory**: Minimum 4GB RAM available to be used by the Wave application on the host system. 
 - **CPU**: Minimum 1 CPU core available on the host system. 
-- **Network**: connectivity to your PostgreSQL and Redis instances
-- **Storage**: 10Gb Sufficient disk space for container images and temporary files
+- **Network**: Connectivity to your PostgreSQL and Redis instances.
+- **Storage**: 10 GB minimum, in addition to sufficient disk space for your container images and temporary files.
 
 ## Database configuration
 
-Wave requires a PostgreSQL database to operate. Create a dedicated `wave` database and user account with the appropriate privileges.
+Wave requires a PostgreSQL database to operate. 
 
-If neccesary execute the following SQL commands on your PostgreSQL instance:
+Create a dedicated `wave` database and user account with the appropriate privileges:
 
 ```sql
 -- Create a dedicated user for Wave
-CREATE ROLE wave_user LOGIN PASSWORD 'your_secure_password_here';
+CREATE ROLE wave_user LOGIN PASSWORD 'your_secure_password';
 
 -- Create the Wave database
 CREATE DATABASE wave;
@@ -73,7 +69,7 @@ GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO wave_user;
 
 Wave will automatically handle schema migrations on startup and create the required database objects.
 
-## Wave Config 
+## Wave config 
 
 Create a configuration file that defines Wave's behavior and integrations. Save this as `config/wave-config.yml` in your Docker Compose directory.
 
@@ -95,16 +91,16 @@ wave:
   db:
     uri: "jdbc:postgresql://your-postgres-host:5432/wave"
     user: "wave_user"
-    password: "your_secure_password_here"
+    password: "your_secure_password"
 
 # Redis configuration for caching and session management
 redis:
   uri: "redis://your-redis-host:6379"
 
-# Tower/Platform integration (optional)
+# Platform integration (optional)
 tower:
   endpoint:
-    url: "https://your-tower-server.com"
+    url: "https://your-platform-server.com"
 
 # Micronaut framework configuration
 micronaut:
@@ -154,14 +150,14 @@ loggers:
       enabled: false
 ```
 
-Configuration Notes:
+Configuration notes:
 
-- Replace your-postgres-host and your-redis-host with your actual service endpoints
-- Adjust number-of-threads (16) and num-threads (64) based on your CPU cores: use 2-4x your CPU core count
+- Replace `your-postgres-host` and `your-redis-host` with your service endpoints.
+- Adjust `number-of-threads` (16) and `num-threads` (64) based on your CPU cores — Use between 2x and 4x your CPU core count.
 
 ## Docker Compose
 
-Add the following to your docker compose. 
+Add the following to your `docker-compose.yml`: 
 
 ```yaml
 services:
@@ -196,7 +192,7 @@ services:
 
 ## Starting Wave 
 
-Once your configuration files are in place, start Wave using Docker Compose:
+After your configuration files are in place, start Wave using Docker Compose:
 
 **Start Wave in detached mode**
 
@@ -212,12 +208,12 @@ docker-compose ps
 
 **View Wave logs**
 
-```
+```shell
 docker-compose logs -f wave-app
 ```
 
-Wave will be available at `http://localhost:9090` once the container is running and healthy. The application may take 30-60 seconds to fully initialize on first startup as it performs database migrations.
+Wave will be available at `http://localhost:9090` once the container is running and healthy. The application may take 30-60 seconds to fully initialize on first startup, as it performs database migrations.
 
-### Advanced Configuration
+### Advanced configuration
 
-For advanced Wave features, scaling guidance, and integration options, see [Configuring Wave](../configuring-wave.md).
+See [Configuring Wave](./configuring-wave.md) for advanced Wave features, scaling guidance, and integration options.
