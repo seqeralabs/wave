@@ -123,7 +123,7 @@ class DataMigrationService {
     void migrateBuildRecords() {
         migrateRecords(TABLE_NAME_BUILD,
                 (Integer offset)-> surrealService.getBuildsPaginated(pageSize, offset),
-                (WaveBuildRecord it)-> postgresService.saveBuildAsync(it).join(),
+                (WaveBuildRecord it)-> postgresService.saveBuild(it),
                 buildDone )
     }
 
@@ -146,7 +146,7 @@ class DataMigrationService {
     void migrateScanRecords() {
         migrateRecords(TABLE_NAME_SCAN,
                 (Integer offset)-> surrealService.getScansPaginated(pageSize, offset),
-                (WaveScanRecord it)-> postgresService.saveScanRecordAsync(it).join(),
+                (WaveScanRecord it)-> postgresService.saveScanRecord(it),
                 scanDone )
     }
 
@@ -156,7 +156,7 @@ class DataMigrationService {
     void migrateMirrorRecords() {
         migrateRecords(TABLE_NAME_MIRROR,
                 (Integer offset)-> surrealService.getMirrorsPaginated(pageSize, offset),
-                (MirrorResult it)-> postgresService.saveMirrorResultAsync(it).join(),
+                (MirrorResult it)-> postgresService.saveMirrorResult(it),
                 mirrorDone )
     }
 
