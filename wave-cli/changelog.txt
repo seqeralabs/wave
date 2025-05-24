@@ -1,5 +1,10 @@
 WAVE CLI CHANGE-LOG
 ===================
+1.6.1 - 24 May 2025
+- Add --build-compression option 
+
+1.6.0 (skipped)
+
 1.5.1 - 23 Dec 2024
 - Fix logback serialization vulnerability (#88) [6ae7be32]
 - Bump commons-io 2.18.0 [00b0ba28]
