@@ -19,8 +19,8 @@ repositories {
 }
 
 dependencies {
-    implementation 'io.seqera:wave-api:0.14.0'
-    implementation 'io.seqera:wave-utils:0.15.0'
+    implementation 'io.seqera:wave-api:0.16.0'
+    implementation 'io.seqera:wave-utils:0.15.1'
     implementation 'info.picocli:picocli:4.6.1'
     implementation 'com.squareup.moshi:moshi:1.15.2'
     implementation 'com.squareup.moshi:moshi-adapters:1.15.2'

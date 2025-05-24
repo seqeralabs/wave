@@ -185,17 +185,21 @@ public class App implements Runnable {
     @Option(names = {"--include"}, paramLabel = "''", description = "Include one or more containers in the specified base image")
     private List<String> includes;
 
-    @Option(names = {"--name-strategy"}, paramLabel = "false", description = "Specify the name strategy for the container name, it can be 'none' or 'tagPrefix' or 'imageSuffix'")
+    @Option(names = {"--name-strategy"}, paramLabel = "<value>", description = "Specify the name strategy for the container name, it can be 'none' or 'tagPrefix' or 'imageSuffix'")
     private ImageNameStrategy nameStrategy;
 
     @Option(names = {"-m","--mirror"}, paramLabel = "false", description = "Enable container mirror mode'")
     private boolean mirror;
 
-    @Option(names = {"--scan-mode"}, paramLabel = "false", description = "Specify container security scan mode, it can be 'none', 'async' or 'required'")
+    @Option(names = {"--scan-mode"}, paramLabel = "<value>", description = "Specify container security scan mode, it can be 'none', 'async' or 'required'")
     private ScanMode scanMode;
 
-    @Option(names = {"--scan-level"}, paramLabel = "false", description = "Specify one or more security scan vulnerabilities level allowed in the container e.g. low,medium,high,critical")
+    @Option(names = {"--scan-level"}, paramLabel = "<value>", description = "Specify one or more security scan vulnerabilities level allowed in the container e.g. low,medium,high,critical")
     private List<ScanLevel> scanLevels;
+
+    @Option(names = {"--build-compression"}, paramLabel = "<value>", description = "Specify the compression algorithm to be used for the build context, it can be 'gzip', 'zstd' or 'estargz'")
+    private BuildCompression.Mode buildCompression;
+
 
     @CommandLine.Parameters
     List<String> prompt;
@@ -413,7 +417,14 @@ public class App implements Runnable {
                 .withMirror(mirror)
                 .withScanMode(scanMode)
                 .withScanLevels(scanLevels)
+                .withBuildCompression(compression(buildCompression))
                 ;
+    }
+
+    BuildCompression compression(BuildCompression.Mode mode) {
+        if( mode==null )
+            return null;
+        return new BuildCompression().withMode(mode);
     }
 
     public void inspect() {

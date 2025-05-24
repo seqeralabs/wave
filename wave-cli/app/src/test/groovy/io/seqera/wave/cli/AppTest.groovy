@@ -21,6 +21,7 @@ import java.nio.file.Files
 import java.time.Duration
 import java.time.Instant
 
+import io.seqera.wave.api.BuildCompression
 import io.seqera.wave.api.ContainerStatus
 import io.seqera.wave.api.ContainerStatusResponse
 import io.seqera.wave.api.ImageNameStrategy
@@ -306,6 +307,32 @@ class AppTest extends Specification {
         then:
         req.scanMode == null
         req.scanLevels == List.of(ScanLevel.LOW, ScanLevel.MEDIUM)
+    }
+
+    def 'should set build compression gzip' () {
+        given:
+        def app = new App()
+        String[] args = ["--build-compression", 'gzip']
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        and:
+        def req = app.createRequest()
+        then:
+        req.buildCompression == new BuildCompression().withMode(BuildCompression.Mode.gzip)
+    }
+
+    def 'should set build compression estargz' () {
+        given:
+        def app = new App()
+        String[] args = ["--build-compression", 'estargz']
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        and:
+        def req = app.createRequest()
+        then:
+        req.buildCompression == new BuildCompression().withMode(BuildCompression.Mode.estargz)
     }
 
     def 'should not allow dry-run and await' () {

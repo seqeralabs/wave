@@ -195,6 +195,15 @@
   "name":"groovy.lang.Closure"
 },
 {
+  "name":"io.seqera.wave.api.BuildCompression",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.seqera.wave.api.BuildCompression$Mode",
+  "fields":[{"name":"estargz"}, {"name":"gzip"}, {"name":"zstd"}]
+},
+{
   "name":"io.seqera.wave.api.BuildContext",
   "allDeclaredFields":true,
   "methods":[{"name":"<init>","parameterTypes":[] }]
