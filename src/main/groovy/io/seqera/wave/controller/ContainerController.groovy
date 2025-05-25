@@ -256,6 +256,9 @@ class ContainerController {
             final generated = containerFileFromPackages(req.packages, req.formatSingularity())
             req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
         }
+        // make sure container platform is defined 
+        if( !req.containerPlatform )
+            req.containerPlatform = ContainerPlatform.DEFAULT.toString()
 
         final ip = addressResolver.resolve(httpRequest)
         // check the rate limit before continuing
@@ -328,7 +331,7 @@ class ContainerController {
         final containerSpec = decodeBase64OrFail(req.containerFile, 'containerFile')
         final condaContent = condaFileFromRequest(req)
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
-        final platform = ContainerPlatform.of(req.containerPlatform)
+        final platform = ContainerPlatform.parseOrDefault(req.containerPlatform)
         final buildRepository = targetRepo( req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository
                 ? buildConfig.defaultPublicRepository
                 : buildConfig.defaultBuildRepository), req.nameStrategy)
@@ -413,8 +416,6 @@ class ContainerController {
             throw new BadRequestException("Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting")
         if( req.scanMode && !scanService )
             throw new UnsupportedScanServiceException()
-        if( !req.containerPlatform )
-            req.containerPlatform = ContainerPlatform.DEFAULT.toString()
 
         // expand inclusions
         inclusionService.addContainerInclusions(req, identity)
