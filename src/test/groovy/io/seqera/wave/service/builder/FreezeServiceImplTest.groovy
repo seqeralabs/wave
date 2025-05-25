@@ -82,7 +82,7 @@ class FreezeServiceImplTest extends Specification  {
 
     def 'should create build file given a container image' () {
         when:
-        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', containerPlatform: 'linux/amd64', freeze: true)
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true)
         def result = freezeService.createBuildFile(req, Mock(PlatformId))
         then:
         result == '''\
@@ -91,7 +91,7 @@ class FreezeServiceImplTest extends Specification  {
             '''.stripIndent(true)
 
         when:
-        req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', containerPlatform: 'linux/amd64', freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2']))
+        req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2']))
         result = freezeService.createBuildFile(req, PlatformId.NULL)
         then:
         result == '''\
@@ -118,7 +118,7 @@ class FreezeServiceImplTest extends Specification  {
         def l1 = new ContainerLayer('/some/loc', 'digest1')
         def l2 = new ContainerLayer('/other/loc', 'digest2')
         def config = new ContainerConfig(env:['FOO=1', 'BAR=2'], entrypoint: ['bash', '--this', '--that'], layers: [l1, l2])
-        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', containerPlatform: 'linux/amd64', freeze: true, format: 'sif', containerConfig: config)
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true, format: 'sif', containerConfig: config)
         when:
         def result = freezeService.createBuildFile(req, Mock(PlatformId))
         then:
@@ -141,14 +141,14 @@ class FreezeServiceImplTest extends Specification  {
         def ENCODED = 'FROM foo\nRUN this\n'.bytes.encodeBase64().toString()
 
         when:
-        def req = new SubmitContainerTokenRequest(containerFile: ENCODED, containerPlatform: 'linux/amd64', freeze: true)
+        def req = new SubmitContainerTokenRequest(containerFile: ENCODED, freeze: true)
         def result = freezeService.createBuildFile(req, Mock(PlatformId))
         then:
         // nothing to do here =>  returns null
         result == null
 
         when:
-        req = new SubmitContainerTokenRequest(containerFile: ENCODED, containerPlatform: 'linux/amd64', freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2'], workingDir: '/work/dir'))
+        req = new SubmitContainerTokenRequest(containerFile: ENCODED, freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2'], workingDir: '/work/dir'))
         result = freezeService.createBuildFile(req, Mock(PlatformId))
         then:
         // nothing to do here =>  returns null
@@ -164,7 +164,7 @@ class FreezeServiceImplTest extends Specification  {
 
     def 'should throw an error' () {
         when:
-        def req = new SubmitContainerTokenRequest(containerFile: 'FROM foo\nRUN this\n', containerPlatform: 'linux/amd64', freeze: false)
+        def req = new SubmitContainerTokenRequest(containerFile: 'FROM foo\nRUN this\n', freeze: false)
         freezeService.createBuildFile(req, Mock(PlatformId))
         then:
         thrown(AssertionError)
@@ -172,7 +172,7 @@ class FreezeServiceImplTest extends Specification  {
 
     def 'should create build request given a container image' () {
         when:
-        def req = new SubmitContainerTokenRequest(containerImage: 'hello-world:latest', containerPlatform: 'linux/amd64', freeze: true)
+        def req = new SubmitContainerTokenRequest(containerImage: 'hello-world:latest', freeze: true)
         def result = freezeService.freezeBuildRequest(req, Mock(PlatformId))
         then:
         1* authService.containerEntrypoint(_,_,_) >> null
@@ -183,7 +183,7 @@ class FreezeServiceImplTest extends Specification  {
             '''.stripIndent(true)
 
         when:
-        req = new SubmitContainerTokenRequest(containerImage: 'hello-world:latest', containerPlatform: 'linux/amd64', freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2']))
+        req = new SubmitContainerTokenRequest(containerImage: 'hello-world:latest', freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2']))
         result = freezeService.freezeBuildRequest(req, Mock(PlatformId))
         then:
         1* authService.containerEntrypoint(_,_,_) >> null
@@ -195,7 +195,7 @@ class FreezeServiceImplTest extends Specification  {
             '''.stripIndent(true)
 
         when:
-        req = new SubmitContainerTokenRequest(containerImage: 'hello-world:latest', containerPlatform: 'linux/amd64', freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2']))
+        req = new SubmitContainerTokenRequest(containerImage: 'hello-world:latest', freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2']))
         result = freezeService.freezeBuildRequest(req, Mock(PlatformId))
         then:
         1* authService.containerEntrypoint(_,_,_) >> ['/foo/entry.sh']
@@ -215,7 +215,7 @@ class FreezeServiceImplTest extends Specification  {
         // 1. no container config is provided
         // therefore the container file is not changed
         when:
-        def req = new SubmitContainerTokenRequest(containerFile: ENCODED, containerPlatform: 'linux/amd64', freeze: true)
+        def req = new SubmitContainerTokenRequest(containerFile: ENCODED, freeze: true)
         def result = freezeService.freezeBuildRequest(req, Mock(PlatformId))
         then:
         0* authService.containerEntrypoint(_,_,_) >> null
@@ -225,7 +225,7 @@ class FreezeServiceImplTest extends Specification  {
         // 2. a container config is provided
         // the container file is updated correspondingly
         when:
-        req = new SubmitContainerTokenRequest(containerFile: ENCODED, containerPlatform: 'linux/amd64', freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2'], workingDir: '/work/dir'))
+        req = new SubmitContainerTokenRequest(containerFile: ENCODED, freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2'], workingDir: '/work/dir'))
         result = freezeService.freezeBuildRequest(req, Mock(PlatformId))
         then:
         1* authService.containerEntrypoint(_,_,_) >> null
@@ -243,7 +243,7 @@ class FreezeServiceImplTest extends Specification  {
         // 3. the container image specifies an entrypoint
         // therefore the 'WAVE_ENTRY_CHAIN' is added to the resulting container file
         when:
-        req = new SubmitContainerTokenRequest(containerFile: ENCODED, containerPlatform: 'linux/amd64', freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2'], workingDir: '/work/dir'))
+        req = new SubmitContainerTokenRequest(containerFile: ENCODED, freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2'], workingDir: '/work/dir'))
         result = freezeService.freezeBuildRequest(req, Mock(PlatformId))
         then:
         1 * authService.containerEntrypoint(_,_,_) >> ['/some/entry.sh']

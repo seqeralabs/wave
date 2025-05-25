@@ -116,7 +116,7 @@ class ContainerControllerTest extends Specification {
         def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry)
 
         when:
-        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest')
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', containerPlatform: 'linux/amd64')
         def data = controller.makeRequestData(req, PlatformId.NULL, "")
         then:
         data.containerImage == 'docker.io/library/ubuntu:latest'
@@ -156,7 +156,7 @@ class ContainerControllerTest extends Specification {
         def target = 'docker.io/repo/ubuntu:latest'
         def build = Mock(BuildRequest) { getTargetImage() >> target }
         and:
-        def req = new SubmitContainerTokenRequest(containerImage: containerImage, freeze: true, buildRepository: 'docker.io/foo/bar', containerPlatform: 'linux/amd64')
+        def req = new SubmitContainerTokenRequest(containerImage: containerImage, containerPlatform: 'linux/amd64', freeze: true, buildRepository: 'docker.io/foo/bar')
 
         when:
         def data = controller.makeRequestData(req, PlatformId.NULL, "")
@@ -303,7 +303,7 @@ class ContainerControllerTest extends Specification {
         def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig, validationService: validationService)
 
         when:
-        def submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerPlatform: 'amd64')
+        def submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'))
         def build = controller.makeBuildRequest(submit, PlatformId.NULL,"")
         then:
         build.containerId =~ /7efaa2ed59c58a16/
@@ -311,6 +311,15 @@ class ContainerControllerTest extends Specification {
         build.targetImage == 'wave/build:7efaa2ed59c58a16'
         build.platform == ContainerPlatform.of('amd64')
         
+        when:
+        submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerPlatform: 'amd64')
+        build = controller.makeBuildRequest(submit, PlatformId.NULL, null)
+        then:
+        build.containerId =~ /7efaa2ed59c58a16/
+        build.containerFile == 'FROM foo'
+        build.targetImage == 'wave/build:7efaa2ed59c58a16'
+        build.platform == ContainerPlatform.of('amd64')
+
         // using 'arm' platform changes the id
         when:
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerPlatform: 'arm64')
@@ -725,7 +734,6 @@ class ContainerControllerTest extends Specification {
         given:
         def req = new SubmitContainerTokenRequest(
                 containerFile: encode('FROM ubuntu:latest'),
-                containerPlatform: 'linux/amd64',
                 buildRepository: BUILD,
                 cacheRepository: CACHE
         )
