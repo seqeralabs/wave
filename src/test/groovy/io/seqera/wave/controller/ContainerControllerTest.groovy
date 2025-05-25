@@ -154,18 +154,16 @@ class ContainerControllerTest extends Specification {
         def controller = Spy(new ContainerController(freezeService: freeze, inclusionService: Mock(ContainerInclusionService)))
         and:
         def target = 'docker.io/repo/ubuntu:latest'
-        def BUILD = Mock(BuildRequest) {
-            getTargetImage() >> target
-        }
+        def build = Mock(BuildRequest) { getTargetImage() >> target }
         and:
-        def req = new SubmitContainerTokenRequest(containerImage: containerImage, freeze: true, buildRepository: 'docker.io/foo/bar')
+        def req = new SubmitContainerTokenRequest(containerImage: containerImage, freeze: true, buildRepository: 'docker.io/foo/bar', containerPlatform: 'linux/amd64')
 
         when:
         def data = controller.makeRequestData(req, PlatformId.NULL, "")
         then:
         1 * freeze.freezeBuildRequest(req, _) >> req.copyWith(containerFile: 'FROM ubuntu:latest')
-        1 * controller.makeBuildRequest(_,_,_) >> BUILD
-        1 * controller.checkBuild(BUILD,false) >> new BuildTrack('1', target, false, false)
+        1 * controller.makeBuildRequest(_,_,_) >> build
+        1 * controller.checkBuild(build,false) >> new BuildTrack('1', target, false, false)
         1 * controller.getContainerDigest(containerImage, PlatformId.NULL) >> 'sha256:12345'
         and:
         data.containerImage == target
@@ -305,7 +303,7 @@ class ContainerControllerTest extends Specification {
         def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig, validationService: validationService)
 
         when:
-        def submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'))
+        def submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerPlatform: 'amd64')
         def build = controller.makeBuildRequest(submit, PlatformId.NULL,"")
         then:
         build.containerId =~ /7efaa2ed59c58a16/
@@ -313,15 +311,6 @@ class ContainerControllerTest extends Specification {
         build.targetImage == 'wave/build:7efaa2ed59c58a16'
         build.platform == ContainerPlatform.of('amd64')
         
-        when:
-        submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerPlatform: 'amd64')
-        build = controller.makeBuildRequest(submit, PlatformId.NULL, null)
-        then:
-        build.containerId =~ /7efaa2ed59c58a16/
-        build.containerFile == 'FROM foo'
-        build.targetImage == 'wave/build:7efaa2ed59c58a16'
-        build.platform == ContainerPlatform.of('amd64')
-
         // using 'arm' platform changes the id
         when:
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerPlatform: 'arm64')
@@ -341,20 +330,17 @@ class ContainerControllerTest extends Specification {
         build.condaFile == 'some::conda-recipe'
         build.targetImage == 'wave/build:c6dac2e544419f71'
         build.platform == ContainerPlatform.of('arm64')
-
     }
 
     def 'should return a bad request exception when field is not encoded' () {
         given:
         def dockerAuth = Mock(ContainerInspectServiceImpl)
         def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig)
+        def request = new SubmitContainerTokenRequest(containerFile: 'FROM some:container', containerPlatform: 'linux/amd64')
 
         // validate containerFile
         when:
-        controller.makeBuildRequest(
-                new SubmitContainerTokenRequest(containerFile: 'FROM some:container'),
-                Mock(PlatformId),
-                null)
+        controller.makeBuildRequest(request, Mock(PlatformId), null)
         then:
         def e = thrown(BadRequestException)
         e.message == "Invalid 'containerFile' attribute - make sure it encoded as a base64 string"
@@ -739,6 +725,7 @@ class ContainerControllerTest extends Specification {
         given:
         def req = new SubmitContainerTokenRequest(
                 containerFile: encode('FROM ubuntu:latest'),
+                containerPlatform: 'linux/amd64',
                 buildRepository: BUILD,
                 cacheRepository: CACHE
         )
