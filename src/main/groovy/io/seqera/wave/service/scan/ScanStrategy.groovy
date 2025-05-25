@@ -37,7 +37,7 @@ import io.seqera.wave.core.ContainerPlatform
 @Requires(bean = ScanConfig)
 abstract class ScanStrategy {
 
-    abstract void scanContainer(String jobName, ScanRequest request)
+    abstract void scanContainer(String jobName, ScanEntry entry)
 
     protected List<String> scanCommand(String targetImage, Path outputFile, ContainerPlatform platform, ScanConfig config) {
         List<String> cmd = ['--quiet', 'image']

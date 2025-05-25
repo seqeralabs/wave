@@ -1,4 +1,91 @@
 # Wave changelog
+1.20.3 - 24 May 2025 
+- Determine job state by using K8s JobStatus [ecc33c37]
+
+1.20.2 - 21 May 2025
+- Fix K8s failure detection on pod error [1c76cd96]
+
+1.20.1 - 20 May 2025
+- Bump Jib to version 3.4.5
+
+1.20.0 - [skipped]
+- Add PostgreSQL based implementation for PersistenceService (#821) [2c5b25f0]
+- Add k8s tracing info [69769b13]
+- Add log trace to postgres service [6e939580]
+- Add pod failure policy [2ce4a998]
+- Add progress async impl [de5f7237]
+- Add support for compression settings (#822) [72566c0d]
+- Improve docker debug command [0a59ec26]
+- Promote job queues config logs to info [d8e3d9f0]
+- Remove unused h2 env [e4422b1e]
+- added jdbc binder for prometheus metrics (#840) [7094a366]
+
+1.19.6 - 30 Apr 2025
+- Bypass cache repo for custom build repos  (#828) [29a93053]
+
+1.19.5 - 17 Apr 2025
+- Add multi arch singularity image (#826) [cf4f97ff]
+- Add proot and init container to singularity build (#825) [6d995d4c]
+- Add compress options to image output [c25496b5]
+- Bump Micronaut to version 4.8.0 [6e4b6031]
+- Bump Netty to version 4.1.119 [f2147953]
+- Bump Gradle 8.13 [8bdd2adc]
+
+1.19.4 - 31 Mar 2025 
+- Add enable-native-access=ALL-UNNAMED to launch opts [4f0525da]
+- Default request containerPlatform to linux/adm64 [dcdb7cf4]
+- Fix NPE accessing job manager config (#812) [da8d101e]
+- Normalize arch argument to platform [f2a3db7b]
+- Remove unused platform variable [77bbb416]
+- Revert use of async Caffeine cache (#811) [95fb3204]
+- Use uniform notation for resources requests & limits (#819) [8bfa1126]
+- Bump nf-jdk:corretto-24-al2023-jemalloc [bcb14150]
+
+1.19.3 - 26 Mar 2025
+- Added dns configuration in k8s job (#816) [0458e667]
+- Add support for cpu and mem limits (#817) [eb0fa3fe]
+- Add limits for scan, mirror and transfer [9b9bc5f2]
+
+1.19.2 - 15 Mar 2025
+- Implement pending queue as stream (#809) [ec847d24]
+- Restore "Add arch in wave metrics (#791)" [a8e84291]
+
+1.19.1 - 13 Mar 2025
+- Revert "Add arch in wave metrics (#791)" [0fd2eefa]
+
+1.19.0 - 10 Mar 2025
+- Add arch in wave metrics (#791) [f03a1f1f]
+- Add submission queue to Job manager (#805) [3b71558e]
+- Improve Redis tests [6e90f71c]
+- Improve thread interruption logic [0e70924c]
+- Improve debug logging [5d5980b1]
+- Fix robots file for crawlers [1cf23c9c]
+
+1.18.4 - 3 Mar 2025
+- Add robots and favicon files [40c91f5f]
+- Improve errors and warns logging [216b8227]
+
+1.18.3 - 28 Feb 2025
+- Add DenyCrawlerFilter (#803) [edfae007]
+
+1.18.2 - 27 Feb 2025
+- Use post for container scan (#802) [1d4bc194]
+- Wv 102 merge https docs.seqera.io wave api into openapi (#800) [206881ec]
+
+1.18.1 - 21 Feb 2025
+- Add denyHosts to pairing websocket [f5369eed]
+- Use virtual threads for build, scan and mirror jobs (#742) [9dfce1f7]
+- removed metrics from open-api (#798) [740831aa]
+- Bump ch.qos.logback:logback-classic 1.5.16 (#799) [7bf703d6]
+
+1.18.0 - 18 Feb 2025
+- Add Scan image request (#796) [a950d1cf]
+- Improve caching for AWS ECR and Auth lookup (#783) [b1a76d15]
+- Improve jwt debug logs [086837e9]
+- Use route target path as proxy cache key (#788) [1133c348]
+- Bump Micronaut to version 4.7.6 [97544609]
+- Bump io.netty:netty-bom:4.1.118.Final [5a861f51]
+
 1.17.2 - 10 Feb 2025
 - Change threads dump-threshold default to 200 [5d136e45]
 - Minor inspect view improvements (#795) [242822fd]

@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023-2024, Seqera Labs
+ *  Copyright (c) 2025, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,46 +16,35 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.auth
+package io.seqera.wave.service.persistence.migrate.cache
 
 import java.time.Duration
 
 import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Value
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.store.state.AbstractStateStore
 import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Singleton
 /**
- * Implement a cache store for {@link RegistryAuth} object that
- * can be distributed across wave replicas
+ * Cache for data migration entries
  *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-@Slf4j
 @Singleton
 @CompileStatic
-class RegistryAuthStore extends AbstractStateStore<RegistryAuth> {
+class DataMigrateCache extends AbstractStateStore<DataMigrateEntry> {
 
-    private Duration duration
-
-    RegistryAuthStore(
-            StateProvider<String, String> provider,
-            @Value('${wave.registry-auth.cache.duration:`3h`}') Duration duration)
-    {
-        super(provider, new MoshiEncodeStrategy<RegistryAuth>() {})
-        this.duration = duration
-        log.info "Creating Registry Auth cache store ― duration=$duration"
+    DataMigrateCache(StateProvider<String,String> provider) {
+        super(provider, new MoshiEncodeStrategy<DataMigrateEntry>() {})
     }
 
     @Override
     protected String getPrefix() {
-        return 'registry-auth/v1'
+        return 'wave-migrate/v1'
     }
 
     @Override
     protected Duration getDuration() {
-        return duration
+        return Duration.ofDays(30)
     }
 }

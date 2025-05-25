@@ -17,11 +17,14 @@
  */
 package io.seqera.wave.service.metric.model
 
+import groovy.transform.CompileStatic
+
 /**
  * Model organisations counts response
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
+@CompileStatic
 class GetOrgCountResponse {
     String metric
     Long count

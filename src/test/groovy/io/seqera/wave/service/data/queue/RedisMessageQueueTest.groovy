@@ -26,6 +26,8 @@ import java.time.Duration
 import io.micronaut.context.ApplicationContext
 import io.seqera.wave.service.data.queue.impl.RedisMessageQueue
 import io.seqera.wave.test.RedisTestContainer
+import io.seqera.wave.util.LongRndKey
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -36,10 +38,7 @@ class RedisMessageQueueTest extends Specification implements RedisTestContainer 
     ApplicationContext context
 
     def setup() {
-        context = ApplicationContext.run([
-                REDIS_HOST: redisHostName,
-                REDIS_PORT: redisPort
-        ], 'test', 'redis')
+        context = ApplicationContext.run('test', 'redis')
     }
 
     def cleanup() {
@@ -79,15 +78,39 @@ class RedisMessageQueueTest extends Specification implements RedisTestContainer 
 
     def 'should offer and poll a value after wait' () {
         given:
-        def broker = context.getBean(RedisMessageQueue)
+        def queue = context.getBean(RedisMessageQueue)
         def wait = Duration.ofMillis(500)
         and:
-        broker.offer('bar1', 'alpha1')
-        broker.offer('bar1', 'beta1')
+        queue.offer('bar1', 'alpha1')
+        queue.offer('bar1', 'beta1')
 
         expect:
-        broker.poll('foo1', wait) == null
-        broker.poll('bar1', wait) == 'alpha1'
-        broker.poll('bar1', wait) == 'beta1'
+        queue.poll('foo1', wait) == null
+        queue.poll('bar1', wait) == 'alpha1'
+        queue.poll('bar1', wait) == 'beta1'
+    }
+
+    def 'should validate queue length' () {
+        given:
+        def id1 = "queue-${LongRndKey.rndHex()}"
+        def id2 = "queue-${LongRndKey.rndHex()}"
+        and:
+        def queue = context.getBean(RedisMessageQueue)
+
+        expect:
+        queue.length('foo') == 0
+
+        when:
+        queue.offer(id1, 'one')
+        queue.offer(id1, 'two')
+        queue.offer(id2, 'three')
+        then:
+        queue.length(id1) == 2
+        queue.length(id2) == 1
+
+        when:
+        queue.poll(id1)
+        then:
+        queue.length(id1) == 1
     }
 }

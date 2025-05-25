@@ -29,7 +29,6 @@ import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerInspectRequest
 import io.seqera.wave.api.ContainerInspectResponse
-import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.logs.BuildLogServiceImpl
 import jakarta.inject.Inject

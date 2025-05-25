@@ -31,7 +31,7 @@ import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.impl.BuildStateStoreImpl
 import io.seqera.wave.service.job.JobFactory
-import io.seqera.wave.service.job.JobQueue
+import io.seqera.wave.service.job.JobProcessingQueue
 import io.seqera.wave.store.state.impl.RedisStateProvider
 import io.seqera.wave.test.RedisTestContainer
 import io.seqera.wave.tower.PlatformId
@@ -45,10 +45,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
     ApplicationContext applicationContext
 
     def setup() {
-        applicationContext = ApplicationContext.run([
-                REDIS_HOST: redisHostName,
-                REDIS_PORT: redisPort
-        ], 'test', 'redis')
+        applicationContext = ApplicationContext.run('test', 'redis')
         flushRedis()
     }
 
@@ -220,7 +217,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
     def 'should abort an await if build never finish' () {
         given:
         def buildCacheStore = applicationContext.getBean(BuildStateStoreImpl)
-        def jobQueue = applicationContext.getBean(JobQueue)
+        def jobQueue = applicationContext.getBean(JobProcessingQueue)
         def jobFactory = applicationContext.getBean(JobFactory)
         def res = BuildResult.create('1')
         def req = new BuildRequest(
@@ -228,12 +225,14 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
                 buildId: '1',
                 startTime: Instant.now(),
                 maxDuration: Duration.ofSeconds(5),
-                workspace: Path.of('/some/work/dir')
+                workspace: Path.of('/some/work/dir'),
+                identity: PlatformId.NULL
         )
         def entry = new BuildEntry(req, res)
+        def job = jobFactory.build(req).withLaunchTime(Instant.now())
         and:
         buildCacheStore.storeIfAbsent(req.targetImage, entry)
-        jobQueue.offer(jobFactory.build(req))
+        jobQueue.offer(job)
 
         when: "wait for an update never will arrive"
         buildCacheStore.awaitBuild(req.targetImage).get()
