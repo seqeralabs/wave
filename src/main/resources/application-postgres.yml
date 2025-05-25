@@ -1,0 +1,14 @@
+wave:
+  db:
+    uri: "jdbc:postgresql://localhost:5432/postgres"
+    user: "postgres"
+    password: "postgres"
+datasources:
+  default:
+    db-type: postgres
+    dialect: POSTGRES
+    driver-class-name: org.postgresql.Driver
+    url: "${wave.db.uri}"
+    username: "${wave.db.user}"
+    password: "${wave.db.password}"
+
