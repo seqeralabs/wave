@@ -1,4 +1,7 @@
 # Wave changelog
+1.20.3 - 24 May 2025 
+- Determine job state by using K8s JobStatus [ecc33c37]
+
 1.20.2 - 21 May 2025
 - Fix K8s failure detection on pod error [1c76cd96]
 
