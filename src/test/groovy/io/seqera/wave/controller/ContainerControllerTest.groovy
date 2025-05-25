@@ -258,7 +258,7 @@ class ContainerControllerTest extends Specification {
         and:
         data.containerFile == DOCKER
         data.identity.userId == 100
-        data.containerImage ==  'wave/build:62627015304c3e53'
+        data.containerImage ==  'wave/build:be9ee6ac1eeff4b5'
         data.containerConfig == cfg
         data.platform.toString() == 'linux/arm64'
     }
