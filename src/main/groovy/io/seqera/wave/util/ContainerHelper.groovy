@@ -303,24 +303,14 @@ class ContainerHelper {
         value ? normalise0(value.toLowerCase(), maxLength, /[^a-z0-9_.\-\/]/) : null
     }
 
-    static String makeContainerId(String containerFile, String condaFile, ContainerPlatform platform, String repository, BuildContext buildContext) {
+    static String makeContainerId(String containerFile, String condaFile, ContainerPlatform platform, String repository, BuildContext buildContext, ContainerConfig containerConfig) {
         final attrs = new LinkedHashMap<String,String>(10)
         attrs.containerFile = containerFile
         attrs.condaFile = condaFile
         attrs.platform = platform?.toString()
         attrs.repository = repository
         if( buildContext ) attrs.buildContext = buildContext.tarDigest
-        return RegHelper.sipHash(attrs)
-    }
-
-    static String makeContainerId(String containerFile, String condaFile, ContainerPlatform platform, String repository, BuildContext buildContext, ContainerConfig config) {
-        final attrs = new LinkedHashMap<String,String>(10)
-        attrs.containerFile = containerFile
-        attrs.condaFile = condaFile
-        attrs.platform = platform?.toString()
-        attrs.repository = repository
-        attrs.config = config?.toString()
-        if( buildContext ) attrs.buildContext = buildContext.tarDigest
+        if( containerConfig ) attrs.containerConfig = String.valueOf(containerConfig.hashCode())
         return RegHelper.sipHash(attrs)
     }
 

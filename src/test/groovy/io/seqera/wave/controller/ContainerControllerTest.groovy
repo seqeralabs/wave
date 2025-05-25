@@ -230,7 +230,7 @@ class ContainerControllerTest extends Specification {
         and:
         data.containerFile == DOCKER
         data.identity.userId == 100
-        data.containerImage ==  'wave/build:62627015304c3e53'
+        data.containerImage ==  'wave/build:be9ee6ac1eeff4b5'
         data.containerConfig == cfg
         data.platform.toString() == 'linux/arm64'
     }
@@ -306,18 +306,18 @@ class ContainerControllerTest extends Specification {
         def submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'))
         def build = controller.makeBuildRequest(submit, PlatformId.NULL,"")
         then:
-        build.containerId =~ /a4cf322e0c3c3e15/
+        build.containerId =~ /7efaa2ed59c58a16/
         build.containerFile == 'FROM foo'
-        build.targetImage == 'wave/build:a4cf322e0c3c3e15'
+        build.targetImage == 'wave/build:7efaa2ed59c58a16'
         build.platform == ContainerPlatform.of('amd64')
         
         when:
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerPlatform: 'amd64')
         build = controller.makeBuildRequest(submit, PlatformId.NULL, null)
         then:
-        build.containerId =~ /a4cf322e0c3c3e15/
+        build.containerId =~ /7efaa2ed59c58a16/
         build.containerFile == 'FROM foo'
-        build.targetImage == 'wave/build:a4cf322e0c3c3e15'
+        build.targetImage == 'wave/build:7efaa2ed59c58a16'
         build.platform == ContainerPlatform.of('amd64')
 
         // using 'arm' platform changes the id
@@ -325,19 +325,19 @@ class ContainerControllerTest extends Specification {
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerPlatform: 'arm64')
         build = controller.makeBuildRequest(submit, PlatformId.NULL, "")
         then:
-        build.containerId =~ /a1ac20345dd0b754/
+        build.containerId =~ /be9ee6ac1eeff4b5/
         build.containerFile == 'FROM foo'
-        build.targetImage == 'wave/build:a1ac20345dd0b754'
+        build.targetImage == 'wave/build:be9ee6ac1eeff4b5'
         build.platform == ContainerPlatform.of('arm64')
 
         when:
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), condaFile: encode('some::conda-recipe'), containerPlatform: 'arm64')
         build = controller.makeBuildRequest(submit, PlatformId.NULL, "")
         then:
-        build.containerId =~ /26f39f28044bee78/
+        build.containerId =~ /c6dac2e544419f71/
         build.containerFile == 'FROM foo'
         build.condaFile == 'some::conda-recipe'
-        build.targetImage == 'wave/build:26f39f28044bee78'
+        build.targetImage == 'wave/build:c6dac2e544419f71'
         build.platform == ContainerPlatform.of('arm64')
     }
 
@@ -762,18 +762,33 @@ class ContainerControllerTest extends Specification {
         'custom/repo'   | 'custom/cache'    | 'custom/cache'
     }
 
-    def 'should create different container Id for different request' () {
+    def 'should create different container id for different request and freeze enabled' () {
         given:
         def dockerAuth = Mock(ContainerInspectServiceImpl)
         def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig, validationService: validationService)
+        and:
+        def request1 = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), freeze: true, containerConfig: new ContainerConfig(env: ["FOO=one"]))
+        def request2 = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), freeze: true, containerConfig: new ContainerConfig(env: ["FOO=two"]))
 
         when:
-        def request1 = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerConfig: new ContainerConfig(env: ["FOO=one"]))
         def build1 = controller.makeBuildRequest(request1, PlatformId.NULL, "")
-
-        def request2 = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerConfig: new ContainerConfig(env: ["FOO=two"]))
         def build2 = controller.makeBuildRequest(request2, PlatformId.NULL,"")
         then:
         build1.containerId != build2.containerId
+    }
+
+    def 'should create same container id for different request and freeze disabled' () {
+        given:
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig, validationService: validationService)
+        and:
+        def request1 = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), freeze: false, containerConfig: new ContainerConfig(env: ["FOO=one"]))
+        def request2 = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), freeze: false, containerConfig: new ContainerConfig(env: ["FOO=two"]))
+
+        when:
+        def build1 = controller.makeBuildRequest(request1, PlatformId.NULL, "")
+        def build2 = controller.makeBuildRequest(request2, PlatformId.NULL,"")
+        then:
+        build1.containerId == build2.containerId
     }
 }

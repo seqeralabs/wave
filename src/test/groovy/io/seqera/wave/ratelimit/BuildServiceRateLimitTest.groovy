@@ -24,6 +24,7 @@ import spock.lang.Specification
 import java.nio.file.Files
 
 import io.micronaut.context.ApplicationContext
+import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.configuration.RateLimiterConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.SlowDownException
@@ -72,7 +73,7 @@ class BuildServiceRateLimitTest extends Specification {
         RUN echo hi > hello.txt
         """.stripIndent()
         and:
-        def CONTAINER_ID = ContainerHelper.makeContainerId(dockerfile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def CONTAINER_ID = ContainerHelper.makeContainerId(dockerfile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def TARGET_IMAGE = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, CONTAINER_ID, null, null)
         def REQ = new BuildRequest(
                 containerId: CONTAINER_ID,
@@ -106,7 +107,7 @@ class BuildServiceRateLimitTest extends Specification {
         RUN echo hi > hello.txt
         """.stripIndent()
         and:
-        def CONTAINER_ID = ContainerHelper.makeContainerId(dockerfile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def CONTAINER_ID = ContainerHelper.makeContainerId(dockerfile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def TARGET_IMAGE = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, CONTAINER_ID, null, null)
         def REQ = new BuildRequest(
                 containerId: CONTAINER_ID,
