@@ -334,9 +334,9 @@ class ContainerController {
                 : req.cacheRepository   // use custom cache repo, when is a custom build repo
         final configJson = inspectService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
         /**
-         * use the container config for build purposes only when "freeze" is enabled,
-         * for non-freeze requests, it's applied during the argumentation phase
-         * see also {@link io.seqera.wave.core.ContainerAugmenter#resolve(io.seqera.wave.core.RoutePath, java.util.Map)}
+         * Use the container config for build purposes only when "freeze" is enabled.
+         * For non-freeze requests, it's applied during the argumentation phase.
+         * See also {@link io.seqera.wave.core.ContainerAugmenter#resolve(io.seqera.wave.core.RoutePath, java.util.Map)}
          */
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
