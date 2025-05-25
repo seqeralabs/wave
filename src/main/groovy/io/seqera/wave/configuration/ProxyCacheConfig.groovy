@@ -35,13 +35,13 @@ import jakarta.inject.Singleton
 @ToString(includeNames = true, includePackage = false)
 class ProxyCacheConfig {
 
-    @Value('${wave.proxy-cache.duration:4m}')
+    @Value('${wave.proxy-cache.duration:120s}')
     private Duration duration
 
     @Value('${wave.proxy-cache.max-size:10000}')
     private int maxSize
 
-    @Value('${wave.proxy-cache.enabled:true}')
+    @Value('${wave.proxy-cache.enabled:false}')
     private boolean enabled
 
     Duration getDuration() {

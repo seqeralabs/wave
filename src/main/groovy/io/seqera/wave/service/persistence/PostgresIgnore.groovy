@@ -16,12 +16,20 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.encoder
+package io.seqera.wave.service.persistence
+
+import java.lang.annotation.ElementType
+import java.lang.annotation.Retention
+import java.lang.annotation.RetentionPolicy
+import java.lang.annotation.Target
 
 /**
- * Marker interface for Moshi encoded exchange objects
+ * Marker annotation to ignore a field when serializing for PostgreSQL database
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface MoshiExchange {
+@Retention(RetentionPolicy.RUNTIME)
+@Target([ElementType.FIELD])
+@interface PostgresIgnore {
+
 }

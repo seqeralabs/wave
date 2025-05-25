@@ -79,7 +79,7 @@ class JwtMonitor implements Runnable {
                 check0(it, now)
             }
             catch (InterruptedException e) {
-                Thread.interrupted()
+                throw new InterruptedException()
             }
             catch (Throwable t) {
                 log.error("Unexpected error in JWT heartbeat while processing key: $it", t)

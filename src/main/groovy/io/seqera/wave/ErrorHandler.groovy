@@ -18,6 +18,7 @@
 
 package io.seqera.wave
 
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpRequest
@@ -36,6 +37,7 @@ import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.exception.UnauthorizedException
 import io.seqera.wave.exception.WaveException
 import io.seqera.wave.util.LongRndKey
+import io.seqera.wave.util.RegHelper
 import jakarta.inject.Singleton
 /**
  * Common error handling logic
@@ -44,6 +46,7 @@ import jakarta.inject.Singleton
  */
 @Slf4j
 @Singleton
+@CompileStatic
 class ErrorHandler {
 
     static interface Mapper<T> {
@@ -53,17 +56,17 @@ class ErrorHandler {
     @Value('${wave.debug:false}')
     private Boolean debug
 
-    def <T> HttpResponse<T> handle(HttpRequest httpRequest, Throwable t, Mapper<T> responseFactory) {
+    <T> HttpResponse<T> handle(HttpRequest request, Throwable t, Mapper<T> responseFactory) {
         final errId = LongRndKey.rndHex()
-        final request = httpRequest?.toString()
         final knownException = t instanceof WaveException || t instanceof HttpStatusException
-        def msg = t.message
+        String msg = t.message
         if( knownException && msg ) {
             // the the error cause
             if( t.cause ) msg += " - Cause: ${t.cause.message ?: t.cause}".toString()
             // render the message for logging
-            def render = msg
-            if( request ) render += " - Request: ${request}"
+            String render = msg
+            if( request )
+                render += toString(request)
             if( !debug ) {
                 log.warn(render)
             }
@@ -78,8 +81,9 @@ class ErrorHandler {
                 msg = "Oops... Unable to process request"
             msg += " - Error ID: ${errId}"
             // render the message for logging
-            def render = msg
-            if( request ) render += " - Request: ${request}"
+            String render = msg
+            if( request )
+                render += toString(request)
             log.error(render, t)
         }
 
@@ -92,10 +96,10 @@ class ErrorHandler {
 
         if( t instanceof RegistryForwardException ) {
             // report this error as it has been returned by the target registry
-            return HttpResponse
+            return (HttpResponse<T>) HttpResponse
                     .status(HttpStatus.valueOf(t.statusCode))
                     .body(t.response)
-                    .headers(t.headers)
+                    .headers(t.headers as Map<CharSequence,CharSequence>)
         }
 
         if( t instanceof DockerRegistryException ) {
@@ -143,4 +147,7 @@ class ErrorHandler {
 
     }
 
+    static String toString(HttpRequest request) {
+        "\n- Request: [${request.methodName}] ${request.uri}\n- Headers:${RegHelper.dumpHeaders(request)}"
+    }
 }

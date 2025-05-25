@@ -1,10 +1,10 @@
 # Wave Application Configuration
 
-Set Wave configuration values using environment variables or in [`config.yml`](./config.yml) configuration file
+Set Wave configuration values using environment variables or in [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml) configuration file
 
 ### config.yml configuration
 
-Declare YAML configuration values in [`config.yml`](./config.yml)
+Declare YAML configuration values in [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml)
 ```
 wave:
     mail:
@@ -39,7 +39,7 @@ The generic format for the attributes is `wave.registries.<registry_name>.userna
 You need to specify all the repositories you will use in the respective wave installation.
 Below are the standard format for known registries, but you can change registry name `(azurecr.io)` to specific one like `seqeralabs.azurecr.io `.
 
-**Note**: Container registry credentials can be defined in [`config.yml`](./config.yml) too. These configurations are important for the wave authentication to the repositories used to push or pull artifacts.
+**Note**: Container registry credentials can be defined in [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml) too. These configurations are important for the wave authentication to the repositories used to push or pull artifacts.
 
 - **`wave.registries.default`**: the default Docker registry for Wave. The default is `docker.io`, and it represents the Docker Hub. *Optional*.
 
@@ -168,13 +168,13 @@ Rate limit configuration controls the limits of anonymous and authenticated user
 
 **Note**: Change these properties to tweak rate limits in wave.
 
-- **`rate-limit.build.anonymous`**: the rate limit for anonymous build requests. By default, it allows up to 10 build requests per hour (`10/1h`) from anonymous users. This setting controls the frequency at which anonymous users can trigger build processes in Wave. *Mandatory*.
+- **`rate-limit.build.anonymous`**: the rate limit for anonymous build requests. By default, it allows up to 25 build requests per hour (`25/1d`) from anonymous users. This setting controls the frequency at which anonymous users can trigger build processes in Wave. *Mandatory*.
 
-- **`rate-limit.build.authenticated`**: the rate limit for authenticated build requests. By default, it allows up to 10 build requests per minute (`10/1m`) from authenticated users. This setting governs the rate at which authenticated users can initiate build processes in Wave. *Mandatory*.
+- **`rate-limit.build.authenticated`**: the rate limit for authenticated build requests. By default, it allows up to 100 build requests per hour (`100/1h`) from authenticated users. This setting governs the rate at which authenticated users can initiate build processes in Wave. *Mandatory*.
 
-- **`rate-limit.pull.anonymous`**: the rate limit for anonymous pull requests. It is set to allow up to 100 pull requests per hour (`100/1h`) from anonymous users by default. This setting controls how frequently anonymous users can perform pull operations in Wave. *Mandatory*.
+- **`rate-limit.pull.anonymous`**: the rate limit for anonymous pull requests. It is set to allow up to 250 pull requests per hour (`250/1h`) from anonymous users by default. This setting controls how frequently anonymous users can perform pull operations in Wave. *Mandatory*.
 
-- **`rate-limit.pull.authenticated`**: the rate limit for authenticated pull requests. By default, it allows up to 100 pull requests per minute (`100/1m`) from authenticated users. This setting governs the rate at which authenticated users can perform pull operations in Wave. *Mandatory*.
+- **`rate-limit.pull.authenticated`**: the rate limit for authenticated pull requests. By default, it allows up to 2k pull requests per minute (`2000/1m`) from authenticated users. This setting governs the rate at which authenticated users can perform pull operations in Wave. *Mandatory*.
 
 - **`wave.denyPaths`**: user to filter out API calls for specific artifacts like manifests, which doesn't exist. *Optional*.
 

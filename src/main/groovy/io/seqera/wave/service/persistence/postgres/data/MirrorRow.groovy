@@ -16,26 +16,34 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.auth
+package io.seqera.wave.service.persistence.postgres.data
 
-import spock.lang.Specification
+import java.time.Instant
 
-import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import jakarta.inject.Inject
-
+import groovy.transform.CompileStatic
+import io.micronaut.core.annotation.Introspected
+import io.micronaut.data.annotation.Id
+import io.micronaut.data.annotation.MappedEntity
+import io.micronaut.data.annotation.TypeDef
+import io.micronaut.data.model.DataType
+import jakarta.persistence.Table
 /**
+ * Model a row entry in the {@code wave_mirror} table
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@MicronautTest
-class RegistryAuthStoreTest extends Specification {
+@MappedEntity
+@Introspected
+@CompileStatic
+@Table(name = "wave_mirror")
+class MirrorRow {
 
-    @Inject RegistryAuthStore store
+    @Id
+    String id
 
-    def 'should return entry key' () {
-        expect:
-        store.key0('foo') == 'registry-auth/v1:foo'
-    }
+    @TypeDef(type = DataType.JSON)
+    String data  // JSONB data will be retrieved as a string
 
+    Instant createdAt
 
 }

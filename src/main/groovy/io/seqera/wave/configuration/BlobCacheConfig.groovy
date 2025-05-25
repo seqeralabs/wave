@@ -86,12 +86,20 @@ class BlobCacheConfig {
     String s5Image
 
     @Nullable
-    @Value('${wave.blobCache.requestsCpu}')
+    @Value('${wave.blobCache.k8s.resources.requests.cpu}')
     String requestsCpu
 
     @Nullable
-    @Value('${wave.blobCache.requestsMemory}')
+    @Value('${wave.blobCache.k8s.resources.requests.memory}')
     String requestsMemory
+
+    @Value('${wave.blobCache.k8s.resources.limits.cpu}')
+    @Nullable
+    String limitsCpu
+
+    @Value('${wave.blobCache.k8s.resources.limits.memory}')
+    @Nullable
+    String limitsMemory
 
     @Nullable
     @Value('${wave.blobCache.url-signature-duration:30m}')
