@@ -333,6 +333,11 @@ class ContainerController {
                 ? (req.cacheRepository ?: buildConfig.defaultCacheRepository)
                 : req.cacheRepository   // use custom cache repo, when is a custom build repo
         final configJson = inspectService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
+        /**
+         * Use the container config for build purposes only when "freeze" is enabled.
+         * For non-freeze requests, it's applied during the argumentation phase.
+         * See also {@link io.seqera.wave.core.ContainerAugmenter#resolve(io.seqera.wave.core.RoutePath, java.util.Map)}
+         */
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
         // use 'imageSuffix' strategy by default for public repo images
@@ -344,7 +349,7 @@ class ContainerController {
         checkContainerSpec(containerSpec)
 
         // create a unique digest to identify the build req
-        final containerId = makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext)
+        final containerId = makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext, containerConfig)
         final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, nameStrategy)
         final maxDuration = buildConfig.buildMaxDuration(req)
         // default to async scan for build req for backward compatibility

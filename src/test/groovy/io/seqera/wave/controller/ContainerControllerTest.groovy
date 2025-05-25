@@ -761,4 +761,34 @@ class ContainerControllerTest extends Specification {
         'custom/repo'   | null              | null
         'custom/repo'   | 'custom/cache'    | 'custom/cache'
     }
+
+    def 'should create different container id for different request and freeze enabled' () {
+        given:
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig, validationService: validationService)
+        and:
+        def request1 = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), freeze: true, containerConfig: new ContainerConfig(env: ["FOO=one"]))
+        def request2 = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), freeze: true, containerConfig: new ContainerConfig(env: ["FOO=two"]))
+
+        when:
+        def build1 = controller.makeBuildRequest(request1, PlatformId.NULL, "")
+        def build2 = controller.makeBuildRequest(request2, PlatformId.NULL,"")
+        then:
+        build1.containerId != build2.containerId
+    }
+
+    def 'should create same container id for different request and freeze disabled' () {
+        given:
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig, validationService: validationService)
+        and:
+        def request1 = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), freeze: false, containerConfig: new ContainerConfig(env: ["FOO=one"]))
+        def request2 = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), freeze: false, containerConfig: new ContainerConfig(env: ["FOO=two"]))
+
+        when:
+        def build1 = controller.makeBuildRequest(request1, PlatformId.NULL, "")
+        def build2 = controller.makeBuildRequest(request2, PlatformId.NULL,"")
+        then:
+        build1.containerId == build2.containerId
+    }
 }
