@@ -39,6 +39,7 @@ import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.persistence.migrate.MigrationOnly
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
@@ -414,6 +415,51 @@ class SurrealPersistenceService implements PersistenceService {
             return future.complete(null)
         })
         return future
+    }
+
+    @MigrationOnly
+    List<WaveBuildRecord> getBuildsPaginated(int limit, int offset) {
+        final query = "select * from wave_build limit $limit start $offset"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result : null
+        return result ? Arrays.asList(result) : null
+    }
+
+    @MigrationOnly
+    List<WaveContainerRecord> getRequestsPaginated(int limit, int offset){
+        final query = "select * from wave_request limit $limit start $offset"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveContainerRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result : null
+        return result ? Arrays.asList(result) : null
+    }
+
+    @MigrationOnly
+    List<WaveScanRecord> getScansPaginated(int limit, int offset){
+        final query = """
+            select * 
+            from wave_scan
+            limit $limit start $offset
+            FETCH vulnerabilities
+            """.stripIndent()
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveScanRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result : null
+        return result ? Arrays.asList(result) : null
+    }
+
+    @MigrationOnly
+    List<MirrorResult> getMirrorsPaginated(int limit, int offset){
+        final query = "select * from wave_mirror limit $limit start $offset"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<MirrorResult>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result : null
+        return result ? Arrays.asList(result) : null
     }
 
 }

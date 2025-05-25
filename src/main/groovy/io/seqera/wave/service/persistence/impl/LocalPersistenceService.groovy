@@ -21,6 +21,8 @@ package io.seqera.wave.service.persistence.impl
 import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
+import io.micronaut.context.annotation.Requires
+import io.micronaut.context.annotation.Secondary
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.PersistenceService
@@ -36,6 +38,8 @@ import jakarta.inject.Singleton
  */
 @Singleton
 @CompileStatic
+@Secondary
+@Requires(notEnv = "surrealdb")
 @TraceElapsedTime(thresholdMillis = '${wave.trace.local-persistence.threshold:100}')
 class LocalPersistenceService implements PersistenceService {
 
