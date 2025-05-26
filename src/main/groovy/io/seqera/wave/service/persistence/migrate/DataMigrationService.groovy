@@ -56,7 +56,7 @@ import jakarta.inject.Inject
 class DataMigrationService {
 
     public static final String TABLE_NAME_BUILD = 'wave_build'
-    public static final String TABLE_NAME_CONTAINER_REQUEST = 'wave_container_request'
+    public static final String TABLE_NAME_CONTAINER_REQUEST = 'wave_request'
     public static final String TABLE_NAME_SCAN = 'wave_scan'
     public static final String TABLE_NAME_MIRROR = 'wave_mirror'
 
