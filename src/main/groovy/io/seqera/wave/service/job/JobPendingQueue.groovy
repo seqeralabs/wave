@@ -22,42 +22,49 @@ import java.time.Duration
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.wave.configuration.JobManagerConfig
+import io.seqera.wave.encoder.EncodingStrategy
+import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.data.stream.AbstractMessageStream
 import io.seqera.wave.service.data.stream.MessageConsumer
 import io.seqera.wave.service.data.stream.MessageStream
 import jakarta.annotation.PreDestroy
 import jakarta.inject.Singleton
 /**
- * Implements a simple persistent FIFO queue
+ * Model a FIFO queue that accumulates job requests waiting to be submitted
+ * to the {@link JobProcessingQueue} accordingly the availability of the latter.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @Singleton
 @CompileStatic
-class JobQueue extends AbstractMessageStream<JobSpec> {
+class JobPendingQueue extends AbstractMessageStream<JobSpec> {
 
-    private final static String STREAM_NAME = 'jobs-queue/v1'
+    private final static String STREAM_NAME = 'jobs-pending/v2'
 
-    private final JobConfig config
+    private EncodingStrategy<JobSpec> encoder
 
-    JobQueue(MessageStream<String> target, JobConfig config) {
+    private JobManagerConfig config
+
+    JobPendingQueue(MessageStream<String> target, JobManagerConfig config) {
         super(target)
+        this.encoder = new MoshiEncodeStrategy<JobSpec>() {}
         this.config = config
-        log.debug "Created job queue"
+        log.info "Created jobs pending queue - config=${config}"
     }
 
     @Override
     protected String name() {
-        return 'jobs-queue'
+        return "jobs-pending"
     }
 
     @Override
     protected Duration pollInterval() {
-        return config.pollInterval
+        return config.schedulerInterval
     }
 
-    final void offer(JobSpec jobSpec) {
+    final void submit(JobSpec jobSpec) {
         super.offer(STREAM_NAME, jobSpec)
     }
 
@@ -65,9 +72,13 @@ class JobQueue extends AbstractMessageStream<JobSpec> {
         super.addConsumer(STREAM_NAME, consumer)
     }
 
+    final int length() {
+        return super.length(STREAM_NAME)
+    }
+
     @PreDestroy
     void destroy() {
-        log.debug "Shutting down job queue"
+        log.debug "Shutting down jobs pending queue"
         this.close()
     }
 }

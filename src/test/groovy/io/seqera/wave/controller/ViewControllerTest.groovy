@@ -21,6 +21,8 @@ package io.seqera.wave.controller
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import java.net.http.HttpResponse
+import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
@@ -31,6 +33,7 @@ import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
+import io.micronaut.runtime.server.EmbeddedServer
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
@@ -53,11 +56,9 @@ import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
+import static io.seqera.wave.controller.ViewController.Colour
 import static io.seqera.wave.util.DataTimeUtils.formatDuration
 import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
-
-import static io.seqera.wave.controller.ViewController.Colour
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -89,6 +90,10 @@ class ViewControllerTest extends Specification {
 
     @Value('${wave.server.url}')
     String serverUrl
+
+    @Inject
+    EmbeddedServer embeddedServer;
+
 
     def 'should create build binding' () {
         given:
@@ -235,7 +240,7 @@ class ViewControllerTest extends Specification {
 
     def 'should render inspect view'() {
         when:
-        def request = HttpRequest.GET('/view/inspect?image=ubuntu')
+        def request = HttpRequest.GET('/view/inspect?image=ubuntu&platform=linux/amd64')
         def response = client.toBlocking().exchange(request, String)
 
         then:
@@ -244,6 +249,16 @@ class ViewControllerTest extends Specification {
         response.body().contains('latest')
         response.body().contains('https://registry-1.docker.io')
         response.body().contains('amd64')
+    }
+
+    def 'should render inspect view for multi platform container'() {
+        when:
+        def request = HttpRequest.GET('/view/inspect?image=ubuntu')
+        def response = client.toBlocking().exchange(request, String)
+
+        then:
+        response.status == HttpStatus.OK
+        response.body().contains('Schema Version')
     }
 
     def 'should render inspect view with platform'() {
@@ -359,7 +374,8 @@ class ViewControllerTest extends Specification {
                 ScanEntry.SUCCEEDED,
                 [new ScanVulnerability('cve-1', 'HIGH', 'test vul', 'testpkg', '1.0.0', '1.1.0', 'http://vul/cve-1')],
                 0,
-                "Some scan logs"
+                "Some scan logs",
+                Mock(Path)
         )
         when:
         def binding = controller.makeScanViewBinding(result)
@@ -394,7 +410,8 @@ class ViewControllerTest extends Specification {
                 ScanEntry.SUCCEEDED,
                 [new ScanVulnerability('cve-1', 'HIGH', 'test vul', 'testpkg', '1.0.0', '1.1.0', 'http://vul/cve-1')],
                 0,
-                "Some scan logs"
+                "Some scan logs",
+                Mock(Path)
         )
 
         when:
@@ -668,8 +685,8 @@ class ViewControllerTest extends Specification {
         def CVE2 = new ScanVulnerability('cve-2', 'x2', 'title2', 'package2', 'version2', 'fixed2', 'url2')
         def CVE3 = new ScanVulnerability('cve-3', 'x3', 'title3', 'package3', 'version3', 'fixed3', 'url3')
         def CVE4 = new ScanVulnerability('cve-4', 'x4', 'title4', 'package4', 'version4', 'fixed4', 'url4')
-        def scan1 = new WaveScanRecord('sc-1234567890abcdef_1', '100', null, null, CONTAINER_IMAGE, PLATFORM, Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3, CVE4], null, null)
-        def scan2 = new WaveScanRecord('sc-1234567890abcdef_2', '101', null, null, CONTAINER_IMAGE, PLATFORM, Instant.now(), Duration.ofSeconds(10), 'FAILED', [], null, null)
+        def scan1 = new WaveScanRecord('sc-1234567890abcdef_1', '100', null, null, CONTAINER_IMAGE, PLATFORM, Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3, CVE4], null, null, null)
+        def scan2 = new WaveScanRecord('sc-1234567890abcdef_2', '101', null, null, CONTAINER_IMAGE, PLATFORM, Instant.now(), Duration.ofSeconds(10), 'FAILED', [], null, null, null)
 
         when:
         def result = controller.renderScansView([scan1, scan2])
@@ -714,8 +731,8 @@ class ViewControllerTest extends Specification {
         def CVE2 = new ScanVulnerability('cve-2', 'x2', 'title2', 'package2', 'version2', 'fixed2', 'url2')
         def CVE3 = new ScanVulnerability('cve-3', 'x3', 'title3', 'package3', 'version3', 'fixed3', 'url3')
         def CVE4 = new ScanVulnerability('cve-4', 'x4', 'title4', 'package4', 'version4', 'fixed4', 'url4')
-        def scan1 = new WaveScanRecord('sc-1234567890abcde_1', '100', null, null, CONTAINER_IMAGE, PLATFORM, Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3, CVE4], null, null)
-        def scan2 = new WaveScanRecord('sc-1234567890abcde_2', '101', null, null, CONTAINER_IMAGE, PLATFORM, Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3], null, null)
+        def scan1 = new WaveScanRecord('sc-1234567890abcde_1', '100', null, null, CONTAINER_IMAGE, PLATFORM, Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3, CVE4], null, null, null)
+        def scan2 = new WaveScanRecord('sc-1234567890abcde_2', '101', null, null, CONTAINER_IMAGE, PLATFORM, Instant.now(), Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3], null, null, null)
 
         when:
         persistenceService.saveScanRecordAsync(scan1)
@@ -763,4 +780,28 @@ class ViewControllerTest extends Specification {
         [new ScanVulnerability(severity: 'MEDIUM'), new ScanVulnerability(severity: 'CRITICAL')]    | new Colour('#ffe4e2','#e00404')
         []                                                                                          | new Colour('#dff0d8','#3c763d')
     }
+
+    def 'should redirect to scan view on successful scan request'() {
+        given:
+        def uri = embeddedServer.getContextURI()
+        and:
+        def client = java.net.http.HttpClient.newBuilder()
+                .version(java.net.http.HttpClient.Version.HTTP_1_1)
+                .followRedirects(java.net.http.HttpClient.Redirect.NEVER)
+                .build()
+        and:
+        def image = "ubuntu:latest"
+        and:
+        def req = java.net.http.HttpRequest.newBuilder()
+                .POST(java.net.http.HttpRequest.BodyPublishers.ofByteArray(image.bytes))
+                .uri(new URI("${uri}/view/scans"))
+                .build()
+
+        when:
+        def resp = client.send(req, HttpResponse.BodyHandlers.ofString())
+        then:
+        resp.statusCode() == 301
+        resp.headers().firstValue('location').get() ==~ '/view/scans/sc-.+'
+    }
+
 }

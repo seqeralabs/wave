@@ -19,13 +19,16 @@
 package io.seqera.wave.service.builder
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.nio.file.Path
 import java.time.Duration
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.api.BuildCompression
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.ContainerHelper
@@ -69,7 +72,7 @@ class BuildStrategyTest extends Specification {
                 '--opt',
                 'platform=linux/amd64',
                 '--export-cache',
-                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip,force-compression=false',
+                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true',
                 '--import-cache',
                 'type=registry,ref=reg.io/wave/build/cache:c168dba125e28777'
         ]
@@ -103,7 +106,7 @@ class BuildStrategyTest extends Specification {
                 '--opt',
                 'platform=linux/amd64',
                 '--export-cache',
-                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip,force-compression=false',
+                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true',
                 '--import-cache',
                 'type=registry,ref=reg.io/wave/build/cache:c168dba125e28777'
         ]
@@ -135,7 +138,7 @@ class BuildStrategyTest extends Specification {
         def content = 'FROM foo:latest'
         def workspace = Path.of("some/path")
         def buildrepo = 'foo.com/repo'
-        def containerId = ContainerHelper.makeContainerId(content, null, ContainerPlatform.of('amd64'), buildrepo, null)
+        def containerId = ContainerHelper.makeContainerId(content, null, ContainerPlatform.of('amd64'), buildrepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildrepo, containerId, null, null)
         def build = new BuildRequest(
                 containerId,
@@ -153,7 +156,8 @@ class BuildStrategyTest extends Specification {
                 'sc-12345',
                 Mock(BuildContext),
                 BuildFormat.DOCKER,
-                timeout
+                timeout,
+                BuildCompression.gzip
         )
 
         then:
@@ -166,5 +170,98 @@ class BuildStrategyTest extends Specification {
         build.buildId == 'bd-af15cb0a413a2d48_0'
         build.workDir == Path.of('.').toRealPath().resolve('some/path/bd-af15cb0a413a2d48_0')
         build.maxDuration == timeout
+    }
+
+    @Unroll
+    def 'should create output options' () {
+        given:
+        def req = new BuildRequest(
+                containerId: 'c168dba125e28777',
+                buildId: 'bd-c168dba125e28777_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'quay.io/wave:c168dba125e28777',
+                cacheRepository: 'reg.io/wave/build/cache',
+                compression: new BuildCompression()
+                        .withMode(REQ_COMPRESS as BuildCompression.Mode)
+                        .withLevel(LEVEL)
+                        .withForce(FORCE),
+        )
+
+        when:
+        def config = new BuildConfig(
+                ociMediatypes: true,
+                compression: CONFIG_COMPRESS,
+                forceCompression: FORCE,
+                buildkitImage: 'moby/buildkit:v0.21.1-rootless')
+        and:
+        def result = BuildStrategy.outputOpts(req, config)
+        then:
+        result == EXPECTED
+
+        where:
+        REQ_COMPRESS    | CONFIG_COMPRESS   | LEVEL | FORCE | EXPECTED
+        null            | null              | null  | null  | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true'
+        null            | 'gzip'            | null  | null  | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=gzip'
+        'gzip'          | null              | null  | false | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=gzip,force-compression=false'
+        'gzip'          | null              | 10    | true  | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=gzip,compression-level=10,force-compression=true'
+        'gzip'          | 'estargz'         | null  | null  | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=gzip'
+        and:
+        null            | 'estargz'         | null  | null  | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=estargz,force-compression=true'
+        'estargz'       | 'gzip'            | null  | null  | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=estargz,force-compression=true'
+        and:
+        null            | 'estargz'         | null  | false | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=estargz,force-compression=false'
+        'estargz'       | 'gzip'            | null  | false | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=estargz,force-compression=false'
+        and:
+        null            | 'estargz'         | 1     | true | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=estargz,compression-level=1,force-compression=true'
+        'estargz'       | 'gzip'            | 2     | true | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=estargz,compression-level=2,force-compression=true'
+    }
+
+
+    @Unroll
+    def 'should create cache options' () {
+        given:
+        def req = new BuildRequest(
+                containerId: 'c168dba125e28777',
+                buildId: 'bd-c168dba125e28777_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'quay.io/wave:c168dba125e28777',
+                cacheRepository: 'reg.io/wave/build/cache',
+                compression: new BuildCompression()
+                        .withMode(REQ_COMPRESS as BuildCompression.Mode)
+                        .withLevel(LEVEL)
+                        .withForce(FORCE),
+        )
+
+        when:
+        def config = new BuildConfig(
+                ociMediatypes: true,
+                compression: CONFIG_COMPRESS,
+                buildkitImage: 'moby/buildkit:v0.21.1-rootless')
+        and:
+        def result = BuildStrategy.cacheOpts(req, config)
+        then:
+        result == EXPECTED
+
+        where:
+        REQ_COMPRESS    | CONFIG_COMPRESS   | LEVEL | FORCE | EXPECTED
+        null            | null              | null  | null | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true'
+        null            | 'gzip'            | null  | null | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip'
+        'gzip'          | null              | null  | null | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip'
+        'gzip'          | null              | null  | true  | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip,force-compression=true'
+        'gzip'          | null              | 10    | true  | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip,compression-level=10,force-compression=true'
+        and:
+        'gzip'          | 'estargz'         | null  | null  | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip'
+        'gzip'          | 'estargz'         | null  | true  | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip,force-compression=true'
+        and:
+        null            | 'estargz'         | null  | null  | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=estargz,force-compression=true'   // <-- default to force compression when using 'estargz'
+        'estargz'       | 'gzip'            | null  | null  | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=estargz,force-compression=true'   // <-- default to force compression when using 'estargz'
+        and:
+        null            | 'estargz'         | null  | false | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=estargz,force-compression=false'
+        'estargz'       | 'gzip'            | null  | false | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=estargz,force-compression=false'
+        and:
+        null            | 'estargz'         | 1     | true  | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=estargz,compression-level=1,force-compression=true'
+        'estargz'       | 'gzip'            | 2     | true  | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=estargz,compression-level=2,force-compression=true'
     }
 }

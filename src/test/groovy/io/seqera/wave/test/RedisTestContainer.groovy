@@ -18,12 +18,14 @@
 
 package io.seqera.wave.test
 
+import spock.lang.Shared
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.utility.DockerImageName
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -32,14 +34,15 @@ trait RedisTestContainer {
 
     private static final Logger log = LoggerFactory.getLogger(RedisTestContainer)
 
-    static GenericContainer redisContainer
+    @Shared
+    static GenericContainer redisContainer;
 
     String getRedisHostName(){
         redisContainer.getHost()
     }
 
     String getRedisPort(){
-        redisContainer.getMappedPort(6379)
+        redisContainer.getMappedPort(6379).toString()
     }
 
     def setupSpec() {
@@ -47,8 +50,13 @@ trait RedisTestContainer {
         redisContainer = new GenericContainer(DockerImageName.parse("redis:7.4.0-alpine"))
                 .withExposedPorts(6379)
                 .waitingFor(Wait.forLogMessage(".*Ready to accept connections.*\\n", 1))
+        // starting redis
         redisContainer.start()
         log.debug "Started Redis test container"
+        // Set Redis host and port as system properties
+        // those properties are accessed by the RedisTestFactory class 
+        System.setProperty("redis.host", redisContainer.getHost())
+        System.setProperty("redis.port", redisContainer.getMappedPort(6379).toString())
     }
 
     def cleanupSpec(){

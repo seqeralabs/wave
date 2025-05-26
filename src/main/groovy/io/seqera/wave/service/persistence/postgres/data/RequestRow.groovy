@@ -16,27 +16,34 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job
+package io.seqera.wave.service.persistence.postgres.data
 
-import java.time.Duration
+import java.time.Instant
 
-import groovy.transform.ToString
-import io.micronaut.context.annotation.Value
-import jakarta.inject.Singleton
-
+import groovy.transform.CompileStatic
+import io.micronaut.core.annotation.Introspected
+import io.micronaut.data.annotation.Id
+import io.micronaut.data.annotation.MappedEntity
+import io.micronaut.data.annotation.TypeDef
+import io.micronaut.data.model.DataType
+import jakarta.persistence.Table
 /**
- * Model Job manager configuration settings
+ * Model a row entry in the {@code wave_request} table
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@ToString(includeNames = true, includePackage = false)
-@Singleton
-class JobConfig {
+@MappedEntity
+@Introspected
+@CompileStatic
+@Table(name = "wave_request")
+class RequestRow {
 
-    @Value('${wave.job-manager.grace-interval:30s}')
-    Duration graceInterval
+    @Id
+    String id
 
-    @Value('${wave.job-manager.poll-interval:400ms}')
-    Duration pollInterval
+    @TypeDef(type = DataType.JSON)
+    String data  // JSONB data will be retrieved as a string
+
+    Instant createdAt
 
 }

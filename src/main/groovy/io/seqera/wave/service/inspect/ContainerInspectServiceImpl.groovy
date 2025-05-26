@@ -22,6 +22,7 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.PackageScope
 import groovy.util.logging.Slf4j
+import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.WaveDefault
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
@@ -37,6 +38,7 @@ import io.seqera.wave.core.spec.ContainerSpec
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
+import io.seqera.wave.model.ContainerOrIndexSpec
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.RegHelper
@@ -222,11 +224,25 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
                 .withClient(client)
                 .withPlatform(platform)
                 .getContainerSpec(path.image, path.getReference(), WaveDefault.ACCEPT_HEADERS)
-                .getConfig()
+                .getContainer()
+                ?.getConfig()
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    ContainerSpec containerSpec(String containerImage, String arch, PlatformId identity) {
+    ContainerSpec containerSpec(String containerImage, String platform, @Nullable PlatformId identity) {
+        if( !platform )
+            throw new BadRequestException("Missing container 'platform' argument")
+        return containerOrIndexSpec(containerImage, platform, identity) .getContainer()
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    ContainerOrIndexSpec containerOrIndexSpec(String containerImage, @Nullable String arch, @Nullable PlatformId identity) {
         final path = ContainerCoordinates.parse(containerImage)
 
         final creds = credentialsProvider.getCredentials(path, identity)

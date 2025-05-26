@@ -1,3 +1,4 @@
+@doc("Wave container build details")
 model WaveBuildRecord {
     buildId: string;
     condaFile: string;

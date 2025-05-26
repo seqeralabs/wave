@@ -50,7 +50,7 @@ class BuildStateStoreImpl extends AbstractStateStore<BuildEntry> implements Buil
 
     private ExecutorService ioExecutor
 
-    BuildStateStoreImpl(StateProvider<String, String> provider, BuildConfig buildConfig, @Named(TaskExecutors.IO) ExecutorService ioExecutor) {
+    BuildStateStoreImpl(StateProvider<String, String> provider, BuildConfig buildConfig, @Named(TaskExecutors.BLOCKING) ExecutorService ioExecutor) {
         super(provider, new MoshiEncodeStrategy<BuildEntry>() {})
         this.buildConfig = buildConfig
         this.ioExecutor = ioExecutor

@@ -28,7 +28,7 @@ interface MessageStream<M> {
     /**
      * Initialize the stream with the given Id
      *
-     * @param streamId The uniqur ID of the stream to be initialized
+     * @param streamId The unique ID of the stream to be initialized
      */
     void init(String streamId)
 
@@ -52,5 +52,10 @@ interface MessageStream<M> {
      *      otherwise {@code false} when the message needs to be further processed
      */
     boolean consume(String streamId, MessageConsumer<M> consumer)
+
+    /**
+     * @return The number of entries in the stream
+     */
+    int length(String streamId)
 
 }

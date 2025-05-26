@@ -31,10 +31,10 @@ class ContainerPlatform {
 
     public static final ContainerPlatform DEFAULT = new ContainerPlatform(DEFAULT_OS, DEFAULT_ARCH)
 
-    private static List<String> ARM64 = ['arm64', 'aarch64']
-    private static List<String> V8 = ['8','v8']
-    private static List<String> AMD64 = ['amd64', 'x86_64', 'x86-64']
-    private static List<String> ALLOWED_ARCH = AMD64 + ARM64 + ['arm']
+    public static final List<String> ARM64 = ['arm64', 'aarch64']
+    private static final List<String> V8 = ['8','v8']
+    public static final List<String> AMD64 = ['amd64', 'x86_64', 'x86-64']
+    public static final List<String> ALLOWED_ARCH = AMD64 + ARM64 + ['arm']
     public static final String DEFAULT_ARCH = 'amd64'
     public static final String DEFAULT_OS = 'linux'
 
@@ -80,9 +80,13 @@ class ContainerPlatform {
         return false
     }
 
+    static ContainerPlatform parseOrDefault(String value, ContainerPlatform defaultPlatform=DEFAULT) {
+        return value ? of(value) : defaultPlatform
+    }
+
     static ContainerPlatform of(String value) {
         if( !value )
-            return DEFAULT
+            throw new BadRequestException("Missing container platform attribute")
 
         final items= value.tokenize('/')
         if( items.size()==1 )

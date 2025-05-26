@@ -212,8 +212,8 @@ class ContainerController {
         if( !registration )
             throw new BadRequestException("Missing pairing record for Tower endpoint '$req.towerEndpoint'")
 
-        // store the jwt record only the very first time it has been
-        // to avoid overridden a newer refresh token that may have 
+        // store the jwt record only the very first time to avoid
+        // overriding a newer jwt token that may have refreshed
         final auth = JwtAuth.of(req)
         if( auth.refresh )
             jwtAuthStore.storeIfAbsent(auth)
@@ -230,8 +230,6 @@ class ContainerController {
             throw new BadRequestException("Attribute `containerFile` and `packages` conflicts each other")
         if( v2 && req.condaFile )
             throw new BadRequestException("Attribute `condaFile` is deprecated - use `packages` instead")
-        if( v2 && req.spackFile )
-            throw new BadRequestException("Attribute `spackFile` is deprecated - use `packages` instead")
         if( !v2 && req.packages )
             throw new BadRequestException("Attribute `packages` is not allowed")
         if( !v2 && req.nameStrategy )
@@ -253,10 +251,9 @@ class ContainerController {
             final generated = containerFileFromPackages(req.packages, req.formatSingularity())
             req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
         }
-
-        if( req.spackFile ) {
-            throw new BadRequestException("Spack packages are not supported any more")
-        }
+        // make sure container platform is defined 
+        if( !req.containerPlatform )
+            req.containerPlatform = ContainerPlatform.DEFAULT.toString()
 
         final ip = addressResolver.resolve(httpRequest)
         // check the rate limit before continuing
@@ -328,12 +325,19 @@ class ContainerController {
         final containerSpec = decodeBase64OrFail(req.containerFile, 'containerFile')
         final condaContent = condaFileFromRequest(req)
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
-        final platform = ContainerPlatform.of(req.containerPlatform)
+        final platform = ContainerPlatform.parseOrDefault(req.containerPlatform)
         final buildRepository = targetRepo( req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository
                 ? buildConfig.defaultPublicRepository
                 : buildConfig.defaultBuildRepository), req.nameStrategy)
-        final cacheRepository = req.cacheRepository ?: buildConfig.defaultCacheRepository
+        final cacheRepository = !validationService.isCustomRepo(req.buildRepository)
+                ? (req.cacheRepository ?: buildConfig.defaultCacheRepository)
+                : req.cacheRepository   // use custom cache repo, when is a custom build repo
         final configJson = inspectService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
+        /**
+         * Use the container config for build purposes only when "freeze" is enabled.
+         * For non-freeze requests, it's applied during the argumentation phase.
+         * See also {@link io.seqera.wave.core.ContainerAugmenter#resolve(io.seqera.wave.core.RoutePath, java.util.Map)}
+         */
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
         // use 'imageSuffix' strategy by default for public repo images
@@ -345,7 +349,7 @@ class ContainerController {
         checkContainerSpec(containerSpec)
 
         // create a unique digest to identify the build req
-        final containerId = makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext)
+        final containerId = makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext, containerConfig)
         final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, nameStrategy)
         final maxDuration = buildConfig.buildMaxDuration(req)
         // default to async scan for build req for backward compatibility
@@ -369,7 +373,8 @@ class ContainerController {
                 scanId,
                 req.buildContext,
                 format,
-                maxDuration
+                maxDuration,
+                req.buildCompression
         )
     }
 
@@ -507,9 +512,6 @@ class ContainerController {
         // in fact, the absence of creds in the docker file is tolerated because it may be a
         // public accessible repo. With build and cache repo, the creds needs to be available
         final configJson = inspectService.credentialsConfigJson("FROM ${request.containerImage}", targetImage, null, identity)
-        final platform = request.containerPlatform
-                ? ContainerPlatform.of(request.containerPlatform)
-                : ContainerPlatform.DEFAULT
 
         final offset = DataTimeUtils.offsetId(request.timestamp)
         final scanId = scanService?.getScanId(targetImage, digest, request.scanMode, request.format)

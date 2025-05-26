@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.persistence
 
+import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
@@ -40,6 +41,7 @@ import io.seqera.wave.util.StringUtils
 @CompileStatic
 class WaveScanRecord implements Cloneable {
 
+    @PostgresIgnore
     String id
     String buildId
     String mirrorId
@@ -52,6 +54,7 @@ class WaveScanRecord implements Cloneable {
     List<ScanVulnerability> vulnerabilities
     Integer exitCode
     String logs
+    Path workDir
 
     /* required by jackson deserialization - do not remove */
     WaveScanRecord() {}
@@ -68,7 +71,8 @@ class WaveScanRecord implements Cloneable {
             String status,
             List<ScanVulnerability> vulnerabilities,
             Integer exitCode,
-            String logs
+            String logs,
+            Path workDir
     )
     {
         this.id = StringUtils.surrealId(id)
@@ -85,6 +89,7 @@ class WaveScanRecord implements Cloneable {
                 : List.<ScanVulnerability>of()
         this.exitCode = exitCode
         this.logs = sanitize0(logs)
+        this.workDir = workDir
     }
 
     WaveScanRecord(ScanEntry scan) {
@@ -102,6 +107,7 @@ class WaveScanRecord implements Cloneable {
                 : List.<ScanVulnerability>of()
         this.exitCode = scan.exitCode
         this.logs = sanitize0(scan.logs)
+        this.workDir = scan.workDir
     }
 
     private static String sanitize0(String str) {

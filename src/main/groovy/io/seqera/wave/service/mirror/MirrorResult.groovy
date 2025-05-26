@@ -25,6 +25,7 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.persistence.PostgresIgnore
 import jakarta.inject.Singleton
 /**
  * Model a container mirror entry object
@@ -39,6 +40,7 @@ class MirrorResult {
 
     enum Status { PENDING, COMPLETED }
 
+    @PostgresIgnore
     final String mirrorId
     final String digest
     final String sourceImage

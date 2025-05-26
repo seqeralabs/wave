@@ -31,6 +31,8 @@ jobs:
       fail-fast: false
       matrix:
         java_version: [21]
+    permissions:
+      contents: write
 
     steps:
       - name: Environment
@@ -61,7 +63,7 @@ jobs:
           make check
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
-          GITHUB_TOKEN: ${{ secrets.GH_SEQERA_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{secrets.TOWER_CI_AWS_ACCESS}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.TOWER_CI_AWS_SECRET}}
           DOCKER_USER: ${{ secrets.DOCKER_USER }}
@@ -88,7 +90,7 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
           QUAY_PAT: ${{ secrets.QUAY_PAT }}
-          GITHUB_TOKEN: ${{ secrets.GH_SEQERA_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish tests report
         if: failure()

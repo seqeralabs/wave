@@ -26,7 +26,7 @@ import groovy.transform.EqualsAndHashCode
 import groovy.transform.Memoized
 import groovy.transform.ToString
 /**
- * Model a container builder request
+ * Model a container build request
  *
  * WARNING: this class is stored as JSON serialized object in the {@link BuildStateStore}.
  * Make sure changes are backward compatible with previous object versions
@@ -82,23 +82,53 @@ class BuildResult {
     }
 
     static BuildResult completed(String buildId, Integer exitStatus, String logs, Instant startTime, String digest) {
-        new BuildResult(buildId, exitStatus, logs, startTime, Duration.between(startTime, Instant.now()), digest)
+        new BuildResult(
+                buildId,
+                exitStatus,
+                logs,
+                startTime,
+                Duration.between(startTime, Instant.now()),
+                digest)
     }
 
     static BuildResult failed(String buildId, String logs, Instant startTime) {
-        new BuildResult(buildId, -1, logs, startTime, Duration.between(startTime, Instant.now()), null)
+        new BuildResult(
+                buildId,
+                -1,
+                logs,
+                startTime,
+                startTime ? Duration.between(startTime, Instant.now()) : null,
+                null)
     }
 
     static BuildResult create(BuildRequest req) {
-        new BuildResult(req.buildId, null, null, req.startTime, null, null)
+        new BuildResult(
+                req.buildId,
+                null,
+                null,
+                req.startTime,
+                null,
+                null)
     }
 
     static BuildResult create(String buildId) {
-        new BuildResult(buildId, null, null, Instant.now(), null, null)
+        new BuildResult(
+                buildId,
+                null,
+                null,
+                Instant.now(),
+                null,
+                null)
     }
 
     @Memoized
     static BuildResult unknown() {
-        new BuildResult('-', -1, 'Unknown build status', null as Instant, Duration.ZERO, null)
+        new BuildResult(
+                '-',
+                -1,
+                'Unknown build status',
+                null as Instant,
+                Duration.ZERO,
+                null)
     }
 }
