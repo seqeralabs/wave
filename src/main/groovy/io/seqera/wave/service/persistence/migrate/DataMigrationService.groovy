@@ -162,8 +162,10 @@ class DataMigrationService {
 
 
     <T> void migrateRecords(String tableName, Function<Integer,List<T>> fetch, Consumer<T> saver, AtomicBoolean done) {
-        if (done.get())
+        if (done.get()) {
+            log.info "All $tableName records ALREADY migrated"
             return
+        }
 
         int offset = dataMigrateCache.get(tableName).offset
         def records = fetch.apply(offset)
@@ -174,14 +176,17 @@ class DataMigrationService {
             return
         }
 
+        int count=0
         for (def it : records) {
             try {
                 if( Thread.currentThread().isInterrupted() ) {
-                    log.debug "Thread is interrupted - exiting $tableName method"
+                    log.info "Thread is interrupted - exiting $tableName method"
                     break
                 }
                 saver.accept(it)
                 dataMigrateCache.put(tableName, new DataMigrateEntry(tableName, ++offset))
+                if( ++count % 50 == 0 )
+                    log.info "Migration ${tableName}; processed ${count} records"
                 Thread.sleep(iterationDelay.toMillis())
             }
             catch (InterruptedException e) {
