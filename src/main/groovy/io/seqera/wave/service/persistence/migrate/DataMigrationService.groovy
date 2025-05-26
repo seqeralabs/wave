@@ -22,6 +22,7 @@ import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.Consumer
 import java.util.function.Function
+import javax.annotation.PreDestroy
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -43,6 +44,9 @@ import io.seqera.wave.service.persistence.migrate.cache.DataMigrateEntry
 import io.seqera.wave.service.persistence.postgres.PostgresPersistentService
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
+import redis.clients.jedis.Jedis
+import redis.clients.jedis.JedisPool
+import redis.clients.jedis.params.SetParams
 /**
  * Service to migrate data from SurrealDB to Postgres
  *
@@ -93,13 +97,30 @@ class DataMigrationService {
     @Inject
     private ApplicationContext applicationContext
 
+    @Inject
+    private JedisPool pool
+
     private final AtomicBoolean buildDone = new AtomicBoolean(false)
     private final AtomicBoolean requestDone = new AtomicBoolean(false)
     private final AtomicBoolean scanDone = new AtomicBoolean(false)
     private final AtomicBoolean mirrorDone = new AtomicBoolean(false)
 
+    private static final String LOCK_KEY = "migrate-lock/v1";
+    private static final Duration LOCK_EXPIRE = Duration.ofDays(30)
+    private static final String LOCK_VALUE = UUID.randomUUID().toString();
+
+    private boolean acquired
+
     @PostConstruct
     void init() {
+        try(Jedis jedis = pool.getResource()) {
+            acquired = tryAcquireLock(jedis, LOCK_KEY, LOCK_VALUE, LOCK_EXPIRE.toMillis());
+        }
+        if( !acquired ) {
+            log.debug "Skipping migration since lock cannot be acquired"
+            return
+        }
+
         log.info("Data migration service initialized with page size: $pageSize, delay: $delay, initial delay: $initialDelay")
         if (!environment.activeNames.contains("surrealdb") || !environment.activeNames.contains("postgres")) {
             throw new IllegalStateException("Both 'surrealdb' and 'postgres' environments must be active.")
@@ -115,6 +136,15 @@ class DataMigrationService {
         taskScheduler.scheduleWithFixedDelay(initialDelay, delay, this::migrateScanRecords)
         taskScheduler.scheduleWithFixedDelay(initialDelay, delay, this::migrateMirrorRecords)
         taskScheduler.scheduleWithFixedDelay(initialDelay, delay, this::shutdown)
+    }
+
+    @PreDestroy void destroy() {
+        if( acquired ) {
+            // remove the lock
+            try (Jedis jedis = pool.getResource()) {
+                releaseLock(jedis, LOCK_KEY, LOCK_VALUE)
+            }
+        }
     }
 
     /**
@@ -219,4 +249,21 @@ class DataMigrationService {
         }
     }
 
+    // == --- jedis lock handling
+    static boolean tryAcquireLock(Jedis jedis, String key, String value, long expireMillis) {
+        SetParams params = new SetParams().nx().px(expireMillis);
+        String result = jedis.set(key, value, params);
+        return "OK".equals(result);
+    }
+
+    static void releaseLock(Jedis jedis, String key, String value) {
+        String luaScript =
+                "if redis.call('get', KEYS[1]) == ARGV[1] then " +
+                        "   return redis.call('del', KEYS[1]) " +
+                        "else return 0 end";
+
+        jedis.eval(luaScript,
+                java.util.Collections.singletonList(key),
+                java.util.Collections.singletonList(value));
+    }
 }
