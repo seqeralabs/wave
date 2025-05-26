@@ -135,7 +135,6 @@ class DataMigrationService {
         taskScheduler.scheduleWithFixedDelay(initialDelay, delay, this::migrateContainerRequests)
         taskScheduler.scheduleWithFixedDelay(initialDelay, delay, this::migrateScanRecords)
         taskScheduler.scheduleWithFixedDelay(initialDelay, delay, this::migrateMirrorRecords)
-        taskScheduler.scheduleWithFixedDelay(initialDelay, delay, this::shutdown)
     }
 
     @PreDestroy void destroy() {
@@ -237,16 +236,6 @@ class DataMigrationService {
         }
 
         log.info("Migrated ${records.size()} $tableName records (offset $offset)")
-    }
-
-    /**
-     * Shutdown the service
-     */
-    void shutdown() {
-        if (buildDone.get() && requestDone.get() && scanDone.get() && mirrorDone.get()) {
-            log.info("ALL RECORDS MIGRATED - STOPPING MIGRATION")
-            applicationContext.close()
-        }
     }
 
     // == --- jedis lock handling
