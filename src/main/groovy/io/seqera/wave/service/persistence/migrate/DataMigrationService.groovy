@@ -163,8 +163,14 @@ class DataMigrationService {
      */
     void migrateContainerRequests() {
         migrateRecords(TABLE_NAME_CONTAINER_REQUEST,
-                (Integer offset)-> surrealService.getRequestsPaginated(pageSize, offset),
+                (Integer offset)-> {
+                    log.debug "Fetching container requests with offset: $offset"
+                    def results = surrealService.getRequestsPaginated(pageSize, offset)
+                    log.debug "Found ${results?.size()} records"
+                    return results
+                },
                 (WaveContainerRecord request)-> {
+                    log.debug "Processing request: ${request?.id}"
                     final id = request.id.contains("wave_request:") ? request.id.takeAfter("wave_request:") : request.id
                     log.info "Migration for wave_request ${request.id}"
                     postgresService.saveContainerRequest(id, request)
