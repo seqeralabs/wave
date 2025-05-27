@@ -113,6 +113,7 @@ class DataMigrationService {
 
     @PostConstruct
     void init() {
+        log.info("Data migration service initialized with page size: $pageSize, delay: $delay, initial delay: $initialDelay")
         try(Jedis jedis = pool.getResource()) {
             acquired = tryAcquireLock(jedis, LOCK_KEY, LOCK_VALUE, LOCK_EXPIRE.toMillis());
         }
@@ -120,8 +121,8 @@ class DataMigrationService {
             log.debug "Skipping migration since lock cannot be acquired"
             return
         }
+        log.info("Data migration initiated")
 
-        log.info("Data migration service initialized with page size: $pageSize, delay: $delay, initial delay: $initialDelay")
         if (!environment.activeNames.contains("surrealdb") || !environment.activeNames.contains("postgres")) {
             throw new IllegalStateException("Both 'surrealdb' and 'postgres' environments must be active.")
         }
@@ -164,6 +165,7 @@ class DataMigrationService {
                 (Integer offset)-> surrealService.getRequestsPaginated(pageSize, offset),
                 (WaveContainerRecord request)-> {
                     final id = request.id.contains("wave_request:") ? request.id.takeAfter("wave_request:") : request.id
+                    log.info "Migration for wave_request ${request.id}"
                     postgresService.saveContainerRequest(id, request)
                 },
                 requestDone )
@@ -191,6 +193,7 @@ class DataMigrationService {
 
 
     <T> void migrateRecords(String tableName, Function<Integer,List<T>> fetch, Consumer<T> saver, AtomicBoolean done) {
+        log.info "Initiating $tableName migration"
         if (done.get()) {
             log.info "All $tableName records ALREADY migrated"
             return
@@ -199,7 +202,7 @@ class DataMigrationService {
         int offset = dataMigrateCache.get(tableName).offset
         def records = fetch.apply(offset)
 
-        if (!records || records.isEmpty()) {
+        if (!records) {
             log.info("All $tableName records migrated.")
             done.set(true)
             return
