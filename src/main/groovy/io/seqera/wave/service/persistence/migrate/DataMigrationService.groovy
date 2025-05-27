@@ -19,6 +19,7 @@
 package io.seqera.wave.service.persistence.migrate
 
 import java.time.Duration
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.Consumer
 import java.util.function.Function
@@ -33,6 +34,8 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.context.env.Environment
 import io.micronaut.data.exceptions.DataAccessException
 import io.micronaut.scheduling.TaskScheduler
+import io.seqera.util.redis.JedisLock
+import io.seqera.util.redis.JedisLockManager
 import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
@@ -46,7 +49,6 @@ import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
-import redis.clients.jedis.params.SetParams
 /**
  * Service to migrate data from SurrealDB to Postgres
  *
@@ -100,32 +102,33 @@ class DataMigrationService {
     @Inject
     private JedisPool pool
 
+    private Jedis conn
+    private JedisLock lock
+
     private final AtomicBoolean buildDone = new AtomicBoolean(false)
     private final AtomicBoolean requestDone = new AtomicBoolean(false)
     private final AtomicBoolean scanDone = new AtomicBoolean(false)
     private final AtomicBoolean mirrorDone = new AtomicBoolean(false)
 
-    private static final String LOCK_KEY = "migrate-lock/v1";
-    private static final Duration LOCK_EXPIRE = Duration.ofDays(30)
-    private static final String LOCK_VALUE = UUID.randomUUID().toString();
-
-    private boolean acquired
+    private static final String LOCK_KEY = "migrate-lock/v2"
 
     @PostConstruct
     void init() {
-        log.info("Data migration service initialized with page size: $pageSize, delay: $delay, initial delay: $initialDelay")
-        try(Jedis jedis = pool.getResource()) {
-            acquired = tryAcquireLock(jedis, LOCK_KEY, LOCK_VALUE, LOCK_EXPIRE.toMillis());
-        }
-        if( !acquired ) {
-            log.debug "Skipping migration since lock cannot be acquired"
-            return
-        }
-        log.info("Data migration initiated")
-
         if (!environment.activeNames.contains("surrealdb") || !environment.activeNames.contains("postgres")) {
             throw new IllegalStateException("Both 'surrealdb' and 'postgres' environments must be active.")
         }
+
+        log.info("Data migration service initialized with page size: $pageSize, delay: $delay, initial delay: $initialDelay")
+        // acquire the lock to only run one instance at time
+        conn = pool.getResource()
+        lock = tryAcquireLock(conn, LOCK_KEY)
+        if( !lock ) {
+            log.debug "Skipping migration since lock cannot be acquired"
+            conn.close()
+            conn = null
+            return
+        }
+        log.info("Data migration initiated")
 
         dataMigrateCache.putIfAbsent(TABLE_NAME_BUILD, new DataMigrateEntry(TABLE_NAME_BUILD, 0))
         dataMigrateCache.putIfAbsent(TABLE_NAME_CONTAINER_REQUEST, new DataMigrateEntry(TABLE_NAME_CONTAINER_REQUEST, 0))
@@ -138,13 +141,11 @@ class DataMigrationService {
         taskScheduler.scheduleWithFixedDelay(initialDelay, delay, this::migrateMirrorRecords)
     }
 
-    @PreDestroy void destroy() {
-        if( acquired ) {
-            // remove the lock
-            try (Jedis jedis = pool.getResource()) {
-                releaseLock(jedis, LOCK_KEY, LOCK_VALUE)
-            }
-        }
+    @PreDestroy
+    void destroy() {
+        // remove the lock & close the connection
+        lock?.release()
+        conn?.close()
     }
 
     /**
@@ -242,20 +243,15 @@ class DataMigrationService {
     }
 
     // == --- jedis lock handling
-    static boolean tryAcquireLock(Jedis jedis, String key, String value, long expireMillis) {
-        SetParams params = new SetParams().nx().px(expireMillis);
-        String result = jedis.set(key, value, params);
-        return "OK".equals(result);
+    static JedisLock tryAcquireLock(Jedis conn, String key) {
+        try{
+            return new JedisLockManager(conn)
+                    .withLockAutoExpireDuration(Duration.ofDays(30))
+                    .acquire(key, Duration.ofMillis(350))
+        }
+        catch (TimeoutException e) {
+            return null
+        }
     }
 
-    static void releaseLock(Jedis jedis, String key, String value) {
-        String luaScript =
-                "if redis.call('get', KEYS[1]) == ARGV[1] then " +
-                        "   return redis.call('del', KEYS[1]) " +
-                        "else return 0 end";
-
-        jedis.eval(luaScript,
-                java.util.Collections.singletonList(key),
-                java.util.Collections.singletonList(value));
-    }
 }
