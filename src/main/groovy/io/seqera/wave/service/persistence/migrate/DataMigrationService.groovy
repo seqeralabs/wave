@@ -52,7 +52,7 @@ import redis.clients.jedis.params.SetParams
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-@Requires(env=['migrate'])
+@Requires(env='migrate')
 @Slf4j
 @Context
 @CompileStatic
