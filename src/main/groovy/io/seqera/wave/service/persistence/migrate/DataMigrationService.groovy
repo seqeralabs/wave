@@ -68,13 +68,13 @@ class DataMigrationService {
     public static final String TABLE_NAME_SCAN = 'wave_scan'
     public static final String TABLE_NAME_MIRROR = 'wave_mirror'
 
-    @Value('${wave.db.migrate.page-size:100}')
+    @Value('${wave.db.migrate.page-size:200}')
     private int pageSize
 
-    @Value('${wave.db.migrate.delay:10s}')
+    @Value('${wave.db.migrate.delay:5s}')
     private Duration delay
 
-    @Value('${wave.db.migrate.initial-delay:60s}')
+    @Value('${wave.db.migrate.initial-delay:70s}')
     private Duration launchDelay
 
     @Value('${wave.db.migrate.initial-delay:10s}')
@@ -185,14 +185,8 @@ class DataMigrationService {
      */
     void migrateContainerRequests() {
         migrateRecords(TABLE_NAME_REQUEST,
-                (Integer offset)-> {
-                    def results = surrealService.getRequestsPaginated(pageSize, offset)
-                    return results
-                },
-                (WaveContainerRecord request)-> {
-                    final id =  fixRequestId(request.id)
-                    postgresService.saveContainerRequest(id, request)
-                },
+                (Integer offset)-> surrealService.getRequestsPaginated(pageSize, offset),
+                (WaveContainerRecord request)-> postgresService.saveContainerRequest(fixRequestId(request.id), request),
                 requestDone )
     }
 
@@ -203,7 +197,7 @@ class DataMigrationService {
             }
             return id.takeAfter("wave_request:")
         }
-            return id
+        return id
     }
 
     /**
