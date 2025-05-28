@@ -22,11 +22,16 @@ import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.JsonNode
+import groovy.transform.CompileStatic
+import io.seqera.wave.service.persistence.migrate.MigrationOnly
+
 /**
  * Custom deserializer for Fusion version strings.
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
+@MigrationOnly
+@CompileStatic
 class FusionVersionStringDeserializer extends JsonDeserializer<String> {
     @Override
     String deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
