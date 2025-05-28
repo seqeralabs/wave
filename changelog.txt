@@ -1,4 +1,7 @@
 # Wave changelog
+1.21.1 - 29 May 2025 
+- Fix Conda lock fallback logic [657316e8]
+
 1.21.0 - 28 May 2025
 - Add Conda locks fallback patch [9b54bba3]
 - Add Surreal to PostgreSQL data migration (#833) [89acf316] [c23fccf2] [8d0a6861]
