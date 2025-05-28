@@ -118,7 +118,6 @@ class DataMigrationService {
 
     private static final String LOCK_KEY = "migrate-lock/v2"
 
-
     @EventListener
     void start(ServerStartupEvent event) {
         if (!environment.activeNames.contains("surrealdb") || !environment.activeNames.contains("postgres")) {
@@ -298,7 +297,7 @@ class DataMigrationService {
                 if( lock )
                     return lock
                 log.info "Unable to acquire lock - await 1s before retrying"
-                sleep(1000)
+                sleep(10_000)
             }
         }
         catch (InterruptedException e) {
