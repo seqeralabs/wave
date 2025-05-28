@@ -17,7 +17,7 @@ The following features are not available in self-hosted Wave installations in Do
 - Container blobs caching
 :::
 
-For full Wave functionality, consider using Kubernetes.
+For full Wave functionality, an AWS Elastic Kubernetes instance is required.
 
 ## Prequesisites
 
