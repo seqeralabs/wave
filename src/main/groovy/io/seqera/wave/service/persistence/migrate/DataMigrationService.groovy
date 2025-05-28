@@ -21,7 +21,7 @@ package io.seqera.wave.service.persistence.migrate
 import static io.seqera.wave.util.DurationUtils.*
 
 import java.time.Duration
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.ScheduledFuture
 import java.util.function.Consumer
 import java.util.function.Function
 
@@ -111,12 +111,13 @@ class DataMigrationService {
 
     private volatile JedisLock lock
 
-    private final AtomicBoolean buildDone = new AtomicBoolean(false)
-    private final AtomicBoolean requestDone = new AtomicBoolean(false)
-    private final AtomicBoolean scanDone = new AtomicBoolean(false)
-    private final AtomicBoolean mirrorDone = new AtomicBoolean(false)
-
     private static final String LOCK_KEY = "migrate-lock/v2"
+
+    private volatile ScheduledFuture mirrorTask
+    private volatile ScheduledFuture buildTask
+    private volatile ScheduledFuture scanTask
+    private volatile ScheduledFuture requestTask
+
 
     @EventListener
     void start(ServerStartupEvent event) {
@@ -163,10 +164,10 @@ class DataMigrationService {
         dataMigrateCache.putIfAbsent(TABLE_NAME_SCAN, new DataMigrateEntry(TABLE_NAME_SCAN, 0))
         dataMigrateCache.putIfAbsent(TABLE_NAME_MIRROR, new DataMigrateEntry(TABLE_NAME_MIRROR, 0))
 
-        taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateBuildRecords)
-        taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateContainerRequests)
-        taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateScanRecords)
-        taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateMirrorRecords)
+        buildTask = taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateBuildRecords)
+        requestTask = taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateRequests)
+        scanTask = taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateScanRecords)
+        mirrorTask = taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateMirrorRecords)
     }
 
     /**
@@ -176,17 +177,17 @@ class DataMigrationService {
         migrateRecords(TABLE_NAME_BUILD,
                 (Integer offset)-> surrealService.getBuildsPaginated(pageSize, offset),
                 (WaveBuildRecord it)-> postgresService.saveBuild(it),
-                buildDone )
+                buildTask )
     }
 
     /**
      * Migrate container requests from SurrealDB to Postgres
      */
-    void migrateContainerRequests() {
+    void migrateRequests() {
         migrateRecords(TABLE_NAME_REQUEST,
                 (Integer offset)-> surrealService.getRequestsPaginated(pageSize, offset),
                 (WaveContainerRecord request)-> postgresService.saveContainerRequest(fixRequestId(request.id), request),
-                requestDone )
+                requestTask )
     }
 
     protected static String fixRequestId(String id){
@@ -206,7 +207,7 @@ class DataMigrationService {
         migrateRecords(TABLE_NAME_SCAN,
                 (Integer offset)-> surrealService.getScansPaginated(pageSize, offset),
                 (WaveScanRecord it)-> postgresService.saveScanRecord(it),
-                scanDone )
+                scanTask )
     }
 
     /**
@@ -216,12 +217,12 @@ class DataMigrationService {
         migrateRecords(TABLE_NAME_MIRROR,
                 (Integer offset)-> surrealService.getMirrorsPaginated(pageSize, offset),
                 (MirrorResult it)-> postgresService.saveMirrorResult(it),
-                mirrorDone )
+                mirrorTask )
     }
 
-    <T> void migrateRecords(String tableName, Function<Integer,List<T>> fetch, Consumer<T> saver, AtomicBoolean done) {
+    <T> void migrateRecords(String tableName, Function<Integer,List<T>> fetch, Consumer<T> saver, ScheduledFuture task) {
         try {
-            migrateRecords0(tableName, fetch, saver, done)
+            migrateRecords0(tableName, fetch, saver, task)
         }
         catch (InterruptedException e) {
             log.info "Migration $tableName has been interrupted (2)"
@@ -232,19 +233,14 @@ class DataMigrationService {
         }
     }
 
-    <T> void migrateRecords0(String tableName, Function<Integer,List<T>> fetch, Consumer<T> saver, AtomicBoolean done) {
+    <T> void migrateRecords0(String tableName, Function<Integer,List<T>> fetch, Consumer<T> saver, ScheduledFuture task) {
         log.info "Initiating $tableName migration"
-        if (done.get()) {
-            log.info "All $tableName records ALREADY migrated"
-            return
-        }
-
         int offset = dataMigrateCache.get(tableName).offset
         def records = fetch.apply(offset)
 
         if (!records) {
             log.info("All $tableName records migrated.")
-            done.set(true)
+            task.cancel(false)
             return
         }
 

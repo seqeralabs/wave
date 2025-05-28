@@ -108,7 +108,7 @@ class DataMigrationServiceTest extends Specification {
                 new DataMigrateEntry(DataMigrationService.TABLE_NAME_REQUEST, 0)
 
         when:
-        service.migrateContainerRequests()
+        service.migrateRequests()
 
         then:
         0 * postgresService.saveContainerRequest(_)
@@ -127,7 +127,7 @@ class DataMigrationServiceTest extends Specification {
                 new DataMigrateEntry(DataMigrationService.TABLE_NAME_REQUEST, 0)
 
         when:
-        service.migrateContainerRequests()
+        service.migrateRequests()
 
         then:
         101 * postgresService.saveContainerRequest(_,_)
