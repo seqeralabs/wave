@@ -48,7 +48,6 @@ import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
-
 import static io.seqera.wave.util.DurationUtils.randomDuration
 /**
  * Service to migrate data from SurrealDB to Postgres
@@ -104,6 +103,7 @@ class DataMigrationService {
     private JedisPool pool
 
     private Jedis conn
+
     private JedisLock lock
 
     private final AtomicBoolean buildDone = new AtomicBoolean(false)
@@ -122,7 +122,7 @@ class DataMigrationService {
         log.info("Data migration service initialized with page size: $pageSize, delay: $delay, initial delay: $initialDelay")
         // acquire the lock to only run one instance at time
         conn = pool.getResource()
-        lock = tryAcquireLock(conn, LOCK_KEY)
+        lock = acquireLock(conn, LOCK_KEY)
         if( !lock ) {
             log.debug "Skipping migration since lock cannot be acquired"
             conn.close()
@@ -263,10 +263,33 @@ class DataMigrationService {
     }
 
     // == --- jedis lock handling
-    static JedisLock tryAcquireLock(Jedis conn, String key) {
-        return new JedisLockManager(conn)
-                .withLockAutoExpireDuration(Duration.ofDays(30))
-                .tryAcquire(key)
+    static JedisLock acquireLock(Jedis conn, String key, Duration timeout=Duration.ofMinutes(10)) {
+        try {
+            final max = timeout.toMillis()
+            final begin = System.currentTimeMillis()
+            while( !Thread.currentThread().isInterrupted() ) {
+                if( System.currentTimeMillis()-begin > max ) {
+                    log.info "Lock acquire timeout reached"
+                    return null
+                }
+                final lock = new JedisLockManager(conn)
+                        .withLockAutoExpireDuration(Duration.ofDays(30))
+                        .tryAcquire(key)
+                if( lock )
+                    return lock
+                log.info "Unable to acquire lock - await 1s before retrying"
+                sleep(1000)
+            }
+        }
+        catch (InterruptedException e) {
+            log.info "Migration acquire lock has been interrupted (3)"
+            Thread.currentThread().interrupt()
+            return null
+        }
+        catch (Throwable t) {
+            log.error("Unexpected error while trying to acquire the lock - ${t.message}", t)
+            return null
+        }
     }
 
 }

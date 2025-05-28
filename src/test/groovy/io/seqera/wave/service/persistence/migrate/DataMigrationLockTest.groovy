@@ -20,6 +20,9 @@ package io.seqera.wave.service.persistence.migrate
 
 import spock.lang.Shared
 import spock.lang.Specification
+import spock.lang.Timeout
+
+import java.time.Duration
 
 import io.micronaut.context.ApplicationContext
 import io.seqera.wave.test.RedisTestContainer
@@ -29,6 +32,7 @@ import redis.clients.jedis.JedisPool
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Timeout(10)
 class DataMigrationLockTest extends Specification implements RedisTestContainer {
 
     @Shared
@@ -44,18 +48,18 @@ class DataMigrationLockTest extends Specification implements RedisTestContainer 
         def connection = context.getBean(JedisPool).getResource()
 
         when:
-        def lock1 = DataMigrationService.tryAcquireLock(connection, key)
+        def lock1 = DataMigrationService.acquireLock(connection, key)
         then:
         lock1 != null
 
         when:
-        def lock2 = DataMigrationService.tryAcquireLock(connection, key)
+        def lock2 = DataMigrationService.acquireLock(connection, key, Duration.ofMillis(100))
         then:
         lock2 == null
 
         when:
         lock1.release()
-        lock2 = DataMigrationService.tryAcquireLock(connection, key)
+        lock2 = DataMigrationService.acquireLock(connection, key)
         then:
         lock2 != null
 
