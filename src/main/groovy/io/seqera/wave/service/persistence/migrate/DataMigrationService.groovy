@@ -19,7 +19,6 @@
 package io.seqera.wave.service.persistence.migrate
 
 import java.time.Duration
-import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.Consumer
 import java.util.function.Function
@@ -49,6 +48,8 @@ import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
+
+import static io.seqera.wave.util.DurationUtils.randomDuration
 /**
  * Service to migrate data from SurrealDB to Postgres
  *
@@ -62,17 +63,17 @@ import redis.clients.jedis.JedisPool
 class DataMigrationService {
 
     public static final String TABLE_NAME_BUILD = 'wave_build'
-    public static final String TABLE_NAME_CONTAINER_REQUEST = 'wave_request'
+    public static final String TABLE_NAME_REQUEST = 'wave_request'
     public static final String TABLE_NAME_SCAN = 'wave_scan'
     public static final String TABLE_NAME_MIRROR = 'wave_mirror'
 
-    @Value('${wave.db.migrate.page-size:1000}')
+    @Value('${wave.db.migrate.page-size:100}')
     private int pageSize
 
-    @Value('${wave.db.migrate.delay:5s}')
+    @Value('${wave.db.migrate.delay:10s}')
     private Duration delay
 
-    @Value('${wave.db.migrate.initial-delay:5s}')
+    @Value('${wave.db.migrate.initial-delay:30s}')
     private Duration initialDelay
 
     @Value('${wave.db.migrate.iteration-delay:100ms}')
@@ -131,18 +132,19 @@ class DataMigrationService {
         log.info("Data migration initiated")
 
         dataMigrateCache.putIfAbsent(TABLE_NAME_BUILD, new DataMigrateEntry(TABLE_NAME_BUILD, 0))
-        dataMigrateCache.putIfAbsent(TABLE_NAME_CONTAINER_REQUEST, new DataMigrateEntry(TABLE_NAME_CONTAINER_REQUEST, 0))
+        dataMigrateCache.putIfAbsent(TABLE_NAME_REQUEST, new DataMigrateEntry(TABLE_NAME_REQUEST, 0))
         dataMigrateCache.putIfAbsent(TABLE_NAME_SCAN, new DataMigrateEntry(TABLE_NAME_SCAN, 0))
         dataMigrateCache.putIfAbsent(TABLE_NAME_MIRROR, new DataMigrateEntry(TABLE_NAME_MIRROR, 0))
 
-        taskScheduler.scheduleWithFixedDelay(initialDelay, delay, this::migrateBuildRecords)
-        taskScheduler.scheduleWithFixedDelay(initialDelay, delay, this::migrateContainerRequests)
-        taskScheduler.scheduleWithFixedDelay(initialDelay, delay, this::migrateScanRecords)
-        taskScheduler.scheduleWithFixedDelay(initialDelay, delay, this::migrateMirrorRecords)
+        taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateBuildRecords)
+        taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateContainerRequests)
+        taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateScanRecords)
+        taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateMirrorRecords)
     }
 
     @PreDestroy
     void destroy() {
+        log.info "Releasing lock and closing connection"
         // remove the lock & close the connection
         lock?.release()
         conn?.close()
@@ -162,7 +164,7 @@ class DataMigrationService {
      * Migrate container requests from SurrealDB to Postgres
      */
     void migrateContainerRequests() {
-        migrateRecords(TABLE_NAME_CONTAINER_REQUEST,
+        migrateRecords(TABLE_NAME_REQUEST,
                 (Integer offset)-> {
                     log.debug "Fetching container requests with offset: $offset"
                     def results = surrealService.getRequestsPaginated(pageSize, offset)
@@ -198,8 +200,20 @@ class DataMigrationService {
                 mirrorDone )
     }
 
-
     <T> void migrateRecords(String tableName, Function<Integer,List<T>> fetch, Consumer<T> saver, AtomicBoolean done) {
+        try {
+            migrateRecords0(tableName, fetch, saver, done)
+        }
+        catch (InterruptedException e) {
+            log.info "Migration $tableName has been interrupted (1)"
+            Thread.currentThread().interrupt()
+        }
+        catch (Throwable t) {
+            log.error("Unexpected migration error - ${t.message}", t)
+        }
+    }
+
+    <T> void migrateRecords0(String tableName, Function<Integer,List<T>> fetch, Consumer<T> saver, AtomicBoolean done) {
         log.info "Initiating $tableName migration"
         if (done.get()) {
             log.info "All $tableName records ALREADY migrated"
@@ -229,7 +243,7 @@ class DataMigrationService {
                 Thread.sleep(iterationDelay.toMillis())
             }
             catch (InterruptedException e) {
-                log.info "Migration $tableName has been interrupted"
+                log.info "Migration $tableName has been interrupted (1)"
                 Thread.currentThread().interrupt()
             }
             catch (DataAccessException dataAccessException) {
@@ -250,14 +264,9 @@ class DataMigrationService {
 
     // == --- jedis lock handling
     static JedisLock tryAcquireLock(Jedis conn, String key) {
-        try{
-            return new JedisLockManager(conn)
-                    .withLockAutoExpireDuration(Duration.ofDays(30))
-                    .acquire(key, Duration.ofMillis(350))
-        }
-        catch (TimeoutException e) {
-            return null
-        }
+        return new JedisLockManager(conn)
+                .withLockAutoExpireDuration(Duration.ofDays(30))
+                .tryAcquire(key)
     }
 
 }
