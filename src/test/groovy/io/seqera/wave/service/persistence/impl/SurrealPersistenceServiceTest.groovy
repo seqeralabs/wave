@@ -23,10 +23,12 @@ import spock.lang.Specification
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
 
 import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.seqera.wave.api.BuildCompression
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
@@ -48,6 +50,7 @@ import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.test.SurrealDBTestContainer
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
+import io.seqera.wave.util.JacksonHelper
 import org.apache.commons.lang3.RandomStringUtils
 
 /**
@@ -730,5 +733,66 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         scans.size() == 2
         scans.contains(scan2)
         scans.contains(scan3)
+    }
+
+    def 'getRequestsPaginated should return list of WaveContainerRecord'() {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def surreal = applicationContext.getBean(SurrealClient)
+        and:
+        def records = [
+                [
+                        id           : "req-123",
+                        fusionVersion: [number: "3.0.0", arch: "x86"],
+                        workspaceId  : 100,
+                        containerImage: "ubuntu:20.04"
+                ],
+                [
+                        id           : "req-456",
+                        fusionVersion: "2.4.0",
+                        workspaceId  : 101,
+                        containerImage: "alpine:latest"
+                ],
+                [
+                        id           : "req-789",
+                        workspaceId  : 101,
+                        containerImage: "alpine:latest"
+                ]
+        ]
+        and:
+        records.each { record ->
+            def json = JacksonHelper.toJson(record)
+            def query = "INSERT INTO wave_request $json"
+            final future = new CompletableFuture<Void>()
+            surreal
+                .sqlAsync(persistence.getAuthorization(), query)
+                .subscribe({result ->
+                    log.trace "Container request with token '$data.id' saved record: ${result}"
+                    future.complete(null)
+                },
+                        {error->
+                            log.error "Failed to save container request with token '$data.id': ${error.message}"
+                            future.completeExceptionally(error)
+                        })
+            }
+
+        sleep 300
+        when:
+        def result = persistence.getRequestsPaginated(10, 0)
+
+        then:
+        result.size() == 3
+        and:
+        result[0].id == 'wave_request:⟨req-123⟩'
+        result[0].fusionVersion == '3.0.0'
+        result[0].containerImage == 'ubuntu:20.04'
+        and:
+        result[1].id == 'wave_request:⟨req-456⟩'
+        result[1].fusionVersion == '2.4.0'
+        result[1].containerImage == 'alpine:latest'
+        and:
+        result[2].id == 'wave_request:⟨req-789⟩'
+        result[2].fusionVersion == null
+        result[2].containerImage == 'alpine:latest'
     }
 }
