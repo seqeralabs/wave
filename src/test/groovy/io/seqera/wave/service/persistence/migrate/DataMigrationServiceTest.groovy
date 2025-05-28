@@ -166,4 +166,23 @@ class DataMigrationServiceTest extends Specification {
         and:
         1 * dataMigrateCache.put(DataMigrationService.TABLE_NAME_MIRROR, new DataMigrateEntry(DataMigrationService.TABLE_NAME_MIRROR, 15))
     }
+
+    def "fixRequestId should extract or return correct id for various input formats"() {
+        expect:
+        DataMigrationService.fixRequestId(input) == expected
+
+        where:
+        input                                | expected
+        "wave_request:12345"                 | "12345"
+        "wave_request:⟨12345⟩"               | "12345"
+        "wave_request:⟨abc-987⟩"             | "abc-987"
+        "wave_request:"                      | ""
+        "wave_request:⟨⟩"                    | ""
+        "wave_request:⟨"                     | ""
+        "wave_request:⟨abc⟩extra"            | "abc"
+        "12345"                              | "12345"
+        "some_other_prefix:12345"            | "some_other_prefix:12345"
+        ""                                   | ""
+        null                                 | null
+    }
 }
