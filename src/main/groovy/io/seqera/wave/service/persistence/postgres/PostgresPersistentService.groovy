@@ -166,6 +166,7 @@ class PostgresPersistentService implements PersistenceService {
     // ===== --- container records ---- =====
     @MigrationOnly
     void saveContainerRequest(String id, WaveContainerRecord data) {
+        log.trace "Saving container request record data=${data}"
         final json = Mapper.toJson(data)
         final entity = new RequestRow(id: id, data:json, createdAt: Instant.now())
         requestRepository.save(entity)
