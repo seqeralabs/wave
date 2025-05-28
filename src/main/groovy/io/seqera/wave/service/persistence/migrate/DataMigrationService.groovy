@@ -18,11 +18,12 @@
 
 package io.seqera.wave.service.persistence.migrate
 
+import static io.seqera.wave.util.DurationUtils.*
+
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.Consumer
 import java.util.function.Function
-import javax.annotation.PreDestroy
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -32,6 +33,9 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.context.env.Environment
 import io.micronaut.data.exceptions.DataAccessException
+import io.micronaut.runtime.event.annotation.EventListener
+import io.micronaut.runtime.server.event.ServerShutdownEvent
+import io.micronaut.runtime.server.event.ServerStartupEvent
 import io.micronaut.scheduling.TaskScheduler
 import io.seqera.util.redis.JedisLock
 import io.seqera.util.redis.JedisLockManager
@@ -44,11 +48,9 @@ import io.seqera.wave.service.persistence.impl.SurrealPersistenceService
 import io.seqera.wave.service.persistence.migrate.cache.DataMigrateCache
 import io.seqera.wave.service.persistence.migrate.cache.DataMigrateEntry
 import io.seqera.wave.service.persistence.postgres.PostgresPersistentService
-import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
-import static io.seqera.wave.util.DurationUtils.randomDuration
 /**
  * Service to migrate data from SurrealDB to Postgres
  *
@@ -72,7 +74,10 @@ class DataMigrationService {
     @Value('${wave.db.migrate.delay:10s}')
     private Duration delay
 
-    @Value('${wave.db.migrate.initial-delay:30s}')
+    @Value('${wave.db.migrate.initial-delay:60s}')
+    private Duration launchDelay
+
+    @Value('${wave.db.migrate.initial-delay:10s}')
     private Duration initialDelay
 
     @Value('${wave.db.migrate.iteration-delay:100ms}')
@@ -102,9 +107,9 @@ class DataMigrationService {
     @Inject
     private JedisPool pool
 
-    private Jedis conn
+    private volatile Jedis conn
 
-    private JedisLock lock
+    private volatile JedisLock lock
 
     private final AtomicBoolean buildDone = new AtomicBoolean(false)
     private final AtomicBoolean requestDone = new AtomicBoolean(false)
@@ -113,12 +118,35 @@ class DataMigrationService {
 
     private static final String LOCK_KEY = "migrate-lock/v2"
 
-    @PostConstruct
-    void init() {
+
+    @EventListener
+    void start(ServerStartupEvent event) {
         if (!environment.activeNames.contains("surrealdb") || !environment.activeNames.contains("postgres")) {
             throw new IllegalStateException("Both 'surrealdb' and 'postgres' environments must be active.")
         }
+        // launch async to not block bootstrap
+        taskScheduler.schedule(launchDelay, ()->{
+            try {
+                launchMigration()
+            }
+            catch (InterruptedException e) {
+                log.info "Migration launch has been interrupted (1)"
+            }
+            catch (Throwable e) {
+                log.info("Unexpected exception during Migration launch", e)
+            }
+        })
+    }
 
+    @EventListener
+    void stop(ServerShutdownEvent event) {
+        log.info "Releasing lock and closing connection"
+        // remove the lock & close the connection
+        lock?.release()
+        conn?.close()
+    }
+
+    void launchMigration() {
         log.info("Data migration service initialized with page size: $pageSize, delay: $delay, initial delay: $initialDelay")
         // acquire the lock to only run one instance at time
         conn = pool.getResource()
@@ -140,14 +168,6 @@ class DataMigrationService {
         taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateContainerRequests)
         taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateScanRecords)
         taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateMirrorRecords)
-    }
-
-    @PreDestroy
-    void destroy() {
-        log.info "Releasing lock and closing connection"
-        // remove the lock & close the connection
-        lock?.release()
-        conn?.close()
     }
 
     /**
@@ -205,7 +225,7 @@ class DataMigrationService {
             migrateRecords0(tableName, fetch, saver, done)
         }
         catch (InterruptedException e) {
-            log.info "Migration $tableName has been interrupted (1)"
+            log.info "Migration $tableName has been interrupted (2)"
             Thread.currentThread().interrupt()
         }
         catch (Throwable t) {
@@ -243,7 +263,7 @@ class DataMigrationService {
                 Thread.sleep(iterationDelay.toMillis())
             }
             catch (InterruptedException e) {
-                log.info "Migration $tableName has been interrupted (1)"
+                log.info "Migration $tableName has been interrupted (3)"
                 Thread.currentThread().interrupt()
             }
             catch (DataAccessException dataAccessException) {
@@ -282,7 +302,7 @@ class DataMigrationService {
             }
         }
         catch (InterruptedException e) {
-            log.info "Migration acquire lock has been interrupted (3)"
+            log.info "Migration acquire lock has been interrupted (4)"
             Thread.currentThread().interrupt()
             return null
         }
