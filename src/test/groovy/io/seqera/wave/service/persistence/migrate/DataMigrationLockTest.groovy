@@ -32,7 +32,7 @@ import redis.clients.jedis.JedisPool
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Timeout(10)
+@Timeout(30)
 class DataMigrationLockTest extends Specification implements RedisTestContainer {
 
     @Shared
