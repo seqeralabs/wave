@@ -83,6 +83,19 @@ class DataMigrationService {
     @Value('${wave.db.migrate.iteration-delay:100ms}')
     private Duration iterationDelay
 
+    @Value ('${wave.db.migrate.requests.enabled:false}')
+    private boolean requestsEnabled
+
+    @Value ('${wave.db.migrate.scans.enabled:false}')
+    private boolean scansEnabled
+
+    @Value ('${wave.db.migrate.mirrors.enabled:false}')
+    private boolean mirrorsEnabled
+
+    @Value ('${wave.db.migrate.builds.enabled:false}')
+    private boolean buildsEnabled
+
+
     @Inject
     private SurrealPersistenceService surrealService
 
@@ -164,10 +177,10 @@ class DataMigrationService {
         dataMigrateCache.putIfAbsent(TABLE_NAME_SCAN, new DataMigrateEntry(TABLE_NAME_SCAN, 0))
         dataMigrateCache.putIfAbsent(TABLE_NAME_MIRROR, new DataMigrateEntry(TABLE_NAME_MIRROR, 0))
 
-        buildTask = taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateBuildRecords)
-        requestTask = taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateRequests)
-        scanTask = taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateScanRecords)
-        mirrorTask = taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateMirrorRecords)
+        buildTask = buildsEnabled ? taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateBuildRecords) : null
+        requestTask = requestsEnabled ? taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateRequests) :  null
+        scanTask = scansEnabled ? taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateScanRecords) : null
+        mirrorTask = mirrorsEnabled ? taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateMirrorRecords) : null
     }
 
     /**
