@@ -24,7 +24,7 @@ After you have configured a base Wave installation with this guide, see [Configu
 ## Prerequisites
 
 **Required infrastructure:**
-- **Kubernetes cluster** - Version 1.20 or higher (any distribution)
+- **Kubernetes cluster** - Version 1.31 or higher (any distribution)
 - **PostgreSQL instance** - Version 12 or higher (managed externally)
 - **Redis instance** - Version 6.0 or higher (managed externally)
 
