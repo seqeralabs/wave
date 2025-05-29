@@ -26,7 +26,6 @@ import javax.annotation.PostConstruct
 import groovy.transform.CompileStatic
 import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import jakarta.inject.Singleton
@@ -38,7 +37,6 @@ import jakarta.inject.Singleton
 @CompileStatic
 @Singleton
 @Slf4j
-@Requires(property = 'wave.scan.enabled', value = 'true')
 class ScanConfig {
 
     /**
@@ -67,6 +65,7 @@ class ScanConfig {
      * The host path where cache DB stored
      */
     @Value('${wave.build.workspace}')
+    @Nullable
     private String buildDirectory
 
     @Value('${wave.scan.timeout:15m}')
@@ -102,6 +101,8 @@ class ScanConfig {
 
     @Memoized
     Path getCacheDirectory() {
+        if  ( !buildDirectory )
+            return null
         final result = Path.of(buildDirectory).toAbsolutePath().resolve('.trivy-cache')
         try {
             Files.createDirectories(result)
@@ -113,7 +114,7 @@ class ScanConfig {
 
     @Memoized
     Path getWorkspace() {
-        Path.of(buildDirectory).toAbsolutePath()
+        buildDirectory ? Path.of(buildDirectory).toAbsolutePath() : null
     }
 
     String getRequestsCpu() {
