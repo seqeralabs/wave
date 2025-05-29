@@ -39,7 +39,7 @@ Nextflow can use the container that Seqera Containers built in the previous sect
 
 1. Create a `main.nf` file with the following contents:
 
-    ```groovy
+    ```nextflow
     process SAMTOOLS {
       container '<container_uri>'
       debug true
@@ -164,7 +164,7 @@ Nextflow can use Wave to seamlessly build a container directly from a Dockerfile
 
 1. Create a `wave.nf` file with the following contents:
 
-    ```groovy
+    ```nextflow
     include { HELLO } from './modules/gamma'
 
     workflow {
@@ -329,7 +329,7 @@ Nextflow can use the container that Wave froze to the build repository that you 
 
 1. Create a `main.nf` file with the following contents:
 
-    ```groovy
+    ```nextflow
     process FAKER {
       container 'docker.io/example-user/repo:faker--2aa7a4d826a76301'
       debug true
