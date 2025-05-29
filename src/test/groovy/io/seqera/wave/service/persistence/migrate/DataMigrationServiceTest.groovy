@@ -20,6 +20,9 @@ package io.seqera.wave.service.persistence.migrate
 
 import spock.lang.Specification
 
+import java.time.Duration
+import java.util.concurrent.ScheduledFuture
+
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.WaveBuildRecord
@@ -118,13 +121,14 @@ class DataMigrationServiceTest extends Specification {
 
     def "should migrate request records in batches"() {
         given:
+        service.iterationDelay = Duration.ofMillis(10)
         def requests = (1..101).collect { new WaveContainerRecord(
                 new SubmitContainerTokenRequest(towerWorkspaceId: it),
                 new ContainerRequest(requestId: it, identity: PlatformId.of(new User(id: it), Mock(SubmitContainerTokenRequest))),
                 null, null, null) }
-        surrealService.getRequestsPaginated(pageSize,0) >> requests
         dataMigrateCache.get(DataMigrationService.TABLE_NAME_REQUEST) >>
-                new DataMigrateEntry(DataMigrationService.TABLE_NAME_REQUEST, 0)
+                new DataMigrateEntry(DataMigrationService.TABLE_NAME_REQUEST, "0")
+        surrealService.getRequestsPaginated(pageSize,"0") >> requests
 
         when:
         service.migrateRequests()
@@ -132,7 +136,7 @@ class DataMigrationServiceTest extends Specification {
         then:
         101 * postgresService.saveContainerRequest(_,_)
         and:
-        1 * dataMigrateCache.put(DataMigrationService.TABLE_NAME_REQUEST, new DataMigrateEntry(DataMigrationService.TABLE_NAME_REQUEST, 101))
+        1 * dataMigrateCache.put(DataMigrationService.TABLE_NAME_REQUEST, new DataMigrateEntry(DataMigrationService.TABLE_NAME_REQUEST, 0, "101"))
     }
 
     def "should migrate scan records in batches"() {

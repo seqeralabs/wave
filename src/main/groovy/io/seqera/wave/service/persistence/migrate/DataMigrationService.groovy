@@ -160,7 +160,7 @@ class DataMigrationService {
         log.info("Data migration initiated")
 
         dataMigrateCache.putIfAbsent(TABLE_NAME_BUILD, new DataMigrateEntry(TABLE_NAME_BUILD, 0))
-        dataMigrateCache.putIfAbsent(TABLE_NAME_REQUEST, new DataMigrateEntry(TABLE_NAME_REQUEST, 0))
+        dataMigrateCache.putIfAbsent(TABLE_NAME_REQUEST, new DataMigrateEntry(TABLE_NAME_REQUEST, 0, "0"))
         dataMigrateCache.putIfAbsent(TABLE_NAME_SCAN, new DataMigrateEntry(TABLE_NAME_SCAN, 0))
         dataMigrateCache.putIfAbsent(TABLE_NAME_MIRROR, new DataMigrateEntry(TABLE_NAME_MIRROR, 0))
 
@@ -184,10 +184,56 @@ class DataMigrationService {
      * Migrate container requests from SurrealDB to Postgres
      */
     void migrateRequests() {
-        migrateRecords(TABLE_NAME_REQUEST,
-                (Integer offset)-> surrealService.getRequestsPaginated(pageSize, offset),
-                (WaveContainerRecord request)-> postgresService.saveContainerRequest(fixRequestId(request.id), request),
-                requestTask )
+        try {
+            log.info "Initiating $TABLE_NAME_REQUEST migration"
+            String lastId = dataMigrateCache.get(TABLE_NAME_REQUEST).lastId
+            def records = surrealService.getRequestsPaginated(pageSize, lastId)
+
+            if (!records) {
+                log.info("All $TABLE_NAME_REQUEST records migrated.")
+                requestTask.cancel(false)
+                return
+            }
+
+            int count = 0
+            for (def it : records) {
+                try {
+                    if (Thread.currentThread().isInterrupted()) {
+                        log.info "Thread is interrupted - exiting $TABLE_NAME_REQUEST method"
+                        break
+                    }
+                    postgresService.saveContainerRequest(fixRequestId(it.id), it)
+                    dataMigrateCache.put(TABLE_NAME_REQUEST, new DataMigrateEntry(TABLE_NAME_REQUEST, it.id))
+                    if (++count % 50 == 0)
+                        log.info "Migration $TABLE_NAME_REQUEST; processed ${count} records"
+                    Thread.sleep(iterationDelay.toMillis())
+                }
+                catch (InterruptedException e) {
+                    log.info "Migration $TABLE_NAME_REQUEST has been interrupted (3)"
+                    Thread.currentThread().interrupt()
+                }
+                catch (DataAccessException dataAccessException) {
+                    if (dataAccessException.message.contains("duplicate key value violates unique constraint")) {
+                        log.warn("Duplicate key error for $TABLE_NAME_REQUEST record: ${dataAccessException.message}")
+                        dataMigrateCache.put(TABLE_NAME_REQUEST, new DataMigrateEntry(TABLE_NAME_REQUEST, it.id))
+                    } else {
+                        log.error("Error saving=> $TABLE_NAME_REQUEST record: ${dataAccessException.message}")
+                    }
+                }
+                catch (Exception e) {
+                    log.error("Error saving $TABLE_NAME_REQUEST record: ${e.message}", e)
+                }
+            }
+
+            log.info("Migrated ${records.size()} $TABLE_NAME_REQUEST records (Id ${records.last.id}.)")
+        }
+        catch (InterruptedException e) {
+            log.info "Migration $TABLE_NAME_REQUEST has been interrupted (2)"
+            Thread.currentThread().interrupt()
+        }
+        catch (Throwable t) {
+            log.error("Unexpected migration error - ${t.message}", t)
+        }
     }
 
     protected static String fixRequestId(String id){
