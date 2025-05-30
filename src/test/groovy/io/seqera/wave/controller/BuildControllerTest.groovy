@@ -35,6 +35,7 @@ import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.BuildStatusResponse
+import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
@@ -75,7 +76,7 @@ class BuildControllerTest extends Specification {
         final containerFile = 'FROM foo:latest'
         final format = BuildFormat.DOCKER
         final platform = ContainerPlatform.of('amd64')
-        final containerId = ContainerHelper.makeContainerId(containerFile, null, platform, 'buildrepo', null)
+        final containerId = ContainerHelper.makeContainerId(containerFile, null, platform, 'buildrepo', null, Mock(ContainerConfig))
         final targetImage = ContainerHelper.makeTargetImage(format, repo, containerId, null, null)
         final build = new BuildRequest(
                 containerId: containerId,

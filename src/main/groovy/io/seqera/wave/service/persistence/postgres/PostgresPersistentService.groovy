@@ -116,6 +116,14 @@ class PostgresPersistentService implements PersistenceService {
                 "Unable to save build record=$data"))
     }
 
+    @MigrationOnly
+    void saveBuild(WaveBuildRecord data) {
+        log.trace "Saving build record=$data"
+        final json = Mapper.toJson(data)
+        final row = new BuildRow(id:data.buildId, data:json, createdAt: Instant.now())
+        buildRepository.save(row)
+    }
+
     @Override
     WaveBuildRecord loadBuild(String buildId) {
         log.trace "Loading build record id=${buildId}"
@@ -202,6 +210,14 @@ class PostgresPersistentService implements PersistenceService {
                 "Unable to save scan record data=${data}"))
     }
 
+    @MigrationOnly
+    void saveScanRecord(WaveScanRecord data) {
+        log.trace "Saving scan record data=${data}"
+        final json = Mapper.toJson(data)
+        final entity = new ScanRow(id: data.id, data:json, createdAt: Instant.now())
+        scanRepository.save(entity)
+    }
+
     @Override
     WaveScanRecord loadScanRecord(String scanId) {
         log.trace "Loading scan record id=${scanId}"
@@ -254,5 +270,13 @@ class PostgresPersistentService implements PersistenceService {
         CompletableFuture.runAsync(safeRun(()->
                 mirrorRepository.save(entity),
                 "Unable to save mirror result data=${data}"))
+    }
+
+    @MigrationOnly
+    void saveMirrorResult(MirrorResult data) {
+        log.trace "Saving mirror result data=${data}"
+        final json = Mapper.toJson(data)
+        final entity = new MirrorRow(id: data.mirrorId, data:json, createdAt: Instant.now())
+        mirrorRepository.save(entity)
     }
 }

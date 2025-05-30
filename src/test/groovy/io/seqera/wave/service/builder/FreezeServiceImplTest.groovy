@@ -103,7 +103,7 @@ class FreezeServiceImplTest extends Specification  {
 
     def 'should create build file given a container image for singularity' () {
         when:
-        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true, format: 'sif')
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', containerPlatform: 'linux/amd64', freeze: true, format: 'sif')
         def result = freezeService.createBuildFile(req, Mock(PlatformId))
         then:
         result == '''\

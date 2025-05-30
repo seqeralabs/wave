@@ -16,35 +16,36 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.persistence.migrate.cache
+package io.seqera.wave.util
 
-import java.time.Duration
-
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.JsonDeserializer
+import com.fasterxml.jackson.databind.JsonNode
 import groovy.transform.CompileStatic
-import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.store.state.AbstractStateStore
-import io.seqera.wave.store.state.impl.StateProvider
-import jakarta.inject.Singleton
+import io.seqera.wave.service.persistence.migrate.MigrationOnly
+
 /**
- * Cache for data migration entries
+ * Custom deserializer for Fusion version strings.
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-@Singleton
+@MigrationOnly
 @CompileStatic
-class DataMigrateCache extends AbstractStateStore<DataMigrateEntry> {
-
-    DataMigrateCache(StateProvider<String,String> provider) {
-        super(provider, new MoshiEncodeStrategy<DataMigrateEntry>() {})
-    }
-
+class FusionVersionStringDeserializer extends JsonDeserializer<String> {
     @Override
-    protected String getPrefix() {
-        return 'migrate-surreal/v1'
-    }
+    String deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+        JsonNode node = p.getCodec().readTree(p);
 
-    @Override
-    protected Duration getDuration() {
-        return Duration.ofDays(30)
+        if (node.isTextual()) {
+            return node.asText()
+        } else if (node.isObject()) {
+            JsonNode numberNode = node.get("number")
+            return numberNode != null && !numberNode.isNull() ? numberNode.asText() : null
+        }
+
+        return null
     }
 }
+
+

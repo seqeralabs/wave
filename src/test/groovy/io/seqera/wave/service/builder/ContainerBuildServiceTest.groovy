@@ -123,7 +123,7 @@ class ContainerBuildServiceTest extends Specification {
                   - salmon=1.6.0
                 '''
         and:
-        def containerId = ContainerHelper.makeContainerId(dockerFile, condaFile, ContainerPlatform.of('amd64'), buildRepo, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, condaFile, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, condaFile, null)
         def req =
                 new BuildRequest(
@@ -166,7 +166,7 @@ class ContainerBuildServiceTest extends Specification {
         def buildRepo = buildConfig.defaultBuildRepository
         and:
         def dockerFile = 'FROM something; {{foo}}'
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
                 new BuildRequest(
@@ -201,7 +201,7 @@ class ContainerBuildServiceTest extends Specification {
         '''.stripIndent()
         and:
         def builder = new ContainerBuildServiceImpl()
-        def containerId = ContainerHelper.makeContainerId(containerFile, null, ContainerPlatform.of('amd64'), 'buildRepo', null)
+        def containerId = ContainerHelper.makeContainerId(containerFile, null, ContainerPlatform.of('amd64'), 'buildRepo', null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.SINGULARITY, 'foo.com/repo', containerId, null, null)
         def req =
                 new BuildRequest(
@@ -281,7 +281,7 @@ class ContainerBuildServiceTest extends Specification {
         and:
         def dockerFile = 'from foo'
         def buildRepo = 'quay.io/org/name'
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
                 new BuildRequest(

@@ -37,6 +37,7 @@ dependencies {
     implementation 'io.seqera:wave-api:0.16.0'
     implementation 'io.seqera:wave-utils:0.15.1'
     implementation 'io.seqera:lib-crypto:1.0.0'
+    implementation 'io.seqera:jedis-lock:1.0.0'
     implementation 'io.micronaut:micronaut-http-client'
     implementation 'io.micronaut:micronaut-jackson-databind'
     implementation 'io.micronaut.groovy:micronaut-runtime-groovy'

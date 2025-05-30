@@ -116,7 +116,7 @@ class ContainerControllerTest extends Specification {
         def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry)
 
         when:
-        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest')
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', containerPlatform: 'linux/amd64')
         def data = controller.makeRequestData(req, PlatformId.NULL, "")
         then:
         data.containerImage == 'docker.io/library/ubuntu:latest'
@@ -154,18 +154,16 @@ class ContainerControllerTest extends Specification {
         def controller = Spy(new ContainerController(freezeService: freeze, inclusionService: Mock(ContainerInclusionService)))
         and:
         def target = 'docker.io/repo/ubuntu:latest'
-        def BUILD = Mock(BuildRequest) {
-            getTargetImage() >> target
-        }
+        def build = Mock(BuildRequest) { getTargetImage() >> target }
         and:
-        def req = new SubmitContainerTokenRequest(containerImage: containerImage, freeze: true, buildRepository: 'docker.io/foo/bar')
+        def req = new SubmitContainerTokenRequest(containerImage: containerImage, containerPlatform: 'linux/amd64', freeze: true, buildRepository: 'docker.io/foo/bar')
 
         when:
         def data = controller.makeRequestData(req, PlatformId.NULL, "")
         then:
         1 * freeze.freezeBuildRequest(req, _) >> req.copyWith(containerFile: 'FROM ubuntu:latest')
-        1 * controller.makeBuildRequest(_,_,_) >> BUILD
-        1 * controller.checkBuild(BUILD,false) >> new BuildTrack('1', target, false, false)
+        1 * controller.makeBuildRequest(_,_,_) >> build
+        1 * controller.checkBuild(build,false) >> new BuildTrack('1', target, false, false)
         1 * controller.getContainerDigest(containerImage, PlatformId.NULL) >> 'sha256:12345'
         and:
         data.containerImage == target
@@ -341,20 +339,17 @@ class ContainerControllerTest extends Specification {
         build.condaFile == 'some::conda-recipe'
         build.targetImage == 'wave/build:c6dac2e544419f71'
         build.platform == ContainerPlatform.of('arm64')
-
     }
 
     def 'should return a bad request exception when field is not encoded' () {
         given:
         def dockerAuth = Mock(ContainerInspectServiceImpl)
         def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig)
+        def request = new SubmitContainerTokenRequest(containerFile: 'FROM some:container', containerPlatform: 'linux/amd64')
 
         // validate containerFile
         when:
-        controller.makeBuildRequest(
-                new SubmitContainerTokenRequest(containerFile: 'FROM some:container'),
-                Mock(PlatformId),
-                null)
+        controller.makeBuildRequest(request, Mock(PlatformId), null)
         then:
         def e = thrown(BadRequestException)
         e.message == "Invalid 'containerFile' attribute - make sure it encoded as a base64 string"
@@ -765,5 +760,35 @@ class ContainerControllerTest extends Specification {
         and:
         'custom/repo'   | null              | null
         'custom/repo'   | 'custom/cache'    | 'custom/cache'
+    }
+
+    def 'should create different container id for different request and freeze enabled' () {
+        given:
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig, validationService: validationService)
+        and:
+        def request1 = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), freeze: true, containerConfig: new ContainerConfig(env: ["FOO=one"]))
+        def request2 = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), freeze: true, containerConfig: new ContainerConfig(env: ["FOO=two"]))
+
+        when:
+        def build1 = controller.makeBuildRequest(request1, PlatformId.NULL, "")
+        def build2 = controller.makeBuildRequest(request2, PlatformId.NULL,"")
+        then:
+        build1.containerId != build2.containerId
+    }
+
+    def 'should create same container id for different request and freeze disabled' () {
+        given:
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig, validationService: validationService)
+        and:
+        def request1 = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), freeze: false, containerConfig: new ContainerConfig(env: ["FOO=one"]))
+        def request2 = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), freeze: false, containerConfig: new ContainerConfig(env: ["FOO=two"]))
+
+        when:
+        def build1 = controller.makeBuildRequest(request1, PlatformId.NULL, "")
+        def build2 = controller.makeBuildRequest(request2, PlatformId.NULL,"")
+        then:
+        build1.containerId == build2.containerId
     }
 }

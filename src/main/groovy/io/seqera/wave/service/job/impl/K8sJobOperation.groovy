@@ -62,8 +62,16 @@ class K8sJobOperation implements JobOperation {
         // Find the latest created pod among the pods associated with the job
         final pod = k8sService.getLatestPodForJob(job.operationName)
         if( !pod ) {
-            log.warn "K8s missing carrier pod for job ${job.operationName}"
-            return new JobState(JobState.Status.UNKNOWN)
+            // in some circumstances the pod carrier pod cannot be retried, most likely
+            // due to a node disruption. in this case determine the state to be returned
+            // by using the JobStatus information (tho logs will be lost)
+            log.warn "K8s missing carrier pod for job ${job.operationName} with status=${status}"
+            final msg = "(logs not available)"
+            return switch (status) {
+                case K8sService.JobStatus.Succeeded -> JobState.succeeded(msg)
+                case K8sService.JobStatus.Failed -> JobState.failed(255, msg)
+                default -> JobState.unknown(msg)
+            }
         }
 
         // determine exit code and logs

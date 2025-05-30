@@ -1,4 +1,19 @@
 # Wave changelog
+1.21.1 - 29 May 2025 
+- Fix Conda lock fallback logic [657316e8]
+
+1.21.0 - 28 May 2025
+- Add Conda locks fallback patch [9b54bba3]
+- Add Surreal to PostgreSQL data migration (#833) [89acf316] [c23fccf2] [8d0a6861]
+- Add support for local file system for logs assets (#808) [ec9aa319] [BREAKING]
+- Fix containerId when using freeze mode and providing custom config (#830) [ccfc943e]
+- Improve parsing of container platform (#810) [aa90f38c]
+- Update singularity build (#837) [415bf745]
+- Bump buildkit:v0.21.1 [b234b8bb]
+
+1.20.3 - 24 May 2025 
+- Determine job state by using K8s JobStatus [ecc33c37]
+
 1.20.2 - 21 May 2025
 - Fix K8s failure detection on pod error [1c76cd96]
 
