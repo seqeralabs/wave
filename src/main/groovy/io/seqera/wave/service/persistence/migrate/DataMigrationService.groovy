@@ -170,7 +170,7 @@ class DataMigrationService {
             conn = null
             return
         }
-        log.info("Data migration initiated")
+        log.info("Data migration initiated with builds enabled: $buildsEnabled, requests enabled: $requestsEnabled, scans enabled: $scansEnabled, and mirrors enabled: $mirrorsEnabled")
 
         dataMigrateCache.putIfAbsent(TABLE_NAME_BUILD, new DataMigrateEntry(TABLE_NAME_BUILD, 0))
         dataMigrateCache.putIfAbsent(TABLE_NAME_REQUEST, new DataMigrateEntry(TABLE_NAME_REQUEST, 0, "0"))
