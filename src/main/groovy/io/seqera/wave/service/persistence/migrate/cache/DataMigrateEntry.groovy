@@ -33,9 +33,16 @@ import groovy.transform.ToString
 class DataMigrateEntry {
     String tableName
     int offset
+    String lastId
 
-    DataMigrateEntry(String tableName, int offset) {
+    DataMigrateEntry(String tableName, int offset, String lastId = null) {
         this.tableName = tableName
         this.offset = offset
+        this.lastId = lastId
+    }
+
+    DataMigrateEntry(String tableName, String lastId) {
+        this.lastId = lastId
+        this.tableName = tableName
     }
 }

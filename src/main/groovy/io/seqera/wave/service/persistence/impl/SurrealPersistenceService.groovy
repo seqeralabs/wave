@@ -428,8 +428,8 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @MigrationOnly
-    List<WaveContainerRecord> getRequestsPaginated(int limit, int offset){
-        final query = "select * from wave_request limit $limit start $offset"
+    List<WaveContainerRecord> getRequestsPaginated(int limit, String lastId) {
+        final query = "select * from wave_request WHERE id > $lastId ORDER BY id limit $limit"
         final json = surrealDb.sqlAsString(getAuthorization(), query)
         final type = new TypeReference<ArrayList<SurrealResult<WaveContainerRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null

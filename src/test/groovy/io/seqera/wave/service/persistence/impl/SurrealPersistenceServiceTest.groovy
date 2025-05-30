@@ -676,7 +676,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         sleep(100)
 
         when:
-        def requests = persistence.getRequestsPaginated(1,0)
+        def requests = persistence.getRequestsPaginated(1,"0")
 
         then:
         requests.size() == 1
@@ -767,18 +767,16 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
             surreal
                 .sqlAsync(persistence.getAuthorization(), query)
                 .subscribe({result ->
-                    log.trace "Container request with token '$data.id' saved record: ${result}"
                     future.complete(null)
                 },
                         {error->
-                            log.error "Failed to save container request with token '$data.id': ${error.message}"
                             future.completeExceptionally(error)
                         })
             }
 
         sleep 300
         when:
-        def result = persistence.getRequestsPaginated(10, 0)
+        def result = persistence.getRequestsPaginated(10, "0")
 
         then:
         result.size() == 3

@@ -83,6 +83,19 @@ class DataMigrationService {
     @Value('${wave.db.migrate.iteration-delay:100ms}')
     private Duration iterationDelay
 
+    @Value ('${wave.db.migrate.requests.enabled:false}')
+    private boolean requestsEnabled
+
+    @Value ('${wave.db.migrate.scans.enabled:false}')
+    private boolean scansEnabled
+
+    @Value ('${wave.db.migrate.mirrors.enabled:false}')
+    private boolean mirrorsEnabled
+
+    @Value ('${wave.db.migrate.builds.enabled:false}')
+    private boolean buildsEnabled
+
+
     @Inject
     private SurrealPersistenceService surrealService
 
@@ -157,17 +170,17 @@ class DataMigrationService {
             conn = null
             return
         }
-        log.info("Data migration initiated")
+        log.info("Data migration initiated with builds enabled: $buildsEnabled, requests enabled: $requestsEnabled, scans enabled: $scansEnabled, and mirrors enabled: $mirrorsEnabled")
 
         dataMigrateCache.putIfAbsent(TABLE_NAME_BUILD, new DataMigrateEntry(TABLE_NAME_BUILD, 0))
-        dataMigrateCache.putIfAbsent(TABLE_NAME_REQUEST, new DataMigrateEntry(TABLE_NAME_REQUEST, 0))
+        dataMigrateCache.putIfAbsent(TABLE_NAME_REQUEST, new DataMigrateEntry(TABLE_NAME_REQUEST, 0, "0"))
         dataMigrateCache.putIfAbsent(TABLE_NAME_SCAN, new DataMigrateEntry(TABLE_NAME_SCAN, 0))
         dataMigrateCache.putIfAbsent(TABLE_NAME_MIRROR, new DataMigrateEntry(TABLE_NAME_MIRROR, 0))
 
-        buildTask = taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateBuildRecords)
-        requestTask = taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateRequests)
-        scanTask = taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateScanRecords)
-        mirrorTask = taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateMirrorRecords)
+        buildTask = buildsEnabled ? taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateBuildRecords) : null
+        requestTask = requestsEnabled ? taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateRequests) :  null
+        scanTask = scansEnabled ? taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateScanRecords) : null
+        mirrorTask = mirrorsEnabled ? taskScheduler.scheduleWithFixedDelay(randomDuration(initialDelay, 0.5f), delay, this::migrateMirrorRecords) : null
     }
 
     /**
@@ -184,10 +197,56 @@ class DataMigrationService {
      * Migrate container requests from SurrealDB to Postgres
      */
     void migrateRequests() {
-        migrateRecords(TABLE_NAME_REQUEST,
-                (Integer offset)-> surrealService.getRequestsPaginated(pageSize, offset),
-                (WaveContainerRecord request)-> postgresService.saveContainerRequest(fixRequestId(request.id), request),
-                requestTask )
+        try {
+            log.info "Initiating $TABLE_NAME_REQUEST migration"
+            String lastId = dataMigrateCache.get(TABLE_NAME_REQUEST).lastId
+            def records = surrealService.getRequestsPaginated(pageSize, lastId)
+
+            if (!records) {
+                log.info("All $TABLE_NAME_REQUEST records migrated.")
+                requestTask.cancel(false)
+                return
+            }
+
+            int count = 0
+            for (def it : records) {
+                try {
+                    if (Thread.currentThread().isInterrupted()) {
+                        log.info "Thread is interrupted - exiting $TABLE_NAME_REQUEST method"
+                        break
+                    }
+                    postgresService.saveContainerRequest(fixRequestId(it.id), it)
+                    dataMigrateCache.put(TABLE_NAME_REQUEST, new DataMigrateEntry(TABLE_NAME_REQUEST, it.id))
+                    if (++count % 50 == 0)
+                        log.info "Migration $TABLE_NAME_REQUEST; processed ${count} records"
+                    Thread.sleep(iterationDelay.toMillis())
+                }
+                catch (InterruptedException e) {
+                    log.info "Migration $TABLE_NAME_REQUEST has been interrupted (3)"
+                    Thread.currentThread().interrupt()
+                }
+                catch (DataAccessException dataAccessException) {
+                    if (dataAccessException.message.contains("duplicate key value violates unique constraint")) {
+                        log.warn("Duplicate key error for $TABLE_NAME_REQUEST record: ${dataAccessException.message}")
+                        dataMigrateCache.put(TABLE_NAME_REQUEST, new DataMigrateEntry(TABLE_NAME_REQUEST, it.id))
+                    } else {
+                        log.error("Error saving=> $TABLE_NAME_REQUEST record: ${dataAccessException.message}")
+                    }
+                }
+                catch (Exception e) {
+                    log.error("Error saving $TABLE_NAME_REQUEST record: ${e.message}", e)
+                }
+            }
+
+            log.info("Migrated ${records.size()} $TABLE_NAME_REQUEST records (Id ${records.last.id}.)")
+        }
+        catch (InterruptedException e) {
+            log.info "Migration $TABLE_NAME_REQUEST has been interrupted (2)"
+            Thread.currentThread().interrupt()
+        }
+        catch (Throwable t) {
+            log.error("Unexpected migration error - ${t.message}", t)
+        }
     }
 
     protected static String fixRequestId(String id){
