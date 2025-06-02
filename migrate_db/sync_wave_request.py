@@ -4,7 +4,7 @@ import io
 import requests
 import psycopg2
 
-SURREAL_URL = os.getenv("SURREAL_URL", "http://surrealv1:8100/sql")
+SURREAL_URL = os.getenv("SURREAL_URL", "http://surrealdb:8000/sql")
 SURREAL_USER = os.getenv("SURREAL_USER", "root")
 SURREAL_PASS = os.getenv("SURREAL_PASS", "root")
 SURREAL_NS = os.getenv("SURREAL_NS", "seqera")
@@ -52,7 +52,7 @@ print(f"Fetched {len(rows)} records from SurrealDB")
 seen_ids = set()
 duplicate = 0
 
-# Write to a temp file instead of buffer
+# Write to a temp file
 with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".csv") as tmpfile:
     for row in rows:
         sid = fix_request_id(row.get("id", ""))
