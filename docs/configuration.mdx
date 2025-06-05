@@ -22,7 +22,7 @@ General configuration options such as wave application name, port, whether to al
 
 - **`micronaut.server.port`**: the port used by the Wave server. The default port is `8080`. *Optional*.
 
-- **`wave.allowAnonymous`**: specifies whether anonymous access to the Wave server is permitted. By default, it is set to `false`, meaning authentication is required. Change this option based on your security requirements. *Mandatory*.
+- **`wave.allowAnonymous`**: specifies whether anonymous access to the Wave server is permitted. By default, it is set to `false`, meaning authentication is required. Change this option based on your security requirements.  *Mandatory*.
 
 - **`wave.server.url`**: the URL for the Wave server. It can be set using `${WAVE_SERVER_URL}` environment variable. *Optional*.
 
@@ -73,7 +73,7 @@ Below are the standard format for known registries, but you can change registry 
 
 - **`wave.httpclient.retry.multiplier`**: defines the multiplier for HTTP client retries. Its default value is `1.0`. *Optional*.
 
-- **`micronaut.http.services.stream-client.read-timeout`**: sets the read timeout for the streaming HTTP client. Its default value is `30s`. *Optional*.
+- **`micronaut.http.services.stream-client.read-timeout`**: sets the read timeout for the streaming HTTP client. Its default value is `30s`.  *Optional*.
 
 - **`micronaut.http.services.stream-client.read-idle-timeout`**: configures the read idle timeout for the streaming HTTP client. Its default value is `120s`. *Optional*.
 
@@ -93,11 +93,11 @@ Below are the standard format for known registries, but you can change registry 
 
 - **`wave.build.repo`**: specifies the Docker container repository for the Docker images built by Wave. This setting is required to define where the images will be stored. *Mandatory*.
 
-- **`wave.build.cache`**: determines the Docker container repository used to cache layers of images built by Wave. *Mandatory*.
+- **`wave.build.cache`**: determines the Docker container repository used to cache layers of images built by Wave.  *Mandatory*.
 
-- **`wave.build.status.delay`**: sets the delay between build status checks. Its default value is `5s`, providing a reasonable interval for status checks. *Optional*.
+- **`wave.build.status.delay`**: sets the delay between build status checks. Its default value is `5s`, providing a reasonable interval for status checks.  *Optional*.
 
-- **`wave.build.status.duration`**: defines the duration for build status checks. Its default value is `1d` (1 day), indicating how long the system should check the build status. *Optional*.
+- **`wave.build.status.duration`**: defines the duration for build status checks. Its default value is `1d` (1 day), indicating how long the system should check the build status.  *Optional*.
 
 - **`wave.build.public`**: indicates whether the Docker container repository is public. If set to true, Wave freeze will prefer this public repository over `wave.build.repo`. *Optional*.
 
@@ -218,7 +218,7 @@ Rate limit configuration controls the limits of anonymous and authenticated user
 
 ### PostgreSQL configuration
 
-- **`wave.db.uri`**: JDBC connection string for the PostgreSQL database. For example, `jdbc:postgresql://localhost:5432/wave`. It can be set using `${WAVE_DB_URI}` environment variable. *Mandatory*.
+- **`wave.db.uri`**: JDBC connection string for the PostgreSQL database. For example, `jdbc:postgresql://localhost:5432/wave`. It can be set using `${WAVE_DB_URI}` environment variable.  *Mandatory*.
 
 - **`wave.db.user`**: Username for authenticating with the PostgreSQL database. It can be set using `${WAVE_DB_USER}` environment variable. *Mandatory*.
 
@@ -266,7 +266,7 @@ Wave offers a feature to provide a cache for Docker blobs, which improves the pe
 
 Email ID to send emails from on the behalf of the Wave service.
 
-- **`mail.from`**: specifies the sender's email address for Wave notifications. This email address serves as the point of origin for any emails sent by Wave, providing a recognizable source for notifications. This setting is crucial for configuring the sender identity when Wave sends email notifications. *Mandatory*.
+- **`mail.from`**: specifies the sender's email address for Wave notifications. This email address serves as the point of origin for any emails sent by Wave, providing a recognizable source for notifications. This setting is crucial for configuring the sender identity when Wave sends email notifications.  *Mandatory*.
 
 ## Metrics configuration
 
