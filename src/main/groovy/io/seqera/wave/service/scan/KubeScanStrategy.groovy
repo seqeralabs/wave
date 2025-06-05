@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.scan
 
-
 import java.nio.file.Path
 
 import groovy.transform.CompileStatic

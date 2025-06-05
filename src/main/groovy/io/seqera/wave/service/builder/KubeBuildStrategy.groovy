@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.builder
 
-
 import java.nio.file.Path
 
 import groovy.transform.CompileStatic

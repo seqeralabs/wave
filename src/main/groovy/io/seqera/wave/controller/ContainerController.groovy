@@ -49,7 +49,10 @@ import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
+import io.seqera.wave.exception.UnsupportedBuildServiceException
+import io.seqera.wave.exception.UnsupportedMirrorServiceException
 import io.seqera.wave.exception.NotFoundException
+import io.seqera.wave.exception.UnsupportedScanServiceException
 import io.seqera.wave.exchange.DescribeWaveContainerResponse
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.ratelimit.AcquireRequest
@@ -131,6 +134,7 @@ class ContainerController {
     private BuildConfig buildConfig
 
     @Inject
+    @Nullable
     private ContainerBuildService buildService
 
     @Inject
@@ -162,6 +166,7 @@ class ContainerController {
     private RateLimiterService rateLimiterService
 
     @Inject
+    @Nullable
     private ContainerMirrorService mirrorService
 
     @Inject
@@ -322,6 +327,7 @@ class ContainerController {
         if( !buildConfig.defaultCacheRepository )
             throw new BadRequestException("Missing build cache repository attribute")
 
+
         final containerSpec = decodeBase64OrFail(req.containerFile, 'containerFile')
         final condaContent = condaFileFromRequest(req)
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
@@ -413,6 +419,8 @@ class ContainerController {
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
         if( req.formatSingularity() && !req.freeze )
             throw new BadRequestException("Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting")
+        if( req.scanMode && !scanService )
+            throw new UnsupportedScanServiceException()
 
         // expand inclusions
         inclusionService.addContainerInclusions(req, identity)
@@ -436,6 +444,7 @@ class ContainerController {
         String scanId
         Boolean succeeded
         if( req.containerFile ) {
+            if( !buildService ) throw new UnsupportedBuildServiceException()
             final build = makeBuildRequest(req, identity, ip)
             final track = checkBuild(build, req.dryRun)
             targetImage = track.targetImage
@@ -448,6 +457,7 @@ class ContainerController {
             type = ContainerRequest.Type.Build
         }
         else if( req.mirror ) {
+            if( !mirrorService ) throw new UnsupportedMirrorServiceException()
             final mirror = makeMirrorRequest(req, identity, digest)
             final track = checkMirror(mirror, identity, req.dryRun)
             targetImage = track.targetImage
