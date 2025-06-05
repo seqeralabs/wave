@@ -107,11 +107,16 @@ Below are the standard format for known registries, but you can change registry 
 
 - **`wave.build.force-compression`**: determines whether to force the compression for each cache layers produced by the build process. The default is `false`, enabling compression for more efficient storage. *Optional*.
 
+
 ### Build process logs configuration
 
 This configuration specifies attributes for the persistence of the logs fetched from containers or k8s pods used for building requested images, which can be accessed later and also attached to the build completion email.
 
 - **`wave.build.logs.bucket`**: the AWS S3 bucket where Wave will store build process logs. *Mandatory*.
+
+- **`wave.build.logs.path`**: the path inside  `wave.build.logs.bucket`, where build logs will be stored. *Mandatory*.
+
+- **`wave.build.locks.path`**: the path inside `wave.build.logs.bucket`, where condalock files will be stored. *Mandatory*.
 
 - **`wave.build.logs.prefix`**: sets the prefix to be used for build process log files in the specified S3 bucket. *Optional*.
 
@@ -180,6 +185,8 @@ Rate limit configuration controls the limits of anonymous and authenticated user
 
 ## Database and cache configuration
 
+### Redis configuration
+
 - **`redis.uri`**: the Uniform Resource Identifier (URI) for connecting to Redis, a popular in-memory data store. By default, it uses the format `redis://${REDIS_HOST:redis}:${REDIS_PORT:6379}`, allowing customization of the Redis host and port through environment variables. *Mandatory*.
 
 - **`redis.pool.enabled`**: whether to enable the Redis pool. It is set to `true` by default, enabling the use of a connection pool for efficient management of connections to the Redis server. *Optional*.
@@ -194,6 +201,8 @@ Rate limit configuration controls the limits of anonymous and authenticated user
 
 - **`redis.password`**: Specifies the password used to authenticate with the Redis server. This is needed when redis authentication is enabled.  *Optional*.
 
+### SurrealDB configuration
+
 - **`surreal.default.ns`**: the namespace for the Surreal database. It can be set using `${SURREALDB_NS}` environment variable. *Mandatory*.
 
 - **`surreal.default.db`**: the name of the Surreal database. It can be set using`${SURREALDB_DB}` environment variable. This setting defines the target database within the Surreal database system that Wave should interact with. *Mandatory*.
@@ -205,6 +214,14 @@ Rate limit configuration controls the limits of anonymous and authenticated user
 - **`surreal.default.password`**: the password used for authentication when connecting to the Surreal database. It can be set using `${SURREALDB_PASSWORD}` environment variable. *Mandatory*.
 
 - **`surreal.default.init-db`**: whether to create database tables, records and indices at application startup  and `db`. *Optional*.
+
+### PostgreSQL configuration
+
+- **`wave.db.uri`**: JDBC connection string for the PostgreSQL database e.g. `jdbc:postgresql://localhost:5432/wave`. It can be set using `${WAVE_DB_URI}` environment variable. Mandatory.
+
+- **`wave.db.user`**: Username for authenticating with the PostgreSQL database. It can be set using `${WAVE_DB_USER}` environment variable. Mandatory.
+
+- **`wave.db.password`**: Password for the PostgreSQL database user. It can be set using `${WAVE_DB_PASSWORD}` environment variable. Mandatory.
 
 ## Blob Cache configuration
 
