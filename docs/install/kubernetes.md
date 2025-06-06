@@ -344,6 +344,36 @@ Consider implementing the following for production deployments:
 - Node selectors or affinity rules for optimal pod placement
 - Resource quotas and limit ranges for the Wave namespace
 
+### AWS credentials to access ECR
+Wave requires access to AWS ECR for container image management. Create an IAM role with the following permissions:
+
+```json
+"Statement": [
+        {
+            "Action": [
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:GetRepositoryPolicy",
+                "ecr:DescribeRepositories",
+                "ecr:ListImages",
+                "ecr:DescribeImages",
+                "ecr:BatchGetImage",
+                "ecr:GetLifecyclePolicy",
+                "ecr:GetLifecyclePolicyPreview",
+                "ecr:ListTagsForResource",
+                "ecr:DescribeImageScanFindings",
+                "ecr:CompleteLayerUpload",
+                "ecr:UploadLayerPart",
+                "ecr:InitiateLayerUpload",
+                "ecr:PutImage"
+            ],
+            "Effect": "Allow",
+            "Resource": [
+                "<REPO>/wave/*"
+            ]
+        }
+  ```
+
 ### Advanced configuration
 
 See [Configuring Wave](./configuring-wave.md) for advanced Wave features, scaling guidance, and integration options.
