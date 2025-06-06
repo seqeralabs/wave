@@ -45,7 +45,9 @@
    INFO  i.s.w.s.p.m.DataMigrationService - All wave_build records migrated.
    INFO  i.s.w.s.p.m.DataMigrationService - All wave_mirror records migrated.
    ```
-5. Verify the migration by checking the PostgreSQL database for the migrated data and also run same curl from step one.
+5. Remove the `migrate` and `surrealdb`environment from `MICRONAUT_ENVIRONMENTS` to stop the migration process and restart wave.
+
+6. Verify the migration by checking the PostgreSQL database for the migrated data and also run same curl from step one.
 - ```bash
   curl <WAVE_URL>/view/builds/<buildId>
     ```
