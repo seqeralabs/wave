@@ -1,6 +1,6 @@
-# Wave Application Configuration
+# Wave application configuration
 
-Set Wave configuration values using environment variables or in [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml) configuration file
+Set Wave configuration values using environment variables or in the [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml) configuration file.
 
 ### config.yml configuration
 
@@ -16,7 +16,7 @@ Environment variables for various attributes has been listed in third column, ei
 
 ## General configuration
 
-General configuration options such as wave application name, port, whether to allow anonymous access (without tower token), wave and Seqera platform url.
+General configuration options such as Wave application name, port, whether to allow anonymous access (without tower token), Wave and Seqera platform url.
 
 - **`micronaut.application.name`**: the name of the Wave application. By default, it is set to `wave-app`. *Optional*.
 
@@ -36,10 +36,13 @@ General configuration options such as wave application name, port, whether to al
 ## Container registry configuration
 
 The generic format for the attributes is `wave.registries.<registry_name>.username` and `wave.registries.<registry_name>.password`.
-You need to specify all the repositories you will use in the respective wave installation.
+You need to specify all the repositories you will use in the respective Wave installation.
 Below are the standard format for known registries, but you can change registry name `(azurecr.io)` to specific one like `seqeralabs.azurecr.io `.
 
-**Note**: Container registry credentials can be defined in [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml) too. These configurations are important for the wave authentication to the repositories used to push or pull artifacts.
+:::note
+Container registry credentials can be defined in [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml) too.
+These configurations are important for the Wave authentication to the repositories used to push or pull artifacts.
+:::
 
 - **`wave.registries.default`**: the default Docker registry for Wave. The default is `docker.io`, and it represents the Docker Hub. *Optional*.
 
@@ -162,7 +165,9 @@ Scan process configuration lets the user provide a [Trivy docker image](https://
 
 Wave scan process uses the same k8s configuration of the build process except for CPU and memory requirements for the k8s pod.
 
-**Note**: only applies when using Kubernetes.
+:::note
+These settings apply only when using Kubernetes.
+:::
 
 - **`wave.scan.k8s.resources.requests.cpu`**: the amount of [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to Wave scan processes. For instance, you can set it to `2` or `1500Mi` (1.5 CPU cores). *Optional*.
 
@@ -172,7 +177,9 @@ Wave scan process uses the same k8s configuration of the build process except fo
 
 Rate limit configuration controls the limits of anonymous and authenticated users' access to Wave.
 
-**Note**: Change these properties to tweak rate limits in wave.
+:::note
+Change these properties to tweak rate limits in Wave.
+:::
 
 - **`rate-limit.build.anonymous`**: the rate limit for anonymous build requests. By default, it allows up to 25 build requests per hour (`25/1d`) from anonymous users. This setting controls the frequency at which anonymous users can trigger build processes in Wave. *Mandatory*.
 
@@ -272,11 +279,11 @@ Email ID to send emails from on the behalf of the Wave service.
 
 Wave Metrics service provides data about container builds and pulls per ip, container image, and user.
 
-- **`wave.metrics.enabled`**: whether to enable the wave metrics. It is `false` by default. *Optional*.
+- **`wave.metrics.enabled`**: whether to enable the Wave metrics. It is `false` by default. *Optional*.
 
 ## Accounts configuration
 
-- **`wave.accounts`**: specifies a list of credentials to access authenticated wave APIs like metrics APIs. *Mandatory*.<br/>
+- **`wave.accounts`**: specifies a list of credentials to access authenticated Wave APIs like metrics APIs. *Mandatory*.<br/>
   Format of the credential list
     ```
     - <USERNAME>:<PASSWORD_CHECKSUM>
