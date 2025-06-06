@@ -34,6 +34,6 @@ if [[ $RELEASE ]]; then
   cd typespec
   sed -i "s/version: 0.0.0/version: $version/" "tsp-output/@typespec/openapi3/openapi.yaml"
 
-  docker build -t 195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/openapi:$TAG .
-  docker push 195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/openapi:$TAG
+  docker build -t 195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/openapi:$version .
+  docker push 195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/openapi:$version
 fi
