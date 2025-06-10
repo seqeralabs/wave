@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.builder
 
-import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 import java.time.OffsetDateTime
@@ -227,6 +226,10 @@ class BuildRequest {
 
     String getCondaFile() {
         return condaFile
+    }
+
+    String getWorkDir() {
+        return "workspace/$buildId"
     }
 
     String getTargetImage() {

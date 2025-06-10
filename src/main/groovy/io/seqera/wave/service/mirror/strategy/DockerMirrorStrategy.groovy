@@ -89,7 +89,7 @@ class DockerMirrorStrategy extends MirrorStrategy {
 
         if( credsFile ) {
             wrapper.add('-e')
-            wrapper.add("DOCKER_CONFIG=$FUSION_PREFIX/$buildConfig.workspaceBucket/$workDir".toString())
+            wrapper.add("DOCKER_CONFIG=$FUSION_PREFIX/$workDir".toString())
 
             wrapper.add("-e")
             wrapper.add("REGISTRY_AUTH_FILE=/tmp/config.json")

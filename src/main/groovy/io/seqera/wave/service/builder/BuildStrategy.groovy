@@ -65,11 +65,11 @@ abstract class BuildStrategy {
                 << "--frontend"
                 << "dockerfile.v0"
                 << "--local"
-                << "dockerfile=$FUSION_PREFIX/$buildConfig.workspaceBucket/$req.workspace".toString()
+                << "dockerfile=$FUSION_PREFIX/$req.workDir".toString()
                 << "--opt"
                 << "filename=Containerfile"
                 << "--local"
-                << "context=$FUSION_PREFIX/$buildConfig.workspaceBucket/$req.workspace/context".toString()
+                << "context=$FUSION_PREFIX/$req.workDir/context".toString()
                 << "--output"
                 << outputOpts(req, buildConfig)
                 << "--opt"
@@ -128,7 +128,7 @@ abstract class BuildStrategy {
 
     String getSymlinkSingularity( BuildRequest req ) {
         if( req.configJson ){
-            return "ln -s $FUSION_PREFIX/$buildConfig.workspaceBucket/$req.workspace/.singularity /root/.singularity &&"
+            return "ln -s $FUSION_PREFIX/$req.workDir/.singularity /root/.singularity &&"
         }
         return  ""
     }

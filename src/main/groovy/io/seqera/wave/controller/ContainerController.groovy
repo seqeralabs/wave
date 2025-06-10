@@ -18,7 +18,6 @@
 
 package io.seqera.wave.controller
 
-import java.nio.file.Path
 import java.time.Instant
 import javax.annotation.PostConstruct
 

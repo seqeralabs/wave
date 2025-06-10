@@ -69,7 +69,7 @@ class KubeBuildStrategy extends BuildStrategy {
             final buildCmd = launchCmd(req)
             final timeout = req.maxDuration ?: buildConfig.defaultTimeout
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
-            k8sService.launchBuildJob(jobName, buildImage, buildCmd, req.workspace, req.configJson, timeout, selector)
+            k8sService.launchBuildJob(jobName, buildImage, buildCmd, req.workDir, req.configJson, timeout, selector)
         }
         catch (ApiException e) {
             throw new BadRequestException("Unexpected build failure - ${e.responseBody}", e)
@@ -97,7 +97,7 @@ class KubeBuildStrategy extends BuildStrategy {
                   mkdir -p /home/builder/.singularity \
                   && cp /singularity/docker-config.json /home/builder/.singularity/docker-config.json \
                   && cp /singularity/remote.yaml /home/builder/.singularity/remote.yaml \
-                  && "${getSymlinkSingularity(req)} singularity build image.sif $FUSION_PREFIX/$buildConfig.workspaceBucket/$req.workspace/Containerfile \
+                  && "${getSymlinkSingularity(req)} singularity build image.sif $FUSION_PREFIX/$req.workDir/Containerfile \
                   && singularity push image.sif ${req.targetImage}
                 """.stripIndent().trim()
         return result

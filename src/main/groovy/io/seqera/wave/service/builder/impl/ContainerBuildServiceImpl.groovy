@@ -159,38 +159,37 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
 
     protected String containerFile0(BuildRequest req, String context) {
         return req.formatSingularity()
-                ? req.containerFile.replace('{{wave_context_dir}}', "$FUSION_PREFIX/$buildConfig.workspaceBucket/$req.workspace/context".toString())
+                ? req.containerFile.replace('{{wave_context_dir}}', "$FUSION_PREFIX/$req.workDir/context".toString())
                 : req.containerFile
     }
 
     protected void launch(BuildRequest req) {
-        BuildResult resp=null
         try {
             //create context dir
-            objectStorageOperations.upload(UploadRequest.fromBytes(new byte[0] , "$req.workspace/context/".toString()))
+            objectStorageOperations.upload(UploadRequest.fromBytes(new byte[0] , "$req.workDir/context/".toString()))
             // save the dockerfile
-            objectStorageOperations.upload(UploadRequest.fromBytes(containerFile0(req, "$req.workspace/Containerfile").bytes, "$req.workspace/Containerfile".toString()))
+            objectStorageOperations.upload(UploadRequest.fromBytes(containerFile0(req, "$req.workDir/Containerfile").bytes, "$req.workDir/Containerfile".toString()))
             // save build context
             if( req.buildContext ) {
-                saveBuildContext(req.buildContext, "$req.workspace/context/", req.identity)
+                saveBuildContext(req.buildContext, "$req.workDir/context/", req.identity)
             }
             // save the conda file
             if( req.condaFile ) {
-                objectStorageOperations.upload(UploadRequest.fromBytes(req.condaFile.bytes, "$req.workspace/context/conda.yml"))
+                objectStorageOperations.upload(UploadRequest.fromBytes(req.condaFile.bytes, "$req.workDir/context/conda.yml"))
             }
             // save docker config for creds
             if( req.configJson ) {
                 if (req.formatDocker()) {
-                    objectStorageOperations.upload(UploadRequest.fromBytes(req.configJson.bytes, "$req.workspace/config.json".toString()))
+                    objectStorageOperations.upload(UploadRequest.fromBytes(req.configJson.bytes, "$req.workDir/config.json".toString()))
                 }
                 else {
-                    objectStorageOperations.upload(UploadRequest.fromBytes(req.configJson.bytes, "$req.workspace/.singularity/docker-config.json".toString()))
-                    objectStorageOperations.upload(UploadRequest.fromBytes(req.configJson.bytes, "$req.workspace/.singularity/remote.yaml".toString()))
+                    objectStorageOperations.upload(UploadRequest.fromBytes(req.configJson.bytes, "$req.workDir/.singularity/docker-config.json".toString()))
+                    objectStorageOperations.upload(UploadRequest.fromBytes(req.configJson.bytes, "$req.workDir/.singularity/remote.yaml".toString()))
                 }
             }
             // save layers provided via the container config
             if( req.containerConfig ) {
-                saveLayersToContext(req, "$req.workspace/context/")
+                saveLayersToContext(req, "$req.workDir/context/")
             }
             // launch the container build
             jobService.launchBuild(req)

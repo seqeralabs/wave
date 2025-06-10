@@ -61,7 +61,7 @@ class DockerBuildStrategy extends BuildStrategy {
         log.debug "Build run command: ${buildCmd.join(' ')}"
         // save docker cli for debugging purpose
         if( debug ) {
-            objectStorageOperations.upload(UploadRequest.fromBytes(buildCmd.join(' ').bytes, "$req.workspace/docker.sh".toString()))
+            objectStorageOperations.upload(UploadRequest.fromBytes(buildCmd.join(' ').bytes, "$req.workDir/docker.sh".toString()))
         }
         
         final builder = new ProcessBuilder()
@@ -100,7 +100,7 @@ class DockerBuildStrategy extends BuildStrategy {
 
         if( req.configJson ) {
             wrapper.add('-e')
-            wrapper.add("DOCKER_CONFIG=$FUSION_PREFIX/$buildConfig.workspaceBucket/$req.workspace".toString())
+            wrapper.add("DOCKER_CONFIG=$FUSION_PREFIX/$req.workDir".toString())
         }
 
         if( req.platform ) {
@@ -139,7 +139,7 @@ class DockerBuildStrategy extends BuildStrategy {
         result
                 << 'sh'
                 << '-c'
-                << """${getSymlinkSingularity(req)} singularity build image.sif $FUSION_PREFIX/$buildConfig.workspaceBucket/$req.workspace/Containerfile \
+                << """${getSymlinkSingularity(req)} singularity build image.sif $FUSION_PREFIX/$req.workDir/Containerfile \
                     && singularity push image.sif ${req.targetImage}""".toString()
         return result
     }

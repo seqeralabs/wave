@@ -350,7 +350,7 @@ class K8sServiceImpl implements K8sService {
                 .execute()
     }
 
-    V1Job buildJobSpec(String name, String containerImage, List<String> args, String workspace, String credsFile, Duration timeout, Map<String,String> nodeSelector) {
+    V1Job buildJobSpec(String name, String containerImage, List<String> args, String workDir, String credsFile, Duration timeout, Map<String,String> nodeSelector) {
 
         // dirty dependency to avoid introducing another parameter
         final singularity = containerImage.contains('singularity')
@@ -359,7 +359,7 @@ class K8sServiceImpl implements K8sService {
         addAWSCreds(env)
 
         if( credsFile ){
-                env.put('DOCKER_CONFIG', "$FUSION_PREFIX/$buildConfig.workspaceBucket/$workspace".toString())
+                env.put('DOCKER_CONFIG', "$FUSION_PREFIX/$workDir".toString())
         }
 
         V1JobBuilder builder = new V1JobBuilder()
@@ -439,12 +439,12 @@ class K8sServiceImpl implements K8sService {
                 .execute()
     }
 
-    V1Job scanJobSpec(String name, String containerImage, List<String> args, String workspace, String creds, ScanConfig scanConfig) {
+    V1Job scanJobSpec(String name, String containerImage, List<String> args, String workDir, String creds, ScanConfig scanConfig) {
 
         Map<String, String> env = new HashMap<String, String>()
         addAWSCreds(env)
         if( creds ){
-            env.put('DOCKER_CONFIG', "$FUSION_PREFIX/$buildConfig.workspaceBucket/$workspace".toString())
+            env.put('DOCKER_CONFIG', "$FUSION_PREFIX/$workDir".toString())
         }
 
         V1JobBuilder builder = new V1JobBuilder()
@@ -508,12 +508,12 @@ class K8sServiceImpl implements K8sService {
                 .execute()
     }
 
-    V1Job mirrorJobSpec(String name, String containerImage, List<String> args, String workspace, String credsFile, MirrorConfig config) {
+    V1Job mirrorJobSpec(String name, String containerImage, List<String> args, String workDir, String credsFile, MirrorConfig config) {
 
         Map<String, String> env = new HashMap<String, String>()
         addAWSCreds(env)
         if( credsFile ){
-            env.put('DOCKER_CONFIG', "$FUSION_PREFIX/$buildConfig.workspaceBucket/$workspace".toString())
+            env.put('DOCKER_CONFIG', "$FUSION_PREFIX/$workDir".toString())
         }
 
         V1JobBuilder builder = new V1JobBuilder()
