@@ -24,6 +24,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Factory
+import io.micronaut.context.annotation.Requires
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.micronaut.objectstorage.InputStreamMapper
 import io.micronaut.objectstorage.ObjectStorageOperations
@@ -52,12 +53,22 @@ class ObjectStorageOperationsFactory {
 
     public static final String BUILD_LOCKS = "build-locks"
 
+    public static final String BUILD_WORKSPACE = "build-workspace"
+
     @Inject
     private ApplicationContext context
 
     @Inject
     @Nullable
     private BuildConfig buildConfig
+
+    @Singleton
+    @Named(BUILD_WORKSPACE)
+    ObjectStorageOperations<?, ?, ?> createBuildWorkspaceOps() {
+        if( !buildConfig )
+            throw new IllegalStateException("Build configuration is not defined")
+        return create0(BUILD_WORKSPACE, buildConfig.workspaceBucket, "wave.build.workspace-bucket")
+    }
 
     @Singleton
     @Named(BUILD_LOGS)

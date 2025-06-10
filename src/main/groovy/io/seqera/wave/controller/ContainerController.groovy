@@ -361,7 +361,7 @@ class ContainerController {
                 containerId,
                 containerSpec,
                 condaContent,
-                Path.of(buildConfig.buildWorkspace),
+                buildConfig.workspaceBucket,
                 targetImage,
                 identity,
                 platform,
@@ -521,7 +521,7 @@ class ContainerController {
                 targetImage,
                 digest,
                 null, // <-- use null to copy all container tags
-                Path.of(buildConfig.buildWorkspace).toAbsolutePath(),
+                buildConfig.workspaceBucket,
                 configJson,
                 scanId,
                 Instant.now(),

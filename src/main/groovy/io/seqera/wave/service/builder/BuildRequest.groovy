@@ -66,7 +66,7 @@ class BuildRequest {
     /**
      * The build context work directory
      */
-    final Path workspace
+    final String workspace
 
     /**
      * The target fully qualified image of the built container. It includes the target registry name
@@ -147,7 +147,7 @@ class BuildRequest {
             String containerId,
             String containerFile,
             String condaFile,
-            Path workspace,
+            String workspace,
             String targetImage,
             PlatformId identity,
             ContainerPlatform platform,
@@ -189,7 +189,7 @@ class BuildRequest {
         this.containerId = opts.containerId
         this.containerFile = opts.containerFile
         this.condaFile = opts.condaFile
-        this.workspace = opts.workspace as Path
+        this.workspace = opts.workspace
         this.targetImage = opts.targetImage
         this.identity = opts.identity as PlatformId
         this.platform = opts.platform as ContainerPlatform
@@ -227,10 +227,6 @@ class BuildRequest {
 
     String getCondaFile() {
         return condaFile
-    }
-
-    Path getWorkDir() {
-        return workspace.resolve(buildId).toAbsolutePath()
     }
 
     String getTargetImage() {

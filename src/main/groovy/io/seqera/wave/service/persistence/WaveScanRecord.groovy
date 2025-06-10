@@ -54,7 +54,7 @@ class WaveScanRecord implements Cloneable {
     List<ScanVulnerability> vulnerabilities
     Integer exitCode
     String logs
-    Path workDir
+    String workDir
 
     /* required by jackson deserialization - do not remove */
     WaveScanRecord() {}

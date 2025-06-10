@@ -18,15 +18,17 @@
 
 package io.seqera.wave.service.scan
 
-
-import java.nio.file.Path
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
+import io.micronaut.objectstorage.ObjectStorageOperations
+import io.micronaut.objectstorage.request.UploadRequest
 import io.seqera.wave.configuration.ScanConfig
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
+import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WORKSPACE
+import static io.seqera.wave.service.builder.BuildConstants.FUSION_PREFIX
 /**
  * Implements ScanStrategy for Docker
  *
@@ -42,6 +44,10 @@ class DockerScanStrategy extends ScanStrategy {
     @Inject
     private ScanConfig scanConfig
 
+    @Inject
+    @Named(BUILD_WORKSPACE)
+    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
+
     DockerScanStrategy(ScanConfig scanConfig) {
         this.scanConfig = scanConfig
     }
@@ -50,11 +56,13 @@ class DockerScanStrategy extends ScanStrategy {
     void scanContainer(String jobName, ScanEntry entry) {
         log.info("Launching container scan job: $jobName for entry: $entry}")
         // config (docker auth) file name
-        final Path configFile = entry.configJson ? entry.workDir.resolve('config.json') : null
+        if( entry.configJson ){
+            objectStorageOperations.upload(UploadRequest.fromBytes(entry.configJson.bytes, "$entry.workDir/config.json".toString()))
+        }
         // outfile file name
-        final reportFile = entry.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
+        final reportFile = "$entry.workDir/$Trivy.OUTPUT_FILE_NAME".toString()
         // create the launch command
-        final dockerCommand = dockerWrapper(jobName, entry.workDir, configFile, scanConfig.environment)
+        final dockerCommand = dockerWrapper(jobName, entry.workDir, entry.configJson, scanConfig.environment)
         final trivyCommand = List.of(scanConfig.scanImage) + scanCommand(entry.containerImage, reportFile, entry.platform, scanConfig)
         final command = dockerCommand + trivyCommand
 
@@ -70,27 +78,28 @@ class DockerScanStrategy extends ScanStrategy {
         }
     }
 
-    protected List<String> dockerWrapper(String jobName, Path scanDir, Path credsFile, List<String> env) {
+    protected List<String> dockerWrapper(String jobName, String workDir, String credsFile, List<String> env) {
 
-        final wrapper = ['docker','run']
-        wrapper.add('--detach')
-        wrapper.add('--name')
-        wrapper.add(jobName)
-
+        final wrapper = ['docker',
+                         'run',
+                         '--detach',
+                         '--name',
+                         jobName,
+                         '-e',
+                         "AWS_ACCESS_KEY_ID=${System.getenv('AWS_ACCESS_KEY_ID')}".toString(),
+                         '-e',
+                         "AWS_SECRET_ACCESS_KEY=${System.getenv('AWS_SECRET_ACCESS_KEY')}".toString()]
         // scan work dir
-        wrapper.add('-w')
-        wrapper.add(scanDir.toString())
-
-        wrapper.add('-v')
-        wrapper.add("$scanDir:$scanDir:rw".toString())
+        wrapper.add('-e')
+        wrapper.add("TRIVY_WORKSPACE_DIR=$FUSION_PREFIX/$workDir".toString())
 
         // cache directory
-        wrapper.add('-v')
-        wrapper.add("${scanConfig.cacheDirectory}:${Trivy.CACHE_MOUNT_PATH}:rw".toString())
+        wrapper.add('-e')
+        wrapper.add("TRIVY_CACHE_DIR=$FUSION_PREFIX/$scanConfig.cacheDirectory/$Trivy.CACHE_MOUNT_PATH".toString())
 
         if(credsFile) {
-            wrapper.add('-v')
-            wrapper.add("${credsFile}:${Trivy.CONFIG_MOUNT_PATH}:ro".toString())
+            wrapper.add('-e')
+            wrapper.add("DOCKER_CONFIG=$FUSION_PREFIX/$scanConfig.workspace".toString())
         }
 
         if( env ) {

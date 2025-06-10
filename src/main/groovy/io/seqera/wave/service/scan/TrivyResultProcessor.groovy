@@ -47,8 +47,8 @@ class TrivyResultProcessor {
      * @return
      *      The list of {@link ScanVulnerability} entries as parsed in from the JSON file.
      */
-    static List<ScanVulnerability> parseFile(Path scanFile, Integer maxEntries=null) {
-        final result = parseJson(scanFile.getText())
+    static List<ScanVulnerability> parseFile(String scanFile, Integer maxEntries=null) {
+        final result = parseJson(scanFile)
         return maxEntries>0 ? filter(result, maxEntries) : result
     }
 

@@ -77,7 +77,7 @@ class ScanEntry implements StateEntry<String>, JobEntry {
     /**
      * Container scan work dir
      */
-    Path workDir
+    String workDir
 
     /**
      * Container auth metadata (aka Docker config json)
@@ -216,7 +216,7 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 opts.requestId as String,
                 opts.containerImage as String,
                 opts.platform as ContainerPlatform,
-                opts.workDir as Path,
+                opts.workDir as String,
                 opts.configJson as String,
                 opts.startTime as Instant,
                 opts.duration as Duration,

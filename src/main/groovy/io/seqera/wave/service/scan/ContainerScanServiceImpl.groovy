@@ -27,6 +27,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.api.ScanMode
 import io.seqera.wave.configuration.ScanConfig
@@ -35,6 +36,7 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.cleanup.CleanupService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.job.JobHandler
+import io.seqera.wave.service.job.JobHelper
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
@@ -47,8 +49,8 @@ import io.seqera.wave.service.request.ContainerRequest
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
+import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WORKSPACE
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
-import static io.seqera.wave.service.job.JobHelper.saveDockerAuth
 
 /**
  * Implements ContainerScanService
@@ -94,6 +96,13 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     @Inject
     @Nullable
     private ScanStrategy scanStrategy
+
+    @Inject
+    private JobHelper jobHelper
+
+    @Inject
+    @Named(BUILD_WORKSPACE)
+    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
 
     ContainerScanServiceImpl() {}
 
@@ -217,7 +226,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     }
     
     protected ScanRequest fromBuild(BuildRequest request) {
-        final workDir = request.workDir.resolveSibling(request.scanId)
+        final workDir = "$request.workspace/$request.scanId".toString()
         return new ScanRequest(
                 request.scanId,
                 request.buildId,
@@ -232,7 +241,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     }
 
     protected ScanRequest fromMirror(MirrorRequest request) {
-        final workDir = request.workDir.resolveSibling(request.scanId)
+        final workDir = "$request.workDir/$request.scanId".toString()
         return new ScanRequest(
                 request.scanId,
                 null,
@@ -247,7 +256,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     }
 
     protected ScanRequest fromContainer(ContainerRequest request) {
-        final workDir = config.workspace.resolve(request.scanId)
+        final workDir = "$config.workspace/$request.scanId".toString()
         final authJson = inspectService.credentialsConfigJson(null, request.containerImage, null, request.identity)
         return new ScanRequest(
                 request.scanId,
@@ -276,7 +285,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         if( !scanStrategy )
             throw new IllegalStateException("Security scan service is not available - check configuration setting 'wave.scan.enabled'")
         // save docker auth file
-        saveDockerAuth(entry.workDir, entry.configJson)
+        jobHelper.saveDockerAuth(entry.workDir, entry.configJson)
         // launch scan job
         scanStrategy.scanContainer(job.operationName, entry)
         // return the update job
@@ -288,8 +297,9 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         ScanEntry result
         if( state.succeeded() ) {
             try {
-                final scanFile = job.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
-                final vulnerabilities = TrivyResultProcessor.parseFile(scanFile, config.vulnerabilityLimit)
+                final scanFile = objectStorageOperations.retrieve("job.workDir/$Trivy.OUTPUT_FILE_NAME".toString()).get()
+                final scanReportFile = scanFile ? scanFile as String : null
+                final vulnerabilities = TrivyResultProcessor.parseFile(scanReportFile, config.vulnerabilityLimit)
                 result = entry.success(vulnerabilities)
                 log.info("Container scan succeeded - id=${entry.scanId}; exit=${state.exitCode}; stdout=${state.stdout}")
             }

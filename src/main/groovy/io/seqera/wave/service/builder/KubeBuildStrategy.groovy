@@ -18,9 +18,6 @@
 
 package io.seqera.wave.service.builder
 
-
-import java.nio.file.Path
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.openapi.ApiException
@@ -36,6 +33,7 @@ import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.util.K8sHelper.getSelectorLabel
+import static io.seqera.wave.service.builder.BuildConstants.FUSION_PREFIX
 /**
  * Build a container image using running a K8s pod
  *
@@ -66,14 +64,12 @@ class KubeBuildStrategy extends BuildStrategy {
     @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
     void build(String jobName, BuildRequest req) {
 
-        final Path configFile = req.configJson ? req.workDir.resolve('config.json') : null
-
         try {
             final buildImage = getBuildImage(req)
             final buildCmd = launchCmd(req)
             final timeout = req.maxDuration ?: buildConfig.defaultTimeout
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
-            k8sService.launchBuildJob(jobName, buildImage, buildCmd, req.workDir, configFile, timeout, selector)
+            k8sService.launchBuildJob(jobName, buildImage, buildCmd, req.workspace, req.configJson, timeout, selector)
         }
         catch (ApiException e) {
             throw new BadRequestException("Unexpected build failure - ${e.responseBody}", e)
@@ -101,7 +97,7 @@ class KubeBuildStrategy extends BuildStrategy {
                   mkdir -p /home/builder/.singularity \
                   && cp /singularity/docker-config.json /home/builder/.singularity/docker-config.json \
                   && cp /singularity/remote.yaml /home/builder/.singularity/remote.yaml \
-                  && singularity build image.sif ${req.workDir}/Containerfile \
+                  && "${getSymlinkSingularity(req)} singularity build image.sif $FUSION_PREFIX/$buildConfig.workspaceBucket/$req.workspace/Containerfile \
                   && singularity push image.sif ${req.targetImage}
                 """.stripIndent().trim()
         return result

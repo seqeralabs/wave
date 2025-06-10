@@ -112,8 +112,8 @@ class ScanConfig {
     }
 
     @Memoized
-    Path getWorkspace() {
-        Path.of(buildDirectory).toAbsolutePath()
+    String getWorkspace() {
+        return buildDirectory
     }
 
     String getRequestsCpu() {

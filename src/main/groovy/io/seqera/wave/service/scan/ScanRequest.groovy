@@ -74,7 +74,7 @@ class ScanRequest {
     /**
      * The scan job work directory
      */
-    final Path workDir
+    final String workDir
 
     /**
      * Scan request creation time
@@ -95,7 +95,7 @@ class ScanRequest {
                 opts.configJson as String,
                 opts.targetImage as String,
                 opts.platform as ContainerPlatform,
-                opts.workDir as Path,
+                opts.workDir as String,
                 opts.creationTime as Instant,
                 opts.identity as PlatformId
         )

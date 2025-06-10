@@ -19,27 +19,32 @@
 package io.seqera.wave.service.job
 
 import java.nio.file.Files
-import java.nio.file.Path
 
-import groovy.json.JsonOutput
-import static java.nio.file.StandardOpenOption.CREATE
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
-import static java.nio.file.StandardOpenOption.WRITE
+import groovy.transform.CompileStatic
+import io.micronaut.objectstorage.ObjectStorageOperations
+import io.micronaut.objectstorage.request.UploadRequest
+import jakarta.inject.Inject
+import jakarta.inject.Named
+import jakarta.inject.Singleton
+import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WORKSPACE
 
 /**
  * Helper class to handle jobs execution common logic
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Singleton
+@CompileStatic
 class JobHelper {
 
-    static void saveDockerAuth(Path workDir, String authJson) {
-        // create the work directory
-        Files.createDirectories(workDir)
+    @Inject
+    @Named(BUILD_WORKSPACE)
+    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
+
+    void saveDockerAuth(String workDir, String authJson) {
         // save docker config for creds
         if( authJson ) {
-            Path configFile = workDir.resolve('config.json')
-            Files.write(configFile, JsonOutput.prettyPrint(authJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            objectStorageOperations.upload(UploadRequest.fromBytes(authJson.bytes, "$workDir/config.json".toString()))
         }
     }
 

@@ -19,8 +19,12 @@
 package io.seqera.wave.service.builder
 
 import groovy.transform.CompileStatic
+import io.micronaut.objectstorage.ObjectStorageOperations
 import io.seqera.wave.configuration.BuildConfig
 import jakarta.inject.Inject
+import jakarta.inject.Named
+import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WORKSPACE
+import static io.seqera.wave.service.builder.BuildConstants.FUSION_PREFIX
 /**
  * Defines an abstract container build strategy.
  *
@@ -39,7 +43,9 @@ abstract class BuildStrategy {
 
     abstract List<String> singularityLaunchCmd(BuildRequest req)
 
-    static final public String BUILDKIT_ENTRYPOINT = 'buildctl-daemonless.sh'
+    @Inject
+    @Named(BUILD_WORKSPACE)
+    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
 
     List<String> launchCmd(BuildRequest req) {
         if(req.formatDocker()) {
@@ -59,11 +65,11 @@ abstract class BuildStrategy {
                 << "--frontend"
                 << "dockerfile.v0"
                 << "--local"
-                << "dockerfile=$req.workDir".toString()
+                << "dockerfile=$FUSION_PREFIX/$buildConfig.workspaceBucket/$req.workspace".toString()
                 << "--opt"
                 << "filename=Containerfile"
                 << "--local"
-                << "context=$req.workDir/context".toString()
+                << "context=$FUSION_PREFIX/$buildConfig.workspaceBucket/$req.workspace/context".toString()
                 << "--output"
                 << outputOpts(req, buildConfig)
                 << "--opt"
@@ -120,4 +126,10 @@ abstract class BuildStrategy {
         return result.toString()
     }
 
+    String getSymlinkSingularity( BuildRequest req ) {
+        if( req.configJson ){
+            return "ln -s $FUSION_PREFIX/$buildConfig.workspaceBucket/$req.workspace/.singularity /root/.singularity &&"
+        }
+        return  ""
+    }
 }

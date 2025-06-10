@@ -18,19 +18,16 @@
 
 package io.seqera.wave.service.builder.impl
 
-import java.nio.file.FileAlreadyExistsException
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.StandardCopyOption
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
-import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.objectstorage.ObjectStorageOperations
+import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.auth.RegistryCredentialsProvider
@@ -59,19 +56,15 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.stream.StreamService
 import io.seqera.wave.tower.PlatformId
-import io.seqera.wave.util.RegHelper
 import io.seqera.wave.util.Retryable
-import io.seqera.wave.util.TarUtils
+import io.seqera.wave.util.TarGzipUtils
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
-import static io.seqera.wave.util.RegHelper.layerDir
+import org.apache.commons.io.IOUtils
 import static io.seqera.wave.util.RegHelper.layerName
-import static java.nio.file.StandardOpenOption.CREATE
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
-import static java.nio.file.StandardOpenOption.WRITE
-import static java.nio.file.attribute.PosixFilePermission.OWNER_READ
-import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
+import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WORKSPACE
+import static io.seqera.wave.service.builder.BuildConstants.FUSION_PREFIX
 /**
  * Implements container build service
  *
@@ -131,6 +124,10 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     @Inject
     private BuildStrategy buildStrategy
 
+    @Inject
+    @Named(BUILD_WORKSPACE)
+    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
+
     /**
      * Build a container image for the given {@link io.seqera.wave.service.builder.BuildRequest}
      *
@@ -160,53 +157,40 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
                 .awaitBuild(targetImage)
     }
 
-    protected String containerFile0(BuildRequest req, Path context) {
-        // add the context dir for singularity builds
-        final containerFile = req.formatSingularity()
-                ? req.containerFile.replace('{{wave_context_dir}}', context.toString())
+    protected String containerFile0(BuildRequest req, String context) {
+        return req.formatSingularity()
+                ? req.containerFile.replace('{{wave_context_dir}}', "$FUSION_PREFIX/$buildConfig.workspaceBucket/$req.workspace/context".toString())
                 : req.containerFile
-
-        return containerFile
     }
 
     protected void launch(BuildRequest req) {
+        BuildResult resp=null
         try {
-            // create the workdir path
-            Files.createDirectories(req.workDir)
-            // create context dir
-            final context = req.workDir.resolve('context')
-            try { Files.createDirectory(context) }
-            catch (FileAlreadyExistsException e) { /* ignore it */ }
+            //create context dir
+            objectStorageOperations.upload(UploadRequest.fromBytes(new byte[0] , "$req.workspace/context/".toString()))
             // save the dockerfile
-            final containerFile = req.workDir.resolve('Containerfile')
-            Files.write(containerFile, containerFile0(req, context).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            objectStorageOperations.upload(UploadRequest.fromBytes(containerFile0(req, "$req.workspace/Containerfile").bytes, "$req.workspace/Containerfile".toString()))
             // save build context
             if( req.buildContext ) {
-                saveBuildContext(req.buildContext, context, req.identity)
+                saveBuildContext(req.buildContext, "$req.workspace/context/", req.identity)
             }
             // save the conda file
             if( req.condaFile ) {
-                final condaFile = context.resolve('conda.yml')
-                Files.write(condaFile, req.condaFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+                objectStorageOperations.upload(UploadRequest.fromBytes(req.condaFile.bytes, "$req.workspace/context/conda.yml"))
             }
             // save docker config for creds
-            Path configFile = null
             if( req.configJson ) {
-                configFile = req.workDir.resolve('config.json')
-                Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
-            }
-            // save remote files for singularity
-            if( configFile && req.formatSingularity()) {
-                final remoteFile = req.workDir.resolve('singularity-remote.yaml')
-                final content = RegHelper.singularityRemoteFile(req.targetImage)
-                Files.write(remoteFile, content.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
-                // set permissions 600 as required by Singularity
-                Files.setPosixFilePermissions(configFile, Set.of(OWNER_READ, OWNER_WRITE))
-                Files.setPosixFilePermissions(remoteFile, Set.of(OWNER_READ, OWNER_WRITE))
+                if (req.formatDocker()) {
+                    objectStorageOperations.upload(UploadRequest.fromBytes(req.configJson.bytes, "$req.workspace/config.json".toString()))
+                }
+                else {
+                    objectStorageOperations.upload(UploadRequest.fromBytes(req.configJson.bytes, "$req.workspace/.singularity/docker-config.json".toString()))
+                    objectStorageOperations.upload(UploadRequest.fromBytes(req.configJson.bytes, "$req.workspace/.singularity/remote.yaml".toString()))
+                }
             }
             // save layers provided via the container config
             if( req.containerConfig ) {
-                saveLayersToContext(req, context)
+                saveLayersToContext(req, "$req.workspace/context/")
             }
             // launch the container build
             jobService.launchBuild(req)
@@ -265,7 +249,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")
     }
 
-    protected void saveLayersToContext(BuildRequest req, Path contextDir) {
+    protected void saveLayersToContext(BuildRequest req, String contextDir) {
         if(req.formatDocker()) {
             saveLayersToDockerContext0(req, contextDir)
         }
@@ -276,48 +260,46 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
             throw new IllegalArgumentException("Unknown container format: $req.format")
     }
 
-    protected void saveLayersToDockerContext0(BuildRequest request, Path contextDir) {
+    protected void saveLayersToDockerContext0(BuildRequest request, String contextDir) {
         final layers = request.containerConfig.layers
         for(int i=0; i<layers.size(); i++) {
             final it = layers[i]
-            final target = contextDir.resolve(layerName(it))
-            final retryable = retry0("Unable to copy '${it.location}' to docker context '${contextDir}'")
+            final target = "$contextDir/${layerName(it)}".toString()
+            final retryable = retry0("Unable to copy '${it.location}' to docker context '$contextDir'")
             // copy the layer to the build context
             retryable.apply(()-> {
                 try (InputStream stream = streamService.stream(it.location, request.identity)) {
-                    Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING)
+                    objectStorageOperations.upload(UploadRequest.fromBytes(IOUtils.toByteArray(stream), target))
                 }
                 return
             })
         }
     }
 
-    protected void saveLayersToSingularityContext0(BuildRequest request, Path contextDir) {
+    protected void saveLayersToSingularityContext0(BuildRequest request, String contextDir) {
         final layers = request.containerConfig.layers
         for(int i=0; i<layers.size(); i++) {
             final it = layers[i]
-            final target = contextDir.resolve(layerDir(it))
-            try { Files.createDirectory(target) }
-            catch (FileAlreadyExistsException e) { /* ignore */ }
+            final target = "$contextDir/${layerName(it)}".toString()
             // retry strategy
-            final retryable = retry0("Unable to copy '${it.location} to singularity context '${contextDir}'")
+            final retryable = retry0("Unable to copy '${it.location} to singularity context '$target'")
             // copy the layer to the build context
             retryable.apply(()-> {
                 try (InputStream stream = streamService.stream(it.location, request.identity)) {
-                    TarUtils.untarGzip(stream, target)
+                    objectStorageOperations.upload(UploadRequest.fromBytes(TarGzipUtils.untarGzip(stream), target, "application/x-tar"))
                 }
                 return
             })
         }
     }
 
-    protected void saveBuildContext(BuildContext buildContext, Path contextDir, PlatformId identity) {
+    protected void saveBuildContext(BuildContext buildContext, String contextDir, PlatformId identity) {
         // retry strategy
         final retryable = retry0("Unable to copy '${buildContext.location} to build context '${contextDir}'")
         // copy the layer to the build context
         retryable.apply(()-> {
             try (InputStream stream = streamService.stream(buildContext.location, identity)) {
-                TarUtils.untarGzip(stream, contextDir)
+                objectStorageOperations.upload(UploadRequest.fromBytes(TarGzipUtils.untarGzip(stream), contextDir, "application/x-tar"))
             }
             return
         })
