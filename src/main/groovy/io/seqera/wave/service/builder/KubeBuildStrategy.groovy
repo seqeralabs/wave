@@ -30,10 +30,10 @@ import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
+import io.seqera.wave.util.FusionHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.util.K8sHelper.getSelectorLabel
-import static io.seqera.wave.service.builder.BuildConstants.FUSION_PREFIX
 /**
  * Build a container image using running a K8s pod
  *
@@ -97,7 +97,7 @@ class KubeBuildStrategy extends BuildStrategy {
                   mkdir -p /home/builder/.singularity \
                   && cp /singularity/docker-config.json /home/builder/.singularity/docker-config.json \
                   && cp /singularity/remote.yaml /home/builder/.singularity/remote.yaml \
-                  && "${getSymlinkSingularity(req)} singularity build image.sif $FUSION_PREFIX/$req.workDir/Containerfile \
+                  && "${getSymlinkSingularity(req)} singularity build image.sif ${FusionHelper.getFusionPath(buildConfig.workspaceBucketName, req.workDir)}/Containerfile \
                   && singularity push image.sif ${req.targetImage}
                 """.stripIndent().trim()
         return result

@@ -214,4 +214,12 @@ class BuildConfig {
         final store = BucketTokenizer.from(workspaceBucket)
         return store.scheme ? store.getKey() : null
     }
+
+    @Memoized
+    String getWorkspaceBucketName() {
+        if( !workspaceBucket )
+            return null
+        final store = BucketTokenizer.from(workspaceBucket)
+        return store.bucket ?: store.getKey()
+    }
 }

@@ -24,6 +24,7 @@ import javax.annotation.Nullable
 import com.google.common.hash.Hashing
 import groovy.transform.CompileStatic
 import io.seqera.wave.configuration.BlobCacheConfig
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.configuration.MirrorConfig
@@ -52,6 +53,10 @@ class JobFactory {
     @Nullable
     private MirrorConfig mirrorConfig
 
+    @Inject
+    @Nullable
+    private BuildConfig buildConfig
+
     JobSpec transfer(String stateId) {
         JobSpec.transfer(
                 stateId,
@@ -67,7 +72,7 @@ class JobFactory {
                 request.buildId.replace('_', '-'),
                 request.startTime,
                 request.maxDuration,
-                request.workspace
+                buildConfig.workspaceBucket
         )
     }
 

@@ -56,6 +56,7 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.stream.StreamService
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.util.FusionHelper
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.TarGzipUtils
 import jakarta.inject.Inject
@@ -64,7 +65,6 @@ import jakarta.inject.Singleton
 import org.apache.commons.io.IOUtils
 import static io.seqera.wave.util.RegHelper.layerName
 import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WORKSPACE
-import static io.seqera.wave.service.builder.BuildConstants.FUSION_PREFIX
 /**
  * Implements container build service
  *
@@ -159,7 +159,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
 
     protected String containerFile0(BuildRequest req, String context) {
         return req.formatSingularity()
-                ? req.containerFile.replace('{{wave_context_dir}}', "$FUSION_PREFIX/$req.workDir/context".toString())
+                ? req.containerFile.replace('{{wave_context_dir}}', "${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/context".toString())
                 : req.containerFile
     }
 

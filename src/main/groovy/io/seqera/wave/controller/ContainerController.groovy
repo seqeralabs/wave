@@ -360,7 +360,6 @@ class ContainerController {
                 containerId,
                 containerSpec,
                 condaContent,
-                buildConfig.workspaceBucket,
                 targetImage,
                 identity,
                 platform,

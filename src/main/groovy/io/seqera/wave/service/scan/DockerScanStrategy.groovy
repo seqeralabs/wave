@@ -24,6 +24,7 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.request.UploadRequest
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.util.FusionHelper
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -91,15 +92,15 @@ class DockerScanStrategy extends ScanStrategy {
                          "AWS_SECRET_ACCESS_KEY=${System.getenv('AWS_SECRET_ACCESS_KEY')}".toString()]
         // scan work dir
         wrapper.add('-e')
-        wrapper.add("TRIVY_WORKSPACE_DIR=$FUSION_PREFIX/$workDir".toString())
+        wrapper.add("TRIVY_WORKSPACE_DIR=${FusionHelper.getFusionPath(scanConfig.workspaceBucketName, workDir)}".toString())
 
         // cache directory
         wrapper.add('-e')
-        wrapper.add("TRIVY_CACHE_DIR=$FUSION_PREFIX/$scanConfig.cacheDirectory/$Trivy.CACHE_MOUNT_PATH".toString())
+        wrapper.add("TRIVY_CACHE_DIR=${FusionHelper.getFusionPath(scanConfig.workspaceBucketName, scanConfig.cacheDirectory)}".toString())
 
         if(credsFile) {
             wrapper.add('-e')
-            wrapper.add("DOCKER_CONFIG=$FUSION_PREFIX/$scanConfig.workspace".toString())
+            wrapper.add("DOCKER_CONFIG=${FusionHelper.getFusionPath(scanConfig.workspaceBucketName, workDir)}".toString())
         }
 
         if( env ) {

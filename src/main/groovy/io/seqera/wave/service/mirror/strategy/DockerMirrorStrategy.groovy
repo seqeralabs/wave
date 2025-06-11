@@ -28,11 +28,11 @@ import io.micronaut.objectstorage.request.UploadRequest
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.service.mirror.MirrorRequest
+import io.seqera.wave.util.FusionHelper
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WORKSPACE
-import static io.seqera.wave.service.builder.BuildConstants.FUSION_PREFIX
 /**
  * Implements a container mirror runner based on Docker
  * 
@@ -89,7 +89,7 @@ class DockerMirrorStrategy extends MirrorStrategy {
 
         if( credsFile ) {
             wrapper.add('-e')
-            wrapper.add("DOCKER_CONFIG=$FUSION_PREFIX/$workDir".toString())
+            wrapper.add("DOCKER_CONFIG=${ FusionHelper.getFusionPath(buildConfig.workspaceBucketName, workDir)}".toString())
 
             wrapper.add("-e")
             wrapper.add("REGISTRY_AUTH_FILE=/tmp/config.json")

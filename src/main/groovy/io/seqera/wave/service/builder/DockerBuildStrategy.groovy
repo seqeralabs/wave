@@ -25,6 +25,7 @@ import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.request.UploadRequest
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.RegistryProxyService
+import io.seqera.wave.util.FusionHelper
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -100,7 +101,7 @@ class DockerBuildStrategy extends BuildStrategy {
 
         if( req.configJson ) {
             wrapper.add('-e')
-            wrapper.add("DOCKER_CONFIG=$FUSION_PREFIX/$req.workDir".toString())
+            wrapper.add("DOCKER_CONFIG=${FusionHelper.getFusionPath(buildConfig.workspaceBucketName, req.workDir)}".toString())
         }
 
         if( req.platform ) {
@@ -139,7 +140,7 @@ class DockerBuildStrategy extends BuildStrategy {
         result
                 << 'sh'
                 << '-c'
-                << """${getSymlinkSingularity(req)} singularity build image.sif $FUSION_PREFIX/$req.workDir/Containerfile \
+                << """${getSymlinkSingularity(req)} singularity build image.sif ${FusionHelper.getFusionPath(buildConfig.workspaceBucketName, req.workDir)}/Containerfile \
                     && singularity push image.sif ${req.targetImage}""".toString()
         return result
     }

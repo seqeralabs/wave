@@ -16,15 +16,18 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.builder
+package io.seqera.wave.util
 
 /**
- * Constants for the build service
+ * Helper class for Fusion
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-class BuildConstants {
+class FusionHelper {
 
-    static final public String BUILDKIT_ENTRYPOINT = 'buildctl-daemonless.sh'
+    public static final String FUSION_PREFIX = "/fusion/s3"
 
+    static String getFusionPath(String bucketName, String workDir) {
+        return "$FUSION_PREFIX/$bucketName/$workDir".toString()
+    }
 }

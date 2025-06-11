@@ -49,6 +49,7 @@ import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.util.FusionHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.service.builder.BuildConstants.BUILDKIT_ENTRYPOINT
@@ -359,7 +360,7 @@ class K8sServiceImpl implements K8sService {
         addAWSCreds(env)
 
         if( credsFile ){
-                env.put('DOCKER_CONFIG', "$FUSION_PREFIX/$workDir".toString())
+                env.put('DOCKER_CONFIG', "${FusionHelper.getFusionPath(buildConfig.workspaceBucketName, workDir)}".toString())
         }
 
         V1JobBuilder builder = new V1JobBuilder()
@@ -444,7 +445,7 @@ class K8sServiceImpl implements K8sService {
         Map<String, String> env = new HashMap<String, String>()
         addAWSCreds(env)
         if( creds ){
-            env.put('DOCKER_CONFIG', "$FUSION_PREFIX/$workDir".toString())
+            env.put('DOCKER_CONFIG', FusionHelper.getFusionPath(buildConfig.workspaceBucketName, workDir))
         }
 
         V1JobBuilder builder = new V1JobBuilder()
@@ -513,7 +514,7 @@ class K8sServiceImpl implements K8sService {
         Map<String, String> env = new HashMap<String, String>()
         addAWSCreds(env)
         if( credsFile ){
-            env.put('DOCKER_CONFIG', "$FUSION_PREFIX/$workDir".toString())
+            env.put('DOCKER_CONFIG', FusionHelper.getFusionPath(buildConfig.workspaceBucketName, workDir))
         }
 
         V1JobBuilder builder = new V1JobBuilder()

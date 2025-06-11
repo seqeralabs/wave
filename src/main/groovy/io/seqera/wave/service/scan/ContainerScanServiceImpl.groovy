@@ -226,7 +226,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     }
     
     protected ScanRequest fromBuild(BuildRequest request) {
-        final workDir = "$request.workspace/$request.scanId".toString()
+        final workDir = "$config.workspaceBucketName/$request.scanId".toString()
         return new ScanRequest(
                 request.scanId,
                 request.buildId,
@@ -256,7 +256,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     }
 
     protected ScanRequest fromContainer(ContainerRequest request) {
-        final workDir = "$config.workspace/$request.scanId".toString()
+        final workDir = "$config.workspaceBucketName/$request.scanId".toString()
         final authJson = inspectService.credentialsConfigJson(null, request.containerImage, null, request.identity)
         return new ScanRequest(
                 request.scanId,
