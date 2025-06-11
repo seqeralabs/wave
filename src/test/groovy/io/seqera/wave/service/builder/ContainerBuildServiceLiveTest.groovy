@@ -204,7 +204,7 @@ class ContainerBuildServiceLiveTest extends Specification {
     def 'should build & push container to azure' () {
         given:
         def folder = Files.createTempDirectory('test')
-        def buildRepo = "seqeralabs.azurecr.io/wave-tests"
+        def buildRepo = "wavetest.azurecr.io/wave-tests"
         def cacheRepo = buildConfig.defaultCacheRepository
         and:
         def dockerFile = '''
