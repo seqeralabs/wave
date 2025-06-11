@@ -251,6 +251,9 @@ class ContainerController {
             final generated = containerFileFromRequest(req)
             req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
         }
+        // make sure container platform is defined 
+        if( !req.containerPlatform )
+            req.containerPlatform = ContainerPlatform.DEFAULT.toString()
 
         final ip = addressResolver.resolve(httpRequest)
         // check the rate limit before continuing
@@ -322,7 +325,7 @@ class ContainerController {
         final containerSpec = decodeBase64OrFail(req.containerFile, 'containerFile')
         final condaContent = condaFileFromRequest(req)
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
-        final platform = ContainerPlatform.of(req.containerPlatform)
+        final platform = ContainerPlatform.parseOrDefault(req.containerPlatform)
         final buildRepository = targetRepo( req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository
                 ? buildConfig.defaultPublicRepository
                 : buildConfig.defaultBuildRepository), req.nameStrategy)
@@ -330,6 +333,11 @@ class ContainerController {
                 ? (req.cacheRepository ?: buildConfig.defaultCacheRepository)
                 : req.cacheRepository   // use custom cache repo, when is a custom build repo
         final configJson = inspectService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
+        /**
+         * Use the container config for build purposes only when "freeze" is enabled.
+         * For non-freeze requests, it's applied during the argumentation phase.
+         * See also {@link io.seqera.wave.core.ContainerAugmenter#resolve(io.seqera.wave.core.RoutePath, java.util.Map)}
+         */
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
         // use 'imageSuffix' strategy by default for public repo images
@@ -341,7 +349,7 @@ class ContainerController {
         checkContainerSpec(containerSpec)
 
         // create a unique digest to identify the build req
-        final containerId = makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext)
+        final containerId = makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext, containerConfig)
         final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, nameStrategy)
         final maxDuration = buildConfig.buildMaxDuration(req)
         // default to async scan for build req for backward compatibility
@@ -405,8 +413,6 @@ class ContainerController {
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
         if( req.formatSingularity() && !req.freeze )
             throw new BadRequestException("Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting")
-        if( !req.containerPlatform )
-            req.containerPlatform = ContainerPlatform.DEFAULT.toString()
 
         // expand inclusions
         inclusionService.addContainerInclusions(req, identity)

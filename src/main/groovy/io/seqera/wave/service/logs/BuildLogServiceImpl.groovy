@@ -184,7 +184,7 @@ class BuildLogServiceImpl implements BuildLogService {
             return result.get().toStreamedFile()
         // implements a fallback to retrieve Conda locks from bucket root 
         if( buildConfig.locksFallback ) {
-            final Optional<ObjectStorageEntry<?>> fallback = locksStoreOps.retrieve(buildId)
+            final Optional<ObjectStorageEntry<?>> fallback = locksStoreOps.retrieve(buildId + '.lock')
             if( fallback.isPresent() )
                 return fallback.get().toStreamedFile()
         }
