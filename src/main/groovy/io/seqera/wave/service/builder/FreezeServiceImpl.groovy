@@ -68,7 +68,7 @@ class FreezeServiceImpl implements FreezeService {
 
     protected String appendEntrypoint(String containerFile, SubmitContainerTokenRequest req, PlatformId identity) {
         // get the container manifest
-        final entry = inspectService.containerEntrypoint(containerFile, ContainerPlatform.of(req.containerPlatform), identity)
+        final entry = inspectService.containerEntrypoint(containerFile, ContainerPlatform.parseOrDefault(req.containerPlatform), identity)
         if( entry ) {
             if( req.formatSingularity() ) {
                 return containerFile + "%environment\n  export WAVE_ENTRY_CHAIN=\"${entry.join(' ')}\"\n"
