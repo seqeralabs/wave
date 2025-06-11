@@ -58,10 +58,6 @@ These configurations are important for the Wave authentication to the repositori
 
 - **`wave.registries.<AWS ECR Repo name>.password`**: the AWS ECR password for authentication. An example AWS ECR Repo name is `195996028523.dkr.ecr.eu-west-1.amazonaws.com`. It can be set using `${AWS_SECRET_ACCESS_KEY}` environment variable. *Optional*.
 
-- **`wave.registries.<azurecr Repo name>.username`**: the Azure Container Registry username for authentication. An example of an Azure Container Registry Repo name is `seqeralabs.azurecr.io`. It can be set using `${AZURECR_USER}` environment variable. *Optional*.
-
-- **`wave.registries.<azurecr Repo name>.password`**: the Azure Container Registry password or PAT for authentication. An example of an Azure Container Registry Repo name is `seqeralabs.azurecr.io`. It can be set using `${AZURECR_PAT}` environment variable. *Optional*.
-
 ## HTTP client configuration
 
 - **`wave.httpclient.connectTimeout`**: sets the connection timeout for the HTTP client. Its default value is `20s`. *Optional*.
