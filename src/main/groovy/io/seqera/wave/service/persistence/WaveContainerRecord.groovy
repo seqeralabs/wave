@@ -21,6 +21,7 @@ package io.seqera.wave.service.persistence
 import java.time.Instant
 import java.time.OffsetDateTime
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
@@ -29,6 +30,7 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.tower.User
+import io.seqera.wave.util.FusionVersionStringDeserializer
 import static io.seqera.wave.util.DataTimeUtils.parseOffsetDateTime
 /**
  * Model a Wave container request record 
@@ -162,6 +164,7 @@ class WaveContainerRecord {
     /**
      * Whenever the request is for container with fusion
      */
+    @JsonDeserialize(using = FusionVersionStringDeserializer.class)
     String fusionVersion
 
     /**

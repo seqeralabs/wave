@@ -80,9 +80,13 @@ class ContainerPlatform {
         return false
     }
 
+    static ContainerPlatform parseOrDefault(String value, ContainerPlatform defaultPlatform=DEFAULT) {
+        return value ? of(value) : defaultPlatform
+    }
+
     static ContainerPlatform of(String value) {
         if( !value )
-            return DEFAULT
+            throw new BadRequestException("Missing container platform attribute")
 
         final items= value.tokenize('/')
         if( items.size()==1 )
