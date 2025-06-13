@@ -327,7 +327,6 @@ class ContainerController {
         if( !buildConfig.defaultCacheRepository )
             throw new BadRequestException("Missing build cache repository attribute")
 
-
         final containerSpec = decodeBase64OrFail(req.containerFile, 'containerFile')
         final condaContent = condaFileFromRequest(req)
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
