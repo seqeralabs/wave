@@ -24,7 +24,7 @@ import jakarta.inject.Singleton
 
 /**
  * Marker bean that's available when Wave is running in "lite" mode
- * that implies the following services are not availbale
+ * that implies the following services are not available
  * - scan
  * - build
  * - mirror
