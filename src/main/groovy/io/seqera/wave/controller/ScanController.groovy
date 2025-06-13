@@ -22,12 +22,16 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.http.HttpResponse
+import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
+import io.micronaut.http.annotation.Produces
+import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.scan.ScanType
 import jakarta.inject.Inject
 
 /**
@@ -43,13 +47,22 @@ import jakarta.inject.Inject
 class ScanController {
     
     @Inject
-    private ContainerScanService containerScanService
+    private ContainerScanService scanService
 
     @Get("/v1alpha1/scans/{scanId}")
     HttpResponse<WaveScanRecord> scanImage(String scanId){
-        final record = containerScanService.getScanRecord(scanId)
+        final record = scanService.getScanRecord(scanId)
         return record
                 ? HttpResponse.ok(record)
                 : HttpResponse.<WaveScanRecord>notFound()
+    }
+
+    @Produces(MediaType.TEXT_PLAIN)
+    @Get(value="/v1alpha1/scans/{scanId}/spdx")
+    HttpResponse<StreamedFile> getCondaLock(String scanId){
+        final report = scanService.fetchReportStream(scanId, ScanType.Spdx)
+        return report
+                ? HttpResponse.ok(report)
+                : HttpResponse.<StreamedFile>notFound()
     }
 }

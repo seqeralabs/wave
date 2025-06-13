@@ -48,5 +48,6 @@ interface ContainerScanService {
 
     List<WaveScanRecord> getAllScans(String scanId)
 
-    StreamedFile fetchLogStream(String scanId, ScanType type)
+    StreamedFile fetchReportStream(String scanId, ScanType type)
+
 }

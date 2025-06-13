@@ -371,9 +371,10 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     }
 
     @Override
-    StreamedFile fetchLogStream(String scanId, ScanType type) {
+    StreamedFile fetchReportStream(String scanId, ScanType type) {
         if( !scanId ) return null
         final Optional<ObjectStorageEntry<?>> result = scanStoreOpts.retrieve(scanKey(scanId,type.output))
         return result.isPresent() ? result.get().toStreamedFile() : null
     }
+
 }
