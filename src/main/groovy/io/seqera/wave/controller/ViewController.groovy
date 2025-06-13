@@ -55,6 +55,7 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanEntry
+import io.seqera.wave.service.scan.ScanType
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
@@ -497,6 +498,7 @@ class ViewController {
         binding.scan_failed = result.status == ScanEntry.FAILED
         binding.scan_succeeded = result.status == ScanEntry.SUCCEEDED
         binding.scan_exitcode = result.exitCode
+        binding.scan_sbom_spdx_url = hasSpdx(result) ? "$serverUrl/v1alpha1/scans/${result.id}/spdx" : null
         binding.scan_logs = result.logs
         // build info
         binding.build_id = result.buildId
@@ -514,6 +516,10 @@ class ViewController {
             binding.vulnerabilities = result.vulnerabilities.toSorted().reverse()
 
         return binding
+    }
+
+    private boolean hasSpdx(WaveScanRecord result) {
+        result.succeeded() && scanService.fetchReportStream(result.id, ScanType.Spdx)
     }
 
     @Canonical
