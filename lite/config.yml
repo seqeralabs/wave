@@ -1,32 +1,16 @@
 wave:
   debug: false
-  server:
-    url: "https://wave.seqera.io"
   tokens:
     cache:
       duration: "36h"
   metrics:
     enabled: true
-  db:
-    uri: "jdbc:postgresql://localhost:5432/wave"
-    user: "postgres"
-    password : "postgres"
-redis:
-  uri: "redis://redis:6379"
-mail:
-  from: "wave-app@seqera.io"
-tower:
-  endpoint:
-    url: 'https://api.cloud.stage-seqera.io'
 rate-limit:
   pull:
     anonymous: 250/1h
     authenticated: 2000/1m
   timeout-errors:
     max-rate: 100/1m
-license:
-  server:
-    url: 'https://licenses.seqera.io'
 micronaut:
   netty:
     event-loops:

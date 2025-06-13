@@ -17,25 +17,27 @@ the use of Fusion file system in Nextflow pipeline, however the following featur
 * Postgres 16 or later
 
 
-### Deployment 
+### Deployment
 
-1. Initialize the Docker swarm environment 
+1. Configure the deployment environment updating the `wave.env` file
+  with the settings corresponding to your system.
+
+2. Initialize the Docker swarm environment
   
     docker swarm init
 
-2. Deploy the Wave service (running 2 replicas)
+3. Deploy the Wave service (running 2 replicas)
   
     docker stack deploy -c docker-compose.yml mystack
 
-3. Check the current status
+4. Check the current status
   
     docker service ls
 
-4. Check the logs 
+5. Check the logs
 
     docker service logs mystack_wave
 
-
-5. Tear down when donw
+6. Tear down when done
 
     docker stack rm mystack
