@@ -78,7 +78,7 @@ dependencies {
     // add postgresql dependencies
     implementation 'io.micronaut.data:micronaut-data-jdbc'
     implementation 'io.micronaut.sql:micronaut-jdbc-hikari'  // HikariCP for connection pooling
-    implementation 'org.postgresql:postgresql'  // PostgreSQL Driver
+    implementation 'org.postgresql:postgresql:42.7.7'        // PostgreSQL Driver
     //object storage dependency
     implementation 'io.micronaut.objectstorage:micronaut-object-storage-aws'
     implementation 'io.micronaut.objectstorage:micronaut-object-storage-local'
