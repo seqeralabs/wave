@@ -18,11 +18,12 @@
 
 package io.seqera.wave.service.mirror
 
-import io.seqera.wave.configuration.MirrorConfig
-
 import java.time.Duration
 
 import groovy.transform.CompileStatic
+import io.micronaut.context.annotation.Requires
+import io.seqera.wave.configuration.BuildEnabled
+import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.store.state.AbstractStateStore
 import io.seqera.wave.store.state.impl.StateProvider
@@ -34,6 +35,7 @@ import jakarta.inject.Singleton
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Singleton
+@Requires(bean = BuildEnabled)
 @CompileStatic
 class MirrorStateStore extends AbstractStateStore<MirrorEntry> {
 

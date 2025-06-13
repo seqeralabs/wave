@@ -35,10 +35,10 @@ import jakarta.inject.Singleton
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
+@Requires(bean = ScanEnabled)
 @CompileStatic
 @Singleton
 @Slf4j
-@Requires(property = 'wave.scan.enabled', value = 'true')
 class ScanConfig {
 
     /**

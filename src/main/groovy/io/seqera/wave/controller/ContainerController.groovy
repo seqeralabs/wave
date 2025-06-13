@@ -49,7 +49,10 @@ import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
+import io.seqera.wave.exception.UnsupportedBuildServiceException
+import io.seqera.wave.exception.UnsupportedMirrorServiceException
 import io.seqera.wave.exception.NotFoundException
+import io.seqera.wave.exception.UnsupportedScanServiceException
 import io.seqera.wave.exchange.DescribeWaveContainerResponse
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.ratelimit.AcquireRequest
@@ -128,9 +131,11 @@ class ContainerController {
     private String towerEndpointUrl
 
     @Inject
+    @Nullable
     private BuildConfig buildConfig
 
     @Inject
+    @Nullable
     private ContainerBuildService buildService
 
     @Inject
@@ -162,6 +167,7 @@ class ContainerController {
     private RateLimiterService rateLimiterService
 
     @Inject
+    @Nullable
     private ContainerMirrorService mirrorService
 
     @Inject
@@ -173,7 +179,7 @@ class ContainerController {
 
     @PostConstruct
     private void init() {
-        log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl; default-build-repo: $buildConfig.defaultBuildRepository; default-cache-repo: $buildConfig.defaultCacheRepository; default-public-repo: $buildConfig.defaultPublicRepository"
+        log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl; default-build-repo: ${buildConfig?.defaultBuildRepository}; default-cache-repo: ${buildConfig?.defaultCacheRepository}; default-public-repo: ${buildConfig?.defaultPublicRepository}"
     }
 
     @Deprecated
@@ -295,7 +301,7 @@ class ContainerController {
 
         // check if the repository does use any reserved word
         final parts = repo.tokenize('/')
-        if( parts.size()>1 && buildConfig.reservedWords ) {
+        if( parts.size()>1 && buildConfig?.reservedWords ) {
             for( String it : parts[1..-1] ) {
                 if( buildConfig.reservedWords.contains(it) )
                     throw new BadRequestException("Use of repository '$repo' is not allowed")
@@ -315,6 +321,8 @@ class ContainerController {
     }
 
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
+        if( !buildConfig )
+            throw new UnsupportedBuildServiceException()
         if( !req.containerFile )
             throw new BadRequestException("Missing dockerfile content")
         if( !buildConfig.defaultBuildRepository )
@@ -413,6 +421,8 @@ class ContainerController {
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
         if( req.formatSingularity() && !req.freeze )
             throw new BadRequestException("Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting")
+        if( req.scanMode && !scanService )
+            throw new UnsupportedScanServiceException()
 
         // expand inclusions
         inclusionService.addContainerInclusions(req, identity)
@@ -436,6 +446,7 @@ class ContainerController {
         String scanId
         Boolean succeeded
         if( req.containerFile ) {
+            if( !buildService ) throw new UnsupportedBuildServiceException()
             final build = makeBuildRequest(req, identity, ip)
             final track = checkBuild(build, req.dryRun)
             targetImage = track.targetImage
@@ -448,6 +459,7 @@ class ContainerController {
             type = ContainerRequest.Type.Build
         }
         else if( req.mirror ) {
+            if( !mirrorService ) throw new UnsupportedMirrorServiceException()
             final mirror = makeMirrorRequest(req, identity, digest)
             final track = checkMirror(mirror, identity, req.dryRun)
             targetImage = track.targetImage
@@ -496,6 +508,8 @@ class ContainerController {
     }
 
     protected MirrorRequest makeMirrorRequest(SubmitContainerTokenRequest request, PlatformId identity, String digest) {
+        if( !mirrorService || !buildConfig )
+            throw new UnsupportedMirrorServiceException()
         final coords = ContainerCoordinates.parse(request.containerImage)
         final target = ContainerCoordinates.parse(request.buildRepository)
         if( !coords.imageAndTag )
@@ -577,10 +591,10 @@ class ContainerController {
     void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException {
         String msg
         //check conda file size
-        if( req.condaFile && req.condaFile.length() > buildConfig.maxCondaFileSize )
+        if( req.condaFile && buildConfig && req.condaFile.length() > buildConfig.maxCondaFileSize )
             throw new BadRequestException("Conda file size exceeds the maximum allowed size of ${buildConfig.maxCondaFileSize} bytes")
         // check container file size
-        if( req.containerFile && req.containerFile.length() > buildConfig.maxContainerFileSize )
+        if( req.containerFile && buildConfig && req.containerFile.length() > buildConfig.maxContainerFileSize )
             throw new BadRequestException("Container file size exceeds the maximum allowed size of ${buildConfig.maxContainerFileSize} bytes")
         // check valid image name
         msg = validationService.checkContainerName(req.containerImage)
