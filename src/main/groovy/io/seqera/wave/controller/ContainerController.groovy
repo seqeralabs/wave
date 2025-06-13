@@ -131,6 +131,7 @@ class ContainerController {
     private String towerEndpointUrl
 
     @Inject
+    @Nullable
     private BuildConfig buildConfig
 
     @Inject
@@ -178,7 +179,7 @@ class ContainerController {
 
     @PostConstruct
     private void init() {
-        log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl; default-build-repo: $buildConfig.defaultBuildRepository; default-cache-repo: $buildConfig.defaultCacheRepository; default-public-repo: $buildConfig.defaultPublicRepository"
+        log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl; default-build-repo: ${buildConfig?.defaultBuildRepository}; default-cache-repo: ${buildConfig?.defaultCacheRepository}; default-public-repo: ${buildConfig?.defaultPublicRepository}"
     }
 
     @Deprecated
@@ -300,7 +301,7 @@ class ContainerController {
 
         // check if the repository does use any reserved word
         final parts = repo.tokenize('/')
-        if( parts.size()>1 && buildConfig.reservedWords ) {
+        if( parts.size()>1 && buildConfig?.reservedWords ) {
             for( String it : parts[1..-1] ) {
                 if( buildConfig.reservedWords.contains(it) )
                     throw new BadRequestException("Use of repository '$repo' is not allowed")
@@ -320,6 +321,8 @@ class ContainerController {
     }
 
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
+        if( !buildConfig )
+            throw new UnsupportedBuildServiceException()
         if( !req.containerFile )
             throw new BadRequestException("Missing dockerfile content")
         if( !buildConfig.defaultBuildRepository )
@@ -505,6 +508,8 @@ class ContainerController {
     }
 
     protected MirrorRequest makeMirrorRequest(SubmitContainerTokenRequest request, PlatformId identity, String digest) {
+        if( !mirrorService || !buildConfig )
+            throw new UnsupportedMirrorServiceException()
         final coords = ContainerCoordinates.parse(request.containerImage)
         final target = ContainerCoordinates.parse(request.buildRepository)
         if( !coords.imageAndTag )
@@ -586,10 +591,10 @@ class ContainerController {
     void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException {
         String msg
         //check conda file size
-        if( req.condaFile && req.condaFile.length() > buildConfig.maxCondaFileSize )
+        if( req.condaFile && buildConfig && req.condaFile.length() > buildConfig.maxCondaFileSize )
             throw new BadRequestException("Conda file size exceeds the maximum allowed size of ${buildConfig.maxCondaFileSize} bytes")
         // check container file size
-        if( req.containerFile && req.containerFile.length() > buildConfig.maxContainerFileSize )
+        if( req.containerFile && buildConfig && req.containerFile.length() > buildConfig.maxContainerFileSize )
             throw new BadRequestException("Container file size exceeds the maximum allowed size of ${buildConfig.maxContainerFileSize} bytes")
         // check valid image name
         msg = validationService.checkContainerName(req.containerImage)

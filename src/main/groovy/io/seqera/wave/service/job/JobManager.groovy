@@ -31,6 +31,7 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.configuration.JobManagerConfig
+import io.seqera.wave.configuration.WaveLite
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
@@ -41,7 +42,7 @@ import jakarta.inject.Named
  */
 @Slf4j
 @Context
-@Requires(notEnv = 'lite')
+@Requires(missingBeans = WaveLite)
 @CompileStatic
 class JobManager {
 

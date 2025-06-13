@@ -27,6 +27,7 @@ import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Requires
 import io.micronaut.scheduling.TaskScheduler
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.configuration.WaveLite
 import io.seqera.wave.service.job.JobOperation
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.scan.ScanIdStore
@@ -39,7 +40,7 @@ import jakarta.inject.Inject
  */
 @Slf4j
 @Context
-@Requires(notEnv = 'lite')
+@Requires(missingBeans = WaveLite)
 @CompileStatic
 class CleanupServiceImpl implements Runnable, CleanupService {
 

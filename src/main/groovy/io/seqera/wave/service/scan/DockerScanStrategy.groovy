@@ -24,6 +24,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.configuration.ScanEnabled
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -34,6 +35,7 @@ import jakarta.inject.Singleton
  */
 @Slf4j
 @Singleton
+@Requires(bean = ScanEnabled)
 @Requires(missingProperty = 'wave.build.k8s')
 @CompileStatic
 class DockerScanStrategy extends ScanStrategy {
