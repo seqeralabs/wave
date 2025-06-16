@@ -25,10 +25,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.configuration.RedisConfig
-import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import jakarta.validation.constraints.NotNull
 import redis.clients.jedis.JedisPool
 
 /**
