@@ -31,6 +31,7 @@ import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.persistence.PersistenceService
@@ -49,7 +50,7 @@ import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_LO
 @Slf4j
 @Singleton
 @CompileStatic
-@Requires(property = 'wave.build')
+@Requires(bean = BuildEnabled)
 class BuildLogServiceImpl implements BuildLogService {
 
     private static final String CONDA_LOCK_START = ">> CONDA_LOCK_START"

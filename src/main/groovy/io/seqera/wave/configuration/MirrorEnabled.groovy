@@ -18,35 +18,19 @@
 
 package io.seqera.wave.configuration
 
-import java.time.Duration
-
-import groovy.transform.ToString
+import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
-import io.micronaut.context.annotation.Value
 import jakarta.inject.Singleton
 
 /**
- * Model Job manager configuration settings
+ * Marker object only accessible when the container mirror service is enabled.
+ * Service can declare it as a requirement to enable or disable the
+ * corresponding service.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Requires(missingBeans = WaveLite)
-@ToString(includeNames = true, includePackage = false)
 @Singleton
-class JobManagerConfig {
-
-    @Value('${wave.job-manager.grace-interval:30s}')
-    Duration graceInterval
-
-    @Value('${wave.job-manager.poll-interval:1s}')
-    Duration pollInterval
-
-    @Value('${wave.job-manager.scheduler-interval:1s}')
-    Duration schedulerInterval
-
-    @Value('${wave.job-manager.scheduler-max-delay:1m}')
-    Duration schedulerMaxDelay
-
-    @Value('${wave.job-manager.max-running-jobs:20}')
-    int maxRunningJobs
+@CompileStatic
+@Requires(property = 'wave.mirror.enabled', value = 'true', defaultValue = 'true')
+class MirrorEnabled {
 }

@@ -82,7 +82,8 @@ class RegistryProxyController {
     private RouteHandler routeHelper
 
     @Inject
-    private ContainerBuildService containerBuildService
+    @Nullable
+    private ContainerBuildService buildService
 
     @Inject
     @Nullable
@@ -135,7 +136,7 @@ class RegistryProxyController {
 
     protected CompletableFuture<MutableHttpResponse<?>> handleFutureBuild0(RoutePath route, HttpRequest httpRequest){
         // check if there's a future build result
-        final future = containerBuildService.buildResult(route)
+        final future = buildService?.buildResult(route)
         if( future ) {
             // wait for the build completion, then apply the usual 'handleGet0' logic
             future
