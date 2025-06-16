@@ -1,0 +1,17 @@
+version: "3.9"
+services:
+  wave:
+    ports:
+      - "9090:9090"
+    volumes:
+      - $PWD:/work
+      - ./config.yml:/work/config.yml
+    environment:
+      - MICRONAUT_ENVIRONMENTS=lite,rate-limit,redis,postgres,prometheus
+      - WAVE_JVM_OPTS=-XX:+UseG1GC -Xms512m -Xmx850m -XX:MaxDirectMemorySize=100m -Dio.netty.maxDirectMemory=0 -Djdk.httpclient.keepalive.timeout=10 -Djdk.tracePinnedThreads=short -Djdk.traceVirtualThreadInThreadDump=full
+    env_file:
+      - wave.env
+    working_dir: /work
+    deploy:
+      mode: replicated
+      replicas: 2
