@@ -25,7 +25,6 @@ import java.time.Duration
 
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.configuration.BuildConfig
-import io.seqera.wave.core.ContainerPlatform
 
 /**
  *

@@ -37,7 +37,6 @@ import io.micronaut.security.rules.SecurityRule
 import io.seqera.wave.service.metric.MetricsConstants
 import io.seqera.wave.service.metric.MetricsService
 import jakarta.inject.Inject
-
 import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
 /**
  * Controller for wave Metrics

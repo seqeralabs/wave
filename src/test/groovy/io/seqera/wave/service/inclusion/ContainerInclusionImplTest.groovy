@@ -22,10 +22,6 @@ import spock.lang.Specification
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.SubmitContainerTokenRequest
-import io.seqera.wave.core.spec.ConfigSpec
-import io.seqera.wave.core.spec.ContainerSpec
-import io.seqera.wave.core.spec.ManifestSpec
-import io.seqera.wave.core.spec.ObjectRef
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.tower.PlatformId

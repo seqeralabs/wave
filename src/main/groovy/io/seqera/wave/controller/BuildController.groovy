@@ -20,6 +20,7 @@ package io.seqera.wave.controller
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.MediaType
@@ -30,6 +31,7 @@ import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.api.BuildStatusResponse
+import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.persistence.WaveBuildRecord
@@ -41,6 +43,7 @@ import jakarta.inject.Inject
  */
 @Slf4j
 @CompileStatic
+@Requires(bean = BuildEnabled)
 @Controller("/")
 @ExecuteOn(TaskExecutors.BLOCKING)
 class BuildController {

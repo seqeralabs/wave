@@ -32,7 +32,7 @@ dependencies {
     compileOnly 'io.micronaut:micronaut-inject-groovy'
     compileOnly 'io.micronaut:micronaut-http-validation'
     implementation 'jakarta.persistence:jakarta.persistence-api:3.0.0'
-    implementation 'io.seqera:lib-mail:1.2.1'
+    implementation 'io.seqera:lib-mail:1.2.2'
     implementation 'io.seqera:lib-pool:1.0.0'
     implementation 'io.seqera:wave-api:0.16.0'
     implementation 'io.seqera:wave-utils:0.15.1'
@@ -78,7 +78,7 @@ dependencies {
     // add postgresql dependencies
     implementation 'io.micronaut.data:micronaut-data-jdbc'
     implementation 'io.micronaut.sql:micronaut-jdbc-hikari'  // HikariCP for connection pooling
-    implementation 'org.postgresql:postgresql'  // PostgreSQL Driver
+    implementation 'org.postgresql:postgresql:42.7.7'        // PostgreSQL Driver
     //object storage dependency
     implementation 'io.micronaut.objectstorage:micronaut-object-storage-aws'
     implementation 'io.micronaut.objectstorage:micronaut-object-storage-local'
