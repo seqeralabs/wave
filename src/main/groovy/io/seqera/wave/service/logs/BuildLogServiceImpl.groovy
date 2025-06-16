@@ -38,8 +38,8 @@ import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 import org.apache.commons.io.input.BoundedInputStream
-
-import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.* 
+import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_LOCKS
+import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_LOGS
 
 /**
  * Implements Service  to manage logs from an Object store
