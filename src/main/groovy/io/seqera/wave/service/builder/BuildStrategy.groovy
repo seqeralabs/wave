@@ -67,7 +67,7 @@ abstract class BuildStrategy {
                 << "--frontend"
                 << "dockerfile.v0"
                 << "--local"
-                << "dockerfile=${FusionHelper.getFusionPath(buildConfig.workspaceBucketName, req.workDir)}/Containerfile".toString()
+                << "dockerfile=${FusionHelper.getFusionPath(buildConfig.workspaceBucketName, req.workDir)}".toString()
                 << "--opt"
                 << "filename=Containerfile"
                 << "--local"
