@@ -16,40 +16,21 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.ratelimit.impl
+package io.seqera.wave.configuration
 
-import com.coveo.spillway.storage.InMemoryStorage
-import com.coveo.spillway.storage.LimitUsageStorage
-import com.coveo.spillway.storage.RedisStorage
 import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Requires
 import jakarta.inject.Singleton
-import redis.clients.jedis.JedisPool
 
 /**
- * A factory for different Spillway implementation
+ * Marker object only accessible when the container mirror service is enabled.
+ * Service can declare it as a requirement to enable or disable the
+ * corresponding service.
  *
- * @author : jorge <jorge.aguilera@seqera.io>
- *
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Requires(env = 'rate-limit')
-@Factory
-@Slf4j
+@Singleton
 @CompileStatic
-class SpillWayStorageFactory {
-
-    @Singleton
-    @Requires(missingProperty =  'redis.uri')
-    LimitUsageStorage inMemoryStorage(){
-        log.info "Using in memory storage for rate limit"
-        return new InMemoryStorage()
-    }
-
-    @Singleton
-    @Requires(property = 'redis.uri')
-    LimitUsageStorage redisStorage(JedisPool pool){
-        return RedisStorage.builder().withJedisPool(pool).build()
-    }
+@Requires(property = 'wave.mirror.enabled', value = 'true', defaultValue = 'true')
+class MirrorEnabled {
 }

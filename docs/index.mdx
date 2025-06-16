@@ -92,3 +92,6 @@ Wave allows for the on-demand provisioning of containers, depending on the targe
 
 The deployment of production pipelines at scale can require the use of multiple cloud regions to enable efficient resource allocation.
 However, this can result in an increased overhead when pulling container images from a central container registry. Wave allows the transparent caching of container images in the same region where computation occurs, reducing data transfer costs and time (in development).
+
+### Wave Lite
+Wave can be used in [lite](./wave-lite.mdx) mode intended for augmentation user case, where user do not require K8s to run wave.

@@ -24,6 +24,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Factory
+import io.micronaut.context.annotation.Requires
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.micronaut.objectstorage.InputStreamMapper
 import io.micronaut.objectstorage.ObjectStorageOperations
@@ -33,6 +34,7 @@ import io.micronaut.objectstorage.local.LocalStorageConfiguration
 import io.micronaut.objectstorage.local.LocalStorageOperations
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.wave.util.BucketTokenizer
 import jakarta.annotation.Nullable
 import jakarta.inject.Inject
@@ -70,6 +72,7 @@ class ObjectStorageOperationsFactory {
 
     @Singleton
     @Named(BUILD_LOGS)
+    @Requires(bean = BuildEnabled)
     ObjectStorageOperations<?, ?, ?> createLogsStorageOps() {
         if( !buildConfig )
             throw new IllegalStateException("Build configuration is not defined")
@@ -78,6 +81,7 @@ class ObjectStorageOperationsFactory {
 
     @Singleton
     @Named(BUILD_LOCKS)
+    @Requires(bean = BuildEnabled)
     ObjectStorageOperations<?, ?, ?> createLocksStorageOpts() {
         if( !buildConfig )
             throw new IllegalStateException("Build configuration is not defined")

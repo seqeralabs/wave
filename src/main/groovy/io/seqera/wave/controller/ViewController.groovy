@@ -27,7 +27,6 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
-import io.micronaut.http.HttpStatus
 import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
@@ -43,8 +42,10 @@ import io.seqera.wave.api.ScanMode
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.exception.BadRequestException
-import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.exception.NotFoundException
+import io.seqera.wave.exception.UnsupportedBuildServiceException
+import io.seqera.wave.exception.UnsupportedMirrorServiceException
+import io.seqera.wave.exception.UnsupportedScanServiceException
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.logs.BuildLogService
@@ -84,6 +85,7 @@ class ViewController {
     private PersistenceService persistenceService
 
     @Inject
+    @Nullable
     private ContainerBuildService buildService
 
     @Inject
@@ -98,6 +100,7 @@ class ViewController {
     private ContainerScanService scanService
 
     @Inject
+    @Nullable
     private ContainerMirrorService mirrorService
 
     @Inject
@@ -107,6 +110,8 @@ class ViewController {
     @View("mirror-view")
     @Get('/mirrors/{mirrorId}')
     HttpResponse viewMirror(String mirrorId) {
+        if( !mirrorService )
+            throw new UnsupportedMirrorServiceException()
         final result = mirrorService.getMirrorResult(mirrorId)
         if( !result )
             throw new NotFoundException("Unknown container mirror id '$mirrorId'")
@@ -137,6 +142,8 @@ class ViewController {
 
     @Get('/builds/{buildId}')
     HttpResponse viewBuild(String buildId) {
+        if( !buildService )
+            throw new UnsupportedBuildServiceException()
         // check redirection for invalid suffix in the form `-nn`
         final r1 = isBuildInvalidSuffix(buildId)
         if( r1 ) {
@@ -359,6 +366,8 @@ class ViewController {
 
     @Get('/scans/{scanId}')
     HttpResponse viewScan(String scanId) {
+        if( !scanService )
+            throw new UnsupportedScanServiceException()
         // check redirection for invalid suffix in the form `-nn`
         final r1 = isScanInvalidSuffix(scanId)
         if( r1 ) {
@@ -445,7 +454,7 @@ class ViewController {
      */
     protected WaveScanRecord loadScanRecord(String scanId) {
         if( !scanService )
-            throw new HttpResponseException(HttpStatus.SERVICE_UNAVAILABLE, "Scan service is not enabled - Check Wave  configuration setting 'wave.scan.enabled'")
+            throw new UnsupportedScanServiceException()
         final scanRecord = scanService.getScanRecord(scanId)
         if( !scanRecord )
             throw new NotFoundException("No scan report exists with id: ${scanId}")

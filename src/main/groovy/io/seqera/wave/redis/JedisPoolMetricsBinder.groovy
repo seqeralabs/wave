@@ -18,10 +18,10 @@
 
 package io.seqera.wave.redis
 
-import groovy.transform.CompileStatic;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.binder.MeterBinder;
-import redis.clients.jedis.JedisPool;
+import groovy.transform.CompileStatic
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.binder.MeterBinder
+import redis.clients.jedis.JedisPool
 
 /**
  * Implements {@link MeterBinder} for {@link redis.clients.jedis.JedisPool}

@@ -23,8 +23,10 @@ import java.nio.file.Path
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.configuration.MirrorConfig
+import io.seqera.wave.configuration.MirrorEnabled
 import io.seqera.wave.service.mirror.MirrorRequest
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -36,6 +38,7 @@ import static java.nio.file.StandardOpenOption.WRITE
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Requires(bean = MirrorEnabled)
 @Singleton
 @CompileStatic
 @Slf4j
