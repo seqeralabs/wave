@@ -38,6 +38,9 @@ import jakarta.inject.Singleton
 @Slf4j
 class BuildConfig {
 
+    @Value('${wave.build.buildkit-image-arm64}')
+    String buildkitImageArm64
+
     @Value('${wave.build.buildkit-image}')
     String buildkitImage
 
@@ -54,8 +57,8 @@ class BuildConfig {
     @Value('${wave.build.public-repo}')
     String defaultPublicRepository
 
-    @Value('${wave.build.workspace-bucket}')
-    String workspaceBucket
+    @Value('${wave.build.workspace}')
+    String buildWorkspace
 
     @Value('${wave.build.status.delay}')
     Duration statusDelay
@@ -137,7 +140,7 @@ class BuildConfig {
                 "default-build-repository=${defaultBuildRepository}; " +
                 "default-cache-repository=${defaultCacheRepository}; " +
                 "default-public-repository=${defaultPublicRepository}; " +
-                "build-workspace-bucket=${workspaceBucket}; " +
+                "build-workspace=${buildWorkspace}; " +
                 "build-timeout=${defaultTimeout}; " +
                 "build-trusted-timeout=${trustedTimeout}; " +
                 "build-logs-path=${logsPath}; " +
@@ -200,7 +203,7 @@ class BuildConfig {
 
     /**
      * The file name prefix applied when storing a build workspace file into an object storage.
-     * For example having {@link #workspaceBucket} as {@code s3://bucket-name/foo/bar} the
+     * For example having {@link #buildWorkspace} as {@code s3://bucket-name/foo/bar} the
      * value returned by this method is {@code foo/bar}.
      *
      * When using a local path the prefix is {@code null}.
@@ -209,17 +212,17 @@ class BuildConfig {
      */
     @Memoized
     String getWorkspacePrefix() {
-        if( !workspaceBucket )
+        if( !buildWorkspace )
             return null
-        final store = BucketTokenizer.from(workspaceBucket)
+        final store = BucketTokenizer.from(buildWorkspace)
         return store.scheme ? store.getKey() : null
     }
 
     @Memoized
     String getWorkspaceBucketName() {
-        if( !workspaceBucket )
+        if( !buildWorkspace )
             return null
-        final store = BucketTokenizer.from(workspaceBucket)
+        final store = BucketTokenizer.from(buildWorkspace)
         return store.bucket ?: store.getKey()
     }
 }

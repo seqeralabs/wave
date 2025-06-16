@@ -67,7 +67,7 @@ class ObjectStorageOperationsFactory {
     ObjectStorageOperations<?, ?, ?> createBuildWorkspaceOps() {
         if( !buildConfig )
             throw new IllegalStateException("Build configuration is not defined")
-        return create0(BUILD_WORKSPACE, buildConfig.workspaceBucket, "wave.build.workspace-bucket")
+        return create0(BUILD_WORKSPACE, buildConfig.buildWorkspace, "wave.build.workspace-bucket")
     }
 
     @Singleton

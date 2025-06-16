@@ -159,7 +159,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
 
     protected String containerFile0(BuildRequest req, String context) {
         return req.formatSingularity()
-                ? req.containerFile.replace('{{wave_context_dir}}', "${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/context".toString())
+                ? req.containerFile.replace('{{wave_context_dir}}', "${FusionHelper.getFusionPath(buildConfig.buildWorkspace, req.workDir)}/$context".toString())
                 : req.containerFile
     }
 

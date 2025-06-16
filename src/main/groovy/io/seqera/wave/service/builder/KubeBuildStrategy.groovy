@@ -27,6 +27,7 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
@@ -74,18 +75,6 @@ class KubeBuildStrategy extends BuildStrategy {
         catch (ApiException e) {
             throw new BadRequestException("Unexpected build failure - ${e.responseBody}", e)
         }
-    }
-
-    protected String getBuildImage(BuildRequest buildRequest){
-        if( buildRequest.formatDocker() ) {
-            return buildConfig.buildkitImage
-        }
-
-        if( buildRequest.formatSingularity() ) {
-            return buildConfig.singularityImage
-        }
-
-        throw new IllegalArgumentException("Unexpected container platform: ${buildRequest.platform}")
     }
 
     List<String> singularityLaunchCmd(BuildRequest req) {

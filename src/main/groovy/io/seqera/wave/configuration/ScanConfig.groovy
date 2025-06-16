@@ -65,8 +65,8 @@ class ScanConfig {
     /**
      * The host path where cache DB stored
      */
-    @Value('${wave.build.workspace-bucket}')
-    private String buildworkspace
+    @Value('${wave.build.workspace}')
+    private String buildWorkspace
 
     @Value('${wave.scan.timeout:15m}')
     private Duration timeout
@@ -106,9 +106,9 @@ class ScanConfig {
 
     @Memoized
     String getWorkspaceBucketName() {
-        if( !buildworkspace )
+        if( !buildWorkspace )
             return null
-        final store = BucketTokenizer.from(buildworkspace)
+        final store = BucketTokenizer.from(buildWorkspace)
         return store.bucket ?: store.getKey()
     }
 

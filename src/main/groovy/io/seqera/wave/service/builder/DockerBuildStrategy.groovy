@@ -109,7 +109,7 @@ class DockerBuildStrategy extends BuildStrategy {
         }
 
         // the container image to be used to build
-        wrapper.add( buildConfig.buildkitImage )
+        wrapper.add( getBuildImage(req) )
         // return it
         return wrapper
     }

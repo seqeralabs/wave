@@ -53,7 +53,6 @@ import io.seqera.wave.util.FusionHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.service.builder.BuildConstants.BUILDKIT_ENTRYPOINT
-import static io.seqera.wave.service.builder.BuildConstants.FUSION_PREFIX
 /**
  * implements the support for Kubernetes cluster
  *
@@ -132,8 +131,8 @@ class K8sServiceImpl implements K8sService {
      */
     @PostConstruct
     private void init() {
-        log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; node-selector=$nodeSelectorMap; cpus=$requestsCpu; memory=$requestsMemory; buildWorkspaceBucket=$buildConfig.workspaceBucket;"
-        if( !buildConfig.workspaceBucket )
+        log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; node-selector=$nodeSelectorMap; cpus=$requestsCpu; memory=$requestsMemory; buildWorkspaceBucket=$buildConfig.buildWorkspace;"
+        if( !buildConfig.buildWorkspace )
             throw new IllegalArgumentException("Missing 'wave.build.workspaceBucket' configuration attribute")
         // validate node selectors
         final platforms = nodeSelectorMap ?: Collections.<String,String>emptyMap()

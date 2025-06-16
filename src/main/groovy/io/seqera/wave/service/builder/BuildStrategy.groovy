@@ -21,6 +21,7 @@ package io.seqera.wave.service.builder
 import groovy.transform.CompileStatic
 import io.micronaut.objectstorage.ObjectStorageOperations
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.util.FusionHelper
 import jakarta.inject.Inject
 import jakarta.inject.Named
@@ -133,5 +134,20 @@ abstract class BuildStrategy {
             return "ln -s ${FusionHelper.getFusionPath(buildConfig.workspaceBucketName, req.workDir)}/.singularity /root/.singularity &&"
         }
         return  ""
+    }
+
+    protected String getBuildImage(BuildRequest buildRequest){
+        if( buildRequest.formatDocker() ) {
+            if ( ContainerPlatform.ARM64.contains(buildRequest.platform.arch)  ) {
+                return buildConfig.buildkitImageArm64
+            }
+            return buildConfig.buildkitImage
+        }
+
+        if( buildRequest.formatSingularity() ) {
+            return buildConfig.singularityImage
+        }
+
+        throw new IllegalArgumentException("Unexpected container platform: ${buildRequest.platform}")
     }
 }
