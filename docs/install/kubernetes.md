@@ -175,6 +175,19 @@ data:
             read-timeout: 30s
             read-idle-timeout: 5m
             event-loop-group: stream-pool
+
+    # Management endpoints configuration
+    loggers:
+      # Enable metrics for monitoring
+      metrics:
+        enabled: true
+      # Enable health checks
+      health:
+        enabled: true
+        disk-space:
+          enabled: false
+        jdbc:
+          enabled: false
 ```
 
 ## Create deployment
