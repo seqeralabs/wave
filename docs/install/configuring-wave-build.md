@@ -340,4 +340,4 @@ Set up monitoring for build operations:
 - **Storage access issues** - Ensure EFS access points are configured correctly
 - **Build timeouts** - Adjust build timeout settings based on workload requirements
 
-For additional configuration options and advanced features, see [Configuring Wave](../configuring-wave.md).
+For additional configuration options and advanced features, see [Configuring Wave](./configuring-wave.md).
