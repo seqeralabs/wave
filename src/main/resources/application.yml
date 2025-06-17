@@ -52,7 +52,7 @@ wave:
       url: "${WAVE_SERVER_URL:`http://localhost:9090`}"
   build:
     workspace: "${WAVE_WORKSPACE_BUCKET}"
-    buildkit-image: "cr.seqera.io/public/wave/buildkit:77ae226fc11d42eb"
+    buildkit-image: "cr.seqera.io/public/wave/buildkit:2ad186d41b8d5ad0"
     buildkit-image-arm64: "cr.seqera.io/public/wave/buildkit:9812468499720d11"
     singularity-image: "public.cr.seqera.io/wave/singularity:v4.2.1-r4"
     repo: "hrma017/dev"
