@@ -21,7 +21,9 @@ package io.seqera.wave.service.job
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
+import io.seqera.wave.configuration.WaveLite
 import io.seqera.wave.service.blob.BlobEntry
 import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.builder.BuildRequest
@@ -37,6 +39,7 @@ import jakarta.inject.Singleton
  */
 @Slf4j
 @Singleton
+@Requires(missingBeans = WaveLite)
 @CompileStatic
 class JobServiceImpl implements JobService {
 

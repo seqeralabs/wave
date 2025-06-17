@@ -33,6 +33,7 @@ import io.micronaut.objectstorage.aws.AwsS3Operations
 import io.micronaut.objectstorage.local.LocalStorageConfiguration
 import io.micronaut.objectstorage.local.LocalStorageOperations
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.wave.util.BucketTokenizer
 import jakarta.annotation.Nullable
 import jakarta.inject.Inject
@@ -72,6 +73,7 @@ class ObjectStorageOperationsFactory {
 
     @Singleton
     @Named(BUILD_LOGS)
+    @Requires(bean = BuildEnabled)
     ObjectStorageOperations<?, ?, ?> createLogsStorageOps() {
         if( !buildConfig )
             throw new IllegalStateException("Build configuration is not defined")
@@ -80,6 +82,7 @@ class ObjectStorageOperationsFactory {
 
     @Singleton
     @Named(BUILD_LOCKS)
+    @Requires(bean = BuildEnabled)
     ObjectStorageOperations<?, ?, ?> createLocksStorageOpts() {
         if( !buildConfig )
             throw new IllegalStateException("Build configuration is not defined")

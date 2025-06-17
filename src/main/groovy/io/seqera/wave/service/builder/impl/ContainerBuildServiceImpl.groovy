@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.objectstorage.ObjectStorageOperations
@@ -33,6 +34,7 @@ import io.seqera.wave.api.BuildContext
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.HttpServerRetryableErrorException
@@ -72,6 +74,7 @@ import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WO
  */
 @Slf4j
 @Singleton
+@Requires(bean = BuildEnabled)
 @Named('Build')
 @CompileStatic
 class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<BuildEntry> {

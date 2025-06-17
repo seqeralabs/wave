@@ -25,6 +25,7 @@ import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.request.UploadRequest
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.util.FusionHelper
+import io.seqera.wave.configuration.ScanEnabled
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -38,6 +39,7 @@ import static io.seqera.wave.service.builder.BuildConstants.FUSION_PREFIX
  */
 @Slf4j
 @Singleton
+@Requires(bean = ScanEnabled)
 @Requires(missingProperty = 'wave.build.k8s')
 @CompileStatic
 class DockerScanStrategy extends ScanStrategy {

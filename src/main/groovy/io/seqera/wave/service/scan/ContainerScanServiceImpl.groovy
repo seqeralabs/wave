@@ -31,6 +31,7 @@ import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.api.ScanMode
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.configuration.ScanEnabled
 import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.cleanup.CleanupService
@@ -60,7 +61,7 @@ import static io.seqera.wave.service.builder.BuildFormat.DOCKER
  */
 @Slf4j
 @Named("Scan")
-@Requires(bean = ScanConfig)
+@Requires(bean = ScanEnabled)
 @Singleton
 @CompileStatic
 class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanEntry> {

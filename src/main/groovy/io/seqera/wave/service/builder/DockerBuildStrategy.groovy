@@ -20,10 +20,13 @@ package io.seqera.wave.service.builder
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.request.UploadRequest
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.configuration.BuildEnabled
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.util.FusionHelper
 import jakarta.inject.Inject
@@ -38,6 +41,7 @@ import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WO
 @Slf4j
 @Singleton
 @CompileStatic
+@Requires(bean = BuildEnabled)
 class DockerBuildStrategy extends BuildStrategy {
 
     @Value('${wave.debug:false}')

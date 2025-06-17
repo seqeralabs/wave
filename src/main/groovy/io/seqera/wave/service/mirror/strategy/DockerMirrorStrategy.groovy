@@ -22,11 +22,13 @@ import java.nio.file.Path
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.request.UploadRequest
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.MirrorConfig
+import io.seqera.wave.configuration.MirrorEnabled
 import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.util.FusionHelper
 import jakarta.inject.Inject
@@ -38,6 +40,7 @@ import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WO
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Requires(bean = MirrorEnabled)
 @Singleton
 @CompileStatic
 @Slf4j

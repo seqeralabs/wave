@@ -24,8 +24,10 @@ import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.scheduling.TaskExecutors
+import io.seqera.wave.configuration.MirrorEnabled
 import io.seqera.wave.service.builder.BuildTrack
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobHelper
@@ -40,7 +42,6 @@ import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 import static io.seqera.wave.service.job.JobHelper.saveDockerAuth
-
 /**
  * Implement a service to mirror a container image to a repository specified by the user
  *
@@ -49,6 +50,7 @@ import static io.seqera.wave.service.job.JobHelper.saveDockerAuth
 @Slf4j
 @Singleton
 @Named('Mirror')
+@Requires(bean = MirrorEnabled)
 @CompileStatic
 class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<MirrorEntry> {
 

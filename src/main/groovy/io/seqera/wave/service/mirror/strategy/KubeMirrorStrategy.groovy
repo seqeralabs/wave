@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.mirror.strategy
 
-
 import java.nio.file.Path
 
 import groovy.transform.CompileStatic
@@ -27,6 +26,7 @@ import io.kubernetes.client.openapi.ApiException
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.MirrorConfig
+import io.seqera.wave.configuration.MirrorEnabled
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
 import io.seqera.wave.service.mirror.MirrorRequest
@@ -39,6 +39,7 @@ import jakarta.inject.Singleton
  */
 @Slf4j
 @Primary
+@Requires(bean = MirrorEnabled)
 @Requires(property = 'wave.build.k8s')
 @Singleton
 @CompileStatic

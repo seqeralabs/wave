@@ -23,9 +23,11 @@ import javax.annotation.Nullable
 
 import com.google.common.hash.Hashing
 import groovy.transform.CompileStatic
+import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.configuration.WaveLite
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.service.mirror.MirrorRequest
@@ -37,6 +39,7 @@ import jakarta.inject.Singleton
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Requires(missingBeans = WaveLite)
 @Singleton
 @CompileStatic
 class JobFactory {
