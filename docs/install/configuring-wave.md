@@ -1,5 +1,5 @@
 ---
-title: Configuring Wave
+title: Configure Wave
 ---
 
 The following covers common operations when setting up and configuring wave see [configuration](../configuration.mdx) for a full refeence of all configuration values and options. 
