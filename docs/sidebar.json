@@ -10,6 +10,17 @@
         "provisioning"
       ]
     },
+    {
+      "type": "category",
+      "label": "Installation",
+      "collapsed": false,
+      "items": [
+        "install/docker-compose",
+        "install/kubernetes",
+        "install/configuring-wave",
+        "install/configuring-wave-build"
+      ]
+    },
     "nextflow",
     {
       "type": "category",
