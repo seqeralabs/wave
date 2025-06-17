@@ -125,7 +125,7 @@ metadata:
   labels:
     app: wave-cfg
 data:
-  config.yml:
+  config.yml: |
     wave:
       # Build service configuration - disabled for Wave base installation
       build:
@@ -175,31 +175,6 @@ data:
             read-timeout: 30s
             read-idle-timeout: 5m
             event-loop-group: stream-pool
-
-    # Management endpoints configuration
-    loggers:
-      env:
-        enabled: false
-      bean:
-        enabled: false
-      caches:
-        enabled: false
-      refresh:
-        enabled: false
-      loggers:
-        enabled: false
-      info:
-        enabled: false
-      # Enable metrics for monitoring
-      metrics:
-        enabled: true
-      # Enable health checks
-      health:
-        enabled: true
-        disk-space:
-          enabled: false
-        jdbc:
-          enabled: false
 ```
 
 ## Create deployment
