@@ -222,6 +222,7 @@ spec:
             - name: MICRONAUT_ENVIRONMENTS
               value: "postgres,redis,lite"
             - name: WAVE_JVM_OPTS
+              value: '-XX:+UseG1GC -Xms512m -Xmx850m -XX:MaxDirectMemorySize=100m -Dio.netty.maxDirectMemory=0 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/efs/wave/dump/java-$(POD_NAME).hprof -Djdk.httpclient.keepalive.timeout=10 -Djdk.tracePinnedThreads=short -Djdk.traceVirtualThreadInThreadDump=full'
           resources:
             requests:
               memory: "4000Mi"
