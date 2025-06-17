@@ -32,6 +32,11 @@
         "api"
       ]
     },
-    "faq"
+    "faq",
+    {
+      "type": "link",
+      "label": "Changelog",
+      "href": "/changelog/tags/wave"
+    }
   ]
 }
