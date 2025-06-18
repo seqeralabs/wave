@@ -95,6 +95,7 @@ class DockerBuildStrategy extends BuildStrategy {
                          'run',
                          '--detach',
                          '--name', name,
+                         '--user', 'root',
                          '--privileged',
                          '-e',
                          "AWS_ACCESS_KEY_ID=${System.getenv('AWS_ACCESS_KEY_ID')}".toString(),
