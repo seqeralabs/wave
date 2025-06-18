@@ -2,6 +2,8 @@ wave:
   debug: true
   scan:
     enabled: true
+    reports:
+      path: "${PWD}/build-workspace/scans"
     failure:
       duration: '30s'
   build:
