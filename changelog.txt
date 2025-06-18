@@ -1,4 +1,15 @@
 # Wave changelog
+1.22.0 - 17 Jun 2025
+- Add lite configuration environment (#818) [4a4b09d8]
+- Add migration docs and update config docs (#854) [600426ab]
+- Fix azure tests [69062b26]
+- Patch openapi image version [3e729804]
+- Remove unwanted imports (#856) [07086eb0]
+- Bump Gradle version 8.14.2 [afc4f333]
+- Bump Micronaut 4.8.3 [8aeffc8b]
+- Bump lib-mail version 1.2.2 [4f8afe1a]
+- Bump postgresql version 42.7.7 [7fa95857]
+
 1.21.1 - 29 May 2025 
 - Fix Conda lock fallback logic [657316e8]
 
