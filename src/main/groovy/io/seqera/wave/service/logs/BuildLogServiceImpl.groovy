@@ -183,12 +183,6 @@ class BuildLogServiceImpl implements BuildLogService {
         final Optional<ObjectStorageEntry<?>> result = locksStoreOps.retrieve(condaLockKey(buildId))
         if( result.isPresent() )
             return result.get().toStreamedFile()
-        // implements a fallback to retrieve Conda locks from bucket root 
-        if( buildConfig.locksFallback ) {
-            final Optional<ObjectStorageEntry<?>> fallback = locksStoreOps.retrieve(buildId + '.lock')
-            if( fallback.isPresent() )
-                return fallback.get().toStreamedFile()
-        }
         return null
     }
 
