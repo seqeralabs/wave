@@ -30,7 +30,6 @@ import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WORKSPACE
-import static io.seqera.wave.service.builder.BuildConstants.FUSION_PREFIX
 /**
  * Implements ScanStrategy for Docker
  *

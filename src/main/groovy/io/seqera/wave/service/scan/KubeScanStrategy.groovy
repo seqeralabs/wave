@@ -18,8 +18,6 @@
 
 package io.seqera.wave.service.scan
 
-import java.nio.file.Path
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.openapi.ApiException
