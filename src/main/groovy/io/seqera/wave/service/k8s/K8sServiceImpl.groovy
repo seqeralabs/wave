@@ -25,6 +25,7 @@ import javax.annotation.PostConstruct
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.custom.Quantity
+import io.kubernetes.client.openapi.models.V1Capabilities
 import io.kubernetes.client.openapi.models.V1ContainerBuilder
 import io.kubernetes.client.openapi.models.V1EnvVar
 import io.kubernetes.client.openapi.models.V1Job
@@ -39,6 +40,7 @@ import io.kubernetes.client.openapi.models.V1PodFailurePolicyOnExitCodesRequirem
 import io.kubernetes.client.openapi.models.V1PodFailurePolicyOnPodConditionsPattern
 import io.kubernetes.client.openapi.models.V1PodFailurePolicyRule
 import io.kubernetes.client.openapi.models.V1ResourceRequirements
+import io.kubernetes.client.openapi.models.V1SecurityContext
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
@@ -52,7 +54,6 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.util.FusionHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import static io.seqera.wave.service.builder.BuildConstants.BUILDKIT_ENTRYPOINT
 /**
  * implements the support for Kubernetes cluster
  *
@@ -402,6 +403,8 @@ class K8sServiceImpl implements K8sService {
         //add https://github.com/nextflow-io/k8s-fuse-plugin
         requests.limits(Map.of("nextflow.io/fuse", new Quantity("1")))
 
+        env.put('TMPDIR', '/tmp')
+
         // container section
         final container = new V1ContainerBuilder()
                 .withName(name)
@@ -409,6 +412,13 @@ class K8sServiceImpl implements K8sService {
                 .withResources(requests)
                 .withEnv(toEnvList(env))
                 .withArgs(args)
+
+        V1SecurityContext securityContext = new V1SecurityContext()
+                .capabilities(new V1Capabilities().addAddItem("SYS_ADMIN"))
+                .runAsUser(1000L)
+                .runAsGroup(1000L)
+                .runAsNonRoot(true)
+        container.withSecurityContext(securityContext)
 
         if( singularity ) {
             container
@@ -419,9 +429,8 @@ class K8sServiceImpl implements K8sService {
             container
             //required by buildkit rootless container
                     .withEnv(toEnvList(BUILDKIT_FLAGS))
-            // buildCommand is to set entrypoint for buildkit
-                    .withCommand(BUILDKIT_ENTRYPOINT)
                     .withArgs(args)
+                    .withNewSecurityContext().withPrivileged(true).endSecurityContext()
         }
 
         // spec section
