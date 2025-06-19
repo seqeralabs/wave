@@ -18,8 +18,6 @@
 
 package io.seqera.wave.service.builder
 
-import java.nio.file.Path
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.openapi.ApiException
@@ -29,10 +27,12 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
+import io.seqera.wave.util.FusionHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.util.K8sHelper.getSelectorLabel
@@ -67,30 +67,16 @@ class KubeBuildStrategy extends BuildStrategy {
     @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
     void build(String jobName, BuildRequest req) {
 
-        final Path configFile = req.configJson ? req.workDir.resolve('config.json') : null
-
         try {
             final buildImage = getBuildImage(req)
             final buildCmd = launchCmd(req)
             final timeout = req.maxDuration ?: buildConfig.defaultTimeout
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
-            k8sService.launchBuildJob(jobName, buildImage, buildCmd, req.workDir, configFile, timeout, selector)
+            k8sService.launchBuildJob(jobName, buildImage, buildCmd, req.workDir, req.configJson, timeout, selector)
         }
         catch (ApiException e) {
             throw new BadRequestException("Unexpected build failure - ${e.responseBody}", e)
         }
-    }
-
-    protected String getBuildImage(BuildRequest buildRequest){
-        if( buildRequest.formatDocker() ) {
-            return buildConfig.buildkitImage
-        }
-
-        if( buildRequest.formatSingularity() ) {
-            return buildConfig.singularityImage
-        }
-
-        throw new IllegalArgumentException("Unexpected container platform: ${buildRequest.platform}")
     }
 
     List<String> singularityLaunchCmd(BuildRequest req) {
@@ -102,7 +88,7 @@ class KubeBuildStrategy extends BuildStrategy {
                   mkdir -p /home/builder/.singularity \
                   && cp /singularity/docker-config.json /home/builder/.singularity/docker-config.json \
                   && cp /singularity/remote.yaml /home/builder/.singularity/remote.yaml \
-                  && singularity build image.sif ${req.workDir}/Containerfile \
+                  && "${getSymlinkSingularity(req)} singularity build image.sif ${FusionHelper.getFusionPath(buildConfig.workspaceBucketName, req.workDir)}/Containerfile \
                   && singularity push image.sif ${req.targetImage}
                 """.stripIndent().trim()
         return result

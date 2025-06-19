@@ -54,12 +54,22 @@ class ObjectStorageOperationsFactory {
 
     public static final String BUILD_LOCKS = "build-locks"
 
+    public static final String BUILD_WORKSPACE = "build-workspace"
+
     @Inject
     private ApplicationContext context
 
     @Inject
     @Nullable
     private BuildConfig buildConfig
+
+    @Singleton
+    @Named(BUILD_WORKSPACE)
+    ObjectStorageOperations<?, ?, ?> createBuildWorkspaceOps() {
+        if( !buildConfig )
+            throw new IllegalStateException("Build configuration is not defined")
+        return create0(BUILD_WORKSPACE, buildConfig.buildWorkspace, "wave.build.workspace-bucket")
+    }
 
     @Singleton
     @Named(BUILD_LOGS)

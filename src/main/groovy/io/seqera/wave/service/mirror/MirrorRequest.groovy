@@ -67,7 +67,7 @@ class MirrorRequest {
     /**
      * The work directory used by the mirror operation
      */
-    final Path workDir
+    final String workDir
 
     /**
      * Docker config json to authorise the mirror (pull & push) operation
@@ -94,7 +94,7 @@ class MirrorRequest {
      */
     final PlatformId identity
 
-    static MirrorRequest create(String sourceImage, String targetImage, String digest, ContainerPlatform platform, Path workspace, String authJson, String scanId, Instant ts, String offsetId, PlatformId identity) {
+    static MirrorRequest create(String sourceImage, String targetImage, String digest, ContainerPlatform platform, String workspace, String authJson, String scanId, Instant ts, String offsetId, PlatformId identity) {
         assert sourceImage, "Argument 'sourceImage' cannot be null"
         assert targetImage, "Argument 'targetImage' cannot be empty"
         assert workspace, "Argument 'workspace' cannot be null"
@@ -107,7 +107,7 @@ class MirrorRequest {
                 targetImage,
                 digest,
                 platform,
-                workspace.resolve(mirrorId),
+                "$workspace/mirrorId".toString(),
                 authJson,
                 scanId,
                 ts,
@@ -136,7 +136,7 @@ class MirrorRequest {
         return platform
     }
 
-    Path getWorkDir() {
+    String getWorkDir() {
         return workDir
     }
 
@@ -167,7 +167,7 @@ class MirrorRequest {
                 opts.targetImage as String,
                 opts.digest as String,
                 opts.platform as ContainerPlatform,
-                opts.workDir as Path,
+                opts.workDir as String,
                 opts.authJson as String,
                 opts.scanId as String,
                 opts.creationTime as Instant,
