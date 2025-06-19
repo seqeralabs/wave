@@ -24,7 +24,7 @@ package io.seqera.wave.service.builder
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 class BuildConstants {
-
+    static final public String FUSION_ENTRYPOINT = 'fusion'
     static final public String BUILDKIT_ENTRYPOINT = 'fusion buildctl-daemonless.sh'
 
 }
