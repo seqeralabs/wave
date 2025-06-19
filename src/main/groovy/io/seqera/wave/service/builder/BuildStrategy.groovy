@@ -27,6 +27,7 @@ import jakarta.inject.Inject
 import jakarta.inject.Named
 import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WORKSPACE
 import static io.seqera.wave.service.builder.BuildConstants.BUILDKIT_ENTRYPOINT
+import static io.seqera.wave.service.builder.BuildConstants.FUSION_ENTRYPOINT
 /**
  * Defines an abstract container build strategy.
  *
@@ -63,6 +64,7 @@ abstract class BuildStrategy {
     protected List<String> dockerLaunchCmd(BuildRequest req) {
         final result = new ArrayList(10)
         result
+                << FUSION_ENTRYPOINT
                 << BUILDKIT_ENTRYPOINT
                 << "build"
                 << "--frontend"
