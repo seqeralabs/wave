@@ -24,6 +24,7 @@ import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.mirror.MirrorEntry
 import io.seqera.wave.service.mirror.MirrorResult
+import io.seqera.wave.service.persistence.postgres.data.PullRow
 
 /**
  * A storage for statistic data
@@ -155,5 +156,20 @@ interface PersistenceService {
      * @return The corresponding {@link WaveScanRecord} object or {@code null} if no record is found
      */
     List<WaveScanRecord> allScans(String scanId)
+
+    /**
+     * Save a pull request record
+     *
+     * @param pullRow The {@link PullRow} object representing the pull request
+     */
+    void savePullRequest(PullRow pullRow)
+
+    /**
+     * Load a pull request record by its id
+     *
+     * @param pullId The id of the pull request to load
+     * @return The {@link PullRow} object representing the pull request or null if not found
+     */
+    PullRow loadPullRequest(UUID id)
 
 }

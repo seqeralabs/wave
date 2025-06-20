@@ -35,6 +35,7 @@ import io.micronaut.http.filter.ServerFilterChain
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.service.metric.MetricsService
+import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.postgres.data.PullRepository
 import io.seqera.wave.service.persistence.postgres.data.PullRow
 import jakarta.inject.Inject
@@ -75,7 +76,7 @@ class PullMetricsRequestsFilter implements HttpServerFilter {
     private ExecutorService executor
 
     @Inject
-    PullRepository pullRepository
+    PersistenceService persistenceService
 
     @Override
     Publisher<MutableHttpResponse<?>> doFilter(HttpRequest<?> request, ServerFilterChain chain) {
@@ -95,7 +96,7 @@ class PullMetricsRequestsFilter implements HttpServerFilter {
             if (version) {
                 CompletableFuture.runAsync(() -> metricsService.incrementFusionPullsCounter(route.identity, arch), executor)
             }
-            pullRepository.save(new PullRow(requestId: route.request.requestId, createdAt: Instant.now()))
+            persistenceService.savePullRequest(new PullRow(requestId: route.request.requestId, createdAt: Instant.now()))
         }
     }
 
