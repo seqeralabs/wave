@@ -18,6 +18,7 @@
 
 package io.seqera.wave.filter
 
+import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
@@ -34,6 +35,8 @@ import io.micronaut.http.filter.ServerFilterChain
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.service.metric.MetricsService
+import io.seqera.wave.service.persistence.postgres.data.PullRepository
+import io.seqera.wave.service.persistence.postgres.data.PullRow
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import org.reactivestreams.Publisher
@@ -71,6 +74,9 @@ class PullMetricsRequestsFilter implements HttpServerFilter {
     @Named(TaskExecutors.BLOCKING)
     private ExecutorService executor
 
+    @Inject
+    PullRepository pullRepository
+
     @Override
     Publisher<MutableHttpResponse<?>> doFilter(HttpRequest<?> request, ServerFilterChain chain) {
         return Flux.from(chain.proceed(request))
@@ -89,6 +95,7 @@ class PullMetricsRequestsFilter implements HttpServerFilter {
             if (version) {
                 CompletableFuture.runAsync(() -> metricsService.incrementFusionPullsCounter(route.identity, arch), executor)
             }
+            pullRepository.save(new PullRow(requestId: route.request.requestId, createdAt: Instant.now()))
         }
     }
 
