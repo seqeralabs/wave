@@ -47,5 +47,4 @@ class PullRow {
 
     Instant createdAt
 
-
 }
