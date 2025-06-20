@@ -96,7 +96,7 @@ class PullMetricsRequestsFilter implements HttpServerFilter {
             if (version) {
                 CompletableFuture.runAsync(() -> metricsService.incrementFusionPullsCounter(route.identity, arch), executor)
             }
-            persistenceService.savePullRequest(new PullRow(requestId: route.request.requestId, createdAt: Instant.now()))
+            CompletableFuture.runAsync(() -> persistenceService.savePullRequest(new PullRow(requestId: route.request.requestId, createdAt: Instant.now())), executor)
         }
     }
 
