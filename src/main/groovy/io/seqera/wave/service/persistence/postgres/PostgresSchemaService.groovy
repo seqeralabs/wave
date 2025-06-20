@@ -92,6 +92,16 @@ class PostgresSchemaService {
             CREATE INDEX IF NOT EXISTS wave_scan_created_at_idx
             ON wave_scan (created_at);
 
+            CREATE TABLE IF NOT EXISTS wave_pull (
+                id TEXT PRIMARY KEY,
+                request_id TEXT,
+                created_at TIMESTAMP DEFAULT NOW(),
+                CONSTRAINT fk_request
+                FOREIGN KEY (request_id)
+                REFERENCES wave_request(id)
+                ON DELETE NO ACTION
+            );
+
             '''.stripIndent()
 
 

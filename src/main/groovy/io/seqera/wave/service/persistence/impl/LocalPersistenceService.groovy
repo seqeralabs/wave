@@ -30,6 +30,7 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.util.trace.TraceElapsedTime
+import io.seqera.wave.service.persistence.postgres.data.PullRow
 import jakarta.inject.Singleton
 /**
  * Basic persistence for dev purpose
@@ -48,6 +49,7 @@ class LocalPersistenceService implements PersistenceService {
     private Map<String,WaveContainerRecord> requestStore = new HashMap<>()
     private Map<String,WaveScanRecord> scanStore = new HashMap<>()
     private Map<String,MirrorResult> mirrorStore = new HashMap<>()
+    private Map<UUID, PullRow> pullStore = new HashMap<>()
 
     @Override
     CompletableFuture<Void> saveBuildAsync(WaveBuildRecord record) {
@@ -131,6 +133,18 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
+    void savePullRequest(PullRow pullRow) {
+        pullStore.put(pullRow.id, pullRow)
+    }
+
+    PullRow loadPullRequest(UUID id) {
+        final row = pullStore.get(id)
+        if( !row )
+            return null
+        return row
+    }
+
+    @Override
     MirrorResult loadMirrorResult(String mirrorId) {
         mirrorStore.get(mirrorId)
     }
@@ -145,5 +159,4 @@ class LocalPersistenceService implements PersistenceService {
         mirrorStore.put(mirror.mirrorId, mirror)
         CompletableFuture.<Void>completedFuture(null)
     }
-
 }

@@ -43,6 +43,7 @@ import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.persistence.postgres.data.PullRow
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.tower.PlatformId
@@ -414,4 +415,16 @@ class PostgresPersistentServiceTest extends Specification {
         and:
         persistentService.allScans("1234567890") == null
     }
+
+    def 'should save and load pull request successfully'() {
+        given:
+        def pullRow = new PullRow(id: UUID.randomUUID(), requestId: '1212a', createdAt: Instant.now())
+
+        when:
+        persistentService.savePullRequest(pullRow)
+
+        then:
+        persistentService.loadPullRequest(pullRow.id).requestId == pullRow.requestId
+    }
+
 }

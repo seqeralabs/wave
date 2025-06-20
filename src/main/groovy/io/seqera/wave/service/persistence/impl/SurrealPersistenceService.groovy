@@ -40,6 +40,7 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.persistence.migrate.MigrationOnly
+import io.seqera.wave.service.persistence.postgres.data.PullRow
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
@@ -460,6 +461,17 @@ class SurrealPersistenceService implements PersistenceService {
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result : null
         return result ? Arrays.asList(result) : null
+    }
+
+    @Override
+    void savePullRequest(PullRow pullRow) {
+        log.trace "Saving pull request data=${pullRow}"
+    }
+
+    @Override
+    PullRow loadPullRequest(UUID id) {
+        log.trace "Loading pull request with id=${id}"
+        return null
     }
 
 }
