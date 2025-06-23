@@ -140,9 +140,6 @@ abstract class BuildStrategy {
 
     protected String getBuildImage(BuildRequest buildRequest){
         if( buildRequest.formatDocker() ) {
-            if ( ContainerPlatform.ARM64.contains(buildRequest.platform.arch)  ) {
-                return buildConfig.buildkitImageArm64
-            }
             return buildConfig.buildkitImage
         }
 

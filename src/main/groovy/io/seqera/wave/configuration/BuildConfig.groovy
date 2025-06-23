@@ -40,9 +40,6 @@ import jakarta.inject.Singleton
 @Slf4j
 class BuildConfig {
 
-    @Value('${wave.build.buildkit-image-arm64}')
-    String buildkitImageArm64
-
     @Value('${wave.build.buildkit-image}')
     String buildkitImage
 
