@@ -160,4 +160,5 @@ class LocalPersistenceService implements PersistenceService {
         mirrorStore.put(mirror.mirrorId, mirror)
         CompletableFuture.<Void>completedFuture(null)
     }
+
 }
