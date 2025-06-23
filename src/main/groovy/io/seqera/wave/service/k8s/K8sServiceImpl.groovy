@@ -117,9 +117,6 @@ class K8sServiceImpl implements K8sService {
     @Inject
     private BuildConfig buildConfig
 
-    // check this link to know more about these options https://github.com/moby/buildkit/tree/master/examples/kubernetes#kubernetes-manifests-for-buildkit
-    private final static Map<String,String> BUILDKIT_FLAGS = ['BUILDKITD_FLAGS': '--oci-worker-no-process-sandbox']
-
     private Map<String, String> getBuildkitAnnotations(String containerName, boolean singularity) {
         if( singularity )
             return null
@@ -427,8 +424,6 @@ class K8sServiceImpl implements K8sService {
                     .withNewSecurityContext().withPrivileged(false).endSecurityContext()
         } else {
             container
-            //required by buildkit rootless container
-                    .withEnv(toEnvList(BUILDKIT_FLAGS))
                     .withArgs(args)
                     .withNewSecurityContext().withPrivileged(true).endSecurityContext()
         }
