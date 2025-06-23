@@ -286,13 +286,15 @@ class PostgresPersistentService implements PersistenceService {
     }
 
     @Override
-    void savePullRequest(PullRow pullRow) {
+    CompletableFuture<Void> savePullRequestAsync(PullRow pullRow) {
         log.trace "Saving pull request data=${pullRow}"
-        pullRepository.save(pullRow)
+        CompletableFuture.runAsync(safeRun(()->
+                pullRepository.save(pullRow),
+                "Unable to save mirror result data=${pullRow}"))
     }
 
     @Override
-    PullRow loadPullRequest(UUID id) {
+    PullRow loadPullRequest(Long id) {
         log.trace "Loading pull request with id=${id}"
         final row = pullRepository.findById(id).orElse(null)
         if( !row )

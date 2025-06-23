@@ -28,5 +28,5 @@ import io.micronaut.data.repository.CrudRepository
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @JdbcRepository(dialect = Dialect.POSTGRES)
-interface PullRepository  extends CrudRepository<PullRow, UUID> {
+interface PullRepository  extends CrudRepository<PullRow, Long> {
 }

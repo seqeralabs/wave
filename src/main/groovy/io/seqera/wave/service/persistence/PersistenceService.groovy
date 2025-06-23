@@ -162,7 +162,7 @@ interface PersistenceService {
      *
      * @param pullRow The {@link PullRow} object representing the pull request
      */
-    void savePullRequest(PullRow pullRow)
+    CompletableFuture<Void> savePullRequestAsync(PullRow pullRow)
 
     /**
      * Load a pull request record by its id
@@ -170,6 +170,6 @@ interface PersistenceService {
      * @param pullId The id of the pull request to load
      * @return The {@link PullRow} object representing the pull request or null if not found
      */
-    PullRow loadPullRequest(UUID id)
+    PullRow loadPullRequest(Long id)
 
 }

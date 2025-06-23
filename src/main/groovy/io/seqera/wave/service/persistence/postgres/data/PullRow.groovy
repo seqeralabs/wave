@@ -23,6 +23,7 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import io.micronaut.core.annotation.Introspected
 import io.micronaut.data.annotation.AutoPopulated
+import io.micronaut.data.annotation.GeneratedValue
 import io.micronaut.data.annotation.MappedEntity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
@@ -39,8 +40,8 @@ import jakarta.persistence.Table
 class PullRow {
 
     @Id
-    @AutoPopulated
-    UUID id
+    @GeneratedValue(GeneratedValue.Type.AUTO)
+    Long id
 
     String requestId
 

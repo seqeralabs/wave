@@ -49,7 +49,7 @@ class LocalPersistenceService implements PersistenceService {
     private Map<String,WaveContainerRecord> requestStore = new HashMap<>()
     private Map<String,WaveScanRecord> scanStore = new HashMap<>()
     private Map<String,MirrorResult> mirrorStore = new HashMap<>()
-    private Map<UUID, PullRow> pullStore = new HashMap<>()
+    private Map<Long, PullRow> pullStore = new HashMap<>()
 
     @Override
     CompletableFuture<Void> saveBuildAsync(WaveBuildRecord record) {
@@ -133,11 +133,12 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
-    void savePullRequest(PullRow pullRow) {
+    CompletableFuture<Void> savePullRequestAsync(PullRow pullRow) {
         pullStore.put(pullRow.id, pullRow)
+        CompletableFuture.<Void>completedFuture(null)
     }
 
-    PullRow loadPullRequest(UUID id) {
+    PullRow loadPullRequest(Long id) {
         final row = pullStore.get(id)
         if( !row )
             return null

@@ -93,7 +93,7 @@ class PostgresSchemaService {
             ON wave_scan (created_at);
 
             CREATE TABLE IF NOT EXISTS wave_pull (
-                id TEXT PRIMARY KEY,
+                id BIGSERIAL PRIMARY KEY,
                 request_id TEXT,
                 created_at TIMESTAMP DEFAULT NOW(),
                 CONSTRAINT fk_request
@@ -122,6 +122,7 @@ class PostgresSchemaService {
         DELETE FROM wave_request;
         DELETE FROM wave_mirror;
         DELETE FROM wave_scan;
+        DELETE FROM wave_pull;
         '''.stripIndent()
 
         jdbcOperations.execute((conn)-> {
