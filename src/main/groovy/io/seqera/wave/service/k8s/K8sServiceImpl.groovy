@@ -410,13 +410,6 @@ class K8sServiceImpl implements K8sService {
                 .withEnv(toEnvList(env))
                 .withArgs(args)
 
-        V1SecurityContext securityContext = new V1SecurityContext()
-                .capabilities(new V1Capabilities().addAddItem("SYS_ADMIN"))
-                .runAsUser(1000L)
-                .runAsGroup(1000L)
-                .runAsNonRoot(true)
-        container.withSecurityContext(securityContext)
-
         if( singularity ) {
             container
             // use 'command' to override the entrypoint of the container
