@@ -441,7 +441,7 @@ class K8sServiceImpl implements K8sService {
         Map<String, String> env = new HashMap<String, String>()
         addAWSCreds(env)
         if( creds ){
-            env.put('DOCKER_CONFIG', FusionHelper.getFusionPath(buildConfig.workspaceBucketName, workDir))
+            env.put('DOCKER_CONFIG', workDir)
         }
 
         V1JobBuilder builder = new V1JobBuilder()
@@ -475,6 +475,9 @@ class K8sServiceImpl implements K8sService {
         if( scanConfig.limitsMemory )
             requests.putLimitsItem('memory', new Quantity(scanConfig.limitsMemory))
 
+        //add https://github.com/nextflow-io/k8s-fuse-plugin
+        requests.limits(Map.of("nextflow.io/fuse", new Quantity("1")))
+
         // container section
         final container = new V1ContainerBuilder()
                 .withName(name)
@@ -490,6 +493,7 @@ class K8sServiceImpl implements K8sService {
             container.addToEnv(new V1EnvVar().name(k).value(v))
         }
 
+        container.withNewSecurityContext().withPrivileged(true).endSecurityContext()
         // spec section
         spec.withContainers(container.build()).endSpec().endTemplate().endSpec()
 
@@ -543,6 +547,9 @@ class K8sServiceImpl implements K8sService {
             requests.putLimitsItem('cpu', new Quantity(config.limitsCpu))
         if( config.limitsMemory )
             requests.putLimitsItem('memory', new Quantity(config.limitsMemory))
+
+        //add https://github.com/nextflow-io/k8s-fuse-plugin
+        requests.limits(Map.of("nextflow.io/fuse", new Quantity("1")))
 
         // container section
         final container = new V1ContainerBuilder()

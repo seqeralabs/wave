@@ -69,7 +69,7 @@ wave:
       multiplier: '1.75'
   scan:
     image:
-      name: aquasec/trivy:0.56.2
+      name: "hrma017/trivy:v0.0.1"
     environment:
       # see https://github.com/aquasecurity/trivy/discussions/7668#discussioncomment-11028887
       - "TRIVY_DB_REPOSITORY=public.ecr.aws/aquasecurity/trivy-db"

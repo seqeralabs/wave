@@ -28,6 +28,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.objectstorage.ObjectStorageOperations
+import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.api.ScanMode
 import io.seqera.wave.configuration.ScanConfig
@@ -47,6 +48,7 @@ import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.request.ContainerRequest
+import io.seqera.wave.util.FusionHelper
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -169,6 +171,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     @Override
     void scan(ScanRequest request) {
         try {
+            //create report file
+            objectStorageOperations.upload(UploadRequest.fromBytes(new byte[0] , "${getScanWorkDir(request.scanId)}/$Trivy.OUTPUT_FILE_NAME".toString()))
             // create a record to mark the beginning
             final scan = ScanEntry.create(request)
             if( scanStore.putIfAbsent(scan.scanId, scan) ) {
@@ -227,7 +231,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     }
     
     protected ScanRequest fromBuild(BuildRequest request) {
-        final workDir = "$config.workspaceBucketName/$request.scanId".toString()
+        final workDir = getScanWorkDir(request.scanId)
         return new ScanRequest(
                 request.scanId,
                 request.buildId,
@@ -242,7 +246,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     }
 
     protected ScanRequest fromMirror(MirrorRequest request) {
-        final workDir = "$request.workDir/$request.scanId".toString()
+        final workDir = getScanWorkDir(request.scanId)
         return new ScanRequest(
                 request.scanId,
                 null,
@@ -257,7 +261,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     }
 
     protected ScanRequest fromContainer(ContainerRequest request) {
-        final workDir = "$config.workspaceBucketName/$request.scanId".toString()
+        final workDir = getScanWorkDir(request.scanId)
         final authJson = inspectService.credentialsConfigJson(null, request.containerImage, null, request.identity)
         return new ScanRequest(
                 request.scanId,
@@ -298,7 +302,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         ScanEntry result
         if( state.succeeded() ) {
             try {
-                final scanFile = objectStorageOperations.retrieve("job.workDir/$Trivy.OUTPUT_FILE_NAME".toString()).get()
+                final scanFile = objectStorageOperations.retrieve("${getScanWorkDir(entry.scanId)}/$Trivy.OUTPUT_FILE_NAME".toString()).get()
                 final scanReportFile = scanFile ? scanFile as String : null
                 final vulnerabilities = TrivyResultProcessor.parseFile(scanReportFile, config.vulnerabilityLimit)
                 result = entry.success(vulnerabilities)
@@ -350,6 +354,10 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     @Override
     List<WaveScanRecord> getAllScans(String scanId){
         persistenceService.allScans(scanId)
+    }
+
+    String getScanWorkDir(String scanId) {
+        return FusionHelper.getFusionPath(config.workspaceBucketName, "workspace/$scanId")
     }
 
 }

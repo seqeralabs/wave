@@ -37,7 +37,7 @@ abstract class ScanStrategy {
     abstract void scanContainer(String jobName, ScanEntry entry)
 
     protected List<String> scanCommand(String targetImage, String outputFile, ContainerPlatform platform, ScanConfig config) {
-        List<String> cmd = ['--quiet', 'image']
+        List<String> cmd = ['trivy', '--quiet', 'image']
         if( platform ) {
             cmd << '--platform'
             cmd << platform.toString()
