@@ -7,5 +7,5 @@ build:
 			--platform linux/amd64,linux/arm64 \
 			--build-arg BUILDKIT_VERSION=${buildkit_version} \
 			--build-arg FUSION_VERSION=${fusion_version} \
-			--tag public.cr.seqera.io/wave/buildkit:v${buildkit-version}-${fusion_version} \
+			--tag public.cr.seqera.io/wave/buildkit:v${buildkit_version}-${fusion_version} \
 			.
