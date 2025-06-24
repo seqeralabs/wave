@@ -22,7 +22,9 @@ import java.time.Duration
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.JobManagerConfig
+import io.seqera.wave.configuration.WaveLite
 import io.seqera.wave.encoder.EncodingStrategy
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.data.stream.AbstractMessageStream
@@ -36,6 +38,7 @@ import jakarta.inject.Singleton
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Requires(missingBeans = WaveLite)
 @Slf4j
 @Singleton
 @CompileStatic
@@ -51,7 +54,7 @@ class JobPendingQueue extends AbstractMessageStream<JobSpec> {
         super(target)
         this.encoder = new MoshiEncodeStrategy<JobSpec>() {}
         this.config = config
-        log.debug "Created jobs pending queue - config=${config}"
+        log.info "Created jobs pending queue - config=${config}"
     }
 
     @Override

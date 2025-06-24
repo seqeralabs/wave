@@ -1,4 +1,48 @@
 # Wave changelog
+1.22.0 - 17 Jun 2025
+- Add lite configuration environment (#818) [4a4b09d8]
+- Add migration docs and update config docs (#854) [600426ab]
+- Fix azure tests [69062b26]
+- Patch openapi image version [3e729804]
+- Remove unwanted imports (#856) [07086eb0]
+- Bump Gradle version 8.14.2 [afc4f333]
+- Bump Micronaut 4.8.3 [8aeffc8b]
+- Bump lib-mail version 1.2.2 [4f8afe1a]
+- Bump postgresql version 42.7.7 [7fa95857]
+
+1.21.1 - 29 May 2025 
+- Fix Conda lock fallback logic [657316e8]
+
+1.21.0 - 28 May 2025
+- Add Conda locks fallback patch [9b54bba3]
+- Add Surreal to PostgreSQL data migration (#833) [89acf316] [c23fccf2] [8d0a6861]
+- Add support for local file system for logs assets (#808) [ec9aa319] [BREAKING]
+- Fix containerId when using freeze mode and providing custom config (#830) [ccfc943e]
+- Improve parsing of container platform (#810) [aa90f38c]
+- Update singularity build (#837) [415bf745]
+- Bump buildkit:v0.21.1 [b234b8bb]
+
+1.20.3 - 24 May 2025 
+- Determine job state by using K8s JobStatus [ecc33c37]
+
+1.20.2 - 21 May 2025
+- Fix K8s failure detection on pod error [1c76cd96]
+
+1.20.1 - 20 May 2025
+- Bump Jib to version 3.4.5
+
+1.20.0 - [skipped]
+- Add PostgreSQL based implementation for PersistenceService (#821) [2c5b25f0]
+- Add k8s tracing info [69769b13]
+- Add log trace to postgres service [6e939580]
+- Add pod failure policy [2ce4a998]
+- Add progress async impl [de5f7237]
+- Add support for compression settings (#822) [72566c0d]
+- Improve docker debug command [0a59ec26]
+- Promote job queues config logs to info [d8e3d9f0]
+- Remove unused h2 env [e4422b1e]
+- added jdbc binder for prometheus metrics (#840) [7094a366]
+
 1.19.6 - 30 Apr 2025
 - Bypass cache repo for custom build repos  (#828) [29a93053]
 

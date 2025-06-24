@@ -1,8 +1,8 @@
 wave:
   db:
-    uri: "jdbc:postgresql://localhost:5432/postgres"
-    user: "postgres"
-    password: "postgres"
+    uri: "jdbc:postgresql://localhost:5432/changeme"
+    user: "changeme"
+    password: "changeme"
 datasources:
   default:
     db-type: postgres

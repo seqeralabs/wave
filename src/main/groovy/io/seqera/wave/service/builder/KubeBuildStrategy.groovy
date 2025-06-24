@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.builder
 
-
 import java.nio.file.Path
 
 import groovy.transform.CompileStatic
@@ -28,7 +27,9 @@ import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
+import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
@@ -43,6 +44,7 @@ import static io.seqera.wave.util.K8sHelper.getSelectorLabel
 @Slf4j
 @Primary
 @Requires(property = 'wave.build.k8s')
+@Requires(bean = BuildEnabled)
 @Singleton
 @CompileStatic
 class KubeBuildStrategy extends BuildStrategy {
@@ -62,6 +64,7 @@ class KubeBuildStrategy extends BuildStrategy {
 
 
     @Override
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
     void build(String jobName, BuildRequest req) {
 
         final Path configFile = req.configJson ? req.workDir.resolve('config.json') : null

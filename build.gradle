@@ -5,8 +5,7 @@ plugins {
     id 'io.seqera.wave.java-library-conventions'
     id 'io.seqera.wave.groovy-application-conventions'
     id "io.micronaut.minimal.application" version "4.1.1"
-    id "com.google.cloud.tools.jib" version "3.4.2"
-    id 'org.asciidoctor.jvm.convert' version '3.3.2'
+    id "com.google.cloud.tools.jib" version "3.4.5"
     id 'jacoco'
 }
 
@@ -33,11 +32,12 @@ dependencies {
     compileOnly 'io.micronaut:micronaut-inject-groovy'
     compileOnly 'io.micronaut:micronaut-http-validation'
     implementation 'jakarta.persistence:jakarta.persistence-api:3.0.0'
-    implementation 'io.seqera:lib-mail:1.2.1'
+    implementation 'io.seqera:lib-mail:1.2.2'
     implementation 'io.seqera:lib-pool:1.0.0'
     implementation 'io.seqera:wave-api:0.16.0'
     implementation 'io.seqera:wave-utils:0.15.1'
     implementation 'io.seqera:lib-crypto:1.0.0'
+    implementation 'io.seqera:jedis-lock:1.0.0'
     implementation 'io.micronaut:micronaut-http-client'
     implementation 'io.micronaut:micronaut-jackson-databind'
     implementation 'io.micronaut.groovy:micronaut-runtime-groovy'
@@ -78,9 +78,10 @@ dependencies {
     // add postgresql dependencies
     implementation 'io.micronaut.data:micronaut-data-jdbc'
     implementation 'io.micronaut.sql:micronaut-jdbc-hikari'  // HikariCP for connection pooling
-    implementation 'org.postgresql:postgresql'  // PostgreSQL Driver
+    implementation 'org.postgresql:postgresql:42.7.7'        // PostgreSQL Driver
     //object storage dependency
     implementation 'io.micronaut.objectstorage:micronaut-object-storage-aws'
+    implementation 'io.micronaut.objectstorage:micronaut-object-storage-local'
     // include sts to allow the use of service account role - https://stackoverflow.com/a/73306570
     // this sts dependency is require by micronaut-aws-parameter-store,
     // not directly used by the app, for this reason keeping `runtimeOnly`

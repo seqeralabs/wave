@@ -10,10 +10,6 @@ micronaut:
     json:
       additionalTypes:
         - application/vnd.docker.distribution.manifest.list.v2+json
-  object-storage:
-    aws:
-      build-logs:
-        bucket: "${wave.build.logs.bucket}"
 ---
 datasources:
   default:
@@ -43,7 +39,7 @@ wave:
     public.ecr.aws:
       username: ${AWS_ACCESS_KEY_ID:test}
       password: ${AWS_SECRET_ACCESS_KEY:test}
-    seqeralabs.azurecr.io:
+    wavetest.azurecr.io:
       username: ${AZURECR_USER:test}
       password: ${AZURECR_PAT:test}
     europe-southwest1-docker.pkg.dev:
@@ -53,11 +49,11 @@ wave:
       password: 'bar'
   build:
     workspace: 'build-workspace'
-    logs :
-      enabled : true
-      bucket : 'nextflow-ci'
-      prefix : 'wave-build/logs'
-      conda-lock-prefix: 'wave-build/conda-locks'
+    logs:
+      enabled: true
+      path: "s3://nextflow-ci/wave-build/logs"
+    locks:
+      path: 's3://nextflow-ci/wave-build/conda-locks'
   scan:
     enabled: true
 ---

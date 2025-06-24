@@ -23,8 +23,10 @@ import java.nio.file.Path
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import jakarta.inject.Inject
@@ -40,6 +42,7 @@ import static java.nio.file.StandardOpenOption.WRITE
 @Slf4j
 @Singleton
 @CompileStatic
+@Requires(bean = BuildEnabled)
 class DockerBuildStrategy extends BuildStrategy {
 
     @Value('${wave.debug:false}')
@@ -61,7 +64,7 @@ class DockerBuildStrategy extends BuildStrategy {
         // save docker cli for debugging purpose
         if( debug ) {
             Files.write(req.workDir.resolve('docker.sh'),
-                    buildCmd.join(' ').bytes,
+                    cmdToStr(buildCmd).bytes,
                     CREATE, WRITE, TRUNCATE_EXISTING)
         }
         
@@ -74,6 +77,13 @@ class DockerBuildStrategy extends BuildStrategy {
         if( process.waitFor()!=0 ) {
             throw new IllegalStateException("Unable to launch build container - exitCode=${process.exitValue()}; output=${process.text}")
         }
+    }
+
+    private String cmdToStr(List<String> cmd) {
+        return cmd
+                .collect(it-> !it || it.contains(' ') ? "\"$it\"".toString() : it)
+                .collect(it-> it.startsWith('-') ? "\\\n  $it".toString() : it)
+                .join(' ')
     }
 
     protected List<String> buildCmd(String jobName, BuildRequest req, Path credsFile) {

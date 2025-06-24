@@ -23,10 +23,12 @@ import spock.lang.Specification
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
 
 import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.seqera.wave.api.BuildCompression
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
@@ -48,6 +50,7 @@ import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.test.SurrealDBTestContainer
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
+import io.seqera.wave.util.JacksonHelper
 import org.apache.commons.lang3.RandomStringUtils
 
 /**
@@ -579,4 +582,217 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.allScans("1234567890") == null
     }
 
+    void 'should get  paginated mirror results'() {
+        given:
+        def digest = 'sha256:12345'
+        def timestamp = Instant.now()
+        def source = 'source.io/foo'
+        def target = 'target.io/foo'
+        and:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        and:
+        def request1 = MirrorRequest.create(
+                source,
+                target,
+                digest,
+                ContainerPlatform.DEFAULT,
+                Path.of('/workspace'),
+                '{auth json}',
+                'scan-1',
+                timestamp.minusSeconds(180),
+                "GMT",
+                Mock(PlatformId) )
+        and:
+        def request2 = MirrorRequest.create(
+                source,
+                target,
+                digest,
+                ContainerPlatform.DEFAULT,
+                Path.of('/workspace'),
+                '{auth json}',
+                'scan-2',
+                timestamp.minusSeconds(120),
+                "GMT",
+                Mock(PlatformId) )
+        and:
+        def request3 = MirrorRequest.create(
+                source,
+                target,
+                digest,
+                ContainerPlatform.DEFAULT,
+                Path.of('/workspace'),
+                '{auth json}',
+                'scan-3',
+                timestamp.minusSeconds(60),
+                "GMT",
+                Mock(PlatformId) )
+        and:
+        def result1 = MirrorResult.of(request1).complete(1, 'err')
+        def result2 = MirrorResult.of(request2).complete(0, 'ok')
+        def result3 = MirrorResult.of(request3).complete(0, 'ok')
+        and:
+        persistence.saveMirrorResultAsync(result1)
+        persistence.saveMirrorResultAsync(result2)
+        persistence.saveMirrorResultAsync(result3)
+        sleep(300)
+
+        when:
+        def mirrors = persistence.getMirrorsPaginated(3,0)
+
+        then:
+        mirrors.size() == 3
+        and:
+        mirrors.contains(result1)
+        mirrors.contains(result2)
+        mirrors.contains(result3)
+    }
+
+    void 'should retrieve paginated container requests'() {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        and:
+        def TOKEN = '123abc'
+        def cfg = new ContainerConfig(entrypoint: ['/opt/fusion'],
+                layers: [ new ContainerLayer(location: 'https://fusionfs.seqera.io/releases/v2.2.8-amd64.json')])
+        def req = new SubmitContainerTokenRequest(
+                towerEndpoint: 'https://tower.nf',
+                towerWorkspaceId: 100,
+                containerConfig: cfg,
+                containerPlatform: ContainerPlatform.of('amd64'),
+                buildRepository: 'build.docker.io',
+                cacheRepository: 'cache.docker.io',
+                fingerprint: 'xyz',
+                timestamp: Instant.now().toString()
+        )
+        def user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
+        def data = ContainerRequest.of(requestId: TOKEN, identity: new PlatformId(user,100), containerImage: 'hello-world', containerFile: "from ubuntu" )
+        def wave = "wave.io/wt/$TOKEN/hello-world"
+        def addr = "100.200.300.400"
+        def exp = Instant.now().plusSeconds(3600)
+        and:
+        def request = new WaveContainerRecord(req, data, wave, addr, exp)
+        and:
+        persistence.saveContainerRequestAsync(request)
+        sleep(100)
+
+        when:
+        def requests = persistence.getRequestsPaginated(1,0)
+
+        then:
+        requests.size() == 1
+        and:
+        requests[0].waveImage == 'wave.io/wt/123abc/hello-world'
+    }
+
+    void 'should retrieve paginated scan records when data exists'() {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        and:
+        def scan1 = new WaveScanRecord(id: 'scan1', containerImage: 'image1', status: 'SUCCEEDED', vulnerabilities:[])
+        def scan2 = new WaveScanRecord(id: 'scan2', containerImage: 'image2', status: 'FAILED', vulnerabilities:[])
+        persistence.saveScanRecordAsync(scan1)
+        persistence.saveScanRecordAsync(scan2)
+        sleep(200)
+
+        when:
+        def scans = persistence.getScansPaginated(2, 0)
+
+        then:
+        scans.size() == 2
+        and:
+        scans.contains(scan1)
+        scans.contains(scan2)
+    }
+
+    void 'should return null when no scan records exist for pagination'() {
+        when:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        and:
+        def scans = persistence.getScansPaginated(2, 0)
+
+        then:
+        scans == null
+    }
+
+    void 'should handle pagination offset correctly for scan records'() {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        and:
+        def scan1 = new WaveScanRecord(id: 'scan1', containerImage: 'image1', status: 'SUCCEEDED', vulnerabilities:[])
+        def scan2 = new WaveScanRecord(id: 'scan2', containerImage: 'image2', status: 'FAILED', vulnerabilities:[])
+        def scan3 = new WaveScanRecord(id: 'scan3', containerImage: 'image3', status: 'PENDING', vulnerabilities:[])
+        persistence.saveScanRecordAsync(scan1)
+        persistence.saveScanRecordAsync(scan2)
+        persistence.saveScanRecordAsync(scan3)
+        sleep(200)
+
+        when:
+        def scans = persistence.getScansPaginated(2, 1)
+
+        then:
+        scans.size() == 2
+        scans.contains(scan2)
+        scans.contains(scan3)
+    }
+
+    def 'getRequestsPaginated should return list of WaveContainerRecord'() {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def surreal = applicationContext.getBean(SurrealClient)
+        and:
+        def records = [
+                [
+                        id           : "req-123",
+                        fusionVersion: [number: "3.0.0", arch: "x86"],
+                        workspaceId  : 100,
+                        containerImage: "ubuntu:20.04"
+                ],
+                [
+                        id           : "req-456",
+                        fusionVersion: "2.4.0",
+                        workspaceId  : 101,
+                        containerImage: "alpine:latest"
+                ],
+                [
+                        id           : "req-789",
+                        workspaceId  : 101,
+                        containerImage: "alpine:latest"
+                ]
+        ]
+        and:
+        records.each { record ->
+            def json = JacksonHelper.toJson(record)
+            def query = "INSERT INTO wave_request $json"
+            final future = new CompletableFuture<Void>()
+            surreal
+                .sqlAsync(persistence.getAuthorization(), query)
+                .subscribe({result ->
+                    log.trace "Container request with token '$data.id' saved record: ${result}"
+                    future.complete(null)
+                },
+                        {error->
+                            log.error "Failed to save container request with token '$data.id': ${error.message}"
+                            future.completeExceptionally(error)
+                        })
+            }
+
+        sleep 300
+        when:
+        def result = persistence.getRequestsPaginated(10, 0)
+
+        then:
+        result.size() == 3
+        and:
+        result[0].id == 'wave_request:⟨req-123⟩'
+        result[0].fusionVersion == '3.0.0'
+        result[0].containerImage == 'ubuntu:20.04'
+        and:
+        result[1].id == 'wave_request:⟨req-456⟩'
+        result[1].fusionVersion == '2.4.0'
+        result[1].containerImage == 'alpine:latest'
+        and:
+        result[2].id == 'wave_request:⟨req-789⟩'
+        result[2].fusionVersion == null
+        result[2].containerImage == 'alpine:latest'
+    }
 }
