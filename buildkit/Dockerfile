@@ -11,3 +11,5 @@ RUN case "${TARGETPLATFORM}" in \
         *) echo "Unsupported platform: ${TARGETPLATFORM}" && exit 1 ;; \
     esac && \
     wget -nv -O - https://fusionfs.seqera.io/releases/pkg/${FUSION_VERSION//./\/}/fusion-${ARCH}.tar.gz | tar zx
+
+ENTRYPOINT ["/usr/bin/fusion"]
