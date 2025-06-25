@@ -52,7 +52,7 @@ wave:
       url: "${WAVE_SERVER_URL:`http://localhost:9090`}"
   build:
     workspace: "${WAVE_WORKSPACE_BUCKET}"
-    buildkit-image: "hrma017/buildkit:v0.1.0"
+    buildkit-image: "hrma017/buildkit:v0.22.0-rootless-2.4.13"
     singularity-image: "public.cr.seqera.io/wave/singularity:v4.2.1-r4"
     repo: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/dev"
     cache: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/cache"
@@ -69,7 +69,7 @@ wave:
       multiplier: '1.75'
   scan:
     image:
-      name: "hrma017/trivy:v0.0.1"
+      name: "hrma017/trivy:v0.63.0-2.4.13"
     environment:
       # see https://github.com/aquasecurity/trivy/discussions/7668#discussioncomment-11028887
       - "TRIVY_DB_REPOSITORY=public.ecr.aws/aquasecurity/trivy-db"
