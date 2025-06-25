@@ -171,8 +171,6 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     @Override
     void scan(ScanRequest request) {
         try {
-            //create report file
-            objectStorageOperations.upload(UploadRequest.fromBytes(new byte[0] , "${getScanWorkDir(request.scanId)}/$Trivy.OUTPUT_FILE_NAME".toString()))
             // create a record to mark the beginning
             final scan = ScanEntry.create(request)
             if( scanStore.putIfAbsent(scan.scanId, scan) ) {
@@ -291,6 +289,9 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
             throw new IllegalStateException("Security scan service is not available - check configuration setting 'wave.scan.enabled'")
         // save docker auth file
         jobHelper.saveDockerAuth(entry.workDir, entry.configJson)
+        // create the scan work directory
+        log.debug("Creating scan work directory: workspace/$entry.scanId")
+        objectStorageOperations.upload(UploadRequest.fromBytes(new byte[0] , "workspace/$entry.scanId".toString()))
         // launch scan job
         scanStrategy.scanContainer(job.operationName, entry)
         // return the update job

@@ -87,13 +87,14 @@ class DockerScanStrategy extends ScanStrategy {
                          '--detach',
                          '--name',
                          jobName,
+                         '--privileged',
                          '-e',
                          "AWS_ACCESS_KEY_ID=${System.getenv('AWS_ACCESS_KEY_ID')}".toString(),
                          '-e',
                          "AWS_SECRET_ACCESS_KEY=${System.getenv('AWS_SECRET_ACCESS_KEY')}".toString()]
         // scan work dir
         wrapper.add('-e')
-        wrapper.add("TRIVY_WORKSPACE_DIR=${FusionHelper.getFusionPath(scanConfig.workspaceBucketName, workDir)}".toString())
+        wrapper.add("TRIVY_WORKSPACE_DIR=$workDir".toString())
 
         // cache directory
         wrapper.add('-e')
@@ -101,7 +102,7 @@ class DockerScanStrategy extends ScanStrategy {
 
         if(credsFile) {
             wrapper.add('-e')
-            wrapper.add("DOCKER_CONFIG=${FusionHelper.getFusionPath(scanConfig.workspaceBucketName, workDir)}".toString())
+            wrapper.add("DOCKER_CONFIG=$workDir".toString())
         }
 
         if( env ) {
