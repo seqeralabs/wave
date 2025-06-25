@@ -27,6 +27,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.objectstorage.ObjectStorageEntry
 import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.scheduling.TaskExecutors
@@ -290,8 +291,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         // save docker auth file
         jobHelper.saveDockerAuth(entry.workDir, entry.configJson)
         // create the scan work directory
-        log.debug("Creating scan work directory: workspace/$entry.scanId")
-        objectStorageOperations.upload(UploadRequest.fromBytes(new byte[0] , "workspace/$entry.scanId".toString()))
+        objectStorageOperations.upload(UploadRequest.fromBytes(new byte[0] , "workspace/$entry.scanId/".toString()))
         // launch scan job
         scanStrategy.scanContainer(job.operationName, entry)
         // return the update job
@@ -303,8 +303,9 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         ScanEntry result
         if( state.succeeded() ) {
             try {
-                final scanFile = objectStorageOperations.retrieve("${getScanWorkDir(entry.scanId)}/$Trivy.OUTPUT_FILE_NAME".toString()).get()
-                final scanReportFile = scanFile ? scanFile as String : null
+                final scanFile = objectStorageOperations.retrieve("workspace/$entry.scanId/$Trivy.OUTPUT_FILE_NAME".toString())
+                        .map(ObjectStorageEntry::getInputStream)
+                final scanReportFile = scanFile.isPresent() ? scanFile.get().text : null
                 final vulnerabilities = TrivyResultProcessor.parseFile(scanReportFile, config.vulnerabilityLimit)
                 result = entry.success(vulnerabilities)
                 log.info("Container scan succeeded - id=${entry.scanId}; exit=${state.exitCode}; stdout=${state.stdout}")
