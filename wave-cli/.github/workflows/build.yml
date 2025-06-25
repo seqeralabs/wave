@@ -1,4 +1,6 @@
 name: Wave-cli builds
+permissions:
+  contents: read
 on:
   push:
     branches:
@@ -121,6 +123,9 @@ jobs:
     if: "contains(github.event.head_commit.message, '[release]') && github.event.ref=='refs/heads/master'"
     needs: [ build ]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
