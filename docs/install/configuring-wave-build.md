@@ -1,5 +1,5 @@
 ---
-title: Kubernetes Installation
+title: Configure Wave build
 ---
 
 This guide covers extending your existing Wave installation on Kubernetes to support container build capabilities. This enables Wave's full feature set including container building, freezing, and advanced caching.
