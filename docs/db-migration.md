@@ -1,7 +1,7 @@
 # Wave Database Migration from SurrealDB to PostgreSQL
 
 ## Pre-requisites
-- Install [wave-cli] (https://github.com/seqeralabs/wave-cli)
+- Install [wave-cli](https://github.com/seqeralabs/wave-cli)
 - Ensure you have a PostgreSQL database set up and accessible from wave.
 
 ## Migration Steps
