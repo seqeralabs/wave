@@ -409,17 +409,7 @@ class K8sServiceImpl implements K8sService {
                 .withResources(requests)
                 .withEnv(toEnvList(env))
                 .withArgs(args)
-
-        if( singularity ) {
-            container
-            // use 'command' to override the entrypoint of the container
-                    .withCommand(args)
-                    .withNewSecurityContext().withPrivileged(false).endSecurityContext()
-        } else {
-            container
-                    .withArgs(args)
-                    .withNewSecurityContext().withPrivileged(true).endSecurityContext()
-        }
+                .withNewSecurityContext().withPrivileged(true).endSecurityContext()
 
         // spec section
         spec.withContainers(container.build()).endSpec().endTemplate().endSpec()

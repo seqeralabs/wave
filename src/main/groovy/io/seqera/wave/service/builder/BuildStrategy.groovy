@@ -44,8 +44,6 @@ abstract class BuildStrategy {
 
     abstract void build(String jobName, BuildRequest req)
 
-    abstract List<String> singularityLaunchCmd(BuildRequest req)
-
     @Inject
     @Named(BUILD_WORKSPACE)
     private ObjectStorageOperations<?, ?, ?> objectStorageOperations
@@ -148,5 +146,15 @@ abstract class BuildStrategy {
         }
 
         throw new IllegalArgumentException("Unexpected container platform: ${buildRequest.platform}")
+    }
+
+    List<String> singularityLaunchCmd(BuildRequest req) {
+        final result = new ArrayList(10)
+        result
+                << 'sh'
+                << '-c'
+                << """${getSymlinkSingularity(req)} singularity build image.sif ${FusionHelper.getFusionPath(buildConfig.workspaceBucketName, req.workDir)}/Containerfile \
+                    && singularity push image.sif ${req.targetImage}""".toString()
+        return result
     }
 }

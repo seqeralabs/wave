@@ -79,18 +79,4 @@ class KubeBuildStrategy extends BuildStrategy {
         }
     }
 
-    List<String> singularityLaunchCmd(BuildRequest req) {
-        final result = new ArrayList(10)
-        result
-                << 'sh'
-                << '-c'
-                << """
-                  mkdir -p /home/builder/.singularity \
-                  && cp /singularity/docker-config.json /home/builder/.singularity/docker-config.json \
-                  && cp /singularity/remote.yaml /home/builder/.singularity/remote.yaml \
-                  && "${getSymlinkSingularity(req)} singularity build image.sif ${FusionHelper.getFusionPath(buildConfig.workspaceBucketName, req.workDir)}/Containerfile \
-                  && singularity push image.sif ${req.targetImage}
-                """.stripIndent().trim()
-        return result
-    }
 }

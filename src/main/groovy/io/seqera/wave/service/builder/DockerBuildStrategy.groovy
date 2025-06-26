@@ -138,14 +138,4 @@ class DockerBuildStrategy extends BuildStrategy {
         wrapper.add(buildConfig.singularityImage)
         return wrapper
     }
-
-    List<String> singularityLaunchCmd(BuildRequest req) {
-        final result = new ArrayList(10)
-        result
-                << 'sh'
-                << '-c'
-                << """${getSymlinkSingularity(req)} singularity build image.sif ${FusionHelper.getFusionPath(buildConfig.workspaceBucketName, req.workDir)}/Containerfile \
-                    && singularity push image.sif ${req.targetImage}""".toString()
-        return result
-    }
 }

@@ -162,7 +162,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
 
     protected String containerFile0(BuildRequest req, String context) {
         return req.formatSingularity()
-                ? req.containerFile.replace('{{wave_context_dir}}', "${FusionHelper.getFusionPath(buildConfig.buildWorkspace, req.workDir)}/$context".toString())
+                ? req.containerFile.replace('{{wave_context_dir}}', "${FusionHelper.getFusionPath(buildConfig.workspaceBucketName, req.workDir)}/$context".toString())
                 : req.containerFile
     }
 
@@ -171,7 +171,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
             //create context dir
             objectStorageOperations.upload(UploadRequest.fromBytes(new byte[0] , "$req.workDir/context/".toString()))
             // save the dockerfile
-            objectStorageOperations.upload(UploadRequest.fromBytes(containerFile0(req, "$req.workDir/Containerfile").bytes, "$req.workDir/Containerfile".toString()))
+            objectStorageOperations.upload(UploadRequest.fromBytes(containerFile0(req, "context").bytes, "$req.workDir/Containerfile".toString()))
             // save build context
             if( req.buildContext ) {
                 saveBuildContext(req.buildContext, "$req.workDir/context/", req.identity)
