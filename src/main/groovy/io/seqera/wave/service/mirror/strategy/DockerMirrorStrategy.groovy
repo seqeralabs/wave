@@ -18,21 +18,23 @@
 
 package io.seqera.wave.service.mirror.strategy
 
-import java.nio.file.Files
 import java.nio.file.Path
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.micronaut.objectstorage.ObjectStorageOperations
+import io.micronaut.objectstorage.request.UploadRequest
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.configuration.MirrorEnabled
 import io.seqera.wave.service.mirror.MirrorRequest
+import io.seqera.wave.util.FusionHelper
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
-import static java.nio.file.StandardOpenOption.CREATE
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
-import static java.nio.file.StandardOpenOption.WRITE
+import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WORKSPACE
 /**
  * Implements a container mirror runner based on Docker
  * 
@@ -50,24 +52,26 @@ class DockerMirrorStrategy extends MirrorStrategy {
     @Inject
     private MirrorConfig mirrorConfig
 
+    @Inject
+    private BuildConfig buildConfig
+
+    @Inject
+    @Named(BUILD_WORKSPACE)
+    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
+
     @Override
     void mirrorJob(String jobName, MirrorRequest request) {
-        // docker auth json file
-        final Path configFile = request.authJson ? request.workDir.resolve('config.json') : null
         // command the docker build command
-        final buildCmd = mirrorCmd(jobName, request.workDir, configFile)
+        final buildCmd = mirrorCmd(jobName, request.workDir, request.authJson)
         buildCmd.addAll( copyCommand(request) )
         log.debug "Container mirror command: ${buildCmd.join(' ')}"
         // save docker cli for debugging purpose
         if( debug ) {
-            Files.write(request.workDir.resolve('docker.sh'),
-                    buildCmd.join(' ').bytes,
-                    CREATE, WRITE, TRUNCATE_EXISTING)
+            objectStorageOperations.upload(UploadRequest.fromBytes(buildCmd.join(' ').bytes, "$request.workDir/docker.sh".toString()))
         }
 
         final process = new ProcessBuilder()
                 .command(buildCmd)
-                .directory(request.workDir.toFile())
                 .redirectErrorStream(true)
                 .start()
         if( process.waitFor()!=0 ) {
@@ -75,17 +79,20 @@ class DockerMirrorStrategy extends MirrorStrategy {
         }
     }
 
-    protected List<String> mirrorCmd(String name, Path workDir, Path credsFile ) {
+    protected List<String> mirrorCmd(String name, String workDir, String credsFile ) {
         //checkout the documentation here to know more about these options https://github.com/moby/buildkit/blob/master/docs/rootless.md#docker
         final wrapper = ['docker',
                          'run',
                         '--detach',
                          '--name', name,
-                         '-v', "$workDir:$workDir".toString() ]
+                         '-e',
+                         "AWS_ACCESS_KEY_ID=${System.getenv('AWS_ACCESS_KEY_ID')}".toString(),
+                         '-e',
+                         "AWS_SECRET_ACCESS_KEY=${System.getenv('AWS_SECRET_ACCESS_KEY')}".toString()]
 
         if( credsFile ) {
-            wrapper.add('-v')
-            wrapper.add("$credsFile:/tmp/config.json:ro".toString())
+            wrapper.add('-e')
+            wrapper.add("DOCKER_CONFIG=${ FusionHelper.getFusionPath(buildConfig.workspaceBucketName, workDir)}".toString())
 
             wrapper.add("-e")
             wrapper.add("REGISTRY_AUTH_FILE=/tmp/config.json")
