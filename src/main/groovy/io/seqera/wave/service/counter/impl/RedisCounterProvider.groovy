@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.counter.impl
 
+import java.time.Duration
+
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
@@ -42,10 +44,21 @@ class RedisCounterProvider implements CounterProvider {
     @Value('${redis.hscan.count:10000}')
     private Integer hscanCount
 
+    @Value('${redis.key.expiry:1s}')
+    private Duration keyExpiry
+
+    final private static String DATE_PATTERN = /\b\d{4}-\d{2}-\d{2}\b/
+
+    static boolean isMetricPerDate(String field) {
+        return field =~ DATE_PATTERN
+    }
     @Override
     long inc(String key, String field, long value) {
         try(Jedis conn=pool.getResource() ) {
-            return conn.hincrBy(key, field, value)
+            long count =  conn.hincrBy(key, field, value)
+            if(isMetricPerDate(field))
+                conn.hexpire(key, keyExpiry.toSeconds(), field)
+            return count
         }
     }
 
@@ -70,4 +83,5 @@ class RedisCounterProvider implements CounterProvider {
             return result
         }
     }
+
 }
