@@ -41,7 +41,6 @@ import io.seqera.wave.service.scan.ContainerScanService
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
-import static io.seqera.wave.service.job.JobHelper.saveDockerAuth
 /**
  * Implement a service to mirror a container image to a repository specified by the user
  *
