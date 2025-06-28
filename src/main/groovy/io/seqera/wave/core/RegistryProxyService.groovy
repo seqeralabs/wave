@@ -51,7 +51,7 @@ import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.RegHelper
-import io.seqera.wave.util.Retryable
+import io.seqera.util.retry.Retryable
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
