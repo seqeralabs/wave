@@ -40,10 +40,13 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.persistence.migrate.MigrationOnly
+import io.seqera.wave.service.persistence.postgres.data.PullRow
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+import jakarta.ws.rs.NotSupportedException
+
 /**
  * Implements a persistence service based based on SurrealDB
  *
@@ -460,6 +463,16 @@ class SurrealPersistenceService implements PersistenceService {
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result : null
         return result ? Arrays.asList(result) : null
+    }
+
+    @Override
+    CompletableFuture<Void> savePullRequestAsync(PullRow pullRow) {
+        throw new NotSupportedException("SurrealDB does not support pull requests, skipping save operation for pullRow: ${pullRow}")
+    }
+
+    @Override
+    PullRow loadPullRequest(Long id) {
+        throw new NotSupportedException("SurrealDB does not support pull requests, skipping load operation for pullId: ${id}")
     }
 
 }
