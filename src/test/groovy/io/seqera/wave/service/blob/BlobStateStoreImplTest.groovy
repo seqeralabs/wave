@@ -56,7 +56,6 @@ class BlobStateStoreImplTest extends Specification {
         store.key0('foo') == 'wave-blobcache/v1:foo'
     }
 
-
     def 'should get and store an entry' () {
         given:
         def key = UUID.randomUUID().toString()
@@ -126,7 +125,6 @@ class BlobStateStoreImplTest extends Specification {
         1 * config.getFailureDuration() >> DELAY_TWO
         and:
         1 * cache.put(key, info_err, DELAY_TWO)  >> null
-
     }
 
 }
