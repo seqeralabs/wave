@@ -62,7 +62,7 @@ import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.stream.StreamService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.RegHelper
-import io.seqera.wave.util.Retryable
+import io.seqera.util.retry.Retryable
 import io.seqera.wave.util.TarUtils
 import jakarta.inject.Inject
 import jakarta.inject.Named
