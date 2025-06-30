@@ -43,6 +43,7 @@ import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.persistence.postgres.data.PullRow
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.tower.PlatformId
@@ -414,4 +415,42 @@ class PostgresPersistentServiceTest extends Specification {
         and:
         persistentService.allScans("1234567890") == null
     }
+
+    def 'should save and load pull request successfully'() {
+        given:
+        given:
+        def largeContainerFile = RandomStringUtils.random(25600, true, true)
+        and:
+        def TOKEN = '123abc'
+        def cfg = new ContainerConfig(entrypoint: ['/opt/fusion'],
+                layers: [ new ContainerLayer(location: 'https://fusionfs.seqera.io/releases/v2.2.8-amd64.json')])
+        def req = new SubmitContainerTokenRequest(
+                towerEndpoint: 'https://tower.nf',
+                towerWorkspaceId: 100,
+                containerConfig: cfg,
+                containerPlatform: ContainerPlatform.of('amd64'),
+                buildRepository: 'build.docker.io',
+                cacheRepository: 'cache.docker.io',
+                fingerprint: 'xyz',
+                timestamp: Instant.now().toString()
+        )
+        def user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
+        def data = ContainerRequest.of(requestId: TOKEN, identity: new PlatformId(user,100), containerImage: 'hello-world', containerFile: largeContainerFile )
+        def wave = "wave.io/wt/$TOKEN/hello-world"
+        def addr = "100.200.300.400"
+        def exp = Instant.now().plusSeconds(3600)
+        and:
+        def request = new WaveContainerRecord(req, data, wave, addr, exp)
+        and:
+        persistentService.saveContainerRequestAsync(request).join()
+        and:
+        def pullRow = new PullRow(id: 1L, requestId: TOKEN, createdAt: Instant.now())
+
+        when:
+        persistentService.savePullRequestAsync(pullRow).join()
+
+        then:
+        persistentService.loadPullRequest(pullRow.id).requestId == pullRow.requestId
+    }
+
 }
