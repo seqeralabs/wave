@@ -27,12 +27,10 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.configuration.BuildConfig
-import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
-import io.seqera.wave.util.FusionHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.util.K8sHelper.getSelectorLabel

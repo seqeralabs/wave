@@ -107,7 +107,7 @@ class MirrorRequest {
                 targetImage,
                 digest,
                 platform,
-                "$workspace/mirrorId".toString(),
+                "workspace/$mirrorId".toString(),
                 authJson,
                 scanId,
                 ts,

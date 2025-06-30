@@ -506,6 +506,7 @@ class K8sServiceImpl implements K8sService {
         if( credsFile ){
             env.put('DOCKER_CONFIG', FusionHelper.getFusionPath(buildConfig.workspaceBucketName, workDir))
         }
+        env.put('REGISTRY_AUTH_FILE', FusionHelper.getFusionPath(buildConfig.workspaceBucketName, workDir))
 
         V1JobBuilder builder = new V1JobBuilder()
 
@@ -548,7 +549,6 @@ class K8sServiceImpl implements K8sService {
                 .withArgs(args)
                 .withEnv(toEnvList(env))
                 .withResources(requests)
-                .withEnv(new V1EnvVar().name("REGISTRY_AUTH_FILE").value("/tmp/config.json"))
 
         // spec section
         spec.withContainers(container.build()).endSpec().endTemplate().endSpec()

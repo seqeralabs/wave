@@ -95,7 +95,7 @@ class DockerMirrorStrategy extends MirrorStrategy {
             wrapper.add("DOCKER_CONFIG=${ FusionHelper.getFusionPath(buildConfig.workspaceBucketName, workDir)}".toString())
 
             wrapper.add("-e")
-            wrapper.add("REGISTRY_AUTH_FILE=/tmp/config.json")
+            wrapper.add("REGISTRY_AUTH_FILE=${ FusionHelper.getFusionPath(buildConfig.workspaceBucketName, workDir)}".toString())
         }
 
         // the container image to be used to build
