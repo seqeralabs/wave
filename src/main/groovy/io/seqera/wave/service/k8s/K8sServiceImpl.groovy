@@ -357,7 +357,7 @@ class K8sServiceImpl implements K8sService {
         addAWSCreds(env)
 
         if( credsFile ){
-                env.put('DOCKER_CONFIG', "${FusionHelper.getFusionPath(buildConfig.workspaceBucketName, workDir)}".toString())
+                env.put('DOCKER_CONFIG', FusionHelper.getFusionPath(buildConfig.workspaceBucketName, workDir))
         }
 
         V1JobBuilder builder = new V1JobBuilder()
@@ -506,7 +506,7 @@ class K8sServiceImpl implements K8sService {
         if( credsFile ){
             env.put('DOCKER_CONFIG', FusionHelper.getFusionPath(buildConfig.workspaceBucketName, workDir))
         }
-        env.put('REGISTRY_AUTH_FILE', FusionHelper.getFusionPath(buildConfig.workspaceBucketName, workDir))
+        env.put('REGISTRY_AUTH_FILE', "${FusionHelper.getFusionPath(buildConfig.workspaceBucketName, workDir)}/config.json".toString())
 
         V1JobBuilder builder = new V1JobBuilder()
 
