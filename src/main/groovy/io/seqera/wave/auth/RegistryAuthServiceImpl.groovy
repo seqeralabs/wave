@@ -40,7 +40,7 @@ import io.seqera.wave.exception.RegistryForwardException
 import io.seqera.wave.exception.RegistryUnauthorizedAccessException
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.util.RegHelper
-import io.seqera.wave.util.Retryable
+import io.seqera.util.retry.Retryable
 import io.seqera.wave.util.StringUtils
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject

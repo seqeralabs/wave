@@ -59,8 +59,9 @@ import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.stream.StreamService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.FusionHelper
-import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.TarGzipUtils
+import io.seqera.wave.util.RegHelper
+import io.seqera.util.retry.Retryable
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
