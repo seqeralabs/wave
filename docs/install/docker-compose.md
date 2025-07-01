@@ -2,20 +2,13 @@
 title: Docker Compose installation
 ---
 
-:::warning
-Wave features supported in Docker Compose installations are limited to: 
-
-- Container inspection
-- Container augmentation 
-
-The following features are not available in self-hosted Wave installations in Docker Compose:
+Docker Compose installations support Wave in Lite mode. Wave Lite includes only container augmentation and inspection capabilities, and enables the use of Fusion file system in Nextflow pipelines. The following features are not available in self-hosted Wave installations in Docker Compose:
 
 - Container Freeze
 - Container Build service
 - Container Mirror service
 - Container Security scanning
-- Container blobs caching
-:::
+- Container blobs caching 
 
 For full Wave functionality, an AWS Elastic Kubernetes instance is required.
 
@@ -31,10 +24,11 @@ Before installing Wave, you require the following infrastructure components:
 The minimum system requirements for self-hosted Wave in Docker Compose are:
 
 - Current, supported versions of **Docker Engine** and **Docker Compose**.
-- **Memory**: 32 GB RAM available to be used by the Wave application on the host system. 
-- **CPU**: 8 CPU cores available on the host system. 
-- **Network**: Connectivity to your PostgreSQL and Redis instances.
-- **Storage**: 10 GB minimum, in addition to sufficient disk space for your container images and temporary files.
+- **EC2 instance**: `m5a.2xlarge` or greater:
+  - **Memory**: 32 GB RAM available to be used by the Wave application on the host system. 
+  - **CPU**: 8 CPU cores available on the host system. 
+  - **Storage**: 10 GB minimum, in addition to sufficient disk space for your container images and temporary files.
+- **Network**: Connectivity to your PostgreSQL and Redis instances.  
 
 ## Database configuration
 
@@ -187,27 +181,29 @@ services:
     restart: unless-stopped
 ```
 
-## Starting Wave 
+## Deploy Wave 
 
-After your configuration files are in place, start Wave using Docker Compose:
+1. Download and populate the [wave.env](./_templates/wave.env) file with the settings corresponding to your system.
 
-**Start Wave in detached mode**
+2. Initialize the Docker swarm environment:
+  
+    docker swarm init
 
-```shell
-docker-compose up -d
-```
+3. Deploy the Wave service, running 2 replicas:
+  
+    docker stack deploy -c docker-compose.yml mystack
 
-**Check the status of the Wave container**
+4. Check the current status:
+  
+    docker service ls
 
-```shell
-docker-compose ps
-```
+5. Check the logs:
 
-**View Wave logs**
+    docker service logs mystack_wave
 
-```shell
-docker-compose logs -f wave-app
-```
+6. Tear down the service when it's no longer needed:
+
+    docker stack rm mystack
 
 Wave will be available at `http://localhost:9090` once the container is running and healthy. The application may take 30-60 seconds to fully initialize on first startup, as it performs database migrations.
 
