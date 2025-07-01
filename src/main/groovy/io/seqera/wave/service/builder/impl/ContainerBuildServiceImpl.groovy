@@ -60,7 +60,6 @@ import io.seqera.wave.service.stream.StreamService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.FusionHelper
 import io.seqera.wave.util.TarGzipUtils
-import io.seqera.wave.util.RegHelper
 import io.seqera.util.retry.Retryable
 import jakarta.inject.Inject
 import jakarta.inject.Named
@@ -163,7 +162,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
 
     protected String containerFile0(BuildRequest req, String context) {
         return req.formatSingularity()
-                ? req.containerFile.replace('{{wave_context_dir}}', "${FusionHelper.getFusionPath(buildConfig.workspaceBucketName, req.workDir)}/$context".toString())
+                ? req.containerFile.replace('{{wave_context_dir}}', "${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/$context".toString())
                 : req.containerFile
     }
 

@@ -105,7 +105,7 @@ class DockerBuildStrategy extends BuildStrategy {
 
         if( req.configJson ) {
             wrapper.add('-e')
-            wrapper.add("DOCKER_CONFIG=${FusionHelper.getFusionPath(buildConfig.workspaceBucketName, req.workDir)}".toString())
+            wrapper.add("DOCKER_CONFIG=${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}".toString())
         }
 
         if( req.platform ) {

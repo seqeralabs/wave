@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.builder
 
+import spock.lang.Shared
 import spock.lang.Specification
 
 import java.nio.file.Files
@@ -32,6 +33,11 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.event.ApplicationEventPublisher
+import io.micronaut.objectstorage.InputStreamMapper
+import io.micronaut.objectstorage.ObjectStorageEntry
+import io.micronaut.objectstorage.ObjectStorageOperations
+import io.micronaut.objectstorage.aws.AwsS3Configuration
+import io.micronaut.objectstorage.aws.AwsS3Operations
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
@@ -52,20 +58,31 @@ import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanStrategy
+import io.seqera.wave.service.stream.StreamService
+import io.seqera.wave.test.AwsS3TestContainer
 import io.seqera.wave.test.TestHelper
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.ContainerHelper
 import io.seqera.wave.util.Packer
+import io.seqera.wave.util.TarGzipUtils
 import io.seqera.wave.util.TemplateRenderer
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream
+import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.s3.S3Client
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @MicronautTest(environments = ['build-service-test'])
-class ContainerBuildServiceTest extends Specification {
+class ContainerBuildServiceTest extends Specification implements AwsS3TestContainer {
 
     @Primary
     @Singleton
@@ -106,10 +123,28 @@ class ContainerBuildServiceTest extends Specification {
     @Inject BuildStateStoreImpl buildCacheStore
     @Inject PersistenceService persistenceService
     @Inject JobService jobService
+    @Inject ApplicationEventPublisher<BuildEvent> eventPublisher
+
+    @Shared
+    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
+
+    def setupSpec() {
+        def s3Client = S3Client.builder()
+                .endpointOverride(URI.create("http://${awsS3HostName}:${awsS3Port}"))
+                .region(Region.EU_WEST_1)
+                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("accesskey", "secretkey")))
+                .forcePathStyle(true)
+                .build()
+        def inputStreamMapper = Mock(InputStreamMapper)
+        def storageBucket = "test-bucket"
+        s3Client.createBucket { it.bucket(storageBucket) }
+        def configuration = new AwsS3Configuration('build-logs')
+        configuration.setBucket(storageBucket)
+        objectStorageOperations = new AwsS3Operations(configuration, s3Client, inputStreamMapper)
+    }
 
     def 'should save build docker build file' () {
         given:
-        def folder = Files.createTempDirectory('test')
         def buildRepo = buildConfig.defaultBuildRepository
         def cacheRepo = buildConfig.defaultCacheRepository
         and:
@@ -130,7 +165,6 @@ class ContainerBuildServiceTest extends Specification {
                         containerId: containerId,
                         containerFile: dockerFile,
                         condaFile: condaFile,
-                        workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
                         platform: TestHelper.containerPlatform(),
@@ -143,7 +177,7 @@ class ContainerBuildServiceTest extends Specification {
         and:
         def store = Mock(BuildStateStore)
         def jobService = Mock(JobService)
-        def builder = new ContainerBuildServiceImpl(buildStore: store, buildConfig: buildConfig, jobService: jobService)
+        def builder = new ContainerBuildServiceImpl(objectStorageOperations: objectStorageOperations, buildStore: store, buildConfig: buildConfig, jobService: jobService, persistenceService: persistenceService, eventPublisher: eventPublisher)
         def RESPONSE = Mock(JobSpec)
           
         when:
@@ -152,11 +186,10 @@ class ContainerBuildServiceTest extends Specification {
         then:
         1 * jobService.launchBuild(req) >> RESPONSE
         and:
-        req.workDir.resolve('Containerfile').text == new TemplateRenderer().render(dockerFile, [:])
-        req.workDir.resolve('context/conda.yml').text == condaFile
-
-        cleanup:
-        folder?.deleteDir()
+        objectStorageOperations.retrieve("$req.workDir/Containerfile").map(ObjectStorageEntry::getInputStream).get().text
+                == new TemplateRenderer().render(dockerFile, [:])
+        objectStorageOperations.retrieve("$req.workDir/context/conda.yml").map(ObjectStorageEntry::getInputStream).get().text
+                == condaFile
     }
 
     def 'should resolve docker file' () {
@@ -192,7 +225,6 @@ class ContainerBuildServiceTest extends Specification {
 
     def 'should replace context path' () {
         given:
-        def folder = Path.of('/some/work/dir')
         def containerFile = '''\
         BootStrap: docker
         Format: ubuntu
@@ -200,14 +232,13 @@ class ContainerBuildServiceTest extends Specification {
           {{wave_context_dir}}/nf-1234/* /
         '''.stripIndent()
         and:
-        def builder = new ContainerBuildServiceImpl()
+        def builder = new ContainerBuildServiceImpl(buildConfig: buildConfig)
         def containerId = ContainerHelper.makeContainerId(containerFile, null, ContainerPlatform.of('amd64'), 'buildRepo', null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.SINGULARITY, 'foo.com/repo', containerId, null, null)
         def req =
                 new BuildRequest(
                         containerId: containerId,
                         containerFile: containerFile,
-                        workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
                         platform: ContainerPlatform.of('amd64'),
@@ -217,44 +248,94 @@ class ContainerBuildServiceTest extends Specification {
                 )
 
         when:
-        def result = builder.containerFile0(req, Path.of('/some/context/'))
+        def result = builder.containerFile0(req, 'context')
         then:
         result == '''\
         BootStrap: docker
         Format: ubuntu
         %files
-          /some/context/nf-1234/* /
+          /fusion/s3/nextflow-ci/wave-build/workspace/89356dcc8b4578f4_1/context/nf-1234/* /
         '''.stripIndent()
 
     }
 
     def 'should untar build context' () {
         given:
+        def gzippedTarBytes = createGzippedTar()
+        def stream = new ByteArrayInputStream(gzippedTarBytes)
+        def streamService = Mock(StreamService)
+        def httpClientConfig = new HttpClientConfig(retryDelay: Duration.ofSeconds(1))
+        and:
+        streamService.stream(_, _) >> stream
+        and:
         def folder = Files.createTempDirectory('test')
         def source = folder.resolve('source')
-        def target = folder.resolve('target')
+        def target = "context"
         Files.createDirectory(source)
-        Files.createDirectory(target)
         and:
         source.resolve('foo.txt').text  = 'Foo'
         source.resolve('bar.txt').text  = 'Bar'
         and:
         def layer = new Packer().layer(source)
         def context = BuildContext.of(layer)
+        and:
+        def builder = new ContainerBuildServiceImpl(objectStorageOperations: objectStorageOperations, streamService: streamService, httpClientConfig: httpClientConfig)
 
         when:
-        service.saveBuildContext(context, target, Mock(PlatformId))
+        builder.saveBuildContext(context, target, Mock(PlatformId))
         then:
-        target.resolve('foo.txt').text == 'Foo'
-        target.resolve('bar.txt').text == 'Bar'
+        !objectStorageOperations.listObjects().isEmpty()
 
         cleanup:
         folder?.deleteDir()
     }
 
+    def 'should save build context successfully'() {
+        given:
+        def buildContext = Mock(BuildContext)
+        buildContext.location >> 'http://localhost:9901/some.tag.gz'
+        def contextDir = '/build/context'
+        def identity = Mock(PlatformId)
+        def gzippedTarBytes = createGzippedTar()
+        def stream = new ByteArrayInputStream(gzippedTarBytes)
+        def streamService = Mock(StreamService)
+        def httpClientConfig = new HttpClientConfig(retryDelay: Duration.ofSeconds(1))
+        def mockObjectStorageOperations = Mock(ObjectStorageOperations)
+        and:
+        streamService.stream(buildContext.location, identity) >> stream
+        and:
+        def builder = new ContainerBuildServiceImpl(objectStorageOperations: mockObjectStorageOperations, streamService: streamService, httpClientConfig: httpClientConfig)
+
+        when:
+        builder.saveBuildContext(buildContext, contextDir, identity)
+
+        then:
+        1 * mockObjectStorageOperations.upload(_)
+    }
+
+    static byte[] createGzippedTar(String fileName = "file.txt", String content = "hello") {
+        def baos = new ByteArrayOutputStream()
+        def gzipOut = new GzipCompressorOutputStream(baos)
+        def tarOut = new TarArchiveOutputStream(gzipOut)
+        def entry = new TarArchiveEntry(fileName)
+        entry.size = content.bytes.length
+        tarOut.putArchiveEntry(entry)
+        tarOut.write(content.bytes)
+        tarOut.closeArchiveEntry()
+        tarOut.close()
+        gzipOut.close()
+        baos.toByteArray()
+    }
 
     def 'should save layers to context dir' () {
         given:
+        def gzippedTarBytes = createGzippedTar()
+        def stream = new ByteArrayInputStream(gzippedTarBytes)
+        def streamService = Mock(StreamService)
+        def httpClientConfig = new HttpClientConfig(retryDelay: Duration.ofSeconds(1))
+        and:
+        streamService.stream(_, _) >> stream
+        and:
         def folder = Files.createTempDirectory('test')
         def file1 = folder.resolve('file1'); file1.text = "I'm file one"
         def file2 = folder.resolve('file2'); file2.text = "I'm file two"
@@ -287,7 +368,6 @@ class ContainerBuildServiceTest extends Specification {
                 new BuildRequest(
                         containerId: containerId,
                         containerFile: dockerFile,
-                        workspace: Path.of('/wsp'),
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
                         platform: ContainerPlatform.of('amd64'),
@@ -298,11 +378,13 @@ class ContainerBuildServiceTest extends Specification {
                         buildId: "${containerId}_1",
                 )
 
+        def builder = new ContainerBuildServiceImpl(objectStorageOperations: objectStorageOperations, httpClientConfig: httpClientConfig, streamService: streamService)
+
         when:
-        service.saveLayersToContext(req, folder)
+        builder.saveLayersToContext(req, "context")
         then:
-        Files.exists(folder.resolve("layer-${l1.gzipDigest.replace(/sha256:/,'')}.tar.gz"))
-        Files.exists(folder.resolve("layer-${l2.gzipDigest.replace(/sha256:/,'')}.tar.gz"))
+        objectStorageOperations.exists("context/layer-${l1.gzipDigest.replace(/sha256:/,'')}.tar.gz")
+        objectStorageOperations.exists("context/layer-${l2.gzipDigest.replace(/sha256:/,'')}.tar.gz")
 
         cleanup:
         folder?.deleteDir()
@@ -360,7 +442,7 @@ class ContainerBuildServiceTest extends Specification {
         def eventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
         def service = new ContainerBuildServiceImpl(buildStore: buildStore, proxyService: proxyService, eventPublisher: eventPublisher, persistenceService: persistenceService, scanService:scanService, buildConfig: buildConfig)
         def job = JobSpec
-                .build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
+                .build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), '/work/dir')
                 .withLaunchTime(Instant.now())
         def state = JobState.succeeded('logs')
         def res = BuildResult.create('1')
@@ -395,7 +477,7 @@ class ContainerBuildServiceTest extends Specification {
         def persistenceService = Mock(PersistenceService)
         def eventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
         def service = new ContainerBuildServiceImpl(buildStore: buildStore, proxyService: proxyService, eventPublisher: eventPublisher, persistenceService:persistenceService, buildConfig: buildConfig)
-        def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
+        def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), '/work/dir')
         def error = new Exception('error')
         def res = BuildResult.create('1')
         def req = new BuildRequest(
@@ -425,7 +507,7 @@ class ContainerBuildServiceTest extends Specification {
         def persistenceService = Mock(PersistenceService)
         def eventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
         def service = new ContainerBuildServiceImpl(buildStore: buildStore, proxyService: proxyService, eventPublisher: eventPublisher, persistenceService:persistenceService, buildConfig: buildConfig)
-        def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
+        def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), '/work/dir')
         def res = BuildResult.create('1')
         def req = new BuildRequest(
                 targetImage: 'docker.io/foo:0',

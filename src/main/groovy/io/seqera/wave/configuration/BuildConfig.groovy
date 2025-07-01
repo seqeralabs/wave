@@ -215,10 +215,10 @@ class BuildConfig {
     }
 
     @Memoized
-    String getWorkspaceBucketName() {
+    String getWorkspaceBucket() {
         if( !buildWorkspace )
             return null
         final store = BucketTokenizer.from(buildWorkspace)
-        return store.bucket ?: store.getKey()
+        return store.scheme ? "${store.bucket}${store.path}".toString() : null
     }
 }

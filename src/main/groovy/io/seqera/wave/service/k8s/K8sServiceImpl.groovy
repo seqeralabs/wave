@@ -25,7 +25,6 @@ import javax.annotation.PostConstruct
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.custom.Quantity
-import io.kubernetes.client.openapi.models.V1Capabilities
 import io.kubernetes.client.openapi.models.V1ContainerBuilder
 import io.kubernetes.client.openapi.models.V1EnvVar
 import io.kubernetes.client.openapi.models.V1Job
@@ -40,7 +39,6 @@ import io.kubernetes.client.openapi.models.V1PodFailurePolicyOnExitCodesRequirem
 import io.kubernetes.client.openapi.models.V1PodFailurePolicyOnPodConditionsPattern
 import io.kubernetes.client.openapi.models.V1PodFailurePolicyRule
 import io.kubernetes.client.openapi.models.V1ResourceRequirements
-import io.kubernetes.client.openapi.models.V1SecurityContext
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
@@ -357,7 +355,7 @@ class K8sServiceImpl implements K8sService {
         addAWSCreds(env)
 
         if( credsFile ){
-                env.put('DOCKER_CONFIG', FusionHelper.getFusionPath(buildConfig.workspaceBucketName, workDir))
+                env.put('DOCKER_CONFIG', FusionHelper.getFusionPath(buildConfig.workspaceBucket, workDir))
         }
 
         V1JobBuilder builder = new V1JobBuilder()
@@ -504,9 +502,9 @@ class K8sServiceImpl implements K8sService {
         Map<String, String> env = new HashMap<String, String>()
         addAWSCreds(env)
         if( credsFile ){
-            env.put('DOCKER_CONFIG', FusionHelper.getFusionPath(buildConfig.workspaceBucketName, workDir))
+            env.put('DOCKER_CONFIG', FusionHelper.getFusionPath(buildConfig.workspaceBucket, workDir))
         }
-        env.put('REGISTRY_AUTH_FILE', "${FusionHelper.getFusionPath(buildConfig.workspaceBucketName, workDir)}/config.json".toString())
+        env.put('REGISTRY_AUTH_FILE', "${FusionHelper.getFusionPath(buildConfig.workspaceBucket, workDir)}/config.json".toString())
 
         V1JobBuilder builder = new V1JobBuilder()
 

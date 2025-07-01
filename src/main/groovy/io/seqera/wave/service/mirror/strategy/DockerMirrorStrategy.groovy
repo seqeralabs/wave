@@ -18,8 +18,6 @@
 
 package io.seqera.wave.service.mirror.strategy
 
-import java.nio.file.Path
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
@@ -93,10 +91,10 @@ class DockerMirrorStrategy extends MirrorStrategy {
 
         if( credsFile ) {
             wrapper.add('-e')
-            wrapper.add("DOCKER_CONFIG=${ FusionHelper.getFusionPath(buildConfig.workspaceBucketName, workDir)}".toString())
+            wrapper.add("DOCKER_CONFIG=${ FusionHelper.getFusionPath(buildConfig.workspaceBucket, workDir)}".toString())
 
             wrapper.add("-e")
-            wrapper.add("REGISTRY_AUTH_FILE=${ FusionHelper.getFusionPath(buildConfig.workspaceBucketName, workDir)}/config.json".toString())
+            wrapper.add("REGISTRY_AUTH_FILE=${ FusionHelper.getFusionPath(buildConfig.workspaceBucket, workDir)}/config.json".toString())
         }
 
         // the container image to be used to build

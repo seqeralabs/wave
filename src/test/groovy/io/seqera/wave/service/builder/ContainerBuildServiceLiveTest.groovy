@@ -82,7 +82,6 @@ class ContainerBuildServiceLiveTest extends Specification {
                 new BuildRequest(
                         containerId: containerId,
                         containerFile: dockerFile,
-                        workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
                         platform: ContainerPlatform.of('amd64'),
@@ -128,7 +127,6 @@ class ContainerBuildServiceLiveTest extends Specification {
                 new BuildRequest(
                         containerId: containerId,
                         containerFile: dockerFile,
-                        workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
                         platform: TestHelper.containerPlatform(),
@@ -174,7 +172,6 @@ class ContainerBuildServiceLiveTest extends Specification {
                 new BuildRequest(
                         containerId: containerId,
                         containerFile: dockerFile,
-                        workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
                         platform: TestHelper.containerPlatform(),
@@ -220,7 +217,6 @@ class ContainerBuildServiceLiveTest extends Specification {
                 new BuildRequest(
                         containerId: containerId,
                         containerFile: dockerFile,
-                        workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
                         platform: TestHelper.containerPlatform(),
@@ -272,7 +268,6 @@ class ContainerBuildServiceLiveTest extends Specification {
                 new BuildRequest(
                         containerId: containerId,
                         containerFile: dockerFile,
-                        workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
                         platform: TestHelper.containerPlatform(),

@@ -23,13 +23,18 @@ import spock.lang.Specification
 import java.nio.file.Path
 
 import io.micronaut.context.ApplicationContext
+import io.micronaut.context.annotation.Property
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.ContainerPlatform
+import org.testcontainers.shaded.org.checkerframework.checker.propkey.qual.PropertyKey
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
+@Property(name ="AWS_ACCESS_KEY_ID", value = "test")
+@Property(name ="AWS_SECRET_ACCESS_KEY", value = "test")
 class DockerBuildStrategyTest extends Specification {
 
     def 'should get docker command' () {
@@ -93,17 +98,14 @@ class DockerBuildStrategyTest extends Specification {
         def ctx = ApplicationContext.run()
         def service = ctx.getBean(DockerBuildStrategy)
         and:
-        def creds = Path.of('/work/creds.json')
-        and:
         def req = new BuildRequest(
                 containerId: '89fb83ce6ec8627b',
                 buildId: 'bd-89fb83ce6ec8627b_1',
-                workspace: Path.of('/work/foo'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'repo:89fb83ce6ec8627b',
                 cacheRepository: 'reg.io/wave/build/cache' )
         when:
-        def cmd = service.buildCmd('build-job-name', req, creds)
+        def cmd = service.buildCmd('build-job-name', req)
         then:
         cmd == ['docker',
                 'run',

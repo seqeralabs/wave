@@ -21,7 +21,6 @@ package io.seqera.wave.service.builder
 import groovy.transform.CompileStatic
 import io.micronaut.objectstorage.ObjectStorageOperations
 import io.seqera.wave.configuration.BuildConfig
-import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.util.FusionHelper
 import jakarta.inject.Inject
 import jakarta.inject.Named
@@ -68,11 +67,11 @@ abstract class BuildStrategy {
                 << "--frontend"
                 << "dockerfile.v0"
                 << "--local"
-                << "dockerfile=${FusionHelper.getFusionPath(buildConfig.workspaceBucketName, req.workDir)}".toString()
+                << "dockerfile=${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}".toString()
                 << "--opt"
                 << "filename=Containerfile"
                 << "--local"
-                << "context=${FusionHelper.getFusionPath(buildConfig.workspaceBucketName, req.workDir)}/context".toString()
+                << "context=${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/context".toString()
                 << "--output"
                 << outputOpts(req, buildConfig)
                 << "--opt"
@@ -131,7 +130,7 @@ abstract class BuildStrategy {
 
     String getSymlinkSingularity( BuildRequest req ) {
         if( req.configJson ){
-            return "ln -s ${FusionHelper.getFusionPath(buildConfig.workspaceBucketName, req.workDir)}/.singularity /root/.singularity &&"
+            return "ln -s ${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/.singularity /root/.singularity &&"
         }
         return  ""
     }
@@ -153,8 +152,7 @@ abstract class BuildStrategy {
         result
                 << 'sh'
                 << '-c'
-                << """${getSymlinkSingularity(req)} singularity build image.sif ${FusionHelper.getFusionPath(buildConfig.workspaceBucketName, req.workDir)}/Containerfile \
-                    && singularity push image.sif ${req.targetImage}""".toString()
+                << "${getSymlinkSingularity(req)} singularity build image.sif ${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/Containerfile && singularity push image.sif ${req.targetImage}".toString()
         return result
     }
 }
