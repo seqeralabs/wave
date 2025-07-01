@@ -84,6 +84,7 @@ class DockerMirrorStrategy extends MirrorStrategy {
         final wrapper = ['docker',
                          'run',
                         '--detach',
+                        '--privileged',
                          '--name', name,
                          '-e',
                          "AWS_ACCESS_KEY_ID=${System.getenv('AWS_ACCESS_KEY_ID')}".toString(),
@@ -95,7 +96,7 @@ class DockerMirrorStrategy extends MirrorStrategy {
             wrapper.add("DOCKER_CONFIG=${ FusionHelper.getFusionPath(buildConfig.workspaceBucketName, workDir)}".toString())
 
             wrapper.add("-e")
-            wrapper.add("REGISTRY_AUTH_FILE=${ FusionHelper.getFusionPath(buildConfig.workspaceBucketName, workDir)}".toString())
+            wrapper.add("REGISTRY_AUTH_FILE=${ FusionHelper.getFusionPath(buildConfig.workspaceBucketName, workDir)}/config.json".toString())
         }
 
         // the container image to be used to build

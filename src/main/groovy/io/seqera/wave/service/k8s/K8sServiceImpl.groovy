@@ -550,6 +550,7 @@ class K8sServiceImpl implements K8sService {
                 .withEnv(toEnvList(env))
                 .withResources(requests)
 
+        container.withNewSecurityContext().withPrivileged(true).endSecurityContext()
         // spec section
         spec.withContainers(container.build()).endSpec().endTemplate().endSpec()
 

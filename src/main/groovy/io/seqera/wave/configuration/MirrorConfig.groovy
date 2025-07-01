@@ -47,7 +47,7 @@ class MirrorConfig {
     @Value('${wave.mirror.failure.duration:50s}')
     Duration failureDuration
 
-    @Value('${wave.mirror.skopeoImage:`quay.io/skopeo/stable`}')
+    @Value('${wave.mirror.skopeoImage}')
     String skopeoImage
 
     @Value('${wave.mirror.retry-attempts:2}')
