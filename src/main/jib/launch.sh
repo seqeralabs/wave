@@ -31,5 +31,8 @@ exec java \
   --add-opens java.base/java.nio=ALL-UNNAMED \
   --enable-native-access=ALL-UNNAMED \
   ${WAVE_JVM_OPTS} \
+  -XX:+UseG1GC -Xms512m -Xmx850m -XX:MaxDirectMemorySize=100m \
+  -Dio.netty.maxDirectMemory=0 -Djdk.httpclient.keepalive.timeout=10 \
+  -Djdk.tracePinnedThreads=short -Djdk.traceVirtualThreadInThreadDump=full \
   -cp /app/resources:/app/classes:/app/libs/* \
   io.seqera.wave.Application
