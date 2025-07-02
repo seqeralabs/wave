@@ -129,7 +129,7 @@ class K8sServiceImpl implements K8sService {
     private void init() {
         log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; node-selector=$nodeSelectorMap; cpus=$requestsCpu; memory=$requestsMemory; buildWorkspaceBucket=$buildConfig.buildWorkspace;"
         if( !buildConfig.buildWorkspace )
-            throw new IllegalArgumentException("Missing 'wave.build.workspaceBucket' configuration attribute")
+            throw new IllegalArgumentException("Missing 'wave.build.workspace' configuration attribute")
         // validate node selectors
         final platforms = nodeSelectorMap ?: Collections.<String,String>emptyMap()
         for( Map.Entry<String,String> it : platforms ) {
@@ -399,7 +399,9 @@ class K8sServiceImpl implements K8sService {
         requests.limits(Map.of("nextflow.io/fuse", new Quantity("1")))
 
         env.put('TMPDIR', '/tmp')
-
+        if( !singularity )
+        // check this link to know more about these options https://github.com/moby/buildkit/tree/master/examples/kubernetes#kubernetes-manifests-for-buildkit
+            env.put('BUILDKITD_FLAGS', '--oci-worker-no-process-sandbox')
         // container section
         final container = new V1ContainerBuilder()
                 .withName(name)
@@ -407,7 +409,7 @@ class K8sServiceImpl implements K8sService {
                 .withResources(requests)
                 .withEnv(toEnvList(env))
                 .withArgs(args)
-                .withNewSecurityContext().withPrivileged(true).endSecurityContext()
+                .withNewSecurityContext().withPrivileged(false).endSecurityContext()
 
         // spec section
         spec.withContainers(container.build()).endSpec().endTemplate().endSpec()
@@ -481,7 +483,7 @@ class K8sServiceImpl implements K8sService {
             container.addToEnv(new V1EnvVar().name(k).value(v))
         }
 
-        container.withNewSecurityContext().withPrivileged(true).endSecurityContext()
+        container.withNewSecurityContext().withPrivileged(false).endSecurityContext()
         // spec section
         spec.withContainers(container.build()).endSpec().endTemplate().endSpec()
 
@@ -548,7 +550,7 @@ class K8sServiceImpl implements K8sService {
                 .withEnv(toEnvList(env))
                 .withResources(requests)
 
-        container.withNewSecurityContext().withPrivileged(true).endSecurityContext()
+        container.withNewSecurityContext().withPrivileged(false).endSecurityContext()
         // spec section
         spec.withContainers(container.build()).endSpec().endTemplate().endSpec()
 
