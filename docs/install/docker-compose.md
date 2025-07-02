@@ -2,6 +2,8 @@
 title: Docker Compose installation
 ---
 
+Wave enables you to provision container images on-demand, removing the need to build and upload them manually to a container registry. Wave can can provision both disposable containers that are only accessible for a short period, and regular registry-persisted container images.
+
 Docker Compose installations support Wave in Lite mode. Wave Lite includes only container augmentation and inspection capabilities, and enables the use of Fusion file system in Nextflow pipelines. The following features are not available in self-hosted Wave installations in Docker Compose:
 
 - Container Freeze
@@ -154,10 +156,11 @@ services:
     image: your-registry.com/wave:latest
     container_name: wave-app
     ports:
-      - "9090:9090"
+      # Bind to the host on 9100 vs 9090  
+      - "9100:9090"
     environment:
-      MICRONAUT_ENVIRONMENTS: "postgres,redis,lite"
-    working_dir: /work
+      - MICRONAUT_ENVIRONMENTS=lite,rate-limit,redis,postgres,prometheus
+      - WAVE_JVM_OPTS=-XX:+UseG1GC -Xms512m -Xmx850m -XX:MaxDirectMemorySize=100m -Dio.netty.maxDirectMemory=0 -Djdk.httpclient.keepalive.timeout=10 -Djdk.tracePinnedThreads=short -Djdk.traceVirtualThreadInThreadDump=full
     volumes:
       - ./config/wave-config.yml:/work/config.yml:ro
     deploy:

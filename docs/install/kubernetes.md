@@ -4,10 +4,7 @@ title: Kubernetes installation
 
 Wave enables you to provision container images on-demand, removing the need to build and upload them manually to a container registry. Wave can can provision both disposable containers that are only accessible for a short period, and regular registry-persisted container images.
 
-This installation guide covers Wave in **augmentation-only mode** (referred to here as `wave-lite`), which provides:
-
-- **inspect** - Container inspection and metadata retrieval
-- **augment** - Container image augmentation with additional layers
+This installation guide covers Wave in Lite mode. Wave Lite includes only container augmentation and inspection capabilities, and enables the use of Fusion file system in Nextflow pipelines.
 
 Wave's full build capabilities require specific integrations with Kubernetes and AWS EFS Storage, making EKS & AWS a hard dependency for fully-featured deployments. The following Wave features are **not** available in this configuration:
 
@@ -48,7 +45,6 @@ This guide assumes:
 - You will deploy Wave into the `wave` namespace
 - You have appropriate cluster permissions to create namespaces, deployments, and services
 - Your PostgreSQL and Redis instances are accessible from the Kubernetes cluster
-
 
 ## Database configuration
 
@@ -125,7 +121,7 @@ metadata:
   labels:
     app: wave-cfg
 data:
-  config.yml: |
+  config.yml:
     wave:
       # Build service configuration - disabled for Wave base installation
       build:
