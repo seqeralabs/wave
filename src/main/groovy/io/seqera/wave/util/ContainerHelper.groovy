@@ -322,4 +322,13 @@ class ContainerHelper {
         if( file.contains('/kaniko') )
             throw new BadRequestException("Provided container file is not allowed (error code: 101)")
     }
+
+    static List<String> getAWSAuthEnvVars(Map<String, String> env) {
+        List.of(
+                '-e',
+                "AWS_ACCESS_KEY_ID=${env.get('AWS_ACCESS_KEY_ID')}".toString(),
+                '-e',
+                "AWS_SECRET_ACCESS_KEY=${env.get('AWS_SECRET_ACCESS_KEY')}".toString()
+        )
+    }
 }

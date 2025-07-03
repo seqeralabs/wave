@@ -28,6 +28,7 @@ import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.configuration.MirrorEnabled
 import io.seqera.wave.service.mirror.MirrorRequest
+import io.seqera.wave.util.ContainerHelper
 import io.seqera.wave.util.FusionHelper
 import jakarta.inject.Inject
 import jakarta.inject.Named
@@ -77,17 +78,15 @@ class DockerMirrorStrategy extends MirrorStrategy {
         }
     }
 
-    protected List<String> mirrorCmd(String name, String workDir, String credsFile ) {
+    protected List<String> mirrorCmd(String name, String workDir, String credsFile, Map<String, String> env = System.getenv()) {
         //checkout the documentation here to know more about these options https://github.com/moby/buildkit/blob/master/docs/rootless.md#docker
         final wrapper = ['docker',
                          'run',
                         '--detach',
                         '--privileged',
                          '--name', name,
-                         '-e',
-                         "AWS_ACCESS_KEY_ID=${System.getenv('AWS_ACCESS_KEY_ID')}".toString(),
-                         '-e',
-                         "AWS_SECRET_ACCESS_KEY=${System.getenv('AWS_SECRET_ACCESS_KEY')}".toString()]
+                         '-e']
+        wrapper.addAll(ContainerHelper.getAWSAuthEnvVars(env))
 
         if( credsFile ) {
             wrapper.add('-e')

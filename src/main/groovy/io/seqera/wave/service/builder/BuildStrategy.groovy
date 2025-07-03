@@ -130,7 +130,7 @@ abstract class BuildStrategy {
 
     String getSymlinkSingularity( BuildRequest req ) {
         if( req.configJson ){
-            return "ln -s ${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/.singularity /root/.singularity &&"
+            return "ln -s ${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/.singularity /root/.singularity && "
         }
         return  ""
     }
@@ -152,7 +152,7 @@ abstract class BuildStrategy {
         result
                 << 'sh'
                 << '-c'
-                << "${getSymlinkSingularity(req)} singularity build image.sif ${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/Containerfile && singularity push image.sif ${req.targetImage}".toString()
+                << "${getSymlinkSingularity(req)}singularity build image.sif ${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/Containerfile && singularity push image.sif ${req.targetImage}".toString()
         return result
     }
 }

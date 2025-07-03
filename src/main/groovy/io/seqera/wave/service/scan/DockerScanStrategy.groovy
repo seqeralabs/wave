@@ -24,6 +24,7 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.request.UploadRequest
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.util.ContainerHelper
 import io.seqera.wave.util.FusionHelper
 import io.seqera.wave.configuration.ScanEnabled
 import jakarta.inject.Inject
@@ -80,18 +81,15 @@ class DockerScanStrategy extends ScanStrategy {
         }
     }
 
-    protected List<String> dockerWrapper(String jobName, String workDir, String credsFile, List<String> env) {
+    protected List<String> dockerWrapper(String jobName, String workDir, String credsFile, List<String> scanEnv, Map<String, String> env = System.getenv()) {
 
         final wrapper = ['docker',
                          'run',
                          '--detach',
                          '--name',
                          jobName,
-                         '--privileged',
-                         '-e',
-                         "AWS_ACCESS_KEY_ID=${System.getenv('AWS_ACCESS_KEY_ID')}".toString(),
-                         '-e',
-                         "AWS_SECRET_ACCESS_KEY=${System.getenv('AWS_SECRET_ACCESS_KEY')}".toString()]
+                         '--privileged']
+        wrapper.addAll(ContainerHelper.getAWSAuthEnvVars(env))
         // scan work dir
         wrapper.add('-e')
         wrapper.add("TRIVY_WORKSPACE_DIR=$workDir".toString())
@@ -105,8 +103,8 @@ class DockerScanStrategy extends ScanStrategy {
             wrapper.add("DOCKER_CONFIG=$workDir".toString())
         }
 
-        if( env ) {
-            for( String it : env ) {
+        if( scanEnv ) {
+            for( String it : scanEnv ) {
                 wrapper.add('-e')
                 wrapper.add(it)
             }

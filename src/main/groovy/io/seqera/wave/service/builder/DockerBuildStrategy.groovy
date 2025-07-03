@@ -27,6 +27,7 @@ import io.micronaut.objectstorage.request.UploadRequest
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.wave.core.RegistryProxyService
+import io.seqera.wave.util.ContainerHelper
 import io.seqera.wave.util.FusionHelper
 import jakarta.inject.Inject
 import jakarta.inject.Named
@@ -80,16 +81,16 @@ class DockerBuildStrategy extends BuildStrategy {
         }
     }
 
-    protected List<String> buildCmd(String jobName, BuildRequest req) {
+    protected List<String> buildCmd(String jobName, BuildRequest req, Map<String, String> env = System.getenv()) {
 
         final dockerCmd = req.formatDocker()
-                ? cmdForBuildkit(jobName, req)
-                : cmdForSingularity(jobName, req)
+                ? cmdForBuildkit(jobName, req, env)
+                : cmdForSingularity(jobName, req, env)
 
         return dockerCmd + launchCmd(req)
     }
 
-    protected List<String> cmdForBuildkit(String name, BuildRequest req) {
+    protected List<String> cmdForBuildkit(String name, BuildRequest req, Map<String, String> env = System.getenv()) {
         //checkout the documentation here to know more about these options https://github.com/moby/buildkit/blob/master/docs/rootless.md#docker
         final wrapper = ['docker',
                          'run',
@@ -97,12 +98,8 @@ class DockerBuildStrategy extends BuildStrategy {
                          '--name', name,
                          '--privileged',
                          '-e',
-                         'TMPDIR=/tmp',
-                         '-e',
-                         "AWS_ACCESS_KEY_ID=${System.getenv('AWS_ACCESS_KEY_ID')}".toString(),
-                         '-e',
-                         "AWS_SECRET_ACCESS_KEY=${System.getenv('AWS_SECRET_ACCESS_KEY')}".toString()]
-
+                         'TMPDIR=/tmp']
+        wrapper.addAll(ContainerHelper.getAWSAuthEnvVars(env))
         if( req.configJson ) {
             wrapper.add('-e')
             wrapper.add("DOCKER_CONFIG=${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}".toString())
@@ -119,16 +116,13 @@ class DockerBuildStrategy extends BuildStrategy {
         return wrapper
     }
 
-    protected List<String> cmdForSingularity(String name, BuildRequest req) {
+    protected List<String> cmdForSingularity(String name, BuildRequest req, Map<String, String> env = System.getenv() ) {
         final wrapper = ['docker',
                          'run',
                          '--detach',
                          '--name', name,
-                         '--privileged',
-                         '-e',
-                         "AWS_ACCESS_KEY_ID=${System.getenv('AWS_ACCESS_KEY_ID')}".toString(),
-                         '-e',
-                         "AWS_SECRET_ACCESS_KEY=${System.getenv('AWS_SECRET_ACCESS_KEY')}".toString()]
+                         '--privileged']
+            wrapper.addAll(ContainerHelper.getAWSAuthEnvVars(env))
 
         if( req.platform ) {
             wrapper.add('--platform')
