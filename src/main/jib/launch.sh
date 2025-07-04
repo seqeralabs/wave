@@ -18,6 +18,16 @@
 
 # Launch backend server
 [ "$WAVE_JVM_OPTS" ] && echo "Detected WAVE_JVM_OPTS=$WAVE_JVM_OPTS"
+JVM_OPTS="${WAVE_JVM_OPTS:-\
+  -XX:+UseG1GC \
+  -Xms512m \
+  -Xmx850m \
+  -XX:MaxDirectMemorySize=100m \
+  -Dio.netty.maxDirectMemory=0 \
+  -Djdk.httpclient.keepalive.timeout=10 \
+  -Djdk.tracePinnedThreads=short \
+  -Djdk.traceVirtualThreadInThreadDump=full \
+}"
 exec java \
   -Dfile.encoding=UTF-8 \
   -Dcom.sun.security.enableAIAcaIssuers=true \
@@ -30,9 +40,6 @@ exec java \
   --add-opens java.base/java.io=ALL-UNNAMED \
   --add-opens java.base/java.nio=ALL-UNNAMED \
   --enable-native-access=ALL-UNNAMED \
-  ${WAVE_JVM_OPTS} \
-  -XX:+UseG1GC -Xms512m -Xmx850m -XX:MaxDirectMemorySize=100m \
-  -Dio.netty.maxDirectMemory=0 -Djdk.httpclient.keepalive.timeout=10 \
-  -Djdk.tracePinnedThreads=short -Djdk.traceVirtualThreadInThreadDump=full \
+  ${JVM_OPTS} \
   -cp /app/resources:/app/classes:/app/libs/* \
   io.seqera.wave.Application
