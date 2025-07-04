@@ -210,7 +210,7 @@ class BuildStoreLocalTest extends Specification {
         result.count == 1
         result.value.request.buildId == 'bd-12345_1'
         result.value.result.buildId == 'bd-12345_1'
-        result.value.request.workDir == Path.of("/some/path/bd-12345_1")
+        result.value.request.workDir == "workspace/bd-12345_1"
         and:
         store.findByRequestId('bd-12345_1') == result.value
 
@@ -221,7 +221,7 @@ class BuildStoreLocalTest extends Specification {
         result.count == 1
         result.value.request.buildId == 'bd-12345_1'
         result.value.result.buildId == 'bd-12345_1'
-        result.value.request.workDir == Path.of("/some/path/bd-12345_1")
+        result.value.request.workDir == "workspace/bd-12345_1"
         and:
         store.findByRequestId('bd-12345_1') == result.value
 
@@ -234,7 +234,7 @@ class BuildStoreLocalTest extends Specification {
         result.count == 2
         result.value.request.buildId == 'bd-12345_2'
         result.value.result.buildId == 'bd-12345_2'
-        result.value.request.workDir == Path.of("/some/path/bd-12345_2")
+        result.value.request.workDir == "workspace/bd-12345_2"
         and:
         store.findByRequestId('bd-12345_1') == null
         store.findByRequestId('bd-12345_2') == result.value

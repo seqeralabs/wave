@@ -48,7 +48,7 @@ wave:
       username: 'foo'
       password: 'bar'
   build:
-    workspace: 'build-workspace'
+    workspace: 's3://nextflow-ci/wave-build'
     logs:
       enabled: true
       path: "s3://nextflow-ci/wave-build/logs"

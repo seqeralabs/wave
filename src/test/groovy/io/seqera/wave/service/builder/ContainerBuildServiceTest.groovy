@@ -64,7 +64,6 @@ import io.seqera.wave.test.TestHelper
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.ContainerHelper
 import io.seqera.wave.util.Packer
-import io.seqera.wave.util.TarGzipUtils
 import io.seqera.wave.util.TemplateRenderer
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
