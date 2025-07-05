@@ -43,7 +43,7 @@ class JobSpecTest extends Specification {
                 creation,
                 submission,
                 Duration.ofMinutes(1),
-                Path.of('/some/path')
+                '/some/path'
         )
         then:
         job.id == '1234'
@@ -52,7 +52,7 @@ class JobSpecTest extends Specification {
         job.creationTime == creation
         job.launchTime == submission
         job.maxDuration == Duration.ofMinutes(1)
-        job.workDir == Path.of('/some/path')
+        job.workDir == '/some/path'
 
         when:
         def newJob = job.withLaunchTime(creation.plusSeconds(100))
@@ -63,7 +63,7 @@ class JobSpecTest extends Specification {
         newJob.creationTime == creation
         newJob.launchTime == creation.plusSeconds(100)
         newJob.maxDuration == Duration.ofMinutes(1)
-        newJob.workDir == Path.of('/some/path')
+        newJob.workDir == '/some/path'
     }
 
     def 'should create transfer job' () {
@@ -82,7 +82,7 @@ class JobSpecTest extends Specification {
     def 'should create build job' () {
         given:
         def now = Instant.now()
-        def job = JobSpec.build('12345','xyz', now, Duration.ofMinutes(1), Path.of('/some/path'))
+        def job = JobSpec.build('12345','xyz', now, Duration.ofMinutes(1), '/some/path')
         expect:
         job.id
         job.entryKey == '12345'
@@ -90,13 +90,13 @@ class JobSpecTest extends Specification {
         job.creationTime == now
         job.maxDuration == Duration.ofMinutes(1)
         job.operationName == 'xyz'
-        job.workDir == Path.of('/some/path')
+        job.workDir == '/some/path'
     }
 
     def 'should create scan job' () {
         given:
         def now = Instant.now()
-        def job = JobSpec.scan('12345','xyz', now, Duration.ofMinutes(1), Path.of('/some/path'))
+        def job = JobSpec.scan('12345','xyz', now, Duration.ofMinutes(1), '/some/path')
         expect:
         job.id
         job.entryKey == '12345'
@@ -104,13 +104,13 @@ class JobSpecTest extends Specification {
         job.creationTime == now
         job.maxDuration == Duration.ofMinutes(1)
         job.operationName == 'xyz'
-        job.workDir == Path.of('/some/path')
+        job.workDir == '/some/path'
     }
 
     def 'should create mirror job' () {
         given:
         def now = Instant.now()
-        def job = JobSpec.mirror('12345','xyz', now, Duration.ofMinutes(1), Path.of('/some/path'))
+        def job = JobSpec.mirror('12345','xyz', now, Duration.ofMinutes(1), '/some/path')
 
         expect:
         job.id
@@ -119,6 +119,6 @@ class JobSpecTest extends Specification {
         job.creationTime == now
         job.maxDuration == Duration.ofMinutes(1)
         job.operationName == 'xyz'
-        job.workDir == Path.of('/some/path')
+        job.workDir == '/some/path'
     }
 }

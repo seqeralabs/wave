@@ -19,8 +19,14 @@
 package io.seqera.wave.service.builder
 
 import groovy.transform.CompileStatic
+import io.micronaut.objectstorage.ObjectStorageOperations
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.util.FusionHelper
 import jakarta.inject.Inject
+import jakarta.inject.Named
+import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WORKSPACE
+import static io.seqera.wave.service.builder.BuildConstants.BUILDKIT_ENTRYPOINT
+import static io.seqera.wave.service.builder.BuildConstants.FUSION_ENTRYPOINT
 /**
  * Defines an abstract container build strategy.
  *
@@ -37,9 +43,9 @@ abstract class BuildStrategy {
 
     abstract void build(String jobName, BuildRequest req)
 
-    abstract List<String> singularityLaunchCmd(BuildRequest req)
-
-    static final public String BUILDKIT_ENTRYPOINT = 'buildctl-daemonless.sh'
+    @Inject
+    @Named(BUILD_WORKSPACE)
+    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
 
     List<String> launchCmd(BuildRequest req) {
         if(req.formatDocker()) {
@@ -55,15 +61,17 @@ abstract class BuildStrategy {
     protected List<String> dockerLaunchCmd(BuildRequest req) {
         final result = new ArrayList(10)
         result
+                << FUSION_ENTRYPOINT
+                << BUILDKIT_ENTRYPOINT
                 << "build"
                 << "--frontend"
                 << "dockerfile.v0"
                 << "--local"
-                << "dockerfile=$req.workDir".toString()
+                << "dockerfile=${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}".toString()
                 << "--opt"
                 << "filename=Containerfile"
                 << "--local"
-                << "context=$req.workDir/context".toString()
+                << "context=${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/context".toString()
                 << "--output"
                 << outputOpts(req, buildConfig)
                 << "--opt"
@@ -120,4 +128,31 @@ abstract class BuildStrategy {
         return result.toString()
     }
 
+    String getSymlinkSingularity( BuildRequest req ) {
+        if( req.configJson ){
+            return "ln -s ${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/.singularity /root/.singularity && "
+        }
+        return  ""
+    }
+
+    protected String getBuildImage(BuildRequest buildRequest){
+        if( buildRequest.formatDocker() ) {
+            return buildConfig.buildkitImage
+        }
+
+        if( buildRequest.formatSingularity() ) {
+            return buildConfig.singularityImage
+        }
+
+        throw new IllegalArgumentException("Unexpected container platform: ${buildRequest.platform}")
+    }
+
+    List<String> singularityLaunchCmd(BuildRequest req) {
+        final result = new ArrayList(10)
+        result
+                << 'sh'
+                << '-c'
+                << "${getSymlinkSingularity(req)}singularity build image.sif ${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/Containerfile && singularity push image.sif ${req.targetImage}".toString()
+        return result
+    }
 }

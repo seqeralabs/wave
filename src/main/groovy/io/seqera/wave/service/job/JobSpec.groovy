@@ -79,9 +79,9 @@ class JobSpec {
      * The temporary path associated with this job (optional). This is expected to be deleted
      * once the job execution terminates.
      */
-    final Path workDir
+    final String workDir
 
-    protected JobSpec(String id, Type type, String entryKey, String operationName, Instant createdAt, Instant submittedAt, Duration maxDuration, Path dir) {
+    protected JobSpec(String id, Type type, String entryKey, String operationName, Instant createdAt, Instant submittedAt, Duration maxDuration, String dir) {
         this.id = id
         this.type = type
         this.entryKey = entryKey
@@ -105,7 +105,7 @@ class JobSpec {
         )
     }
 
-    static JobSpec scan(String recordId, String operationName, Instant creationTime, Duration maxDuration, Path dir) {
+    static JobSpec scan(String recordId, String operationName, Instant creationTime, Duration maxDuration, String dir) {
         new JobSpec(
                 LongRndKey.rndHex(),
                 Type.Scan,
@@ -118,7 +118,7 @@ class JobSpec {
         )
     }
 
-    static JobSpec build(String recordId, String operationName, Instant creationTime, Duration maxDuration,  Path dir) {
+    static JobSpec build(String recordId, String operationName, Instant creationTime, Duration maxDuration,  String dir) {
         new JobSpec(
                 LongRndKey.rndHex(),
                 Type.Build,
@@ -131,7 +131,7 @@ class JobSpec {
         )
     }
 
-    static JobSpec mirror(String recordId, String operationName, Instant creationTime, Duration maxDuration, Path workDir) {
+    static JobSpec mirror(String recordId, String operationName, Instant creationTime, Duration maxDuration, String workDir) {
         new JobSpec(
                 LongRndKey.rndHex(),
                 Type.Mirror,

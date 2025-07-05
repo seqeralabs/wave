@@ -45,6 +45,7 @@ abstract class MirrorStrategy {
             }
         }
 
+        result.add("skopeo")
         result.add("copy")
         result.add("--preserve-digests")
         result.add("--multi-arch")

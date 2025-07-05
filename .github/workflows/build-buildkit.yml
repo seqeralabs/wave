@@ -1,10 +1,10 @@
-name: Build and publish Singularity container image
+name: Build and publish Buildkit container image
 
 on:
   workflow_dispatch:
     inputs:
-      singularity-version:
-        description: 'Singularity version'
+      buildkit-version:
+        description: 'Buildkit version'
         required: true
       fusion-version:
         description: 'Fusion version'
@@ -30,5 +30,5 @@ jobs:
 
       - name: Build and Push Image to public.cr.seqera.io
         run: |
-          cd singularity
-          make build singularity_version=${{ github.event.inputs.singularity-version }} fusion_version=${{ github.event.inputs.fusion-version }}
+          cd buildkit
+          make build buildkit_version=${{ github.event.inputs.buildkit-version }} fusion_version=${{ github.event.inputs.fusion-version }} 

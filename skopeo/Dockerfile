@@ -1,7 +1,8 @@
-FROM alpine:3.21.3
-ARG SINGULARITY_VERSION
-RUN apk update
-RUN apk add singularity=${SINGULARITY_VERSION}
+ARG SKOPEO_VERSION
+FROM --platform=$BUILDPLATFORM quay.io/skopeo/stable:v${SKOPEO_VERSION}
+USER root
+
+RUN microdnf install -y wget tar && microdnf clean all
 
 ARG TARGETPLATFORM
 ARG FUSION_VERSION
