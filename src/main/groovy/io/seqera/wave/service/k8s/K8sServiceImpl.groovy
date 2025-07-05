@@ -240,9 +240,13 @@ class K8sServiceImpl implements K8sService {
     }
 
 
-    private void addAWSCreds(Map <String, String> env) {
+    private Map <String, String> getAWSCreds(Map <String, String> env) {
+        if ( !env ) {
+            env = new HashMap<String, String>()
+        }
         env.put('AWS_ACCESS_KEY_ID', "${System.getenv('AWS_ACCESS_KEY_ID')}".toString())
         env.put('AWS_SECRET_ACCESS_KEY', "${System.getenv('AWS_SECRET_ACCESS_KEY')}".toString())
+        return env
     }
 
     /**
@@ -339,20 +343,22 @@ class K8sServiceImpl implements K8sService {
     @Override
     @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
     V1Job launchBuildJob(String name, String containerImage, List<String> args, String workspace, String creds, Duration timeout, Map<String,String> nodeSelector) {
-        final spec = buildJobSpec(name, containerImage, args, workspace, creds, timeout, nodeSelector)
+        def env = getAWSCreds(null)
+        env.put('TMPDIR', '/tmp')
+        final spec = buildJobSpec(name, containerImage, args, workspace, creds, timeout, nodeSelector, env)
         return k8sClient
                 .batchV1Api()
                 .createNamespacedJob(namespace, spec)
                 .execute()
     }
 
-    V1Job buildJobSpec(String name, String containerImage, List<String> args, String workDir, String credsFile, Duration timeout, Map<String,String> nodeSelector) {
+    V1Job buildJobSpec(String name, String containerImage, List<String> args, String workDir, String credsFile, Duration timeout, Map<String,String> nodeSelector, Map<String, String> env) {
 
         // dirty dependency to avoid introducing another parameter
         final singularity = containerImage.contains('singularity')
-
-        Map<String, String> env = new HashMap<String, String>()
-        addAWSCreds(env)
+        if( !singularity )
+        // check this link to know more about these options https://github.com/moby/buildkit/tree/master/examples/kubernetes#kubernetes-manifests-for-buildkit
+            env.put('BUILDKITD_FLAGS', '--oci-worker-no-process-sandbox')
 
         if( credsFile ){
                 env.put('DOCKER_CONFIG', FusionHelper.getFusionPath(buildConfig.workspaceBucket, workDir))
@@ -396,12 +402,8 @@ class K8sServiceImpl implements K8sService {
             requests.putLimitsItem('memory', new Quantity(limitsMemory))
 
         //add https://github.com/nextflow-io/k8s-fuse-plugin
-        requests.limits(Map.of("nextflow.io/fuse", new Quantity("1")))
+        requests.putLimitsItem('nextflow.io/fuse', new Quantity("1"))
 
-        env.put('TMPDIR', '/tmp')
-        if( !singularity )
-        // check this link to know more about these options https://github.com/moby/buildkit/tree/master/examples/kubernetes#kubernetes-manifests-for-buildkit
-            env.put('BUILDKITD_FLAGS', '--oci-worker-no-process-sandbox')
         // container section
         final container = new V1ContainerBuilder()
                 .withName(name)
@@ -409,7 +411,13 @@ class K8sServiceImpl implements K8sService {
                 .withResources(requests)
                 .withEnv(toEnvList(env))
                 .withArgs(args)
+        if( singularity)
+        container
+                .withNewSecurityContext().withPrivileged(false).endSecurityContext()
+        else
+        container
                 .withNewSecurityContext().withPrivileged(true).endSecurityContext()
+
 
         // spec section
         spec.withContainers(container.build()).endSpec().endTemplate().endSpec()
@@ -419,17 +427,17 @@ class K8sServiceImpl implements K8sService {
 
     @Override
     V1Job launchScanJob(String name, String containerImage, List<String> args, String workspace, String creds, ScanConfig scanConfig) {
-        final spec = scanJobSpec(name, containerImage, args, workspace, creds, scanConfig)
+        def env = getAWSCreds(null)
+        env.put('TMPDIR', '/tmp')
+        final spec = scanJobSpec(name, containerImage, args, workspace, creds, scanConfig, env)
         return k8sClient
                 .batchV1Api()
                 .createNamespacedJob(namespace, spec)
                 .execute()
     }
 
-    V1Job scanJobSpec(String name, String containerImage, List<String> args, String workDir, String creds, ScanConfig scanConfig) {
+    V1Job scanJobSpec(String name, String containerImage, List<String> args, String workDir, String creds, ScanConfig scanConfig, Map<String,String> env) {
 
-        Map<String, String> env = new HashMap<String, String>()
-        addAWSCreds(env)
         if( creds ){
             env.put('DOCKER_CONFIG', workDir)
         }
@@ -451,6 +459,7 @@ class K8sServiceImpl implements K8sService {
                 .withNewTemplate()
                 .editOrNewSpec()
                 .withServiceAccount(serviceAccount)
+                .withActiveDeadlineSeconds( scanConfig.timeout.toSeconds() )
                 .withRestartPolicy("Never")
                 .withDnsConfig(dnsConfig())
                 .withDnsPolicy(dnsPolicy)
@@ -466,7 +475,7 @@ class K8sServiceImpl implements K8sService {
             requests.putLimitsItem('memory', new Quantity(scanConfig.limitsMemory))
 
         //add https://github.com/nextflow-io/k8s-fuse-plugin
-        requests.limits(Map.of("nextflow.io/fuse", new Quantity("1")))
+        requests.putLimitsItem('nextflow.io/fuse', new Quantity("1"))
 
         // container section
         final container = new V1ContainerBuilder()
@@ -492,17 +501,17 @@ class K8sServiceImpl implements K8sService {
 
     @Override
     V1Job launchMirrorJob(String name, String containerImage, List<String> args, String workDir, String creds, MirrorConfig config) {
-        final spec = mirrorJobSpec(name, containerImage, args, workDir, creds, config)
+        def env = getAWSCreds(null)
+        env.put('TMPDIR', '/tmp')
+        final spec = mirrorJobSpec(name, containerImage, args, workDir, creds, config, env)
         return k8sClient
                 .batchV1Api()
                 .createNamespacedJob(namespace, spec)
                 .execute()
     }
 
-    V1Job mirrorJobSpec(String name, String containerImage, List<String> args, String workDir, String credsFile, MirrorConfig config) {
+    V1Job mirrorJobSpec(String name, String containerImage, List<String> args, String workDir, String credsFile, MirrorConfig config, Map<String,String> env) {
 
-        Map<String, String> env = new HashMap<String, String>()
-        addAWSCreds(env)
         if( credsFile ){
             env.put('DOCKER_CONFIG', FusionHelper.getFusionPath(buildConfig.workspaceBucket, workDir))
         }
@@ -540,7 +549,7 @@ class K8sServiceImpl implements K8sService {
             requests.putLimitsItem('memory', new Quantity(config.limitsMemory))
 
         //add https://github.com/nextflow-io/k8s-fuse-plugin
-        requests.limits(Map.of("nextflow.io/fuse", new Quantity("1")))
+        requests.putLimitsItem('nextflow.io/fuse', new Quantity("1"))
 
         // container section
         final container = new V1ContainerBuilder()
