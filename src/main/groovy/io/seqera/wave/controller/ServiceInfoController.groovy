@@ -20,6 +20,7 @@ package io.seqera.wave.controller
 
 import groovy.transform.CompileStatic
 import io.micronaut.core.annotation.Nullable
+import java.util.Optional
 
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
@@ -60,10 +61,6 @@ class ServiceInfoController {
                 : HttpResponse.badRequest()
     }
 
-    @Get("/openapi")
-    HttpResponse getOpenAPI() {
-        HttpResponse.redirect(URI.create("/openapi/"))
-    }
 
     @Get(uri = "/favicon.ico", produces = MediaType.IMAGE_X_ICON)
     HttpResponse getFavicon() {

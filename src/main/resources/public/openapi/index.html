@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wave API Documentation</title>
+    <link rel="stylesheet" type="text/css" href="/webjars/swagger-ui/5.17.14/swagger-ui.css" />
+    <link rel="icon" type="image/png" href="/webjars/swagger-ui/5.17.14/favicon-32x32.png" sizes="32x32" />
+    <link rel="icon" type="image/png" href="/webjars/swagger-ui/5.17.14/favicon-16x16.png" sizes="16x16" />
+    <style>
+        html {
+            box-sizing: border-box;
+            overflow: -moz-scrollbars-vertical;
+            overflow-y: scroll;
+        }
+
+        *,
+        *:before,
+        *:after {
+            box-sizing: inherit;
+        }
+
+        body {
+            margin: 0;
+            background: #fafafa;
+        }
+
+        .version-selector {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 5px;
+        }
+
+        .version-selector select {
+            border: none;
+            background: transparent;
+            font-size: 14px;
+        }
+
+        /* Hide Swagger branding elements */
+        .topbar {
+            display: none !important;
+        }
+        
+        .swagger-ui .info .title small {
+            display: none;
+        }
+        
+        .swagger-ui .info a[href*="swagger.io"] {
+            display: none !important;
+        }
+        
+        /* Customize header area */
+        .swagger-ui .info .title {
+            font-size: 36px;
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="version-selector">
+        <label for="version-select">Version: </label>
+        <select id="version-select">
+            <option value="openapi-latest.yaml">Latest</option>
+            <option value="openapi-1.22.0.yaml">1.22.0</option>
+        </select>
+    </div>
+
+    <div id="swagger-ui"></div>
+
+    <script src="/webjars/swagger-ui/5.17.14/swagger-ui-bundle.js"></script>
+    <script src="/webjars/swagger-ui/5.17.14/swagger-ui-standalone-preset.js"></script>
+    <script>
+        function loadSpec(specUrl) {
+            SwaggerUIBundle({
+                url: '/openapi/' + specUrl,
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                onComplete: function() {
+                    // Remove Swagger branding
+                    const topbar = document.querySelector('.topbar');
+                    if (topbar) {
+                        topbar.style.display = 'none';
+                    }
+                    
+                    // Remove "Swagger Petstore" default info
+                    const infoSection = document.querySelector('.info');
+                    if (infoSection) {
+                        const swaggerLinks = infoSection.querySelectorAll('a[href*="swagger.io"]');
+                        swaggerLinks.forEach(link => link.remove());
+                    }
+                }
+            });
+        }
+
+        // Load initial spec
+        loadSpec('openapi-latest.yaml');
+
+        // Handle version selector change
+        document.getElementById('version-select').addEventListener('change', function(e) {
+            loadSpec(e.target.value);
+        });
+    </script>
+</body>
+</html>
