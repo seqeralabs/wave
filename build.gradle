@@ -190,17 +190,19 @@ test {
 }
 
 /** Update version number for backend app and modules */
-task buildInfo { doLast {
-    def info = """\
+tasks.register('buildInfo') {
+    doLast {
+        def info = """\
                 name=${project.name}
                 group=${project.group}
                 version=${version}
                 commitId=${project.property('commitId')}
             """.stripIndent().toString()
-    def f = file("${buildDir}/resources/main/META-INF/build-info.properties")
-    f.parentFile.mkdirs()
-    f.text = info
-} }
+        def f = file("${buildDir}/resources/main/META-INF/build-info.properties")
+        f.parentFile.mkdirs()
+        f.text = info
+    }
+}
 buildInfo.dependsOn processResources
 compileGroovy.dependsOn buildInfo
 
@@ -209,7 +211,7 @@ jacoco {
 }
 
 // OpenAPI generation tasks
-task generateOpenApi(type: Exec) {
+tasks.register('generateOpenApi', Exec) {
     group 'openapi'
     description 'Generate OpenAPI spec from TypeSpec'
     workingDir 'typespec'
