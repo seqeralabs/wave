@@ -31,6 +31,7 @@ import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
+import io.seqera.wave.util.FusionHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.util.K8sHelper.getSelectorLabel
@@ -75,6 +76,17 @@ class KubeBuildStrategy extends BuildStrategy {
         catch (ApiException e) {
             throw new BadRequestException("Unexpected build failure - ${e.responseBody}", e)
         }
+    }
+
+    List<String> singularityLaunchCmd(BuildRequest req) {
+        final result = new ArrayList(10)
+        result
+                << """
+                  fusion cp -r ${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/. /home/builder/ \
+                  && singularity build image.sif /home/builder/Containerfile \
+                  && singularity push image.sif ${req.targetImage}
+                """.stripIndent().trim()
+        return result
     }
 
 }

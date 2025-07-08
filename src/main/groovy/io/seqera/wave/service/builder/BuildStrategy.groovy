@@ -40,11 +40,13 @@ abstract class BuildStrategy {
     @Inject
     private BuildConfig buildConfig
 
-    abstract void build(String jobName, BuildRequest req)
-
     @Inject
     @Named(BUILD_WORKSPACE)
     private ObjectStorageOperations<?, ?, ?> objectStorageOperations
+
+    abstract void build(String jobName, BuildRequest req)
+
+    abstract List<String> singularityLaunchCmd(BuildRequest req)
 
     List<String> launchCmd(BuildRequest req) {
         if(req.formatDocker()) {
@@ -66,7 +68,7 @@ abstract class BuildStrategy {
                     --opt filename=Containerfile \
                     --local context=/home/user/$req.buildId/context  \
                     --output ${outputOpts(req, buildConfig)} \
-                    --opt platform=$req.platform""")
+                    --opt platform=$req.platform""".stripIndent().trim())
 
         if( req.cacheRepository ) {
             result.append" --export-cache ${cacheOpts(req, buildConfig)} --import-cache type=registry,ref=$req.cacheRepository:$req.containerId".toString()
@@ -118,7 +120,9 @@ abstract class BuildStrategy {
 
     String getSymlinkSingularity( BuildRequest req ) {
         if( req.configJson ){
-            return "ln -s ${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/.singularity /root/.singularity && "
+            return """
+            fusion cp -r ${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)} /home/user/$req.buildId && \
+            ln -s ${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/.singularity /root/.singularity && """
         }
         return  ""
     }
@@ -135,12 +139,4 @@ abstract class BuildStrategy {
         throw new IllegalArgumentException("Unexpected container platform: ${buildRequest.platform}")
     }
 
-    List<String> singularityLaunchCmd(BuildRequest req) {
-        final result = new ArrayList(10)
-        result
-                << 'sh'
-                << '-c'
-                << "${getSymlinkSingularity(req)}singularity build image.sif ${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/Containerfile && singularity push image.sif ${req.targetImage}".toString()
-        return result
-    }
 }

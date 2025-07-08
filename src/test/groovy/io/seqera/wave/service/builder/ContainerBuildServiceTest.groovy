@@ -214,7 +214,7 @@ class ContainerBuildServiceTest extends Specification implements AwsS3TestContai
                 )
 
         when:
-        def result = builder.containerFile0(req, null)
+        def result = builder.containerFile0(req)
         then:
         result == 'FROM something; {{foo}}'
 
@@ -247,7 +247,7 @@ class ContainerBuildServiceTest extends Specification implements AwsS3TestContai
                 )
 
         when:
-        def result = builder.containerFile0(req, 'context')
+        def result = builder.containerFile0(req)
         then:
         result == '''\
         BootStrap: docker

@@ -364,7 +364,7 @@ class K8sServiceImpl implements K8sService {
             if ( !singularity ) {
                 env.put('DOCKER_CONFIG', "/home/user/${workDir.takeAfter("/")}".toString())
             } else {
-                env.put('DOCKER_CONFIG', FusionHelper.getFusionPath(buildConfig.workspaceBucket, workDir))
+                env.put('DOCKER_CONFIG', "/home/builder/.singularity")
             }
         }
 
@@ -414,11 +414,9 @@ class K8sServiceImpl implements K8sService {
                 .withImage(containerImage)
                 .withResources(requests)
                 .withEnv(toEnvList(env))
+                .withCommand("/bin/sh", "-c")
+                .withImagePullPolicy("Always")
                 .withArgs(args)
-                .withNewSecurityContext().withPrivileged(false).endSecurityContext()
-        if ( !singularity ) {
-            container.withCommand("/bin/sh", "-c")
-        }
 
         // spec section
         spec.withContainers(container.build()).endSpec().endTemplate().endSpec()
