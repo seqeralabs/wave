@@ -27,4 +27,5 @@ RUN adduser \
     -s /bin/sh \
     builder
 
+WORKDIR /home/builder
 USER builder
