@@ -58,18 +58,21 @@ abstract class BuildStrategy {
     }
 
     protected List<String> dockerLaunchCmd(BuildRequest req) {
-        final result = new ArrayList(10)
-        result
-                << """fusion cp -r ${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)} /home/user/$req.buildId && \
-                    $BUILDKIT_ENTRYPOINT build --frontend dockerfile.v0 --local dockerfile=/home/user/$req.buildId \
-                    --opt filename=Containerfile --local context=/home/user/$req.buildId/context  \
-                    --output ${outputOpts(req, buildConfig)} --opt platform=$req.platform""".toString()
+        StringBuilder result = new StringBuilder("""
+                    fusion cp -r ${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)} /home/user/$req.buildId && \
+                    $BUILDKIT_ENTRYPOINT build \
+                    --frontend dockerfile.v0 \
+                    --local dockerfile=/home/user/$req.buildId \
+                    --opt filename=Containerfile \
+                    --local context=/home/user/$req.buildId/context  \
+                    --output ${outputOpts(req, buildConfig)} \
+                    --opt platform=$req.platform""")
 
         if( req.cacheRepository ) {
-            result + "--export-cache ${cacheOpts(req, buildConfig)} --import-cache type=registry,ref=$req.cacheRepository:$req.containerId".toString()
+            result.append" --export-cache ${cacheOpts(req, buildConfig)} --import-cache type=registry,ref=$req.cacheRepository:$req.containerId".toString()
         }
 
-        return result
+        return List.of(result.toString())
     }
 
 
