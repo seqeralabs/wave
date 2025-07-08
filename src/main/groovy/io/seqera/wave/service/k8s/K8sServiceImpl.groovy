@@ -361,7 +361,11 @@ class K8sServiceImpl implements K8sService {
             env.put('BUILDKITD_FLAGS', '--oci-worker-no-process-sandbox')
 
         if( credsFile ){
+            if ( !singularity ) {
+                env.put('DOCKER_CONFIG', "/home/user/${workDir.takeAfter("/")}".toString())
+            } else {
                 env.put('DOCKER_CONFIG', FusionHelper.getFusionPath(buildConfig.workspaceBucket, workDir))
+            }
         }
 
         V1JobBuilder builder = new V1JobBuilder()
@@ -411,13 +415,10 @@ class K8sServiceImpl implements K8sService {
                 .withResources(requests)
                 .withEnv(toEnvList(env))
                 .withArgs(args)
-        if( singularity)
-        container
                 .withNewSecurityContext().withPrivileged(false).endSecurityContext()
-        else
-        container
-                .withNewSecurityContext().withPrivileged(true).endSecurityContext()
-
+        if ( !singularity ) {
+            container.withCommand("/bin/sh", "-c")
+        }
 
         // spec section
         spec.withContainers(container.build()).endSpec().endTemplate().endSpec()

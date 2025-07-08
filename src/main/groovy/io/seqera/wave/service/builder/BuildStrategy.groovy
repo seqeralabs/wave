@@ -26,7 +26,6 @@ import jakarta.inject.Inject
 import jakarta.inject.Named
 import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WORKSPACE
 import static io.seqera.wave.service.builder.BuildConstants.BUILDKIT_ENTRYPOINT
-import static io.seqera.wave.service.builder.BuildConstants.FUSION_ENTRYPOINT
 /**
  * Defines an abstract container build strategy.
  *
@@ -61,27 +60,13 @@ abstract class BuildStrategy {
     protected List<String> dockerLaunchCmd(BuildRequest req) {
         final result = new ArrayList(10)
         result
-                << FUSION_ENTRYPOINT
-                << BUILDKIT_ENTRYPOINT
-                << "build"
-                << "--frontend"
-                << "dockerfile.v0"
-                << "--local"
-                << "dockerfile=${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}".toString()
-                << "--opt"
-                << "filename=Containerfile"
-                << "--local"
-                << "context=${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/context".toString()
-                << "--output"
-                << outputOpts(req, buildConfig)
-                << "--opt"
-                << "platform=$req.platform".toString()
+                << """fusion cp -r ${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)} /home/user/$req.buildId && \
+                    $BUILDKIT_ENTRYPOINT build --frontend dockerfile.v0 --local dockerfile=/home/user/$req.buildId \
+                    --opt filename=Containerfile --local context=/home/user/$req.buildId/context  \
+                    --output ${outputOpts(req, buildConfig)} --opt platform=$req.platform""".toString()
 
         if( req.cacheRepository ) {
-            result << "--export-cache"
-            result << cacheOpts(req, buildConfig)
-            result << "--import-cache"
-            result << "type=registry,ref=$req.cacheRepository:$req.containerId".toString()
+            result + "--export-cache ${cacheOpts(req, buildConfig)} --import-cache type=registry,ref=$req.cacheRepository:$req.containerId".toString()
         }
 
         return result
