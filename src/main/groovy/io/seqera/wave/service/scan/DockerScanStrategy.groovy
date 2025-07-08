@@ -21,8 +21,10 @@ package io.seqera.wave.service.scan
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
+import io.micronaut.context.annotation.Value
 import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.request.UploadRequest
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.util.ContainerHelper
 import io.seqera.wave.util.FusionHelper
@@ -48,6 +50,9 @@ class DockerScanStrategy extends ScanStrategy {
     private ScanConfig scanConfig
 
     @Inject
+    private BuildConfig buildConfig
+
+    @Inject
     @Named(BUILD_WORKSPACE)
     private ObjectStorageOperations<?, ?, ?> objectStorageOperations
 
@@ -58,12 +63,8 @@ class DockerScanStrategy extends ScanStrategy {
     @Override
     void scanContainer(String jobName, ScanEntry entry) {
         log.info("Launching container scan job: $jobName for entry: $entry}")
-        // config (docker auth) file name
-        if( entry.configJson ){
-            objectStorageOperations.upload(UploadRequest.fromBytes(entry.configJson.bytes, "$entry.workDir/config.json".toString()))
-        }
         // outfile file name
-        final reportFile = "$entry.workDir/$Trivy.OUTPUT_FILE_NAME".toString()
+        final reportFile = FusionHelper.getFusionPath(buildConfig.workspaceBucket, "$entry.workDir/$Trivy.OUTPUT_FILE_NAME")
         // create the launch command
         final dockerCommand = dockerWrapper(jobName, entry.workDir, entry.configJson, scanConfig.environment)
         final trivyCommand = List.of(scanConfig.scanImage) + scanCommand(entry.containerImage, reportFile, entry.platform, scanConfig)

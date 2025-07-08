@@ -24,11 +24,15 @@ import io.kubernetes.client.openapi.ApiException
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
+import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.ScanEnabled
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
+import io.seqera.wave.util.FusionHelper
+import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
  * Implements ScanStrategy for Kubernetes
@@ -52,6 +56,9 @@ class KubeScanStrategy extends ScanStrategy {
 
     private final ScanConfig scanConfig
 
+    @Inject
+    private BuildConfig buildConfig
+
     KubeScanStrategy(K8sService k8sService, ScanConfig scanConfig) {
         this.k8sService = k8sService
         this.scanConfig = scanConfig
@@ -61,7 +68,7 @@ class KubeScanStrategy extends ScanStrategy {
     void scanContainer(String jobName, ScanEntry entry) {
         log.info("Launching container scan job: $jobName for entry: ${entry}")
         try{
-            final reportFile = "$entry.workDir/$Trivy.OUTPUT_FILE_NAME".toString()
+            final reportFile = FusionHelper.getFusionPath(buildConfig.workspaceBucket, "$entry.workDir/$Trivy.OUTPUT_FILE_NAME")
             final trivyCommand = scanCommand(entry.containerImage, reportFile, entry.platform, scanConfig)
             k8sService.launchScanJob(jobName, scanConfig.scanImage, trivyCommand, entry.workDir, entry.configJson, scanConfig)
         }

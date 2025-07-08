@@ -291,7 +291,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         // save docker auth file
         jobHelper.saveDockerAuth(entry.workDir, entry.configJson)
         // create the scan work directory
-        objectStorageOperations.upload(UploadRequest.fromBytes(new byte[0] , "workspace/$entry.scanId/".toString()))
+        objectStorageOperations.upload(UploadRequest.fromBytes(new byte[0] , "$entry.workDir/report.json".toString()))
         // launch scan job
         scanStrategy.scanContainer(job.operationName, entry)
         // return the update job
@@ -303,9 +303,10 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         ScanEntry result
         if( state.succeeded() ) {
             try {
-                final scanFile = objectStorageOperations.retrieve("workspace/$entry.scanId/$Trivy.OUTPUT_FILE_NAME".toString())
+                final scanFile = objectStorageOperations.retrieve("$entry.workDir/$Trivy.OUTPUT_FILE_NAME".toString())
                         .map(ObjectStorageEntry::getInputStream)
                 final scanReportFile = scanFile.isPresent() ? scanFile.get().text : null
+                log.info ("Container scan report file found - id=${entry.scanId}; file=${scanReportFile}")
                 final vulnerabilities = TrivyResultProcessor.parseFile(scanReportFile, config.vulnerabilityLimit)
                 result = entry.success(vulnerabilities)
                 log.info("Container scan succeeded - id=${entry.scanId}; exit=${state.exitCode}; stdout=${state.stdout}")
@@ -358,8 +359,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         persistenceService.allScans(scanId)
     }
 
-    String getScanWorkDir(String scanId) {
-        return FusionHelper.getFusionPath(config.workspaceBucketName, "workspace/$scanId")
+    static String getScanWorkDir(String scanId) {
+        return "workspace/$scanId"
     }
 
 }

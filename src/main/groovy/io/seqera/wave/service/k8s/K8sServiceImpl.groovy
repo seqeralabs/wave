@@ -440,7 +440,7 @@ class K8sServiceImpl implements K8sService {
     V1Job scanJobSpec(String name, String containerImage, List<String> args, String workDir, String creds, ScanConfig scanConfig, Map<String,String> env) {
 
         if( creds ){
-            env.put('DOCKER_CONFIG', workDir)
+            env.put('DOCKER_CONFIG', FusionHelper.getFusionPath(buildConfig.workspaceBucket, workDir))
         }
 
         V1JobBuilder builder = new V1JobBuilder()
