@@ -416,6 +416,9 @@ class K8sServiceImpl implements K8sService {
                 .withEnv(toEnvList(env))
                 .withArgs(args)
 
+        if ( !singularity ) {
+            container.withCommand('sh', '-c')
+        }
         // spec section
         spec.withContainers(container.build()).endSpec().endTemplate().endSpec()
 

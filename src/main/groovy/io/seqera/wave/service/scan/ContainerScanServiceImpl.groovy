@@ -306,7 +306,6 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
                 final scanFile = objectStorageOperations.retrieve("$entry.workDir/$Trivy.OUTPUT_FILE_NAME".toString())
                         .map(ObjectStorageEntry::getInputStream)
                 final scanReportFile = scanFile.isPresent() ? scanFile.get().text : null
-                log.info ("Container scan report file found - id=${entry.scanId}; file=${scanReportFile}")
                 final vulnerabilities = TrivyResultProcessor.parseFile(scanReportFile, config.vulnerabilityLimit)
                 result = entry.success(vulnerabilities)
                 log.info("Container scan succeeded - id=${entry.scanId}; exit=${state.exitCode}; stdout=${state.stdout}")

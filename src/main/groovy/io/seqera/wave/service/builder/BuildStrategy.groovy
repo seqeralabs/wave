@@ -116,15 +116,6 @@ abstract class BuildStrategy {
         return result.toString()
     }
 
-    String getSymlinkSingularity( BuildRequest req ) {
-        if( req.configJson ){
-            return """
-            fusion cp -r ${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)} /home/user/$req.buildId && \
-            ln -s ${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/.singularity /root/.singularity && """
-        }
-        return  ""
-    }
-
     protected String getBuildImage(BuildRequest buildRequest){
         if( buildRequest.formatDocker() ) {
             return buildConfig.buildkitImage

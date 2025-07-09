@@ -28,7 +28,6 @@ import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.util.ContainerHelper
-import io.seqera.wave.util.FusionHelper
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -97,12 +96,13 @@ class DockerBuildStrategy extends BuildStrategy {
                          '--detach',
                          '--name', name,
                          '--privileged',
+                         '--entrypoint', 'sh',
                          '-e',
                          'TMPDIR=/tmp']
         wrapper.addAll(ContainerHelper.getAWSAuthEnvVars(env))
         if( req.configJson ) {
             wrapper.add('-e')
-            wrapper.add("DOCKER_CONFIG=${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}".toString())
+            wrapper.add("DOCKER_CONFIG=/home/user/$req.buildId".toString())
         }
 
         if( req.platform ) {
@@ -112,6 +112,8 @@ class DockerBuildStrategy extends BuildStrategy {
 
         // the container image to be used to build
         wrapper.add( getBuildImage(req) )
+
+        wrapper.add('-c')
         // return it
         return wrapper
     }
