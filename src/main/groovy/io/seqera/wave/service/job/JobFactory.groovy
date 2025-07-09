@@ -75,7 +75,7 @@ class JobFactory {
                 request.buildId.replace('_', '-'),
                 request.startTime,
                 request.maxDuration,
-                buildConfig.buildWorkspace
+                request.workDir
         )
     }
 
