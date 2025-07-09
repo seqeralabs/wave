@@ -414,8 +414,6 @@ class K8sServiceImpl implements K8sService {
                 .withImage(containerImage)
                 .withResources(requests)
                 .withEnv(toEnvList(env))
-                .withCommand("/bin/sh", "-c")
-                .withImagePullPolicy("Always")
                 .withArgs(args)
 
         // spec section

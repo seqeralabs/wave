@@ -46,8 +46,6 @@ abstract class BuildStrategy {
 
     abstract void build(String jobName, BuildRequest req)
 
-    abstract List<String> singularityLaunchCmd(BuildRequest req)
-
     List<String> launchCmd(BuildRequest req) {
         if(req.formatDocker()) {
             dockerLaunchCmd(req)
@@ -139,4 +137,16 @@ abstract class BuildStrategy {
         throw new IllegalArgumentException("Unexpected container platform: ${buildRequest.platform}")
     }
 
+    List<String> singularityLaunchCmd(BuildRequest req) {
+        final result = new ArrayList(10)
+        result
+                << 'sh'
+                << '-c'
+                << """
+                  fusion cp -r ${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/. /home/builder/ \
+                  && singularity build image.sif /home/builder/Containerfile \
+                  && singularity push image.sif ${req.targetImage}
+                """.stripIndent().trim()
+        return result
+    }
 }

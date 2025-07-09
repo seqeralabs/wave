@@ -78,15 +78,4 @@ class KubeBuildStrategy extends BuildStrategy {
         }
     }
 
-    List<String> singularityLaunchCmd(BuildRequest req) {
-        final result = new ArrayList(10)
-        result
-                << """
-                  fusion cp -r ${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/. /home/builder/ \
-                  && singularity build image.sif /home/builder/Containerfile \
-                  && singularity push image.sif ${req.targetImage}
-                """.stripIndent().trim()
-        return result
-    }
-
 }

@@ -132,4 +132,5 @@ class DockerBuildStrategy extends BuildStrategy {
         wrapper.add(buildConfig.singularityImage)
         return wrapper
     }
+
 }
