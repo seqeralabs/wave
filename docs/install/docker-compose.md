@@ -19,14 +19,14 @@ The following features are not available in self-hosted Wave installations in Do
 
 For full Wave functionality, an AWS Elastic Kubernetes instance is required.
 
-## Prequesisites
+## Prerequisites
 
 Before installing Wave, you require the following infrastructure components:
 
 - **PostgreSQL instance** - Version 12, or higher 
 - **Redis instance** - Version 6.2, or higher
 
-## System requirements:
+## System requirements
 
 The minimum system requirements for self-hosted Wave in Docker Compose are:
 
