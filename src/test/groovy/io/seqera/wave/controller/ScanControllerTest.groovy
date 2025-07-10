@@ -58,7 +58,7 @@ class ScanControllerTest extends Specification {
         def mirrorId = 'mr-123'
         def requestId = 'rq-123'
         def containerImage = "testcontainerimage"
-        def workDir = Path.of('/some/work/dir')
+        def workDir = '/some/work/dir'
         def configJson = '{auth}'
         def scanVulnerability = new ScanVulnerability(
                 "id1",

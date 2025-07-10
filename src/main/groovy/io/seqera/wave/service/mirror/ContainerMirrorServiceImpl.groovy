@@ -30,6 +30,7 @@ import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.MirrorEnabled
 import io.seqera.wave.service.builder.BuildTrack
 import io.seqera.wave.service.job.JobHandler
+import io.seqera.wave.service.job.JobHelper
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
@@ -40,7 +41,6 @@ import io.seqera.wave.service.scan.ContainerScanService
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
-import static io.seqera.wave.service.job.JobHelper.saveDockerAuth
 /**
  * Implement a service to mirror a container image to a repository specified by the user
  *
@@ -75,6 +75,9 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
 
     @Inject
     private MirrorStrategy mirrorStrategy
+
+    @Inject
+    JobHelper jobHelper
 
     /**
      * {@inheritDoc}
@@ -170,7 +173,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
     JobSpec launchJob(JobSpec job, MirrorEntry entry) {
         final request = entry.request
         // save docker auth file
-        saveDockerAuth(request.workDir, request.authJson)
+        jobHelper.saveDockerAuth(request.workDir, request.authJson)
         // launch mirror job
         mirrorStrategy.mirrorJob(job.operationName, request)
         // return the update job

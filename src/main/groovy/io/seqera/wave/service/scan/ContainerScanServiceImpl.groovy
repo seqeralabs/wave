@@ -27,6 +27,9 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.objectstorage.ObjectStorageEntry
+import io.micronaut.objectstorage.ObjectStorageOperations
+import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.api.ScanMode
 import io.seqera.wave.configuration.ScanConfig
@@ -36,6 +39,7 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.cleanup.CleanupService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.job.JobHandler
+import io.seqera.wave.service.job.JobHelper
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
@@ -45,11 +49,12 @@ import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.request.ContainerRequest
+import io.seqera.wave.util.FusionHelper
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
+import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WORKSPACE
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
-import static io.seqera.wave.service.job.JobHelper.saveDockerAuth
 
 /**
  * Implements ContainerScanService
@@ -95,6 +100,13 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     @Inject
     @Nullable
     private ScanStrategy scanStrategy
+
+    @Inject
+    private JobHelper jobHelper
+
+    @Inject
+    @Named(BUILD_WORKSPACE)
+    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
 
     ContainerScanServiceImpl() {}
 
@@ -218,7 +230,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     }
     
     protected ScanRequest fromBuild(BuildRequest request) {
-        final workDir = request.workDir.resolveSibling(request.scanId)
+        final workDir = getScanWorkDir(request.scanId)
         return new ScanRequest(
                 request.scanId,
                 request.buildId,
@@ -233,7 +245,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     }
 
     protected ScanRequest fromMirror(MirrorRequest request) {
-        final workDir = request.workDir.resolveSibling(request.scanId)
+        final workDir = getScanWorkDir(request.scanId)
         return new ScanRequest(
                 request.scanId,
                 null,
@@ -248,7 +260,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     }
 
     protected ScanRequest fromContainer(ContainerRequest request) {
-        final workDir = config.workspace.resolve(request.scanId)
+        final workDir = getScanWorkDir(request.scanId)
         final authJson = inspectService.credentialsConfigJson(null, request.containerImage, null, request.identity)
         return new ScanRequest(
                 request.scanId,
@@ -277,7 +289,9 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         if( !scanStrategy )
             throw new IllegalStateException("Security scan service is not available - check configuration setting 'wave.scan.enabled'")
         // save docker auth file
-        saveDockerAuth(entry.workDir, entry.configJson)
+        jobHelper.saveDockerAuth(entry.workDir, entry.configJson)
+        // create the scan work directory
+        objectStorageOperations.upload(UploadRequest.fromBytes(new byte[0] , "$entry.workDir/report.json".toString()))
         // launch scan job
         scanStrategy.scanContainer(job.operationName, entry)
         // return the update job
@@ -289,8 +303,10 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         ScanEntry result
         if( state.succeeded() ) {
             try {
-                final scanFile = job.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
-                final vulnerabilities = TrivyResultProcessor.parseFile(scanFile, config.vulnerabilityLimit)
+                final scanFile = objectStorageOperations.retrieve("$entry.workDir/$Trivy.OUTPUT_FILE_NAME".toString())
+                        .map(ObjectStorageEntry::getInputStream)
+                final scanReportFile = scanFile.isPresent() ? scanFile.get().text : null
+                final vulnerabilities = TrivyResultProcessor.parseFile(scanReportFile, config.vulnerabilityLimit)
                 result = entry.success(vulnerabilities)
                 log.info("Container scan succeeded - id=${entry.scanId}; exit=${state.exitCode}; stdout=${state.stdout}")
             }
@@ -340,6 +356,10 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     @Override
     List<WaveScanRecord> getAllScans(String scanId){
         persistenceService.allScans(scanId)
+    }
+
+    static String getScanWorkDir(String scanId) {
+        return "workspace/$scanId"
     }
 
 }

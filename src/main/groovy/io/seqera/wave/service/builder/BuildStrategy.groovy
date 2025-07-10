@@ -19,8 +19,13 @@
 package io.seqera.wave.service.builder
 
 import groovy.transform.CompileStatic
+import io.micronaut.objectstorage.ObjectStorageOperations
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.util.FusionHelper
 import jakarta.inject.Inject
+import jakarta.inject.Named
+import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WORKSPACE
+import static io.seqera.wave.service.builder.BuildConstants.BUILDKIT_ENTRYPOINT
 /**
  * Defines an abstract container build strategy.
  *
@@ -35,11 +40,11 @@ abstract class BuildStrategy {
     @Inject
     private BuildConfig buildConfig
 
+    @Inject
+    @Named(BUILD_WORKSPACE)
+    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
+
     abstract void build(String jobName, BuildRequest req)
-
-    abstract List<String> singularityLaunchCmd(BuildRequest req)
-
-    static final public String BUILDKIT_ENTRYPOINT = 'buildctl-daemonless.sh'
 
     List<String> launchCmd(BuildRequest req) {
         if(req.formatDocker()) {
@@ -53,30 +58,21 @@ abstract class BuildStrategy {
     }
 
     protected List<String> dockerLaunchCmd(BuildRequest req) {
-        final result = new ArrayList(10)
-        result
-                << "build"
-                << "--frontend"
-                << "dockerfile.v0"
-                << "--local"
-                << "dockerfile=$req.workDir".toString()
-                << "--opt"
-                << "filename=Containerfile"
-                << "--local"
-                << "context=$req.workDir/context".toString()
-                << "--output"
-                << outputOpts(req, buildConfig)
-                << "--opt"
-                << "platform=$req.platform".toString()
+        StringBuilder result = new StringBuilder("""
+                    fusion cp -r ${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)} /home/user/$req.buildId && \
+                    $BUILDKIT_ENTRYPOINT build \
+                    --frontend dockerfile.v0 \
+                    --local dockerfile=/home/user/$req.buildId \
+                    --opt filename=Containerfile \
+                    --local context=/home/user/$req.buildId/context  \
+                    --output ${outputOpts(req, buildConfig)} \
+                    --opt platform=$req.platform""".stripIndent().trim())
 
         if( req.cacheRepository ) {
-            result << "--export-cache"
-            result << cacheOpts(req, buildConfig)
-            result << "--import-cache"
-            result << "type=registry,ref=$req.cacheRepository:$req.containerId".toString()
+            result.append" --export-cache ${cacheOpts(req, buildConfig)} --import-cache type=registry,ref=$req.cacheRepository:$req.containerId".toString()
         }
 
-        return result
+        return List.of(result.toString())
     }
 
 
@@ -120,4 +116,28 @@ abstract class BuildStrategy {
         return result.toString()
     }
 
+    protected String getBuildImage(BuildRequest buildRequest){
+        if( buildRequest.formatDocker() ) {
+            return buildConfig.buildkitImage
+        }
+
+        if( buildRequest.formatSingularity() ) {
+            return buildConfig.singularityImage
+        }
+
+        throw new IllegalArgumentException("Unexpected container platform: ${buildRequest.platform}")
+    }
+
+    List<String> singularityLaunchCmd(BuildRequest req) {
+        final result = new ArrayList(10)
+        result
+                << 'sh'
+                << '-c'
+                << """
+                  fusion cp -r ${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/. /home/builder/ \
+                  && singularity build image.sif /home/builder/Containerfile \
+                  && singularity push image.sif ${req.targetImage}
+                """.stripIndent().trim()
+        return result
+    }
 }

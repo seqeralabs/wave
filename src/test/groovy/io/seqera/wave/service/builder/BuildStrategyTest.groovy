@@ -21,7 +21,6 @@ package io.seqera.wave.service.builder
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import java.nio.file.Path
 import java.time.Duration
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
@@ -48,7 +47,6 @@ class BuildStrategyTest extends Specification {
         def req = new BuildRequest(
                 containerId: 'c168dba125e28777',
                 buildId: 'bd-c168dba125e28777_1',
-                workspace: Path.of('/work/foo'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'quay.io/wave:c168dba125e28777',
                 cacheRepository: 'reg.io/wave/build/cache',
@@ -58,15 +56,17 @@ class BuildStrategyTest extends Specification {
         def cmd = strategy.launchCmd(req)
         then:
         cmd == [
+                'fusion',
+                'buildctl-daemonless.sh',
                 'build',
                 '--frontend',
                 'dockerfile.v0',
                 '--local',
-                'dockerfile=/work/foo/bd-c168dba125e28777_1',
+                'dockerfile=/fusion/s3/nextflow-ci/wave-build/workspace/bd-c168dba125e28777_1',
                 '--opt',
                 'filename=Containerfile',
                 '--local',
-                'context=/work/foo/bd-c168dba125e28777_1/context',
+                'context=/fusion/s3/nextflow-ci/wave-build/workspace/bd-c168dba125e28777_1/context',
                 '--output',
                 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true',
                 '--opt',
@@ -83,7 +83,6 @@ class BuildStrategyTest extends Specification {
         def req = new BuildRequest(
                 containerId: 'c168dba125e28777',
                 buildId: 'bd-c168dba125e28777_1',
-                workspace: Path.of('/work/foo'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'quay.io/wave:c168dba125e28777',
                 cacheRepository: 'reg.io/wave/build/cache' )
@@ -92,15 +91,17 @@ class BuildStrategyTest extends Specification {
         def cmd = strategy.launchCmd(req)
         then:
         cmd == [
+                'fusion',
+                'buildctl-daemonless.sh',
                 'build',
                 '--frontend',
                 'dockerfile.v0',
                 '--local',
-                'dockerfile=/work/foo/bd-c168dba125e28777_1',
+                'dockerfile=/fusion/s3/nextflow-ci/wave-build/workspace/bd-c168dba125e28777_1',
                 '--opt',
                 'filename=Containerfile',
                 '--local',
-                'context=/work/foo/bd-c168dba125e28777_1/context',
+                'context=/fusion/s3/nextflow-ci/wave-build/workspace/bd-c168dba125e28777_1/context',
                 '--output',
                 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true',
                 '--opt',
@@ -117,18 +118,18 @@ class BuildStrategyTest extends Specification {
         def req = new BuildRequest(
                 containerId: 'c168dba125e28777',
                 buildId: 'bd-c168dba125e28777_1',
-                workspace: Path.of('/work/foo'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'oras://quay.io/wave:c168dba125e28777',
                 format: BuildFormat.SINGULARITY,
-                cacheRepository: 'reg.io/wave/build/cache' )
+                cacheRepository: 'reg.io/wave/build/cache',
+                configJson: '{"config":"json"}',)
         when:
         def cmd = strategy.launchCmd(req)
         then:
         cmd == [
                 "sh",
                 "-c",
-                "singularity build image.sif /work/foo/bd-c168dba125e28777_1/Containerfile && singularity push image.sif oras://quay.io/wave:c168dba125e28777"
+                "ln -s /fusion/s3/nextflow-ci/wave-build/workspace/bd-c168dba125e28777_1/.singularity /root/.singularity && singularity build image.sif /fusion/s3/nextflow-ci/wave-build/workspace/bd-c168dba125e28777_1/Containerfile && singularity push image.sif oras://quay.io/wave:c168dba125e28777"
             ]
     }
 
@@ -136,7 +137,6 @@ class BuildStrategyTest extends Specification {
         when:
         def timeout = Duration.ofMinutes(5)
         def content = 'FROM foo:latest'
-        def workspace = Path.of("some/path")
         def buildrepo = 'foo.com/repo'
         def containerId = ContainerHelper.makeContainerId(content, null, ContainerPlatform.of('amd64'), buildrepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildrepo, containerId, null, null)
@@ -144,7 +144,6 @@ class BuildStrategyTest extends Specification {
                 containerId,
                 content,
                 'condaFile',
-                workspace,
                 targetImage,
                 PlatformId.NULL,
                 ContainerPlatform.of('amd64'),
@@ -162,13 +161,13 @@ class BuildStrategyTest extends Specification {
 
         then:
         build.containerId == 'af15cb0a413a2d48'
-        build.workspace == Path.of("some/path")
+        build.workDir == 'workspace/bd-af15cb0a413a2d48_0'
         and:
         build.containerId == 'af15cb0a413a2d48'
-        build.workspace == Path.of("some/path")
+        build.workDir == 'workspace/bd-af15cb0a413a2d48_0'
         and:
         build.buildId == 'bd-af15cb0a413a2d48_0'
-        build.workDir == Path.of('.').toRealPath().resolve('some/path/bd-af15cb0a413a2d48_0')
+        build.workDir == 'workspace/bd-af15cb0a413a2d48_0'
         build.maxDuration == timeout
     }
 
@@ -178,7 +177,6 @@ class BuildStrategyTest extends Specification {
         def req = new BuildRequest(
                 containerId: 'c168dba125e28777',
                 buildId: 'bd-c168dba125e28777_1',
-                workspace: Path.of('/work/foo'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'quay.io/wave:c168dba125e28777',
                 cacheRepository: 'reg.io/wave/build/cache',
@@ -224,7 +222,6 @@ class BuildStrategyTest extends Specification {
         def req = new BuildRequest(
                 containerId: 'c168dba125e28777',
                 buildId: 'bd-c168dba125e28777_1',
-                workspace: Path.of('/work/foo'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'quay.io/wave:c168dba125e28777',
                 cacheRepository: 'reg.io/wave/build/cache',

@@ -225,7 +225,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
                 buildId: '1',
                 startTime: Instant.now(),
                 maxDuration: Duration.ofSeconds(5),
-                workspace: Path.of('/some/work/dir'),
+                workspace: '/some/work/dir',
                 identity: PlatformId.NULL
         )
         def entry = new BuildEntry(req, res)
@@ -253,7 +253,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
                 buildId: 'bd-12345_0',
                 containerFile: 'from foo',
                 condaFile: 'conda spec',
-                workspace:  Path.of("/some/path"),
+                workspace:  "/some/path",
                 targetImage:  'docker.io/some:image:12345',
                 identity: PlatformId.NULL,
                 platform:  ContainerPlatform.of('linux/amd64'),
@@ -270,7 +270,6 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
         result.count == 1
         result.value.request.buildId == 'bd-12345_1'
         result.value.result.buildId == 'bd-12345_1'
-        result.value.request.workDir == Path.of("/some/path/bd-12345_1")
         and:
         store.findByRequestId('bd-12345_1') == result.value
 
@@ -281,7 +280,6 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
         result.count == 1
         result.value.request.buildId == 'bd-12345_1'
         result.value.result.buildId == 'bd-12345_1'
-        result.value.request.workDir == Path.of("/some/path/bd-12345_1")
         and:
         store.findByRequestId('bd-12345_1') == result.value
 
@@ -294,7 +292,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
         result.count == 2
         result.value.request.buildId == 'bd-12345_2'
         result.value.result.buildId == 'bd-12345_2'
-        result.value.request.workDir == Path.of("/some/path/bd-12345_2")
+        result.value.request.workDir == "workspace/bd-12345_2"
         and:
         store.findByRequestId('bd-12345_1') == null
         store.findByRequestId('bd-12345_2') == result.value

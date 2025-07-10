@@ -56,9 +56,6 @@ class BuildConfig {
     @Value('${wave.build.public-repo}')
     String defaultPublicRepository
 
-    /**
-     * File system path there the dockerfile is save
-     */
     @Value('${wave.build.workspace}')
     String buildWorkspace
 
@@ -198,5 +195,30 @@ class BuildConfig {
             return null
         final store = BucketTokenizer.from(locksPath)
         return store.scheme ? store.getKey() : null
+    }
+
+    /**
+     * The file name prefix applied when storing a build workspace file into an object storage.
+     * For example having {@link #buildWorkspace} as {@code s3://bucket-name/foo/bar} the
+     * value returned by this method is {@code foo/bar}.
+     *
+     * When using a local path the prefix is {@code null}.
+     *
+     * @return the workspace file name prefix
+     */
+    @Memoized
+    String getWorkspacePrefix() {
+        if( !buildWorkspace )
+            return null
+        final store = BucketTokenizer.from(buildWorkspace)
+        return store.scheme ? store.getKey() : null
+    }
+
+    @Memoized
+    String getWorkspaceBucket() {
+        if( !buildWorkspace )
+            return null
+        final store = BucketTokenizer.from(buildWorkspace)
+        return store.scheme ? "${store.bucket}${store.path}".toString() : null
     }
 }

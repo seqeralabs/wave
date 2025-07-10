@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.builder
 
-import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 import java.time.OffsetDateTime
@@ -62,11 +61,6 @@ class BuildRequest {
      * The conda file recipe associated with this request
      */
     final String condaFile
-
-    /**
-     * The build context work directory
-     */
-    final Path workspace
 
     /**
      * The target fully qualified image of the built container. It includes the target registry name
@@ -147,7 +141,6 @@ class BuildRequest {
             String containerId,
             String containerFile,
             String condaFile,
-            Path workspace,
             String targetImage,
             PlatformId identity,
             ContainerPlatform platform,
@@ -166,7 +159,6 @@ class BuildRequest {
         this.containerId = containerId
         this.containerFile = containerFile
         this.condaFile = condaFile
-        this.workspace = workspace
         this.targetImage = targetImage
         this.identity = identity
         this.platform = platform
@@ -189,7 +181,6 @@ class BuildRequest {
         this.containerId = opts.containerId
         this.containerFile = opts.containerFile
         this.condaFile = opts.condaFile
-        this.workspace = opts.workspace as Path
         this.targetImage = opts.targetImage
         this.identity = opts.identity as PlatformId
         this.platform = opts.platform as ContainerPlatform
@@ -229,8 +220,8 @@ class BuildRequest {
         return condaFile
     }
 
-    Path getWorkDir() {
-        return workspace.resolve(buildId).toAbsolutePath()
+    String getWorkDir() {
+        return "workspace/$buildId"
     }
 
     String getTargetImage() {

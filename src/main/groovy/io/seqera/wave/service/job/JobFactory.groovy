@@ -25,6 +25,7 @@ import com.google.common.hash.Hashing
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.BlobCacheConfig
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.WaveLite
 import io.seqera.wave.service.builder.BuildRequest
@@ -54,6 +55,10 @@ class JobFactory {
     @Inject
     @Nullable
     private MirrorConfig mirrorConfig
+
+    @Inject
+    @Nullable
+    private BuildConfig buildConfig
 
     JobSpec transfer(String stateId) {
         JobSpec.transfer(

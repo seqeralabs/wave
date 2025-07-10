@@ -20,7 +20,6 @@ package io.seqera.wave.service.builder
 
 import spock.lang.Specification
 
-import java.nio.file.Path
 import java.time.Duration
 import java.time.OffsetDateTime
 
@@ -42,7 +41,7 @@ class BuildRequestTest extends Specification {
         def TIMEOUT = Duration.ofMinutes(5)
         def USER = new PlatformId(new User(id:1, email: 'foo@user.com'))
         def CONTENT = 'FROM foo'
-        def PATH = Path.of('somewhere')
+        def PATH = 'somewhere'
         def BUILD_REPO = 'docker.io/wave'
         def CACHE_REPO = 'docker.io/cache'
         def SCAN_ID = '123456'
@@ -60,7 +59,6 @@ class BuildRequestTest extends Specification {
                 CONTAINER_ID,
                 CONTENT,
                 null,
-                PATH,
                 TARGET_IMAGE,
                 USER,
                 PLATFORM,
@@ -106,7 +104,6 @@ class BuildRequestTest extends Specification {
                 CONTAINER_ID,
                 CONTENT,
                 CONDA_RECIPE,
-                PATH,
                 TARGET_IMAGE,
                 USER,
                 PLATFORM,
@@ -133,7 +130,6 @@ class BuildRequestTest extends Specification {
                 CONTAINER_ID,
                 CONTENT,
                 null,
-                PATH,
                 TARGET_IMAGE,
                 USER,
                 PLATFORM,
@@ -159,7 +155,7 @@ class BuildRequestTest extends Specification {
         def TIMEOUT = Duration.ofMinutes(5)
         def USER = new PlatformId(new User(id:1, email: 'foo@user.com'))
         def CONTENT = 'From: foo'
-        def PATH = Path.of('somewhere')
+        def PATH = 'somewhere'
         def BUILD_REPO = 'docker.io/wave'
         def CACHE_REPO = 'docker.io/cache'
         def IP_ADDR = '10.20.30.40'
@@ -176,7 +172,6 @@ class BuildRequestTest extends Specification {
                 CONTAINER_ID,
                 CONTENT,
                 null,
-                PATH,
                 TARGET_IMAGE,
                 USER,
                 PLATFORM,
@@ -212,7 +207,7 @@ class BuildRequestTest extends Specification {
         given:
         def TIMEOUT = Duration.ofMinutes(5)
         def USER = new PlatformId(new User(id:1, email: 'foo@user.com'))
-        def PATH = Path.of('somewhere')
+        def PATH = 'somewhere'
         def BUILD_REPO = 'docker.io/wave'
         def CACHE_REPO = 'docker.io/cache'
         def PLATFORM = ContainerPlatform.of('amd64')
@@ -223,26 +218,26 @@ class BuildRequestTest extends Specification {
         and:
         def CONTAINER_ID1 = ContainerHelper.makeContainerId(FOO_CONTENT, null, PLATFORM, BUILD_REPO, null, Mock(ContainerConfig))
         def TARGET_IMAGE1 = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID1, null, null)
-        def req1 = new BuildRequest(CONTAINER_ID1, FOO_CONTENT, null, PATH, TARGET_IMAGE1, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT, BuildCompression.gzip)
+        def req1 = new BuildRequest(CONTAINER_ID1, FOO_CONTENT, null, TARGET_IMAGE1, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT, BuildCompression.gzip)
         and:
-        def req2 = new BuildRequest(CONTAINER_ID1, FOO_CONTENT, null, PATH, TARGET_IMAGE1, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT, BuildCompression.gzip)
+        def req2 = new BuildRequest(CONTAINER_ID1, FOO_CONTENT, null, TARGET_IMAGE1, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT, BuildCompression.gzip)
         and:
         def CONTAINER_ID3 = ContainerHelper.makeContainerId(BAR_CONTENT, null, PLATFORM, BUILD_REPO, null, Mock(ContainerConfig))
         def TARGET_IMAGE3 = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID3, null, null)
-        def req3 = new BuildRequest(CONTAINER_ID3, BAR_CONTENT, null, PATH, TARGET_IMAGE3, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT, BuildCompression.gzip)
+        def req3 = new BuildRequest(CONTAINER_ID3, BAR_CONTENT, null, TARGET_IMAGE3, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT, BuildCompression.gzip)
         and:
         def CONTAINER_ID4 = ContainerHelper.makeContainerId(BAR_CONTENT, CONDA_CONTENT, PLATFORM, BUILD_REPO, null, Mock(ContainerConfig))
         def TARGET_IMAGE4 = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID4, CONDA_CONTENT, null)
-        def req4 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, PATH, TARGET_IMAGE4, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT, BuildCompression.gzip)
+        def req4 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, TARGET_IMAGE4, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT, BuildCompression.gzip)
         and:
-        def req5 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, PATH, TARGET_IMAGE4, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT, BuildCompression.gzip)
+        def req5 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, TARGET_IMAGE4, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT, BuildCompression.gzip)
         and:
         CONDA_CONTENT = 'salmon=1.2.5'
         def CONTAINER_ID6 = ContainerHelper.makeContainerId(BAR_CONTENT, CONDA_CONTENT, PLATFORM, BUILD_REPO, null, Mock(ContainerConfig))
         def TARGET_IMAGE6 = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID6, CONDA_CONTENT, null)
-        def req6 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, PATH, TARGET_IMAGE6, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT, BuildCompression.gzip)
+        def req6 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, TARGET_IMAGE6, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT, BuildCompression.gzip)
         and:
-        def req7 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, PATH, TARGET_IMAGE6, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', "UTC+2", null, null, null, FORMAT, TIMEOUT, BuildCompression.gzip)
+        def req7 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, TARGET_IMAGE6, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', "UTC+2", null, null, null, FORMAT, TIMEOUT, BuildCompression.gzip)
 
         expect:
         req1 == req2

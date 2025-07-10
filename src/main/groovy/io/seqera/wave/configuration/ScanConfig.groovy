@@ -18,8 +18,6 @@
 
 package io.seqera.wave.configuration
 
-import java.nio.file.Files
-import java.nio.file.Path
 import java.time.Duration
 import javax.annotation.PostConstruct
 
@@ -29,6 +27,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.seqera.wave.util.BucketTokenizer
 import jakarta.inject.Singleton
 /**
  * Container Scan service settings
@@ -67,7 +66,7 @@ class ScanConfig {
      * The host path where cache DB stored
      */
     @Value('${wave.build.workspace}')
-    private String buildDirectory
+    private String buildWorkspace
 
     @Value('${wave.scan.timeout:15m}')
     private Duration timeout
@@ -101,19 +100,16 @@ class ScanConfig {
     }
 
     @Memoized
-    Path getCacheDirectory() {
-        final result = Path.of(buildDirectory).toAbsolutePath().resolve('.trivy-cache')
-        try {
-            Files.createDirectories(result)
-        } catch (IOException e) {
-            log.error "Unable to create scan cache directory=${result} - cause: ${e.message}"
-        }
-        return result
+    String getCacheDirectory() {
+        return  ".trivy-cache"
     }
 
     @Memoized
-    Path getWorkspace() {
-        Path.of(buildDirectory).toAbsolutePath()
+    String getWorkspaceBucketName() {
+        if( !buildWorkspace )
+            return null
+        final store = BucketTokenizer.from(buildWorkspace)
+        return store.bucket ?: store.getKey()
     }
 
     String getRequestsCpu() {
