@@ -19,16 +19,25 @@
 package io.seqera.wave.service.scan
 
 /**
- * Trivy constants
+ * Define the scan format that should be used
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface Trivy {
+enum ScanType {
 
-    static final public String CACHE_MOUNT_PATH = '/root/.cache/'
+    Default("json", "report.json"),
+    Spdx("spdx-json", "spdx.json"),
+    CycloneDx("cyclonedx", "cyclonedx.json"),
 
-    static final public String CONFIG_MOUNT_PATH = '/root/.docker/config.json'
+    final private String format;
+    final private String output;
 
-    @Deprecated
-    static final public String OUTPUT_FILE_NAME = 'report.json'
+    ScanType(String format, String output) {
+        this.format = format
+        this.output = output
+    }
+
+    String getFormat() { format }
+
+    String getOutput() { output }
 }
