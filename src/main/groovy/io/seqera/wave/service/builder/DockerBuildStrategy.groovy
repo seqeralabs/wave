@@ -28,6 +28,7 @@ import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.util.ContainerHelper
+import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -61,7 +62,7 @@ class DockerBuildStrategy extends BuildStrategy {
 
         // command the docker build command
         final buildCmd= buildCmd(jobName, req)
-        log.debug "Build run command: ${buildCmd.join(' ')}"
+        log.debug "Build run command: ${StringUtils.redactAwsCredentials(buildCmd.join(' '))}"
         // save docker cli for debugging purpose
         if( debug ) {
             objectStorageOperations.upload(UploadRequest.fromBytes(buildCmd.join(' ').bytes, "$req.workDir/docker.sh".toString()))

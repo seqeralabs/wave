@@ -51,7 +51,6 @@ import jakarta.inject.Inject
  */
 @Slf4j
 @MicronautTest
-@Ignore
 class ContainerBuildServiceLiveTest extends Specification {
 
     @Inject ContainerBuildServiceImpl service
