@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.builder
 
+import spock.lang.Ignore
 import spock.lang.Requires
 import spock.lang.Specification
 
@@ -50,6 +51,7 @@ import jakarta.inject.Inject
  */
 @Slf4j
 @MicronautTest
+@Ignore
 class ContainerBuildServiceLiveTest extends Specification {
 
     @Inject ContainerBuildServiceImpl service

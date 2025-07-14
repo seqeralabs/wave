@@ -55,18 +55,18 @@ class BuildStrategyTest extends Specification {
         when:
         def cmd = strategy.launchCmd(req)
         then:
-        cmd == [
-                'fusion',
+        cmd == [[
+                'fusion cp -r /fusion/s3/nextflow-ci/wave-build/workspace/bd-c168dba125e28777_1 /home/user/bd-c168dba125e28777_1 &&',
                 'buildctl-daemonless.sh',
                 'build',
                 '--frontend',
                 'dockerfile.v0',
                 '--local',
-                'dockerfile=/fusion/s3/nextflow-ci/wave-build/workspace/bd-c168dba125e28777_1',
+                'dockerfile=/home/user/bd-c168dba125e28777_1',
                 '--opt',
                 'filename=Containerfile',
                 '--local',
-                'context=/fusion/s3/nextflow-ci/wave-build/workspace/bd-c168dba125e28777_1/context',
+                'context=/home/user/bd-c168dba125e28777_1/context',
                 '--output',
                 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true',
                 '--opt',
@@ -75,7 +75,7 @@ class BuildStrategyTest extends Specification {
                 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true',
                 '--import-cache',
                 'type=registry,ref=reg.io/wave/build/cache:c168dba125e28777'
-        ]
+        ].join(" ")]
     }
 
     def 'should get buildkit command with build context' () {
@@ -90,18 +90,18 @@ class BuildStrategyTest extends Specification {
         when:
         def cmd = strategy.launchCmd(req)
         then:
-        cmd == [
-                'fusion',
+        cmd == [[
+                'fusion cp -r /fusion/s3/nextflow-ci/wave-build/workspace/bd-c168dba125e28777_1 /home/user/bd-c168dba125e28777_1 &&',
                 'buildctl-daemonless.sh',
                 'build',
                 '--frontend',
                 'dockerfile.v0',
                 '--local',
-                'dockerfile=/fusion/s3/nextflow-ci/wave-build/workspace/bd-c168dba125e28777_1',
+                'dockerfile=/home/user/bd-c168dba125e28777_1',
                 '--opt',
                 'filename=Containerfile',
                 '--local',
-                'context=/fusion/s3/nextflow-ci/wave-build/workspace/bd-c168dba125e28777_1/context',
+                'context=/home/user/bd-c168dba125e28777_1/context',
                 '--output',
                 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true',
                 '--opt',
@@ -110,7 +110,7 @@ class BuildStrategyTest extends Specification {
                 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true',
                 '--import-cache',
                 'type=registry,ref=reg.io/wave/build/cache:c168dba125e28777'
-        ]
+        ].join(" ")]
     }
 
     def 'should get singularity command' () {
@@ -129,7 +129,7 @@ class BuildStrategyTest extends Specification {
         cmd == [
                 "sh",
                 "-c",
-                "ln -s /fusion/s3/nextflow-ci/wave-build/workspace/bd-c168dba125e28777_1/.singularity /root/.singularity && singularity build image.sif /fusion/s3/nextflow-ci/wave-build/workspace/bd-c168dba125e28777_1/Containerfile && singularity push image.sif oras://quay.io/wave:c168dba125e28777"
+                "fusion cp -r /fusion/s3/nextflow-ci/wave-build/workspace/bd-c168dba125e28777_1/. /home/builder/ && singularity build image.sif /home/builder/Containerfile && singularity push image.sif oras://quay.io/wave:c168dba125e28777"
             ]
     }
 

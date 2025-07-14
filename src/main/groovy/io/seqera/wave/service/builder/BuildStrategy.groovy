@@ -58,21 +58,24 @@ abstract class BuildStrategy {
     }
 
     protected List<String> dockerLaunchCmd(BuildRequest req) {
-        StringBuilder result = new StringBuilder("""
-                    fusion cp -r ${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)} /home/user/$req.buildId && \
-                    $BUILDKIT_ENTRYPOINT build \
-                    --frontend dockerfile.v0 \
-                    --local dockerfile=/home/user/$req.buildId \
-                    --opt filename=Containerfile \
-                    --local context=/home/user/$req.buildId/context  \
-                    --output ${outputOpts(req, buildConfig)} \
-                    --opt platform=$req.platform""".stripIndent().trim())
+        final result = new ArrayList<String>(10)
+        result
+                << 'fusion cp -r'
+                << "${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)} /home/user/$req.buildId &&".toString()
+                << "$BUILDKIT_ENTRYPOINT build".toString()
+                << '--frontend dockerfile.v0'
+                << "--local dockerfile=/home/user/$req.buildId".toString()
+                << '--opt filename=Containerfile'
+                << "--local context=/home/user/$req.buildId/context".toString()
+                << "--output ${outputOpts(req, buildConfig)}".toString()
+                << "--opt platform=$req.platform".toString()
 
         if( req.cacheRepository ) {
-            result.append" --export-cache ${cacheOpts(req, buildConfig)} --import-cache type=registry,ref=$req.cacheRepository:$req.containerId".toString()
+            result
+                << "--export-cache ${cacheOpts(req, buildConfig)} --import-cache type=registry,ref=$req.cacheRepository:$req.containerId".toString()
         }
 
-        return List.of(result.toString())
+        return List.of(result.join(" "))
     }
 
 
@@ -101,7 +104,7 @@ abstract class BuildStrategy {
         result << ",push=true"
         result << ",oci-mediatypes=${config.ociMediatypes}"
         result << compressOpts(req, config)
-        return result.toString()
+        return result.toString().trim()
     }
 
     static protected String cacheOpts(BuildRequest req, BuildConfig config) {
@@ -129,15 +132,17 @@ abstract class BuildStrategy {
     }
 
     List<String> singularityLaunchCmd(BuildRequest req) {
-        final result = new ArrayList(10)
+        final result = new ArrayList<String>(3)
         result
                 << 'sh'
                 << '-c'
-                << """
-                  fusion cp -r ${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/. /home/builder/ \
-                  && singularity build image.sif /home/builder/Containerfile \
-                  && singularity push image.sif ${req.targetImage}
-                """.stripIndent().trim()
+        final fusionCmd = new ArrayList(5)
+        fusionCmd
+                << 'fusion cp -r'
+                << "${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/. /home/builder/ &&".toString()
+                << 'singularity build image.sif /home/builder/Containerfile &&'
+                << "singularity push image.sif ${req.targetImage}".toString()
+        result.add(fusionCmd.join(' '))
         return result
     }
 }
