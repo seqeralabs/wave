@@ -84,8 +84,7 @@ class DockerMirrorStrategy extends MirrorStrategy {
                          'run',
                         '--detach',
                         '--privileged',
-                         '--name', name,
-                         '-e']
+                         '--name', name]
         wrapper.addAll(ContainerHelper.getAWSAuthEnvVars(env))
 
         if( credsFile ) {
