@@ -20,8 +20,6 @@ package io.seqera.wave.service.scan
 
 import spock.lang.Specification
 
-import java.nio.file.Path
-
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.ScanConfig
@@ -33,22 +31,27 @@ import jakarta.inject.Inject
 @MicronautTest
 class DockerScanStrategyTest extends Specification {
 
+    final testEnv =[
+            AWS_ACCESS_KEY_ID: 'test',
+            AWS_SECRET_ACCESS_KEY: 'test',
+    ]
+
     @Inject
     DockerScanStrategy dockerContainerStrategy
 
     @MockBean(ScanConfig)
-    ScanConfig mockConfig() {
+    ScanConfig mockScanConfig() {
         Mock(ScanConfig) {
-            getCacheDirectory() >> Path.of('/some/scan/cache')
+            getCacheDirectory() >> 'some/scan/cache'
         }
     }
 
     def 'should get docker command' () {
 
         when:
-        def scanDir = Path.of('/some/scan/dir')
-        def config = Path.of("/user/test/build-workspace/config.json")
-        def command = dockerContainerStrategy.dockerWrapper('foo-123', scanDir, config, ['FOO=1', 'BAR=2'])
+        def scanDir = '/some/scan/dir'
+        def config = "/user/test/build-workspace/config.json"
+        def command = dockerContainerStrategy.dockerWrapper('foo-123', scanDir, config, ['FOO=1', 'BAR=2'], testEnv)
 
         then:
         command == [
@@ -57,14 +60,12 @@ class DockerScanStrategyTest extends Specification {
                 '--detach',
                 '--name',
                 'foo-123',
-                '-w',
-                '/some/scan/dir',
-                '-v',
-                '/some/scan/dir:/some/scan/dir:rw',
-                '-v',
-                '/some/scan/cache:/root/.cache/:rw',
-                '-v',
-                '/user/test/build-workspace/config.json:/root/.docker/config.json:ro',
+                '--privileged',
+                '-e', 'AWS_ACCESS_KEY_ID=test',
+                '-e', 'AWS_SECRET_ACCESS_KEY=test',
+                '-e', 'TRIVY_WORKSPACE_DIR=/some/scan/dir',
+                '-e', 'TRIVY_CACHE_DIR=/fusion/s3/null/some/scan/cache',
+                '-e', 'DOCKER_CONFIG=/some/scan/dir',
                 '-e',
                 'FOO=1',
                 '-e',

@@ -61,7 +61,7 @@ class JobFactoryTest extends Specification {
         job.creationTime == ts
         job.type == JobSpec.Type.Build
         job.maxDuration == Duration.ofMinutes(1)
-        job.workDir == 's3://workspace/dir'
+        job.workDir == 'workspace/bd-12345_9'
     }
 
     def 'should create transfer job' () {

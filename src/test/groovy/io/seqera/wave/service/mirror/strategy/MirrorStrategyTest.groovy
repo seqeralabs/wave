@@ -44,7 +44,7 @@ class MirrorStrategyTest extends Specification {
                 'target.io/foo',
                 'sha256:12345',
                 PLATFORM ? ContainerPlatform.of(PLATFORM) : null,
-                Path.of('/workspace'),
+                'workspace',
                 '{auth json}',
                 'scan-123',
                 Instant.now(),
@@ -58,10 +58,10 @@ class MirrorStrategyTest extends Specification {
 
         where:
         PLATFORM        | EXPECTED
-        null            | "copy --preserve-digests --multi-arch all docker://source.io/foo docker://target.io/foo"
-        'linux/amd64'   | "--override-os linux --override-arch amd64 copy --preserve-digests --multi-arch system docker://source.io/foo docker://target.io/foo"
-        'linux/arm64'   | "--override-os linux --override-arch arm64 copy --preserve-digests --multi-arch system docker://source.io/foo docker://target.io/foo"
-        'linux/arm64/7' | "--override-os linux --override-arch arm64 --override-variant 7 copy --preserve-digests --multi-arch system docker://source.io/foo docker://target.io/foo"
+        null            | "skopeo copy --preserve-digests --multi-arch all docker://source.io/foo docker://target.io/foo"
+        'linux/amd64'   | "--override-os linux --override-arch amd64 skopeo copy --preserve-digests --multi-arch system docker://source.io/foo docker://target.io/foo"
+        'linux/arm64'   | "--override-os linux --override-arch arm64 skopeo copy --preserve-digests --multi-arch system docker://source.io/foo docker://target.io/foo"
+        'linux/arm64/7' | "--override-os linux --override-arch arm64 --override-variant 7 skopeo copy --preserve-digests --multi-arch system docker://source.io/foo docker://target.io/foo"
 
     }
 

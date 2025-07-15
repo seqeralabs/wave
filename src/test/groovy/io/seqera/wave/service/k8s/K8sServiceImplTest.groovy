@@ -330,7 +330,7 @@ class K8sServiceImplTest extends Specification {
         job.spec.backoffLimit == 1
         job.spec.template.spec.containers[0].image == containerImage
         job.spec.template.spec.containers[0].args == args
-        !job.spec.template.spec.containers[0].securityContext.privileged
+
         and:
         job.spec.template.spec.dnsPolicy == null
         job.spec.template.spec.dnsConfig == null
@@ -481,7 +481,7 @@ class K8sServiceImplTest extends Specification {
         def name = 'scan-job'
         def containerImage = 'scan-image:latest'
         def args = ['arg1', 'arg2']
-        def workDir = '/work/dir'
+        def workDir = 'work/dir'
         def credsFile = 'creds'
         def scanConfig = Mock(ScanConfig) {
             getCacheDirectory() >> Path.of('/build/cache/dir')
@@ -501,7 +501,7 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.containers[0].args == args
         job.spec.template.spec.containers[0].resources.requests.get('cpu') == new Quantity('2')
         job.spec.template.spec.containers[0].resources.requests.get('memory') == new Quantity('4Gi')
-        job.spec.template.spec.containers[0].env == [ new V1EnvVar().name('DOCKER_CONFIG').value('/work/dir'), new V1EnvVar().name('FOO').value('abc'), new V1EnvVar().name('BAR').value('xyz') ]
+        job.spec.template.spec.containers[0].env == [ new V1EnvVar().name('DOCKER_CONFIG').value('/fusion/s3/build/work/work/dir'), new V1EnvVar().name('FOO').value('abc'), new V1EnvVar().name('BAR').value('xyz') ]
         job.spec.template.spec.restartPolicy == 'Never'
         and:
         job.spec.template.spec.dnsPolicy == null

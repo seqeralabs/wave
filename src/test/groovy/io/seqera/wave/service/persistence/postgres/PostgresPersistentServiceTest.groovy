@@ -99,7 +99,6 @@ class PostgresPersistentServiceTest extends Specification {
                 'container1234',
                 data,
                 data,
-                Path.of("/some/path"),
                 'buildrepo:recipe-container1234',
                 PlatformId.NULL,
                 ContainerPlatform.of('amd64'),
@@ -153,9 +152,9 @@ class PostgresPersistentServiceTest extends Specification {
 
     def 'should find latest build' () {
         given:
-        def request1 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_1' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(30), identity: PlatformId.NULL)
-        def request2 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_2' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(20), identity: PlatformId.NULL)
-        def request3 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_3' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(10), identity: PlatformId.NULL)
+        def request1 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_1' , startTime: Instant.now().minusSeconds(30), identity: PlatformId.NULL)
+        def request2 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_2' , startTime: Instant.now().minusSeconds(20), identity: PlatformId.NULL)
+        def request3 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_3' , startTime: Instant.now().minusSeconds(10), identity: PlatformId.NULL)
 
         def result1 = new BuildResult(request1.buildId, -1, "ok", request1.startTime, Duration.ofSeconds(2), null)
         persistentService.saveBuildAsync(WaveBuildRecord.fromEvent(new BuildEvent(request1, result1))) .join()
@@ -174,10 +173,10 @@ class PostgresPersistentServiceTest extends Specification {
 
     def 'should find all builds' () {
         given:
-        def request1 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_1' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(30), identity: PlatformId.NULL)
-        def request2 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_2' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(20), identity: PlatformId.NULL)
-        def request3 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_3' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(10), identity: PlatformId.NULL)
-        def request4 = new BuildRequest( containerId: 'abc', buildId: 'bd-xyz_3' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(0), identity: PlatformId.NULL)
+        def request1 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_1' , startTime: Instant.now().minusSeconds(30), identity: PlatformId.NULL)
+        def request2 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_2' , startTime: Instant.now().minusSeconds(20), identity: PlatformId.NULL)
+        def request3 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_3' , startTime: Instant.now().minusSeconds(10), identity: PlatformId.NULL)
+        def request4 = new BuildRequest( containerId: 'abc', buildId: 'bd-xyz_3' , startTime: Instant.now().minusSeconds(0), identity: PlatformId.NULL)
 
         def result1 = new BuildResult(request1.buildId, -1, "ok", request1.startTime, Duration.ofSeconds(2), null)
         def record1 = WaveBuildRecord.fromEvent(new BuildEvent(request1, result1))
@@ -261,7 +260,7 @@ class PostgresPersistentServiceTest extends Specification {
                 'target.io/foo',
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
-                Path.of('/workspace'),
+                'workspace',
                 '{auth json}',
                 'scan-123',
                 Instant.now(),
@@ -290,7 +289,7 @@ class PostgresPersistentServiceTest extends Specification {
                 target,
                 digest,
                 ContainerPlatform.DEFAULT,
-                Path.of('/workspace'),
+                'workspace',
                 '{auth json}',
                 'scan-1',
                 timestamp.minusSeconds(180),
@@ -302,7 +301,7 @@ class PostgresPersistentServiceTest extends Specification {
                 target,
                 digest,
                 ContainerPlatform.DEFAULT,
-                Path.of('/workspace'),
+                'workspace',
                 '{auth json}',
                 'scan-2',
                 timestamp.minusSeconds(120),
@@ -314,7 +313,7 @@ class PostgresPersistentServiceTest extends Specification {
                 target,
                 digest,
                 ContainerPlatform.DEFAULT,
-                Path.of('/workspace'),
+                'workspace',
                 '{auth json}',
                 'scan-3',
                 timestamp.minusSeconds(60),

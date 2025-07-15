@@ -99,7 +99,7 @@ class KubeBuildStrategyTest extends Specification {
         def req = new BuildRequest(containerId, dockerfile, null, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1), BuildCompression.gzip)
 
         then: 'should return buildkit image'
-        strategy.getBuildImage(req) == 'hrma017/buildkit:v0.22.0-2.4.13'
+        strategy.getBuildImage(req) == 'hrma017/buildkit:v0.22.0-rootless-2.4.13'
 
         when:'getting singularity with amd64 arch in build request'
         req = new BuildRequest(containerId, dockerfile, null, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.SINGULARITY,Duration.ofMinutes(1), BuildCompression.gzip)

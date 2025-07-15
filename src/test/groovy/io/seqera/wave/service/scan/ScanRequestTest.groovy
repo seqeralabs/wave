@@ -59,7 +59,7 @@ class ScanRequestTest extends Specification {
         scan.configJson == '{config}'
         scan.targetImage == 'tg-image'
         scan.platform == ContainerPlatform.DEFAULT
-        scan.workDir == Path.of('/some/dir')
+        scan.workDir == 'workspace/sc-123'
         scan.creationTime == timestamp
         scan.identity == identity
     }

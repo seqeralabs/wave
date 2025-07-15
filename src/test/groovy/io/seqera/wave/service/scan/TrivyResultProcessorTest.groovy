@@ -107,10 +107,7 @@ class TrivyResultProcessorTest extends Specification {
 
     def "should return a sorted map of vulnerabilities"() {
         given:
-        def folder = Files.createTempDirectory('test')
-        def scan = folder.resolve('scan.json')
-        and:
-        scan.text = """
+        def scan = """
             { "Results": [
                 {
                    "Target": "sample-application",
@@ -186,9 +183,6 @@ class TrivyResultProcessorTest extends Specification {
         def allIssues = TrivyResultProcessor.parseFile(scan)
         then:
         allIssues.size() == 5
-
-        cleanup:
-        folder?.deleteDir()
     }
 
     def 'should not fail with empty list' () {

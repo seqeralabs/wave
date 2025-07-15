@@ -156,7 +156,7 @@ class ScanEntryTest extends Specification {
         result.platform == ContainerPlatform.DEFAULT
         result.status == ScanEntry.SUCCEEDED
         result.vulnerabilities == [cve1]
-        result.workDir == Path.of('/some/work/dir')
+        result.workDir == '/some/work/dir'
         result.configJson == null
     }
 
@@ -170,7 +170,7 @@ class ScanEntryTest extends Specification {
                 buildId: 'build-12345',
                 containerImage: 'docker.io/some:image',
                 platform: ContainerPlatform.DEFAULT,
-                workDir: Path.of('/some/work/dir'),
+                workDir: '/some/work/dir',
                 configJson: '{this and that}',
                 startTime:  ts,
                 duration: elapsed,
@@ -189,7 +189,7 @@ class ScanEntryTest extends Specification {
         result.vulnerabilities == []
         result.exitCode == 1
         result.logs == "Oops something has failed"
-        result.workDir == Path.of('/some/work/dir')
+        result.workDir == '/some/work/dir'
         result.configJson == null
     }
 
@@ -241,7 +241,7 @@ class ScanEntryTest extends Specification {
         scan.requestId == 'rq-123'
         scan.containerImage == 'docker.io/foo/bar'
         scan.platform ==  ContainerPlatform.DEFAULT
-        scan.workDir == Path.of('/some/work/dir')
+        scan.workDir == 'workspace/sc-123'
         scan.configJson == '{some:auth}'
         scan.startTime == ts
         scan.status == ScanEntry.PENDING
@@ -268,7 +268,7 @@ class ScanEntryTest extends Specification {
 
     def 'should create entry from record' () {
         given:
-        def recrd = new WaveScanRecord(
+        def record = new WaveScanRecord(
                 '12345',
                 'bd-12345',
                 'mr-12345',
@@ -281,24 +281,24 @@ class ScanEntryTest extends Specification {
                 [new ScanVulnerability('cve-1', 'HIGH', 'test vul', 'testpkg', '1.0.0', '1.1.0', 'http://vul/cve-1')],
                 0,
                 "Some scan logs",
-                Path.of('/some/work/dir')
+                '/some/work/dir'
         )
 
         when:
-        def entry = ScanEntry.of(recrd)
+        def entry = ScanEntry.of(record)
         then:
-        entry.scanId == recrd.id
-        entry.buildId == recrd.buildId
-        entry.mirrorId == recrd.mirrorId
-        entry.requestId == recrd.requestId
-        entry.containerImage == recrd.containerImage
-        entry.platform == recrd.platform
-        entry.startTime == recrd.startTime
-        entry.duration == recrd.duration
-        entry.status == recrd.status
-        entry.vulnerabilities == recrd.vulnerabilities
-        entry.exitCode == recrd.exitCode
-        entry.logs == recrd.logs
-        entry.workDir == Path.of('/some/work/dir')
+        entry.scanId == record.id
+        entry.buildId == record.buildId
+        entry.mirrorId == record.mirrorId
+        entry.requestId == record.requestId
+        entry.containerImage == record.containerImage
+        entry.platform == record.platform
+        entry.startTime == record.startTime
+        entry.duration == record.duration
+        entry.status == record.status
+        entry.vulnerabilities == record.vulnerabilities
+        entry.exitCode == record.exitCode
+        entry.logs == record.logs
+        entry.workDir == '/some/work/dir'
     }
 }

@@ -533,7 +533,6 @@ class ContainerController {
                 targetImage,
                 digest,
                 null, // <-- use null to copy all container tags
-                buildConfig.buildWorkspace,
                 configJson,
                 scanId,
                 Instant.now(),

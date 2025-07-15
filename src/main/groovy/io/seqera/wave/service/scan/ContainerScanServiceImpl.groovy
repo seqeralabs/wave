@@ -239,7 +239,6 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
                 request.configJson,
                 request.targetImage,
                 request.platform,
-                workDir,
                 Instant.now(),
                 request.identity)
     }
@@ -254,7 +253,6 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
                 request.authJson,
                 request.targetImage,
                 request.platform,
-                workDir,
                 Instant.now(),
                 request.identity)
     }
@@ -270,7 +268,6 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
                 authJson,
                 request.containerImage,
                 request.platform,
-                workDir,
                 Instant.now(),
                 request.identity)
     }

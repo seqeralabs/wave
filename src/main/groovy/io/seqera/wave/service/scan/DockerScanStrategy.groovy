@@ -21,9 +21,6 @@ package io.seqera.wave.service.scan
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.micronaut.context.annotation.Value
-import io.micronaut.objectstorage.ObjectStorageOperations
-import io.micronaut.objectstorage.request.UploadRequest
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.util.ContainerHelper
@@ -51,10 +48,6 @@ class DockerScanStrategy extends ScanStrategy {
 
     @Inject
     private BuildConfig buildConfig
-
-    @Inject
-    @Named(BUILD_WORKSPACE)
-    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
 
     DockerScanStrategy(ScanConfig scanConfig) {
         this.scanConfig = scanConfig

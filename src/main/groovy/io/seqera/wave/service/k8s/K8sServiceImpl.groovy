@@ -492,7 +492,6 @@ class K8sServiceImpl implements K8sService {
             container.addToEnv(new V1EnvVar().name(k).value(v))
         }
 
-        container.withNewSecurityContext().withPrivileged(false).endSecurityContext()
         // spec section
         spec.withContainers(container.build()).endSpec().endTemplate().endSpec()
 
@@ -559,7 +558,6 @@ class K8sServiceImpl implements K8sService {
                 .withEnv(toEnvList(env))
                 .withResources(requests)
 
-        container.withNewSecurityContext().withPrivileged(false).endSecurityContext()
         // spec section
         spec.withContainers(container.build()).endSpec().endTemplate().endSpec()
 

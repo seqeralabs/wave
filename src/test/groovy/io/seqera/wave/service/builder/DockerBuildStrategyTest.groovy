@@ -60,12 +60,15 @@ class DockerBuildStrategyTest extends Specification {
                 '--name',
                 'build-job-name',
                 '--privileged',
+                '--entrypoint',
+                'sh',
                 '-e', 'TMPDIR=/tmp',
                 '-e', 'AWS_ACCESS_KEY_ID=test',
                 '-e', 'AWS_SECRET_ACCESS_KEY=test',
-                '-e', 'DOCKER_CONFIG=/fusion/s3/nextflow-ci/wave-build/workspace/bd-89fb83ce6ec8627b_1',
+                '-e', 'DOCKER_CONFIG=/home/user/bd-89fb83ce6ec8627b_1',
                 '--platform', 'linux/amd64',
-                'hrma017/buildkit:v0.22.0-2.4.13']
+                'hrma017/buildkit:v0.22.0-rootless-2.4.13',
+                '-c']
 
         when:
         req = new BuildRequest(
@@ -84,12 +87,15 @@ class DockerBuildStrategyTest extends Specification {
                 '--name',
                 'build-job-name',
                 '--privileged',
+                '--entrypoint',
+                'sh',
                 '-e', 'TMPDIR=/tmp',
                 '-e', 'AWS_ACCESS_KEY_ID=test',
                 '-e', 'AWS_SECRET_ACCESS_KEY=test',
-                '-e', 'DOCKER_CONFIG=/fusion/s3/nextflow-ci/wave-build/workspace/bd-89fb83ce6ec8627b_1',
+                '-e', 'DOCKER_CONFIG=/home/user/bd-89fb83ce6ec8627b_1',
                 '--platform', 'linux/arm64',
-                'hrma017/buildkit:v0.22.0-2.4.13']
+                'hrma017/buildkit:v0.22.0-rootless-2.4.13',
+                '-c']
 
         when:
         req = new BuildRequest(
@@ -106,11 +112,14 @@ class DockerBuildStrategyTest extends Specification {
                 '--name',
                 'build-job-name',
                 '--privileged',
+                '--entrypoint',
+                'sh',
                 '-e', 'TMPDIR=/tmp',
                 '-e', 'AWS_ACCESS_KEY_ID=test',
                 '-e', 'AWS_SECRET_ACCESS_KEY=test',
                 '--platform', 'linux/arm64',
-                'hrma017/buildkit:v0.22.0-2.4.13']
+                'hrma017/buildkit:v0.22.0-rootless-2.4.13',
+                '-c']
 
         cleanup:
         ctx.close()
@@ -136,22 +145,25 @@ class DockerBuildStrategyTest extends Specification {
                 '--name',
                 'build-job-name',
                 '--privileged',
+                '--entrypoint',
+                'sh',
                 '-e', 'TMPDIR=/tmp',
                 '-e', 'AWS_ACCESS_KEY_ID=test',
                 '-e', 'AWS_SECRET_ACCESS_KEY=test',
                 '--platform', 'linux/amd64',
-                'hrma017/buildkit:v0.22.0-2.4.13',
-                'fusion',
+                'hrma017/buildkit:v0.22.0-rootless-2.4.13',
+                '-c',
+                ['fusion cp -r /fusion/s3/nextflow-ci/wave-build/workspace/bd-89fb83ce6ec8627b_1 /home/user/bd-89fb83ce6ec8627b_1 &&',
                 'buildctl-daemonless.sh',
                 'build',
                 '--frontend',
                 'dockerfile.v0',
                 '--local',
-                'dockerfile=/fusion/s3/nextflow-ci/wave-build/workspace/bd-89fb83ce6ec8627b_1',
+                'dockerfile=/home/user/bd-89fb83ce6ec8627b_1',
                 '--opt',
                 'filename=Containerfile',
                 '--local',
-                'context=/fusion/s3/nextflow-ci/wave-build/workspace/bd-89fb83ce6ec8627b_1/context',
+                'context=/home/user/bd-89fb83ce6ec8627b_1/context',
                 '--output',
                 'type=image,name=repo:89fb83ce6ec8627b,push=true,oci-mediatypes=true',
                 '--opt',
@@ -159,7 +171,7 @@ class DockerBuildStrategyTest extends Specification {
                 '--export-cache',
                 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:89fb83ce6ec8627b,mode=max,ignore-error=true,oci-mediatypes=true',
                 '--import-cache',
-                'type=registry,ref=reg.io/wave/build/cache:89fb83ce6ec8627b' ]
+                'type=registry,ref=reg.io/wave/build/cache:89fb83ce6ec8627b'].join(" ") ]
 
         cleanup:
         ctx.close()
@@ -169,8 +181,6 @@ class DockerBuildStrategyTest extends Specification {
         given:
         def ctx = ApplicationContext.run()
         def service = ctx.getBean(DockerBuildStrategy)
-        and:
-        def creds = Path.of('/work/creds.json')
         and:
         def req = new BuildRequest(
                 containerId: 'd4869cc39b8d7d55',
@@ -193,10 +203,10 @@ class DockerBuildStrategyTest extends Specification {
                 '-e', 'AWS_ACCESS_KEY_ID=test',
                 '-e', 'AWS_SECRET_ACCESS_KEY=test',
                 '--platform', 'linux/amd64',
-                'hrma017/singularity:v4.2.1-r5-2.4.13',
+                'hrma017/singularity:v4.3.1-r1-2.4.13',
                 'sh',
                 '-c',
-                'ln -s /fusion/s3/nextflow-ci/wave-build/workspace/bd-d4869cc39b8d7d55_1/.singularity /root/.singularity && singularity build image.sif /fusion/s3/nextflow-ci/wave-build/workspace/bd-d4869cc39b8d7d55_1/Containerfile && singularity push image.sif oras://repo:d4869cc39b8d7d55'
+                'fusion cp -r /fusion/s3/nextflow-ci/wave-build/workspace/bd-d4869cc39b8d7d55_1/. /home/builder/ && singularity build image.sif /home/builder/Containerfile && singularity push image.sif oras://repo:d4869cc39b8d7d55'
         ]
 
         cleanup:
@@ -207,8 +217,6 @@ class DockerBuildStrategyTest extends Specification {
         given:
         def ctx = ApplicationContext.run()
         def service = ctx.getBean(DockerBuildStrategy)
-        and:
-        def creds = Path.of('/work/creds.json')
         and:
         def req = new BuildRequest(
                 containerId: '9c68af894bb2419c',
@@ -230,10 +238,10 @@ class DockerBuildStrategyTest extends Specification {
                 '-e', 'AWS_ACCESS_KEY_ID=test',
                 '-e', 'AWS_SECRET_ACCESS_KEY=test',
                 '--platform', 'linux/arm64',
-                'hrma017/singularity:v4.2.1-r5-2.4.13',
+                'hrma017/singularity:v4.3.1-r1-2.4.13',
                 'sh',
                 '-c',
-                'singularity build image.sif /fusion/s3/nextflow-ci/wave-build/workspace/bd-9c68af894bb2419c_1/Containerfile && singularity push image.sif oras://repo:9c68af894bb2419c'
+                'fusion cp -r /fusion/s3/nextflow-ci/wave-build/workspace/bd-9c68af894bb2419c_1/. /home/builder/ && singularity build image.sif /home/builder/Containerfile && singularity push image.sif oras://repo:9c68af894bb2419c'
         ]
 
         cleanup:

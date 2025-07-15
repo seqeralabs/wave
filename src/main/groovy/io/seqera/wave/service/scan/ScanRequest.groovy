@@ -72,11 +72,6 @@ class ScanRequest {
     final ContainerPlatform platform
 
     /**
-     * The scan job work directory
-     */
-    final String workDir
-
-    /**
      * Scan request creation time
      */
     final Instant creationTime
@@ -95,10 +90,13 @@ class ScanRequest {
                 opts.configJson as String,
                 opts.targetImage as String,
                 opts.platform as ContainerPlatform,
-                opts.workDir as String,
                 opts.creationTime as Instant,
                 opts.identity as PlatformId
         )
+    }
+
+    String getWorkDir() {
+        return "workspace/${scanId}"
     }
 
 }

@@ -253,7 +253,7 @@ class ContainerBuildServiceTest extends Specification implements AwsS3TestContai
         BootStrap: docker
         Format: ubuntu
         %files
-          /fusion/s3/nextflow-ci/wave-build/workspace/89356dcc8b4578f4_1/context/nf-1234/* /
+          /home/builder/context/nf-1234/* /
         '''.stripIndent()
 
     }

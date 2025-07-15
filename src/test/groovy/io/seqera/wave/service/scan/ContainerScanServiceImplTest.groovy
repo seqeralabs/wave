@@ -26,6 +26,8 @@ import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
+import io.micronaut.objectstorage.ObjectStorageOperations
+import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ScanMode
 import io.seqera.wave.configuration.ScanConfig
@@ -44,6 +46,9 @@ import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.LongRndKey
 import jakarta.inject.Inject
+import jakarta.inject.Named
+import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WORKSPACE
+
 /**
  * Tests for ContainerScanServiceImpl
  *
@@ -67,11 +72,15 @@ class ContainerScanServiceImplTest extends Specification {
     @Inject
     CleanupService cleanupService
 
+    @Inject
+    @Named(BUILD_WORKSPACE)
+    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
+
+
     def 'should start scan successfully'() {
         given:
         def KEY = 'scan-10'
-        def workDir = Files.createTempDirectory('test')
-        def scanRequest = ScanRequest.of(scanId: KEY, buildId:'build-1', targetImage: 'ubuntu:latest', platform: ContainerPlatform.of('linux/amd64'), workDir: workDir, creationTime: Instant.now())
+        def scanRequest = ScanRequest.of(scanId: KEY, buildId:'build-1', targetImage: 'ubuntu:latest', platform: ContainerPlatform.of('linux/amd64'), creationTime: Instant.now())
 
         when:
         scanService.scan(scanRequest)
@@ -83,7 +92,6 @@ class ContainerScanServiceImplTest extends Specification {
 
         cleanup:
         scanStore.clear()
-        workDir?.deleteDir()
     }
 
     def 'should handle job completion event and update scan record'() {
@@ -145,13 +153,12 @@ class ContainerScanServiceImplTest extends Specification {
                  ]
               }      
         """
-        def workDir = Files.createTempDirectory('test')
-        def reportFile = workDir.resolve('report.json')
-        Files.write(reportFile, trivyDockerResulJson.bytes)
         and:
         def KEY = 'scan-20'
+        def workDir = "workspace/$KEY"
+        objectStorageOperations.upload((UploadRequest.fromBytes(trivyDockerResulJson.bytes,"$workDir/report.json".toString())))
         def jobService = Mock(JobService)
-        def service = new ContainerScanServiceImpl(scanStore: scanStore, persistenceService: persistenceService, jobService: jobService, config: new ScanConfig(vulnerabilityLimit: 100))
+        def service = new ContainerScanServiceImpl(scanStore: scanStore, persistenceService: persistenceService, jobService: jobService, config: new ScanConfig(vulnerabilityLimit: 100), objectStorageOperations: objectStorageOperations)
         def job = JobSpec.scan(KEY, 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), workDir)
         def scan = ScanEntry.of(scanId: KEY, buildId: 'build-20', containerImage: 'ubuntu:latest', startTime: Instant.now())
 
@@ -193,8 +200,8 @@ class ContainerScanServiceImplTest extends Specification {
         }
 
         cleanup:
-        workDir?.deleteDir()
         scanStore.clear()
+        objectStorageOperations.delete("$workDir/report.json".toString())
     }
 
     def 'should handle job error event and update scan record'() {
@@ -202,7 +209,7 @@ class ContainerScanServiceImplTest extends Specification {
         def KEY = 'scan-30'
         def jobService = Mock(JobService)
         def service = new ContainerScanServiceImpl(scanStore: scanStore, persistenceService: persistenceService, jobService: jobService)
-        def job = JobSpec.scan(KEY, 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
+        def job = JobSpec.scan(KEY, 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), 'work/dir')
         def error = new Exception('Some error msg')
         def scan = ScanEntry.of(scanId: KEY, buildId: 'build-30', containerImage: 'ubuntu:latest', startTime: Instant.now())
 
@@ -234,7 +241,7 @@ class ContainerScanServiceImplTest extends Specification {
         def KEY = 'scan-40'
         def jobService = Mock(JobService)
         def service = new ContainerScanServiceImpl(scanStore: scanStore, persistenceService: persistenceService, jobService: jobService)
-        def job = JobSpec.scan(KEY, 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
+        def job = JobSpec.scan(KEY, 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), 'work/dir')
         def scan = ScanEntry.of(scanId: KEY, buildId: 'build-40', containerImage: 'ubuntu:latest', startTime: Instant.now())
 
         when:
@@ -267,13 +274,12 @@ class ContainerScanServiceImplTest extends Specification {
         def scanService = new ContainerScanServiceImpl()
         def containerId = 'container1234'
         and:
-        def workspace = Path.of('/some/workspace')
+        def workspace = 'workspace'
         def platform = ContainerPlatform.of('amd64')
         final build =
                 new BuildRequest(
                         containerId: containerId,
                         containerFile: 'FROM ubuntu',
-                        workspace: workspace,
                         targetImage: 'docker.io/my/repo:container1234',
                         identity: PlatformId.NULL,
                         platform: platform,
@@ -305,7 +311,6 @@ class ContainerScanServiceImplTest extends Specification {
                 'target/foo',
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
-                Path.of('/some/workspace'),
                 '{config}',
                 'sc-123',
                 timestamp,
@@ -321,7 +326,7 @@ class ContainerScanServiceImplTest extends Specification {
         scan.configJson == '{config}'
         scan.targetImage == 'target/foo'
         scan.platform == ContainerPlatform.DEFAULT
-        scan.workDir == Path.of('/some/workspace/sc-123')
+        scan.workDir == 'workspace/sc-123'
         scan.creationTime >= timestamp
     }
 
@@ -345,7 +350,7 @@ class ContainerScanServiceImplTest extends Specification {
         when:
         ScanRequest scan = scanService.fromContainer(request)
         then:
-        config.workspace >> Path.of('/some/workspace')
+        config.workspace >> 's3://some/workspace'
         inspectService.credentialsConfigJson(null,'docker.io/foo:bar',null,userId) >> '{docker json config}'
         and:
         scan.scanId == 'sc-345'
@@ -355,7 +360,7 @@ class ContainerScanServiceImplTest extends Specification {
         scan.configJson == '{docker json config}'
         scan.targetImage == 'docker.io/foo:bar'
         scan.platform == ContainerPlatform.DEFAULT
-        scan.workDir == Path.of('/some/workspace/sc-345')
+        scan.workDir == 'workspace/sc-345'
         scan.creationTime >= timestamp
     }
 
