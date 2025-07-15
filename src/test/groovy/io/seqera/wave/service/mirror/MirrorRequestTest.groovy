@@ -20,7 +20,6 @@ package io.seqera.wave.service.mirror
 
 import spock.lang.Specification
 
-import java.nio.file.Path
 import java.time.Instant
 
 import io.seqera.wave.core.ContainerPlatform
@@ -40,7 +39,6 @@ class MirrorRequestTest extends Specification {
                 'quay.io/foo:latest',
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
-                'workspace',
                 '{json config}',
                 'sc-123',
                 ts,

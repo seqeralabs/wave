@@ -20,7 +20,6 @@ package io.seqera.wave.service.job
 
 import spock.lang.Specification
 
-import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
@@ -102,7 +101,7 @@ class JobFactoryTest extends Specification {
         job.type == JobSpec.Type.Scan
         job.maxDuration == duration
         job.creationTime == request.creationTime
-        job.workDir == 'workspace'
+        job.workDir == 'workspace/sc-12345_1'
     }
 
     def 'should create mirror job' () {
@@ -117,7 +116,6 @@ class JobFactoryTest extends Specification {
                 'target/foo',
                 'sha256:12345',
                 Mock(ContainerPlatform),
-                workspace,
                 '{config}',
                 'sc-123',
                 Instant.now(),

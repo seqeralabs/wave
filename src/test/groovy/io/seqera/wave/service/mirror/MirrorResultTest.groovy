@@ -20,7 +20,6 @@ package io.seqera.wave.service.mirror
 
 import spock.lang.Specification
 
-import java.nio.file.Path
 import java.time.Instant
 
 import io.seqera.wave.core.ContainerPlatform
@@ -40,7 +39,6 @@ class MirrorResultTest extends Specification {
                 'target.io/foo',
                 'sha256:12345',
                 Mock(ContainerPlatform),
-                'workspace',
                 '{auth json}',
                 'scan-123',
                 Instant.now(),
@@ -72,7 +70,6 @@ class MirrorResultTest extends Specification {
                 'target.io/foo',
                 'sha256:12345',
                 Mock(ContainerPlatform),
-                'workspace',
                 '{auth json}',
                 'scan-123',
                 ts,

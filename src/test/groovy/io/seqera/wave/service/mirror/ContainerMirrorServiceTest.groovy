@@ -21,8 +21,6 @@ package io.seqera.wave.service.mirror
 import spock.lang.Requires
 import spock.lang.Specification
 
-import java.nio.file.Files
-import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.TimeUnit
@@ -70,7 +68,6 @@ class ContainerMirrorServiceTest extends Specification {
                 target,
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
-                folder,
                 creds,
                 null,
                 Instant.now(),
@@ -93,7 +90,6 @@ class ContainerMirrorServiceTest extends Specification {
                 'target/foo',
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
-                'some/dir',
                 '{config}',
                 null,
                 Instant.now(),
@@ -117,7 +113,6 @@ class ContainerMirrorServiceTest extends Specification {
                 'target/foo',
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
-                'some/dir',
                 '{config}',
                 null,
                 Instant.now(),
@@ -141,7 +136,6 @@ class ContainerMirrorServiceTest extends Specification {
                 'target/foo',
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
-                'some/dir',
                 '{config}',
                 null,
                 Instant.now(),
@@ -173,7 +167,6 @@ class ContainerMirrorServiceTest extends Specification {
                 'target/foo',
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
-                'some/dir',
                 '{config}',
                 null,
                 Instant.now(),
@@ -206,7 +199,6 @@ class ContainerMirrorServiceTest extends Specification {
                 'target/foo',
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
-                'some/dir',
                 '{config}',
                 null,
                 Instant.now(),

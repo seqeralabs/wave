@@ -21,7 +21,6 @@ package io.seqera.wave.service.mirror.strategy
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import java.nio.file.Path
 import java.time.Instant
 
 import io.seqera.wave.core.ContainerPlatform
@@ -44,7 +43,6 @@ class MirrorStrategyTest extends Specification {
                 'target.io/foo',
                 'sha256:12345',
                 PLATFORM ? ContainerPlatform.of(PLATFORM) : null,
-                'workspace',
                 '{auth json}',
                 'scan-123',
                 Instant.now(),

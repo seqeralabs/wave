@@ -20,7 +20,6 @@ package io.seqera.wave.service.builder
 
 import spock.lang.Specification
 
-import java.nio.file.Files
 import java.time.Duration
 
 import io.micronaut.context.annotation.Property
@@ -88,7 +87,6 @@ class KubeBuildStrategyTest extends Specification {
     def "should get the correct image for a specific architecture"(){
         given:
         def USER = new PlatformId(new User(id:1, email: 'foo@user.com'))
-        def PATH = 'test'
         def repo = 'docker.io/wave'
         def cache = 'docker.io/cache'
         def dockerfile = 'from foo'
@@ -105,13 +103,13 @@ class KubeBuildStrategyTest extends Specification {
         req = new BuildRequest(containerId, dockerfile, null, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.SINGULARITY,Duration.ofMinutes(1), BuildCompression.gzip)
 
         then:'should return singularity amd64 image'
-        strategy.getBuildImage(req) == 'hrma017/singularity:v4.2.1-r5-2.4.13'
+        strategy.getBuildImage(req) == 'hrma017/singularity:v4.3.1-r1-2.4.13'
 
         when:'getting singularity with arm64 arch in build request'
         req = new BuildRequest(containerId, dockerfile, null, targetImage, USER, ContainerPlatform.of('arm64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.SINGULARITY, Duration.ofMinutes(1), BuildCompression.gzip)
 
         then:'should return singularity arm64 image'
-        strategy.getBuildImage(req) == 'hrma017/singularity:v4.2.1-r5-2.4.13'
+        strategy.getBuildImage(req) == 'hrma017/singularity:v4.3.1-r1-2.4.13'
     }
 
 }
