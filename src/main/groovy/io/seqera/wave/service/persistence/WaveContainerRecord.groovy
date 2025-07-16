@@ -48,134 +48,134 @@ class WaveContainerRecord {
      * This is container token and it is named as id for surrealdb requirement
      */
     @PostgresIgnore
-    final String id
+    String id
 
     /**
      * The Tower user associated with the request
      */
-    final User user
+    User user
 
     /**
      * The Tower workspace associated with the request
      */
-    final Long workspaceId
+    Long workspaceId
 
     /**
      * The container image requested. this can be null null when a build request was submitted
      */
-    final String containerImage
+    String containerImage
 
     /**
      * The container file (aka Dockerfile) content associated with the request
      */
-    final String containerFile
+    String containerFile
 
     /**
      * The container config associated with the request
      */
-    final ContainerConfig containerConfig
+    ContainerConfig containerConfig
 
     /**
      * The conda file associated with the request
      */
-    final String condaFile
+    String condaFile
 
     /**
      * The container arch platform
      */
-    final String platform
+    String platform
 
     /**
      * The Tower endpoint associated with the request
      */
-    final String towerEndpoint
+    String towerEndpoint
 
     /**
      * The repository where the build image is uploaded
      */
-    final String buildRepository
+    String buildRepository
 
     /**
      * The repository where container layers are cached
      */
-    final String cacheRepository
+    String cacheRepository
 
     /**
      * The request fingerprint
      */
-    final String fingerprint
+    String fingerprint
 
     /**
      * The request timestamp
      */
-    final Instant timestamp
+    Instant timestamp
 
     /**
      * The time zone id where the request was originated
      */
-    final String zoneId
+    String zoneId
 
     /**
      * The IP address originating the request
      */
-    final String ipAddress
+    String ipAddress
 
     /**
      * The container image associated with this Wave container, it can be the container image
      * as provide by the user, or a container image built by Wave
      */
-    final String sourceImage
+    String sourceImage
 
     /**
      * The container SHA256 digest of the container image associated with this request
      */
-    final String sourceDigest
+    String sourceDigest
 
     /**
      * The resulting Wave container image name
      */
-    final String waveImage
+    String waveImage
 
     /**
      * The resulting Wave container image digest
      */
-    final String waveDigest
+    String waveDigest
 
     /**
      * The timestamp of the Wave container expiration
      */
-    final Instant expiration
+    Instant expiration
 
     /**
      * The ID of the build if the Wave request triggered a container build, null otherwise
      */
-    final String buildId
+    String buildId
 
     /**
      * Whenever a new build was triggered for this Wave request, or the container was built by a previous request
      */
-    final Boolean buildNew
+    Boolean buildNew
 
     /**
      * Whenever the request is a Wave container freeze
      */
-    final Boolean freeze
+    Boolean freeze
 
     /**
      * Whenever the request is for container with fusion
      */
     @JsonDeserialize(using = FusionVersionStringDeserializer.class)
-    final String fusionVersion
+    String fusionVersion
 
     /**
      * Whenever it's a "mirror" build request
      */
-    final Boolean mirror
+    Boolean mirror
 
     /**
      * The scan id associated with this request
      */
-    final String scanId
+    String scanId
 
     WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequest data, String waveImage, String addr, Instant expiration) {
         this.id = data.requestId
