@@ -99,6 +99,13 @@ body {
         </tr>
         {{/if}}
 
+        {{#if scan_sbom_spdx_url}}
+        <tr>
+            <td>SBOM SPDX</td>
+            <td><a href="{{scan_sbom_spdx_url}}">SBOM SPDX report</a></td>
+        </tr>
+        {{/if}}
+
        {{#if scan_logs}}
        <tr>
             <td colspan="2">
