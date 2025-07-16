@@ -1,0 +1,1134 @@
+openapi: 3.0.0
+info:
+  title: Wave service
+  version: 0.0.0
+tags: []
+paths:
+  /v1alpha1/builds/{buildId}:
+    get:
+      operationId: BuildService_getBuildRecord
+      description: Provides status of build against buildId passed as path variable.
+      parameters:
+        - name: buildId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WaveBuildRecord'
+        '404':
+          description: The server cannot find the requested resource.
+  /v1alpha1/builds/{buildId}/logs:
+    get:
+      operationId: BuildService_getBuildLogs
+      description: Supply logs corresponding to the specified buildId within the API request.
+      parameters:
+        - name: buildId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: string
+        '404':
+          description: The server cannot find the requested resource.
+  /v1alpha1/builds/{buildId}/status:
+    get:
+      operationId: BuildService_getBuildStatus
+      description: Provides status of build against buildId passed as path variable.
+      parameters:
+        - name: buildId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuildStatusResponse'
+        '404':
+          description: The server cannot find the requested resource.
+  /v1alpha1/inspect:
+    post:
+      operationId: InspectService_inspectContainer
+      description: This endpoint returns the metadata about provided container image.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContainerInspectResponse'
+        '404':
+          description: The server cannot find the requested resource.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContainerInspectRequest'
+  /v1alpha1/mirrors/{mirrorId}:
+    get:
+      operationId: getMirrorRecord_containerMirror
+      description: This endpoint allows you to get the details of a container mirror request made to Wave.
+      parameters:
+        - name: mirrorId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContainerMirrorResponse'
+        '404':
+          description: The server cannot find the requested resource.
+  /v1alpha1/scans/{scanId}:
+    get:
+      operationId: scanService_scanImage
+      description: This endpoint allows you to get the details of a container scan request made to Wave.
+      parameters:
+        - name: scanId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WaveScanRecord'
+        '404':
+          description: The server cannot find the requested resource.
+  /v1alpha2/container:
+    post:
+      operationId: ContainerService_createContainer
+      description: This endpoint allows you to submit a request to access a private container registry via Wave, or build a container image on-the-fly with a Dockerfile or Conda recipe file and returns the name of the container request made available by Wave.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContainerResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContainerRequest'
+  /v1alpha2/container/{requestId}:
+    get:
+      operationId: ContainerService_getContainerDetails
+      description: This endpoint allows you to get the details of a container request made to Wave.
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WaveContainerRecord'
+        '404':
+          description: The server cannot find the requested resource.
+  /v1alpha2/container/{requestId}/status:
+    get:
+      operationId: ContainerService_getContainerStatus
+      description: This endpoint allows you to get the status of a container request made to Wave.
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContainerStatusResponse'
+        '404':
+          description: The server cannot find the requested resource.
+  /v1alpha2/validate-creds:
+    post:
+      operationId: validateCredsV2
+      description: This endpoint allows you to validate the credentials of a container registry.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: boolean
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateRegistryCredsRequest'
+components:
+  schemas:
+    BuildStatusResponse:
+      type: object
+      required:
+        - duration
+        - id
+        - startTime
+        - status
+        - succeeded
+      properties:
+        duration:
+          type: string
+        id:
+          type: string
+        startTime:
+          type: string
+        status:
+          $ref: '#/components/schemas/Status'
+        succeeded:
+          type: boolean
+      description: Response payload for build status.
+      example:
+        id: 6c084f2e43f86a78_1
+        status: COMPLETED
+        startTime: '2024-04-09T20:31:35.355423Z'
+        duration: '123.914989000'
+        succeeded: true
+    CondaOpts:
+      type: object
+      required:
+        - basePackages
+        - commands
+        - mambaImage
+      properties:
+        basePackages:
+          type: string
+          description: Names of base packages.
+        commands:
+          type: array
+          items:
+            type: string
+          description: Command to be included in the container.
+        mambaImage:
+          type: string
+          description: Name of the docker image used to build Conda containers.
+      description: Options for Conda environments.
+      example:
+        basePackages: python=3.8
+        commands:
+          - pip install bwa
+          - pip install salmon
+        mambaImage: mambaorg/micromamba:0.15.3
+    CondaPackages:
+      type: object
+      required:
+        - channels
+        - entries
+        - type
+      properties:
+        channels:
+          type: array
+          items:
+            type: string
+          description: Conda channels to search for packages.
+        condaOpts:
+          $ref: '#/components/schemas/CondaOpts'
+        entries:
+          type: array
+          items:
+            type: string
+          description: Conda packages to install.
+        environment:
+          type: string
+          description: The package environment file encoded as a base64 string.
+        type:
+          type: string
+          enum:
+            - CONDA
+          description: This represents the type of package builder. Use `CONDA`.
+      description: Package configurations for container builds.
+    ContainerConfig:
+      type: object
+      required:
+        - cmd
+        - entrypoint
+        - env
+        - layers
+        - workingDir
+      properties:
+        cmd:
+          type: array
+          items:
+            type: string
+          description: The launch command to be used by the Wave container, e.g., `['echo', 'Hello world']` (optional).
+        entrypoint:
+          type: array
+          items:
+            type: string
+          description: The container entrypoint command, e.g., `['/bin/bash']`.
+        env:
+          type: array
+          items:
+            type: string
+          description: The environment variables to be defined in the Wave container, e.g., `['FOO=one','BAR=two']` (optional).
+        layers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContainerLayer'
+        workingDir:
+          type: string
+          description: The work directory to be used in the Wave container, e.g., `/some/work/dir` (optional).
+      description: Configuration details for a container.
+      example:
+        cmd:
+          - echo
+          - hello
+        entrypoint:
+          - /bin/sh
+        env:
+          - FOO=bar
+        layers:
+          - gzipDigest: sha256:1234567890abcdef
+            gzipSize: '1234'
+            location: https://seqera.io/layer.tar.gz
+            skipHashing: false
+            tarDigest: sha256:abcdef1234567890
+        workingDir: /app
+    ContainerInspectConfig:
+      type: object
+      required:
+        - architecture
+        - config
+        - container
+        - created
+        - rootfs
+      properties:
+        architecture:
+          type: string
+        config:
+          type: object
+          properties:
+            attachStdin:
+              type: boolean
+            attachStdout:
+              type: boolean
+            attachStderr:
+              type: boolean
+            tty:
+              type: boolean
+            env:
+              type: array
+              items:
+                type: string
+            cmd:
+              type: array
+              items:
+                type: string
+            image:
+              type: string
+          required:
+            - attachStdin
+            - attachStdout
+            - attachStderr
+            - tty
+            - env
+            - cmd
+            - image
+        container:
+          type: string
+        created:
+          type: string
+        rootfs:
+          $ref: '#/components/schemas/RootFS'
+      description: Configuration details of a container.
+      example:
+        architecture: linux/amd64
+        config:
+          attachStdin: false
+          attachStdout: true
+          attachStderr: true
+          tty: false
+          env:
+            - PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+          cmd:
+            - sh
+          image: alpine:latest
+        container: docker.io/alpine:latest
+        created: '2021-06-10T15:00:00.000000000Z'
+        rootfs:
+          diff_ids:
+            - sha256:1234567890abcdef
+          type: layers
+    ContainerInspectRequest:
+      type: object
+      required:
+        - containerImage
+        - towerAccessToken
+        - towerEndpoint
+        - towerWorkspaceId
+      properties:
+        containerImage:
+          type: string
+          description: Name of the container to be inpected, e.g., `docker.io/library/ubuntu:latest`
+        towerAccessToken:
+          type: string
+          description: 'Access token of the user account granting the access to the Seqera Platform service specified via `towerEndpoint` (optional).  '
+        towerEndpoint:
+          type: string
+          description: 'Seqera Platform service endpoint from where container registry credentials are retrieved (optional). Default `https://api.cloud.seqera.io`. '
+        towerWorkspaceId:
+          type: integer
+          format: int64
+          description: ID of the Seqera Platform workspace from where the container registry credentials are retrieved (optional). When omitted the personal workspace is used.
+      description: Request payload for inspecting a container.
+      example:
+        containerImage: docker.io/alpine:latest
+        towerAccessToken: 1234567890abcdef
+        towerEndpoint: https://api.cloud.seqera.io
+        towerWorkspaceId: 1234567890
+    ContainerInspectResponse:
+      type: object
+      required:
+        - Container
+      properties:
+        Container:
+          type: object
+          properties:
+            registry:
+              type: string
+            hostName:
+              type: string
+            imageName:
+              type: string
+            reference:
+              type: string
+            digest:
+              type: string
+            config:
+              $ref: '#/components/schemas/ContainerInspectConfig'
+            manifest:
+              $ref: '#/components/schemas/Manifest'
+            v1:
+              type: boolean
+            v2:
+              type: boolean
+            oci:
+              type: boolean
+          required:
+            - registry
+            - hostName
+            - imageName
+            - reference
+            - digest
+            - config
+            - manifest
+            - v1
+            - v2
+            - oci
+      description: Response payload for inspecting a container.
+      example:
+        Container:
+          registry: docker.io
+          hostName: docker.io
+          imageName: alpine
+          reference: latest
+          digest: sha256:1234567890abcdef
+          config:
+            architecture: linux/amd64
+            config:
+              attachStdin: false
+              attachStdout: true
+              attachStderr: true
+              tty: false
+              env:
+                - PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+              cmd:
+                - sh
+              image: alpine:latest
+            container: docker.io/alpine:latest
+            created: '2021-06-10T15:00:00.000000000Z'
+            rootfs:
+              diff_ids:
+                - sha256:1234567890abcdef
+              type: layers
+          manifest:
+            schemaVersion: 2
+            mediaType: application/vnd.docker.distribution.manifest.v2+json
+            config:
+              mediaType: application/vnd.docker.container.image.v1+json
+              size: 123456
+              digest: sha256:1234567890abcdef
+            layers:
+              - mediaType: application/vnd.docker.image.rootfs.diff.tar.gzip
+                size: 123456
+                digest: sha256:1234567890abcdef
+          v1: false
+          v2: true
+          oci: false
+    ContainerLayer:
+      type: object
+      required:
+        - gzipDigest
+        - gzipSize
+        - location
+        - skipHashing
+        - tarDigest
+      properties:
+        gzipDigest:
+          type: string
+          description: The SHA256 checksum of the provided layer tar gzip file, e.g., `sha256:a7c724b02...`.
+        gzipSize:
+          type: string
+          description: The size in bytes of the the provided layer tar gzip file.
+        location:
+          type: string
+          description: Specifies a container image layer stored as a tar.gz file (optional). Either a HTTP URL to the file or a base64 encoded string prefixed with `data:`.
+        skipHashing:
+          type: boolean
+          description: If true, the layer tar file will not be hashed.
+        tarDigest:
+          type: string
+          description: The SHA256checksum of the provided tar file, e.g., `sha256:a7c724b02...`.
+      description: Represents a layer in a container image.
+      example:
+        gzipDigest: sha256:1234567890abcdef
+        gzipSize: '123456'
+        location: https://example.com/image.tar.gz
+        skipHashing: false
+        tarDigest: sha256:abcdef1234567890
+    ContainerMirrorResponse:
+      type: object
+      required:
+        - mirrorId
+        - digest
+        - sourceImage
+        - targetImage
+        - platform
+        - creationTime
+        - status
+        - duration
+        - exitCode
+        - logs
+      properties:
+        mirrorId:
+          type: string
+        digest:
+          type: string
+        sourceImage:
+          type: string
+        targetImage:
+          type: string
+        platform:
+          $ref: '#/components/schemas/ContainerPlatform'
+        creationTime:
+          type: string
+        status:
+          $ref: '#/components/schemas/Status'
+        duration:
+          type: string
+        exitCode:
+          type: integer
+          format: int32
+        logs:
+          type: string
+      description: Response payload for container mirroring.
+      example:
+        mirrorId: 6c084f2e43f86a78_1
+        digest: sha256:1234567890abcdef
+        sourceImage: docker.io/alpine:latest
+        targetImage: docker.io/alpine:latest
+        platform:
+          os: LINUX
+          arch: AMD64
+          variant: v1
+        creationTime: '2024-04-09T20:31:35.355423Z'
+        status: COMPLETED
+        duration: '123.914989000'
+        exitCode: 0
+        logs: Successfully mirrored image.
+    ContainerPlatform:
+      type: object
+      required:
+        - os
+        - arch
+      properties:
+        os:
+          type: string
+        arch:
+          type: string
+        variant:
+          type: string
+      description: Represents os platform of a container.
+      example:
+        os: linux
+        arch: amd64
+        variant: v1
+    ContainerRequest:
+      type: object
+      required:
+        - containerPlatform
+        - format
+      properties:
+        buildContext:
+          $ref: '#/components/schemas/ContainerLayer'
+        buildRepository:
+          type: string
+          description: Container repository where container builds should be pushed, e.g., `docker.io/user/my-image` (optional).
+        cacheRepository:
+          type: string
+          description: Container repository used to cache build layers `docker.io/user/my-cache` (optional).
+        containerConfig:
+          $ref: '#/components/schemas/ContainerConfig'
+        containerFile:
+          type: string
+          description: Dockerfile used for building a new container encoded in base64 (optional). When provided, the attribute `containerImage` must be omitted.
+        containerImage:
+          type: string
+          description: 'Name of the container to be served, e.g., `docker.io/library/ubuntu:latest` (optional). If omitted, the `containerFile` must be provided.  '
+        containerIncludes:
+          type: array
+          items:
+            type: string
+          description: List of container images to include in the built container (optional).
+        containerPlatform:
+          type: string
+          description: Target container architecture of the built container, e.g., `linux/amd64` (optional). Currently only supporting amd64 and arm64.
+        dryRun:
+          type: boolean
+          description: Request to build the container in a dry-run mode.
+        fingerprint:
+          type: string
+          description: Request unique fingerprint.
+        format:
+          type: string
+          enum:
+            - sif
+            - docker
+          description: 'The format of the container to be built. Its values can be `sif` for singularity or `docker` as default. '
+        freeze:
+          type: boolean
+          description: Freeze requires buildRepository to push the build container to a user-defined repository. This provides the container URL from the user-defined repository, not the Wave generated URL. This URL won't change.
+        nameStrategy:
+          type: string
+          enum:
+            - none
+            - tagPrefix
+            - imageSuffix
+          description: 'The name strategy to be used to create the name of the container built by Wave. Its values can be `none`, `tagPrefix`, or `imageSuffix`. '
+        mirror:
+          type: boolean
+        packages:
+          allOf:
+            - $ref: '#/components/schemas/CondaPackages'
+          description: Conda packages to be installed in the container.
+        scanMode:
+          $ref: '#/components/schemas/ScanMode'
+        scanLevels:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScanLevel'
+        timestamp:
+          type: string
+          description: Request submission timestamp using ISO-8601.
+        towerAccessToken:
+          type: string
+          description: Access token of the user account granting access to the Seqera Platform service specified via `towerEndpoint` (optional).
+        towerEndpoint:
+          type: string
+          description: Seqera Platform service endpoint from where container registry credentials are retrieved (optional). Default `https://api.cloud.seqera.io`.
+        towerRefreshToken:
+          type: string
+          description: Token to refresh ``towerAccessToken` after it become invalid (optional).
+        towerWorkspaceId:
+          type: integer
+          format: int64
+          description: ID of the Seqera Platform workspace from where the container registry credentials are retrieved (optional). When omitted the personal workspace is used.
+        workflowId:
+          type: string
+          description: ID of the Seqera Platform workspace from which this container request originates (optional).
+      description: Request payload for creating a container token.
+      example:
+        packages:
+          type: CONDA
+          entries:
+            - salmon
+            - bwa
+          channels:
+            - conda-forge
+            - bioconda
+        format: docker
+        containerPlatform: linux/amd64
+    ContainerResponse:
+      type: object
+      required:
+        - buildId
+        - cached
+        - containerImage
+        - containerToken
+        - expiration
+        - freeze
+        - mirror
+        - requestId
+        - scanId
+        - status
+        - targetImage
+      properties:
+        buildId:
+          type: string
+          description: Unique identifier for the build.
+        cached:
+          type: boolean
+          description: Indicates if the build is cached.
+        containerImage:
+          type: string
+          description: Container image to be used.
+        containerToken:
+          type: string
+          description: Token to access the container.
+        expiration:
+          type: string
+          description: The expiration timestamp of the Wave container using ISO-8601 format.
+        freeze:
+          type: boolean
+          description: Indicates if the build is pushed to user container registry.
+        mirror:
+          type: boolean
+          description: Indicates if its a mirror request.
+        requestId:
+          type: string
+          description: Unique identifier for the request.
+        scanId:
+          type: string
+          description: Unique identifier for the scan.
+        status:
+          allOf:
+            - $ref: '#/components/schemas/ContainerStatus'
+          description: Status of the container build.
+        targetImage:
+          type: string
+          description: The Wave container image name
+      description: Response payload for container token creation.
+      example:
+        containerToken: 732b73aa17c8
+        targetImage: wave.seqera.io/wt/732b73aa17c8/build/dev:salmon_bwa--5e49881e6ad74121
+        expiration: '2024-04-09T21:19:01.715321Z'
+        buildId: 5e49881e6ad74121_1
+        cached: false
+        freeze: false
+        mirror: false
+        requestId: 5e49881e6ad74121
+        scanId: 5e49881e6ad74121
+        containerImage: docker.io/build/dev:salmon_bwa--5e49881e6ad74121
+        status: PENDING
+    ContainerStatus:
+      type: string
+      enum:
+        - PENDING
+        - BUILDING
+        - SCANNING
+        - DONE
+    ContainerStatusResponse:
+      type: object
+      required:
+        - id
+        - status
+        - buildId
+        - scanId
+        - succeeded
+        - detailsUri
+        - creationTime
+        - duration
+      properties:
+        id:
+          type: string
+        status:
+          $ref: '#/components/schemas/ContainerStatus'
+        buildId:
+          type: string
+        mirrorId:
+          type: string
+        scanId:
+          type: string
+        vulnerabilities:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/vulnerability'
+        succeeded:
+          type: boolean
+        reason:
+          type: string
+        detailsUri:
+          type: string
+        creationTime:
+          type: string
+        duration:
+          type: string
+      description: Response payload for container status.
+      example:
+        id: 6c084f2e43f86a78
+        buildId: 6c084f2e43f86a78_1
+        status: DONE
+        creationTime: '2024-04-09T20:31:35.355423Z'
+        detailsUri: https://wave.seqera.io/view/builds/6c084f2e43f86a78_1
+        duration: '123.914989000'
+        succeeded: true
+        scanId: 6c084f2e43f86a78_1
+    Manifest:
+      type: object
+      required:
+        - config
+        - layers
+        - mediaType
+        - schemaVersion
+      properties:
+        config:
+          type: object
+          properties:
+            digest:
+              type: string
+            mediaType:
+              type: string
+            size:
+              type: integer
+              format: int64
+          required:
+            - digest
+            - mediaType
+            - size
+        layers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManifestLayer'
+        mediaType:
+          type: string
+        schemaVersion:
+          type: integer
+          format: int32
+      description: Manifest details of a container.
+      example:
+        config:
+          digest: sha256:6c084f2e43f86a78
+          mediaType: application/vnd.docker.container.image.v1+json
+          size: 1234
+        layers:
+          - digest: sha256:6c084f2e43f86a78
+            mediaType: application/vnd.docker.container.image.v1+json
+            size: 1234
+        mediaType: application/vnd.docker.container.image.v1+json
+        schemaVersion: 2
+    ManifestLayer:
+      type: object
+      required:
+        - digest
+        - mediaType
+        - size
+      properties:
+        digest:
+          type: string
+        mediaType:
+          type: string
+        size:
+          type: integer
+          format: int64
+      description: Manifest layer details of a container.
+      example:
+        digest: sha256:6c084f2e43f86a78
+        mediaType: application/vnd.docker.container.image.v1+json
+        size: 1234
+    RootFS:
+      type: object
+      required:
+        - diff_ids
+        - type
+      properties:
+        diff_ids:
+          type: array
+          items:
+            type: string
+        type:
+          type: string
+      description: Details about the root filesystem of a container.
+      example:
+        diff_ids:
+          - sha256:6c084f2e43f86a78
+          - sha256:6c084f2e43f86a78
+        type: layers
+    ScanLevel:
+      type: string
+      enum:
+        - LOW
+        - MEDIUM
+        - HIGH
+        - CRITICAL
+    ScanMode:
+      type: string
+      enum:
+        - none
+        - async
+        - required
+    Status:
+      type: string
+      enum:
+        - PENDING
+        - COMPLETED
+    User:
+      type: object
+      required:
+        - id
+        - userName
+        - email
+      properties:
+        id:
+          type: integer
+          format: int64
+        userName:
+          type: string
+        email:
+          type: string
+      description: Wave USer details
+      example:
+        id: 1
+        userName: test
+        email: test@seqera.io
+    ValidateRegistryCredsRequest:
+      type: object
+      required:
+        - password
+        - registry
+        - userName
+      properties:
+        password:
+          type: string
+        registry:
+          type: string
+        userName:
+          type: string
+      description: request payload of validate credentials request
+      example:
+        password: password
+        registry: docker.io/wave
+        userName: username
+    Versions:
+      type: string
+      enum:
+        - 0.0.0
+    Vulnerability:
+      type: object
+      required:
+        - fixedVersion
+        - id
+        - installedVersion
+        - pkgName
+        - primaryUrl
+        - severity
+        - title
+      properties:
+        fixedVersion:
+          type: string
+        id:
+          type: string
+        installedVersion:
+          type: string
+        pkgName:
+          type: string
+        primaryUrl:
+          type: string
+        severity:
+          type: string
+        title:
+          type: string
+      description: Scan Vulnerability details
+      example:
+        fixedVersion: 1.0.0
+        id: CVE-2021-1234
+        installedVersion: 0.9.0
+        pkgName: test
+        primaryUrl: https://test.com
+        severity: high
+        title: test
+    WaveBuildRecord:
+      type: object
+      required:
+        - buildId
+        - condaFile
+        - digest
+        - dockerFile
+        - duration
+        - exitStatus
+        - format
+        - offsetId
+        - platform
+        - requestIp
+        - scanId
+        - startTime
+        - succeeded
+        - targetImage
+        - userEmail
+        - userId
+        - userName
+      properties:
+        buildId:
+          type: string
+        condaFile:
+          type: string
+        digest:
+          type: string
+        dockerFile:
+          type: string
+        duration:
+          type: integer
+          format: int64
+        exitStatus:
+          type: integer
+          format: int32
+        format:
+          type: string
+          enum:
+            - docker
+            - sif
+        offsetId:
+          type: string
+        platform:
+          type: string
+        requestIp:
+          type: string
+        scanId:
+          type: string
+        startTime:
+          type: string
+        succeeded:
+          type: boolean
+        targetImage:
+          type: string
+        userEmail:
+          type: string
+        userId:
+          type: integer
+          format: int64
+        userName:
+          type: string
+      description: Wave container build details
+    WaveContainerRecord:
+      type: object
+      required:
+        - user
+        - workspaceId
+        - containerConfig
+        - timestamp
+        - expiration
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        workspaceId:
+          type: integer
+          format: int64
+        containerImage:
+          type: string
+        containerFile:
+          type: string
+        containerConfig:
+          $ref: '#/components/schemas/ContainerConfig'
+        condaFile:
+          type: string
+        platform:
+          type: string
+        towerEndpoint:
+          type: string
+        buildRepository:
+          type: string
+        cacheRepository:
+          type: string
+        fingerprint:
+          type: string
+        timestamp:
+          type: string
+        zoneId:
+          type: string
+        ipAddress:
+          type: string
+        sourceImage:
+          type: string
+        sourceDigest:
+          type: string
+        waveImage:
+          type: string
+        waveDigest:
+          type: string
+        expiration:
+          type: string
+        buildId:
+          type: string
+        buildNew:
+          type: boolean
+        freeze:
+          type: boolean
+        fusionVersion:
+          type: string
+      description: Wave container details
+    WaveScanRecord:
+      type: object
+      required:
+        - buildId
+        - duration
+        - containerImage
+        - id
+        - startTime
+        - status
+        - vulnerabilities
+      properties:
+        buildId:
+          type: string
+        duration:
+          type: integer
+          format: int64
+        containerImage:
+          type: string
+        id:
+          type: string
+        startTime:
+          type: string
+        status:
+          type: string
+        vulnerabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/Vulnerability'
+      description: Response Payload for wave scan
+    vulnerability:
+      type: object
+      required:
+        - severity
+        - count
+      properties:
+        severity:
+          type: string
+        count:
+          type: integer
+          format: int32
