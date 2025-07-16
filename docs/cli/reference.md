@@ -54,7 +54,7 @@ With the Wave CLI you can build Docker and Singularity containers from a variety
 
 The following sections describe several common usage cases. To get started by creating an example Nextflow pipeline that uses Wave CLI, see [Get started][start].
 
-[start]: ../get-started.mdx#wave-cli
+[start]: ../get-started#wave-cli
 
 ### Augment a container with a directory
 
