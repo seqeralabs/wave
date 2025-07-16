@@ -92,6 +92,16 @@ class PostgresSchemaService {
             CREATE INDEX IF NOT EXISTS wave_scan_created_at_idx
             ON wave_scan (created_at);
 
+            CREATE TABLE IF NOT EXISTS wave_pull (
+                id BIGSERIAL PRIMARY KEY,
+                request_id TEXT,
+                created_at TIMESTAMP DEFAULT NOW(),
+                CONSTRAINT fk_request
+                FOREIGN KEY (request_id)
+                REFERENCES wave_request(id)
+                ON DELETE NO ACTION
+            );
+
             '''.stripIndent()
 
 
@@ -112,6 +122,7 @@ class PostgresSchemaService {
         DELETE FROM wave_request;
         DELETE FROM wave_mirror;
         DELETE FROM wave_scan;
+        DELETE FROM wave_pull;
         '''.stripIndent()
 
         jdbcOperations.execute((conn)-> {
