@@ -21,8 +21,6 @@ package io.seqera.wave.service.scan
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import java.nio.file.Files
-import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
@@ -30,6 +28,7 @@ import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ScanMode
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildFormat
@@ -71,6 +70,9 @@ class ContainerScanServiceImplTest extends Specification {
 
     @Inject
     CleanupService cleanupService
+
+    @Inject
+    BuildConfig buildConfig
 
     @Inject
     @Named(BUILD_WORKSPACE)
@@ -158,9 +160,9 @@ class ContainerScanServiceImplTest extends Specification {
         def workDir = "workspace/$KEY"
         objectStorageOperations.upload((UploadRequest.fromBytes(trivyDockerResulJson.bytes,"$workDir/report.json".toString())))
         def jobService = Mock(JobService)
-        def service = new ContainerScanServiceImpl(scanStore: scanStore, persistenceService: persistenceService, jobService: jobService, config: new ScanConfig(vulnerabilityLimit: 100), objectStorageOperations: objectStorageOperations)
+        def service = new ContainerScanServiceImpl(scanStore: scanStore, persistenceService: persistenceService, jobService: jobService, config: new ScanConfig(vulnerabilityLimit: 100), objectStorageOperations: objectStorageOperations, cleanupService: cleanupService)
         def job = JobSpec.scan(KEY, 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), workDir)
-        def scan = ScanEntry.of(scanId: KEY, buildId: 'build-20', containerImage: 'ubuntu:latest', startTime: Instant.now())
+        def scan = ScanEntry.of(scanId: KEY, buildId: 'build-20', containerImage: 'ubuntu:latest', startTime: Instant.now(), workDir: workDir)
 
         when:
         service.onJobCompletion(job, scan, new JobState(JobState.Status.SUCCEEDED,0))
