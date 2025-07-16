@@ -67,7 +67,7 @@ class AwsMailProvider implements MailProvider {
                 .build()
         final email = SendRawEmailRequest.builder()
                 .rawMessage(rawMessage)
-                .build()
+                .build() as SendRawEmailRequest
         final result = client.sendRawEmail(email);
         log.debug "Mail message sent: ${result}"
     }
