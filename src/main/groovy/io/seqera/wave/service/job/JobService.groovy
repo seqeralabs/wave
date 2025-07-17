@@ -32,11 +32,11 @@ interface JobService {
 
     JobSpec launchTransfer(BlobEntry blob, List<String> command)
 
-    JobSpec launchBuild(BuildRequest request)
+    JobSpec launchBuild(BuildRequest request, String key)
 
-    JobSpec launchScan(ScanRequest request)
+    JobSpec launchScan(ScanRequest request, String key)
 
-    JobSpec launchMirror(MirrorRequest request)
+    JobSpec launchMirror(MirrorRequest request, String key)
 
     JobState status(JobSpec jobSpec)
 

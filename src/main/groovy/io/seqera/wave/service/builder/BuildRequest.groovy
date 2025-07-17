@@ -220,10 +220,6 @@ class BuildRequest {
         return condaFile
     }
 
-    String getWorkDir() {
-        return "workspace/$buildId"
-    }
-
     String getTargetImage() {
         return targetImage
     }

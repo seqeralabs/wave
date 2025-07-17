@@ -58,14 +58,14 @@ class DockerBuildStrategy extends BuildStrategy {
     private ObjectStorageOperations<?, ?, ?> objectStorageOperations
 
     @Override
-    void build(String jobName, BuildRequest req) {
+    void build(String jobName, BuildRequest req, String key) {
 
         // command the docker build command
         final buildCmd= buildCmd(jobName, req)
         log.debug "Build run command: ${StringUtils.redactAwsCredentials(buildCmd.join(' '))}"
         // save docker cli for debugging purpose
         if( debug ) {
-            objectStorageOperations.upload(UploadRequest.fromBytes(buildCmd.join(' ').bytes, "$req.workDir/docker.sh".toString()))
+            objectStorageOperations.upload(UploadRequest.fromBytes(buildCmd.join(' ').bytes, "$key/docker.sh".toString()))
         }
         
         final builder = new ProcessBuilder()

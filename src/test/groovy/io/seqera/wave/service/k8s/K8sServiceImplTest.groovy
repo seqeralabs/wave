@@ -468,7 +468,6 @@ class K8sServiceImplTest extends Specification {
     def 'should create scan job spec with valid inputs'() {
         given:
         def PROPS = [
-                'wave.build.workspace': 's3://build/work',
                 'wave.build.k8s.namespace': 'foo',
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'bar',
@@ -489,6 +488,7 @@ class K8sServiceImplTest extends Specification {
             getRequestsMemory() >> '4Gi'
             getEnvironmentAsTuples() >> [new Tuple2<String, String>('FOO', 'abc'), new Tuple2<String, String>('BAR', 'xyz')]
             getTimeout() >> Duration.ofMinutes(5)
+            getWorkspaceBucket() >> 'build/work'
         }
 
         when:
@@ -555,7 +555,6 @@ class K8sServiceImplTest extends Specification {
     def 'should create scan job spec without node selector'() {
         given:
         def PROPS = [
-                'wave.build.workspace': 's3://build/work',
                 'wave.build.k8s.namespace': 'foo',
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'bar',
@@ -575,6 +574,7 @@ class K8sServiceImplTest extends Specification {
             getRequestsCpu() >> '2'
             getRequestsMemory() >> '4Gi'
             getTimeout() >> Duration.ofMinutes(5)
+            getWorkspaceBucket() >> '/build/work'
         }
 
         when:
@@ -647,7 +647,6 @@ class K8sServiceImplTest extends Specification {
     def 'should create scan job spec without resource requests'() {
         given:
         def PROPS = [
-                'wave.build.workspace': 's3://build/work',
                 'wave.build.k8s.namespace': 'foo',
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'bar',
@@ -668,6 +667,7 @@ class K8sServiceImplTest extends Specification {
             getRequestsCpu() >> null
             getRequestsMemory() >> null
             getTimeout() >> Duration.ofMinutes(5)
+            getWorkspaceBucket() >> '/build/work'
         }
 
         when:
@@ -804,7 +804,6 @@ class K8sServiceImplTest extends Specification {
     def 'should create scan job spec with dns config'() {
         given:
         def PROPS = [
-                'wave.build.workspace': 's3://build/work',
                 'wave.build.k8s.namespace': 'foo',
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'bar',
@@ -827,6 +826,7 @@ class K8sServiceImplTest extends Specification {
             getRequestsCpu() >> null
             getRequestsMemory() >> null
             getTimeout() >> Duration.ofMinutes(5)
+            getWorkspaceBucket() >> '/build/work'
         }
 
         when:

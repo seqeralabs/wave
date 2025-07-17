@@ -107,7 +107,7 @@ class WaveScanRecord implements Cloneable {
                 : List.<ScanVulnerability>of()
         this.exitCode = scan.exitCode
         this.logs = sanitize0(scan.logs)
-        this.workDir = scan.workDir
+        this.workDir = scan.key
     }
 
     private static String sanitize0(String str) {

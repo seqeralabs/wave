@@ -59,14 +59,14 @@ class DockerMirrorStrategy extends MirrorStrategy {
     private ObjectStorageOperations<?, ?, ?> objectStorageOperations
 
     @Override
-    void mirrorJob(String jobName, MirrorRequest request) {
+    void mirrorJob(String jobName, MirrorRequest request, String key) {
         // command the docker build command
-        final buildCmd = mirrorCmd(jobName, request.workDir, request.authJson)
+        final buildCmd = mirrorCmd(jobName, request.mirrorId, request.authJson)
         buildCmd.addAll( copyCommand(request) )
         log.debug "Container mirror command: ${buildCmd.join(' ')}"
         // save docker cli for debugging purpose
         if( debug ) {
-            objectStorageOperations.upload(UploadRequest.fromBytes(buildCmd.join(' ').bytes, "$request.workDir/docker.sh".toString()))
+            objectStorageOperations.upload(UploadRequest.fromBytes(buildCmd.join(' ').bytes, "$key/docker.sh".toString()))
         }
 
         final process = new ProcessBuilder()
@@ -78,7 +78,7 @@ class DockerMirrorStrategy extends MirrorStrategy {
         }
     }
 
-    protected List<String> mirrorCmd(String name, String workDir, String credsFile, Map<String, String> env = System.getenv()) {
+    protected List<String> mirrorCmd(String name, String mirrorId, String credsFile, Map<String, String> env = System.getenv()) {
         //checkout the documentation here to know more about these options https://github.com/moby/buildkit/blob/master/docs/rootless.md#docker
         final wrapper = ['docker',
                          'run',
@@ -89,10 +89,10 @@ class DockerMirrorStrategy extends MirrorStrategy {
 
         if( credsFile ) {
             wrapper.add('-e')
-            wrapper.add("DOCKER_CONFIG=${ FusionHelper.getFusionPath(buildConfig.workspaceBucket, workDir)}".toString())
+            wrapper.add("DOCKER_CONFIG=${ FusionHelper.getFusionPath(buildConfig.workspaceBucket, mirrorId)}".toString())
 
             wrapper.add("-e")
-            wrapper.add("REGISTRY_AUTH_FILE=${ FusionHelper.getFusionPath(buildConfig.workspaceBucket, workDir)}/config.json".toString())
+            wrapper.add("REGISTRY_AUTH_FILE=${ FusionHelper.getFusionPath(buildConfig.workspaceBucket, mirrorId)}/config.json".toString())
         }
 
         // the container image to be used to build

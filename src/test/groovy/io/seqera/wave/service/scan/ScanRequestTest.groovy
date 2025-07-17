@@ -59,7 +59,6 @@ class ScanRequestTest extends Specification {
         scan.configJson == '{config}'
         scan.targetImage == 'tg-image'
         scan.platform == ContainerPlatform.DEFAULT
-        scan.workDir == 'workspace/sc-123'
         scan.creationTime == timestamp
         scan.identity == identity
     }

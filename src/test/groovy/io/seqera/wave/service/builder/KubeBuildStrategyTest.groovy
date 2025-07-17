@@ -61,7 +61,7 @@ class KubeBuildStrategyTest extends Specification {
     def "request to build a container with right selector"(){
         given:
         def USER = new PlatformId(new User(id:1, email: 'foo@user.com'))
-        def PATH = 'test'
+        def KEY = 'test'
         def repo = 'docker.io/wave'
         def cache = 'docker.io/cache'
         def dockerfile = 'from foo'
@@ -70,14 +70,14 @@ class KubeBuildStrategyTest extends Specification {
         def containerId = ContainerHelper.makeContainerId(dockerfile, null, ContainerPlatform.of('amd64'), repo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, repo, containerId, null, null)
         def req = new BuildRequest(containerId, dockerfile, null, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1), BuildCompression.gzip)
-        strategy.build('build-job-name', req)
+        strategy.build('build-job-name', req, KEY)
 
         then:
         1 * k8sService.launchBuildJob( _, _, _, _, _, _, [service:'wave-build']) >> null
 
         when:
         def req2 = new BuildRequest(containerId, dockerfile, null, targetImage, USER, ContainerPlatform.of('arm64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1), BuildCompression.gzip)
-        strategy.build('job-name', req2)
+        strategy.build('job-name', req2, KEY)
 
         then:
         1 * k8sService.launchBuildJob( _, _, _, _, _, _, [service:'wave-build-arm64']) >> null

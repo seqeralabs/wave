@@ -75,9 +75,9 @@ class ScanEntry implements StateEntry<String>, JobEntry {
     ContainerPlatform platform
 
     /**
-     * Container scan work dir
+     * Container scan workspace key
      */
-    String workDir
+    String workspaceKey
 
     /**
      * Container auth metadata (aka Docker config json)
@@ -129,7 +129,7 @@ class ScanEntry implements StateEntry<String>, JobEntry {
     @Deprecated
     boolean completed() { done() }
 
-    static ScanEntry create(ScanRequest request) {
+    static ScanEntry create(ScanRequest request, String key) {
         return new ScanEntry(
                 request.scanId,
                 request.buildId,
@@ -137,7 +137,7 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 request.requestId,
                 request.targetImage,
                 request.platform,
-                request.workDir,
+                key,
                 request.configJson,
                 request.creationTime,
                 null,
@@ -153,7 +153,7 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 this.requestId,
                 this.containerImage,
                 this.platform,
-                this.workDir,
+                this.workspaceKey,
                 null, // <-- clear json auth
                 this.startTime,
                 Duration.between(this.startTime, Instant.now()),
@@ -162,7 +162,7 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 0 )
     }
 
-    ScanEntry failure(Integer exitCode, String logs){
+    ScanEntry failure(String logs, Integer exitCode){
         return new ScanEntry(
                 this.scanId,
                 this.buildId,
@@ -170,7 +170,7 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 this.requestId,
                 this.containerImage,
                 this.platform,
-                this.workDir,
+                this.workspaceKey,
                 null, // <-- clear json auth
                 this.startTime,
                 Duration.between(this.startTime, Instant.now()),
@@ -180,7 +180,7 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 logs)
     }
 
-    static ScanEntry failure(ScanRequest request){
+    static ScanEntry failure(ScanRequest request, String key){
         return new ScanEntry(
                 request.scanId,
                 request.buildId,
@@ -188,7 +188,7 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 request.requestId,
                 request.targetImage,
                 request.platform,
-                request.workDir,
+                key,
                 null, // <-- clear json auth
                 request.creationTime,
                 Duration.between(request.creationTime, Instant.now()),
@@ -216,7 +216,7 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 opts.requestId as String,
                 opts.containerImage as String,
                 opts.platform as ContainerPlatform,
-                opts.workDir as String,
+                opts.workspaceKey as String,
                 opts.configJson as String,
                 opts.startTime as Instant,
                 opts.duration as Duration,

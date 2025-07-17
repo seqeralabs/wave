@@ -139,7 +139,7 @@ class ScanEntryTest extends Specification {
                 buildId: 'build-12345',
                 containerImage: 'docker.io/some:image',
                 platform: ContainerPlatform.DEFAULT,
-                workDir: Path.of('/some/work/dir'),
+                workspaceKey: '/some/work/dir',
                 configJson: '{this and that}',
                 startTime: ts,
                 duration: elapsed,
@@ -156,7 +156,7 @@ class ScanEntryTest extends Specification {
         result.platform == ContainerPlatform.DEFAULT
         result.status == ScanEntry.SUCCEEDED
         result.vulnerabilities == [cve1]
-        result.workDir == '/some/work/dir'
+        result.workspaceKey == '/some/work/dir'
         result.configJson == null
     }
 
@@ -170,14 +170,14 @@ class ScanEntryTest extends Specification {
                 buildId: 'build-12345',
                 containerImage: 'docker.io/some:image',
                 platform: ContainerPlatform.DEFAULT,
-                workDir: '/some/work/dir',
+                workspaceKey: '/some/work/dir',
                 configJson: '{this and that}',
                 startTime:  ts,
                 duration: elapsed,
                 status: ScanEntry.FAILED,
                 vulnerabilities: [] )
         when:
-        def result = scan.failure(1, "Oops something has failed")
+        def result = scan.failure("Oops something has failed", 1)
         then:
         result.scanId == '12345'
         result.buildId == 'build-12345'
@@ -189,7 +189,7 @@ class ScanEntryTest extends Specification {
         result.vulnerabilities == []
         result.exitCode == 1
         result.logs == "Oops something has failed"
-        result.workDir == '/some/work/dir'
+        result.workspaceKey == '/some/work/dir'
         result.configJson == null
     }
 
@@ -207,7 +207,7 @@ class ScanEntryTest extends Specification {
                 workDir: Path.of('/some/path'),
                 creationTime: ts )
         when:
-        def result = ScanEntry.failure(request)
+        def result = ScanEntry.failure(request, 'workspace/scan-123')
         then:
         result.scanId == 'scan-123'
         result.buildId == 'build-345'
@@ -233,7 +233,7 @@ class ScanEntryTest extends Specification {
                 configJson: '{some:auth}',
                 creationTime: ts )
         when:
-        def scan = ScanEntry.create(request)
+        def scan = ScanEntry.create(request, 'workspace/sc-123')
         then:
         scan.scanId == 'sc-123'
         scan.buildId == 'bd-345'
@@ -241,7 +241,6 @@ class ScanEntryTest extends Specification {
         scan.requestId == 'rq-123'
         scan.containerImage == 'docker.io/foo/bar'
         scan.platform ==  ContainerPlatform.DEFAULT
-        scan.workDir == 'workspace/sc-123'
         scan.configJson == '{some:auth}'
         scan.startTime == ts
         scan.status == ScanEntry.PENDING
@@ -299,6 +298,5 @@ class ScanEntryTest extends Specification {
         entry.vulnerabilities == record.vulnerabilities
         entry.exitCode == record.exitCode
         entry.logs == record.logs
-        entry.workDir == '/some/work/dir'
     }
 }

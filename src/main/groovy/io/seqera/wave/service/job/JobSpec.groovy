@@ -79,9 +79,9 @@ class JobSpec {
      * The temporary path associated with this job (optional). This is expected to be deleted
      * once the job execution terminates.
      */
-    final String workDir
+    final String key
 
-    protected JobSpec(String id, Type type, String entryKey, String operationName, Instant createdAt, Instant submittedAt, Duration maxDuration, String dir) {
+    protected JobSpec(String id, Type type, String entryKey, String operationName, Instant createdAt, Instant submittedAt, Duration maxDuration, String key) {
         this.id = id
         this.type = type
         this.entryKey = entryKey
@@ -89,7 +89,7 @@ class JobSpec {
         this.maxDuration = maxDuration
         this.creationTime = createdAt
         this.launchTime = submittedAt
-        this.workDir = dir
+        this.key = key
     }
 
     static JobSpec transfer(String recordId, String operationName, Instant creationTime, Duration maxDuration) {
@@ -105,7 +105,7 @@ class JobSpec {
         )
     }
 
-    static JobSpec scan(String recordId, String operationName, Instant creationTime, Duration maxDuration, String dir) {
+    static JobSpec scan(String recordId, String operationName, Instant creationTime, Duration maxDuration, String key) {
         new JobSpec(
                 LongRndKey.rndHex(),
                 Type.Scan,
@@ -114,11 +114,11 @@ class JobSpec {
                 creationTime,
                 null,
                 maxDuration,
-                dir
+                key
         )
     }
 
-    static JobSpec build(String recordId, String operationName, Instant creationTime, Duration maxDuration,  String dir) {
+    static JobSpec build(String recordId, String operationName, Instant creationTime, Duration maxDuration,  String key) {
         new JobSpec(
                 LongRndKey.rndHex(),
                 Type.Build,
@@ -127,11 +127,11 @@ class JobSpec {
                 creationTime,
                 null,
                 maxDuration,
-                dir
+                key
         )
     }
 
-    static JobSpec mirror(String recordId, String operationName, Instant creationTime, Duration maxDuration, String workDir) {
+    static JobSpec mirror(String recordId, String operationName, Instant creationTime, Duration maxDuration, String key) {
         new JobSpec(
                 LongRndKey.rndHex(),
                 Type.Mirror,
@@ -140,7 +140,7 @@ class JobSpec {
                 creationTime,
                 null,
                 maxDuration,
-                workDir
+                key
         )
     }
 
@@ -153,7 +153,7 @@ class JobSpec {
                 this.creationTime,
                 instant,
                 this.maxDuration,
-                this.workDir
+                this.key
         )
     }
 }

@@ -30,7 +30,7 @@ import io.seqera.wave.service.mirror.MirrorRequest
 @CompileStatic
 abstract class MirrorStrategy {
 
-    abstract void mirrorJob(String jobName, MirrorRequest request)
+    abstract void mirrorJob(String jobName, MirrorRequest request, String key)
 
     protected List<String> copyCommand(MirrorRequest request) {
         final result = new ArrayList<String>(20)

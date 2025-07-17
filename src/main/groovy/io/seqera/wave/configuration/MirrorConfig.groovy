@@ -21,9 +21,11 @@ package io.seqera.wave.configuration
 import java.time.Duration
 
 import groovy.transform.CompileStatic
+import groovy.transform.Memoized
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.seqera.wave.util.BucketTokenizer
 import jakarta.inject.Singleton
 /**
  * Model mirror service config options
@@ -68,5 +70,36 @@ class MirrorConfig {
     @Value('${wave.mirror.k8s.resources.limits.memory}')
     @Nullable
     String limitsMemory
+
+    @Value('${wave.build.workspace}')
+    private String buildWorkspace
+
+    @Nullable
+    @Value('${wave.scan.workspace}')
+    private String mirrorWorkspace
+
+    @Memoized
+    String resolveMirrorWorkspace() {
+        if( !mirrorWorkspace )
+            return buildWorkspace
+        return mirrorWorkspace
+    }
+    @Memoized
+    String getWorkspaceBucket() {
+        final workspace = resolveMirrorWorkspace()
+        if( !workspace )
+            return null
+        final store = BucketTokenizer.from(workspace)
+        return store.scheme ? "${store.bucket}${store.path}".toString() : null
+    }
+
+    @Memoized
+    String getWorkspacePrefix() {
+        final workspace = resolveMirrorWorkspace()
+        if( !workspace )
+            return null
+        final store = BucketTokenizer.from(workspace)
+        return store.scheme ? store.getKey() : null
+    }
 
 }

@@ -18,11 +18,9 @@
 
 package io.seqera.wave.service.builder
 
-import spock.lang.Ignore
 import spock.lang.Requires
 import spock.lang.Specification
 
-import java.nio.file.Files
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.TimeUnit
@@ -66,7 +64,6 @@ class ContainerBuildServiceLiveTest extends Specification {
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should build & push container to aws' () {
         given:
-        def folder = Files.createTempDirectory('test')
         def buildRepo = buildConfig.defaultBuildRepository
         def cacheRepo = buildConfig.defaultCacheRepository
         def duration = Duration.ofMinutes(1)
@@ -103,15 +100,11 @@ class ContainerBuildServiceLiveTest extends Specification {
                 .buildResult(targetImage)
                 .get(duration.toSeconds(), TimeUnit.SECONDS)
                 .succeeded()
-
-        cleanup:
-        folder?.deleteDir()
     }
 
     @Requires({System.getenv('DOCKER_USER') && System.getenv('DOCKER_PAT')})
     def 'should build & push container to docker.io' () {
         given:
-        def folder = Files.createTempDirectory('test')
         def buildRepo = "docker.io/pditommaso/wave-tests"
         def cacheRepo = buildConfig.defaultCacheRepository
         def duration = Duration.ofMinutes(1)
@@ -149,14 +142,11 @@ class ContainerBuildServiceLiveTest extends Specification {
                 .get(duration.toSeconds(), TimeUnit.SECONDS)
                 .succeeded()
 
-        cleanup:
-        folder?.deleteDir()
     }
 
     @Requires({System.getenv('QUAY_USER') && System.getenv('QUAY_PAT')})
     def 'should build & push container to quay.io' () {
         given:
-        def folder = Files.createTempDirectory('test')
         def cacheRepo = buildConfig.defaultCacheRepository
         def duration = Duration.ofSeconds(90)
         and:
@@ -194,14 +184,11 @@ class ContainerBuildServiceLiveTest extends Specification {
                 .get(duration.toSeconds(), TimeUnit.SECONDS)
                 .succeeded()
 
-        cleanup:
-        folder?.deleteDir()
     }
 
     @Requires({System.getenv('AZURECR_USER') && System.getenv('AZURECR_PAT')})
     def 'should build & push container to azure' () {
         given:
-        def folder = Files.createTempDirectory('test')
         def buildRepo = "wavetest.azurecr.io/wave-tests"
         def cacheRepo = buildConfig.defaultCacheRepository
         and:
@@ -239,14 +226,11 @@ class ContainerBuildServiceLiveTest extends Specification {
                 .get(duration.toSeconds(), TimeUnit.SECONDS)
                 .succeeded()
 
-        cleanup:
-        folder?.deleteDir()
     }
 
     @Requires({System.getenv('DOCKER_USER') && System.getenv('DOCKER_PAT')})
     def 'should build & push container to docker.io with local layers' () {
         given:
-        def folder = Files.createTempDirectory('test')
         def buildRepo = "docker.io/pditommaso/wave-tests"
         def cacheRepo = buildConfig.defaultCacheRepository
         def layer = Files.createDirectories(folder.resolve('layer'))
@@ -291,8 +275,6 @@ class ContainerBuildServiceLiveTest extends Specification {
                 .get(duration.toSeconds(), TimeUnit.SECONDS)
                 .succeeded()
 
-        cleanup:
-        folder?.deleteDir()
     }
 
 }

@@ -27,7 +27,7 @@ class FusionHelper {
 
     public static final String FUSION_PREFIX = "/fusion/s3"
 
-    static String getFusionPath(String bucketName, String workDir) {
-        return "$FUSION_PREFIX/$bucketName/$workDir".toString()
+    static String getFusionPath(String bucketName, String id) {
+        return "$FUSION_PREFIX/$bucketName/$id".toString()
     }
 }

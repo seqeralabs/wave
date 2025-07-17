@@ -28,7 +28,6 @@ import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ScanMode
-import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildFormat
@@ -72,7 +71,7 @@ class ContainerScanServiceImplTest extends Specification {
     CleanupService cleanupService
 
     @Inject
-    BuildConfig buildConfig
+    ScanConfig scanConfig
 
     @Inject
     @Named(BUILD_WORKSPACE)
@@ -156,13 +155,13 @@ class ContainerScanServiceImplTest extends Specification {
               }      
         """
         and:
-        def KEY = 'scan-20'
-        def workDir = "workspace/$KEY"
-        objectStorageOperations.upload((UploadRequest.fromBytes(trivyDockerResulJson.bytes,"$workDir/report.json".toString())))
+        def ID = 'scan-20'
+        def KEY = "$scanConfig.workspacePrefix/$ID"
+        objectStorageOperations.upload((UploadRequest.fromBytes(trivyDockerResulJson.bytes,"$KEY/report.json".toString())))
         def jobService = Mock(JobService)
         def service = new ContainerScanServiceImpl(scanStore: scanStore, persistenceService: persistenceService, jobService: jobService, config: new ScanConfig(vulnerabilityLimit: 100), objectStorageOperations: objectStorageOperations, cleanupService: cleanupService)
-        def job = JobSpec.scan(KEY, 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), workDir)
-        def scan = ScanEntry.of(scanId: KEY, buildId: 'build-20', containerImage: 'ubuntu:latest', startTime: Instant.now(), workDir: workDir)
+        def job = JobSpec.scan(KEY, 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), KEY)
+        def scan = ScanEntry.of(scanId: KEY, buildId: 'build-20', containerImage: 'ubuntu:latest', startTime: Instant.now(), key: KEY)
 
         when:
         service.onJobCompletion(job, scan, new JobState(JobState.Status.SUCCEEDED,0))
@@ -296,11 +295,9 @@ class ContainerScanServiceImplTest extends Specification {
         then:
         scan.scanId == build.scanId
         scan.buildId == build.buildId
-        scan.workDir != build.workDir
         scan.configJson == build.configJson
         scan.targetImage == build.targetImage
         scan.platform == build.platform
-        scan.workDir.startsWith(workspace)
     }
 
     def 'should create scan request from mirror' () {
@@ -328,7 +325,6 @@ class ContainerScanServiceImplTest extends Specification {
         scan.configJson == '{config}'
         scan.targetImage == 'target/foo'
         scan.platform == ContainerPlatform.DEFAULT
-        scan.workDir == 'workspace/sc-123'
         scan.creationTime >= timestamp
     }
 
@@ -362,7 +358,6 @@ class ContainerScanServiceImplTest extends Specification {
         scan.configJson == '{docker json config}'
         scan.targetImage == 'docker.io/foo:bar'
         scan.platform == ContainerPlatform.DEFAULT
-        scan.workDir == 'workspace/sc-345'
         scan.creationTime >= timestamp
     }
 

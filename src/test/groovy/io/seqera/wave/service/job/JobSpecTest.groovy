@@ -52,7 +52,7 @@ class JobSpecTest extends Specification {
         job.creationTime == creation
         job.launchTime == submission
         job.maxDuration == Duration.ofMinutes(1)
-        job.workDir == '/some/path'
+        job.key == '/some/path'
 
         when:
         def newJob = job.withLaunchTime(creation.plusSeconds(100))
@@ -63,7 +63,7 @@ class JobSpecTest extends Specification {
         newJob.creationTime == creation
         newJob.launchTime == creation.plusSeconds(100)
         newJob.maxDuration == Duration.ofMinutes(1)
-        newJob.workDir == '/some/path'
+        newJob.key == '/some/path'
     }
 
     def 'should create transfer job' () {
@@ -90,7 +90,7 @@ class JobSpecTest extends Specification {
         job.creationTime == now
         job.maxDuration == Duration.ofMinutes(1)
         job.operationName == 'xyz'
-        job.workDir == '/some/path'
+        job.key == '/some/path'
     }
 
     def 'should create scan job' () {
@@ -104,7 +104,7 @@ class JobSpecTest extends Specification {
         job.creationTime == now
         job.maxDuration == Duration.ofMinutes(1)
         job.operationName == 'xyz'
-        job.workDir == '/some/path'
+        job.key == '/some/path'
     }
 
     def 'should create mirror job' () {
@@ -119,6 +119,6 @@ class JobSpecTest extends Specification {
         job.creationTime == now
         job.maxDuration == Duration.ofMinutes(1)
         job.operationName == 'xyz'
-        job.workDir == '/some/path'
+        job.key == '/some/path'
     }
 }

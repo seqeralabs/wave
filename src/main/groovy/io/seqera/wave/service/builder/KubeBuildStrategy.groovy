@@ -63,14 +63,14 @@ class KubeBuildStrategy extends BuildStrategy {
 
     @Override
     @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
-    void build(String jobName, BuildRequest req) {
+    void build(String jobName, BuildRequest req, String key) {
 
         try {
             final buildImage = getBuildImage(req)
             final buildCmd = launchCmd(req)
             final timeout = req.maxDuration ?: buildConfig.defaultTimeout
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
-            k8sService.launchBuildJob(jobName, buildImage, buildCmd, req.workDir, req.configJson, timeout, selector)
+            k8sService.launchBuildJob(jobName, buildImage, buildCmd, req.buildId, req.configJson, timeout, selector)
         }
         catch (ApiException e) {
             throw new BadRequestException("Unexpected build failure - ${e.responseBody}", e)

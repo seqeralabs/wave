@@ -89,7 +89,7 @@ class ContainerBuildServiceTest extends Specification implements AwsS3TestContai
     static class FakeBuildStrategy extends BuildStrategy {
 
         @Override
-        void build(String jobName, BuildRequest request) {
+        void build(String jobName, BuildRequest request, String key) {
             // do nothing
             log.debug "Running fake build job=$jobName - request=$request"
         }
@@ -183,11 +183,11 @@ class ContainerBuildServiceTest extends Specification implements AwsS3TestContai
         builder.launch(req)
       
         then:
-        1 * jobService.launchBuild(req) >> RESPONSE
+        1 * jobService.launchBuild(req, _) >> RESPONSE
         and:
-        objectStorageOperations.retrieve("$req.workDir/Containerfile").map(ObjectStorageEntry::getInputStream).get().text
+        objectStorageOperations.retrieve("$buildConfig.workspacePrefix/$req.buildId/Containerfile").map(ObjectStorageEntry::getInputStream).get().text
                 == new TemplateRenderer().render(dockerFile, [:])
-        objectStorageOperations.retrieve("$req.workDir/context/conda.yml").map(ObjectStorageEntry::getInputStream).get().text
+        objectStorageOperations.retrieve("$buildConfig.workspacePrefix/$req.buildId/context/conda.yml").map(ObjectStorageEntry::getInputStream).get().text
                 == condaFile
     }
 

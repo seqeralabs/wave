@@ -342,17 +342,17 @@ class K8sServiceImpl implements K8sService {
      */
     @Override
     @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
-    V1Job launchBuildJob(String name, String containerImage, List<String> args, String workspace, String creds, Duration timeout, Map<String,String> nodeSelector) {
+    V1Job launchBuildJob(String name, String containerImage, List<String> args, String buildId, String creds, Duration timeout, Map<String,String> nodeSelector) {
         def env = getAWSCreds(null)
         env.put('TMPDIR', '/tmp')
-        final spec = buildJobSpec(name, containerImage, args, workspace, creds, timeout, nodeSelector, env)
+        final spec = buildJobSpec(name, containerImage, args, buildId, creds, timeout, nodeSelector, env)
         return k8sClient
                 .batchV1Api()
                 .createNamespacedJob(namespace, spec)
                 .execute()
     }
 
-    V1Job buildJobSpec(String name, String containerImage, List<String> args, String workDir, String credsFile, Duration timeout, Map<String,String> nodeSelector, Map<String, String> env) {
+    V1Job buildJobSpec(String name, String containerImage, List<String> args, String buildId, String credsFile, Duration timeout, Map<String,String> nodeSelector, Map<String, String> env) {
 
         // dirty dependency to avoid introducing another parameter
         final singularity = containerImage.contains('singularity')
@@ -362,7 +362,7 @@ class K8sServiceImpl implements K8sService {
 
         if( credsFile ){
             if ( !singularity ) {
-                env.put('DOCKER_CONFIG', "/home/user/${workDir.takeAfter("/")}".toString())
+                env.put('DOCKER_CONFIG', "/home/user/$buildId".toString())
             } else {
                 env.put('DOCKER_CONFIG', "/home/builder/.singularity")
             }
@@ -426,20 +426,20 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
-    V1Job launchScanJob(String name, String containerImage, List<String> args, String workspace, String creds, ScanConfig scanConfig) {
+    V1Job launchScanJob(String name, String containerImage, List<String> args, String scanId, String creds, ScanConfig scanConfig) {
         def env = getAWSCreds(null)
         env.put('TMPDIR', '/tmp')
-        final spec = scanJobSpec(name, containerImage, args, workspace, creds, scanConfig, env)
+        final spec = scanJobSpec(name, containerImage, args, scanId, creds, scanConfig, env)
         return k8sClient
                 .batchV1Api()
                 .createNamespacedJob(namespace, spec)
                 .execute()
     }
 
-    V1Job scanJobSpec(String name, String containerImage, List<String> args, String workDir, String creds, ScanConfig scanConfig, Map<String,String> env) {
+    V1Job scanJobSpec(String name, String containerImage, List<String> args, String scanId, String creds, ScanConfig scanConfig, Map<String,String> env) {
 
         if( creds ){
-            env.put('DOCKER_CONFIG', FusionHelper.getFusionPath(buildConfig.workspaceBucket, workDir))
+            env.put('DOCKER_CONFIG', FusionHelper.getFusionPath(scanConfig.workspaceBucket, scanId))
         }
 
         V1JobBuilder builder = new V1JobBuilder()
@@ -499,22 +499,22 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
-    V1Job launchMirrorJob(String name, String containerImage, List<String> args, String workDir, String creds, MirrorConfig config) {
+    V1Job launchMirrorJob(String name, String containerImage, List<String> args, String mirrorId, String creds, MirrorConfig config) {
         def env = getAWSCreds(null)
         env.put('TMPDIR', '/tmp')
-        final spec = mirrorJobSpec(name, containerImage, args, workDir, creds, config, env)
+        final spec = mirrorJobSpec(name, containerImage, args, mirrorId, creds, config, env)
         return k8sClient
                 .batchV1Api()
                 .createNamespacedJob(namespace, spec)
                 .execute()
     }
 
-    V1Job mirrorJobSpec(String name, String containerImage, List<String> args, String workDir, String credsFile, MirrorConfig config, Map<String,String> env) {
+    V1Job mirrorJobSpec(String name, String containerImage, List<String> args, String mirrorId, String credsFile, MirrorConfig config, Map<String,String> env) {
 
         if( credsFile ){
-            env.put('DOCKER_CONFIG', FusionHelper.getFusionPath(buildConfig.workspaceBucket, workDir))
+            env.put('DOCKER_CONFIG', FusionHelper.getFusionPath(config.workspaceBucket, mirrorId))
         }
-        env.put('REGISTRY_AUTH_FILE', "${FusionHelper.getFusionPath(buildConfig.workspaceBucket, workDir)}/config.json".toString())
+        env.put('REGISTRY_AUTH_FILE', "${FusionHelper.getFusionPath(config.workspaceBucket, mirrorId)}/config.json".toString())
 
         V1JobBuilder builder = new V1JobBuilder()
 

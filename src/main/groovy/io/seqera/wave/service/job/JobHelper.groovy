@@ -23,6 +23,7 @@ import java.nio.file.Files
 import groovy.transform.CompileStatic
 import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.request.UploadRequest
+import io.seqera.wave.configuration.BuildConfig
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -41,10 +42,13 @@ class JobHelper {
     @Named(BUILD_WORKSPACE)
     private ObjectStorageOperations<?, ?, ?> objectStorageOperations
 
-    void saveDockerAuth(String workDir, String authJson) {
+    @Inject
+    BuildConfig buildConfig
+
+    void saveDockerAuth(String id, String authJson) {
         // save docker config for creds
         if( authJson ) {
-            objectStorageOperations.upload(UploadRequest.fromBytes(authJson.bytes, "$workDir/config.json".toString()))
+            objectStorageOperations.upload(UploadRequest.fromBytes(authJson.bytes, "$buildConfig.workspacePrefix/$id/config.json".toString()))
         }
     }
 

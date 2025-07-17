@@ -156,8 +156,8 @@ class CleanupServiceImpl implements Runnable, CleanupService {
         // schedule the job deletion
         store.add(JOB_PREFIX + job.operationName, expirationSecs)
         // schedule work dir path deletion
-        if( job.workDir ) {
-            store.add(DIR_PREFIX + job.workDir, expirationSecs)
+        if( job.key ) {
+            store.add(DIR_PREFIX + job.key, expirationSecs)
         }
     }
 

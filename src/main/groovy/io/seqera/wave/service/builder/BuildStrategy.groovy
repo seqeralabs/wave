@@ -19,12 +19,9 @@
 package io.seqera.wave.service.builder
 
 import groovy.transform.CompileStatic
-import io.micronaut.objectstorage.ObjectStorageOperations
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.util.FusionHelper
 import jakarta.inject.Inject
-import jakarta.inject.Named
-import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WORKSPACE
 import static io.seqera.wave.service.builder.BuildConstants.BUILDKIT_ENTRYPOINT
 /**
  * Defines an abstract container build strategy.
@@ -40,11 +37,7 @@ abstract class BuildStrategy {
     @Inject
     private BuildConfig buildConfig
 
-    @Inject
-    @Named(BUILD_WORKSPACE)
-    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
-
-    abstract void build(String jobName, BuildRequest req)
+    abstract void build(String jobName, BuildRequest req, String key)
 
     List<String> launchCmd(BuildRequest req) {
         if(req.formatDocker()) {
@@ -61,7 +54,7 @@ abstract class BuildStrategy {
         final result = new ArrayList<String>(10)
         result
                 << 'fusion cp -r'
-                << "${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)} /home/user/$req.buildId &&".toString()
+                << "${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.buildId)} /home/user/$req.buildId &&".toString()
                 << "$BUILDKIT_ENTRYPOINT build".toString()
                 << '--frontend dockerfile.v0'
                 << "--local dockerfile=/home/user/$req.buildId".toString()
@@ -139,7 +132,7 @@ abstract class BuildStrategy {
         final fusionCmd = new ArrayList(5)
         fusionCmd
                 << 'fusion cp -r'
-                << "${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.workDir)}/. /home/builder/ &&".toString()
+                << "${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.buildId)}/. /home/builder/ &&".toString()
                 << 'singularity build image.sif /home/builder/Containerfile &&'
                 << "singularity push image.sif ${req.targetImage}".toString()
         result.add(fusionCmd.join(' '))

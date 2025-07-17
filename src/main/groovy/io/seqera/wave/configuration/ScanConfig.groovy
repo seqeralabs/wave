@@ -62,11 +62,12 @@ class ScanConfig {
     @Nullable
     private String limitsMemory
 
-    /**
-     * The host path where cache DB stored
-     */
     @Value('${wave.build.workspace}')
     private String buildWorkspace
+
+    @Nullable
+    @Value('${wave.scan.workspace}')
+    private String scanWorkspace
 
     @Value('${wave.scan.timeout:15m}')
     private Duration timeout
@@ -105,11 +106,36 @@ class ScanConfig {
     }
 
     @Memoized
+    String resolveScanWorkspace() {
+        if( !scanWorkspace )
+            return buildWorkspace
+        return scanWorkspace
+    }
+
+    @Memoized
     String getWorkspaceBucketName() {
         if( !buildWorkspace )
             return null
         final store = BucketTokenizer.from(buildWorkspace)
         return store.bucket ?: store.getKey()
+    }
+
+    @Memoized
+    String getWorkspaceBucket() {
+        final workspace = resolveScanWorkspace()
+        if( !workspace )
+            return null
+        final store = BucketTokenizer.from(workspace)
+        return store.scheme ? "${store.bucket}${store.path}".toString() : null
+    }
+
+    @Memoized
+    String getWorkspacePrefix() {
+        final workspace = resolveScanWorkspace()
+        if( !workspace )
+            return null
+        final store = BucketTokenizer.from(workspace)
+        return store.scheme ? store.getKey() : null
     }
 
     String getRequestsCpu() {

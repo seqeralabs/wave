@@ -58,13 +58,15 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.stream.StreamService
 import io.seqera.wave.tower.PlatformId
-import io.seqera.wave.util.FusionHelper
 import io.seqera.wave.util.TarGzipUtils
 import io.seqera.util.retry.Retryable
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.io.IOUtils
+import static io.seqera.wave.util.RegHelper.layerDir
 import static io.seqera.wave.util.RegHelper.layerName
 import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WORKSPACE
 /**
@@ -168,40 +170,51 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
 
     protected void launch(BuildRequest req) {
         try {
+
+            final buildKey = buildKey(req.buildId)
             //create context dir
-            objectStorageOperations.upload(UploadRequest.fromBytes(new byte[0] , "$req.workDir/context/".toString()))
+            def response = objectStorageOperations.upload(UploadRequest.fromBytes(new byte[0] , "$buildKey/context/".toString()))
             // save the dockerfile
-            objectStorageOperations.upload(UploadRequest.fromBytes(containerFile0(req).bytes, "$req.workDir/Containerfile".toString()))
+            objectStorageOperations.upload(UploadRequest.fromBytes(containerFile0(req).bytes, "$buildKey/Containerfile".toString()))
             // save build context
             if( req.buildContext ) {
-                saveBuildContext(req.buildContext, "$req.workDir/context/", req.identity)
+                saveBuildContext(req.buildContext, "$buildKey/context/", req.identity)
             }
             // save the conda file
             if( req.condaFile ) {
-                objectStorageOperations.upload(UploadRequest.fromBytes(req.condaFile.bytes, "$req.workDir/context/conda.yml"))
+                objectStorageOperations.upload(UploadRequest.fromBytes(req.condaFile.bytes, "$buildKey/context/conda.yml"))
             }
             // save docker config for creds
             if( req.configJson ) {
                 if (req.formatDocker()) {
-                    objectStorageOperations.upload(UploadRequest.fromBytes(req.configJson.bytes, "$req.workDir/config.json".toString()))
+                    objectStorageOperations.upload(UploadRequest.fromBytes(req.configJson.bytes, "$buildKey/config.json".toString()))
                 }
                 else {
-                    objectStorageOperations.upload(UploadRequest.fromBytes(req.configJson.bytes, "$req.workDir/.singularity/docker-config.json".toString()))
-                    objectStorageOperations.upload(UploadRequest.fromBytes(req.configJson.bytes, "$req.workDir/.singularity/remote.yaml".toString()))
+                    objectStorageOperations.upload(UploadRequest.fromBytes(req.configJson.bytes, "$buildKey/.singularity/docker-config.json".toString()))
+                    objectStorageOperations.upload(UploadRequest.fromBytes(req.configJson.bytes, "$buildKey/.singularity/remote.yaml".toString()))
                 }
             }
             // save layers provided via the container config
             if( req.containerConfig ) {
-                saveLayersToContext(req, "$req.workDir/context/")
+                saveLayersToContext(req, "$buildKey/context")
             }
             // launch the container build
-            jobService.launchBuild(req)
+            jobService.launchBuild(req, buildKey)
         }
         catch (Throwable e) {
             log.error "== Container build unexpected exception: ${e.message} - request=$req", e
             final result = BuildResult.failed(req.buildId, e.message, req.startTime)
             handleBuildCompletion(new BuildEntry(req, result))
         }
+    }
+
+    protected String buildKey(String buildId) {
+        if( !buildId )
+            return null
+        final prefix = buildConfig?.workspacePrefix
+        return prefix
+                ? "${prefix}/${buildId}"
+                : buildId
     }
 
     protected void launchAsync(BuildRequest request) {
@@ -271,7 +284,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
             // copy the layer to the build context
             retryable.apply(()-> {
                 try (InputStream stream = streamService.stream(it.location, request.identity)) {
-                    objectStorageOperations.upload(UploadRequest.fromBytes(IOUtils.toByteArray(stream), target))
+                    objectStorageOperations.upload(UploadRequest.fromBytes(IOUtils.toByteArray(stream), target, "application/x-tar"))
                 }
                 return
             })
@@ -282,13 +295,13 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         final layers = request.containerConfig.layers
         for(int i=0; i<layers.size(); i++) {
             final it = layers[i]
-            final target = "$contextDir/${layerName(it)}".toString()
+            final target = "$contextDir/${layerDir(it)}/${layerName(it)}".toString()
             // retry strategy
             final retryable = retry0("Unable to copy '${it.location} to singularity context '$target'")
             // copy the layer to the build context
             retryable.apply(()-> {
                 try (InputStream stream = streamService.stream(it.location, request.identity)) {
-                    objectStorageOperations.upload(UploadRequest.fromBytes(TarGzipUtils.untarGzip(stream), target, "application/x-tar"))
+                    objectStorageOperations.upload(UploadRequest.fromBytes(TarGzipUtils.untarGzip(stream), target, "application/octet-stream"))
                 }
                 return
             })
@@ -301,7 +314,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         // copy the layer to the build context
         retryable.apply(()-> {
             try (InputStream stream = streamService.stream(buildContext.location, identity)) {
-                objectStorageOperations.upload(UploadRequest.fromBytes(TarGzipUtils.untarGzip(stream), contextDir, "application/x-tar"))
+                objectStorageOperations.upload(UploadRequest.fromBytes(TarGzipUtils.untarGzip(stream), contextDir, "application/octet-stream"))
             }
             return
         })
@@ -370,7 +383,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
      */
     @Override
     JobSpec launchJob(JobSpec job, BuildEntry entry) {
-        buildStrategy.build(job.operationName, entry.request)
+        buildStrategy.build(job.operationName, entry.request, buildKey(entry.request.buildId))
         // return the update job
         return job.withLaunchTime(Instant.now())
     }

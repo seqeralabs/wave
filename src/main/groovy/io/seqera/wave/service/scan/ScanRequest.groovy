@@ -94,9 +94,4 @@ class ScanRequest {
                 opts.identity as PlatformId
         )
     }
-
-    String getWorkDir() {
-        return "workspace/${scanId}"
-    }
-
 }

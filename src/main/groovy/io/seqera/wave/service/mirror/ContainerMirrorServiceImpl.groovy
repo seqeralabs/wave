@@ -27,6 +27,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.scheduling.TaskExecutors
+import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.configuration.MirrorEnabled
 import io.seqera.wave.service.builder.BuildTrack
 import io.seqera.wave.service.job.JobHandler
@@ -79,16 +80,20 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
     @Inject
     JobHelper jobHelper
 
+    @Inject
+    MirrorConfig mirrorConfig
+
     /**
      * {@inheritDoc}
      */
     @Override
     BuildTrack mirrorImage(MirrorRequest request) {
         if( store.putIfAbsent(request.targetImage, MirrorEntry.of(request))) {
+            final mirrorKey = mirrorKey(request.mirrorId)
             log.info "== Container mirror submitted - request=$request"
             //increment mirror counter
             CompletableFuture.runAsync(() -> metricsService.incrementMirrorsCounter(request.identity, request.platform.arch), ioExecutor)
-            jobService.launchMirror(request)
+            jobService.launchMirror(request, mirrorKey)
             return new BuildTrack(request.mirrorId, request.targetImage, false, null)
         }
         final ret = store.get(request.targetImage)
@@ -101,6 +106,15 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
         }
         // invalid state
         throw new IllegalStateException("Unable to determine mirror status for '$request.targetImage'")
+    }
+
+    protected String mirrorKey(String mirrorId) {
+        if( !mirrorId )
+            return null
+        final prefix = mirrorConfig?.workspacePrefix
+        return prefix
+                ? "${prefix}/${mirrorId}"
+                : mirrorId
     }
 
     /**
@@ -173,9 +187,9 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
     JobSpec launchJob(JobSpec job, MirrorEntry entry) {
         final request = entry.request
         // save docker auth file
-        jobHelper.saveDockerAuth(request.workDir, request.authJson)
+        jobHelper.saveDockerAuth(request.mirrorId, request.authJson)
         // launch mirror job
-        mirrorStrategy.mirrorJob(job.operationName, request)
+        mirrorStrategy.mirrorJob(job.operationName, request, mirrorKey(request.mirrorId))
         // return the update job
         return job.withLaunchTime(Instant.now())
     }

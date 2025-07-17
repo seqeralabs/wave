@@ -57,9 +57,9 @@ class DockerScanStrategy extends ScanStrategy {
     void scanContainer(String jobName, ScanEntry entry) {
         log.info("Launching container scan job: $jobName for entry: $entry}")
         // outfile file name
-        final reportFile = FusionHelper.getFusionPath(buildConfig.workspaceBucket, "$entry.workDir/$Trivy.OUTPUT_FILE_NAME")
+        final reportFile = FusionHelper.getFusionPath(buildConfig.workspaceBucket, "$entry.scanId/$Trivy.OUTPUT_FILE_NAME")
         // create the launch command
-        final dockerCommand = dockerWrapper(jobName, entry.workDir, entry.configJson, scanConfig.environment)
+        final dockerCommand = dockerWrapper(jobName, entry.key, entry.configJson, scanConfig.environment)
         final trivyCommand = List.of(scanConfig.scanImage) + scanCommand(entry.containerImage, reportFile, entry.platform, scanConfig)
         final command = dockerCommand + trivyCommand
 

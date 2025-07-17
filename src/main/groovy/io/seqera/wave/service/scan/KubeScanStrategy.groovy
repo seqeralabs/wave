@@ -68,9 +68,9 @@ class KubeScanStrategy extends ScanStrategy {
     void scanContainer(String jobName, ScanEntry entry) {
         log.info("Launching container scan job: $jobName for entry: ${entry}")
         try{
-            final reportFile = FusionHelper.getFusionPath(buildConfig.workspaceBucket, "$entry.workDir/$Trivy.OUTPUT_FILE_NAME")
+            final reportFile = FusionHelper.getFusionPath(buildConfig.workspaceBucket, "$entry.scanId/$Trivy.OUTPUT_FILE_NAME")
             final trivyCommand = scanCommand(entry.containerImage, reportFile, entry.platform, scanConfig)
-            k8sService.launchScanJob(jobName, scanConfig.scanImage, trivyCommand, entry.workDir, entry.configJson, scanConfig)
+            k8sService.launchScanJob(jobName, scanConfig.scanImage, trivyCommand, entry.key, entry.configJson, scanConfig)
         }
         catch (ApiException e) {
             throw new BadRequestException("Unexpected scan failure: ${e.responseBody}", e)
