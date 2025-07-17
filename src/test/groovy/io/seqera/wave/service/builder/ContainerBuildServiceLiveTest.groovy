@@ -95,7 +95,6 @@ class ContainerBuildServiceLiveTest extends Specification {
                 )
         and:
         buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
-        log.debug "====${buildCacheStore.get(targetImage)} for key $targetImage"
 
         when:
         service.launch(req)

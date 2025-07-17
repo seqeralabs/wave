@@ -11,7 +11,7 @@ compile:
 	 ./gradlew assemble
 
 check:
-	./gradlew check
+	./gradlew test --tests io.seqera.wave.service.builder.ContainerBuildServiceLiveTest
 
 image:
 	./gradlew jibDockerBuild

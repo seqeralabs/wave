@@ -333,7 +333,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
 
     @Override
     BuildEntry getJobEntry(JobSpec job) {
-        buildStore.getBuild(job.entryKey)
+        def entry = buildStore.getBuild(job.entryKey)
+        log.debug "== Container build job entry retrieved - job=${job.operationName}; entry=$entry"
+        return entry
     }
 
     @Override

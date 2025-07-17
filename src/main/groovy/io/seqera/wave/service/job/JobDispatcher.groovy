@@ -66,6 +66,7 @@ class JobDispatcher {
     protected <T> T apply(JobSpec job, BiFunction<JobHandler, JobEntry, T> consumer) {
         final handler = dispatch.get(job.type)
         final record = handler.getJobEntry(job)
+        log.debug "== ${job.type} record for job=${job.entryKey} is ${record?.done()}"
         if( !record ) {
             log.error "== ${job.type} record unknown for job=${job.entryKey}"
         }
