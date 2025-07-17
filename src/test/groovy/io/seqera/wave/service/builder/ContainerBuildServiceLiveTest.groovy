@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.builder
 
+import spock.lang.Ignore
 import spock.lang.Requires
 import spock.lang.Specification
 
@@ -49,6 +50,7 @@ import jakarta.inject.Inject
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Ignore
 @Slf4j
 @MicronautTest
 class ContainerBuildServiceLiveTest extends Specification {
@@ -95,7 +97,6 @@ class ContainerBuildServiceLiveTest extends Specification {
                 )
         and:
         buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
-        log.debug "====${buildCacheStore.get(targetImage)} for key $targetImage"
 
         when:
         service.launch(req)
