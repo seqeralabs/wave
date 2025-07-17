@@ -19,11 +19,13 @@
 package io.seqera.wave.service.cleanup
 
 import java.time.Instant
+import java.util.stream.Collectors
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Requires
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.scheduling.TaskScheduler
 import io.seqera.wave.configuration.ScanConfig
@@ -34,6 +36,9 @@ import io.seqera.wave.service.scan.ScanIdStore
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
+import org.reactivestreams.Publisher
+import reactor.core.publisher.Flux
+import reactor.core.scheduler.Schedulers
 import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WORKSPACE
 /**
  * Implement a service for resources cleanup
@@ -132,7 +137,7 @@ class CleanupServiceImpl implements Runnable, CleanupService {
 
     protected void cleanupDir0(String path) {
         try {
-            objectStorageOperations.delete(path)
+            deleteFolder(path)
         }
         catch (Throwable t) {
             log.error("Unexpected error deleting path=$path - cause: ${t.message}", t)
@@ -164,5 +169,17 @@ class CleanupServiceImpl implements Runnable, CleanupService {
     @Override
     void cleanupScanId(String containerImage) {
         store.add(SCANID_PREFIX + containerImage, scanConfig.failureDuration.toSeconds())
+    }
+
+    @Override
+    void deleteFolder(String key) {
+        final objects = objectStorageOperations.listObjects()
+        if (objects.isEmpty()) return
+        for( def object : objects ) {
+            if( object.startsWith(key) ) {
+                log.trace("Deleting object: $object")
+                objectStorageOperations.delete(object)
+            }
+        }
     }
 }

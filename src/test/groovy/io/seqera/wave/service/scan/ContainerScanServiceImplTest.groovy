@@ -202,7 +202,7 @@ class ContainerScanServiceImplTest extends Specification {
 
         cleanup:
         scanStore.clear()
-        objectStorageOperations.delete("$workDir/report.json".toString())
+        cleanupService.deleteFolder("$KEY/report.json".toString())
     }
 
     def 'should handle job error event and update scan record'() {

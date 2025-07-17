@@ -31,4 +31,6 @@ interface CleanupService {
 
     void cleanupScanId(String containerImage)
 
+    void deleteFolder(String key)
+
 }

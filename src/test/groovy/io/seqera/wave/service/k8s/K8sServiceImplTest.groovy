@@ -514,7 +514,6 @@ class K8sServiceImplTest extends Specification {
     def 'should create scan job spec without creds file'() {
         given:
         def PROPS = [
-                'wave.build.workspace': 's3://build/work',
                 'wave.build.k8s.namespace': 'foo',
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'bar',
@@ -574,7 +573,6 @@ class K8sServiceImplTest extends Specification {
             getRequestsCpu() >> '2'
             getRequestsMemory() >> '4Gi'
             getTimeout() >> Duration.ofMinutes(5)
-            getWorkspaceBucket() >> '/build/work'
         }
 
         when:
@@ -599,7 +597,6 @@ class K8sServiceImplTest extends Specification {
     def 'should create mirror job spec'() {
         given:
         def PROPS = [
-                'wave.build.workspace': 's3://build/work',
                 'wave.build.k8s.namespace': 'foo',
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'bar',
@@ -618,6 +615,7 @@ class K8sServiceImplTest extends Specification {
         def mirrorConfig = Mock(MirrorConfig) {
             getRequestsCpu() >> null
             getRequestsMemory() >> null
+            getWorkspaceBucket() >> 'build/work'
         }
 
         when:

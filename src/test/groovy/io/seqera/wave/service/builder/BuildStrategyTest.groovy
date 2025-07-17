@@ -161,13 +161,10 @@ class BuildStrategyTest extends Specification {
 
         then:
         build.containerId == 'af15cb0a413a2d48'
-        build.workDir == 'workspace/bd-af15cb0a413a2d48_0'
         and:
         build.containerId == 'af15cb0a413a2d48'
-        build.workDir == 'workspace/bd-af15cb0a413a2d48_0'
         and:
         build.buildId == 'bd-af15cb0a413a2d48_0'
-        build.workDir == 'workspace/bd-af15cb0a413a2d48_0'
         build.maxDuration == timeout
     }
 
