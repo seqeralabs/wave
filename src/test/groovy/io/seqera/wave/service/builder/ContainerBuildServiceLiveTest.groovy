@@ -21,6 +21,7 @@ package io.seqera.wave.service.builder
 import spock.lang.Requires
 import spock.lang.Specification
 
+import java.nio.file.Files
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.TimeUnit
@@ -35,6 +36,7 @@ import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.impl.BuildStateStoreImpl
 import io.seqera.wave.service.builder.impl.ContainerBuildServiceImpl
+import io.seqera.wave.service.cleanup.CleanupService
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.persistence.PersistenceService
@@ -60,13 +62,14 @@ class ContainerBuildServiceLiveTest extends Specification {
     @Inject BuildStateStoreImpl buildCacheStore
     @Inject PersistenceService persistenceService
     @Inject JobService jobService
+    @Inject CleanupService cleanupService
 
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should build & push container to aws' () {
         given:
         def buildRepo = buildConfig.defaultBuildRepository
         def cacheRepo = buildConfig.defaultCacheRepository
-        def duration = Duration.ofMinutes(1)
+        def duration = Duration.ofMinutes(2)
         and:
         def dockerFile = '''
         FROM busybox
@@ -100,6 +103,9 @@ class ContainerBuildServiceLiveTest extends Specification {
                 .buildResult(targetImage)
                 .get(duration.toSeconds(), TimeUnit.SECONDS)
                 .succeeded()
+
+        cleanup:
+        cleanupService.deleteFolder(service.buildKey(req.buildId))
     }
 
     @Requires({System.getenv('DOCKER_USER') && System.getenv('DOCKER_PAT')})
@@ -142,13 +148,15 @@ class ContainerBuildServiceLiveTest extends Specification {
                 .get(duration.toSeconds(), TimeUnit.SECONDS)
                 .succeeded()
 
+        cleanup:
+        cleanupService.deleteFolder(service.buildKey(req.buildId))
     }
 
     @Requires({System.getenv('QUAY_USER') && System.getenv('QUAY_PAT')})
     def 'should build & push container to quay.io' () {
         given:
         def cacheRepo = buildConfig.defaultCacheRepository
-        def duration = Duration.ofSeconds(90)
+        def duration = Duration.ofMinutes(2)
         and:
         def dockerFile = '''
         FROM busybox
@@ -184,6 +192,9 @@ class ContainerBuildServiceLiveTest extends Specification {
                 .get(duration.toSeconds(), TimeUnit.SECONDS)
                 .succeeded()
 
+        cleanup:
+        cleanupService.deleteFolder(service.buildKey(req.buildId))
+
     }
 
     @Requires({System.getenv('AZURECR_USER') && System.getenv('AZURECR_PAT')})
@@ -197,7 +208,7 @@ class ContainerBuildServiceLiveTest extends Specification {
         RUN echo Hello > hello.txt
         '''.stripIndent()
         and:
-        def duration = Duration.ofMinutes(1)
+        def duration = Duration.ofMinutes(2)
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
@@ -226,11 +237,15 @@ class ContainerBuildServiceLiveTest extends Specification {
                 .get(duration.toSeconds(), TimeUnit.SECONDS)
                 .succeeded()
 
+        cleanup:
+        cleanupService.deleteFolder(service.buildKey(req.buildId))
+
     }
 
     @Requires({System.getenv('DOCKER_USER') && System.getenv('DOCKER_PAT')})
     def 'should build & push container to docker.io with local layers' () {
         given:
+        def folder = Files.createTempDirectory('test')
         def buildRepo = "docker.io/pditommaso/wave-tests"
         def cacheRepo = buildConfig.defaultCacheRepository
         def layer = Files.createDirectories(folder.resolve('layer'))
@@ -245,7 +260,7 @@ class ContainerBuildServiceLiveTest extends Specification {
         def l1 = new Packer().layer(layer, [file1, file2])
         def containerConfig = new ContainerConfig(cmd: ['echo', 'Hola'], layers: [l1])
         and:
-        def duration = Duration.ofMinutes(1)
+        def duration = Duration.ofMinutes(2)
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
@@ -274,6 +289,10 @@ class ContainerBuildServiceLiveTest extends Specification {
                 .buildResult(targetImage)
                 .get(duration.toSeconds(), TimeUnit.SECONDS)
                 .succeeded()
+
+        cleanup:
+        cleanupService.deleteFolder(service.buildKey(req.buildId))
+        folder?.deleteDir()
 
     }
 
