@@ -96,7 +96,7 @@ class JobFactory {
                 request.mirrorId.replace('_', '-'),
                 request.creationTime,
                 mirrorConfig.maxDuration,
-                request.workDir
+                key
         )
     }
 

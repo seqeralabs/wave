@@ -129,10 +129,6 @@ class MirrorRequest {
         return platform
     }
 
-    String getWorkDir() {
-        return "workspace/$mirrorId".toString()
-    }
-
     String getAuthJson() {
         return authJson
     }

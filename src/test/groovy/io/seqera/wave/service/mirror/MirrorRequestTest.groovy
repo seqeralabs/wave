@@ -51,7 +51,6 @@ class MirrorRequestTest extends Specification {
         req.targetImage == 'quay.io/foo:latest'
         req.digest == 'sha256:12345'
         req.platform == ContainerPlatform.DEFAULT
-        req.workDir == "workspace/${req.mirrorId}"
         req.authJson == '{json config}'
         req.creationTime >= ts
         req.creationTime <= Instant.now()
