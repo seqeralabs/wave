@@ -33,7 +33,7 @@ wave:
     quay.io:
       username: ${QUAY_USER:test}
       password: ${QUAY_PAT:test}
-    195996028523.dkr.ecr.eu-west-1.amazonaws.com:
+    128997144437.dkr.ecr.eu-west-1.amazonaws.com:
       username: ${AWS_ACCESS_KEY_ID:test}
       password: ${AWS_SECRET_ACCESS_KEY:test}
     public.ecr.aws:
@@ -48,12 +48,12 @@ wave:
       username: 'foo'
       password: 'bar'
   build:
-    workspace: 's3://nextflow-ci/wave-build/workspace'
+    workspace: 's3://wave-fusion-test-munish/wave-build/workspace'
     logs:
       enabled: true
-      path: "s3://nextflow-ci/wave-build/logs"
+      path: "s3://wave-fusion-test-munish/wave-build/logs"
     locks:
-      path: 's3://nextflow-ci/wave-build/conda-locks'
+      path: 's3://wave-fusion-test-munish/wave-build/conda-locks'
   scan:
     enabled: true
 ---
