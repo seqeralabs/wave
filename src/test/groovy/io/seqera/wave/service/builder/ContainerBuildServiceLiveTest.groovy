@@ -69,7 +69,7 @@ class ContainerBuildServiceLiveTest extends Specification {
         given:
         def buildRepo = buildConfig.defaultBuildRepository
         def cacheRepo = buildConfig.defaultCacheRepository
-        def duration = Duration.ofMinutes(2)
+        def duration = Duration.ofMinutes(1)
         and:
         def dockerFile = '''
         FROM busybox
@@ -91,10 +91,11 @@ class ContainerBuildServiceLiveTest extends Specification {
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
                         maxDuration: duration,
-                        buildId: "bd-${containerId}_1",
+                        buildId: "${containerId}_1",
                 )
         and:
         buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
+        log.debug "====${buildCacheStore.get(targetImage)} for key $targetImage"
 
         when:
         service.launch(req)
@@ -135,7 +136,7 @@ class ContainerBuildServiceLiveTest extends Specification {
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
                         maxDuration: duration,
-                        buildId: "bd-${containerId}_1",
+                        buildId: "${containerId}_1",
                 )
         and:
         buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
@@ -156,7 +157,7 @@ class ContainerBuildServiceLiveTest extends Specification {
     def 'should build & push container to quay.io' () {
         given:
         def cacheRepo = buildConfig.defaultCacheRepository
-        def duration = Duration.ofMinutes(2)
+        def duration = Duration.ofSeconds(90)
         and:
         def dockerFile = '''
         FROM busybox
@@ -179,7 +180,7 @@ class ContainerBuildServiceLiveTest extends Specification {
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
                         maxDuration: duration,
-                        buildId: "bd-${containerId}_1",
+                        buildId: "${containerId}_1",
                 )
         and:
         buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
@@ -208,7 +209,7 @@ class ContainerBuildServiceLiveTest extends Specification {
         RUN echo Hello > hello.txt
         '''.stripIndent()
         and:
-        def duration = Duration.ofMinutes(2)
+        def duration = Duration.ofMinutes(1)
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
@@ -224,7 +225,7 @@ class ContainerBuildServiceLiveTest extends Specification {
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
                         maxDuration: duration,
-                        buildId: "bd-${containerId}_1",
+                        buildId: "${containerId}_1",
                 )
         and:
         buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
@@ -260,7 +261,7 @@ class ContainerBuildServiceLiveTest extends Specification {
         def l1 = new Packer().layer(layer, [file1, file2])
         def containerConfig = new ContainerConfig(cmd: ['echo', 'Hola'], layers: [l1])
         and:
-        def duration = Duration.ofMinutes(2)
+        def duration = Duration.ofMinutes(1)
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
@@ -277,7 +278,7 @@ class ContainerBuildServiceLiveTest extends Specification {
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
                         maxDuration: duration,
-                        buildId: "bd-${containerId}_1",
+                        buildId: "${containerId}_1",
                 )
         and:
         buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
