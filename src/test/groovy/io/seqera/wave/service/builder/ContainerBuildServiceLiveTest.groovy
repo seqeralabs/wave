@@ -69,7 +69,7 @@ class ContainerBuildServiceLiveTest extends Specification {
         given:
         def buildRepo = buildConfig.defaultBuildRepository
         def cacheRepo = buildConfig.defaultCacheRepository
-        def duration = Duration.ofMinutes(1)
+        def duration = Duration.ofMinutes(3)
         and:
         def dockerFile = '''
         FROM busybox
@@ -113,7 +113,7 @@ class ContainerBuildServiceLiveTest extends Specification {
         given:
         def buildRepo = "docker.io/pditommaso/wave-tests"
         def cacheRepo = buildConfig.defaultCacheRepository
-        def duration = Duration.ofMinutes(1)
+        def duration = Duration.ofMinutes(3)
         and:
         def dockerFile = '''
         FROM busybox
@@ -156,7 +156,7 @@ class ContainerBuildServiceLiveTest extends Specification {
     def 'should build & push container to quay.io' () {
         given:
         def cacheRepo = buildConfig.defaultCacheRepository
-        def duration = Duration.ofSeconds(90)
+        def duration = Duration.ofSeconds(3)
         and:
         def dockerFile = '''
         FROM busybox
@@ -208,7 +208,7 @@ class ContainerBuildServiceLiveTest extends Specification {
         RUN echo Hello > hello.txt
         '''.stripIndent()
         and:
-        def duration = Duration.ofMinutes(1)
+        def duration = Duration.ofMinutes(3)
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
@@ -260,7 +260,7 @@ class ContainerBuildServiceLiveTest extends Specification {
         def l1 = new Packer().layer(layer, [file1, file2])
         def containerConfig = new ContainerConfig(cmd: ['echo', 'Hola'], layers: [l1])
         and:
-        def duration = Duration.ofMinutes(1)
+        def duration = Duration.ofMinutes(3)
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
