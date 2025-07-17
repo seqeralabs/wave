@@ -245,7 +245,7 @@ class K8sServiceImplTest extends Specification {
             name == 'foo'
             image == 'singularity:latest'
             command == ['this', 'that']
-            args == null
+            args == []
             volumeMounts.size() == 3
             volumeMounts.get(0).name == 'build-data'
             volumeMounts.get(0).mountPath == '/root/.singularity/docker-config.json'
