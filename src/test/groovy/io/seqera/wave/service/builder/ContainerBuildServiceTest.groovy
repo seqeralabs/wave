@@ -20,6 +20,7 @@ package io.seqera.wave.service.builder
 
 import spock.lang.Shared
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -54,6 +55,7 @@ import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
+import io.seqera.wave.service.logs.BuildLogServiceImpl
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanEntry
@@ -526,6 +528,18 @@ class ContainerBuildServiceTest extends Specification implements AwsS3TestContai
         1 * persistenceService.saveBuildAsync(_) >> null
         and:
         1 * eventPublisher.publishEvent(_)
+    }
+
+    @Unroll
+    def 'should make build key name' () {
+        expect:
+        def config = new BuildConfig(buildWorkspace: 's3://bucket-name/foo/bar')
+        new ContainerBuildServiceImpl(buildConfig: config).buildKey(BUILDID) == EXPECTED
+
+        where:
+        BUILDID         | EXPECTED
+        null          | null
+        '123'         | 'foo/bar/123'
     }
 
 }

@@ -88,7 +88,7 @@ class ContainerBuildServiceLiveTest extends Specification {
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
                         maxDuration: duration,
-                        buildId: "${containerId}_1",
+                        buildId: "bd-${containerId}_1",
                 )
         and:
         buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
@@ -129,7 +129,7 @@ class ContainerBuildServiceLiveTest extends Specification {
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
                         maxDuration: duration,
-                        buildId: "${containerId}_1",
+                        buildId: "bd-${containerId}_1",
                 )
         and:
         buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
@@ -171,7 +171,7 @@ class ContainerBuildServiceLiveTest extends Specification {
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
                         maxDuration: duration,
-                        buildId: "${containerId}_1",
+                        buildId: "bd-${containerId}_1",
                 )
         and:
         buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
@@ -213,7 +213,7 @@ class ContainerBuildServiceLiveTest extends Specification {
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
                         maxDuration: duration,
-                        buildId: "${containerId}_1",
+                        buildId: "bd-${containerId}_1",
                 )
         and:
         buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))
@@ -262,7 +262,7 @@ class ContainerBuildServiceLiveTest extends Specification {
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
                         maxDuration: duration,
-                        buildId: "${containerId}_1",
+                        buildId: "bd-${containerId}_1",
                 )
         and:
         buildCacheStore.storeBuild(targetImage, new BuildEntry(req, BuildResult.create(req)))

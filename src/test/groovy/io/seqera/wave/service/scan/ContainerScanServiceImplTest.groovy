@@ -471,4 +471,16 @@ class ContainerScanServiceImplTest extends Specification {
         1 * persistenceService.saveScanRecordAsync(new WaveScanRecord(scanFailed)) >> null
         1 * cleanupService.cleanupScanId(container) >> null
     }
+
+    @Unroll
+    def 'should make scan key name' () {
+        expect:
+        def config = new ScanConfig(scanWorkspace: 's3://bucket-name/foo/bar')
+        new ContainerScanServiceImpl(config: config).scanKey(SCANID) == EXPECTED
+
+        where:
+        SCANID         | EXPECTED
+        null          | null
+        '123'         | 'foo/bar/123'
+    }
 }

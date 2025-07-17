@@ -173,7 +173,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
 
             final buildKey = buildKey(req.buildId)
             //create context dir
-            def response = objectStorageOperations.upload(UploadRequest.fromBytes(new byte[0] , "$buildKey/context/".toString()))
+            objectStorageOperations.upload(UploadRequest.fromBytes(new byte[0] , "$buildKey/context/".toString()))
             // save the dockerfile
             objectStorageOperations.upload(UploadRequest.fromBytes(containerFile0(req).bytes, "$buildKey/Containerfile".toString()))
             // save build context

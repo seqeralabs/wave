@@ -20,6 +20,7 @@ package io.seqera.wave.service.mirror
 
 import spock.lang.Requires
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.time.Duration
 import java.time.Instant
@@ -27,11 +28,14 @@ import java.util.concurrent.TimeUnit
 
 import groovy.util.logging.Slf4j
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.configuration.MirrorConfig
+import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.scan.ContainerScanServiceImpl
 import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
 /**
@@ -222,6 +226,18 @@ class ContainerMirrorServiceTest extends Specification {
         def s2 = persistenceService.loadMirrorResult(request.mirrorId)
         and:
         s2 == s1.result
+    }
+
+    @Unroll
+    def 'should make mirror key name' () {
+        expect:
+        def config = new MirrorConfig(mirrorWorkspace: 's3://bucket-name/foo/bar')
+        new ContainerMirrorServiceImpl(mirrorConfig: config).mirrorKey(MIRRORID) == EXPECTED
+
+        where:
+        MIRRORID         | EXPECTED
+        null          | null
+        '123'         | 'foo/bar/123'
     }
 
 }

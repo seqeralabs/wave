@@ -225,11 +225,10 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
                 buildId: '1',
                 startTime: Instant.now(),
                 maxDuration: Duration.ofSeconds(5),
-                workspace: '/some/work/dir',
                 identity: PlatformId.NULL
         )
         def entry = new BuildEntry(req, res)
-        def job = jobFactory.build(req).withLaunchTime(Instant.now())
+        def job = jobFactory.build(req, 'workspace/1').withLaunchTime(Instant.now())
         and:
         buildCacheStore.storeIfAbsent(req.targetImage, entry)
         jobQueue.offer(job)
@@ -292,7 +291,6 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
         result.count == 2
         result.value.request.buildId == 'bd-12345_2'
         result.value.result.buildId == 'bd-12345_2'
-        result.value.request.workDir == "workspace/bd-12345_2"
         and:
         store.findByRequestId('bd-12345_1') == null
         store.findByRequestId('bd-12345_2') == result.value
