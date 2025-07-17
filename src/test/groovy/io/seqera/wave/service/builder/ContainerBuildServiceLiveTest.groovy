@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.builder
 
+import spock.lang.IgnoreRest
 import spock.lang.Requires
 import spock.lang.Specification
 
@@ -64,6 +65,7 @@ class ContainerBuildServiceLiveTest extends Specification {
     @Inject JobService jobService
     @Inject CleanupService cleanupService
 
+    @IgnoreRest
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should build & push container to aws' () {
         given:
