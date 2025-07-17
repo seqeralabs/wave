@@ -74,31 +74,19 @@ class MirrorConfig {
     @Value('${wave.build.workspace}')
     private String buildWorkspace
 
-    @Nullable
-    @Value('${wave.scan.workspace}')
-    private String mirrorWorkspace
-
-    @Memoized
-    String resolveMirrorWorkspace() {
-        if( !mirrorWorkspace )
-            return buildWorkspace
-        return mirrorWorkspace
-    }
     @Memoized
     String getWorkspaceBucket() {
-        final workspace = resolveMirrorWorkspace()
-        if( !workspace )
+        if( !buildWorkspace )
             return null
-        final store = BucketTokenizer.from(workspace)
+        final store = BucketTokenizer.from(buildWorkspace)
         return store.scheme ? "${store.bucket}${store.path}".toString() : null
     }
 
     @Memoized
     String getWorkspacePrefix() {
-        final workspace = resolveMirrorWorkspace()
-        if( !workspace )
+        if( !buildWorkspace )
             return null
-        final store = BucketTokenizer.from(workspace)
+        final store = BucketTokenizer.from(buildWorkspace)
         return store.scheme ? store.getKey() : null
     }
 

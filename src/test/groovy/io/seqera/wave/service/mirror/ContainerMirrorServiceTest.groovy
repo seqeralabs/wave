@@ -231,7 +231,7 @@ class ContainerMirrorServiceTest extends Specification {
     @Unroll
     def 'should make mirror key name' () {
         expect:
-        def config = new MirrorConfig(mirrorWorkspace: 's3://bucket-name/foo/bar')
+        def config = new MirrorConfig(buildWorkspace: 's3://bucket-name/foo/bar')
         new ContainerMirrorServiceImpl(mirrorConfig: config).mirrorKey(MIRRORID) == EXPECTED
 
         where:

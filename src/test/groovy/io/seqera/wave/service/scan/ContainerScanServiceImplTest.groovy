@@ -475,7 +475,7 @@ class ContainerScanServiceImplTest extends Specification {
     @Unroll
     def 'should make scan key name' () {
         expect:
-        def config = new ScanConfig(scanWorkspace: 's3://bucket-name/foo/bar')
+        def config = new ScanConfig(buildWorkspace: 's3://bucket-name/foo/bar')
         new ContainerScanServiceImpl(config: config).scanKey(SCANID) == EXPECTED
 
         where:

@@ -65,10 +65,6 @@ class ScanConfig {
     @Value('${wave.build.workspace}')
     private String buildWorkspace
 
-    @Nullable
-    @Value('${wave.scan.workspace}')
-    private String scanWorkspace
-
     @Value('${wave.scan.timeout:15m}')
     private Duration timeout
 
@@ -106,13 +102,6 @@ class ScanConfig {
     }
 
     @Memoized
-    String resolveScanWorkspace() {
-        if( !scanWorkspace )
-            return buildWorkspace
-        return scanWorkspace
-    }
-
-    @Memoized
     String getWorkspaceBucketName() {
         if( !buildWorkspace )
             return null
@@ -122,19 +111,17 @@ class ScanConfig {
 
     @Memoized
     String getWorkspaceBucket() {
-        final workspace = resolveScanWorkspace()
-        if( !workspace )
+        if( !buildWorkspace )
             return null
-        final store = BucketTokenizer.from(workspace)
+        final store = BucketTokenizer.from(buildWorkspace)
         return store.scheme ? "${store.bucket}${store.path}".toString() : null
     }
 
     @Memoized
     String getWorkspacePrefix() {
-        final workspace = resolveScanWorkspace()
-        if( !workspace )
+        if( !buildWorkspace )
             return null
-        final store = BucketTokenizer.from(workspace)
+        final store = BucketTokenizer.from(buildWorkspace)
         return store.scheme ? store.getKey() : null
     }
 
