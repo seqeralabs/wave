@@ -39,6 +39,7 @@ class ValidationServiceTest extends Specification {
     BuildConfig buildConfig() {
         Mock(BuildConfig) {
             defaultPublicRepository >> 'public.repo.io'
+            buildWorkspace >> 's3://wave-build-workspace'
         }
     }
 

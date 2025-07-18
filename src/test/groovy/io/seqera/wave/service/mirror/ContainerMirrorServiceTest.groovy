@@ -20,20 +20,22 @@ package io.seqera.wave.service.mirror
 
 import spock.lang.Requires
 import spock.lang.Specification
+import spock.lang.Unroll
 
-import java.nio.file.Files
-import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 import groovy.util.logging.Slf4j
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.configuration.MirrorConfig
+import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.scan.ContainerScanServiceImpl
 import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
 /**
@@ -61,7 +63,7 @@ class ContainerMirrorServiceTest extends Specification {
         given:
         def source = 'docker.io/hello-world:latest'
         def target = 'docker.io/pditommaso/wave-tests'
-        def folder = Files.createTempDirectory('test')
+        def folder = 'test'
 
         when:
         def creds = dockerAuthService.credentialsConfigJson(null, source, target, Mock(PlatformId))
@@ -70,7 +72,6 @@ class ContainerMirrorServiceTest extends Specification {
                 target,
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
-                folder,
                 creds,
                 null,
                 Instant.now(),
@@ -84,8 +85,6 @@ class ContainerMirrorServiceTest extends Specification {
                 .get(90, TimeUnit.SECONDS)
                 .done()
 
-        cleanup:
-        folder?.deleteDir()
     }
 
     def 'should get mirror result from state store' () {
@@ -95,7 +94,6 @@ class ContainerMirrorServiceTest extends Specification {
                 'target/foo',
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
-                Path.of('/some/dir'),
                 '{config}',
                 null,
                 Instant.now(),
@@ -119,7 +117,6 @@ class ContainerMirrorServiceTest extends Specification {
                 'target/foo',
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
-                Path.of('/some/dir'),
                 '{config}',
                 null,
                 Instant.now(),
@@ -143,7 +140,6 @@ class ContainerMirrorServiceTest extends Specification {
                 'target/foo',
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
-                Path.of('/some/dir'),
                 '{config}',
                 null,
                 Instant.now(),
@@ -152,7 +148,7 @@ class ContainerMirrorServiceTest extends Specification {
         )
         and:
         def state = MirrorEntry.of(request)
-        def job = JobSpec.mirror(request.mirrorId, 'mirror-123', Instant.now(), Duration.ofMillis(1), Mock(Path))
+        def job = JobSpec.mirror(request.mirrorId, 'mirror-123', Instant.now(), Duration.ofMillis(1), 'workdir')
         when:
         mirrorService.onJobCompletion(job, state, new JobState(JobState.Status.SUCCEEDED, 0, 'OK'))
         then:
@@ -175,7 +171,6 @@ class ContainerMirrorServiceTest extends Specification {
                 'target/foo',
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
-                Path.of('/some/dir'),
                 '{config}',
                 null,
                 Instant.now(),
@@ -184,7 +179,7 @@ class ContainerMirrorServiceTest extends Specification {
         )
         and:
         def state = MirrorEntry.of(request)
-        def job = JobSpec.mirror(request.mirrorId, 'mirror-123', Instant.now(), Duration.ofMillis(1), Mock(Path))
+        def job = JobSpec.mirror(request.mirrorId, 'mirror-123', Instant.now(), Duration.ofMillis(1), 'workdir')
         when:
         mirrorService.onJobException(job, state, new Exception('Oops something went wrong'))
         then:
@@ -208,7 +203,6 @@ class ContainerMirrorServiceTest extends Specification {
                 'target/foo',
                 'sha256:12345',
                 ContainerPlatform.DEFAULT,
-                Path.of('/some/dir'),
                 '{config}',
                 null,
                 Instant.now(),
@@ -217,7 +211,7 @@ class ContainerMirrorServiceTest extends Specification {
         )
         and:
         def state = MirrorEntry.of(request)
-        def job = JobSpec.mirror(request.mirrorId, 'mirror-123', Instant.now(), Duration.ofMillis(1), Mock(Path))
+        def job = JobSpec.mirror(request.mirrorId, 'mirror-123', Instant.now(), Duration.ofMillis(1), 'workdir')
         when:
         mirrorService.onJobTimeout(job, state)
         then:
@@ -232,6 +226,18 @@ class ContainerMirrorServiceTest extends Specification {
         def s2 = persistenceService.loadMirrorResult(request.mirrorId)
         and:
         s2 == s1.result
+    }
+
+    @Unroll
+    def 'should make mirror key name' () {
+        expect:
+        def config = new MirrorConfig(buildWorkspace: 's3://bucket-name/foo/bar')
+        new ContainerMirrorServiceImpl(mirrorConfig: config).mirrorKey(MIRRORID) == EXPECTED
+
+        where:
+        MIRRORID         | EXPECTED
+        null          | null
+        '123'         | 'foo/bar/123'
     }
 
 }

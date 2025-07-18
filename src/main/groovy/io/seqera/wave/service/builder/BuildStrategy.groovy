@@ -20,7 +20,9 @@ package io.seqera.wave.service.builder
 
 import groovy.transform.CompileStatic
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.util.FusionHelper
 import jakarta.inject.Inject
+import static io.seqera.wave.service.builder.BuildConstants.BUILDKIT_ENTRYPOINT
 /**
  * Defines an abstract container build strategy.
  *
@@ -35,11 +37,7 @@ abstract class BuildStrategy {
     @Inject
     private BuildConfig buildConfig
 
-    abstract void build(String jobName, BuildRequest req)
-
-    abstract List<String> singularityLaunchCmd(BuildRequest req)
-
-    static final public String BUILDKIT_ENTRYPOINT = 'buildctl-daemonless.sh'
+    abstract void build(String jobName, BuildRequest req, String key)
 
     List<String> launchCmd(BuildRequest req) {
         if(req.formatDocker()) {
@@ -53,30 +51,24 @@ abstract class BuildStrategy {
     }
 
     protected List<String> dockerLaunchCmd(BuildRequest req) {
-        final result = new ArrayList(10)
+        final result = new ArrayList<String>(10)
         result
-                << "build"
-                << "--frontend"
-                << "dockerfile.v0"
-                << "--local"
-                << "dockerfile=$req.workDir".toString()
-                << "--opt"
-                << "filename=Containerfile"
-                << "--local"
-                << "context=$req.workDir/context".toString()
-                << "--output"
-                << outputOpts(req, buildConfig)
-                << "--opt"
-                << "platform=$req.platform".toString()
+                << 'fusion cp -r'
+                << "${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.buildId)} /home/user/$req.buildId &&".toString()
+                << "$BUILDKIT_ENTRYPOINT build".toString()
+                << '--frontend dockerfile.v0'
+                << "--local dockerfile=/home/user/$req.buildId".toString()
+                << '--opt filename=Containerfile'
+                << "--local context=/home/user/$req.buildId/context".toString()
+                << "--output ${outputOpts(req, buildConfig)}".toString()
+                << "--opt platform=$req.platform".toString()
 
         if( req.cacheRepository ) {
-            result << "--export-cache"
-            result << cacheOpts(req, buildConfig)
-            result << "--import-cache"
-            result << "type=registry,ref=$req.cacheRepository:$req.containerId".toString()
+            result
+                << "--export-cache ${cacheOpts(req, buildConfig)} --import-cache type=registry,ref=$req.cacheRepository:$req.containerId".toString()
         }
 
-        return result
+        return List.of(result.join(" "))
     }
 
 
@@ -105,7 +97,7 @@ abstract class BuildStrategy {
         result << ",push=true"
         result << ",oci-mediatypes=${config.ociMediatypes}"
         result << compressOpts(req, config)
-        return result.toString()
+        return result.toString().trim()
     }
 
     static protected String cacheOpts(BuildRequest req, BuildConfig config) {
@@ -120,4 +112,30 @@ abstract class BuildStrategy {
         return result.toString()
     }
 
+    protected String getBuildImage(BuildRequest buildRequest){
+        if( buildRequest.formatDocker() ) {
+            return buildConfig.buildkitImage
+        }
+
+        if( buildRequest.formatSingularity() ) {
+            return buildConfig.singularityImage
+        }
+
+        throw new IllegalArgumentException("Unexpected container platform: ${buildRequest.platform}")
+    }
+
+    List<String> singularityLaunchCmd(BuildRequest req) {
+        final result = new ArrayList<String>(3)
+        result
+                << 'sh'
+                << '-c'
+        final fusionCmd = new ArrayList(5)
+        fusionCmd
+                << 'fusion cp -r'
+                << "${FusionHelper.getFusionPath(buildConfig.workspaceBucket, req.buildId)}/. /home/builder/ &&".toString()
+                << 'singularity build image.sif /home/builder/Containerfile &&'
+                << "singularity push image.sif ${req.targetImage}".toString()
+        result.add(fusionCmd.join(' '))
+        return result
+    }
 }

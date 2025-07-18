@@ -52,17 +52,15 @@ class KubeMirrorStrategy extends MirrorStrategy {
     private K8sService k8sService
 
     @Override
-    void mirrorJob(String jobName, MirrorRequest request) {
-        // docker auth json file
-        final Path configFile = request.authJson ? request.workDir.resolve('config.json') : null
+    void mirrorJob(String jobName, MirrorRequest request, String key) {
 
         try {
             k8sService.launchMirrorJob(
                     jobName,
                     config.skopeoImage,
                     copyCommand(request),
-                    request.workDir,
-                    configFile,
+                    request.mirrorId,
+                    request.authJson,
                     config)
         }
         catch (ApiException e) {

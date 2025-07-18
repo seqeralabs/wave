@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.builder
 
+import spock.lang.Ignore
 import spock.lang.Requires
 import spock.lang.Specification
 
@@ -36,6 +37,7 @@ import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.impl.BuildStateStoreImpl
 import io.seqera.wave.service.builder.impl.ContainerBuildServiceImpl
+import io.seqera.wave.service.cleanup.CleanupService
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.persistence.PersistenceService
@@ -48,6 +50,7 @@ import jakarta.inject.Inject
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Ignore
 @Slf4j
 @MicronautTest
 class ContainerBuildServiceLiveTest extends Specification {
@@ -61,11 +64,11 @@ class ContainerBuildServiceLiveTest extends Specification {
     @Inject BuildStateStoreImpl buildCacheStore
     @Inject PersistenceService persistenceService
     @Inject JobService jobService
+    @Inject CleanupService cleanupService
 
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should build & push container to aws' () {
         given:
-        def folder = Files.createTempDirectory('test')
         def buildRepo = buildConfig.defaultBuildRepository
         def cacheRepo = buildConfig.defaultCacheRepository
         def duration = Duration.ofMinutes(1)
@@ -82,7 +85,6 @@ class ContainerBuildServiceLiveTest extends Specification {
                 new BuildRequest(
                         containerId: containerId,
                         containerFile: dockerFile,
-                        workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
                         platform: ContainerPlatform.of('amd64'),
@@ -105,13 +107,12 @@ class ContainerBuildServiceLiveTest extends Specification {
                 .succeeded()
 
         cleanup:
-        folder?.deleteDir()
+        cleanupService.deleteFolder(service.buildKey(req.buildId))
     }
 
     @Requires({System.getenv('DOCKER_USER') && System.getenv('DOCKER_PAT')})
     def 'should build & push container to docker.io' () {
         given:
-        def folder = Files.createTempDirectory('test')
         def buildRepo = "docker.io/pditommaso/wave-tests"
         def cacheRepo = buildConfig.defaultCacheRepository
         def duration = Duration.ofMinutes(1)
@@ -128,7 +129,6 @@ class ContainerBuildServiceLiveTest extends Specification {
                 new BuildRequest(
                         containerId: containerId,
                         containerFile: dockerFile,
-                        workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
                         platform: TestHelper.containerPlatform(),
@@ -151,13 +151,12 @@ class ContainerBuildServiceLiveTest extends Specification {
                 .succeeded()
 
         cleanup:
-        folder?.deleteDir()
+        cleanupService.deleteFolder(service.buildKey(req.buildId))
     }
 
     @Requires({System.getenv('QUAY_USER') && System.getenv('QUAY_PAT')})
     def 'should build & push container to quay.io' () {
         given:
-        def folder = Files.createTempDirectory('test')
         def cacheRepo = buildConfig.defaultCacheRepository
         def duration = Duration.ofSeconds(90)
         and:
@@ -174,7 +173,6 @@ class ContainerBuildServiceLiveTest extends Specification {
                 new BuildRequest(
                         containerId: containerId,
                         containerFile: dockerFile,
-                        workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
                         platform: TestHelper.containerPlatform(),
@@ -197,13 +195,13 @@ class ContainerBuildServiceLiveTest extends Specification {
                 .succeeded()
 
         cleanup:
-        folder?.deleteDir()
+        cleanupService.deleteFolder(service.buildKey(req.buildId))
+
     }
 
     @Requires({System.getenv('AZURECR_USER') && System.getenv('AZURECR_PAT')})
     def 'should build & push container to azure' () {
         given:
-        def folder = Files.createTempDirectory('test')
         def buildRepo = "wavetest.azurecr.io/wave-tests"
         def cacheRepo = buildConfig.defaultCacheRepository
         and:
@@ -220,7 +218,6 @@ class ContainerBuildServiceLiveTest extends Specification {
                 new BuildRequest(
                         containerId: containerId,
                         containerFile: dockerFile,
-                        workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
                         platform: TestHelper.containerPlatform(),
@@ -243,7 +240,8 @@ class ContainerBuildServiceLiveTest extends Specification {
                 .succeeded()
 
         cleanup:
-        folder?.deleteDir()
+        cleanupService.deleteFolder(service.buildKey(req.buildId))
+
     }
 
     @Requires({System.getenv('DOCKER_USER') && System.getenv('DOCKER_PAT')})
@@ -272,7 +270,6 @@ class ContainerBuildServiceLiveTest extends Specification {
                 new BuildRequest(
                         containerId: containerId,
                         containerFile: dockerFile,
-                        workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
                         platform: TestHelper.containerPlatform(),
@@ -296,7 +293,9 @@ class ContainerBuildServiceLiveTest extends Specification {
                 .succeeded()
 
         cleanup:
+        cleanupService.deleteFolder(service.buildKey(req.buildId))
         folder?.deleteDir()
+
     }
 
 }

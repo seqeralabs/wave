@@ -1,0 +1,34 @@
+name: Build and publish Buildkit container image
+
+on:
+  workflow_dispatch:
+    inputs:
+      buildkit-version:
+        description: 'Buildkit version'
+        required: true
+      fusion-version:
+        description: 'Fusion version'
+        required: true
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Docker Login
+        uses: docker/login-action@v3
+        with:
+          registry: public.cr.seqera.io
+          username: ${{ vars.SEQERA_PUBLIC_CR_USERNAME  }}
+          password: ${{ secrets.SEQERA_PUBLIC_CR_PASSWORD }}
+
+      - name: Build and Push Image to public.cr.seqera.io
+        run: |
+          cd buildkit
+          make build buildkit_version=${{ github.event.inputs.buildkit-version }} fusion_version=${{ github.event.inputs.fusion-version }} 

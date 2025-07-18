@@ -42,7 +42,7 @@ class WaveScanRecordTest extends Specification {
         def mirrorId = 'mr-1234'
         def requestId = 'cr-1234'
         def containerImage = "testcontainerimage"
-        def workDir = Path.of('/some/work/dir')
+        def workDir = 'some/work/dir'
         def authJson = '{auth}'
         def scanVulnerability = new ScanVulnerability(
                                 "id1",

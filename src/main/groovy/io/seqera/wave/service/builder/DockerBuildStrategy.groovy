@@ -18,22 +18,21 @@
 
 package io.seqera.wave.service.builder
 
-import java.nio.file.Files
-import java.nio.file.Path
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.micronaut.objectstorage.ObjectStorageOperations
+import io.micronaut.objectstorage.request.UploadRequest
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.BuildEnabled
-import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
+import io.seqera.wave.util.ContainerHelper
+import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
-import static java.nio.file.StandardOpenOption.CREATE
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
-import static java.nio.file.StandardOpenOption.WRITE
+import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WORKSPACE
 /**
  *  Build a container image using a Docker CLI tool
  *
@@ -54,106 +53,87 @@ class DockerBuildStrategy extends BuildStrategy {
     @Inject
     RegistryProxyService proxyService
 
-    @Override
-    void build(String jobName, BuildRequest req) {
+    @Inject
+    @Named(BUILD_WORKSPACE)
+    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
 
-        final Path configFile = req.configJson ? req.workDir.resolve('config.json') : null
+    @Override
+    void build(String jobName, BuildRequest req, String key) {
+
         // command the docker build command
-        final buildCmd= buildCmd(jobName, req, configFile)
-        log.debug "Build run command: ${buildCmd.join(' ')}"
+        final buildCmd= buildCmd(jobName, req)
+        log.debug "Build run command: ${StringUtils.redactAwsCredentials(buildCmd.join(' '))}"
         // save docker cli for debugging purpose
         if( debug ) {
-            Files.write(req.workDir.resolve('docker.sh'),
-                    cmdToStr(buildCmd).bytes,
-                    CREATE, WRITE, TRUNCATE_EXISTING)
+            objectStorageOperations.upload(UploadRequest.fromBytes(buildCmd.join(' ').bytes, "$key/docker.sh".toString()))
         }
         
-        final process = new ProcessBuilder()
+        final builder = new ProcessBuilder()
             .command(buildCmd)
-            .directory(req.workDir.toFile())
-            .redirectErrorStream(true)
-            .start()
+        //this is to run it in windows
+            .redirectError(ProcessBuilder.Redirect.INHERIT)
+        builder.redirectOutput(ProcessBuilder.Redirect.INHERIT)
+
+        def process = builder.start()
 
         if( process.waitFor()!=0 ) {
             throw new IllegalStateException("Unable to launch build container - exitCode=${process.exitValue()}; output=${process.text}")
         }
     }
 
-    private String cmdToStr(List<String> cmd) {
-        return cmd
-                .collect(it-> !it || it.contains(' ') ? "\"$it\"".toString() : it)
-                .collect(it-> it.startsWith('-') ? "\\\n  $it".toString() : it)
-                .join(' ')
-    }
-
-    protected List<String> buildCmd(String jobName, BuildRequest req, Path credsFile) {
+    protected List<String> buildCmd(String jobName, BuildRequest req, Map<String, String> env = System.getenv()) {
 
         final dockerCmd = req.formatDocker()
-                ? cmdForBuildkit(jobName, req.workDir, credsFile, req.platform)
-                : cmdForSingularity(jobName, req.workDir, credsFile, req.platform)
+                ? cmdForBuildkit(jobName, req, env)
+                : cmdForSingularity(jobName, req, env)
 
         return dockerCmd + launchCmd(req)
     }
 
-    protected List<String> cmdForBuildkit(String name, Path workDir, Path credsFile, ContainerPlatform platform ) {
+    protected List<String> cmdForBuildkit(String name, BuildRequest req, Map<String, String> env = System.getenv()) {
         //checkout the documentation here to know more about these options https://github.com/moby/buildkit/blob/master/docs/rootless.md#docker
         final wrapper = ['docker',
                          'run',
                          '--detach',
                          '--name', name,
                          '--privileged',
-                         '-v', "$workDir:$workDir".toString(),
-                         '--entrypoint',
-                         BUILDKIT_ENTRYPOINT]
-
-        if( credsFile ) {
-            wrapper.add('-v')
-            wrapper.add("$credsFile:/home/user/.docker/config.json:ro".toString())
+                         '--entrypoint', 'sh',
+                         '-e',
+                         'TMPDIR=/tmp']
+        wrapper.addAll(ContainerHelper.getAWSAuthEnvVars(env))
+        if( req.configJson ) {
+            wrapper.add('-e')
+            wrapper.add("DOCKER_CONFIG=/home/user/$req.buildId".toString())
         }
 
-        if( platform ) {
+        if( req.platform ) {
             wrapper.add('--platform')
-            wrapper.add(platform.toString())
+            wrapper.add(req.platform.toString())
         }
 
         // the container image to be used to build
-        wrapper.add( buildConfig.buildkitImage )
+        wrapper.add( getBuildImage(req) )
+
+        wrapper.add('-c')
         // return it
         return wrapper
     }
 
-    protected List<String> cmdForSingularity(String name, Path workDir, Path credsFile, ContainerPlatform platform) {
+    protected List<String> cmdForSingularity(String name, BuildRequest req, Map<String, String> env = System.getenv() ) {
         final wrapper = ['docker',
                          'run',
                          '--detach',
                          '--name', name,
-                         '--privileged',
-                         "--entrypoint", '',
-                         '-v', "$workDir:$workDir".toString()]
+                         '--privileged']
+            wrapper.addAll(ContainerHelper.getAWSAuthEnvVars(env))
 
-        if( credsFile ) {
-            wrapper.add('-v')
-            wrapper.add("$credsFile:/root/.singularity/docker-config.json:ro".toString())
-            //
-            wrapper.add('-v')
-            wrapper.add("${credsFile.resolveSibling('singularity-remote.yaml')}:/root/.singularity/remote.yaml:ro".toString())
-        }
-
-        if( platform ) {
+        if( req.platform ) {
             wrapper.add('--platform')
-            wrapper.add(platform.toString())
+            wrapper.add(req.platform.toString())
         }
 
         wrapper.add(buildConfig.singularityImage)
         return wrapper
     }
 
-    List<String> singularityLaunchCmd(BuildRequest req) {
-        final result = new ArrayList(10)
-        result
-                << 'sh'
-                << '-c'
-                << "singularity build image.sif ${req.workDir}/Containerfile && singularity push image.sif ${req.targetImage}".toString()
-        return result
-    }
 }

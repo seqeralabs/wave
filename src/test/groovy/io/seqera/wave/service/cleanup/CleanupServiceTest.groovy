@@ -20,6 +20,8 @@ package io.seqera.wave.service.cleanup
 
 import spock.lang.Specification
 
+import io.micronaut.objectstorage.ObjectStorageOperations
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -44,5 +46,51 @@ class CleanupServiceTest extends Specification {
         service.cleanupEntry('scanid:foo:bar')
         then:
         1 * service.cleanupScanId0('foo:bar') >> null
+    }
+
+    def 'should delete folder when objects match key'() {
+        given:
+        def objectStorageOperations = Mock(ObjectStorageOperations)
+        def cleanupService = new CleanupServiceImpl(objectStorageOperations: objectStorageOperations)
+        def key = 'folder/'
+        def objects = ['folder/file1', 'folder/file2', 'other/file3']
+        objectStorageOperations.listObjects() >> objects
+
+        when:
+        cleanupService.deleteFolder(key)
+
+        then:
+        1 * objectStorageOperations.delete('folder/file1')
+        1 * objectStorageOperations.delete('folder/file2')
+        0 * objectStorageOperations.delete('other/file3')
+    }
+
+    def 'should not delete folder when no objects match key'() {
+        given:
+        def objectStorageOperations = Mock(ObjectStorageOperations)
+        def cleanupService = new CleanupServiceImpl(objectStorageOperations: objectStorageOperations)
+        def key = 'folder/'
+        def objects = ['other/file1', 'other/file2']
+        objectStorageOperations.listObjects() >> objects
+
+        when:
+        cleanupService.deleteFolder(key)
+
+        then:
+        0 * objectStorageOperations.delete(_)
+    }
+
+    def 'should not delete folder when no objects exist'() {
+        given:
+        def objectStorageOperations = Mock(ObjectStorageOperations)
+        def cleanupService = new CleanupServiceImpl(objectStorageOperations: objectStorageOperations)
+        def key = 'folder/'
+        objectStorageOperations.listObjects() >> []
+
+        when:
+        cleanupService.deleteFolder(key)
+
+        then:
+        0 * objectStorageOperations.delete(_)
     }
 }

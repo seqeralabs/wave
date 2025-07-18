@@ -27,6 +27,9 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.objectstorage.ObjectStorageEntry
+import io.micronaut.objectstorage.ObjectStorageOperations
+import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.api.ScanMode
 import io.seqera.wave.configuration.ScanConfig
@@ -36,6 +39,7 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.cleanup.CleanupService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.job.JobHandler
+import io.seqera.wave.service.job.JobHelper
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
@@ -48,8 +52,8 @@ import io.seqera.wave.service.request.ContainerRequest
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
+import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WORKSPACE
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
-import static io.seqera.wave.service.job.JobHelper.saveDockerAuth
 
 /**
  * Implements ContainerScanService
@@ -95,6 +99,13 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     @Inject
     @Nullable
     private ScanStrategy scanStrategy
+
+    @Inject
+    private JobHelper jobHelper
+
+    @Inject
+    @Named(BUILD_WORKSPACE)
+    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
 
     ContainerScanServiceImpl() {}
 
@@ -161,7 +172,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     void scan(ScanRequest request) {
         try {
             // create a record to mark the beginning
-            final scan = ScanEntry.create(request)
+            final scan = ScanEntry.create(request, scanKey(request.scanId))
             if( scanStore.putIfAbsent(scan.scanId, scan) ) {
                 //start scanning of build container
                 CompletableFuture.runAsync(() -> launch(request), executor)
@@ -169,7 +180,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         }
         catch (Throwable e){
             log.warn "Unable to save scan result - id=${request.scanId}; cause=${e.message}", e
-            storeScanEntry(ScanEntry.failure(request))
+            storeScanEntry(ScanEntry.failure(request, scanKey(request.scanId)))
         }
     }
 
@@ -199,12 +210,21 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     protected void launch(ScanRequest request) {
         try {
             incrScanMetrics(request)
-            jobService.launchScan(request)
+            jobService.launchScan(request, scanKey(request.scanId))
         }
         catch (Throwable e){
             log.warn "Unable to save scan result - id=${request.scanId}; cause=${e.message}", e
-            storeScanEntry(ScanEntry.failure(request))
+            storeScanEntry(ScanEntry.failure(request, scanKey(request.scanId)))
         }
+    }
+
+    protected String scanKey(String scanId) {
+        if( !scanId )
+            return null
+        final prefix = config?.workspacePrefix
+        return prefix
+                ? "${prefix}/${scanId}"
+                : scanId
     }
 
     protected void incrScanMetrics(ScanRequest request) {
@@ -218,7 +238,6 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     }
     
     protected ScanRequest fromBuild(BuildRequest request) {
-        final workDir = request.workDir.resolveSibling(request.scanId)
         return new ScanRequest(
                 request.scanId,
                 request.buildId,
@@ -227,13 +246,11 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
                 request.configJson,
                 request.targetImage,
                 request.platform,
-                workDir,
                 Instant.now(),
                 request.identity)
     }
 
     protected ScanRequest fromMirror(MirrorRequest request) {
-        final workDir = request.workDir.resolveSibling(request.scanId)
         return new ScanRequest(
                 request.scanId,
                 null,
@@ -242,13 +259,11 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
                 request.authJson,
                 request.targetImage,
                 request.platform,
-                workDir,
                 Instant.now(),
                 request.identity)
     }
 
     protected ScanRequest fromContainer(ContainerRequest request) {
-        final workDir = config.workspace.resolve(request.scanId)
         final authJson = inspectService.credentialsConfigJson(null, request.containerImage, null, request.identity)
         return new ScanRequest(
                 request.scanId,
@@ -258,7 +273,6 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
                 authJson,
                 request.containerImage,
                 request.platform,
-                workDir,
                 Instant.now(),
                 request.identity)
     }
@@ -277,7 +291,9 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         if( !scanStrategy )
             throw new IllegalStateException("Security scan service is not available - check configuration setting 'wave.scan.enabled'")
         // save docker auth file
-        saveDockerAuth(entry.workDir, entry.configJson)
+        jobHelper.saveDockerAuth(entry.key, entry.configJson)
+        // create the scan work directory
+        objectStorageOperations.upload(UploadRequest.fromBytes(new byte[0] , "${scanKey(entry.scanId)}/report.json".toString()))
         // launch scan job
         scanStrategy.scanContainer(job.operationName, entry)
         // return the update job
@@ -289,18 +305,20 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         ScanEntry result
         if( state.succeeded() ) {
             try {
-                final scanFile = job.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
-                final vulnerabilities = TrivyResultProcessor.parseFile(scanFile, config.vulnerabilityLimit)
+                final scanFile = objectStorageOperations.retrieve("${scanKey(entry.scanId)}/$Trivy.OUTPUT_FILE_NAME".toString())
+                        .map(ObjectStorageEntry::getInputStream)
+                final scanReportFile = scanFile.isPresent() ? scanFile.get().text : null
+                final vulnerabilities = TrivyResultProcessor.parseFile(scanReportFile, config.vulnerabilityLimit)
                 result = entry.success(vulnerabilities)
                 log.info("Container scan succeeded - id=${entry.scanId}; exit=${state.exitCode}; stdout=${state.stdout}")
             }
             catch (NoSuchFileException e) {
-                result = entry.failure(0, "No such file: ${e.message}")
+                result = entry.failure("No such file: ${e.message}", 0)
                 log.warn("Container scan failed - id=${entry.scanId}; NoSuchFile=${e.message}")
             }
         }
         else{
-            result = entry.failure(state.exitCode, state.stdout)
+            result = entry.failure(state.stdout, state.exitCode)
             log.warn("Container scan failed - id=${entry.scanId}; exit=${state.exitCode}; stdout=${state.stdout}")
         }
 
@@ -310,13 +328,13 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     @Override
     void onJobException(JobSpec job, ScanEntry entry, Throwable e) {
         log.error("Container scan exception - id=${entry.scanId} - cause=${e.getMessage()}", e)
-        storeScanEntry(entry.failure(null, e.message))
+        storeScanEntry(entry.failure(e.message, null))
     }
 
     @Override
     void onJobTimeout(JobSpec job, ScanEntry entry) {
         log.warn("Container scan timed out - id=${entry.scanId}")
-        storeScanEntry(entry.failure(null, "Container scan timed out"))
+        storeScanEntry(entry.failure("Container scan timed out", null))
     }
 
     protected void storeScanEntry(ScanEntry scan) {

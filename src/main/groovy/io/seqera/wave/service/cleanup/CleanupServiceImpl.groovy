@@ -18,13 +18,13 @@
 
 package io.seqera.wave.service.cleanup
 
-import java.nio.file.Path
 import java.time.Instant
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Requires
+import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.scheduling.TaskScheduler
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.WaveLite
@@ -33,6 +33,8 @@ import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.scan.ScanIdStore
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
+import jakarta.inject.Named
+import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WORKSPACE
 /**
  * Implement a service for resources cleanup
  *
@@ -70,6 +72,10 @@ class CleanupServiceImpl implements Runnable, CleanupService {
 
     @Inject
     private ScanConfig scanConfig
+
+    @Inject
+    @Named(BUILD_WORKSPACE)
+    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
 
     @PostConstruct
     private init() {
@@ -126,7 +132,7 @@ class CleanupServiceImpl implements Runnable, CleanupService {
 
     protected void cleanupDir0(String path) {
         try {
-            Path.of(path).deleteDir()
+            deleteFolder(path)
         }
         catch (Throwable t) {
             log.error("Unexpected error deleting path=$path - cause: ${t.message}", t)
@@ -150,13 +156,25 @@ class CleanupServiceImpl implements Runnable, CleanupService {
         // schedule the job deletion
         store.add(JOB_PREFIX + job.operationName, expirationSecs)
         // schedule work dir path deletion
-        if( job.workDir ) {
-            store.add(DIR_PREFIX + job.workDir, expirationSecs)
+        if( job.key ) {
+            store.add(DIR_PREFIX + job.key, expirationSecs)
         }
     }
 
     @Override
     void cleanupScanId(String containerImage) {
         store.add(SCANID_PREFIX + containerImage, scanConfig.failureDuration.toSeconds())
+    }
+
+    @Override
+    void deleteFolder(String key) {
+        final objects = objectStorageOperations.listObjects()
+        if (objects.isEmpty()) return
+        for( def object : objects ) {
+            if( object.startsWith(key) ) {
+                log.trace("Deleting object: $object")
+                objectStorageOperations.delete(object)
+            }
+        }
     }
 }

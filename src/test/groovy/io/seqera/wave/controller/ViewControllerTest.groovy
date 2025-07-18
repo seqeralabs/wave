@@ -22,7 +22,6 @@ import spock.lang.Specification
 import spock.lang.Unroll
 
 import java.net.http.HttpResponse
-import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
@@ -375,7 +374,7 @@ class ViewControllerTest extends Specification {
                 [new ScanVulnerability('cve-1', 'HIGH', 'test vul', 'testpkg', '1.0.0', '1.1.0', 'http://vul/cve-1')],
                 0,
                 "Some scan logs",
-                Mock(Path)
+                'workDir'
         )
         when:
         def binding = controller.makeScanViewBinding(result)
@@ -411,7 +410,7 @@ class ViewControllerTest extends Specification {
                 [new ScanVulnerability('cve-1', 'HIGH', 'test vul', 'testpkg', '1.0.0', '1.1.0', 'http://vul/cve-1')],
                 0,
                 "Some scan logs",
-                Mock(Path)
+                'workDir'
         )
 
         when:
