@@ -34,7 +34,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.event.ApplicationEventPublisher
-import io.micronaut.objectstorage.InputStreamMapper
+import io.micronaut.objectstorage.DefaultInputStreamMapper
 import io.micronaut.objectstorage.ObjectStorageEntry
 import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.aws.AwsS3Configuration
@@ -55,7 +55,6 @@ import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
-import io.seqera.wave.service.logs.BuildLogServiceImpl
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanEntry
@@ -136,7 +135,7 @@ class ContainerBuildServiceTest extends Specification implements AwsS3TestContai
                 .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("accesskey", "secretkey")))
                 .forcePathStyle(true)
                 .build()
-        def inputStreamMapper = Mock(InputStreamMapper)
+        def inputStreamMapper = new DefaultInputStreamMapper()
         def storageBucket = "test-bucket"
         s3Client.createBucket { it.bucket(storageBucket) }
         def configuration = new AwsS3Configuration('build-logs')
@@ -283,7 +282,7 @@ class ContainerBuildServiceTest extends Specification implements AwsS3TestContai
         def builder = new ContainerBuildServiceImpl(objectStorageOperations: objectStorageOperations, streamService: streamService, httpClientConfig: httpClientConfig)
 
         when:
-        builder.saveBuildContext(context, target, Mock(PlatformId))
+        builder.saveBuildContext(context, 'test', Mock(PlatformId))
         then:
         !objectStorageOperations.listObjects().isEmpty()
 

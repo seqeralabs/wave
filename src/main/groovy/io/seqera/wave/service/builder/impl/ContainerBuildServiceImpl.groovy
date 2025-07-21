@@ -63,9 +63,6 @@ import io.seqera.util.retry.Retryable
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
-import org.apache.commons.io.IOUtils
 import static io.seqera.wave.util.RegHelper.layerDir
 import static io.seqera.wave.util.RegHelper.layerName
 import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WORKSPACE
@@ -284,7 +281,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
             // copy the layer to the build context
             retryable.apply(()-> {
                 try (InputStream stream = streamService.stream(it.location, request.identity)) {
-                    objectStorageOperations.upload(UploadRequest.fromBytes(IOUtils.toByteArray(stream), target, "application/x-tar"))
+                    objectStorageOperations.upload(new InputStreamUploadRequest(stream, target, "application/x-tar", null))
                 }
                 return
             })
@@ -300,8 +297,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
             final retryable = retry0("Unable to copy '${it.location} to singularity context '$target'")
             // copy the layer to the build context
             retryable.apply(()-> {
-                try (InputStream stream = streamService.stream(it.location, request.identity)) {
-                    objectStorageOperations.upload(UploadRequest.fromBytes(TarGzipUtils.untarGzip(stream), target, "application/octet-stream"))
+                try (InputStream stream = streamService.stream(it.location, request.identity)
+                     InputStream stream2 = TarGzipUtils.untarGzip(stream)) {
+                    objectStorageOperations.upload(new InputStreamUploadRequest(stream2, target, "application/x-tar", null))
                 }
                 return
             })
@@ -313,8 +311,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         final retryable = retry0("Unable to copy '${buildContext.location} to build context '${contextDir}'")
         // copy the layer to the build context
         retryable.apply(()-> {
-            try (InputStream stream = streamService.stream(buildContext.location, identity)) {
-                objectStorageOperations.upload(UploadRequest.fromBytes(TarGzipUtils.untarGzip(stream), contextDir, "application/octet-stream"))
+            try (InputStream stream = streamService.stream(buildContext.location, identity)
+                 InputStream stream2 = TarGzipUtils.untarGzip(stream)) {
+                objectStorageOperations.upload(new InputStreamUploadRequest(stream2, contextDir, "application/octet-stream", null))
             }
             return
         })

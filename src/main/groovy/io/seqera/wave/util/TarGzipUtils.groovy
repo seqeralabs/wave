@@ -18,9 +18,9 @@
 
 package io.seqera.wave.util
 
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry
+import java.util.zip.GZIPInputStream
+
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 /**
  * Tar and Gzip utilities
  *
@@ -28,28 +28,37 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
  */
 class TarGzipUtils {
 
-    static byte[] untarGzip(final InputStream is) throws IOException {
-        try (GzipCompressorInputStream gzipStream = new GzipCompressorInputStream(is)) {
-            byte[] tarContent = untarToByteArray(gzipStream)
-            return tarContent;
-        }
-    }
+    static InputStream untarGzip(InputStream tarGzStream) {
+        def gzipIn = new GZIPInputStream(tarGzStream)
+        def tarIn = new TarArchiveInputStream(gzipIn)
 
-    private static byte[] untarToByteArray(final InputStream is) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (TarArchiveInputStream tarInputStream = new TarArchiveInputStream(is)) {
-            TarArchiveEntry entry;
-            byte[] buffer = new byte[1024];
-            int count;
-            while ((entry = (TarArchiveEntry) tarInputStream.getNextEntry()) != null) {
-                if (!entry.isDirectory()) {
-                    while ((count = tarInputStream.read(buffer)) != -1) {
-                        baos.write(buffer, 0, count);
+        def entry
+        while ((entry = tarIn.nextEntry) != null) {
+            if (!entry.isDirectory()) {
+                long size = entry.size
+                return new FilterInputStream(tarIn) {
+                    long remaining = size
+
+                    @Override
+                    int read() {
+                        if (remaining-- <= 0) return -1
+                        return super.read()
+                    }
+
+                    @Override
+                    int read(byte[] b, int off, int len) {
+                        if (remaining <= 0) return -1
+                        int toRead = Math.min(len, (int) remaining)
+                        int read = super.read(b, off, toRead)
+                        if (read > 0) remaining -= read
+                        return read
                     }
                 }
             }
         }
-        return baos.toByteArray();
+
+        throw new IllegalStateException("No file entry found in tar archive")
     }
+
 
 }
