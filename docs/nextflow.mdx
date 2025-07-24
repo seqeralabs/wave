@@ -78,11 +78,8 @@ Wave can build and provision container images on demand for your Nextflow pipeli
 <summary>**Build Nextflow module containers**</summary>
 
 To provision container images on demand, add the Dockerfile of the container to the [module directory](https://www.nextflow.io/docs/latest/module.html#module-directory) where the pipeline process is defined.
-When Wave is enabled, it automatically uses the Dockerfile to build the required container, uploads the container to the registry, and uses the container to execute the script defined in the process.
+When Wave is enabled, it automatically uses the Dockerfile to build the required container, uploads the container to the registry, and uses the container to execute the script defined in the process. If a process declares a `container` directive, it takes precedence over the Dockerfile definition.
 
-:::warning
-If a process declares a `container` directive, it takes precedence over the Dockerfile definition.
-:::
 
 To use the Dockerfile in the module directory, even when a process uses a `container` directive, add the following to your Nextflow configuration file:
 
@@ -90,9 +87,7 @@ To use the Dockerfile in the module directory, even when a process uses a `conta
 wave.strategy = ['dockerfile','container']
 ```
 
-:::note
 The above `strategy` instructs Wave to prioritize the module Dockerfile over process `container` directives.
-:::
 
 :::warning
 Wave does not support `ADD`, `COPY`, or other Dockerfile commands that access files in the host file system.
@@ -118,9 +113,7 @@ wave.strategy = ['conda']
 
 Replace `<PLATFORM_ACCESS_TOKEN>` with your Seqera Platform access token.
 
-:::note
 The above `strategy` tells Wave to use the `conda` directive to provision containers and ignore the `container` directive and Dockerfile(s).
-:::
 
 For Nextflow 23.10.x or newer, the `conda-forge::procps-ng` package is included automatically in provisioned containers. This package includes the `ps` command.
 
@@ -162,7 +155,7 @@ Replace `<BUILD_REPOSITORY>` with the repository where your Singularity image fi
 
 When using a private repository, provide repository access keys via the Seqera Platform credentials manager. See [Authenticate private repositories](https://docs.seqera.io/platform/24.1/credentials/overview) for more information.
 
-Grant access to the repository on compute nodes with:
+Moreover, the access to the repository must be granted in the compute nodes. To grant access to the repository on compute nodes, run the following command:
 
 ```bash
 singularity remote login <REMOTE_NAME>
@@ -170,9 +163,11 @@ singularity remote login <REMOTE_NAME>
 
 Replace `<REMOTE_NAME>` with your Singularity remote endpoint.
 
-See the [Singularity remote login documentation](https://docs.sylabs.io/guides/3.1/user-guide/cli/singularity_remote_login.html) for details.
+See the [Singularity remote login documentation](https://docs.sylabs.io/guides/3.1/user-guide/cli/singularity_remote_login.html) for more information.
 
+:::note
 To build Singularity native images, disable both `singularity.ociAutoPull` and `singularity.ociMode` in your Nextflow configuration file. For more information, see the Nextflow [configuration documentation](https://www.nextflow.io/docs/latest/config.html#config-singularity).
+:::
 
 </details>
 
