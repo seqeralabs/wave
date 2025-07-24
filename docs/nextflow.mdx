@@ -87,8 +87,6 @@ To use the Dockerfile in the module directory, even when a process uses a `conta
 wave.strategy = ['dockerfile','container']
 ```
 
-The above `strategy` instructs Wave to prioritize the module Dockerfile over process `container` directives.
-
 :::warning
 Wave does not support `ADD`, `COPY`, or other Dockerfile commands that access files in the host file system.
 :::
@@ -112,8 +110,6 @@ wave.strategy = ['conda']
 ```
 
 Replace `<PLATFORM_ACCESS_TOKEN>` with your Seqera Platform access token.
-
-The above `strategy` tells Wave to use the `conda` directive to provision containers and ignore the `container` directive and Dockerfile(s).
 
 For Nextflow 23.10.x or newer, the `conda-forge::procps-ng` package is included automatically in provisioned containers. This package includes the `ps` command.
 
