@@ -42,7 +42,7 @@ Wave allows you to use private repositories in your Nextflow pipelines. Provide 
 <details open>
 <summary>**Access private container repositories**</summary>
 
-After creating your credentials, specify your [personal access token](https://docs.seqera.io/platform/latest/api/overview#authentication) in your pipeline configuration file. If you created credentials in a Seqera Platform organization workspace, add your workspace ID:
+After creating your credentials, add your [personal access token](https://docs.seqera.io/platform/latest/api/overview#authentication) in your pipeline Nextflow configuration file. If you created credentials in a Seqera Platform organization workspace, add your workspace ID:
 
 ```groovy
 tower {
@@ -112,7 +112,7 @@ This allows you to use conda packages in your pipeline, even on cloud-native pla
 
 With Wave enabled, define the `conda` requirements in your pipeline processes, as long as the process does not also specify a `container` directive or a Dockerfile.
 
-If you want to use the `conda` directive even when a process also specifies a `container` directive or Dockerfile, add this setting to your configuration:
+If you want to use the `conda` directive even when a process also specifies a `container` directive or Dockerfile, add the following setting to your Nextflow configuration file:
 
 ```groovy
 wave.strategy = ['conda']
@@ -147,7 +147,7 @@ Available as of Nextflow version 23.09.0-edge.
 This feature requires a version of Singularity (or Apptainer) that supports pulling images using the `oras:` pseudo-protocol.
 :::
 
-To enable provisioning of Singularity images in your pipeline, use the following configuration:
+To enable provisioning of Singularity images in your pipeline, add the following setting to your Nextflow configuration file:
 
 ```groovy
 singularity.enabled = true
@@ -171,7 +171,7 @@ Replace `<REMOTE_NAME>` with your Singularity remote endpoint.
 
 See the [Singularity remote login documentation](https://docs.sylabs.io/guides/3.1/user-guide/cli/singularity_remote_login.html) for details.
 
-To build Singularity native images, disable both `singularity.ociAutoPull` and `singularity.ociMode` in your configuration. For more information, see the Nextflow [configuration documentation](https://www.nextflow.io/docs/latest/config.html#config-singularity).
+To build Singularity native images, disable both `singularity.ociAutoPull` and `singularity.ociMode` in your Nextflow configuration file. For more information, see the Nextflow [configuration documentation](https://www.nextflow.io/docs/latest/config.html#config-singularity).
 
 </details>
 
@@ -213,7 +213,7 @@ Wave does not support using a sha256 digest in the image name (for example, `ubu
 
 To reference a container by sha256 digest in the image name with Wave, you must enable freeze mode and force the creation of a new container image using your specified base image.
 
-In your pipeline configuration, specify the following settings:
+Add the following settings to your Nextflow configuration file:
 
 ```groovy
 wave.enabled = true
