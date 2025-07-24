@@ -32,7 +32,7 @@ The following sections describe how to use Wave features with Nextflow.
 
 ### Access private container repositories
 
-Wave allows you to use private repositories in your Nextflow pipelines. Provide repository access keys as [Seqera Platform credentials](https://docs.seqera.io/platform/latest/credentials/overview).
+Use Wave to access private repositories in your Nextflow pipelines. Provide your repository access keys as [Seqera Platform credentials](https://docs.seqera.io/platform/latest/credentials/overview).
 
 <details open>
 <summary>**Access private container repositories**</summary>
@@ -53,7 +53,7 @@ tower.workspaceId = '<PLATFORM_WORKSPACE_ID>'
 
 Replace `<PLATFORM_WORKSPACE_ID>` with your Platform organization workspace ID.
 
-Wave uploads containers it builds to the default AWS ECR repository with the name `195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build`.
+Wave uploads built containers to the default AWS ECR repository with the name `195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build`.
 Images in this repository are deleted automatically one week after they are pushed.
 
 To store Wave containers in your own container repository, add the following to your Nextflow configuration file:
@@ -78,8 +78,11 @@ Wave can build and provision container images on demand for your Nextflow pipeli
 <summary>**Build Nextflow module containers**</summary>
 
 To provision container images on demand, add the Dockerfile of the container to the [module directory](https://www.nextflow.io/docs/latest/module.html#module-directory) where the pipeline process is defined.
-When Wave is enabled, it automatically uses the Dockerfile to build the required container, uploads the container to the registry, and uses the container to execute the script defined in the process. If a process declares a `container` directive, it takes precedence over the Dockerfile definition.
+When Wave is enabled, it automatically uses the Dockerfile to build the required container, uploads the container to the registry, and uses the container to execute the script defined in the process.
 
+:::note
+If a process declares a `container` directive, it takes precedence over the Dockerfile definition.
+:::
 
 To use the Dockerfile in the module directory, even when a process uses a `container` directive, add the following to your Nextflow configuration file:
 
@@ -101,9 +104,10 @@ This allows you to use conda packages in your pipeline, even on cloud-native pla
 <details open>
 <summary>**Build conda-based containers**</summary>
 
-Define the `conda` requirements in your pipeline processes, as long as the process does not also specify a `container` directive or a Dockerfile.
+Define the `conda` requirements in your pipeline processes.
+Ensure the process doesn't include a `container` directive or Dockerfile.
 
-To use the `conda` directive even when a process also specifies a `container` directive or Dockerfile, add the following to your Nextflow configuration file:
+To prioritize `conda` over `container` directives and Dockerfiles, add the following to your Nextflow configuration:
 
 ```groovy
 wave.strategy = ['conda']
@@ -125,7 +129,7 @@ conda.channels = 'seqera,conda-forge,bioconda,defaults'
 ### Build Singularity containers
 
 Nextflow can build Singularity native images on demand using a `Singularityfile` or conda packages.
-The Singularity images are uploaded to an OCI-compliant container registry of your choice and stored as an [ORAS artifact](https://oras.land/).
+Images are uploaded to an OCI-compliant container registry of your choice and stored as an [ORAS artifact](https://oras.land/).
 
 :::note
 Available as of Nextflow version 23.09.0-edge.
@@ -151,7 +155,7 @@ Replace `<BUILD_REPOSITORY>` with the repository where your Singularity image fi
 
 When using a private repository, provide repository access keys via the Seqera Platform credentials manager. See [Authenticate private repositories](https://docs.seqera.io/platform/24.1/credentials/overview) for more information.
 
-Moreover, the access to the repository must be granted in the compute nodes. To grant access to the repository on compute nodes, run the following command:
+The access to the repository must be granted in the compute nodes. To grant access to the repository on compute nodes, run the following command:
 
 ```bash
 singularity remote login <REMOTE_NAME>
@@ -174,7 +178,8 @@ Wave containers allow you to run your containerized workflow with the Fusion fil
 <details open>
 <summary>**Use Wave with Fusion**</summary>
 
-Wave with Fusion allows you to use an object storage bucket, such as AWS S3 or Google Cloud Storage, as your pipeline work directory. This can simplify and speed up operations on local, AWS Batch, Google Batch, or Kubernetes executions.
+Wave with Fusion allows you to use an object storage bucket, such as AWS S3 or Google Cloud Storage, as your pipeline work directory.
+This can simplify and speed up operations on local, AWS Batch, Google Batch, or Kubernetes executions.
 
 For more information, see:
 - [Fusion documentation](https://docs.seqera.io/fusion)
@@ -203,7 +208,7 @@ The following configuration options are available:
 
 Wave does not support using a sha256 digest in the image name (for example, `ubuntu@sha256:3235...ce8f`) when using the augmentation process to extend container images.
 
-To reference a container by sha256 digest in the image name with Wave, you must enable freeze mode and force the creation of a new container image using your specified base image.
+To reference a container by sha256 digest in the image name with Wave, enable freeze mode and force the creation of a new container image using your specified base image.
 
 Add the following to your Nextflow configuration file:
 
