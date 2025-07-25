@@ -33,7 +33,7 @@ import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.DockerDigestStore
 import io.seqera.wave.storage.HttpDigestStore
 import io.seqera.wave.storage.ZippedDigestStore
-import io.seqera.wave.util.TypeHelper
+import io.seqera.lang.type.TypeHelper
 /**
  * Implements a JSON {@link EncodingStrategy} based on Mosh JSON serializer
  *

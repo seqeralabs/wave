@@ -28,7 +28,7 @@ import groovy.util.logging.Slf4j
 import io.seqera.wave.encoder.EncodingStrategy
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.util.ExponentialAttempt
-import io.seqera.wave.util.TypeHelper
+import io.seqera.lang.type.TypeHelper
 /**
  * Implement an abstract stream that allows that consumes messages asynchronously
  * as soon as they are available.

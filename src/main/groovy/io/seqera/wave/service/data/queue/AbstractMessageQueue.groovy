@@ -33,7 +33,7 @@ import io.seqera.wave.encoder.EncodingStrategy
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.pairing.socket.MessageSender
 import io.seqera.wave.util.ExponentialAttempt
-import io.seqera.wave.util.TypeHelper
+import io.seqera.lang.type.TypeHelper
 import jakarta.annotation.PostConstruct
 /**
  * Implements a distributed message queue in which many listeners can register
