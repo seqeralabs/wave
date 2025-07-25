@@ -18,7 +18,6 @@
 
 package io.seqera.wave.controller
 
-import java.nio.file.Path
 import java.time.Instant
 import javax.annotation.PostConstruct
 
@@ -369,7 +368,6 @@ class ContainerController {
                 containerId,
                 containerSpec,
                 condaContent,
-                Path.of(buildConfig.buildWorkspace),
                 targetImage,
                 identity,
                 platform,
@@ -535,7 +533,6 @@ class ContainerController {
                 targetImage,
                 digest,
                 null, // <-- use null to copy all container tags
-                Path.of(buildConfig.buildWorkspace).toAbsolutePath(),
                 configJson,
                 scanId,
                 Instant.now(),

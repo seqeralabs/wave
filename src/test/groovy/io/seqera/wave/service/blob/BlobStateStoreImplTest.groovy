@@ -38,6 +38,7 @@ import software.amazon.awssdk.services.s3.S3Client
 @Property(name = 'wave.blobCache.enabled', value = 'true')
 @Property(name = 'wave.blobCache.storage.bucket', value='s3://foo')
 @Property(name = 'wave.blobCache.storage.region', value='eu-west-1')
+@Property(name = 'wave.build.workspace', value='workspace') // this is added to remove the requirement of DefaultS3Client
 @MicronautTest
 class BlobStateStoreImplTest extends Specification {
 

@@ -54,7 +54,7 @@ class WaveScanRecord implements Cloneable {
     List<ScanVulnerability> vulnerabilities
     Integer exitCode
     String logs
-    Path workDir
+    String workDir
 
     /* required by jackson deserialization - do not remove */
     WaveScanRecord() {}
@@ -72,7 +72,7 @@ class WaveScanRecord implements Cloneable {
             List<ScanVulnerability> vulnerabilities,
             Integer exitCode,
             String logs,
-            Path workDir
+            String workDir
     )
     {
         this.id = StringUtils.surrealId(id)
@@ -107,7 +107,7 @@ class WaveScanRecord implements Cloneable {
                 : List.<ScanVulnerability>of()
         this.exitCode = scan.exitCode
         this.logs = sanitize0(scan.logs)
-        this.workDir = scan.workDir
+        this.workDir = scan.key
     }
 
     private static String sanitize0(String str) {
