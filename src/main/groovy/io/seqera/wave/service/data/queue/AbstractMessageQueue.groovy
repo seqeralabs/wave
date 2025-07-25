@@ -30,10 +30,8 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.websocket.exceptions.WebSocketSessionException
 import io.seqera.wave.encoder.EncodingStrategy
-import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.pairing.socket.MessageSender
 import io.seqera.wave.util.ExponentialAttempt
-import io.seqera.lang.type.TypeHelper
 import jakarta.annotation.PostConstruct
 /**
  * Implements a distributed message queue in which many listeners can register
@@ -65,8 +63,7 @@ abstract class AbstractMessageQueue<M> implements Runnable {
     final private Cache<String,Boolean> closedClients
 
     AbstractMessageQueue(MessageQueue<String> broker, ExecutorService ioExecutor) {
-        final type = TypeHelper.getGenericType(this, 0)
-        this.encoder = new MoshiEncodeStrategy<M>(type) {}
+        this.encoder = createEncodingStrategy()
         this.broker = broker
         this.closedClients = createCache(ioExecutor)
         this.name0 = name() + '-thread-' + count.getAndIncrement()
@@ -81,6 +78,14 @@ abstract class AbstractMessageQueue<M> implements Runnable {
                 .expireAfterWrite(10, TimeUnit.MINUTES)
                 .build()
     }
+
+    /**
+     * Create an instance of the required {@link EncodingStrategy<M>} to serialise/deserialize
+     * message events.
+     *
+     * @return An instance of {@link EncodingStrategy<M>}
+     */
+    abstract protected EncodingStrategy<M> createEncodingStrategy()
 
     /**
      * Start the listener thread after the class creation, to avoid race-condition accessing attributes
