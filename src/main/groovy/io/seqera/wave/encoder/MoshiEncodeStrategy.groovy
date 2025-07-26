@@ -24,6 +24,7 @@ import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import groovy.transform.CompileStatic
+import io.seqera.serde.encode.StringEncodingStrategy
 import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import io.seqera.wave.service.pairing.socket.msg.PairingResponse
@@ -35,7 +36,7 @@ import io.seqera.wave.storage.HttpDigestStore
 import io.seqera.wave.storage.ZippedDigestStore
 import io.seqera.lang.type.TypeHelper
 /**
- * Implements a JSON {@link EncodingStrategy} based on Mosh JSON serializer
+ * Implements a JSON {@link StringEncodingStrategy} based on Mosh JSON serializer
  *
  * See https://github.com/square/moshi
  * https://www.baeldung.com/java-json-moshi
@@ -43,7 +44,7 @@ import io.seqera.lang.type.TypeHelper
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-abstract class MoshiEncodeStrategy<V> implements EncodingStrategy<V> {
+abstract class MoshiEncodeStrategy<V> implements StringEncodingStrategy<V> {
 
     private Type type;
     private Moshi moshi

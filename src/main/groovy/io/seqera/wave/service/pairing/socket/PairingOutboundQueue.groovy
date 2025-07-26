@@ -25,8 +25,8 @@ import javax.annotation.PreDestroy
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
 import io.micronaut.scheduling.TaskExecutors
+import io.seqera.data.queue.MessageQueue
 import io.seqera.wave.service.data.queue.BaseMessageQueue
-import io.seqera.wave.service.data.queue.MessageQueue
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import jakarta.inject.Named
 import jakarta.inject.Singleton

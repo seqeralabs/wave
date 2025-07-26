@@ -21,7 +21,9 @@ package io.seqera.wave.service.data.queue
 import java.util.concurrent.ExecutorService
 
 import io.seqera.lang.type.TypeHelper
-import io.seqera.wave.encoder.EncodingStrategy
+import io.seqera.serde.encode.StringEncodingStrategy
+import io.seqera.data.queue.AbstractMessageQueue
+import io.seqera.data.queue.MessageQueue
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 
 /**
@@ -35,12 +37,12 @@ abstract class BaseMessageQueue<M> extends AbstractMessageQueue<M> {
     }
 
     /**
-     * Create an instance of the required {@link io.seqera.wave.encoder.EncodingStrategy<M>} to serialise/deserialize
+     * Create an instance of the required {@link StringEncodingStrategy<M>} to serialise/deserialize
      * message events.
      *
-     * @return An instance of {@link io.seqera.wave.encoder.EncodingStrategy<M>}
+     * @return An instance of {@link StringEncodingStrategy<M>}
      */
-    protected EncodingStrategy<M> createEncodingStrategy() {
+    protected StringEncodingStrategy<M> createEncodingStrategy() {
         final type = TypeHelper.getGenericType(this, 0)
         return new MoshiEncodeStrategy<M>(type) {}
     }

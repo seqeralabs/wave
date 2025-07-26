@@ -24,8 +24,8 @@ import spock.lang.Specification
 import java.time.Duration
 
 import io.micronaut.context.ApplicationContext
+import io.seqera.fixtures.redis.RedisTestContainer
 import io.seqera.wave.store.cache.RedisL2TieredCache
-import io.seqera.wave.test.RedisTestContainer
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>

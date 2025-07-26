@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023-2024, Seqera Labs
+ *  Copyright (c) 2023-2025, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -18,25 +18,25 @@
 
 package io.seqera.wave.service.data.stream
 
-import java.time.Duration
+import io.seqera.data.stream.AbstractMessageStream
+import io.seqera.data.stream.MessageStream
+import io.seqera.lang.type.TypeHelper
+import io.seqera.serde.encode.StringEncodingStrategy
+import io.seqera.wave.encoder.MoshiEncodeStrategy
 
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class TestStream extends AbstractMessageStream<TestMessage> {
+abstract class BaseMessageStream<M> extends AbstractMessageStream<M> {
 
-    TestStream(MessageStream<String> target) {
+    BaseMessageStream(MessageStream<String> target) {
         super(target)
     }
 
     @Override
-    protected String name() {
-        return 'test-stream'
-    }
-
-    @Override
-    protected Duration pollInterval() {
-        return Duration.ofSeconds(1)
+    protected StringEncodingStrategy<M> createEncodingStrategy() {
+        final type = TypeHelper.getGenericType(this, 0)
+        return new MoshiEncodeStrategy<M>(type) {}
     }
 }
