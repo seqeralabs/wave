@@ -39,7 +39,7 @@ dependencies {
     implementation 'io.seqera:lib-retry:1.0.0'
     implementation 'io.seqera:lib-random:1.0.0'
     implementation 'io.seqera:wave-api:0.16.0'
-    implementation 'io.seqera:wave-utils:1.0.1'
+    implementation 'io.seqera:wave-utils:1.0.0'
     implementation 'io.seqera:lib-crypto:1.0.0'
     implementation 'io.seqera:jedis-lock:1.0.0'
     implementation 'io.seqera:lib-data-queue-redis:1.0.0'
