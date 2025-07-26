@@ -25,15 +25,43 @@ import io.seqera.serde.encode.StringEncodingStrategy
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 
 /**
- *
+ * Base abstract class for implementing message streams in the Wave application.
+ * 
+ * <p>This class extends {@link AbstractMessageStream} and provides a foundation for
+ * creating type-safe message streams with automatic JSON serialization/deserialization
+ * using the Moshi library. It handles the encoding strategy configuration and
+ * provides a consistent interface for message stream implementations.</p>
+ * 
+ * <p>Message streams are used for real-time message processing and event handling,
+ * allowing for continuous data flow and stream-based operations. Concrete implementations
+ * should extend this class to define specific streaming behavior and message processing logic.</p>
+ * 
+ * @param <M> the type of messages that this stream will handle
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 abstract class BaseMessageStream<M> extends AbstractMessageStream<M> {
 
+    /**
+     * Constructs a new BaseMessageStream with the specified target stream.
+     * 
+     * @param target the underlying string-based message stream that handles
+     *               the actual message transport and streaming operations
+     */
     BaseMessageStream(MessageStream<String> target) {
         super(target)
     }
 
+    /**
+     * Creates an instance of the required {@link StringEncodingStrategy} to serialize
+     * and deserialize message events to/from JSON format.
+     * 
+     * <p>This method uses reflection to determine the generic type parameter {@code M}
+     * and creates a Moshi-based encoding strategy that can handle the automatic
+     * conversion between the strongly-typed message objects and their JSON string
+     * representations for streaming operations.</p>
+     * 
+     * @return a new instance of {@link StringEncodingStrategy} configured for type {@code M}
+     */
     @Override
     protected StringEncodingStrategy<M> createEncodingStrategy() {
         final type = TypeHelper.getGenericType(this, 0)

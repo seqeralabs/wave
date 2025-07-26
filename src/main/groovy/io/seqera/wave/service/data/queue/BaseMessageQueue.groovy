@@ -27,20 +27,43 @@ import io.seqera.data.queue.MessageQueue
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 
 /**
- *
+ * Base abstract class for implementing message queues in the Wave application.
+ * 
+ * <p>This class extends {@link AbstractMessageQueue} and provides a foundation for
+ * creating type-safe message queues with automatic JSON serialization/deserialization
+ * using the Moshi library. It handles the encoding strategy configuration and
+ * provides a consistent interface for message queue implementations.</p>
+ * 
+ * <p>Concrete implementations should extend this class and implement the required
+ * abstract methods from the parent class to define specific queue behavior.</p>
+ * 
+ * @param <M> the type of messages that this queue will handle
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 abstract class BaseMessageQueue<M> extends AbstractMessageQueue<M> {
 
+    /**
+     * Constructs a new BaseMessageQueue with the specified broker and executor.
+     * 
+     * @param broker the underlying string-based message queue broker that handles
+     *               the actual message transport and storage
+     * @param ioExecutor the executor service used for asynchronous I/O operations
+     *                   and message processing tasks
+     */
     BaseMessageQueue(MessageQueue<String> broker, ExecutorService ioExecutor) {
         super(broker, ioExecutor)
     }
 
     /**
-     * Create an instance of the required {@link StringEncodingStrategy<M>} to serialise/deserialize
-     * message events.
-     *
-     * @return An instance of {@link StringEncodingStrategy<M>}
+     * Creates an instance of the required {@link StringEncodingStrategy} to serialize
+     * and deserialize message events to/from JSON format.
+     * 
+     * <p>This method uses reflection to determine the generic type parameter {@code M}
+     * and creates a Moshi-based encoding strategy that can handle the automatic
+     * conversion between the strongly-typed message objects and their JSON string
+     * representations.</p>
+     * 
+     * @return a new instance of {@link StringEncodingStrategy} configured for type {@code M}
      */
     protected StringEncodingStrategy<M> createEncodingStrategy() {
         final type = TypeHelper.getGenericType(this, 0)
