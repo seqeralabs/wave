@@ -23,8 +23,10 @@ import spock.lang.Specification
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.TimeUnit
 
 import io.micronaut.scheduling.TaskExecutors
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.data.queue.MessageQueue
 import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
@@ -35,6 +37,7 @@ import jakarta.inject.Named
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@MicronautTest(transactional = false)
 class PairingOutboundQueueLocalTest extends Specification {
 
     @Inject
