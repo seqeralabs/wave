@@ -34,19 +34,19 @@ import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.server.EmbeddedServer
+import io.seqera.fixtures.redis.RedisTestContainer
 import io.seqera.wave.exchange.RegistryErrorResponse
 import io.seqera.wave.model.ContentType
-import io.seqera.wave.service.request.ContainerRequest
-import io.seqera.wave.service.builder.impl.BuildStateStoreImpl
+import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
-import io.seqera.wave.service.builder.BuildEntry
+import io.seqera.wave.service.builder.impl.BuildStateStoreImpl
 import io.seqera.wave.service.job.JobFactory
 import io.seqera.wave.service.job.JobProcessingQueue
+import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.request.ContainerRequestStoreImpl
 import io.seqera.wave.storage.ManifestCacheStore
 import io.seqera.wave.test.DockerRegistryContainer
-import io.seqera.wave.test.RedisTestContainer
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 /**

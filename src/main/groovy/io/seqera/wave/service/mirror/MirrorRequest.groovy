@@ -26,7 +26,7 @@ import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
-import io.seqera.wave.util.LongRndKey
+import io.seqera.random.LongRndKey
 /**
  * Model a container mirror request
  *

@@ -22,7 +22,8 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
-import io.seqera.wave.test.RedisTestContainer
+import io.seqera.fixtures.redis.RedisTestContainer
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>

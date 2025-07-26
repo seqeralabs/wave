@@ -28,7 +28,7 @@ import io.seqera.wave.api.ScanMode
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.tower.PlatformId
-import io.seqera.wave.util.LongRndKey
+import io.seqera.random.LongRndKey
 import static io.seqera.wave.util.StringUtils.trunc
 /**
  * Model a container request

@@ -40,7 +40,7 @@ import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import io.seqera.wave.service.pairing.socket.msg.PairingResponse
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import static io.seqera.wave.util.LongRndKey.rndHex
+import static io.seqera.random.LongRndKey.rndHex
 /**
  * Implements Wave pairing websocket server
  *

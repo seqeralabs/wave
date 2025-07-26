@@ -26,7 +26,7 @@ import java.util.concurrent.TimeoutException
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.scheduling.TaskExecutors
-import io.seqera.wave.encoder.EncodingStrategy
+import io.seqera.serde.encode.StringEncodingStrategy
 import jakarta.inject.Inject
 import jakarta.inject.Named
 /**
@@ -46,7 +46,7 @@ import jakarta.inject.Named
 @CompileStatic
 abstract class AbstractFutureStore<V> implements FutureStore<String,V> {
 
-    private EncodingStrategy<V> encodingStrategy
+    private StringEncodingStrategy<V> encodingStrategy
 
     private FutureHash<String> store
 
@@ -54,7 +54,7 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V> {
     @Named(TaskExecutors.BLOCKING)
     private ExecutorService executor
 
-    AbstractFutureStore(FutureHash<String> store, EncodingStrategy<V> encodingStrategy) {
+    AbstractFutureStore(FutureHash<String> store, StringEncodingStrategy<V> encodingStrategy) {
         this.store = store
         this.encodingStrategy = encodingStrategy
     }

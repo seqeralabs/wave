@@ -28,7 +28,7 @@ import io.micronaut.context.annotation.Value
 import io.seqera.tower.crypto.AsymmetricCipher
 import io.seqera.wave.exchange.PairingResponse
 import io.seqera.wave.util.DigestFunctions
-import io.seqera.wave.util.LongRndKey
+import io.seqera.random.LongRndKey
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 

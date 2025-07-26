@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023-2024, Seqera Labs
+ *  Copyright (c) 2023-2025, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.data.queue
+package io.seqera.wave.service.pairing.socket
 
 import spock.lang.Specification
 
@@ -27,19 +27,18 @@ import java.util.concurrent.TimeUnit
 
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.service.pairing.socket.PairingOutboundQueue
+import io.seqera.data.queue.MessageQueue
 import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import jakarta.inject.Inject
 import jakarta.inject.Named
 
 /**
- * Test class {@link AbstractMessageQueue} using a {@link io.seqera.wave.service.data.queue.impl.LocalMessageQueue}
  *
- * @author Jordi Deu-Pons <jordi@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@MicronautTest(environments = ['test'])
-class AbstractMessageQueueLocalTest extends Specification {
+@MicronautTest(transactional = false)
+class PairingOutboundQueueLocalTest extends Specification {
 
     @Inject
     private MessageQueue<String> broker

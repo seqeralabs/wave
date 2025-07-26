@@ -25,9 +25,9 @@ import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import groovy.transform.Canonical
 import groovy.transform.Memoized
 import io.micronaut.context.ApplicationContext
+import io.seqera.fixtures.redis.RedisTestContainer
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.encoder.MoshiSerializable
-import io.seqera.wave.test.RedisTestContainer
 import spock.lang.Shared
 import spock.lang.Specification
 

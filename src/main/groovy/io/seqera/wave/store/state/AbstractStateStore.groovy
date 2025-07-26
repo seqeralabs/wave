@@ -21,7 +21,7 @@ package io.seqera.wave.store.state
 import java.time.Duration
 
 import groovy.transform.CompileStatic
-import io.seqera.wave.encoder.EncodingStrategy
+import io.seqera.serde.encode.StringEncodingStrategy
 import io.seqera.wave.store.state.impl.StateProvider
 /**
  * Implements a generic store for ephemeral state data
@@ -31,11 +31,11 @@ import io.seqera.wave.store.state.impl.StateProvider
 @CompileStatic
 abstract class AbstractStateStore<V> implements StateStore<String,V> {
 
-    private EncodingStrategy<V> encodingStrategy
+    private StringEncodingStrategy<V> encodingStrategy
 
     private StateProvider<String,String> delegate
 
-    AbstractStateStore(StateProvider<String,String> provider, EncodingStrategy<V> encodingStrategy) {
+    AbstractStateStore(StateProvider<String,String> provider, StringEncodingStrategy<V> encodingStrategy) {
         this.delegate = provider
         this.encodingStrategy = encodingStrategy
     }
