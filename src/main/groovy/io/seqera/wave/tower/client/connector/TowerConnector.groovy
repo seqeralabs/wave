@@ -45,13 +45,13 @@ import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
 import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.tower.client.TowerClient
-import io.seqera.wave.util.ExponentialAttempt
+import io.seqera.util.retry.ExponentialAttempt
 import io.seqera.wave.util.JacksonHelper
 import io.seqera.wave.util.RegHelper
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
-import static io.seqera.wave.util.LongRndKey.rndHex
+import static io.seqera.random.LongRndKey.rndHex
 /**
  * Implements an abstract client that allows to connect Tower service either
  * via HTTP client or a WebSocket-based client
