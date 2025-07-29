@@ -25,6 +25,7 @@ import com.google.common.hash.Hashing
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.BlobCacheConfig
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.WaveLite
 import io.seqera.wave.service.builder.BuildRequest
@@ -55,6 +56,10 @@ class JobFactory {
     @Nullable
     private MirrorConfig mirrorConfig
 
+    @Inject
+    @Nullable
+    private BuildConfig buildConfig
+
     JobSpec transfer(String stateId) {
         JobSpec.transfer(
                 stateId,
@@ -64,34 +69,34 @@ class JobFactory {
         )
     }
 
-    JobSpec build(BuildRequest request) {
+    JobSpec build(BuildRequest request, String key) {
         JobSpec.build(
                 request.targetImage,
                 request.buildId.replace('_', '-'),
                 request.startTime,
                 request.maxDuration,
-                request.workDir
+                key
         )
     }
 
-    JobSpec scan(ScanRequest request) {
+    JobSpec scan(ScanRequest request, String key) {
         JobSpec.scan(
                 request.scanId,
                 request.scanId.replace('_', '-'),
                 request.creationTime,
                 scanConfig.timeout,
-                request.workDir
+                key
         )
     }
 
-    JobSpec mirror(MirrorRequest request) {
+    JobSpec mirror(MirrorRequest request, String key) {
         assert request.mirrorId.startsWith(MirrorRequest.ID_PREFIX)
         JobSpec.mirror(
                 request.targetImage,
                 request.mirrorId.replace('_', '-'),
                 request.creationTime,
                 mirrorConfig.maxDuration,
-                request.workDir
+                key
         )
     }
 

@@ -21,9 +21,11 @@ package io.seqera.wave.configuration
 import java.time.Duration
 
 import groovy.transform.CompileStatic
+import groovy.transform.Memoized
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.seqera.wave.util.BucketTokenizer
 import jakarta.inject.Singleton
 /**
  * Model mirror service config options
@@ -47,7 +49,7 @@ class MirrorConfig {
     @Value('${wave.mirror.failure.duration:50s}')
     Duration failureDuration
 
-    @Value('${wave.mirror.skopeoImage:`quay.io/skopeo/stable`}')
+    @Value('${wave.mirror.skopeoImage}')
     String skopeoImage
 
     @Value('${wave.mirror.retry-attempts:2}')
@@ -68,5 +70,24 @@ class MirrorConfig {
     @Value('${wave.mirror.k8s.resources.limits.memory}')
     @Nullable
     String limitsMemory
+
+    @Value('${wave.build.workspace}')
+    private String buildWorkspace
+
+    @Memoized
+    String getWorkspaceBucket() {
+        if( !buildWorkspace )
+            return null
+        final store = BucketTokenizer.from(buildWorkspace)
+        return store.scheme ? "${store.bucket}${store.path}".toString() : null
+    }
+
+    @Memoized
+    String getWorkspacePrefix() {
+        if( !buildWorkspace )
+            return null
+        final store = BucketTokenizer.from(buildWorkspace)
+        return store.scheme ? store.getKey() : null
+    }
 
 }

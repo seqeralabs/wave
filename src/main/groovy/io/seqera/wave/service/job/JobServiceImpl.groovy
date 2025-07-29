@@ -81,27 +81,27 @@ class JobServiceImpl implements JobService {
     }
 
     @Override
-    JobSpec launchBuild(BuildRequest request) {
+    JobSpec launchBuild(BuildRequest request, String key) {
         // create the unique job id for the build
-        final job = jobFactory.build(request)
+        final job = jobFactory.build(request, key)
         // launch the build job
         pendingQueue.submit(job)
         return job
     }
 
     @Override
-    JobSpec launchScan(ScanRequest request) {
+    JobSpec launchScan(ScanRequest request, String key) {
         // create the unique job id for the build
-        final job = jobFactory.scan(request)
+        final job = jobFactory.scan(request, key)
         // launch the scan job
         pendingQueue.submit(job)
         return job
     }
 
     @Override
-    JobSpec launchMirror(MirrorRequest request) {
+    JobSpec launchMirror(MirrorRequest request, String key) {
         // create the unique job id for the build
-        final job = jobFactory.mirror(request)
+        final job = jobFactory.mirror(request, key)
         // launch the scan job
         pendingQueue.submit(job)
         return job

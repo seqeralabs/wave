@@ -36,14 +36,16 @@ class ContainerScanStrategyTest extends Specification {
         given:
         def targetImage = "repository/scantool"
         def containerScanStrategy = Spy(ScanStrategy)
-        def outFile = Path.of('/some/out.json')
+        def outFile = '/some/out.json'
         def config = Mock(ScanConfig) { getTimeout() >> Duration.ofMinutes(100) }
         def platform = ContainerPlatform.DEFAULT
 
         when:
         def command = containerScanStrategy.scanCommand(targetImage, outFile, platform, config)
         then:
-        command == [ '--quiet',
+        command == [
+                     'trivy',
+                     '--quiet',
                      'image',
                      '--platform',
                      'linux/amd64',
@@ -60,7 +62,7 @@ class ContainerScanStrategyTest extends Specification {
         given:
         def targetImage = "repository/scantool"
         def containerScanStrategy = Spy(ScanStrategy)
-        def outFile = Path.of('/some/out.json')
+        def outFile = '/some/out.json'
         def platform = ContainerPlatform.DEFAULT
         def config = Mock(ScanConfig) {
             getTimeout() >> Duration.ofMinutes(100)
@@ -70,7 +72,9 @@ class ContainerScanStrategyTest extends Specification {
         when:
         def command = containerScanStrategy.scanCommand(targetImage, outFile, platform, config)
         then:
-        command == [ '--quiet',
+        command == [
+                     'trivy',
+                     '--quiet',
                      'image',
                      '--platform',
                      'linux/amd64',

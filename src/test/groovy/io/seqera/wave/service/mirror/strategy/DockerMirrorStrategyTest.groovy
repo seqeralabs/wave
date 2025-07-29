@@ -22,6 +22,7 @@ import spock.lang.Specification
 
 import java.nio.file.Path
 
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.MirrorConfig
 
 /**
@@ -30,21 +31,29 @@ import io.seqera.wave.configuration.MirrorConfig
  */
 class DockerMirrorStrategyTest extends Specification {
 
+    final testEnv =[
+            AWS_ACCESS_KEY_ID: 'test',
+            AWS_SECRET_ACCESS_KEY: 'test',
+    ]
+
     def 'should build docker command'  () {
         given:
         def config = new MirrorConfig(skopeoImage: 'skopeo:latest')
-        def strategy = new DockerMirrorStrategy(mirrorConfig: config)
+        def buildConfig = new BuildConfig(buildWorkspace: 's3://bucket/workspace')
+        def strategy = new DockerMirrorStrategy(mirrorConfig: config, buildConfig: buildConfig)
 
         when:
-        def result = strategy.mirrorCmd('foo', Path.of('/work/dir'), Path.of('/work/dir/creds.json'))
+        def result = strategy.mirrorCmd('foo', 'work/dir', '{"creds:"json"}', testEnv)
         then:
         result == ['docker',
                    'run',
                    '--detach',
+                   '--privileged',
                    '--name', 'foo',
-                   '-v', '/work/dir:/work/dir',
-                   '-v', '/work/dir/creds.json:/tmp/config.json:ro',
-                   '-e', 'REGISTRY_AUTH_FILE=/tmp/config.json',
+                   '-e', 'AWS_ACCESS_KEY_ID=test',
+                   '-e', 'AWS_SECRET_ACCESS_KEY=test',
+                   '-e', 'DOCKER_CONFIG=/fusion/s3/bucket/workspace/work/dir',
+                   '-e', 'REGISTRY_AUTH_FILE=/fusion/s3/bucket/workspace/work/dir/config.json',
                    'skopeo:latest'
         ]
 

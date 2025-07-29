@@ -401,7 +401,7 @@ class MoshiEncodingStrategyTest extends Specification {
                 '12345',
                 ts,
                 Duration.ofMinutes(1),
-                Path.of('/some/path') )
+                '/some/path' )
 
         when:
         def json = encoder.encode(build)

@@ -91,4 +91,10 @@ class StringUtils {
             path = '/' + path
         return base + path
     }
+
+    static redactAwsCredentials(String text) {
+        return text
+                .replaceAll(/(?i)AWS_ACCESS_KEY_ID=\S+/, 'AWS_ACCESS_KEY_ID=[REDACTED]')
+                .replaceAll(/(?i)AWS_SECRET_ACCESS_KEY=\S+/, 'AWS_SECRET_ACCESS_KEY=[REDACTED]')
+    }
 }

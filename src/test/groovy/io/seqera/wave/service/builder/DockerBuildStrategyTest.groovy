@@ -25,6 +25,7 @@ import java.nio.file.Path
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.ContainerPlatform
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -32,15 +33,26 @@ import io.seqera.wave.core.ContainerPlatform
 @MicronautTest
 class DockerBuildStrategyTest extends Specification {
 
+    final testEnv =[
+            AWS_ACCESS_KEY_ID: 'test',
+            AWS_SECRET_ACCESS_KEY: 'test',
+    ]
+
     def 'should get docker command' () {
         given:
         def ctx = ApplicationContext.run()
         and:
         def service = ctx.getBean(DockerBuildStrategy)
         and:
-        def work = Path.of('/work/foo')
+        def req = new BuildRequest(
+                containerId: '89fb83ce6ec8627b',
+                buildId: 'bd-89fb83ce6ec8627b_1',
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'repo:89fb83ce6ec8627b',
+                cacheRepository: 'reg.io/wave/build/cache' ,
+                configJson: '{"config": "json"}' )
         when:
-        def cmd = service.cmdForBuildkit('build-job-name', work, null, null)
+        def cmd = service.cmdForBuildkit('build-job-name', req, testEnv)
         then:
         cmd == ['docker',
                 'run',
@@ -48,13 +60,26 @@ class DockerBuildStrategyTest extends Specification {
                 '--name',
                 'build-job-name',
                 '--privileged',
-                '-v', '/work/foo:/work/foo',
                 '--entrypoint',
-                'buildctl-daemonless.sh',
-                'moby/buildkit:v0.21.1-rootless']
+                'sh',
+                '-e', 'TMPDIR=/tmp',
+                '-e', 'AWS_ACCESS_KEY_ID=test',
+                '-e', 'AWS_SECRET_ACCESS_KEY=test',
+                '-e', 'DOCKER_CONFIG=/home/user/bd-89fb83ce6ec8627b_1',
+                '--platform', 'linux/amd64',
+                'hrma017/buildkit:v0.22.0-rootless-2.4.13',
+                '-c']
 
         when:
-        cmd = service.cmdForBuildkit('build-job-name', work, Path.of('/foo/creds.json'), ContainerPlatform.of('arm64'))
+        req = new BuildRequest(
+                containerId: '89fb83ce6ec8627b',
+                buildId: 'bd-89fb83ce6ec8627b_1',
+                platform: ContainerPlatform.of('linux/arm64'),
+                targetImage: 'repo:89fb83ce6ec8627b',
+                cacheRepository: 'reg.io/wave/build/cache',
+                configJson: '{"config": "json"}' )
+        and:
+        cmd = service.cmdForBuildkit('build-job-name', req, testEnv)
         then:
         cmd == ['docker',
                 'run',
@@ -62,15 +87,24 @@ class DockerBuildStrategyTest extends Specification {
                 '--name',
                 'build-job-name',
                 '--privileged',
-                '-v', '/work/foo:/work/foo',
                 '--entrypoint',
-                'buildctl-daemonless.sh',
-                '-v', '/foo/creds.json:/home/user/.docker/config.json:ro',
+                'sh',
+                '-e', 'TMPDIR=/tmp',
+                '-e', 'AWS_ACCESS_KEY_ID=test',
+                '-e', 'AWS_SECRET_ACCESS_KEY=test',
+                '-e', 'DOCKER_CONFIG=/home/user/bd-89fb83ce6ec8627b_1',
                 '--platform', 'linux/arm64',
-                'moby/buildkit:v0.21.1-rootless']
+                'hrma017/buildkit:v0.22.0-rootless-2.4.13',
+                '-c']
 
         when:
-        cmd = service.cmdForBuildkit('build-job-name', work, Path.of('/foo/creds.json'), null)
+        req = new BuildRequest(
+                containerId: '89fb83ce6ec8627b',
+                buildId: 'bd-89fb83ce6ec8627b_1',
+                platform: ContainerPlatform.of('linux/arm64'),
+                targetImage: 'repo:89fb83ce6ec8627b',
+                cacheRepository: 'reg.io/wave/build/cache' )
+        cmd = service.cmdForBuildkit('build-job-name', req, testEnv)
         then:
         cmd == ['docker',
                 'run',
@@ -78,11 +112,14 @@ class DockerBuildStrategyTest extends Specification {
                 '--name',
                 'build-job-name',
                 '--privileged',
-                '-v', '/work/foo:/work/foo',
                 '--entrypoint',
-                'buildctl-daemonless.sh',
-                '-v', '/foo/creds.json:/home/user/.docker/config.json:ro',
-                'moby/buildkit:v0.21.1-rootless']
+                'sh',
+                '-e', 'TMPDIR=/tmp',
+                '-e', 'AWS_ACCESS_KEY_ID=test',
+                '-e', 'AWS_SECRET_ACCESS_KEY=test',
+                '--platform', 'linux/arm64',
+                'hrma017/buildkit:v0.22.0-rootless-2.4.13',
+                '-c']
 
         cleanup:
         ctx.close()
@@ -93,17 +130,14 @@ class DockerBuildStrategyTest extends Specification {
         def ctx = ApplicationContext.run()
         def service = ctx.getBean(DockerBuildStrategy)
         and:
-        def creds = Path.of('/work/creds.json')
-        and:
         def req = new BuildRequest(
                 containerId: '89fb83ce6ec8627b',
                 buildId: 'bd-89fb83ce6ec8627b_1',
-                workspace: Path.of('/work/foo'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'repo:89fb83ce6ec8627b',
                 cacheRepository: 'reg.io/wave/build/cache' )
         when:
-        def cmd = service.buildCmd('build-job-name', req, creds)
+        def cmd = service.buildCmd('build-job-name', req, testEnv)
         then:
         cmd == ['docker',
                 'run',
@@ -111,21 +145,25 @@ class DockerBuildStrategyTest extends Specification {
                 '--name',
                 'build-job-name',
                 '--privileged',
-                '-v', '/work/foo/bd-89fb83ce6ec8627b_1:/work/foo/bd-89fb83ce6ec8627b_1',
                 '--entrypoint',
-                'buildctl-daemonless.sh',
-                '-v', '/work/creds.json:/home/user/.docker/config.json:ro',
+                'sh',
+                '-e', 'TMPDIR=/tmp',
+                '-e', 'AWS_ACCESS_KEY_ID=test',
+                '-e', 'AWS_SECRET_ACCESS_KEY=test',
                 '--platform', 'linux/amd64',
-                'moby/buildkit:v0.21.1-rootless',
+                'hrma017/buildkit:v0.22.0-rootless-2.4.13',
+                '-c',
+                ['fusion cp -r /fusion/s3/nextflow-ci/wave-build/workspace/bd-89fb83ce6ec8627b_1 /home/user/bd-89fb83ce6ec8627b_1 &&',
+                'buildctl-daemonless.sh',
                 'build',
                 '--frontend',
                 'dockerfile.v0',
                 '--local',
-                'dockerfile=/work/foo/bd-89fb83ce6ec8627b_1',
+                'dockerfile=/home/user/bd-89fb83ce6ec8627b_1',
                 '--opt',
                 'filename=Containerfile',
                 '--local',
-                'context=/work/foo/bd-89fb83ce6ec8627b_1/context',
+                'context=/home/user/bd-89fb83ce6ec8627b_1/context',
                 '--output',
                 'type=image,name=repo:89fb83ce6ec8627b,push=true,oci-mediatypes=true',
                 '--opt',
@@ -133,7 +171,7 @@ class DockerBuildStrategyTest extends Specification {
                 '--export-cache',
                 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:89fb83ce6ec8627b,mode=max,ignore-error=true,oci-mediatypes=true',
                 '--import-cache',
-                'type=registry,ref=reg.io/wave/build/cache:89fb83ce6ec8627b' ]
+                'type=registry,ref=reg.io/wave/build/cache:89fb83ce6ec8627b'].join(" ") ]
 
         cleanup:
         ctx.close()
@@ -144,8 +182,6 @@ class DockerBuildStrategyTest extends Specification {
         def ctx = ApplicationContext.run()
         def service = ctx.getBean(DockerBuildStrategy)
         and:
-        def creds = Path.of('/work/creds.json')
-        and:
         def req = new BuildRequest(
                 containerId: 'd4869cc39b8d7d55',
                 buildId: 'bd-d4869cc39b8d7d55_1',
@@ -153,9 +189,10 @@ class DockerBuildStrategyTest extends Specification {
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'oras://repo:d4869cc39b8d7d55',
                 cacheRepository: 'reg.io/wave/build/cache',
-                format: BuildFormat.SINGULARITY  )
+                format: BuildFormat.SINGULARITY ,
+                configJson: '{"config": "json"}' )
         when:
-        def cmd = service.buildCmd('build-job-name', req, creds)
+        def cmd = service.buildCmd('build-job-name', req, testEnv)
         then:
         cmd == ['docker',
                 'run',
@@ -163,15 +200,13 @@ class DockerBuildStrategyTest extends Specification {
                 '--name',
                 'build-job-name',
                 '--privileged',
-                '--entrypoint', '',
-                '-v', '/work/foo/bd-d4869cc39b8d7d55_1:/work/foo/bd-d4869cc39b8d7d55_1',
-                '-v', '/work/creds.json:/root/.singularity/docker-config.json:ro',
-                '-v', '/work/singularity-remote.yaml:/root/.singularity/remote.yaml:ro',
+                '-e', 'AWS_ACCESS_KEY_ID=test',
+                '-e', 'AWS_SECRET_ACCESS_KEY=test',
                 '--platform', 'linux/amd64',
-                'public.cr.seqera.io/wave/singularity:v4.2.1-r4',
+                'hrma017/singularity:v4.3.1-r1-2.4.13',
                 'sh',
                 '-c',
-                'singularity build image.sif /work/foo/bd-d4869cc39b8d7d55_1/Containerfile && singularity push image.sif oras://repo:d4869cc39b8d7d55'
+                'fusion cp -r /fusion/s3/nextflow-ci/wave-build/workspace/bd-d4869cc39b8d7d55_1/. /home/builder/ && singularity build image.sif /home/builder/Containerfile && singularity push image.sif oras://repo:d4869cc39b8d7d55'
         ]
 
         cleanup:
@@ -183,8 +218,6 @@ class DockerBuildStrategyTest extends Specification {
         def ctx = ApplicationContext.run()
         def service = ctx.getBean(DockerBuildStrategy)
         and:
-        def creds = Path.of('/work/creds.json')
-        and:
         def req = new BuildRequest(
                 containerId: '9c68af894bb2419c',
                 buildId: 'bd-9c68af894bb2419c_1',
@@ -192,9 +225,9 @@ class DockerBuildStrategyTest extends Specification {
                 platform: ContainerPlatform.of('linux/arm64'),
                 targetImage: 'oras://repo:9c68af894bb2419c',
                 cacheRepository: 'reg.io/wave/build/cache',
-                format: BuildFormat.SINGULARITY )
+                format: BuildFormat.SINGULARITY)
         when:
-        def cmd = service.buildCmd('build-job-name', req, creds)
+        def cmd = service.buildCmd('build-job-name', req, testEnv)
         then:
         cmd == ['docker',
                 'run',
@@ -202,15 +235,13 @@ class DockerBuildStrategyTest extends Specification {
                 '--name',
                 'build-job-name',
                 '--privileged',
-                '--entrypoint', '',
-                '-v', '/work/foo/bd-9c68af894bb2419c_1:/work/foo/bd-9c68af894bb2419c_1',
-                '-v', '/work/creds.json:/root/.singularity/docker-config.json:ro',
-                '-v', '/work/singularity-remote.yaml:/root/.singularity/remote.yaml:ro',
+                '-e', 'AWS_ACCESS_KEY_ID=test',
+                '-e', 'AWS_SECRET_ACCESS_KEY=test',
                 '--platform', 'linux/arm64',
-                'public.cr.seqera.io/wave/singularity:v4.2.1-r4',
+                'hrma017/singularity:v4.3.1-r1-2.4.13',
                 'sh',
                 '-c',
-                'singularity build image.sif /work/foo/bd-9c68af894bb2419c_1/Containerfile && singularity push image.sif oras://repo:9c68af894bb2419c'
+                'fusion cp -r /fusion/s3/nextflow-ci/wave-build/workspace/bd-9c68af894bb2419c_1/. /home/builder/ && singularity build image.sif /home/builder/Containerfile && singularity push image.sif oras://repo:9c68af894bb2419c'
         ]
 
         cleanup:

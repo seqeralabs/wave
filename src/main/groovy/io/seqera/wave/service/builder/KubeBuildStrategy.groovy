@@ -18,8 +18,6 @@
 
 package io.seqera.wave.service.builder
 
-import java.nio.file.Path
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.openapi.ApiException
@@ -65,46 +63,18 @@ class KubeBuildStrategy extends BuildStrategy {
 
     @Override
     @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
-    void build(String jobName, BuildRequest req) {
-
-        final Path configFile = req.configJson ? req.workDir.resolve('config.json') : null
+    void build(String jobName, BuildRequest req, String key) {
 
         try {
             final buildImage = getBuildImage(req)
             final buildCmd = launchCmd(req)
             final timeout = req.maxDuration ?: buildConfig.defaultTimeout
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
-            k8sService.launchBuildJob(jobName, buildImage, buildCmd, req.workDir, configFile, timeout, selector)
+            k8sService.launchBuildJob(jobName, buildImage, buildCmd, req.buildId, req.configJson, timeout, selector)
         }
         catch (ApiException e) {
             throw new BadRequestException("Unexpected build failure - ${e.responseBody}", e)
         }
     }
 
-    protected String getBuildImage(BuildRequest buildRequest){
-        if( buildRequest.formatDocker() ) {
-            return buildConfig.buildkitImage
-        }
-
-        if( buildRequest.formatSingularity() ) {
-            return buildConfig.singularityImage
-        }
-
-        throw new IllegalArgumentException("Unexpected container platform: ${buildRequest.platform}")
-    }
-
-    List<String> singularityLaunchCmd(BuildRequest req) {
-        final result = new ArrayList(10)
-        result
-                << 'sh'
-                << '-c'
-                << """
-                  mkdir -p /home/builder/.singularity \
-                  && cp /singularity/docker-config.json /home/builder/.singularity/docker-config.json \
-                  && cp /singularity/remote.yaml /home/builder/.singularity/remote.yaml \
-                  && singularity build image.sif ${req.workDir}/Containerfile \
-                  && singularity push image.sif ${req.targetImage}
-                """.stripIndent().trim()
-        return result
-    }
 }
