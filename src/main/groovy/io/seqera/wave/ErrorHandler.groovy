@@ -36,7 +36,7 @@ import io.seqera.wave.exception.RegistryForwardException
 import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.exception.UnauthorizedException
 import io.seqera.wave.exception.WaveException
-import io.seqera.wave.util.LongRndKey
+import io.seqera.random.LongRndKey
 import io.seqera.wave.util.RegHelper
 import jakarta.inject.Singleton
 /**

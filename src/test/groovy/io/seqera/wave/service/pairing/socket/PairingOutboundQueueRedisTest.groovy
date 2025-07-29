@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023-2024, Seqera Labs
+ *  Copyright (c) 2023-2025, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.data.queue
+package io.seqera.wave.service.pairing.socket
 
 import spock.lang.Shared
 import spock.lang.Specification
@@ -27,17 +27,16 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 import io.micronaut.context.ApplicationContext
-import io.seqera.wave.service.data.queue.impl.RedisMessageQueue
-import io.seqera.wave.service.pairing.socket.PairingOutboundQueue
+import io.seqera.data.queue.impl.RedisMessageQueue
+import io.seqera.fixtures.redis.RedisTestContainer
 import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
-import io.seqera.wave.test.RedisTestContainer
+
 /**
- * Test class {@link AbstractMessageQueue} using a {@link RedisMessageQueue}
  *
- * @author Jordi Deu-Pons <jordi@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class AbstractMessageQueueRedisTest extends Specification implements RedisTestContainer {
+class PairingOutboundQueueRedisTest extends Specification implements RedisTestContainer {
 
     @Shared
     ApplicationContext context
