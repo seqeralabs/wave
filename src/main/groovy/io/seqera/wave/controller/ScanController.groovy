@@ -59,7 +59,7 @@ class ScanController {
 
     @Produces(MediaType.TEXT_PLAIN)
     @Get(value="/v1alpha1/scans/{scanId}/spdx")
-    HttpResponse<StreamedFile> getCondaLock(String scanId){
+    HttpResponse<StreamedFile> getSbomSPDX(String scanId){
         final report = scanService.fetchReportStream(scanId, ScanType.Spdx)
         return report
                 ? HttpResponse.ok(report)
