@@ -42,7 +42,7 @@ import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.tower.PlatformId
-import io.seqera.wave.util.LongRndKey
+import io.seqera.random.LongRndKey
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_WORKSPACE

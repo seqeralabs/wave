@@ -22,7 +22,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
-import io.seqera.wave.test.RedisTestContainer
+import io.seqera.fixtures.redis.RedisTestContainer
 import redis.clients.jedis.Jedis
 /**
  * MetricsCounter tests based on Redis

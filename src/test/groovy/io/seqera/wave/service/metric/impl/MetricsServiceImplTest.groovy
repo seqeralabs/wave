@@ -24,9 +24,9 @@ import spock.lang.Unroll
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
+import io.seqera.fixtures.redis.RedisTestContainer
 import io.seqera.wave.service.counter.impl.LocalCounterProvider
 import io.seqera.wave.service.metric.MetricsCounterStore
-import io.seqera.wave.test.RedisTestContainer
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 
