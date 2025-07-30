@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.scan
 
+import java.nio.file.Files
 import java.nio.file.Path
 
 import groovy.transform.CompileStatic
@@ -63,6 +64,7 @@ class KubeScanStrategy extends ScanStrategy {
     void scanContainer(String jobName, ScanEntry entry) {
         log.info("Launching container scan job: $jobName for entry: ${entry}")
         try{
+            Files.createDirectories(entry.workDir)
             final Path configFile = entry.configJson ? entry.workDir.resolve('config.json') : null
             final command = trivyCommand(entry.containerImage, entry.workDir, entry.platform, scanConfig)
             k8sService.launchScanJob(jobName, scanConfig.scanImage, command, entry.workDir, configFile, scanConfig)
