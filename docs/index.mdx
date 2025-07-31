@@ -1,5 +1,5 @@
 ---
-title: Wave overview
+title: Wave
 ---
 
 Containers are an essential part of modern data analysis pipelines in bioinformatics. They encapsulate applications and dependencies in portable, self-contained packages that can be easily distributed across diverse computing environments. Containers are also key to enabling predictable and reproducible scientific results. However, workflows can comprise dozens of distinct container images. Pipeline developers must manage and maintain these container images and ensure that their functionality precisely aligns with the requirements of every pipeline task, creating unnecessary friction in the maintenance and deployment of data pipelines.
@@ -8,17 +8,13 @@ Wave solves this problem by provisioning containers on-demand during the pipelin
 
 To get started with Wave:
 
-1. See the [Get started][started] guide.
+1. See the [Get started][started] guides.
 1. Learn about [Nextflow integration][nf].
 1. Learn about the [Wave CLI][cli].
 
 :::note
 Wave is also available as hosted service on [Seqera Platform](https://cloud.seqera.io/). For Seqera Enterprise customers, a licensed self-hosted Wave solution is also available. Contact us [contact us](https://seqera.io/contact-us/) for more information.
 :::
-
-[started]: ./get-started.mdx
-[nf]: ./nextflow.mdx
-[cli]: ./cli/index.mdx
 
 ## Wave features
 
@@ -95,3 +91,7 @@ However, this can result in an increased overhead when pulling container images 
 
 ### Wave Lite
 Wave can be used in [lite](./wave-lite.mdx) mode intended for augmentation user case, where user do not require K8s to run wave.
+
+[started]: ./get-started/index.mdx
+[nf]: ./nextflow.mdx
+[cli]: ./cli/index.mdx
