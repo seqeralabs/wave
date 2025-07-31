@@ -129,6 +129,6 @@ class ContainerScanStrategyTest extends Specification {
         when:
         def command = containerScanStrategy.trivyCommand(targetImage, workDir, platform, config)
         then:
-        command == [ '-c', 'trivy --quiet image --platform linux/amd64 --timeout 100m --format json --output /work/dir/report.json --severity low,high repository/scantool && trivy --quiet image --platform linux/amd64 --timeout 100m --format spdx-json --output /work/dir/spdx.json repository/scantool' ]
+        command == [ 'trivy --quiet image --platform linux/amd64 --timeout 100m --format json --output /work/dir/report.json --severity low,high repository/scantool && trivy --quiet image --platform linux/amd64 --timeout 100m --format spdx-json --output /work/dir/spdx.json repository/scantool' ]
     }
 }
