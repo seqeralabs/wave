@@ -54,7 +54,7 @@ class DockerScanStrategy extends ScanStrategy {
         final Path configFile = entry.configJson ? entry.workDir.resolve('config.json') : null
         // create the launch command
         final dockerCommand = dockerWrapper(jobName, entry.workDir, configFile, scanConfig.environment)
-        final command = dockerCommand + scanConfig.scanImage + trivyCommand(entry.containerImage, entry.workDir, entry.platform, scanConfig)
+        final command = dockerCommand + scanConfig.scanImage + "-c" + trivyCommand(entry.containerImage, entry.workDir, entry.platform, scanConfig)
 
         //launch scanning
         log.debug("Container scan command: ${command.join(' ')}")

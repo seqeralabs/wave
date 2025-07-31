@@ -65,6 +65,6 @@ abstract class ScanStrategy {
         cmd.add("&&")
         // the SBOM spdx scan
         cmd.addAll(scanCommand(containerImage, workDir, platform, scanConfig, ScanType.Spdx) )
-        return List.of("-c", cmd.join(' '))
+        return List.of(cmd.join(' '))
     }
 }
