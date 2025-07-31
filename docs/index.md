@@ -16,9 +16,9 @@ To get started with Wave:
 Wave is also available as hosted service on [Seqera Platform](https://cloud.seqera.io/). For Seqera Enterprise customers, a licensed self-hosted Wave solution is also available. Contact us [contact us](https://seqera.io/contact-us/) for more information.
 :::
 
-[started]: ./get-started.mdx
-[nf]: ./nextflow.mdx
-[cli]: ./cli/index.mdx
+[started]: ./get-started
+[nf]: ./nextflow
+[cli]: ./cli/index
 
 ## Wave features
 
@@ -28,13 +28,13 @@ Wave is also available as hosted service on [Seqera Platform](https://cloud.seqe
 
 Wave integrates with [Seqera Platform credentials management][private] enabling seamless access and publishing to private registries.
 
-[private]: ./nextflow.mdx#access-private-container-repositories
+[private]: ./nextflow#access-private-container-repositories
 
 #### Seqera Containers - The community container registry
 
 [Seqera Containers] is a free to use service operated for the community by Seqera.
 
-It uses Wave to build images from Conda / PyPI packages on demand, either through the [web interface](https://seqera.io/containers/) or using the [Wave CLI](./cli/index.mdx) / [Nextflow integration](./nextflow.mdx).
+It uses Wave to build images from Conda / PyPI packages on demand, either through the [web interface](https://seqera.io/containers/) or using the [Wave CLI](./cli/index) / [Nextflow integration](./nextflow).
 
 These images are cached and hosted permanently, being served through a [Docker Distribution][docker] registry and hosted on AWS infrastructure. Images are cached and served via Cloudflare CDN.
 
@@ -52,14 +52,14 @@ Seqera Containers does not work with custom container files, augmentation, or au
 Wave offers a flexible approach to container image management. It allows you to [dynamically add custom layers][augment] to existing docker images, creating new images tailored to your specific needs.
 Any existing container can be extended without rebuilding it. You can add user-provided content such as custom scripts and logging agents, providing greater flexibility in the container’s configuration.
 
-[augment]: ./provisioning.mdx#container-augmentation
+[augment]: ./provisioning#container-augmentation
 
 ### Conda-based containers
 
 Package management systems such as Conda and Bioconda simplify the installation of scientific software.
 Wave enables dynamic provisioning of container images from any Conda or Bioconda recipe. Just [declare the Conda packages][conda] in your Nextflow pipeline and Wave will assemble the required container.
 
-[conda]: ./nextflow.mdx#build-conda-based-containers
+[conda]: ./nextflow#build-conda-based-containers
 
 ### Singularity containers
 
@@ -71,7 +71,7 @@ The advantage of this approach is that Singularity and Apptainer engines can pul
 Considering the Singularity image format's peculiarities, Wave's freeze mode is mandatory when provisioning Singularity images.
 :::
 
-[singularity]: ./nextflow.mdx#build-singularity-containers
+[singularity]: ./nextflow#build-singularity-containers
 
 ### Deploying containers across multi-clouds
 

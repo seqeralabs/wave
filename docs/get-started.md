@@ -375,6 +375,6 @@ Reneechester, AK 75644
 [Podman]: https://podman.io/docs/installation
 [Docker Desktop]: https://www.docker.com/products/docker-desktop/
 
-[wave-build]: ./cli/reference.mdx#build-a-container
-[nf-config]: ./nextflow.mdx#configuration-options
-[wave-cli]: ./cli/index.mdx
+[wave-build]: ./cli/reference#build-a-container
+[nf-config]: ./nextflow#configuration-options
+[wave-cli]: ./cli/index
