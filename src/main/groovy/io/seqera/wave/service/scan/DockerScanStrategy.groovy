@@ -52,12 +52,9 @@ class DockerScanStrategy extends ScanStrategy {
         log.info("Launching container scan job: $jobName for entry: $entry}")
         // config (docker auth) file name
         final Path configFile = entry.configJson ? entry.workDir.resolve('config.json') : null
-        // outfile file name
-        final reportFile = entry.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
         // create the launch command
         final dockerCommand = dockerWrapper(jobName, entry.workDir, configFile, scanConfig.environment)
-        final trivyCommand = List.of(scanConfig.scanImage) + scanCommand(entry.containerImage, reportFile, entry.platform, scanConfig)
-        final command = dockerCommand + trivyCommand
+        final command = dockerCommand + scanConfig.scanImage + "-c" + trivyCommand(entry.containerImage, entry.workDir, entry.platform, scanConfig)
 
         //launch scanning
         log.debug("Container scan command: ${command.join(' ')}")
@@ -77,7 +74,9 @@ class DockerScanStrategy extends ScanStrategy {
         wrapper.add('--detach')
         wrapper.add('--name')
         wrapper.add(jobName)
-
+        // reset the entrypoint
+        wrapper.add('--entrypoint')
+        wrapper.add('/bin/sh')
         // scan work dir
         wrapper.add('-w')
         wrapper.add(scanDir.toString())

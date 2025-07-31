@@ -33,6 +33,7 @@ import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
+import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.runtime.server.EmbeddedServer
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
@@ -52,6 +53,7 @@ import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanEntry
+import io.seqera.wave.service.scan.ScanType
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
@@ -360,7 +362,9 @@ class ViewControllerTest extends Specification {
 
     def 'should create binding' () {
         given:
-        def controller = new ViewController(serverUrl: serverUrl, buildLogService: buildLogService)
+        def scanService = Mock(ContainerScanService)
+        and:
+        def controller = new ViewController(serverUrl: serverUrl, buildLogService: buildLogService, scanService:scanService)
         and:
         def result = new WaveScanRecord(
                 '12345',
@@ -380,6 +384,8 @@ class ViewControllerTest extends Specification {
         when:
         def binding = controller.makeScanViewBinding(result)
         then:
+        scanService.fetchReportStream(result.id, ScanType.Spdx) >> Mock(StreamedFile)
+        and:
         binding.scan_id == '12345'
         binding.scan_container_image == 'docker.io/some:image'
         binding.scan_time == formatTimestamp(result.startTime)
@@ -387,6 +393,7 @@ class ViewControllerTest extends Specification {
         binding.scan_succeeded
         binding.scan_exitcode == 0
         binding.scan_logs == "Some scan logs"
+        binding.scan_sbom_spdx_url == 'http://foo.com/v1alpha1/scans/12345/spdx'
         binding.vulnerabilities == [new ScanVulnerability(id:'cve-1', severity:'HIGH', title:'test vul', pkgName:'testpkg', installedVersion:'1.0.0', fixedVersion:'1.1.0', primaryUrl:'http://vul/cve-1')]
         binding.build_id == 'bd-12345'
         binding.build_url == 'http://foo.com/view/builds/bd-12345'
