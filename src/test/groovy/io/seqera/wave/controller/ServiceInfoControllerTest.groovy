@@ -74,7 +74,7 @@ class ServiceInfoControllerTest extends Specification {
 
         then:
         resp.status == HttpStatus.MOVED_PERMANENTLY // Expect 301
-        resp.headers.get("Location") == "/openapi/" // Validate redirect location
+        resp.headers.get("Location") == "/openapi/index.html" // Validate redirect location
     }
 
     def 'should get favicon' () {

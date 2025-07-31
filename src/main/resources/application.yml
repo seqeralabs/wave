@@ -32,6 +32,10 @@ micronaut:
         paths: 'classpath:io/seqera/wave/assets'
         mapping: '/assets/**'
         enabled: true
+      webjars:
+        paths: 'classpath:META-INF/resources/webjars'
+        mapping: '/webjars/**'
+        enabled: true
 # http client configuration
 # https://docs.micronaut.io/latest/guide/configurationreference.html#io.micronaut.http.client.DefaultHttpClientConfiguration
   http:
