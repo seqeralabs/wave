@@ -78,7 +78,7 @@ class K8sJobOperation implements JobOperation {
         final exitCode = pod
                 .status
                 ?.containerStatuses
-                ?.first
+                ?.first()
                 ?.state
                 ?.terminated
                 ?.exitCode
