@@ -74,7 +74,7 @@ class K8SJobOperationTest extends Specification {
         given:
         def job = Mock(JobSpec)
         and:
-        def status = new V1PodStatus(phase: "Failed")
+        def status = new V1PodStatus(phase: "Failed", containerStatuses: [new V1ContainerStatus( state: new V1ContainerState(terminated: new V1ContainerStateTerminated(exitCode: 255)))])
         def pod = new V1Pod(metadata: [name: job.operationName], status: status)
         and:
         k8sService.getLatestPodForJob(job.operationName) >> pod
