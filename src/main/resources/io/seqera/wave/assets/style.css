@@ -1,0 +1,317 @@
+* {
+    box-sizing: border-box;
+}
+
+a{
+    color: #007bff;
+}
+
+a::after {
+    content: '';
+    display: inline-block;
+    margin-left: 2px;
+    width: 14px;
+    height: 14px;
+    background-image: url("data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M10.0002%205H8.2002C7.08009%205%206.51962%205%206.0918%205.21799C5.71547%205.40973%205.40973%205.71547%205.21799%206.0918C5%206.51962%205%207.08009%205%208.2002V15.8002C5%2016.9203%205%2017.4801%205.21799%2017.9079C5.40973%2018.2842%205.71547%2018.5905%206.0918%2018.7822C6.5192%2019%207.07899%2019%208.19691%2019H15.8031C16.921%2019%2017.48%2019%2017.9074%2018.7822C18.2837%2018.5905%2018.5905%2018.2839%2018.7822%2017.9076C19%2017.4802%2019%2016.921%2019%2015.8031V14M20%209V4M20%204H15M20%204L13%2011%22%20stroke%3D%22%23007bff%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    vertical-align: middle;
+}
+
+body {
+    font-size: 14px;
+    margin: 0;
+    padding: 0;
+    background: rgba(255,255,255,1);
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.container {
+    width: 100%;
+    max-width: 1000px;
+    margin: 60px auto 32px;
+    padding: 32px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.header-section {
+    margin-bottom: 40px;
+}
+
+.main-title {
+    color: rgba(36,36,36,1);
+    font-family: 'SF Pro Display', sans-serif;
+    font-weight: 500;
+    font-size: 36px;
+    margin: 0 0 16px 0;
+    text-align: left;
+}
+
+.status-alert {
+    background: rgba(229,245,236,1);
+    padding: 16px;
+    border-radius: 4px;
+    margin: 16px 0;
+    position: relative;
+}
+
+.status-alert.error {
+    background: rgba(242, 222, 222, 1);
+    color: rgba(169, 68, 66, 1);
+}
+
+.status-alert.progress {
+    background: rgba(217, 237, 247, 1);
+    color: rgba(49, 112, 143, 1);
+}
+
+.status-message {
+    color: rgba(36,36,36,1);
+    font-family: 'SF Pro Display', sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    margin: 0;
+    padding-left: 40px;
+}
+
+.status-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+}
+
+.lds-dual-ring {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+}
+
+.lds-dual-ring:after {
+    content: " ";
+    display: block;
+    width: 16px;
+    height: 16px;
+    margin: 2px;
+    border-radius: 50%;
+    border: 3px solid #3c763d;
+    border-color: #3c763d transparent #3c763d transparent;
+    animation: lds-dual-ring 1.2s linear infinite;
+}
+
+@keyframes lds-dual-ring {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.content-section {
+    margin-bottom: 40px;
+}
+
+.section-title {
+    color: rgba(36,36,36,1);
+    font-family: 'SF Pro Display', sans-serif;
+    font-weight: 500;
+    font-size: 18px;
+    margin: 0 0 8px 0;
+}
+
+table {
+    width: 100%;
+    margin: 8px 0;
+    border-collapse: collapse;
+    border: none;
+}
+
+tr {
+    border: none;
+}
+
+td {
+    padding: 8px 0;
+    border: none;
+    vertical-align: middle;
+}
+
+td:first-child {
+    width: 152px;
+    color: rgba(36,36,36,1);
+    font-family: 'SF Pro Display', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+td:last-child {
+    color: rgba(36,36,36,1);
+    font-family: 'SF Pro Display', sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    word-break: break-all;
+}
+
+.code-section {
+    margin: 8px 0;
+    position: relative;
+}
+
+.code-container {
+    background: rgba(247,247,247,1);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+
+.code-content {
+    padding: 16px;
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 400px;
+}
+
+.code-text {
+    color: rgba(22,15,38,1);
+    font-family: 'Courier', monospace;
+    font-weight: 400;
+    font-size: 14px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.build-logs .code-content {
+    background: rgba(247,247,247,1);
+}
+
+.build-logs .code-text {
+    color: rgba(22,15,38,1);
+}
+
+.code-actions {
+    position: absolute;
+    top: 5px;
+    right: 15px;
+    display: flex;
+    gap: 5px;
+}
+
+.action-btn {
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 4px;
+    padding: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-btn:hover {
+    background: rgba(255, 255, 255, 1);
+}
+
+.build-logs .action-btn {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(221, 223, 223, 1);
+}
+
+.build-logs .action-btn:hover {
+    background: rgba(255, 255, 255, 1);
+}
+
+.footer-divider {
+    width: 100%;
+    height: 1px;
+    background: rgba(221,222,222,1);
+    margin: 40px 0 24px 0;
+}
+
+.footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.footer-text {
+    color: rgba(145,147,147,1);
+    font-family: 'SF Pro Display', sans-serif;
+    font-weight: 400;
+    font-size: 12px;
+    text-align: right;
+    line-height: 1.5;
+}
+
+.footer-text a {
+    color: rgba(145,147,147,1);
+    text-decoration: none;
+}
+
+.footer-text a:hover {
+    text-decoration: underline;
+}
+
+.header-bar {
+    width: 100%;
+    height: 60px;
+    background: rgba(247,247,247,1);
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.generated-by {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.logo-brand {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.divider-x {
+    color: rgba(36,36,36,1);
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 12px;
+}
+
+.truncated-message {
+    margin-top: 15px;
+    font-size: 14px;
+}
+
+.truncated-message a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.truncated-message a:hover {
+    text-decoration: underline;
+}
+
+a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
