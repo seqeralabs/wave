@@ -28,7 +28,7 @@ body {
 
 .container {
     width: 100%;
-    max-width: 1000px;
+    max-width: 50%;
     margin: 60px auto 32px;
     padding: 32px;
     background: white;
@@ -268,16 +268,13 @@ td:last-child {
     justify-content: center;
 }
 
-.generated-by {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
 .logo-container {
     display: flex;
-    align-items: center;
     gap: 8px;
+    width: 100%;
+    max-width: 50%;
+    justify-content: flex-start;
+    align-items: center;
 }
 
 .logo-brand {
