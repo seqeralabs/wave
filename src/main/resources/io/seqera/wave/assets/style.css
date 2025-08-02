@@ -28,7 +28,7 @@ body {
 
 .container {
     width: 100%;
-    max-width: 50%;
+    max-width: 1000px;
     margin: 60px auto 32px;
     padding: 32px;
     background: white;
@@ -272,7 +272,7 @@ td:last-child {
     display: flex;
     gap: 8px;
     width: 100%;
-    max-width: 50%;
+    max-width: 1000px;
     justify-content: flex-start;
     align-items: center;
 }
