@@ -312,29 +312,51 @@ a {
 a:hover {
     text-decoration: underline;
 }
+
 .content-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 12px;
     margin-top: 16px;
 }
+
 .-table th,
 .content-table td {
     border: 1px solid #dcdcdc;
     padding: 8px;
     text-align: left;
 }
+
 .content-table th {
     font-weight: 500;
     border: none;
     border-bottom: 2px solid #333333;
+    text-align: left;
 }
+
 .content-table tbody tr:nth-child(even) {
     background-color: #f9f9f9;
 }
+
 .content-table tbody tr:nth-child(odd) {
     background-color: #ffffff;
 }
+
 .content-table .nowrap {
     white-space: nowrap;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.running-spinner {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    border-top: 2px solid #0066cc;
+    border-right: 2px solid #0066cc;
+    animation: spin 1s linear infinite;
 }
