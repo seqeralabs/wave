@@ -205,7 +205,7 @@ class ViewController {
                 final bind = new HashMap(20)
                 bind.build_id = result.buildId
                 bind.build_digest = result.digest
-                bind.scan_status = getStatus(result)
+                bind.build_status = getStatus(result)
                 bind.build_success = getStatus(result) == "SUCCEEDED"
                 bind.build_failed = getStatus(result) == "FAILED"
                 bind.build_in_progress = getStatus(result) == "IN PROGRESS"
@@ -419,7 +419,7 @@ class ViewController {
             for (def result : results) {
                 final bind = new HashMap(20)
                 bind.scan_id = result.id
-                binding.scan_status = result.status
+                bind.scan_status = result.status
                 bind.scan_success = result.status == ScanEntry.SUCCEEDED
                 bind.scan_failed = result.status == ScanEntry.FAILED
                 bind.scan_pending = result.status == ScanEntry.PENDING

@@ -85,7 +85,7 @@ class ScanConfig {
     @Value('${wave.scan.failure.duration:30m}')
     Duration failureDuration
 
-    @Value('${wave.scan.id.duration:7d}')
+    @Value('${wave.scan.id.duration:60s}')
     Duration scanIdDuration
 
     @Nullable
