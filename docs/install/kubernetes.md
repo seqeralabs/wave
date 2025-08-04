@@ -6,7 +6,7 @@ Wave enables you to provision container images on-demand, removing the need to b
 
 This installation guide covers Wave in Lite mode. Wave Lite includes only container augmentation and inspection capabilities, and enables the use of Fusion file system in Nextflow pipelines.
 
-Wave's full build capabilities require specific integrations with Kubernetes and AWS EFS Storage, making EKS & AWS a hard dependency for fully-featured deployments. The following Wave features are **not** available in this configuration:
+Wave's full build capabilities require specific integrations with Kubernetes and AWS EFS Storage, making EKS and AWS a hard dependency for fully-featured deployments. The following Wave features are **not** available in this configuration:
 
 - **Container Freeze**
 - **Container Build service** 
