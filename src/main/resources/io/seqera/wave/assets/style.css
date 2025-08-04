@@ -320,6 +320,15 @@ a:hover {
     margin-top: 16px;
 }
 
+.content-table td:first-child,
+.content-table th:first-child {
+    border-left: none;
+}
+
+.content-table td:last-child,
+.content-table th:last-child {
+    border-right: none;
+}
 .-table th,
 .content-table td {
     border: 1px solid #dcdcdc;
