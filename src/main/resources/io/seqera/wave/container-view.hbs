@@ -10,21 +10,6 @@
     <link href="/assets/style.css" rel="stylesheet">
     <script src="/assets/copy.js"></script>
     <style>
-        .action-btn {
-            background: rgba(255, 255, 255, 0.9);
-            border: 1px solid rgba(221, 223, 223, 1);
-            border-radius: 4px;
-            padding: 8px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .action-btn:hover {
-            background: rgba(255, 255, 255, 1);
-        }
         .admin-section {
             font-family: sans-serif;
         }
@@ -166,20 +151,48 @@
         <table>
             <tr>
                 <td>Container image</td>
-                <td>{{source_container_image}}</td>
+                <td>
+                    {{source_container_image}}
+                    <button class="action-btn" onclick="copyToClipboard(`{{source_container_image}}`, this)" title="Copy container image">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
+                        </svg>
+                    </button>
+                </td>
             </tr>
             <tr>
                 <td>Container digest</td>
-                <td>{{source_container_digest}}</td>
+                <td>
+                    {{source_container_digest}}
+                    <button class="action-btn" onclick="copyToClipboard(`{{source_container_digest}}`, this)" title="Copy digest">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
+                        </svg>
+                    </button>
+                </td>
             </tr>
             {{#if wave_container_show}}
                 <tr>
                     <td>Wave image</td>
-                    <td>{{wave_container_image}}</td>
+                    <td>
+                        {{wave_container_image}}
+                        <button class="action-btn" onclick="copyToClipboard(`{{wave_container_image}}`, this)" title="Copy container image">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
+                                <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
+                            </svg>
+                        </button>
+                    </td>
                 </tr>
                 <tr>
                     <td>Wave digest</td>
-                    <td>{{wave_container_digest}}</td>
+                    <td>
+                        {{wave_container_digest}}
+                        <button class="action-btn" onclick="copyToClipboard(`{{wave_container_digest}}`, this)" title="Copy digest">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
+                                <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
+                            </svg>
+                        </button>
+                    </td>
                 </tr>
             {{/if}}
             <tr>
