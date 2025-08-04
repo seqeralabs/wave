@@ -507,6 +507,7 @@ class ViewController {
         binding.scan_succeeded = result.status == ScanEntry.SUCCEEDED
         binding.scan_exitcode = result.exitCode
         binding.scan_logs = result.logs
+        binding.scan_log_url = result.logs ? "$serverUrl/v1alpha1/scans/${result.id}/logs" : null
         // build info
         binding.build_id = result.buildId
         binding.build_url = result.buildId ? "$serverUrl/view/builds/${result.buildId}" : null

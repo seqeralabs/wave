@@ -312,29 +312,29 @@ a {
 a:hover {
     text-decoration: underline;
 }
-.vulnerabilities-table {
+.content-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 12px;
     margin-top: 16px;
 }
-.vulnerabilities-table th,
-.vulnerabilities-table td {
+.-table th,
+.content-table td {
     border: 1px solid #dcdcdc;
     padding: 8px;
     text-align: left;
 }
-.vulnerabilities-table th {
+.content-table th {
     font-weight: 500;
     border: none;
     border-bottom: 2px solid #333333;
 }
-.vulnerabilities-table tbody tr:nth-child(even) {
+.content-table tbody tr:nth-child(even) {
     background-color: #f9f9f9;
 }
-.vulnerabilities-table tbody tr:nth-child(odd) {
+.content-table tbody tr:nth-child(odd) {
     background-color: #ffffff;
 }
-.vulnerabilities-table .nowrap {
+.content-table .nowrap {
     white-space: nowrap;
 }
