@@ -26,10 +26,11 @@ Before installing Wave, you require the following infrastructure components:
 The minimum system requirements for self-hosted Wave in Docker Compose are:
 
 - Current, supported versions of **Docker Engine** and **Docker Compose**.
-- **EC2 instance**: `m5a.2xlarge` or greater:
+- Compute instance minimum requirements:
   - **Memory**: 32 GB RAM available to be used by the Wave application on the host system. 
   - **CPU**: 8 CPU cores available on the host system. 
   - **Storage**: 10 GB minimum, in addition to sufficient disk space for your container images and temporary files.
+  - For example, in AWS EC2, `m5a.2xlarge` or greater
 - **Network**: Connectivity to your PostgreSQL and Redis instances.  
 
 ## Database configuration
@@ -159,8 +160,7 @@ services:
       # Bind to the host on 9100 vs 9090  
       - "9100:9090"
     environment:
-      - MICRONAUT_ENVIRONMENTS=lite,rate-limit,redis,postgres,prometheus
-      - WAVE_JVM_OPTS=-XX:+UseG1GC -Xms512m -Xmx850m -XX:MaxDirectMemorySize=100m -Dio.netty.maxDirectMemory=0 -Djdk.httpclient.keepalive.timeout=10 -Djdk.tracePinnedThreads=short -Djdk.traceVirtualThreadInThreadDump=full
+      - MICRONAUT_ENVIRONMENTS=lite,redis,postgres
     volumes:
       - ./config/wave-config.yml:/work/config.yml:ro
     deploy:

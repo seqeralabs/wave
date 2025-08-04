@@ -4,9 +4,9 @@ title: Kubernetes installation
 
 Wave enables you to provision container images on-demand, removing the need to build and upload them manually to a container registry. Wave can can provision both disposable containers that are only accessible for a short period, and regular registry-persisted container images.
 
-This installation guide covers Wave in Lite mode. Wave Lite includes only container augmentation and inspection capabilities, and enables the use of Fusion file system in Nextflow pipelines.
+This installation guide covers Wave in Lite mode. Wave Lite provides container augmentation and inspection capabilities on AWS, Azure, and GCP cloud deployments, and enables the use of Fusion file system in Nextflow pipelines.
 
-Wave's full build capabilities require specific integrations with Kubernetes and AWS EFS Storage, making EKS and AWS a hard dependency for fully-featured deployments. The following Wave features are **not** available in this configuration:
+The following Wave features are **not** available in Lite configuration:
 
 - **Container Freeze**
 - **Container Build service** 
@@ -15,7 +15,7 @@ Wave's full build capabilities require specific integrations with Kubernetes and
 - **Container blobs caching**
 
 :::info
-After you have configured a base Wave installation with this guide, see [Configuring Wave Build](./configuring-wave-build.md) to extend your installation to support build capabilities.
+Wave's full build capabilities require specific integrations with Kubernetes and AWS EFS Storage, making EKS and AWS a hard dependency for fully-featured deployments. After you have configured a base Wave Lite installation on AWS with this guide, see [Configuring Wave Build](./configuring-wave-build.md) to extend your installation to support build capabilities.
 :::
  
 ## Prerequisites
@@ -121,7 +121,7 @@ metadata:
   labels:
     app: wave-cfg
 data:
-  config.yml:
+  config.yml: |
     wave:
       # Build service configuration - disabled for Wave base installation
       build:
@@ -217,8 +217,6 @@ spec:
           env:
             - name: MICRONAUT_ENVIRONMENTS
               value: "postgres,redis,lite"
-            - name: WAVE_JVM_OPTS
-              value: '-XX:+UseG1GC -Xms512m -Xmx850m -XX:MaxDirectMemorySize=100m -Dio.netty.maxDirectMemory=0 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/efs/wave/dump/java-$(POD_NAME).hprof -Djdk.httpclient.keepalive.timeout=10 -Djdk.tracePinnedThreads=short -Djdk.traceVirtualThreadInThreadDump=full'
           resources:
             requests:
               memory: "4000Mi"
