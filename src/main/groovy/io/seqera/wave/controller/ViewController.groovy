@@ -205,6 +205,9 @@ class ViewController {
                 final bind = new HashMap(20)
                 bind.build_id = result.buildId
                 bind.build_digest = result.digest
+                bind.build_success = getStatus(result) == "SUCCEEDED"
+                bind.build_failed = getStatus(result) == "FAILED"
+                bind.build_in_progress = getStatus(result) == "IN PROGRESS"
                 bind.build_status = getStatus(result)
                 bind.build_time = formatTimestamp(result.startTime, result.offsetId) ?: '-'
                 binding.add(bind)
