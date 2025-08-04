@@ -126,6 +126,7 @@ class ViewController {
         binding.mirror_in_progress = result.exitCode == null
         binding.mirror_exitcode = result.exitCode ?: null
         binding.mirror_logs = result.exitCode ? result.logs : null
+        binding.mirror_log_url = result.logs ? "$serverUrl/v1alpha1/mirrors/${result.mirrorId}/logs" : null
         binding.mirror_time = formatTimestamp(result.creationTime, result.offsetId) ?: '-'
         binding.mirror_duration = formatDuration(result.duration) ?: '-'
         binding.mirror_source_image = result.sourceImage
