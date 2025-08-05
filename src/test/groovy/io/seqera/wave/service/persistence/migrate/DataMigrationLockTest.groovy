@@ -25,7 +25,7 @@ import spock.lang.Timeout
 import java.time.Duration
 
 import io.micronaut.context.ApplicationContext
-import io.seqera.wave.test.RedisTestContainer
+import io.seqera.fixtures.redis.RedisTestContainer
 import redis.clients.jedis.JedisPool
 
 /**
