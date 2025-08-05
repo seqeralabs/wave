@@ -40,7 +40,7 @@ import redis.clients.jedis.util.JedisURIHelper
  */
 @Factory
 @Slf4j
-@Requires(property = 'redis.uri')
+@Requires(bean = RedisActivationStrategy)
 @CompileStatic
 class RedisFactory {
 
