@@ -369,3 +369,108 @@ a:hover {
     border-right: 2px solid #0066cc;
     animation: spin 1s linear infinite;
 }
+
+.tree {
+    --spacing: 1.5rem;
+    --radius: 6px;
+    padding: 10px 0 0;
+    font-family: 'SF Pro Display', sans-serif;
+}
+
+.tree li {
+    display: block;
+    position: relative;
+    padding-left: calc(2 * var(--spacing) - var(--radius) - 2px);
+    margin: 4px 0;
+}
+
+.tree ul {
+    margin-left: calc(var(--radius) - var(--spacing));
+    padding-left: 0;
+}
+
+.tree ul li {
+    border-left: 2px solid #ddd;
+}
+
+.tree ul li:last-child {
+    border-color: transparent;
+}
+
+.tree ul li::before {
+    content: '';
+    display: block;
+    position: absolute;
+    top: calc(var(--spacing) / -2);
+    left: -2px;
+    width: calc(var(--spacing) + 2px);
+    height: calc(var(--spacing) + 1px);
+    border: solid #ddd;
+    border-width: 0 0 2px 2px;
+}
+
+.tree summary {
+    display: block;
+    cursor: pointer;
+    font-size: 14px;
+    color: #242424;
+    font-weight: 500;
+    padding: 4px 0;
+}
+
+.tree summary::marker,
+.tree summary::-webkit-details-marker {
+    display: none;
+}
+
+.tree summary:focus {
+    outline: none;
+}
+
+.tree summary:focus-visible {
+    outline: 1px dotted #000;
+}
+
+.tree li::after,
+.tree summary::before {
+    content: '';
+    display: block;
+    position: absolute;
+    top: calc(var(--spacing) / 2 - var(--radius));
+    left: calc(var(--spacing) - var(--radius) - 1px);
+    width: calc(2 * var(--radius));
+    height: calc(2 * var(--radius));
+    border-radius: 2px;
+    background: #e6e6ed;
+    border: 1px solid #ddd;
+}
+
+.tree summary::before {
+    z-index: 1;
+    background: #4256E7;
+    border: 1px solid #ddd;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 2v8M2 6h8' stroke='%23fff' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 8px 8px;
+}
+
+.tree details[open] > summary::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 6h8' stroke='%23fff' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+.tree-text {
+    font-size: 14px;
+    color: #242424;
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+.tree a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.tree a:hover {
+    text-decoration: underline;
+}
