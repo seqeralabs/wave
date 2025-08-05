@@ -276,6 +276,14 @@ td:last-child {
     display: none;
 }
 
+.footer-logo {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 150px;
+    height: auto;
+}
+
 .header-bar {
     width: 100%;
     height: 60px;
