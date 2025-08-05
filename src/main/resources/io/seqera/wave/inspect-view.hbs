@@ -17,10 +17,12 @@
 <div class="container">
     <div class="header-section">
         <h1 class="main-title">Container Inspect</h1>
-        {{#if error_message}}
-            <div class="status-alert error">
-                <p class="status-message">{{error_message}}</p>
-            </div>
+    {{#if error_message}}
+        <div class="error-div">
+        <div class="status-alert error">
+            <p class="status-message">{{error_message}}</p>
+        </div>
+        </div>
     </div>
     {{else}}
     {{#if schemaVersion}}

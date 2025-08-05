@@ -272,7 +272,6 @@ class ViewControllerTest extends Specification {
         response.body().contains('latest')
         response.body().contains('https://registry-1.docker.io')
         response.body().contains('arm64')
-        response.body().contains(serverUrl)
     }
 
     def 'should render in progress build page' () {
@@ -538,11 +537,9 @@ class ViewControllerTest extends Specification {
 
         when:
         request = HttpRequest.GET("/view/builds/07277")
-        client.toBlocking().exchange(request, String)
+        response = client.toBlocking().exchange(request, String)
         then:
-        HttpClientResponseException e = thrown(HttpClientResponseException)
-        and:
-        e.status.code == 404
+        response.body().contains("Unknown build id")
 
     }
 

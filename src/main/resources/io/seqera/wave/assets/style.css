@@ -474,3 +474,7 @@ a:hover {
 .tree a:hover {
     text-decoration: underline;
 }
+
+.error-div{
+    min-height: 50vh;
+}

@@ -112,8 +112,9 @@ class ViewController {
         if( !mirrorService )
             throw new UnsupportedMirrorServiceException()
         final result = mirrorService.getMirrorResult(mirrorId)
-        if( !result )
-            throw new NotFoundException("Unknown container mirror id '$mirrorId'")
+        if( !result ){
+            return HttpResponse.ok(["error_message": "Unknown container mirror id '$mirrorId'"])
+        }
         return HttpResponse.ok(renderMirrorView(result))
     }
 
@@ -156,7 +157,7 @@ class ViewController {
             final builds = buildService.getAllBuilds(buildId)
             if( !builds ) {
                 log.debug "Found not build with id: $buildId"
-                throw new NotFoundException("Unknown container build id '$buildId'")
+                return HttpResponse.ok(new ModelAndView("build-list", ["error_message": "Unknown build id '$buildId'"]))
             }
             if( builds.size()==1 ) {
                 log.debug "Redirect to build page [2]: ${builds.first().buildId}"
@@ -168,8 +169,9 @@ class ViewController {
 
         // go ahead with proper handling
         final record = buildService.getBuildRecord(buildId)
-        if( !record )
-            throw new NotFoundException("Unknown container build id '$buildId'")
+        if( !record ){
+            return HttpResponse.ok(new ModelAndView("build-view", ["error_message": "Unknown build id '$buildId'"]))
+        }
         return HttpResponse.ok(new ModelAndView("build-view", renderBuildView(record)))
     }
 

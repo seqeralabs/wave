@@ -22,7 +22,14 @@
 <div class="container">
     <div class="header-section">
         <h1 class="main-title">Wave Container Mirror Completion</h1>
-
+    {{#if error_message}}
+        <div class="error-div">
+            <div class="status-alert error">
+                <div class="status-icon"></div>
+                <p class="status-message">{{error_message}}</p>
+            </div>
+        </div>
+    {{else}}
         {{#if mirror_success}}
             <div class="status-alert">
                 <div class="status-icon">✓</div>
@@ -140,6 +147,7 @@
                 {{/if}}
             </div>
         </div>
+    {{/if}}
     {{/if}}
 
     {{> io/seqera/wave/partials/footer}}

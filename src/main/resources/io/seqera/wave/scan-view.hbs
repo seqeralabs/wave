@@ -43,11 +43,12 @@
                 </div>
             {{/if}}
         {{else}}
-        {{! scan not exist, show an message using a grey box }}
+        <div class="error-div">
             <div class="status-alert error">
                 <div class="status-icon"></div>
                 <p class="status-message">{{error_message}}</p>
             </div>
+        </div>
         {{/if}}
     </div>
 
