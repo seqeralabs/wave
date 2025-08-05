@@ -24,7 +24,7 @@ import spock.lang.Specification
 import java.time.Duration
 
 import io.micronaut.context.ApplicationContext
-import io.seqera.wave.test.RedisTestContainer
+import io.seqera.fixtures.redis.RedisTestContainer
 
 class RedisStateProviderTest extends Specification implements RedisTestContainer {
 
