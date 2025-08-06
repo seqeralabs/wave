@@ -32,7 +32,6 @@
             line-height: 100%;
             outline: none;
             text-decoration: none;
-            -ms-interpolation-mode: bicubic;
         }
         * {
             box-sizing: border-box;
@@ -61,8 +60,6 @@
 
         table {
             border-collapse: collapse ;
-            mso-table-lspace: 0pt ;
-            mso-table-rspace: 0pt ;
         }
 
         td, th {
@@ -70,7 +67,7 @@
         }
 
         .email-container {
-            max-width: 600px;
+            max-width: 800px;
             margin: 0 auto;
             background: #ffffff;
         }
@@ -122,28 +119,13 @@
             border: #EE9AA2;
         }
 
-        .status-alert.progress {
-            background: #D9EDF7FF;
-            color: #242424;
-            border: #0066cc;
-        }
-
         .status-message {
             color: #242424;
             font-family: 'SF Pro Display', sans-serif;
             font-weight: 400;
             font-size: 14px;
             margin: 0;
-            padding-left: 40px;
-        }
-
-        .status-icon {
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 20px;
-            height: 20px;
+            padding-left: 5px;
         }
 
         .section-title {
@@ -214,10 +196,7 @@
 
         .footer-content {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
             padding: 20px 0;
-            max-width: 1200px;
             margin: 0 auto;
         }
 
@@ -232,23 +211,6 @@
             font-size: 14px;
         }
 
-        .footer-links {
-            display: flex;
-            gap: 30px;
-        }
-
-        .footer-link {
-            color: #666;
-            text-decoration: none;
-            font-size: 14px;
-            transition: color 0.3s ease;
-        }
-
-        .footer-link:hover {
-            color: #333;
-            text-decoration: underline;
-        }
-
         a {
             color: #007bff ;
             text-decoration: none;
@@ -260,10 +222,6 @@
 
         /* Mobile responsive styles */
         @media only screen and (max-width: 600px) {
-            .main-content {
-                padding: 24px 16px ;
-            }
-
             .main-title {
                 font-size: 24px ;
             }
@@ -274,20 +232,6 @@
 
             .footer-icon img {
                 width: 100px ;
-            }
-
-            .footer-icon {
-            display: inline-block;
-            vertical-align: middle;
-            }
-
-            .footer-links {
-                margin-top: 10px ;
-            }
-
-            .footer-link {
-                display: block ;
-                margin: 5px 0 ;
             }
 
             .content-table {
@@ -335,20 +279,18 @@
                 <div class="main-container" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; padding: 30px; max-width: 800px; margin: 0 auto;">
 
                     <!-- Title Section -->
-                    <div style="margin-bottom: 30px;">
+                    <div class="main-title">
                         <h1 class="main-title">Container Build Notification</h1>
                     </div>
 
                     <!-- Status Alert -->
                     <% if (build_success) { %>
                     <div class="status-alert success">
-                        <div class="status-icon">✓</div>
-                        <div class="status-message">Container build completed successfully!</div>
+                        <div class="status-message">✓ Container build completed successfully!</div>
                     </div>
                     <% } else { %>
                     <div class="status-alert error">
-                        <div class="status-icon">✗</div>
-                        <div class="status-message">Container build failed</div>
+                        <div class="status-message">✗ Container build failed</div>
                     </div>
                     <% } %>
 
@@ -432,21 +374,12 @@
                 </div>
                 <!-- Footer -->
                 <div class="footer-divider"></div>
-                <div class="footer-section">
                     <div class="footer-content">
                         <div class="copyright">
                             © 2025 Seqera. All Rights Reserved.
                         </div>
-                        <div class="footer-icon">
-                            <img src="cid:seqera-icon" alt="Seqera" style="height: 16px; display: inline-block; vertical-align: middle;">
-                        </div>
-                        <div class="footer-links">
-                            <a href="https://seqera.io/legal/" class="footer-link">User agreement</a>
-                            <a href="https://seqera.io/privacy-policy/" class="footer-link">Privacy statement</a>
-                        </div>
                     </div>
                 </div>
-            </div>
         </td>
     </tr>
 </table>
