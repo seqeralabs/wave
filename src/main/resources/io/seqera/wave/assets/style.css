@@ -207,7 +207,9 @@ td:last-child {
     background: #FFFFFFE5;
     border: none;
     border-radius: 4px;
-    padding: 8px;
+    padding: 0;
+    position: relative;
+    top:2px;
     cursor: pointer;
     transition: background-color 0.2s;
     display: inline-flex;
