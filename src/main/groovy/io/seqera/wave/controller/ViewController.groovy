@@ -548,12 +548,12 @@ class ViewController {
         boolean hasHighOrCritical = vulnerabilities.stream()
                 .anyMatch(v -> v.severity.equals("HIGH") || v.severity.equals("CRITICAL"))
         if(hasHighOrCritical){
-            return new Colour('#ffe4e2', '#e00404')
+            return new Colour('#ffe4e2', '#242424')
         }
         else if(hasMedium){
-            return new Colour('#fff8c5', "#000000")
+            return new Colour('#fff8c5', "#242424")
         }
-        return new Colour('#dff0d8', '#3c763d')
+        return new Colour('#e5f5eC', '#242424')
     }
 
 }
