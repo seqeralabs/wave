@@ -775,7 +775,7 @@ class ViewControllerTest extends Specification {
         [new ScanVulnerability(severity: 'LOW'), new ScanVulnerability(severity: 'MEDIUM')]         | new Colour('#fff8c5','#242424')
         [new ScanVulnerability(severity: 'LOW'), new ScanVulnerability(severity: 'HIGH')]           | new Colour('#ffe4e2','#242424')
         [new ScanVulnerability(severity: 'MEDIUM'), new ScanVulnerability(severity: 'CRITICAL')]    | new Colour('#ffe4e2','#242424')
-        []                                                                                         | new Colour('#dff0d8','#3c763d')
+        []                                                                                          | new Colour('#e5f5eC','#242424')
     }
 
     def 'should redirect to scan view on successful scan request'() {
