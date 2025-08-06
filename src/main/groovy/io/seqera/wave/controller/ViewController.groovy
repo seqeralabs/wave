@@ -274,12 +274,12 @@ class ViewController {
 
     @View("container-view")
     @Get('/containers/{token}')
-    HttpResponse<Map<String,Object>> viewContainer(String token) {
+    HttpResponse viewContainer(String token) {
         final data = persistenceService.loadContainerRequest(token)
-        if( !data )
-            throw new NotFoundException("Unknown container token: $token")
         // return the response
         final binding = new HashMap(20)
+        if( !data )
+            return HttpResponse.notFound(["error_message": "Unknown container request id '$token'"])
         binding.request_token = token
         binding.request_container_image = data.containerImage
         binding.request_contaiener_platform = data.platform ?: '-'

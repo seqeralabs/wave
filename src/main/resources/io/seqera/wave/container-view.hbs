@@ -55,9 +55,16 @@
 
 <div class="container">
     <div class="header-section">
-        <h1 class="main-title">Wave container</h1>
+        <h1 class="main-title">Container</h1>
     </div>
-
+{{#if error_message}}
+        <div class="error-div">
+            <div class="status-alert error">
+                <div class="status-icon"></div>
+                <p class="status-message">{{error_message}}</p>
+            </div>
+        </div>
+{{else}}
     <div class="content-section">
         <h2 class="section-title">Request</h2>
         <table>
@@ -287,7 +294,7 @@
             </div>
         </div>
     </div>
-
+{{/if}}
     {{> io/seqera/wave/partials/footer}}
 </div>
 
