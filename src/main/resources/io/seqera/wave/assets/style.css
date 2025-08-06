@@ -22,7 +22,7 @@ body {
     font-size: 14px;
     margin: 0;
     padding: 0;
-    background: rgba(255,255,255,1);
+    background: #FFFFFFFF;
     font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
@@ -33,7 +33,7 @@ body {
     padding: 32px;
     background: white;
     border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 10px #00000019;
 }
 
 .header-section {
@@ -41,7 +41,7 @@ body {
 }
 
 .main-title {
-    color: rgba(36,36,36,1);
+    color: #242424;
     font-family: 'SF Pro Display', sans-serif;
     font-weight: 500;
     font-size: 36px;
@@ -50,25 +50,29 @@ body {
 }
 
 .status-alert {
-    background: rgba(229,245,236,1);
+    background: #E5F5EC;
     padding: 16px;
     border-radius: 4px;
     margin: 16px 0;
     position: relative;
+    border: #28AE61;
+    color: #242424;
 }
 
 .status-alert.error {
-    background: rgba(242, 222, 222, 1);
-    color: rgba(169, 68, 66, 1);
+    background: #FBE7E9;
+    color: #242424;
+    border: #EE9AA2;
 }
 
 .status-alert.progress {
-    background: rgba(217, 237, 247, 1);
-    color: rgba(49, 112, 143, 1);
+    background: #D9EDF7FF;
+    color: #242424;
+    border: #0066cc;
 }
 
 .status-message {
-    color: rgba(36,36,36,1);
+    color: #242424;
     font-family: 'SF Pro Display', sans-serif;
     font-weight: 400;
     font-size: 14px;
@@ -113,7 +117,7 @@ body {
 }
 
 .section-title {
-    color: rgba(36,36,36,1);
+    color: #242424;
     font-family: 'SF Pro Display', sans-serif;
     font-weight: 500;
     font-size: 18px;
@@ -139,14 +143,14 @@ td {
 
 td:first-child {
     width: 152px;
-    color: rgba(36,36,36,1);
+    color: #242424;
     font-family: 'SF Pro Display', sans-serif;
     font-weight: 500;
     font-size: 14px;
 }
 
 td:last-child {
-    color: rgba(36,36,36,1);
+    color: #242424;
     font-family: 'SF Pro Display', sans-serif;
     font-weight: 400;
     font-size: 14px;
@@ -159,7 +163,7 @@ td:last-child {
 }
 
 .code-container {
-    background: rgba(247,247,247,1);
+    background: #F7F7F7FF;
     border-radius: 4px;
     position: relative;
     overflow: hidden;
@@ -173,7 +177,7 @@ td:last-child {
 }
 
 .code-text {
-    color: rgba(22,15,38,1);
+    color: #160F26FF;
     font-family: 'Courier', monospace;
     font-weight: 400;
     font-size: 14px;
@@ -184,11 +188,11 @@ td:last-child {
 }
 
 .build-logs .code-content {
-    background: rgba(247,247,247,1);
+    background: #F7F7F7FF;
 }
 
 .build-logs .code-text {
-    color: rgba(22,15,38,1);
+    color: #160F26FF;
 }
 
 .code-actions {
@@ -200,7 +204,7 @@ td:last-child {
 }
 
 .action-btn {
-    background: rgba(255, 255, 255, 0.9);
+    background: #FFFFFFE5;
     border: none;
     border-radius: 4px;
     padding: 8px;
@@ -212,16 +216,16 @@ td:last-child {
 }
 
 .action-btn:hover {
-    background: rgba(255, 255, 255, 1);
+    background: #FFFFFFFF;
 }
 
 .build-logs .action-btn {
-    background: rgba(255, 255, 255, 0.9);
-    border-color: rgba(221, 223, 223, 1);
+    background: #FFFFFFE5;
+    border-color: #DDDFDFFF;
 }
 
 .build-logs .action-btn:hover {
-    background: rgba(255, 255, 255, 1);
+    background: #FFFFFFFF;
 }
 
 .footer-content {
@@ -286,7 +290,7 @@ td:last-child {
 .header-bar {
     width: 100%;
     height: 60px;
-    background: rgba(247,247,247,1);
+    background: #F7F7F7FF;
     position: fixed;
     top: 0;
     left: 0;
@@ -312,7 +316,7 @@ td:last-child {
 }
 
 .divider-x {
-    color: rgba(36,36,36,1);
+    color: #242424;
     font-family: 'Inter', sans-serif;
     font-weight: 400;
     font-size: 12px;
