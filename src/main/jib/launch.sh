@@ -18,7 +18,7 @@
 
 # Launch backend server
 [ "$WAVE_JVM_OPTS" ] && echo "Detected WAVE_JVM_OPTS=$WAVE_JVM_OPTS"
-JVM_OPTS="${WAVE_JVM_OPTS:-\
+WAVE_JVM_OPTS="${WAVE_JVM_OPTS:-\
   -XX:+UseG1GC \
   -Xms512m \
   -Xmx850m \
@@ -40,6 +40,6 @@ exec java \
   --add-opens java.base/java.io=ALL-UNNAMED \
   --add-opens java.base/java.nio=ALL-UNNAMED \
   --enable-native-access=ALL-UNNAMED \
-  ${JVM_OPTS} \
+  ${WAVE_JVM_OPTS} \
   -cp /app/resources:/app/classes:/app/libs/* \
   io.seqera.wave.Application
