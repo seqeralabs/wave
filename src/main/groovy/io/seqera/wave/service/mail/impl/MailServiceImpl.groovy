@@ -110,8 +110,6 @@ class MailServiceImpl implements MailService {
         mail.body(MailHelper.getTemplateFile('/io/seqera/wave/build-notification.html', binding))
         mail.attach(MailAttachment.resource('/io/seqera/wave/assets/wave-logo.png', contentId: '<wave-logo>', disposition: 'inline'))
         mail.attach(MailAttachment.resource('/io/seqera/wave/assets/seqera-logo.png', contentId: '<seqera-logo>', disposition: 'inline'))
-        mail.attach(MailAttachment.resource('/io/seqera/wave/assets/seqera-icon.png', contentId: '<seqera-icon>', disposition: 'inline'))
-
         return mail
     }
 
