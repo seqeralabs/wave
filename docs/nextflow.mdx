@@ -5,7 +5,7 @@ title: Nextflow integration
 You can use Wave directly from your Nextflow pipelines. Wave supports private repositories, container freezing, and conda packages.
 
 :::note
-Nextflow integration requires Nextflow `22.10.0` or later.
+Nextflow integration requires Nextflow `22.10.0`, or later.
 :::
 
 ## Get started
@@ -24,12 +24,12 @@ tower {
 
 Replace `<PLATFORM_ACCESS_TOKEN>` with your Seqera Platform access token.
 
-The use of the Seqera access token is not mandatory. However, it grants the following additional capabilities:
+Using a Seqera access token is optional but provides additional capabilities:
 
-- Access to private repositories, using credentials stored in your Seqera Platform account
+- Access to private repositories
 - Higher API request limits than anonymous users
 
-For all configuration options, see [Configuration options](#configuration-options).
+For all Nextflow configuration options, see [Configuration options](#configuration-options).
 
 ## Use Wave features with Nextflow
 
@@ -37,12 +37,13 @@ The following sections describe how to use Wave features with Nextflow.
 
 ### Access private container repositories
 
-Wave allows you to use private repositories in your Nextflow pipelines. Provide repository access keys as [Seqera Platform credentials](https://docs.seqera.io/platform/latest/credentials/overview).
+Wave allows you to use private container repositories with your Nextflow pipelines. Provide repository access keys as [Seqera Platform credentials](https://docs.seqera.io/platform/latest/credentials/overview).
 
 <details open>
 <summary>**Access private container repositories**</summary>
 
-After creating your credentials, specify your [personal access token](https://docs.seqera.io/platform/latest/api/overview#authentication) in your pipeline configuration file. If you created credentials in a Seqera Platform organization workspace, add your workspace ID:
+After creating your credentials, specify your [personal access token](https://docs.seqera.io/platform/latest/api/overview#authentication) in your pipeline configuration file.
+If you created credentials in a Seqera Platform organization workspace, add your workspace ID:
 
 ```groovy
 tower {
@@ -88,7 +89,7 @@ When Wave is enabled, it automatically uses the Dockerfile to build the required
 If a process declares a `container` directive, it takes precedence over the Dockerfile definition.
 :::
 
-If you want to use the Dockerfile in the module directory even when a process uses a `container` directive, add the following setting to your Nextflow configuration file:
+To use the Dockerfile in the module directory even when a process uses a `container` directive, add the following setting to your Nextflow configuration file:
 
 ```groovy
 wave.strategy = ['dockerfile','container']
@@ -104,7 +105,7 @@ Wave does not support `ADD`, `COPY`, or other Dockerfile commands that access fi
 
 ### Build conda-based containers
 
-Wave can provision containers based on the `process-conda` [directive](https://www.nextflow.io/docs/latest/process.html#conda) used by processes in your pipeline.
+Wave can provision containers based on the [`conda` directive](https://www.nextflow.io/docs/latest/process.html#conda).
 This allows you to use conda packages in your pipeline, even on cloud-native platforms like AWS Batch and Kubernetes, which do not support the conda package manager directly.
 
 <details open>
@@ -112,7 +113,7 @@ This allows you to use conda packages in your pipeline, even on cloud-native pla
 
 With Wave enabled, define the `conda` requirements in your pipeline processes, as long as the process does not also specify a `container` directive or a Dockerfile.
 
-If you want to use the `conda` directive even when a process also specifies a `container` directive or Dockerfile, add this setting to your configuration:
+To use the `conda` directive even when a process also specifies a `container` directive or Dockerfile, add this setting to your configuration:
 
 ```groovy
 wave.strategy = ['conda']
@@ -192,18 +193,18 @@ For more information, see:
 
 ## Configuration options
 
-The following configuration options are available:
+The following Nextflow configuration options are available:
 
 | Method                       | Description                                                                                                                                                              |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `wave.enabled`               | Enable/disable the execution of Wave containers                                                                                                                          |
 | `wave.endpoint`              | The Wave service endpoint (default: `https://wave.seqera.io`)                                                                                                            |
-| `wave.build.repository`      | The container repository where image built by Wave needs to be uploaded (note: the corresponding credentials need to be provided in your Seqera Platform account).       |
-| `wave.build.cacheRepository` | The container repository used to cache image layers build by the Wave service (note: the corresponding credentials need to be provided in your Seqera Platform account). |
-| `wave.conda.mambaImage`      | The Mamba container image is used to build conda based container. This is expected to be [micromamba-docker](https://github.com/mamba-org/micromamba-docker) image.      |
-| `wave.conda.commands`        | One or more commands to be added to the Dockerfile used by build a conda based image.                                                                                    |
-| `wave.strategy`              | The strategy to be used when resolving ambiguous Wave container requirement (default: `'container,dockerfile,conda'`)                                                    |
-| `wave.freeze`                | When `freeze` mode is enabled containers provisioned by Wave are stored permanently in the repository specified via the setting `wave.build.repository`.                 |
+| `wave.build.repository`      | The container repository where images built by Wave are uploaded. You must provide corresponding credentials in your Seqera Platform account.                            |
+| `wave.build.cacheRepository` | The container repository used to cache image layers built by the Wave service. You must provide corresponding credentials in your Seqera Platform account.               |
+| `wave.conda.mambaImage`      | The Mamba container image used to build conda-based containers. This should be a [micromamba-docker](https://github.com/mamba-org/micromamba-docker) image.              |
+| `wave.conda.commands`        | One or more commands to add to the Dockerfile used to build a conda-based image.                                                                                         |
+| `wave.strategy`              | The strategy used when resolving ambiguous Wave container requirements (default: `'container,dockerfile,conda'`)                                                         |
+| `wave.freeze`                | When `freeze` mode is enabled, containers provisioned by Wave are stored permanently in the repository specified by `wave.build.repository`.                             |
 
 ## Limitations
 
