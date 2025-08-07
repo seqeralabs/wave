@@ -281,7 +281,7 @@ class ViewController {
         if( !data )
             return HttpResponse.notFound(["error_message": "Unknown container request id '$token'"])
         binding.request_token = token
-        binding.request_container_image = data.containerImage
+        binding.request_container_image = data.containerImage ?: '-'
         binding.request_contaiener_platform = data.platform ?: '-'
         binding.request_fingerprint = data.fingerprint ?: '-'
         binding.request_timestamp = formatTimestamp(data.timestamp, data.zoneId) ?: '-'
