@@ -17,9 +17,9 @@ wave.enabled = true
 tower.accessToken = '<PLATFORM_ACCESS_TOKEN>'
 ```
 
-Replace `<PLATFORM_ACCESS_TOKEN>` with your Seqera Platform access token.
+Replace `<PLATFORM_ACCESS_TOKEN>` with your Platform access token.
 
-Using a Seqera access token is optional but provides additional capabilities:
+  Using a Platform access token is optional but provides additional capabilities:
 
 - Access to private repositories
 - Higher API request limits than anonymous users
@@ -43,9 +43,9 @@ To access private container repositories, add your [Platform access token](https
 tower.accessToken = '<PLATFORM_ACCESS_TOKEN>'
 ```
 
-Replace `<PLATFORM_ACCESS_TOKEN>` with your Seqera Platform access token.
+Replace `<PLATFORM_ACCESS_TOKEN>` with your Platform access token.
 
-If you created credentials in a Seqera Platform organization workspace, also add your workspace ID:
+If you created credentials in an organization workspace, also add your workspace ID:
 
 ```groovy
 tower.workspaceId = '<PLATFORM_WORKSPACE_ID>'
@@ -113,7 +113,7 @@ To prioritize `conda` over `container` directives and Dockerfiles, add the follo
 wave.strategy = ['conda']
 ```
 
-Replace `<PLATFORM_ACCESS_TOKEN>` with your Seqera Platform access token.
+Replace `<PLATFORM_ACCESS_TOKEN>` with your Platform access token.
 
 For Nextflow 23.10.x, or later, the `conda-forge::procps-ng` package is included automatically in provisioned containers. This package includes the `ps` command.
 
@@ -153,7 +153,7 @@ wave.build.repository = '<BUILD_REPOSITORY>'
 
 Replace `<BUILD_REPOSITORY>` with the repository where your Singularity image files should be uploaded.
 
-When using a private repository, provide repository access keys via the Seqera Platform credentials manager. See [Authenticate private repositories](https://docs.seqera.io/platform/24.1/credentials/overview) for more information.
+When using a private repository, provide repository access keys via the Platform credentials manager. See [Authenticate private repositories](https://docs.seqera.io/platform/24.1/credentials/overview) for more information.
 
 The access to the repository must be granted in the compute nodes. To grant access to the repository on compute nodes, run the following command:
 
@@ -195,8 +195,8 @@ The following Nextflow configuration options are available:
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `wave.enabled`               | Enable/disable the execution of Wave containers                                                                                                                          |
 | `wave.endpoint`              | The Wave service endpoint (default: `https://wave.seqera.io`)                                                                                                            |
-| `wave.build.repository`      | The container repository where images built by Wave are uploaded. You must provide corresponding credentials in your Seqera Platform account.                            |
-| `wave.build.cacheRepository` | The container repository used to cache image layers built by the Wave service. You must provide corresponding credentials in your Seqera Platform account.               |
+| `wave.build.repository`      | The container repository where images built by Wave are uploaded. You must provide corresponding credentials in your Platform account.                            |
+| `wave.build.cacheRepository` | The container repository used to cache image layers built by the Wave service. You must provide corresponding credentials in your Platform account.               |
 | `wave.conda.mambaImage`      | The Mamba container image used to build conda-based containers. This should be a [micromamba-docker](https://github.com/mamba-org/micromamba-docker) image.              |
 | `wave.conda.commands`        | One or more commands to add to the Dockerfile used to build a conda-based image.                                                                                         |
 | `wave.strategy`              | The strategy used when resolving ambiguous Wave container requirements (default: `'container,dockerfile,conda'`)                                                         |
@@ -204,11 +204,11 @@ The following Nextflow configuration options are available:
 
 ## Limitations
 
-### Use of sha256 digest in the image name
+### Use of SHA256 digest in the image name
 
-Wave does not support using a sha256 digest in the image name (for example, `ubuntu@sha256:3235...ce8f`) when using the augmentation process to extend container images.
+Wave does not support using an SHA256 digest in the image name (for example, `ubuntu@sha256:3235...ce8f`) when using the augmentation process to extend container images.
 
-To reference a container by sha256 digest in the image name with Wave, enable freeze mode and force the creation of a new container image using your specified base image.
+To reference a container by SHA256 digest in the image name with Wave, enable freeze mode and force the creation of a new container image using your specified base image.
 
 Add the following to your Nextflow configuration file:
 
