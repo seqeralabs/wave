@@ -24,7 +24,7 @@ import spock.lang.Specification
 import java.time.Instant
 
 import io.micronaut.context.ApplicationContext
-import io.seqera.wave.test.RedisTestContainer
+import io.seqera.fixtures.redis.RedisTestContainer
 
 /**
  *
