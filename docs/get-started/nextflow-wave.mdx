@@ -23,7 +23,7 @@ In this guide, you'll build a container from a Nextflow module and freeze that p
 1. Copy and store your token securely.
 
     :::caution
-    The access token is displayed only once. Save the token value before closing the **Personal Access Token** window.
+    The access token is displayed only once. Save the token value before you close the **Personal Access Token** window.
     :::
 
 1. In a terminal window, assign your access token to the `TOWER_ACCESS_TOKEN` environment variable:
@@ -41,7 +41,7 @@ To create your access token in Docker Hub:
 1. Log in to [Docker Hub](https://hub.docker.com/).
 2. Select your username in the top right corner and select **Account Settings**.
 3. Select **Security > New Access Token**.
-4. Enter a token description and select **Read-only** from the Access permissions drop-down menu, then select **Generate**.
+4. Enter a token description. Select **Access permissions > Read-only**, then select **Generate**.
 5. Copy and save the generated access token (this is only displayed once).
 
 To add your credentials to Seqera:
@@ -58,7 +58,7 @@ To add your credentials to Seqera:
     - **Password**: Specify your personal access token (PAT). For example, `1fcd02dc-...215bc3f3`.
     - **Registry server**: Specify the container registry hostname, excluding the protocol. For example, `docker.io`.
 
-3.  After you've completed all the form fields, select **Add**. The new credential is now listed under the **Credentials** tab.
+3.  Select **Add**. The new credential will be listed under the **Credentials** tab.
 
 Seqera supports other container registries, such as GitHub and Quay.io.
 

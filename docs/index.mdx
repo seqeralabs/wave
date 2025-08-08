@@ -2,7 +2,9 @@
 title: Wave
 ---
 
-Containers are an essential part of modern data analysis pipelines in bioinformatics. They encapsulate applications and dependencies in portable, self-contained packages that can be easily distributed across diverse computing environments. Containers are also key to enabling predictable and reproducible scientific results. However, workflows can comprise dozens of distinct container images. Pipeline developers must manage and maintain these container images and ensure that their functionality precisely aligns with the requirements of every pipeline task, creating unnecessary friction in the maintenance and deployment of data pipelines.
+Containers are an essential part of modern data analysis pipelines in bioinformatics. They encapsulate applications and dependencies in portable, self-contained packages that can be easily distributed across diverse computing environments. Containers are also key to enabling predictable and reproducible scientific results.
+
+However, workflows can comprise dozens of distinct container images. Pipeline developers must manage and maintain these container images and ensure that their functionality precisely aligns with the requirements of every pipeline task, creating unnecessary friction in the maintenance and deployment of data pipelines.
 
 Wave solves this problem by provisioning containers on-demand during the pipeline execution. This allows the delivery of container images that are defined precisely depending on the requirements of each pipeline task in terms of dependencies and platform architecture. This process is completely transparent and fully automated, removing all the plumbing and friction commonly needed to create, upload, and maintain dozens of container images that might be required by a pipeline execution.
 
@@ -90,7 +92,7 @@ The deployment of production pipelines at scale can require the use of multiple 
 However, this can result in an increased overhead when pulling container images from a central container registry. Wave allows the transparent caching of container images in the same region where computation occurs, reducing data transfer costs and time (in development).
 
 ### Wave Lite
-Wave can be used in [lite](./wave-lite.mdx) mode intended for augmentation user case, where user do not require K8s to run wave.
+Wave can be used in [Lite mode](./wave-lite.mdx). This is intended for use cases, where users do not require k8s to run Wave.
 
 [started]: ./get-started/index.mdx
 [nf]: ./nextflow.mdx
