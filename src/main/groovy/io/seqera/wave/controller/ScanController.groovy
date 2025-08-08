@@ -70,7 +70,7 @@ class ScanController {
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     @Get("/v1alpha1/scans/{scanId}/logs")
     HttpResponse<String> getScanLog(String scanId){
-        final logs = containerScanService.getScanRecord(scanId).logs
+        final logs = scanService.getScanRecord(scanId).logs
         return logs
                 ? (HttpResponse.ok(logs)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=${scanId}.log"))
