@@ -63,7 +63,7 @@ class ScanController {
     HttpResponse<StreamedFile> getSbomSPDX(String scanId){
         final report = scanService.fetchReportStream(scanId, ScanType.Spdx)
         return report
-                ? HttpResponse.ok(report)
+                ? HttpResponse.ok(report).header("Content-Disposition", "attachment; filename=\"spdx-${scanId}.json\"")
                 : HttpResponse.<StreamedFile>notFound()
     }
 
