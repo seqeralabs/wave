@@ -512,3 +512,7 @@ a:hover {
 .error-div{
     min-height: 50vh;
 }
+
+.progress-div{
+    min-height: 50vh;
+}
