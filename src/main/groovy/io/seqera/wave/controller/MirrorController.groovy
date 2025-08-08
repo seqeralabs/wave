@@ -21,9 +21,12 @@ package io.seqera.wave.controller
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.http.HttpHeaders
 import io.micronaut.http.HttpResponse
+import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
+import io.micronaut.http.annotation.Produces
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.exception.UnsupportedMirrorServiceException
@@ -53,6 +56,16 @@ class MirrorController {
         return result
                 ? HttpResponse.ok(result)
                 : HttpResponse.<MirrorResult>notFound()
+    }
+
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    @Get("/v1alpha1/mirrors/{mirrorId}/logs")
+    HttpResponse<String> getScanLog(String mirrorId){
+        final logs = mirrorService.getMirrorResult(mirrorId).logs
+        return logs
+                ? (HttpResponse.ok(logs)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=${mirrorId}.log"))
+                : HttpResponse.<String>notFound()
     }
 
 }

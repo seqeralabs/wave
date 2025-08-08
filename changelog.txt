@@ -1,4 +1,14 @@
 # Wave changelog
+1.23.1 - 7 Aug 2025
+- Revert to MN 4.8.3 [b7ee0214]
+- Improve view titles [a59b623b]
+- Fix minor container view glitch [a745979e]
+
+1.23.0 - 7 Aug 2025
+- Redesign Wave reports (#871) [edae3c5f]
+- Add default jvm config (#864) [b7222304]
+- Fix potential deadlock in DockerJobOperation process handling [ecff3a5e]
+
 1.22.1 - 5 Aug 2025
 - Add lib-lang to import TypeHelper [9372f865]
 - Add lib-retry [8d4277ba]
