@@ -25,7 +25,7 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-import io.seqera.wave.util.LongRndKey
+import io.seqera.random.LongRndKey
 
 /**
  * Model a unique job to be managed

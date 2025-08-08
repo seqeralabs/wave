@@ -40,7 +40,7 @@ class DataMigrateCache extends AbstractStateStore<DataMigrateEntry> {
 
     @Override
     protected String getPrefix() {
-        return 'wave-migrate/v1'
+        return 'migrate-surreal/v1'
     }
 
     @Override

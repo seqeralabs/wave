@@ -20,8 +20,6 @@ package io.seqera.wave.service.persistence.migrate
 
 import spock.lang.Specification
 
-import java.util.concurrent.CompletableFuture
-
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.WaveBuildRecord
@@ -84,7 +82,7 @@ class DataMigrationServiceTest extends Specification {
         service.migrateBuildRecords()
 
         then:
-        100 * postgresService.saveBuildAsync(_) >> Mock(CompletableFuture<WaveBuildRecord>)
+        100 * postgresService.saveBuild(_)
         and:
         1 * dataMigrateCache.put(DataMigrationService.TABLE_NAME_BUILD, new DataMigrateEntry(DataMigrationService.TABLE_NAME_BUILD, 100))
     }
@@ -106,16 +104,16 @@ class DataMigrationServiceTest extends Specification {
     def "should not migrate if request records are empty"() {
         given:
         surrealService.getRequestsPaginated(pageSize,0) >> []
-        dataMigrateCache.get(DataMigrationService.TABLE_NAME_CONTAINER_REQUEST) >>
-                new DataMigrateEntry(DataMigrationService.TABLE_NAME_CONTAINER_REQUEST, 0)
+        dataMigrateCache.get(DataMigrationService.TABLE_NAME_REQUEST) >>
+                new DataMigrateEntry(DataMigrationService.TABLE_NAME_REQUEST, 0)
 
         when:
-        service.migrateContainerRequests()
+        service.migrateRequests()
 
         then:
-        0 * postgresService.saveContainerRequestAsync(_)
+        0 * postgresService.saveContainerRequest(_)
         and:
-        0 * dataMigrateCache.put(DataMigrationService.TABLE_NAME_CONTAINER_REQUEST, pageSize)
+        0 * dataMigrateCache.put(DataMigrationService.TABLE_NAME_REQUEST, pageSize)
     }
 
     def "should migrate request records in batches"() {
@@ -125,16 +123,16 @@ class DataMigrationServiceTest extends Specification {
                 new ContainerRequest(requestId: it, identity: PlatformId.of(new User(id: it), Mock(SubmitContainerTokenRequest))),
                 null, null, null) }
         surrealService.getRequestsPaginated(pageSize,0) >> requests
-        dataMigrateCache.get(DataMigrationService.TABLE_NAME_CONTAINER_REQUEST) >>
-                new DataMigrateEntry(DataMigrationService.TABLE_NAME_CONTAINER_REQUEST, 0)
+        dataMigrateCache.get(DataMigrationService.TABLE_NAME_REQUEST) >>
+                new DataMigrateEntry(DataMigrationService.TABLE_NAME_REQUEST, 0)
 
         when:
-        service.migrateContainerRequests()
+        service.migrateRequests()
 
         then:
         101 * postgresService.saveContainerRequest(_,_)
         and:
-        1 * dataMigrateCache.put(DataMigrationService.TABLE_NAME_CONTAINER_REQUEST, new DataMigrateEntry(DataMigrationService.TABLE_NAME_CONTAINER_REQUEST, 101))
+        1 * dataMigrateCache.put(DataMigrationService.TABLE_NAME_REQUEST, new DataMigrateEntry(DataMigrationService.TABLE_NAME_REQUEST, 101))
     }
 
     def "should migrate scan records in batches"() {
@@ -148,7 +146,7 @@ class DataMigrationServiceTest extends Specification {
         service.migrateScanRecords()
 
         then:
-        99 * postgresService.saveScanRecordAsync(_) >> Mock(CompletableFuture<WaveScanRecord>)
+        99 * postgresService.saveScanRecord(_)
         and:
         1 * dataMigrateCache.put(DataMigrationService.TABLE_NAME_SCAN, new DataMigrateEntry(DataMigrationService.TABLE_NAME_SCAN, 99))
     }
@@ -164,8 +162,27 @@ class DataMigrationServiceTest extends Specification {
         service.migrateMirrorRecords()
 
         then:
-        15 * postgresService.saveMirrorResultAsync(_) >> Mock(CompletableFuture<MirrorResult>)
+        15 * postgresService.saveMirrorResult(_)
         and:
         1 * dataMigrateCache.put(DataMigrationService.TABLE_NAME_MIRROR, new DataMigrateEntry(DataMigrationService.TABLE_NAME_MIRROR, 15))
+    }
+
+    def "fixRequestId should extract or return correct id for various input formats"() {
+        expect:
+        DataMigrationService.fixRequestId(input) == expected
+
+        where:
+        input                                | expected
+        "wave_request:12345"                 | "12345"
+        "wave_request:⟨12345⟩"               | "12345"
+        "wave_request:⟨abc-987⟩"             | "abc-987"
+        "wave_request:"                      | ""
+        "wave_request:⟨⟩"                    | ""
+        "wave_request:⟨"                     | ""
+        "wave_request:⟨abc⟩extra"            | "abc"
+        "12345"                              | "12345"
+        "some_other_prefix:12345"            | "some_other_prefix:12345"
+        ""                                   | ""
+        null                                 | null
     }
 }

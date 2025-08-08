@@ -22,15 +22,19 @@ import javax.annotation.Nullable
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
+import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.util.BucketTokenizer
 import jakarta.inject.Singleton
 /**
  * Model Wave build config settings
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
+@Requires(bean = BuildEnabled)
 @CompileStatic
 @Singleton
 @Slf4j
@@ -105,6 +109,28 @@ class BuildConfig {
     @Value('${wave.build.max-container-file-size:10000}')
     int maxContainerFileSize
 
+    /**
+     * The path where build logs locks files are stored. Can be either
+     * a S3 path e.g. {@code s3://some-bucket/data/path} or a local file system
+     * path e.g. {@code /some/data/path}
+     */
+    @Value('${wave.build.logs.path}')
+    String logsPath
+
+    /**
+     * The path where Conda locks files are stored. Can be either
+     * a S3 path e.g. {@code s3://some-bucket/data/path} or a local file system
+     * path e.g. {@code /some/data/path}
+     */
+    @Value('${wave.build.locks.path}')
+    String locksPath
+
+    /**
+     * Max length allowed for build logs download
+     */
+    @Value('${wave.build.logs.maxLength:100000}')
+    long maxLength
+
     @PostConstruct
     private void init() {
         log.info("Builder config: " +
@@ -116,6 +142,8 @@ class BuildConfig {
                 "build-workspace=${buildWorkspace}; " +
                 "build-timeout=${defaultTimeout}; " +
                 "build-trusted-timeout=${trustedTimeout}; " +
+                "build-logs-path=${logsPath}; " +
+                "build-locks-path=${locksPath}; " +
                 "status-delay=${statusDelay}; " +
                 "status-duration=${statusDuration}; " +
                 "failure-duration=${getFailureDuration()}; " +
@@ -136,5 +164,39 @@ class BuildConfig {
         return request.towerAccessToken && request.freeze && trustedTimeout>defaultTimeout
                 ? trustedTimeout
                 : defaultTimeout
+    }
+
+    /**
+     * The file name prefix applied when storing a build logs file into an object storage.
+     * For example having {@link #logsPath} as {@code s3://bucket-name/foo/bar} the
+     * value returned by this method is {@code foo/bar}.
+     *
+     * When using a local path the prefix is {@code null}.
+     *
+     * @return the log file name prefix
+     */
+    @Memoized
+    String getLogsPrefix() {
+        if( !logsPath )
+            return null
+        final store = BucketTokenizer.from(logsPath)
+        return store.scheme ? store.getKey() : null
+    }
+
+    /**
+     * The file name prefix applied when storing a Conda lock file into an object storage.
+     * For example having {@link #logsPath} as {@code s3://bucket-name/foo/bar} the
+     * value returned by this method is {@code foo/bar}.
+     *
+     * When using a local path the prefix is {@code null}.
+     *
+     * @return the log file name prefix
+     */
+    @Memoized
+    String getLocksPrefix() {
+        if( !locksPath )
+            return null
+        final store = BucketTokenizer.from(locksPath)
+        return store.scheme ? store.getKey() : null
     }
 }

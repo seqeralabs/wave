@@ -138,7 +138,7 @@ class BuildStrategyTest extends Specification {
         def content = 'FROM foo:latest'
         def workspace = Path.of("some/path")
         def buildrepo = 'foo.com/repo'
-        def containerId = ContainerHelper.makeContainerId(content, null, ContainerPlatform.of('amd64'), buildrepo, null)
+        def containerId = ContainerHelper.makeContainerId(content, null, ContainerPlatform.of('amd64'), buildrepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildrepo, containerId, null, null)
         def build = new BuildRequest(
                 containerId,
@@ -193,7 +193,7 @@ class BuildStrategyTest extends Specification {
                 ociMediatypes: true,
                 compression: CONFIG_COMPRESS,
                 forceCompression: FORCE,
-                buildkitImage: 'moby/buildkit:v0.18.2-rootless')
+                buildkitImage: 'moby/buildkit:v0.21.1-rootless')
         and:
         def result = BuildStrategy.outputOpts(req, config)
         then:
@@ -238,7 +238,7 @@ class BuildStrategyTest extends Specification {
         def config = new BuildConfig(
                 ociMediatypes: true,
                 compression: CONFIG_COMPRESS,
-                buildkitImage: 'moby/buildkit:v0.18.2-rootless')
+                buildkitImage: 'moby/buildkit:v0.21.1-rootless')
         and:
         def result = BuildStrategy.cacheOpts(req, config)
         then:

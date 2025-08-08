@@ -27,7 +27,6 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
-import io.micronaut.http.HttpStatus
 import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
@@ -43,8 +42,10 @@ import io.seqera.wave.api.ScanMode
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.exception.BadRequestException
-import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.exception.NotFoundException
+import io.seqera.wave.exception.UnsupportedBuildServiceException
+import io.seqera.wave.exception.UnsupportedMirrorServiceException
+import io.seqera.wave.exception.UnsupportedScanServiceException
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.logs.BuildLogService
@@ -83,6 +84,7 @@ class ViewController {
     private PersistenceService persistenceService
 
     @Inject
+    @Nullable
     private ContainerBuildService buildService
 
     @Inject
@@ -97,6 +99,7 @@ class ViewController {
     private ContainerScanService scanService
 
     @Inject
+    @Nullable
     private ContainerMirrorService mirrorService
 
     @Inject
@@ -106,9 +109,12 @@ class ViewController {
     @View("mirror-view")
     @Get('/mirrors/{mirrorId}')
     HttpResponse viewMirror(String mirrorId) {
+        if( !mirrorService )
+            throw new UnsupportedMirrorServiceException()
         final result = mirrorService.getMirrorResult(mirrorId)
-        if( !result )
-            throw new NotFoundException("Unknown container mirror id '$mirrorId'")
+        if( !result ){
+            return HttpResponse.ok(["error_message": "Unknown container mirror id '$mirrorId'"])
+        }
         return HttpResponse.ok(renderMirrorView(result))
     }
 
@@ -121,6 +127,7 @@ class ViewController {
         binding.mirror_in_progress = result.exitCode == null
         binding.mirror_exitcode = result.exitCode ?: null
         binding.mirror_logs = result.exitCode ? result.logs : null
+        binding.mirror_log_url = result.logs ? "$serverUrl/v1alpha1/mirrors/${result.mirrorId}/logs" : null
         binding.mirror_time = formatTimestamp(result.creationTime, result.offsetId) ?: '-'
         binding.mirror_duration = formatDuration(result.duration) ?: '-'
         binding.mirror_source_image = result.sourceImage
@@ -136,6 +143,8 @@ class ViewController {
 
     @Get('/builds/{buildId}')
     HttpResponse viewBuild(String buildId) {
+        if( !buildService )
+            throw new UnsupportedBuildServiceException()
         // check redirection for invalid suffix in the form `-nn`
         final r1 = isBuildInvalidSuffix(buildId)
         if( r1 ) {
@@ -148,7 +157,7 @@ class ViewController {
             final builds = buildService.getAllBuilds(buildId)
             if( !builds ) {
                 log.debug "Found not build with id: $buildId"
-                throw new NotFoundException("Unknown container build id '$buildId'")
+                return HttpResponse.ok(new ModelAndView("build-list", ["error_message": "Unknown build id '$buildId'"]))
             }
             if( builds.size()==1 ) {
                 log.debug "Redirect to build page [2]: ${builds.first().buildId}"
@@ -160,8 +169,9 @@ class ViewController {
 
         // go ahead with proper handling
         final record = buildService.getBuildRecord(buildId)
-        if( !record )
-            throw new NotFoundException("Unknown container build id '$buildId'")
+        if( !record ){
+            return HttpResponse.ok(new ModelAndView("build-view", ["error_message": "Unknown build id '$buildId'"]))
+        }
         return HttpResponse.ok(new ModelAndView("build-view", renderBuildView(record)))
     }
 
@@ -197,6 +207,10 @@ class ViewController {
                 final bind = new HashMap(20)
                 bind.build_id = result.buildId
                 bind.build_digest = result.digest
+                bind.build_status = getStatus(result)
+                bind.build_success = getStatus(result) == "SUCCEEDED"
+                bind.build_failed = getStatus(result) == "FAILED"
+                bind.build_in_progress = getStatus(result) == "IN PROGRESS"
                 bind.build_status = getStatus(result)
                 bind.build_time = formatTimestamp(result.startTime, result.offsetId) ?: '-'
                 binding.add(bind)
@@ -260,14 +274,14 @@ class ViewController {
 
     @View("container-view")
     @Get('/containers/{token}')
-    HttpResponse<Map<String,Object>> viewContainer(String token) {
+    HttpResponse viewContainer(String token) {
         final data = persistenceService.loadContainerRequest(token)
-        if( !data )
-            throw new NotFoundException("Unknown container token: $token")
         // return the response
         final binding = new HashMap(20)
+        if( !data )
+            return HttpResponse.notFound(["error_message": "Unknown container request id '$token'"])
         binding.request_token = token
-        binding.request_container_image = data.containerImage
+        binding.request_container_image = data.containerImage ?: '-'
         binding.request_contaiener_platform = data.platform ?: '-'
         binding.request_fingerprint = data.fingerprint ?: '-'
         binding.request_timestamp = formatTimestamp(data.timestamp, data.zoneId) ?: '-'
@@ -358,6 +372,8 @@ class ViewController {
 
     @Get('/scans/{scanId}')
     HttpResponse viewScan(String scanId) {
+        if( !scanService )
+            throw new UnsupportedScanServiceException()
         // check redirection for invalid suffix in the form `-nn`
         final r1 = isScanInvalidSuffix(scanId)
         if( r1 ) {
@@ -406,6 +422,9 @@ class ViewController {
                 final bind = new HashMap(20)
                 bind.scan_id = result.id
                 bind.scan_status = result.status
+                bind.scan_success = result.status == ScanEntry.SUCCEEDED
+                bind.scan_failed = result.status == ScanEntry.FAILED
+                bind.scan_pending = result.status == ScanEntry.PENDING
                 bind.scan_time = formatTimestamp(result.startTime) ?: '-'
                 bind.scan_vuls_count = result.status == 'SUCCEEDED' ? result.vulnerabilities.size() : '-'
                 binding.add(bind)
@@ -444,7 +463,7 @@ class ViewController {
      */
     protected WaveScanRecord loadScanRecord(String scanId) {
         if( !scanService )
-            throw new HttpResponseException(HttpStatus.SERVICE_UNAVAILABLE, "Scan service is not enabled - Check Wave  configuration setting 'wave.scan.enabled'")
+            throw new UnsupportedScanServiceException()
         final scanRecord = scanService.getScanRecord(scanId)
         if( !scanRecord )
             throw new NotFoundException("No scan report exists with id: ${scanId}")
@@ -498,6 +517,7 @@ class ViewController {
         binding.scan_succeeded = result.status == ScanEntry.SUCCEEDED
         binding.scan_exitcode = result.exitCode
         binding.scan_logs = result.logs
+        binding.scan_log_url = result.logs ? "$serverUrl/v1alpha1/scans/${result.id}/logs" : null
         // build info
         binding.build_id = result.buildId
         binding.build_url = result.buildId ? "$serverUrl/view/builds/${result.buildId}" : null
@@ -528,12 +548,12 @@ class ViewController {
         boolean hasHighOrCritical = vulnerabilities.stream()
                 .anyMatch(v -> v.severity.equals("HIGH") || v.severity.equals("CRITICAL"))
         if(hasHighOrCritical){
-            return new Colour('#ffe4e2', '#e00404')
+            return new Colour('#ffe4e2', '#242424')
         }
         else if(hasMedium){
-            return new Colour('#fff8c5', "#000000")
+            return new Colour('#fff8c5', "#242424")
         }
-        return new Colour('#dff0d8', '#3c763d')
+        return new Colour('#e5f5eC', '#242424')
     }
 
 }

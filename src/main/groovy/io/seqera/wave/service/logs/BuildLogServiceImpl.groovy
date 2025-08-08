@@ -21,27 +21,27 @@ package io.seqera.wave.service.logs
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
-import io.micronaut.core.annotation.Nullable
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.micronaut.context.annotation.Value
 import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.objectstorage.ObjectStorageEntry
 import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.scheduling.TaskExecutors
+import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.persistence.PersistenceService
-import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 import org.apache.commons.io.input.BoundedInputStream
-import static org.apache.commons.lang3.StringUtils.strip
+import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_LOCKS
+import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_LOGS
+
 /**
  * Implements Service  to manage logs from an Object store
  *
@@ -50,7 +50,7 @@ import static org.apache.commons.lang3.StringUtils.strip
 @Slf4j
 @Singleton
 @CompileStatic
-@Requires(property = 'wave.build.logs.bucket')
+@Requires(bean = BuildEnabled)
 class BuildLogServiceImpl implements BuildLogService {
 
     private static final String CONDA_LOCK_START = ">> CONDA_LOCK_START"
@@ -58,42 +58,30 @@ class BuildLogServiceImpl implements BuildLogService {
     private static final String CONDA_LOCK_END = "<< CONDA_LOCK_END"
 
     @Inject
-    @Named('build-logs')
-    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
+    @Named(BUILD_LOGS)
+    private ObjectStorageOperations<?, ?, ?> logsStoreOps
+
+    @Inject
+    @Named(BUILD_LOCKS)
+    private ObjectStorageOperations<?, ?, ?> locksStoreOps
 
     @Inject
     private PersistenceService persistenceService
 
-    @Nullable
-    @Value('${wave.build.logs.prefix}')
-    private String prefix
-
-    @Value('${wave.build.logs.bucket}')
-    private String bucket
-
-    @Value('${wave.build.logs.maxLength:100000}')
-    private long maxLength
-
-    @Nullable
-    @Value('${wave.build.logs.conda-lock-prefix}')
-    private String condaLockPrefix
+    @Inject
+    private BuildConfig buildConfig
 
     @Inject
     @Named(TaskExecutors.BLOCKING)
     private ExecutorService ioExecutor
 
-    @PostConstruct
-    private void init() {
-        log.info "Creating Build log service bucket=$bucket; logs prefix=$prefix; maxLength: ${maxLength}; condaLock prefix=$condaLockPrefix"
-    }
-
     protected String logKey(String buildId) {
         if( !buildId )
             return null
-        if( !prefix )
-            return buildId + '.log'
-        final base = strip(prefix, '/')
-        return "${base}/${buildId}.log"
+        final prefix = buildConfig?.logsPrefix
+        return prefix
+                ? "${prefix}/${buildId}.log"
+                : buildId + '.log'
     }
 
     @EventListener
@@ -105,12 +93,11 @@ class BuildLogServiceImpl implements BuildLogService {
 
     @Override
     void storeLog(String buildId, String content) {
-
         try {
             final String logs = removeCondaLockFile(content)
             log.debug "Storing logs for buildId: $buildId"
             final uploadRequest = UploadRequest.fromBytes(logs.bytes, logKey(buildId))
-            objectStorageOperations.upload(uploadRequest)
+            logsStoreOps.upload(uploadRequest)
             // check if needed to store the conda lock
             final condaLock = content.contains(CONDA_LOCK_START)
             if ( condaLock )
@@ -128,7 +115,7 @@ class BuildLogServiceImpl implements BuildLogService {
 
     private StreamedFile fetchLogStream0(String buildId) {
         if( !buildId ) return null
-        final Optional<ObjectStorageEntry<?>> result = objectStorageOperations.retrieve(logKey(buildId))
+        final Optional<ObjectStorageEntry<?>> result = logsStoreOps.retrieve(logKey(buildId))
         return result.isPresent() ? result.get().toStreamedFile() : null
     }
 
@@ -137,8 +124,8 @@ class BuildLogServiceImpl implements BuildLogService {
         final result = fetchLogStream(buildId)
         if( !result )
             return null
-        final logs = new BoundedInputStream(result.getInputStream(), maxLength).getText()
-        return new BuildLog(logs, logs.length()>=maxLength)
+        final logs = new BoundedInputStream(result.getInputStream(), buildConfig.maxLength).getText()
+        return new BuildLog(logs, logs.length()>=buildConfig.maxLength)
     }
 
     protected static removeCondaLockFile(String logs) {
@@ -165,7 +152,7 @@ class BuildLogServiceImpl implements BuildLogService {
             if ( condaLock ){
                 log.debug "Storing conda lock for buildId: $buildId"
                 final uploadRequest = UploadRequest.fromBytes(condaLock.bytes, condaLockKey(buildId))
-                objectStorageOperations.upload(uploadRequest)
+                locksStoreOps.upload(uploadRequest)
             }
         }
         catch (Exception e) {
@@ -176,10 +163,10 @@ class BuildLogServiceImpl implements BuildLogService {
     protected String condaLockKey(String buildId) {
         if( !buildId )
             return null
-        if( !condaLockPrefix )
-            return buildId + '.lock'
-        final base = strip(condaLockPrefix, '/')
-        return "${base}/${buildId}.lock"
+        final prefix = buildConfig?.locksPrefix
+        return prefix
+                ? "${prefix}/${buildId}.lock"
+                : buildId + '.lock'
     }
 
     @Override
@@ -188,14 +175,15 @@ class BuildLogServiceImpl implements BuildLogService {
         if( !result )
             return null
         return result.getInputStream().getText()
-
     }
 
     @Override
     StreamedFile fetchCondaLockStream(String buildId) {
         if( !buildId ) return null
-        final Optional<ObjectStorageEntry<?>> result = objectStorageOperations.retrieve(condaLockKey(buildId))
-        return result.isPresent() ? result.get().toStreamedFile() : null
+        final Optional<ObjectStorageEntry<?>> result = locksStoreOps.retrieve(condaLockKey(buildId))
+        if( result.isPresent() )
+            return result.get().toStreamedFile()
+        return null
     }
 
     protected static String extractCondaLockFile(String logs) {

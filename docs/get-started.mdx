@@ -12,6 +12,7 @@ You can provision containers that include [Conda packages][conda] through [Seqer
 
 - You have either [Docker Desktop] or [Podman] installed locally.
 - You have [Nextflow] 23.10.x or newer installed locally.
+- Use Singularity 4.x or newer to run the Singularity containers.
 
 In this guide, you'll request a containerized Conda package from Seqera Containers.
 
@@ -38,7 +39,7 @@ Nextflow can use the container that Seqera Containers built in the previous sect
 
 1. Create a `main.nf` file with the following contents:
 
-    ```groovy
+    ```nextflow
     process SAMTOOLS {
       container '<container_uri>'
       debug true
@@ -163,7 +164,7 @@ Nextflow can use Wave to seamlessly build a container directly from a Dockerfile
 
 1. Create a `wave.nf` file with the following contents:
 
-    ```groovy
+    ```nextflow
     include { HELLO } from './modules/gamma'
 
     workflow {
@@ -328,7 +329,7 @@ Nextflow can use the container that Wave froze to the build repository that you 
 
 1. Create a `main.nf` file with the following contents:
 
-    ```groovy
+    ```nextflow
     process FAKER {
       container 'docker.io/example-user/repo:faker--2aa7a4d826a76301'
       debug true
