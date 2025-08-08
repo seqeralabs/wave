@@ -192,7 +192,7 @@ services:
   
     docker swarm init
 
-3. Deploy the Wave service, running 2 replicas:
+3. Deploy the Wave service, running two replicas:
   
     docker stack deploy -c docker-compose.yml mystack
 
