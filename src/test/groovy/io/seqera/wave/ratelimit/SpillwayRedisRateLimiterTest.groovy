@@ -22,10 +22,10 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
+import io.seqera.fixtures.redis.RedisTestContainer
 import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.configuration.RateLimiterConfig
 import io.seqera.wave.ratelimit.impl.SpillwayRateLimiter
-import io.seqera.wave.test.RedisTestContainer
 import redis.clients.jedis.Jedis
 
 /**

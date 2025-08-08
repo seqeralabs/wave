@@ -16,27 +16,28 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.data.stream
-
-import java.time.Duration
+package io.seqera.wave.service.scan
 
 /**
+ * Define the scan format that should be used
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class TestStream extends AbstractMessageStream<TestMessage> {
+enum ScanType {
 
-    TestStream(MessageStream<String> target) {
-        super(target)
+    Default("json", "report.json"),
+    Spdx("spdx-json", "spdx.json"),
+    CycloneDx("cyclonedx", "cyclonedx.json"),
+
+    final private String format;
+    final private String output;
+
+    ScanType(String format, String output) {
+        this.format = format
+        this.output = output
     }
 
-    @Override
-    protected String name() {
-        return 'test-stream'
-    }
+    String getFormat() { format }
 
-    @Override
-    protected Duration pollInterval() {
-        return Duration.ofSeconds(1)
-    }
+    String getOutput() { output }
 }

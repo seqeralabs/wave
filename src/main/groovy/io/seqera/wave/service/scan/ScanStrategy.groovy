@@ -36,8 +36,8 @@ abstract class ScanStrategy {
 
     abstract void scanContainer(String jobName, ScanEntry entry)
 
-    protected List<String> scanCommand(String targetImage, Path outputFile, ContainerPlatform platform, ScanConfig config) {
-        List<String> cmd = ['--quiet', 'image']
+    protected List<String> scanCommand(String targetImage, Path workDir, ContainerPlatform platform, ScanConfig config, ScanType mode) {
+        List<String> cmd = ['trivy', '--quiet', 'image']
         if( platform ) {
             cmd << '--platform'
             cmd << platform.toString()
@@ -45,15 +45,26 @@ abstract class ScanStrategy {
         cmd << '--timeout'
         cmd << "${config.timeout.toMinutes()}m".toString()
         cmd << '--format'
-        cmd << 'json'
+        cmd << mode.format
         cmd << '--output'
-        cmd << outputFile.toString()
+        cmd << workDir.resolve(mode.output).toString()
 
-        if( config.severity ) {
+        if( config.severity && mode==ScanType.Default ) {
             cmd << '--severity'
             cmd << config.severity
         }
         cmd << targetImage
         return cmd
+    }
+
+    protected List<String> trivyCommand(String containerImage, Path workDir, ContainerPlatform platform, ScanConfig scanConfig) {
+        final cmd = new ArrayList<String>(50)
+        // the vulnerability scan command
+        cmd.addAll(scanCommand(containerImage, workDir, platform, scanConfig, ScanType.Default) )
+        // command separator
+        cmd.add("&&")
+        // the SBOM spdx scan
+        cmd.addAll(scanCommand(containerImage, workDir, platform, scanConfig, ScanType.Spdx) )
+        return List.of(cmd.join(' '))
     }
 }
