@@ -1,10 +1,14 @@
 ---
-title: CLI overview
+title: Overview
 ---
 
 The Wave CLI is a convenient wrapper around the Wave API.
 
-You can compose Wave CLI with other commands. The CLI returns the URL of the container build on stdout in the following format: `wave.seqera.io/wt/xxxxxxxxxxxx/wave/build:xxxxxxxxxxxxxxxx`
+You can compose Wave CLI with other commands. The CLI returns the URL of the container build on `stdout` in the following format:
+
+```
+wave.seqera.io/wt/xxxxxxxxxxxx/wave/build:xxxxxxxxxxxxxxxx
+```
 
 The first sequence is a 12-character unique access token.
 The second sequence is a 16-character checksum that uniquely identifies the build.

@@ -19,7 +19,7 @@ tower.accessToken = '<PLATFORM_ACCESS_TOKEN>'
 
 Replace `<PLATFORM_ACCESS_TOKEN>` with your Platform access token.
 
-  Using a Platform access token is optional but provides additional capabilities:
+Using a Platform access token is optional but provides additional capabilities:
 
 - Access to private repositories
 - Higher API request limits than anonymous users
