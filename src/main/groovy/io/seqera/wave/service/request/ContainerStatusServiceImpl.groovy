@@ -18,6 +18,9 @@
 
 package io.seqera.wave.service.request
 
+import io.seqera.wave.exception.UnsupportedBuildServiceException
+import io.seqera.wave.exception.UnsupportedMirrorServiceException
+import io.seqera.wave.exception.UnsupportedScanServiceException
 import static io.seqera.wave.api.ContainerStatus.*
 
 import java.time.Duration
@@ -56,9 +59,11 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
     }
 
     @Inject
+    @Nullable
     private ContainerBuildService buildService
 
     @Inject
+    @Nullable
     private ContainerMirrorService mirrorService
 
     @Inject
@@ -73,6 +78,8 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
     private String serverUrl
 
     protected ScanEntry getScanState(String scanId) {
+        if( !scanService )
+            throw new UnsupportedScanServiceException()
         final entry = scanService.getScanState(scanId)
         if( entry!=null )
             return entry
@@ -116,12 +123,15 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
 
     protected ContainerState getContainerState(ContainerRequest request) {
         if( request.mirror && request.buildId ) {
+            if( !mirrorService )
+                throw new UnsupportedMirrorServiceException()
             final mirror = mirrorService.getMirrorResult(request.buildId)
             if (!mirror)
                 throw new NotFoundException("Missing container mirror record with id: ${request.buildId}")
             return ContainerState.from(mirror)
         }
         if( request.buildId ) {
+            if( !buildService ) throw new UnsupportedBuildServiceException()
             final build = buildService.getBuildRecord(request.buildId)
             if (!build)
                 throw new NotFoundException("Missing container build record with id: ${request.buildId}")

@@ -24,6 +24,7 @@ import javax.annotation.PostConstruct
 import groovy.transform.CompileStatic
 import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.util.BucketTokenizer
@@ -33,6 +34,7 @@ import jakarta.inject.Singleton
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
+@Requires(bean = BuildEnabled)
 @CompileStatic
 @Singleton
 @Slf4j
@@ -122,9 +124,6 @@ class BuildConfig {
      */
     @Value('${wave.build.locks.path}')
     String locksPath
-
-    @Value('${wave.build.locks.fallback:false}')
-    Boolean locksFallback
 
     /**
      * Max length allowed for build logs download

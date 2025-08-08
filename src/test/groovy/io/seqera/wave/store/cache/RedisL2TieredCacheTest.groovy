@@ -24,7 +24,7 @@ import spock.lang.Specification
 import java.time.Duration
 
 import io.micronaut.context.ApplicationContext
-import io.seqera.wave.test.RedisTestContainer
+import io.seqera.fixtures.redis.RedisTestContainer
 
 class RedisL2TieredCacheTest extends Specification implements RedisTestContainer {
 

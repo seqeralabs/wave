@@ -71,8 +71,10 @@ namespace wave {
 
   }
 
-  @route("/v1alpha1/scans/{scanId}")
+  @route("/v1alpha1/scans")
   interface scanService{
+
+    @route("{scanId}")
     @doc("This endpoint allows you to get the details of a container scan request made to Wave.")
     @get op scanImage(@path scanId: string) : { 
       @body response: WaveScanRecord;
@@ -81,7 +83,17 @@ namespace wave {
       @statusCode statusCode: 404;
      };
 
-  }
+    @route("{scanId}/logs")
+    @doc("This endpoint allows you to get the logs of a container scan request made to Wave.")
+    @get op getScanLogs(@path scanId: string): {
+        @body response: string;
+        @statusCode statusCode: 200;
+        @header("Content-Disposition")
+        contentDisposition: string
+         }|{
+        @statusCode statusCode: 404;
+    };
+    }
 
   @route("/v1alpha1/inspect")
   interface InspectService {
@@ -110,6 +122,16 @@ namespace wave {
      }|{
       @statusCode statusCode: 404;
     };
-  }
 
+    @route("/{mirrorId}/logs")
+    @doc("This endpoint allows you to get the logs of a container mirror request made to Wave.")
+    @get op getMirrorLogs(@path mirrorId: string): {
+        @body response: string;
+        @statusCode statusCode: 200;
+        @header("Content-Disposition")
+         contentDisposition: string
+         }|{
+        @statusCode statusCode: 404;
+    }
+    }
 }

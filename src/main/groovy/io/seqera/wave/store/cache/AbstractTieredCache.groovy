@@ -35,7 +35,7 @@ import groovy.transform.CompileStatic
 import groovy.transform.Memoized
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
-import io.seqera.wave.encoder.EncodingStrategy
+import io.seqera.serde.encode.StringEncodingStrategy
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.encoder.MoshiSerializable
 import org.jetbrains.annotations.Nullable
@@ -64,7 +64,7 @@ abstract class AbstractTieredCache<K, V extends MoshiSerializable> implements Ti
         long expiresAt
     }
 
-    private EncodingStrategy<Entry> encoder
+    private StringEncodingStrategy<Entry> encoder
 
     private volatile Cache<String,Entry> _l1
 

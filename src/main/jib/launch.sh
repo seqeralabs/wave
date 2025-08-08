@@ -18,6 +18,16 @@
 
 # Launch backend server
 [ "$WAVE_JVM_OPTS" ] && echo "Detected WAVE_JVM_OPTS=$WAVE_JVM_OPTS"
+WAVE_JVM_OPTS="${WAVE_JVM_OPTS:-\
+  -XX:+UseG1GC \
+  -Xms512m \
+  -Xmx850m \
+  -XX:MaxDirectMemorySize=100m \
+  -Dio.netty.maxDirectMemory=0 \
+  -Djdk.httpclient.keepalive.timeout=10 \
+  -Djdk.tracePinnedThreads=short \
+  -Djdk.traceVirtualThreadInThreadDump=full \
+}"
 exec java \
   -Dfile.encoding=UTF-8 \
   -Dcom.sun.security.enableAIAcaIssuers=true \
