@@ -21,6 +21,7 @@ package io.seqera.wave.controller
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
+import io.micronaut.http.HttpHeaders
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Controller
@@ -65,4 +66,15 @@ class ScanController {
                 ? HttpResponse.ok(report)
                 : HttpResponse.<StreamedFile>notFound()
     }
+
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    @Get("/v1alpha1/scans/{scanId}/logs")
+    HttpResponse<String> getScanLog(String scanId){
+        final logs = containerScanService.getScanRecord(scanId).logs
+        return logs
+                ? (HttpResponse.ok(logs)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=${scanId}.log"))
+                : HttpResponse.<String>notFound()
+    }
+
 }

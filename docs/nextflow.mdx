@@ -2,127 +2,134 @@
 title: Nextflow integration
 ---
 
-This feature requires Nextflow `22.10.0` or later.
+You can use Wave directly from your Nextflow pipelines. Nextflow integration with Wave supports private repositories, container freezing, and conda packages.
 
-You can use Wave directly from any of your Nextflow pipelines, with full support for private repositories, container freezing, and conda packages. Add the following snippet to your `nextflow.config` file:
+:::note
+Nextflow integration with Wave requires Nextflow 22.10.0, or later.
+:::
+
+## Get started
+
+To enable Wave in your Nextflow pipeline, add the following to your Nextflow configuration file:
 
 ```groovy
-wave {
-    enabled = true
-}
-
-tower {
-    accessToken = '<your_access_token>'
-}
+wave.enabled = true
+tower.accessToken = '<PLATFORM_ACCESS_TOKEN>'
 ```
 
-The use of the Seqera access token is not mandatory. However, it grants the following additional capabilities:
+Replace `<PLATFORM_ACCESS_TOKEN>` with your Platform access token.
+
+  Using a Platform access token is optional but provides additional capabilities:
 
 - Access to private repositories
-- More API requests than is permitted for anonymous users
+- Higher API request limits than anonymous users
 
-For the entire list of configuration options, see [Configuration options](#configuration-options).
+For all Nextflow configuration options, see [Configuration options](#configuration-options).
 
-## Use Wave with Nextflow
+## Use Wave features with Nextflow
 
-The following sections describe several common usage cases. To get started by creating an example pipeline that uses Wave, see [Get started][start].
-
-[start]: ./get-started.mdx#nextflow
+The following sections describe how to use Wave features with Nextflow.
 
 ### Access private container repositories
 
-Wave allows the use of private repositories in your Nextflow pipelines. The repository access keys must be provided in the form of [Seqera Platform credentials][credentials].
+Use Wave to access private repositories in your Nextflow pipelines. Provide your repository access keys as [Seqera Platform credentials](https://docs.seqera.io/platform/latest/credentials/overview).
 
 <details open>
 <summary>**Access private container repositories**</summary>
 
-After creating the credentials, specify your [personal access token][pat] in your pipeline configuration file. If the credentials were created in a Seqera Platform organization workspace, specify the workspace ID as well in the config file as shown below:
+To access private container repositories, add your [Platform access token](https://docs.seqera.io/platform/latest/api/overview#authentication) to your Nextflow configuration file.
 
 ```groovy
-tower {
-  accessToken = '<your access token>'
-  workspaceId = '<your workspace id>'
-}
+tower.accessToken = '<PLATFORM_ACCESS_TOKEN>'
 ```
 
-Containers built by Wave are uploaded to the Wave default repository hosted on AWS ECR with name `195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build`. The images in this repository are automatically deleted 1 week from the date of their push.
+Replace `<PLATFORM_ACCESS_TOKEN>` with your Platform access token.
 
-If you want to store Wave containers in your own container repository use the following settings in the Nextflow configuration file:
+If you created credentials in an organization workspace, also add your workspace ID:
 
 ```groovy
-wave.build.repository = 'example.com/your/build-repo'
-wave.build.cacheRepository = 'example.com/your/cache-repo'
+tower.workspaceId = '<PLATFORM_WORKSPACE_ID>'
 ```
 
-The first repository is used to store the built container images. The second one is used to store the individual image layers for caching purposes.
+Replace `<PLATFORM_WORKSPACE_ID>` with your Platform organization workspace ID.
 
-When launching the pipeline execution, Wave allows Nextflow to access the private container repositories defined in your pipeline configuration, by using the credentials stored in the Seqera Platform credentials manager.
+Wave uploads built containers to the default AWS ECR repository with the name `195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build`.
+Images in this repository are deleted automatically one week after they are pushed.
 
-[credentials]: https://docs.seqera.io/platform/latest/credentials/overview
-[pat]: https://docs.seqera.io/platform/latest/api/overview#authentication
+To store Wave containers in your own container repository, add the following to your Nextflow configuration file:
+
+```groovy
+wave.build.repository = '<BUILD_REPOSITORY>'
+wave.build.cacheRepository = '<CACHE_REPOSITORY>'
+```
+
+Replace the following:
+
+- `<BUILD_REPOSITORY>`: the repository to store your built container images
+- `<CACHE_REPOSITORY>`: the repository to store image layers for caching
+
 </details>
 
-### Build Nextflow modules containers
+### Build Nextflow module containers
 
-Wave can build and provision container images on-demand for your Nextflow pipelines.
+Wave can build and provision container images on demand for your Nextflow pipelines.
 
 <details open>
-<summary>**Build Nextflow modules containers**</summary>
+<summary>**Build Nextflow module containers**</summary>
 
-To enable this feature, add the Dockerfile of the container to be built in the [module directory][module-directory] where the pipeline process is defined. When Wave is enabled, it automatically uses the Dockerfile to build the required container, upload to the registry, and it uses the container to execute the script defined in the process.
+To provision container images on demand, add the Dockerfile of the container to the [module directory](https://www.nextflow.io/docs/latest/module.html#module-directory) where the pipeline process is defined.
+When Wave is enabled, it automatically uses the Dockerfile to build the required container, uploads the container to the registry, and uses the container to execute the script defined in the process.
 
-Make sure the process does not declare a `container` directive, otherwise it will take precedence over the Dockerfile definition.
+:::note
+If a process declares a `container` directive, it takes precedence over the Dockerfile definition.
+:::
 
-If a process uses a `container` directive and you still want to build the container using the Dockerfile provided in the module directory, add the following setting to the pipeline config file:
+To use the Dockerfile in the module directory, even when a process uses a `container` directive, add the following to your Nextflow configuration file:
 
 ```groovy
 wave.strategy = ['dockerfile','container']
 ```
 
-This setting instructs Wave to prioritize the module Dockerfile over process `container` directives.
-
 :::warning
-When building containers, Wave currently does not support `ADD`, `COPY`, or any other Dockerfile commands that access files in the host file system.
+Wave does not support `ADD`, `COPY`, or other Dockerfile commands that access files in the host file system.
 :::
 
-[module-directory]: https://www.nextflow.io/docs/latest/module.html#module-directory
 </details>
 
-### Build Conda-based containers
+### Build conda-based containers
 
-Wave allows the provisioning of containers based on the `process-conda` [directive][process-conda] used by the processes in your pipeline. This is a quick alternative to building Conda packages in the local computer. Moreover, this enables the use of Conda packages in your pipeline when deploying in cloud-native platforms such as AWS Batch and Kubernetes, which do not allow the convenient use of the Conda package manager.
+Wave can provision containers based on the [`conda` directive](https://www.nextflow.io/docs/latest/process.html#conda).
+This allows you to use conda packages in your pipeline, even on cloud-native platforms like AWS Batch and Kubernetes, which do not support the conda package manager directly.
 
 <details open>
-<summary>**Build Conda-based containers**</summary>
+<summary>**Build conda-based containers**</summary>
 
-With Wave enabled in your pipeline, simply define the `conda` requirements in the pipeline processes, provided the same process does not also specify a `container` directive or a Dockerfile.
+Define the `conda` requirements in your pipeline processes.
+Ensure the process doesn't include a `container` directive or Dockerfile.
 
-In the latter case, add the following setting to your pipeline configuration:
+To prioritize `conda` over `container` directives and Dockerfiles, add the following to your Nextflow configuration:
 
 ```groovy
 wave.strategy = ['conda']
 ```
 
-The above setting instructs Wave to use the `conda` directive to provision the pipeline containers and ignore the `container` directive and any Dockerfile(s).
+Replace `<PLATFORM_ACCESS_TOKEN>` with your Platform access token.
 
-For versions of Nextflow 23.10.x or newer, when a container is provisioned, the `conda-forge::procps-ng` package is included automatically. This package includes the `ps` command.
+For Nextflow 23.10.x, or later, the `conda-forge::procps-ng` package is included automatically in provisioned containers. This package includes the `ps` command.
 
-Some configuration options in the `conda` scope are used when Wave is used to build Conda-based containers.
-For example, the Conda channels and their priority can be set with `conda.channels`:
+You can set conda channels and their priority with `conda.channels`:
 
 ```groovy
 wave.strategy = ['conda']
 conda.channels = 'seqera,conda-forge,bioconda,defaults'
 ```
 
-[process-conda]: https://www.nextflow.io/docs/latest/process.html#conda
 </details>
 
 ### Build Singularity containers
 
-Nextflow can build Singularity native images on-demand using `Singularityfile`,
-Conda packages. The Singularity images are automatically uploaded in a container registry OCI compliant
-of your choice and stored as a [ORAS artifact](https://oras.land/).
+Nextflow can build Singularity native images on demand using a `Singularityfile` or conda packages.
+Images are uploaded to an OCI-compliant container registry of your choice and stored as an [ORAS artifact](https://oras.land/).
 
 :::note
 Available as of Nextflow version 23.09.0-edge.
@@ -135,78 +142,81 @@ Available as of Nextflow version 23.09.0-edge.
 This feature requires a version of Singularity (or Apptainer) that supports pulling images using the `oras:` pseudo-protocol.
 :::
 
-For example to enable the provisioning of Singularity images in your pipeline use the following configuration snippet:
+To enable provisioning of Singularity images in your pipeline, add the following to your Nextflow configuration file:
 
 ```groovy
 singularity.enabled = true
-wave.enabled = true
 wave.freeze = true
 wave.strategy = ['conda']
-wave.build.repository = 'docker.io/user/repo'
+wave.build.repository = '<BUILD_REPOSITORY>'
 ```
 
-In the above configuration replace `docker.io/user/repo` with a repository of your choice where Singularity image files
-should be uploaded.
+Replace `<BUILD_REPOSITORY>` with the repository where your Singularity image files should be uploaded.
 
-When using a private repository, the repository access keys must be provided via the Seqera Platform credentials manager. For more information, see [Authenticate private repositories][private].
+When using a private repository, provide repository access keys via the Platform credentials manager. See [Authenticate private repositories](https://docs.seqera.io/platform/24.1/credentials/overview) for more information.
 
-Moreover the access to the repository must be granted in the compute nodes by using the command `singularity remote login <registry>`.
-Please see Singularity documentation for further details.
+The access to the repository must be granted in the compute nodes. To grant access to the repository on compute nodes, run the following command:
 
-In order to build Singularity native images, both `singularity.ociAutoPull` and `singularity.ociMode` must be disabled in the configuration. For more information, see the Nextflow [configuration][config] documentation.
+```bash
+singularity remote login <REMOTE_NAME>
+```
 
-[private]: https://docs.seqera.io/platform/24.1/credentials/overview
-[config]: https://www.nextflow.io/docs/latest/config.html#config-singularity
+Replace `<REMOTE_NAME>` with your Singularity remote endpoint.
+
+See the [Singularity remote login documentation](https://docs.sylabs.io/guides/3.1/user-guide/cli/singularity_remote_login.html) for more information.
+
+:::note
+To build Singularity native images, disable both `singularity.ociAutoPull` and `singularity.ociMode` in your Nextflow configuration file. For more information, see the Nextflow [configuration documentation](https://www.nextflow.io/docs/latest/config.html#config-singularity).
+:::
+
 </details>
 
 ### Use Wave with Fusion
 
-Wave containers allows you to run your containerized workflow with the Fusion file system.
+Wave containers allow you to run your containerized workflow with the Fusion file system.
 
 <details open>
 <summary>**Use Wave with Fusion**</summary>
 
-This enables the use of an object storage bucket such as AWS S3 or Google Cloud Storage as your pipeline work directory, simplifying and speeding up many operations on local, AWS Batch, Google Batch or Kubernetes executions.
+Wave with Fusion allows you to use an object storage bucket, such as AWS S3 or Google Cloud Storage, as your pipeline work directory.
+This can simplify and speed up operations on local, AWS Batch, Google Batch, or Kubernetes executions.
 
-For more information, refer to the following documentation pages:
+For more information, see:
+- [Fusion documentation](https://docs.seqera.io/fusion)
+- [Nextflow Fusion integration documentation](https://www.nextflow.io/docs/latest/fusion.html)
 
-- [Fusion documentation][fusion]
-- [Nextflow Fusion integration documentation][nextflow-fusion]
-
-[fusion]: https://docs.seqera.io/fusion
-[nextflow-fusion]: https://www.nextflow.io/docs/latest/fusion.html
 </details>
 
 ## Configuration options
 
-The following configuration options are available:
+The following Nextflow configuration options are available:
 
 | Method                       | Description                                                                                                                                                              |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `wave.enabled`               | Enable/disable the execution of Wave containers                                                                                                                          |
 | `wave.endpoint`              | The Wave service endpoint (default: `https://wave.seqera.io`)                                                                                                            |
-| `wave.build.repository`      | The container repository where image built by Wave needs to be uploaded (note: the corresponding credentials need to be provided in your Seqera Platform account).       |
-| `wave.build.cacheRepository` | The container repository used to cache image layers build by the Wave service (note: the corresponding credentials need to be provided in your Seqera Platform account). |
-| `wave.conda.mambaImage`      | The Mamba container image is used to build Conda based container. This is expected to be [micromamba-docker](https://github.com/mamba-org/micromamba-docker) image.      |
-| `wave.conda.commands`        | One or more commands to be added to the Dockerfile used by build a Conda based image.                                                                                    |
-| `wave.strategy`              | The strategy to be used when resolving ambiguous Wave container requirement (default: `'container,dockerfile,conda'`)                                                    |
-| `wave.freeze`                | When `freeze` mode is enabled containers provisioned by Wave are stored permanently in the repository specified via the setting `wave.build.repository`.                 |
+| `wave.build.repository`      | The container repository where images built by Wave are uploaded. You must provide corresponding credentials in your Platform account.                            |
+| `wave.build.cacheRepository` | The container repository used to cache image layers built by the Wave service. You must provide corresponding credentials in your Platform account.               |
+| `wave.conda.mambaImage`      | The Mamba container image used to build conda-based containers. This should be a [micromamba-docker](https://github.com/mamba-org/micromamba-docker) image.              |
+| `wave.conda.commands`        | One or more commands to add to the Dockerfile used to build a conda-based image.                                                                                         |
+| `wave.strategy`              | The strategy used when resolving ambiguous Wave container requirements (default: `'container,dockerfile,conda'`)                                                         |
+| `wave.freeze`                | When `freeze` mode is enabled, containers provisioned by Wave are stored permanently in the repository specified by `wave.build.repository`.                             |
 
 ## Limitations
 
-### Use of sha256 digest in the image name
+### Use of SHA256 digest in the image name
 
-The Wave does not support the use of sha256 digest in the image name, e.g. `ubuntu@sha256:3235...ce8f`, when using
-the augmentation process to extend container images.
+Wave does not support using an SHA256 digest in the image name (for example, `ubuntu@sha256:3235...ce8f`) when using the augmentation process to extend container images.
 
-In order to reference a container via sha256 digest in the image name with Wave you will need to *freeze* image mode
-that will force the creation of a new container image using the container you have specified as base image.
+To reference a container by SHA256 digest in the image name with Wave, enable freeze mode and force the creation of a new container image using your specified base image.
 
-In your pipeline configuration, ensure that you specify the following settings:
+Add the following to your Nextflow configuration file:
 
 ```groovy
 wave.enabled = true
 wave.freeze = true
 wave.strategy = ['dockerfile']
-wave.build.repository = 'docker.io/<user>/<repository>'
+wave.build.repository = '<BUILD_REPOSITORY>'
 ```
+
+Replace `<BUILD_REPOSITORY>` with the repository where your image files should be uploaded.

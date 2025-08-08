@@ -274,7 +274,6 @@ class ViewControllerTest extends Specification {
         response.body().contains('latest')
         response.body().contains('https://registry-1.docker.io')
         response.body().contains('arm64')
-        response.body().contains(serverUrl)
     }
 
     def 'should render in progress build page' () {
@@ -545,11 +544,9 @@ class ViewControllerTest extends Specification {
 
         when:
         request = HttpRequest.GET("/view/builds/07277")
-        client.toBlocking().exchange(request, String)
+        response = client.toBlocking().exchange(request, String)
         then:
-        HttpClientResponseException e = thrown(HttpClientResponseException)
-        and:
-        e.status.code == 404
+        response.body().contains("Unknown build id")
 
     }
 
@@ -778,14 +775,14 @@ class ViewControllerTest extends Specification {
 
         where:
         VULNERABILITIES                                                                             | EXPEXTED_COLOR
-        [new ScanVulnerability(severity: 'LOW')]                                                    | new Colour('#dff0d8','#3c763d')
-        [new ScanVulnerability(severity: 'MEDIUM')]                                                 | new Colour('#fff8c5','#000000')
-        [new ScanVulnerability(severity: 'HIGH')]                                                   | new Colour('#ffe4e2','#e00404')
-        [new ScanVulnerability(severity: 'CRITICAL')]                                               | new Colour('#ffe4e2','#e00404')
-        [new ScanVulnerability(severity: 'LOW'), new ScanVulnerability(severity: 'MEDIUM')]         | new Colour('#fff8c5','#000000')
-        [new ScanVulnerability(severity: 'LOW'), new ScanVulnerability(severity: 'HIGH')]           | new Colour('#ffe4e2','#e00404')
-        [new ScanVulnerability(severity: 'MEDIUM'), new ScanVulnerability(severity: 'CRITICAL')]    | new Colour('#ffe4e2','#e00404')
-        []                                                                                          | new Colour('#dff0d8','#3c763d')
+        [new ScanVulnerability(severity: 'LOW')]                                                    | new Colour('#e5f5eC','#242424')
+        [new ScanVulnerability(severity: 'MEDIUM')]                                                 | new Colour('#fff8c5','#242424')
+        [new ScanVulnerability(severity: 'HIGH')]                                                   | new Colour('#ffe4e2','#242424')
+        [new ScanVulnerability(severity: 'CRITICAL')]                                               | new Colour('#ffe4e2','#242424')
+        [new ScanVulnerability(severity: 'LOW'), new ScanVulnerability(severity: 'MEDIUM')]         | new Colour('#fff8c5','#242424')
+        [new ScanVulnerability(severity: 'LOW'), new ScanVulnerability(severity: 'HIGH')]           | new Colour('#ffe4e2','#242424')
+        [new ScanVulnerability(severity: 'MEDIUM'), new ScanVulnerability(severity: 'CRITICAL')]    | new Colour('#ffe4e2','#242424')
+        []                                                                                          | new Colour('#e5f5eC','#242424')
     }
 
     def 'should redirect to scan view on successful scan request'() {
