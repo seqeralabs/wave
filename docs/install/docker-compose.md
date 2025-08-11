@@ -2,21 +2,13 @@
 title: Docker Compose installation
 ---
 
-Wave enables you to provision container images on-demand, removing the need to build and upload them manually to a container registry. Wave can can provision both disposable containers that are only accessible for a short period, and regular registry-persisted container images.
+Wave enables you to provision container images on demand, removing the need to build and upload them manually to a container registry. Wave can provision both ephemeral containers that are only accessible for a short period, and regular registry-persisted container images.
 
-Docker Compose installations support Wave in Lite mode. Wave Lite includes only container augmentation and inspection capabilities, and enables the use of Fusion file system in Nextflow pipelines. The following features are not available in self-hosted Wave installations in Docker Compose:
-
-- Container Freeze
-- Container Build service
-- Container Mirror service
-- Container Security scanning
-- Container blobs caching 
-
-For full Wave functionality, an AWS Elastic Kubernetes instance is required.
+Docker Compose installations support Wave in Lite mode. Wave Lite includes only container augmentation and inspection capabilities, and enables the use of Fusion file system in Nextflow pipelines. 
 
 ## Prerequisites
 
-Before installing Wave, you require the following infrastructure components:
+Before installing Wave, you need the following infrastructure components:
 
 - **PostgreSQL instance** - Version 12, or higher 
 - **Redis instance** - Version 6.2, or higher
@@ -190,25 +182,35 @@ services:
 
 2. Initialize the Docker swarm environment:
   
+    ```bash
     docker swarm init
+    ```
 
 3. Deploy the Wave service, running two replicas:
   
+    ```bash
     docker stack deploy -c docker-compose.yml mystack
+    ```
 
 4. Check the current status:
   
+    ```bash
     docker service ls
+    ```
 
 5. Check the logs:
 
+    ```bash
     docker service logs mystack_wave
+    ```
 
 6. Tear down the service when it's no longer needed:
 
+    ```bash
     docker stack rm mystack
+    ```
 
-Wave will be available at `http://localhost:9090` once the container is running and healthy. The application may take 30-60 seconds to fully initialize on first startup, as it performs database migrations.
+Wave is available at `http://localhost:9090` once the container is running and healthy. The application may take 30-60 seconds to fully initialize on first startup, as it performs database migrations.
 
 ### Advanced configuration
 
