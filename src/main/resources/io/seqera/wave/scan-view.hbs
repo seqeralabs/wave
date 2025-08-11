@@ -23,12 +23,10 @@
     {{#if scan_exist}}
                 {{#if scan_completed}}
                     {{#if scan_failed}}
-                    <div class="error-div">
                         <div class="status-alert error">
                             <div class="status-icon">✗</div>
                             <div class="status-message">Unable to complete the container security scan successfully</div>
                         </div>
-                    </div>
                     {{else}}
                         <div class="status-alert" style="color: {{scan_color_fg}}; background-color: {{scan_color_bg}};">
                             <div class="status-icon">✓</div>
