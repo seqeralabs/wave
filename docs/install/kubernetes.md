@@ -4,18 +4,10 @@ title: Kubernetes installation
 
 Wave enables you to provision container images on-demand, removing the need to build and upload them manually to a container registry. Wave can can provision both disposable containers that are only accessible for a short period, and regular registry-persisted container images.
 
-This installation guide covers Wave in Lite mode. Wave Lite provides container augmentation and inspection capabilities on AWS, Azure, and GCP cloud deployments, and enables the use of Fusion file system in Nextflow pipelines.
-
-The following Wave features are **not** available in Lite configuration:
-
-- **Container Freeze**
-- **Container Build service** 
-- **Container Mirror service**
-- **Container Security scanning**
-- **Container blobs caching**
+This installation guide covers Wave in [Lite](../wave-lite.md) mode. Wave Lite provides container augmentation and inspection capabilities on AWS, Azure, and GCP cloud deployments, and enables the use of Fusion file system in Nextflow pipelines.
 
 :::info
-Wave's full build capabilities require specific integrations with Kubernetes and AWS EFS Storage, making EKS and AWS a hard dependency for fully-featured deployments. After you have configured a base Wave Lite installation on AWS with this guide, see [Configuring Wave Build](./configuring-wave-build.md) to extend your installation to support build capabilities.
+Wave's full build capabilities require specific integrations with Kubernetes and AWS EFS Storage, making EKS and AWS a hard dependency for fully-featured deployments. After you have configured a base Wave Lite installation on AWS with this guide, see [Configure Wave Build](./configure-wave-build.md) to extend your installation to support build capabilities.
 :::
  
 ## Prerequisites
@@ -35,7 +27,7 @@ The minimum system requirements for a Wave Kubernetes installation are:
 - **Storage**: Sufficient storage for your container images and temporary files
 
 :::info
-See [Configuring Wave](./configuring-wave.md) for detailed scaling and performance tuning guidance.
+See [Configure Wave](./configure-wave.md) for detailed scaling and performance tuning guidance.
 :::
 
 ## Assumptions

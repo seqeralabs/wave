@@ -192,6 +192,10 @@ services:
     docker stack deploy -c docker-compose.yml mystack
     ```
 
+    :::note
+    Wave is available at `http://localhost:9090` once the container is running and healthy. The application may take 30-60 seconds to fully initialize on first startup, as it performs database migrations.
+    :::
+
 4. Check the current status:
   
     ```bash
@@ -210,7 +214,9 @@ services:
     docker stack rm mystack
     ```
 
-Wave is available at `http://localhost:9090` once the container is running and healthy. The application may take 30-60 seconds to fully initialize on first startup, as it performs database migrations.
+    :::warning
+    If Wave Lite is running in the same container as Platform Connect for [Studios](https://docs.seqera.io/platform-enterprise/25.2/enterprise/studios#docker-compose), tearing down the service will also interrupt Connect services. 
+    :::
 
 ### Advanced configuration
 
