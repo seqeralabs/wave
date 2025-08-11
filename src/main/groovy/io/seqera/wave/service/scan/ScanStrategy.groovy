@@ -49,7 +49,7 @@ abstract class ScanStrategy {
         cmd << '--output'
         cmd << workDir.resolve(mode.output).toString()
         cmd << '--cache-dir'
-        cmd << workDir.resolve('trivy-cache').toString()
+        cmd << '/tmp/trivy-cache'
         if( config.severity && mode==ScanType.Default ) {
             cmd << '--severity'
             cmd << config.severity
