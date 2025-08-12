@@ -29,19 +29,15 @@
         </div>
         {{else}}
         {{#if build_success}}
-        <div class="error-div">
             <div class="status-alert">
                 <div class="status-icon">✓</div>
                 <div class="status-message">Container build completed successfully!</div>
             </div>
-        </div>
         {{else build_failed}}
-        <div class="error-div">
             <div class="status-alert error">
                 <div class="status-icon">✗</div>
                 <div class="status-message">Container build failed</div>
             </div>
-        </div>
         {{else build_in_progress}}
         <div class="progress-div">
             <div class="status-alert progress">
