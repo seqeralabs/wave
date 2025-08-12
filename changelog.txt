@@ -1,4 +1,10 @@
 # Wave changelog
+1.24.0 - 12 Aug 2025
+- Add support for container SBOM report (#841) [919a4016]
+- Fix views (#877) [88db93f5]
+- Fix build view (#876) [3a6aa92e]
+- Bump trivy to version 0.65.0 [ad14e0f2]
+
 1.23.1 - 7 Aug 2025
 - Revert to MN 4.8.3 [b7ee0214]
 - Improve view titles [a59b623b]
