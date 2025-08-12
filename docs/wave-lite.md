@@ -1,4 +1,4 @@
-# Wave lite
+# Wave Lite
 
 Wave Lite is a configuration mode for Wave containers that provides the following features:
 
