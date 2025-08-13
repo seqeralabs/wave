@@ -205,7 +205,7 @@ services:
     docker service logs mystack_wave
     ```
 
-6. Tear down the service when it's no longer needed:
+1. Tear down the service when it's no longer needed:
 
     ```bash
     docker stack rm mystack
