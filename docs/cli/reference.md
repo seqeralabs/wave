@@ -6,9 +6,9 @@ With the Wave CLI you can build Docker and Singularity containers from a variety
 
 The following sections describe several common usage cases. To get started by creating an example Nextflow pipeline that uses Wave CLI, see [Wave CLI][start].
 
-[start]: ../get-started.md#wave-cli
+[start]: /wave_docs/wave_repo/docs/get-started/wave-cli.mdx
 
-## Augment a container with a directory
+## Augment a container with a directory 
 
 The Wave CLI supports container augmentation with a specified directory. You can use container augmentation to dynamically add a layer to your container, so you can inject scripts or configuration files as a new layer.
 

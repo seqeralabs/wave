@@ -145,7 +145,7 @@ data:
           limits:
             memory: '4Gi'
             cpu: '2000m'
-      
+
       # Enable other build-dependent features
       mirror:
         enabled: true
@@ -153,20 +153,20 @@ data:
         enabled: true
       blobCache:
         enabled: true
-      
+
       # Existing database, redis, and platform configuration...
       db:
         uri: "jdbc:postgresql://your-postgres-host:5432/wave"
         user: "wave_user"
         password: "your_secure_password_here"
-      
+
       redis:
         uri: "redis://your-redis-host:6379"
-      
+
       tower:
         endpoint:
           url: "https://your-platform-instance.com/api"
-      
+
       # Kubernetes-specific configuration for builds
       k8s:
         namespace: wave
@@ -340,4 +340,4 @@ Set up monitoring for build operations:
 - **Storage access issues** - Ensure EFS access points are configured correctly
 - **Build timeouts** - Adjust build timeout settings based on workload requirements
 
-For additional configuration options and advanced features, see [Configuring Wave](./configuring-wave.md).
+For additional configuration options and advanced features, see [Configuring Wave](./configure-wave.md).
