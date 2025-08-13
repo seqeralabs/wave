@@ -180,7 +180,7 @@ services:
 
 1. Download and populate the [wave.env](./_templates/wave.env) file with the settings corresponding to your system.
 
-2. We recommend to use Docker swarm for deploying Wave. You can follow this [guide](https://docs.docker.com/engine/swarm/swarm-tutorial/create-swarm/) to set up Docker Swarm.
+2. Use Docker Swarm to deploy Wave Lite. See [Create a swarm](https://docs.docker.com/engine/swarm/swarm-tutorial/create-swarm/) for detailed setup instructions.
 
 
 3. Deploy the Wave service, running two replicas:
