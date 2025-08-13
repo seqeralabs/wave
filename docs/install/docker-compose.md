@@ -183,7 +183,7 @@ services:
 1. Use Docker Swarm to deploy Wave Lite. See [Create a swarm](https://docs.docker.com/engine/swarm/swarm-tutorial/create-swarm/) for detailed setup instructions.
 
 
-3. Deploy the Wave service, running two replicas:
+1. Deploy the Wave service, running two replicas:
   
     ```bash
     docker stack deploy -c docker-compose.yml mystack
