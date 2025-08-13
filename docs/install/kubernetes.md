@@ -4,21 +4,10 @@ title: Kubernetes installation
 
 Wave enables you to provision container images on-demand, removing the need to build and upload them manually to a container registry. Wave can can provision both disposable containers that are only accessible for a short period, and regular registry-persisted container images.
 
-This installation guide covers Wave in **augmentation-only mode** (referred to here as `wave-lite`), which provides:
-
-- **inspect** - Container inspection and metadata retrieval
-- **augment** - Container image augmentation with additional layers
-
-Wave's full build capabilities require specific integrations with Kubernetes and AWS EFS Storage, making EKS & AWS a hard dependency for fully-featured deployments. The following Wave features are **not** available in this configuration:
-
-- **Container Freeze**
-- **Container Build service** 
-- **Container Mirror service**
-- **Container Security scanning**
-- **Container blobs caching**
+This installation guide covers Wave in [Lite](../wave-lite.md) mode. Wave Lite provides container augmentation and inspection capabilities on AWS, Azure, and GCP cloud deployments, and enables the use of Fusion file system in Nextflow pipelines.
 
 :::info
-After you have configured a base Wave installation with this guide, see [Configuring Wave Build](./configuring-wave-build.md) to extend your installation to support build capabilities.
+Wave's full build capabilities require specific integrations with Kubernetes and AWS EFS Storage, making EKS and AWS a hard dependency for fully-featured deployments. After you have configured a base Wave Lite installation on AWS with this guide, see [Configure Wave Build](./configure-wave-build.md) to extend your installation to support build capabilities.
 :::
  
 ## Prerequisites
@@ -38,7 +27,7 @@ The minimum system requirements for a Wave Kubernetes installation are:
 - **Storage**: Sufficient storage for your container images and temporary files
 
 :::info
-See [Configuring Wave](./configuring-wave.md) for detailed scaling and performance tuning guidance.
+See [Configure Wave](./configure-wave.md) for detailed scaling and performance tuning guidance.
 :::
 
 ## Assumptions
@@ -48,7 +37,6 @@ This guide assumes:
 - You will deploy Wave into the `wave` namespace
 - You have appropriate cluster permissions to create namespaces, deployments, and services
 - Your PostgreSQL and Redis instances are accessible from the Kubernetes cluster
-
 
 ## Database configuration
 
@@ -221,8 +209,6 @@ spec:
           env:
             - name: MICRONAUT_ENVIRONMENTS
               value: "postgres,redis,lite"
-            - name: WAVE_JVM_OPTS
-              value: '-XX:+UseG1GC -Xms512m -Xmx850m -XX:MaxDirectMemorySize=100m -Dio.netty.maxDirectMemory=0 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/efs/wave/dump/java-$(POD_NAME).hprof -Djdk.httpclient.keepalive.timeout=10 -Djdk.tracePinnedThreads=short -Djdk.traceVirtualThreadInThreadDump=full'
           resources:
             requests:
               memory: "4000Mi"
