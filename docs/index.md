@@ -2,13 +2,15 @@
 title: Wave containers
 ---
 
-Containers are an essential part of modern data analysis pipelines in bioinformatics. They encapsulate applications and dependencies in portable, self-contained packages that can be easily distributed across diverse computing environments. Containers are also key to enabling predictable and reproducible scientific results. However, workflows can comprise dozens of distinct container images. Pipeline developers must manage and maintain these container images and ensure that their functionality precisely aligns with the requirements of every pipeline task, creating unnecessary friction in the maintenance and deployment of data pipelines.
+Containers are an essential part of modern data analysis pipelines in bioinformatics. They encapsulate applications and dependencies in portable, self-contained packages that can be easily distributed across diverse computing environments. Containers are also key to enabling predictable and reproducible scientific results.
+
+However, workflows can comprise dozens of distinct container images. Pipeline developers must manage and maintain these container images and ensure that their functionality precisely aligns with the requirements of every pipeline task, creating unnecessary friction in the maintenance and deployment of data pipelines.
 
 Wave solves this problem by provisioning containers on-demand during pipeline execution. This allows the delivery of container images that are defined precisely depending on the requirements of each pipeline task in terms of dependencies and platform architecture. This process is completely transparent and fully automated, removing all the plumbing and friction commonly needed to create, upload, and maintain multiple container images required for pipeline execution.
 
 To get started with Wave:
 
-1. See the [Get started][started] guide.
+1. See the [Get started][started] guides.
 1. Learn about [Nextflow integration][nf].
 1. Learn about the [Wave CLI][cli].
 
