@@ -10,7 +10,7 @@ Docker Compose installations support Wave Lite, a configuration mode for Wave th
 
 Before installing Wave, you need the following infrastructure components:
 
-- **PostgreSQL instance** - Version 12, or higher 
+- **PostgreSQL instance** - Version 12, or higher
 - **Redis instance** - Version 6.2, or higher
 
 ## System requirements
@@ -19,15 +19,15 @@ The minimum system requirements for self-hosted Wave in Docker Compose are:
 
 - Current, supported versions of **Docker Engine** and **Docker Compose**.
 - Compute instance minimum requirements:
-  - **Memory**: 32 GB RAM available to be used by the Wave application on the host system. 
-  - **CPU**: 8 CPU cores available on the host system. 
+  - **Memory**: 32 GB RAM available to be used by the Wave application on the host system.
+  - **CPU**: 8 CPU cores available on the host system.
   - **Storage**: 10 GB in addition to sufficient disk space for your container images and temporary files.
   - For example, in AWS EC2, `m5a.2xlarge` or greater
-  - **Network**: Connectivity to your PostgreSQL and Redis instances.  
+  - **Network**: Connectivity to your PostgreSQL and Redis instances.
 
 ## Database configuration
 
-Wave requires a PostgreSQL database to operate. 
+Wave requires a PostgreSQL database to operate.
 
 Create a dedicated `wave` database and user account with the appropriate privileges:
 
@@ -58,7 +58,7 @@ GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO wave_user;
 
 Wave will automatically handle schema migrations on startup and create the required database objects.
 
-## Wave config 
+## Wave config
 
 Create a configuration file that defines Wave's behavior and integrations. Save this as `config/wave-config.yml` in your Docker Compose directory.
 
@@ -67,7 +67,7 @@ wave:
   # Build service configuration - disabled for Docker Compose
   build:
     enabled: false
-  # Mirror service configuration - disabled for Docker Compose  
+  # Mirror service configuration - disabled for Docker Compose
   mirror:
     enabled: false
   # Security scanning configuration - disabled for Docker Compose
@@ -141,7 +141,7 @@ Configuration notes:
 
 ## Docker Compose
 
-Add the following to your `docker-compose.yml`: 
+Add the following to your `docker-compose.yml`:
 
 ```yaml
 services:
@@ -149,7 +149,7 @@ services:
     image: your-registry.com/wave:latest
     container_name: wave-app
     ports:
-      # Bind to the host on 9100 vs 9090  
+      # Bind to the host on 9100 vs 9090
       - "9100:9090"
     environment:
       - MICRONAUT_ENVIRONMENTS=lite,redis,postgres
@@ -157,7 +157,7 @@ services:
       - ./config/wave-config.yml:/work/config.yml:ro
     deploy:
       mode: replicated
-      replicas: 2      
+      replicas: 2
       resources:
         limits:
           memory: 4G
@@ -176,7 +176,7 @@ services:
     restart: unless-stopped
 ```
 
-## Deploy Wave 
+## Deploy Wave
 
 1. Download and populate the [wave.env](./_templates/wave.env) file with the settings corresponding to your system.
 
@@ -184,7 +184,7 @@ services:
 
 
 1. Deploy the Wave service, running two replicas:
-  
+
     ```bash
     docker stack deploy -c docker-compose.yml mystack
     ```
@@ -194,7 +194,7 @@ services:
     :::
 
 1. Check the current status:
-  
+
     ```bash
     docker service ls
     ```
@@ -212,9 +212,9 @@ services:
     ```
 
     :::warning
-    If Wave Lite is running in the same container as Platform Connect for [Studios](https://docs.seqera.io/platform-enterprise/25.2/enterprise/studios#docker-compose), tearing down the service will also interrupt Connect services. 
+    If Wave Lite is running in the same container as Platform Connect for [Studios](https://docs.seqera.io/platform-enterprise/25.2/enterprise/studios#docker-compose), tearing down the service will also interrupt Connect services.
     :::
 
 ### Advanced configuration
 
-See [Configuring Wave](./configuring-wave.md) for advanced Wave features, scaling guidance, and integration options.
+See [Configuring Wave](./configure-wave.md) for advanced Wave features, scaling guidance, and integration options.

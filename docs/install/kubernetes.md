@@ -9,7 +9,7 @@ This installation guide covers Wave in [Lite](../wave-lite.md) mode. Wave Lite p
 :::info
 Wave's full build capabilities require specific integrations with Kubernetes and AWS EFS Storage, making EKS and AWS a hard dependency for fully-featured deployments. After you have configured a base Wave Lite installation on AWS with this guide, see [Configure Wave Build](./configure-wave-build.md) to extend your installation to support build capabilities.
 :::
- 
+
 ## Prerequisites
 
 **Required infrastructure:**
@@ -22,7 +22,7 @@ Wave's full build capabilities require specific integrations with Kubernetes and
 The minimum system requirements for a Wave Kubernetes installation are:
 
 - **Memory**: Minimum 4GB RAM per Wave pod
-- **CPU**: Minimum 1 CPU core per pod 
+- **CPU**: Minimum 1 CPU core per pod
 - **Network**: Connectivity to your external PostgreSQL and Redis instances
 - **Storage**: Sufficient storage for your container images and temporary files
 
@@ -40,7 +40,7 @@ This guide assumes:
 
 ## Database configuration
 
-Wave requires a PostgreSQL database to operate. 
+Wave requires a PostgreSQL database to operate.
 
 Create a dedicated `wave` database and user account with the appropriate privileges:
 
@@ -137,7 +137,7 @@ data:
     redis:
       uri: "rediss://your-redis-host:6379"
 
-    # Platform integration (optional)  
+    # Platform integration (optional)
     tower:
       endpoint:
         url: "https://your-platform-server.com"
@@ -277,7 +277,7 @@ Wave must be accessible from:
 - Seqera Platform services
 - Compute environments (for container image access)
 
-Configure external access using a Kubernetes ingress. 
+Configure external access using a Kubernetes ingress.
 
 Update the following example ingress with your provider-specific annotations:
 
@@ -301,7 +301,7 @@ spec:
               number: 9090
 ```
 
-### TLS 
+### TLS
 
 Wave does not handle TLS termination directly. Configure TLS at your ingress controller or load balancer level. Most ingress controllers support automatic certificate provisioning through provider integrations.
 
@@ -351,8 +351,4 @@ Wave requires access to AWS ECR for container image management. Create an IAM ro
 
 ### Advanced configuration
 
-See [Configuring Wave](./configuring-wave.md) for advanced Wave features, scaling guidance, and integration options.
-
-
-
-
+See [Configuring Wave](./configure-wave.md) for advanced Wave features, scaling guidance, and integration options.
