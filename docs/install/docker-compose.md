@@ -199,7 +199,7 @@ services:
     docker service ls
     ```
 
-5. Check the logs:
+1. Check the logs:
 
     ```bash
     docker service logs mystack_wave
