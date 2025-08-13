@@ -18,7 +18,7 @@ To get started with Wave:
 Wave is also available as a hosted service on [Seqera Platform](https://cloud.seqera.io/). For Seqera Enterprise customers, a licensed self-hosted Wave solution is also available. [Contact us](https://seqera.io/contact-us/) for more information.
 :::
 
-[started]: ./get-started/index.md
+[started]: ./get-started/index.mdx
 [nf]: ./nextflow.md
 [cli]: ./cli/index.md
 
