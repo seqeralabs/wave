@@ -7,6 +7,7 @@
       "items": [
         "index",
         "get-started",
+        "wave-lite",
         "provisioning"
       ]
     },
@@ -17,8 +18,8 @@
       "items": [
         "install/docker-compose",
         "install/kubernetes",
-        "install/configuring-wave",
-        "install/configuring-wave-build"
+        "install/configure-wave",
+        "install/configure-wave-build"
       ]
     },
     "nextflow",
