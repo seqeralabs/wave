@@ -193,7 +193,7 @@ services:
     Wave is available at `http://localhost:9090` once the container is running and healthy. The application may take 30-60 seconds to fully initialize on first startup, as it performs database migrations.
     :::
 
-4. Check the current status:
+1. Check the current status:
   
     ```bash
     docker service ls
