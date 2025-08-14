@@ -5,7 +5,7 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
-rootProject.name = "wave"
+rootProject.name="wave"
 
 include('app', 'api', 'util')
 
