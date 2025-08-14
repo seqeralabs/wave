@@ -8,6 +8,6 @@ import DocCardList from "@theme/DocCardList";
 
 <DocCardList />
 
-[seqera-containers-page]: /wave_docs/wave_repo/docs/get-started/nextflow-seqera-containers.mdx
-[nextflow-wave-page]: /wave_docs/wave_repo/docs/get-started/nextflow-wave.mdx
-[wave-cli-page]: /wave_docs/wave_repo/docs/get-started/wave-cli.mdx
+[seqera-containers-page]: /wave_docs/wave_repo/docs/tutorials/nextflow-seqera-containers.mdx
+[nextflow-wave-page]: /wave_docs/wave_repo/docs/tutorials/nextflow-wave.mdx
+[wave-cli-page]: /wave_docs/wave_repo/docs/tutorials/wave-cli.mdx

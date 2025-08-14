@@ -10,15 +10,15 @@ This guide describes how to build a container from a [conda package][conda] and 
 - Creating a Nextflow pipeline that uses the container.
 - Running the Nextflow pipeline.
 
-**Prerequisites**
-
+:::info[**Prerequisites**]
 You will need the following to get started:
 
 - An account with a container registry, such as DockerHub, and an access token that provides write access to your container repository.
 - A [Seqera](https://cloud.seqera.io/login) account, to store your container registry credentials for Wave to use.
-- Either [Docker Desktop] or [Podman] installed locally.
+- [Docker Desktop] installed locally.
 - [Nextflow] 23.10.x or newer installed locally.
 - The [Wave CLI][wave-cli] installed locally.
+:::
 
 ## Create your Seqera access token
 
@@ -42,7 +42,7 @@ You will need the following to get started:
 
 ## Add your container registry credentials to Seqera
 
-When freezing a container to the build repository that you specify, Wave uses Seqera to obtain your registry access credentials. If you use Docker as your container registry, completing the following steps:
+When freezing a container to the build repository that you specify, Wave uses Seqera to obtain your registry access credentials. If you use Docker as your container registry, complete the following steps:
 
 To create your access token in Docker Hub:
 
@@ -80,7 +80,7 @@ In the same terminal window from the previous section, run the Wave CLI to build
 wave --conda-package 'faker' --freeze --build-repo <repo_uri> --await
 ```
 
-Example output:
+If successful, you will see output similar to the following:
 
 ```
 docker.io/example-user/repo:faker--2aa7a4d826a76301
@@ -130,7 +130,7 @@ To confirm that the `faker` command is available from your pipeline, run the fol
 nextflow run main.nf
 ```
 
-The output from a successful execution is displayed in the following example:
+If successful, you will see output similar to the following:
 
 ```
 Launching `./main.nf` [happy_leavitt] DSL2 - revision: 03b4e42ba3

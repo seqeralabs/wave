@@ -9,15 +9,13 @@ This guide describes how to provision containers that include [conda packages][c
 - Creating a Nextflow pipeline that uses the container.
 - Running the Nextflow pipeline.
 
-**Prerequisites**
-
+:::info[**Prerequisites**]
 You will need the following to get started:
 
 - Either [Docker Desktop] or [Podman] installed locally.
 - [Nextflow] 23.10.x or newer installed locally.
 - Singularity 4.x or newer to run the Singularity containers.
-
-In this guide, you'll request a containerized Conda package from Seqera Containers.
+:::
 
 ## Request a conda package as a Seqera Container
 
@@ -71,7 +69,7 @@ nextflow run main.nf
 If successful, you will see output similar to the following:
 
 ```
- N E X T F L O W   ~  version 24.04.4
+N E X T F L O W   ~  version 24.04.4
 
 Launching `samtools.nf` [furious_carlsson] DSL2 - revision: 04817f962f
 
