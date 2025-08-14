@@ -275,7 +275,7 @@ class ViewController {
 
     @View("container-view")
     @Get('/containers/{token}')
-    HttpResponse<Map<String,Object>> viewContainer(String token) {
+    HttpResponse<?> viewContainer(String token) {
         final data = containerService.loadContainerRecord(token)
         if( !data )
             throw new NotFoundException("Unknown container token: $token")
