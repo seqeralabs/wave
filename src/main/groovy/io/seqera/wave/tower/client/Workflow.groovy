@@ -23,7 +23,7 @@ import java.time.OffsetDateTime
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-import io.seqera.wave.encoder.MoshiExchange
+import io.seqera.wave.encoder.MoshiSerializable
 
 /**
  * Model a Platform workflow run
@@ -33,7 +33,7 @@ import io.seqera.wave.encoder.MoshiExchange
 @EqualsAndHashCode
 @CompileStatic
 @ToString(includePackage = false, includeNames = true)
-class Workflow implements MoshiExchange {
+class Workflow implements MoshiSerializable {
 
     enum WorkflowStatus {
         SUBMITTED,
