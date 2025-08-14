@@ -197,7 +197,7 @@ test {
 /** Update version number for backend app and modules */
 task buildInfo { doLast {
     def info = """\
-                name=${project.name}
+                name=${rootProject.name}
                 group=${project.group}
                 version=${version}
                 commitId=${project.property('commitId')}
