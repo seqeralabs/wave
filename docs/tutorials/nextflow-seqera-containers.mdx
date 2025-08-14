@@ -3,13 +3,19 @@ title: Nextflow and Seqera Containers
 description: Provision containers through Seqera Containers and use them in your Nextflow pipelines
 ---
 
-You can provision containers that include [conda packages][conda] through [Seqera Containers][sc] and use them directly in your Nextflow pipelines.
+This guide describes how to provision containers that include [conda packages][conda] through [Seqera Containers][sc] and use them directly in your Nextflow pipelines. It includes:
+
+- Requesting a conda package as a Seqera Container.
+- Creating a Nextflow pipeline that uses the container.
+- Running the Nextflow pipeline.
 
 **Prerequisites**
 
-- You have either [Docker Desktop] or [Podman] installed locally.
-- You have [Nextflow] 23.10.x or newer installed locally.
-- Use Singularity 4.x or newer to run the Singularity containers.
+You will need the following to get started:
+
+- Either [Docker Desktop] or [Podman] installed locally.
+- [Nextflow] 23.10.x or newer installed locally.
+- Singularity 4.x or newer to run the Singularity containers.
 
 In this guide, you'll request a containerized Conda package from Seqera Containers.
 
@@ -18,7 +24,7 @@ In this guide, you'll request a containerized Conda package from Seqera Containe
 1. Open [Seqera Containers][sc] in a browser.
 1. In the search box, enter `samtools`.
 1. In the search results, select **Add** in the `bioconda::samtools` result, and then **Get Container** to initiate the container build.
-1. From the **Fetching container** modal, copy the the durable container image URI that Seqera Containers provides.
+1. From the **Fetching container** modal, copy the durable container image URI that Seqera Containers provides.
 1. Optional: Select **View build details** to watch Seqera Containers build the requested container in real time.
 
 ## Create a Nextflow pipeline that uses the container
@@ -38,7 +44,7 @@ Nextflow can use the container that Seqera Containers built in the previous sect
 
     ```nextflow
     process SAMTOOLS {
-      container '<container_uri>'
+      container '<CONTAINER_URI>'
       debug true
       """
       samtools --version-only
@@ -49,7 +55,8 @@ Nextflow can use the container that Seqera Containers built in the previous sect
     }
     ```
 
-    Substitute `<container_uri>` for the container URI that you received from Seqera Containers in the previous section. e.g.
+    Replace `<CONTAINER_URI>` with the container URI that you received from Seqera Containers in the previous section. For example:
+
     - `community.wave.seqera.io/library/samtools:1.20--b5dfbd93de237464` for linux/amd64.
     - `community.wave.seqera.io/library/samtools:1.20--497854c5df637867` for linux/arm64.
 
@@ -61,7 +68,7 @@ To confirm that the `samtools` command is available from your pipeline, run the 
 nextflow run main.nf
 ```
 
-The output from a successful execution is displayed in the following example:
+If successful, you will see output similar to the following:
 
 ```
  N E X T F L O W   ~  version 24.04.4
@@ -71,7 +78,6 @@ Launching `samtools.nf` [furious_carlsson] DSL2 - revision: 04817f962f
 executor >  local (1)
 [2f/d2ccc7] process > SAMTOOLS [100%] 1 of 1 ✔
 1.20+htslib-1.20
-
 ```
 
 [sc]: https://seqera.io/containers/
