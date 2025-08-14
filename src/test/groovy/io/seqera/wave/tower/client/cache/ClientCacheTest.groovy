@@ -27,8 +27,8 @@ import java.time.OffsetDateTime
 import java.time.ZoneOffset
 
 import io.micronaut.context.ApplicationContext
+import io.seqera.fixtures.redis.RedisTestContainer
 import io.seqera.wave.store.cache.RedisL2TieredCache
-import io.seqera.wave.test.RedisTestContainer
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.client.DescribeWorkflowResponse

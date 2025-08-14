@@ -23,8 +23,10 @@ import java.nio.file.Path
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import jakarta.inject.Inject
@@ -40,6 +42,7 @@ import static java.nio.file.StandardOpenOption.WRITE
 @Slf4j
 @Singleton
 @CompileStatic
+@Requires(bean = BuildEnabled)
 class DockerBuildStrategy extends BuildStrategy {
 
     @Value('${wave.debug:false}')

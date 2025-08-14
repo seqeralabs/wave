@@ -51,6 +51,8 @@ import io.seqera.wave.service.persistence.postgres.PostgresPersistentService
 import jakarta.inject.Inject
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
+import static io.seqera.wave.util.DurationUtils.randomDuration
+
 /**
  * Service to migrate data from SurrealDB to Postgres
  *

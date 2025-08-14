@@ -18,15 +18,16 @@
 
 package io.seqera.wave.service.job
 
-import io.seqera.wave.configuration.JobManagerConfig
-
 import java.time.Duration
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.seqera.wave.service.data.stream.AbstractMessageStream
-import io.seqera.wave.service.data.stream.MessageConsumer
-import io.seqera.wave.service.data.stream.MessageStream
+import io.micronaut.context.annotation.Requires
+import io.seqera.data.stream.MessageConsumer
+import io.seqera.data.stream.MessageStream
+import io.seqera.wave.configuration.JobManagerConfig
+import io.seqera.wave.configuration.WaveLite
+import io.seqera.wave.service.data.stream.BaseMessageStream
 import jakarta.annotation.PreDestroy
 import jakarta.inject.Singleton
 /**
@@ -34,10 +35,11 @@ import jakarta.inject.Singleton
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Requires(missingBeans = WaveLite)
 @Slf4j
 @Singleton
 @CompileStatic
-class JobProcessingQueue extends AbstractMessageStream<JobSpec> {
+class JobProcessingQueue extends BaseMessageStream<JobSpec> {
 
     private final static String QUEUE_NAME = "jobs-queue"
 

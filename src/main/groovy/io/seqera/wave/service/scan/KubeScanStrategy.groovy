@@ -18,7 +18,7 @@
 
 package io.seqera.wave.service.scan
 
-
+import java.nio.file.Files
 import java.nio.file.Path
 
 import groovy.transform.CompileStatic
@@ -29,6 +29,7 @@ import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.configuration.ScanEnabled
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Singleton
@@ -40,6 +41,7 @@ import jakarta.inject.Singleton
  */
 @Slf4j
 @Primary
+@Requires(bean = ScanEnabled)
 @Requires(property = 'wave.build.k8s')
 @Singleton
 @CompileStatic
@@ -62,10 +64,10 @@ class KubeScanStrategy extends ScanStrategy {
     void scanContainer(String jobName, ScanEntry entry) {
         log.info("Launching container scan job: $jobName for entry: ${entry}")
         try{
+            Files.createDirectories(entry.workDir)
             final Path configFile = entry.configJson ? entry.workDir.resolve('config.json') : null
-            final reportFile = entry.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
-            final trivyCommand = scanCommand(entry.containerImage, reportFile, entry.platform, scanConfig)
-            k8sService.launchScanJob(jobName, scanConfig.scanImage, trivyCommand, entry.workDir, configFile, scanConfig)
+            final command = trivyCommand(entry.containerImage, entry.workDir, entry.platform, scanConfig)
+            k8sService.launchScanJob(jobName, scanConfig.scanImage, command, entry.workDir, configFile, scanConfig)
         }
         catch (ApiException e) {
             throw new BadRequestException("Unexpected scan failure: ${e.responseBody}", e)

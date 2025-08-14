@@ -7,7 +7,27 @@
       "items": [
         "index",
         "get-started",
+        "wave-lite",
         "provisioning"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Installation",
+      "collapsed": false,
+      "items": [
+        "install/docker-compose",
+        "install/kubernetes"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Configuration",
+      "collapsed": false,
+      "items": [   
+        "wave-lite",     
+        "install/configure-wave",
+        "install/configure-wave-build"
       ]
     },
     "nextflow",
@@ -21,6 +41,11 @@
         "api"
       ]
     },
-    "faq"
+    "faq",
+    {
+      "type": "link",
+      "label": "Changelog",
+      "href": "/changelog/tags/wave"
+    }
   ]
 }

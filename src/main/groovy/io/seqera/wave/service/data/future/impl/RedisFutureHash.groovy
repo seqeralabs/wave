@@ -24,6 +24,7 @@ import java.util.concurrent.TimeoutException
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
+import io.seqera.activator.redis.RedisActivator
 import io.seqera.wave.service.data.future.FutureHash
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -39,7 +40,7 @@ import redis.clients.jedis.params.SetParams
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
-@Requires(env = 'redis')
+@Requires(bean = RedisActivator)
 @Singleton
 @CompileStatic
 class RedisFutureHash implements FutureHash<String>  {
