@@ -1,4 +1,6 @@
-# Usage metrics
+---
+title: Usage metrics
+---
 
 Wave uses Redis to store its usage metrics for a specific date and/or a specific organization.
 
