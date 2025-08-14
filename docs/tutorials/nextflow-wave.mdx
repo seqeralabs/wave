@@ -1,8 +1,10 @@
 ---
 title: Nextflow and Wave
 description: Provision containers with Wave directly from your Nextflow pipelines
-tags: [wave, containers, nextflow]
+tags: [containers, nextflow, wave]
 ---
+
+Wave integrates seamlessly into Nextflow pipelines by automatically provisioning containers on-demand based on your specified Conda dependencies.
 
 This guide describes how to provision containers with Wave directly from your Nextflow pipelines. It includes:
 
@@ -161,12 +163,16 @@ executor >  local (1)
                 ||     ||
 ```
 
+## Next steps
+
+Learn more about [Nextflow's integration][nextflow-int] with Wave.
+
 [sc]: https://seqera.io/containers/
 [conda]: https://docs.conda.io/en/latest/
 [Nextflow]: https://www.nextflow.io/docs/latest/install.html
+[nextflow-int]: /wave_docs/wave_repo/docs/nextflow.md
 [Podman]: https://podman.io/docs/installation
 [Docker Desktop]: https://www.docker.com/products/docker-desktop/
-
 [wave-build]: /wave_docs/wave_repo/docs/cli/reference.md#build-a-container
 [nf-config]: /wave_docs/wave_repo/docs/nextflow.md#configuration-options
 [wave-cli]: /wave_docs/wave_repo/docs/cli/index.md

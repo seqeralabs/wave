@@ -1,10 +1,12 @@
 ---
 title: Nextflow and Seqera Containers
 description: Provision containers through Seqera Containers and use them in your Nextflow pipelines
-tags: [wave, seqera containers, nextflow]
+tags: [containers, nextflow, seqera containers, wave]
 ---
 
-This guide describes how to provision containers that include [conda packages][conda] through [Seqera Containers][sc] and use them directly in your Nextflow pipelines. It includes:
+[Seqera Containers][sc] is a free, publicly available bioinformatics container solution launched by Seqera in collaboration with AWS that allows researchers to generate custom containers on-demand for any combination of Conda and PyPI packages at the click of a button.
+
+This guide describes how to provision containers that include Conda package through [Seqera Containers][sc] and use them directly in your Nextflow pipelines. It includes:
 
 - Requesting a conda package as a Seqera Container.
 - Creating a Nextflow pipeline that uses the container.
@@ -78,6 +80,10 @@ executor >  local (1)
 [2f/d2ccc7] process > SAMTOOLS [100%] 1 of 1 ✔
 1.20+htslib-1.20
 ```
+
+## Next steps
+
+Visit [Seqera Containers][sc] to learn more about Seqera's container solutions.
 
 [sc]: https://seqera.io/containers/
 [conda]: https://docs.conda.io/en/latest/
