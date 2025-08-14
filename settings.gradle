@@ -5,9 +5,12 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
-rootProject.name="wave"
+rootProject.name = "wave"
+
+include('app', 'api')
 
 // only for development
 // clone https://github.com/seqeralabs/libseqera
 // in a sibling directory and include the build below
 //includeBuild('../libseqera')
+
