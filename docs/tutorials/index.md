@@ -1,5 +1,7 @@
 ---
 title: Tutorials
+description: Guides to get started with Wave.
+tags: [wave]
 ---
 
 Wave is versatile and you can leverage it in your Nextflow pipelines in several ways. The following guides describe how to quickly get started with [Nextflow and Seqera Containers][seqera-containers-page], [Nextflow and Wave][nextflow-wave-page], and the [Wave CLI][wave-cli-page].

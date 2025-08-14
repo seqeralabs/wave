@@ -1,6 +1,7 @@
 ---
 title: Nextflow and Seqera Containers
 description: Provision containers through Seqera Containers and use them in your Nextflow pipelines
+tags: [wave, seqera containers, nextflow]
 ---
 
 This guide describes how to provision containers that include [conda packages][conda] through [Seqera Containers][sc] and use them directly in your Nextflow pipelines. It includes:
@@ -22,7 +23,7 @@ You will need the following to get started:
 1. Open [Seqera Containers][sc] in a browser.
 1. In the search box, enter `samtools`.
 1. In the search results, select **Add** in the `bioconda::samtools` result, and then **Get Container** to initiate the container build.
-1. From the **Fetching container** modal, copy the durable container image URI that Seqera Containers provides.
+1. From the **Fetching container** modal, copy the container image URI that Seqera Containers provides.
 1. Optional: Select **View build details** to watch Seqera Containers build the requested container in real time.
 
 ## Create a Nextflow pipeline that uses the container
@@ -71,7 +72,7 @@ If successful, you will see output similar to the following:
 ```
 N E X T F L O W   ~  version 24.04.4
 
-Launching `samtools.nf` [furious_carlsson] DSL2 - revision: 04817f962f
+Launching `main.nf` [furious_carlsson] DSL2 - revision: 04817f962f
 
 executor >  local (1)
 [2f/d2ccc7] process > SAMTOOLS [100%] 1 of 1 ✔
