@@ -6,9 +6,7 @@ With the Wave CLI you can build Docker and Singularity containers from a variety
 
 The following sections describe several common usage cases. To get started by creating an example Nextflow pipeline that uses Wave CLI, see [Wave CLI][start].
 
-[start]: /wave_docs/wave_repo/docs/get-started/wave-cli.mdx
-
-## Augment a container with a directory 
+## Augment a container with a directory
 
 The Wave CLI supports container augmentation with a specified directory. You can use container augmentation to dynamically add a layer to your container, so you can inject scripts or configuration files as a new layer.
 
@@ -47,7 +45,7 @@ docker run $(wave -i alpine --layer new-layer) sh -c hello.sh
 
 ## Build a container from conda packages
 
-The Wave CLI supports building a container from a list of [conda] packages.
+The Wave CLI supports building a container from a list of [Conda][conda] packages.
 
 <details open>
 <summary>**Build a container from Conda packages**</summary>
@@ -60,7 +58,7 @@ Conda builds support the following arguments:
 - `--conda-channels`: One or more comma-separated channels. The default value is ` seqera,bioconda,conda-forge,defaults`.
 - `--conda-file`: A [Conda lock file][conda-lock]. Can be a local file or a URL to a remote file.
 - `--conda-package`: A Conda package to install. Can be specified multiple times. Expressions are supported, such as `bioconda::samtools=1.17` or `samtools>=1.0,<1.17`.
-- ` --conda-run-command`: A Docker `RUN` command used when the container is built. Can be specified multiple times.
+- ` --conda-run-command`: A Docker `RUN` command used when containers are built. Can be specified multiple times.
 
 **Example usage**
 
@@ -72,8 +70,6 @@ wave \
   --conda-package samtools=1.17
 ```
 
-[Conda]: https://anaconda.org/anaconda/repo
-[conda-lock]: https://github.com/conda/conda-lock
 </details>
 
 ## Build a container from a Dockerfile
@@ -141,12 +137,12 @@ docker run $(wave -f Dockerfile --context build-context) sh -c hello.sh
 
 ## Build a Singularity container
 
-The Wave CLI supports building a [Singularity]. A target build repository, specified with the `--build-repo` argument, is required to build a Singularity container. You can build a Singularity container from several sources.
+The Wave CLI supports building a [Singularity][singularity]. A target build repository, specified with the `--build-repo` argument, is required to build a Singularity container. You can build a Singularity container from several sources.
 
 <details open>
 <summary>**Build a Singularity container**</summary>
 
-- A [SingularityCE] def file
+- A [SingularityCE][singularityce] def file
 - A Docker container image with an optional local context directory
 - Conda packages
 
@@ -184,13 +180,11 @@ In the following example, two Conda packages are specified:
 wave --conda-package bamtools=2.5.2 --conda-package samtools=1.17 --freeze --singularity --build-repo docker.io/user/repo
 ```
 
-[Singularity]: https://docs.sylabs.io/guides/latest/user-guide/introduction.html
-[SingularityCE]: https://docs.sylabs.io/guides/latest/user-guide/definition_files.html
 </details>
 
 ## Build a container and freeze to a container registry
 
-The Wave CLI supports building a container and persisting the container to a container registry, such as DockerHub. You can refer to this frozen container image in a Dockerfile or [Nextflow] pipeline in the same way as any other container.
+The Wave CLI supports building a container and persisting the container to a container registry, such as DockerHub. You can refer to this frozen container image in a Dockerfile or [Nextflow][nextflow] pipeline in the same way as any other container.
 
 <details open>
 <summary>**Build a container and freeze to a container registry**</summary>
@@ -219,5 +213,11 @@ wave -i alpine --freeze \
   --build-repo docker.io/user/repo --tower-token <TOKEN>
 ```
 
-[Nextflow]: https://www.nextflow.io/
 </details>
+
+[conda]: https://anaconda.org/anaconda/repo
+[conda-lock]: https://github.com/conda/conda-lock
+[nextflow]: https://www.nextflow.io/
+[singularity]: https://docs.sylabs.io/guides/latest/user-guide/introduction.html
+[singularityce]: https://docs.sylabs.io/guides/latest/user-guide/definition_files.html
+[start]: /wave_docs/wave_repo/docs/tutorials/wave-cli.mdx
