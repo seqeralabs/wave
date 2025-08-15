@@ -19,7 +19,7 @@ tower.accessToken = '<TOWER_ACCESS_TOKEN>'
 
 Replace `<TOWER_ACCESS_TOKEN>` with your Seqera access token.
 
-  Using a Seqera access token is optional but provides additional capabilities:
+Using a Seqera access token is optional but provides additional capabilities:
 
 - Access to private repositories
 - Higher API request limits than anonymous users

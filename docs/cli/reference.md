@@ -1,62 +1,14 @@
 ---
-title: CLI reference
+title: Commands
 ---
-
-## Install the Wave CLI
-
-To install the `wave` CLI for your platform, complete the following steps:
-
-1.  Download latest version of the Wave CLI for your platform:
-
-    - To install the latest release from GitHub:
-
-      1.  Download the [latest version of the Wave CLI][download] for your platform.
-
-      1.  In a new terminal, complete the following steps:
-
-          1. Move the executable from your downloads folder to a location in your `PATH`, such as `~/bin`. For example: `mv wave-cli-0.8.0-macos-x86_64 ~/bin/wave`
-          1. Ensure that the executable bit is set. For example: `chmod u+x ~/bin/wave`
-
-    - To install the latest version with [Homebrew]:
-
-        ```bash
-        brew install seqeralabs/tap/wave-cli
-        ```
-
-1.  Verify that you can build containers with Wave:
-
-    1.  Create a basic `Dockerfile`:
-
-        ```
-        cat << EOF > ./Dockerfile
-        FROM busybox:latest
-        EOF
-        ```
-
-    1.  Use the CLI to build the container:
-
-        ```
-        wave -f Dockerfile
-        ```
-
-        Example output:
-
-        ```
-        wave.seqera.io/wt/xxxxxxxxxxxx/wave/build:xxxxxxxxxxxxxxxx
-        ```
-
-[download]: https://github.com/seqeralabs/wave-cli/releases
-[Homebrew]: https://brew.sh/
-
-## Build a container
 
 With the Wave CLI you can build Docker and Singularity containers from a variety of sources, including a Dockerfile, Singularity def file, file system directory, and Conda packages.
 
-The following sections describe several common usage cases. To get started by creating an example Nextflow pipeline that uses Wave CLI, see [Get started][start].
+The following sections describe several common usage cases. To get started by creating an example Nextflow pipeline that uses Wave CLI, see [Wave CLI][start].
 
-[start]: ../get-started.mdx#wave-cli
+[start]: /wave_docs/wave_repo/docs/get-started/wave-cli.mdx
 
-### Augment a container with a directory
+## Augment a container with a directory 
 
 The Wave CLI supports container augmentation with a specified directory. You can use container augmentation to dynamically add a layer to your container, so you can inject scripts or configuration files as a new layer.
 
@@ -93,9 +45,9 @@ docker run $(wave -i alpine --layer new-layer) sh -c hello.sh
 ```
 </details>
 
-### Build a container from Conda packages
+## Build a container from conda packages
 
-The Wave CLI supports building a container from a list of [Conda] packages.
+The Wave CLI supports building a container from a list of [conda] packages.
 
 <details open>
 <summary>**Build a container from Conda packages**</summary>
@@ -124,7 +76,7 @@ wave \
 [conda-lock]: https://github.com/conda/conda-lock
 </details>
 
-### Build a container from a Dockerfile
+## Build a container from a Dockerfile
 
 The Wave CLI supports building a container from a `Dockerfile`. Specifying an optional build context allows the use of `ADD` and `COPY` commands in a Dockerfile.
 
@@ -187,7 +139,7 @@ docker run $(wave -f Dockerfile --context build-context) sh -c hello.sh
 ```
 </details>
 
-### Build a Singularity container
+## Build a Singularity container
 
 The Wave CLI supports building a [Singularity]. A target build repository, specified with the `--build-repo` argument, is required to build a Singularity container. You can build a Singularity container from several sources.
 
@@ -236,7 +188,7 @@ wave --conda-package bamtools=2.5.2 --conda-package samtools=1.17 --freeze --sin
 [SingularityCE]: https://docs.sylabs.io/guides/latest/user-guide/definition_files.html
 </details>
 
-### Build a container and freeze to a container registry
+## Build a container and freeze to a container registry
 
 The Wave CLI supports building a container and persisting the container to a container registry, such as DockerHub. You can refer to this frozen container image in a Dockerfile or [Nextflow] pipeline in the same way as any other container.
 
