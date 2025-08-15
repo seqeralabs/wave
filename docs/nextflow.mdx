@@ -14,12 +14,12 @@ To enable Wave in your Nextflow pipeline, add the following to your Nextflow con
 
 ```groovy
 wave.enabled = true
-tower.accessToken = '<PLATFORM_ACCESS_TOKEN>'
+tower.accessToken = '<TOWER_ACCESS_TOKEN>'
 ```
 
-Replace `<PLATFORM_ACCESS_TOKEN>` with your Platform access token.
+Replace `<TOWER_ACCESS_TOKEN>` with your Seqera access token.
 
-  Using a Platform access token is optional but provides additional capabilities:
+  Using a Seqera access token is optional but provides additional capabilities:
 
 - Access to private repositories
 - Higher API request limits than anonymous users
@@ -37,13 +37,13 @@ Use Wave to access private repositories in your Nextflow pipelines. Provide your
 <details open>
 <summary>**Access private container repositories**</summary>
 
-To access private container repositories, add your [Platform access token](https://docs.seqera.io/platform/latest/api/overview#authentication) to your Nextflow configuration file.
+To access private container repositories, add your [Seqera access token](https://docs.seqera.io/platform/latest/api/overview#authentication) to your Nextflow configuration file.
 
 ```groovy
-tower.accessToken = '<PLATFORM_ACCESS_TOKEN>'
+tower.accessToken = '<TOWER_ACCESS_TOKEN>'
 ```
 
-Replace `<PLATFORM_ACCESS_TOKEN>` with your Platform access token.
+Replace `<TOWER_ACCESS_TOKEN>` with your Seqera access token.
 
 If you created credentials in an organization workspace, also add your workspace ID:
 
@@ -113,7 +113,7 @@ To prioritize `conda` over `container` directives and Dockerfiles, add the follo
 wave.strategy = ['conda']
 ```
 
-Replace `<PLATFORM_ACCESS_TOKEN>` with your Platform access token.
+Replace `<TOWER_ACCESS_TOKEN>` with your Seqera access token.
 
 For Nextflow 23.10.x, or later, the `conda-forge::procps-ng` package is included automatically in provisioned containers. This package includes the `ps` command.
 
