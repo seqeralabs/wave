@@ -8,5 +8,8 @@
     "@typespec/openapi3": "0.64.0",
     "@typespec/rest": "0.64.0"
   },
+  "scripts": {
+    "compile": "tsp compile ."
+  },
   "private": true
 }
