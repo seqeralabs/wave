@@ -36,7 +36,7 @@ You will need the following to get started:
 
 1. In a terminal window, assign your access token to the `TOWER_ACCESS_TOKEN` environment variable:
 
-    ```
+    ```bash
     export TOWER_ACCESS_TOKEN=<ACCESS_TOKEN>
     ```
 
@@ -108,13 +108,14 @@ Nextflow can use Wave to seamlessly build a container directly from a Dockerfile
     ```
 
 1. Create a module directory:
-    ```
+
+    ```bash
     mkdir -p modules/gamma
     ```
 
 1. Create the `modules/gamma/main.nf` file for the module with the following contents:
 
-    ```
+    ```nextflow
     process HELLO {
       debug true
 
@@ -126,7 +127,7 @@ Nextflow can use Wave to seamlessly build a container directly from a Dockerfile
 
 1. Create the `modules/gamma/Dockerfile` file for the module and add following contents:
 
-    ```
+    ```docker
     FROM alpine
 
     RUN apk update && apk add bash cowsay \
@@ -148,7 +149,7 @@ nextflow run main.nf -with-wave
 
 If successful, you will see output similar to the following:
 
-```
+```console
 Launching `main.nf` [naughty_wiles] DSL2 - revision: 3756d705d9
 
 executor >  local (1)
