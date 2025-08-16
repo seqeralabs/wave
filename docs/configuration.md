@@ -116,7 +116,7 @@ This configuration specifies attributes for the persistence of the logs fetched 
 
 - **`wave.build.logs.path`**: the path inside  `wave.build.logs.bucket`, where build logs will be stored. *Mandatory*.
 
-- **`wave.build.locks.path`**: the path inside `wave.build.logs.bucket`, where conda lock files will be stored. *Mandatory*.
+- **`wave.build.locks.path`**: the path inside `wave.build.logs.bucket`, where Conda lock files will be stored. *Mandatory*.
 
 - **`wave.build.logs.prefix`**: sets the prefix to be used for build process log files in the specified S3 bucket. *Optional*.
 
@@ -150,13 +150,13 @@ These settings apply only when running on Kubernetes.
 
 ## Container scan process configuration
 
-Scan process configuration lets the user provide a [Trivy docker image](https://hub.docker.com/r/aquasec/trivy) with any tag and severity levels of vulnerability that need to be scanned.
+Scan process configuration lets the user provide a [Trivy Docker image](https://hub.docker.com/r/aquasec/trivy) with any tag and severity levels of vulnerability that need to be scanned.
 
 - **`wave.scan.enabled`**: specifies whether vulnerability scanning is enabled or disabled. It's `false` by default and can be enabled by changing it to `true`. *Optional*.
 
 - **`wave.scan.severity`**: the [severity levels](https://aquasecurity.github.io/trivy/v0.22.0/vulnerability/examples/filter/) to report in vulnerability scanning. For example, you can configure it with `MEDIUM,HIGH,CRITICAL` to include vulnerabilities of these severity levels in the scan report. *Optional*.
 
-- **`wave.scan.image.name`**: the [Trivy docker image](https://hub.docker.com/r/aquasec/trivy) used for container security scanning. The default value is `aquasec/trivy:0.47.0`. This the image that Wave will use to perform vulnerability scanning on containers. *Optional*.
+- **`wave.scan.image.name`**: the [Trivy Docker image](https://hub.docker.com/r/aquasec/trivy) used for container security scanning. The default value is `aquasec/trivy:0.47.0`. This the image that Wave will use to perform vulnerability scanning on containers. *Optional*.
 
 
 ### Kubernetes configuration for Wave scan process
@@ -205,7 +205,7 @@ Change these properties to tweak rate limits in Wave.
 
 - **`redis.client.timeout`**: defines the timeout duration (in milliseconds) for Redis client operations. The default value is `5000` (5 seconds).  *Optional*.
 
-- **`redis.password`**: specifies the password used to authenticate with the Redis server. This is needed when redis authentication is enabled.  *Optional*.
+- **`redis.password`**: specifies the password used to authenticate with the Redis server. This is needed when Redis authentication is enabled.  *Optional*.
 
 ### SurrealDB configuration
 

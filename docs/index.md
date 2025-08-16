@@ -51,7 +51,7 @@ Seqera Containers does not work with custom container files, augmentation, or au
 
 ### Augment existing containers
 
-Wave offers a flexible approach to container image management. It allows you to [dynamically add custom layers][augment] to existing docker images, creating new images tailored to your specific needs.
+Wave offers a flexible approach to container image management. It allows you to [dynamically add custom layers][augment] to existing Docker images, creating new images tailored to your specific needs.
 Any existing container can be extended without rebuilding it. You can add user-provided content such as custom scripts and logging agents, providing greater flexibility in the container’s configuration.
 
 [augment]: ./provisioning.md#container-augmentation

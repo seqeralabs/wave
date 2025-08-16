@@ -2,7 +2,7 @@
 title: Nextflow integration
 ---
 
-You can use Wave directly from your Nextflow pipelines. Nextflow integration with Wave supports private repositories, container freezing, and conda packages.
+You can use Wave directly from your Nextflow pipelines. Nextflow integration with Wave supports private repositories, container freezing, and Conda packages.
 
 :::note
 Nextflow integration with Wave requires Nextflow 22.10.0, or later.
@@ -96,13 +96,13 @@ Wave does not support `ADD`, `COPY`, or other Dockerfile commands that access fi
 
 </details>
 
-### Build conda-based containers
+### Build Conda-based containers
 
 Wave can provision containers based on the [`conda` directive](https://www.nextflow.io/docs/latest/process.html#conda).
-This allows you to use conda packages in your pipeline, even on cloud-native platforms like AWS Batch and Kubernetes, which do not support the conda package manager directly.
+This allows you to use Conda packages in your pipeline, even on cloud-native platforms like AWS Batch and Kubernetes, which do not support the Conda package manager directly.
 
 <details open>
-<summary>**Build conda-based containers**</summary>
+<summary>**Build Conda-based containers**</summary>
 
 Define the `conda` requirements in your pipeline processes.
 Ensure the process doesn't include a `container` directive or Dockerfile.
@@ -117,7 +117,7 @@ Replace `<PLATFORM_ACCESS_TOKEN>` with your Platform access token.
 
 For Nextflow 23.10.x, or later, the `conda-forge::procps-ng` package is included automatically in provisioned containers. This package includes the `ps` command.
 
-You can set conda channels and their priority with `conda.channels`:
+You can set Conda channels and their priority with `conda.channels`:
 
 ```groovy
 wave.strategy = ['conda']
@@ -128,7 +128,7 @@ conda.channels = 'seqera,conda-forge,bioconda,defaults'
 
 ### Build Singularity containers
 
-Nextflow can build Singularity native images on demand using a `Singularityfile` or conda packages.
+Nextflow can build Singularity native images on demand using a `Singularityfile` or Conda packages.
 Images are uploaded to an OCI-compliant container registry of your choice and stored as an [ORAS artifact](https://oras.land/).
 
 :::note
@@ -197,8 +197,8 @@ The following Nextflow configuration options are available:
 | `wave.endpoint`              | The Wave service endpoint (default: `https://wave.seqera.io`)                                                                                                            |
 | `wave.build.repository`      | The container repository where images built by Wave are uploaded. You must provide corresponding credentials in your Platform account.                            |
 | `wave.build.cacheRepository` | The container repository used to cache image layers built by the Wave service. You must provide corresponding credentials in your Platform account.               |
-| `wave.conda.mambaImage`      | The Mamba container image used to build conda-based containers. This should be a [micromamba-docker](https://github.com/mamba-org/micromamba-docker) image.              |
-| `wave.conda.commands`        | One or more commands to add to the Dockerfile used to build a conda-based image.                                                                                         |
+| `wave.conda.mambaImage`      | The Mamba container image used to build Conda-based containers. This should be a [micromamba-docker](https://github.com/mamba-org/micromamba-docker) image.              |
+| `wave.conda.commands`        | One or more commands to add to the Dockerfile used to build a Conda-based image.                                                                                         |
 | `wave.strategy`              | The strategy used when resolving ambiguous Wave container requirements (default: `'container,dockerfile,conda'`)                                                         |
 | `wave.freeze`                | When `freeze` mode is enabled, containers provisioned by Wave are stored permanently in the repository specified by `wave.build.repository`.                             |
 
