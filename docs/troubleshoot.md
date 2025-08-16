@@ -8,9 +8,9 @@ If your container build fails, you can check the build details by checking the l
 ![](_images/wave_container_build_failure_details.png)
 
 If there is nothing conclusive in logs, you can check the exit status, e.g. if it is 137 that means out of memory error.
-Wave run build process in kubernetes pod, you can check this [link](https://komodor.com/learn/exit-codes-in-containers-and-kubernetes-the-complete-guide/) for more details on exit codes.
+Wave run build process in Kubernetes pod, you can check this [link](https://komodor.com/learn/exit-codes-in-containers-and-kubernetes-the-complete-guide/) for more details on exit codes.
 
-2. How to solve buildkit  error, while running wave build on docker desktop in mac os?
+2. How to solve buildkit  error, while running wave build on Docker desktop in mac os?
 
 #### error:
 ```
