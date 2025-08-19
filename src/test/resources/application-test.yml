@@ -51,11 +51,13 @@ wave:
     workspace: 'build-workspace'
     logs:
       enabled: true
-      path: "s3://nextflow-ci/wave-build/logs"
+      path: "wave-test/logs"
     locks:
-      path: 's3://nextflow-ci/wave-build/conda-locks'
+      path: "wave-test/conda-locks"
   scan:
     enabled: true
+    reports:
+      path: "wave-test/scans"
 ---
 logger:
   levels:
