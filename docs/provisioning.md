@@ -1,5 +1,5 @@
 ---
-title: How container provisioning works
+title: Container provisioning
 ---
 
 In the container lifecycle, images are generally created (*built*) and uploaded (*pushed*) to a container registry, and then these images are downloaded (*pulled*) for the execution of a specific pipeline.
