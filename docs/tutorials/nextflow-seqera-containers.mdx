@@ -8,7 +8,7 @@ tags: [containers, nextflow, seqera containers, wave]
 
 This guide describes how to provision containers that include Conda package through [Seqera Containers][sc] and use them directly in your Nextflow pipelines. It includes:
 
-- Requesting a conda package as a Seqera Container.
+- Requesting a conda package from Seqera Container.
 - Creating a Nextflow pipeline that uses the container.
 - Running the Nextflow pipeline.
 
@@ -20,7 +20,11 @@ You will need the following to get started:
 - Singularity 4.x or newer to run the Singularity containers.
 :::
 
-## Request a conda package as a Seqera Container
+## Request a conda package from Seqera Containers
+
+Seqera Containers enables users to generate custom Docker or Singularity containers by selecting conda and PyPI packages through a web interface.
+
+To request a conda package from Seqera Containers:
 
 1. Open [Seqera Containers][sc] in a browser.
 1. In the search box, enter `samtools`.
