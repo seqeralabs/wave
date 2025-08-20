@@ -6,55 +6,66 @@ Wave enables you to provision container images on demand, removing the need to b
 
 Docker Compose installations support Wave Lite, a configuration mode for Wave that includes only container augmentation and inspection capabilities, and enables the use of Fusion file system in Nextflow pipelines.
 
-## Prerequisites
+This page describes how run self-hosted Wave in Docker Compose. It includes:
 
-Before installing Wave, you need the following infrastructure components:
+- Database configuration
+- Wave configuration
+- Deploying Wave
+- Advanced configuration
 
-- **PostgreSQL instance** - Version 12, or higher
-- **Redis instance** - Version 6.2, or higher
+:::info[**Prerequisites**]
+You will need the following to get started:
 
-## System requirements
+- A PostgreSQL instance (version 12 or higher)
+- A Redis instance (version 6.2 or higher)
+:::
 
+:::info[**System requirements**]
 The minimum system requirements for self-hosted Wave in Docker Compose are:
 
-- Current, supported versions of **Docker Engine** and **Docker Compose**.
-- Compute instance minimum requirements:
-  - **Memory**: 32 GB RAM available to be used by the Wave application on the host system.
-  - **CPU**: 8 CPU cores available on the host system.
-  - **Storage**: 10 GB in addition to sufficient disk space for your container images and temporary files.
-  - For example, in AWS EC2, `m5a.2xlarge` or greater
-  - **Network**: Connectivity to your PostgreSQL and Redis instances.
+- Current, supported versions of Docker Engine and Docker Compose
+- A compute instance with the minimum requirements:
+    - **Memory**: 32 GB RAM available for use by the Wave application on the host system
+    - **CPU**: 8 CPU cores available on the host system
+    - **Storage**: 10 GB in addition to sufficient disk space for your container images and temporary files (for example, in AWS EC2, `m5a.2xlarge` or greater)
+    - **Network**: Connectivity to your PostgreSQL and Redis instances
+:::
 
 ## Database configuration
 
 Wave requires a PostgreSQL database to operate.
 
-Create a dedicated `wave` database and user account with the appropriate privileges:
+To configure :
 
-```sql
--- Create a dedicated user for Wave
-CREATE ROLE wave_user LOGIN PASSWORD 'your_secure_password';
+1. Access PostgreSQL
+2. Create a dedicated `wave` database and user account with the appropriate privileges:
 
--- Create the Wave database
-CREATE DATABASE wave;
+    ```sql
+    -- Create a dedicated user for Wave
+    CREATE ROLE wave_user LOGIN PASSWORD '<SECURE_PASSWORD>';
 
--- Connect to the wave database
-\c wave;
+    -- Create the Wave database
+    CREATE DATABASE wave;
 
--- Grant basic schema access
-GRANT USAGE, CREATE ON SCHEMA public TO wave_user;
+    -- Connect to the wave database
+    \c wave;
 
--- Grant privileges on existing tables and sequences
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO wave_user;
-GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO wave_user;
+    -- Grant basic schema access
+    GRANT USAGE, CREATE ON SCHEMA public TO wave_user;
 
--- Grant privileges on future tables and sequences
-ALTER DEFAULT PRIVILEGES IN SCHEMA public
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO wave_user;
+    -- Grant privileges on existing tables and sequences
+    GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO wave_user;
+    GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO wave_user;
 
-ALTER DEFAULT PRIVILEGES IN SCHEMA public
-GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO wave_user;
-```
+    -- Grant privileges on future tables and sequences
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO wave_user;
+
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public
+    GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO wave_user;
+    ```
+
+    Replace `<SECURE_PASSWORD>` with a secure password for the database user.
 
 Wave will automatically handle schema migrations on startup and create the required database objects.
 
@@ -176,7 +187,7 @@ services:
     restart: unless-stopped
 ```
 
-## Deploy Wave
+## Deploying Wave
 
 1. Download and populate the [wave.env](./_templates/wave.env) file with the settings corresponding to your system.
 
