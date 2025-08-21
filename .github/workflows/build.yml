@@ -52,6 +52,15 @@ jobs:
           architecture: x64
           cache: gradle
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install TypeSpec dependencies
+        run: npm install
+        working-directory: typespec
+
       - name: Compile
         run: make compile
         env:
