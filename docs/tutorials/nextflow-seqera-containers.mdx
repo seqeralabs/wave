@@ -4,11 +4,11 @@ description: Provision containers through Seqera Containers and use them in your
 tags: [containers, nextflow, seqera containers, wave]
 ---
 
-[Seqera Containers][sc] is a free, publicly available bioinformatics container solution launched by Seqera in collaboration with AWS that allows researchers to generate custom containers on-demand for any combination of Conda and PyPI packages at the click of a button.
+[Seqera Containers][sc] is a free, publicly available bioinformatics container solution launched by Seqera in collaboration with AWS that allows researchers to generate custom containers on demand for any combination of Conda and PyPI packages at the click of a button.
 
-This guide describes how to provision containers that include Conda package through [Seqera Containers][sc] and use them directly in your Nextflow pipelines. It includes:
+This guide describes how to provision containers that include Conda packages through [Seqera Containers][sc] and use them directly in your Nextflow pipelines. It includes:
 
-- Requesting a conda package from Seqera Container.
+- Requesting a Conda package from Seqera Containers.
 - Creating a Nextflow pipeline that uses the container.
 - Running the Nextflow pipeline.
 
@@ -17,7 +17,7 @@ You will need the following to get started:
 
 - Either [Docker Desktop] or [Podman] installed locally.
 - [Nextflow] 23.10.x or newer installed locally.
-- Singularity 4.x or newer to run the Singularity containers.
+- [Singularity][Singularity] 4.x or newer to run the Singularity containers.
 :::
 
 ## Request a conda package from Seqera Containers
@@ -92,6 +92,7 @@ Visit [Seqera Containers][sc] to learn more about Seqera's container solutions.
 [sc]: https://seqera.io/containers/
 [conda]: https://docs.conda.io/en/latest/
 [Nextflow]: https://www.nextflow.io/docs/latest/install.html
+[Singularity]: https://docs.sylabs.io/guides/latest/user-guide/introduction.html
 [Podman]: https://podman.io/docs/installation
 [Docker Desktop]: https://www.docker.com/products/docker-desktop/
 
