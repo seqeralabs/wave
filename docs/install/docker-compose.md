@@ -1,5 +1,5 @@
 ---
-title: Docker Compose installation
+title: Docker Compose
 ---
 
 Wave enables you to provision container images on demand, removing the need to build and upload them manually to a container registry. Wave can provision both ephemeral and regular registry-persisted container images.
@@ -10,6 +10,7 @@ This page describes how run self-hosted Wave in Docker Compose. It includes:
 
 - Database configuration
 - Wave configuration
+- Docker Compose
 - Deploying Wave
 - Advanced configuration
 
@@ -35,29 +36,45 @@ The minimum system requirements for self-hosted Wave in Docker Compose are:
 
 Wave requires a PostgreSQL database to operate.
 
-To configure :
+To configure your PostgreSQL database:
 
-1. Access PostgreSQL
-2. Create a dedicated `wave` database and user account with the appropriate privileges:
+1. Connect to PostgreSQL.
+2. Create a dedicated user for Wave:
 
     ```sql
-    -- Create a dedicated user for Wave
     CREATE ROLE wave_user LOGIN PASSWORD '<SECURE_PASSWORD>';
+    ```
 
-    -- Create the Wave database
+    Replace `<SECURE_PASSWORD>` with a secure password for the database user.
+
+3. Create the Wave database:
+
+    ```sql
     CREATE DATABASE wave;
+    ```
 
-    -- Connect to the wave database
+4. Connect to the wave database:
+
+    ```sql
     \c wave;
+    ```
 
-    -- Grant basic schema access
+5. Grant basic schema access:
+
+    ```sql
     GRANT USAGE, CREATE ON SCHEMA public TO wave_user;
+    ```
 
-    -- Grant privileges on existing tables and sequences
+6. Grant privileges on existing tables and sequences:
+
+    ```sql
     GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO wave_user;
     GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO wave_user;
+    ```
 
-    -- Grant privileges on future tables and sequences
+7.  Grant privileges on future tables and sequences:
+
+    ```sql
     ALTER DEFAULT PRIVILEGES IN SCHEMA public
     GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO wave_user;
 
@@ -65,90 +82,96 @@ To configure :
     GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO wave_user;
     ```
 
-    Replace `<SECURE_PASSWORD>` with a secure password for the database user.
+:::note
+Wave will automatically handle schema migrations and create the required database objects on startup.
+:::
 
-Wave will automatically handle schema migrations on startup and create the required database objects.
+## Wave configuration
 
-## Wave config
+Wave requires a configuration file to defines its behavior and integrations.
 
-Create a configuration file that defines Wave's behavior and integrations. Save this as `config/wave-config.yml` in your Docker Compose directory.
+To define your Wave configuration:
 
-```yaml
-wave:
-  # Build service configuration - disabled for Docker Compose
-  build:
-    enabled: false
-  # Mirror service configuration - disabled for Docker Compose
-  mirror:
-    enabled: false
-  # Security scanning configuration - disabled for Docker Compose
-  scan:
-    enabled: false
-  # Blob caching configuration - disabled for Docker Compose
-  blobCache:
-    enabled: false
-  # Database connection settings
-  db:
-    uri: "jdbc:postgresql://your-postgres-host:5432/wave"
-    user: "wave_user"
-    password: "your_secure_password"
+1. Create `config/wave-config.yml` in your Docker Compose directory.
+2. Add the following configuration:
 
-# Redis configuration for caching and session management
-redis:
-  uri: "redis://your-redis-host:6379"
+    ```yaml
+    wave:
+    # Build service configuration - disabled for Docker Compose
+    build:
+        enabled: false
+    # Mirror service configuration - disabled for Docker Compose
+    mirror:
+        enabled: false
+    # Security scanning configuration - disabled for Docker Compose
+    scan:
+        enabled: false
+    # Blob caching configuration - disabled for Docker Compose
+    blobCache:
+        enabled: false
+    # Database connection settings
+    db:
+        uri: "jdbc:postgresql://<POSTGRES_HOST>:5432/wave"
+        user: "wave_user"
+        password: "your_secure_password"
 
-# Platform integration (optional)
-tower:
-  endpoint:
-    url: "https://your-platform-server.com"
+    # Redis configuration for caching and session management
+    redis:
+    uri: "redis://<REDIS_HOST>:6379"
 
-# Micronaut framework configuration
-micronaut:
-  # Netty HTTP server configuration
-  netty:
-    event-loops:
-      default:
-        num-threads: 64
-      stream-pool:
-        executor: stream-executor
-  # HTTP client configuration
-  http:
-    services:
-      stream-client:
-        read-timeout: 30s
-        read-idle-timeout: 5m
-        event-loop-group: stream-pool
+    # Platform integration (optional)
+    tower:
+    endpoint:
+        url: "https://your-platform-server.com"
 
-# Management endpoints configuration
-loggers:
-  env:
-    enabled: false
-  bean:
-    enabled: false
-  caches:
-    enabled: false
-  refresh:
-    enabled: false
-  loggers:
-    enabled: false
-  info:
-    enabled: false
-  # Enable metrics for monitoring
-  metrics:
-    enabled: true
-  # Enable health checks
-  health:
-    enabled: true
-    disk-space:
-      enabled: false
-    jdbc:
-      enabled: false
-```
+    # Micronaut framework configuration
+    micronaut:
+    # Netty HTTP server configuration
+    netty:
+        event-loops:
+        default:
+            num-threads: 64
+        stream-pool:
+            executor: stream-executor
+    # HTTP client configuration
+    http:
+        services:
+        stream-client:
+            read-timeout: 30s
+            read-idle-timeout: 5m
+            event-loop-group: stream-pool
 
-Configuration notes:
+    # Management endpoints configuration
+    loggers:
+    env:
+        enabled: false
+    bean:
+        enabled: false
+    caches:
+        enabled: false
+    refresh:
+        enabled: false
+    loggers:
+        enabled: false
+    info:
+        enabled: false
+    # Enable metrics for monitoring
+    metrics:
+        enabled: true
+    # Enable health checks
+    health:
+        enabled: true
+        disk-space:
+        enabled: false
+        jdbc:
+        enabled: false
+    ```
 
-- Replace `your-postgres-host` and `your-redis-host` with your service endpoints.
-- Adjust `number-of-threads` (16) and `num-threads` (64) based on your CPU cores — Use between 2x and 4x your CPU core count.
+    Replace the following:
+
+    - `<POSTGRES_HOST>`: your Postgres service endpoint
+    - `<REDIS_HOST>`: your Redis service endpoint
+    - Adjust `number-of-threads` (16) and `num-threads` (64) based on your CPU cores — Use between 2x and 4x your CPU core count.
 
 ## Docker Compose
 
@@ -226,6 +249,6 @@ services:
     If Wave Lite is running in the same container as Platform Connect for [Studios](https://docs.seqera.io/platform-enterprise/25.2/enterprise/studios#docker-compose), tearing down the service will also interrupt Connect services.
     :::
 
-### Advanced configuration
+## Advanced configuration
 
 See [Configuring Wave](./configure-wave.md) for advanced Wave features, scaling guidance, and integration options.
