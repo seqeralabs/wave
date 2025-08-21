@@ -88,12 +88,11 @@ Wave will automatically handle schema migrations and create the required databas
 
 ## Wave configuration
 
-Wave requires a configuration file to defines its behavior and integrations.
+Wave requires a configuration file to define its behavior and integrations.
 
 To define your Wave configuration:
 
-1. Create `config/wave-config.yml` in your Docker Compose directory.
-2. Add the following configuration:
+1. Create a `config/wave-config.yml` file in your Docker Compose directory with the following configuration:
 
     ```yaml
     wave:
@@ -113,7 +112,7 @@ To define your Wave configuration:
     db:
         uri: "jdbc:postgresql://<POSTGRES_HOST>:5432/wave"
         user: "wave_user"
-        password: "your_secure_password"
+        password: "<SECURE_PASSWORD>"
 
     # Redis configuration for caching and session management
     redis:
@@ -171,9 +170,16 @@ To define your Wave configuration:
 
     - `<POSTGRES_HOST>`: your Postgres service endpoint
     - `<REDIS_HOST>`: your Redis service endpoint
-    - Adjust `number-of-threads` (16) and `num-threads` (64) based on your CPU cores — Use between 2x and 4x your CPU core count.
+    - `<SECURE_PASSWORD>`: your secure password for the database user
+
+    Adjust the following values based on your CPU cores:
+
+    - `number-of-threads`: Set between 2x and 4x your CPU core count (default: 16)
+    - `num-threads`: Set between 2x and 4x your CPU core count (default: 64)
 
 ## Docker Compose
+
+Docker Compose requires configuration to work with Wave.
 
 Add the following to your `docker-compose.yml`:
 
@@ -215,7 +221,6 @@ services:
 1. Download and populate the [wave.env](./_templates/wave.env) file with the settings corresponding to your system.
 
 1. Use Docker Swarm to deploy Wave Lite. See [Create a swarm](https://docs.docker.com/engine/swarm/swarm-tutorial/create-swarm/) for detailed setup instructions.
-
 
 1. Deploy the Wave service, running two replicas:
 
