@@ -79,13 +79,15 @@ Seqera supports other container registries, such as GitHub and Quay.io.
 
 ## Create and freeze a container
 
-Wave lets you build a container from any Conda package or set of Conda packages that you specify. In this section, you'll use Wave to build a container that includes the `faker` Conda package.
+Wave lets you build a container from a Conda package or a set of Conda packages that you specify. In this section, you'll use Wave to build a container that includes the `faker` Conda package.
 
-In the same terminal window from the previous section, run the Wave CLI to build and freeze a container with the `faker` Conda package to the repository that you specify. Specify the URI for the repository for which you added an access token to Seqera, so that Wave can push the built container.
+In the same terminal window from the previous section, run the Wave CLI to build and freeze a container with the `faker` Conda package to the repository that you specify:
 
 ```bash
-wave --conda-package 'faker' --freeze --build-repo <repo_uri> --await
+wave --conda-package 'faker' --freeze --build-repo <REPO_URI> --await
 ```
+
+Replace `<REPO_URI>` with the URI for the repository for which you added an access token to Seqera.
 
 If successful, you will see output similar to the following:
 
