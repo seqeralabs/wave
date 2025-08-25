@@ -1,17 +1,19 @@
 ---
 title: Docker Compose
+description: Run Wave in Docker Compose
+tags: [docker compose, install, wave]
 ---
 
 Wave enables you to provision container images on demand, removing the need to build and upload them manually to a container registry. Wave can provision both ephemeral and regular registry-persisted container images.
 
-Docker Compose installations support Wave Lite, a configuration mode for Wave that includes only container augmentation and inspection capabilities, and enables the use of Fusion file system in Nextflow pipelines.
+Docker Compose installations support Wave Lite, a configuration mode for Wave that includes only container augmentation and inspection capabilities, and enables the use of Fusion file system in Nextflow pipelines. See [Wave Lite](../wave-lite.md) for more information.
 
-This page describes how run self-hosted Wave in Docker Compose. It includes:
+This page describes how to run Wave on Docker Compose. It includes:
 
 - Database configuration
 - Wave configuration
 - Docker Compose
-- Deploying Wave
+- Wave deployment
 - Advanced configuration
 
 :::info[**Prerequisites**]
@@ -19,13 +21,8 @@ You will need the following to get started:
 
 - A PostgreSQL instance (version 12 or higher)
 - A Redis instance (version 6.2 or higher)
-:::
-
-:::info[**System requirements**]
-The minimum system requirements for self-hosted Wave in Docker Compose are:
-
-- Current, supported versions of Docker Engine and Docker Compose
-- A compute instance with the minimum requirements:
+- Supported versions of Docker Engine and Docker Compose
+- A compute instance with at least:
     - **Memory**: 32 GB RAM available for use by the Wave application on the host system
     - **CPU**: 8 CPU cores available on the host system
     - **Storage**: 10 GB in addition to sufficient disk space for your container images and temporary files (for example, in AWS EC2, `m5a.2xlarge` or greater)
@@ -34,12 +31,12 @@ The minimum system requirements for self-hosted Wave in Docker Compose are:
 
 ## Database configuration
 
-Wave requires a PostgreSQL database to operate.
+PostgreSQL is a relational database that stores and manages data using SQL queries. Wave requires a PostgreSQL database to operate.
 
-To configure your PostgreSQL database:
+To create your `wave` PostgreSQL database and user account with appropriate privileges:
 
 1. Connect to PostgreSQL.
-2. Create a dedicated user for Wave:
+1. Create a dedicated user for Wave:
 
     ```sql
     CREATE ROLE wave_user LOGIN PASSWORD '<SECURE_PASSWORD>';
@@ -47,32 +44,32 @@ To configure your PostgreSQL database:
 
     Replace `<SECURE_PASSWORD>` with a secure password for the database user.
 
-3. Create the Wave database:
+1. Create the Wave database:
 
     ```sql
     CREATE DATABASE wave;
     ```
 
-4. Connect to the wave database:
+1. Connect to the wave database:
 
     ```sql
     \c wave;
     ```
 
-5. Grant basic schema access:
+1. Grant basic schema access:
 
     ```sql
     GRANT USAGE, CREATE ON SCHEMA public TO wave_user;
     ```
 
-6. Grant privileges on existing tables and sequences:
+1. Grant privileges on existing tables and sequences:
 
     ```sql
     GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO wave_user;
     GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO wave_user;
     ```
 
-7.  Grant privileges on future tables and sequences:
+1.  Grant privileges on future tables and sequences:
 
     ```sql
     ALTER DEFAULT PRIVILEGES IN SCHEMA public
@@ -88,100 +85,99 @@ Wave will automatically handle schema migrations and create the required databas
 
 ## Wave configuration
 
-Wave requires a configuration file to define its behavior and integrations.
+Wave requires configuration for database connections, Redis caching, and server settings.
 
-To define your Wave configuration:
+To configure Wave, create a `config/wave-config.yml` file with the following configuration in your Docker Compose directory:
 
-1. Create a `config/wave-config.yml` file in your Docker Compose directory with the following configuration:
+```yaml
+wave:
+  # Build service configuration - disabled for Docker Compose
+  build:
+    enabled: false
+  # Mirror service configuration - disabled for Docker Compose
+  mirror:
+    enabled: false
+  # Security scanning configuration - disabled for Docker Compose
+  scan:
+    enabled: false
+  # Blob caching configuration - disabled for Docker Compose
+  blobCache:
+    enabled: false
+  # Database connection settings
+  db:
+    uri: "jdbc:postgresql://<POSTGRES_HOST>:5432/wave"
+    user: "wave_user"
+    password: "<SECURE_PASSWORD>"
 
-    ```yaml
-    wave:
-    # Build service configuration - disabled for Docker Compose
-    build:
-        enabled: false
-    # Mirror service configuration - disabled for Docker Compose
-    mirror:
-        enabled: false
-    # Security scanning configuration - disabled for Docker Compose
-    scan:
-        enabled: false
-    # Blob caching configuration - disabled for Docker Compose
-    blobCache:
-        enabled: false
-    # Database connection settings
-    db:
-        uri: "jdbc:postgresql://<POSTGRES_HOST>:5432/wave"
-        user: "wave_user"
-        password: "<SECURE_PASSWORD>"
-
-    # Redis configuration for caching and session management
-    redis:
+  # Redis configuration for caching and session management
+  redis:
     uri: "redis://<REDIS_HOST>:6379"
 
-    # Platform integration (optional)
-    tower:
+  # Platform integration (optional)
+  tower:
     endpoint:
-        url: "https://your-platform-server.com"
+      url: "<PLATFORM_SERVER>"
 
-    # Micronaut framework configuration
-    micronaut:
+  # Micronaut framework configuration
+  micronaut:
     # Netty HTTP server configuration
     netty:
-        event-loops:
+      event-loops:
         default:
-            num-threads: 64
+          num-threads: 64
         stream-pool:
-            executor: stream-executor
+          executor: stream-executor
     # HTTP client configuration
     http:
-        services:
+      services:
         stream-client:
-            read-timeout: 30s
-            read-idle-timeout: 5m
-            event-loop-group: stream-pool
+          read-timeout: 30s
+          read-idle-timeout: 5m
+          event-loop-group: stream-pool
 
-    # Management endpoints configuration
-    loggers:
-    env:
-        enabled: false
-    bean:
-        enabled: false
-    caches:
-        enabled: false
-    refresh:
-        enabled: false
-    loggers:
-        enabled: false
-    info:
-        enabled: false
-    # Enable metrics for monitoring
-    metrics:
-        enabled: true
-    # Enable health checks
-    health:
-        enabled: true
-        disk-space:
-        enabled: false
-        jdbc:
-        enabled: false
-    ```
+# Management endpoints configuration
+loggers:
+  env:
+    enabled: false
+  bean:
+    enabled: false
+  caches:
+    enabled: false
+  refresh:
+    enabled: false
+  loggers:
+    enabled: false
+  info:
+    enabled: false
+# Enable metrics for monitoring
+metrics:
+  enabled: true
+# Enable health checks
+health:
+  enabled: true
+  disk-space:
+    enabled: false
+  jdbc:
+    enabled: false
+```
 
-    Replace the following:
+Replace the following:
 
-    - `<POSTGRES_HOST>`: your Postgres service endpoint
-    - `<REDIS_HOST>`: your Redis service endpoint
-    - `<SECURE_PASSWORD>`: your secure password for the database user
+- `<POSTGRES_HOST>`: your Postgres service endpoint
+- `<REDIS_HOST>`: your Redis service endpoint
+- `<SECURE_PASSWORD>`: your secure password for the database user
+- `<PLATFORM_SERVER>`: your Platform endpoint URL (_optional_)
 
-    Adjust the following values based on your CPU cores:
+Adjust the following values based on your CPU cores:
 
-    - `number-of-threads`: Set between 2x and 4x your CPU core count (default: 16)
-    - `num-threads`: Set between 2x and 4x your CPU core count (default: 64)
+- `number-of-threads`: Set between 2x and 4x your CPU core count (default: 16)
+- `num-threads`: Set between 2x and 4x your CPU core count (default: 64)
 
 ## Docker Compose
 
-Docker Compose requires configuration to work with Wave.
+Docker Compose is a tool for defining and running multi-container Docker applications. It requires configuration to work with Wave.
 
-Add the following to your `docker-compose.yml`:
+To configure Docker Compose, add the following to your `docker-compose.yml`:
 
 ```yaml
 services:
@@ -216,7 +212,7 @@ services:
     restart: unless-stopped
 ```
 
-## Deploying Wave
+## Wave deployment
 
 1. Download and populate the [wave.env](./_templates/wave.env) file with the settings corresponding to your system.
 
