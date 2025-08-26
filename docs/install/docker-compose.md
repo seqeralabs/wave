@@ -1,14 +1,14 @@
 ---
 title: Docker Compose
-description: Run Wave in Docker Compose
+description: Run Wave List on Docker Compose
 tags: [docker compose, install, wave]
 ---
 
-Wave enables you to provision container images on demand, removing the need to build and upload them manually to a container registry. Wave can provision both ephemeral and regular registry-persisted container images.
+Docker Compose provides a straightforward deployment method suitable for development, testing, and production environments by packaging Wave services and dependencies into a coordinated container stack. This approach handles service orchestration automatically, coordinating startup and networking of Wave components, with updates performed by downloading new container versions and restarting the application stack.
 
-Docker Compose installations support Wave Lite, a configuration mode for Wave that includes only container augmentation and inspection capabilities, and enables the use of Fusion file system in Nextflow pipelines. See [Wave Lite](../wave-lite.md) for more information.
+Docker Compose installations support [Wave Lite](../wave-lite.md), a configuration mode for Wave that includes only container augmentation and inspection capabilities, and enables the use of Fusion file system in Nextflow pipelines.
 
-This page describes how to run Wave on Docker Compose. It includes:
+This page describes how to run Wave Lite on Docker Compose. It includes:
 
 - Database configuration
 - Wave configuration
@@ -30,8 +30,6 @@ You will need the following to get started:
 :::
 
 ## Database configuration
-
-PostgreSQL is a relational database that stores and manages data using SQL queries. Wave requires a PostgreSQL database to operate.
 
 To create your `wave` PostgreSQL database and user account with appropriate privileges:
 
@@ -85,9 +83,7 @@ Wave will automatically handle schema migrations and create the required databas
 
 ## Wave configuration
 
-Wave requires configuration for database connections, Redis caching, and server settings.
-
-To configure Wave, create a `config/wave-config.yml` file with the following configuration in your Docker Compose directory:
+To configure Wave, create a `config/wave-config.yml` file in your Docker Compose directory with the following configuration:
 
 ```yaml
 wave:
@@ -109,31 +105,31 @@ wave:
     user: "wave_user"
     password: "<SECURE_PASSWORD>"
 
-  # Redis configuration for caching and session management
-  redis:
-    uri: "redis://<REDIS_HOST>:6379"
+    # Redis configuration for caching and session management
+redis:
+  uri: "redis://<REDIS_HOST>:6379"
 
-  # Platform integration (optional)
-  tower:
-    endpoint:
-      url: "<PLATFORM_SERVER>"
+# Platform integration (optional)
+tower:
+  endpoint:
+  url: "<PLATFORM_SERVER>"
 
-  # Micronaut framework configuration
-  micronaut:
-    # Netty HTTP server configuration
-    netty:
-      event-loops:
-        default:
-          num-threads: 64
+# Micronaut framework configuration
+micronaut:
+  # Netty HTTP server configuration
+  netty:
+    event-loops:
+      default:
+        num-threads: 64
         stream-pool:
-          executor: stream-executor
-    # HTTP client configuration
-    http:
-      services:
-        stream-client:
-          read-timeout: 30s
-          read-idle-timeout: 5m
-          event-loop-group: stream-pool
+        executor: stream-executor
+  # HTTP client configuration
+  http:
+    services:
+      stream-client:
+        read-timeout: 30s
+        read-idle-timeout: 5m
+        event-loop-group: stream-pool
 
 # Management endpoints configuration
 loggers:
@@ -149,16 +145,16 @@ loggers:
     enabled: false
   info:
     enabled: false
-# Enable metrics for monitoring
-metrics:
-  enabled: true
-# Enable health checks
-health:
-  enabled: true
-  disk-space:
-    enabled: false
-  jdbc:
-    enabled: false
+  # Enable metrics for monitoring
+  metrics:
+    enabled: true
+  # Enable health checks
+    health:
+    enabled: true
+    disk-space:
+      enabled: false
+    jdbc:
+      enabled: false
 ```
 
 Replace the following:
@@ -175,9 +171,7 @@ Adjust the following values based on your CPU cores:
 
 ## Docker Compose
 
-Docker Compose is a tool for defining and running multi-container Docker applications. It requires configuration to work with Wave.
-
-To configure Docker Compose, add the following to your `docker-compose.yml`:
+To configure Docker Compose, create a `docker-compose.yml` file with the following configuration:
 
 ```yaml
 services:
@@ -213,6 +207,8 @@ services:
 ```
 
 ## Wave deployment
+
+To deploy Wave Lite using Docker Swarm:
 
 1. Download and populate the [wave.env](./_templates/wave.env) file with the settings corresponding to your system.
 

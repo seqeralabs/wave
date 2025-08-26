@@ -4,9 +4,7 @@ description: Run Wave Lite on Kubernetes
 tags: [kubernetes, install, wave, wave lite]
 ---
 
-Wave enables you to provision container images on-demand, removing the need to build and upload them manually to a container registry. Wave can provision both disposable containers that are only accessible for a short period, and regular registry-persisted container images.
-
-Kubernetes installations support Wave Lite, a configuration mode for Wave that supports container augmentation and inspection on AWS, Azure, and GCP deployments, and enables the use of Fusion file system in Nextflow pipelines. See [Wave Lite](../wave-lite.md) for more information.
+Kubernetes installations support [Wave Lite](../wave-lite.md), a configuration mode for Wave that supports container augmentation and inspection on AWS, Azure, and GCP deployments, and enables the use of Fusion file system in Nextflow pipelines.
 
 This page describes how to run Wave Lite on Kubernetes. It includes:
 
@@ -33,7 +31,7 @@ You will need the following to get started:
     - **Storage**: Sufficient storage for your container images and temporary files
 :::
 
-:::info[**Assumptions**]
+:::warning[**Assumptions**]
 This guide assumes:
 
 - You have already deployed Seqera Platform Enterprise
@@ -43,8 +41,6 @@ This guide assumes:
 :::
 
 ## Database configuration
-
-Wave requires a PostgreSQL database to operate.
 
 To create your `wave` PostgreSQL database and user account with appropriate privileges:
 
@@ -94,9 +90,7 @@ To create your `wave` PostgreSQL database and user account with appropriate priv
 
 ## Namespace creation
 
-A Kubernetes namespace provides logical isolation for cluster resources, allowing you to organize all Wave components together with proper resource limits and access controls.
-
-To create a `wave` namespace:
+To create a Kubernetes `wave` namespace:
 
 1. Create `namespace.yaml` with the following configuration:
 
@@ -118,7 +112,7 @@ To create a `wave` namespace:
 
 ## Wave configuration
 
-Wave requires configuration for database connections, Redis caching, and server settings.
+To configure database connections, Redis caching, and server settings:
 
 1. Create `wave-config.yaml` with the following configuration:
 
@@ -206,6 +200,7 @@ Wave requires configuration for database connections, Redis caching, and server 
     It is recommended to use Kubernetes Secrets for sensitive data instead of embedding them in the ConfigMap. For example, by adding environment variables with secrets to your Wave deployment manifest:
 
     ```yaml
+    ---
     env:
     - name: WAVE_DB_PASSWORD
         valueFrom:
@@ -225,7 +220,7 @@ Wave requires configuration for database connections, Redis caching, and server 
 
 ## Wave deployment
 
-Deploy Wave using the following deployment manifest:
+To deploy Wave using the deployment manifest:
 
 1. Create `wave-deployment.yaml` with the following configuration:
 
