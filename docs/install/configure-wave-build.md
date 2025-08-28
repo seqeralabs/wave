@@ -1,343 +1,413 @@
 ---
 title: Configure Wave build
+description: Enable Wave build on Kubernetes and AWS EFS storage
+tags: [kubernetes, install, wave, wave build]
 ---
 
-This guide covers extending your existing Wave installation on Kubernetes to support container build capabilities. This enables Wave's full feature set including container building, freezing, and advanced caching.
+Wave's full build capabilities require specific integrations with Kubernetes and AWS Elastic File System (EFS) Storage, making Amazon Elastic Kubernetes Service (EKS) and AWS hard dependencies for full-featured deployments that support container build capabilities.
 
-## Prerequisites
+This page describes how to extend your [Kubernetes installation](./kubernetes) to support container build capabilities. It includes:
 
-Before extending Wave for build support, ensure you have:
+- Configure Kubernetes service account and RBAC policies
+- Configure EFS storage
+- Update Wave configuration
+- Update Wave deployments
+- Deploy updates
+- Verify build functionality
+- Configure production enhancements
+- Optimize for production environments
+- Configure advanced options
 
-- **Existing Wave installation** - Basic Wave deployment already running in augmentation-only mode
-- **AWS EKS cluster** - Build capabilities require AWS-specific integrations
-- **EFS filesystem** - Configured and accessible from your EKS cluster for shared build storage
-- **Cluster admin permissions** - Required to create RBAC policies and storage resources
+:::info[**Prerequisites**]
+You will need the following to get started:
 
-## Create Kubernetes Service Account & RBAC Policies
+- An existing [Wave Lite Kubernetes installation](./kubernetes.md)
+- An AWS EKS cluster
+- An EFS filesystem configured and accessible from your EKS cluster
+- Cluster admin permissions to create RBAC policies and storage resources
+:::
 
-Wave's build service needs permissions to create and manage build pods. Create the necessary RBAC configuration:
+## Configure Kubernetes service account and RBAC policies
 
-```yaml
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: wave-sa
-  namespace: wave
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: wave-role
-rules:
-  - apiGroups: [""]
-    resources: [pods, pods/status, pods/log, pods/exec]
-    verbs: [get, list, watch, create, delete]
-  - apiGroups: ["batch"]
-    resources: [jobs, jobs/status]
-    verbs: [get, list, watch, create, delete]
-  - apiGroups: [""]
-    resources: [configmaps, secrets]
-    verbs: [get, list]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: wave-rolebind
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: wave-role
-subjects:
-  - kind: ServiceAccount
+To configure your Kubernetes service account and RBAC policies:
+
+1. Create `wave-rbac.yaml` with the following configuration:
+
+    ```yaml
+    ---
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
     name: wave-sa
     namespace: wave
-```
-
-## Configure EFS Storage
-
-Wave builds require shared storage accessible across multiple pods. Configure EFS with the AWS EFS CSI driver:
-
-### Storage Class
-
-```yaml
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: efs-wave-sc
-provisioner: efs.csi.aws.com
-parameters:
-  provisioningMode: efs-ap
-  fileSystemId: "REPLACE_ME_EFS_ID"
-  directoryPerms: "0755"
-```
-
-### Persistent Volume
-
-```yaml
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: wave-build-pv
-spec:
-  capacity:
-    storage: 500Gi
-  volumeMode: Filesystem
-  accessModes:
-    - ReadWriteMany
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: efs-wave-sc
-  csi:
-    driver: efs.csi.aws.com
-    volumeHandle: "REPLACE_ME_EFS_ID"
-```
-
-### Persistent Volume Claim
-
-```yaml
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  namespace: wave
-  name: wave-build-pvc
-  labels:
-    app: wave-app
-spec:
-  accessModes:
-    - ReadWriteMany
-  resources:
-    requests:
-      storage: 500Gi
-  storageClassName: efs-wave-sc
-```
-
-**Configuration Notes:**
-- Replace `REPLACE_ME_EFS_ID` with your actual EFS filesystem ID
-- EFS must be in the same VPC as your EKS cluster
-- Ensure EFS security groups allow NFS traffic from EKS worker nodes
-
-## Update Wave Configuration
-
-Update your existing Wave ConfigMap to enable build features and configure storage paths:
-
-```yaml
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: wave-cfg
-  namespace: wave
-  labels:
-    app: wave-cfg
-data:
-  config.yml: |
-    wave:
-      # Enable build service
-      build:
-        enabled: true
-        workspace: '/build/work'
-        # Optional: Configure build timeouts
-        timeout: '1h'
-        # Optional: Configure resource limits for build pods
-        resources:
-          requests:
-            memory: '1Gi'
-            cpu: '500m'
-          limits:
-            memory: '4Gi'
-            cpu: '2000m'
-
-      # Enable other build-dependent features
-      mirror:
-        enabled: true
-      scan:
-        enabled: true
-      blobCache:
-        enabled: true
-
-      # Existing database, redis, and platform configuration...
-      db:
-        uri: "jdbc:postgresql://your-postgres-host:5432/wave"
-        user: "wave_user"
-        password: "your_secure_password_here"
-
-      redis:
-        uri: "redis://your-redis-host:6379"
-
-      tower:
-        endpoint:
-          url: "https://your-platform-instance.com/api"
-
-      # Kubernetes-specific configuration for builds
-      k8s:
-        namespace: wave
-        serviceAccount: wave-sa
-        # Optional: Configure build pod settings
-        buildPod:
-          image: 'quay.io/buildah/stable:latest'
-          nodeSelector:
-            wave-builds: "true"
-```
-
-## Update Wave Deployment
-
-Modify your existing Wave deployment to include the service account and EFS storage:
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: wave
-  namespace: wave
-  labels:
-    app: wave-app
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: wave-app
-  template:
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
     metadata:
+    name: wave-role
+    rules:
+    - apiGroups: [""]
+        resources: [pods, pods/status, pods/log, pods/exec]
+        verbs: [get, list, watch, create, delete]
+    - apiGroups: ["batch"]
+        resources: [jobs, jobs/status]
+        verbs: [get, list, watch, create, delete]
+    - apiGroups: [""]
+        resources: [configmaps, secrets]
+        verbs: [get, list]
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+    name: wave-rolebind
+    roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: ClusterRole
+    name: wave-role
+    subjects:
+    - kind: ServiceAccount
+        name: wave-sa
+        namespace: wave
+    ```
+
+1. Apply the RBAC configuration:
+
+    ```bash
+    kubectl apply -f wave-rbac.yaml
+    ```
+
+## Configure EFS storage
+
+Wave builds require shared storage accessible across multiple pods. Configure EFS with the AWS EFS CSI driver to provide persistent, shared storage for build artifacts and caching.
+
+:::note
+EFS must be in the same Virtual Private Cloud (VPC) as your EKS cluster. Ensure EFS security groups allow NFS traffic from EKS worker nodes.
+:::
+
+### Storage class
+
+To configure your EFS storage class:
+
+1. Create `wave-storage.yaml` with the following configuration:
+
+    ```yaml
+    ---
+    apiVersion: storage.k8s.io/v1
+    kind: StorageClass
+    metadata:
+      name: efs-wave-sc
+    provisioner: efs.csi.aws.com
+    parameters:
+      provisioningMode: efs-ap
+      fileSystemId: "<EFS_ID>"
+      directoryPerms: "0755"
+    ```
+
+    Replace `<EFS_ID>` with your Amazon EFS File System ID.
+
+1. Apply the storage configuration:
+
+    ```bash
+    kubectl apply -f wave-storage.yaml
+    ```
+
+### Persistent volume
+
+To configure your persistent volume:
+
+1. Create `wave-persistent.yaml` with the following configuration:
+
+    ```yaml
+    apiVersion: v1
+    kind: PersistentVolume
+    metadata:
+      name: wave-build-pv
+    spec:
+      capacity:
+        storage: 500Gi
+      volumeMode: Filesystem
+      accessModes:
+        - ReadWriteMany
+      persistentVolumeReclaimPolicy: Retain
+      storageClassName: efs-wave-sc
+      csi:
+        driver: efs.csi.aws.com
+        volumeHandle: "<EFS_ID>"
+    ```
+
+    Replace `<EFS_ID>` with your Amazon EFS File System ID.
+
+1. Apply the persistent volume:
+
+    ```bash
+    kubectl apply -f wave-persistent.yaml
+    ```
+
+### Persistent volume claim
+
+To configure your persistent volume claim:
+
+1. Create `wave-persistent-claim.yaml` with the following configuration:
+
+    ```yaml
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      namespace: wave
+      name: wave-build-pvc
       labels:
         app: wave-app
     spec:
-      serviceAccountName: wave-sa  # Add service account
-      containers:
-        - image: your-registry.com/wave:latest
-          name: wave-app
-          ports:
-            - containerPort: 9090
-              name: http
-          env:
-            - name: MICRONAUT_ENVIRONMENTS
-              value: "postgres,redis,k8s"  # Add k8s environment
-            - name: WAVE_JVM_OPTS
-              value: "-Xmx3g -Xms1g -XX:+UseG1GC"
-          resources:
-            requests:
-              memory: "4Gi"
-              cpu: "1000m"
-            limits:
-              memory: "4Gi"
-              cpu: "2000m"
-          workingDir: "/work"
-          volumeMounts:
+      accessModes:
+        - ReadWriteMany
+      resources:
+        requests:
+          storage: 500Gi
+      storageClassName: efs-wave-sc
+    ```
+
+1. Apply the persistent volume claim:
+
+    ```bash
+    kubectl apply -f wave-persistent-claim.yaml
+    ```
+
+## Update Wave configuration
+
+Update your existing Wave ConfigMap to enable build features and configure storage paths:
+
+1. Open `wave-config.yaml` and update the configuration with the following:
+
+    ```yaml
+    kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: wave-cfg
+      namespace: wave
+      labels:
+        app: wave-cfg
+    data:
+      config.yml: |
+        wave:
+          # Enable build service
+          build:
+            enabled: true
+            workspace: '/build/work'
+            # Optional: Configure build timeouts
+            timeout: '1h'
+            # Optional: Configure resource limits for build pods
+            resources:
+              requests:
+                memory: '1Gi'
+                cpu: '500m'
+              limits:
+                memory: '4Gi'
+                cpu: '2000m'
+
+          # Enable other build-dependent features
+          mirror:
+            enabled: true
+          scan:
+            enabled: true
+          blobCache:
+            enabled: true
+
+          # Existing database, redis, and platform configuration...
+          db:
+            uri: "jdbc:postgresql://<POSTGRES_HOST>:5432/wave"
+            user: "wave_user"
+            password: "<SECURE_PASSWORD>"
+
+          redis:
+            uri: "rediss://<REDIS_HOST>:6379"
+
+          # Platform integration (optional)
+          tower:
+            endpoint:
+              url: "<PLATFORM_SERVER>"
+
+          # Kubernetes-specific configuration for builds
+          k8s:
+            namespace: wave
+            serviceAccount: wave-sa
+            # Optional: Configure build pod settings
+            buildPod:
+              image: 'quay.io/buildah/stable:latest'
+              nodeSelector:
+                wave-builds: "true"
+    ```
+
+    Replace the following:
+
+    - `<POSTGRES_HOST>`: your Postgres service endpoint
+    - `<REDIS_HOST>`: your Redis service endpoint
+    - `<SECURE_PASSWORD>`: your secure password for the database user
+    - `<PLATFORM_SERVER>`: your Platform endpoint URL (_optional_)
+
+1. Apply the Wave configuration:
+
+    ```bash
+    kubectl apply -f wave-config.yaml
+    ```
+
+## Update Wave deployments
+
+To update your Wave deployment, follow these steps:
+
+1. Modify your existing `wave-deployment.yaml` to include the service account and EFS storage:
+
+    ```yaml
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: wave
+      namespace: wave
+      labels:
+        app: wave-app
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: wave-app
+      template:
+        metadata:
+          labels:
+            app: wave-app
+        spec:
+          serviceAccountName: wave-sa  # Add service account
+          containers:
+            - image: <REGISTRY_ADDRESS>/wave:<WAVE_IMAGE_TAG>
+              name: wave-app
+              ports:
+                - containerPort: 9090
+                  name: http
+              env:
+                - name: MICRONAUT_ENVIRONMENTS
+                  value: "postgres,redis,k8s"  # Add k8s environment
+                - name: WAVE_JVM_OPTS
+                  value: "-Xmx3g -Xms1g -XX:+UseG1GC"
+              resources:
+                requests:
+                  memory: "4Gi"
+                  cpu: "1000m"
+                limits:
+                  memory: "4Gi"
+                  cpu: "2000m"
+              workingDir: "/work"
+              volumeMounts:
+                - name: wave-cfg
+                  mountPath: /work/config.yml
+                  subPath: "config.yml"
+                - name: build-storage  # Add EFS mount
+                  mountPath: /build
+              readinessProbe:
+                httpGet:
+                  path: /health
+                  port: 9090
+                initialDelaySeconds: 30
+                timeoutSeconds: 10
+              livenessProbe:
+                httpGet:
+                  path: /health
+                  port: 9090
+                initialDelaySeconds: 60
+                timeoutSeconds: 10
+          volumes:
             - name: wave-cfg
-              mountPath: /work/config.yml
-              subPath: "config.yml"
-            - name: build-storage  # Add EFS mount
-              mountPath: /build
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 9090
-            initialDelaySeconds: 30
-            timeoutSeconds: 10
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 9090
-            initialDelaySeconds: 60
-            timeoutSeconds: 10
-      volumes:
-        - name: wave-cfg
-          configMap:
-            name: wave-cfg
-        - name: build-storage  # Add EFS volume
-          persistentVolumeClaim:
-            claimName: wave-build-pvc
-      restartPolicy: Always
-```
+              configMap:
+                name: wave-cfg
+            - name: build-storage  # Add EFS volume
+              persistentVolumeClaim:
+                claimName: wave-build-pvc
+          restartPolicy: Always
+    ```
 
-## Deploy the Updates
+    Replace the following:
 
-Apply the configuration changes to enable build support:
+    - `<REGISTRY_ADDRESS>`: your registry image address
+    - `<WAVE_IMAGE_TAG>`: your Wave image tag version
 
-```bash
-# Apply RBAC configuration
-kubectl apply -f wave-rbac.yaml
+1. Apply the updated deployment:
 
-# Apply storage configuration
-kubectl apply -f wave-storage.yaml
+    ```
+    kubectl apply -f wave-deployment.yaml
+    ```
 
-# Update the ConfigMap
-kubectl apply -f wave-configmap.yaml
+## Verify the deployment
 
-# Update the deployment
-kubectl apply -f wave-deployment.yaml
+To verify your deployment, follow these steps:
 
-# Verify the deployment
-kubectl get pods -n wave
-kubectl logs -f deployment/wave -n wave
+1. Check the Wave pods and logs::
 
-# Check that EFS is mounted correctly
-kubectl exec -it deployment/wave -n wave -- df -h /build
-```
+    ```bash
+    kubectl get pods -n wave
+    kubectl logs -f deployment/wave -n wave
+    ```
 
-## Verify Build Functionality
+1. Check that EFS is mounted correctly:
+
+    ```bash
+    kubectl exec -it deployment/wave -n wave -- df -h /build
+    ```
+
+## Verify build functionality
 
 Test that Wave build capabilities are working:
 
-1. **Check Wave health endpoint** for build service status
-2. **Monitor logs** for build service initialization messages
-3. **Test a simple build** through the Wave API or Platform integration
+1. Check Wave health endpoint for build service status
+1. Monitor logs for build service initialization messages
+1. **Test a simple build** through the Wave API or Platform integration
 
-```bash
-curl http://wave-service.wave.svc.cluster.local:9090/health
+    ```bash
+    curl http://wave-service.wave.svc.cluster.local:9090/health
+    kubectl logs -f deployment/wave -n wave | grep -i build
+    ```
 
-kubectl logs -f deployment/wave -n wave | grep -i build
-```
+## Configure production enhancements
 
-## Recommended Production Enhancements
+The following sections describe recommended enhancements for production deployments:
 
-### Dedicated Node Pools
+### Dedicated node pools
 
-Create dedicated node pools for Wave build workloads to isolate build processes and optimize resource allocation:
+Create dedicated node pools for Wave build workloads to isolate build processes and optimize resource allocation.
 
+### Build pod resource management
 
-### Build Pod Resource Management
+Control resource usage and prevent build pods from overwhelming your cluster:
 
-Configure resource quotas and limits for build pods:
+- Configure resource quotas and limits for build pods.
 
-```yaml
-apiVersion: v1
-kind: ResourceQuota
-metadata:
-  name: wave-build-quota
-  namespace: wave
-spec:
-  hard:
-    requests.cpu: "10"
-    requests.memory: 20Gi
-    limits.cpu: "20"
-    limits.memory: 40Gi
-    pods: "10"
-```
+    ```yaml
+    apiVersion: v1
+    kind: ResourceQuota
+    metadata:
+      name: wave-build-quota
+      namespace: wave
+    spec:
+      hard:
+        requests.cpu: "10"
+        requests.memory: 20Gi
+        limits.cpu: "20"
+        limits.memory: 40Gi
+        pods: "10"
+    ```
 
-### Monitoring and Alerting
+### Monitoring and alerting
 
-Set up monitoring for build operations:
+Set up monitoring for build operations to track performance and identify issues:
 
-- **Build success/failure rates**
-- **Build duration metrics**
-- **EFS storage usage**
-- **Node resource utilization**
-- **Build queue length**
+- Build success/failure rates
+- Build duration metrics
+- EFS storage usage
+- Node resource utilization
+- Build queue length
 
-## Security Considerations
+## Security considerations
 
-- **EFS Access Points** - Use EFS access points to isolate build workspaces
-- **Network Policies** - Restrict network access for build pods
-- **Pod Security Standards** - Apply appropriate security contexts to build pods
-- **Image Scanning** - Enable security scanning for built images
-- **RBAC Minimization** - Regularly review and minimize Wave's cluster permissions
+Implement these security measures to protect your Wave deployment and build environment:
 
-## Troubleshooting
-
-**Common issues and solutions:**
-
-- **EFS mount failures** - Check security groups and VPC configuration
-- **Build pod creation failures** - Verify RBAC permissions and node selectors
-- **Storage access issues** - Ensure EFS access points are configured correctly
-- **Build timeouts** - Adjust build timeout settings based on workload requirements
-
-For additional configuration options and advanced features, see [Configuring Wave](./configure-wave.md).
+- Use EFS access points to isolate build workspaces
+- Restrict network access for build pods
+- Apply appropriate security contexts to build pods
+- Enable security scanning for built images
+- Regularly review and minimize Wave's cluster permissions

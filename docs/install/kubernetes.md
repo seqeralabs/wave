@@ -1,22 +1,23 @@
 ---
-title: Kubernetes
-description: Run Wave Lite on Kubernetes
+title: Install Wave Lite with Kubernetes
+description: Install Wave Lite on Kubernetes
 tags: [kubernetes, install, wave, wave lite]
 ---
 
+Kubernetes is the preferred choice for deploying Wave in production environments that require scalability, high availability, and resilience. Its installation involves setting up a cluster, configuring various components, and managing networking, storage, and resource allocation.
+
 Kubernetes installations support [Wave Lite](../wave-lite.md), a configuration mode for Wave that supports container augmentation and inspection on AWS, Azure, and GCP deployments, and enables the use of Fusion file system in Nextflow pipelines.
 
-This page describes how to run Wave Lite on Kubernetes. It includes:
+This page describes how to run Wave Lite on Kubernetes. It includes steps to:
 
-- Database configuration
-- Namespace creation
-- Wave configuration
-- Wave deployment
-- Service creation
-- Advanced configuration
-- Next steps
+- Configure a database
+- Create a namespace
+- Configure Wave
+- Deploy Wave
+- Create a service
+- Configure Wave connectivity
 
-Wave's full build capabilities require specific integrations on Kubernetes and AWS EFS Storage, making EKS and AWS a hard dependency for fully-featured deployments. After you configure a base Wave Lite installation on AWS with this guide, see [Configure Wave Build](./configure-wave-build.md) to optionally extend your installation to support build capabilities.
+Wave's full build capabilities require specific integrations with Kubernetes and AWS Elastic File System (EFS) Storage, making Amazon Elastic Kubernetes Service (EKS) and AWS hard dependencies for full-featured deployments. If you require build capabilities, see [Configure Wave build](./configure-wave-build.md) to extend your installation.
 
 :::info[**Prerequisites**]
 You will need the following to get started:
@@ -40,12 +41,12 @@ This guide assumes:
 - Your PostgreSQL and Redis instances are accessible from the Kubernetes cluster
 :::
 
-## Database configuration
+## Configure a database
 
-To create your `wave` PostgreSQL database and user account with appropriate privileges:
+To create a PostgreSQL database and user account, follow these steps:
 
 1. Connect to PostgreSQL.
-1. Create a dedicated user for Wave:
+1. Create a dedicated user:
 
     ```sql
     CREATE ROLE wave_user LOGIN PASSWORD '<SECURE_PASSWORD>';
@@ -88,9 +89,9 @@ To create your `wave` PostgreSQL database and user account with appropriate priv
     GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO wave_user;
     ```
 
-## Namespace creation
+## Create a namespace
 
-To create a Kubernetes `wave` namespace:
+To create a Kubernetes `wave` namespace, follow these steps:
 
 1. Create `namespace.yaml` with the following configuration:
 
@@ -104,15 +105,15 @@ To create a Kubernetes `wave` namespace:
         app: wave-app
     ```
 
-2. Deploy the `wave` namespace:
+1. Apply the `wave` namespace configuration:
 
     ```bash
     kubectl apply -f namespace.yaml
     ```
 
-## Wave configuration
+## Configure Wave
 
-To configure database connections, Redis caching, and server settings:
+To configure database connections, Redis caching, and server settings, follow these steps:
 
 1. Create `wave-config.yaml` with the following configuration:
 
@@ -209,18 +210,18 @@ To configure database connections, Redis caching, and server settings:
             key: db-password
     ```
 
-    See the Kubernetes [Secrets](https://kubernetes.io/docs/concepts/configuration/secret/) for more details.
+    For more information, see Kubernetes [Secrets](https://kubernetes.io/docs/concepts/configuration/secret/).
     :::
 
-    2. Deploy the ConfigMap to the `wave` namespace:
+1. Apply the ConfigMap:
 
     ```bash
     kubectl apply -f wave-config.yaml
     ```
 
-## Wave deployment
+## Deploy Wave
 
-To deploy Wave using the deployment manifest:
+To deploy Wave using the deployment manifest, follow these steps:
 
 1. Create `wave-deployment.yaml` with the following configuration:
 
@@ -286,15 +287,15 @@ To deploy Wave using the deployment manifest:
     - `<AWS_ACCOUNT>`: your AWS account ID
     - `<WAVE_IMAGE_TAG>`: your Wave image tag version
 
-2. Deploy Wave to the `wave` namespace:
+2. Apply the Wave configuration:
 
     ```bash
     kubectl apply -f wave-deployment.yaml
     ```
 
-## Service creation
+## Create a service
 
-To expose Wave within the cluster using a Service:
+To expose Wave within the cluster using a Service, follow these steps:
 
 1. Create `wave-service.yaml` with the following configuration:
 
@@ -318,101 +319,127 @@ To expose Wave within the cluster using a Service:
       type: ClusterIP
     ```
 
-2. Deploy the service to the `wave` namespace:
+1. Apply the service to the namespace:
 
     ```bash
     kubectl apply -f wave-service.yaml
     ```
 
-## Next steps
+## Configure Wave connectivity
 
-### Configure Seqera Platform to integrate with Wave
+After deploying Wave Lite, configure networking and integrate with Seqera Platform to make Wave accessible and functional.
 
-Configure your Seqera Platform Enterprise deployment to integrate with Wave by setting the Wave server endpoint in your `tower.yml` [configuration](https://docs.seqera.io/platform-enterprise/latest/enterprise/configuration/wave).
-
-### Networking
+### Set up networking
 
 Wave must be accessible from:
 
 - Seqera Platform services
 - Compute environments (for container image access)
 
-Configure external access using a Kubernetes ingress.
+Use a Kubernetes ingress to configure external access.
 
-Update the following example ingress with your provider-specific annotations:
+To set up an ingress, follow these steps:
 
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: wave-ingress
-  namespace: wave
-spec:
-  rules:
-  - host: wave.your-domain.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: wave-service
-            port:
-              number: 9090
-```
+1. Create `wave-ingress.yaml` with the following configuration:
 
-### TLS
+    ```yaml
+    apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      name: wave-ingress
+      namespace: wave
+      # Add your ingress controller annotations here
+    spec:
+      rules:
+      - host: <WAVE_DOMAIN>
+        http:
+          paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: wave-service
+                port:
+                  number: 9090
+    ```
 
-Wave does not handle TLS termination directly. Configure TLS at your ingress controller or load balancer level. Most ingress controllers support automatic certificate provisioning through provider integrations.
+    Replace `<WAVE_DOMAIN>` with your provider-specific domain.
 
+2. Apply the ingress:
 
-### Production environments
+    ```bash
+    kubectl apply -f wave-ingress.yaml
+    ```
 
-Consider implementing the following for production deployments:
+### Configure TLS
 
-**Reliability:**
-- Pod Disruption Budgets, for availability during cluster maintenance
-- Horizontal Pod Autoscaler, for automatic scaling based on load
-- Multiple replicas with anti-affinity rules, for high availability
+Wave does not handle TLS termination directly.
+Configure it at your ingress controller or load balancer level.
+Most ingress controllers support automatic certificate provisioning.
 
-**Resource management:**
-- Node selectors or affinity rules for optimal pod placement
-- Resource quotas and limit ranges for the Wave namespace
+### Connect to Seqera Platform
 
-### AWS credentials to access ECR
+Configure your Seqera Platform deployment to use Wave by setting the Wave server endpoint in your `tower.yml` configuration. For more information, see [Pair your Seqera instance with Wave](https://docs.seqera.io/platform-enterprise/enterprise/configuration/wave#pair-your-seqera-instance-with-wave).
 
-Wave requires access to AWS ECR for container image management. Create an IAM role with the following permissions:
+### Configure AWS ECR access
 
-```json
-"Statement": [
-    {
-        "Action": [
-            "ecr:BatchCheckLayerAvailability",
-            "ecr:GetDownloadUrlForLayer",
-            "ecr:GetRepositoryPolicy",
-            "ecr:DescribeRepositories",
-            "ecr:ListImages",
-            "ecr:DescribeImages",
-            "ecr:BatchGetImage",
-            "ecr:GetLifecyclePolicy",
-            "ecr:GetLifecyclePolicyPreview",
-            "ecr:ListTagsForResource",
-            "ecr:DescribeImageScanFindings",
-            "ecr:CompleteLayerUpload",
-            "ecr:UploadLayerPart",
-            "ecr:InitiateLayerUpload",
-            "ecr:PutImage"
-        ],
-        "Effect": "Allow",
-        "Resource": [
-            "<RESOURCE_NAME>/wave/*"
-        ]
-    }
-]
-```
+Wave needs specific permissions to manage container images.
 
-Replace `<RESOURCE_NAME>` with your ECR repository Amazon Resource Name (ARN).
+To configure AWS ECR access:
 
-## Advanced configuration
+- Create an IAM role with the following permissions:
 
-See [Configuring Wave](./configure-wave.md) for advanced Wave features, scaling guidance, and integration options.
+    ```json
+    "Statement": [
+        {
+            "Action": [
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:GetRepositoryPolicy",
+                "ecr:DescribeRepositories",
+                "ecr:ListImages",
+                "ecr:DescribeImages",
+                "ecr:BatchGetImage",
+                "ecr:GetLifecyclePolicy",
+                "ecr:GetLifecyclePolicyPreview",
+                "ecr:ListTagsForResource",
+                "ecr:DescribeImageScanFindings",
+                "ecr:CompleteLayerUpload",
+                "ecr:UploadLayerPart",
+                "ecr:InitiateLayerUpload",
+                "ecr:PutImage"
+            ],
+            "Effect": "Allow",
+            "Resource": [
+                "<RESOURCE_NAME>/wave/*"
+            ]
+        }
+    ]
+    ```
+
+    Replace `<RESOURCE_NAME>` with your ECR repository Amazon Resource Name (ARN).
+
+## Optimize for production environments
+
+For production deployments, implement these reliability and performance improvements:
+
+**High availability:**
+
+- Set `replicas: 3` or higher in your deployment
+- Add pod anti-affinity rules to distribute replicas across nodes
+- Configure Pod Disruption Budgets for maintenance windows
+
+**Auto-scaling:**
+
+- Set up Horizontal Pod Autoscaler based on CPU/memory usage
+- Configure resource quotas and limits for the Wave namespace
+
+**Monitoring:**
+
+- Set up monitoring for Wave pods and services
+- Configure alerting for health check failures
+- Monitor database and Redis connection health
+
+## Configure advanced options
+
+For advanced Wave features, scaling guidance, and integration options, see [Configure Wave](./configure-wave.md).

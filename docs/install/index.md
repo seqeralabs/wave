@@ -1,28 +1,33 @@
 ---
 title: Installation
-description: Install self-hosted Wave
+description: Install Wave
 tags: [docker compose, kubernetes, install, wave, wave lite]
 ---
 
-import DocCardList from "@theme/DocCardList";
-
 Wave provides multiple installation and deployment options to accommodate different organizational needs and infrastructure requirements.
 
-## Hosted service
+## Wave service by Seqera
 
-The simplest way to get started with Wave is through the hosted service at [Seqera containers](https://seqera.io/containers/). This cloud-based option requires no local infrastructure setup and provides immediate access to Wave's container provisioning capabilities. Seqera containers is ideal for users who want to start using Wave quickly with minimal configuration overhead.
+Wave is Seqera's container provisioning service that streamlines container management for Nextflow data analysis pipelines. The simplest way to get started with Wave is
+through the hosted Wave service at https://wave.seqera.io. This cloud-based option requires no local infrastructure setup and provides immediate access to Wave's container
+provisioning capabilities. The hosted service is ideal for users who want to start using Wave quickly with minimal configuration overhead.
 
-When using the Seqera containers service, you can add a simple configuration block to your `nextflow.config` file to integrate Wave with your Nextflow pipelines:
+When using the hosted Wave service, you can add a simple configuration block to your `nextflow.config` file to integrate Wave with your Nextflow pipelines:
 
 ```groovy
 wave {
     enabled = true
 }
+
+tower {
+  accessToken = '<TOWER_ACCESS_TOKEN>'
+}
 ```
 
-For access to other public or private container repositories, you can add container registry credentials to your `nextflow.config` file. See the [Nextflow and Wave](../tutorials/nextflow-wave) tutorial to get started.
+You don't need a Seqera access token for basic Wave functionality. However, providing one grants you additional capabilities including access to private container
+repositories, container freezing to your own registry, and bypassing rate limits on public registries. Container registry credentials should be configured using the [credentials manager](https://docs.seqera.io/platform-cloud/credentials/overview) in Seqera Platform.
 
-You can also integrate your registry with Seqera Platform's credential management system. See [Credentials overview](https://docs.seqera.io/platform-cloud/credentials/overview) for more information.
+If you're a Seqera Platform Enterprise customer, integrate Wave by adding the `TOWER_ENABLE_WAVE=true` and `WAVE_SERVER_URL="https://wave.seqera.io"` environment variables to your Seqera configuration environment. You must configure container registry credentials in the Platform UI to enable access to private repositories, and ensure the Wave service is accessible from your network infrastructure. For more information, see [Wave containers](https://docs.seqera.io/platform-enterprise/enterprise/configuration/wave).
 
 ## Self-hosted deployment
 
@@ -30,12 +35,23 @@ For organizations that require greater control over their container infrastructu
 
 ### Docker Compose
 
-Docker Compose provides a straightforward deployment method suitable for development environments, testing, and production deployments. This method packages Wave services and dependencies into a coordinated set of containers that can be managed as a single application stack.
+Docker Compose provides a straightforward method for deploying Wave. Docker Compose packages Wave services and dependencies into a coordinated container stack and handles service orchestration automatically, managing startup and networking of Wave components.
 
-The Docker Compose deployment handles service orchestration automatically, coordinating the startup and networking of Wave components. Updates can be performed by downloading new container versions and restarting the application stack. To install with Docker Compose, see [Docker Compose installation](./docker-compose.md).
+Docker Compose installations support [Wave Lite](../wave-lite.md), a configuration mode for Wave that includes container augmentation and inspection capabilities, and enables the use of the Fusion file system in Nextflow pipelines. See [Install Wave Lite with Docker Compose](./docker-compose.md) for detailed configuration instructions.
 
 ### Kubernetes
 
-Kubernetes deployment offers enterprise-grade scalability and high availability for production environments. Wave can also use the k8s pod to delegate the transfer task for scalability and includes comprehensive configuration options for build processes.
+Kubernetes is the preferred choice for deploying Wave in production environments that require scalability, high availability, and resilience. A Kubernetes installation involves setting up a cluster, configuring various components, and managing networking, storage, and resource allocation.
+
+Kubernetes installations support [Wave Lite](../wave-lite.md), a configuration mode for Wave that supports container augmentation and inspection on AWS, Azure, and GCP deployments, and enables the use of Fusion file system in Nextflow pipelines. See [Install Wave Lite with Kubernetes](./kubernetes.md) for detailed configuration instructions.
+
+If your organization requires full build capabilities, you can extend Wave beyond the base Wave Lite installation. This advanced configuration enables container
+building functionality through specific integrations on Kubernetes and AWS EFS storage. See [Configure Wave build](./configure-wave-build.md) for detailed instructions.
+
+<!--
+## Installation Guides
+
+import DocCardList from "@theme/DocCardList";
 
 <DocCardList />
+-->
