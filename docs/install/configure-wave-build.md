@@ -192,18 +192,30 @@ Update your existing Wave ConfigMap to enable build features and configure stora
           # Enable build service
           build:
             enabled: true
-            workspace: '/build/work'
+            workspace: '/build/workspace'
+            # Optional: Retain failed builds to gather logs & inspect
+            cleanup: "OnSuccess"
             # Optional: Configure build timeouts
-            timeout: '1h'
-            # Optional: Configure resource limits for build pods
-            resources:
-              requests:
-                memory: '1Gi'
-                cpu: '500m'
-              limits:
-                memory: '4Gi'
-                cpu: '2000m'
-
+            timeout: '15m'
+            # Example additional kubernetes configuration for wave-build
+            k8s:
+              dns:
+                servers:
+                  - "1.1.1.1"
+                  - "8.8.8.8"
+              namespace: "wave-build"
+              storage:
+                mountPath: "/build"
+                # Relevant volume claim name should match the
+                claimName: "wave-build-pvc"
+              serviceAccount: "wave-build-sa"
+              resources:
+                requests:
+                  memory: '1800Mi'
+              nodeSelector:
+                # This node selector binds the build pods to a separate cluster node group
+                linux/amd64: 'service=wave-build'
+                linux/arm64: 'service=wave-build-arm64'
           # Enable other build-dependent features
           mirror:
             enabled: true
@@ -219,29 +231,18 @@ Update your existing Wave ConfigMap to enable build features and configure stora
             password: "<SECURE_PASSWORD>"
 
           redis:
-            uri: "rediss://<REDIS_HOST>:6379"
+            uri: "redis://<REDIS_HOST>:6379"
 
-          # Platform integration (optional)
           tower:
             endpoint:
               url: "<PLATFORM_SERVER>"
-
-          # Kubernetes-specific configuration for builds
-          k8s:
-            namespace: wave
-            serviceAccount: wave-sa
-            # Optional: Configure build pod settings
-            buildPod:
-              image: 'quay.io/buildah/stable:latest'
-              nodeSelector:
-                wave-builds: "true"
     ```
 
     Replace the following:
 
     - `<POSTGRES_HOST>`: your Postgres service endpoint
-    - `<REDIS_HOST>`: your Redis service endpoint
     - `<SECURE_PASSWORD>`: your secure password for the database user
+    - `<REDIS_HOST>`: your Redis service endpoint
     - `<PLATFORM_SERVER>`: your Platform endpoint URL (_optional_)
 
 1. Apply the Wave configuration:
@@ -298,7 +299,7 @@ To update your Wave deployment, follow these steps:
                 - name: wave-cfg
                   mountPath: /work/config.yml
                   subPath: "config.yml"
-                - name: build-storage  # Add EFS mount
+                - name: build-storage
                   mountPath: /build
               readinessProbe:
                 httpGet:
