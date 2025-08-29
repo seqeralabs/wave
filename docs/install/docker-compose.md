@@ -31,51 +31,31 @@ You will need the following to get started:
 
 ## Configure a database
 
-To create a PostgreSQL database and user account, follow these steps:
+To configure a PostgreSQL database, follow these steps:
 
 1. Connect to PostgreSQL.
-1. Create a dedicated user:
+1. Create a dedicated `wave` database and user account with the appropriate privileges:
 
     ```sql
     CREATE ROLE wave_user LOGIN PASSWORD '<SECURE_PASSWORD>';
-    ```
 
-    Replace `<SECURE_PASSWORD>` with a secure password for the database user.
-
-1. Create the `wave` database:
-
-    ```sql
     CREATE DATABASE wave;
-    ```
 
-1. Connect to the `wave` database:
-
-    ```sql
     \c wave;
-    ```
 
-1. Grant basic schema access:
-
-    ```sql
     GRANT USAGE, CREATE ON SCHEMA public TO wave_user;
-    ```
 
-1. Grant privileges on existing tables and sequences:
-
-    ```sql
     GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO wave_user;
     GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO wave_user;
-    ```
 
-1.  Grant privileges on future tables and sequences:
-
-    ```sql
     ALTER DEFAULT PRIVILEGES IN SCHEMA public
     GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO wave_user;
 
     ALTER DEFAULT PRIVILEGES IN SCHEMA public
     GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO wave_user;
     ```
+
+    Replace `<SECURE_PASSWORD>` with a secure password for the database user.
 
 :::note
 Wave will automatically handle schema migrations and create the required database objects on startup.
@@ -162,8 +142,8 @@ To configure Wave's behavior and integrations:
     Replace the following:
 
     - `<POSTGRES_HOST>`: your Postgres service endpoint
-    - `<REDIS_HOST>`: your Redis service endpoint
     - `<SECURE_PASSWORD>`: your secure password for the database user
+    - `<REDIS_HOST>`: your Redis service endpoint
     - `<PLATFORM_SERVER>`: your Platform endpoint URL (_optional_)
 
     Adjust the following values based on your CPU cores:

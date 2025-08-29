@@ -46,48 +46,28 @@ This guide assumes:
 To create a PostgreSQL database and user account, follow these steps:
 
 1. Connect to PostgreSQL.
-1. Create a dedicated user:
+1. Create a dedicated `wave` database and user account with the appropriate privileges:
 
     ```sql
     CREATE ROLE wave_user LOGIN PASSWORD '<SECURE_PASSWORD>';
-    ```
 
-    Replace `<SECURE_PASSWORD>` with a secure password for the database user.
-
-1. Create the Wave database:
-
-    ```sql
     CREATE DATABASE wave;
-    ```
 
-1. Connect to the wave database:
-
-    ```sql
     \c wave;
-    ```
 
-1. Grant basic schema access:
-
-    ```sql
     GRANT USAGE, CREATE ON SCHEMA public TO wave_user;
-    ```
 
-1. Grant privileges on existing tables and sequences:
-
-    ```sql
     GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO wave_user;
     GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO wave_user;
-    ```
 
-1. Grant privileges on future tables and sequences:
-
-    ```sql
     ALTER DEFAULT PRIVILEGES IN SCHEMA public
     GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO wave_user;
 
     ALTER DEFAULT PRIVILEGES IN SCHEMA public
     GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO wave_user;
     ```
+
+    Replace `<SECURE_PASSWORD>` with a secure password for the database user.
 
 ## Create a namespace
 

@@ -4,7 +4,7 @@ description: Enable Wave build on Kubernetes and AWS EFS storage
 tags: [kubernetes, install, wave, wave build]
 ---
 
-Wave's full build capabilities require specific integrations with Kubernetes and AWS Elastic File System (EFS) Storage, making Amazon Elastic Kubernetes Service (EKS) and AWS hard dependencies for full-featured deployments that support container build capabilities.
+Wave's full build capabilities require specific integrations with Kubernetes and AWS Elastic File System (EFS) Storage. Amazon Elastic Kubernetes Service (EKS) and AWS hard dependencies for full-featured deployments that support container build capabilities.
 
 This page describes how to extend your [Kubernetes installation](./kubernetes) to support container build capabilities. It includes:
 
