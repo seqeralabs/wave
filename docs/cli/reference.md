@@ -30,7 +30,7 @@ The following arguments are used for a directory build:
 
 Create a new context directory:
 
-```
+```bash
 mkdir -p new-layer/usr/local/bin
 printf 'echo Hello world!' > new-layer/usr/local/bin/hello.sh
 chmod +x new-layer/usr/local/bin/hello.sh
@@ -38,7 +38,7 @@ chmod +x new-layer/usr/local/bin/hello.sh
 
 Use the CLI to build the image and run the result with Docker:
 
-```
+```bash
 docker run $(wave -i alpine --layer new-layer) sh -c hello.sh
 ```
 </details>
@@ -64,7 +64,7 @@ Conda builds support the following arguments:
 
 In the following example, a container with the `samtools` and `bamtools` packages is built:
 
-```
+```bash
 wave \
   --conda-package bamtools=2.5.2 \
   --conda-package samtools=1.17
@@ -92,7 +92,7 @@ Building a Dockerfile that requires `--build-arg` for build time variables isn't
 
 In the following example `Dockerfile`, several packages are installed:
 
-```
+```Dockerfile
 cat << EOF > ./Dockerfile
 FROM alpine
 
@@ -106,14 +106,14 @@ EOF
 
 Build and run the container based on the Dockerfile in the previous example by running the following command:
 
-```
+```bash
 container=$(wave --containerfile ./Dockerfile)
 docker run --rm $container cowsay "Hello world"
 ```
 
 In the following example `Dockerfile`, a local context is used:
 
-```
+```Dockerfile
 cat << EOF > ./Dockerfile
 FROM alpine
 ADD hello.sh /usr/local/bin/
@@ -122,7 +122,7 @@ EOF
 
 Create the shell script referenced in the previous example by running the following commands in your terminal:
 
-```
+```bash
 mkdir -p build-context/
 printf 'echo Hello world!' > build-context/hello.sh
 chmod +x build-context/hello.sh
@@ -130,7 +130,7 @@ chmod +x build-context/hello.sh
 
 Build and run the container based on the Dockerfile in the previous example by running the following command:
 
-```
+```bash
 docker run $(wave -f Dockerfile --context build-context) sh -c hello.sh
 ```
 </details>
@@ -164,19 +164,19 @@ The following arguments are used to build a Singularity container:
 
 In the following example, a Docker base image is augmented:
 
-```
+```bash
 wave -i alpine --layer context-dir/ --build-repo docker.io/user/repo
 ```
 
 In the following example, a SingularityCE def file is specified:
 
-```
+```bash
 wave -f hello-world.def --singularity --freeze --build-repo docker.io/user/repo
 ```
 
 In the following example, two Conda packages are specified:
 
-```
+```bash
 wave --conda-package bamtools=2.5.2 --conda-package samtools=1.17 --freeze --singularity --build-repo docker.io/user/repo
 ```
 
@@ -208,7 +208,7 @@ The following arguments are used to freeze a container build:
 
 In the following example, the `alpine` container image is frozen to a private DockerHub image registry. The `--tower-token` argument is not required if the `TOWER_ACCESS_TOKEN` environment variable is defined.
 
-```
+```bash
 wave -i alpine --freeze \
   --build-repo docker.io/user/repo --tower-token <TOKEN>
 ```

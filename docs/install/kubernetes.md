@@ -1,329 +1,376 @@
 ---
-title: Kubernetes installation
+title: Install Wave Lite with Kubernetes
+description: Install Wave Lite on Kubernetes
+tags: [kubernetes, install, wave, wave lite]
 ---
 
-Wave enables you to provision container images on-demand, removing the need to build and upload them manually to a container registry. Wave can can provision both disposable containers that are only accessible for a short period, and regular registry-persisted container images.
+Kubernetes is the preferred choice for deploying Wave in production environments that require scalability, high availability, and resilience. Its installation involves setting up a cluster, configuring various components, and managing networking, storage, and resource allocation.
 
-This installation guide covers Wave in [Lite](../wave-lite.md) mode. Wave Lite provides container augmentation and inspection capabilities on AWS, Azure, and GCP cloud deployments, and enables the use of Fusion file system in Nextflow pipelines.
+Kubernetes installations support [Wave Lite](../wave-lite.md), a configuration mode for Wave that supports container augmentation and inspection on AWS, Azure, and GCP deployments, and enables the use of Fusion file system in Nextflow pipelines.
 
-:::info
-Wave's full build capabilities require specific integrations with Kubernetes and AWS EFS Storage, making EKS and AWS a hard dependency for fully-featured deployments. After you have configured a base Wave Lite installation on AWS with this guide, see [Configure Wave Build](./configure-wave-build.md) to extend your installation to support build capabilities.
+This page describes how to run Wave Lite on Kubernetes. It includes steps to:
+
+- Configure a database
+- Create a namespace
+- Configure Wave
+- Deploy Wave
+- Create a service
+- Configure Wave connectivity
+
+Wave's full build capabilities require specific integrations with Kubernetes and AWS Elastic File System (EFS) Storage, making Amazon Elastic Kubernetes Service (EKS) and AWS hard dependencies for full-featured deployments. If you require build capabilities, see [Configure Wave build](./configure-wave-build.md) to extend your installation.
+
+:::info[**Prerequisites**]
+You will need the following to get started:
+
+- A Kubernetes cluster (version 1.31 or higher)
+- An externally managed PostgreSQL instance (version 12 or higher)
+- An externally managed Redis instance (version 6.0 or higher)
+- A Kubernetes cluster with at least:
+    - **Memory**: 4 GB RAM per Wave pod
+    - **CPU**: 1 CPU core per pod
+    - **Network**: Connectivity to your external PostgreSQL and Redis instances
+    - **Storage**: Sufficient storage for your container images and temporary files
 :::
 
-## Prerequisites
-
-**Required infrastructure:**
-- **Kubernetes cluster** - Version 1.31 or higher (any distribution)
-- **PostgreSQL instance** - Version 12 or higher (managed externally)
-- **Redis instance** - Version 6.0 or higher (managed externally)
-
-## System requirements
-
-The minimum system requirements for a Wave Kubernetes installation are:
-
-- **Memory**: Minimum 4GB RAM per Wave pod
-- **CPU**: Minimum 1 CPU core per pod
-- **Network**: Connectivity to your external PostgreSQL and Redis instances
-- **Storage**: Sufficient storage for your container images and temporary files
-
-:::info
-See [Configure Wave](./configure-wave.md) for detailed scaling and performance tuning guidance.
-:::
-
-## Assumptions
-
+:::warning[**Assumptions**]
 This guide assumes:
+
 - You have already deployed Seqera Platform Enterprise
 - You will deploy Wave into the `wave` namespace
 - You have appropriate cluster permissions to create namespaces, deployments, and services
 - Your PostgreSQL and Redis instances are accessible from the Kubernetes cluster
+:::
 
-## Database configuration
+## Configure a database
 
-Wave requires a PostgreSQL database to operate.
+To create a PostgreSQL database and user account, follow these steps:
 
-Create a dedicated `wave` database and user account with the appropriate privileges:
+1. Connect to PostgreSQL.
+1. Create a dedicated `wave` database and user account with the appropriate privileges:
 
-```sql
--- Create a dedicated user for Wave
-CREATE ROLE wave_user LOGIN PASSWORD 'your_secure_password';
+    ```sql
+    CREATE ROLE wave_user LOGIN PASSWORD '<SECURE_PASSWORD>';
 
--- Create the Wave database
-CREATE DATABASE wave;
+    CREATE DATABASE wave;
 
--- Connect to the wave database
-\c wave;
+    \c wave;
 
--- Grant basic schema access
-GRANT USAGE, CREATE ON SCHEMA public TO wave_user;
+    GRANT USAGE, CREATE ON SCHEMA public TO wave_user;
 
--- Grant privileges on existing tables and sequences
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO wave_user;
-GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO wave_user;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO wave_user;
+    GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO wave_user;
 
--- Grant privileges on future tables and sequences
-ALTER DEFAULT PRIVILEGES IN SCHEMA public
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO wave_user;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO wave_user;
 
-ALTER DEFAULT PRIVILEGES IN SCHEMA public
-GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO wave_user;
-```
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public
+    GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO wave_user;
+    ```
 
-## Create namespace
+    Replace `<SECURE_PASSWORD>` with a secure password for the database user.
 
-```yaml
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: "wave"
-  labels:
-    app: wave-app
-```
+## Create a namespace
+
+To create a Kubernetes `wave` namespace, follow these steps:
+
+1. Create `namespace.yaml` with the following configuration:
+
+    ```yaml
+    ---
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: "wave"
+      labels:
+        app: wave-app
+    ```
+
+1. Apply the `wave` namespace configuration:
+
+    ```bash
+    kubectl apply -f namespace.yaml
+    ```
 
 ## Configure Wave
 
-Create a ConfigMap containing Wave's configuration. Update the following values to match your environment:
+To configure database connections, Redis caching, and server settings, follow these steps:
 
-- Database connection details (`uri`, `user`, `password`)
-- Redis connection string
-- Seqera Platform API endpoint
+1. Create `wave-config.yaml` with the following configuration:
 
-:::warning
-This configuration contains sensitive values. It is recommended to use Kubernetes Secrets for sensitive data, instead of embedding them directly in the ConfigMap. See the [Kubernetes Secrets documentation](https://kubernetes.io/docs/concepts/configuration/secret/) for more details.
-
-Example using environment variables with secrets:
-
-```yaml
-env:
-  - name: WAVE_DB_PASSWORD
-    valueFrom:
-      secretKeyRef:
-        name: wave-secrets
-        key: db-password
-```
-:::
-
-```yaml
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: wave-cfg
-  namespace: "wave"
-  labels:
-    app: wave-cfg
-data:
-  config.yml: |
-    wave:
-      # Build service configuration - disabled for Wave base installation
-      build:
-        enabled: false
-      # Mirror service configuration - disabled for Wave base installation
-      mirror:
-        enabled: false
-      # Security scanning configuration - disabled for Wave base installation
-      scan:
-        enabled: false
-      # Blob caching configuration - disabled for Wave base installation
-      blobCache:
-        enabled: false
-      # Database connection settings
-      db:
-        uri: "jdbc:postgresql://your-postgres-host:5432/wave"
-        user: "wave_user"
-        password: "your_secure_password"
-
-    # Redis configuration for caching and session management
-    redis:
-      uri: "rediss://your-redis-host:6379"
-
-    # Platform integration (optional)
-    tower:
-      endpoint:
-        url: "https://your-platform-server.com"
-
-    # Micronaut framework configuration
-    micronaut:
-      # Executor configuration for handling concurrent requests
-      executors:
-        stream-executor:
-          type: FIXED
-          number-of-threads: 16
-      # Netty HTTP server configuration
-      netty:
-        event-loops:
-          default:
-            num-threads: 64
-          stream-pool:
-            executor: stream-executor
-      # HTTP client configuration
-      http:
-        services:
-          stream-client:
-            read-timeout: 30s
-            read-idle-timeout: 5m
-            event-loop-group: stream-pool
-
-    # Management endpoints configuration
-    loggers:
-      # Enable metrics for monitoring
-      metrics:
-        enabled: true
-      # Enable health checks
-      health:
-        enabled: true
-        disk-space:
-          enabled: false
-        jdbc:
-          enabled: false
-```
-
-## Create deployment
-
-Deploy Wave using the following Deployment manifest:
-
-```yaml
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: wave
-  namespace: "wave"
-  labels:
-    app: wave-app
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: wave-app
-  template:
+    ```yaml
+    ---
+    apiVersion: v1
+    kind: ConfigMap
     metadata:
+      name: wave-cfg
+      namespace: "wave"
+    data:
+      config.yml: |
+        wave:
+          # Build service configuration - disabled for Wave base installation
+          build:
+            enabled: false
+          # Mirror service configuration - disabled for Wave base installation
+          mirror:
+            enabled: false
+          # Security scanning configuration - disabled for Wave base installation
+          scan:
+            enabled: false
+          # Blob caching configuration - disabled for Wave base installation
+          blobCache:
+            enabled: false
+          # Database connection settings
+          db:
+            uri: "jdbc:postgresql://<POSTGRES_HOST>:5432/wave"
+            user: "wave_user"
+            password: "<SECURE_PASSWORD>"
+
+          # Redis configuration for caching and session management
+          redis:
+            uri: "rediss://<REDIS_HOST>:6379"
+
+          # Platform integration (optional)
+          tower:
+            endpoint:
+              url: "<PLATFORM_SERVER>"
+
+          # Micronaut framework configuration
+          micronaut:
+            # Executor configuration for handling concurrent requests
+            executors:
+              stream-executor:
+                type: FIXED
+                number-of-threads: 16
+            # Netty HTTP server configuration
+            netty:
+              event-loops:
+                default:
+                  num-threads: 64
+                stream-pool:
+                  executor: stream-executor
+            # HTTP client configuration
+            http:
+              services:
+                stream-client:
+                  read-timeout: 30s
+                  read-idle-timeout: 5m
+                  event-loop-group: stream-pool
+
+        # Management endpoints configuration
+        loggers:
+        # Enable metrics for monitoring
+        metrics:
+          enabled: true
+        # Enable health checks
+        health:
+          enabled: true
+          disk-space:
+            enabled: false
+          jdbc:
+            enabled: false
+    ```
+
+    Replace the following:
+
+    - `<POSTGRES_HOST>`: your Postgres service endpoint
+    - `<REDIS_HOST>`: your Redis service endpoint
+    - `<SECURE_PASSWORD>`: your secure password for the database user
+    - `<PLATFORM_SERVER>`: your Platform endpoint URL (_optional_)
+
+    :::tip
+    It is recommended to use Kubernetes Secrets for sensitive data instead of embedding them in the ConfigMap. For example, by adding environment variables with secrets to your Wave deployment manifest:
+
+    ```yaml
+    ---
+    env:
+    - name: WAVE_DB_PASSWORD
+        valueFrom:
+        secretKeyRef:
+            name: wave-secrets
+            key: db-password
+    ```
+
+    For more information, see Kubernetes [Secrets](https://kubernetes.io/docs/concepts/configuration/secret/).
+    :::
+
+1. Apply the ConfigMap:
+
+    ```bash
+    kubectl apply -f wave-config.yaml
+    ```
+
+## Deploy Wave
+
+To deploy Wave using the deployment manifest, follow these steps:
+
+1. Create `wave-deployment.yaml` with the following configuration:
+
+    ```yaml
+    ---
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: wave
+      namespace: "wave"
       labels:
         app: wave-app
     spec:
-      containers:
-        - image: REPLACE_ME_AWS_ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/nf-tower-enterprise/wave:REPLACE_ME_WAVE_IMAGE_TAG
-          name: wave-app
-          ports:
-            - containerPort: 9090
-          env:
-            - name: MICRONAUT_ENVIRONMENTS
-              value: "postgres,redis,lite"
-          resources:
-            requests:
-              memory: "4000Mi"
-            limits:
-              memory: "4000Mi"
-          workingDir: "/work"
-          volumeMounts:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: wave-app
+      template:
+        metadata:
+          labels:
+            app: wave-app
+        spec:
+          containers:
+            - image: <AWS_ACCOUNT>.dkr.ecr.us-east-1.amazonaws.com/nf-tower-enterprise/wave:<WAVE_IMAGE_TAG>
+              name: wave-app
+              ports:
+                - containerPort: 9090
+              env:
+                - name: MICRONAUT_ENVIRONMENTS
+                  value: "postgres,redis,lite"
+              resources:
+                requests:
+                  memory: "4000Mi"
+                limits:
+                  memory: "4000Mi"
+              workingDir: "/work"
+              volumeMounts:
+                - name: wave-cfg
+                  mountPath: /work/config.yml
+                  subPath: "config.yml"
+              readinessProbe:
+                httpGet:
+                  path: /health
+                  port: 9090
+                initialDelaySeconds: 5
+                timeoutSeconds: 3
+              livenessProbe:
+                httpGet:
+                  path: /health
+                  port: 9090
+                initialDelaySeconds: 5
+                timeoutSeconds: 3
+                failureThreshold: 10
+          volumes:
             - name: wave-cfg
-              mountPath: /work/config.yml
-              subPath: "config.yml"
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 9090
-            initialDelaySeconds: 5
-            timeoutSeconds: 3
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 9090
-            initialDelaySeconds: 5
-            timeoutSeconds: 3
-            failureThreshold: 10
-      volumes:
-        - name: wave-cfg
-          configMap:
-            name: wave-cfg
-      restartPolicy: Always
-```
+              configMap:
+                name: wave-cfg
+          restartPolicy: Always
+    ```
 
-## Create Service
+    Replace the following:
 
-Expose Wave within the cluster using a Service:
+    - `<AWS_ACCOUNT>`: your AWS account ID
+    - `<WAVE_IMAGE_TAG>`: your Wave image tag version
 
-```yaml
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: wave-service
-  namespace: "wave"
-  labels:
-    app: wave-app
-spec:
-  selector:
-    app: wave-app
-  ports:
-    - name: http
-      port: 9090
-      targetPort: 9090
-      protocol: TCP
-  type: ClusterIP
-```
+2. Apply the Wave configuration:
 
+    ```bash
+    kubectl apply -f wave-deployment.yaml
+    ```
 
-## Next steps
+## Create a service
 
-### Configure Seqera Platform to integrate with Wave
+To expose Wave within the cluster using a Service, follow these steps:
 
-Configure your Seqera Platform Enterprise deployment to integrate with Wave by setting the Wave server endpoint in your `tower.yml` [configuration](https://docs.seqera.io/platform-enterprise/latest/enterprise/configuration/wave).
+1. Create `wave-service.yaml` with the following configuration:
 
-### Networking
+    ```yaml
+    ---
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: wave-service
+      namespace: "wave"
+      labels:
+        app: wave-app
+    spec:
+      selector:
+        app: wave-app
+      ports:
+        - name: http
+          port: 9090
+          targetPort: 9090
+          protocol: TCP
+      type: ClusterIP
+    ```
+
+1. Apply the service to the namespace:
+
+    ```bash
+    kubectl apply -f wave-service.yaml
+    ```
+
+## Configure Wave connectivity
+
+After deploying Wave Lite, configure networking and integrate with Seqera Platform to make Wave accessible and functional.
+
+### Set up networking
 
 Wave must be accessible from:
 
 - Seqera Platform services
 - Compute environments (for container image access)
 
-Configure external access using a Kubernetes ingress.
+Use a Kubernetes ingress to configure external access.
 
-Update the following example ingress with your provider-specific annotations:
+To set up an ingress, follow these steps:
 
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: wave-ingress
-  namespace: wave
-spec:
-  rules:
-  - host: wave.your-domain.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: wave-service
-            port:
-              number: 9090
-```
+1. Create `wave-ingress.yaml` with the following configuration:
 
-### TLS
+    ```yaml
+    apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      name: wave-ingress
+      namespace: wave
+      # Add your ingress controller annotations here
+    spec:
+      rules:
+      - host: <WAVE_DOMAIN>
+        http:
+          paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: wave-service
+                port:
+                  number: 9090
+    ```
 
-Wave does not handle TLS termination directly. Configure TLS at your ingress controller or load balancer level. Most ingress controllers support automatic certificate provisioning through provider integrations.
+    Replace `<WAVE_DOMAIN>` with your provider-specific domain.
 
+2. Apply the ingress:
 
-### Production environments
+    ```bash
+    kubectl apply -f wave-ingress.yaml
+    ```
 
-Consider implementing the following for production deployments:
+### Configure TLS
 
-**Reliability:**
-- Pod Disruption Budgets, for availability during cluster maintenance
-- Horizontal Pod Autoscaler, for automatic scaling based on load
-- Multiple replicas with anti-affinity rules, for high availability
+Wave does not handle TLS termination directly.
+Configure it at your ingress controller or load balancer level.
+Most ingress controllers support automatic certificate provisioning.
 
-**Resource management:**
-- Node selectors or affinity rules for optimal pod placement
-- Resource quotas and limit ranges for the Wave namespace
+### Connect to Seqera Platform
 
-### AWS credentials to access ECR
-Wave requires access to AWS ECR for container image management. Create an IAM role with the following permissions:
+Configure your Seqera Platform deployment to use Wave by setting the Wave server endpoint in your `tower.yml` configuration. For more information, see [Pair your Seqera instance with Wave](https://docs.seqera.io/platform-enterprise/enterprise/configuration/wave#pair-your-seqera-instance-with-wave).
 
-```json
-"Statement": [
+### Configure AWS ECR access
+
+Wave needs specific permissions to manage container images.
+
+To configure AWS ECR access:
+
+- Create an IAM role with the following permissions:
+
+    ```json
+    "Statement": [
         {
             "Action": [
                 "ecr:BatchCheckLayerAvailability",
@@ -344,11 +391,35 @@ Wave requires access to AWS ECR for container image management. Create an IAM ro
             ],
             "Effect": "Allow",
             "Resource": [
-                "<REPO>/wave/*"
+                "<RESOURCE_NAME>/wave/*"
             ]
         }
-  ```
+    ]
+    ```
 
-### Advanced configuration
+    Replace `<RESOURCE_NAME>` with your ECR repository Amazon Resource Name (ARN).
 
-See [Configuring Wave](./configure-wave.md) for advanced Wave features, scaling guidance, and integration options.
+## Optimize for production environments
+
+For production deployments, implement these reliability and performance improvements:
+
+**High availability:**
+
+- Set `replicas: 3` or higher in your deployment
+- Add pod anti-affinity rules to distribute replicas across nodes
+- Configure Pod Disruption Budgets for maintenance windows
+
+**Auto-scaling:**
+
+- Set up Horizontal Pod Autoscaler based on CPU/memory usage
+- Configure resource quotas and limits for the Wave namespace
+
+**Monitoring:**
+
+- Set up monitoring for Wave pods and services
+- Configure alerting for health check failures
+- Monitor database and Redis connection health
+
+## Configure advanced options
+
+For advanced Wave features, scaling guidance, and integration options, see [Configure Wave](./configure-wave.md).

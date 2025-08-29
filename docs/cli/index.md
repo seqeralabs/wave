@@ -6,7 +6,7 @@ The Wave CLI is a convenient wrapper around the Wave API.
 
 You can compose Wave CLI with other commands. The CLI returns the URL of the container build on `stdout` in the following format:
 
-```
+```console
 wave.seqera.io/wt/xxxxxxxxxxxx/wave/build:xxxxxxxxxxxxxxxx
 ```
 
