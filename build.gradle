@@ -113,6 +113,8 @@ dependencies {
     implementation 'io.micronaut:micronaut-management'
     //views
     implementation 'io.micronaut.views:micronaut-views-handlebars'
+    // swagger ui
+    implementation 'org.webjars:swagger-ui:5.17.14'
 
 }
 
@@ -190,23 +192,85 @@ test {
 }
 
 /** Update version number for backend app and modules */
-task buildInfo { doLast {
-    def info = """\
+tasks.register('buildInfo') {
+    doLast {
+        def info = """\
                 name=${project.name}
                 group=${project.group}
                 version=${version}
                 commitId=${project.property('commitId')}
             """.stripIndent().toString()
-    def f = file("${buildDir}/resources/main/META-INF/build-info.properties")
-    f.parentFile.mkdirs()
-    f.text = info
-} }
+        def f = file("${buildDir}/resources/main/META-INF/build-info.properties")
+        f.parentFile.mkdirs()
+        f.text = info
+    }
+}
 buildInfo.dependsOn processResources
 compileGroovy.dependsOn buildInfo
 
 jacoco {
     toolVersion '0.8.12'
 }
+
+// OpenAPI generation tasks
+tasks.register('generateOpenApi', Exec) {
+    group 'openapi'
+    description 'Generate OpenAPI spec from TypeSpec'
+    workingDir 'typespec'
+    
+    inputs.files fileTree('typespec').include('**/*.tsp')
+    outputs.file 'typespec/tsp-output/@typespec/openapi3/openapi.yaml'
+    
+    commandLine 'npm', 'run', 'compile'
+    
+    doLast {
+        // Copy generated OpenAPI to resources
+        copy {
+            from 'typespec/tsp-output/@typespec/openapi3/openapi.yaml'
+            into 'src/main/resources/public/openapi/'
+        }
+        
+        // Update version in OpenAPI spec
+        def openApiFile = file('src/main/resources/public/openapi/openapi.yaml')
+        def content = openApiFile.text
+        content = content.replaceAll(/version: "[^"]*"/, "version: \"${version}\"")
+        openApiFile.text = content
+        
+        // Create versioned copies
+        copy {
+            from 'src/main/resources/public/openapi/openapi.yaml'
+            into 'src/main/resources/public/openapi/'
+            rename { "openapi-${version}.yaml" }
+        }
+        
+        copy {
+            from 'src/main/resources/public/openapi/openapi.yaml'
+            into 'src/main/resources/public/openapi/'
+            rename { "openapi-latest.yaml" }
+        }
+    }
+}
+
+task generateSwaggerUI {
+    group 'openapi'
+    description 'Generate Swagger UI for OpenAPI spec'
+    dependsOn generateOpenApi
+    
+    doLast {
+        // Create Swagger UI HTML from template
+        def templateFile = file('src/main/resources/swagger-ui-template.html')
+        def outputFile = file('src/main/resources/public/openapi/index.html')
+        
+        if (templateFile.exists()) {
+            def template = templateFile.text
+            def html = template.replace('{{version}}', version)
+            outputFile.parentFile.mkdirs()
+            outputFile.text = html
+        }
+    }
+}
+
+processResources.dependsOn generateSwaggerUI
 /**
  * Code coverage with JaCoCo.
  * See: https://www.jacoco.org/; https://docs.gradle.org/current/userguide/jacoco_plugin.html
