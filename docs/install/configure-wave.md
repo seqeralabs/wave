@@ -1,8 +1,10 @@
 ---
 title: Configure Wave
+plugins:
+  - "@site/src/plugins/sectionize"
 ---
 
-The following covers common operations when setting up and configuring wave see [configuration](../configuration.md) for a full refeence of all configuration values and options.
+The following covers common operations when setting up and configuring wave see [configuration](../configuration.md) for a full reference of all configuration values and options.
 
 ## Email Configuration
 
@@ -123,9 +125,9 @@ Wave can perform security scanning on container builds. This feature requires th
 
 Prerequisites
 
-- Wave build service must be enabled (wave.build.enabled: true)
-- Scanning backend must be configured and accessible
-- Appropriate compute resources for scanning workloads
+##### Wave build service must be enabled (wave.build.enabled: true)
+##### Scanning backend must be configured and accessible
+##### Appropriate compute resources for scanning workloads
 
 ```
 wave:
