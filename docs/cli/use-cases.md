@@ -1,10 +1,14 @@
 ---
-title: Commands
+title: Use cases
 ---
 
 With the Wave CLI you can build Docker and Singularity containers from a variety of sources, including a Dockerfile, Singularity def file, file system directory, and Conda packages.
 
-The following sections describe several common usage cases. To get started by creating an example Nextflow pipeline that uses Wave CLI, see [Wave CLI][start].
+The following sections describe several common use cases.
+
+:::tip
+To get started with an example Nextflow pipeline that uses Wave CLI, see [Wave CLI][start].
+:::
 
 ## Augment a container with a directory
 
@@ -210,7 +214,39 @@ In the following example, the `alpine` container image is frozen to a private Do
 
 ```
 wave -i alpine --freeze \
-  --build-repo docker.io/user/repo --tower-token <TOKEN>
+  --build-repo docker.io/user/repo --tower-token <TOWER_TOKEN>
+```
+
+</details>
+
+## Mirror a container image to another registry
+
+The Wave CLI supports mirroring, i.e., copying containers to a container registry of your choice.
+
+<details open>
+<summary>**Mirror a container image to another registry**</summary>
+
+To mirror a container image, you must ensure the following conditions are met:
+
+- You created a Seqera access token.
+- You specified the destination container registry credentials in Seqera Platform.
+- You specify the Seqera access token via either the `TOWER_ACCESS_TOKEN` environment variable or the `--tower-token` Wave command line option.
+
+**Related CLI arguments**
+
+The following arguments are used to freeze a container build:
+
+- `--mirror`: Enable container mirror mode.
+- `--build-repo`: A target repository to save the built container to.
+- `--tower-token`: A Seqera Platform auth token so that Wave can access your private registry credentials. Not required if the `TOWER_ACCESS_TOKEN` environment variable is set.
+
+**Example usage**
+
+In the following example, the [`samtools:0.1.16--2`][samtools] container image is mirrored to a private DockerHub image registry. The `--tower-token` argument is not required if the `TOWER_ACCESS_TOKEN` environment variable is defined.
+
+```
+wave -i quay.io/biocontainers/samtools:0.1.16--2 --mirror \
+  --build-repo docker.io/<USERNAME>/containers --tower-token <TOWER_TOKEN>
 ```
 
 </details>
@@ -218,6 +254,7 @@ wave -i alpine --freeze \
 [conda]: https://anaconda.org/anaconda/repo
 [conda-lock]: https://github.com/conda/conda-lock
 [nextflow]: https://www.nextflow.io/
+[samtools]: https://quay.io/repository/biocontainers/samtools?tab=tags
 [singularity]: https://docs.sylabs.io/guides/latest/user-guide/introduction.html
 [singularityce]: https://docs.sylabs.io/guides/latest/user-guide/definition_files.html
 [start]: /wave_docs/wave_repo/docs/tutorials/wave-cli.mdx
