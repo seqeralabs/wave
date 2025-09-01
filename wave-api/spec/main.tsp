@@ -11,7 +11,6 @@ using TypeSpec.Rest;
  */
 @service({
   title: "Wave API",
-  version: "1.0.0",
 })
 namespace Wave;
 

@@ -366,6 +366,11 @@ tasks.named('inspectRuntimeClasspath') {
     dependsOn generateSwaggerUI
 }
 
+// Fix sourcesJar dependency on generated Swagger UI files  
+tasks.named('sourcesJar') {
+    dependsOn generateSwaggerUI
+}
+
 // Make sure generated code is available for compilation
 tasks.named('compileJava') {
     dependsOn 'generateSwaggerUI', project(':wave-api').tasks.named('compileJava')
