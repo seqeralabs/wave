@@ -113,12 +113,9 @@ dependencies {
     implementation 'io.micronaut:micronaut-management'
     //views
     implementation 'io.micronaut.views:micronaut-views-handlebars'
-
-    // upgrade indirect dependencies 
-    runtimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.78'
-    runtimeOnly 'org.bitbucket.b_c:jose4j:0.9.4'
-    runtimeOnly 'io.netty:netty-bom:4.1.119.Final'
-    runtimeOnly 'com.google.protobuf:protobuf-java:4.27.5'
+    // bump version to prevent security issue
+    runtimeOnly 'org.apache.commons:commons-lang3:3.18.0'
+    runtimeOnly "io.netty:netty-bom:4.2.4.Final"
 }
 
 application {
