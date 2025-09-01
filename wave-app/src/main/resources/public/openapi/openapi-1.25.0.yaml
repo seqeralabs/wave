@@ -1,0 +1,683 @@
+openapi: 3.0.0
+info:
+  title: Wave API
+  version: 1.25.0
+  description: |-
+    Wave Containers Provisioning Service API
+    A comprehensive container orchestration and build service
+tags:
+  - name: Service
+  - name: Container
+  - name: Build
+  - name: Inspect
+  - name: Validate
+paths:
+  /container:
+    post:
+      operationId: ContainerApi_submitContainerToken
+      description: Submit container token request (legacy)
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitContainerTokenResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Container
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitContainerTokenRequest'
+  /service-info:
+    get:
+      operationId: ServiceApi_getServiceInfo
+      description: Get service information
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceInfoResponse'
+      tags:
+        - Service
+  /v1alpha1/builds/{buildId}:
+    get:
+      operationId: BuildApi_getBuild
+      description: Get build record
+      parameters:
+        - name: buildId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Build
+  /v1alpha1/builds/{buildId}/condalock:
+    get:
+      operationId: BuildApi_getCondaLock
+      description: Get conda lock file
+      parameters:
+        - name: buildId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: string
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Build
+  /v1alpha1/builds/{buildId}/logs:
+    get:
+      operationId: BuildApi_getBuildLogs
+      description: Get build logs
+      parameters:
+        - name: buildId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: string
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Build
+  /v1alpha1/builds/{buildId}/status:
+    get:
+      operationId: BuildApi_getBuildStatus
+      description: Get build status
+      parameters:
+        - name: buildId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuildStatusResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Build
+  /v1alpha1/containers:
+    post:
+      operationId: ContainerApi_submitContainerTokenV1
+      description: Submit container token request v1
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitContainerTokenResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Container
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitContainerTokenRequest'
+  /v1alpha1/containers/{requestId}:
+    delete:
+      operationId: ContainerApi_deleteContainer
+      description: Delete container
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Container
+  /v1alpha1/containers/{requestId}/status:
+    get:
+      operationId: ContainerApi_getContainerStatus
+      description: Get container status
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContainerStatusResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Container
+  /v1alpha1/inspect:
+    post:
+      operationId: InspectApi_inspectContainer
+      description: Inspect container
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContainerInspectResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Inspect
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContainerInspectRequest'
+  /v1alpha2/containers:
+    post:
+      operationId: ContainerApi_submitContainerTokenV2
+      description: Submit container token request v2
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitContainerTokenResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Container
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitContainerTokenRequest'
+  /validate-creds:
+    post:
+      operationId: ValidateApi_validateCredentials
+      description: Validate registry credentials
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Validate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateRegistryCredsRequest'
+components:
+  schemas:
+    BuildCompression:
+      type: string
+      enum:
+        - gzip
+        - none
+      description: Build compression mode
+    BuildContext:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ContainerLayer'
+      description: Container build context
+    BuildStatusResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Build ID
+        status:
+          type: string
+          description: Build status
+        statusMessage:
+          type: string
+          description: Status message
+        startTime:
+          type: string
+          format: date-time
+          description: Start time
+        completeTime:
+          type: string
+          format: date-time
+          description: Complete time
+        duration:
+          type: integer
+          format: int64
+          description: Duration in milliseconds
+        succeeded:
+          type: boolean
+          description: Succeeded flag
+      description: Build status response
+    ContainerConfig:
+      type: object
+      properties:
+        entrypoint:
+          type: array
+          items:
+            type: string
+          description: Container entrypoint
+        cmd:
+          type: array
+          items:
+            type: string
+          description: Container command
+        env:
+          type: array
+          items:
+            type: string
+          description: Environment variables
+        workingDir:
+          type: string
+          description: Working directory
+        layers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContainerLayer'
+          description: Container layers
+      description: Container configuration
+    ContainerInspectRequest:
+      type: object
+      required:
+        - containerImage
+      properties:
+        containerImage:
+          type: string
+          description: Container image to inspect
+        containerPlatform:
+          type: string
+          description: Container platform
+      description: Container inspect request
+    ContainerInspectResponse:
+      type: object
+      properties:
+        config:
+          allOf:
+            - $ref: '#/components/schemas/ContainerConfig'
+          description: Container configuration
+        manifest:
+          type: object
+          additionalProperties: {}
+          description: Container manifest
+      description: Container inspect response
+    ContainerLayer:
+      type: object
+      required:
+        - location
+      properties:
+        location:
+          type: string
+          description: |-
+            The layer location, it can be either `http:` or `https:` prefixed URI
+            or a `data:` pseudo-protocol followed by a base64 encoded tar gzipped layer payload
+        gzipDigest:
+          type: string
+          description: The layer gzip sha256 checksum
+        gzipSize:
+          type: integer
+          format: int32
+          description: The layer gzip size in bytes
+        tarDigest:
+          type: string
+          description: The layer tar sha256 checksum
+        skipHashing:
+          type: boolean
+          description: When true, this layer is not added in the final config fingerprint
+      description: Container layer meta-info
+    ContainerStatus:
+      type: string
+      enum:
+        - PENDING
+        - BUILDING
+        - DONE
+        - ERROR
+      description: Container status
+    ContainerStatusResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Request ID
+        status:
+          allOf:
+            - $ref: '#/components/schemas/ContainerStatus'
+          description: Container status
+        statusMessage:
+          type: string
+          description: Status message
+        targetImage:
+          type: string
+          description: Target image
+        expiration:
+          type: string
+          format: date-time
+          description: Expiration time
+        buildId:
+          type: string
+          description: Build ID
+        buildStatus:
+          type: string
+          description: Build status
+        scanId:
+          type: string
+          description: Scan ID
+        scanStatus:
+          type: string
+          description: Scan status
+      description: Container status response
+    ErrorResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Error message
+        details:
+          type: string
+          description: Error details
+      description: Error response
+    ImageNameStrategy:
+      type: string
+      enum:
+        - none
+        - tagPrefix
+        - imageSuffix
+      description: Image naming strategy
+    PackagesSpec:
+      type: object
+      properties:
+        type:
+          type: string
+          description: Package specifications type
+        entries:
+          type: array
+          items:
+            type: string
+          description: Package entries
+        channels:
+          type: array
+          items:
+            type: string
+          description: Channels for conda packages
+        condaOpts:
+          type: object
+          additionalProperties:
+            type: string
+          description: Conda options
+      description: Package specifications
+    ScanLevel:
+      type: string
+      enum:
+        - LOW
+        - MEDIUM
+        - HIGH
+        - CRITICAL
+      description: Security scan vulnerability level
+    ScanMode:
+      type: string
+      enum:
+        - none
+        - async
+        - required
+      description: Security scan mode
+    ServiceInfo:
+      type: object
+      required:
+        - version
+        - commitId
+      properties:
+        version:
+          type: string
+          description: Application version
+        commitId:
+          type: string
+          description: Build commit ID
+      description: Service information model
+    ServiceInfoResponse:
+      type: object
+      required:
+        - serviceInfo
+      properties:
+        serviceInfo:
+          $ref: '#/components/schemas/ServiceInfo'
+      description: Service information response
+    SubmitContainerTokenRequest:
+      type: object
+      properties:
+        towerAccessToken:
+          type: string
+          description: Tower access token required to enable the service
+        towerRefreshToken:
+          type: string
+          description: Tower refresh token used to refresh the authorization
+        towerEndpoint:
+          type: string
+          description: 'Tower endpoint: the public address of the tower instance to integrate with wave'
+        towerWorkspaceId:
+          type: integer
+          format: int64
+          description: Tower workspace id
+        containerImage:
+          type: string
+          description: Container image to be pulled
+        containerFile:
+          type: string
+          description: Container build file i.g. Dockerfile of the container to be build
+        containerConfig:
+          allOf:
+            - $ref: '#/components/schemas/ContainerConfig'
+          description: List of layers to be added in the pulled image
+        condaFile:
+          type: string
+          description: Conda recipe file used to build the container
+        containerPlatform:
+          type: string
+          description: The container platform to be used
+        buildRepository:
+          type: string
+          description: The repository where the build container should be pushed
+        cacheRepository:
+          type: string
+          description: The repository where the build container should be pushed
+        timestamp:
+          type: string
+          description: Request timestamp
+        fingerprint:
+          type: string
+          description: Request unique fingerprint
+        freeze:
+          type: boolean
+          description: Enable freeze mode that cause the container build to include all containerConfig dependencies
+          default: false
+        buildContext:
+          allOf:
+            - $ref: '#/components/schemas/BuildContext'
+          description: A layer holding the build context for this container request
+        format:
+          type: string
+          description: 'Format of the target container build. Use `sif` for Singularity. default: docker/oci'
+        dryRun:
+          type: boolean
+          description: When true build requests are carried out in dry-run mode
+        workflowId:
+          type: string
+          description: Id of workflow in tower
+        containerIncludes:
+          type: array
+          items:
+            type: string
+          description: One or more container should be included in upstream container request
+        packages:
+          allOf:
+            - $ref: '#/components/schemas/PackagesSpec'
+          description: Defines the packages to be included in this container request
+        nameStrategy:
+          allOf:
+            - $ref: '#/components/schemas/ImageNameStrategy'
+          description: The strategy applied to name a container build by wave when using the freeze option
+        mirror:
+          type: boolean
+          description: Whenever use container "mirror" mode
+          default: false
+        scanMode:
+          allOf:
+            - $ref: '#/components/schemas/ScanMode'
+          description: The request security scan mode
+        scanLevels:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScanLevel'
+          description: Define the allows security vulnerabilities in the container request
+        buildCompression:
+          allOf:
+            - $ref: '#/components/schemas/BuildCompression'
+          description: The compression mode to be used when building a container image
+      description: Submit container token request
+    SubmitContainerTokenResponse:
+      type: object
+      properties:
+        requestId:
+          type: string
+          description: Unique Id for this request
+        containerToken:
+          type: string
+          description: A unique authorization token assigned to this request
+        targetImage:
+          type: string
+          description: The fully qualified wave container name to be used
+        expiration:
+          type: string
+          format: date-time
+          description: The time instant when the container token is going to expire
+        containerImage:
+          type: string
+          description: The source container image that originated this request
+        buildId:
+          type: string
+          description: The ID of the build associated with this request or null of the image already exists
+        cached:
+          type: boolean
+          description: Whenever it's a cached build image
+        freeze:
+          type: boolean
+          description: When the result is a freeze container
+        mirror:
+          type: boolean
+          description: When the result is a mirror container
+        scanId:
+          type: string
+          description: The id of the security scan associated with this container
+        succeeded:
+          type: boolean
+          description: Whenever the container has been provisioned successfully or not
+      description: Submit container token response
+    ValidateRegistryCredsRequest:
+      type: object
+      properties:
+        registry:
+          type: string
+          description: Registry server
+        userName:
+          type: string
+          description: Username
+        password:
+          type: string
+          description: Password
+      description: Registry credentials validation request

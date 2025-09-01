@@ -7,6 +7,9 @@ plugins {
 
 rootProject.name="wave"
 
+include 'wave-api'
+include 'wave-app'
+
 // only for development
 // clone https://github.com/seqeralabs/libseqera
 // in a sibling directory and include the build below

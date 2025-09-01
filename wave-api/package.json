@@ -1,0 +1,14 @@
+{
+  "name": "wave-api",
+  "version": "1.0.0",
+  "description": "Wave API TypeSpec definitions",
+  "devDependencies": {
+    "@typespec/compiler": "^0.62.0",
+    "@typespec/http": "^0.62.0",
+    "@typespec/rest": "^0.62.0",
+    "@typespec/openapi3": "^0.62.0"
+  },
+  "scripts": {
+    "typespec:compile": "tsp compile spec/main.tsp --output-dir build/openapi"
+  }
+}

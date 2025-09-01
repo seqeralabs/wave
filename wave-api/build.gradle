@@ -1,0 +1,96 @@
+/*
+ * Copyright 2025, Seqera Labs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+plugins {
+    id 'io.seqera.wave.java-library-conventions'
+}
+
+group = 'io.seqera'
+version "${rootProject.file('VERSION').text.trim()}"
+
+configurations.configureEach {
+    exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk7"
+}
+
+dependencies {
+    implementation platform("io.micronaut.platform:micronaut-platform:$micronautVersion")
+    annotationProcessor platform("io.micronaut.platform:micronaut-platform:$micronautVersion")
+    
+    // Minimal dependencies for exchange classes
+    annotationProcessor 'io.micronaut.serde:micronaut-serde-processor'
+    annotationProcessor 'io.micronaut:micronaut-inject-java'
+    implementation 'io.micronaut.serde:micronaut-serde-jackson'
+    implementation 'io.micronaut:micronaut-inject'
+    implementation 'jakarta.validation:jakarta.validation-api'
+    
+    // OpenAPI dependencies for generated code
+    implementation 'io.swagger.core.v3:swagger-annotations'
+    implementation 'io.micronaut.openapi:micronaut-openapi-annotations'
+    
+    implementation 'com.squareup.moshi:moshi:1.15.2'
+    implementation 'com.squareup.moshi:moshi-adapters:1.15.2'
+    
+    // Testing
+    testImplementation 'org.junit.jupiter:junit-jupiter-api'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+// TypeSpec OpenAPI generation tasks
+tasks.register('installTypeSpec', Exec) {
+    group = 'api generation'
+    description = 'Install TypeSpec dependencies'
+    commandLine 'sh', '-c', 'npm install'
+    workingDir = projectDir
+}
+
+tasks.register('generateOpenApi') {
+    group = 'api generation'
+    description = 'Generate OpenAPI spec from TypeSpec source'
+    dependsOn 'installTypeSpec'
+    
+    doLast {
+        def version = file('../VERSION').text.trim()
+        
+        // Generate OpenAPI spec from TypeSpec
+        exec {
+            workingDir = projectDir
+            commandLine 'sh', '-c', 'npm run typespec:compile'
+        }
+        
+        // Post-process the generated YAML to inject version from VERSION file
+        def openApiFile = file('build/openapi/openapi.yaml')
+        if (openApiFile.exists()) {
+            def content = openApiFile.text
+            content = content.replaceAll(/version:\s*1\.0\.0/, "version: ${version}")
+            openApiFile.text = content
+        }
+    }
+    
+    inputs.files('spec/main.tsp', 'spec/tspconfig.yaml', '../VERSION')
+    outputs.dir('build/openapi')
+}
+
+// Clean generated OpenAPI files
+clean {
+    delete 'build/openapi'
+    delete 'node_modules'
+}

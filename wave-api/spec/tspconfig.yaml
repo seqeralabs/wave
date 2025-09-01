@@ -1,0 +1,7 @@
+emit:
+  - "@typespec/openapi3"
+options:
+  "@typespec/openapi3":
+    output-file: "openapi.yaml"
+    file-type: "yaml"
+    emitter-output-dir: "{project-root}/../build/openapi"
