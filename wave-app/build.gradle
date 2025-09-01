@@ -156,6 +156,16 @@ micronaut {
         server(project(':wave-api').file("build/openapi/openapi.yaml")) {
             apiPackageName = "io.seqera.wave.api.spec"
             modelPackageName = "io.seqera.wave.api.schema.v0"
+            useReactive = false
+            useAuth = false
+            apiNameSuffix = "ApiSpec"
+            additionalProperties = [
+                "removeOperationIdPrefix": "true",
+                "operationIdCaseFormat": "camelCase",
+                "interfaceOnly": "true",
+                "dateLibrary": "java8",
+                "openApiNullable": "false"
+            ]
         }
     }
 }

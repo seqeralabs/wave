@@ -37,9 +37,12 @@ dependencies {
     implementation 'io.micronaut:micronaut-inject'
     implementation 'jakarta.validation:jakarta.validation-api'
     
-    // OpenAPI dependencies for generated code
+    // OpenAPI dependencies for generated code  
     implementation 'io.swagger.core.v3:swagger-annotations'
     implementation 'io.micronaut.openapi:micronaut-openapi-annotations'
+    
+    // Additional dependencies to match app-bootstrap
+    implementation 'jakarta.annotation:jakarta.annotation-api'
     
     implementation 'com.squareup.moshi:moshi:1.15.2'
     implementation 'com.squareup.moshi:moshi-adapters:1.15.2'

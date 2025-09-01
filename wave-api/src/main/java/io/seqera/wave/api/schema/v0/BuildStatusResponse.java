@@ -16,7 +16,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import com.fasterxml.jackson.annotation.*;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.validation.constraints.*;
@@ -78,7 +78,7 @@ public class BuildStatusResponse {
     @Nullable(inherited = true)
     @JsonProperty(JSON_PROPERTY_START_TIME)
     @JsonInclude(JsonInclude.Include.USE_DEFAULTS)
-    private ZonedDateTime startTime;
+    private OffsetDateTime startTime;
 
     /**
      * Complete time
@@ -86,7 +86,7 @@ public class BuildStatusResponse {
     @Nullable(inherited = true)
     @JsonProperty(JSON_PROPERTY_COMPLETE_TIME)
     @JsonInclude(JsonInclude.Include.USE_DEFAULTS)
-    private ZonedDateTime completeTime;
+    private OffsetDateTime completeTime;
 
     /**
      * Duration in milliseconds
@@ -193,7 +193,7 @@ public class BuildStatusResponse {
      *
      * @return the startTime property value
      */
-    public ZonedDateTime getStartTime() {
+    public OffsetDateTime getStartTime() {
         return startTime;
     }
 
@@ -202,7 +202,7 @@ public class BuildStatusResponse {
      *
      * @param startTime property value to set
      */
-    public void setStartTime(ZonedDateTime startTime) {
+    public void setStartTime(OffsetDateTime startTime) {
         this.startTime = startTime;
     }
 
@@ -211,7 +211,7 @@ public class BuildStatusResponse {
      *
      * @return The same instance of BuildStatusResponse for chaining.
      */
-    public BuildStatusResponse startTime(ZonedDateTime startTime) {
+    public BuildStatusResponse startTime(OffsetDateTime startTime) {
         this.startTime = startTime;
         return this;
     }
@@ -221,7 +221,7 @@ public class BuildStatusResponse {
      *
      * @return the completeTime property value
      */
-    public ZonedDateTime getCompleteTime() {
+    public OffsetDateTime getCompleteTime() {
         return completeTime;
     }
 
@@ -230,7 +230,7 @@ public class BuildStatusResponse {
      *
      * @param completeTime property value to set
      */
-    public void setCompleteTime(ZonedDateTime completeTime) {
+    public void setCompleteTime(OffsetDateTime completeTime) {
         this.completeTime = completeTime;
     }
 
@@ -239,7 +239,7 @@ public class BuildStatusResponse {
      *
      * @return The same instance of BuildStatusResponse for chaining.
      */
-    public BuildStatusResponse completeTime(ZonedDateTime completeTime) {
+    public BuildStatusResponse completeTime(OffsetDateTime completeTime) {
         this.completeTime = completeTime;
         return this;
     }

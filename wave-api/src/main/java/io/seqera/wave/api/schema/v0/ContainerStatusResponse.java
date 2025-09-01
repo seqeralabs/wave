@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import io.seqera.wave.api.schema.v0.ContainerStatus;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import com.fasterxml.jackson.annotation.*;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.validation.constraints.*;
@@ -91,7 +91,7 @@ public class ContainerStatusResponse {
     @Nullable(inherited = true)
     @JsonProperty(JSON_PROPERTY_EXPIRATION)
     @JsonInclude(JsonInclude.Include.USE_DEFAULTS)
-    private ZonedDateTime expiration;
+    private OffsetDateTime expiration;
 
     /**
      * Build ID
@@ -242,7 +242,7 @@ public class ContainerStatusResponse {
      *
      * @return the expiration property value
      */
-    public ZonedDateTime getExpiration() {
+    public OffsetDateTime getExpiration() {
         return expiration;
     }
 
@@ -251,7 +251,7 @@ public class ContainerStatusResponse {
      *
      * @param expiration property value to set
      */
-    public void setExpiration(ZonedDateTime expiration) {
+    public void setExpiration(OffsetDateTime expiration) {
         this.expiration = expiration;
     }
 
@@ -260,7 +260,7 @@ public class ContainerStatusResponse {
      *
      * @return The same instance of ContainerStatusResponse for chaining.
      */
-    public ContainerStatusResponse expiration(ZonedDateTime expiration) {
+    public ContainerStatusResponse expiration(OffsetDateTime expiration) {
         this.expiration = expiration;
         return this;
     }

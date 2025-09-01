@@ -16,7 +16,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import com.fasterxml.jackson.annotation.*;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.validation.constraints.*;
@@ -86,7 +86,7 @@ public class SubmitContainerTokenResponse {
     @Nullable(inherited = true)
     @JsonProperty(JSON_PROPERTY_EXPIRATION)
     @JsonInclude(JsonInclude.Include.USE_DEFAULTS)
-    private ZonedDateTime expiration;
+    private OffsetDateTime expiration;
 
     /**
      * The source container image that originated this request
@@ -233,7 +233,7 @@ public class SubmitContainerTokenResponse {
      *
      * @return the expiration property value
      */
-    public ZonedDateTime getExpiration() {
+    public OffsetDateTime getExpiration() {
         return expiration;
     }
 
@@ -242,7 +242,7 @@ public class SubmitContainerTokenResponse {
      *
      * @param expiration property value to set
      */
-    public void setExpiration(ZonedDateTime expiration) {
+    public void setExpiration(OffsetDateTime expiration) {
         this.expiration = expiration;
     }
 
@@ -251,7 +251,7 @@ public class SubmitContainerTokenResponse {
      *
      * @return The same instance of SubmitContainerTokenResponse for chaining.
      */
-    public SubmitContainerTokenResponse expiration(ZonedDateTime expiration) {
+    public SubmitContainerTokenResponse expiration(OffsetDateTime expiration) {
         this.expiration = expiration;
         return this;
     }
