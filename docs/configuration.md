@@ -158,6 +158,9 @@ Scan process configuration lets the user provide a [Trivy docker image](https://
 
 - **`wave.scan.image.name`**: the [Trivy docker image](https://hub.docker.com/r/aquasec/trivy) used for container security scanning. The default value is `aquasec/trivy:0.47.0`. This the image that Wave will use to perform vulnerability scanning on containers. *Optional*.
 
+- **`wave.scan.reports.path`**: the path inside the S3 bucket where Wave will store SBOM reports. For example, `s3://wave-store/scan-reports`. *Mandatory*.
+
+
 
 ### Kubernetes configuration for Wave scan process
 

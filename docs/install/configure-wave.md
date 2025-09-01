@@ -235,11 +235,4 @@ Using ECR as a cache repository provides:
 | `cache.enabled`    | Enable build caching | `true`                                                    |
 | `cache.repository` | ECR repository URL   | `123456789012.dkr.ecr.us-east-1.amazonaws.com/wave-cache` |
 
-
-#### JVM Options
-
-| Option             | Description                                                                                                                                                         |
-|--------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `-Dio.netty.allocator.type=pooled`    | This Option is required by wave using micronaut 4.9.x. you can check more details [here](https://github.com/seqeralabs/wave/blob/master/adr/mv-4.9-netty-memory.md) |
-
 **Note:** ECR cache requires Wave build service to be enabled and is only available in AWS deployments with proper ECR access configured.
