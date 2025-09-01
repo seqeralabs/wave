@@ -1,25 +1,26 @@
 ---
-title: Wave application configuration
-plugins: [sectionize]
+title: Wave application
+tags: [configuration, wave]
 ---
 
-Set Wave configuration values using environment variables or in the [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml) configuration file.
+Configure the Wave application by setting YAML values in the [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml) configuration file. For example:
 
-### config.yml configuration
-
-Declare YAML configuration values in [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml)
 ```
 wave:
     mail:
         from: "wave-app@seqera.io"
 ```
 
-YAML configuration keys on this page are listed in "dot" notation, i.e., the mail from value in the snippet above is represented as `wave.mail.from` in the tables that follow.
-Environment variables for various attributes has been listed in third column, either you can provide those attributes values in config.yml or using corresponding environment variable.
+This page uses dot notation to represent nested YAML configuration keys.
+For example, the `from` value under the `mail` section in the YAML above is written as `wave.mail.from` in the configuration reference.
 
-## General configuration
+Environment variables are listed where available for each configuration option.
+Not all configuration options have corresponding environment variables.
+You can set values using either the `config.yml` file or environment variables.
 
-General configuration options such as Wave application name, port, whether to allow anonymous access (without tower token), Wave and Seqera platform url.
+## General
+
+Configure general Wave application settings such as application name, port, anonymous access permissions, and platform URLs with the following options:
 
 `micronaut.application.name` *(optional)*
 : Sets the name of the Wave application (default: `wave-app`).
@@ -28,7 +29,7 @@ General configuration options such as Wave application name, port, whether to al
 : Sets the port used by the Wave server (default:  `8080`).
 
 `wave.allowAnonymous` *(required)*
-: Specifies whether anonymous access to the Wave server is permitted. (default: `false`)
+: Enables anonymous access to the Wave servers (default: `false`).
 : Modify this option based on your security requirements.
 
 `wave.server.url` *(optional)*
@@ -46,16 +47,19 @@ General configuration options such as Wave application name, port, whether to al
 : Adjust levels based on logging requirements.
 
 
-## Container registry configuration
+## Container registry
 
-The generic format for the attributes is `wave.registries.<registry_name>.username` and `wave.registries.<registry_name>.password`.
-You need to specify all the repositories you will use in the respective Wave installation.
-Below are the standard format for known registries, but you can change registry name `(azurecr.io)` to specific one like `seqeralabs.azurecr.io `.
+Wave uses the generic format `wave.registries.<REGISTRY_NAME>.username` and `wave.registries.<REGISTRY_NAME>.password` for registry authentication.
+You must specify all repositories used in your Wave installation.
+
+The examples below show standard formats for known registries, but you can customize the registry name (for example, change `azurecr.io` to `seqeralabs.azurecr.io`).
 
 :::note
-Container registry credentials can be defined in [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml) too.
-These configurations are important for the Wave authentication to the repositories used to push or pull artifacts.
+You can also define container registry credentials in the [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml) file.
+These configurations enable Wave authentication for repositories used to push or pull artifacts.
 :::
+
+Configure container registry authentication with the following options:
 
 `wave.registries.default` *(optional)*
 : Sets the default Docker registry for Wave (default: `docker.io`).
@@ -78,15 +82,17 @@ These configurations are important for the Wave authentication to the repositori
 
 `wave.registries.<AWS ECR Repo name>.username` *(optional)*
 : Sets the AWS ECR (Elastic Container Registry) username for authentication.
-: For example, `195996028523.dkr.ecr.eu-west-1.amazonaws.com`.
+  For example, `195996028523.dkr.ecr.eu-west-1.amazonaws.com`.
 : Can be set using the `${AWS_ACCESS_KEY_ID}` environment variable.
 
 `wave.registries.<AWS ECR Repo name>.password` *(optional)*
 : Sets the AWS ECR password for authentication.
-: For example: `195996028523.dkr.ecr.eu-west-1.amazonaws.com`.
+  For example: `195996028523.dkr.ecr.eu-west-1.amazonaws.com`.
 : Can be set using `${AWS_SECRET_ACCESS_KEY}` environment variable.
 
-## HTTP client configuration
+## HTTP client
+
+Configure the HTTP client with the following options:
 
 `wave.httpclient.connectTimeout` *(optional)*
 : Sets the  connection timeout for the HTTP client (defult: `20s`).
@@ -104,7 +110,7 @@ These configurations are important for the Wave authentication to the repositori
 : Sets the jitter for HTTP client retries (default: `0.25`).
 
 `wave.httpclient.retry.multiplier` *(optional)*
-: Sets the multiplier for HTTP client retries. (default: `1.0`).
+: Sets the multiplier for HTTP client retries (default: `1.0`).
 
 `micronaut.http.services.stream-client.read-timeout` *(optional)*
 : Sets the read timeout for the streaming HTTP client (default: `30s`).
@@ -112,57 +118,60 @@ These configurations are important for the Wave authentication to the repositori
 `micronaut.http.services.stream-client.read-idle-timeout` *(optional)*
 : Sets the read idle timeout for the streaming HTTP client (default: `120s`).
 
-## Container build process configuration
+## Container build process
+
+Configure how Wave builds container images and manages associated logs for monitoring, troubleshooting, and delivery with the following options:
+
 
 `wave.build.timeout` *(optional)*
 : Sets the timeout for the build process (default: `5m`).
 
 `wave.build.workspace` *(required)*
 : Sets the path to the directory used by Wave to store artifacts such as Dockerfiles, Trivy cache for scan, Buildkit context, and authentication configuration files.
-: For example, `/efs/wave/build`.
+  For example, `/efs/wave/build`.
 
 `wave.build.cleanup` *(optional)*
 : Sets the cleanup strategy after the build process.
-: Set to `OnSuccess` for cleanup only if a build is successful.
+  For example, set to `OnSuccess` for cleanup only if a build is successful.
 
 `wave.build.buildkit-image` *(optional)*
-: Sets the specifies the [Buildkit](https://github.com/moby/buildkit) Docker image used in the Wave build process (default: `moby/buildkit:v0.13.2-rootless`).
+: Sets the [Buildkit](https://github.com/moby/buildkit) Docker image used in the Wave build process (default: `moby/buildkit:v0.13.2-rootless`).
 
 `wave.build.singularity-image` *(optional)*
 : Sets the [Singularity](https://quay.io/repository/singularity/singularity?tab=tags) image used in the build process (default: `quay.io/singularity/singularity:v3.11.4-slim`.
 
 `wave.build.singularity-image-arm64` *(optional)*
-: Sets he ARM64 version of the Singularity image for the build process. (default: `quay.io/singularity/singularity:v3.11.4-slim-arm64`).
+: Sets he ARM64 version of the Singularity image for the build process (default: `quay.io/singularity/singularity:v3.11.4-slim-arm64`).
 
 `wave.build.repo` *(required)*
-: Specifies the Docker container repository for the Docker images built by Wave.
+: Sets the Docker container repository for the Docker images built by Wave.
 
 `wave.build.cache` *(required)*
-: Determines the Docker container repository used to cache layers of images built by Wave.
+: Sets the Docker container repository used to cache layers of images built by Wave.
 
 `wave.build.status.delay` *(optional)*
-: Sets the delay between build status checks. (default: `5s`).
+: Sets the delay between build status checks (default: `5s`).
 
 `wave.build.status.duration`
-: Sets the duration for build status checks. (default: `1d`).
+: Sets the duration for build status checks (default: `1d`).
 
 `wave.build.public` *(optional)*
-: Specifies whether the Docker container repository is public.
-: If set to `true`, Wave freeze will prefer this public repository over `wave.build.repo`.`
+: Enables public Docker container repositories.
+: When `true`, Wave freeze will prefer this public repository over `wave.build.repo`.`
 
 `wave.build.oci-mediatypes` *(optional)*
-: Sets whether to use OCI media types in exported manifests (default: `true`).
+: Enables OCI media types in exported manifests (default: `true`).
 
 `wave.build.compression` *(optional)*
 : Sets which type of compression will be applied to cache layers (default: `gzip`).
 : Options include: `uncompressed|estargz|zstd`.
 
 `wave.build.force-compression` *(optional)*
-: Specifies whether to force the compression for each cache layers produced by the build process (default: `false`).
+: Enables forced compression for each cache layers produced by the build process (default: `false`).
 
-### Build process logs configuration
+### Build process logs
 
-This configuration specifies attributes for the persistence of the logs fetched from containers or k8s pods used for building requested images, which can be accessed later and also attached to the build completion email.
+Configure how Wave stores and delivers build logs from containers and Kubernetes pods, which can be retrieved later or included in build completion emails, with the following options:
 
 `wave.build.logs.bucket` *(required)*
 : Sets the AWS S3 bucket where Wave will store build process logs.
@@ -177,15 +186,11 @@ This configuration specifies attributes for the persistence of the logs fetched 
 : Sets the prefix for build process log files in the specified S3 bucket.
 
 `wave.build.logs.maxLength` *(optional)*
-: Determines the maximum number of bytes that can be read from a log file. If a log file exceeds this limit, it will be truncated. (default: `100000` (100 KB)).
+: Determines the maximum number of bytes that can be read from a log file. If a log file exceeds this limit, it will be truncated (default: `100000` (100 KB)).
 
-### Kubernetes configuration for container build process
+### Kubernetes container build process
 
-Kubernetes configuration has options specific for k8s, and most of them, except CPU and memory, are the same for the build and scan process.
-
-:::note
-These settings apply only when running on Kubernetes.
-:::
+Configure Kubernetes-specific settings for Wave, where build and scan processes share most configurations except for CPU and memory requirements, with the following options:
 
 `wave.build.k8s.namespace` *(required)*
 : Sets the Kubernetes namespace where Wave will run its build pods.
@@ -197,7 +202,7 @@ These settings apply only when running on Kubernetes.
 : Sets the volume mount path on Wave build Kubernetes pods.
 
 `wave.build.k8s.labels` *(optional)*
-: allows you to set labels on Wave build Kubernetes pods.
+: Sets labels on Wave build Kubernetes pods.
 
 `wave.build.k8s.node-selector` *(optional)*
 : Sets the node selector for Wave build Kubernetes pods.
@@ -207,18 +212,18 @@ These settings apply only when running on Kubernetes.
 
 `wave.build.k8s.resources.requests.cpu` *(optional)*
 : Sets the [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) to allocate to Wave build processes.
-: For example, `2` or `1500Mi` (1.5 CPU cores).
+  For example, set to `2` (2 CPU cores) or `1500Mi` (1.5 CPU cores).
 
 `wave.build.k8s.resources.requests.memory` *(optional)*
 : Sets the [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) to allocate to Wave build processes.
-: For example, it could be set to `3Gi` (3 Megabytes) or `2000Mi` (2000 Megabytes).
+  For example, set to `3Gi` (3 Megabytes) or `2000Mi` (2000 Megabytes).
 
-## Container scan process configuration
+## Container scan process
 
-Scan process configuration lets the user provide a [Trivy docker image](https://hub.docker.com/r/aquasec/trivy) with any tag and severity levels of vulnerability that need to be scanned.
+Configure how Wave's vulnerability scanning process uses a [Trivy docker image](https://hub.docker.com/r/aquasec/trivy) with customizable tags and severity levels with the following options:
 
 `wave.scan.enabled` *(optional)*
-: Specifies whether vulnerability scanning is enabled or disabled (default: `false`).
+: Enables vulnerability scanning (default: `false`).
 
 `wave.scan.severity` *(optional)*
 : Sets the [severity levels](https://aquasecurity.github.io/trivy/v0.22.0/vulnerability/examples/filter/) to report in vulnerability scanning.
@@ -227,176 +232,189 @@ Scan process configuration lets the user provide a [Trivy docker image](https://
 `wave.scan.image.name`  *(optional)*
 : Sets the [Trivy docker image](https://hub.docker.com/r/aquasec/trivy) to use for container security scanning (default: `aquasec/trivy:0.47.0`).
 
-### Kubernetes configuration for Wave scan process
+### Kubernetes Wave scan process
 
-Wave scan process uses the same k8s configuration of the build process except for CPU and memory requirements for the k8s pod.
+Configure Wave scanning process resource requirements for Kubernetes deployments with the following options:
 
-:::note
-These settings apply only when using Kubernetes.
-:::
+`wave.scan.k8s.resources.requests.cpu` *(optional)*
+: Sets the amount of [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to Wave scan processes.
+  For example, set to `2` (2 CPU cores) or `1500Mi` (1.5 CPU cores).
 
-`wave.scan.k8s.resources.requests.cpu`
-: Sets the amount of [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to Wave scan processes. For instance, you can set it to `2` or `1500Mi` (1.5 CPU cores). *(optional)*
+`wave.scan.k8s.resources.requests.memory` *(optional)*
+: Sets the [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to Wave scan processes.
+  For example, set to `3Gi` (3 Megabytes) or `2000Mi` (2000 Megabytes).
 
-`wave.scan.k8s.resources.requests.memory`
-: Sets the [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to Wave scan processes. For example, it could be set to `3Gi` or `2000Mi` (3 or 2000 Megabytes). *(optional)*
+## Rate limits
 
-## Rate limit configuration
+Configure how Wave controls rate limits for anonymous and authenticated user access with the following options:
 
-Rate limit configuration controls the limits of anonymous and authenticated users' access to Wave.
+`rate-limit.build.anonymous` *(required)*
+: Sets the rate limit for build requests from anonymous users (default: 25 build requests per hour (`25/1d`); max: 25).
 
-:::note
-Change these properties to tweak rate limits in Wave.
-:::
+`rate-limit.build.authenticated` *(required)*
+: Sets the rate limit for build requests from authenticated users (default: 100 build requests per hour (`100/1h`); max: 100).
 
-`rate-limit.build.anonymous`
-: Sets the rate limit for anonymous build requests. By default, it allows up to 25 build requests per hour (`25/1d`) from anonymous users. This setting controls the frequency at which anonymous users can trigger build processes in Wave. *(required)*
+`rate-limit.pull.anonymous` *(required)*
+: Sets the rate limit for anonymous pull requests from anonymous users (default: 250 pull requests per hour (`250/1h`); max: 250).
 
-`rate-limit.build.authenticated`
-: Sets the rate limit for authenticated build requests. By default, it allows up to 100 build requests per hour (`100/1h`) from authenticated users. This setting governs the rate at which authenticated users can initiate build processes in Wave. *(required)*
+`rate-limit.pull.authenticated` *(required)*
+: Sets the rate limit for authenticated pull requests from authenticated users (default: 2k pull requests per minute (`2000/1m`); max 2k)
 
-`rate-limit.pull.anonymous`
-: Sets the rate limit for anonymous pull requests. It is set to allow up to 250 pull requests per hour (`250/1h`) from anonymous users by default. This setting controls how frequently anonymous users can perform pull operations in Wave. *(required)*
+`wave.denyPaths` *(optional)*
+: Filter out API calls for specific artifacts, like manifests, that don't exist.
 
-`rate-limit.pull.authenticated`
-: Sets the rate limit for authenticated pull requests. By default, it allows up to 2k pull requests per minute (`2000/1m`) from authenticated users. This setting governs the rate at which authenticated users can perform pull operations in Wave. *(required)*
+## Database and cache
 
-`wave.denyPaths`
-: user to filter out API calls for specific artifacts like manifests, which doesn't exist. *(optional)*
+Wave uses external database and caching services to store application data and improve performance.
 
-## Database and cache configuration
+### Redis
 
-### Redis configuration
+Configure Redis with the following options:
 
-`redis.uri`
-: Sets the Uniform Resource Identifier (URI) for connecting to Redis, a popular in-memory data store. By default, it uses the format `redis://${REDIS_HOST:redis}:${REDIS_PORT:6379}`, allowing customization of the Redis host and port through environment variables. *(required)*
+`redis.uri` *(required)*
+: Sets the Uniform Resource Identifier (URI) for connecting to Redis (default format: `redis://${REDIS_HOST:redis}:${REDIS_PORT:6379}`.
 
-`redis.pool.enabled`
-: Whether to enable the Redis pool. It is set to `true` by default, enabling the use of a connection pool for efficient management of connections to the Redis server. *(optional)*
+`redis.pool.enabled` *(optional)*
+: Enables the Redis pool (default: `true`).
 
-`redis.pool.minIdle`
-: Specifies the minimum number of idle connections to maintain in the Redis connection pool. The default value is `0`. This ensures that connections are readily available for use.  *(optional)*
+`redis.pool.minIdle` *(optional)*
+: Sets the minimum number of idle connections to maintain in the Redis connection pool (default: `0`).
 
-`redis.pool.maxIdle`
-: Specifies the maximum number of idle connections to maintain in the Redis connection pool. The default value is `10`.  *(optional)*
+`redis.pool.maxIdle` *(optional)*
+: Sets the maximum number of idle connections to maintain in the Redis connection pool (default: `10`).
 
-`redis.pool.maxTotal`
-: Specifies the maximum number of connections that can be maintained in the Redis connection pool. The default value is `50`. This helps to manage resource usage efficiently while supporting high demand.  *(optional)*
+`redis.pool.maxTotal` *(optional)*
+: Sets the maximum number of connections that can be maintained in the Redis connection pool (default: `50`)
 
-`redis.client.timeout`
-: Sets the timeout duration (in milliseconds) for Redis client operations. The default value is `5000` (5 seconds).  *(optional)*
+`redis.client.timeout` *(optional)*
+: Sets the timeout duration (in milliseconds) for Redis client operations (default: `5000` (5 seconds)).
 
-`redis.password`
-: Specifies the password used to authenticate with the Redis server. This is needed when redis authentication is enabled.  *(optional)*
+`redis.password` *(optional)*
+: Sets the password used to authenticate with the Redis server.
 
-### SurrealDB configuration
+### SurrealDB
 
-`surreal.default.ns`
-: Sets the namespace for the Surreal database. It can be set using `${SURREALDB_NS}` environment variable. *(required)*
+Configure SurrealDB with the following options:
 
-`surreal.default.db`
-: Sets the name of the Surreal database. It can be set using`${SURREALDB_DB}` environment variable. This setting defines the target database within the Surreal database system that Wave should interact with. *(required)*
+`surreal.default.ns` *(required)*
+: Sets the namespace for the Surreal database.
+: Can be set using the `${SURREALDB_NS}` environment variable.
 
-`surreal.default.url`
-: Sets the URL for connecting to the Surreal database. It can be set using `${SURREALDB_URL}` environment variable. This URL defines the endpoint that Wave uses to establish a connection with the Surreal database. *(required)*
+`surreal.default.db` *(required)*
+: Sets the name of the Surreal database.
+: Can be set using the `${SURREALDB_DB}` environment variable.
 
-`surreal.default.user`
-: Sets the username used for authentication when connecting to the Surreal database. It can be set using `${SURREALDB_USER}` environment variable. *(required)*
+`surreal.default.url` *(required)*
+: Sets the URL for connecting to the Surreal database.
+: Can be set using the `${SURREALDB_URL}` environment variable.
 
-`surreal.default.password`
-: Sets the password used for authentication when connecting to the Surreal database. It can be set using `${SURREALDB_PASSWORD}` environment variable. *(required)*
+`surreal.default.user` *(required)*
+: Sets the username used for authentication when connecting to the Surreal database.
+: Can be set using the `${SURREALDB_USER}` environment variable.
 
-`surreal.default.init-db`
-: Whether to create database tables, records and indices at application startup  and `db`. *(optional)*
+`surreal.default.password` *(required)*
+: Sets the password used for authentication when connecting to the Surreal database.
+: Can be set using the `${SURREALDB_PASSWORD}` environment variable.
 
-### PostgreSQL configuration
+`surreal.default.init-db` *(optional)*
+: Whether to create database tables, records and indices at application startup  and `db`.
 
-`wave.db.uri`
-: JDBC connection string for the PostgreSQL database. For example, `jdbc:postgresql://localhost:5432/wave`. It can be set using `${WAVE_DB_URI}` environment variable.  *(required)*
+### PostgreSQL
 
-`wave.db.user`
-: Username for authenticating with the PostgreSQL database. It can be set using `${WAVE_DB_USER}` environment variable. *(required)*
+Configure PostgreSQL with the following options:
 
-`wave.db.password`
-: Password for the PostgreSQL database user. It can be set using `${WAVE_DB_PASSWORD}` environment variable. *(required)*
+`wave.db.uri` *(required)*
+: JDBC connection string for the PostgreSQL database.
+  For example, `jdbc:postgresql://localhost:5432/wave`.
+: It can be set using `${WAVE_DB_URI}` environment variable.
 
-## Blob Cache configuration
+`wave.db.user` *(required)*
+: Username for authenticating with the PostgreSQL database.
+: Can be set using the `${WAVE_DB_USER}` environment variable.
 
-Wave offers a feature to provide a cache for Docker blobs, which improves the performance of supplying blobs to the client. If you use Kubernetes, Wave can also use the k8s pod to delegate the transfer task for scalability.
+`wave.db.password` *(required)*
+: Password for the PostgreSQL database user.
+: Can be set using the `${WAVE_DB_PASSWORD}` environment variable.
 
-`wave.blobCache.enabled`
-: Whether to enable the blob cache. It is `false` by default. *(optional)*
+## Blob cache
 
-`wave.blobCache.s5cmdImage`
-: Sets the Docker image that supplies the [s5cmd tool](https://github.com/peak/s5cmd). This tool is used to upload blob binaries to the S3 bucket. The default image used by Wave is `public.cr.seqera.io/wave/s5cmd:v2.2.2`. *(optional)*
+Configure how Wave caches Docker blobs to improve client performance and optionally delegates transfer tasks to Kubernetes pods for scalability with the following options:
 
-`wave.blobCache.status.delay`
-: Sets the time delay in checking the status of the transfer of the blob binary from the repository to the cache. Its default value is `5s`. *(optional)*
+`wave.blobCache.enabled` *(optional)*
+: Enables the blob cache (default:`false`).
 
-`wave.blobCache.status.duration`
-: Sets the time for which Wave will store the blob binary in cache. Its default value is `5d`. *(optional)*
+`wave.blobCache.s5cmdImage` *(optional)*
+: Sets the Docker image that supplies the [s5cmd tool](https://github.com/peak/s5cmd)to upload blob binaries to the S3 bucket (default: `public.cr.seqera.io/wave/s5cmd:v2.2.2`).
 
-`wave.blobCache.timeout`
-: Timeout for blob binary transfer, after which Wave will throw a `TransferTimeoutException` exception. Its default value is `5m`. *(optional)*
+`wave.blobCache.status.delay` *(optional)*
 
-`wave.blobCache.baseUrl`
-: Sets the URL, which will override the base URL (part of URL before the blob path) of blobs sent to the end client. *(optional)*
+: Sets the time delay in checking the status of the transfer of the blob binary from the repository to the cache (default: `5s`).
 
-`wave.blobCache.signing-strategy`
-: Sets the URL signing strategy for different services. Currently, Wave offers it for AWS S3 and Cloudflare and you can use the respective values to enable them `aws-presigned-url` and `cloudflare-waf-token`. *(required)*
+`wave.blobCache.status.duration` *(optional)*
+: Sets the time for which Wave will store the blob binary in cache (default: `5d`).
 
-`wave.blobCache.cloudflare.lifetime`
-: Sets the validity of the cloud flare WAF token. *(required)*
+`wave.blobCache.timeout`  *(optional)*
+: Timeout for blob binary transfer, after which Wave will throw a `TransferTimeoutException` exception (default: `5m`)
 
-`wave.blobCache.cloudflare.urlSignatureDuration`
-: Sets the validity of the AWS S3 URL signature. Its default value is `30m`. *(optional)*
+`wave.blobCache.baseUrl` *(optional)*
+: Sets the URL, which will override the base URL (part of URL before the blob path) of blobs sent to the end client.
 
-`wave.blobCache.cloudflare.secret-key`
+`wave.blobCache.signing-strategy` *(optional)*
+: Sets the URL signing strategy for different services.
+: Currently supports AWS S3 and Cloudflare service.
+: Options include: `aws-presigned-url|cloudflare-waf-token`.
+
+`wave.blobCache.cloudflare.lifetime` *(required)*
+: Sets the validity of the cloud flare WAF token.
+
+`wave.blobCache.cloudflare.urlSignatureDuration` *(optional)*
+: Sets the validity of the AWS S3 URL signature (default: `30m`).
+
+`wave.blobCache.cloudflare.secret-key` *(required)*
 : Sets the [Cloudflare secret](https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/) to create the WAF token. *(required)*
 
-`wave.blobCache.storage.bucket`
-: Sets the name of Cloudflare or S3 bucket. For example, `s3://wave-blob-cache`. *(required)*
+`wave.blobCache.storage.bucket` *(required)*
+: Sets the name of Cloudflare or S3 bucket.
+  For example, `s3://wave-blob-cache`. *(required)*
 
-`wave.blobCache.storage.region`
-: Sets the AWS region where the bucket is created. *(required)*
+`wave.blobCache.storage.region` *(required)*
+: Sets the AWS region where the bucket is created.
 
-`wave.blobCache.storage.endpoint`
-: Sets the URL for the storage location. This will be used for the download or upload of blob binaries. *(optional)*
+`wave.blobCache.storage.endpoint` *(optional)*
+: Sets the URL for the storage location for the download or upload of blob binaries.
 
-`wave.blobCache.storage.accessKey`
-: Sets the access key (part of credentials) to access the resources of the service used for caching. *(optional)*
+`wave.blobCache.storage.accessKey` *(optional)*
+: Sets the access key (part of credentials) to access the resources of the service used for caching.
 
-`wave.blobCache.storage.secretKey`
-: Sets the secret key (part of credentials) to access the resources of the service used for caching. *(optional)*
+`wave.blobCache.storage.secretKey` *(optional)*
+: Sets the secret key (part of credentials) to access the resources of the service used for caching.
 
-`wave.blobCache.requestsCpu`
-: Sets the amount of [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to the k8s pod used for blob binary transfers. *(optional)*
+`wave.blobCache.requestsCpu` *(optional)*
+: Sets the amount of [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to the k8s pod used for blob binary transfers.
 
-`wave.blobCache.requestsMemory`
-: Sets the [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to the k8s pod used for blob binary transfers. *(optional)*
+`wave.blobCache.requestsMemory` *(optional)*
+: Sets the [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to the k8s pod used for blob binary transfers.
 
 ## Email configuration
 
-Email ID to send emails from on the behalf of the Wave service.
+Configure how Wave sends email notifications on behalf of the service with the following options:
 
-`mail.from`
-: Specifies the sender's email address for Wave notifications. This email address serves as the point of origin for any emails sent by Wave, providing a recognizable source for notifications. This setting is crucial for configuring the sender identity when Wave sends email notifications.  *(required)*
+`mail.from` *(required)*
+: Sets the sender's email address for Wave notifications.
+  This email address serves as the point of origin for any emails sent by Wave, providing a recognizable source for notifications.
 
-## Metrics configuration
+## Metrics
 
-Wave Metrics service provides data about container builds and pulls per ip, container image, and user.
+Configure how Wave Metrics service provides data about container builds and pulls per ip, container image, and user with the following options:
 
-`wave.metrics.enabled`
-: Whether to enable the Wave metrics. It is `false` by default. *(optional)*
+`wave.metrics.enabled` *(optional)*
+: Enables Wave metrics (default: `false`).
 
-## Accounts configuration
+## Accounts
 
-`wave.accounts`
-: Specifies a list of credentials to access authenticated Wave APIs like metrics APIs. *(required)*
+Configure user credentials for accessing authenticated Wave APIs and services with the following options:
 
-Format of the credential list:
-
-```console
-- <USERNAME>:<PASSWORD_CHECKSUM>
-```
+`wave.accounts` *(required)*
+: Sets a list of credentials to access authenticated Wave APIs like metrics APIs.
+: Format of the credential list: `- <USERNAME>:<PASSWORD_CHECKSUM>`
 
