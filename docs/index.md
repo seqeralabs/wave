@@ -1,24 +1,26 @@
 ---
-title: Wave overview
+title: Wave containers
 ---
 
-Containers are an essential part of modern data analysis pipelines in bioinformatics. They encapsulate applications and dependencies in portable, self-contained packages that can be easily distributed across diverse computing environments. Containers are also key to enabling predictable and reproducible scientific results. However, workflows can comprise dozens of distinct container images. Pipeline developers must manage and maintain these container images and ensure that their functionality precisely aligns with the requirements of every pipeline task, creating unnecessary friction in the maintenance and deployment of data pipelines.
+Containers are an essential part of modern data analysis pipelines in bioinformatics. They encapsulate applications and dependencies in portable, self-contained packages that can be easily distributed across diverse computing environments. Containers are also key to enabling predictable and reproducible scientific results.
 
-Wave solves this problem by provisioning containers on-demand during the pipeline execution. This allows the delivery of container images that are defined precisely depending on the requirements of each pipeline task in terms of dependencies and platform architecture. This process is completely transparent and fully automated, removing all the plumbing and friction commonly needed to create, upload, and maintain dozens of container images that might be required by a pipeline execution.
+However, workflows can comprise dozens of distinct container images. Pipeline developers must manage and maintain these container images and ensure that their functionality precisely aligns with the requirements of every pipeline task, creating unnecessary friction in the maintenance and deployment of data pipelines.
+
+Wave solves this problem by provisioning containers on-demand during pipeline execution. This allows the delivery of container images that are defined precisely depending on the requirements of each pipeline task in terms of dependencies and platform architecture. This process is completely transparent and fully automated, removing all the plumbing and friction commonly needed to create, upload, and maintain multiple container images required for pipeline execution.
 
 To get started with Wave:
 
-1. See the [Get started][started] guide.
+1. See the [Get started][started] guides.
 1. Learn about [Nextflow integration][nf].
 1. Learn about the [Wave CLI][cli].
 
 :::note
-Wave is also available as hosted service on [Seqera Platform](https://cloud.seqera.io/). For Seqera Enterprise customers, a licensed self-hosted Wave solution is also available. Contact us [contact us](https://seqera.io/contact-us/) for more information.
+Wave is also available as a hosted service on [Seqera Platform](https://cloud.seqera.io/). For Seqera Enterprise customers, a licensed self-hosted Wave solution is also available. [Contact us](https://seqera.io/contact-us/) for more information.
 :::
 
-[started]: ./get-started.mdx
-[nf]: ./nextflow.mdx
-[cli]: ./cli/index.mdx
+[started]: ./tutorials/index.md
+[nf]: ./nextflow.md
+[cli]: ./cli/index.md
 
 ## Wave features
 
@@ -28,13 +30,13 @@ Wave is also available as hosted service on [Seqera Platform](https://cloud.seqe
 
 Wave integrates with [Seqera Platform credentials management][private] enabling seamless access and publishing to private registries.
 
-[private]: ./nextflow.mdx#access-private-container-repositories
+[private]: ./nextflow.md#access-private-container-repositories
 
 #### Seqera Containers - The community container registry
 
-[Seqera Containers] is a free to use service operated for the community by Seqera.
+[Seqera Containers] is a free community service operated by Seqera.
 
-It uses Wave to build images from Conda / PyPI packages on demand, either through the [web interface](https://seqera.io/containers/) or using the [Wave CLI](./cli/index.mdx) / [Nextflow integration](./nextflow.mdx).
+It uses Wave to build images from Conda / PyPI packages on demand, either through the [web interface](https://seqera.io/containers/) or using the [Wave CLI](./cli/index.md) / [Nextflow integration](./nextflow.md).
 
 These images are cached and hosted permanently, being served through a [Docker Distribution][docker] registry and hosted on AWS infrastructure. Images are cached and served via Cloudflare CDN.
 
@@ -52,32 +54,32 @@ Seqera Containers does not work with custom container files, augmentation, or au
 Wave offers a flexible approach to container image management. It allows you to [dynamically add custom layers][augment] to existing docker images, creating new images tailored to your specific needs.
 Any existing container can be extended without rebuilding it. You can add user-provided content such as custom scripts and logging agents, providing greater flexibility in the container’s configuration.
 
-[augment]: ./provisioning.mdx#container-augmentation
+[augment]: ./provisioning.md#container-augmentation
 
 ### Conda-based containers
 
 Package management systems such as Conda and Bioconda simplify the installation of scientific software.
 Wave enables dynamic provisioning of container images from any Conda or Bioconda recipe. Just [declare the Conda packages][conda] in your Nextflow pipeline and Wave will assemble the required container.
 
-[conda]: ./nextflow.mdx#build-conda-based-containers
+[conda]: ./nextflow.md#build-conda-based-containers
 
 ### Singularity containers
 
 Singularity and Apptainer use a proprietary format called _Singularity Image Format_ (SIF). The Wave service can [provision containers based on the Singularity image format][singularity] either by using a `Singularityfile` file or Conda packages. The resulting Singularity image file is stored as an ORAS artifact in an OCI-compliant container registry of your choice or the Wave Community registry.
 
-The advantage of this approach is that Singularity and Apptainer engines can pull and execute those container images natively without requiring extra conversion steps, as needed when using Docker images with those two engines.
+The advantage of this approach is that Singularity and Apptainer engines can pull and execute container images natively without the extra conversion steps needed when using Docker images with these engines.
 
 :::note
-Considering the Singularity image format's peculiarities, Wave's freeze mode is mandatory when provisioning Singularity images.
+Due to the Singularity image format's peculiarities, Wave's freeze mode is mandatory when provisioning Singularity images.
 :::
 
-[singularity]: ./nextflow.mdx#build-singularity-containers
+[singularity]: ./nextflow.md#build-singularity-containers
 
 ### Deploying containers across multi-clouds
 
 Cloud vendors provide integrated container registries, providing better performance and cost-efficiency than central, remote registries.
 This requires mirroring container collections across multiple accounts, regions, and cloud providers when deploying multi-cloud pipelines.
-Wave streamlines this process by provisioning the required containers to the target registry on-demand during the pipeline executions.
+Wave streamlines this process by provisioning the required containers to the target registry on demand during pipeline execution.
 
 ### Container security scanning
 
@@ -85,13 +87,14 @@ Builds for OCI-compliant container images are automatically scanned for known se
 
 ### Optimize workloads for specific architectures
 
-Modern data pipelines can be deployed across different data centers having different hardware architectures such as amd64, arm64, and others. This requires curating different collections of containers for each architecture.
+Modern data pipelines can be deployed across different data centers having different hardware architectures such as AMD64, ARM64, and others. This requires curating different collections of containers for each architecture.
 Wave allows for the on-demand provisioning of containers, depending on the target execution platform (in development).
 
 ### Near caching
 
-The deployment of production pipelines at scale can require the use of multiple cloud regions to enable efficient resource allocation.
+The deployment of production pipelines at scale often requires the use of multiple cloud regions to enable efficient resource allocation.
 However, this can result in an increased overhead when pulling container images from a central container registry. Wave allows the transparent caching of container images in the same region where computation occurs, reducing data transfer costs and time (in development).
 
 ### Wave Lite
-Wave can be used in [lite](./wave-lite.mdx) mode intended for augmentation user case, where user do not require K8s to run wave.
+
+Wave can be used in [Lite](./wave-lite.md) mode for container augmentation and inspection capabilities. Wave Lite can be deployed in both Docker Compose and Kubernetes installations.

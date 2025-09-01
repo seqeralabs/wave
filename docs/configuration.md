@@ -1,4 +1,6 @@
-# Wave application configuration
+---
+title: Wave application configuration
+---
 
 Set Wave configuration values using environment variables or in the [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml) configuration file.
 
