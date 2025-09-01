@@ -77,9 +77,9 @@ Due to the Singularity image format's peculiarities, Wave's freeze mode is manda
 
 ### Deploying containers across multi-clouds
 
-Cloud vendors provide integrated container registries, providing better performance and cost-efficiency than central, remote registries.
-This requires mirroring container collections across multiple accounts, regions, and cloud providers when deploying multi-cloud pipelines.
-Wave streamlines this process by provisioning the required containers to the target registry on demand during pipeline execution.
+Cloud vendors provide integrated container registries, offering better performance and cost-efficiency than central, remote registries.
+Storing container images in a private registry also enhances security, ensures policy compliance, and provides faster, more reliable access with greater control over image management.
+Wave mirroring addresses these needs by copying containers to your chosen registry while preserving the original manifest, image name, and hash, and ensuring images remain unmodified and accessible via the original build hash during pipeline execution.
 
 ### Container security scanning
 
