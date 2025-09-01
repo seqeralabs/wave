@@ -26,10 +26,10 @@ Configure general Wave application settings such as application name, port, anon
 : Sets the name of the Wave application (default: `wave-app`).
 
 `micronaut.server.port` *(optional)*
-: Sets the port used by the Wave server (default:  `8080`).
+: Sets the port used by the Wave server (default: `8080`).
 
 `wave.allowAnonymous` *(required)*
-: Enables anonymous access to the Wave servers (default: `false`).
+: Enables anonymous access to the Wave server (default: `false`).
 : Modify this option based on your security requirements.
 
 `wave.server.url` *(optional)*
@@ -43,7 +43,7 @@ Configure general Wave application settings such as application name, port, anon
 : Sets the URL pointing to the Seqera platform API service (default: [`https://api.cloud.seqera.io`](https://api.cloud.seqera.io)).
 
 `logger.levels.io.seqera` *(optional)*
-: Sets the [logger level](https://logging.apache.org/log4j/2.x/manual/customloglevels.html)  for the `io.seqera`package (default: `TRACE`).
+: Sets the [logger level](https://logging.apache.org/log4j/2.x/manual/customloglevels.html) for the `io.seqera` package (default: `TRACE`).
 : Adjust levels based on logging requirements.
 
 
@@ -95,16 +95,16 @@ Configure container registry authentication with the following options:
 Configure the HTTP client with the following options:
 
 `wave.httpclient.connectTimeout` *(optional)*
-: Sets the  connection timeout for the HTTP client (defult: `20s`).
+: Sets the connection timeout for the HTTP client (default: `20s`).
 
 `wave.httpclient.retry.delay` *(optional)*
-: Sets the delay for HTTP client retries (defualt: `1s`).
+: Sets the delay for HTTP client retries (default: `1s`).
 
 `wave.httpclient.retry.attempts` *(optional)*
-: Sets the number of HTTP client retry attempts (defualt: `5`).
+: Sets the number of HTTP client retry attempts (default: `5`).
 
 `wave.httpclient.retry.maxDelay` *(optional)*
-: Sets the  maximum delay for HTTP client retries.
+: Sets the maximum delay for HTTP client retries.
 
 `wave.httpclient.retry.jitter` *(optional)*
 : Sets the jitter for HTTP client retries (default: `0.25`).
@@ -138,10 +138,10 @@ Configure how Wave builds container images and manages associated logs for monit
 : Sets the [Buildkit](https://github.com/moby/buildkit) Docker image used in the Wave build process (default: `moby/buildkit:v0.13.2-rootless`).
 
 `wave.build.singularity-image` *(optional)*
-: Sets the [Singularity](https://quay.io/repository/singularity/singularity?tab=tags) image used in the build process (default: `quay.io/singularity/singularity:v3.11.4-slim`.
+: Sets the [Singularity](https://quay.io/repository/singularity/singularity?tab=tags) image used in the build process (default: `quay.io/singularity/singularity:v3.11.4-slim`).
 
 `wave.build.singularity-image-arm64` *(optional)*
-: Sets he ARM64 version of the Singularity image for the build process (default: `quay.io/singularity/singularity:v3.11.4-slim-arm64`).
+: Sets the ARM64 version of the Singularity image for the build process (default: `quay.io/singularity/singularity:v3.11.4-slim-arm64`).
 
 `wave.build.repo` *(required)*
 : Sets the Docker container repository for the Docker images built by Wave.
@@ -152,12 +152,12 @@ Configure how Wave builds container images and manages associated logs for monit
 `wave.build.status.delay` *(optional)*
 : Sets the delay between build status checks (default: `5s`).
 
-`wave.build.status.duration`
+`wave.build.status.duration` *(optional)*
 : Sets the duration for build status checks (default: `1d`).
 
 `wave.build.public` *(optional)*
-: Enables public Docker container repositories.
-: When `true`, Wave freeze will prefer this public repository over `wave.build.repo`.`
+: Enables public Docker container repositories (default: `false`).
+: When `true`, Wave freeze will prefer this public repository over `wave.build.repo`.
 
 `wave.build.oci-mediatypes` *(optional)*
 : Enables OCI media types in exported manifests (default: `true`).
@@ -177,7 +177,7 @@ Configure how Wave stores and delivers build logs from containers and Kubernetes
 : Sets the AWS S3 bucket where Wave will store build process logs.
 
 `wave.build.logs.path` *(required)*
-: Sets the path inside  `wave.build.logs.bucket` where Wave will store build logs.
+: Sets the path inside `wave.build.logs.bucket` where Wave will store build logs.
 
 `wave.build.locks.path` *(required)*
 : Sets the path inside `wave.build.logs.bucket` where Wave will store conda lock files.
@@ -216,7 +216,7 @@ Configure Kubernetes-specific settings for Wave, where build and scan processes 
 
 `wave.build.k8s.resources.requests.memory` *(optional)*
 : Sets the [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) to allocate to Wave build processes.
-  For example, set to `3Gi` (3 Megabytes) or `2000Mi` (2000 Megabytes).
+  For example, set to `3Gi` (3 Gigabytes) or `2000Mi` (2000 Megabytes).
 
 ## Container scan process
 
@@ -242,14 +242,14 @@ Configure Wave scanning process resource requirements for Kubernetes deployments
 
 `wave.scan.k8s.resources.requests.memory` *(optional)*
 : Sets the [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to Wave scan processes.
-  For example, set to `3Gi` (3 Megabytes) or `2000Mi` (2000 Megabytes).
+  For example, set to `3Gi` (3 Gigabytes) or `2000Mi` (2000 Megabytes).
 
 ## Rate limits
 
 Configure how Wave controls rate limits for anonymous and authenticated user access with the following options:
 
 `rate-limit.build.anonymous` *(required)*
-: Sets the rate limit for build requests from anonymous users (default: 25 build requests per hour (`25/1d`); max: 25).
+: Sets the rate limit for build requests from anonymous users (default: 25 build requests per day (`25/1d`); max: 25).
 
 `rate-limit.build.authenticated` *(required)*
 : Sets the rate limit for build requests from authenticated users (default: 100 build requests per hour (`100/1h`); max: 100).
@@ -258,7 +258,7 @@ Configure how Wave controls rate limits for anonymous and authenticated user acc
 : Sets the rate limit for anonymous pull requests from anonymous users (default: 250 pull requests per hour (`250/1h`); max: 250).
 
 `rate-limit.pull.authenticated` *(required)*
-: Sets the rate limit for authenticated pull requests from authenticated users (default: 2k pull requests per minute (`2000/1m`); max 2k)
+: Sets the rate limit for authenticated pull requests from authenticated users (default: 2k pull requests per minute (`2000/1m`); max: 2k).
 
 `wave.denyPaths` *(optional)*
 : Filter out API calls for specific artifacts, like manifests, that don't exist.
@@ -284,7 +284,7 @@ Configure Redis with the following options:
 : Sets the maximum number of idle connections to maintain in the Redis connection pool (default: `10`).
 
 `redis.pool.maxTotal` *(optional)*
-: Sets the maximum number of connections that can be maintained in the Redis connection pool (default: `50`)
+: Sets the maximum number of connections that can be maintained in the Redis connection pool (default: `50`).
 
 `redis.client.timeout` *(optional)*
 : Sets the timeout duration (in milliseconds) for Redis client operations (default: `5000` (5 seconds)).
@@ -317,7 +317,7 @@ Configure SurrealDB with the following options:
 : Can be set using the `${SURREALDB_PASSWORD}` environment variable.
 
 `surreal.default.init-db` *(optional)*
-: Whether to create database tables, records and indices at application startup  and `db`.
+: Enables automatic creation of database tables, records, and indices at application startup.
 
 ### PostgreSQL
 
@@ -341,20 +341,19 @@ Configure PostgreSQL with the following options:
 Configure how Wave caches Docker blobs to improve client performance and optionally delegates transfer tasks to Kubernetes pods for scalability with the following options:
 
 `wave.blobCache.enabled` *(optional)*
-: Enables the blob cache (default:`false`).
+: Enables the blob cache (default: `false`).
 
 `wave.blobCache.s5cmdImage` *(optional)*
-: Sets the Docker image that supplies the [s5cmd tool](https://github.com/peak/s5cmd)to upload blob binaries to the S3 bucket (default: `public.cr.seqera.io/wave/s5cmd:v2.2.2`).
+: Sets the Docker image that supplies the [s5cmd tool](https://github.com/peak/s5cmd) to upload blob binaries to the S3 bucket (default: `public.cr.seqera.io/wave/s5cmd:v2.2.2`).
 
 `wave.blobCache.status.delay` *(optional)*
-
 : Sets the time delay in checking the status of the transfer of the blob binary from the repository to the cache (default: `5s`).
 
 `wave.blobCache.status.duration` *(optional)*
 : Sets the time for which Wave will store the blob binary in cache (default: `5d`).
 
-`wave.blobCache.timeout`  *(optional)*
-: Timeout for blob binary transfer, after which Wave will throw a `TransferTimeoutException` exception (default: `5m`)
+`wave.blobCache.timeout` *(optional)*
+: Timeout for blob binary transfer, after which Wave will throw a `TransferTimeoutException` exception (default: `5m`).
 
 `wave.blobCache.baseUrl` *(optional)*
 : Sets the URL, which will override the base URL (part of URL before the blob path) of blobs sent to the end client.
@@ -365,17 +364,17 @@ Configure how Wave caches Docker blobs to improve client performance and optiona
 : Options include: `aws-presigned-url|cloudflare-waf-token`.
 
 `wave.blobCache.cloudflare.lifetime` *(required)*
-: Sets the validity of the cloud flare WAF token.
+: Sets the validity of the Cloudflare WAF token.
 
 `wave.blobCache.cloudflare.urlSignatureDuration` *(optional)*
 : Sets the validity of the AWS S3 URL signature (default: `30m`).
 
 `wave.blobCache.cloudflare.secret-key` *(required)*
-: Sets the [Cloudflare secret](https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/) to create the WAF token. *(required)*
+: Sets the [Cloudflare secret](https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/) to create the WAF token.
 
 `wave.blobCache.storage.bucket` *(required)*
 : Sets the name of Cloudflare or S3 bucket.
-  For example, `s3://wave-blob-cache`. *(required)*
+  For example, `s3://wave-blob-cache`.
 
 `wave.blobCache.storage.region` *(required)*
 : Sets the AWS region where the bucket is created.
