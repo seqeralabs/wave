@@ -1,5 +1,5 @@
 ---
-title: Configuration reference
+title: Reference
 tags: [configuration, reference, wave]
 ---
 
