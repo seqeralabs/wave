@@ -7,7 +7,7 @@ plugins {
 
 rootProject.name="wave"
 
-include 'wave-api'
+include 'wave-api-v1'
 include 'wave-app'
 
 // only for development

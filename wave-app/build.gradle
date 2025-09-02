@@ -45,7 +45,7 @@ repositories {
 }
 
 dependencies {
-    implementation project(':wave-api')
+    implementation project(':wave-api-v1')
 
     annotationProcessor 'io.micronaut.validation:micronaut-validation-processor'
     annotationProcessor 'io.micronaut:micronaut-http-validation'
@@ -60,6 +60,7 @@ dependencies {
     implementation 'io.seqera:lib-retry:1.1.0'
     implementation 'io.seqera:lib-random:1.0.0'
     implementation 'io.seqera:lib-activator:1.0.0'
+    implementation 'io.seqera:wave-api:0.16.0'
     implementation 'io.seqera:wave-utils:1.0.0'
     implementation 'io.seqera:lib-crypto:1.0.0'
     implementation 'io.seqera:jedis-lock:1.0.0'
@@ -153,7 +154,7 @@ micronaut {
         annotations("io.seqera.*")
     }
     openapi {
-        server(project(':wave-api').file("build/openapi/openapi.yaml")) {
+        server(project(':wave-api-v1').file("build/openapi/openapi.yaml")) {
             apiPackageName = "io.seqera.wave.api.spec"
             modelPackageName = "io.seqera.wave.api.schema.v0"
             useReactive = false
@@ -164,7 +165,10 @@ micronaut {
                 "operationIdCaseFormat": "camelCase",
                 "interfaceOnly": "true",
                 "dateLibrary": "java8",
-                "openApiNullable": "false"
+                "openApiNullable": "false",
+                "serializationLibrary": "JACKSON",
+                "useMicronautSerde": "false",
+                "micronautSerde": "false"
             ]
         }
     }
@@ -249,7 +253,7 @@ compileGroovy.dependsOn buildInfo
 tasks.register('generateSwaggerUI') {
     group = 'documentation'
     description = 'Generate Swagger UI using WebJars'
-    dependsOn project(':wave-api').tasks.named('generateOpenApi')
+    dependsOn project(':wave-api-v1').tasks.named('generateOpenApi')
     
     doLast {
         def resourcesDir = file('src/main/resources/public/openapi')
@@ -264,13 +268,13 @@ tasks.register('generateSwaggerUI') {
         
         // Copy OpenAPI specs with versioning (YAML only) from API project
         copy {
-            from project(':wave-api').file('build/openapi/openapi.yaml')
+            from project(':wave-api-v1').file('build/openapi/openapi.yaml')
             into resourcesDir
             rename 'openapi.yaml', 'openapi-latest.yaml'
         }
         
         copy {
-            from project(':wave-api').file('build/openapi/openapi.yaml')
+            from project(':wave-api-v1').file('build/openapi/openapi.yaml')
             into resourcesDir
             rename 'openapi.yaml', "openapi-${version}.yaml"
         }
@@ -311,7 +315,7 @@ tasks.register('generateSwaggerUI') {
         indexHtml.text = processedContent
     }
     
-    inputs.files(project(':wave-api').file('build/openapi/openapi.yaml'), 'src/main/resources/swagger-ui-template.html', '../VERSION')
+    inputs.files(project(':wave-api-v1').file('build/openapi/openapi.yaml'), 'src/main/resources/swagger-ui-template.html', '../VERSION')
     outputs.dir('src/main/resources/public/openapi')
 }
 
@@ -323,7 +327,7 @@ tasks.register('cleanApiCode') {
     doLast {
         // Clean generated files from both projects
         delete fileTree('src/main/java/io/seqera/wave/api/spec') { include '**/*.java' }
-        delete fileTree(project(':wave-api').file('src/main/java/io/seqera/wave/api/schema/v0')) { include '**/*.java' }
+        delete fileTree(project(':wave-api-v1').file('src/main/java/io/seqera/wave/api/schema/v0')) { include '**/*.java' }
         
         logger.info("Cleaned generated API files")
     }
@@ -348,7 +352,7 @@ tasks.register('generateApiCode') {
         // Copy model classes to API project (they belong there)
         copy {
             from 'build/generated/openapi/generateServerOpenApiModels/src/main/java/io/seqera/wave/api/schema/v0'
-            into project(':wave-api').file('src/main/java/io/seqera/wave/api/schema/v0')
+            into project(':wave-api-v1').file('src/main/java/io/seqera/wave/api/schema/v0')
             include '**/*.java'
         }
         
@@ -357,8 +361,8 @@ tasks.register('generateApiCode') {
 }
 
 // Ensure OpenAPI generation happens before server code generation
-generateServerOpenApiModels.dependsOn project(':wave-api').tasks.named('generateOpenApi')
-generateServerOpenApiApis.dependsOn project(':wave-api').tasks.named('generateOpenApi')
+generateServerOpenApiModels.dependsOn project(':wave-api-v1').tasks.named('generateOpenApi')
+generateServerOpenApiApis.dependsOn project(':wave-api-v1').tasks.named('generateOpenApi')
 
 // Wire Swagger UI generation into build process
 processResources.dependsOn generateSwaggerUI
@@ -373,7 +377,7 @@ tasks.named('sourcesJar') {
 
 // Make sure generated code is available for compilation
 tasks.named('compileJava') {
-    dependsOn 'generateSwaggerUI', project(':wave-api').tasks.named('compileJava')
+    dependsOn 'generateSwaggerUI', project(':wave-api-v1').tasks.named('compileJava')
 }
 
 // Exclude generated files from the build directory to avoid duplicates

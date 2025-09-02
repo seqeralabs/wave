@@ -3,7 +3,7 @@ config ?= runtimeClasspath
 ifdef module
 mm = :${module}:
 else
-mm =
+mm = :wave-app:
 endif
 
 

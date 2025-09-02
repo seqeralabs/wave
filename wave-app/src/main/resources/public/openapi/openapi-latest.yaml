@@ -1,10 +1,10 @@
 openapi: 3.0.0
 info:
   title: Wave API
-  version: 1.25.0
   description: |-
     Wave Containers Provisioning Service API
     A comprehensive container orchestration and build service
+  version: 0.0.0
 tags:
   - name: Service
   - name: Container
