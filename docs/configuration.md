@@ -46,7 +46,7 @@ Container registry credentials can be defined in [`config.yml`](https://github.c
 These configurations are important for the Wave authentication to the repositories used to push or pull artifacts.
 :::
 
-- **`wave.registries.default`**: the default Docker registry for Wave. The default is `docker.io`, and it represents the Docker Hub. *Optional*.
+- **`wave.registries.default`**: the default Container registry for Wave. The default is `docker.io`, and it represents the Docker Hub. *Optional*.
 
 - **`wave.registries.docker.io.username`**: the Docker Hub username for authentication. It can be set using `${DOCKER_USER}` environment variable. *Optional*.
 
@@ -82,17 +82,17 @@ These configurations are important for the Wave authentication to the repositori
 
 - **`wave.build.timeout`**: the timeout for the build process. Its default value is `5m` (5 minutes), providing a reasonable time frame for the build operation. *Optional*.
 
-- **`wave.build.workspace`**: defines the path to the directory used by Wave to store artifacts such as Dockerfiles, Trivy cache for scan, Buildkit context, authentication configuration files, etc. For example, `/efs/wave/build`. *Mandatory*.
+- **`wave.build.workspace`**: defines the path to the directory used by Wave to store artifacts such as Containerfiles, Trivy cache for scan, Buildkit context, authentication configuration files, etc. For example, `/efs/wave/build`. *Mandatory*.
 
 - **`wave.build.cleanup`**: determines the cleanup strategy after the build process. Options include `OnSuccess`, meaning cleanup occurs only if the build is successful. *Optional*.
 
-- **`wave.build.buildkit-image`**: specifies the [Buildkit](https://github.com/moby/buildkit) Docker image used in the Wave build process. The default is `moby/buildkit:v0.13.2-rootless`. *Optional*.
+- **`wave.build.buildkit-image`**: specifies the [Buildkit](https://github.com/moby/buildkit) Container image used in the Wave build process. The default is `moby/buildkit:v0.13.2-rootless`. *Optional*.
 
 - **`wave.build.singularity-image`**: sets the [Singularity](https://quay.io/repository/singularity/singularity?tab=tags) image used in the build process. The default is `quay.io/singularity/singularity:v3.11.4-slim`. *Optional*.
 
 - **`wave.build.singularity-image-arm64`**: the ARM64 version of the Singularity image for the build process. The default is `quay.io/singularity/singularity:v3.11.4-slim-arm64`. *Optional*.
 
-- **`wave.build.repo`**: specifies the Container repository for the Docker images built by Wave. This setting is required to define where the images will be stored. *Mandatory*.
+- **`wave.build.repo`**: specifies the Container repository for the Container images built by Wave. This setting is required to define where the images will be stored. *Mandatory*.
 
 - **`wave.build.cache`**: determines the Container repository used to cache layers of images built by Wave.  *Mandatory*.
 
@@ -231,11 +231,11 @@ Change these properties to tweak rate limits in Wave.
 
 ## Blob Cache configuration
 
-Wave offers a feature to provide a cache for Docker blobs, which improves the performance of supplying blobs to the client. If you use Kubernetes, Wave can also use the k8s pod to delegate the transfer task for scalability.
+Wave offers a feature to provide a cache for Container blobs, which improves the performance of supplying blobs to the client. If you use Kubernetes, Wave can also use the k8s pod to delegate the transfer task for scalability.
 
 - **`wave.blobCache.enabled`**: whether to enable the blob cache. It is `false` by default. *Optional*.
 
-- **`wave.blobCache.s5cmdImage`**: the Docker image that supplies the [s5cmd tool](https://github.com/peak/s5cmd). This tool is used to upload blob binaries to the S3 bucket. The default image used by Wave is `public.cr.seqera.io/wave/s5cmd:v2.2.2`. *Optional*.
+- **`wave.blobCache.s5cmdImage`**: the Container image that supplies the [s5cmd tool](https://github.com/peak/s5cmd). This tool is used to upload blob binaries to the S3 bucket. The default image used by Wave is `public.cr.seqera.io/wave/s5cmd:v2.2.2`. *Optional*.
 
 - **`wave.blobCache.status.delay`**: the time delay in checking the status of the transfer of the blob binary from the repository to the cache. Its default value is `5s`. *Optional*.
 
