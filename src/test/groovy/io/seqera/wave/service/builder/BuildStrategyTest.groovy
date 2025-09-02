@@ -193,7 +193,7 @@ class BuildStrategyTest extends Specification {
                 ociMediatypes: true,
                 compression: CONFIG_COMPRESS,
                 forceCompression: FORCE,
-                buildkitImage: 'moby/buildkit:v0.21.1-rootless')
+                buildkitImage: 'moby/buildkit:v0.23.2-rootless')
         and:
         def result = BuildStrategy.outputOpts(req, config)
         then:
@@ -238,7 +238,7 @@ class BuildStrategyTest extends Specification {
         def config = new BuildConfig(
                 ociMediatypes: true,
                 compression: CONFIG_COMPRESS,
-                buildkitImage: 'moby/buildkit:v0.21.1-rootless')
+                buildkitImage: 'moby/buildkit:v0.23.2-rootless')
         and:
         def result = BuildStrategy.cacheOpts(req, config)
         then:
