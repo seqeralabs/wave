@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Wave API</title>
+    <link rel="stylesheet" type="text/css" href="/webjars/swagger-ui/5.17.14/swagger-ui.css" />
+    <style>
+        html {
+            box-sizing: border-box;
+            overflow: -moz-scrollbars-vertical;
+            overflow-y: scroll;
+        }
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
+        body {
+            margin:0;
+            background: #fafafa;
+        }
+        .version-selector {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .version-selector select {
+            margin-left: 5px;
+        }
+        
+        /* Hide Swagger branding */
+        .swagger-ui .topbar {
+            display: none;
+        }
+        
+        .swagger-ui .info hgroup.main a {
+            display: none;
+        }
+        
+        /* Hide "Swagger" from page title in info section */
+        .swagger-ui .info .title small {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="version-selector">
+        <label>OpenAPI Spec:</label>
+        <select id="spec-selector" onchange="changeSpec()">
+            <option value="./openapi-latest.yaml">Latest (YAML)</option>
+        </select>
+    </div>
+    
+    <div id="swagger-ui"></div>
+    
+    <script src="/webjars/swagger-ui/5.17.14/swagger-ui-bundle.js"></script>
+    <script src="/webjars/swagger-ui/5.17.14/swagger-ui-standalone-preset.js"></script>
+    <script>
+        let ui;
+        
+        function initSwaggerUI(specUrl) {
+            if (ui) {
+                ui.specActions.updateUrl(specUrl);
+                ui.specActions.download(specUrl);
+            } else {
+                ui = SwaggerUIBundle({
+                    url: specUrl,
+                    dom_id: '#swagger-ui',
+                    deepLinking: true,
+                    presets: [
+                        SwaggerUIBundle.presets.apis,
+                        SwaggerUIStandalonePreset
+                    ],
+                    plugins: [
+                        SwaggerUIBundle.plugins.DownloadUrl
+                    ],
+                    layout: "StandaloneLayout"
+                });
+            }
+        }
+        
+        function changeSpec() {
+            const selector = document.getElementById('spec-selector');
+            const selectedUrl = selector.value;
+            initSwaggerUI(selectedUrl);
+        }
+        
+        async function loadAvailableVersions() {
+            try {
+                const response = await fetch('./versions.txt');
+                const text = await response.text();
+                const versions = text.trim().split('\n').filter(v => v.length > 0);
+                
+                const selector = document.getElementById('spec-selector');
+                versions.forEach(version => {
+                    const option = document.createElement('option');
+                    option.value = `./openapi-${version}.yaml`;
+                    option.textContent = `Version ${version} (YAML)`;
+                    selector.appendChild(option);
+                });
+            } catch (error) {
+                console.warn('Could not load available versions:', error);
+            }
+        }
+        
+        window.onload = async function() {
+            // Load available versions first
+            await loadAvailableVersions();
+            
+            // Default to latest YAML version
+            initSwaggerUI('./openapi-latest.yaml');
+        };
+    </script>
+</body>
+</html>
