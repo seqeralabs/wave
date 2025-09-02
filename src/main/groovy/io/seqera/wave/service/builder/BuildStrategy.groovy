@@ -35,6 +35,10 @@ abstract class BuildStrategy {
     @Inject
     private BuildConfig buildConfig
 
+    protected BuildConfig getBuildConfig() {
+        return buildConfig
+    }
+
     abstract void build(String jobName, BuildRequest req)
 
     abstract List<String> singularityLaunchCmd(BuildRequest req)
@@ -65,15 +69,19 @@ abstract class BuildStrategy {
                 << "--local"
                 << "context=$req.workDir/context".toString()
                 << "--output"
-                << outputOpts(req, buildConfig)
+                << outputOpts(req, getBuildConfig())
                 << "--opt"
                 << "platform=$req.platform".toString()
 
         if( req.cacheRepository ) {
             result << "--export-cache"
-            result << cacheOpts(req, buildConfig)
+            result << cacheOpts(req, getBuildConfig())
             result << "--import-cache"
             result << "type=registry,ref=$req.cacheRepository:$req.containerId".toString()
+        }
+
+        if( getBuildConfig().extraFlags ) {
+            result.addAll(getBuildConfig().extraFlags)
         }
 
         return result

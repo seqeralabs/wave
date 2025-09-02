@@ -131,6 +131,14 @@ class BuildConfig {
     @Value('${wave.build.logs.maxLength:100000}')
     long maxLength
 
+    @Nullable
+    @Value('${wave.build.buildkit.extra-flags}')
+    List<String> extraFlags
+
+    List<String> getExtraFlags() {
+        return extraFlags
+    }
+
     @PostConstruct
     private void init() {
         log.info("Builder config: " +
@@ -151,7 +159,8 @@ class BuildConfig {
                 "oci-mediatypes=${ociMediatypes}; " +
                 "compression=${compression}; " +
                 "force-compression=${forceCompression}; " +
-                "retry-attempts=${retryAttempts}")
+                "retry-attempts=${retryAttempts}; " +
+                "extra-flags=${extraFlags}")
         // minimal validation
         if( trustedTimeout < defaultTimeout ) {
             log.warn "Trusted build timeout should be longer than default timeout - check configuration setting 'wave.build.trusted-timeout'"

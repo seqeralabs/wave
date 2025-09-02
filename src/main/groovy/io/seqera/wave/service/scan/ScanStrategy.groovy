@@ -54,6 +54,9 @@ abstract class ScanStrategy {
             cmd << '--severity'
             cmd << config.severity
         }
+        if( config.extraFlags ) {
+            cmd.addAll(config.extraFlags)
+        }
         cmd << targetImage
         return cmd
     }

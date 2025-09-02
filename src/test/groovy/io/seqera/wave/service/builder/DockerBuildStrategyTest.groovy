@@ -216,4 +216,34 @@ class DockerBuildStrategyTest extends Specification {
         cleanup:
         ctx.close()
     }
+
+    def 'should include extra flags in buildkit command' () {
+        given:
+        def properties = [
+                'wave.build.buildkit.extra-flags[0]': '--no-cache',
+                'wave.build.buildkit.extra-flags[1]': '--progress=plain'
+        ]
+        def ctx = ApplicationContext.run(properties)
+        def service = ctx.getBean(DockerBuildStrategy)
+        and:
+        def req = new BuildRequest(
+                containerId: '89fb83ce6ec8627b',
+                buildId: 'bd-89fb83ce6ec8627b_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'repo:89fb83ce6ec8627b',
+                cacheRepository: 'reg.io/wave/build/cache' )
+        when:
+        def cmd = service.buildCmd('build-job-name', req, null)
+        def launchCmd = cmd.subList(cmd.indexOf('build'), cmd.size())
+        then:
+        launchCmd.contains('--no-cache')
+        launchCmd.contains('--progress=plain')
+        and:
+        launchCmd[-2] == '--no-cache'
+        launchCmd[-1] == '--progress=plain'
+
+        cleanup:
+        ctx.close()
+    }
 }

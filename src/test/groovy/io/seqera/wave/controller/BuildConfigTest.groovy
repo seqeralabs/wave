@@ -63,4 +63,16 @@ class BuildConfigTest extends Specification {
         'xtz'       | true          | 5             | 10            | 10    // <-- pick "trusted" because both "freeze" and "token" are provided
         'xtz'       | true          | 20            | 10            | 20    // <-- pick "default" when it's greater than "trusted"
     }
+
+    def 'should return extra flags' () {
+        given:
+        def config1 = new BuildConfig()
+        def config2 = new BuildConfig(extraFlags: ['--no-cache', '--progress=plain'])
+        def config3 = new BuildConfig(extraFlags: [])
+
+        expect:
+        config1.extraFlags == null
+        config2.extraFlags == ['--no-cache', '--progress=plain']
+        config3.extraFlags == []
+    }
 }

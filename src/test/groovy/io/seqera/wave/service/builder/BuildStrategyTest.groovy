@@ -264,4 +264,66 @@ class BuildStrategyTest extends Specification {
         null            | 'estargz'         | 1     | true  | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=estargz,compression-level=1,force-compression=true'
         'estargz'       | 'gzip'            | 2     | true  | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=estargz,compression-level=2,force-compression=true'
     }
+
+    def 'should include extra flags in docker launch command' () {
+        given:
+        def req = new BuildRequest(
+                containerId: 'c168dba125e28777',
+                buildId: 'bd-c168dba125e28777_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'quay.io/wave:c168dba125e28777',
+                cacheRepository: 'reg.io/wave/build/cache',
+        )
+        def config = new BuildConfig(
+                ociMediatypes: true,
+                extraFlags: ['--no-cache', '--progress=plain']
+        )
+        def testStrategy = new BuildStrategy() {
+            @Override
+            void build(String jobName, BuildRequest buildReq) {}
+            @Override
+            List<String> singularityLaunchCmd(BuildRequest buildReq) { return [] }
+            @Override
+            protected BuildConfig getBuildConfig() { return config }
+        }
+
+        when:
+        def cmd = testStrategy.dockerLaunchCmd(req)
+        then:
+        cmd.containsAll(['--no-cache', '--progress=plain'])
+        and:
+        cmd[-2] == '--no-cache'
+        cmd[-1] == '--progress=plain'
+    }
+
+    def 'should not include extra flags when null' () {
+        given:
+        def req = new BuildRequest(
+                containerId: 'c168dba125e28777',
+                buildId: 'bd-c168dba125e28777_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'quay.io/wave:c168dba125e28777',
+        )
+        def config = new BuildConfig(
+                ociMediatypes: true,
+                extraFlags: null
+        )
+        def testStrategy = new BuildStrategy() {
+            @Override
+            void build(String jobName, BuildRequest buildReq) {}
+            @Override
+            List<String> singularityLaunchCmd(BuildRequest buildReq) { return [] }
+            @Override
+            protected BuildConfig getBuildConfig() { return config }
+        }
+
+        when:
+        def cmd = testStrategy.dockerLaunchCmd(req)
+        then:
+        !cmd.contains('--no-cache')
+        !cmd.contains('--progress=plain')
+    }
+
 }

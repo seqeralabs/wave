@@ -38,4 +38,16 @@ class ScanConfigTest extends Specification {
         config3.environmentAsTuples == [new Tuple2('FOO',''), new Tuple2('BAR','')]
 
     }
+
+    def 'should return extra flags' () {
+        given:
+        def config1 = new ScanConfig()
+        def config2 = new ScanConfig(extraFlags: ['--skip-db-update', '--offline-scan'])
+        def config3 = new ScanConfig(extraFlags: [])
+
+        expect:
+        config1.extraFlags == null
+        config2.extraFlags == ['--skip-db-update', '--offline-scan']
+        config3.extraFlags == []
+    }
 }

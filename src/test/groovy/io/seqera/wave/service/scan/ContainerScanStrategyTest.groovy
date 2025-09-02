@@ -137,4 +137,72 @@ class ContainerScanStrategyTest extends Specification {
         then:
         command == [ 'trivy --quiet image --platform linux/amd64 --timeout 100m --format json --output /work/dir/report.json --cache-dir /tmp/trivy-cache --severity low,high repository/scantool && trivy --quiet image --platform linux/amd64 --timeout 100m --format spdx-json --output /work/dir/spdx.json --cache-dir /tmp/trivy-cache repository/scantool' ]
     }
+
+    def "should return trivy command with extra flags"() {
+        given:
+        def targetImage = "repository/scantool"
+        def containerScanStrategy = Spy(ScanStrategy)
+        def workDir = Path.of('/work/dir')
+        def platform = ContainerPlatform.DEFAULT
+        def config = Mock(ScanConfig) {
+            getTimeout() >> Duration.ofMinutes(100)
+            getSeverity() >> 'low,high'
+            getExtraFlags() >> ['--skip-db-update', '--offline-scan']
+        }
+
+        when:
+        def command = containerScanStrategy.scanCommand(targetImage, workDir, platform, config, ScanType.Default)
+        then:
+        command == [ 'trivy',
+                     '--quiet',
+                     'image',
+                     '--platform',
+                     'linux/amd64',
+                     '--timeout',
+                     '100m',
+                     '--format',
+                     'json',
+                     '--output',
+                     '/work/dir/report.json',
+                     '--cache-dir',
+                     '/tmp/trivy-cache',
+                     '--severity',
+                     'low,high',
+                     '--skip-db-update',
+                     '--offline-scan',
+                     targetImage]
+    }
+
+    def "should return trivy command with extra flags but no severity for spdx"() {
+        given:
+        def targetImage = "repository/scantool"
+        def containerScanStrategy = Spy(ScanStrategy)
+        def workDir = Path.of('/work/dir')
+        def platform = ContainerPlatform.DEFAULT
+        def config = Mock(ScanConfig) {
+            getTimeout() >> Duration.ofMinutes(100)
+            getSeverity() >> 'low,high'
+            getExtraFlags() >> ['--skip-db-update', '--offline-scan']
+        }
+
+        when:
+        def command = containerScanStrategy.scanCommand(targetImage, workDir, platform, config, ScanType.Spdx)
+        then:
+        command == [ 'trivy',
+                     '--quiet',
+                     'image',
+                     '--platform',
+                     'linux/amd64',
+                     '--timeout',
+                     '100m',
+                     '--format',
+                     'spdx-json',
+                     '--output',
+                     '/work/dir/spdx.json',
+                     '--cache-dir',
+                     '/tmp/trivy-cache',
+                     '--skip-db-update',
+                     '--offline-scan',
+                     targetImage]
+    }
 }

@@ -101,6 +101,10 @@ class ScanConfig {
     @Value('${wave.scan.reports.path}')
     String reportsPath
 
+    @Nullable
+    @Value('${wave.scan.trivy.extra-flags}')
+    List<String> extraFlags
+
     String getScanImage() {
         return scanImage
     }
@@ -160,9 +164,13 @@ class ScanConfig {
         return result
     }
 
+    List<String> getExtraFlags() {
+        return extraFlags
+    }
+
     @PostConstruct
     private void init() {
-        log.info("Scan config: docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}; limits-cpu: ${limitsCpu}; limits-memory: ${limitsMemory}; severity: $severity; vulnerability-limit: $vulnerabilityLimit; retry-attempts: $retryAttempts; env=${environment}")
+        log.info("Scan config: docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}; limits-cpu: ${limitsCpu}; limits-memory: ${limitsMemory}; severity: $severity; vulnerability-limit: $vulnerabilityLimit; retry-attempts: $retryAttempts; env=${environment}; extra-flags: ${extraFlags}")
     }
 
     /**
