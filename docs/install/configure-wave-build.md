@@ -153,7 +153,11 @@ data:
           serviceAccount: "wave-build-sa"
           resources:
             requests:
-              memory: '1800Mi'
+              memory: '1Gi'
+              cpu: '500m'
+            limits:
+              memory: '4Gi'
+              cpu: '2000m'
           nodeSelector:
             # this node selector binds the build pods to a separate cluster node group
             linux/amd64: 'service=wave-build'
