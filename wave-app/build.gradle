@@ -167,8 +167,6 @@ micronaut {
                 "dateLibrary": "java8",
                 "openApiNullable": "false",
                 "serializationLibrary": "JACKSON",
-                "useMicronautSerde": "false",
-                "micronautSerde": "false"
             ]
         }
     }
