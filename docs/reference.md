@@ -77,12 +77,12 @@ Configure container registry authentication with the following options:
 : Sets the Quay.io password or PAT for authentication.
 : Can be set using the `${QUAY_PAT}` environment variable.
 
-`wave.registries.<AWS ECR Repo name>.username` *(optional)*
+`wave.registries.<AWS_ECR_REPO_NAME>.username` *(optional)*
 : Sets the AWS ECR (Elastic Container Registry) username for authentication.
   For example, `195996028523.dkr.ecr.eu-west-1.amazonaws.com`.
 : Can be set using the `${AWS_ACCESS_KEY_ID}` environment variable.
 
-`wave.registries.<AWS ECR Repo name>.password` *(optional)*
+`wave.registries.<AWS_ECR_REPO_NAME>.password` *(optional)*
 : Sets the AWS ECR password for authentication.
   For example: `195996028523.dkr.ecr.eu-west-1.amazonaws.com`.
 : Can be set using the `${AWS_SECRET_ACCESS_KEY}` environment variable.
@@ -228,6 +228,10 @@ Configure how Wave's vulnerability scanning process uses a [Trivy docker image](
 
 `wave.scan.image.name`  *(optional)*
 : Sets the [Trivy docker image](https://hub.docker.com/r/aquasec/trivy) to use for container security scanning (default: `aquasec/trivy:0.47.0`).
+
+`wave.scan.reports.path` *required*
+: Sets the path inside the S3 bucket where Wave will store SBOM reports.
+  For example, `s3://wave-store/scan-reports`.
 
 ### Kubernetes Wave scan process
 
