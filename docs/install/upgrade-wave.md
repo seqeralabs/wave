@@ -26,6 +26,6 @@ Wave 1.25.0 upgrades micronaut to 4.9.2 and netty to 4.2.0. This includes a chan
 
 To maintain stable memory usage patterns, it is recommended to explicitly set the Netty ByteBuf allocator back to PooledByteBufAllocator. Update your Wave configuration as follows:
 
-add the following in `WAVE_JVM_OPTS`
+add this option **only** if you are passing custom `WAVE_JVM_OPTS`
 
 - **`-Dio.netty.allocator.type=pooled`**: More details can be found [here](https://github.com/seqeralabs/wave/blob/master/adr/mv-4.9-netty-memory.md). *Mandatory*.
