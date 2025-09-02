@@ -3,7 +3,7 @@ title: Wave application
 tags: [configuration, wave]
 ---
 
-Configure the Wave application by setting YAML values in the [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml) configuration file. For example:
+This page lists configuration options for the Wave application. Configure Wave by setting YAML values in the [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml) configuration file. For example:
 
 ```
 wave:
@@ -11,16 +11,13 @@ wave:
         from: "wave-app@seqera.io"
 ```
 
-This page uses dot notation to represent nested YAML configuration keys.
-For example, the `from` value under the `mail` section in the YAML above is written as `wave.mail.from` in the configuration reference.
+The configuration reference uses dot notation to represent nested YAML keys. In the example above, the `from` value under the `mail` section is referenced as `wave.mail.from` throughout this documentation
 
-Environment variables are listed where available for each configuration option.
-Not all configuration options have corresponding environment variables.
-You can set values using either the `config.yml` file or environment variables.
+You can configure Wave using either the `config.yml` file or environment variables. Environment variables are provided where available, though not all configuration options support them.
 
 ## General
 
-Configure general Wave application settings such as application name, port, anonymous access permissions, and platform URLs with the following options:
+Configure general Wave application settings, such as application name, port, anonymous access permissions, and platform URLs with the following options:
 
 `micronaut.application.name` *(optional)*
 : Sets the name of the Wave application (default: `wave-app`).
