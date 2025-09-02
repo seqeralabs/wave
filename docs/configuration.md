@@ -92,15 +92,15 @@ These configurations are important for the Wave authentication to the repositori
 
 - **`wave.build.singularity-image-arm64`**: the ARM64 version of the Singularity image for the build process. The default is `quay.io/singularity/singularity:v3.11.4-slim-arm64`. *Optional*.
 
-- **`wave.build.repo`**: specifies the Docker container repository for the Docker images built by Wave. This setting is required to define where the images will be stored. *Mandatory*.
+- **`wave.build.repo`**: specifies the Container repository for the Docker images built by Wave. This setting is required to define where the images will be stored. *Mandatory*.
 
-- **`wave.build.cache`**: determines the Docker container repository used to cache layers of images built by Wave.  *Mandatory*.
+- **`wave.build.cache`**: determines the Container repository used to cache layers of images built by Wave.  *Mandatory*.
+
+- **`wave.build.public-repo`**: specifies a public Container repository for the container images built by Wave. This will be used when user uses freeze but not provide build-repository.  *Mandatory*.
 
 - **`wave.build.status.delay`**: sets the delay between build status checks. Its default value is `5s`, providing a reasonable interval for status checks.  *Optional*.
 
 - **`wave.build.status.duration`**: defines the duration for build status checks. Its default value is `1d` (1 day), indicating how long the system should check the build status.  *Optional*.
-
-- **`wave.build.public`**: indicates whether the Docker container repository is public. If set to true, Wave freeze will prefer this public repository over `wave.build.repo`. *Optional*.
 
 - **`wave.build.oci-mediatypes`**: defines whether to use OCI media types in exported manifests. Its default value is `true`. *Optional*.
 
