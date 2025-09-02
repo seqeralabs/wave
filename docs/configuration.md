@@ -1,6 +1,6 @@
 ---
-title: Wave application
-tags: [configuration, wave]
+title: Configuration reference
+tags: [configuration, reference, wave]
 ---
 
 This page lists configuration options for the Wave application. Configure Wave by setting YAML values in the [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml) configuration file. For example:

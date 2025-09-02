@@ -1,10 +1,8 @@
 ---
 title: Configure Wave
-plugins:
-  - "@site/src/plugins/sectionize"
 ---
 
-The following covers common operations when setting up and configuring wave see [configuration](../configuration.md) for a full reference of all configuration values and options.
+This page describes common operations for setting up and configuring Wave. For a full list of Wave configuration options, see [Configuration reference](../wave-application.md).
 
 ## Email Configuration
 
