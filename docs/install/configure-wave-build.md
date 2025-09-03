@@ -342,22 +342,19 @@ Set up monitoring for build operations:
 
 For additional configuration options and advanced features, see [Configuring Wave](./configure-wave.md).
 
+### Bottlerocket support
 
-### Bottlerocket Support
+Bottlerocket sets `user.max_user_namespaces=0` by default for security. To use Buildkit with Bottlerocket, enable user namespaces for container builds by setting `user.max_user_namespaces=N` on your host nodes, where `N` is a positive integer, such as `63359`.
 
-Bottlerocket defaults to configuring `user.max_user_namespaces=0` for security. Buildkit support requires enabling user namespaces for container builds by setting `user.max_user_namespaces=N` (where N is a positive integer, like 63359) on the host nodes.
+You can configure this setting in two ways:
 
-There are two approaches to configure this:
+#### Recommended: Node startup configuration
 
-#### Recommended: Node Startup Configuration
+Configure the user namespace setting in your node group's startup script or user data. This approach applies the configuration at boot time and doesn't require privileged containers in your cluster.
 
-Configure the user namespace setting through your node group's startup script or user data. This is the preferred method as it applies the configuration at boot time without requiring privileged containers in your cluster.
+#### Alternative: DaemonSet approach
 
-
-
-#### Alternative: DaemonSet Approach
-
-Use a DaemonSet when you cannot control the node configuration directly. This approach requires running a privileged container, so we recommend deploying it only on wave-build nodes and using a dedicated namespace for isolation.
+If you can't control the node configuration directly, use a DaemonSet. This approach requires running a privileged container. We recommend you deploy it only on wave-build nodes and use a dedicated namespace for isolation.
 
 **Example manifest:**
 
