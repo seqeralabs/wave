@@ -392,7 +392,7 @@ spec:
 
 #### Additional resources
 
-For more information about Bottlerocket:
+For more information about Bottlerocket, see:
 
 - [Bottlerocket FAQs](https://bottlerocket.dev/en/faq/)
 - [Amazon Bottlerocket FAQs](https://aws.amazon.com/bottlerocket/faqs/)
