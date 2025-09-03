@@ -202,6 +202,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
                 final remoteFile = req.workDir.resolve('singularity-remote.yaml')
                 final content = RegHelper.singularityRemoteFile(req.targetImage)
                 Files.write(remoteFile, content.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+                // set permissions 600 as required by Singularity
+                Files.setPosixFilePermissions(configFile, Set.of(OWNER_READ, OWNER_WRITE))
+                Files.setPosixFilePermissions(remoteFile, Set.of(OWNER_READ, OWNER_WRITE))
             }
             // save layers provided via the container config
             if( req.containerConfig ) {

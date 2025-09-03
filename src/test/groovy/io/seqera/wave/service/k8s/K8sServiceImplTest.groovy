@@ -203,7 +203,11 @@ class K8sServiceImplTest extends Specification {
             args == ['this', 'that']
             env.name == ['BUILDKITD_FLAGS']
             env.value == ['--oci-worker-no-process-sandbox']
+            securityContext.privileged == false
+            securityContext.appArmorProfile.type == 'Unconfined'
             command == ['buildctl-daemonless.sh']
+            securityContext.privileged == false
+            securityContext.appArmorProfile.type == 'Unconfined'
             volumeMounts.size() == 2
             volumeMounts.get(0).name == 'build-data'
             volumeMounts.get(0).mountPath == '/home/user/.docker/config.json'
@@ -296,6 +300,8 @@ class K8sServiceImplTest extends Specification {
             args == ['this', 'that']
             env.name == ['BUILDKITD_FLAGS']
             env.value == ['--oci-worker-no-process-sandbox']
+            securityContext.privileged == false
+            securityContext.appArmorProfile.type == 'Unconfined'
             volumeMounts.size() == 1
             volumeMounts.get(0).name == 'build-data'
             volumeMounts.get(0).mountPath == '/build/work/xyz'
@@ -655,6 +661,8 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.containers[0].env.find { it.name == 'BUILDKITD_FLAGS' }
         job.spec.template.spec.containers[0].command == ['buildctl-daemonless.sh']
         job.spec.template.spec.containers[0].args == args
+        job.spec.template.spec.containers[0].securityContext.privileged == false
+        job.spec.template.spec.containers[0].securityContext.appArmorProfile.type == 'Unconfined'
 
         and:
         job.spec.template.spec.containers.get(0).getWorkingDir() == '/tmp'
@@ -711,6 +719,8 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.containers[0].env.find { it.name == 'BUILDKITD_FLAGS' }
         job.spec.template.spec.containers[0].command == ['buildctl-daemonless.sh']
         job.spec.template.spec.containers[0].args == args
+        job.spec.template.spec.containers[0].securityContext.privileged == false
+        job.spec.template.spec.containers[0].securityContext.appArmorProfile.type == 'Unconfined'
 
         and:
         job.spec.template.spec.containers.get(0).getWorkingDir() == '/tmp'
@@ -770,6 +780,8 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.containers[0].env.find { it.name == 'BUILDKITD_FLAGS' }
         job.spec.template.spec.containers[0].command == ['buildctl-daemonless.sh']
         job.spec.template.spec.containers[0].args == args
+        job.spec.template.spec.containers[0].securityContext.privileged == false
+        job.spec.template.spec.containers[0].securityContext.appArmorProfile.type == 'Unconfined'
 
         and:
         job.spec.template.spec.containers.get(0).getWorkingDir() == '/tmp'

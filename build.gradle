@@ -152,9 +152,6 @@ jib {
         ports = ['9090']
         entrypoint = '/bin/sh'
         args = ['/launch.sh']  // copied from `src/main/jib` directory
-        environment = [
-                'MICRONAUT_ENVIRONMENTS': 'prod'
-        ]
     }
     extraDirectories {
         paths {

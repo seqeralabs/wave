@@ -1,5 +1,5 @@
 ---
-title: Wave Database Migration from SurrealDB to PostgreSQL
+title: Wave database migration from SurrealDB to PostgreSQL
 ---
 
 ## Pre-requisites
