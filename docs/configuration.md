@@ -231,7 +231,7 @@ Change these properties to tweak rate limits in Wave.
 
 ## Blob Cache configuration
 
-Wave offers a feature to provide a cache for Container blobs, which improves the performance of supplying blobs to the client. If you use Kubernetes, Wave can also use the k8s pod to delegate the transfer task for scalability.
+Wave offers a feature to provide a cache for container blobs, which improves the performance of supplying blobs to the client. If you use Kubernetes, Wave can also use the k8s pod to delegate the transfer task for scalability.
 
 - **`wave.blobCache.enabled`**: whether to enable the blob cache. It is `false` by default. *Optional*.
 
