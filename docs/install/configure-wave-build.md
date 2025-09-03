@@ -341,3 +341,54 @@ Set up monitoring for build operations:
 - **Build timeouts** - Adjust build timeout settings based on workload requirements
 
 For additional configuration options and advanced features, see [Configuring Wave](./configure-wave.md).
+
+
+### Bottlerocket Support
+
+Bottlerocket defaults to configuring `user.max_user_namespaces=0` for security. Buildkit support requires enabling user namespaces for container builds by setting `user.max_user_namespaces=N` (where N is a positive integer, like 63359) on the host nodes.
+
+There are two approaches to configure this:
+
+#### Recommended: Node Startup Configuration
+
+Configure the user namespace setting through your node group's startup script or user data. This is the preferred method as it applies the configuration at boot time without requiring privileged containers in your cluster.
+
+
+
+#### Alternative: DaemonSet Approach
+
+Use a DaemonSet when you cannot control the node configuration directly. This approach requires running a privileged container, so we recommend deploying it only on wave-build nodes and using a dedicated namespace for isolation.
+
+**Example manifest:**
+
+```yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app: sysctl-userns
+  name: sysctl-userns
+spec:
+  selector:
+    matchLabels:
+      app: sysctl-userns
+  template:
+    metadata:
+      labels:
+        app: sysctl-userns
+    spec:
+      containers:
+        - name: sysctl-userns
+          image: busybox
+          command: ["sh", "-euxc", "sysctl -w user.max_user_namespaces=63359 && sleep infinity"]
+          securityContext:
+            privileged: true
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: service
+                operator: In
+                values: ["wave-build", "wave-build-arm64"]
+```
