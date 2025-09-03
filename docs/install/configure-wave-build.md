@@ -389,3 +389,10 @@ spec:
                 operator: In
                 values: ["wave-build", "wave-build-arm64"]
 ```
+
+#### Additional resources
+
+For more information about Bottlerocket:
+
+- [Bottlerocket FAQs](https://bottlerocket.dev/en/faq/)
+- [Amazon Bottlerocket FAQs](https://aws.amazon.com/bottlerocket/faqs/)
