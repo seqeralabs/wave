@@ -92,7 +92,7 @@ These configurations are important for the Wave authentication to the repositori
 
 - **`wave.build.singularity-image-arm64`**: the ARM64 version of the Singularity image for the build process. The default is `quay.io/singularity/singularity:v3.11.4-slim-arm64`. *Optional*.
 
-- **`wave.build.repo`**: specifies the Container repository for the Container images built by Wave. This setting is required to define where the images will be stored. *Mandatory*.
+- **`wave.build.repo`**: specifies the container repository for the container images built by Wave. This setting is required to define where the images will be stored. *Mandatory*.
 
 - **`wave.build.cache`**: determines the Container repository used to cache layers of images built by Wave.  *Mandatory*.
 
