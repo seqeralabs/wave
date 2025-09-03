@@ -86,7 +86,7 @@ These configurations are important for the Wave authentication to the repositori
 
 - **`wave.build.cleanup`**: determines the cleanup strategy after the build process. Options include `OnSuccess`, meaning cleanup occurs only if the build is successful. *Optional*.
 
-- **`wave.build.buildkit-image`**: specifies the [Buildkit](https://github.com/moby/buildkit) Container image used in the Wave build process. The default is `moby/buildkit:v0.13.2-rootless`. *Optional*.
+- **`wave.build.buildkit-image`**: specifies the [Buildkit](https://github.com/moby/buildkit) container image used in the Wave build process. The default is `moby/buildkit:v0.13.2-rootless`. *Optional*.
 
 - **`wave.build.singularity-image`**: sets the [Singularity](https://quay.io/repository/singularity/singularity?tab=tags) image used in the build process. The default is `quay.io/singularity/singularity:v3.11.4-slim`. *Optional*.
 
