@@ -51,7 +51,7 @@ wave:
   server:
       url: "${WAVE_SERVER_URL:`http://localhost:9090`}"
   build:
-    buildkit-image: "moby/buildkit:v0.21.1-rootless"
+    buildkit-image: "moby/buildkit:v0.23.2-rootless"
     singularity-image: "public.cr.seqera.io/wave/singularity:v4.2.1-r4"
     # note changing this should be matching the micronaut.server.idle-timeout (see above)
     timeout: 900s
