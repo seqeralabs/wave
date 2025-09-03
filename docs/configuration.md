@@ -46,7 +46,7 @@ Container registry credentials can be defined in [`config.yml`](https://github.c
 These configurations are important for the Wave authentication to the repositories used to push or pull artifacts.
 :::
 
-- **`wave.registries.default`**: the default Container registry for Wave. The default is `docker.io`, and it represents the Docker Hub. *Optional*.
+- **`wave.registries.default`**: the default container registry for Wave. The default is `docker.io`, and it represents the Docker Hub. *Optional*.
 
 - **`wave.registries.docker.io.username`**: the Docker Hub username for authentication. It can be set using `${DOCKER_USER}` environment variable. *Optional*.
 
