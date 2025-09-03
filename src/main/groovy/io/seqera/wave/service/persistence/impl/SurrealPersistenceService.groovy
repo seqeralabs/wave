@@ -45,7 +45,7 @@ import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import jakarta.ws.rs.NotSupportedException
+import jakarta.transaction.NotSupportedException
 
 /**
  * Implements a persistence service based based on SurrealDB
