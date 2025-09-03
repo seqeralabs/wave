@@ -72,8 +72,7 @@ import static io.seqera.wave.util.RegHelper.layerName
 import static java.nio.file.StandardOpenOption.CREATE
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import static java.nio.file.StandardOpenOption.WRITE
-import static java.nio.file.attribute.PosixFilePermission.OWNER_READ
-import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
+
 /**
  * Implements container build service
  *
@@ -304,7 +303,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
             // copy the layer to the build context
             retryable.apply(()-> {
                 try (InputStream stream = streamService.stream(it.location, request.identity)) {
-                    TarUtils.untarGzip(stream, target)
+                    TarUtils.untarGzip(stream, target, false)
                 }
                 return
             })
@@ -317,7 +316,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         // copy the layer to the build context
         retryable.apply(()-> {
             try (InputStream stream = streamService.stream(buildContext.location, identity)) {
-                TarUtils.untarGzip(stream, contextDir)
+                TarUtils.untarGzip(stream, contextDir, false)
             }
             return
         })
