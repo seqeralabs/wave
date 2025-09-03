@@ -41,12 +41,14 @@
                 <p class="status-message">Container mirror failed</p>
             </div>
         {{else mirror_in_progress}}
+        <div class="error-progress">
             <div class="status-alert progress">
                 <div class="status-icon">
                     <div class="lds-dual-ring"></div>
                 </div>
                 <p class="status-message">Container mirror in progress</p>
             </div>
+        </div>
         {{/if}}
     </div>
 

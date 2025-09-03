@@ -1,4 +1,6 @@
-# Wave Database Migration from SurrealDB to PostgreSQL
+---
+title: Wave Database Migration from SurrealDB to PostgreSQL
+---
 
 ## Pre-requisites
 - Install [wave-cli] (https://github.com/seqeralabs/wave-cli)
@@ -28,7 +30,7 @@
 - ```bash
     curl <WAVE_URL>/view/mirrors/<mirrorId>
     ```
-1. Ensure you have all necessary credentials for both [SurrealDB](configuration.mdx#SurrealDB configuration) and [PostgreSQL](configuration.mdx#PostgreSQL configuration).
+1. Ensure you have all necessary credentials for both [SurrealDB](configuration.md#SurrealDB configuration) and [PostgreSQL](configuration.md#PostgreSQL configuration).
 2. Enable the following environment by adding them in `MICRONAUT_ENVIRONMENTS`:
   - `postgres`
   - `surrealdb`

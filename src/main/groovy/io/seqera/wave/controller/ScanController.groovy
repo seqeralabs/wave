@@ -32,6 +32,7 @@ import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.scan.ScanType
 import jakarta.inject.Inject
 
 /**
@@ -47,20 +48,29 @@ import jakarta.inject.Inject
 class ScanController {
     
     @Inject
-    private ContainerScanService containerScanService
+    private ContainerScanService scanService
 
     @Get("/v1alpha1/scans/{scanId}")
     HttpResponse<WaveScanRecord> scanImage(String scanId){
-        final record = containerScanService.getScanRecord(scanId)
+        final record = scanService.getScanRecord(scanId)
         return record
                 ? HttpResponse.ok(record)
                 : HttpResponse.<WaveScanRecord>notFound()
     }
 
+    @Produces(MediaType.TEXT_PLAIN)
+    @Get(value="/v1alpha1/scans/{scanId}/spdx")
+    HttpResponse<StreamedFile> getSbomSPDX(String scanId){
+        final report = scanService.fetchReportStream(scanId, ScanType.Spdx)
+        return report
+                ? HttpResponse.ok(report).header("Content-Disposition", "attachment; filename=\"spdx-${scanId}.json\"")
+                : HttpResponse.<StreamedFile>notFound()
+    }
+
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     @Get("/v1alpha1/scans/{scanId}/logs")
     HttpResponse<String> getScanLog(String scanId){
-        final logs = containerScanService.getScanRecord(scanId).logs
+        final logs = scanService.getScanRecord(scanId).logs
         return logs
                 ? (HttpResponse.ok(logs)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=${scanId}.log"))

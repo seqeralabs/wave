@@ -20,6 +20,7 @@ package io.seqera.wave.service.scan
 
 import spock.lang.Specification
 
+import java.nio.file.Files
 import java.nio.file.Path
 
 import io.micronaut.test.annotation.MockBean
@@ -40,6 +41,7 @@ class DockerScanStrategyTest extends Specification {
     ScanConfig mockConfig() {
         Mock(ScanConfig) {
             getCacheDirectory() >> Path.of('/some/scan/cache')
+            getReportsPath() >> Files.createTempDirectory('wave-test').toString()
         }
     }
 
@@ -57,6 +59,8 @@ class DockerScanStrategyTest extends Specification {
                 '--detach',
                 '--name',
                 'foo-123',
+                '--entrypoint',
+                '/bin/sh',
                 '-w',
                 '/some/scan/dir',
                 '-v',
