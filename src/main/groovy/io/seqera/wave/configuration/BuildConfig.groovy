@@ -131,6 +131,9 @@ class BuildConfig {
     @Value('${wave.build.logs.maxLength:100000}')
     long maxLength
 
+    @Value('${wave.build.storage-type:efs}')
+    String storageType
+
     @PostConstruct
     private void init() {
         log.info("Builder config: " +
@@ -151,7 +154,8 @@ class BuildConfig {
                 "oci-mediatypes=${ociMediatypes}; " +
                 "compression=${compression}; " +
                 "force-compression=${forceCompression}; " +
-                "retry-attempts=${retryAttempts}")
+                "retry-attempts=${retryAttempts}; "+
+                "storage-type=${storageType}")
         // minimal validation
         if( trustedTimeout < defaultTimeout ) {
             log.warn "Trusted build timeout should be longer than default timeout - check configuration setting 'wave.build.trusted-timeout'"

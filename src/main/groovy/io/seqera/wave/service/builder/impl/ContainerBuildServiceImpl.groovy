@@ -72,7 +72,8 @@ import static io.seqera.wave.util.RegHelper.layerName
 import static java.nio.file.StandardOpenOption.CREATE
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import static java.nio.file.StandardOpenOption.WRITE
-
+import static java.nio.file.attribute.PosixFilePermission.OWNER_READ
+import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
 /**
  * Implements container build service
  *
@@ -203,6 +204,10 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
                 final content = RegHelper.singularityRemoteFile(req.targetImage)
                 Files.write(remoteFile, content.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
                 // set permissions 600 as required by Singularity
+                if ("efs" == buildConfig.storageType) {
+                    Files.setPosixFilePermissions(configFile, Set.of(OWNER_READ, OWNER_WRITE))
+                    Files.setPosixFilePermissions(remoteFile, Set.of(OWNER_READ, OWNER_WRITE))
+                }
             }
             // save layers provided via the container config
             if( req.containerConfig ) {
@@ -304,7 +309,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
             // copy the layer to the build context
             retryable.apply(()-> {
                 try (InputStream stream = streamService.stream(it.location, request.identity)) {
-                    TarUtils.untarGzip(stream, target, false)
+                    TarUtils.untarGzip(stream, target, ("efs" == buildConfig.storageType))
                 }
                 return
             })
