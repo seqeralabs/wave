@@ -322,7 +322,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         // copy the layer to the build context
         retryable.apply(()-> {
             try (InputStream stream = streamService.stream(buildContext.location, identity)) {
-                TarUtils.untarGzip(stream, contextDir, false)
+                TarUtils.untarGzip(stream, contextDir, ("efs" == buildConfig.storageType))
             }
             return
         })
