@@ -171,6 +171,34 @@ To build Singularity native images, disable both `singularity.ociAutoPull` and `
 
 </details>
 
+### Mirror containers across registries
+
+Wave enables mirroring, i.e., copying containers used by your pipeline to a container registry of your choice.
+Your pipeline can then pull containers from the target registry instead of the original registry.
+
+<details open>
+<summary>**Build Singularity containers**</summary>
+
+To enable mirroring, add the following to your Nextflow configuration file:
+
+```groovy
+wave.enabled = true
+wave.mirror = true
+wave.build.repository = '<BUILD_REPOSITORY>'
+tower.accessToken = '<TOWER_ACCESS_TOKEN>'
+```
+
+Replace the following:
+
+- `<BUILD_REPOSITORY>`: the repository to store your built containers
+- `<TOWER_ACCESS_TOKEN>`: your Seqera access token
+
+:::note
+You must provide credentials through the Seqera Platform credentials manager to allow pushing containers to the build repository. See [Nextflow and Wave](./tutorials/nextflow-wave.mdx) for a detailed guide.
+:::
+
+</details>
+
 ### Use Wave with Fusion
 
 Wave containers allow you to run your containerized workflow with the Fusion file system.
@@ -193,13 +221,14 @@ The following Nextflow configuration options are available:
 
 | Method                       | Description                                                                                                                                                              |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `wave.enabled`               | Enable/disable the execution of Wave containers                                                                                                                          |
-| `wave.endpoint`              | The Wave service endpoint (default: `https://wave.seqera.io`)                                                                                                            |
-| `wave.build.repository`      | The container repository where images built by Wave are uploaded. You must provide corresponding credentials in your Platform account.                            |
-| `wave.build.cacheRepository` | The container repository used to cache image layers built by the Wave service. You must provide corresponding credentials in your Platform account.               |
+| `wave.enabled`               | Enable/disable the execution of Wave containers.                                                                                                                         |
+| `wave.endpoint`              | The Wave service endpoint (default: `https://wave.seqera.io`).                                                                                                           |
+| `wave.build.repository`      | The container repository where images built by Wave are uploaded. You must provide corresponding credentials in your Platform account.                                   |
+| `wave.build.cacheRepository` | The container repository used to cache image layers built by the Wave service. You must provide corresponding credentials in your Platform account.                      |
 | `wave.conda.mambaImage`      | The Mamba container image used to build Conda-based containers. This should be a [micromamba-docker](https://github.com/mamba-org/micromamba-docker) image.              |
 | `wave.conda.commands`        | One or more commands to add to the Dockerfile used to build a Conda-based image.                                                                                         |
-| `wave.strategy`              | The strategy used when resolving ambiguous Wave container requirements (default: `'container,dockerfile,conda'`)                                                         |
+| `wave.mirror`                | Enable Wave container mirroring (default: false).                                                                                                                        |
+| `wave.strategy`              | The strategy used when resolving ambiguous Wave container requirements (default: `'container,dockerfile,conda'`).                                                        |
 | `wave.freeze`                | When `freeze` mode is enabled, containers provisioned by Wave are stored permanently in the repository specified by `wave.build.repository`.                             |
 
 ## Limitations

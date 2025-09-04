@@ -18,7 +18,7 @@ To get started with Wave:
 Wave is also available as a hosted service on [Seqera Platform](https://cloud.seqera.io/). For Seqera Enterprise customers, a licensed self-hosted Wave solution is also available. [Contact us](https://seqera.io/contact-us/) for more information.
 :::
 
-[started]: ./get-started/index.mdx
+[started]: ./tutorials/index.md
 [nf]: ./nextflow.md
 [cli]: ./cli/index.md
 
@@ -77,9 +77,9 @@ Due to the Singularity image format's peculiarities, Wave's freeze mode is manda
 
 ### Deploying containers across multi-clouds
 
-Cloud vendors provide integrated container registries, providing better performance and cost-efficiency than central, remote registries.
-This requires mirroring container collections across multiple accounts, regions, and cloud providers when deploying multi-cloud pipelines.
-Wave streamlines this process by provisioning the required containers to the target registry on demand during pipeline execution.
+Cloud vendors provide integrated container registries with better performance and cost-efficiency than central, remote registries.
+Storing container images in a private registry also enhances security and provide faster access with greater control.
+Wave mirroring addresses these needs by copying containers to your chosen registry while preserving the original manifest, image name, and hash, and ensuring images remain unmodified and accessible via the original build hash.
 
 ### Container security scanning
 

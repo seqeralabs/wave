@@ -1,22 +1,34 @@
 ---
 title: Nextflow and Wave
 description: Provision containers with Wave directly from your Nextflow pipelines
+tags: [containers, nextflow, wave]
 ---
 
-You can provision containers with Wave directly from your Nextflow pipelines.
+Wave integrates seamlessly into Nextflow pipelines by automatically provisioning containers on demand based on your specified Conda dependencies.
 
-**Prerequisites**
+This guide describes how to provision containers with Wave directly from your Nextflow pipelines. It includes:
 
-- You have an account with a container registry, such as DockerHub, and an access token that provides write access to your container repository.
-- You have a Seqera account to log into Platform.
-- You have either [Docker Desktop] or [Podman] installed locally.
-- You have [Nextflow] 23.10.x or newer installed locally.
+- Creating a Seqera access token.
+- Adding your container registry credentials to Seqera.
+- Creating a Nextflow pipeline that uses the container.
+- Running the Nextflow pipeline.
 
-In this guide, you'll build a container from a Nextflow module and freeze that package in your private container repository.
+:::info[**Prerequisites**]
+You will need the following to get started:
+
+- An account with a container registry, such as DockerHub, and an access token that provides write access to your container repository.
+- A Seqera account to log into Platform.
+- Either [Docker Desktop] or [Podman] installed locally.
+- [Nextflow] 23.10.x or newer installed locally.
+:::
 
 ## Create your Seqera access token
 
-1. Log in to Seqera.
+A Seqera access token is your personal authentication key that enables access to Seqera Platform services.
+
+To create a Seqera access token:
+
+1. Log in to [Platform](https://cloud.seqera.io/login).
 1. From your personal workspace: Go to the user menu and select **Settings > Your tokens**.
 1. Select **Add token**.
 1. Enter a unique name for your token, then select **Add**.
@@ -28,13 +40,15 @@ In this guide, you'll build a container from a Nextflow module and freeze that p
 
 1. In a terminal window, assign your access token to the `TOWER_ACCESS_TOKEN` environment variable:
 
+    ```bash
+    export TOWER_ACCESS_TOKEN=<ACCESS_TOKEN>
     ```
-    export TOWER_ACCESS_TOKEN=<token_token>
-    ```
+
+    Replace `<ACCESS_TOKEN>` with the access token you created.
 
 ## Add your container registry credentials to Seqera
 
-When freezing a container to the build repository that you specify, Wave uses Seqera to obtain your registry access credentials. If you use Docker as your container registry, complete the following steps:
+When freezing a container to the build repository that you specify, Wave uses Seqera to obtain your registry access credentials.
 
 To create your access token in Docker Hub:
 
@@ -76,7 +90,7 @@ Nextflow can use Wave to seamlessly build a container directly from a Dockerfile
     }
 
     wave {
-      build.repository = '<repo_uri>'
+      build.repository = '<REPO_URI>'
       wave.freeze = true
     }
 
@@ -85,9 +99,9 @@ Nextflow can use Wave to seamlessly build a container directly from a Dockerfile
     }
     ```
 
-    The `<repo_uri>` must be substituted with your private container repository.
+    Replace `<REPO_URI>` with your private container repository.
 
-1. Create a `wave.nf` file with the following contents:
+1. Create a `main.nf` file with the following contents:
 
     ```nextflow
     include { HELLO } from './modules/gamma'
@@ -97,14 +111,15 @@ Nextflow can use Wave to seamlessly build a container directly from a Dockerfile
     }
     ```
 
-1. Create a directory for the module:
-    ```
+1. Create a module directory:
+
+    ```bash
     mkdir -p modules/gamma
     ```
 
-1. Create the `modules/gamma/main.nf` file for the module:
+1. Create the `modules/gamma/main.nf` file for the module with the following contents:
 
-    ```
+    ```nextflow
     process HELLO {
       debug true
 
@@ -114,9 +129,9 @@ Nextflow can use Wave to seamlessly build a container directly from a Dockerfile
     }
     ```
 
-1. Create the `modules/gamma/Dockerfile` file for the module:
+1. Create the `modules/gamma/Dockerfile` file for the module and add following contents:
 
-    ```
+    ```docker
     FROM alpine
 
     RUN apk update && apk add bash cowsay \
@@ -130,16 +145,16 @@ Nextflow can use Wave to seamlessly build a container directly from a Dockerfile
 
 ## Run the Nextflow pipeline
 
-To run the pipeline, and initiate the Wave container build, enter the following command:
+To run the pipeline, and initiate the Wave container build, run the following command:
 
-```
-nextflow run wave.nf -with-wave
+```bash
+nextflow run main.nf -with-wave
 ```
 
-The output from a successful execution is displayed in the following example:
+If successful, you will see output similar to the following:
 
-```
-Launching `wave.nf` [naughty_wiles] DSL2 - revision: 3756d705d9
+```console
+Launching `main.nf` [naughty_wiles] DSL2 - revision: 3756d705d9
 
 executor >  local (1)
 [c1/6d7d9d] HELLO | 1 of 1 ✔
@@ -153,12 +168,16 @@ executor >  local (1)
                 ||     ||
 ```
 
+## Next steps
+
+Learn more about [Nextflow's integration][nextflow-int] with Wave.
+
 [sc]: https://seqera.io/containers/
 [conda]: https://docs.conda.io/en/latest/
 [Nextflow]: https://www.nextflow.io/docs/latest/install.html
+[nextflow-int]: /wave_docs/wave_repo/docs/nextflow.md
 [Podman]: https://podman.io/docs/installation
 [Docker Desktop]: https://www.docker.com/products/docker-desktop/
-
-[wave-build]: /wave_docs/wave_repo/docs/cli/reference.md#build-a-container
+[wave-build]: /wave_docs/wave_repo/docs/cli/use-cases.md#build-a-container
 [nf-config]: /wave_docs/wave_repo/docs/nextflow.md#configuration-options
 [wave-cli]: /wave_docs/wave_repo/docs/cli/index.md
