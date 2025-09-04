@@ -132,12 +132,6 @@ class K8sServiceImpl implements K8sService {
     // check this link to know more about these options https://github.com/moby/buildkit/tree/master/examples/kubernetes#kubernetes-manifests-for-buildkit
     private final static Map<String,String> BUILDKIT_FLAGS = ['BUILDKITD_FLAGS': '--oci-worker-no-process-sandbox']
 
-    private Map<String, String> getBuildkitAnnotations(String containerName, boolean singularity) {
-        if( singularity )
-            return null
-        final key = "container.apparmor.security.beta.kubernetes.io/${containerName}".toString()
-        return Map.of(key, "unconfined")
-    }
 
     /**
      * Validate config setting
@@ -328,7 +322,6 @@ class K8sServiceImpl implements K8sService {
                 .withNamespace(namespace)
                 .withName(name)
                 .addToLabels(labels)
-                .addToAnnotations(getBuildkitAnnotations(name,singularity))
                 .endMetadata()
 
         //spec section
@@ -365,6 +358,12 @@ class K8sServiceImpl implements K8sService {
                     // buildCommand is to set entrypoint for buildkit
                     .withCommand(BUILDKIT_ENTRYPOINT)
                     .withArgs(args)
+                    .withNewSecurityContext()
+                        .withPrivileged(false)
+                        .withNewAppArmorProfile()
+                            .withType("Unconfined")
+                        .endAppArmorProfile()
+                    .endSecurityContext()
         }
 
         // spec section
@@ -613,7 +612,6 @@ class K8sServiceImpl implements K8sService {
                 .withPodFailurePolicy(failurePolicy())
                 .withNewTemplate()
                 .withNewMetadata()
-                .addToAnnotations(getBuildkitAnnotations(name,singularity))
                 .endMetadata()
                 .editOrNewSpec()
                 .withDnsConfig(dnsConfig())
@@ -665,6 +663,12 @@ class K8sServiceImpl implements K8sService {
             // buildCommand is to set entrypoint for buildkit
                     .withCommand(BUILDKIT_ENTRYPOINT)
                     .withArgs(args)
+                    .withNewSecurityContext()
+                        .withPrivileged(false)
+                        .withNewAppArmorProfile()
+                            .withType("Unconfined")
+                        .endAppArmorProfile()
+                    .endSecurityContext()
         }
 
         // spec section

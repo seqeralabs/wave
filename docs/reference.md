@@ -43,7 +43,6 @@ Configure general Wave application settings, such as application name, port, ano
 : Sets the [logger level](https://logging.apache.org/log4j/2.x/manual/customloglevels.html) for the `io.seqera` package (default: `TRACE`).
 : Adjust levels based on logging requirements.
 
-
 ## Container registry
 
 Wave uses the generic format `wave.registries.<REGISTRY_NAME>.username` and `wave.registries.<REGISTRY_NAME>.password` for registry authentication.
