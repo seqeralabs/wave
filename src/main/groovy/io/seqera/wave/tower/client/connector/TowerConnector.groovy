@@ -132,13 +132,14 @@ abstract class TowerConnector {
     }
 
     protected ExponentialAttempt newAttempt(int attempt) {
-        def exponentialAttempt = new ExponentialAttempt()
-        exponentialAttempt
+        new ExponentialAttempt()
+                .builder()
                 .withAttempt(attempt)
                 .withMaxDelay(retryMaxDelay)
                 .withBackOffBase(retryBackOffBase)
                 .withBackOffDelay(retryBackOffDelay)
                 .withMaxAttempts(maxAttempts)
+                .build()
     }
 
     @CompileDynamic
