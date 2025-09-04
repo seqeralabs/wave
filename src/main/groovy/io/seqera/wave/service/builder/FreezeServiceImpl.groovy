@@ -131,7 +131,7 @@ class FreezeServiceImpl implements FreezeService {
         if( layers ) {
             result += '%files\n'
             for(int i=0; i<layers.size(); i++) {
-                result += "  {{wave_context_dir}}/${layerDir(layers[i])}/* /\n"
+                result += "  {{wave_context_dir}}/${layerDir(layers[i])} /tmp/layers/${layerDir(layers[i])}\n"
             }
         }
 
