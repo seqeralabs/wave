@@ -47,7 +47,7 @@ docker run $(wave -i alpine --layer new-layer) sh -c hello.sh
 ```
 </details>
 
-## Build a container from conda packages
+## Build a container from Conda packages
 
 The Wave CLI supports building a container from a list of [Conda][conda] packages.
 

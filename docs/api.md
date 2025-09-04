@@ -189,7 +189,7 @@ The endpoint returns the name of the container request made available by Wave.
 | `type`                              | This represents the type of package builder. Use `CONDA`.                                                                                   |
 | `entries`                           | List of the packages names.                                                                                                                                    |
 | `channels`                          | List of Conda channels, which will be used to download packages.                                                                                               |
-| `mambaImage`                        | Name of the docker image used to build Conda containers.                                                                                              |
+| `mambaImage`                        | Name of the Docker image used to build Conda containers.                                                                                              |
 | `commands`                          | Command to be included in the container.                                                                                                                       |
 | `basePackages`                      | Names of base packages.                                                                                                                                        |
 | `nameStrategy`                      | The name strategy to be used to create the name of the container built by Wave. Its values can be `none`, `tagPrefix`, or `imageSuffix`.                       |                                                     |
@@ -217,7 +217,7 @@ The endpoint returns the name of the container request made available by Wave.
 
 ### Examples
 
-1. Create docker image with conda packages
+1. Create Docker image with Conda packages:
 
 ##### Request
 
@@ -246,7 +246,7 @@ curl --location 'http://localhost:9090/v1alpha2/container' \
 }
 ```
 
-2. Create singularity image with conda packages
+2. Create Singularity image with Conda packages:
 
 ##### Request
 
