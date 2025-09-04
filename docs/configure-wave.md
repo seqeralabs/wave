@@ -1,8 +1,8 @@
 ---
-title: Common operations
+title: Configure Wave
 ---
 
-This page describes common operations to set up and configure Wave. See [Reference](../wave-application.md) for a full list of Wave configuration options.
+This page describes common operations to set up and configure Wave. See [Reference](./reference.md) for a full list of Wave configuration options.
 
 ## Email notifications
 
