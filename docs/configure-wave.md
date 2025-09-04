@@ -2,7 +2,11 @@
 title: Configure Wave
 ---
 
-This page describes common operations to set up and configure Wave. See [Reference](./reference.md) for a full list of Wave configuration options.
+This page describes common operations to set up and configure Wave.
+
+:::info
+See [Reference](./reference.md) for a full list of Wave configuration options.
+:::
 
 ## Email notifications
 
