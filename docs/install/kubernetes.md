@@ -7,7 +7,7 @@ Wave enables you to provision container images on-demand, removing the need to b
 This installation guide covers Wave in [Lite](../wave-lite.md) mode. Wave Lite provides container augmentation and inspection capabilities on AWS, Azure, and GCP cloud deployments, and enables the use of Fusion file system in Nextflow pipelines.
 
 :::info
-Wave's full build capabilities require specific integrations with Kubernetes and AWS EFS Storage, making EKS and AWS a hard dependency for fully-featured deployments. After you have configured a base Wave Lite installation on AWS with this guide, see [Configure Wave Build](../configure-wave-build.md) to extend your installation to support build capabilities.
+Wave's full build capabilities require specific integrations with Kubernetes and AWS EFS Storage, making EKS and AWS a hard dependency for fully-featured deployments. After you have configured a base Wave Lite installation on AWS with this guide, see [Configure Wave Build](./configure-wave-build.md) to extend your installation to support build capabilities.
 :::
 
 ## Prerequisites

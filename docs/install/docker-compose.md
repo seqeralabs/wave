@@ -217,4 +217,4 @@ services:
 
 ### Advanced configuration
 
-See [Configuring Wave](./configure-wave.md) for advanced Wave features, scaling guidance, and integration options.
+See [Configuring Wave](../configure-wave.md) for advanced Wave features, scaling guidance, and integration options.

@@ -148,7 +148,7 @@ data:
           namespace: "wave-build"
           storage:
             mountPath: "/build"
-            # Relevant volume claim name should match the 
+            # Relevant volume claim name should match the
             claimName: "wave-build-pvc"
           serviceAccount: "wave-build-sa"
           resources:
@@ -347,4 +347,4 @@ Set up monitoring for build operations:
 - **Storage access issues** - Ensure EFS access points are configured correctly
 - **Build timeouts** - Adjust build timeout settings based on workload requirements
 
-For additional configuration options and advanced features, see [Configuring Wave](./configure-wave.md).
+For additional configuration options and advanced features, see [Configuring Wave](../configure-wave.md).
