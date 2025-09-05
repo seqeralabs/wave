@@ -70,7 +70,6 @@ class DockerBuildStrategy extends BuildStrategy {
 
         if( req.buildContext ) {
             runExtractContext(req.workDir)
-            runDeleteContextContent(req.workDir)
         }
 
         final process = new ProcessBuilder()
@@ -102,20 +101,9 @@ class DockerBuildStrategy extends BuildStrategy {
 
     protected static void runExtractContext(Path workDir) {
         log.debug("Extracting context archive: $workDir/context/content")
-        def tarCmd = "tar -xzvf $workDir/context/content -C $workDir/context".toString()
+        def tarCmd = "tar -xzvf $workDir/compressedcontext -C $workDir/context".toString()
         log.debug("Context extract command: $tarCmd")
         def process = tarCmd.execute()
-        process.waitFor()
-        if (process.exitValue() != 0) {
-            throw new RuntimeException("Failed to extract context")
-        }
-    }
-
-    protected static void runDeleteContextContent(Path workDir) {
-        log.debug("Deleting context archive: $workDir/context/content")
-        final deleteCmd = "rm -f $workDir/context/content".toString()
-        log.debug("Context extract command: $deleteCmd")
-        def process = deleteCmd.execute()
         process.waitFor()
         if (process.exitValue() != 0) {
             throw new RuntimeException("Failed to extract context")

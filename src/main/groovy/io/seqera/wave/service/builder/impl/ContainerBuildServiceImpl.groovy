@@ -183,7 +183,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
             Files.write(containerFile, containerFile0(req, context).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             // save build context
             if( req.buildContext ) {
-                saveBuildContext(req.buildContext, context, req.identity)
+                saveBuildContext(req.buildContext, req.workDir, req.identity)
             }
             // save the conda file
             if( req.condaFile ) {
@@ -309,10 +309,10 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         }
     }
 
-    protected void saveBuildContext(BuildContext buildContext, Path contextDir, PlatformId identity) {
+    protected void saveBuildContext(BuildContext buildContext, Path workDir, PlatformId identity) {
         // retry strategy
-        final retryable = retry0("Unable to copy '${buildContext.location} to build context '${contextDir}'")
-        final target = contextDir.resolve("content")
+        final retryable = retry0("Unable to copy '${buildContext.location} to work directory '${workDir}'")
+        final target = workDir.resolve("compressedcontext")
         try { Files.createDirectory(target) }
         catch (FileAlreadyExistsException e) { /* ignore */ }
         // copy the layer to the build context
