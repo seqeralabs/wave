@@ -1,5 +1,5 @@
 ---
-title: Nextflow integration
+title: Use cases
 ---
 
 You can use Wave directly from your Nextflow pipelines. Nextflow integration with Wave supports private repositories, container freezing, and conda packages.
