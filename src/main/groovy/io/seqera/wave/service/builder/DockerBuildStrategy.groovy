@@ -100,7 +100,7 @@ class DockerBuildStrategy extends BuildStrategy {
 
     protected static void runExtractContext(Path workDir) {
         log.debug("Extracting context archive: $workDir/context/content")
-        def tarCmd = unTarContextCommand(workDir)
+        def tarCmd = "tar -xzf $workDir/context/content -C $workDir/context".toString()
         log.debug("Context extract command: $tarCmd")
         def process = tarCmd.execute()
         process.waitFor()
@@ -111,7 +111,7 @@ class DockerBuildStrategy extends BuildStrategy {
 
     protected static void runDeleteContextContent(Path workDir) {
         log.debug("Deleting context archive: $workDir/context/content")
-        final deleteCmd = deleteContextCommand(workDir)
+        final deleteCmd = "rm -f $workDir/context/content".toString()
         log.debug("Context extract command: $deleteCmd")
         def process = deleteCmd.execute()
         process.waitFor()

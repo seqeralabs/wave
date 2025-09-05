@@ -122,12 +122,4 @@ abstract class BuildStrategy {
         return result.toString()
     }
 
-    static protected String unTarContextCommand(Path workDir) {
-        "tar -xf $workDir/context/content -C $workDir/context".toString()
-    }
-
-    static protected String deleteContextCommand(Path workDir) {
-        "rm -f $workDir/context/content".toString()
-    }
-
 }

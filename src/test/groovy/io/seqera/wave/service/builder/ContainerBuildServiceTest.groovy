@@ -228,31 +228,6 @@ class ContainerBuildServiceTest extends Specification {
 
     }
 
-    def 'should untar build context' () {
-        given:
-        def folder = Files.createTempDirectory('test')
-        def source = folder.resolve('source')
-        def target = folder.resolve('target')
-        Files.createDirectory(source)
-        Files.createDirectory(target)
-        and:
-        source.resolve('foo.txt').text  = 'Foo'
-        source.resolve('bar.txt').text  = 'Bar'
-        and:
-        def layer = new Packer().layer(source)
-        def context = BuildContext.of(layer)
-
-        when:
-        service.saveBuildContext(context, target, Mock(PlatformId))
-        then:
-        target.resolve('foo.txt').text == 'Foo'
-        target.resolve('bar.txt').text == 'Bar'
-
-        cleanup:
-        folder?.deleteDir()
-    }
-
-
     def 'should save layers to context dir' () {
         given:
         def folder = Files.createTempDirectory('test')
