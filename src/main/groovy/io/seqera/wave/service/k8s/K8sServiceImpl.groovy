@@ -654,7 +654,7 @@ class K8sServiceImpl implements K8sService {
                         .withName("permissions-fix")
                         .withImage("busybox")
                         .withCommand("sh", "-c", "cp -r /tmp/singularity/* /singularity && chown -R 1000:1000 /singularity")
-                        .withVolumeMounts(mounts)
+                        .withVolumeMounts(initMounts)
                         .build()
                 )
             }
