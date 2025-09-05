@@ -312,10 +312,13 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     protected void saveBuildContext(BuildContext buildContext, Path contextDir, PlatformId identity) {
         // retry strategy
         final retryable = retry0("Unable to copy '${buildContext.location} to build context '${contextDir}'")
+        final target = contextDir.resolve("content")
+        try { Files.createDirectory(target) }
+        catch (FileAlreadyExistsException e) { /* ignore */ }
         // copy the layer to the build context
         retryable.apply(()-> {
             try (InputStream stream = streamService.stream(buildContext.location, identity)) {
-                TarUtils.untarGzip(stream, contextDir)
+                Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING)
             }
             return
         })

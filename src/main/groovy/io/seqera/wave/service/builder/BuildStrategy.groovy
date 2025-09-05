@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.builder
 
+import java.nio.file.Path
+
 import groovy.transform.CompileStatic
 import io.seqera.wave.configuration.BuildConfig
 import jakarta.inject.Inject
@@ -118,6 +120,14 @@ abstract class BuildStrategy {
         result << ",oci-mediatypes=${config.ociMediatypes}"
         result << compressOpts(req, config)
         return result.toString()
+    }
+
+    static protected String unTarContextCommand(Path workDir) {
+        "tar -xf $workDir/context/content -C $workDir/context".toString()
+    }
+
+    static protected String deleteContextCommand(Path workDir) {
+        "rm -f $workDir/context/content".toString()
     }
 
 }

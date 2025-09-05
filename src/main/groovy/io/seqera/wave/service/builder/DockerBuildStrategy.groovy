@@ -67,7 +67,10 @@ class DockerBuildStrategy extends BuildStrategy {
                     cmdToStr(buildCmd).bytes,
                     CREATE, WRITE, TRUNCATE_EXISTING)
         }
-        
+
+        runExtractContext(req.workDir)
+        runDeleteContextContent(req.workDir)
+
         final process = new ProcessBuilder()
             .command(buildCmd)
             .directory(req.workDir.toFile())
@@ -93,6 +96,28 @@ class DockerBuildStrategy extends BuildStrategy {
                 : cmdForSingularity(jobName, req.workDir, credsFile, req.platform)
 
         return dockerCmd + launchCmd(req)
+    }
+
+    protected static void runExtractContext(Path workDir) {
+        log.debug("Extracting context archive: $workDir/context/content")
+        def tarCmd = unTarContextCommand(workDir)
+        log.debug("Context extract command: $tarCmd")
+        def process = tarCmd.execute()
+        process.waitFor()
+        if (process.exitValue() != 0) {
+            throw new RuntimeException("Failed to extract context")
+        }
+    }
+
+    protected static void runDeleteContextContent(Path workDir) {
+        log.debug("Deleting context archive: $workDir/context/content")
+        final deleteCmd = deleteContextCommand(workDir)
+        log.debug("Context extract command: $deleteCmd")
+        def process = deleteCmd.execute()
+        process.waitFor()
+        if (process.exitValue() != 0) {
+            throw new RuntimeException("Failed to extract context")
+        }
     }
 
     protected List<String> cmdForBuildkit(String name, Path workDir, Path credsFile, ContainerPlatform platform ) {
