@@ -72,8 +72,6 @@ import static io.seqera.wave.util.RegHelper.layerName
 import static java.nio.file.StandardOpenOption.CREATE
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import static java.nio.file.StandardOpenOption.WRITE
-import static java.nio.file.attribute.PosixFilePermission.OWNER_READ
-import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
 /**
  * Implements container build service
  *
@@ -185,7 +183,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
             Files.write(containerFile, containerFile0(req, context).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             // save build context
             if( req.buildContext ) {
-                saveBuildContext(req.buildContext, context, req.identity)
+                saveBuildContext(req.buildContext, req.workDir, req.identity)
             }
             // save the conda file
             if( req.condaFile ) {
@@ -203,9 +201,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
                 final remoteFile = req.workDir.resolve('singularity-remote.yaml')
                 final content = RegHelper.singularityRemoteFile(req.targetImage)
                 Files.write(remoteFile, content.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
-                // set permissions 600 as required by Singularity
-                Files.setPosixFilePermissions(configFile, Set.of(OWNER_READ, OWNER_WRITE))
-                Files.setPosixFilePermissions(remoteFile, Set.of(OWNER_READ, OWNER_WRITE))
             }
             // save layers provided via the container config
             if( req.containerConfig ) {
@@ -307,20 +302,23 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
             // copy the layer to the build context
             retryable.apply(()-> {
                 try (InputStream stream = streamService.stream(it.location, request.identity)) {
-                    TarUtils.untarGzip(stream, target)
+                    Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING)
                 }
                 return
             })
         }
     }
 
-    protected void saveBuildContext(BuildContext buildContext, Path contextDir, PlatformId identity) {
+    protected void saveBuildContext(BuildContext buildContext, Path workDir, PlatformId identity) {
         // retry strategy
-        final retryable = retry0("Unable to copy '${buildContext.location} to build context '${contextDir}'")
+        final retryable = retry0("Unable to copy '${buildContext.location} to work directory '${workDir}'")
+        final target = workDir.resolve("compressedcontext")
+        try { Files.createDirectory(target) }
+        catch (FileAlreadyExistsException e) { /* ignore */ }
         // copy the layer to the build context
         retryable.apply(()-> {
             try (InputStream stream = streamService.stream(buildContext.location, identity)) {
-                TarUtils.untarGzip(stream, contextDir)
+                Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING)
             }
             return
         })

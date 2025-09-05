@@ -127,8 +127,8 @@ class FreezeServiceImplTest extends Specification  {
             BootStrap: docker
             From: ubuntu:latest
             %files
-              {{wave_context_dir}}/layer-digest1/* /
-              {{wave_context_dir}}/layer-digest2/* /
+              {{wave_context_dir}}/layer-digest1 /opt/layers/layer-digest1
+              {{wave_context_dir}}/layer-digest2 /opt/layers/layer-digest2
             %environment
               export FOO=1 BAR=2
             %runscript

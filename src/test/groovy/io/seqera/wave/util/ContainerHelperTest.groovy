@@ -57,6 +57,13 @@ class ContainerHelperTest extends Specification {
                 BootStrap: docker
                 From: mambaorg/micromamba:1.5.10-noble
                 %post
+                    if ls /opt/layers/* 1> /dev/null 2>&1; then
+                        for layer in /opt/layers/layer-*; do
+                            echo "Extracting $layer"
+                            tar -xzf "$layer" -C / 2>/dev/null || tar -xf "$layer" -C / || true
+                        done
+                        rm -rf /opt/layers
+                    fi
                     micromamba install -y -n base -c conda-forge -c defaults -f https://foo.com/lock.yml
                     micromamba install -y -n base foo::one bar::two
                     micromamba env export --name base --explicit > environment.lock
@@ -114,6 +121,13 @@ class ContainerHelperTest extends Specification {
                 %files
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
+                    if ls /opt/layers/* 1> /dev/null 2>&1; then
+                        for layer in /opt/layers/layer-*; do
+                            echo "Extracting $layer"
+                            tar -xzf "$layer" -C / 2>/dev/null || tar -xf "$layer" -C / || true
+                        done
+                        rm -rf /opt/layers
+                    fi
                     micromamba install -y -n base -f /scratch/conda.yml
                     micromamba install -y -n base foo::one bar::two
                     micromamba env export --name base --explicit > environment.lock
