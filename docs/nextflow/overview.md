@@ -2,6 +2,8 @@
 title: Overview
 ---
 
+Wave container provisioning service seamlessly integrates with Nextflow pipelines to streamline container management and deployment. When used with Nextflow, Wave automatically handles container building, provisioning, and optimization, eliminating the complexity of manual container management in your workflow execution.
+
 With Wave and Nextflow, you can:
 
 - Build container images automatically from Dockerfiles or Conda environments
