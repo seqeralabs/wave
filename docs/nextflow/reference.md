@@ -3,9 +3,11 @@ title: Reference
 tags: [nextflow, reference, wave]
 ---
 
+This reference lists the Wave configuration variables that can be used to customize Wave behavior in your Nextflow pipelines. These settings are configured in the Nextflow configuration file (`nextflow.config`) of your pipeline. See [Configuration](https://www.nextflow.io/docs/latest/config.html) for more information about Nextflow configuration.
+
 ## General
 
-Configure general Wave settings with the following options:
+Use the following options to configure general Wave settings:
 
 `wave.enabled`
 : Enables the execution of Wave containers (default: `false`).
@@ -14,7 +16,7 @@ Configure general Wave settings with the following options:
 : Specifies the Wave service endpoint (default: `https://wave.seqera.io`).
 
 `wave.freeze`
-: Enables freeze mode to permanently store provisioned Wave containers in the repository specified by `wave.build.repository`.(default: `false`).
+: Enables freeze mode to permanently store provisioned Wave containers in the repository specified by `wave.build.repository` (default: `false`).
 
 `wave.mirror`
 : Enables Wave container mirroring (default: `false`).
@@ -24,7 +26,7 @@ Configure general Wave settings with the following options:
 
 ## Build
 
-Configure build settings with the following options:
+Use the following options to configure build settings:
 
 `wave.build.cacheRepository`
 : Specifies the container repository URL for caching image layers built by the Wave service.
@@ -37,7 +39,7 @@ Configure build settings with the following options:
 : Sets the compression level used when building containers. Valid ranges depend on compression type: 0-9 for `gzip/estargz`, 0-22 for `zstd`. Higher values provide better compression but slower build times.
 
 `wave.build.compression.mode`
-: Sets the compression algorithm for container builds. Valid options are `gzip`, `estargz`, or `zstd`. (default: `gzip`).
+: Sets the compression algorithm for container builds. Valid options are `gzip`, `estargz`, or `zstd` (default: `gzip`).
 
 `wave.build.conda.basePackages`
 : Sets Conda packages to always include in the container (default: `conda-forge::procps-ng`).
@@ -46,7 +48,7 @@ Configure build settings with the following options:
 : Sets commands to add to the Dockerfile for Conda-based images.
 
 `wave.build.conda.mambaImage`
-: Specifies additional the Mamba container image used for building Conda-based containers.
+: Specifies the Mamba container image used for building Conda-based containers.
   Must be a [micromamba-docker](https://github.com/mamba-org/micromamba-docker) compatible image.
 
 `wave.build.repository`
@@ -55,7 +57,7 @@ Configure build settings with the following options:
 
 ## Conda
 
-Configure Conda settings with the following options:
+Use the following options to configure Conda settings:
 
 `wave.conda.mambaImage`
 : Specifies the Mamba container image used for building Conda-based containers.
@@ -67,20 +69,20 @@ Configure Conda settings with the following options:
 
 ## HTTP client
 
-Configure HTTP client settings with the following options:
+Use the following options to configure HTTP client settings:
 
 `wave.httpClient.connectTimeout`
-: Sets the initial delay before retrying failed HTTP requests (default: `30s`).
+: Sets the connection timeout for the Wave HTTP client  (default: `30s`).
 
 `wave.httpClient.maxRate`
 : Sets the maximum request rate for the Wave HTTP client (default: `1/sec`).
 
 ## Retry policy
 
-Configure retry policy settings with the following options:
+Use the following options to configure retry policy settings:
 
 `wave.retryPolicy.delay`
-: Sets the initial delay when retrying failing HTTP requests (default: `450ms`).
+: Sets the delay when retrying failing HTTP requests (default: `450ms`).
 
 `wave.retryPolicy.jitter`
 : Sets the jitter factor for randomly varying retry delays (default: `0.25`).
@@ -93,11 +95,11 @@ Configure retry policy settings with the following options:
 
 ## Scan
 
-Configure scan settings with the following options:
+Use the following options to configure scan settings:
 
 `wave.scan.allowedLevels`
 : Specifies a comma-separated list of allowed vulnerability levels for container scanning. Requires `wave.scan.mode = 'required'` to be set.
-: Options include: `low`, `medium`, `high`, `critical`.
+  Options include: `low`, `medium`, `high`, `critical`.
 
 `wave.scan.mode`
 : Sets the Wave container security scanning mode.
