@@ -3,7 +3,11 @@ title: Reference
 tags: [nextflow, reference, wave]
 ---
 
-This reference lists the Wave configuration variables that can be used to customize Wave behavior in your Nextflow pipelines. These settings are configured in the Nextflow configuration file of your pipeline.
+This reference lists the Wave configuration variables that can be used to customize Wave behavior in your Nextflow pipelines. Configure these settings in your pipelines Nextflow configuration file.
+
+:::note
+Nextflow integration with Wave requires Nextflow 22.10.0, or later.
+:::
 
 ## General
 
@@ -24,8 +28,7 @@ Use the following options to configure general Wave settings:
 `wave.mirror`
 : Enables Wave container mirroring (default: `false`).
   The target registry must be specified by `wave.build.repository`.
-  This option is only compatible with `wave.strategy = 'container'`.
-  It cannot be used with `wave.freeze`.
+  This option is only compatible with `wave.strategy = 'container'` and cannot be used with `wave.freeze`.
   Requires Nextflow version 24.09.1-edge or later.
 
 `wave.strategy`

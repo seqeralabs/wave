@@ -2,7 +2,17 @@
 title: Use cases
 ---
 
-The following sections describe how to use Wave features with Nextflow.
+With Nextflow and Wave, you can build, upload, and manage the container images required by your data analysis workflows automatically and on-demand during pipeline execution.
+
+The following sections describe several common use cases.
+
+:::tip
+To get started with an example Nextflow pipeline that uses Wave, see [Nextflow and Wave](../tutorials/nextflow-wave.mdx).
+:::
+
+:::note
+Nextflow integration with Wave requires Nextflow 22.10.0, or later.
+:::
 
 ### Access private container repositories
 
