@@ -2,32 +2,6 @@
 title: Use cases
 ---
 
-You can use Wave directly from your Nextflow pipelines. Nextflow integration with Wave supports private repositories, container freezing, and conda packages.
-
-:::note
-Nextflow integration with Wave requires Nextflow 22.10.0, or later.
-:::
-
-## Get started
-
-To enable Wave in your Nextflow pipeline, add the following to your Nextflow configuration file:
-
-```groovy
-wave.enabled = true
-tower.accessToken = '<TOWER_ACCESS_TOKEN>'
-```
-
-Replace `<TOWER_ACCESS_TOKEN>` with your Seqera access token.
-
-Using a Seqera access token is optional but provides additional capabilities:
-
-- Access to private repositories
-- Higher API request limits than anonymous users
-
-For all Nextflow configuration options, see [Configuration options](#configuration-options).
-
-## Use Wave features with Nextflow
-
 The following sections describe how to use Wave features with Nextflow.
 
 ### Access private container repositories
@@ -214,22 +188,6 @@ For more information, see:
 - [Nextflow Fusion integration documentation](https://www.nextflow.io/docs/latest/fusion.html)
 
 </details>
-
-## Configuration options
-
-The following Nextflow configuration options are available:
-
-| Method                       | Description                                                                                                                                                              |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `wave.enabled`               | Enable/disable the execution of Wave containers.                                                                                                                         |
-| `wave.endpoint`              | The Wave service endpoint (default: `https://wave.seqera.io`).                                                                                                           |
-| `wave.build.repository`      | The container repository where images built by Wave are uploaded. You must provide corresponding credentials in your Platform account.                                   |
-| `wave.build.cacheRepository` | The container repository used to cache image layers built by the Wave service. You must provide corresponding credentials in your Platform account.                      |
-| `wave.conda.mambaImage`      | The Mamba container image used to build conda-based containers. This should be a [micromamba-docker](https://github.com/mamba-org/micromamba-docker) image.              |
-| `wave.conda.commands`        | One or more commands to add to the Dockerfile used to build a conda-based image.                                                                                         |
-| `wave.mirror`                | Enable Wave container mirroring (default: false).                                                                                                                        |
-| `wave.strategy`              | The strategy used when resolving ambiguous Wave container requirements (default: `'container,dockerfile,conda'`).                                                        |
-| `wave.freeze`                | When `freeze` mode is enabled, containers provisioned by Wave are stored permanently in the repository specified by `wave.build.repository`.                             |
 
 ## Limitations
 

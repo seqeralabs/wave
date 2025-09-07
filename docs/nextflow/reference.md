@@ -3,7 +3,7 @@ title: Reference
 tags: [nextflow, reference, wave]
 ---
 
-This reference lists the Wave configuration variables that can be used to customize Wave behavior in your Nextflow pipelines. These settings are configured in the Nextflow configuration file (`nextflow.config`) of your pipeline. See [Configuration](https://www.nextflow.io/docs/latest/config.html) for more information about Nextflow configuration.
+This reference lists the Wave configuration variables that can be used to customize Wave behavior in your Nextflow pipelines. These settings are configured in the Nextflow configuration file (`nextflow.config`) of your pipeline.
 
 ## General
 
@@ -16,10 +16,15 @@ Use the following options to configure general Wave settings:
 : Specifies the Wave service endpoint (default: `https://wave.seqera.io`).
 
 `wave.freeze`
-: Enables freeze mode to permanently store provisioned Wave containers in the repository specified by `wave.build.repository` (default: `false`).
+: Enables freeze mode to permanently store provisioned Wave containers (default: `false`).
+  The target registry must be specified by `wave.build.repository`.
+  It is also recommended to specify a custom cache repository using `wave.build.cacheRepository`.
 
 `wave.mirror`
 : Enables Wave container mirroring (default: `false`).
+  The target registry must be specified by `wave.build.repository`.
+  This option is only compatible with `wave.strategy = 'container'`.
+  It cannot be used with `wave.freeze`.
 
 `wave.strategy`
 : Sets the strategy used when resolving ambiguous Wave container requirements (default: `'container,dockerfile,conda'`).
@@ -39,7 +44,7 @@ Use the following options to configure build settings:
 : Sets the compression level used when building containers. Valid ranges depend on compression type: 0-9 for `gzip/estargz`, 0-22 for `zstd`. Higher values provide better compression but slower build times.
 
 `wave.build.compression.mode`
-: Sets the compression algorithm for container builds. Valid options are `gzip`, `estargz`, or `zstd` (default: `gzip`).
+: Sets the compression algorithm for container builds. Options include: `gzip`, `estargz`, or `zstd` (default: `gzip`).
 
 `wave.build.conda.basePackages`
 : Sets Conda packages to always include in the container (default: `conda-forge::procps-ng`).
@@ -100,6 +105,7 @@ Use the following options to configure scan settings:
 `wave.scan.allowedLevels`
 : Specifies a comma-separated list of allowed vulnerability levels for container scanning. Requires `wave.scan.mode = 'required'` to be set.
   Options include: `low`, `medium`, `high`, `critical`.
+  This option is only compatible with `wave.scan.mode = 'required'`.
 
 `wave.scan.mode`
 : Sets the Wave container security scanning mode.
