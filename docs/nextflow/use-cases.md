@@ -11,7 +11,7 @@ To get started with an example Nextflow pipeline that uses Wave, see [Nextflow a
 :::
 
 :::note
-Nextflow integration with Wave requires Nextflow 22.10.0, or later.
+Requires Nextflow version 22.10.0 or later.
 :::
 
 ### Access private container repositories
@@ -116,7 +116,7 @@ Nextflow can build Singularity native images on demand using a `Singularityfile`
 Images are uploaded to an OCI-compliant container registry of your choice and stored as an [ORAS artifact](https://oras.land/).
 
 :::note
-Available as of Nextflow version 23.09.0-edge.
+Requires Nextflow version 23.09.0-edge or later.
 :::
 
 <details open>
