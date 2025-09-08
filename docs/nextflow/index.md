@@ -28,7 +28,7 @@ Using a Seqera access token is optional but provides additional capabilities:
 
 :::
 
-## Use Cases
+## Use cases
 
 Wave supports several key use cases that enhance your Nextflow pipeline capabilities:
 
