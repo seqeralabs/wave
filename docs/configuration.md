@@ -206,7 +206,7 @@ Change these properties to tweak rate limits in Wave.
 
 - **`redis.client.timeout`**: defines the timeout duration (in milliseconds) for Redis client operations. The default value is `5000` (5 seconds).  *Optional*.
 
-- **`redis.password`**: specifies the password used to authenticate with the Redis server. This is needed when redis authentication is enabled.  *Optional*.
+- **`redis.password`**: specifies the password used to authenticate with the Redis server. This is needed when redis authentication is enabled. It can be set using the `${REDIS_PASSWORD}` environment variable. *Optional*.
 
 ### SurrealDB configuration
 
