@@ -11,7 +11,7 @@ To get started with an example Nextflow pipeline that uses Wave, see [Nextflow a
 :::
 
 :::note
-Requires Nextflow version 22.10.0 or later.
+Nextflow integration with Wave requires Nextflow 22.10.0 or later.
 :::
 
 ### Access private container repositories
