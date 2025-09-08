@@ -178,7 +178,7 @@ Replace the following:
 - `<TOWER_ACCESS_TOKEN>`: your Seqera access token
 
 :::note
-You must provide credentials through the Seqera Platform credentials manager to allow pushing containers to the build repository. See [Nextflow and Wave](./tutorials/nextflow-wave.mdx) for a detailed guide.
+You must provide credentials through the Seqera Platform credentials manager to allow pushing containers to the build repository. See [Nextflow and Wave](../tutorials/nextflow-wave.mdx) for a detailed guide.
 :::
 
 </details>
