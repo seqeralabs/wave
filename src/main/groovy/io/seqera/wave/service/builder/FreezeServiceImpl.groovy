@@ -30,6 +30,7 @@ import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.util.RegHelper.layerDir
 import static io.seqera.wave.util.RegHelper.layerName
+import static io.seqera.wave.util.RegHelper.layerMountDir
 /**
  * Implements helper methods to handle container build context
  *
@@ -131,7 +132,7 @@ class FreezeServiceImpl implements FreezeService {
         if( layers ) {
             result += '%files\n'
             for(int i=0; i<layers.size(); i++) {
-                result += "  {{wave_context_dir}}/${layerDir(layers[i])} /opt/layers/${layerDir(layers[i])}\n"
+                result += "  {{wave_context_dir}}/${layerName(layers[i])} ${layerMountDir(layers[i])}\n"
             }
         }
 

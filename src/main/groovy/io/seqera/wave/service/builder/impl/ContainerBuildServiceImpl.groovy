@@ -263,42 +263,14 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")
     }
 
-    protected void saveLayersToContext(BuildRequest req, Path contextDir) {
-        if(req.formatDocker()) {
-            saveLayersToDockerContext0(req, contextDir)
-        }
-        else if(req.formatSingularity()) {
-            saveLayersToSingularityContext0(req, contextDir)
-        }
-        else
-            throw new IllegalArgumentException("Unknown container format: $req.format")
-    }
-
-    protected void saveLayersToDockerContext0(BuildRequest request, Path contextDir) {
+    protected void saveLayersToContext(BuildRequest request, Path contextDir) {
         final layers = request.containerConfig.layers
         for(int i=0; i<layers.size(); i++) {
             final it = layers[i]
             final target = contextDir.resolve(layerName(it))
-            final retryable = retry0("Unable to copy '${it.location}' to docker context '${contextDir}'")
-            // copy the layer to the build context
-            retryable.apply(()-> {
-                try (InputStream stream = streamService.stream(it.location, request.identity)) {
-                    Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING)
-                }
-                return
-            })
-        }
-    }
-
-    protected void saveLayersToSingularityContext0(BuildRequest request, Path contextDir) {
-        final layers = request.containerConfig.layers
-        for(int i=0; i<layers.size(); i++) {
-            final it = layers[i]
-            final target = contextDir.resolve(layerDir(it))
             try { Files.createDirectory(target) }
             catch (FileAlreadyExistsException e) { /* ignore */ }
-            // retry strategy
-            final retryable = retry0("Unable to copy '${it.location} to singularity context '${contextDir}'")
+            final retryable = retry0("Unable to copy '${it.location}' to docker context '${contextDir}'")
             // copy the layer to the build context
             retryable.apply(()-> {
                 try (InputStream stream = streamService.stream(it.location, request.identity)) {
