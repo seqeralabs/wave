@@ -653,10 +653,23 @@ class K8sServiceImpl implements K8sService {
                 spec.withInitContainers(new V1ContainerBuilder()
                         .withName("permissions-fix")
                         .withImage("busybox")
-                        .withCommand("sh", "-c", "cp -r /tmp/singularity/* /singularity && chown -R 1000:1000 /singularity")
-                        .withVolumeMounts(initMounts)
+                        .withCommand("sh", "-c")
+                        .withArgs(
+                                '''
+                                    if ls /opt/layers/* 1> /dev/null 2>&1; then
+                                      for layer in /opt/layers/layer-*; do
+                                        echo "Extracting $layer"
+                                        tar -xzf "$layer" -C / 2>/dev/null || tar -xf "$layer" -C /
+                                      done
+                                      rm -rf /opt/layers
+                                    fi
+                                    cp -r /tmp/singularity/* /singularity && chown -R 1000:1000 /singularity
+                                '''.stripIndent()
+                        )
+                        .withVolumeMounts(initMounts + mounts)
                         .build()
                 )
+
             }
         } else {
             container
