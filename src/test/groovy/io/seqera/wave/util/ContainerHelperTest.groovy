@@ -24,6 +24,7 @@ import spock.lang.Unroll
 
 import java.time.Instant
 
+import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
@@ -48,22 +49,18 @@ class ContainerHelperTest extends Specification {
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['https://foo.com/lock.yml']
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
+        def layers = [new ContainerLayer(gzipDigest: 'layer1'), new ContainerLayer(gzipDigest: 'layer2')]
 
         when:
-        def result = ContainerHelper.containerFileFromPackages(packages, true)
+        def result = ContainerHelper.containerFileFromPackages(packages, true, layers)
 
         then:
         result =='''\
                 BootStrap: docker
                 From: mambaorg/micromamba:1.5.10-noble
                 %post
-                    if ls /opt/layers/* 1> /dev/null 2>&1; then
-                        for layer in /opt/layers/layer-*; do
-                            echo "Extracting $layer"
-                            tar -xzf "$layer" -C / 2>/dev/null || tar -xf "$layer" -C / || true
-                        done
-                        rm -rf /opt/layers
-                    fi
+                    cd / && tar -xzf /opt/layers/layer-layer1.tar.gz && rm /opt/layers/layer-layer1.tar.gz
+                    cd / && tar -xzf /opt/layers/layer-layer2.tar.gz && rm /opt/layers/layer-layer2.tar.gz
                     micromamba install -y -n base -c conda-forge -c defaults -f https://foo.com/lock.yml
                     micromamba install -y -n base foo::one bar::two
                     micromamba env export --name base --explicit > environment.lock
@@ -85,7 +82,7 @@ class ContainerHelperTest extends Specification {
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
 
         when:
-        def result = ContainerHelper.containerFileFromPackages(packages, false)
+        def result = ContainerHelper.containerFileFromPackages(packages, false, null)
 
         then:
         result =='''\
@@ -110,9 +107,10 @@ class ContainerHelperTest extends Specification {
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
+        def layers = [new ContainerLayer(gzipDigest: 'layer1'), new ContainerLayer(gzipDigest: 'layer2')]
 
         when:
-        def result = ContainerHelper.containerFileFromPackages(packages, true)
+        def result = ContainerHelper.containerFileFromPackages(packages, true, layers)
 
         then:
         result =='''\
@@ -121,13 +119,8 @@ class ContainerHelperTest extends Specification {
                 %files
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
-                    if ls /opt/layers/* 1> /dev/null 2>&1; then
-                        for layer in /opt/layers/layer-*; do
-                            echo "Extracting $layer"
-                            tar -xzf "$layer" -C / 2>/dev/null || tar -xf "$layer" -C / || true
-                        done
-                        rm -rf /opt/layers
-                    fi
+                    cd / && tar -xzf /opt/layers/layer-layer1.tar.gz && rm /opt/layers/layer-layer1.tar.gz
+                    cd / && tar -xzf /opt/layers/layer-layer2.tar.gz && rm /opt/layers/layer-layer2.tar.gz
                     micromamba install -y -n base -f /scratch/conda.yml
                     micromamba install -y -n base foo::one bar::two
                     micromamba env export --name base --explicit > environment.lock
@@ -148,7 +141,7 @@ class ContainerHelperTest extends Specification {
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
 
         when:
-        def result = ContainerHelper.containerFileFromPackages(packages, false)
+        def result = ContainerHelper.containerFileFromPackages(packages, false, null)
 
         then:
         result =='''\

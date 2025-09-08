@@ -254,7 +254,7 @@ class ContainerController {
 
         if( v2 && req.packages ) {
             // generate the container file required to assemble the container
-            final generated = containerFileFromPackages(req.packages, req.formatSingularity(), req.containerConfig.layers)
+            final generated = containerFileFromPackages(req.packages, req.formatSingularity(), req.containerConfig?.layers)
             req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
         }
         // make sure container platform is defined 
