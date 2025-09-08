@@ -6,7 +6,7 @@ tags: [nextflow, configuration, wave]
 This reference lists the Wave configuration variables that can be used to customize Wave behavior in your Nextflow pipelines. Configure these settings in your pipelines Nextflow configuration file.
 
 :::note
-Nextflow integration with Wave requires Nextflow 22.10.0, or later.
+Nextflow integration with Wave requires Nextflow 22.10.0 or later.
 :::
 
 ## General
