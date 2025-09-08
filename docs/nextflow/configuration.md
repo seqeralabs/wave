@@ -1,6 +1,6 @@
 ---
-title: Reference
-tags: [nextflow, reference, wave]
+title: Configuration options
+tags: [nextflow, configuration, wave]
 ---
 
 This reference lists the Wave configuration variables that can be used to customize Wave behavior in your Nextflow pipelines. Configure these settings in your pipelines Nextflow configuration file.

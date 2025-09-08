@@ -60,4 +60,4 @@ Combine Wave containers with Fusion to use cloud object storage as your pipeline
 
 Wave provides extensive configuration options to customize container provisioning behavior, scanning behavior, caching strategies, and repository settings.
 
-For detailed configuration options and advanced settings, see the [Configuration Reference](./reference.md).
+For detailed configuration options and advanced settings, see the [Configuration options](./configuration.md).
