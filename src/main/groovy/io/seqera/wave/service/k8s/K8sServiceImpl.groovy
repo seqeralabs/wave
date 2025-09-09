@@ -677,7 +677,7 @@ class K8sServiceImpl implements K8sService {
                 spec.withInitContainers(new V1ContainerBuilder()
                         .withName("untar-context")
                         .withImage("busybox")
-                        .withCommand("sh", "-c", "tar -xf ${storageMountPath}/${request.buildId}/compressedcontext -C ${storageMountPath}/${request.buildId}/context")
+                        .withCommand("sh", "-c", "tar -xzf ${request.workDir}/compressedcontext -C ${request.workDir}/context")
                         .withVolumeMounts(mounts)
                         .build()
                 )
