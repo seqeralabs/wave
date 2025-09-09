@@ -31,6 +31,7 @@ Configure general Wave application settings, such as application name, port, ano
 
 `tower.endpoint.url` *(optional)*
 : Specifies the URL pointing to the Seqera platform API service (default: [`https://api.cloud.seqera.io`](https://api.cloud.seqera.io)).
+  Can be set using the `${TOWER_ENDPOINT_URL}` environment variable.
 
 `wave.allowAnonymous` *(required)*
 : Enables anonymous access to the Wave server (default: `false`).
@@ -295,6 +296,7 @@ Configure Redis with the following options:
 
 `redis.uri` *(required)*
 : Specifies the URI for connecting to Redis (default format: `redis://${REDIS_HOST:redis}:${REDIS_PORT:6379}`.
+  Can be set using the `${REDIS_URI}` environment variable.
 
 ### SurrealDB
 
@@ -404,7 +406,7 @@ Configure how Wave sends email notifications on behalf of the service with the f
 
 `mail.from` *(required)*
 : Specifies the sender's email address for Wave notifications.
-  This email address serves as the point of origin for any emails sent by Wave, providing a recognizable source for notifications.
+  Can be set using the `${{MAIL_FROM}}}` environment variable.
 
 ## Metrics
 
