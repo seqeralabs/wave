@@ -33,7 +33,6 @@ import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.auth.RegistryCredentialsProvider

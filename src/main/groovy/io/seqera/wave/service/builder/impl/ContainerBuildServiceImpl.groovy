@@ -270,7 +270,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
             final target = contextDir.resolve(layerName(it))
             try { Files.createDirectory(target) }
             catch (FileAlreadyExistsException e) { /* ignore */ }
-            final retryable = retry0("Unable to copy '${it.location}' to docker context '${contextDir}'")
+            final retryable = retry0("Unable to copy '${it.location}' to context '${contextDir}'")
             // copy the layer to the build context
             retryable.apply(()-> {
                 try (InputStream stream = streamService.stream(it.location, request.identity)) {
@@ -284,7 +284,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
     protected void saveBuildContext(BuildContext buildContext, Path workDir, PlatformId identity) {
         // retry strategy
         final retryable = retry0("Unable to copy '${buildContext.location} to work directory '${workDir}'")
-        final target = workDir.resolve("compressedcontext")
+        final target = workDir.resolve("context.tar.gz")
         try { Files.createDirectory(target) }
         catch (FileAlreadyExistsException e) { /* ignore */ }
         // copy the layer to the build context

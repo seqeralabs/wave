@@ -567,7 +567,7 @@ class K8sServiceImpl implements K8sService {
 
         // required volumes
         final mounts = new ArrayList<V1VolumeMount>(5)
-        mounts.add(mountBuildStorage(workDir, storageMountPath, false))
+        mounts.add(mountBuildStorage(workDir, storageMountPath, true))
 
         final initMounts = new ArrayList<V1VolumeMount>(5)
 
@@ -577,6 +577,7 @@ class K8sServiceImpl implements K8sService {
         if( credsFile ){
             if( !singularity ) {
                 mounts.add(0, mountHostPath(credsFile, storageMountPath, '/home/user/.docker/config.json'))
+                initMounts.add(0,mountBuildStorage(workDir, storageMountPath, false))
             }
             else {
                 //emptydir volume for singularity
@@ -677,8 +678,11 @@ class K8sServiceImpl implements K8sService {
                 spec.withInitContainers(new V1ContainerBuilder()
                         .withName("untar-context")
                         .withImage("busybox")
-                        .withCommand("sh", "-c", "tar -xzf ${request.workDir}/compressedcontext -C ${request.workDir}/context")
-                        .withVolumeMounts(mounts)
+                        .withCommand(
+                                "sh",
+                                "-c",
+                                "[ -d ${request.workDir}/context ] || mkdir -p ${request.workDir}/context && tar -xzf ${request.workDir}/context.tar.gz -C ${request.workDir}/context")
+                        .withVolumeMounts(initMounts)
                         .build()
                 )
             }
