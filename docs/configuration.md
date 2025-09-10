@@ -134,7 +134,7 @@ Configure how Wave builds container images and manages associated logs for monit
 
 `wave.build.compression` *(optional)*
 : Sets which type of compression will be applied to cache layers (default: `gzip`).
-  Options include: `uncompressed|estargz|zstd`.
+  Options include: `uncompressed`,`estargz`, and `zstd`.
 
 `wave.build.force-compression` *(optional)*
 : Enables forced compression for each cache layers produced by the build process (default: `false`).
@@ -142,9 +142,10 @@ Configure how Wave builds container images and manages associated logs for monit
 `wave.build.oci-mediatypes` *(optional)*
 : Enables OCI media types in exported manifests (default: `true`).
 
-`wave.build.public-repo` *(required)*
+`wave.build.public-repo` *(optional)*
 : Specifies a public repository for the container images built by Wave.
-  Wave uses this repository when you use the freeze feature without providing a build-repository.
+  Wave uses this repository when you freeze container images without specifying `wave.build.repo`.
+  When not configured, you must specify `wave.build.repo` for freeze mode operations.
 
 `wave.build.repo` *(required)*
 : Sets the Docker container repository for the container images built by Wave.
@@ -237,7 +238,7 @@ Configure how Wave's vulnerability scanning process uses a [Trivy docker image](
 
 `wave.scan.severity` *(optional)*
 : Sets the [severity levels](https://aquasecurity.github.io/trivy/v0.22.0/vulnerability/examples/filter/) to report in vulnerability scanning.
-: Options include: `MEDIUM,HIGH,CRITICAL`.
+: Options include: `MEDIUM`,`HIGH`, and `CRITICAL`.
 
 ### Kubernetes Wave scan process
 
@@ -373,7 +374,7 @@ Configure how Wave caches container blobs to improve client performance and opti
 `wave.blobCache.signing-strategy` *(optional)*
 : Sets the URL signing strategy for different services.
   Currently supports AWS S3 and Cloudflare service.
-  Options include: `aws-presigned-url|cloudflare-waf-token`.
+  Options include: `aws-presigned-url` and `cloudflare-waf-token`.
 
 `wave.blobCache.status.delay` *(optional)*
 : Sets the time delay in checking the status of the transfer of the blob binary from the repository to the cache (default: `5s`).
