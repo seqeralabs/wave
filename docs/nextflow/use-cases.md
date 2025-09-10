@@ -183,6 +183,40 @@ You must provide credentials through the Seqera Platform credentials manager to 
 
 </details>
 
+### Security scan containers
+
+Wave can scan containers used in your Nextflow pipelines for security vulnerabilities. This feature helps ensure that your workflows use secure container images by identifying potential security risks before and during pipeline execution.
+
+<details open>
+<summary>**Security scan containers**</summary>
+
+To enable container security scanning, add the following to your Nextflow configuration file:
+
+```groovy
+wave.enabled = true
+wave.scan.mode = 'required'
+tower.accessToken = '<TOWER_ACCESS_TOKEN>'
+```
+
+Replace `<TOWER_ACCESS_TOKEN>` with your Seqera access token.
+
+You can control which vulnerability levels are acceptable by specifying allowed levels:
+
+```groovy
+wave.scan.allowedLevels = 'low,medium'
+```
+
+The accepted vulnerability levels are: `low`, `medium`, `high`, and `critical`.
+
+When `wave.scan.mode` is set to `required`, Wave will block pipeline execution if containers contain vulnerabilities above the specified threshold.
+The scanning uses the [Common Vulnerabilities Scoring System (CVSS)](https://en.wikipedia.org/wiki/Common_Vulnerability_Scoring_System) to assess security risks.
+
+:::note
+Scan results expire after one week. Containers accessed after seven days will be automatically re-scanned to ensure up-to-date security assessments.
+:::
+
+</details>
+
 ### Use Wave with Fusion
 
 Wave containers allow you to run your containerized workflow with the Fusion file system.
