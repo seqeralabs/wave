@@ -351,4 +351,4 @@ Wave requires access to AWS ECR for container image management. Create an IAM ro
 
 ### Advanced configuration
 
-See [Configuring Wave](../configure-wave.md) for advanced Wave features, scaling guidance, and integration options.
+See [Configure Wave](../configure-wave.md) for advanced Wave features, scaling guidance, and integration options.
