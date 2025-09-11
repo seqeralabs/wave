@@ -2,11 +2,15 @@
 title: Configure Wave
 ---
 
-The following covers common operations when setting up and configuring wave see [configuration](../configuration.md) for a full refeence of all configuration values and options.
+This page describes common operations to set up and configure Wave.
 
-## Email Configuration
+:::info
+See [Configuration reference](./configuration.md) for a full list configuration options for self-hosted Wave deployments.
+:::
 
-Wave can be configured to send notification emails for various build related events.
+## Email notifications
+
+Wave can be configured to send email notifications for various build related events.
 
 ### SMTP
 
@@ -14,14 +18,14 @@ Wave can be configured to send notification emails for various build related eve
 
 Add `mail` to your Micronaut environments and configure the SMTP settings in your Wave configuration:
 
-**Environment Configuration:**
+**Environment configuration:**
 
 ```yaml
 # Add 'mail' to your existing environments
 MICRONAUT_ENVIRONMENTS: "postgres,redis,lite,mail"
 ```
 
-**SMTP Configuration:**
+**SMTP configuration:**
 
 ```yaml
 mail:
@@ -67,21 +71,21 @@ For AWS environments, Wave supports direct integration with Amazon Simple Email 
 
 Add `aws-ses` to your Micronaut environments along with `mail`:
 
-**Environment Configuration:**
+**Environment configuration:**
 
 ```yaml
 # Add both 'mail' and 'aws-ses' to your existing environments
 MICRONAUT_ENVIRONMENTS: "postgres,redis,lite,mail,aws-ses"
 ```
 
-**SES Configuration:**
+**SES configuration:**
 
 ```yaml
 mail:
     from: "wave-notifications@your-domain.com"
 ```
 
-#### IAM Permissions
+#### IAM permissions
 
 Wave requires the following IAM permissions for SES integration:
 
@@ -98,7 +102,7 @@ Wave requires the following IAM permissions for SES integration:
 }
 ```
 
-#### SES Setup Requirements
+#### SES setup requirements
 
 Before configuring Wave with SES:
 
@@ -107,7 +111,7 @@ Before configuring Wave with SES:
 3. **Configure appropriate sending limits** for your use case
 4. **Ensure SES is available** in your Wave deployment region
 
-#### Regional Considerations
+#### Regional considerations
 
 Wave will automatically use SES in the same AWS region where it's deployed. Ensure SES is:
 
@@ -117,13 +121,13 @@ Wave will automatically use SES in the same AWS region where it's deployed. Ensu
 
 **Note:** No SMTP configuration is needed when using SES with IAM authentication - Wave will use the AWS SDK to send emails directly through the SES API.
 
-## Enabling Scanning
+## Security scanning
 
 Wave can perform security scanning on container builds. This feature requires the build service to be enabled and additional scanning infrastructure.
 
-Prerequisites
+**Prerequisites:**
 
-- Wave build service must be enabled (wave.build.enabled: true)
+- Wave build service must be enabled (`wave.build.enabled: true`)
 - Scanning backend must be configured and accessible
 - Appropriate compute resources for scanning workloads
 
@@ -134,11 +138,11 @@ wave:
     scan: true
 ```
 
-## ECR Cache Repository
+## ECR cache repository
 
 Wave supports using Amazon Elastic Container Registry (ECR) as a cache repository to store and reuse **build** layers, improving build performance and reducing bandwidth usage.
 
-#### Prerequisites
+**Prerequisites:**
 
 - AWS ECR repository configured in the same region as Wave
 - Wave must have appropriate IAM permissions to push/pull from ECR
@@ -157,7 +161,7 @@ wave:
             repository: "123456789012.dkr.ecr.us-east-1.amazonaws.com/wave-cache"
 ```
 
-#### IAM Permissions
+#### IAM permissions
 
 Wave requires the following IAM permissions for ECR cache operations:
 
@@ -188,7 +192,7 @@ Wave requires the following IAM permissions for ECR cache operations:
 }
 ```
 
-#### ECR Repository Setup
+#### ECR repository setup
 
 Create and configure your ECR cache repository:
 
