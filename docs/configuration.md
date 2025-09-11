@@ -1,9 +1,11 @@
 ---
-title: Configuration options
+title: Configuration reference
 tags: [configuration, reference, wave]
 ---
 
-This page lists configuration options for the Wave application.
+This page documents configuration options for self-hosted Wave deployments.
+If you are using Wave as a service, these configuration options do not apply to your setup.
+
 Configure Wave by setting YAML values in the [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml) configuration file:
 
 ```yml

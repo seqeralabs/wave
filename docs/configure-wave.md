@@ -5,7 +5,7 @@ title: Configure Wave
 This page describes common operations to set up and configure Wave.
 
 :::info
-See [Configuration options](./configuration.md) for a full list of Wave configuration options.
+See [Configuration reference](./configuration.md) for a full list configuration options for self-hosted Wave deployments.
 :::
 
 ## Email notifications
