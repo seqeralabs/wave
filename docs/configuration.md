@@ -3,15 +3,16 @@ title: Configuration options
 tags: [configuration, reference, wave]
 ---
 
-This page lists configuration options for the Wave application. Configure Wave by setting YAML values in the [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml) configuration file. For example:
+This page lists configuration options for the Wave application.
+Configure Wave by setting YAML values in the [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml) configuration file:
 
-```
+```yml
 wave:
     mail:
         from: "wave-app@seqera.io"
 ```
 
-The configuration reference uses dot notation to represent nested YAML keys. In the example above, the `from` value under the `mail` section is referenced as `wave.mail.from`.
+Configuration paths in this reference use dot notation to represent nested YAML keys. In the example above, the `from` value nested under the `mail` section is referenced as `wave.mail.from`.
 
 You can configure Wave using either the `config.yml` file or environment variables. Environment variables are provided where available, though not all configuration options support them.
 
