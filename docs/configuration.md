@@ -28,7 +28,7 @@ Configure general Wave application settings, such as application name, port, ano
 : Sets the name of the Wave application (default: `wave-app`).
 
 `micronaut.server.port` *(optional)*
-: Sets the port used by the Wave server (default: `8080`).
+: Sets the port used by the Wave server (default: `9090`).
 
 `tower.endpoint.url` *(optional)*
 : Specifies the URL pointing to the Seqera platform API service (default: [`https://api.cloud.seqera.io`](https://api.cloud.seqera.io)).
@@ -41,7 +41,7 @@ Configure general Wave application settings, such as application name, port, ano
 `wave.denyPaths` *(optional)*
 : Filter out API calls for specific artifacts, like manifests, that don't exist.
 
-`wave.server.url` *(optional)*
+`wave.server.url` *(required)*
 : Specifies the URL for the Wave server.
   Can be set using the `${WAVE_SERVER_URL}` environment variable.
 
@@ -123,7 +123,7 @@ Configure the HTTP client with the following options:
 
 Configure how Wave builds container images and manages associated logs for monitoring, troubleshooting, and delivery with the following options:
 
-`wave.build.buildkit-image` *(optional)*
+`wave.build.buildkit-image` *(required)*
 : Sets the [Buildkit](https://github.com/moby/buildkit) container image used in the Wave build process (default: `moby/buildkit:v0.13.2-rootless`).
 
 `wave.build.cache` *(required)*
@@ -228,7 +228,7 @@ Configure Kubernetes-specific settings for Wave, where build and scan processes 
 Configure how Wave's vulnerability scanning process uses a [Trivy docker image](https://hub.docker.com/r/aquasec/trivy) with customizable tags and severity levels with the following options:
 
 `wave.scan.enabled` *(optional)*
-: Enables vulnerability scanning (default: `false`).
+: Enables vulnerability scanning (default: `true`).
 
 `wave.scan.image.name`  *(optional)*
 : Sets the [Trivy docker image](https://hub.docker.com/r/aquasec/trivy) to use for container security scanning (default: `aquasec/trivy:0.47.0`).
@@ -351,10 +351,10 @@ Configure how Wave caches container blobs to improve client performance and opti
 `wave.blobCache.baseUrl` *(optional)*
 : Specifies the URL, which will override the base URL (part of URL before the blob path) of blobs sent to the end client.
 
-`wave.blobCache.cloudflare.lifetime` *(required)*
+`wave.blobCache.cloudflare.lifetime` *(optional)*
 : Sets the validity of the Cloudflare WAF token.
 
-`wave.blobCache.cloudflare.secret-key` *(required)*
+`wave.blobCache.cloudflare.secret-key` *(optional)*
 : Specifies the [Cloudflare secret](https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/) to create the WAF token.
 
 `wave.blobCache.cloudflare.urlSignatureDuration` *(optional)*
