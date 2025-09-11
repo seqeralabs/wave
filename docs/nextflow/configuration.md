@@ -123,7 +123,7 @@ Use the following options to configure scan settings:
   Options include: `low`, `medium`, `high`, `critical`.
 
 `wave.scan.mode`
-: _  Requires Nextflow version 24.09.1-edge or later_
+: _Requires Nextflow version 24.09.1-edge or later_
 : Sets the Wave container security scanning mode.
 : Options include:
 : - `none`: No container security scanning
