@@ -52,6 +52,10 @@ Use conda packages directly in cloud-native environments that don't natively sup
 
 Build and provision Singularity native images for HPC environments while maintaining compatibility with container registries through ORAS artifacts. See [Build Singularity containers](./use-cases.md#build-singularity-containers) for more information.
 
+### Security scanning
+
+Scan your Nextflow pipeline containers automatically with Wave to identify security vulnerabilities before they become a problem. This proactive security check gives you confidence that your workflows run on secure images, helping you address potential risks early and maintain robust, trustworthy pipelines. See [Security scan containers](./use-cases.md#security-scan-containers) for more information.
+
 ### Fusion file system integration
 
 Combine Wave containers with Fusion to use cloud object storage as your pipeline work directory, simplifying data management and improving performance on cloud platforms. See [Use Wave with Fusion](./use-cases.md#use-wave-with-fusion) for more information.
