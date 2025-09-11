@@ -20,16 +20,6 @@ You can configure Wave using either the `config.yml` file or environment variabl
 
 Configure general Wave application settings, such as application name, port, anonymous access permissions, and platform URLs with the following options:
 
-`logger.levels.io.seqera` *(optional)*
-: Sets the [logger level](https://logging.apache.org/log4j/2.x/manual/customloglevels.html) for the `io.seqera` package (default: `TRACE`).
-: Adjust levels based on logging requirements.
-
-`micronaut.application.name` *(optional)*
-: Sets the name of the Wave application (default: `wave-app`).
-
-`micronaut.server.port` *(optional)*
-: Sets the port used by the Wave server (default: `9090`).
-
 `tower.endpoint.url` *(optional)*
 : Specifies the URL pointing to the Seqera platform API service (default: [`https://api.cloud.seqera.io`](https://api.cloud.seqera.io)).
   Can be set using the `${TOWER_ENDPOINT_URL}` environment variable.
@@ -94,12 +84,6 @@ Configure container registry authentication with the following options:
 ## HTTP client
 
 Configure the HTTP client with the following options:
-
-`micronaut.http.services.stream-client.read-idle-timeout` *(optional)*
-: Sets the read idle timeout for the streaming HTTP client (default: `120s`).
-
-`micronaut.http.services.stream-client.read-timeout` *(optional)*
-: Sets the read timeout for the streaming HTTP client (default: `30s`).
 
 `wave.httpclient.connectTimeout` *(optional)*
 : Sets the connection timeout for the HTTP client (default: `20s`).
@@ -299,33 +283,6 @@ Configure Redis with the following options:
 `redis.uri` *(required)*
 : Specifies the URI for connecting to Redis (default format: `redis://${REDIS_HOST:redis}:${REDIS_PORT:6379}`.
   Can be set using the `${REDIS_URI}` environment variable.
-
-### SurrealDB
-
-Configure SurrealDB with the following options:
-
-`surreal.default.db` *(required)*
-: Sets the name of the Surreal database.
-  Can be set using the `${SURREALDB_DB}` environment variable.
-
-`surreal.default.init-db` *(optional)*
-: Enables automatic creation of database tables, records, and indices at application startup.
-
-`surreal.default.ns` *(required)*
-: Sets the namespace for the Surreal database.
-  Can be set using the `${SURREALDB_NS}` environment variable.
-
-`surreal.default.password` *(required)*
-: Specifies the password used for authentication when connecting to the Surreal database.
-  Can be set using the `${SURREALDB_PASSWORD}` environment variable.
-
-`surreal.default.url` *(required)*
-: Specifies the URL for connecting to the Surreal database.
-  Can be set using the `${SURREALDB_URL}` environment variable.
-
-`surreal.default.user` *(required)*
-: Specifies the username used for authentication when connecting to the Surreal database.
-  Can be set using the `${SURREALDB_USER}` environment variable.
 
 ### PostgreSQL
 
