@@ -1,34 +1,18 @@
 ---
-title: Nextflow integration
+title: Use cases
 ---
 
-You can use Wave directly from your Nextflow pipelines. Nextflow integration with Wave supports private repositories, container freezing, and conda packages.
+With Nextflow and Wave, you can build, upload, and manage the container images required by your data analysis workflows automatically and on-demand during pipeline execution.
 
-:::note
-Nextflow integration with Wave requires Nextflow 22.10.0, or later.
+The following sections describe several common use cases.
+
+:::tip
+To get started with an example Nextflow pipeline that uses Wave, see [Nextflow and Wave](../tutorials/nextflow-wave.mdx).
 :::
 
-## Get started
-
-To enable Wave in your Nextflow pipeline, add the following to your Nextflow configuration file:
-
-```groovy
-wave.enabled = true
-tower.accessToken = '<TOWER_ACCESS_TOKEN>'
-```
-
-Replace `<TOWER_ACCESS_TOKEN>` with your Seqera access token.
-
-Using a Seqera access token is optional but provides additional capabilities:
-
-- Access to private repositories
-- Higher API request limits than anonymous users
-
-For all Nextflow configuration options, see [Configuration options](#configuration-options).
-
-## Use Wave features with Nextflow
-
-The following sections describe how to use Wave features with Nextflow.
+:::note
+Nextflow integration with Wave requires Nextflow 22.10.0 or later.
+:::
 
 ### Access private container repositories
 
@@ -132,7 +116,7 @@ Nextflow can build Singularity native images on demand using a `Singularityfile`
 Images are uploaded to an OCI-compliant container registry of your choice and stored as an [ORAS artifact](https://oras.land/).
 
 :::note
-Available as of Nextflow version 23.09.0-edge.
+Requires Nextflow version 23.09.0-edge or later.
 :::
 
 <details open>
@@ -194,7 +178,41 @@ Replace the following:
 - `<TOWER_ACCESS_TOKEN>`: your Seqera access token
 
 :::note
-You must provide credentials through the Seqera Platform credentials manager to allow pushing containers to the build repository. See [Nextflow and Wave](./tutorials/nextflow-wave.mdx) for a detailed guide.
+You must provide credentials through the Seqera Platform credentials manager to allow pushing containers to the build repository. See [Nextflow and Wave](../tutorials/nextflow-wave.mdx) for a detailed guide.
+:::
+
+</details>
+
+### Security scan containers
+
+Wave can scan containers used in your Nextflow pipelines for security vulnerabilities. This feature helps ensure that your workflows use secure container images by identifying potential security risks before and during pipeline execution.
+
+<details open>
+<summary>**Security scan containers**</summary>
+
+To enable container security scanning, add the following to your Nextflow configuration file:
+
+```groovy
+wave.enabled = true
+wave.scan.mode = 'required'
+tower.accessToken = '<TOWER_ACCESS_TOKEN>'
+```
+
+Replace `<TOWER_ACCESS_TOKEN>` with your Seqera access token.
+
+You can control which vulnerability levels are acceptable by specifying allowed levels:
+
+```groovy
+wave.scan.allowedLevels = 'low,medium'
+```
+
+The accepted vulnerability levels are: `low`, `medium`, `high`, and `critical`.
+
+When `wave.scan.mode` is set to `required`, Wave will block pipeline execution if containers contain vulnerabilities above the specified threshold.
+The scanning uses the [Common Vulnerabilities Scoring System (CVSS)](https://en.wikipedia.org/wiki/Common_Vulnerability_Scoring_System) to assess security risks.
+
+:::note
+Scan results expire after one week. Containers accessed after seven days will be automatically re-scanned to ensure up-to-date security assessments.
 :::
 
 </details>
@@ -214,22 +232,6 @@ For more information, see:
 - [Nextflow Fusion integration documentation](https://www.nextflow.io/docs/latest/fusion.html)
 
 </details>
-
-## Configuration options
-
-The following Nextflow configuration options are available:
-
-| Method                       | Description                                                                                                                                                              |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `wave.enabled`               | Enable/disable the execution of Wave containers.                                                                                                                         |
-| `wave.endpoint`              | The Wave service endpoint (default: `https://wave.seqera.io`).                                                                                                           |
-| `wave.build.repository`      | The container repository where images built by Wave are uploaded. You must provide corresponding credentials in your Platform account.                                   |
-| `wave.build.cacheRepository` | The container repository used to cache image layers built by the Wave service. You must provide corresponding credentials in your Platform account.                      |
-| `wave.conda.mambaImage`      | The Mamba container image used to build conda-based containers. This should be a [micromamba-docker](https://github.com/mamba-org/micromamba-docker) image.              |
-| `wave.conda.commands`        | One or more commands to add to the Dockerfile used to build a conda-based image.                                                                                         |
-| `wave.mirror`                | Enable Wave container mirroring (default: false).                                                                                                                        |
-| `wave.strategy`              | The strategy used when resolving ambiguous Wave container requirements (default: `'container,dockerfile,conda'`).                                                        |
-| `wave.freeze`                | When `freeze` mode is enabled, containers provisioned by Wave are stored permanently in the repository specified by `wave.build.repository`.                             |
 
 ## Limitations
 
