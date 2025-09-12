@@ -103,18 +103,6 @@ class K8sServiceImpl implements K8sService {
     @Nullable
     private Map<String, String> nodeSelectorMap
 
-    @Property(name='wave.scan.k8s.node-selector')
-    @Nullable
-    private Map<String, String> scanNodeSelectorMap
-
-    @Property(name='wave.mirror.k8s.node-selector')
-    @Nullable
-    private Map<String, String> mirrorNodeSelectorMap
-
-    @Property(name='wave.transfer.k8s.node-selector')
-    @Nullable
-    private Map<String, String> transferNodeSelectorMap
-
     @Value('${wave.build.k8s.service-account}')
     @Nullable
     private String serviceAccount
@@ -530,8 +518,8 @@ class K8sServiceImpl implements K8sService {
                     .withDnsConfig(dnsConfig())
                     .withDnsPolicy(dnsPolicy)
 
-        if( transferNodeSelectorMap )
-            spec.withNodeSelector(transferNodeSelectorMap)
+        if( nodeSelectorMap )
+            spec.withNodeSelector(nodeSelectorMap)
 
         //container section
         spec = spec.addNewContainer()
@@ -737,8 +725,8 @@ class K8sServiceImpl implements K8sService {
                 .withDnsConfig(dnsConfig())
                 .withDnsPolicy(dnsPolicy)
 
-        if( scanNodeSelectorMap )
-            spec.withNodeSelector(scanNodeSelectorMap)
+        if( nodeSelectorMap )
+            spec.withNodeSelector(nodeSelectorMap)
 
         final requests = new V1ResourceRequirements()
         if( scanConfig.requestsCpu )
@@ -816,8 +804,8 @@ class K8sServiceImpl implements K8sService {
                 .withDnsConfig(dnsConfig())
                 .withDnsPolicy(dnsPolicy)
 
-        if( mirrorNodeSelectorMap )
-            spec.withNodeSelector(mirrorNodeSelectorMap)
+        if( nodeSelectorMap )
+            spec.withNodeSelector(nodeSelectorMap)
 
         final requests = new V1ResourceRequirements()
         if( config.requestsCpu )

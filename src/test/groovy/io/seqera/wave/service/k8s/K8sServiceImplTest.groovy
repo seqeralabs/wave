@@ -1326,7 +1326,7 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.storage.claimName': 'bar',
                 'wave.build.k8s.storage.mountPath': '/build',
                 'wave.build.k8s.service-account': 'theAdminAccount',
-                'wave.scan.k8s.node-selector': [
+                'wave.build.k8s.node-selector': [
                         'linux/amd64': 'service=wave-build',
                         'linux/arm64': 'service=wave-build-arm64'
                 ]
@@ -1372,7 +1372,7 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.dns.servers': ['1.1.1.1', '8.8.8.8'],
                 'wave.build.k8s.dns.policy': 'None',
-                'wave.transfer.k8s.node-selector': [
+                'wave.build.k8s.node-selector': [
                         'linux/amd64': 'service=wave-build',
                         'linux/arm64': 'service=wave-build-arm64'
                 ]
@@ -1415,7 +1415,7 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.storage.mountPath': '/build',
                 'wave.build.k8s.service-account': 'theAdminAccount',
                 'wave.mirror.retry-attempts': 3,
-                'wave.mirror.k8s.node-selector': [
+                'wave.build.k8s.node-selector': [
                         'linux/amd64': 'service=wave-build',
                         'linux/arm64': 'service=wave-build-arm64'
                 ]
