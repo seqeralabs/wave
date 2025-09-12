@@ -1316,4 +1316,136 @@ class K8sServiceImplTest extends Specification {
         true            | new V1JobCondition().reason('PodFailurePolicy').message("Container bd-53e3f909446988d1-1 for pod wave-build/bd-53e3f909446988d1-1-m9plq failed with exit code 1 matching FailJob rule at index 2")
 
     }
+
+    def 'should add node selector in scan job'() {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'foo',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.storage.claimName': 'bar',
+                'wave.build.k8s.storage.mountPath': '/build',
+                'wave.build.k8s.service-account': 'theAdminAccount',
+                'wave.scan.k8s.node-selector': [
+                        'linux/amd64': 'service=wave-build',
+                        'linux/arm64': 'service=wave-build-arm64'
+                ]
+        ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def name = 'scan-job'
+        def containerImage = 'scan-image:latest'
+        def args = ['arg1', 'arg2']
+        def workDir = Path.of('/work/dir')
+        def credsFile = Path.of('/creds/file')
+        def scanConfig = Mock(ScanConfig) {
+            getCacheDirectory() >> Path.of('/build/cache/dir')
+        }
+
+        when:
+        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig)
+
+        then:
+        job.metadata.name == name
+        job.metadata.namespace == 'foo'
+        job.spec.template.spec.containers[0].image == containerImage
+        job.spec.template.spec.containers[0].args == args
+        job.spec.template.spec.volumes.size() == 1
+        job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
+        job.spec.template.spec.restartPolicy == 'Never'
+        job.spec.template.spec.nodeSelector == ['linux/amd64': 'service=wave-build', 'linux/arm64': 'service=wave-build-arm64']
+        and:
+        job.spec.template.spec.dnsPolicy == null
+        job.spec.template.spec.dnsConfig == null
+
+        cleanup:
+        ctx.close()
+    }
+
+    def 'should add node selector in transfer job' () {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'my-ns',
+                'wave.build.k8s.service-account': 'foo-sa',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.dns.servers': ['1.1.1.1', '8.8.8.8'],
+                'wave.build.k8s.dns.policy': 'None',
+                'wave.transfer.k8s.node-selector': [
+                        'linux/amd64': 'service=wave-build',
+                        'linux/arm64': 'service=wave-build-arm64'
+                ]
+        ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def config = Mock(BlobCacheConfig) {
+            getEnvironment() >> ['FOO':'one', 'BAR':'two']
+        }
+
+        when:
+        def result = k8sService.createTransferJobSpec('foo', 'my-image:latest', ['this','that'], config)
+        then:
+        result.metadata.name == 'foo'
+        result.metadata.namespace == 'my-ns'
+        result.spec.template.spec.nodeSelector == ['linux/amd64': 'service=wave-build', 'linux/arm64': 'service=wave-build-arm64']
+        and:
+        verifyAll(result.spec.template.spec) {
+            serviceAccount == 'foo-sa'
+            containers.get(0).name == 'foo'
+            containers.get(0).image == 'my-image:latest'
+            containers.get(0).args ==  ['this','that']
+            !containers.get(0).getResources().limits
+            dnsConfig.nameservers == ['1.1.1.1', '8.8.8.8']
+            dnsPolicy == 'None'
+        }
+
+        cleanup:
+        ctx.close()
+    }
+
+    def 'should add node selector in mirror job'() {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'foo',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.storage.claimName': 'bar',
+                'wave.build.k8s.storage.mountPath': '/build',
+                'wave.build.k8s.service-account': 'theAdminAccount',
+                'wave.mirror.retry-attempts': 3,
+                'wave.mirror.k8s.node-selector': [
+                        'linux/amd64': 'service=wave-build',
+                        'linux/arm64': 'service=wave-build-arm64'
+                ]
+        ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def name = 'scan-job'
+        def containerImage = 'scan-image:latest'
+        def args = ['arg1', 'arg2']
+        def workDir = Path.of('/build/work/dir')
+        def credsFile = Path.of('/build/work/dir/creds/file')
+        def mirrorConfig = Mock(MirrorConfig)
+
+        when:
+        def job = k8sService.mirrorJobSpec(name, containerImage, args, workDir, credsFile, mirrorConfig)
+
+        then:
+        job.metadata.name == name
+        job.metadata.namespace == 'foo'
+        job.spec.backoffLimit == 1
+        job.spec.template.spec.containers[0].image == containerImage
+        job.spec.template.spec.containers[0].args == args
+        job.spec.template.spec.containers[0].resources.requests == [:]
+        and:
+        job.spec.template.spec.containers[0].volumeMounts.size() == 2
+        and:
+        job.spec.template.spec.nodeSelector == ['linux/amd64': 'service=wave-build', 'linux/arm64': 'service=wave-build-arm64']
+
+        cleanup:
+        ctx.close()
+    }
 }

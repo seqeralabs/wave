@@ -103,6 +103,18 @@ class K8sServiceImpl implements K8sService {
     @Nullable
     private Map<String, String> nodeSelectorMap
 
+    @Property(name='wave.scan.k8s.node-selector')
+    @Nullable
+    private Map<String, String> scanNodeSelectorMap
+
+    @Property(name='wave.mirror.k8s.node-selector')
+    @Nullable
+    private Map<String, String> mirrorNodeSelectorMap
+
+    @Property(name='wave.transfer.k8s.node-selector')
+    @Nullable
+    private Map<String, String> transferNodeSelectorMap
+
     @Value('${wave.build.k8s.service-account}')
     @Nullable
     private String serviceAccount
@@ -517,14 +529,18 @@ class K8sServiceImpl implements K8sService {
                     .withRestartPolicy("Never")
                     .withDnsConfig(dnsConfig())
                     .withDnsPolicy(dnsPolicy)
+
+        if( transferNodeSelectorMap )
+            spec.withNodeSelector(transferNodeSelectorMap)
+
         //container section
-                    .addNewContainer()
-                        .withName(name)
-                        .withImage(containerImage)
-                        .withArgs(args)
-                        .withResources(requests)
-                        .withEnv(toEnvList(blobConfig.getEnvironment()))
-                    .endContainer()
+        spec = spec.addNewContainer()
+                    .withName(name)
+                    .withImage(containerImage)
+                    .withArgs(args)
+                    .withResources(requests)
+                    .withEnv(toEnvList(blobConfig.getEnvironment()))
+                .endContainer()
                 .endSpec()
                 .endTemplate()
                 .endSpec()
@@ -721,6 +737,9 @@ class K8sServiceImpl implements K8sService {
                 .withDnsConfig(dnsConfig())
                 .withDnsPolicy(dnsPolicy)
 
+        if( scanNodeSelectorMap )
+            spec.withNodeSelector(scanNodeSelectorMap)
+
         final requests = new V1ResourceRequirements()
         if( scanConfig.requestsCpu )
             requests.putRequestsItem('cpu', new Quantity(scanConfig.requestsCpu))
@@ -796,6 +815,9 @@ class K8sServiceImpl implements K8sService {
                 .addAllToVolumes(volumes)
                 .withDnsConfig(dnsConfig())
                 .withDnsPolicy(dnsPolicy)
+
+        if( mirrorNodeSelectorMap )
+            spec.withNodeSelector(mirrorNodeSelectorMap)
 
         final requests = new V1ResourceRequirements()
         if( config.requestsCpu )
