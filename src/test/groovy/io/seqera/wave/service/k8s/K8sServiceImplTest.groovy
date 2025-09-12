@@ -456,7 +456,7 @@ class K8sServiceImplTest extends Specification {
         }
 
         when:
-        def result = k8sService.createTransferJobSpec('foo', 'my-image:latest', ['this','that'], config)
+        def result = k8sService.createTransferJobSpec('foo', 'my-image:latest', ['this','that'], config, null)
         result
         then:
         result.metadata.name == 'foo'
@@ -494,7 +494,7 @@ class K8sServiceImplTest extends Specification {
         }
 
         when:
-        def result = k8sService.createTransferJobSpec('foo', 'my-image:latest', ['this','that'], config)
+        def result = k8sService.createTransferJobSpec('foo', 'my-image:latest', ['this','that'], config, null)
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
@@ -834,7 +834,7 @@ class K8sServiceImplTest extends Specification {
         }
 
         when:
-        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig)
+        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig, null)
 
         then:
         job.metadata.name == name
@@ -880,7 +880,7 @@ class K8sServiceImplTest extends Specification {
         }
 
         when:
-        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig)
+        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig, null)
 
         then:
         job.metadata.name == name
@@ -922,7 +922,7 @@ class K8sServiceImplTest extends Specification {
         }
 
         when:
-        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig)
+        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig, null)
 
         then:
         job.metadata.name == name
@@ -965,7 +965,7 @@ class K8sServiceImplTest extends Specification {
         }
 
         when:
-        def job = k8sService.mirrorJobSpec(name, containerImage, args, workDir, credsFile, mirrorConfig)
+        def job = k8sService.mirrorJobSpec(name, containerImage, args, workDir, credsFile, mirrorConfig, null)
 
         then:
         job.metadata.name == name
@@ -1027,7 +1027,7 @@ class K8sServiceImplTest extends Specification {
         }
 
         when:
-        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig)
+        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig, null)
 
         then:
         job.metadata.name == name
@@ -1187,7 +1187,7 @@ class K8sServiceImplTest extends Specification {
         }
 
         when:
-        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig)
+        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig, null)
 
         then:
         job.metadata.name == name
@@ -1230,7 +1230,7 @@ class K8sServiceImplTest extends Specification {
         }
 
         when:
-        def result = k8sService.createTransferJobSpec('foo', 'my-image:latest', ['this','that'], config)
+        def result = k8sService.createTransferJobSpec('foo', 'my-image:latest', ['this','that'], config, null)
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
@@ -1276,7 +1276,7 @@ class K8sServiceImplTest extends Specification {
         }
 
         when:
-        def result = k8sService.createTransferJobSpec('foo', 'my-image:latest', ['this','that'], config)
+        def result = k8sService.createTransferJobSpec('foo', 'my-image:latest', ['this','that'], config, null)
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
@@ -1326,10 +1326,6 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.storage.claimName': 'bar',
                 'wave.build.k8s.storage.mountPath': '/build',
                 'wave.build.k8s.service-account': 'theAdminAccount',
-                'wave.build.k8s.node-selector': [
-                        'linux/amd64': 'service=wave-build',
-                        'linux/arm64': 'service=wave-build-arm64'
-                ]
         ]
         and:
         def ctx = ApplicationContext.run(PROPS)
@@ -1342,9 +1338,10 @@ class K8sServiceImplTest extends Specification {
         def scanConfig = Mock(ScanConfig) {
             getCacheDirectory() >> Path.of('/build/cache/dir')
         }
+        def nodeSelector = [service: 'wave-build']
 
         when:
-        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig)
+        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig, nodeSelector)
 
         then:
         job.metadata.name == name
@@ -1354,10 +1351,8 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.volumes.size() == 1
         job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
         job.spec.template.spec.restartPolicy == 'Never'
-        job.spec.template.spec.nodeSelector == ['linux/amd64': 'service=wave-build', 'linux/arm64': 'service=wave-build-arm64']
         and:
-        job.spec.template.spec.dnsPolicy == null
-        job.spec.template.spec.dnsConfig == null
+        job.spec.template.spec.nodeSelector == ['service':'wave-build']
 
         cleanup:
         ctx.close()
@@ -1371,11 +1366,7 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.service-account': 'foo-sa',
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.dns.servers': ['1.1.1.1', '8.8.8.8'],
-                'wave.build.k8s.dns.policy': 'None',
-                'wave.build.k8s.node-selector': [
-                        'linux/amd64': 'service=wave-build',
-                        'linux/arm64': 'service=wave-build-arm64'
-                ]
+                'wave.build.k8s.dns.policy': 'None'
         ]
         and:
         def ctx = ApplicationContext.run(PROPS)
@@ -1383,15 +1374,16 @@ class K8sServiceImplTest extends Specification {
         def config = Mock(BlobCacheConfig) {
             getEnvironment() >> ['FOO':'one', 'BAR':'two']
         }
+        def nodeSelector = [service: 'wave-build']
 
         when:
-        def result = k8sService.createTransferJobSpec('foo', 'my-image:latest', ['this','that'], config)
+        def job = k8sService.createTransferJobSpec('foo', 'my-image:latest', ['this','that'], config, nodeSelector)
         then:
-        result.metadata.name == 'foo'
-        result.metadata.namespace == 'my-ns'
-        result.spec.template.spec.nodeSelector == ['linux/amd64': 'service=wave-build', 'linux/arm64': 'service=wave-build-arm64']
+        job.metadata.name == 'foo'
+        job.metadata.namespace == 'my-ns'
+        job.spec.template.spec.nodeSelector == ['service':'wave-build']
         and:
-        verifyAll(result.spec.template.spec) {
+        verifyAll(job.spec.template.spec) {
             serviceAccount == 'foo-sa'
             containers.get(0).name == 'foo'
             containers.get(0).image == 'my-image:latest'
@@ -1415,10 +1407,6 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.storage.mountPath': '/build',
                 'wave.build.k8s.service-account': 'theAdminAccount',
                 'wave.mirror.retry-attempts': 3,
-                'wave.build.k8s.node-selector': [
-                        'linux/amd64': 'service=wave-build',
-                        'linux/arm64': 'service=wave-build-arm64'
-                ]
         ]
         and:
         def ctx = ApplicationContext.run(PROPS)
@@ -1429,9 +1417,10 @@ class K8sServiceImplTest extends Specification {
         def workDir = Path.of('/build/work/dir')
         def credsFile = Path.of('/build/work/dir/creds/file')
         def mirrorConfig = Mock(MirrorConfig)
+        def nodeSelector = [service: 'wave-build']
 
         when:
-        def job = k8sService.mirrorJobSpec(name, containerImage, args, workDir, credsFile, mirrorConfig)
+        def job = k8sService.mirrorJobSpec(name, containerImage, args, workDir, credsFile, mirrorConfig, nodeSelector)
 
         then:
         job.metadata.name == name
@@ -1443,7 +1432,7 @@ class K8sServiceImplTest extends Specification {
         and:
         job.spec.template.spec.containers[0].volumeMounts.size() == 2
         and:
-        job.spec.template.spec.nodeSelector == ['linux/amd64': 'service=wave-build', 'linux/arm64': 'service=wave-build-arm64']
+        job.spec.template.spec.nodeSelector == ['service':'wave-build']
 
         cleanup:
         ctx.close()
@@ -1468,7 +1457,7 @@ class K8sServiceImplTest extends Specification {
         def workDir = Path.of('/build/work/xyz')
         def credsFile = workDir.resolve('config.json')
         def timeout = Duration.ofMinutes(10)
-        def nodeSelector = ['linux/amd64': 'service=wave-build', 'linux/arm64': 'service=wave-build-arm64']
+        def nodeSelector = [service: 'wave-build']
 
         when:
         def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, nodeSelector)
@@ -1481,7 +1470,7 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.containers[0].securityContext.privileged == false
         job.spec.template.spec.containers[0].securityContext.appArmorProfile.type == 'Unconfined'
         and:
-        job.spec.template.spec.nodeSelector == ['linux/amd64': 'service=wave-build', 'linux/arm64': 'service=wave-build-arm64']
+        job.spec.template.spec.nodeSelector == ['service':'wave-build']
 
         cleanup:
         ctx.close()
