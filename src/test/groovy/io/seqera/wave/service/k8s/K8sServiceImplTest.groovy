@@ -1448,4 +1448,42 @@ class K8sServiceImplTest extends Specification {
         cleanup:
         ctx.close()
     }
+
+    def 'should add node selector in build job'() {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'my-ns',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.storage.claimName': 'build-claim',
+                'wave.build.k8s.storage.mountPath': '/build',
+                'wave.build.retry-attempts': 3
+        ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def name = 'test-job'
+        def containerImage = 'docker://test-image'
+        def args = ['arg1', 'arg2']
+        def workDir = Path.of('/build/work/xyz')
+        def credsFile = workDir.resolve('config.json')
+        def timeout = Duration.ofMinutes(10)
+        def nodeSelector = ['linux/amd64': 'service=wave-build', 'linux/arm64': 'service=wave-build-arm64']
+
+        when:
+        def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, nodeSelector)
+
+        then:
+        job.spec.template.spec.containers[0].image == containerImage
+        job.spec.template.spec.containers[0].env.find { it.name == 'BUILDKITD_FLAGS' }
+        job.spec.template.spec.containers[0].command == ['buildctl-daemonless.sh']
+        job.spec.template.spec.containers[0].args == args
+        job.spec.template.spec.containers[0].securityContext.privileged == false
+        job.spec.template.spec.containers[0].securityContext.appArmorProfile.type == 'Unconfined'
+        and:
+        job.spec.template.spec.nodeSelector == ['linux/amd64': 'service=wave-build', 'linux/arm64': 'service=wave-build-arm64']
+
+        cleanup:
+        ctx.close()
+    }
 }
