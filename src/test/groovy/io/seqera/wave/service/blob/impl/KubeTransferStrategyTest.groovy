@@ -47,7 +47,7 @@ class KubeTransferStrategyTest extends Specification {
         def podName = "$jobName-abc".toString()
         def pod = new V1Pod(metadata: [name: podName, creationTimestamp: OffsetDateTime.now()])
         pod.status = new V1PodStatus(phase: "Succeeded")
-        k8sService.launchTransferJob(_, _, _, _) >> new V1Job(metadata: [name: jobName])
+        k8sService.launchTransferJob(_, _, _, _, _) >> new V1Job(metadata: [name: jobName])
         k8sService.getPod(_) >> pod
         k8sService.logsPod(_) >> "transfer successful"
 
@@ -55,7 +55,7 @@ class KubeTransferStrategyTest extends Specification {
         strategy.launchJob(podName, command)
 
         then:
-        1 * k8sService.launchTransferJob(podName, blobConfig.s5Image, command, blobConfig)
+        1 * k8sService.launchTransferJob(podName, blobConfig.s5Image, command, blobConfig, _)
     }
 
 }
