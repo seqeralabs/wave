@@ -56,7 +56,7 @@ class KubeTransferStrategy implements TransferStrategy {
     @Override
     void launchJob(String jobName, List<String> command) {
 
-        final selector= getSelectorLabel(ContainerPlatform.DEFAULT, nodeSelectorMap)
+        final selector = getSelectorLabel(ContainerPlatform.DEFAULT, nodeSelectorMap)
 
         // run the transfer job
         k8sService.launchTransferJob(jobName, blobConfig.s5Image, command, blobConfig, selector)
