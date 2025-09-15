@@ -1,5 +1,7 @@
 ---
 title: Use cases
+description: Learn how to use Wave with Nextflow for container management, building, and security scanning
+tags: [nextflow, wave, use cases]
 ---
 
 With Nextflow and Wave, you can build, upload, and manage the container images required by your data analysis workflows automatically and on-demand during pipeline execution.
@@ -27,15 +29,11 @@ To access private container repositories, add your [Seqera access token](https:/
 tower.accessToken = '<TOWER_ACCESS_TOKEN>'
 ```
 
-Replace `<TOWER_ACCESS_TOKEN>` with your Seqera access token.
-
 If you created credentials in an organization workspace, also add your workspace ID:
 
 ```groovy
 tower.workspaceId = '<PLATFORM_WORKSPACE_ID>'
 ```
-
-Replace `<PLATFORM_WORKSPACE_ID>` with your Platform organization workspace ID.
 
 Wave uploads built containers to the default AWS ECR repository with the name `195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build`.
 Images in this repository are deleted automatically one week after they are pushed.
@@ -80,13 +78,13 @@ Wave does not support `ADD`, `COPY`, or other Dockerfile commands that access fi
 
 </details>
 
-### Build conda-based containers
+### Build Conda-based containers
 
 Wave can provision containers based on the [`conda` directive](https://www.nextflow.io/docs/latest/process.html#conda).
-This allows you to use conda packages in your pipeline, even on cloud-native platforms like AWS Batch and Kubernetes, which do not support the conda package manager directly.
+This allows you to use Conda packages in your pipeline, even on cloud-native platforms like AWS Batch and Kubernetes, which do not support the Conda package manager directly.
 
 <details open>
-<summary>**Build conda-based containers**</summary>
+<summary>**Build Conda-based containers**</summary>
 
 Define the `conda` requirements in your pipeline processes.
 Ensure the process doesn't include a `container` directive or Dockerfile.
@@ -101,7 +99,7 @@ Replace `<TOWER_ACCESS_TOKEN>` with your Seqera access token.
 
 For Nextflow 23.10.x, or later, the `conda-forge::procps-ng` package is included automatically in provisioned containers. This package includes the `ps` command.
 
-You can set conda channels and their priority with `conda.channels`:
+You can set Conda channels and their priority with `conda.channels`:
 
 ```groovy
 wave.strategy = ['conda']
@@ -112,7 +110,7 @@ conda.channels = 'seqera,conda-forge,bioconda,defaults'
 
 ### Build Singularity containers
 
-Nextflow can build Singularity native images on demand using a `Singularityfile` or conda packages.
+Nextflow can build Singularity native images on demand using a `Singularityfile` or Conda packages.
 Images are uploaded to an OCI-compliant container registry of your choice and stored as an [ORAS artifact](https://oras.land/).
 
 :::note
@@ -137,7 +135,7 @@ wave.build.repository = '<BUILD_REPOSITORY>'
 
 Replace `<BUILD_REPOSITORY>` with the repository where your Singularity image files should be uploaded.
 
-When using a private repository, provide repository access keys via the Platform credentials manager. See [Authenticate private repositories](https://docs.seqera.io/platform/24.1/credentials/overview) for more information.
+When using a private repository, provide repository access keys via the Platform credentials manager. See [Authenticate private repositories](https://docs.seqera.io/platform/credentials/overview) for more information.
 
 The access to the repository must be granted in the compute nodes. To grant access to the repository on compute nodes, run the following command:
 
@@ -157,11 +155,11 @@ To build Singularity native images, disable both `singularity.ociAutoPull` and `
 
 ### Mirror containers across registries
 
-Wave enables mirroring, i.e., copying containers used by your pipeline to a container registry of your choice.
+Wave enables mirroring by copying containers used by your pipeline to a container registry of your choice.
 Your pipeline can then pull containers from the target registry instead of the original registry.
 
 <details open>
-<summary>**Build Singularity containers**</summary>
+<summary>**Mirror containers across registries**</summary>
 
 To enable mirroring, add the following to your Nextflow configuration file:
 
@@ -185,7 +183,7 @@ You must provide credentials through the Seqera Platform credentials manager to 
 
 ### Security scan containers
 
-Wave can scan containers used in your Nextflow pipelines for security vulnerabilities. This feature helps ensure that your workflows use secure container images by identifying potential security risks before and during pipeline execution.
+Wave scans containers used in your Nextflow pipelines for security vulnerabilities. This feature helps you ensure that your workflows use secure container images by identifying potential security risks before and during pipeline execution.
 
 <details open>
 <summary>**Security scan containers**</summary>
@@ -208,11 +206,11 @@ wave.scan.allowedLevels = 'low,medium'
 
 The accepted vulnerability levels are: `low`, `medium`, `high`, and `critical`.
 
-When `wave.scan.mode` is set to `required`, Wave will block pipeline execution if containers contain vulnerabilities above the specified threshold.
+When `wave.scan.mode` is set to `required`, Wave blocks pipeline execution if containers contain vulnerabilities above the specified threshold.
 The scanning uses the [Common Vulnerabilities Scoring System (CVSS)](https://en.wikipedia.org/wiki/Common_Vulnerability_Scoring_System) to assess security risks.
 
 :::note
-Scan results expire after one week. Containers accessed after seven days will be automatically re-scanned to ensure up-to-date security assessments.
+Scan results expire after seven days. Wave automatically re-scans containers accessed after seven days to ensure up-to-date security assessments.
 :::
 
 </details>

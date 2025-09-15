@@ -1,10 +1,14 @@
 ---
-  title: Configuration options
-  description: Wave configuration variables for customizing behavior in Nextflow pipelines
-  tags: [nextflow, configuration, wave]
+title: Configuration reference
+description: Wave configuration variables for customizing behavior in Nextflow pipelines
+tags: [nextflow, wave, use configuration]
 ---
 
-This reference lists the Wave configuration variables that can be used to customize Wave behavior in your Nextflow pipelines. Configure these settings in your pipelines Nextflow configuration file.
+This reference lists the Wave configuration variables that can be used to customize Wave behavior in your Nextflow pipelines. Configure these settings in your Nextflow configuration file.
+
+:::tip
+For a full list of Nextflow configuration options, see [Configuration options](https://www.nextflow.io/docs/latest/reference/config.html).
+:::
 
 :::note
 Nextflow integration with Wave requires Nextflow 22.10.0 or later.
@@ -24,7 +28,7 @@ Use the following options to configure general Wave settings:
 : _Requires Nextflow version 23.07.0-edge or later_
 : Enables freeze mode to permanently store provisioned Wave containers (default: `false`).
   The target registry must be specified by `wave.build.repository`.
-  Specify a custom cache repository using `wave.build.cacheRepository` is also recommended.
+  Specifying a custom cache repository using `wave.build.cacheRepository` is also recommended.
 
 `wave.mirror`
 : _Requires Nextflow version 24.09.1-edge or later_
@@ -37,7 +41,7 @@ Use the following options to configure general Wave settings:
 
 ## Build
 
-Use the following options to configure build settings:
+Use the following options to configure Wave build settings:
 
 `wave.build.cacheRepository`
 : Specifies the container repository URL for caching image layers built by the Wave service.
@@ -48,7 +52,7 @@ Use the following options to configure build settings:
 : Enables forceful compression for all layers, including existing layers (default: `false`).
 
 `wave.build.compression.level`
-: _Requires Nextflow version 25.05.0-edge or later._
+: _Requires Nextflow version 25.05.0-edge or later_
 : Sets the compression level used when building containers. Valid ranges depend on compression type: 0-9 for `gzip/estargz`, 0-22 for `zstd`. Higher values provide better compression but slower build times.
 
 `wave.build.compression.mode`
@@ -71,7 +75,7 @@ Use the following options to configure build settings:
 
 ## Conda
 
-Use the following options to configure Conda settings:
+Use the following options to configure Wave Conda settings:
 
 `wave.conda.mambaImage`
 : Specifies the Mamba container image used for building Conda-based containers.
@@ -83,11 +87,11 @@ Use the following options to configure Conda settings:
 
 ## HTTP client
 
-Use the following options to configure HTTP client settings:
+Use the following options to configure Wave  HTTP client settings:
 
 `wave.httpClient.connectTimeout`
 : _Requires Nextflow version 22.06.0-edge or later_
-: Sets the connection timeout for the Wave HTTP client  (default: `30s`).
+: Sets the connection timeout for the Wave HTTP client (default: `30s`).
 
 `wave.httpClient.maxRate`
 : _Requires Nextflow version 22.06.0-edge or later_
@@ -95,7 +99,7 @@ Use the following options to configure HTTP client settings:
 
 ## Retry policy
 
-Use the following options to configure retry policy settings:
+Use the following options to configure Wave retry policy settings:
 
 `wave.retryPolicy.delay`
 : _Requires Nextflow version 22.06.0-edge or later_
@@ -115,7 +119,7 @@ Use the following options to configure retry policy settings:
 
 ## Scan
 
-Use the following options to configure scan settings:
+Use the following options to configure Wave scan settings:
 
 `wave.scan.allowedLevels`
 : _Requires Nextflow version 24.09.1-edge or later_

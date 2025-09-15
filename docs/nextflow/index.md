@@ -1,8 +1,10 @@
 ---
 title: Overview
+description: Learn about using Wave with Nextflow
+tags: [nextflow, wave, get started]
 ---
 
-Wave container provisioning service seamlessly integrates with Nextflow pipelines to streamline container management and deployment. When used with Nextflow, Wave automatically handles container building, provisioning, and optimization, eliminating the complexity of manual container management in your workflow execution.
+Wave's container provisioning service seamlessly integrates with Nextflow pipelines to streamline container management and deployment. When used with Nextflow, Wave automatically handles container building, provisioning, and optimization, eliminating the complexity of manual container management in your workflow execution.
 
 :::note
 Nextflow integration with Wave requires Nextflow 22.10.0 or later.
@@ -34,7 +36,7 @@ Wave supports several key use cases that enhance your Nextflow pipeline capabili
 
 ### Container building and provisioning
 
-Wave can automatically build container images from Dockerfiles placed in your module directories or provision containers based on conda package specifications. This eliminates the need to pre-build and manage container images manually. See [Build Nextflow module containers](./use-cases.md#build-nextflow-module-containers) for more information.
+Wave can automatically build container images from Dockerfiles placed in your module directories or provision containers based on Conda package specifications. This eliminates the need to pre-build and manage container images manually. See [Build Nextflow module containers](./use-cases.md#build-nextflow-module-containers) for more information.
 
 ### Private repository access
 
@@ -46,7 +48,7 @@ Mirror containers from public registries to your own private registry for improv
 
 ### Conda package integration
 
-Use conda packages directly in cloud-native environments that don't natively support conda. Wave builds containers with your specified conda dependencies, enabling portable execution across different compute platforms. See [Build conda-based containers](./use-cases.md#build-conda-based-containers) for more information.
+Use Conda packages directly in cloud-native environments that don't natively support Conda. Wave builds containers with your specified Conda dependencies, enabling portable execution across different compute platforms. See [Build Conda-based containers](./use-cases.md#build-conda-based-containers) for more information.
 
 ### Singularity container support
 
@@ -54,7 +56,7 @@ Build and provision Singularity native images for HPC environments while maintai
 
 ### Security scanning
 
-Scan your Nextflow pipeline containers automatically with Wave to identify security vulnerabilities before they become a problem. This proactive security check gives you confidence that your workflows run on secure images, helping you address potential risks early and maintain robust, trustworthy pipelines. See [Security scan containers](./use-cases.md#security-scan-containers) for more information.
+Scan your Nextflow pipeline containers automatically with Wave to identify security vulnerabilities before they become a problem. This proactive security check gives you confidence that your workflows run on secure images. It helps you address potential risks early and maintain robust, trustworthy pipelines. See [Security scan containers](./use-cases.md#security-scan-containers) for more information.
 
 ### Fusion file system integration
 
@@ -64,4 +66,4 @@ Combine Wave containers with Fusion to use cloud object storage as your pipeline
 
 Wave provides extensive configuration options to customize container provisioning behavior, scanning behavior, caching strategies, and repository settings.
 
-For detailed configuration options and advanced settings, see the [Configuration options](./configuration.md).
+For detailed configuration options and advanced settings, see [Configuration reference](./configuration.md).
