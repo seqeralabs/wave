@@ -320,6 +320,13 @@ class ViewController {
         binding.mirror_url =  data.mirror ? "$serverUrl/view/mirrors/${data.buildId}" : null
         binding.mirror_cached = data.mirror ? !data.buildNew : null
         binding.server_url = serverUrl
+
+        def image = persistenceService.loadImage(token)
+        if ( image ) {
+            binding.source_image_exist = true
+            binding.source_image_build_url = image.buildId ? "$serverUrl/view/builds/${image.buildId}" : null
+            binding.source_image_scan_url = image.scanId ? "$serverUrl/view/scans/${image.scanId}" : null
+        }
         return HttpResponse.<Map<String,Object>>ok(binding)
     }
 

@@ -40,6 +40,7 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.persistence.migrate.MigrationOnly
+import io.seqera.wave.service.persistence.postgres.data.ImageRow
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
@@ -352,7 +353,21 @@ class SurrealPersistenceService implements PersistenceService {
         return result ? Arrays.asList(result) : null
     }
 
-    // ===  mirror operations
+    @Override
+    WaveScanRecord loadScanLatestSucceed(String image) {
+        return null
+    }
+
+    @Override
+    void saveImageAsync(ImageRow imageRow) {
+
+    }
+
+    @Override
+    ImageRow loadImage(String id) {
+        return null
+    }
+// ===  mirror operations
 
     /**
      * Load a mirror state record

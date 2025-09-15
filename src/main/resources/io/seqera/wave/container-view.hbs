@@ -253,6 +253,28 @@
         </table>
     </div>
 
+    {{#if source_image_exist}}
+    <div class="content-section">
+        <table>
+            {{#if source_image_build_url}}
+                <tr>
+                    <td>Source Image Build ID</td>
+                    <td>
+                            <a href="{{source_image_build_url}}">{{source_image_build_url}}</a>
+                    </td>
+                </tr>
+            {{/if}}
+            {{#if source_image_scan_url}}
+                <tr>
+                    <td>Source Image Scan ID</td>
+                    <td>
+                        <a href="{{source_image_scan_url}}">{{source_image_scan_url}}</a>
+                    </td>
+                </tr>
+            {{/if}}
+        </table>
+    </div>
+    {{/if}}
     {{#if tower_user_id}}
         <div class="content-section">
             <h2 class="section-title">Platform &amp; User info</h2>

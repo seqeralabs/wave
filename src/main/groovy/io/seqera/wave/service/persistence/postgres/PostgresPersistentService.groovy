@@ -40,6 +40,8 @@ import io.seqera.wave.service.persistence.impl.SurrealPersistenceService
 import io.seqera.wave.service.persistence.migrate.MigrationOnly
 import io.seqera.wave.service.persistence.postgres.data.BuildRepository
 import io.seqera.wave.service.persistence.postgres.data.BuildRow
+import io.seqera.wave.service.persistence.postgres.data.ImageRepository
+import io.seqera.wave.service.persistence.postgres.data.ImageRow
 import io.seqera.wave.service.persistence.postgres.data.MirrorRepository
 import io.seqera.wave.service.persistence.postgres.data.MirrorRow
 import io.seqera.wave.service.persistence.postgres.data.RequestRepository
@@ -74,6 +76,9 @@ class PostgresPersistentService implements PersistenceService {
 
     @Inject
     private ScanRepository scanRepository
+
+    @Inject
+    private ImageRepository imageRepository
 
     @Inject
     @Nullable
@@ -278,5 +283,29 @@ class PostgresPersistentService implements PersistenceService {
         final json = Mapper.toJson(data)
         final entity = new MirrorRow(id: data.mirrorId, data:json, createdAt: Instant.now())
         mirrorRepository.save(entity)
+    }
+
+    @Override
+    WaveScanRecord loadScanLatestSucceed(String image) {
+        log.trace "Loading latest successful scan record with image=${image}"
+        final row = scanRepository.findLatestSucceedScanByImage(image)
+        if( !row ){
+            return null
+        }
+        return Mapper.fromJson(WaveScanRecord, row.data, [id: row.id])
+    }
+
+    @Override
+    void saveImageAsync(ImageRow imageRow) {
+        log.trace "Saving image record id=${imageRow.id}; image=${imageRow}"
+        CompletableFuture.runAsync(safeRun(()->
+                imageRepository.save(imageRow),
+                "Unable to save mirror result data=${imageRow}"))
+    }
+
+    @Override
+    ImageRow loadImage(String id) {
+        log.trace "Loading image record id=${id}"
+        return imageRepository.findById(id).orElse(null)
     }
 }

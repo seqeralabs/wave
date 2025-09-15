@@ -20,6 +20,8 @@ package io.seqera.wave.controller
 
 import java.nio.file.Path
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
@@ -70,6 +72,7 @@ import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerRecord
+import io.seqera.wave.service.persistence.postgres.data.ImageRow
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.request.ContainerRequestService
 import io.seqera.wave.service.request.ContainerStatusService
@@ -82,6 +85,7 @@ import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
@@ -176,6 +180,10 @@ class ContainerController {
     @Inject
     @Nullable
     private ContainerScanService scanService
+
+    @Inject
+    @Named(TaskExecutors.BLOCKING)
+    private ExecutorService ioExecutor
 
     @PostConstruct
     private void init() {
@@ -274,6 +282,10 @@ class ContainerController {
                         : makeResponseV1(data, token, target)
         // persist request
         storeContainerRequest0(req, data, token, target, ip)
+        //check if source image is built by wave
+        if ( identity ) {
+            CompletableFuture.runAsync(() -> checkSourceImage(req, identity), ioExecutor)
+        }
         scanService?.scanOnRequest(data)
         // log the response
         log.debug "New container request fulfilled - token=$token.value; expiration=$token.expiration; container=$data.containerImage; build=$resp.buildId; identity=$identity"
@@ -567,6 +579,18 @@ class ContainerController {
 
     protected String targetImage(String token, ContainerCoordinates container) {
         return "${new URL(serverUrl).getAuthority()}/wt/$token/${container.getImageAndTag()}"
+    }
+
+    protected void checkSourceImage(SubmitContainerTokenRequest request, PlatformId identity) {
+        final digest = registryProxyService.getImageDigest(request.containerImage, identity)
+        final build = persistenceService.loadBuildSucceed(request.containerImage, digest)
+        final scan = persistenceService.loadScanLatestSucceed(request.containerImage)
+
+        persistenceService.saveImageAsync(new ImageRow(
+                id: request.towerAccessToken,
+                buildId: build.buildId,
+                scanId: scan.id)
+        )
     }
 
     @Get('/container-token/{token}')

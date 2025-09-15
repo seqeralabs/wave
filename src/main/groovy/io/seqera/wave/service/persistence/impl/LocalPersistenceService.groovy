@@ -30,6 +30,7 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.util.trace.TraceElapsedTime
+import io.seqera.wave.service.persistence.postgres.data.ImageRow
 import jakarta.inject.Singleton
 /**
  * Basic persistence for dev purpose
@@ -48,6 +49,7 @@ class LocalPersistenceService implements PersistenceService {
     private Map<String,WaveContainerRecord> requestStore = new HashMap<>()
     private Map<String,WaveScanRecord> scanStore = new HashMap<>()
     private Map<String,MirrorResult> mirrorStore = new HashMap<>()
+    private Map<String,ImageRow> imageStore = new HashMap<>()
 
     @Override
     CompletableFuture<Void> saveBuildAsync(WaveBuildRecord record) {
@@ -128,6 +130,25 @@ class LocalPersistenceService implements PersistenceService {
                 .findAll( it-> pattern.matcher(it.id).matches() )
                 .sort { it.startTime }
                 .reverse()
+    }
+
+    @Override
+    WaveScanRecord loadScanLatestSucceed(String image) {
+        scanStore
+                .values()
+                .findAll( it-> it.containerImage == (image) && it.succeeded() )
+                .sort { it.startTime }
+                .reverse() [0]
+    }
+
+    @Override
+    void saveImageAsync(ImageRow imageRow) {
+        imageStore.put(imageRow.id, imageRow)
+    }
+
+    @Override
+    ImageRow loadImage(String id) {
+        imageStore.get(id)
     }
 
     @Override

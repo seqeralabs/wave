@@ -85,6 +85,14 @@ class PostgresSchemaService {
                 created_at TIMESTAMP DEFAULT NOW(),
                 data JSONB NOT NULL
             );
+            
+            -- SOURCE IMAGE INFO entity 
+            CREATE TABLE IF NOT EXISTS wave_image (
+                id TEXT PRIMARY KEY,
+                created_at TIMESTAMP DEFAULT NOW(),
+                build_id TEXT,
+                scan_id TEXT
+            );
 
             CREATE INDEX IF NOT EXISTS wave_scan_start_time_idx
             ON wave_scan ((data->>'startTime'));
@@ -112,6 +120,7 @@ class PostgresSchemaService {
         DELETE FROM wave_request;
         DELETE FROM wave_mirror;
         DELETE FROM wave_scan;
+        DELETE FROM wave_source_image_info;
         '''.stripIndent()
 
         jdbcOperations.execute((conn)-> {

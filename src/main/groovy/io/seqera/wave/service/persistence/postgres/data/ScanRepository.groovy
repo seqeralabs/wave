@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.persistence.postgres.data
 
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.data.annotation.Query
 import io.micronaut.data.jdbc.annotation.JdbcRepository
 import io.micronaut.data.model.query.builder.sql.Dialect
@@ -46,5 +47,25 @@ interface ScanRepository extends CrudRepository<ScanRow, String> {
         ORDER BY data->>'startTime' DESC
         ''')
     List<ScanRow> findAllByScanId(String scanId)
+
+    /**
+     * Find the latest successful scan for the given container image name
+     *
+     * @param image
+     *      The container image name to be searched
+     * @return
+     *      The {@link ScanRow} representing the latest successful scan for the given image or {@code null}
+     *      if not match can be found.
+     */
+    @Nullable
+    @Query('''
+        SELECT w.* 
+        FROM wave_scan w 
+        WHERE w.data->>'containerImage' ~ :image
+        and w.status = 'SUCCEED'
+        ORDER BY (data->>'startTime')::timestamp DESC 
+        LIMIT 1    
+        ''')
+    BuildRow findLatestSucceedScanByImage(String image)
 
 }

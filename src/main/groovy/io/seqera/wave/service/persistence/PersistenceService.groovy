@@ -24,6 +24,7 @@ import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.mirror.MirrorEntry
 import io.seqera.wave.service.mirror.MirrorResult
+import io.seqera.wave.service.persistence.postgres.data.ImageRow
 
 /**
  * A storage for statistic data
@@ -155,5 +156,28 @@ interface PersistenceService {
      * @return The corresponding {@link WaveScanRecord} object or {@code null} if no record is found
      */
     List<WaveScanRecord> allScans(String scanId)
+
+    /**
+     * Retrieve the latest {@link WaveScanRecord} object for the given container image name
+     * where the build status is 'SUCCEED'
+     *
+     * @param image The container image name for which the latest successful build record should be retrieved
+     * @return The corresponding {@link WaveScanRecord} object or {@code null} if no record is found
+     */
+    WaveScanRecord loadScanLatestSucceed(String image)
+
+    /**
+     * Save an image record
+     *
+     * @param imageRow The {@link ImageRow} object to be saved
+     */
+    void saveImageAsync(ImageRow imageRow)
+
+    /**
+     * Save an image record
+     *
+     * @param imageRow The {@link ImageRow} object to be saved
+     */
+    ImageRow loadImage(String id)
 
 }
