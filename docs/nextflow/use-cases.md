@@ -95,9 +95,7 @@ To prioritize `conda` over `container` directives and Dockerfiles, add the follo
 wave.strategy = ['conda']
 ```
 
-Replace `<TOWER_ACCESS_TOKEN>` with your Seqera access token.
-
-For Nextflow 23.10.x, or later, the `conda-forge::procps-ng` package is included automatically in provisioned containers. This package includes the `ps` command.
+For Nextflow 23.10.0, or later, the `conda-forge::procps-ng` package is automatically included in provisioned containers. This package includes the `ps` command.
 
 You can set Conda channels and their priority with `conda.channels`:
 

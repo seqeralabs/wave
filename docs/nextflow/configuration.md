@@ -124,7 +124,7 @@ Use the following options to configure Wave scan settings:
 `wave.scan.allowedLevels`
 : _Requires Nextflow version 24.09.1-edge or later._
 : Specifies a comma-separated list of allowed vulnerability levels for container scanning. Requires `wave.scan.mode = 'required'` to be set.
-  Options include: `low`, `medium`, `high`, `critical`.
+  Options include: `low`, `medium`, `high`, and `critical`.
 
 `wave.scan.mode`
 : _Requires Nextflow version 24.09.1-edge or later._
