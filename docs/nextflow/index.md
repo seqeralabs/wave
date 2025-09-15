@@ -34,17 +34,13 @@ Using a Seqera access token is optional but provides additional capabilities:
 
 Wave supports several key use cases that enhance your Nextflow pipeline capabilities:
 
-### Container building and provisioning
-
-Wave can automatically build container images from Dockerfiles placed in your module directories or provision containers based on Conda package specifications. This eliminates the need to pre-build and manage container images manually. See [Build Nextflow module containers](./use-cases.md#build-nextflow-module-containers) for more information.
-
 ### Private repository access
 
 Securely access private container repositories using credentials managed through the Seqera Platform. Wave handles authentication automatically, allowing your pipelines to pull from private registries without exposing sensitive credentials. See [Access private container repositories](./use-cases.md#access-private-container-repositories) for more information.
 
-### Container mirroring
+### Container building and provisioning
 
-Mirror containers from public registries to your own private registry for improved performance, compliance, and availability. This ensures your pipelines can access required containers even when upstream registries are unavailable. See [Mirror containers across registries](./use-cases.md#mirror-containers-across-registries) for more information.
+Wave can automatically build container images from Dockerfiles placed in your module directories or provision containers based on Conda package specifications. This eliminates the need to pre-build and manage container images manually. See [Build Nextflow module containers](./use-cases.md#build-nextflow-module-containers) for more information.
 
 ### Conda package integration
 
@@ -53,6 +49,10 @@ Use Conda packages directly in cloud-native environments that don't natively sup
 ### Singularity container support
 
 Build and provision Singularity native images for HPC environments while maintaining compatibility with container registries through ORAS artifacts. See [Build Singularity containers](./use-cases.md#build-singularity-containers) for more information.
+
+### Container mirroring
+
+Mirror containers from public registries to your own private registry for improved performance, compliance, and availability. This ensures your pipelines can access required containers even when upstream registries are unavailable. See [Mirror containers across registries](./use-cases.md#mirror-containers-across-registries) for more information.
 
 ### Security scanning
 
