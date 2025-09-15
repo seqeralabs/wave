@@ -130,6 +130,6 @@ Use the following options to configure Wave scan settings:
 : _Requires Nextflow version 24.09.1-edge or later._
 : Sets the Wave container security scanning mode.
 : Options include:
-: - `none`: No container security scanning
+: - `none`: No container security scanning.
 : - `async`: Containers are scanned for security vulnerabilities. The task is executed regardless of the scan result.
 : - `required`: Containers are scanned for security vulnerabilities. The task is executed only if the container is free of vulnerabilities.
