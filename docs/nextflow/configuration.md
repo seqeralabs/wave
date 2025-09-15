@@ -53,7 +53,7 @@ Use the following options to configure Wave build settings:
 
 `wave.build.compression.level`
 : _Requires Nextflow version 25.05.0-edge or later._
-: Sets the compression level used when building containers. Valid ranges depend on compression type: 0-9 for `gzip/estargz`, 0-22 for `zstd`. Higher values provide better compression but slower build times.
+: Sets the compression level used when building containers. Valid ranges depend on compression type: `0`-`9` for `gzip` and `estargz`, and `0`-`22` for `zstd`. Higher values provide better compression but slower build times.
 
 `wave.build.compression.mode`
 : _Requires Nextflow version 25.05.0-edge or later._
