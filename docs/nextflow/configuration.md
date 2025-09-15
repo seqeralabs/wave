@@ -25,13 +25,13 @@ Use the following options to configure general Wave settings:
 : Specifies the Wave service endpoint (default: `https://wave.seqera.io`).
 
 `wave.freeze`
-: _Requires Nextflow version 23.07.0-edge or later_
+: _Requires Nextflow version 23.07.0-edge or later._
 : Enables freeze mode to permanently store provisioned Wave containers (default: `false`).
   The target registry must be specified by `wave.build.repository`.
   Specifying a custom cache repository using `wave.build.cacheRepository` is also recommended.
 
 `wave.mirror`
-: _Requires Nextflow version 24.09.1-edge or later_
+: _Requires Nextflow version 24.09.1-edge or later._
 : Enables Wave container mirroring (default: `false`).
   The target registry must be specified by `wave.build.repository`.
   This option is only compatible with `wave.strategy = 'container'` and cannot be used with `wave.freeze`.
@@ -48,15 +48,15 @@ Use the following options to configure Wave build settings:
   Requires corresponding credentials to be configured in your Platform account.
 
 `wave.build.compression.force`
-: _Requires Nextflow version 25.05.0-edge or later_
+: _Requires Nextflow version 25.05.0-edge or later._
 : Enables forceful compression for all layers, including existing layers (default: `false`).
 
 `wave.build.compression.level`
-: _Requires Nextflow version 25.05.0-edge or later_
+: _Requires Nextflow version 25.05.0-edge or later._
 : Sets the compression level used when building containers. Valid ranges depend on compression type: 0-9 for `gzip/estargz`, 0-22 for `zstd`. Higher values provide better compression but slower build times.
 
 `wave.build.compression.mode`
-: _Requires Nextflow version 25.05.0-edge or later_
+: _Requires Nextflow version 25.05.0-edge or later._
 : Sets the compression algorithm for container builds. Options include: `gzip`, `estargz`, or `zstd` (default: `gzip`).
 
 `wave.build.conda.basePackages`
@@ -90,11 +90,11 @@ Use the following options to configure Wave Conda settings:
 Use the following options to configure Wave  HTTP client settings:
 
 `wave.httpClient.connectTimeout`
-: _Requires Nextflow version 22.06.0-edge or later_
+: _Requires Nextflow version 22.06.0-edge or later._
 : Sets the connection timeout for the Wave HTTP client (default: `30s`).
 
 `wave.httpClient.maxRate`
-: _Requires Nextflow version 22.06.0-edge or later_
+: _Requires Nextflow version 22.06.0-edge or later._
 : Sets the maximum request rate for the Wave HTTP client (default: `1/sec`).
 
 ## Retry policy
@@ -102,19 +102,19 @@ Use the following options to configure Wave  HTTP client settings:
 Use the following options to configure Wave retry policy settings:
 
 `wave.retryPolicy.delay`
-: _Requires Nextflow version 22.06.0-edge or later_
+: _Requires Nextflow version 22.06.0-edge or later._
 : Sets the delay when retrying failing HTTP requests (default: `450ms`).
 
 `wave.retryPolicy.jitter`
-: _Requires Nextflow version 22.06.0-edge or later_
+: _Requires Nextflow version 22.06.0-edge or later._
 : Sets the jitter factor for randomly varying retry delays (default: `0.25`).
 
 `wave.retryPolicy.maxAttempts`
-: _Requires Nextflow version 22.06.0-edge or later_
+: _Requires Nextflow version 22.06.0-edge or later._
 : Sets the maximum retry attempts for failing HTTP requests (default: `5`).
 
 `wave.retryPolicy.maxDelay`
-: _Requires Nextflow version 22.06.0-edge or later_
+: _Requires Nextflow version 22.06.0-edge or later._
 : Sets the maximum delay when retrying failing HTTP requests (default: `90s`).
 
 ## Scan
@@ -122,12 +122,12 @@ Use the following options to configure Wave retry policy settings:
 Use the following options to configure Wave scan settings:
 
 `wave.scan.allowedLevels`
-: _Requires Nextflow version 24.09.1-edge or later_
+: _Requires Nextflow version 24.09.1-edge or later._
 : Specifies a comma-separated list of allowed vulnerability levels for container scanning. Requires `wave.scan.mode = 'required'` to be set.
   Options include: `low`, `medium`, `high`, `critical`.
 
 `wave.scan.mode`
-: _Requires Nextflow version 24.09.1-edge or later_
+: _Requires Nextflow version 24.09.1-edge or later._
 : Sets the Wave container security scanning mode.
 : Options include:
 : - `none`: No container security scanning
