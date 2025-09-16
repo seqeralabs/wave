@@ -4,8 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'add the latest version of zerofs  https://github.com/Barre/ZeroFS/releases (e.g., 0.15.4)'
+        description: 'Image version (e.g., 0.1.0)'
         required: true
+      zfsversion :
+        description : 'add the latest version of zerofs  https://github.com/Barre/ZeroFS/releases (e.g., 0.15.4)'
+        required : true
 
 jobs:
   build-and-push:
@@ -28,4 +31,4 @@ jobs:
       - name: Build and Push Image to public.cr.seqera.io
         run: |
           cd zerofs
-          make build version=${{ github.event.inputs.version }}
+          make build version=${{ github.event.inputs.version }} zfs_version=${{ github.event.inputs.zfsversion }}
