@@ -1,72 +1,78 @@
 ---
 title: Usage metrics
+description: Overview of Wave's Redis-based usage metrics storage and tracking system
+date: 2025-09-17
+tags: [redis, metrics, wave]
 ---
 
-Wave uses Redis to store its usage metrics for a specific date and/or a specific organization.
+Wave can store usage metrics for specific dates and organizations in Redis.
 
-These are stored using the following keys:
+:::note
+To use metrics, enable `wave.metrics.enabled` in your Wave configuration file. For more information about Wave configuration files, see [Configuration reference](./configuration.md).
+:::
 
-- `pulls/d/YYYY-MM-DD`
-- `pulls/o/<org>`
-- `pulls/o/<org>/d/YYYY-MM-DD`
-- `fusion/d/YYYY-MM-DD`
-- `fusion/o/<org>`
-- `fusion/o/<org>/d/YYYY-MM-DD`
-- `builds/d/YYYY-MM-DD`
-- `builds/o/<org>`
-- `builds/o/<org>/d/YYYY-MM-DD`
-- `pulls/a/<arch>/d/YYYY-MM-DD`
-- `pulls/o/<org>/a/<arch>`
-- `pulls/o/<org>/a/<arch>/d/YYYY-MM-DD`
-- `pulls/a/<arch>`
-- `fusion/a/<arch>/d/YYYY-MM-DD`
-- `fusion/o/<org>/a/<arch>`
-- `fusion/o/<org>/a/<arch>/d/YYYY-MM-DD`
-- `fusion/a/<arch>`
-- `builds/a/<arch>/d/YYYY-MM-DD`
-- `builds/o/<org>/a/<arch>`
-- `builds/o/<org>/a/<arch>/d/YYYY-MM-DD`
-- `builds/a/<arch>`
-- `mirrors/a/<arch>/d/YYYY-MM-DD`
-- `mirrors/o/<org>/a/<arch>`
-- `mirrors/o/<org>/a/<arch>/d/YYYY-MM-DD`
-- `mirrors/a/<arch>`
+## Keys
 
-## Functionality
+When Wave makes a keys request:
 
-### Store Builds
+1. Wave increments the key with the current date. For example, `builds/d/2024-04-23`.
+1. **For authenticated requests**: If the request includes a Seqera Platform token, Wave also performs organization-specific tracking:
+    1. Wave extracts the domain from the user's email address using the access token to query Seqera Platform. For example, it extracts `seqera.io` from `user@seqera.io`.
+    1. Wave increments the key with the organization-specific keys. For example, `builds/o/seqera.io` and `builds/o/seqera.io/d/2024-04-23`.
 
-When Wave launches a build, it also increments the values of following keys in Redis:
+### Builds
 
-- `builds/d/YYYY-MM-DD`
-- `builds/o/<org>`
-- `builds/o/<org>/d/YYYY-MM-DD`
+When you make a container build request, Wave increments the following `builds` keys:
 
-### Store Pulls
+- `builds/d/<YYYY-MM-DD>`
+- `builds/o/<ORG>`
+- `builds/o/<ORG>/d/<YYYY-MM-DD>`
 
-Wave tracks the container image pulls using io.seqera.wave.filter.PullMetricsRequestsFilter, where it checks if `Content-Type` header contains one of the following values:
+### Pulls
 
-- `application/vnd.docker.distribution.manifest.v2+json`
-- `application/vnd.oci.image.manifest.v1+json`
-- `application/vnd.docker.distribution.manifest.v1+prettyjws`
-- `application/vnd.docker.distribution.manifest.v1+json`
+When you make a container build request, Wave increments the following keys:
 
-Then it increments the values of following keys in Redis:
+1. Wave tracks the container image pulls using `io.seqera.wave.filter.PullMetricsRequestsFilter`.
+1. Wave checks if the `Content-Type` header contains one of the following manifest values:
+   - `application/vnd.docker.distribution.manifest.v2+json`
+   - `application/vnd.oci.image.manifest.v1+json`
+   - `application/vnd.docker.distribution.manifest.v1+prettyjws`
+   - `application/vnd.docker.distribution.manifest.v1+json`
+1. It increments the following `pulls` keys:
+    - `pulls/d/<YYYY-MM-DD>`
+    - `pulls/o/<ORG>`
+    - `pulls/o/<ORG>/d/<YYYY-MM-DD>`
+1. **For Fusion-enabled containers**: If the pulled container uses Fusion, Wave also increments the following Fusion-specific keys:
+    - `fusion/d/<YYYY-MM-DD>`
+    - `fusion/o/<ORG>`
+    - `fusion/o/<ORG>/d/<YYYY-MM-DD>`
 
-- `pulls/d/YYYY-MM-DD`
-- `pulls/o/<org>`
-- `pulls/o/<org>/d/YYYY-MM-DD`
+## Keys reference
 
-Then, if the pulled container uses fusion, it increments the values of following keys in Redis:
+Wave stores usage metrics in Redis using the following key patterns:
 
-- `fusion/d/YYYY-MM-DD`
-- `fusion/o/<org>`
-- `fusion/o/<org>/d/YYYY-MM-DD`
-
-## How keys are created
-
-- When a request is made to wave, first it increments the key with current date. e.g. `builds/d/2024-04-23`.
-- Keys with organization are only incremented if the user is authenticated means there is Seqera platform token in the request.
-- Wave extract the domain from the user email id (For example: `test_metrics@seqera.io`), which it gets from Seqera platform using the access token.
-- In this case, The organization value will be `seqera.io`.
-- Then it increments the key with organization. For example: `builds/o/seqera.io/d/2024-04-23` and `builds/o/seqera.io`.
+- `pulls/d/<<YYYY-MM-DD>>`
+- `pulls/o/<ORG>`
+- `pulls/o/<ORG>/d/<YYYY-MM-DD>`
+- `fusion/d/<YYYY-MM-DD>`
+- `fusion/o/<ORG>`
+- `fusion/o/<ORG>/d/<YYYY-MM-DD>`
+- `builds/d/<YYYY-MM-DD>`
+- `builds/o/<ORG>`
+- `builds/o/<ORG>/d/<YYYY-MM-DD>`
+- `pulls/a/<ARCH>/d/<YYYY-MM-DD>`
+- `pulls/o/<ORG>/a/<ARCH>`
+- `pulls/o/<ORG>/a/<ARCH>/d/<YYYY-MM-DD>`
+- `pulls/a/<ARCH>`
+- `fusion/a/<ARCH>/d/<YYYY-MM-DD>`
+- `fusion/o/<ORG>/a/<ARCH>`
+- `fusion/o/<ORG>/a/<ARCH>/d/<YYYY-MM-DD>`
+- `fusion/a/<ARCH>`
+- `builds/a/<ARCH>/d/<YYYY-MM-DD>`
+- `builds/o/<ORG>/a/<ARCH>`
+- `builds/o/<ORG>/a/<ARCH>/d/<YYYY-MM-DD>`
+- `builds/a/<ARCH>`
+- `mirrors/a/<ARCH>/d/<YYYY-MM-DD>`
+- `mirrors/o/<ORG>/a/<ARCH>`
+- `mirrors/o/<ORG>/a/<ARCH>/d/<YYYY-MM-DD>`
+- `mirrors/a/<ARCH>`
