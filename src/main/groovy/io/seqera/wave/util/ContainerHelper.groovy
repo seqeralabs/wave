@@ -23,6 +23,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
@@ -41,6 +42,9 @@ import static io.seqera.wave.util.DockerHelper.condaFileToSingularityFile
 import static io.seqera.wave.util.DockerHelper.condaPackagesToCondaYaml
 import static io.seqera.wave.util.DockerHelper.condaPackagesToDockerFile
 import static io.seqera.wave.util.DockerHelper.condaPackagesToSingularityFile
+import static io.seqera.wave.util.RegHelper.layerMountDir
+import static io.seqera.wave.util.RegHelper.layerName
+
 /**
  * Container helper methods
  *
@@ -60,19 +64,27 @@ class ContainerHelper {
      * @return
      *      The corresponding Containerfile
      */
-    static String containerFileFromPackages(PackagesSpec spec, boolean formatSingularity) {
+    static String containerFileFromPackages(PackagesSpec spec, boolean formatSingularity, List<ContainerLayer> layers) {
         if( spec.type == PackagesSpec.Type.CONDA ) {
             final lockFile = condaLockFile(spec.entries)
             if( !spec.condaOpts )
                 spec.condaOpts = new CondaOpts()
+            List<String> unTarLayerCmd = null
+            if( formatSingularity && layers ) {
+                unTarLayerCmd = new ArrayList<>(layers.size())
+                for (def layer : layers) {
+                    def layerMountDir = layerMountDir(layer)
+                    unTarLayerCmd.add("cd / && tar -xzf $layerMountDir && rm $layerMountDir".toString())
+                }
+            }
             def result
             if ( lockFile ) {
                 result = formatSingularity
-                        ? condaPackagesToSingularityFile(lockFile, spec.channels, spec.condaOpts)
+                        ? condaPackagesToSingularityFile(lockFile, spec.channels, spec.condaOpts, unTarLayerCmd)
                         : condaPackagesToDockerFile(lockFile, spec.channels, spec.condaOpts)
             } else {
                 result = formatSingularity
-                        ? condaFileToSingularityFile(spec.condaOpts)
+                        ? condaFileToSingularityFile(spec.condaOpts, unTarLayerCmd)
                         : condaFileToDockerFile(spec.condaOpts)
             }
             return result
