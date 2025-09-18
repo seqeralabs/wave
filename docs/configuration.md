@@ -371,7 +371,7 @@ Configure how Wave sends email notifications on behalf of the service with the f
 
 ## Metrics
 
-Configure how Wave Metrics service provides data about container builds and pulls per ip, container image, and user with the following options:
+Configure how [Wave Metrics service](https://github.com/seqeralabs/wave/blob/master/docs/metrics.md) provides data about container builds and pulls per organisation and date with the following options:
 
 `wave.metrics.enabled` *(optional)*
 : Enables Wave metrics (default: `false`).
