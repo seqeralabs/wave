@@ -8,7 +8,7 @@ tags: [redis, metrics, wave]
 Wave can store usage metrics for specific dates and organizations in Redis.
 
 :::note
-To use metrics, enable `wave.metrics.enabled` in your Wave configuration file. For more information about Wave configuration files, see [Configuration reference](./configuration.md).
+To use metrics, enable `wave.metrics.enabled` in your Wave configuration file. See [Configuration reference](./configuration.md) for more information about Wave configuration files.
 :::
 
 ## Keys
@@ -38,11 +38,11 @@ When you make a container build request, Wave increments the following keys:
    - `application/vnd.oci.image.manifest.v1+json`
    - `application/vnd.docker.distribution.manifest.v1+prettyjws`
    - `application/vnd.docker.distribution.manifest.v1+json`
-1. It increments the following `pulls` keys:
+1. Wave increments the following `pulls` keys:
     - `pulls/d/<YYYY-MM-DD>`
     - `pulls/o/<ORG>`
     - `pulls/o/<ORG>/d/<YYYY-MM-DD>`
-1. **For Fusion-enabled containers**: If the pulled container uses Fusion, Wave also increments the following Fusion-specific keys:
+1. **For Fusion-enabled containers**: If the pulled container uses Fusion, Wave increments the following `fusion` keys:
     - `fusion/d/<YYYY-MM-DD>`
     - `fusion/o/<ORG>`
     - `fusion/o/<ORG>/d/<YYYY-MM-DD>`
@@ -51,7 +51,7 @@ When you make a container build request, Wave increments the following keys:
 
 Wave stores usage metrics in Redis using the following key patterns:
 
-- `pulls/d/<<YYYY-MM-DD>>`
+- `pulls/d/<YYYY-MM-DD>`
 - `pulls/o/<ORG>`
 - `pulls/o/<ORG>/d/<YYYY-MM-DD>`
 - `fusion/d/<YYYY-MM-DD>`
