@@ -2,7 +2,7 @@
 title: Usage metrics
 description: Overview of Wave's Redis-based usage metrics storage and tracking system
 date: 2025-09-17
-tags: [redis, metrics, wave]
+tags: [redis, metrics, keys, wave]
 ---
 
 Wave can store usage metrics for specific dates and organizations in Redis.
