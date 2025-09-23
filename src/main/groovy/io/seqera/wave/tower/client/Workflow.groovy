@@ -16,44 +16,43 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.store.range
+package io.seqera.wave.tower.client
+
+import java.time.OffsetDateTime
 
 import groovy.transform.CompileStatic
-import io.seqera.wave.store.range.impl.RangeProvider
+import groovy.transform.EqualsAndHashCode
+import groovy.transform.ToString
+import io.seqera.wave.encoder.MoshiSerializable
+
 /**
- * Abstract implementation for range set similar to Redis `zrange`
+ * Model a Platform workflow run
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@EqualsAndHashCode
 @CompileStatic
-abstract class AbstractRangeStore implements RangeStore {
+@ToString(includePackage = false, includeNames = true)
+class Workflow implements MoshiSerializable {
 
-    private RangeProvider delegate
-
-    protected abstract String getKey()
-
-    AbstractRangeStore(RangeProvider provider) {
-        this.delegate = provider
+    enum WorkflowStatus {
+        SUBMITTED,
+        RUNNING,
+        SUCCEEDED,
+        FAILED,
+        CANCELLED,
+        UNKNOWN
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    void add(String entry, double score) {
-        delegate.add(getKey(), entry, score)
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    List<String> getRange(double min, double max, int count) {
-        return getRange(min, max, count, true)
-    }
-
-    List<String> getRange(double min, double max, int count, boolean remove) {
-        return delegate.getRange(getKey(), min, max, count, remove) ?: List.<String>of()
-    }
-
+    String id
+    OffsetDateTime submit
+    OffsetDateTime start
+    OffsetDateTime complete
+    OffsetDateTime dateCreated
+    OffsetDateTime lastUpdated
+    String runName
+    String sessionId
+    String workDir
+    String launchId
+    WorkflowStatus status
 }
