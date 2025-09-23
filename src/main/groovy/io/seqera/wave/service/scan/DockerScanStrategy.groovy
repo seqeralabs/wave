@@ -68,6 +68,27 @@ class DockerScanStrategy extends ScanStrategy {
         }
     }
 
+    @Override
+    void scanPlugin(String jobName, ScanEntry entry) {
+        log.info("Launching plugin scan job: $jobName for entry: $entry}")
+        // config (docker auth) file name
+        final Path configFile = entry.configJson ? entry.workDir.resolve('config.json') : null
+        // create the launch command
+        final dockerCommand = dockerWrapper(jobName, entry.workDir, configFile, scanConfig.environment)
+        final command = dockerCommand + scanConfig.scanPluginImage + "-c" + scanPluginCommand(entry.containerImage, entry.workDir, scanConfig, ScanType.Default)
+
+        //launch scanning
+        log.debug("Plugin scan command: ${command.join(' ')}")
+        final process = new ProcessBuilder()
+                .command(command)
+                .redirectErrorStream(true)
+                .start()
+
+        if( process.waitFor()!=0 ) {
+            throw new IllegalStateException("Unable to launch scan container - exitCode=${process.exitValue()}; output=${process.text}")
+        }
+    }
+
     protected List<String> dockerWrapper(String jobName, Path scanDir, Path credsFile, List<String> env) {
 
         final wrapper = ['docker','run']

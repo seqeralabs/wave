@@ -289,7 +289,10 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         // save docker auth file
         saveDockerAuth(entry.workDir, entry.configJson)
         // launch scan job
-        scanStrategy.scanContainer(job.operationName, entry)
+        if( !entry.platform )
+            scanStrategy.scanPlugin(job.operationName, entry)
+        else
+            scanStrategy.scanContainer(job.operationName, entry)
         // return the update job
         return job.withLaunchTime(Instant.now())
     }
@@ -376,6 +379,25 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         if( !scanId ) return null
         final Optional<ObjectStorageEntry<?>> result = scanStoreOpts.retrieve(scanKey(scanId,type.output))
         return result.isPresent() ? result.get().toStreamedFile() : null
+    }
+
+    @Override
+    void scanPlugin(String plugin) {
+        try {
+            final scanId = getScanId(plugin, null, ScanMode.required, null)
+            final workDir = config.workspace.resolve(scanId)
+
+            log.info("Starting plugin scan - pluginUrl=${plugin}; scanId=${scanId}")
+            // Create a custom scan request for plugin scanning
+            final pluginScanRequest = ScanRequest.of( scanId:  scanId, targetImage:  plugin, workDir:  workDir, platform: null)
+
+            // Create scan entry
+            scan(pluginScanRequest)
+        }
+        catch (Exception e) {
+            log.warn "Unable to run plugin scan - pluginUrl=${plugin}; reason=${e.message}"
+            println(e.stackTrace)
+        }
     }
 
 }

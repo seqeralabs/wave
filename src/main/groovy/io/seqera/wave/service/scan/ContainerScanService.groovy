@@ -50,4 +50,6 @@ interface ContainerScanService {
 
     StreamedFile fetchReportStream(String scanId, ScanType type)
 
+    void scanPlugin(String plugin)
+
 }

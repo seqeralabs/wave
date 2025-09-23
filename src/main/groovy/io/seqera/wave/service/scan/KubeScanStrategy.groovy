@@ -74,6 +74,11 @@ class KubeScanStrategy extends ScanStrategy {
         }
     }
 
+    @Override
+    void scanPlugin(String jobName, ScanEntry entry) {
+
+    }
+
     void cleanup(String podName) {
         try {
             k8sService.deletePod(podName)

@@ -27,6 +27,7 @@ import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Produces
+import io.micronaut.http.annotation.QueryValue
 import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
@@ -75,6 +76,12 @@ class ScanController {
                 ? (HttpResponse.ok(logs)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=${scanId}.log"))
                 : HttpResponse.<String>notFound()
+    }
+
+    @Produces(MediaType.APPLICATION_JSON)
+    @Get("/v1alpha1/scans/plugins")
+    HttpResponse<String> scanPlugin(@QueryValue String plugin){
+        return scanService.scanPlugin(plugin)
     }
 
 }
