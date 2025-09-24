@@ -51,6 +51,7 @@ import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.request.ContainerRequest
+import io.seqera.wave.service.scan.plugin.PluginScanResponse
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -383,7 +384,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     }
 
     @Override
-    void scanPlugin(String plugin) {
+    PluginScanResponse scanPlugin(String plugin) {
         try {
             final scanId = getScanId(plugin, null, ScanMode.required, null)
             final workDir = config.workspace.resolve(scanId)
@@ -394,10 +395,11 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
 
             // Create scan entry
             scan(pluginScanRequest)
+            return new PluginScanResponse(scanId: pluginScanRequest.scanId, createTime: pluginScanRequest.creationTime)
         }
         catch (Exception e) {
             log.warn "Unable to run plugin scan - pluginUrl=${plugin}; reason=${e.message}"
-            println(e.stackTrace)
+            return null
         }
     }
 

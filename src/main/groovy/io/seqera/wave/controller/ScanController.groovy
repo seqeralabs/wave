@@ -34,6 +34,7 @@ import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ScanType
+import io.seqera.wave.service.scan.plugin.PluginScanResponse
 import jakarta.inject.Inject
 
 /**
@@ -80,8 +81,9 @@ class ScanController {
 
     @Produces(MediaType.APPLICATION_JSON)
     @Get("/v1alpha1/scans/plugins")
-    HttpResponse<String> scanPlugin(@QueryValue String plugin){
-        return scanService.scanPlugin(plugin)
+    HttpResponse<PluginScanResponse> scanPlugin(@QueryValue String plugin){
+        final res = scanService.scanPlugin(plugin)
+        return res ? HttpResponse.ok(res) : HttpResponse.<PluginScanResponse>notFound()
     }
 
 }

@@ -24,6 +24,8 @@ import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.mirror.MirrorEntry
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.request.ContainerRequest
+import io.seqera.wave.service.scan.plugin.PluginScanResponse
+
 /**
  * Declare operations to scan containers
  *
@@ -50,6 +52,6 @@ interface ContainerScanService {
 
     StreamedFile fetchReportStream(String scanId, ScanType type)
 
-    void scanPlugin(String plugin)
+    PluginScanResponse scanPlugin(String plugin)
 
 }
