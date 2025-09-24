@@ -76,7 +76,16 @@ class KubeScanStrategy extends ScanStrategy {
 
     @Override
     void scanPlugin(String jobName, ScanEntry entry) {
-
+        log.info("Launching container scan job: $jobName for entry: ${entry}")
+        try{
+            Files.createDirectories(entry.workDir)
+            final Path configFile = entry.configJson ? entry.workDir.resolve('config.json') : null
+            final command = scanPluginCommand(entry.containerImage, entry.workDir, scanConfig, ScanType.Default)
+            k8sService.launchScanJob(jobName, scanConfig.scanPluginImage, command, entry.workDir, configFile, scanConfig)
+        }
+        catch (ApiException e) {
+            throw new BadRequestException("Unexpected scan failure: ${e.responseBody}", e)
+        }
     }
 
     void cleanup(String podName) {
