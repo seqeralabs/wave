@@ -64,6 +64,9 @@ wave:
       attempts: 5
       multiplier: '1.75'
   scan:
+    plugin:
+      image:
+        name: hrma017/trivy-oras:v0.65.0 #for testing
     image:
       name: aquasec/trivy:0.65.0
     environment:
