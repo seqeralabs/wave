@@ -51,7 +51,7 @@ abstract class ScanStrategy {
         cmd << '--output'
         cmd << workDir.resolve(mode.output).toString()
         cmd << '--cache-dir'
-        cmd << '/tmp/trivy-cache'
+        cmd << Trivy.CACHE_MOUNT_PATH
         if( config.severity && mode==ScanType.Default ) {
             cmd << '--severity'
             cmd << config.severity
@@ -81,13 +81,13 @@ abstract class ScanStrategy {
                  << '--output'
                  << workDir.resolve(mode.output).toString()
                  << '--cache-dir'
-                 << '/tmp/trivy-cache'
+                 << Trivy.CACHE_MOUNT_PATH
         if( config.severity && mode==ScanType.Default ) {
             trivyCmd << '--severity'
             trivyCmd << config.severity
         }
-        trivyCmd << 'fs'
+        trivyCmd << "$workDir/fs".toString()
 
-        return List.of("oras pull -d $plugin -o plugin && unzip -u plugin/*.zip -d fs && ${trivyCmd.join(' ')}".toString())
+        return List.of("oras pull $plugin -o $workDir/plugin && unzip -u $workDir/plugin/*.zip -d $workDir/fs && ${trivyCmd.join(' ')}".toString())
     }
 }

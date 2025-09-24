@@ -220,7 +220,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     protected void incrScanMetrics(ScanRequest request) {
         try {
             //increment metrics
-            metricsService.incrementScansCounter(request.identity, request.platform.arch)
+            if (request.platform)
+                metricsService.incrementScansCounter(request.identity, request.platform.arch)
         }
         catch (Throwable e) {
             log.warn "Enable to increase scan metrics - cause: ${e.cause}", e
@@ -389,7 +390,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
 
             log.info("Starting plugin scan - pluginUrl=${plugin}; scanId=${scanId}")
             // Create a custom scan request for plugin scanning
-            final pluginScanRequest = ScanRequest.of( scanId:  scanId, targetImage:  plugin, workDir:  workDir, platform: null)
+            final pluginScanRequest = ScanRequest.of( scanId:  scanId, targetImage:  plugin, workDir:  workDir, creationTime: Instant.now(), platform: null)
 
             // Create scan entry
             scan(pluginScanRequest)
