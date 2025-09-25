@@ -1,4 +1,10 @@
 # Wave changelog
+1.25.2 - 25 Sep 2025
+- Add CLAUDE.md documentation file [573c06ae]
+- Bump corretto-25-al2023-jemalloc as base image [715c594a]
+- Add Claude PR Assistant workflow [94f9f443]
+- Add ARM64 platform support to container build (#911) [12dd4978]
+
 1.25.1 - 22 Sep 2025
 - Fix links broken by renaming page (#892) [db0cacd9]
 - Remove unused env from jib task def [34718247]
