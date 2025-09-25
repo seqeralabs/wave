@@ -24,7 +24,6 @@ import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.mirror.MirrorEntry
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.request.ContainerRequest
-
 /**
  * Declare operations to scan containers
  *
