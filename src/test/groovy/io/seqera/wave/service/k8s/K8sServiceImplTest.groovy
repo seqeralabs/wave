@@ -41,6 +41,8 @@ import io.micronaut.context.ApplicationContext
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.service.builder.BuildRequest
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -597,9 +599,11 @@ class K8sServiceImplTest extends Specification {
         def credsFile = workDir.resolve('config.json')
         def timeout = Duration.ofMinutes(10)
         def nodeSelector = [key: 'value']
+        and:
+        def request = new BuildRequest(workspace: workDir, buildId: "1")
 
         when:
-        def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, nodeSelector)
+        def job = k8sService.buildJobSpec(name, containerImage, args, request, credsFile, timeout, nodeSelector)
 
         then:
         job.spec.backoffLimit == 1
@@ -614,8 +618,8 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.containers.get(0).volumeMounts.get(0).mountPath == '/singularity'
         and:
         job.spec.template.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(1).mountPath == '/build/work/xyz'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(1).mountPath == '/build/work/xyz/1'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz/1'
         and:
         job.spec.template.spec.volumes.size() == 2
         and:
@@ -652,9 +656,11 @@ class K8sServiceImplTest extends Specification {
         def credsFile = workDir.resolve('config.json')
         def timeout = Duration.ofMinutes(10)
         def nodeSelector = [key: 'value']
+        and:
+        def request = new BuildRequest(workspace: workDir, buildId: "1")
 
         when:
-        def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, nodeSelector)
+        def job = k8sService.buildJobSpec(name, containerImage, args, request, credsFile, timeout, nodeSelector)
 
         then:
         job.spec.template.spec.containers[0].image == containerImage
@@ -673,8 +679,8 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz/config.json'
         and:
         job.spec.template.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(1).mountPath == '/build/work/xyz'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(1).mountPath == '/build/work/xyz/1'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz/1'
         and:
         job.spec.template.spec.volumes.get(0).name == 'build-data'
         job.spec.template.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
@@ -710,9 +716,11 @@ class K8sServiceImplTest extends Specification {
         def credsFile = workDir.resolve('config.json')
         def timeout = Duration.ofMinutes(10)
         def nodeSelector = [key: 'value']
+        and:
+        def request = new BuildRequest(workspace: workDir, buildId: "1")
 
         when:
-        def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, nodeSelector)
+        def job = k8sService.buildJobSpec(name, containerImage, args, request, credsFile, timeout, nodeSelector)
 
         then:
         job.spec.template.spec.containers[0].image == containerImage
@@ -731,69 +739,8 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz/config.json'
         and:
         job.spec.template.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(1).mountPath == '/build/work/xyz'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz'
-        and:
-        job.spec.template.spec.volumes.get(0).name == 'build-data'
-        job.spec.template.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
-        and:
-        job.spec.template.spec.containers.get(0).resources.requests.get('cpu') == new Quantity('2')
-        job.spec.template.spec.containers.get(0).resources.requests.get('memory') == new Quantity('8Gi')
-        and:
-        job.spec.template.spec.containers.get(0).resources.limits.get('cpu') == new Quantity('4')
-        job.spec.template.spec.containers.get(0).resources.limits.get('memory') == new Quantity('16Gi')
-
-        cleanup:
-        ctx.close()
-    }
-
-    def 'should create job request with resource limits'() {
-        given:
-        def PROPS = [
-                'wave.build.workspace': '/build/work',
-                'wave.build.k8s.namespace': 'my-ns',
-                'wave.build.k8s.configPath': '/home/kube.config',
-                'wave.build.k8s.storage.claimName': 'build-claim',
-                'wave.build.k8s.storage.mountPath': '/build',
-                'wave.build.retry-attempts': 3,
-                'wave.build.k8s.resources.requests.cpu': '2',
-                'wave.build.k8s.resources.requests.memory': '8Gi',
-                'wave.build.k8s.resources.limits.cpu': '4',
-                'wave.build.k8s.resources.limits.memory': '16Gi'
-        ]
-        and:
-        def ctx = ApplicationContext.run(PROPS)
-        def k8sService = ctx.getBean(K8sServiceImpl)
-        def name = 'test-job'
-        def containerImage = 'docker://test-image'
-        def args = ['arg1', 'arg2']
-        def workDir = Path.of('/build/work/xyz')
-        def credsFile = workDir.resolve('config.json')
-        def timeout = Duration.ofMinutes(10)
-        def nodeSelector = [key: 'value']
-
-        when:
-        def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, nodeSelector)
-
-        then:
-        job.spec.template.spec.containers[0].image == containerImage
-        job.spec.template.spec.containers[0].env.find { it.name == 'BUILDKITD_FLAGS' }
-        job.spec.template.spec.containers[0].command == ['buildctl-daemonless.sh']
-        job.spec.template.spec.containers[0].args == args
-        job.spec.template.spec.containers[0].securityContext.privileged == false
-        job.spec.template.spec.containers[0].securityContext.appArmorProfile.type == 'Unconfined'
-
-        and:
-        job.spec.template.spec.containers.get(0).getWorkingDir() == '/tmp'
-        and:
-        job.spec.template.spec.containers.get(0).volumeMounts.size() == 2
-        job.spec.template.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(0).mountPath == '/home/user/.docker/config.json'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz/config.json'
-        and:
-        job.spec.template.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(1).mountPath == '/build/work/xyz'
-        job.spec.template.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(1).mountPath == '/build/work/xyz/1'
+        job.spec.template.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz/1'
         and:
         job.spec.template.spec.volumes.get(0).name == 'build-data'
         job.spec.template.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'

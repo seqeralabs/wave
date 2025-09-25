@@ -72,8 +72,6 @@ import static io.seqera.wave.util.RegHelper.layerName
 import static java.nio.file.StandardOpenOption.CREATE
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import static java.nio.file.StandardOpenOption.WRITE
-import static java.nio.file.attribute.PosixFilePermission.OWNER_READ
-import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
 /**
  * Implements container build service
  *
@@ -185,7 +183,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
             Files.write(containerFile, containerFile0(req, context).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             // save build context
             if( req.buildContext ) {
-                saveBuildContext(req.buildContext, context, req.identity)
+                saveBuildContext(req.buildContext, req.workDir, req.identity)
             }
             // save the conda file
             if( req.condaFile ) {
@@ -265,23 +263,14 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")
     }
 
-    protected void saveLayersToContext(BuildRequest req, Path contextDir) {
-        if(req.formatDocker()) {
-            saveLayersToDockerContext0(req, contextDir)
-        }
-        else if(req.formatSingularity()) {
-            saveLayersToSingularityContext0(req, contextDir)
-        }
-        else
-            throw new IllegalArgumentException("Unknown container format: $req.format")
-    }
-
-    protected void saveLayersToDockerContext0(BuildRequest request, Path contextDir) {
+    protected void saveLayersToContext(BuildRequest request, Path contextDir) {
         final layers = request.containerConfig.layers
         for(int i=0; i<layers.size(); i++) {
             final it = layers[i]
             final target = contextDir.resolve(layerName(it))
-            final retryable = retry0("Unable to copy '${it.location}' to docker context '${contextDir}'")
+            try { Files.createDirectory(target) }
+            catch (FileAlreadyExistsException e) { /* ignore */ }
+            final retryable = retry0("Unable to copy '${it.location}' to context '${contextDir}'")
             // copy the layer to the build context
             retryable.apply(()-> {
                 try (InputStream stream = streamService.stream(it.location, request.identity)) {
@@ -292,32 +281,16 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         }
     }
 
-    protected void saveLayersToSingularityContext0(BuildRequest request, Path contextDir) {
-        final layers = request.containerConfig.layers
-        for(int i=0; i<layers.size(); i++) {
-            final it = layers[i]
-            final target = contextDir.resolve(layerDir(it))
-            try { Files.createDirectory(target) }
-            catch (FileAlreadyExistsException e) { /* ignore */ }
-            // retry strategy
-            final retryable = retry0("Unable to copy '${it.location} to singularity context '${contextDir}'")
-            // copy the layer to the build context
-            retryable.apply(()-> {
-                try (InputStream stream = streamService.stream(it.location, request.identity)) {
-                    TarUtils.untarGzip(stream, target)
-                }
-                return
-            })
-        }
-    }
-
-    protected void saveBuildContext(BuildContext buildContext, Path contextDir, PlatformId identity) {
+    protected void saveBuildContext(BuildContext buildContext, Path workDir, PlatformId identity) {
         // retry strategy
-        final retryable = retry0("Unable to copy '${buildContext.location} to build context '${contextDir}'")
+        final retryable = retry0("Unable to copy '${buildContext.location} to work directory '${workDir}'")
+        final target = workDir.resolve("context.tar.gz")
+        try { Files.createDirectory(target) }
+        catch (FileAlreadyExistsException e) { /* ignore */ }
         // copy the layer to the build context
         retryable.apply(()-> {
             try (InputStream stream = streamService.stream(buildContext.location, identity)) {
-                TarUtils.untarGzip(stream, contextDir)
+                Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING)
             }
             return
         })
