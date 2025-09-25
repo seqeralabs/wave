@@ -66,22 +66,14 @@ class KubeScanStrategy extends ScanStrategy {
         try{
             Files.createDirectories(entry.workDir)
             final Path configFile = entry.configJson ? entry.workDir.resolve('config.json') : null
-            final command = trivyCommand(entry.containerImage, entry.workDir, entry.platform, scanConfig)
-            k8sService.launchScanJob(jobName, scanConfig.scanImage, command, entry.workDir, configFile, scanConfig)
-        }
-        catch (ApiException e) {
-            throw new BadRequestException("Unexpected scan failure: ${e.responseBody}", e)
-        }
-    }
 
-    @Override
-    void scanPlugin(String jobName, ScanEntry entry) {
-        log.info("Launching container scan job: $jobName for entry: ${entry}")
-        try{
-            Files.createDirectories(entry.workDir)
-            final Path configFile = entry.configJson ? entry.workDir.resolve('config.json') : null
-            final command = scanPluginCommand(entry.containerImage, entry.workDir, scanConfig, ScanType.Default)
-            k8sService.launchScanJob(jobName, scanConfig.scanPluginImage, command, entry.workDir, configFile, scanConfig)
+            if (entry.containerImage.contains("nextflow/plugin")) {
+                final command = scanPluginCommand(entry.containerImage, entry.workDir, scanConfig, ScanType.Default)
+                k8sService.launchScanJob(jobName, scanConfig.scanPluginImage, command, entry.workDir, configFile, scanConfig)
+            } else {
+                final command = trivyCommand(entry.containerImage, entry.workDir, entry.platform, scanConfig)
+                k8sService.launchScanJob(jobName, scanConfig.scanImage, command, entry.workDir, configFile, scanConfig)
+            }
         }
         catch (ApiException e) {
             throw new BadRequestException("Unexpected scan failure: ${e.responseBody}", e)

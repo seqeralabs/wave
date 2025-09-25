@@ -54,31 +54,14 @@ class DockerScanStrategy extends ScanStrategy {
         final Path configFile = entry.configJson ? entry.workDir.resolve('config.json') : null
         // create the launch command
         final dockerCommand = dockerWrapper(jobName, entry.workDir, configFile, scanConfig.environment)
-        final command = dockerCommand + scanConfig.scanImage + "-c" + trivyCommand(entry.containerImage, entry.workDir, entry.platform, scanConfig)
+        final command = entry.containerImage.contains("nextflow/plugin")
+                        ? dockerCommand + scanConfig.scanPluginImage + "-c" + scanPluginCommand(entry.containerImage, entry.workDir, scanConfig, ScanType.Default)
+                        : dockerCommand + scanConfig.scanImage + "-c" + trivyCommand(entry.containerImage, entry.workDir, entry.platform, scanConfig)
+
+
 
         //launch scanning
         log.debug("Container scan command: ${command.join(' ')}")
-        final process = new ProcessBuilder()
-                .command(command)
-                .redirectErrorStream(true)
-                .start()
-
-        if( process.waitFor()!=0 ) {
-            throw new IllegalStateException("Unable to launch scan container - exitCode=${process.exitValue()}; output=${process.text}")
-        }
-    }
-
-    @Override
-    void scanPlugin(String jobName, ScanEntry entry) {
-        log.info("Launching plugin scan job: $jobName for entry: $entry}")
-        // config (docker auth) file name
-        final Path configFile = entry.configJson ? entry.workDir.resolve('config.json') : null
-        // create the launch command
-        final dockerCommand = dockerWrapper(jobName, entry.workDir, configFile, scanConfig.environment)
-        final command = dockerCommand + scanConfig.scanPluginImage + "-c" + scanPluginCommand(entry.containerImage, entry.workDir, scanConfig, ScanType.Default)
-
-        //launch scanning
-        log.debug("Plugin scan command: ${command.join(' ')}")
         final process = new ProcessBuilder()
                 .command(command)
                 .redirectErrorStream(true)

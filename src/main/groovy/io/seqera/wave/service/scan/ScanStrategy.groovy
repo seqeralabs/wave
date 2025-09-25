@@ -36,8 +36,6 @@ abstract class ScanStrategy {
 
     abstract void scanContainer(String jobName, ScanEntry entry)
 
-    abstract void scanPlugin(String jobName, ScanEntry entry)
-
     protected List<String> scanCommand(String targetImage, Path workDir, ContainerPlatform platform, ScanConfig config, ScanType mode) {
         List<String> cmd = ['trivy', '--quiet', 'image']
         if( platform ) {
