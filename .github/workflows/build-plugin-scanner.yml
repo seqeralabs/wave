@@ -3,10 +3,14 @@ name: Build and publish Singularity container image
 on:
   workflow_dispatch:
     inputs:
-      version:
+      trivy_version:
         description: 'trivy version (e.g., 0.65.0)'
         required: true
         default: '0.65.0'
+      oras_version :
+        description : 'oras version (e.g., 1.3.0)'
+        required : true
+        default : '1.3.0'
 
 jobs:
   build-and-push:
@@ -29,4 +33,4 @@ jobs:
       - name: Build and Push Image to public.cr.seqera.io
         run: |
           cd plugin-scanner
-          make build version=${{ github.event.inputs.version }}
+          make build trivy_version=${{ github.event.inputs.trivy_version }} oras_version=${{ github.event.inputs.oras_version }}
