@@ -55,7 +55,7 @@ class ContainerScanStrategyTest extends Specification {
                      '--output',
                      '/work/dir/report.json',
                      '--cache-dir',
-                     '/tmp/trivy-cache',
+                     '/root/.cache/',
                      targetImage]
     }
 
@@ -85,7 +85,7 @@ class ContainerScanStrategyTest extends Specification {
                      '--output',
                      '/work/dir/report.json',
                      '--cache-dir',
-                     '/tmp/trivy-cache',
+                     '/root/.cache/',
                      '--severity',
                      'low,high',
                      targetImage]
@@ -117,7 +117,7 @@ class ContainerScanStrategyTest extends Specification {
                      '--output',
                      '/work/dir/spdx.json',
                      '--cache-dir',
-                     '/tmp/trivy-cache',
+                     '/root/.cache/',
                      targetImage]
     }
 
@@ -135,6 +135,6 @@ class ContainerScanStrategyTest extends Specification {
         when:
         def command = containerScanStrategy.trivyCommand(targetImage, workDir, platform, config)
         then:
-        command == [ 'trivy --quiet image --platform linux/amd64 --timeout 100m --format json --output /work/dir/report.json --cache-dir /tmp/trivy-cache --severity low,high repository/scantool && trivy --quiet image --platform linux/amd64 --timeout 100m --format spdx-json --output /work/dir/spdx.json --cache-dir /tmp/trivy-cache repository/scantool' ]
+        command == [ 'trivy --quiet image --platform linux/amd64 --timeout 100m --format json --output /work/dir/report.json --cache-dir /root/.cache/ --severity low,high repository/scantool && trivy --quiet image --platform linux/amd64 --timeout 100m --format spdx-json --output /work/dir/spdx.json --cache-dir /root/.cache/ repository/scantool' ]
     }
 }
