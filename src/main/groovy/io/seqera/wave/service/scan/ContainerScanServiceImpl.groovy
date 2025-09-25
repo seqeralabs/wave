@@ -220,7 +220,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     protected void incrScanMetrics(ScanRequest request) {
         try {
             //increment metrics
-            metricsService.incrementScansCounter(request.identity, request.platform.arch)
+            if (request.platform)
+                metricsService.incrementScansCounter(request.identity, request.platform.arch)
         }
         catch (Throwable e) {
             log.warn "Enable to increase scan metrics - cause: ${e.cause}", e
@@ -377,5 +378,4 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         final Optional<ObjectStorageEntry<?>> result = scanStoreOpts.retrieve(scanKey(scanId,type.output))
         return result.isPresent() ? result.get().toStreamedFile() : null
     }
-
 }

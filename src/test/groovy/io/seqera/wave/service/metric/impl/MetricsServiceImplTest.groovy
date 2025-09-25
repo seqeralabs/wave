@@ -58,7 +58,7 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         then:
         def res1 = metricsService.getOrgCount(PREFIX_BUILDS, date, null)
         res1.count == 3
-        res1.orgs == ['org1.com': 1, 'org2.com': 1]
+        res1.orgs == ['org1.com': 1, 'org2.com': 1, anonymous:1]
         and:
         def res2 = metricsService.getOrgCount(PREFIX_BUILDS, null, 'org1.com')
         res2.count == 1
@@ -70,7 +70,7 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         and:
         def res4 = metricsService.getOrgCount(PREFIX_BUILDS, date, null)
         res4.count == 3
-        res4.orgs == ['org1.com': 1, 'org2.com': 1]
+        res4.orgs == ['org1.com': 1, 'org2.com': 1, anonymous:1]
     }
 
     def 'should increment pull count and return the correct count' () {
@@ -100,7 +100,7 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         and:
         def res3 = metricsService.getOrgCount(PREFIX_PULLS,date, null)
         res3.count == 3
-        res3.orgs == ['org1.com': 1, 'org2.com': 1]
+        res3.orgs == ['org1.com': 1, anonymous:1, 'org2.com': 1]
     }
 
     def 'should increment fusion pull count and return the correct count' () {
@@ -130,7 +130,7 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         and:
         def res3 = metricsService.getOrgCount(PREFIX_FUSION, date, null)
         res3.count == 3
-        res3.orgs == ['org1.com': 1, 'org2.com': 1]
+        res3.orgs == ['org1.com': 1, anonymous:1, 'org2.com': 1]
     }
 
     @Unroll
@@ -209,24 +209,24 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
 
         then:
         buildOrgCounts.metric == PREFIX_BUILDS
-        buildOrgCounts.count == 2
-        buildOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        buildOrgCounts.count == 3
+        buildOrgCounts.orgs == ['org1.com': 1, anonymous:1, 'org2.com': 1]
         and:
         pullOrgCounts.metric == PREFIX_PULLS
-        pullOrgCounts.count == 2
-        pullOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        pullOrgCounts.count == 3
+        pullOrgCounts.orgs == ['org1.com': 1, anonymous:1, 'org2.com': 1]
         and:
         fusionOrgCounts.metric == PREFIX_FUSION
-        fusionOrgCounts.count == 2
-        fusionOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        fusionOrgCounts.count == 3
+        fusionOrgCounts.orgs == ['org1.com': 1, anonymous:1, 'org2.com': 1]
         and:
         mirrorOrgCounts.metric == PREFIX_MIRRORS
-        mirrorOrgCounts.count == 2
-        mirrorOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        mirrorOrgCounts.count == 3
+        mirrorOrgCounts.orgs == ['org1.com': 1, anonymous:1, 'org2.com': 1]
         and:
         scanOrgCounts.metric == PREFIX_SCANS
-        scanOrgCounts.count == 2
-        scanOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        scanOrgCounts.count == 3
+        scanOrgCounts.orgs == ['org1.com': 1, anonymous:1, 'org2.com': 1]
         and:
         emptyOrgCounts.metric == null
         emptyOrgCounts.count == 0
@@ -270,23 +270,23 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         then:
         buildOrgCounts.metric == PREFIX_BUILDS
         buildOrgCounts.count == 3
-        buildOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        buildOrgCounts.orgs == ['org1.com': 1, anonymous:1, 'org2.com': 1]
         and:
         pullOrgCounts.metric == PREFIX_PULLS
         pullOrgCounts.count == 3
-        pullOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        pullOrgCounts.orgs == ['org1.com': 1, anonymous:1, 'org2.com': 1]
         and:
         fusionOrgCounts.metric == PREFIX_FUSION
         fusionOrgCounts.count == 3
-        fusionOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        fusionOrgCounts.orgs == ['org1.com': 1, anonymous:1, 'org2.com': 1]
         and:
         mirrorOrgCounts.metric == PREFIX_MIRRORS
         mirrorOrgCounts.count == 3
-        mirrorOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        mirrorOrgCounts.orgs == ['org1.com': 1, anonymous:1, 'org2.com': 1]
         and:
         scanOrgCounts.metric == PREFIX_SCANS
         scanOrgCounts.count == 3
-        scanOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        scanOrgCounts.orgs == ['org1.com': 1, anonymous:1, 'org2.com': 1]
     }
 
     def 'should throw exception when prefix is null' (){
@@ -323,7 +323,7 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         then:
         def res1 = metricsService.getOrgCount(PREFIX_BUILDS, date, null)
         res1.count == 3
-        res1.orgs == ['org1.com': 1, 'org2.com': 1]
+        res1.orgs == ['org1.com': 1, anonymous:1, 'org2.com': 1]
         and:
         def res2 = metricsService.getOrgCount(PREFIX_BUILDS, null, 'org1.com')
         res2.count == 1
@@ -335,7 +335,7 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         and:
         def res4 = metricsService.getOrgCount(PREFIX_BUILDS, date, null)
         res4.count == 3
-        res4.orgs == ['org1.com': 1, 'org2.com': 1]
+        res4.orgs == ['org1.com': 1, anonymous:1, 'org2.com': 1]
     }
 
     def 'should increment pull count and return the correct count with arch' () {
@@ -367,7 +367,7 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         and:
         def res3 = metricsService.getOrgCount(PREFIX_PULLS,date, null, null)
         res3.count == 3
-        res3.orgs == ['org1.com': 1, 'org2.com': 1]
+        res3.orgs == ['org1.com': 1, anonymous:1, 'org2.com': 1]
         res3.arch == null
         and:
         def res4 = metricsService.getOrgCount(PREFIX_PULLS, null, 'org1.com', 'amd64')
@@ -382,7 +382,7 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         and:
         def res6 = metricsService.getOrgCount(PREFIX_PULLS,date, null, null)
         res6.count == 3
-        res6.orgs == ['org1.com': 1, 'org2.com': 1]
+        res6.orgs == ['org1.com': 1, anonymous:1, 'org2.com': 1]
         res6.arch == null
     }
 
@@ -415,7 +415,7 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         and:
         def res3 = metricsService.getOrgCount(PREFIX_FUSION, date, null, null)
         res3.count == 3
-        res3.orgs == ['org1.com': 1, 'org2.com': 1]
+        res3.orgs == ['org1.com': 1, anonymous:1, 'org2.com': 1]
         res3.arch == null
         and:
         def res4 = metricsService.getOrgCount(PREFIX_FUSION,null, 'org1.com', 'amd64')
@@ -430,7 +430,7 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         and:
         def res6 = metricsService.getOrgCount(PREFIX_FUSION, date, null, null)
         res6.count == 3
-        res6.orgs == ['org1.com': 1, 'org2.com': 1]
+        res6.orgs == ['org1.com': 1, anonymous:1, 'org2.com': 1]
         res6.arch == null
     }
 
@@ -476,23 +476,23 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         then:
         buildOrgCounts.metric == PREFIX_BUILDS
         buildOrgCounts.count == 3
-        buildOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        buildOrgCounts.orgs == ['org1.com': 1, anonymous:1, 'org2.com': 1]
         and:
         pullOrgCounts.metric == PREFIX_PULLS
         pullOrgCounts.count == 3
-        pullOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        pullOrgCounts.orgs == ['org1.com': 1, anonymous:1, 'org2.com': 1]
         and:
         fusionOrgCounts.metric == PREFIX_FUSION
         fusionOrgCounts.count == 3
-        fusionOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        fusionOrgCounts.orgs == ['org1.com': 1, anonymous:1, 'org2.com': 1]
         and:
         mirrorOrgCounts.metric == PREFIX_MIRRORS
         mirrorOrgCounts.count == 3
-        mirrorOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        mirrorOrgCounts.orgs == ['org1.com': 1, anonymous:1, 'org2.com': 1]
         and:
         scanOrgCounts.metric == PREFIX_SCANS
         scanOrgCounts.count == 3
-        scanOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        scanOrgCounts.orgs == ['org1.com': 1, anonymous:1, 'org2.com': 1]
         and:
         buildOrgAndArchCounts.metric == PREFIX_BUILDS
         buildOrgAndArchCounts.count == 1

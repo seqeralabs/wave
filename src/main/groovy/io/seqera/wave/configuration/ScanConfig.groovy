@@ -48,6 +48,12 @@ class ScanConfig {
     @Value('${wave.scan.image.name}')
     private String scanImage
 
+    /**
+     * Docker image of tool need to be used for plugin scanner
+     */
+    @Value('${wave.scan.plugin.image.name}')
+    private String scanPluginImage
+
     @Value('${wave.scan.k8s.resources.requests.cpu}')
     @Nullable
     private String requestsCpu
@@ -103,6 +109,10 @@ class ScanConfig {
 
     String getScanImage() {
         return scanImage
+    }
+
+    String getScanPluginImage() {
+        return scanPluginImage
     }
 
     @Memoized

@@ -153,7 +153,8 @@ class MetricsServiceImpl implements MetricsService {
     }
 
     protected void incrementCounter(String prefix, String email, String arch) {
-        final org = getOrg(email)
+
+        final org = email ? getOrg(email) : "anonymous"
         final day = LocalDate.now().format(DATE_FORMATTER)
 
         //increment the count for the current day

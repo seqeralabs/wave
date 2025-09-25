@@ -49,7 +49,7 @@ abstract class ScanStrategy {
         cmd << '--output'
         cmd << workDir.resolve(mode.output).toString()
         cmd << '--cache-dir'
-        cmd << '/tmp/trivy-cache'
+        cmd << Trivy.CACHE_MOUNT_PATH
         if( config.severity && mode==ScanType.Default ) {
             cmd << '--severity'
             cmd << config.severity
@@ -67,5 +67,25 @@ abstract class ScanStrategy {
         // the SBOM spdx scan
         cmd.addAll(scanCommand(containerImage, workDir, platform, scanConfig, ScanType.Spdx) )
         return List.of(cmd.join(' '))
+    }
+
+    protected static List<String> scanPluginCommand(String plugin, Path workDir, ScanConfig config, ScanType mode) {
+        final trivyCmd = ['trivy', 'rootfs', '--scanners vuln']
+        trivyCmd
+                 << '--timeout'
+                 << "${config.timeout.toMinutes()}m".toString()
+                 << '--format'
+                 << mode.format
+                 << '--output'
+                 << workDir.resolve(mode.output).toString()
+                 << '--cache-dir'
+                 << Trivy.CACHE_MOUNT_PATH
+        if( config.severity && mode==ScanType.Default ) {
+            trivyCmd << '--severity'
+            trivyCmd << config.severity
+        }
+        trivyCmd << "$workDir/fs".toString()
+
+        return List.of("oras pull $plugin -o $workDir/plugin && unzip -u $workDir/plugin/*.zip -d $workDir/fs && ${trivyCmd.join(' ')}".toString())
     }
 }
