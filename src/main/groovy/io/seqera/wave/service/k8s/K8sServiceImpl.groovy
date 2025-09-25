@@ -472,8 +472,8 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Job} description the submitted job
      */
     @Override
-    V1Job launchTransferJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
-        final spec = createTransferJobSpec(name, containerImage, args, blobConfig)
+    V1Job launchTransferJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig, Map<String,String> nodeSelector) {
+        final spec = createTransferJobSpec(name, containerImage, args, blobConfig, nodeSelector)
 
         return k8sClient
                 .batchV1Api()
@@ -487,7 +487,7 @@ class K8sServiceImpl implements K8sService {
                 : null
     }
 
-    V1Job createTransferJobSpec(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
+    V1Job createTransferJobSpec(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig, Map<String,String> nodeSelector) {
 
         V1JobBuilder builder = new V1JobBuilder()
 
@@ -517,6 +517,7 @@ class K8sServiceImpl implements K8sService {
                     .withRestartPolicy("Never")
                     .withDnsConfig(dnsConfig())
                     .withDnsPolicy(dnsPolicy)
+                    .withNodeSelector(nodeSelector)
         //container section
                     .addNewContainer()
                         .withName(name)
@@ -678,15 +679,15 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
-    V1Job launchScanJob(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig) {
-        final spec = scanJobSpec(name, containerImage, args, workDir, creds, scanConfig)
+    V1Job launchScanJob(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
+        final spec = scanJobSpec(name, containerImage, args, workDir, creds, scanConfig, nodeSelector)
         return k8sClient
                 .batchV1Api()
                 .createNamespacedJob(namespace, spec)
                 .execute()
     }
 
-    V1Job scanJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig) {
+    V1Job scanJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig, Map<String,String> nodeSelector) {
 
         final mounts = new ArrayList<V1VolumeMount>(5)
         mounts.add(mountBuildStorage(workDir, storageMountPath, false))
@@ -720,6 +721,7 @@ class K8sServiceImpl implements K8sService {
                 .addAllToVolumes(volumes)
                 .withDnsConfig(dnsConfig())
                 .withDnsPolicy(dnsPolicy)
+                .withNodeSelector(nodeSelector)
 
         final requests = new V1ResourceRequirements()
         if( scanConfig.requestsCpu )
@@ -754,15 +756,15 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
-    V1Job launchMirrorJob(String name, String containerImage, List<String> args, Path workDir, Path creds, MirrorConfig config) {
-        final spec = mirrorJobSpec(name, containerImage, args, workDir, creds, config)
+    V1Job launchMirrorJob(String name, String containerImage, List<String> args, Path workDir, Path creds, MirrorConfig config, Map<String,String> nodeSelector) {
+        final spec = mirrorJobSpec(name, containerImage, args, workDir, creds, config, nodeSelector)
         return k8sClient
                 .batchV1Api()
                 .createNamespacedJob(namespace, spec)
                 .execute()
     }
 
-    V1Job mirrorJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, MirrorConfig config) {
+    V1Job mirrorJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, MirrorConfig config, Map<String,String> nodeSelector) {
 
         // required volumes
         final mounts = new ArrayList<V1VolumeMount>(5)
@@ -796,6 +798,7 @@ class K8sServiceImpl implements K8sService {
                 .addAllToVolumes(volumes)
                 .withDnsConfig(dnsConfig())
                 .withDnsPolicy(dnsPolicy)
+                .withNodeSelector(nodeSelector)
 
         final requests = new V1ResourceRequirements()
         if( config.requestsCpu )
