@@ -30,7 +30,7 @@ import io.seqera.wave.core.ContainerPlatform
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-class ContainerScanStrategyTest extends Specification {
+class ScanStrategyTest extends Specification {
 
     def "should return trivy command"() {
         given:
@@ -137,4 +137,56 @@ class ContainerScanStrategyTest extends Specification {
         then:
         command == [ 'trivy --quiet image --platform linux/amd64 --timeout 100m --format json --output /work/dir/report.json --cache-dir /root/.cache/ --severity low,high repository/scantool && trivy --quiet image --platform linux/amd64 --timeout 100m --format spdx-json --output /work/dir/spdx.json --cache-dir /root/.cache/ repository/scantool' ]
     }
+
+    def "should return trivy plugin command with default mode"() {
+        given:
+        def plugin = "repository/plugin"
+        def workDir = Path.of('/work/dir')
+        def config = Mock(ScanConfig) {
+            getTimeout() >> Duration.ofMinutes(100)
+            getSeverity() >> null
+        }
+        def mode = ScanType.Default
+
+        when:
+        def command = ScanStrategy.scanPluginCommand(plugin, workDir, config, mode)
+
+        then:
+        command == ["oras pull repository/plugin -o /work/dir/plugin && unzip -u /work/dir/plugin/*.zip -d /work/dir/fs && trivy rootfs --scanners vuln --timeout 100m --format json --output /work/dir/report.json --cache-dir /root/.cache/ /work/dir/fs"]
+    }
+
+    def "should return trivy plugin command with severity in default mode"() {
+        given:
+        def plugin = "repository/plugin"
+        def workDir = Path.of('/work/dir')
+        def config = Mock(ScanConfig) {
+            getTimeout() >> Duration.ofMinutes(100)
+            getSeverity() >> 'low,high'
+        }
+        def mode = ScanType.Default
+
+        when:
+        def command = ScanStrategy.scanPluginCommand(plugin, workDir, config, mode)
+
+        then:
+        command == ["oras pull repository/plugin -o /work/dir/plugin && unzip -u /work/dir/plugin/*.zip -d /work/dir/fs && trivy rootfs --scanners vuln --timeout 100m --format json --output /work/dir/report.json --cache-dir /root/.cache/ --severity low,high /work/dir/fs"]
+    }
+
+    def "should return trivy plugin command with spdx mode"() {
+        given:
+        def plugin = "repository/plugin"
+        def workDir = Path.of('/work/dir')
+        def config = Mock(ScanConfig) {
+            getTimeout() >> Duration.ofMinutes(100)
+            getSeverity() >> 'low,high'
+        }
+        def mode = ScanType.Spdx
+
+        when:
+        def command = ScanStrategy.scanPluginCommand(plugin, workDir, config, mode)
+
+        then:
+        command == ["oras pull repository/plugin -o /work/dir/plugin && unzip -u /work/dir/plugin/*.zip -d /work/dir/fs && trivy rootfs --scanners vuln --timeout 100m --format spdx-json --output /work/dir/spdx.json --cache-dir /root/.cache/ /work/dir/fs"]
+    }
+
 }
