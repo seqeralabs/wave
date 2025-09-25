@@ -51,7 +51,6 @@ import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.request.ContainerRequest
-import io.seqera.wave.service.scan.plugin.PluginScanResponse
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -379,25 +378,4 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         final Optional<ObjectStorageEntry<?>> result = scanStoreOpts.retrieve(scanKey(scanId,type.output))
         return result.isPresent() ? result.get().toStreamedFile() : null
     }
-
-    @Override
-    PluginScanResponse scanPlugin(String plugin) {
-        try {
-            final scanId = getScanId(plugin, null, ScanMode.required, null)
-            final workDir = config.workspace.resolve(scanId)
-
-            log.info("Starting plugin scan - pluginUrl=${plugin}; scanId=${scanId}")
-            // Create a custom scan request for plugin scanning
-            final pluginScanRequest = ScanRequest.of( scanId:  scanId, targetImage:  plugin, workDir:  workDir, creationTime: Instant.now(), platform: null)
-
-            // Create scan entry
-            scan(pluginScanRequest)
-            return new PluginScanResponse(scanId: pluginScanRequest.scanId, createTime: pluginScanRequest.creationTime)
-        }
-        catch (Exception e) {
-            log.warn "Unable to run plugin scan - pluginUrl=${plugin}; reason=${e.message}"
-            return null
-        }
-    }
-
 }
