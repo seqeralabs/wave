@@ -120,7 +120,7 @@ When you run your pipeline again:
 1. Wave finds the cached images (matched by content hash)
 1. Wave returns the registry URLs immediately without rebuilding
 1. All container pulls go directly to your registry
-1. No Wave API calls occur during task execution
+1. Wave API calls do not count against quota.
 
 Rate limit issues are eliminated because manifest requests happen at the registry level, not through Wave.
 
