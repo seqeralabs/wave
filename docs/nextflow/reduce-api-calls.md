@@ -46,7 +46,7 @@ Wave freeze builds your container once and stores it in your registry. After the
 **Building without freeze:**
 
 1. Each task requests a manifest from Wave
-1. Wave retrieves the base image from the source registry
+1. Wave either retrieves the base image manifest from the source registry, builds the image from a Dockerfile or builds the image from a Conda definition.
 1. Wave builds the image with the fusion layer
 1. Wave returns the modified manifest
 1. Every task creates one API call to Wave
