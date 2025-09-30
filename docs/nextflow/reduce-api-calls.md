@@ -55,7 +55,7 @@ With thousands of concurrent tasks, this approach exceeds rate limits.
 
 **Building with freeze:**
 
-1. Wave builds the image once with your specifications
+1. Wave retrieves the manifest or builds the image once with your specifications
 1. Wave pushes the complete image to your registry
 1. Wave returns a direct URL to your registry
 1. All future pulls go directly to your registry
