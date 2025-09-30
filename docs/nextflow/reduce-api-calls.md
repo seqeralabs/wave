@@ -96,13 +96,13 @@ Amazon ECR has the following benefits:
 
 **Not recommended**: Private Docker Hub for AWS Batch workloads
 
-Private Docker Hub has the following limitations:
+External container registries have following limitations:
 
 - Requires manual credential configuration on each compute instance
 - Additional security overhead
 - More complex authentication setup
 
-If you use private Docker Hub, configure Docker credentials on each compute instance.
+If you use external container registries, configure your credentials on each compute instance.
 
 ### First pipeline run
 
