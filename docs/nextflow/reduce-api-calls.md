@@ -10,7 +10,7 @@ Wave rate limits can affect large-scale pipelines that pull containers across th
 
 ## How Wave rate limits work
 
-Wave applies rate limits to manifest requests, not layer requests. With an access token, you can pull 2,000 containers per minute. When you pull a container:
+Wave applies rate limits to container pulls. With an access token, you can pull 2,000 containers per minute. When you pull a container:
 
 - The manifest request counts as one pull against your rate limit.
 - Layer and blob requests don't count against rate limits.
