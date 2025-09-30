@@ -83,7 +83,7 @@ Replace the following:
 
 **Recommended**: Use Amazon ECR for AWS Batch workloads
 
-Amazon ECR provides the following benefits:
+Amazon ECR has the following benefits:
 
 - Automatic authentication through IAM roles
 - No manual credential configuration
