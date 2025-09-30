@@ -10,17 +10,17 @@ Wave rate limits can affect large-scale pipelines that pull containers across th
 
 ## API limits
 
-Wave applies rate limits to container builds and pulls. Authenticated users have higher rate limits than anonymous users.
+Wave applies rate limits to container builds and pulls (manifest requests). Authenticated users have higher rate limits than anonymous users.
 
 If an access token is provided, the following rate limits apply:
 
 - 250 container builds per hour
-- 2,000 container pulls (manifests) per minute
+- 2,000 container pulls (manifest requests) per minute
 
 If an access token isn't provided, the following rate limits apply:
 
 - 25 container builds per day
-- 100 container pulls (manifests) per hour
+- 100 container pulls (manifest requests) per hour
 
 ## How Wave pull rate limits work
 
