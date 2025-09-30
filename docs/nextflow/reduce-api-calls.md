@@ -125,6 +125,6 @@ When you run your pipeline again:
 Rate limit issues are eliminated because manifest requests happen at the registry level, not through Wave.
 
 :::note
-For stable containers, you may run `nextflow inspect main.nf` to get registry URLs and update your pipeline to use them directly. Keep Wave enabled during active development or when using dynamic container features.
+For stable containers, you can run `nextflow inspect` to generate a Nextflow configuration that includes resolved container URLs from your repository, which can then be used within Nextflow as an additional configuration file. Keep Wave enabled during active development or when using dynamic container features to build containers at runtime.
 :::
 
