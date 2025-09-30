@@ -41,7 +41,7 @@ This volume exceeds the 2,000 per minute limit and causes failed tasks and pipel
 
 ## Use Wave freeze to avoid rate limits
 
-Wave freeze builds your container once and stores it in your registry. After the initial build, all container pulls bypass Wave.
+Wave freeze builds your container once and stores it in your registry. After the initial build, the source for the container manifest and layers are redirected to your private registry by Wave.
 
 **Building without freeze:**
 
