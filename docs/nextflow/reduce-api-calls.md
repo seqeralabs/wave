@@ -97,7 +97,7 @@ When you run your pipeline for the first time with Wave freeze:
 1. Wave returns the final registry URLs.
 1. Your compute tasks pull images directly from your registry.
 
-The initial build counts against build limits, not pull limits. Build limits are significantly higher than pull limits.
+The initial build counts against build limits, not pull limits.
 
 ### Subsequent pipeline runs
 
