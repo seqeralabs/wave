@@ -64,7 +64,7 @@ On subsequent attempts to access the container, Wave will not rebuild the existi
 1. Wave identifies the container exists at the Wave Freeze configured location
 1. Wave returns the existing URL to your registry
 
-With freeze enabled, Wave is removed from the container pull path. Your compute instances pull directly from your registry with no Wave API calls.
+With freeze enabled, only the first API call to Wave counts towards your quota. You can access the same container thousands of times without affecting your allowance.
 
 ## Configure Wave freeze
 
