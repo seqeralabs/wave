@@ -1,7 +1,9 @@
 ---
 title: Reduce Wave API calls
-description: Advanced
-tags: [nextflow, wave, use cases]
+description: Learn how to use Wave freeze to reduce API calls and avoid rate limits in large-scale Nextflow pipelines
+date created: 2025-09-30
+date edited: 2025-09-30
+tags: [nextflow, wave, rate limits, use cases, guides]
 ---
 
 Wave rate limits can affect large-scale pipelines that pull containers across thousands of concurrent tasks. This guide shows you how to use Wave freeze to reduce API calls and avoid rate limits.
