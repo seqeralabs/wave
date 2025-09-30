@@ -29,21 +29,20 @@ This volume exceeds the 2,000 per minute limit and causes failed tasks and pipel
 
 Wave freeze builds your container once and stores it in your registry. After the initial build, all container pulls bypass Wave.
 
-**Augmentation without freeze:**
+**Building without freeze:**
 
 1. Each task requests a manifest from Wave.
 1. Wave retrieves the base image from the source registry.
-1. Wave augments the image with the fusion layer.
+1. Wave builds the image with the fusion layer.
 1. Wave returns the modified manifest.
 1. Every task creates one API call to Wave.
 
 With thousands of concurrent tasks, this approach exceeds rate limits.
 
-**Augmentation with freeze:**
+**Building with freeze:**
 
 1. Wave builds the image once with your specifications.
 1. Wave pushes the complete image to your registry.
-1. Wave stores the manifest in its database.
 1. Wave returns a direct URL to your registry.
 1. All future pulls go directly to your registry.
 
