@@ -47,7 +47,7 @@ Wave freeze builds your container once and stores it in your registry. After the
 
 1. Each task requests a manifest from Wave
 1. Wave either retrieves the base image manifest from the source registry, builds the image from a Dockerfile or builds the image from a Conda definition.
-1. Wave builds the image with the fusion layer
+1. Wave injects the fusion layer to the container manifest
 1. Wave returns the modified manifest
 1. Every task creates one API call to Wave
 
@@ -58,7 +58,11 @@ With thousands of concurrent tasks, this approach exceeds rate limits.
 1. Wave retrieves the manifest or builds the image once with your specifications
 1. Wave pushes the complete image manifest and layers to your registry
 1. Wave returns a direct URL to your registry
-1. All future pulls go directly to your registry
+On subsequent attempts to access the container, Wave will not rebuild the existing container:
+
+1. Wave checks for existence of the container
+1. Wave identifies the container exists at the Wave Freeze configured location
+1. Wave returns the existing URL to your registry
 
 With freeze enabled, Wave is removed from the container pull path. Your compute instances pull directly from your registry with no Wave API calls.
 
