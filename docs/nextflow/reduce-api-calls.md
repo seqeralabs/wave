@@ -120,21 +120,27 @@ Avoid the `latest` tag because it points to different image versions over time.
 
 ## Container registry selection
 
-**Recommended**: Use Amazon ECR for AWS Batch workloads
+**Recommended**: Use your cloud provider's native container registry for simplest setup and integration.
 
-Amazon ECR has the following benefits:
+Native cloud registries have the following benefits:
 
-- Automatic authentication through IAM roles
-- No manual credential configuration
-- Lowest latency for AWS workloads
-- Simplest setup
+- Automatic authentication through cloud IAM roles
+- Low latency for workloads in the same cloud region
+- Simple setup and configuration
+- Native integration with your cloud platform
 
-**Not recommended**: External container registries for AWS Batch workloads
+Examples of native registries by cloud provider:
 
-External container registries have following limitations:
+- **AWS**: Amazon Elastic Container Registry (ECR)
+- **Azure**: Azure Container Registry (ACR)
+- **Google Cloud**: Google Artifact Registry
+
+**Not recommended**: Third-party container registries
+
+Third-party registries (such as Docker Hub, Quay.io, or JFrog Artifactory) have the following limitations:
 
 - Requires manual credential configuration on each compute instance
 - Additional security overhead
 - More complex authentication setup
 
-If you use external container registries, configure your credentials on each compute instance.
+If you use third-party registries, configure your credentials on each compute instance.
