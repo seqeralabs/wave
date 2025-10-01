@@ -76,6 +76,7 @@ When you run your pipeline with Wave freeze again:
 1. The same frozen image serves many task executions.
 
 With freeze enabled, only the first API call to Wave counts towards your quota.
+Frozen images will be reused as long as the image and its configuration remain the same.
 Rate limit issues are eliminated because manifest requests happen at the registry level, not through Wave.
 
 :::note
