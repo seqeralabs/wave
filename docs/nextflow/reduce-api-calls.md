@@ -112,6 +112,12 @@ Fusion isn't required for Wave freeze.
 However, Fusion ensures that the frozen images contain the necessary components for optimal performance when when accessing cloud object storage.
 :::
 
+## Container image tags
+
+Use specific version tags (such as `ubuntu:22.04`) or SHA256 digests with Wave freeze.
+Specific tags enable Wave to match content hashes and reuse frozen images, which ensures reproducibility and eliminates unnecessary rebuilds.
+Avoid the `latest` tag because it points to different image versions over time.
+
 ## Container registry selection
 
 **Recommended**: Use Amazon ECR for AWS Batch workloads
