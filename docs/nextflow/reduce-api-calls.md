@@ -26,7 +26,7 @@ If an access token isn't provided, the following rate limits apply:
 
 When you pull a container image:
 
-- The manifest request counts as one pull against your rate limit
+- The manifest request to Wave counts as one pull against your rate limit
 - Layer and blob requests don't count against rate limits
 - A container image with 100 layers counts as 1 pull
 
@@ -50,7 +50,7 @@ When you run your pipeline without Wave freeze:
 1. Each task requests a manifest from Wave.
 1. Wave either retrieves the base image manifest from the source registry, builds the image from a Dockerfile, or builds the image from a Conda definition.
 1. Wave injects the Fusion layer to the container image manifest.
-1. Wave stores the built container images on Seqera infrastructure.
+1. Wave stores the final manifest on Seqera infrastructure.
 1. Wave returns the modified manifest.
 1. Every task creates one API call to Wave.
 
@@ -62,16 +62,15 @@ When you run your pipeline with Wave freeze for the first time:
 
 1. The Nextflow head job sends your build request to Wave.
 1. Wave checks whether the requested images already exist.
-1. Wave builds any missing images and pushes them to your registry.
+1. Wave builds any missing images and pushes the manifest and layers to your registry.
 1. Wave returns the final registry URLs.
 1. Your compute tasks pull images directly from your registry.
 
 When you run your pipeline with Wave freeze again:
 
 1. The Nextflow head job contacts Wave to request the frozen images.
-1. Wave's rate limiting applies to this request.
 1. Wave finds the frozen images in your registry (matched by content hash).
-1. Wave returns the registry URLs immediately without rebuilding.
+1. Wave returns the container URLs in the destination container registry without rebuilding.
 1. All tasks pull the image directly from your registry.
 1. The same frozen image serves many task executions.
 
