@@ -79,7 +79,7 @@ Frozen images will be reused as long as the image and its configuration remain t
 Rate limit issues are eliminated because manifest requests happen at the registry level, not through Wave.
 
 :::note
-For stable container images, you can run `nextflow inspect` to generate a Nextflow configuration that includes resolved container registry URLs. These can then be used within Nextflow as an additional configuration file. Keep Wave enabled during active development or when using dynamic container features to build container images at runtime.
+For stable container images, you can resolve container URLs using [`nextflow inspect`](https://nextflow.io/docs/latest/reference/cli.html#inspect) or [Wave CLI](../cli/index.md). Both tools generate Nextflow configuration files with resolved container registry URLs that you can you to configure your pipeline. Keep Wave enabled during active development or when using dynamic container features to build container images at runtime.
 :::
 
 ## Configure Wave freeze
