@@ -26,6 +26,11 @@ If an access token isn't provided, the following rate limits apply:
 
 When you pull a container image:
 
+1. The Docker service downloads the container manifest (a JSON file detailing each layer of the final image).
+1. The Docker service downloads each layer listed in the manifest file.
+
+Wave defines a pull as downloading both the container manifest and all layers. Therefore:
+
 - The manifest request to Wave counts as one pull against your rate limit
 - Layer and blob requests don't count against rate limits
 - A container image with 100 layers counts as 1 pull
