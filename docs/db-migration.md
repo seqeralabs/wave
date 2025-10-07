@@ -6,7 +6,7 @@ tags: [wave, surrealdb, postgresql, migration]
 
 [Wave 1.21.0](https://docs.seqera.io/changelog/wave/v1.21.0) introduces support for PostgreSQL as the primary database backend, replacing SurrealDB.
 
-This guide covers migrating your existing Wave installation from SurrealDB to PostgreSQL.
+This guide outlines the steps to migrate your existing Wave installation from SurrealDB to PostgreSQL.
 
 :::info[**Prerequisites**]
 You will need the following to get started:
