@@ -116,5 +116,8 @@ You will need the following to get started:
 
 Add the following properties to your Wave configuration file:
 
-- `wave.build.logs.path`: Sets the path inside  `wave.build.logs.bucket`, where build logs will be stored.
-- `wave.build.locks.path`: Sets the path inside `wave.build.logs.bucket`, where conda lock files will be stored.
+`wave.build.logs.path`
+: Sets the path inside  `wave.build.logs.bucket`, where build logs will be stored.
+
+`wave.build.locks.path`
+: Sets the path inside `wave.build.logs.bucket`, where conda lock files will be stored.
