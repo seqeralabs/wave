@@ -48,14 +48,19 @@ wave:
       username: 'foo'
       password: 'bar'
   build:
+    repo : "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/dev"
+    cache : "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/cache"
+    public-repo : "community.wave.seqera.io"
     workspace: 'build-workspace'
     logs:
       enabled: true
-      path: "s3://nextflow-ci/wave-build/logs"
+      path: "wave-test/logs"
     locks:
-      path: 's3://nextflow-ci/wave-build/conda-locks'
+      path: "wave-test/conda-locks"
   scan:
     enabled: true
+    reports:
+      path: "wave-test/scans"
 ---
 logger:
   levels:

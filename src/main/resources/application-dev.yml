@@ -2,9 +2,14 @@ wave:
   debug: true
   scan:
     enabled: true
+    reports:
+      path: "${PWD}/build-workspace/scans"
     failure:
       duration: '30s'
   build:
+    repo : "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/dev"
+    cache : "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/cache"
+    public-repo : "community.wave.seqera.io"
     workspace: 'build-workspace'
     logs:
       path: "${PWD}/build-workspace/logs"

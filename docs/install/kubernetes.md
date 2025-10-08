@@ -4,23 +4,12 @@ title: Kubernetes installation
 
 Wave enables you to provision container images on-demand, removing the need to build and upload them manually to a container registry. Wave can can provision both disposable containers that are only accessible for a short period, and regular registry-persisted container images.
 
-This installation guide covers Wave in **augmentation-only mode** (referred to here as `wave-lite`), which provides:
-
-- **inspect** - Container inspection and metadata retrieval
-- **augment** - Container image augmentation with additional layers
-
-Wave's full build capabilities require specific integrations with Kubernetes and AWS EFS Storage, making EKS & AWS a hard dependency for fully-featured deployments. The following Wave features are **not** available in this configuration:
-
-- **Container Freeze**
-- **Container Build service** 
-- **Container Mirror service**
-- **Container Security scanning**
-- **Container blobs caching**
+This installation guide covers Wave in [Lite](../wave-lite.md) mode. Wave Lite provides container augmentation and inspection capabilities on AWS, Azure, and GCP cloud deployments, and enables the use of Fusion file system in Nextflow pipelines.
 
 :::info
-After you have configured a base Wave installation with this guide, see [Configuring Wave Build](./configuring-wave-build.md) to extend your installation to support build capabilities.
+Wave's full build capabilities require specific integrations with Kubernetes and AWS EFS Storage, making EKS and AWS a hard dependency for fully-featured deployments. After you have configured a base Wave Lite installation on AWS with this guide, see [Configure Wave Build](./configure-wave-build.md) to extend your installation to support build capabilities.
 :::
- 
+
 ## Prerequisites
 
 **Required infrastructure:**
@@ -33,12 +22,12 @@ After you have configured a base Wave installation with this guide, see [Configu
 The minimum system requirements for a Wave Kubernetes installation are:
 
 - **Memory**: Minimum 4GB RAM per Wave pod
-- **CPU**: Minimum 1 CPU core per pod 
+- **CPU**: Minimum 1 CPU core per pod
 - **Network**: Connectivity to your external PostgreSQL and Redis instances
 - **Storage**: Sufficient storage for your container images and temporary files
 
 :::info
-See [Configuring Wave](./configuring-wave.md) for detailed scaling and performance tuning guidance.
+See [Configure Wave](../configure-wave.md) for detailed scaling and performance tuning guidance.
 :::
 
 ## Assumptions
@@ -49,10 +38,9 @@ This guide assumes:
 - You have appropriate cluster permissions to create namespaces, deployments, and services
 - Your PostgreSQL and Redis instances are accessible from the Kubernetes cluster
 
-
 ## Database configuration
 
-Wave requires a PostgreSQL database to operate. 
+Wave requires a PostgreSQL database to operate.
 
 Create a dedicated `wave` database and user account with the appropriate privileges:
 
@@ -149,7 +137,7 @@ data:
     redis:
       uri: "rediss://your-redis-host:6379"
 
-    # Platform integration (optional)  
+    # Platform integration (optional)
     tower:
       endpoint:
         url: "https://your-platform-server.com"
@@ -221,8 +209,6 @@ spec:
           env:
             - name: MICRONAUT_ENVIRONMENTS
               value: "postgres,redis,lite"
-            - name: WAVE_JVM_OPTS
-              value: '-XX:+UseG1GC -Xms512m -Xmx850m -XX:MaxDirectMemorySize=100m -Dio.netty.maxDirectMemory=0 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/efs/wave/dump/java-$(POD_NAME).hprof -Djdk.httpclient.keepalive.timeout=10 -Djdk.tracePinnedThreads=short -Djdk.traceVirtualThreadInThreadDump=full'
           resources:
             requests:
               memory: "4000Mi"
@@ -291,7 +277,7 @@ Wave must be accessible from:
 - Seqera Platform services
 - Compute environments (for container image access)
 
-Configure external access using a Kubernetes ingress. 
+Configure external access using a Kubernetes ingress.
 
 Update the following example ingress with your provider-specific annotations:
 
@@ -315,7 +301,7 @@ spec:
               number: 9090
 ```
 
-### TLS 
+### TLS
 
 Wave does not handle TLS termination directly. Configure TLS at your ingress controller or load balancer level. Most ingress controllers support automatic certificate provisioning through provider integrations.
 
@@ -365,8 +351,4 @@ Wave requires access to AWS ECR for container image management. Create an IAM ro
 
 ### Advanced configuration
 
-See [Configuring Wave](./configuring-wave.md) for advanced Wave features, scaling guidance, and integration options.
-
-
-
-
+See [Configure Wave](../configure-wave.md) for advanced Wave features, scaling guidance, and integration options.

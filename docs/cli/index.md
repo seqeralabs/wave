@@ -1,13 +1,34 @@
 ---
-title: CLI overview
+title: Overview
 ---
 
-The Wave CLI is a convenient wrapper around the Wave API.
+The Wave CLI is a command-line interface that provides convenient access to Wave's container provisioning capabilities through a simple wrapper around the Wave API.
 
-You can compose Wave CLI with other commands. The CLI returns the URL of the container build on stdout in the following format: `wave.seqera.io/wt/xxxxxxxxxxxx/wave/build:xxxxxxxxxxxxxxxx`
+Wave command line tool includes functionality to:
 
-The first sequence is a 12-character unique access token.
-The second sequence is a 16-character checksum that uniquely identifies the build.
+- Build container images on-demand using Dockerfiles or Conda packages
+- Augment existing images with additional layers
+- Generate multi-platform containers for linux/amd64 and linux/arm64 architectures
+- Create Singularity native images and push them to OCI-compliant registries
+- Mirror containers between registries by copying images on-demand to target repositories
+- Scan containers for security vulnerabilities automatically during provisioning
+- Push and cache built containers to user-specified repositories
+- Integrate with Seqera Platform for credentials management and persistent storage
+
+## Container URLs
+
+The Wave CLI is designed for composability with other command-line tools. Upon successful completion, it outputs the container URL to stdout in this format:
+
+```console
+wave.seqera.io/wt/xxxxxxxxxxxx/wave/build:xxxxxxxxxxxxxxxx
+```
+
+In the above example:
+
+- The first 12-character sequence is a unique access token
+- The second 16-character sequence is a checksum that uniquely identifies the build
+
+## Container persistence
 
 By default, Wave container builds are ephemeral. You can persist, or _freeze_, a container build by saving it in a private container registry. For Wave to freeze your container image, you must provide a Seqera access token so that Wave can access your private registry credentials.
 
