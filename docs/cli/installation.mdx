@@ -16,13 +16,13 @@ To self-install the latest Wave release from GitHub:
 
     1. Move the executable from your downloads folder to a location in your `PATH`, such as `~/bin`. For example:
 
-        ```
+        ```bash
         mv wave-cli-0.8.0-macos-x86_64 ~/bin/wave
         ```
 
     1. Ensure that the executable permission is set. For example:
 
-        ```
+        ```bash
         chmod u+x ~/bin/wave
         ```
 
@@ -30,7 +30,7 @@ To self-install the latest Wave release from GitHub:
 
     1.  Create a basic `Dockerfile`:
 
-        ```
+        ```Dockerfile
         cat << EOF > ./Dockerfile
         FROM busybox:latest
         EOF
@@ -38,13 +38,13 @@ To self-install the latest Wave release from GitHub:
 
     1.  Use the CLI to build the container:
 
-        ```
+        ```bash
         wave -f Dockerfile
         ```
 
         Example output:
 
-        ```
+        ```console
         wave.seqera.io/wt/xxxxxxxxxxxx/wave/build:xxxxxxxxxxxxxxxx
         ```
 
@@ -62,7 +62,7 @@ To install the latest version with [Homebrew]:
 
     1.  Create a basic `Dockerfile`:
 
-        ```
+        ```dockerfile
         cat << EOF > ./Dockerfile
         FROM busybox:latest
         EOF
@@ -70,13 +70,13 @@ To install the latest version with [Homebrew]:
 
     1.  Use the CLI to build the container:
 
-        ```
+        ```bash
         wave -f Dockerfile
         ```
 
         Example output:
 
-        ```
+        ```console
         wave.seqera.io/wt/xxxxxxxxxxxx/wave/build:xxxxxxxxxxxxxxxx
         ```
 

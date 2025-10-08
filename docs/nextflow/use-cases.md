@@ -1,34 +1,20 @@
 ---
-title: Nextflow integration
+title: Use cases
+description: Learn how to use Wave with Nextflow for container management, building, and security scanning
+tags: [nextflow, wave, use cases]
 ---
 
-You can use Wave directly from your Nextflow pipelines. Nextflow integration with Wave supports private repositories, container freezing, and conda packages.
+With Nextflow and Wave, you can build, upload, and manage the container images required by your data analysis workflows automatically and on-demand during pipeline execution.
 
-:::note
-Nextflow integration with Wave requires Nextflow 22.10.0, or later.
+The following sections describe several common use cases.
+
+:::tip
+To get started with an example Nextflow pipeline that uses Wave, see [Nextflow and Wave](../tutorials/nextflow-wave.mdx).
 :::
 
-## Get started
-
-To enable Wave in your Nextflow pipeline, add the following to your Nextflow configuration file:
-
-```groovy
-wave.enabled = true
-tower.accessToken = '<TOWER_ACCESS_TOKEN>'
-```
-
-Replace `<TOWER_ACCESS_TOKEN>` with your Seqera access token.
-
-Using a Seqera access token is optional but provides additional capabilities:
-
-- Access to private repositories
-- Higher API request limits than anonymous users
-
-For all Nextflow configuration options, see [Configuration options](#configuration-options).
-
-## Use Wave features with Nextflow
-
-The following sections describe how to use Wave features with Nextflow.
+:::note
+Nextflow integration with Wave requires Nextflow 22.10.0 or later.
+:::
 
 ### Access private container repositories
 
@@ -43,15 +29,11 @@ To access private container repositories, add your [Seqera access token](https:/
 tower.accessToken = '<TOWER_ACCESS_TOKEN>'
 ```
 
-Replace `<TOWER_ACCESS_TOKEN>` with your Seqera access token.
-
 If you created credentials in an organization workspace, also add your workspace ID:
 
 ```groovy
 tower.workspaceId = '<PLATFORM_WORKSPACE_ID>'
 ```
-
-Replace `<PLATFORM_WORKSPACE_ID>` with your Platform organization workspace ID.
 
 Wave uploads built containers to the default AWS ECR repository with the name `195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build`.
 Images in this repository are deleted automatically one week after they are pushed.
@@ -96,13 +78,13 @@ Wave does not support `ADD`, `COPY`, or other Dockerfile commands that access fi
 
 </details>
 
-### Build conda-based containers
+### Build Conda-based containers
 
 Wave can provision containers based on the [`conda` directive](https://www.nextflow.io/docs/latest/process.html#conda).
-This allows you to use conda packages in your pipeline, even on cloud-native platforms like AWS Batch and Kubernetes, which do not support the conda package manager directly.
+This allows you to use Conda packages in your pipeline, even on cloud-native platforms like AWS Batch and Kubernetes, which do not support the Conda package manager directly.
 
 <details open>
-<summary>**Build conda-based containers**</summary>
+<summary>**Build Conda-based containers**</summary>
 
 Define the `conda` requirements in your pipeline processes.
 Ensure the process doesn't include a `container` directive or Dockerfile.
@@ -113,11 +95,9 @@ To prioritize `conda` over `container` directives and Dockerfiles, add the follo
 wave.strategy = ['conda']
 ```
 
-Replace `<TOWER_ACCESS_TOKEN>` with your Seqera access token.
+For Nextflow 23.10.0, or later, the `conda-forge::procps-ng` package is automatically included in provisioned containers. This package includes the `ps` command.
 
-For Nextflow 23.10.x, or later, the `conda-forge::procps-ng` package is included automatically in provisioned containers. This package includes the `ps` command.
-
-You can set conda channels and their priority with `conda.channels`:
+You can set Conda channels and their priority with `conda.channels`:
 
 ```groovy
 wave.strategy = ['conda']
@@ -128,11 +108,11 @@ conda.channels = 'seqera,conda-forge,bioconda,defaults'
 
 ### Build Singularity containers
 
-Nextflow can build Singularity native images on demand using a `Singularityfile` or conda packages.
+Nextflow can build Singularity native images on demand using a `Singularityfile` or Conda packages.
 Images are uploaded to an OCI-compliant container registry of your choice and stored as an [ORAS artifact](https://oras.land/).
 
 :::note
-Available as of Nextflow version 23.09.0-edge.
+Requires Nextflow version 23.09.0-edge or later.
 :::
 
 <details open>
@@ -153,7 +133,7 @@ wave.build.repository = '<BUILD_REPOSITORY>'
 
 Replace `<BUILD_REPOSITORY>` with the repository where your Singularity image files should be uploaded.
 
-When using a private repository, provide repository access keys via the Platform credentials manager. See [Authenticate private repositories](https://docs.seqera.io/platform/24.1/credentials/overview) for more information.
+When using a private repository, provide repository access keys via the Platform credentials manager. See [Authenticate private repositories](https://docs.seqera.io/platform/credentials/overview) for more information.
 
 The access to the repository must be granted in the compute nodes. To grant access to the repository on compute nodes, run the following command:
 
@@ -167,6 +147,68 @@ See the [Singularity remote login documentation](https://docs.sylabs.io/guides/3
 
 :::note
 To build Singularity native images, disable both `singularity.ociAutoPull` and `singularity.ociMode` in your Nextflow configuration file. For more information, see the Nextflow [configuration documentation](https://www.nextflow.io/docs/latest/config.html#config-singularity).
+:::
+
+</details>
+
+### Mirror containers across registries
+
+Wave enables mirroring by copying containers used by your pipeline to a container registry of your choice.
+Your pipeline can then pull containers from the target registry instead of the original registry.
+
+<details open>
+<summary>**Mirror containers across registries**</summary>
+
+To enable mirroring, add the following to your Nextflow configuration file:
+
+```groovy
+wave.enabled = true
+wave.mirror = true
+wave.build.repository = '<BUILD_REPOSITORY>'
+tower.accessToken = '<TOWER_ACCESS_TOKEN>'
+```
+
+Replace the following:
+
+- `<BUILD_REPOSITORY>`: the repository to store your built containers
+- `<TOWER_ACCESS_TOKEN>`: your Seqera access token
+
+:::note
+You must provide credentials through the Seqera Platform credentials manager to allow pushing containers to the build repository. See [Nextflow and Wave](../tutorials/nextflow-wave.mdx) for a detailed guide.
+:::
+
+</details>
+
+### Security scan containers
+
+Wave scans containers used in your Nextflow pipelines for security vulnerabilities. This feature helps you ensure that your workflows use secure container images by identifying potential security risks before and during pipeline execution.
+
+<details open>
+<summary>**Security scan containers**</summary>
+
+To enable container security scanning, add the following to your Nextflow configuration file:
+
+```groovy
+wave.enabled = true
+wave.scan.mode = 'required'
+tower.accessToken = '<TOWER_ACCESS_TOKEN>'
+```
+
+Replace `<TOWER_ACCESS_TOKEN>` with your Seqera access token.
+
+You can control which vulnerability levels are acceptable by specifying allowed levels:
+
+```groovy
+wave.scan.allowedLevels = 'low,medium'
+```
+
+The accepted vulnerability levels are: `low`, `medium`, `high`, and `critical`.
+
+When `wave.scan.mode` is set to `required`, Wave blocks pipeline execution if containers contain vulnerabilities above the specified threshold.
+The scanning uses the [Common Vulnerabilities Scoring System (CVSS)](https://en.wikipedia.org/wiki/Common_Vulnerability_Scoring_System) to assess security risks.
+
+:::note
+Scan results expire after seven days. Wave automatically re-scans containers accessed after seven days to ensure up-to-date security assessments.
 :::
 
 </details>
@@ -186,21 +228,6 @@ For more information, see:
 - [Nextflow Fusion integration documentation](https://www.nextflow.io/docs/latest/fusion.html)
 
 </details>
-
-## Configuration options
-
-The following Nextflow configuration options are available:
-
-| Method                       | Description                                                                                                                                                              |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `wave.enabled`               | Enable/disable the execution of Wave containers                                                                                                                          |
-| `wave.endpoint`              | The Wave service endpoint (default: `https://wave.seqera.io`)                                                                                                            |
-| `wave.build.repository`      | The container repository where images built by Wave are uploaded. You must provide corresponding credentials in your Platform account.                            |
-| `wave.build.cacheRepository` | The container repository used to cache image layers built by the Wave service. You must provide corresponding credentials in your Platform account.               |
-| `wave.conda.mambaImage`      | The Mamba container image used to build conda-based containers. This should be a [micromamba-docker](https://github.com/mamba-org/micromamba-docker) image.              |
-| `wave.conda.commands`        | One or more commands to add to the Dockerfile used to build a conda-based image.                                                                                         |
-| `wave.strategy`              | The strategy used when resolving ambiguous Wave container requirements (default: `'container,dockerfile,conda'`)                                                         |
-| `wave.freeze`                | When `freeze` mode is enabled, containers provisioned by Wave are stored permanently in the repository specified by `wave.build.repository`.                             |
 
 ## Limitations
 
