@@ -70,22 +70,35 @@ abstract class ScanStrategy {
     }
 
     protected static List<String> scanPluginCommand(String plugin, Path workDir, ScanConfig config, ScanType mode) {
+        final cmd = new ArrayList<String>(50)
+        // the vulnerability scan command
+        cmd.addAll(trivyPluginCommand(workDir, config, ScanType.Default) )
+        // command separator
+        cmd.add("&&")
+        // the SBOM spdx scan
+        cmd.addAll(trivyPluginCommand(workDir, config, ScanType.Spdx) )
+
+        return List.of("oras pull $plugin -o $workDir/plugin && unzip -u $workDir/plugin/*.zip -d $workDir/fs && ${cmd.join(' ')}".toString())
+    }
+
+    protected static List<String> trivyPluginCommand(Path workDir, ScanConfig config, ScanType mode) {
         final trivyCmd = ['trivy', 'rootfs', '--scanners vuln']
         trivyCmd
-                 << '--timeout'
-                 << "${config.timeout.toMinutes()}m".toString()
-                 << '--format'
-                 << mode.format
-                 << '--output'
-                 << workDir.resolve(mode.output).toString()
-                 << '--cache-dir'
-                 << Trivy.CACHE_MOUNT_PATH
+                << '--timeout'
+                << "${config.timeout.toMinutes()}m".toString()
+                << '--format'
+                << mode.format
+                << '--output'
+                << workDir.resolve(mode.output).toString()
+                << '--cache-dir'
+                << Trivy.CACHE_MOUNT_PATH
         if( config.severity && mode==ScanType.Default ) {
             trivyCmd << '--severity'
             trivyCmd << config.severity
         }
         trivyCmd << "$workDir/fs".toString()
 
-        return List.of("oras pull $plugin -o $workDir/plugin && unzip -u $workDir/plugin/*.zip -d $workDir/fs && ${trivyCmd.join(' ')}".toString())
+        return trivyCmd
     }
+
 }

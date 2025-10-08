@@ -152,7 +152,7 @@ class ScanStrategyTest extends Specification {
         def command = ScanStrategy.scanPluginCommand(plugin, workDir, config, mode)
 
         then:
-        command == ["oras pull repository/plugin -o /work/dir/plugin && unzip -u /work/dir/plugin/*.zip -d /work/dir/fs && trivy rootfs --scanners vuln --timeout 100m --format json --output /work/dir/report.json --cache-dir /root/.cache/ /work/dir/fs"]
+        command == ["oras pull repository/plugin -o /work/dir/plugin && unzip -u /work/dir/plugin/*.zip -d /work/dir/fs && trivy rootfs --scanners vuln --timeout 100m --format json --output /work/dir/report.json --cache-dir /root/.cache/ /work/dir/fs && trivy rootfs --scanners vuln --timeout 100m --format spdx-json --output /work/dir/spdx.json --cache-dir /root/.cache/ /work/dir/fs"]
     }
 
     def "should return trivy plugin command with severity in default mode"() {
@@ -169,7 +169,7 @@ class ScanStrategyTest extends Specification {
         def command = ScanStrategy.scanPluginCommand(plugin, workDir, config, mode)
 
         then:
-        command == ["oras pull repository/plugin -o /work/dir/plugin && unzip -u /work/dir/plugin/*.zip -d /work/dir/fs && trivy rootfs --scanners vuln --timeout 100m --format json --output /work/dir/report.json --cache-dir /root/.cache/ --severity low,high /work/dir/fs"]
+        command == ["oras pull repository/plugin -o /work/dir/plugin && unzip -u /work/dir/plugin/*.zip -d /work/dir/fs && trivy rootfs --scanners vuln --timeout 100m --format json --output /work/dir/report.json --cache-dir /root/.cache/ --severity low,high /work/dir/fs && trivy rootfs --scanners vuln --timeout 100m --format spdx-json --output /work/dir/spdx.json --cache-dir /root/.cache/ /work/dir/fs"]
     }
 
     def "should return trivy plugin command with spdx mode"() {
@@ -186,7 +186,7 @@ class ScanStrategyTest extends Specification {
         def command = ScanStrategy.scanPluginCommand(plugin, workDir, config, mode)
 
         then:
-        command == ["oras pull repository/plugin -o /work/dir/plugin && unzip -u /work/dir/plugin/*.zip -d /work/dir/fs && trivy rootfs --scanners vuln --timeout 100m --format spdx-json --output /work/dir/spdx.json --cache-dir /root/.cache/ /work/dir/fs"]
+        command == ['oras pull repository/plugin -o /work/dir/plugin && unzip -u /work/dir/plugin/*.zip -d /work/dir/fs && trivy rootfs --scanners vuln --timeout 100m --format json --output /work/dir/report.json --cache-dir /root/.cache/ --severity low,high /work/dir/fs && trivy rootfs --scanners vuln --timeout 100m --format spdx-json --output /work/dir/spdx.json --cache-dir /root/.cache/ /work/dir/fs']
     }
 
 }
