@@ -1,0 +1,165 @@
+---
+title: Wave CLI
+description: Provision containers with the Wave CLI
+tags: [containers, nextflow, wave, wave cli]
+---
+
+Wave CLI is a command line tool for the Wave containers provisioning service that allows you to build container images on demand for various sources.
+
+This guide describes how to build containers using the Wave CLI and freeze them in your private container repository. It includes:
+
+- Creating a Seqera access token.
+- Adding your container registry credentials to Seqera.
+- Creating a Nextflow pipeline that uses the container.
+- Running the Nextflow pipeline.
+
+:::info[**Prerequisites**]
+You will need the following to get started:
+
+- An account with a container registry, such as DockerHub, and an access token that provides write access to your container repository.
+- A [Seqera](https://cloud.seqera.io/login) account, to store your container registry credentials for Wave to use.
+- [Docker Desktop] installed locally.
+- [Nextflow] 23.10.x or newer installed locally.
+- The [Wave CLI][wave-cli] installed locally.
+:::
+
+## Create your Seqera access token
+
+A Seqera access token is your personal authentication key that enables access to Seqera Platform services.
+
+To create a Seqera access token:
+
+1. Log in to [Platform](https://cloud.seqera.io/login).
+1. From your personal workspace: Go to the user menu and select **Settings > Your tokens**.
+1. Select **Add token**.
+1. Enter a unique name for your token, then select **Add**.
+1. Copy and store your token securely.
+
+    :::caution
+     The access token is displayed only once. Save the token value before you close the **Personal Access Token** window.
+    :::
+
+1. In a terminal window, assign your access token to the `TOWER_ACCESS_TOKEN` environment variable:
+
+    ```bash
+    export TOWER_ACCESS_TOKEN=<ACCESS_TOKEN>
+    ```
+
+    Replace `<ACCESS_TOKEN>` with the access token you created.
+
+## Add your container registry credentials to Seqera
+
+When freezing a container to the build repository that you specify, Wave uses Seqera to obtain your registry access credentials. If you use Docker as your container registry, complete the following steps:
+
+To create your access token in Docker Hub:
+
+1. Log in to [Docker Hub](https://hub.docker.com/).
+2. Select your username in the top right corner and select **Account Settings**.
+3. Select **Security > New Access Token**.
+4. Enter a token description. Select **Access permissions > Read-only**, then select **Generate**.
+5. Copy and save the generated access token (this is only displayed once).
+
+To add your credentials to Seqera:
+
+1.  Add your credentials to your organization or personal workspace:
+    - From an organization workspace: Go to **Credentials > Add Credentials**.
+    - From your personal workspace: From the user menu, go to **Your credentials > Add credentials**.
+
+2.  Complete the following fields:
+
+    - **Name**: Specify a unique name for the credentials using alphanumeric characters, dashes, or underscores. For example, `my-registry-creds`.
+    - **Provider**: Select **Container registry**.
+    - **User name**: Specify your Docker username. For example, `user1`.
+    - **Password**: Specify your personal access token (PAT). For example, `1fcd02dc-...215bc3f3`.
+    - **Registry server**: Specify the container registry hostname, excluding the protocol. For example, `docker.io`.
+
+3.  Select **Add**. The new credential will be listed under the **Credentials** tab.
+
+Seqera supports other container registries, such as GitHub and Quay.io.
+
+## Create and freeze a container
+
+Wave lets you build a container from a Conda package or a set of Conda packages that you specify. In this section, you'll use Wave to build a container that includes the `faker` Conda package.
+
+In the same terminal window from the previous section, run the Wave CLI to build and freeze a container with the `faker` Conda package to the repository that you specify:
+
+```bash
+wave --conda-package 'faker' --freeze --build-repo <REPO_URI> --await
+```
+
+Replace `<REPO_URI>` with the URI for the repository for which you added an access token to Seqera.
+
+If successful, you will see output similar to the following:
+
+```console
+docker.io/example-user/repo:faker--2aa7a4d826a76301
+```
+
+After the container build completes, Seqera emails you a build status report, including the build logs for the container.
+
+## Create a Nextflow pipeline that uses the container
+
+Nextflow can use the container that Wave froze to the build repository that you provided in the previous section. The Wave CLI outputs the URI for the container image and the image tag. Use these values in the `container` directive.
+
+1. In a terminal window, create a new directory for the Nextflow pipeline.
+1. Create a `nextflow.config` file with the following contents:
+
+    ```groovy
+    docker {
+      enabled = true
+    }
+
+    tower {
+      accessToken = "$TOWER_ACCESS_TOKEN"
+    }
+    ```
+
+1. Create a `main.nf` file with the following contents:
+
+    ```nextflow
+    process FAKER {
+      container 'docker.io/example-user/repo:faker--2aa7a4d826a76301'
+      debug true
+
+      """
+      faker address
+      """
+    }
+
+    workflow {
+      FAKER()
+    }
+    ```
+
+## Run the Nextflow pipeline
+
+To confirm that the `faker` command is available from your pipeline, run the following command:
+
+```bash
+nextflow run main.nf
+```
+
+If successful, you will see output similar to the following:
+
+```console
+Launching `./main.nf` [happy_leavitt] DSL2 - revision: 03b4e42ba3
+
+executor >  local (1)
+[1d/120069] FAKER | 1 of 1 ✔
+1287 Eric Grove
+Reneechester, AK 75644
+```
+
+## Next steps
+
+Learn more about Wave CLI and how to use it to build containers in the [Wave CLI documentation][wave-cli].
+
+[sc]: https://seqera.io/containers/
+[conda]: https://docs.conda.io/en/latest/
+[Nextflow]: https://www.nextflow.io/docs/latest/install.html
+[Podman]: https://podman.io/docs/installation
+[Docker Desktop]: https://www.docker.com/products/docker-desktop/
+
+[wave-build]: /wave_docs/wave_repo/docs/cli/use-cases.md#build-a-container
+[nf-config]: /wave_docs/wave_repo/docs/nextflow/configuration.md
+[wave-cli]: /wave_docs/wave_repo/docs/cli/index.md

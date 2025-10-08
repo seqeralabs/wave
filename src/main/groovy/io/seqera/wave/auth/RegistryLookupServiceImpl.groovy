@@ -20,21 +20,15 @@ package io.seqera.wave.auth
 
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.util.concurrent.CompletionException
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.TimeUnit
 
-import com.github.benmanes.caffeine.cache.AsyncLoadingCache
-import com.github.benmanes.caffeine.cache.CacheLoader
-import com.github.benmanes.caffeine.cache.Caffeine
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.exception.RegistryForwardException
 import io.seqera.wave.http.HttpClientFactory
-import io.seqera.wave.util.Retryable
-import jakarta.annotation.PostConstruct
+import io.seqera.util.retry.Retryable
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -57,42 +51,11 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
     private HttpClientConfig httpConfig
 
     @Inject
-    private RegistryAuthStore store
-
-    @Inject
     @Named(TaskExecutors.BLOCKING)
     private ExecutorService ioExecutor
 
-    private CacheLoader<URI, RegistryAuth> loader = new CacheLoader<URI, RegistryAuth>() {
-        @Override
-        RegistryAuth load(URI endpoint) throws Exception {
-            // check if there's a record in the store cache (redis)
-            def result = store.get(endpoint.toString())
-            if( result ) {
-                log.debug "Authority lookup for endpoint: '$endpoint' => $result [from store]"
-               return result
-            }
-            // look-up using the corresponding API endpoint
-            result = lookup0(endpoint)
-            log.debug "Authority lookup for endpoint: '$endpoint' => $result"
-            // save it in the store cache (redis)
-            store.put(endpoint.toString(), result)
-            return result
-        }
-    }
-
-    // FIXME https://github.com/seqeralabs/wave/issues/747
-    private AsyncLoadingCache<URI, RegistryAuth> cache
-
-    @PostConstruct
-    void init() {
-        cache = Caffeine
-                .newBuilder()
-                .maximumSize(10_000)
-                .expireAfterAccess(1, TimeUnit.HOURS)
-                .executor(ioExecutor)
-                .buildAsync(loader)
-    }
+    @Inject
+    private RegistryLookupCache cache
 
     protected RegistryAuth lookup0(URI endpoint) {
         final httpClient = HttpClientFactory.followRedirectsHttpClient()
@@ -129,17 +92,9 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
      */
     @Override
     RegistryInfo lookup(String registry) {
-        try {
-            final endpoint = registryEndpoint(registry)
-            // FIXME https://github.com/seqeralabs/wave/issues/747
-            final auth = cache.synchronous().get(endpoint)
-            return new RegistryInfo(registry, endpoint, auth)
-        }
-        catch (CompletionException e) {
-            // this catches the exception thrown in the cache loader lookup
-            // and throws the causing exception that should be `RegistryUnauthorizedAccessException`
-            throw e.cause
-        }
+        final endpoint = registryEndpoint(registry)
+        final auth = cache.getOrCompute(endpoint.toString(), (k) -> lookup0(endpoint), cache.duration)
+        return new RegistryInfo(registry, endpoint, auth)
     }
 
     /**

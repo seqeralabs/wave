@@ -49,7 +49,10 @@ import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
+import io.seqera.wave.exception.UnsupportedBuildServiceException
+import io.seqera.wave.exception.UnsupportedMirrorServiceException
 import io.seqera.wave.exception.NotFoundException
+import io.seqera.wave.exception.UnsupportedScanServiceException
 import io.seqera.wave.exchange.DescribeWaveContainerResponse
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.ratelimit.AcquireRequest
@@ -128,9 +131,11 @@ class ContainerController {
     private String towerEndpointUrl
 
     @Inject
+    @Nullable
     private BuildConfig buildConfig
 
     @Inject
+    @Nullable
     private ContainerBuildService buildService
 
     @Inject
@@ -162,6 +167,7 @@ class ContainerController {
     private RateLimiterService rateLimiterService
 
     @Inject
+    @Nullable
     private ContainerMirrorService mirrorService
 
     @Inject
@@ -173,7 +179,7 @@ class ContainerController {
 
     @PostConstruct
     private void init() {
-        log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl; default-build-repo: $buildConfig.defaultBuildRepository; default-cache-repo: $buildConfig.defaultCacheRepository; default-public-repo: $buildConfig.defaultPublicRepository"
+        log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl; default-build-repo: ${buildConfig?.defaultBuildRepository}; default-cache-repo: ${buildConfig?.defaultCacheRepository}; default-public-repo: ${buildConfig?.defaultPublicRepository}"
     }
 
     @Deprecated
@@ -212,8 +218,8 @@ class ContainerController {
         if( !registration )
             throw new BadRequestException("Missing pairing record for Tower endpoint '$req.towerEndpoint'")
 
-        // store the jwt record only the very first time it has been
-        // to avoid overridden a newer refresh token that may have 
+        // store the jwt record only the very first time to avoid
+        // overriding a newer jwt token that may have refreshed
         final auth = JwtAuth.of(req)
         if( auth.refresh )
             jwtAuthStore.storeIfAbsent(auth)
@@ -230,8 +236,6 @@ class ContainerController {
             throw new BadRequestException("Attribute `containerFile` and `packages` conflicts each other")
         if( v2 && req.condaFile )
             throw new BadRequestException("Attribute `condaFile` is deprecated - use `packages` instead")
-        if( v2 && req.spackFile )
-            throw new BadRequestException("Attribute `spackFile` is deprecated - use `packages` instead")
         if( !v2 && req.packages )
             throw new BadRequestException("Attribute `packages` is not allowed")
         if( !v2 && req.nameStrategy )
@@ -253,10 +257,9 @@ class ContainerController {
             final generated = containerFileFromPackages(req.packages, req.formatSingularity())
             req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
         }
-
-        if( req.spackFile ) {
-            throw new BadRequestException("Spack packages are not supported any more")
-        }
+        // make sure container platform is defined 
+        if( !req.containerPlatform )
+            req.containerPlatform = ContainerPlatform.DEFAULT.toString()
 
         final ip = addressResolver.resolve(httpRequest)
         // check the rate limit before continuing
@@ -298,7 +301,7 @@ class ContainerController {
 
         // check if the repository does use any reserved word
         final parts = repo.tokenize('/')
-        if( parts.size()>1 && buildConfig.reservedWords ) {
+        if( parts.size()>1 && buildConfig?.reservedWords ) {
             for( String it : parts[1..-1] ) {
                 if( buildConfig.reservedWords.contains(it) )
                     throw new BadRequestException("Use of repository '$repo' is not allowed")
@@ -318,6 +321,8 @@ class ContainerController {
     }
 
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
+        if( !buildConfig )
+            throw new UnsupportedBuildServiceException()
         if( !req.containerFile )
             throw new BadRequestException("Missing dockerfile content")
         if( !buildConfig.defaultBuildRepository )
@@ -328,12 +333,19 @@ class ContainerController {
         final containerSpec = decodeBase64OrFail(req.containerFile, 'containerFile')
         final condaContent = condaFileFromRequest(req)
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
-        final platform = ContainerPlatform.of(req.containerPlatform)
+        final platform = ContainerPlatform.parseOrDefault(req.containerPlatform)
         final buildRepository = targetRepo( req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository
                 ? buildConfig.defaultPublicRepository
                 : buildConfig.defaultBuildRepository), req.nameStrategy)
-        final cacheRepository = req.cacheRepository ?: buildConfig.defaultCacheRepository
+        final cacheRepository = !validationService.isCustomRepo(req.buildRepository)
+                ? (req.cacheRepository ?: buildConfig.defaultCacheRepository)
+                : req.cacheRepository   // use custom cache repo, when is a custom build repo
         final configJson = inspectService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
+        /**
+         * Use the container config for build purposes only when "freeze" is enabled.
+         * For non-freeze requests, it's applied during the argumentation phase.
+         * See also {@link io.seqera.wave.core.ContainerAugmenter#resolve(io.seqera.wave.core.RoutePath, java.util.Map)}
+         */
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
         // use 'imageSuffix' strategy by default for public repo images
@@ -345,7 +357,7 @@ class ContainerController {
         checkContainerSpec(containerSpec)
 
         // create a unique digest to identify the build req
-        final containerId = makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext)
+        final containerId = makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext, containerConfig)
         final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, nameStrategy)
         final maxDuration = buildConfig.buildMaxDuration(req)
         // default to async scan for build req for backward compatibility
@@ -369,7 +381,8 @@ class ContainerController {
                 scanId,
                 req.buildContext,
                 format,
-                maxDuration
+                maxDuration,
+                req.buildCompression
         )
     }
 
@@ -408,6 +421,8 @@ class ContainerController {
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
         if( req.formatSingularity() && !req.freeze )
             throw new BadRequestException("Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting")
+        if( req.scanMode && !scanService )
+            throw new UnsupportedScanServiceException()
 
         // expand inclusions
         inclusionService.addContainerInclusions(req, identity)
@@ -431,6 +446,7 @@ class ContainerController {
         String scanId
         Boolean succeeded
         if( req.containerFile ) {
+            if( !buildService ) throw new UnsupportedBuildServiceException()
             final build = makeBuildRequest(req, identity, ip)
             final track = checkBuild(build, req.dryRun)
             targetImage = track.targetImage
@@ -443,6 +459,7 @@ class ContainerController {
             type = ContainerRequest.Type.Build
         }
         else if( req.mirror ) {
+            if( !mirrorService ) throw new UnsupportedMirrorServiceException()
             final mirror = makeMirrorRequest(req, identity, digest)
             final track = checkMirror(mirror, identity, req.dryRun)
             targetImage = track.targetImage
@@ -491,6 +508,8 @@ class ContainerController {
     }
 
     protected MirrorRequest makeMirrorRequest(SubmitContainerTokenRequest request, PlatformId identity, String digest) {
+        if( !mirrorService || !buildConfig )
+            throw new UnsupportedMirrorServiceException()
         final coords = ContainerCoordinates.parse(request.containerImage)
         final target = ContainerCoordinates.parse(request.buildRepository)
         if( !coords.imageAndTag )
@@ -507,9 +526,6 @@ class ContainerController {
         // in fact, the absence of creds in the docker file is tolerated because it may be a
         // public accessible repo. With build and cache repo, the creds needs to be available
         final configJson = inspectService.credentialsConfigJson("FROM ${request.containerImage}", targetImage, null, identity)
-        final platform = request.containerPlatform
-                ? ContainerPlatform.of(request.containerPlatform)
-                : ContainerPlatform.DEFAULT
 
         final offset = DataTimeUtils.offsetId(request.timestamp)
         final scanId = scanService?.getScanId(targetImage, digest, request.scanMode, request.format)
@@ -575,10 +591,10 @@ class ContainerController {
     void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException {
         String msg
         //check conda file size
-        if( req.condaFile && req.condaFile.length() > buildConfig.maxCondaFileSize )
+        if( req.condaFile && buildConfig && req.condaFile.length() > buildConfig.maxCondaFileSize )
             throw new BadRequestException("Conda file size exceeds the maximum allowed size of ${buildConfig.maxCondaFileSize} bytes")
         // check container file size
-        if( req.containerFile && req.containerFile.length() > buildConfig.maxContainerFileSize )
+        if( req.containerFile && buildConfig && req.containerFile.length() > buildConfig.maxContainerFileSize )
             throw new BadRequestException("Container file size exceeds the maximum allowed size of ${buildConfig.maxContainerFileSize} bytes")
         // check valid image name
         msg = validationService.checkContainerName(req.containerImage)

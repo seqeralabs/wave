@@ -25,9 +25,9 @@ import java.util.concurrent.CompletionException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 
-import com.github.benmanes.caffeine.cache.AsyncLoadingCache
 import com.github.benmanes.caffeine.cache.CacheLoader
 import com.github.benmanes.caffeine.cache.Caffeine
+import com.github.benmanes.caffeine.cache.LoadingCache
 import groovy.json.JsonSlurper
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
@@ -40,7 +40,7 @@ import io.seqera.wave.exception.RegistryForwardException
 import io.seqera.wave.exception.RegistryUnauthorizedAccessException
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.util.RegHelper
-import io.seqera.wave.util.Retryable
+import io.seqera.util.retry.Retryable
 import io.seqera.wave.util.StringUtils
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
@@ -97,19 +97,18 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         final stableKey = getStableKey(key)
         def result = tokenStore.get(stableKey)
         if( result ) {
-            log.debug "Registry auth token for cachekey: '$key' [$stableKey] => $result [from store]"
+            log.debug "Registry auth token for cachekey: '$key' [$stableKey] => ${StringUtils.redact(result)} [from store]"
             return result
         }
         // look-up using the corresponding API endpoint
         result = getToken0(key)
-        log.debug "Registry auth token for cachekey: '$key' [$stableKey] => $result"
+        log.debug "Registry auth token for cachekey: '$key' [$stableKey] => ${StringUtils.redact(result)}"
         // save it in the store cache (redis)
         tokenStore.put(stableKey, result)
         return result
     }
 
-    // FIXME https://github.com/seqeralabs/wave/issues/747
-    private AsyncLoadingCache<CacheKey, String> cacheTokens
+    private LoadingCache<CacheKey, String> cacheTokens
 
     @Inject
     private RegistryLookupService lookupService
@@ -124,7 +123,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
                 .maximumSize(10_000)
                 .expireAfterAccess(_1_HOUR.toMillis(), TimeUnit.MILLISECONDS)
                 .executor(ioExecutor)
-                .buildAsync(loader)
+                .build(loader)
     }
 
     /**
@@ -284,8 +283,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     protected String getAuthToken(String image, RegistryAuth auth, RegistryCredentials creds) {
         final key = new CacheKey(image, auth, creds)
         try {
-            // FIXME https://github.com/seqeralabs/wave/issues/747
-            return cacheTokens.synchronous().get(key)
+            return cacheTokens.get(key)
         }
         catch (CompletionException e) {
             // this catches the exception thrown in the cache loader lookup
@@ -303,8 +301,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
      */
     void invalidateAuthorization(String image, RegistryAuth auth, RegistryCredentials creds) {
         final key = new CacheKey(image, auth, creds)
-        // FIXME https://github.com/seqeralabs/wave/issues/747
-        cacheTokens.synchronous().invalidate(key)
+        cacheTokens.invalidate(key)
         tokenStore.remove(getStableKey(key))
     }
 

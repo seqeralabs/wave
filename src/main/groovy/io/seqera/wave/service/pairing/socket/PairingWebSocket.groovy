@@ -40,7 +40,7 @@ import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import io.seqera.wave.service.pairing.socket.msg.PairingResponse
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import static io.seqera.wave.util.LongRndKey.rndHex
+import static io.seqera.random.LongRndKey.rndHex
 /**
  * Implements Wave pairing websocket server
  *
@@ -66,9 +66,19 @@ class PairingWebSocket {
     @Value('${wave.closeSessionOnInvalidLicenseToken:false}')
     private boolean closeSessionOnInvalidLicenseToken
 
+    @Nullable
+    @Value('${wave.denyHosts}')
+    private List<String> denyHosts
+
     @OnOpen
     void onOpen(String service, String token, String endpoint, WebSocketSession session) {
         log.debug "Opening pairing session - endpoint: ${endpoint} [sessionId: $session.id]"
+
+        if( isDenyHost(endpoint) ) {
+            log.warn "Pairing not allowed for endpoint: ${endpoint}"
+            session.close(CloseReason.POLICY_VIOLATION)
+            return
+        }
 
         // check for a valid connection token
         if( licenseManager && !isLicenseTokenValid(token, endpoint) && closeSessionOnInvalidLicenseToken ) {
@@ -150,4 +160,11 @@ class PairingWebSocket {
         return true
     }
 
+    protected boolean isDenyHost(String endpoint) {
+        for( String it : (denyHosts ?: List.of()) ) {
+            if( endpoint.contains(it) )
+                return true
+        }
+        return false
+    }
 }

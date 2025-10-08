@@ -50,6 +50,7 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
     private CredentialsService credentialsService
 
     @Inject
+    @Nullable
     private BuildConfig buildConfig
 
     /**
@@ -116,7 +117,7 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
         // NOTE: this requires that 'defaultBuildRepository', 'defaultCacheRepository' and 'defaultPublicRepository' have a unique registry host name
         // that means that for example docker.io/some/repo should not be used otherwise wave credentials could be used in place of user credentials
         // for a repo having the same registry host
-        if( container.sameRegistry(buildConfig.defaultBuildRepository) || container.sameRegistry(buildConfig.defaultCacheRepository) || container.sameRegistry(buildConfig.defaultPublicRepository) )
+        if( container.sameRegistry(buildConfig?.defaultBuildRepository) || container.sameRegistry(buildConfig?.defaultCacheRepository) || container.sameRegistry(buildConfig?.defaultPublicRepository) )
             return getDefaultCredentials(container)
 
         return getUserCredentials0(container.registry, identity)

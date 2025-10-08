@@ -20,27 +20,39 @@ package io.seqera.wave.service.k8s
 
 import java.nio.file.Path
 import java.time.Duration
+import java.util.regex.Pattern
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.openapi.models.V1ContainerBuilder
+import io.kubernetes.client.openapi.models.V1EmptyDirVolumeSourceBuilder
 import io.kubernetes.client.openapi.models.V1EnvVar
 import io.kubernetes.client.openapi.models.V1HostPathVolumeSource
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1JobBuilder
+import io.kubernetes.client.openapi.models.V1JobCondition
 import io.kubernetes.client.openapi.models.V1JobStatus
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
+import io.kubernetes.client.openapi.models.V1PodDNSConfig
+import io.kubernetes.client.openapi.models.V1PodDNSConfigBuilder
+import io.kubernetes.client.openapi.models.V1PodFailurePolicy
+import io.kubernetes.client.openapi.models.V1PodFailurePolicyOnExitCodesRequirement
+import io.kubernetes.client.openapi.models.V1PodFailurePolicyOnPodConditionsPattern
+import io.kubernetes.client.openapi.models.V1PodFailurePolicyRule
 import io.kubernetes.client.openapi.models.V1ResourceRequirements
 import io.kubernetes.client.openapi.models.V1Volume
+import io.kubernetes.client.openapi.models.V1VolumeBuilder
 import io.kubernetes.client.openapi.models.V1VolumeMount
+import io.kubernetes.client.openapi.models.V1VolumeMountBuilder
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.MirrorConfig
@@ -60,6 +72,14 @@ import static io.seqera.wave.service.builder.BuildStrategy.BUILDKIT_ENTRYPOINT
 @Requires(property = 'wave.build.k8s')
 @CompileStatic
 class K8sServiceImpl implements K8sService {
+
+    @Value('${wave.build.k8s.dns.servers}')
+    @Nullable
+    private List<String> dnsServers
+
+    @Value('${wave.build.k8s.dns.policy}')
+    @Nullable
+    private String dnsPolicy
 
     @Value('${wave.build.k8s.namespace}')
     private String namespace
@@ -95,6 +115,14 @@ class K8sServiceImpl implements K8sService {
     @Nullable
     private String requestsMemory
 
+    @Value('${wave.build.k8s.resources.limits.cpu}')
+    @Nullable
+    private String limitsCpu
+
+    @Value('${wave.build.k8s.resources.limits.memory}')
+    @Nullable
+    private String limitsMemory
+
     @Inject
     private K8sClient k8sClient
 
@@ -104,12 +132,6 @@ class K8sServiceImpl implements K8sService {
     // check this link to know more about these options https://github.com/moby/buildkit/tree/master/examples/kubernetes#kubernetes-manifests-for-buildkit
     private final static Map<String,String> BUILDKIT_FLAGS = ['BUILDKITD_FLAGS': '--oci-worker-no-process-sandbox']
 
-    private Map<String, String> getBuildkitAnnotations(String containerName, boolean singularity) {
-        if( singularity )
-            return null
-        final key = "container.apparmor.security.beta.kubernetes.io/${containerName}".toString()
-        return Map.of(key, "unconfined")
-    }
 
     /**
      * Validate config setting
@@ -140,6 +162,7 @@ class K8sServiceImpl implements K8sService {
      * @return  An instance of {@link JobStatus}
      */
     @Override
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
     JobStatus getJobStatus(String name) {
         final job = k8sClient
                 .batchV1Api()
@@ -165,9 +188,26 @@ class K8sServiceImpl implements K8sService {
                 return JobStatus.Failed
             if( backoffLimit!=null && status.failed > backoffLimit )
                 return JobStatus.Failed
+            if( status.conditions?.any( c-> isPodFailCondition(c)) )
+                return JobStatus.Failed
         }
         return JobStatus.Pending
     }
+
+    /**
+     * Determines if the job has failed due the rules defined by {@link #failurePolicy()}
+     *
+     * @param condition The job condition to be evaluated
+     * @return {@code true} if the job condition identifies a failure, {@code false otherwise}
+     */
+    static final private Pattern FAIL_MESSAGE = ~/Container .+ failed .+ matching FailJob rule at index 2/
+
+    static protected boolean isPodFailCondition(V1JobCondition condition) {
+        return condition.reason=='PodFailurePolicy'
+                && condition.message
+                && FAIL_MESSAGE.matcher(condition.message).matches()
+    }
+
     /**
      * Get pod description
      *
@@ -282,7 +322,6 @@ class K8sServiceImpl implements K8sService {
                 .withNamespace(namespace)
                 .withName(name)
                 .addToLabels(labels)
-                .addToAnnotations(getBuildkitAnnotations(name,singularity))
                 .endMetadata()
 
         //spec section
@@ -319,6 +358,12 @@ class K8sServiceImpl implements K8sService {
                     // buildCommand is to set entrypoint for buildkit
                     .withCommand(BUILDKIT_ENTRYPOINT)
                     .withArgs(args)
+                    .withNewSecurityContext()
+                        .withPrivileged(false)
+                        .withNewAppArmorProfile()
+                            .withType("Unconfined")
+                        .endAppArmorProfile()
+                    .endSecurityContext()
         }
 
         // spec section
@@ -336,6 +381,7 @@ class K8sServiceImpl implements K8sService {
      * @return The logs as a string or when logs are not available or cannot be accessed
      */
     @Override
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
     String logsPod(V1Pod pod) {
         try {
             final logs = k8sClient.podLogs()
@@ -435,6 +481,12 @@ class K8sServiceImpl implements K8sService {
                 .execute()
     }
 
+    protected V1PodDNSConfig dnsConfig() {
+        return dnsServers
+                ? new V1PodDNSConfigBuilder().withNameservers(dnsServers).build()
+                : null
+    }
+
     V1Job createTransferJobSpec(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
 
         V1JobBuilder builder = new V1JobBuilder()
@@ -451,6 +503,10 @@ class K8sServiceImpl implements K8sService {
             requests.putRequestsItem('cpu', new Quantity(blobConfig.requestsCpu))
         if( blobConfig.requestsMemory )
             requests.putRequestsItem('memory', new Quantity(blobConfig.requestsMemory))
+        if( blobConfig.limitsCpu )
+            requests.putLimitsItem('cpu', new Quantity(blobConfig.limitsCpu))
+        if( blobConfig.limitsMemory )
+            requests.putLimitsItem('memory', new Quantity(blobConfig.limitsMemory))
 
         //spec section
         def spec = builder.withNewSpec()
@@ -459,6 +515,8 @@ class K8sServiceImpl implements K8sService {
                     .editOrNewSpec()
                     .withServiceAccount(serviceAccount)
                     .withRestartPolicy("Never")
+                    .withDnsConfig(dnsConfig())
+                    .withDnsPolicy(dnsPolicy)
         //container section
                     .addNewContainer()
                         .withName(name)
@@ -491,6 +549,7 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Pod} description the submitted pod
      */
     @Override
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
     V1Job launchBuildJob(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, Map<String,String> nodeSelector) {
         final spec = buildJobSpec(name, containerImage, args, workDir, creds, timeout, nodeSelector)
         return k8sClient
@@ -508,6 +567,8 @@ class K8sServiceImpl implements K8sService {
         final mounts = new ArrayList<V1VolumeMount>(5)
         mounts.add(mountBuildStorage(workDir, storageMountPath, true))
 
+        final initMounts = new ArrayList<V1VolumeMount>(5)
+
         final volumes = new ArrayList<V1Volume>(5)
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
@@ -516,9 +577,22 @@ class K8sServiceImpl implements K8sService {
                 mounts.add(0, mountHostPath(credsFile, storageMountPath, '/home/user/.docker/config.json'))
             }
             else {
+                //emptydir volume for singularity
+                volumes.add(new V1VolumeBuilder()
+                        .withName("singularity")
+                        .withEmptyDir(new V1EmptyDirVolumeSourceBuilder().build())
+                        .build())
+                def singularityMount = new V1VolumeMountBuilder()
+                        .withName("singularity")
+                        .withMountPath("/singularity")
+                        .build()
                 final remoteFile = credsFile.resolveSibling('singularity-remote.yaml')
-                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/root/.singularity/docker-config.json'))
-                mounts.add(1, mountHostPath(remoteFile, storageMountPath, '/root/.singularity/remote.yaml'))
+                mounts.add(0, singularityMount)
+
+                initMounts.addAll(
+                        singularityMount,
+                        mountHostPath(credsFile, storageMountPath, '/tmp/singularity/docker-config.json'),
+                        mountHostPath(remoteFile, storageMountPath, '/tmp/singularity/remote.yaml'))
             }
         }
 
@@ -532,14 +606,16 @@ class K8sServiceImpl implements K8sService {
                 .endMetadata()
 
         //spec section
-        def spec = builder
+        final spec = builder
                 .withNewSpec()
                 .withBackoffLimit(buildConfig.retryAttempts)
+                .withPodFailurePolicy(failurePolicy())
                 .withNewTemplate()
                 .withNewMetadata()
-                .addToAnnotations(getBuildkitAnnotations(name,singularity))
                 .endMetadata()
                 .editOrNewSpec()
+                .withDnsConfig(dnsConfig())
+                .withDnsPolicy(dnsPolicy)
                 .withNodeSelector(nodeSelector)
                 .withServiceAccount(serviceAccount)
                 .withActiveDeadlineSeconds( timeout.toSeconds() )
@@ -551,6 +627,11 @@ class K8sServiceImpl implements K8sService {
             requests.putRequestsItem('cpu', new Quantity(requestsCpu))
         if( requestsMemory )
             requests.putRequestsItem('memory', new Quantity(requestsMemory))
+
+        if( limitsCpu )
+            requests.putLimitsItem('cpu', new Quantity(limitsCpu))
+        if( limitsMemory )
+            requests.putLimitsItem('memory', new Quantity(limitsMemory))
 
         // container section
         final container = new V1ContainerBuilder()
@@ -564,7 +645,17 @@ class K8sServiceImpl implements K8sService {
             container
             // use 'command' to override the entrypoint of the container
                     .withCommand(args)
-                    .withNewSecurityContext().withPrivileged(true).endSecurityContext()
+                    .withNewSecurityContext().withPrivileged(false).endSecurityContext()
+            if( credsFile) {
+                // init container to copy change owner of docker config and remote.yaml
+                spec.withInitContainers(new V1ContainerBuilder()
+                        .withName("permissions-fix")
+                        .withImage("busybox")
+                        .withCommand("sh", "-c", "cp -r /tmp/singularity/* /singularity && chown -R 1000:1000 /singularity")
+                        .withVolumeMounts(initMounts)
+                        .build()
+                )
+            }
         } else {
             container
             //required by buildkit rootless container
@@ -572,6 +663,12 @@ class K8sServiceImpl implements K8sService {
             // buildCommand is to set entrypoint for buildkit
                     .withCommand(BUILDKIT_ENTRYPOINT)
                     .withArgs(args)
+                    .withNewSecurityContext()
+                        .withPrivileged(false)
+                        .withNewAppArmorProfile()
+                            .withType("Unconfined")
+                        .endAppArmorProfile()
+                    .endSecurityContext()
         }
 
         // spec section
@@ -614,23 +711,31 @@ class K8sServiceImpl implements K8sService {
         //spec section
         def spec = builder
                 .withNewSpec()
-                .withBackoffLimit(scanConfig.retryAttempts)
+                .withBackoffLimit(buildConfig.retryAttempts)
+                .withPodFailurePolicy(failurePolicy())
                 .withNewTemplate()
                 .editOrNewSpec()
                 .withServiceAccount(serviceAccount)
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
+                .withDnsConfig(dnsConfig())
+                .withDnsPolicy(dnsPolicy)
 
         final requests = new V1ResourceRequirements()
         if( scanConfig.requestsCpu )
             requests.putRequestsItem('cpu', new Quantity(scanConfig.requestsCpu))
         if( scanConfig.requestsMemory )
             requests.putRequestsItem('memory', new Quantity(scanConfig.requestsMemory))
+        if( scanConfig.limitsCpu )
+            requests.putLimitsItem('cpu', new Quantity(scanConfig.limitsCpu))
+        if( scanConfig.limitsMemory )
+            requests.putLimitsItem('memory', new Quantity(scanConfig.limitsMemory))
 
         // container section
         final container = new V1ContainerBuilder()
                 .withName(name)
                 .withImage(containerImage)
+                .withCommand("sh", "-c")
                 .withArgs(args)
                 .withVolumeMounts(mounts)
                 .withResources(requests)
@@ -682,18 +787,25 @@ class K8sServiceImpl implements K8sService {
         //spec section
         def spec = builder
                 .withNewSpec()
-                .withBackoffLimit(config.retryAttempts)
+                .withBackoffLimit(buildConfig.retryAttempts)
+                .withPodFailurePolicy(failurePolicy())
                 .withNewTemplate()
                 .editOrNewSpec()
                 .withServiceAccount(serviceAccount)
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
+                .withDnsConfig(dnsConfig())
+                .withDnsPolicy(dnsPolicy)
 
         final requests = new V1ResourceRequirements()
         if( config.requestsCpu )
             requests.putRequestsItem('cpu', new Quantity(config.requestsCpu))
         if( config.requestsMemory )
             requests.putRequestsItem('memory', new Quantity(config.requestsMemory))
+        if( config.limitsCpu )
+            requests.putLimitsItem('cpu', new Quantity(config.limitsCpu))
+        if( config.limitsMemory )
+            requests.putLimitsItem('memory', new Quantity(config.limitsMemory))
 
         // container section
         final container = new V1ContainerBuilder()
@@ -732,6 +844,7 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
     V1Pod getLatestPodForJob(String jobName) {
         // list all pods for the given job
         final allPods = k8sClient
@@ -752,4 +865,30 @@ class K8sServiceImpl implements K8sService {
         }
         return latest
     }
+
+    protected V1PodFailurePolicy failurePolicy() {
+        // retry policy
+        // read more here
+        // https://kubernetes.io/blog/2024/08/19/kubernetes-1-31-pod-failure-policy-for-jobs-goes-ga/
+        //
+        return new V1PodFailurePolicy()
+                // not count the failure towards the backoffLimit
+                // for pod failure due to "DisruptionTarget" reason
+                // this cause the pod to be retried. NOTE this requires "backoffLimit" > 0
+                .addRulesItem(new V1PodFailurePolicyRule()
+                        .action("Ignore")
+                        .addOnPodConditionsItem( new V1PodFailurePolicyOnPodConditionsPattern()
+                                .type("DisruptionTarget")) )
+                // fail to job for any configuration issue
+                .addRulesItem(new V1PodFailurePolicyRule()
+                        .action("FailJob")
+                        .addOnPodConditionsItem( new V1PodFailurePolicyOnPodConditionsPattern()
+                                .type("ConfigIssue")) )
+                // fail the job for any non-zero exit status
+                .addRulesItem(new V1PodFailurePolicyRule()
+                        .action("FailJob")
+                        .onExitCodes(new V1PodFailurePolicyOnExitCodesRequirement()
+                                .operator("NotIn").values([0]) ))
+    }
+
 }

@@ -24,9 +24,9 @@ import spock.lang.Specification
 import java.time.Duration
 
 import io.micronaut.context.ApplicationContext
+import io.seqera.fixtures.redis.RedisTestContainer
 import io.seqera.wave.configuration.ProxyCacheConfig
 import io.seqera.wave.store.cache.RedisL2TieredCache
-import io.seqera.wave.test.RedisTestContainer
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -37,10 +37,7 @@ class ProxyCacheTest extends Specification implements RedisTestContainer {
     ApplicationContext applicationContext
 
     def setup() {
-        applicationContext = ApplicationContext.run([
-                REDIS_HOST : redisHostName,
-                REDIS_PORT : redisPort
-        ], 'test', 'redis')
+        applicationContext = ApplicationContext.run('test', 'redis')
         sleep(500) // workaround to wait for Redis connection
     }
 

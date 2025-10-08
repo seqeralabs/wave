@@ -22,10 +22,10 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
+import io.seqera.fixtures.redis.RedisTestContainer
 import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.configuration.RateLimiterConfig
 import io.seqera.wave.ratelimit.impl.SpillwayRateLimiter
-import io.seqera.wave.test.RedisTestContainer
 import redis.clients.jedis.Jedis
 
 /**
@@ -44,10 +44,7 @@ class SpillwayRedisRateLimiterTest extends Specification implements RedisTestCon
     Jedis jedis
 
     def setup() {
-        applicationContext = ApplicationContext.run([
-                REDIS_HOST   : redisHostName,
-                REDIS_PORT   : redisPort
-        ], 'test', 'redis','rate-limit')
+        applicationContext = ApplicationContext.run('test', 'redis','rate-limit')
         rateLimiter = applicationContext.getBean(SpillwayRateLimiter)
         jedis = new Jedis(redisHostName, redisPort as int)
         jedis.flushAll()

@@ -16,111 +16,372 @@
   ~  along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<html>
-<head>
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Wave container build notification">
-    <title>Wave container build notification</title>
+    <title>Container build notification</title>
+    <link href="https://fonts.googleapis.com/css?family=SF+Pro+Display:400,500,600&display=swap" rel="stylesheet">
+    <style>
+        img {
+            border: 0;
+            height: auto;
+            line-height: 100%;
+            outline: none;
+            text-decoration: none;
+        }
+        * {
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            margin: 60px auto 32px;
+            padding: 32px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        body {
+            font-size: 14px;
+            margin: 0 ;
+            padding: 0 ;
+            background: #ffffff ;
+            font-family:'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif ;
+            width: 100% ;
+            min-width: 100% ;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+
+        table {
+            border-collapse: collapse ;
+        }
+
+        td, th {
+            vertical-align: top;
+        }
+
+        .email-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+        }
+
+        .header-bar {
+            background: #f7f7f7;
+            padding: 15px 20px;
+            text-align: center;
+        }
+
+        .logo-container {
+            text-align: left;
+        }
+
+        .logo-brand {
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .divider-x {
+            color: #242424;
+            font-size: 12px;
+            font-weight: 400;
+            margin: 0 8px;
+            vertical-align: middle;
+        }
+
+        .main-title {
+            color: #242424;
+            font-size: 28px;
+            font-weight: 500;
+            margin: 0 0 16px 0;
+            line-height: 1.2;
+        }
+
+        .status-alert {
+            background: #E5F5EC;
+            padding: 16px;
+            border-radius: 4px;
+            margin: 16px 0;
+            position: relative;
+            border: #28AE61;
+            color: #242424;
+        }
+
+        .status-alert.error {
+            background: #FBE7E9;
+            color: #242424;
+            border: #EE9AA2;
+        }
+
+        .status-message {
+            color: #242424;
+            font-family: 'SF Pro Display', sans-serif;
+            font-weight: 400;
+            font-size: 14px;
+            margin: 0;
+            padding-left: 5px;
+        }
+
+        .section-title {
+            color: #242424;
+            font-size: 18px;
+            font-weight: 500;
+            margin: 24px 0 8px 0;
+        }
+
+        .content-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin-top: 16px;
+        }
+
+        .content-table th {
+            font-weight: 500;
+            border-bottom: 2px solid #333333;
+            text-align: left;
+            padding: 8px;
+        }
+
+        .content-table td {
+            border: 1px solid #dcdcdc;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .content-table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .content-table tbody tr:nth-child(odd) {
+            background-color: #ffffff;
+        }
+
+        .code-section {
+            margin: 8px 0;
+        }
+
+        .code-container {
+            background: #f7f7f7;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .code-content {
+            padding: 16px;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .code-text {
+            color: #160f26;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .content-section {
+            margin-bottom: 24px;
+        }
+
+        .footer-content {
+            display: flex;
+            padding: 20px 0;
+            margin: 0 auto;
+        }
+
+        .footer-divider {
+            height: 1px;
+            background-color: #e0e0e0;
+            margin-bottom: 20px;
+        }
+
+        .copyright {
+            color: #666;
+            font-size: 14px;
+        }
+
+        a {
+            color: #007bff ;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Mobile responsive styles */
+        @media only screen and (max-width: 600px) {
+            .main-title {
+                font-size: 24px ;
+            }
+
+            .logo-brand img {
+                width: 100px ;
+            }
+
+            .footer-icon img {
+                width: 100px ;
+            }
+
+            .content-table {
+                font-size: 11px ;
+            }
+
+            .content-table td:first-child {
+                width: 120px ;
+            }
+        }
+
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            .status-alert {
+                background: #E5F5EC ;
+                border: 1px #28AE61 ;
+                color: #242424 ;
+            }
+
+            .status-alert.error {
+                background: #FBE7E9 ;
+                color: #242424 ;
+                border: 1px #EE9AA2 ;
+            }
+        }
+    </style>
 </head>
 <body>
-<div style="font-family:'-apple-system', BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; padding: 30px; max-width: 800px; margin: 0 auto;">
+<table class="container">
+    <tr>
+        <td>
+            <div class="email-container">
+                <!-- Header -->
+                <div class="header-bar">
+                    <div class="logo-container">
+                        <div class="logo-brand">
+                            <img src="cid:seqera-logo" alt="Seqera" style="height: 16px; display: inline-block; vertical-align: middle;">
+                        </div>
+                        <span class="divider-x">×</span>
+                        <div class="logo-brand">
+                            <img src="cid:wave-logo" alt="Wave" style="height: 16px; display: inline-block; vertical-align: middle;">
+                        </div>
+                    </div>
+                </div>
+                <div class="main-container" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; padding: 30px; max-width: 800px; margin: 0 auto;">
 
-    <div>
-        <img style="float:left; margin-top: 5px; margin-right: 10px; width: 30px;" src="cid:wave-logo">
-        <h1>Wave container build completion</h1>
-    </div>
-    <% if (build_success) { %>
-    <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
-        <h4 style="margin-top:0; color: inherit;">
-            Container build completed successfully!
-        </h4>
-    </div>
-    <% } else { %>
-    <div style="color: #a94442; background-color: #f2dede; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
-        <h4 style="margin-top:0; color: inherit;">
-            Container build failed
-        </h4>
-    </div>
-    <% } %>
+                    <!-- Title Section -->
+                    <div class="main-title">
+                        <h1 class="main-title">Container Build Notification</h1>
+                    </div>
 
-    <h3>Summary</h3>
-    <table cellpadding="4" >
-        <tr>
-            <td>Build ID</td>
-            <td><a href="${build_url}">${build_id}</a></td>
-        </tr>
+                    <!-- Status Alert -->
+                    <% if (build_success) { %>
+                    <div class="status-alert success">
+                        <div class="status-message">✓ Container build completed successfully!</div>
+                    </div>
+                    <% } else { %>
+                    <div class="status-alert error">
+                        <div class="status-message">✗ Container build failed</div>
+                    </div>
+                    <% } %>
 
-        <tr>
-            <td>User</td>
-            <td>${build_user}</td>
-        </tr>
+                    <!-- Build Summary -->
+                    <h2 class="section-title">Build Summary</h2>
+                    <table class="content-table" >
+                        <tr>
+                            <td>Build ID</td>
+                            <td><a href="${build_url}" style="color: #007bff; text-decoration: none;">${build_id}</a></td>
+                        </tr>
+                        <tr>
+                            <td>User</td>
+                            <td>${build_user}</td>
+                        </tr>
+                        <tr>
+                            <td>Container Image</td>
+                            <td>${build_image}</td>
+                        </tr>
+                        <tr>
+                            <td>Container Digest</td>
+                            <td>${build_digest}</td>
+                        </tr>
+                        <tr>
+                            <td>Image Format</td>
+                            <td>${build_format}</td>
+                        </tr>
+                        <tr>
+                            <td>Compression</td>
+                            <td>${build_compression}</td>
+                        </tr>
+                        <tr>
+                            <td>Platform</td>
+                            <td>${build_platform}</td>
+                        </tr>
+                        <tr>
+                            <td>Build Time</td>
+                            <td>${build_time}</td>
+                        </tr>
+                        <tr>
+                            <td>Duration</td>
+                            <td>${build_duration}</td>
+                        </tr>
+                        <tr>
+                            <td>Exit Status</td>
+                            <td>
+                                    ${build_exit_status}
+                            </td>
+                        </tr>
+                        <% if (scan_url) { %>
+                        <tr>
+                            <td>Security Scan</td>
+                            <td><a href="${scan_url}" style="color: #007bff; text-decoration: none;">${scan_id}</a></td>
+                        </tr>
+                        <% } %>
+                    </table>
 
-        <tr>
-            <td>Container image</td>
-            <td>${build_image}</td>
-        </tr>
+                    <!-- Container File Section -->
+                    <div class="content-section">
+                        <h3 class="section-title">Containerfile</h3>
+                        <div class="code-section">
+                            <div class="code-container">
+                                <div class="code-content">
+                                    <pre class="code-text">${build_containerfile}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-        <tr>
-            <td>Container digest</td>
-            <td>${build_digest}</td>
-        </tr>
-
-        <tr>
-            <td>Image format</td>
-            <td>${build_format}</td>
-        </tr>
-
-        <tr>
-            <td>Platform</td>
-            <td>${build_platform}</td>
-        </tr>
-
-        <tr>
-            <td>Build time</td>
-            <td>${build_time}</td>
-        </tr>
-
-        <tr>
-            <td>Duration</td>
-            <td>${build_duration}</td>
-        </tr>
-
-        <tr>
-        <td>Exit status</td>
-        <td>${build_exit_status}</td>
-        </tr>
-
-        <% if (scan_url) { %>
-        <tr>
-        <td>Security scan</td>
-        <td><a href="${scan_url}">${scan_id}</a></td>
-        </tr>
-        <% } %>
-    </table>
-
-    <h3>Container file</h3>
-    <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">${build_containerfile}</pre>
-
-    <% if (build_condafile) { %>
-    <h3>Conda file</h3>
-    <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">${build_condafile}</pre>
-    <% } %>
-
-    <div class="footer" style="clear:both;width:100%;">
-        <hr class="footer-hr" style="height:0;overflow:visible;margin-top:30px;border:0;border-top:1px solid #eee;color:#999999;font-size:12px;line-height:18px;margin-bottom:30px;">
-        <img style="float:right; width: 150px;" src="cid:seqera-logo">
-        <p class="footer-text" style="font-family:'-apple-system', BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';font-weight:normal;margin:0;margin-bottom:15px;color:#999999;font-size:12px;line-height:18px;">
-            <a href="${server_url}">${server_url}</a><br>
-            Seqera<br>
-            Carrer de Marià Aguiló, 28<br>
-            08005 Barcelona<br>
-        </p>
-    </div>
-
-</div>
-
+                    <% if (build_condafile) { %>
+                <div class="content-section">
+                    <h3 class="section-title">Conda file</h3>
+                    <div class="code-section">
+                        <div class="code-container">
+                            <div class="code-content">
+                                <pre class="code-text">${build_condafile}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                    <% } %>
+                </div>
+                <!-- Footer -->
+                <div class="footer-divider"></div>
+                    <div class="footer-content">
+                        <div class="copyright">
+                            © 2025 Seqera. All Rights Reserved.
+                        </div>
+                    </div>
+                </div>
+        </td>
+    </tr>
+</table>
 </body>
 </html>

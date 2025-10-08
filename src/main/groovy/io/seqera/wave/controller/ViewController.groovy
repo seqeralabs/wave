@@ -25,17 +25,27 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
-import io.micronaut.http.HttpStatus
+import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
+import io.micronaut.http.annotation.Post
 import io.micronaut.http.annotation.QueryValue
+import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.annotation.Client
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.views.ModelAndView
 import io.micronaut.views.View
-import io.seqera.wave.exception.HttpResponseException
+import io.seqera.wave.api.ScanMode
+import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.api.SubmitContainerTokenResponse
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.exception.NotFoundException
+import io.seqera.wave.exception.UnsupportedBuildServiceException
+import io.seqera.wave.exception.UnsupportedMirrorServiceException
+import io.seqera.wave.exception.UnsupportedScanServiceException
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.logs.BuildLogService
@@ -46,9 +56,14 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanEntry
+import io.seqera.wave.service.scan.ScanType
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+import org.reactivestreams.Subscription
+import reactor.core.publisher.Mono
 import static io.seqera.wave.util.DataTimeUtils.formatDuration
 import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
 /**
@@ -70,6 +85,7 @@ class ViewController {
     private PersistenceService persistenceService
 
     @Inject
+    @Nullable
     private ContainerBuildService buildService
 
     @Inject
@@ -84,14 +100,22 @@ class ViewController {
     private ContainerScanService scanService
 
     @Inject
+    @Nullable
     private ContainerMirrorService mirrorService
+
+    @Inject
+    @Client("/")
+    private HttpClient httpClient
 
     @View("mirror-view")
     @Get('/mirrors/{mirrorId}')
     HttpResponse viewMirror(String mirrorId) {
+        if( !mirrorService )
+            throw new UnsupportedMirrorServiceException()
         final result = mirrorService.getMirrorResult(mirrorId)
-        if( !result )
-            throw new NotFoundException("Unknown container mirror id '$mirrorId'")
+        if( !result ){
+            return HttpResponse.ok(["error_message": "Unknown container mirror id '$mirrorId'"])
+        }
         return HttpResponse.ok(renderMirrorView(result))
     }
 
@@ -104,6 +128,7 @@ class ViewController {
         binding.mirror_in_progress = result.exitCode == null
         binding.mirror_exitcode = result.exitCode ?: null
         binding.mirror_logs = result.exitCode ? result.logs : null
+        binding.mirror_log_url = result.logs ? "$serverUrl/v1alpha1/mirrors/${result.mirrorId}/logs" : null
         binding.mirror_time = formatTimestamp(result.creationTime, result.offsetId) ?: '-'
         binding.mirror_duration = formatDuration(result.duration) ?: '-'
         binding.mirror_source_image = result.sourceImage
@@ -119,6 +144,8 @@ class ViewController {
 
     @Get('/builds/{buildId}')
     HttpResponse viewBuild(String buildId) {
+        if( !buildService )
+            throw new UnsupportedBuildServiceException()
         // check redirection for invalid suffix in the form `-nn`
         final r1 = isBuildInvalidSuffix(buildId)
         if( r1 ) {
@@ -131,7 +158,7 @@ class ViewController {
             final builds = buildService.getAllBuilds(buildId)
             if( !builds ) {
                 log.debug "Found not build with id: $buildId"
-                throw new NotFoundException("Unknown container build id '$buildId'")
+                return HttpResponse.ok(new ModelAndView("build-list", ["error_message": "Unknown build id '$buildId'"]))
             }
             if( builds.size()==1 ) {
                 log.debug "Redirect to build page [2]: ${builds.first().buildId}"
@@ -143,8 +170,9 @@ class ViewController {
 
         // go ahead with proper handling
         final record = buildService.getBuildRecord(buildId)
-        if( !record )
-            throw new NotFoundException("Unknown container build id '$buildId'")
+        if( !record ){
+            return HttpResponse.ok(new ModelAndView("build-view", ["error_message": "Unknown build id '$buildId'"]))
+        }
         return HttpResponse.ok(new ModelAndView("build-view", renderBuildView(record)))
     }
 
@@ -181,6 +209,10 @@ class ViewController {
                 bind.build_id = result.buildId
                 bind.build_digest = result.digest
                 bind.build_status = getStatus(result)
+                bind.build_success = getStatus(result) == "SUCCEEDED"
+                bind.build_failed = getStatus(result) == "FAILED"
+                bind.build_in_progress = getStatus(result) == "IN PROGRESS"
+                bind.build_status = getStatus(result)
                 bind.build_time = formatTimestamp(result.startTime, result.offsetId) ?: '-'
                 binding.add(bind)
             }
@@ -215,6 +247,7 @@ class ViewController {
         binding.build_duration = formatDuration(result.duration) ?: '-'
         binding.build_image = result.targetImage
         binding.build_format = result.format?.render() ?: 'Docker'
+        binding.build_compression = result.compression?.mode ?: '(default)'
         binding.build_platform = result.platform
         binding.build_containerfile = result.dockerFile ?: '-'
         binding.build_condafile = result.condaFile
@@ -242,14 +275,14 @@ class ViewController {
 
     @View("container-view")
     @Get('/containers/{token}')
-    HttpResponse<Map<String,Object>> viewContainer(String token) {
+    HttpResponse viewContainer(String token) {
         final data = persistenceService.loadContainerRequest(token)
-        if( !data )
-            throw new NotFoundException("Unknown container token: $token")
         // return the response
         final binding = new HashMap(20)
+        if( !data )
+            return HttpResponse.notFound(["error_message": "Unknown container request id '$token'"])
         binding.request_token = token
-        binding.request_container_image = data.containerImage
+        binding.request_container_image = data.containerImage ?: '-'
         binding.request_contaiener_platform = data.platform ?: '-'
         binding.request_fingerprint = data.fingerprint ?: '-'
         binding.request_timestamp = formatTimestamp(data.timestamp, data.zoneId) ?: '-'
@@ -290,8 +323,58 @@ class ViewController {
         return HttpResponse.<Map<String,Object>>ok(binding)
     }
 
+    /**
+     * Get a container image name name and create a container scan request for it, redirecting
+     * to the corresponding scan view image
+     *
+     * @param image
+     *      The container image to be scanned
+     * @return
+     *      The redirect response to the scan view for the requested container image
+     */
+    @Post('/scans')
+    Publisher<HttpResponse> requestScan(@Body String image) {
+        final req = new SubmitContainerTokenRequest(containerImage: image, scanMode: ScanMode.required)
+        final post = HttpRequest.POST("/v1alpha2/container", req)
+        final resp = httpClient.retrieve(post, SubmitContainerTokenResponse)
+
+        // Use Mono to handle the Publisher and create a Publisher<HttpResponse>
+        return Mono.create { sink ->
+            resp.subscribe(new Subscriber<SubmitContainerTokenResponse>() {
+
+                @Override
+                void onSubscribe(Subscription subscription) {
+                    subscription.request(1) // Request one item
+                }
+
+                @Override
+                void onNext(SubmitContainerTokenResponse response) {
+                    // Create the redirect response
+                    final redirect = HttpResponse.redirect(URI.create("/view/scans/${response.scanId}"))
+                    sink.success(redirect)
+                }
+
+                @Override
+                void onError(Throwable t) {
+                    final msg = "Error processing scan request - cause: ${t.message}"
+                    final err = t instanceof BadRequestException
+                            ? HttpResponse.badRequest(msg)
+                            : HttpResponse.serverError(msg)
+                    sink.success(err)
+                }
+
+                @Override
+                void onComplete() {
+                    // No-op
+                }
+            })
+        }
+    }
+
     @Get('/scans/{scanId}')
     HttpResponse viewScan(String scanId) {
+        if( !scanService )
+            throw new UnsupportedScanServiceException()
         // check redirection for invalid suffix in the form `-nn`
         final r1 = isScanInvalidSuffix(scanId)
         if( r1 ) {
@@ -340,6 +423,9 @@ class ViewController {
                 final bind = new HashMap(20)
                 bind.scan_id = result.id
                 bind.scan_status = result.status
+                bind.scan_success = result.status == ScanEntry.SUCCEEDED
+                bind.scan_failed = result.status == ScanEntry.FAILED
+                bind.scan_pending = result.status == ScanEntry.PENDING
                 bind.scan_time = formatTimestamp(result.startTime) ?: '-'
                 bind.scan_vuls_count = result.status == 'SUCCEEDED' ? result.vulnerabilities.size() : '-'
                 binding.add(bind)
@@ -369,7 +455,6 @@ class ViewController {
                 : false
     }
 
-
     /**
      * Retrieve a {@link ScanEntry} object for the specified scan ID
      *
@@ -379,7 +464,7 @@ class ViewController {
      */
     protected WaveScanRecord loadScanRecord(String scanId) {
         if( !scanService )
-            throw new HttpResponseException(HttpStatus.SERVICE_UNAVAILABLE, "Scan service is not enabled - Check Wave  configuration setting 'wave.scan.enabled'")
+            throw new UnsupportedScanServiceException()
         final scanRecord = scanService.getScanRecord(scanId)
         if( !scanRecord )
             throw new NotFoundException("No scan report exists with id: ${scanId}")
@@ -391,14 +476,23 @@ class ViewController {
     HttpResponse<Map<String,Object>> viewInspect(@QueryValue String image, @Nullable @QueryValue String platform) {
         final binding = new HashMap(10)
         try {
-            final spec = inspectService.containerSpec(image, platform, null)
-            binding.imageName = spec.imageName
-            binding.reference = spec.reference
-            binding.digest = spec.digest
-            binding.registry = spec.registry
-            binding.hostName = spec.hostName
-            binding.config = JacksonHelper.toJson(spec.config)
-            binding.manifest = JacksonHelper.toJson(spec.manifest)
+            final spec = inspectService.containerOrIndexSpec(image, platform, null)
+            if ( spec.container ){
+                binding.imageName = spec.container.imageName
+                binding.reference = spec.container.reference
+                binding.digest = spec.container.digest
+                binding.registry = spec.container.registry
+                binding.hostName = spec.container.hostName
+                binding.config = JacksonHelper.toJson(spec.container.config)
+                binding.manifest = JacksonHelper.toJson(spec.container.manifest)
+            }
+            else {
+                binding.imageName = image
+                binding.digest = spec.index.digest
+                binding.schemaVersion = spec.index.schemaVersion
+                binding.mediaType = spec.index.mediaType
+                binding.manifests = JacksonHelper.toJson(spec.index.manifests)
+            }
         }
         catch (Exception e){
             binding.error_message = e.getMessage()
@@ -423,7 +517,9 @@ class ViewController {
         binding.scan_failed = result.status == ScanEntry.FAILED
         binding.scan_succeeded = result.status == ScanEntry.SUCCEEDED
         binding.scan_exitcode = result.exitCode
+        binding.scan_sbom_spdx_url = hasSpdx(result) ? "$serverUrl/v1alpha1/scans/${result.id}/spdx" : null
         binding.scan_logs = result.logs
+        binding.scan_log_url = result.logs ? "$serverUrl/v1alpha1/scans/${result.id}/logs" : null
         // build info
         binding.build_id = result.buildId
         binding.build_url = result.buildId ? "$serverUrl/view/builds/${result.buildId}" : null
@@ -442,6 +538,10 @@ class ViewController {
         return binding
     }
 
+    private boolean hasSpdx(WaveScanRecord result) {
+        result.succeeded() && scanService.fetchReportStream(result.id, ScanType.Spdx)
+    }
+
     @Canonical
     static class Colour {
         final background
@@ -454,12 +554,12 @@ class ViewController {
         boolean hasHighOrCritical = vulnerabilities.stream()
                 .anyMatch(v -> v.severity.equals("HIGH") || v.severity.equals("CRITICAL"))
         if(hasHighOrCritical){
-            return new Colour('#ffe4e2', '#e00404')
+            return new Colour('#ffe4e2', '#242424')
         }
         else if(hasMedium){
-            return new Colour('#fff8c5', "#000000")
+            return new Colour('#fff8c5', "#242424")
         }
-        return new Colour('#dff0d8', '#3c763d')
+        return new Colour('#e5f5eC', '#242424')
     }
 
 }

@@ -22,8 +22,8 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
+import io.seqera.fixtures.redis.RedisTestContainer
 import io.seqera.wave.store.range.impl.RedisRangeProvider
-import io.seqera.wave.test.RedisTestContainer
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -37,10 +37,7 @@ class RedisRangeProviderTest extends Specification implements RedisTestContainer
     RedisRangeProvider provider
 
     def setup() {
-        applicationContext = ApplicationContext.run([
-                REDIS_HOST : redisHostName,
-                REDIS_PORT : redisPort
-        ], 'test', 'redis')
+        applicationContext = ApplicationContext.run('test', 'redis')
         provider = applicationContext.getBean(RedisRangeProvider)
         sleep(500) // workaround to wait for Redis connection
     }

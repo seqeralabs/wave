@@ -22,6 +22,7 @@ import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.data.queue.MessageSender
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import jakarta.inject.Inject
 import jakarta.inject.Singleton

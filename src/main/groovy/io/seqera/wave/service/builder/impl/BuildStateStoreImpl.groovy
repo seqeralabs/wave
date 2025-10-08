@@ -24,11 +24,13 @@ import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildEntry
+import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildStateStore
 import io.seqera.wave.store.state.AbstractStateStore
 import io.seqera.wave.store.state.CountParams
@@ -44,13 +46,14 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
+@Requires(bean = BuildEnabled)
 class BuildStateStoreImpl extends AbstractStateStore<BuildEntry> implements BuildStateStore {
 
     private BuildConfig buildConfig
 
     private ExecutorService ioExecutor
 
-    BuildStateStoreImpl(StateProvider<String, String> provider, BuildConfig buildConfig, @Named(TaskExecutors.IO) ExecutorService ioExecutor) {
+    BuildStateStoreImpl(StateProvider<String, String> provider, BuildConfig buildConfig, @Named(TaskExecutors.BLOCKING) ExecutorService ioExecutor) {
         super(provider, new MoshiEncodeStrategy<BuildEntry>() {})
         this.buildConfig = buildConfig
         this.ioExecutor = ioExecutor

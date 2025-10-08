@@ -50,7 +50,7 @@ import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.scan.ContainerScanService
-import io.seqera.wave.service.scan.ScanRequest
+import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanStrategy
 import io.seqera.wave.test.TestHelper
 import io.seqera.wave.tower.PlatformId
@@ -77,6 +77,11 @@ class ContainerBuildServiceTest extends Specification {
             // do nothing
             log.debug "Running fake build job=$jobName - request=$request"
         }
+
+        @Override
+        List<String> singularityLaunchCmd(BuildRequest req) {
+            return ['singularity', 'fake', 'cmd']
+        }
     }
 
     @Primary
@@ -85,7 +90,7 @@ class ContainerBuildServiceTest extends Specification {
     static class FakeScanStrategy extends ScanStrategy {
 
         @Override
-        void scanContainer(String jobName, ScanRequest request) {
+        void scanContainer(String jobName, ScanEntry request) {
             // do nothing
             log.debug "Running fake scan job=$jobName - request=$request"
         }
@@ -118,7 +123,7 @@ class ContainerBuildServiceTest extends Specification {
                   - salmon=1.6.0
                 '''
         and:
-        def containerId = ContainerHelper.makeContainerId(dockerFile, condaFile, ContainerPlatform.of('amd64'), buildRepo, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, condaFile, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, condaFile, null)
         def req =
                 new BuildRequest(
@@ -161,7 +166,7 @@ class ContainerBuildServiceTest extends Specification {
         def buildRepo = buildConfig.defaultBuildRepository
         and:
         def dockerFile = 'FROM something; {{foo}}'
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
                 new BuildRequest(
@@ -196,7 +201,7 @@ class ContainerBuildServiceTest extends Specification {
         '''.stripIndent()
         and:
         def builder = new ContainerBuildServiceImpl()
-        def containerId = ContainerHelper.makeContainerId(containerFile, null, ContainerPlatform.of('amd64'), 'buildRepo', null)
+        def containerId = ContainerHelper.makeContainerId(containerFile, null, ContainerPlatform.of('amd64'), 'buildRepo', null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.SINGULARITY, 'foo.com/repo', containerId, null, null)
         def req =
                 new BuildRequest(
@@ -276,7 +281,7 @@ class ContainerBuildServiceTest extends Specification {
         and:
         def dockerFile = 'from foo'
         def buildRepo = 'quay.io/org/name'
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
                 new BuildRequest(
@@ -354,7 +359,9 @@ class ContainerBuildServiceTest extends Specification {
         def scanService = Mock(ContainerScanService)
         def eventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
         def service = new ContainerBuildServiceImpl(buildStore: buildStore, proxyService: proxyService, eventPublisher: eventPublisher, persistenceService: persistenceService, scanService:scanService, buildConfig: buildConfig)
-        def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
+        def job = JobSpec
+                .build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
+                .withLaunchTime(Instant.now())
         def state = JobState.succeeded('logs')
         def res = BuildResult.create('1')
         def req = new BuildRequest(

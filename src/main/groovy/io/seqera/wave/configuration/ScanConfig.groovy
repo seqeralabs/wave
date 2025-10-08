@@ -29,16 +29,17 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.seqera.wave.util.BucketTokenizer
 import jakarta.inject.Singleton
 /**
  * Container Scan service settings
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
+@Requires(bean = ScanEnabled)
 @CompileStatic
 @Singleton
 @Slf4j
-@Requires(property = 'wave.scan.enabled', value = 'true')
 class ScanConfig {
 
     /**
@@ -54,6 +55,14 @@ class ScanConfig {
     @Value('${wave.scan.k8s.resources.requests.memory}')
     @Nullable
     private String requestsMemory
+
+    @Value('${wave.scan.k8s.resources.limits.cpu}')
+    @Nullable
+    private String limitsCpu
+
+    @Value('${wave.scan.k8s.resources.limits.memory}')
+    @Nullable
+    private String limitsMemory
 
     /**
      * The host path where cache DB stored
@@ -88,6 +97,10 @@ class ScanConfig {
     @Value('${wave.scan.vulnerability.limit:100}')
     Integer vulnerabilityLimit
 
+    @Nullable
+    @Value('${wave.scan.reports.path}')
+    String reportsPath
+
     String getScanImage() {
         return scanImage
     }
@@ -116,6 +129,14 @@ class ScanConfig {
         return requestsMemory
     }
 
+    String getLimitsCpu() {
+        return limitsCpu
+    }
+
+    String getLimitsMemory() {
+        return limitsMemory
+    }
+
     Duration getTimeout() {
         return timeout
     }
@@ -141,6 +162,23 @@ class ScanConfig {
 
     @PostConstruct
     private void init() {
-        log.info("Scan config: docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}; severity: $severity; vulnerability-limit: $vulnerabilityLimit; retry-attempts: $retryAttempts; env=${environment}")
+        log.info("Scan config: docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}; limits-cpu: ${limitsCpu}; limits-memory: ${limitsMemory}; severity: $severity; vulnerability-limit: $vulnerabilityLimit; retry-attempts: $retryAttempts; env=${environment}")
+    }
+
+    /**
+     * The file name prefix applied when storing a Conda lock file into an object storage.
+     * For example having {@link #reportsPath} as {@code s3://bucket-name/foo/bar} the
+     * value returned by this method is {@code foo/bar}.
+     *
+     * When using a local path the prefix is {@code null}.
+     *
+     * @return the log file name prefix
+     */
+    @Memoized
+    String getReportsPrefix() {
+        if( !reportsPath )
+            return null
+        final store = BucketTokenizer.from(reportsPath)
+        return store.scheme ? store.getKey() : null
     }
 }

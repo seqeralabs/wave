@@ -1,4 +1,182 @@
 # Wave changelog
+1.25.2 - 25 Sep 2025
+- Add CLAUDE.md documentation file [573c06ae]
+- Bump corretto-25-al2023-jemalloc as base image [715c594a]
+- Add Claude PR Assistant workflow [94f9f443]
+- Add ARM64 platform support to container build (#911) [12dd4978]
+
+1.25.1 - 22 Sep 2025
+- Fix links broken by renaming page (#892) [db0cacd9]
+- Remove unused env from jib task def [34718247]
+- Replace deprecated AppArmor annotation with securityContext field (#896) [e474e5c7]
+- Wv 217 remove app encoded values for seqera environment (#893) [e4eec429]
+- Bump buildkit to 0.23.2 in tests (#894) [fc24a4a0]
+- Bump MN version 4.9.3 [03b98e8d]
+- Bump buildkit version 0.23.2 [f31316d9]
+- Bump corretto-25-al2023-mimalloc as base image [46a6e2a9]
+
+1.25.0 - 1 Sep 2025
+- Fix Netty direct memory OOM after Micronaut 4.9.2 upgrade (#889) [d16ab5dd]
+- Support csi s3 driver in wave  (#875) [a425ddc5]
+- fixed build view (#879) [3c8d7ae4]
+- Bump security updates [e12b00af]
+
+1.24.0 - 12 Aug 2025
+- Add support for container SBOM report (#841) [919a4016]
+- Fix views (#877) [88db93f5]
+- Fix build view (#876) [3a6aa92e]
+- Bump trivy to version 0.65.0 [ad14e0f2]
+
+1.23.1 - 7 Aug 2025
+- Revert to MN 4.8.3 [b7ee0214]
+- Improve view titles [a59b623b]
+- Fix minor container view glitch [a745979e]
+
+1.23.0 - 7 Aug 2025
+- Redesign Wave reports (#871) [edae3c5f]
+- Add default jvm config (#864) [b7222304]
+- Fix potential deadlock in DockerJobOperation process handling [ecff3a5e]
+
+1.22.1 - 5 Aug 2025
+- Add lib-lang to import TypeHelper [9372f865]
+- Add lib-retry [8d4277ba]
+- Fix type casting [fac0623d]
+- Integrate Redis activator pattern for conditional component activation (#872) [71724421]
+- Refactor message queue and stream infrastructure (#870) [a8727181]
+- Remove unused fallback flag [1da3ebee]
+- Bump MN 4.9.1 [e83d3bb9]
+- Bump MN 4.9.2 [0adeb552]
+- Bump foojay-resolver-convention to version 1.0.0 [c705a2cf]
+- Bump k8s java client to 24.0.0 (#866) [f2be4b88]
+
+1.22.0 - 17 Jun 2025
+- Add lite configuration environment (#818) [4a4b09d8]
+- Add migration docs and update config docs (#854) [600426ab]
+- Fix azure tests [69062b26]
+- Patch openapi image version [3e729804]
+- Remove unwanted imports (#856) [07086eb0]
+- Bump Gradle version 8.14.2 [afc4f333]
+- Bump Micronaut 4.8.3 [8aeffc8b]
+- Bump lib-mail version 1.2.2 [4f8afe1a]
+- Bump postgresql version 42.7.7 [7fa95857]
+
+1.21.1 - 29 May 2025 
+- Fix Conda lock fallback logic [657316e8]
+
+1.21.0 - 28 May 2025
+- Add Conda locks fallback patch [9b54bba3]
+- Add Surreal to PostgreSQL data migration (#833) [89acf316] [c23fccf2] [8d0a6861]
+- Add support for local file system for logs assets (#808) [ec9aa319] [BREAKING]
+- Fix containerId when using freeze mode and providing custom config (#830) [ccfc943e]
+- Improve parsing of container platform (#810) [aa90f38c]
+- Update singularity build (#837) [415bf745]
+- Bump buildkit:v0.21.1 [b234b8bb]
+
+1.20.3 - 24 May 2025 
+- Determine job state by using K8s JobStatus [ecc33c37]
+
+1.20.2 - 21 May 2025
+- Fix K8s failure detection on pod error [1c76cd96]
+
+1.20.1 - 20 May 2025
+- Bump Jib to version 3.4.5
+
+1.20.0 - [skipped]
+- Add PostgreSQL based implementation for PersistenceService (#821) [2c5b25f0]
+- Add k8s tracing info [69769b13]
+- Add log trace to postgres service [6e939580]
+- Add pod failure policy [2ce4a998]
+- Add progress async impl [de5f7237]
+- Add support for compression settings (#822) [72566c0d]
+- Improve docker debug command [0a59ec26]
+- Promote job queues config logs to info [d8e3d9f0]
+- Remove unused h2 env [e4422b1e]
+- added jdbc binder for prometheus metrics (#840) [7094a366]
+
+1.19.6 - 30 Apr 2025
+- Bypass cache repo for custom build repos  (#828) [29a93053]
+
+1.19.5 - 17 Apr 2025
+- Add multi arch singularity image (#826) [cf4f97ff]
+- Add proot and init container to singularity build (#825) [6d995d4c]
+- Add compress options to image output [c25496b5]
+- Bump Micronaut to version 4.8.0 [6e4b6031]
+- Bump Netty to version 4.1.119 [f2147953]
+- Bump Gradle 8.13 [8bdd2adc]
+
+1.19.4 - 31 Mar 2025 
+- Add enable-native-access=ALL-UNNAMED to launch opts [4f0525da]
+- Default request containerPlatform to linux/adm64 [dcdb7cf4]
+- Fix NPE accessing job manager config (#812) [da8d101e]
+- Normalize arch argument to platform [f2a3db7b]
+- Remove unused platform variable [77bbb416]
+- Revert use of async Caffeine cache (#811) [95fb3204]
+- Use uniform notation for resources requests & limits (#819) [8bfa1126]
+- Bump nf-jdk:corretto-24-al2023-jemalloc [bcb14150]
+
+1.19.3 - 26 Mar 2025
+- Added dns configuration in k8s job (#816) [0458e667]
+- Add support for cpu and mem limits (#817) [eb0fa3fe]
+- Add limits for scan, mirror and transfer [9b9bc5f2]
+
+1.19.2 - 15 Mar 2025
+- Implement pending queue as stream (#809) [ec847d24]
+- Restore "Add arch in wave metrics (#791)" [a8e84291]
+
+1.19.1 - 13 Mar 2025
+- Revert "Add arch in wave metrics (#791)" [0fd2eefa]
+
+1.19.0 - 10 Mar 2025
+- Add arch in wave metrics (#791) [f03a1f1f]
+- Add submission queue to Job manager (#805) [3b71558e]
+- Improve Redis tests [6e90f71c]
+- Improve thread interruption logic [0e70924c]
+- Improve debug logging [5d5980b1]
+- Fix robots file for crawlers [1cf23c9c]
+
+1.18.4 - 3 Mar 2025
+- Add robots and favicon files [40c91f5f]
+- Improve errors and warns logging [216b8227]
+
+1.18.3 - 28 Feb 2025
+- Add DenyCrawlerFilter (#803) [edfae007]
+
+1.18.2 - 27 Feb 2025
+- Use post for container scan (#802) [1d4bc194]
+- Wv 102 merge https docs.seqera.io wave api into openapi (#800) [206881ec]
+
+1.18.1 - 21 Feb 2025
+- Add denyHosts to pairing websocket [f5369eed]
+- Use virtual threads for build, scan and mirror jobs (#742) [9dfce1f7]
+- removed metrics from open-api (#798) [740831aa]
+- Bump ch.qos.logback:logback-classic 1.5.16 (#799) [7bf703d6]
+
+1.18.0 - 18 Feb 2025
+- Add Scan image request (#796) [a950d1cf]
+- Improve caching for AWS ECR and Auth lookup (#783) [b1a76d15]
+- Improve jwt debug logs [086837e9]
+- Use route target path as proxy cache key (#788) [1133c348]
+- Bump Micronaut to version 4.7.6 [97544609]
+- Bump io.netty:netty-bom:4.1.118.Final [5a861f51]
+
+1.17.2 - 10 Feb 2025
+- Change threads dump-threshold default to 200 [5d136e45]
+- Minor inspect view improvements (#795) [242822fd]
+- Bump gradle 8.12.1 [6b85565e]
+- Bump MN version 4.7.5 [03febd69]
+
+1.17.1 - 4 Feb 2025
+- Add container index support to inspect view (#792) [34428d25]
+- Remove server from openapi spec (#793) [9cbdec1d]
+
+1.17.0 - 30 Jan 2025
+- Ignore URI dependencies in Conda envs when generating image hash (#786) [c097c8a2]
+- Render html from openapi spec generated by typespec (#707) [d3dfee9a]
+- Disable proxy cache by default [c91fc31f]
+- Update gradle deps [8a2e4209]
+- Bump buildkit to version 0.18.2 (#787) [facbf99c]
+- Bump java settings [1f6b94da]
+
 1.16.8 - 20 Jab 2025
 - Add TraceContextFilter logging context propagation [396c10c2]
 - Improve Proxy cache configuration [163e605f]

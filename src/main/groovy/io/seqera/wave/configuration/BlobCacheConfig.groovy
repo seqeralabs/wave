@@ -32,13 +32,10 @@ import io.micronaut.core.annotation.Nullable
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
-@Requires(property = 'wave.blobCache.enabled', value = 'true')
+@Requires(bean = BlobCacheEnabled)
 @ToString(includeNames = true, includePackage = false, excludes = 'storageSecretKey', ignoreNulls = true)
 @CompileStatic
 class BlobCacheConfig {
-
-    @Value('${wave.blobCache.enabled:false}')
-    boolean enabled
 
     /**
      * The time interval every when the status of the blob transfer is checked
@@ -86,12 +83,20 @@ class BlobCacheConfig {
     String s5Image
 
     @Nullable
-    @Value('${wave.blobCache.requestsCpu}')
+    @Value('${wave.blobCache.k8s.resources.requests.cpu}')
     String requestsCpu
 
     @Nullable
-    @Value('${wave.blobCache.requestsMemory}')
+    @Value('${wave.blobCache.k8s.resources.requests.memory}')
     String requestsMemory
+
+    @Value('${wave.blobCache.k8s.resources.limits.cpu}')
+    @Nullable
+    String limitsCpu
+
+    @Value('${wave.blobCache.k8s.resources.limits.memory}')
+    @Nullable
+    String limitsMemory
 
     @Nullable
     @Value('${wave.blobCache.url-signature-duration:30m}')

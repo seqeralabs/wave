@@ -18,7 +18,9 @@
 
 package io.seqera.wave.service.scan
 
+import java.nio.file.Files
 import java.nio.file.NoSuchFileException
+import java.nio.file.Path
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
@@ -26,9 +28,15 @@ import java.util.concurrent.ExecutorService
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
+import io.micronaut.core.annotation.Nullable
+import io.micronaut.http.server.types.files.StreamedFile
+import io.micronaut.objectstorage.ObjectStorageEntry
+import io.micronaut.objectstorage.ObjectStorageOperations
+import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.api.ScanMode
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.configuration.ScanEnabled
 import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.cleanup.CleanupService
@@ -46,7 +54,9 @@ import io.seqera.wave.service.request.ContainerRequest
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
+import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.SCAN_REPORTS
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
+import static io.seqera.wave.service.job.JobHelper.saveDockerAuth
 /**
  * Implements ContainerScanService
  *
@@ -55,7 +65,7 @@ import static io.seqera.wave.service.builder.BuildFormat.DOCKER
  */
 @Slf4j
 @Named("Scan")
-@Requires(bean = ScanConfig)
+@Requires(bean = ScanEnabled)
 @Singleton
 @CompileStatic
 class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanEntry> {
@@ -64,8 +74,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     private ScanConfig config
 
     @Inject
-    @Named(TaskExecutors.IO)
-    private ExecutorService executor
+    @Named(TaskExecutors.BLOCKING)
+    private ExecutorService ioExecutor
 
     @Inject
     private ScanStateStore scanStore
@@ -87,6 +97,14 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
 
     @Inject
     private CleanupService cleanupService
+
+    @Inject
+    @Nullable
+    private ScanStrategy scanStrategy
+
+    @Inject
+    @Named(SCAN_REPORTS)
+    private ObjectStorageOperations<?, ?, ?> scanStoreOpts
 
     ContainerScanServiceImpl() {}
 
@@ -156,7 +174,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
             final scan = ScanEntry.create(request)
             if( scanStore.putIfAbsent(scan.scanId, scan) ) {
                 //start scanning of build container
-                CompletableFuture.runAsync(() -> launch(request), executor)
+                CompletableFuture.runAsync(() -> launch(request), ioExecutor)
             }
         }
         catch (Throwable e){
@@ -202,7 +220,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     protected void incrScanMetrics(ScanRequest request) {
         try {
             //increment metrics
-            metricsService.incrementScansCounter(request.identity)
+            metricsService.incrementScansCounter(request.identity, request.platform.arch)
         }
         catch (Throwable e) {
             log.warn "Enable to increase scan metrics - cause: ${e.cause}", e
@@ -265,13 +283,27 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     }
 
     @Override
+    JobSpec launchJob(JobSpec job, ScanEntry entry) {
+        if( !scanStrategy )
+            throw new IllegalStateException("Security scan service is not available - check configuration setting 'wave.scan.enabled'")
+        // save docker auth file
+        saveDockerAuth(entry.workDir, entry.configJson)
+        // launch scan job
+        scanStrategy.scanContainer(job.operationName, entry)
+        // return the update job
+        return job.withLaunchTime(Instant.now())
+    }
+
+    @Override
     void onJobCompletion(JobSpec job, ScanEntry entry, JobState state) {
         ScanEntry result
         if( state.succeeded() ) {
             try {
-                final scanFile = job.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
+                final scanFile = job.workDir.resolve(ScanType.Default.output)
                 final vulnerabilities = TrivyResultProcessor.parseFile(scanFile, config.vulnerabilityLimit)
                 result = entry.success(vulnerabilities)
+                uploadScanReports(entry.scanId, job.workDir.resolve(ScanType.Spdx.output))
+                uploadScanReports(entry.scanId, job.workDir.resolve(ScanType.CycloneDx.output))
                 log.info("Container scan succeeded - id=${entry.scanId}; exit=${state.exitCode}; stdout=${state.stdout}")
             }
             catch (NoSuchFileException e) {
@@ -285,6 +317,23 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         }
 
         storeScanEntry(result)
+    }
+
+    protected void uploadScanReports(String scanId, Path data) {
+        if( !config.reportsPath || !Files.exists(data) )
+            return
+        final uploadRequest = UploadRequest.fromBytes(data.bytes, scanKey(scanId, data.fileName.toString()))
+        CompletableFuture.runAsync(()-> scanStoreOpts.upload(uploadRequest), ioExecutor)
+    }
+
+    protected String scanKey(String scanId, String fileName) {
+        if( !scanId )
+            return null
+        final name = "${scanId}/${fileName}"
+        final prefix = config.reportsPrefix
+        return prefix
+                ? "${prefix}/${name}"
+                : name
     }
 
     @Override
@@ -320,6 +369,13 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     @Override
     List<WaveScanRecord> getAllScans(String scanId){
         persistenceService.allScans(scanId)
+    }
+
+    @Override
+    StreamedFile fetchReportStream(String scanId, ScanType type) {
+        if( !scanId ) return null
+        final Optional<ObjectStorageEntry<?>> result = scanStoreOpts.retrieve(scanKey(scanId,type.output))
+        return result.isPresent() ? result.get().toStreamedFile() : null
     }
 
 }

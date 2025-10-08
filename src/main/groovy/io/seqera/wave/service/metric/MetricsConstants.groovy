@@ -17,7 +17,6 @@
  */
 
 package io.seqera.wave.service.metric
-
 /**
  * Metric constants
  *
@@ -38,5 +37,11 @@ interface MetricsConstants {
     static final public String PREFIX_ORG =  'o'
 
     static final public String PREFIX_DAY =  'd'
+
+    static final public String PREFIX_ARCH =  'a'
+
+    static final public String ARM64 =  'arm64'
+
+    static final public String AMD64 =  'amd64'
 
 }

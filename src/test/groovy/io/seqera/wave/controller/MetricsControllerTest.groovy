@@ -18,6 +18,7 @@
 
 package io.seqera.wave.controller
 
+import spock.lang.Shared
 import spock.lang.Specification
 
 import java.time.LocalDate
@@ -46,9 +47,53 @@ class MetricsControllerTest extends Specification {
     HttpClient client
 
     @Inject
+    @Shared
     MetricsService metricsService
 
     final dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
+    final def date = LocalDate.now().format(dateFormatter)
+
+    def setupSpec() {
+        def user1 = new User(id: 1, userName: 'foo', email: 'user1@org1.com')
+        def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
+        def platformId1 = new PlatformId(user1, 101)
+        def platformId2 = new PlatformId(user2, 102)
+        metricsService.incrementBuildsCounter(platformId1, 'amd64')
+        metricsService.incrementBuildsCounter(platformId1, 'arm64')
+        metricsService.incrementBuildsCounter(platformId2, 'arm64')
+        metricsService.incrementBuildsCounter(null, null)
+        metricsService.incrementBuildsCounter(null, 'arm64')
+        metricsService.incrementBuildsCounter(platformId2, null)
+
+        metricsService.incrementPullsCounter(platformId1, 'amd64')
+        metricsService.incrementPullsCounter(platformId1, 'arm64')
+        metricsService.incrementPullsCounter(platformId2, 'arm64')
+        metricsService.incrementPullsCounter(null, null)
+        metricsService.incrementPullsCounter(null, 'arm64')
+        metricsService.incrementPullsCounter(platformId2, null)
+
+        metricsService.incrementFusionPullsCounter(platformId1, 'amd64')
+        metricsService.incrementFusionPullsCounter(platformId1, 'arm64')
+        metricsService.incrementFusionPullsCounter(platformId2, 'arm64')
+        metricsService.incrementFusionPullsCounter(null, null)
+        metricsService.incrementFusionPullsCounter(null, 'arm64')
+        metricsService.incrementFusionPullsCounter(platformId2, null)
+
+        metricsService.incrementScansCounter(platformId1, 'amd64')
+        metricsService.incrementScansCounter(platformId1, 'arm64')
+        metricsService.incrementScansCounter(platformId2, 'arm64')
+        metricsService.incrementScansCounter(null, null)
+        metricsService.incrementScansCounter(null, 'arm64')
+        metricsService.incrementScansCounter(platformId2, null)
+
+        metricsService.incrementMirrorsCounter(platformId1, 'amd64')
+        metricsService.incrementMirrorsCounter(platformId1, 'arm64')
+        metricsService.incrementMirrorsCounter(platformId2, 'arm64')
+        metricsService.incrementMirrorsCounter(null, null)
+        metricsService.incrementMirrorsCounter(null, 'arm64')
+        metricsService.incrementMirrorsCounter(platformId2, null)
+    }
 
     def 'should get http status code 401 when no credentials provided'() {
         when:
@@ -60,22 +105,12 @@ class MetricsControllerTest extends Specification {
     }
 
     def 'should get the correct builds count and http status code 200'() {
-        given:
-        def date = LocalDate.now().format(dateFormatter)
-        def user1 = new User(id: 1, userName: 'foo', email: 'user1@org1.com')
-        def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
-        def platformId1 = new PlatformId(user1, 101)
-        def platformId2 = new PlatformId(user2, 102)
-        metricsService.incrementBuildsCounter(platformId1)
-        metricsService.incrementBuildsCounter(platformId2)
-        metricsService.incrementBuildsCounter(null)
-
         when: 'only date is provided'
         def req = HttpRequest.GET("/v1alpha2/metrics/builds?date=$date").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
-        res.body() == [metric:'builds', count:3, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.body() == [metric:'builds', count:6, orgs:['org1.com': 2, 'org2.com': 2]]
         res.status.code == 200
 
         when: 'date and org is provided'
@@ -83,7 +118,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
-        res.body() == [metric:'builds', count:1, orgs:['org1.com': 1]]
+        res.body() == [metric:'builds', count:2, orgs:['org1.com': 2]]
         res.status.code == 200
 
         when: 'only org is provided'
@@ -91,7 +126,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
-        res.body() == [metric:'builds', count:1, orgs:['org1.com': 1]]
+        res.body() == [metric:'builds', count:2, orgs:['org1.com': 2]]
         res.status.code == 200
 
         when: 'no param is provided'
@@ -99,27 +134,17 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct org count'
-        res.body() == [metric:'builds', count:2, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.body() == [metric:'builds', count:4, orgs:['org1.com': 2, 'org2.com': 2]]
         res.status.code == 200
     }
 
     def 'should get the correct pulls count and http status code 200'() {
-        given:
-        def date = LocalDate.now().format(dateFormatter)
-        def user1 = new User(id: 1, userName: 'foo', email: 'user1@org1.com')
-        def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
-        def platformId1 = new PlatformId(user1, 101)
-        def platformId2 = new PlatformId(user2, 102)
-        metricsService.incrementPullsCounter(platformId1)
-        metricsService.incrementPullsCounter(platformId2)
-        metricsService.incrementPullsCounter(null)
-
         when: 'only date is provided'
         def req = HttpRequest.GET("/v1alpha2/metrics/pulls?date=$date").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
-        res.body() == [metric:'pulls', count:3, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.body() == [metric:'pulls', count:6, orgs:['org1.com': 2, 'org2.com': 2]]
         res.status.code == 200
 
         when: 'date and org is provided'
@@ -127,7 +152,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
-        res.body() == [metric:'pulls', count:1, orgs:['org1.com': 1]]
+        res.body() == [metric:'pulls', count:2, orgs:['org1.com': 2]]
         res.status.code == 200
 
         when: 'only org is provided'
@@ -135,7 +160,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
-        res.body() == [metric:'pulls', count:1, orgs:['org2.com': 1]]
+        res.body() == [metric:'pulls', count:2, orgs:['org2.com': 2]]
         res.status.code == 200
 
         when: 'no param is provided'
@@ -143,27 +168,18 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct org count'
-        res.body() == [metric:'pulls', count:2, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.body() == [metric:'pulls', count:4, orgs:['org1.com': 2, 'org2.com': 2]]
         res.status.code == 200
+
     }
 
     def 'should get the correct fusion pulls count and http status code 200'() {
-        given:
-        def date = LocalDate.now().format(dateFormatter)
-        def user1 = new User(id: 1, userName: 'foo', email: 'user1@org1.com')
-        def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
-        def platformId1 = new PlatformId(user1, 101)
-        def platformId2 = new PlatformId(user2, 102)
-        metricsService.incrementFusionPullsCounter(platformId1)
-        metricsService.incrementFusionPullsCounter(platformId2)
-        metricsService.incrementFusionPullsCounter(null)
-
         when:'only date is provided'
         def req = HttpRequest.GET("/v1alpha2/metrics/fusion/pulls?date=$date").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
-        res.body() == [metric:'fusion', count:3, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.body() == [metric:'fusion', count:6, orgs:['org1.com': 2, 'org2.com': 2]]
         res.status.code == 200
 
         when: 'date and org is provided'
@@ -171,7 +187,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
-        res.body() == [metric:'fusion', count:1, orgs:['org1.com': 1]]
+        res.body() == [metric:'fusion', count:2, orgs:['org1.com': 2]]
         res.status.code == 200
 
         when: 'only org is provided'
@@ -179,7 +195,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
-        res.body() == [metric:'fusion', count:1, orgs:['org2.com': 1]]
+        res.body() == [metric:'fusion', count:2, orgs:['org2.com': 2]]
         res.status.code == 200
 
         when: 'no param is provided'
@@ -187,27 +203,17 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct org count'
-        res.body() == [metric:'fusion', count:2, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.body() == [metric:'fusion', count:4, orgs:['org1.com': 2, 'org2.com': 2]]
         res.status.code == 200
     }
 
     def 'should get the correct scans count and http status code 200'() {
-        given:
-        def date = LocalDate.now().format(dateFormatter)
-        def user1 = new User(id: 1, userName: 'foo', email: 'user1@org1.com')
-        def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
-        def platformId1 = new PlatformId(user1, 101)
-        def platformId2 = new PlatformId(user2, 102)
-        metricsService.incrementScansCounter(platformId1)
-        metricsService.incrementScansCounter(platformId2)
-        metricsService.incrementScansCounter(null)
-
         when: 'only date is provided'
         def req = HttpRequest.GET("/v1alpha2/metrics/scans?date=$date").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
-        res.body() == [metric:'scans', count:3, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.body() == [metric:'scans', count:6, orgs:['org1.com': 2, 'org2.com': 2]]
         res.status.code == 200
 
         when: 'date and org is provided'
@@ -215,7 +221,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
-        res.body() == [metric:'scans', count:1, orgs:['org1.com': 1]]
+        res.body() == [metric:'scans', count:2, orgs:['org1.com': 2]]
         res.status.code == 200
 
         when: 'only org is provided'
@@ -223,7 +229,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
-        res.body() == [metric:'scans', count:1, orgs:['org2.com': 1]]
+        res.body() == [metric:'scans', count:2, orgs:['org2.com': 2]]
         res.status.code == 200
 
         when: 'no param is provided'
@@ -231,27 +237,17 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct org count'
-        res.body() == [metric:'scans', count:2, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.body() == [metric:'scans', count:4, orgs:['org1.com': 2, 'org2.com': 2]]
         res.status.code == 200
     }
 
     def 'should get the correct mirrors count and http status code 200'() {
-        given:
-        def date = LocalDate.now().format(dateFormatter)
-        def user1 = new User(id: 1, userName: 'foo', email: 'user1@org1.com')
-        def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
-        def platformId1 = new PlatformId(user1, 101)
-        def platformId2 = new PlatformId(user2, 102)
-        metricsService.incrementMirrorsCounter(platformId1)
-        metricsService.incrementMirrorsCounter(platformId2)
-        metricsService.incrementMirrorsCounter(null)
-
         when: 'only date is provided'
         def req = HttpRequest.GET("/v1alpha2/metrics/mirrors?date=$date").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
-        res.body() == [metric:'mirrors', count:3, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.body() == [metric:'mirrors', count:6, orgs:['org1.com': 2, 'org2.com': 2]]
         res.status.code == 200
 
         when: 'date and org is provided'
@@ -259,7 +255,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
-        res.body() == [metric:'mirrors', count:1, orgs:['org1.com': 1]]
+        res.body() == [metric:'mirrors', count:2, orgs:['org1.com': 2]]
         res.status.code == 200
 
         when: 'only org is provided'
@@ -267,7 +263,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
-        res.body() == [metric:'mirrors', count:1, orgs:['org2.com': 1]]
+        res.body() == [metric:'mirrors', count:2, orgs:['org2.com': 2]]
         res.status.code == 200
 
         when: 'no param is provided'
@@ -275,7 +271,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct org count'
-        res.body() == [metric:'mirrors', count:2, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.body() == [metric:'mirrors', count:4, orgs:['org1.com': 2, 'org2.com': 2]]
         res.status.code == 200
     }
 
@@ -287,6 +283,386 @@ class MetricsControllerTest extends Specification {
         then: 'should get 400 response code and message'
         def e = thrown(HttpClientResponseException)
         e.message == 'date format should be yyyy-MM-dd'
+        e.status.code == 400
+    }
+
+    def '[v1alpha3] should get the correct builds count and http status code 200'() {
+        when: 'only date is provided'
+        def req = HttpRequest.GET("/v1alpha3/metrics/builds?date=$date").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'builds', count:6, orgs:['org1.com': 2, 'org2.com': 2]]
+        res.status.code == 200
+
+        when: 'date and org is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/builds?date=$date&org=org1.com").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'builds', count:2, orgs:['org1.com': 2]]
+        res.status.code == 200
+
+        when: 'only org is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/builds?org=org1.com").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'builds', count:2, orgs:['org1.com': 2]]
+        res.status.code == 200
+
+        when: 'only org is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/builds?org=org1.com").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'builds', count:2, orgs:['org1.com': 2]]
+        res.status.code == 200
+
+        when: 'no param is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/builds").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct org count'
+        res.body() == [metric:'builds', count:4, orgs:['org1.com': 2, 'org2.com': 2]]
+        res.status.code == 200
+    }
+
+    def '[v1alpha3] should get the correct builds count and http status code 200 with architecture'() {
+        when: 'arch and date is provided'
+        def req = HttpRequest.GET("/v1alpha3/metrics/builds?date=$date&arch=arm64").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'builds', arch: 'arm64', count:3, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.status.code == 200
+
+        when: 'date, org and arch is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/builds?date=$date&org=org1.com&arch=amd64").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'builds', arch:'amd64', count:1, orgs:['org1.com': 1]]
+        res.status.code == 200
+
+        when: 'org and arch is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/builds?org=org1.com&arch=amd64").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'builds', arch: 'amd64', count:1, orgs:['org1.com': 1]]
+        res.status.code == 200
+
+        when: 'org and arch is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/builds?org=org1.com&arch=arm64").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'builds', arch: 'arm64', count:1, orgs:['org1.com': 1]]
+        res.status.code == 200
+
+        when: 'only arch is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/builds?arch=arm64").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct org count'
+        res.body() == [metric:'builds', arch: 'arm64', count:3, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.status.code == 200
+    }
+
+    def '[v1alpha3] should get the correct pulls count and http status code 200'() {
+        when: 'only date is provided'
+        def req = HttpRequest.GET("/v1alpha3/metrics/pulls?date=$date").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'pulls', count:6, orgs:['org1.com': 2, 'org2.com': 2]]
+        res.status.code == 200
+
+        when: 'date and org is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/pulls?date=$date&org=org1.com").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'pulls', count:2, orgs:['org1.com': 2]]
+        res.status.code == 200
+
+        when: 'only org is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/pulls?org=org2.com").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'pulls', count:2, orgs:['org2.com': 2]]
+        res.status.code == 200
+
+        when: 'no param is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/pulls").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct org count'
+        res.body() == [metric:'pulls', count:4, orgs:['org1.com': 2, 'org2.com': 2]]
+        res.status.code == 200
+
+    }
+
+    def '[v1alpha3] should get the correct pulls count and http status code 200 with architecture'() {
+        when: 'only date is provided'
+        def req = HttpRequest.GET("/v1alpha3/metrics/pulls?date=$date&arch=arm64").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'pulls', arch:'arm64', count:3, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.status.code == 200
+
+        when: 'date and org is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/pulls?date=$date&org=org1.com&arch=amd64").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'pulls', arch:'amd64', count:1, orgs:['org1.com': 1]]
+        res.status.code == 200
+
+        when: 'only org is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/pulls?org=org2.com&arch=arm64").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'pulls', arch:'arm64', count:1, orgs:['org2.com': 1]]
+        res.status.code == 200
+
+        when: 'no param is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/pulls?arch=arm64").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct org count'
+        res.body() == [metric:'pulls', arch:'arm64', count:3, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.status.code == 200
+
+    }
+
+    def '[v1alpha3] should get the correct fusion pulls count and http status code 200'() {
+        when:'only date is provided'
+        def req = HttpRequest.GET("/v1alpha3/metrics/fusion/pulls?date=$date").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'fusion', count:6, orgs:['org1.com': 2, 'org2.com': 2]]
+        res.status.code == 200
+
+        when: 'date and org is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/fusion/pulls?date=$date&org=org1.com").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'fusion', count:2, orgs:['org1.com': 2]]
+        res.status.code == 200
+
+        when: 'only org is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/fusion/pulls?org=org2.com").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'fusion', count:2, orgs:['org2.com': 2]]
+        res.status.code == 200
+
+        when: 'no param is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/fusion/pulls").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct org count'
+        res.body() == [metric:'fusion', count:4, orgs:['org1.com': 2, 'org2.com': 2]]
+        res.status.code == 200
+    }
+
+    def '[v1alpha3] should get the correct fusion pulls count and http status code 200 with architecture'() {
+        when:'only date is provided'
+        def req = HttpRequest.GET("/v1alpha3/metrics/fusion/pulls?date=$date&arch=amd64").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'fusion', arch:'amd64', count:1, orgs:['org1.com': 1]]
+        res.status.code == 200
+
+        when: 'date and org is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/fusion/pulls?date=$date&org=org1.com&arch=arm64").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'fusion', arch:'arm64', count:1, orgs:['org1.com': 1]]
+        res.status.code == 200
+
+        when: 'only org is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/fusion/pulls?org=org2.com&arch=amd64").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'fusion', arch:'amd64', count:0, orgs:['org2.com': 0]]
+        res.status.code == 200
+
+        when: 'no param is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/fusion/pulls?arch=arm64").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct org count'
+        res.body() == [metric:'fusion', arch:'arm64', count:3, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.status.code == 200
+    }
+
+    def '[v1alpha3] should get the correct scans count and http status code 200'() {
+        when: 'only date is provided'
+        def req = HttpRequest.GET("/v1alpha3/metrics/scans?date=$date").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'scans', count:6, orgs:['org1.com': 2, 'org2.com': 2]]
+        res.status.code == 200
+
+        when: 'date and org is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/scans?date=$date&org=org1.com").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'scans', count:2, orgs:['org1.com': 2]]
+        res.status.code == 200
+
+        when: 'only org is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/scans?org=org2.com").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'scans', count:2, orgs:['org2.com': 2]]
+        res.status.code == 200
+
+        when: 'no param is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/scans").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct org count'
+        res.body() == [metric:'scans', count:4, orgs:['org1.com': 2, 'org2.com': 2]]
+        res.status.code == 200
+    }
+
+    def '[v1alpha3] should get the correct scans count and http status code 200 with architecture'() {
+        when: 'only date is provided'
+        def req = HttpRequest.GET("/v1alpha3/metrics/scans?date=$date&arch=arm64").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'scans', arch:'arm64', count:3, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.status.code == 200
+
+        when: 'date and org is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/scans?date=$date&org=org1.com&arch=amd64").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'scans', arch:'amd64', count:1, orgs:['org1.com': 1]]
+        res.status.code == 200
+
+        when: 'only org is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/scans?org=org2.com&arch=arm64").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'scans', arch:'arm64', count:1, orgs:['org2.com': 1]]
+        res.status.code == 200
+
+        when: 'no param is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/scans?arch=amd64").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct org count'
+        res.body() == [metric:'scans', arch:'amd64', count:1, orgs:['org1.com': 1]]
+        res.status.code == 200
+    }
+
+    def '[v1alpha3] should get the correct mirrors count and http status code 200'() {
+        when: 'only date is provided'
+        def req = HttpRequest.GET("/v1alpha3/metrics/mirrors?date=$date").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'mirrors', count:6, orgs:['org1.com': 2, 'org2.com': 2]]
+        res.status.code == 200
+
+        when: 'date and org is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/mirrors?date=$date&org=org1.com").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'mirrors', count:2, orgs:['org1.com': 2]]
+        res.status.code == 200
+
+        when: 'only org is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/mirrors?org=org2.com").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'mirrors', count:2, orgs:['org2.com': 2]]
+        res.status.code == 200
+
+        when: 'no param is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/mirrors").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct org count'
+        res.body() == [metric:'mirrors', count:4, orgs:['org1.com': 2, 'org2.com': 2]]
+        res.status.code == 200
+    }
+
+    def '[v1alpha3] should get the correct mirrors count and http status code 200 with architecture'() {
+        when: 'only date is provided'
+        def req = HttpRequest.GET("/v1alpha3/metrics/mirrors?date=$date&arch=amd64").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'mirrors', arch:'amd64', count:1, orgs:['org1.com': 1]]
+        res.status.code == 200
+
+        when: 'date and org is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/mirrors?date=$date&org=org1.com&arch=arm64").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'mirrors', arch:'arm64', count:1, orgs:['org1.com': 1]]
+        res.status.code == 200
+
+        when: 'only org is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/mirrors?org=org2.com&arch=amd64").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [metric:'mirrors', arch:'amd64', count:0, orgs:['org2.com': 0]]
+        res.status.code == 200
+
+        when: 'no param is provided'
+        req = HttpRequest.GET("/v1alpha3/metrics/mirrors?arch=arm64").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct org count'
+        res.body() == [metric:'mirrors', arch:'arm64', count:3, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.status.code == 200
+    }
+
+    def '[v1alpha3] should validate date query parameter'() {
+        when: 'wrong date format is provided'
+        def req = HttpRequest.GET("/v1alpha3/metrics/pulls?date=2024-03-2").basicAuth("username", "password")
+        client.toBlocking().exchange(req, Map)
+
+        then: 'should get 400 response code and message'
+        def e = thrown(HttpClientResponseException)
+        e.message == 'date format should be yyyy-MM-dd'
+        e.status.code == 400
+    }
+
+    def '[v1alpha3] should validate arch query parameter'() {
+        when: 'wrong arch format is provided'
+        def req = HttpRequest.GET("/v1alpha3/metrics/pulls?arch=64").basicAuth("username", "password")
+        client.toBlocking().exchange(req, Map)
+
+        then: 'should get 400 response code and message'
+        def e = thrown(HttpClientResponseException)
+        e.message == 'arch should be one of [amd64, x86_64, x86-64, arm64, aarch64, arm]'
         e.status.code == 400
     }
 }

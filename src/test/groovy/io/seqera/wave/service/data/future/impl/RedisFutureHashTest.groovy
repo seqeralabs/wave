@@ -24,7 +24,7 @@ import spock.lang.Specification
 import java.time.Duration
 
 import io.micronaut.context.ApplicationContext
-import io.seqera.wave.test.RedisTestContainer
+import io.seqera.fixtures.redis.RedisTestContainer
 
 /**
  *
@@ -36,10 +36,7 @@ class RedisFutureHashTest extends Specification implements RedisTestContainer  {
     ApplicationContext context
 
     def setup() {
-        context = ApplicationContext.run([
-                REDIS_HOST: redisHostName,
-                REDIS_PORT: redisPort
-        ], 'test', 'redis')
+        context = ApplicationContext.run('test', 'redis')
     }
 
     def cleanup() {

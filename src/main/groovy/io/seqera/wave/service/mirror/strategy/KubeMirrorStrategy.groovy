@@ -18,25 +18,20 @@
 
 package io.seqera.wave.service.mirror.strategy
 
-import java.nio.file.Files
 import java.nio.file.Path
 
-import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.openapi.ApiException
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
+import io.seqera.wave.configuration.MirrorConfig
+import io.seqera.wave.configuration.MirrorEnabled
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
-import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.service.mirror.MirrorRequest
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import static java.nio.file.StandardOpenOption.CREATE
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
-import static java.nio.file.StandardOpenOption.WRITE
-
 /**
  * Implements a container mirror runner based on Kubernetes
  *
@@ -44,6 +39,7 @@ import static java.nio.file.StandardOpenOption.WRITE
  */
 @Slf4j
 @Primary
+@Requires(bean = MirrorEnabled)
 @Requires(property = 'wave.build.k8s')
 @Singleton
 @CompileStatic
@@ -57,14 +53,8 @@ class KubeMirrorStrategy extends MirrorStrategy {
 
     @Override
     void mirrorJob(String jobName, MirrorRequest request) {
-        Path configFile = null
-        // create the work directory
-        Files.createDirectories(request.workDir)
-        // save docker config for creds
-        if( request.authJson ) {
-            configFile = request.workDir.resolve('config.json')
-            Files.write(configFile, JsonOutput.prettyPrint(request.authJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
-        }
+        // docker auth json file
+        final Path configFile = request.authJson ? request.workDir.resolve('config.json') : null
 
         try {
             k8sService.launchMirrorJob(

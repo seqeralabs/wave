@@ -24,8 +24,10 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
+import io.micronaut.context.annotation.Requires
 import io.micronaut.scheduling.TaskScheduler
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.configuration.WaveLite
 import io.seqera.wave.service.job.JobOperation
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.scan.ScanIdStore
@@ -38,6 +40,7 @@ import jakarta.inject.Inject
  */
 @Slf4j
 @Context
+@Requires(missingBeans = WaveLite)
 @CompileStatic
 class CleanupServiceImpl implements Runnable, CleanupService {
 
@@ -88,7 +91,7 @@ class CleanupServiceImpl implements Runnable, CleanupService {
                 cleanupEntry(it)
             }
             catch (InterruptedException e) {
-                Thread.interrupted()
+                throw new InterruptedException()
             }
             catch (Throwable t) {
                 log.error("Unexpected error in JWT heartbeat while processing key: $it", t)

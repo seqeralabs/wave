@@ -21,6 +21,7 @@ package io.seqera.wave.configuration
 import java.time.Duration
 
 import groovy.transform.CompileStatic
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import jakarta.inject.Singleton
@@ -29,6 +30,7 @@ import jakarta.inject.Singleton
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Requires(bean = MirrorEnabled)
 @Singleton
 @CompileStatic
 class MirrorConfig {
@@ -52,11 +54,19 @@ class MirrorConfig {
     Integer retryAttempts
 
     @Nullable
-    @Value('${wave.mirror.requestsCpu}')
+    @Value('${wave.mirror.k8s.resources.requests.cpu}')
     String requestsCpu
 
     @Nullable
-    @Value('${wave.mirror.requestsMemory}')
+    @Value('${wave.mirror.k8s.resources.requests.memory}')
     String requestsMemory
+
+    @Value('${wave.mirror.k8s.resources.limits.cpu}')
+    @Nullable
+    String limitsCpu
+
+    @Value('${wave.mirror.k8s.resources.limits.memory}')
+    @Nullable
+    String limitsMemory
 
 }

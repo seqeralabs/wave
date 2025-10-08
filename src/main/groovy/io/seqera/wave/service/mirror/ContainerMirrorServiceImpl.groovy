@@ -18,24 +18,29 @@
 
 package io.seqera.wave.service.mirror
 
+import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.scheduling.TaskExecutors
+import io.seqera.wave.configuration.MirrorEnabled
 import io.seqera.wave.service.builder.BuildTrack
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.metric.MetricsService
+import io.seqera.wave.service.mirror.strategy.MirrorStrategy
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.scan.ContainerScanService
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
+import static io.seqera.wave.service.job.JobHelper.saveDockerAuth
 /**
  * Implement a service to mirror a container image to a repository specified by the user
  *
@@ -44,6 +49,7 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @Named('Mirror')
+@Requires(bean = MirrorEnabled)
 @CompileStatic
 class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<MirrorEntry> {
 
@@ -54,7 +60,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
     private JobService jobService
 
     @Inject
-    @Named(TaskExecutors.IO)
+    @Named(TaskExecutors.BLOCKING)
     private ExecutorService ioExecutor
 
     @Inject
@@ -67,6 +73,9 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
     @Inject
     private MetricsService metricsService
 
+    @Inject
+    private MirrorStrategy mirrorStrategy
+
     /**
      * {@inheritDoc}
      */
@@ -75,7 +84,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
         if( store.putIfAbsent(request.targetImage, MirrorEntry.of(request))) {
             log.info "== Container mirror submitted - request=$request"
             //increment mirror counter
-            CompletableFuture.runAsync(() -> metricsService.incrementMirrorsCounter(request.identity), ioExecutor)
+            CompletableFuture.runAsync(() -> metricsService.incrementMirrorsCounter(request.identity, request.platform.arch), ioExecutor)
             jobService.launchMirror(request)
             return new BuildTrack(request.mirrorId, request.targetImage, false, null)
         }
@@ -157,4 +166,14 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
         log.error("Mirror container errored - job=${job.operationName}; result=${result}", error)
     }
 
+    @Override
+    JobSpec launchJob(JobSpec job, MirrorEntry entry) {
+        final request = entry.request
+        // save docker auth file
+        saveDockerAuth(request.workDir, request.authJson)
+        // launch mirror job
+        mirrorStrategy.mirrorJob(job.operationName, request)
+        // return the update job
+        return job.withLaunchTime(Instant.now())
+    }
 }
