@@ -283,7 +283,7 @@ Configure Redis with the following options:
 : Sets the minimum number of idle connections to maintain in the Redis connection pool (default: `0`).
 
 `redis.uri` *(required)*
-: Specifies the URI for connecting to Redis (default format: `redis://${REDIS_HOST:redis}:${REDIS_PORT:6379}`.
+: Specifies the URI for connecting to Redis (default format: `redis://${REDIS_HOST:redis}:${REDIS_PORT:6379}`).
   Can be set using the `${REDIS_URI}` environment variable.
 
 ### PostgreSQL
@@ -367,11 +367,11 @@ Configure how Wave sends email notifications on behalf of the service with the f
 
 `mail.from` *(required)*
 : Specifies the sender's email address for Wave notifications.
-  Can be set using the `${{MAIL_FROM}}}` environment variable.
+  Can be set using the `${MAIL_FROM}` environment variable.
 
 ## Metrics
 
-Configure how Wave Metrics service provides data about container builds and pulls per ip, container image, and user with the following options:
+Configure how Wave Metrics service provides data about container builds and pulls per organization and date with the following options:
 
 `wave.metrics.enabled` *(optional)*
 : Enables Wave metrics (default: `false`).
