@@ -126,12 +126,11 @@ class BuildScanCommandTest extends Specification {
         def command = strategy.buildScanCommand(targetImage, workDir, platform, config)
 
         then:
-        // Plugin scan includes platform parameter (passed as string, may be empty)
+        // Plugin scan does NOT include platform parameter
         command == [
             'plugin',
             'ghcr.io/seqera-labs/nextflow/plugin/nf-amazon:1.0.0',
             '/work/plugin',
-            'linux/arm64',
             '25',
             'LOW,MEDIUM,HIGH,CRITICAL',
             'default'
@@ -153,11 +152,11 @@ class BuildScanCommandTest extends Specification {
         def command = strategy.buildScanCommand(targetImage, workDir, platform, config)
 
         then:
+        // Plugin scan does NOT include platform
         command == [
             'plugin',
             'nextflow/plugin/nf-tower:2.0.0',
             '/plugin/scan',
-            '',  // empty platform
             '30',
             '',
             'default'

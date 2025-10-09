@@ -39,19 +39,21 @@ abstract class ScanStrategy {
     /**
      * Build unified scan command that works for both container and plugin scans
      * The scan.sh script handles all the complexity internally
+     *
+     * For container scans: [scanType, image, workDir, platform, timeout, severity, format]
+     * For plugin scans:    [scanType, plugin, workDir, timeout, severity, format]
      */
     protected List<String> buildScanCommand(String containerImage, Path workDir, ContainerPlatform platform, ScanConfig scanConfig) {
         final scanType = containerImage.contains("nextflow/plugin") ? "plugin" : "container"
+        final isPlugin = scanType == "plugin"
 
         final cmd = new ArrayList<String>()
         cmd.add(scanType)
         cmd.add(containerImage)
         cmd.add(workDir.toString())
 
-        if( platform ) {
-            cmd.add(platform.toString())
-        } else {
-            cmd.add("")
+        if( !isPlugin ) {
+            cmd.add(platform ? platform.toString() : "")
         }
 
         cmd.add("${scanConfig.timeout.toMinutes()}".toString())

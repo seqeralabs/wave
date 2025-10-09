@@ -2,27 +2,41 @@
 set -e
 
 # Unified scan script for both container images and Nextflow plugins
-# Usage: scan.sh <scan_type> <target> <work_dir> <platform> <timeout> <severity> <scan_format>
+# Usage for containers: scan.sh container <target> <work_dir> <platform> <timeout> <severity> <scan_format>
+# Usage for plugins:    scan.sh plugin <target> <work_dir> <timeout> <severity> <scan_format>
 #
 # Parameters:
 #   scan_type: "container" or "plugin"
 #   target: container image name or plugin identifier
 #   work_dir: working directory for output files
-#   platform: container platform (e.g., linux/amd64) - can be empty for plugins
-#   timeout: scan timeout in minutes (default: 15)
-#   severity: vulnerability severity levels (e.g., CRITICAL,HIGH) - optional
-#   scan_format: scan format type (default|spdx|cyclonedx) - optional
+#   For containers (7 params):
+#     platform: container platform (e.g., linux/amd64)
+#     timeout: scan timeout in minutes (default: 15)
+#     severity: vulnerability severity levels (e.g., CRITICAL,HIGH)
+#     scan_format: scan format type (default|spdx|cyclonedx)
+#   For plugins (6 params, no platform):
+#     timeout: scan timeout in minutes (default: 15)
+#     severity: vulnerability severity levels (e.g., CRITICAL,HIGH)
+#     scan_format: scan format type (default|spdx|cyclonedx)
 
 SCAN_TYPE="${1:-container}"
 TARGET="${2}"
 WORK_DIR="${3:-/tmp/scan}"
 
-# Parameters are now consistent for both scan types
-# Platform is passed for both, but will be empty for plugins
-PLATFORM="${4}"
-TIMEOUT="${5:-15}"
-SEVERITY="${6}"
-SCAN_FORMAT="${7:-default}"
+# Adjust parameter positions based on scan type
+# Plugins don't have platform parameter (6 params), containers do (7 params)
+if [ "$SCAN_TYPE" = "plugin" ]; then
+    PLATFORM=""
+    TIMEOUT="${4:-15}"
+    SEVERITY="${5}"
+    SCAN_FORMAT="${6:-default}"
+else
+    # Container scan includes platform
+    PLATFORM="${4}"
+    TIMEOUT="${5:-15}"
+    SEVERITY="${6}"
+    SCAN_FORMAT="${7:-default}"
+fi
 
 CACHE_DIR="${TRIVY_CACHE_DIR:-/root/.cache/}"
 
