@@ -236,6 +236,10 @@ class RegHelper {
         return layerName(layer).replace(/.tar.gz/,'')
     }
 
+    static String layerMountDir(ContainerLayer layer) {
+        return "/opt/layers/${layerName(layer)}"
+    }
+
     static void closeResponse(HttpResponse<?> response) {
         log.trace "Closing HttpClient response: $response"
         try {

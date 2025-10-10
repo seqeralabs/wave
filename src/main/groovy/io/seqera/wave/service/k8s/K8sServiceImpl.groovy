@@ -58,6 +58,7 @@ import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.scan.Trivy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -550,16 +551,17 @@ class K8sServiceImpl implements K8sService {
      */
     @Override
     @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
-    V1Job launchBuildJob(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, Map<String,String> nodeSelector) {
-        final spec = buildJobSpec(name, containerImage, args, workDir, creds, timeout, nodeSelector)
+    V1Job launchBuildJob(String name, String containerImage, List<String> args, BuildRequest request, Path creds, Duration timeout, Map<String,String> nodeSelector) {
+        final spec = buildJobSpec(name, containerImage, args, request, creds, timeout, nodeSelector)
         return k8sClient
                 .batchV1Api()
                 .createNamespacedJob(namespace, spec)
                 .execute()
     }
 
-    V1Job buildJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, Duration timeout, Map<String,String> nodeSelector) {
+    V1Job buildJobSpec(String name, String containerImage, List<String> args, BuildRequest request, Path credsFile, Duration timeout, Map<String,String> nodeSelector) {
 
+        final workDir = request.workDir
         // dirty dependency to avoid introducing another parameter
         final singularity = containerImage.contains('singularity')
 
@@ -575,6 +577,7 @@ class K8sServiceImpl implements K8sService {
         if( credsFile ){
             if( !singularity ) {
                 mounts.add(0, mountHostPath(credsFile, storageMountPath, '/home/user/.docker/config.json'))
+                initMounts.add(0,mountBuildStorage(workDir, storageMountPath, false))
             }
             else {
                 //emptydir volume for singularity
@@ -669,6 +672,20 @@ class K8sServiceImpl implements K8sService {
                             .withType("Unconfined")
                         .endAppArmorProfile()
                     .endSecurityContext()
+
+            if (request.buildContext) {
+                //init container to untar context
+                spec.withInitContainers(new V1ContainerBuilder()
+                        .withName("untar-context")
+                        .withImage("busybox")
+                        .withCommand(
+                                "sh",
+                                "-c",
+                                "[ -d ${request.workDir}/context ] || mkdir -p ${request.workDir}/context && tar -xzf ${request.workDir}/context.tar.gz -C ${request.workDir}/context")
+                        .withVolumeMounts(initMounts)
+                        .build()
+                )
+            }
         }
 
         // spec section
