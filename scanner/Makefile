@@ -6,5 +6,5 @@ build:
 			--platform linux/amd64,linux/arm64 \
 			--build-arg version=${trivy_version} \
 			--build-arg oras_version=${oras_version} \
-			--tag hrma017/trivy-oras:v${trivy_version}-oras-${oras_version} \
+			--tag public.cr.seqera.io/wave/trivy-oras:v${trivy_version}-oras-${oras_version} \
 			.
