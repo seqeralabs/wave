@@ -43,15 +43,18 @@ import jakarta.inject.Singleton
 class ScanConfig {
 
     /**
-     * Docker image of tool need to be used for container scanner
+     * Docker image of tool need to be used for container scanner.
+     * This unified image now handles both container and plugin scans via scan.sh script.
      */
     @Value('${wave.scan.image.name}')
     private String scanImage
 
     /**
-     * Docker image of tool need to be used for plugin scanner
+     * Docker image of tool need to be used for plugin scanner.
+     * @deprecated As of version X.X.X, use {@link #scanImage} instead. The unified scanner image handles both types.
      */
-    @Value('${wave.scan.plugin.image.name}')
+    @Deprecated
+    @Value('${wave.scan.plugin.image.name:#{null}}')
     private String scanPluginImage
 
     @Value('${wave.scan.k8s.resources.requests.cpu}')
@@ -111,8 +114,12 @@ class ScanConfig {
         return scanImage
     }
 
+    /**
+     * @deprecated As of version X.X.X, use {@link #getScanImage()} instead. The unified scanner image handles both types.
+     */
+    @Deprecated
     String getScanPluginImage() {
-        return scanPluginImage
+        return scanPluginImage ?: scanImage
     }
 
     @Memoized

@@ -67,13 +67,9 @@ class KubeScanStrategy extends ScanStrategy {
             Files.createDirectories(entry.workDir)
             final Path configFile = entry.configJson ? entry.workDir.resolve('config.json') : null
 
-            if (entry.containerImage.contains("nextflow/plugin")) {
-                final command = scanPluginCommand(entry.containerImage, entry.workDir, scanConfig, ScanType.Default)
-                k8sService.launchScanJob(jobName, scanConfig.scanPluginImage, command, entry.workDir, configFile, scanConfig)
-            } else {
-                final command = trivyCommand(entry.containerImage, entry.workDir, entry.platform, scanConfig)
-                k8sService.launchScanJob(jobName, scanConfig.scanImage, command, entry.workDir, configFile, scanConfig)
-            }
+            // Use unified scan image and command for both container and plugin scans
+            final command = buildScanCommand(entry.containerImage, entry.workDir, entry.platform, scanConfig)
+            k8sService.launchScanJob(jobName, scanConfig.scanImage, command, entry.workDir, configFile, scanConfig)
         }
         catch (ApiException e) {
             throw new BadRequestException("Unexpected scan failure: ${e.responseBody}", e)
