@@ -42,6 +42,8 @@ import io.seqera.wave.service.persistence.postgres.data.BuildRepository
 import io.seqera.wave.service.persistence.postgres.data.BuildRow
 import io.seqera.wave.service.persistence.postgres.data.MirrorRepository
 import io.seqera.wave.service.persistence.postgres.data.MirrorRow
+import io.seqera.wave.service.persistence.postgres.data.PullRepository
+import io.seqera.wave.service.persistence.postgres.data.PullRow
 import io.seqera.wave.service.persistence.postgres.data.RequestRepository
 import io.seqera.wave.service.persistence.postgres.data.RequestRow
 import io.seqera.wave.service.persistence.postgres.data.ScanRepository
@@ -74,6 +76,9 @@ class PostgresPersistentService implements PersistenceService {
 
     @Inject
     private ScanRepository scanRepository
+
+    @Inject
+    private PullRepository pullRepository
 
     @Inject
     @Nullable
@@ -278,5 +283,22 @@ class PostgresPersistentService implements PersistenceService {
         final json = Mapper.toJson(data)
         final entity = new MirrorRow(id: data.mirrorId, data:json, createdAt: Instant.now())
         mirrorRepository.save(entity)
+    }
+
+    @Override
+    CompletableFuture<Void> savePullRequestAsync(PullRow pullRow) {
+        log.trace "Saving pull request data=${pullRow}"
+        CompletableFuture.runAsync(safeRun(()->
+                pullRepository.save(pullRow),
+                "Unable to save mirror result data=${pullRow}"))
+    }
+
+    @Override
+    PullRow loadPullRequest(Long id) {
+        log.trace "Loading pull request with id=${id}"
+        final row = pullRepository.findById(id).orElse(null)
+        if( !row )
+            return null
+        return row
     }
 }
