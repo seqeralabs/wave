@@ -2,41 +2,43 @@
 set -e
 
 # Unified scan script for both container images and Nextflow plugins
-# Usage for containers: scan.sh container <target> <work_dir> <platform> <timeout> <severity> <scan_format>
-# Usage for plugins:    scan.sh plugin <target> <work_dir> <timeout> <severity> <scan_format>
+# Usage: scan.sh --type <container|plugin> --target <target> [options]
 #
-# Parameters:
-#   scan_type: "container" or "plugin"
-#   target: container image name or plugin identifier
-#   work_dir: working directory for output files
-#   For containers (7 params):
-#     platform: container platform (e.g., linux/amd64)
-#     timeout: scan timeout in minutes (default: 15)
-#     severity: vulnerability severity levels (e.g., CRITICAL,HIGH)
-#     scan_format: scan format type (default|spdx|cyclonedx)
-#   For plugins (6 params, no platform):
-#     timeout: scan timeout in minutes (default: 15)
-#     severity: vulnerability severity levels (e.g., CRITICAL,HIGH)
-#     scan_format: scan format type (default|spdx|cyclonedx)
+# Required options:
+#   --type        Scan type: "container" or "plugin" (default: container)
+#   --target      Container image name or plugin identifier
+#
+# Optional:
+#   --work-dir    Working directory for output files (default: /tmp/scan)
+#   --platform    Container platform, e.g., linux/amd64 (container only)
+#   --timeout     Scan timeout in minutes (default: 15)
+#   --severity    Vulnerability severity levels, e.g., CRITICAL,HIGH
+#   --format      Scan format: default|spdx|cyclonedx (default: default)
 
-SCAN_TYPE="${1:-container}"
-TARGET="${2}"
-WORK_DIR="${3:-/tmp/scan}"
+# Set defaults
+SCAN_TYPE="${SCAN_TYPE:-container}"
+WORK_DIR="${WORK_DIR:-/tmp/scan}"
+TIMEOUT="${TIMEOUT:-15}"
+SCAN_FORMAT="${SCAN_FORMAT:-default}"
 
-# Adjust parameter positions based on scan type
-# Plugins don't have platform parameter (6 params), containers do (7 params)
-if [ "$SCAN_TYPE" = "plugin" ]; then
-    PLATFORM=""
-    TIMEOUT="${4:-15}"
-    SEVERITY="${5}"
-    SCAN_FORMAT="${6:-default}"
-else
-    # Container scan includes platform
-    PLATFORM="${4}"
-    TIMEOUT="${5:-15}"
-    SEVERITY="${6}"
-    SCAN_FORMAT="${7:-default}"
-fi
+# Parse command-line options
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --type|--target|--work-dir|--platform|--timeout|--severity|--format)
+            [[ -z "$2" || "$2" == --* ]] && { echo "Error: $1 requires a value"; exit 1; }
+            case $1 in
+                --type) SCAN_TYPE="$2";;
+                --target) TARGET="$2";;
+                --work-dir) WORK_DIR="$2";;
+                --platform) PLATFORM="$2";;
+                --timeout) TIMEOUT="$2";;
+                --severity) SEVERITY="$2";;
+                --format) SCAN_FORMAT="$2";;
+            esac
+            shift 2;;
+        *) echo "Unknown option: $1"; exit 1;;
+    esac
+done
 
 CACHE_DIR="${TRIVY_CACHE_DIR:-/root/.cache/}"
 
@@ -142,18 +144,20 @@ scan_plugin() {
 }
 
 # Main execution
-echo "========================================="
-echo "Unified Scanner"
-echo "========================================="
-echo "Scan Type: $SCAN_TYPE"
-echo "Target: $TARGET"
-echo "Work Dir: $WORK_DIR"
-echo "Platform: ${PLATFORM:-<not specified>}"
-echo "Timeout: ${TIMEOUT}m"
-echo "Severity: ${SEVERITY:-<not specified>}"
-echo "Format: $SCAN_FORMAT"
-echo "Cache Dir: $CACHE_DIR"
-echo "========================================="
+cat <<EOF
+=========================================
+Unified Scanner
+=========================================
+Scan Type: $SCAN_TYPE
+Target: $TARGET
+Work Dir: $WORK_DIR
+Platform: ${PLATFORM:-<not specified>}
+Timeout: ${TIMEOUT}m
+Severity: ${SEVERITY:-<not specified>}
+Format: $SCAN_FORMAT
+Cache Dir: $CACHE_DIR
+=========================================
+EOF
 
 case "$SCAN_TYPE" in
     container)
