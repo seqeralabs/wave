@@ -36,6 +36,41 @@ abstract class ScanStrategy {
 
     abstract void scanContainer(String jobName, ScanEntry entry)
 
+    /**
+     * Build unified scan command that works for both container and plugin scans
+     * The scan.sh script handles all the complexity internally
+     *
+     * For container scans: [scanType, image, workDir, platform, timeout, severity, format]
+     * For plugin scans:    [scanType, plugin, workDir, timeout, severity, format]
+     */
+    protected List<String> buildScanCommand(String containerImage, Path workDir, ContainerPlatform platform, ScanConfig scanConfig) {
+        final scanType = containerImage.contains("nextflow/plugin") ? "plugin" : "container"
+        final isPlugin = scanType == "plugin"
+
+        final cmd = new ArrayList<String>()
+        cmd.add(scanType)
+        cmd.add(containerImage)
+        cmd.add(workDir.toString())
+
+        if( !isPlugin ) {
+            cmd.add(platform ? platform.toString() : "")
+        }
+
+        cmd.add("${scanConfig.timeout.toMinutes()}".toString())
+
+        if( scanConfig.severity ) {
+            cmd.add(scanConfig.severity)
+        } else {
+            cmd.add("")
+        }
+
+        // Scan format (always default for now)
+        cmd.add("default")
+
+        return cmd
+    }
+
+    @Deprecated
     protected List<String> scanCommand(String targetImage, Path workDir, ContainerPlatform platform, ScanConfig config, ScanType mode) {
         List<String> cmd = ['trivy', '--quiet', 'image']
         if( platform ) {
@@ -58,6 +93,7 @@ abstract class ScanStrategy {
         return cmd
     }
 
+    @Deprecated
     protected List<String> trivyCommand(String containerImage, Path workDir, ContainerPlatform platform, ScanConfig scanConfig) {
         final cmd = new ArrayList<String>(50)
         // the vulnerability scan command
@@ -69,6 +105,7 @@ abstract class ScanStrategy {
         return List.of(cmd.join(' '))
     }
 
+    @Deprecated
     protected static List<String> scanPluginCommand(String plugin, Path workDir, ScanConfig config, ScanType mode) {
         final cmd = new ArrayList<String>(50)
         // the vulnerability scan command
@@ -81,6 +118,7 @@ abstract class ScanStrategy {
         return List.of("oras pull $plugin -o $workDir/plugin && unzip -u $workDir/plugin/*.zip -d $workDir/fs && ${cmd.join(' ')}".toString())
     }
 
+    @Deprecated
     protected static List<String> trivyPluginCommand(Path workDir, ScanConfig config, ScanType mode) {
         final trivyCmd = ['trivy', 'rootfs', '--scanners vuln']
         trivyCmd
