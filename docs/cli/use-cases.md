@@ -5,9 +5,7 @@ date: "2025-10-14"
 tags: [wave cli, use cases, containers, docker, singularity]
 ---
 
-With the Wave CLI you can build Docker and Singularity containers from a variety of sources, including a Dockerfile, Singularity definition file, file system directory, and Conda packages.
-
-The following sections describe several common use cases.
+With the Wave CLI you can build Docker and Singularity containers from a variety of sources, including a Dockerfile, Singularity definition file, file system directory, and Conda packages. The following sections describe several common use cases.
 
 :::tip
 To get started with an example Nextflow pipeline that uses Wave CLI, see [Wave CLI][start].
@@ -37,7 +35,7 @@ The following limitations apply:
 
 **Example usage**
 
-The following example shows how to create a custom layer with a shell script and build it onto an Alpine base image:
+Create a custom layer with a shell script and add it onto an Alpine base image:
 
 1. Create a new context directory:
 
@@ -73,7 +71,7 @@ Conda builds support the following arguments:
 
 **Example usage**
 
-The following example shows how to build a container with specific versions of the `samtools` and `bamtools` packages:
+Build a container with specific versions of the `samtools` and `bamtools` packages:
 
 ```bash
 wave \
@@ -97,12 +95,12 @@ Building a Dockerfile that requires `--build-arg` for build time variables isn't
 
 Container builds support the following arguments:
 
-- `--containerfile` or `-f`: A Dockerfile to build. Build args aren't currently supported.
+- `--containerfile`, `-f`: A Dockerfile to build. Build args aren't currently supported.
 - `--context`: A directory that contains the context for the build.
 
 **Example usage**
 
-The following example shows how to build a container from a `Dockerfile` that installs several packages:
+Build a container that installs several packages from a `Dockerfile`:
 
 1. Create a Dockerfile:
 
@@ -125,7 +123,7 @@ The following example shows how to build a container from a `Dockerfile` that in
     docker run --rm $container cowsay "Hello world"
     ```
 
-The following example shows how to build a container from a Dockerfile with a local build context:
+Build a container from a Dockerfile with a local build context:
 1. Create a Dockerfile that references a local file:
 
     ```bash
@@ -135,7 +133,7 @@ The following example shows how to build a container from a Dockerfile with a lo
     EOF
     ```
 
-1. Create the shell script in a build context directory:
+1. Create the shell script in the build context directory:
 
     ```bash
     mkdir -p build-context/
@@ -175,19 +173,19 @@ The following limitations apply:
 
 **Example usage**
 
-The following example shows how to augment a Docker base image and save it as a Singularity container:
+Augment a Docker base image and save it as a Singularity container:
 
 ```bash
 wave -i alpine --layer context-dir/ --build-repo docker.io/user/repo
 ```
 
-The following example shows how to build a Singularity container from a SingularityCE definition (`.def`) file:
+Build a Singularity container from a SingularityCE definition (`.def`) file:
 
 ```bash
 wave -f hello-world.def --singularity --freeze --build-repo docker.io/user/repo
 ```
 
-The following example shows how to build a Singularity container from Conda packages:
+Build a Singularity container from Conda packages:
 
 ```bash
 wave --conda-package bamtools=2.5.2 --conda-package samtools=1.17 --freeze --singularity --build-repo docker.io/user/repo
@@ -204,7 +202,7 @@ The Wave CLI supports building a container and persisting the container to a con
 
 **Prerequisites**
 
-To freeze a container, ensure the following conditions are met:
+Ensure the following conditions are met:
 
 - You created a Seqera access token
 - You specified the destination container registry credentials in Seqera Platform
@@ -221,7 +219,7 @@ Container freeze builds support the following arguments:
 
 **Example usage**
 
-The following example shows how to freeze the `alpine` container image to a private Docker Hub registry:
+Freeze the `alpine` container image to a private Docker Hub registry:
 
 ```bash
 wave -i alpine --freeze \
@@ -239,7 +237,7 @@ The Wave CLI supports mirroring, i.e., copying containers to a container registr
 
 **Prerequisites**
 
-To mirror a container image, ensure the following conditions are met:
+Ensure the following conditions are met:
 
 - You created a Seqera access token
 - You specified the destination container registry credentials in Seqera Platform
@@ -255,7 +253,7 @@ Container mirroring supports the following arguments:
 
 **Example usage**
 
-The following example shows how to mirror the [`samtools:0.1.16--2`][samtools] container image to a private Docker Hub registry:
+Mirror the [`samtools:0.1.16--2`][samtools] container image to a private Docker Hub registry:
 
 ```bash
 wave -i quay.io/biocontainers/samtools:0.1.16--2 --mirror \
