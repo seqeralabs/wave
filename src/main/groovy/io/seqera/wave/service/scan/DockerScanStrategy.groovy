@@ -100,6 +100,9 @@ class DockerScanStrategy extends ScanStrategy {
             }
         }
 
+        wrapper.add('--entrypoint')
+        wrapper.add('/usr/local/bin/scan.sh')
+
         return wrapper
     }
 }
