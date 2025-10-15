@@ -60,7 +60,9 @@ run_trivy_scan() {
 
     local cmd="trivy --quiet $scan_command"
 
-    [ -n "$PLATFORM" ] && cmd="$cmd --platform $PLATFORM"
+    if [ -n "$PLATFORM" ] && [ "$PLATFORM" != "none" ]; then
+      cmd="$cmd --platform $PLATFORM"
+    fi
 
     cmd="$cmd --timeout ${TIMEOUT}m"
     cmd="$cmd --format $output_format"

@@ -50,27 +50,27 @@ abstract class ScanStrategy {
      */
     protected List<String> buildScanCommand(String containerImage, Path workDir, ContainerPlatform platform, ScanConfig scanConfig) {
         final scanType = containerImage.contains("nextflow/plugin") ? "plugin" : "container"
-        final isPlugin = scanType == "plugin"
 
+        final platformStr = scanType == 'container' ? platform.toString() : "none"
         final cmd = new ArrayList<String>()
-        cmd.add(scanType)
-        cmd.add(containerImage)
-        cmd.add(workDir.toString())
-
-        if( !isPlugin ) {
-            cmd.add(platform ? platform.toString() : "")
-        }
-
-        cmd.add("${scanConfig.timeout.toMinutes()}".toString())
+        cmd
+                << '--type'
+                << scanType
+                << '--target'
+                << containerImage
+                << '--work-dir'
+                << workDir.toString()
+                << '--platform'
+                << platformStr
+                << '--timeout'
+                << "${scanConfig.timeout.toMinutes()}".toString()
+                << '--format'
+                << 'default'
 
         if( scanConfig.severity ) {
-            cmd.add(scanConfig.severity)
-        } else {
-            cmd.add("")
+            cmd << '--severity'
+            cmd << scanConfig.severity
         }
-
-        // Scan format (always default for now)
-        cmd.add("default")
 
         return cmd
     }

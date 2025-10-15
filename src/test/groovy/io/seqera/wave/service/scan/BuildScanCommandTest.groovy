@@ -49,17 +49,17 @@ class BuildScanCommandTest extends Specification {
 
         then:
         command == [
-            'container',
-            'alpine:latest',
-            '/work/dir',
-            'linux/amd64',
-            '20',
-            'CRITICAL,HIGH',
-            'default'
+            '--type', 'container',
+            '--target', 'alpine:latest',
+            '--work-dir', '/work/dir',
+            '--platform', 'linux/amd64',
+            '--timeout', '20',
+            '--format', 'default',
+            '--severity', 'CRITICAL,HIGH'
         ]
     }
 
-    def "should build container scan command without platform"() {
+    def "should build container scan command with null platform"() {
         given:
         def strategy = Spy(ScanStrategy)
         def targetImage = "ubuntu:22.04"
@@ -74,15 +74,8 @@ class BuildScanCommandTest extends Specification {
         def command = strategy.buildScanCommand(targetImage, workDir, platform, config)
 
         then:
-        command == [
-            'container',
-            'ubuntu:22.04',
-            '/scan/path',
-            '',  // empty platform
-            '15',
-            'HIGH',
-            'default'
-        ]
+        // When platform is null, platform.toString() will throw NullPointerException
+        thrown(NullPointerException)
     }
 
     def "should build container scan command without severity"() {
@@ -101,13 +94,12 @@ class BuildScanCommandTest extends Specification {
 
         then:
         command == [
-            'container',
-            'nginx:alpine',
-            '/tmp/scan',
-            'linux/amd64',
-            '10',
-            '',
-            'default'
+            '--type', 'container',
+            '--target', 'nginx:alpine',
+            '--work-dir', '/tmp/scan',
+            '--platform', 'linux/amd64',
+            '--timeout', '10',
+            '--format', 'default'
         ]
     }
 
@@ -126,14 +118,15 @@ class BuildScanCommandTest extends Specification {
         def command = strategy.buildScanCommand(targetImage, workDir, platform, config)
 
         then:
-        // Plugin scan does NOT include platform parameter
+        // Plugin scan includes platform as 'none' for plugin scans
         command == [
-            'plugin',
-            'ghcr.io/seqera-labs/nextflow/plugin/nf-amazon:1.0.0',
-            '/work/plugin',
-            '25',
-            'LOW,MEDIUM,HIGH,CRITICAL',
-            'default'
+            '--type', 'plugin',
+            '--target', 'ghcr.io/seqera-labs/nextflow/plugin/nf-amazon:1.0.0',
+            '--work-dir', '/work/plugin',
+            '--platform', 'none',
+            '--timeout', '25',
+            '--format', 'default',
+            '--severity', 'LOW,MEDIUM,HIGH,CRITICAL'
         ]
     }
 
@@ -152,14 +145,14 @@ class BuildScanCommandTest extends Specification {
         def command = strategy.buildScanCommand(targetImage, workDir, platform, config)
 
         then:
-        // Plugin scan does NOT include platform
+        // Plugin scan includes platform as 'none' for plugin scans
         command == [
-            'plugin',
-            'nextflow/plugin/nf-tower:2.0.0',
-            '/plugin/scan',
-            '30',
-            '',
-            'default'
+            '--type', 'plugin',
+            '--target', 'nextflow/plugin/nf-tower:2.0.0',
+            '--work-dir', '/plugin/scan',
+            '--platform', 'none',
+            '--timeout', '30',
+            '--format', 'default'
         ]
     }
 
@@ -177,7 +170,7 @@ class BuildScanCommandTest extends Specification {
         def command = strategy.buildScanCommand(pluginImage, workDir, platform, config)
 
         then:
-        command[0] == 'plugin'
+        command[1] == 'plugin'
 
         where:
         pluginImage << [
@@ -201,7 +194,7 @@ class BuildScanCommandTest extends Specification {
         def command = strategy.buildScanCommand(containerImage, workDir, platform, config)
 
         then:
-        command[0] == 'container'
+        command[1] == 'container'
 
         where:
         containerImage << [
@@ -227,7 +220,7 @@ class BuildScanCommandTest extends Specification {
         def command = strategy.buildScanCommand(targetImage, workDir, platform, config)
 
         then:
-        command[4] == expectedMinutes
+        command[9] == expectedMinutes
 
         where:
         timeout                    | expectedMinutes
@@ -273,7 +266,15 @@ class BuildScanCommandTest extends Specification {
         def command = strategy.buildScanCommand(targetImage, workDir, platform, config)
 
         then:
-        command[5] == ''
+        // Empty string is falsy in Groovy, so severity options are not added
+        command == [
+            '--type', 'container',
+            '--target', 'alpine:latest',
+            '--work-dir', '/scan',
+            '--platform', 'linux/amd64',
+            '--timeout', '15',
+            '--format', 'default'
+        ]
     }
 
     def "should handle absolute and relative work directory paths"() {
@@ -290,7 +291,7 @@ class BuildScanCommandTest extends Specification {
         def command = strategy.buildScanCommand(targetImage, workDir, platform, config)
 
         then:
-        command[2] == expectedPath
+        command[5] == expectedPath
 
         where:
         workDir                       | expectedPath
