@@ -64,9 +64,6 @@ wave:
       attempts: 5
       multiplier: '1.75'
   scan:
-    plugin:
-      image:
-        name:  hrma017/trivy-oras:v0.65.0-oras-1.3.0 #for testing
     image:
       name: hrma017/trivy-oras:v0.65.0-oras-1.3.0 #for testing
     environment:

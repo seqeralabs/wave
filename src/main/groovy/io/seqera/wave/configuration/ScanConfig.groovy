@@ -49,14 +49,6 @@ class ScanConfig {
     @Value('${wave.scan.image.name}')
     private String scanImage
 
-    /**
-     * Docker image of tool need to be used for plugin scanner.
-     * @deprecated As of version X.X.X, use {@link #scanImage} instead. The unified scanner image handles both types.
-     */
-    @Deprecated
-    @Value('${wave.scan.plugin.image.name:#{null}}')
-    private String scanPluginImage
-
     @Value('${wave.scan.k8s.resources.requests.cpu}')
     @Nullable
     private String requestsCpu
@@ -112,14 +104,6 @@ class ScanConfig {
 
     String getScanImage() {
         return scanImage
-    }
-
-    /**
-     * @deprecated As of version X.X.X, use {@link #getScanImage()} instead. The unified scanner image handles both types.
-     */
-    @Deprecated
-    String getScanPluginImage() {
-        return scanPluginImage ?: scanImage
     }
 
     @Memoized
