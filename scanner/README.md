@@ -17,18 +17,21 @@ Builds a unified scanner image based on `aquasec/trivy` with additional tools:
 - **scan.sh** - Unified scan orchestration script
 
 ### `scan.sh`
-The main orchestration script that handles both scan types:
+The main orchestration script that handles both scan types using named CLI options:
 
-**Parameters:**
-1. `scan_type` - Either "container" or "plugin"
-2. `target` - Container image name or plugin identifier
-3. `work_dir` - Working directory for output files
-4. `platform` - Container platform (e.g., linux/amd64) - optional
-5. `timeout` - Scan timeout in minutes (default: 15)
-6. `severity` - Vulnerability severity levels (e.g., CRITICAL,HIGH) - optional
-7. `scan_format` - Scan format type (default|spdx|cyclonedx) - optional
+**Required Options:**
+- `--type` - Scan type: "container" or "plugin" (default: container)
+- `--target` - Container image name or plugin identifier
+
+**Optional Options:**
+- `--work-dir` - Working directory for output files (default: /tmp/scan)
+- `--platform` - Container platform (e.g., linux/amd64) - only for container scans, ignored for plugins
+- `--timeout` - Scan timeout in minutes (default: 15)
+- `--severity` - Vulnerability severity levels (e.g., CRITICAL,HIGH)
+- `--format` - Scan format type: default|spdx|cyclonedx (default: default)
 
 **Features:**
+- Named CLI options for clear and maintainable command construction
 - Automatically detects scan type based on target
 - Handles plugin download, extraction, and scanning
 - Generates multiple output formats (JSON vulnerability report + SBOM)
@@ -54,26 +57,27 @@ docker build \
 ### Container Image Scan
 ```bash
 docker run --rm -v /tmp/scan:/scan wave-scanner:latest \
-  container \
-  alpine:latest \
-  /scan \
-  linux/amd64 \
-  15 \
-  "CRITICAL,HIGH" \
-  default
+  --type container \
+  --target alpine:latest \
+  --work-dir /scan \
+  --platform linux/amd64 \
+  --timeout 15 \
+  --severity "CRITICAL,HIGH" \
+  --format default
 ```
 
 ### Plugin Scan
 ```bash
 docker run --rm -v /tmp/scan:/scan wave-scanner:latest \
-  plugin \
-  ghcr.io/nextflow-io/plugins/nf-amazon:2.0.0 \
-  /scan \
-  "" \
-  15 \
-  "CRITICAL,HIGH" \
-  default
+  --type plugin \
+  --target ghcr.io/nextflow-io/plugins/nf-amazon:2.0.0 \
+  --work-dir /scan \
+  --timeout 15 \
+  --severity "CRITICAL,HIGH" \
+  --format default
 ```
+
+**Note:** The `--platform` option is automatically ignored for plugin scans.
 
 ## Wave Integration
 
@@ -117,8 +121,14 @@ To test locally:
 docker build -t wave-scanner:test .
 
 # Test container scan
-docker run --rm -v $(pwd)/test-output:/scan wave-scanner:test container alpine:latest /scan
+docker run --rm -v $(pwd)/test-output:/scan wave-scanner:test \
+  --type container \
+  --target alpine:latest \
+  --work-dir /scan
 
 # Test plugin scan
-docker run --rm -v $(pwd)/test-output:/scan wave-scanner:test plugin nf-amazon /scan
+docker run --rm -v $(pwd)/test-output:/scan wave-scanner:test \
+  --type plugin \
+  --target ghcr.io/nextflow-io/plugins/nf-amazon:2.0.0 \
+  --work-dir /scan
 ```
