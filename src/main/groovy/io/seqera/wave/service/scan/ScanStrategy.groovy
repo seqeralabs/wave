@@ -40,6 +40,11 @@ abstract class ScanStrategy {
      * Build unified scan command that works for both container and plugin scans
      * The scan.sh script handles all the complexity internally
      *
+     * Currently wave detects whether is a plugin or container scan based on the image name
+     * if image name container "nextflow/plugin" then it is a plugin scan otherwise container scan
+     * This is a work around we will improve using mediatype in future
+     * for more details see https://github.com/seqeralabs/wave/issues/919
+     *
      * For container scans: [scanType, image, workDir, platform, timeout, severity, format]
      * For plugin scans:    [scanType, plugin, workDir, timeout, severity, format]
      */
