@@ -25,7 +25,7 @@ Wave has been designed to streamline the use of software containers with Nextflo
 Store the container registry credentials in your [Seqera Platform](https://cloud.seqera.io) account.
 
 If you launch the Nextflow pipeline with Seqera, there's nothing else to do (other than using a compute environment with Wave support enabled).
-If you're launching the pipeline with the Nextflow command line, provide your Seqera access token in the Nextflow configuration file adding the setting `tower.accessToken='<YOUR TOKEN>'`.
+If you're launching the pipeline with the Nextflow command line, add your [Seqera access token](https://docs.seqera.io/platform/latest/api/overview#authentication) to your Nextflow configuration.
 
 ## Does Wave modify my container images?
 
@@ -35,7 +35,7 @@ With Wave container augmentation, you can include extra content required by the 
 
 ## Can the container built by Wave be stored in my container registry?
 
-Yes. You can specify the container registry where Wave stores built containers by adding the following setting in your pipeline Nextflow config file:
+Yes. You can specify the container registry where Wave stores built containers by adding the following setting in your Nextflow configuration:
 
 ```groovy
 wave.build.repository = 'example.com/your/build-repo'
@@ -57,9 +57,7 @@ Wave has been tested with the following container registries:
 
 Wave does not support using an SHA256 digest in the image name (for example, `ubuntu@sha256:3235...ce8f`) when using the augmentation process to extend container images.
 
-To reference a container by SHA256 digest in the image name with Wave, enable freeze mode and force the creation of a new container image using your specified base image.
-
-Add the following to your Nextflow configuration file:
+To reference a container by SHA256 digest in the image name with Wave, enable freeze mode and force the creation of a new container image using your specified base image by adding the following to your Nextflow configuration:
 
 ```groovy
 wave.enabled = true
