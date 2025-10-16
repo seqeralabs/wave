@@ -4,7 +4,7 @@ description: Learn how to use Wave with Nextflow for container management, build
 tags: [nextflow, wave, use cases]
 ---
 
-With Nextflow and Wave, you can build, upload, and manage the container images required by your pipelines automatically and on-demand during execution.
+With Nextflow and Wave, you can build, upload, and manage the container images automatically and on-demand during pipeline execution.
 The following sections describe several common use cases.
 
 :::tip

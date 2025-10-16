@@ -5,7 +5,7 @@ date: "2025-10-14"
 tags: [wave cli, use cases, containers, docker, singularity]
 ---
 
-With the Wave CLI you can build Docker and Singularity containers from a variety of sources, including a Dockerfile, Singularity definition file, file system directory, and Conda packages. The following sections describe several common use cases.
+The Wave CLI enables you to build Docker and Singularity containers from various sources, including Dockerfiles, Singularity definition files, file system directories, and Conda packages. The following sections describe several common use cases.
 
 :::tip
 To get started with an example Nextflow pipeline that uses Wave CLI, see [Wave CLI][start].
@@ -13,7 +13,7 @@ To get started with an example Nextflow pipeline that uses Wave CLI, see [Wave C
 
 ## Augment a container with a directory
 
-The Wave CLI supports container augmentation with a specified directory. You can use container augmentation to dynamically add a layers, such as scripts or configuration files, to your container.
+The Wave CLI supports container augmentation with a specified directory. You can use container augmentation to dynamically add layers, such as scripts or configuration files, to your container.
 
 <details open>
 <summary>**Augment a container with a directory**</summary>
@@ -29,13 +29,13 @@ Directory builds support the following arguments:
 
 The following limitations apply:
 
+- A base image must be specified.
 - Each file must be no larger than 1 MB.
 - A directory must be no larger than 10 MB, inclusive of all files.
-- A base image must be specified.
 
 **Example usage**
 
-Create a custom layer with a shell script and add it onto an Alpine base image:
+Create a custom layer with a shell script and add it to an Alpine base image:
 
 1. Create a new context directory:
 
@@ -85,7 +85,7 @@ wave \
 The Wave CLI supports building a container from a `Dockerfile`. Specifying an optional build context allows the use of `ADD` and `COPY` commands in a Dockerfile.
 
 :::note
-Building a Dockerfile that requires `--build-arg` for build time variables isn't currently supported.
+Dockerfile builds that require `--build-arg` for build time variables aren't currently supported.
 :::
 
 <details open>
@@ -95,7 +95,7 @@ Building a Dockerfile that requires `--build-arg` for build time variables isn't
 
 Container builds support the following arguments:
 
-- `--containerfile`, `-f`: A Dockerfile to build. Build args aren't currently supported.
+- `--containerfile`, `-f`: A Dockerfile to build. Build arguments aren't currently supported.
 - `--context`: A directory that contains the context for the build.
 
 **Example usage**
@@ -124,6 +124,7 @@ Build a container that installs several packages from a `Dockerfile`:
     ```
 
 Build a container from a Dockerfile with a local build context:
+
 1. Create a Dockerfile that references a local file:
 
     ```bash
@@ -150,7 +151,7 @@ Build a container from a Dockerfile with a local build context:
 
 ## Build a Singularity container
 
-The Wave CLI supports building [Singularity][singularity] containers. A target build repository, specified with the `--build-repo` argument, is required to build Singularity containers. You can build a Singularity container from a [SingularityCE][singularityce] definition file, a Docker container image with an optional local context directory, and Conda packages.
+The Wave CLI supports building [Singularity][singularity] containers. A target build repository, specified with the `--build-repo` argument, is required to build Singularity containers.
 
 <details open>
 <summary>**Build a Singularity container**</summary>
@@ -161,7 +162,7 @@ Singularity container builds support the following arguments:
 
 - `--build-repo`: Specifies the target repository to save the built container.
 - `--freeze`: Enables container freeze mode.
-- `--singularity`, `-s`: Builds a Singularity container.
+- `--singularity`, `-s`: Enables Singularity container builds.
 - `--tower-token`: Specifies a Seqera Platform authentication token for accessing private registry credentials (not required if the `TOWER_ACCESS_TOKEN` environment variable is set).
 - `--tower-workspace-id`: Specifies a Seqera Platform workspace ID (e.g., `1234567890`) where credentials are stored.
 
@@ -239,9 +240,9 @@ The Wave CLI supports mirroring, i.e., copying containers to a container registr
 
 Ensure the following conditions are met:
 
-- You created a Seqera access token
-- You specified the destination container registry credentials in Seqera Platform
-- You specified the Seqera access token via either the `TOWER_ACCESS_TOKEN` environment variable or the `--tower-token` Wave command-line option
+- You created a Seqera access token.
+- You specified the destination container registry credentials in Seqera Platform.
+- You specified the Seqera access token via either the `TOWER_ACCESS_TOKEN` environment variable or the `--tower-token` Wave command-line option.
 
 **Related CLI arguments**
 
