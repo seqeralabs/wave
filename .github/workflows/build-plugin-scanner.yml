@@ -1,4 +1,4 @@
-name: Build and publish Singularity container image
+name: Build and publish Scanner container image
 
 on:
   workflow_dispatch:
