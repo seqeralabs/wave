@@ -1,7 +1,8 @@
 ---
 title: Use cases
 description: Learn how to use Wave CLI for building Docker and Singularity containers from various sources
-date: "2025-10-14"
+date: "2024-08-22"
+last_update: "2025-10-16"
 tags: [wave cli, use cases, containers, docker, singularity]
 ---
 
