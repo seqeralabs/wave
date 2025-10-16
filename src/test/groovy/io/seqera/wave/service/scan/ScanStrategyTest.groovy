@@ -53,7 +53,8 @@ class ScanStrategyTest extends Specification {
             '--work-dir', '/tmp/scan',
             '--platform', 'linux/amd64',
             '--timeout', '15',
-            '--format', 'default'
+            '--format', 'default',
+            '--cache-dir', '/root/.cache/'
         ]
     }
 
@@ -80,6 +81,7 @@ class ScanStrategyTest extends Specification {
             '--platform', 'linux/arm64',
             '--timeout', '20',
             '--format', 'default',
+            '--cache-dir', '/root/.cache/',
             '--severity', 'HIGH,CRITICAL'
         ]
     }
@@ -106,7 +108,8 @@ class ScanStrategyTest extends Specification {
             '--work-dir', '/plugin/scan',
             '--platform', 'none',
             '--timeout', '10',
-            '--format', 'default'
+            '--format', 'default',
+            '--cache-dir', '/root/.cache/'
         ]
     }
 
@@ -133,6 +136,7 @@ class ScanStrategyTest extends Specification {
             '--platform', 'none',
             '--timeout', '30',
             '--format', 'default',
+            '--cache-dir', '/root/.cache/',
             '--severity', 'CRITICAL'
         ]
     }

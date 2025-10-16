@@ -55,6 +55,7 @@ class BuildScanCommandTest extends Specification {
             '--platform', 'linux/amd64',
             '--timeout', '20',
             '--format', 'default',
+            '--cache-dir', '/root/.cache/',
             '--severity', 'CRITICAL,HIGH'
         ]
     }
@@ -99,7 +100,8 @@ class BuildScanCommandTest extends Specification {
             '--work-dir', '/tmp/scan',
             '--platform', 'linux/amd64',
             '--timeout', '10',
-            '--format', 'default'
+            '--format', 'default',
+            '--cache-dir', '/root/.cache/'
         ]
     }
 
@@ -126,6 +128,7 @@ class BuildScanCommandTest extends Specification {
             '--platform', 'none',
             '--timeout', '25',
             '--format', 'default',
+            '--cache-dir', '/root/.cache/',
             '--severity', 'LOW,MEDIUM,HIGH,CRITICAL'
         ]
     }
@@ -152,7 +155,8 @@ class BuildScanCommandTest extends Specification {
             '--work-dir', '/plugin/scan',
             '--platform', 'none',
             '--timeout', '30',
-            '--format', 'default'
+            '--format', 'default',
+            '--cache-dir', '/root/.cache/'
         ]
     }
 
@@ -247,8 +251,9 @@ class BuildScanCommandTest extends Specification {
         def command = strategy.buildScanCommand(targetImage, workDir, platform, config)
 
         then:
-        // Last parameter for container (with platform) should be 'default'
-        command.last() == 'default'
+        // Format should be 'default'
+        command.contains('--format')
+        command[command.indexOf('--format') + 1] == 'default'
     }
 
     def "should handle empty severity string"() {
@@ -273,7 +278,8 @@ class BuildScanCommandTest extends Specification {
             '--work-dir', '/scan',
             '--platform', 'linux/amd64',
             '--timeout', '15',
-            '--format', 'default'
+            '--format', 'default',
+            '--cache-dir', '/root/.cache/'
         ]
     }
 

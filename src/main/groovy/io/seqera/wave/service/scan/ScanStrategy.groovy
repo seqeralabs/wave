@@ -66,6 +66,8 @@ abstract class ScanStrategy {
                 << "${scanConfig.timeout.toMinutes()}".toString()
                 << '--format'
                 << 'default'
+                << '--cache-dir'
+                << Trivy.CACHE_MOUNT_PATH
 
         if( scanConfig.severity ) {
             cmd << '--severity'

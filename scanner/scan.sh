@@ -14,17 +14,19 @@ set -e
 #   --timeout     Scan timeout in minutes (default: 15)
 #   --severity    Vulnerability severity levels, e.g., CRITICAL,HIGH
 #   --format      Scan format: default|spdx|cyclonedx (default: default)
+#   --cache-dir   Cache directory for Trivy (default: /root/.cache/)
 
 # Set defaults
 SCAN_TYPE="${SCAN_TYPE:-container}"
 WORK_DIR="${WORK_DIR:-/tmp/scan}"
 TIMEOUT="${TIMEOUT:-15}"
 SCAN_FORMAT="${SCAN_FORMAT:-default}"
+CACHE_DIR="${CACHE_DIR:-/root/.cache/}"
 
 # Parse command-line options
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --type|--target|--work-dir|--platform|--timeout|--severity|--format)
+        --type|--target|--work-dir|--platform|--timeout|--severity|--format|--cache-dir)
             [[ -z "$2" || "$2" == --* ]] && { echo "Error: $1 requires a value"; exit 1; }
             case $1 in
                 --type) SCAN_TYPE="$2";;
@@ -34,13 +36,12 @@ while [[ $# -gt 0 ]]; do
                 --timeout) TIMEOUT="$2";;
                 --severity) SEVERITY="$2";;
                 --format) SCAN_FORMAT="$2";;
+                --cache-dir) CACHE_DIR="$2";;
             esac
             shift 2;;
         *) echo "Unknown option: $1"; exit 1;;
     esac
 done
-
-CACHE_DIR="${TRIVY_CACHE_DIR:-/root/.cache/}"
 
 # Validate required parameters
 if [ -z "$TARGET" ]; then
