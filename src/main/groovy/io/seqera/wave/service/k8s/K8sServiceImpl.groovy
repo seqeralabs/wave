@@ -735,7 +735,6 @@ class K8sServiceImpl implements K8sService {
         final container = new V1ContainerBuilder()
                 .withName(name)
                 .withImage(containerImage)
-                .withCommand("/usr/local/bin/scan.sh")
                 .withArgs(args)
                 .withVolumeMounts(mounts)
                 .withResources(requests)

@@ -70,9 +70,7 @@ class DockerScanStrategyTest extends Specification {
                 '-e',
                 'FOO=1',
                 '-e',
-                'BAR=2',
-                '--entrypoint',
-                '/usr/local/bin/scan.sh'
+                'BAR=2'
         ]
 
     }

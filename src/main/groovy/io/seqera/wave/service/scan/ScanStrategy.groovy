@@ -53,6 +53,7 @@ abstract class ScanStrategy {
 
         final platformStr = scanType == 'container' ? platform.toString() : "none"
         final cmd = new ArrayList<String>()
+                << '/usr/local/bin/scan.sh'
                 << '--type'
                 << scanType
                 << '--target'
