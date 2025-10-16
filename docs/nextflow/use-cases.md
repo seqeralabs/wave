@@ -33,7 +33,7 @@ To enable private container repository access:
     tower.accessToken = '<TOWER_ACCESS_TOKEN>'
     ```
 
-    Replace `<TOWER_ACCESS_TOKEN>` with your [Seqera access token](https://docs.seqera.io/platform/latest/api/overview#authentication).
+    Replace `<TOWER_ACCESS_TOKEN>` with your [Seqera access token](../tutorials/nextflow-wave.mdx#create-your-seqera-access-token).
 
 1. (Optional) If you created your credentials in an organization workspace, add your workspace ID to your Nextflow configuration:
 
@@ -201,7 +201,7 @@ To enable container mirroring:
     tower.accessToken = '<TOWER_ACCESS_TOKEN>'
     ```
 
-    Replace `<TOWER_ACCESS_TOKEN>` with your [Seqera access token](https://docs.seqera.io/platform/latest/api/overview#authentication).
+    Replace `<TOWER_ACCESS_TOKEN>` with your [Seqera access token](../tutorials/nextflow-wave.mdx#create-your-seqera-access-token).
 
 
 1. Configure your private repository access in Seqera Platform. See [Seqera Platform credentials](https://docs.seqera.io/platform/latest/credentials/overview) for more information.
@@ -233,7 +233,7 @@ To enable container security scanning:
         tower.accessToken = '<TOWER_ACCESS_TOKEN>'
         ```
 
-    Replace `<TOWER_ACCESS_TOKEN>` with your [Seqera access token](https://docs.seqera.io/platform/latest/api/overview#authentication).
+    Replace `<TOWER_ACCESS_TOKEN>` with your [Seqera access token](../tutorials/nextflow-wave.mdx#create-your-seqera-access-token).
 
 1. Add the acceptable vulnerability levels to your Nextflow configuration:
 
@@ -269,7 +269,7 @@ To enable Wave with Fusion, add the following to your Nextflow configuration:
     tower.accessToken = '<TOWER_ACCESS_TOKEN>'
     ```
 
-    Replace `<TOWER_ACCESS_TOKEN>` with your [Seqera access token](https://docs.seqera.io/platform/latest/api/overview#authentication).
+    Replace `<TOWER_ACCESS_TOKEN>` with your [Seqera access token](../tutorials/nextflow-wave.mdx#create-your-seqera-access-token).
 
 :::note
 For more information about Fusion capabilities and configuration options, see the [Fusion file system documentation](https://docs.seqera.io/fusion).
