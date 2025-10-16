@@ -25,7 +25,7 @@ Wave has been designed to streamline the use of software containers with Nextflo
 Store the container registry credentials in your [Seqera Platform](https://cloud.seqera.io) account.
 
 If you launch the Nextflow pipeline with Seqera, there's nothing else to do (other than using a compute environment with Wave support enabled).
-If you're launching the pipeline with the Nextflow command line, add your [Seqera access token](https://docs.seqera.io/platform/latest/api/overview#authentication) to your Nextflow configuration.
+If you're launching the pipeline with the Nextflow command line, add your [Seqera access token](https://docs.seqera.io/platform/latest/api/overview#authentication) to your Nextflow configuration. See [Access private container repositories](./nextflow/use-cases.md#access-private-container-repositories) for more information.
 
 ## Does Wave modify my container images?
 
