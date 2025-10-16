@@ -33,4 +33,4 @@ jobs:
       - name: Build and Push Image to public.cr.seqera.io
         run: |
           cd plugin-scanner
-          make build trivy_version=${{ github.event.inputs.trivy_version }} oras_version=${{ github.event.inputs.oras_version }}
+          make all trivy_version=${{ github.event.inputs.trivy_version }} oras_version=${{ github.event.inputs.oras_version }}

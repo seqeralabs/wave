@@ -1,4 +1,4 @@
-ARG version
+ARG version=0.65.0
 FROM aquasec/trivy:${version}
 ARG oras_version
 ENV UNZIP_DISABLE_ZIPBOMB_DETECTION=TRUE
