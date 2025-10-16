@@ -25,117 +25,134 @@ import java.time.Duration
 
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
-
 /**
  *
- * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso
  */
 class ScanStrategyTest extends Specification {
 
-    def "should return trivy command"() {
+    def 'should build scan command for container image without severity'() {
         given:
-        def targetImage = "repository/scantool"
-        def containerScanStrategy = Spy(ScanStrategy)
-        def workDir = Path.of('/work/dir')
-        def config = Mock(ScanConfig) { getTimeout() >> Duration.ofMinutes(100) }
-        def platform = ContainerPlatform.DEFAULT
-
-        when:
-        def command = containerScanStrategy.scanCommand(targetImage, workDir, platform, config, ScanType.Default)
-        then:
-        command == [ 'trivy',
-                     '--quiet',
-                     'image',
-                     '--platform',
-                     'linux/amd64',
-                     '--timeout',
-                     '100m',
-                     '--format',
-                     'json',
-                     '--output',
-                     '/work/dir/report.json',
-                     '--cache-dir',
-                     '/root/.cache/',
-                     targetImage]
-    }
-
-    def "should return trivy command with severity"() {
-        given:
-        def targetImage = "repository/scantool"
-        def containerScanStrategy = Spy(ScanStrategy)
-        def workDir = Path.of('/work/dir')
-        def platform = ContainerPlatform.DEFAULT
-        def config = Mock(ScanConfig) {
-            getTimeout() >> Duration.ofMinutes(100)
-            getSeverity() >> 'low,high'
+        def strategy = Spy(ScanStrategy)
+        def image = 'ubuntu:latest'
+        def workDir = Path.of('/tmp/scan')
+        def platform = new ContainerPlatform('linux', 'amd64', null)
+        def scanConfig = Mock(ScanConfig) {
+            getTimeout() >> Duration.ofMinutes(15)
+            getSeverity() >> null
         }
 
         when:
-        def command = containerScanStrategy.scanCommand(targetImage, workDir, platform, config, ScanType.Default)
+        def result = strategy.buildScanCommand(image, workDir, platform, scanConfig)
+
         then:
-        command == [ 'trivy',
-                     '--quiet',
-                     'image',
-                     '--platform',
-                     'linux/amd64',
-                     '--timeout',
-                     '100m',
-                     '--format',
-                     'json',
-                     '--output',
-                     '/work/dir/report.json',
-                     '--cache-dir',
-                     '/root/.cache/',
-                     '--severity',
-                     'low,high',
-                     targetImage]
+        result == [
+            '/usr/local/bin/scan.sh',
+            '--type', 'container',
+            '--target', 'ubuntu:latest',
+            '--work-dir', '/tmp/scan',
+            '--platform', 'linux/amd64',
+            '--timeout', '15',
+            '--format', 'default'
+        ]
     }
 
-    def "should return trivy command with spdx"() {
+    def 'should build scan command for container image with severity'() {
         given:
-        def targetImage = "repository/scantool"
-        def containerScanStrategy = Spy(ScanStrategy)
+        def strategy = Spy(ScanStrategy)
+        def image = 'nginx:alpine'
         def workDir = Path.of('/work/dir')
-        def platform = ContainerPlatform.DEFAULT
-        def config = Mock(ScanConfig) {
-            getTimeout() >> Duration.ofMinutes(100)
-            getSeverity() >> 'low,high'
+        def platform = new ContainerPlatform('linux', 'arm64', null)
+        def scanConfig = Mock(ScanConfig) {
+            getTimeout() >> Duration.ofMinutes(20)
+            getSeverity() >> 'HIGH,CRITICAL'
         }
 
         when:
-        def command = containerScanStrategy.scanCommand(targetImage, workDir, platform, config, ScanType.Spdx)
+        def result = strategy.buildScanCommand(image, workDir, platform, scanConfig)
+
         then:
-        command == [ 'trivy',
-                     '--quiet',
-                     'image',
-                     '--platform',
-                     'linux/amd64',
-                     '--timeout',
-                     '100m',
-                     '--format',
-                     'spdx-json',
-                     '--output',
-                     '/work/dir/spdx.json',
-                     '--cache-dir',
-                     '/root/.cache/',
-                     targetImage]
+        result == [
+            '/usr/local/bin/scan.sh',
+            '--type', 'container',
+            '--target', 'nginx:alpine',
+            '--work-dir', '/work/dir',
+            '--platform', 'linux/arm64',
+            '--timeout', '20',
+            '--format', 'default',
+            '--severity', 'HIGH,CRITICAL'
+        ]
     }
 
-    def "should return trivy run command"() {
+    def 'should build scan command for plugin with platform set to none'() {
         given:
-        def targetImage = "repository/scantool"
-        def containerScanStrategy = Spy(ScanStrategy)
-        def workDir = Path.of('/work/dir')
-        def platform = ContainerPlatform.DEFAULT
-        def config = Mock(ScanConfig) {
-            getTimeout() >> Duration.ofMinutes(100)
-            getSeverity() >> 'low,high'
+        def strategy = Spy(ScanStrategy)
+        def image = 'nextflow/plugin:nf-hello@1.0.0'
+        def workDir = Path.of('/plugin/scan')
+        def platform = new ContainerPlatform('linux', 'amd64', null)
+        def scanConfig = Mock(ScanConfig) {
+            getTimeout() >> Duration.ofMinutes(10)
+            getSeverity() >> null
         }
 
         when:
-        def command = containerScanStrategy.trivyCommand(targetImage, workDir, platform, config)
+        def result = strategy.buildScanCommand(image, workDir, platform, scanConfig)
+
         then:
-        command == [ 'trivy --quiet image --platform linux/amd64 --timeout 100m --format json --output /work/dir/report.json --cache-dir /root/.cache/ --severity low,high repository/scantool && trivy --quiet image --platform linux/amd64 --timeout 100m --format spdx-json --output /work/dir/spdx.json --cache-dir /root/.cache/ repository/scantool' ]
+        result == [
+            '/usr/local/bin/scan.sh',
+            '--type', 'plugin',
+            '--target', 'nextflow/plugin:nf-hello@1.0.0',
+            '--work-dir', '/plugin/scan',
+            '--platform', 'none',
+            '--timeout', '10',
+            '--format', 'default'
+        ]
     }
 
+    def 'should build scan command for plugin with severity'() {
+        given:
+        def strategy = Spy(ScanStrategy)
+        def image = 'nextflow/plugin:nf-tower@1.5.0'
+        def workDir = Path.of('/tmp/plugin')
+        def platform = new ContainerPlatform('linux', 'amd64', null)
+        def scanConfig = Mock(ScanConfig) {
+            getTimeout() >> Duration.ofMinutes(30)
+            getSeverity() >> 'CRITICAL'
+        }
+
+        when:
+        def result = strategy.buildScanCommand(image, workDir, platform, scanConfig)
+
+        then:
+        result == [
+            '/usr/local/bin/scan.sh',
+            '--type', 'plugin',
+            '--target', 'nextflow/plugin:nf-tower@1.5.0',
+            '--work-dir', '/tmp/plugin',
+            '--platform', 'none',
+            '--timeout', '30',
+            '--format', 'default',
+            '--severity', 'CRITICAL'
+        ]
+    }
+
+    def 'should convert timeout to minutes correctly'() {
+        given:
+        def strategy = Spy(ScanStrategy)
+        def image = 'alpine:latest'
+        def workDir = Path.of('/scan')
+        def platform = new ContainerPlatform('linux', 'amd64', null)
+        def scanConfig = Mock(ScanConfig) {
+            getTimeout() >> Duration.ofSeconds(90)
+            getSeverity() >> null
+        }
+
+        when:
+        def result = strategy.buildScanCommand(image, workDir, platform, scanConfig)
+
+        then:
+        result.contains('1') // 90 seconds = 1 minute (rounded down)
+        result[result.indexOf('--timeout') + 1] == '1'
+    }
 }

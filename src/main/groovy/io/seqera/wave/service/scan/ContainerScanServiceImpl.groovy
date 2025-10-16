@@ -378,4 +378,5 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         final Optional<ObjectStorageEntry<?>> result = scanStoreOpts.retrieve(scanKey(scanId,type.output))
         return result.isPresent() ? result.get().toStreamedFile() : null
     }
+
 }

@@ -406,57 +406,6 @@ class K8sServiceImpl implements K8sService {
                 .execute()
     }
 
-    @Deprecated
-    V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig, Map<String,String> nodeSelector) {
-
-        final mounts = new ArrayList<V1VolumeMount>(5)
-        mounts.add(mountBuildStorage(workDir, storageMountPath, false))
-        mounts.add(mountScanCacheDir(scanConfig.cacheDirectory, storageMountPath))
-
-        final volumes = new ArrayList<V1Volume>(5)
-        volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
-
-        if( credsFile ){
-            mounts.add(0, mountHostPath(credsFile, storageMountPath, Trivy.CONFIG_MOUNT_PATH))
-        }
-
-        V1PodBuilder builder = new V1PodBuilder()
-
-        //metadata section
-        builder.withNewMetadata()
-                .withNamespace(namespace)
-                .withName(name)
-                .addToLabels(labels)
-                .endMetadata()
-
-        //spec section
-        def spec = builder
-                .withNewSpec()
-                .withNodeSelector(nodeSelector)
-                .withServiceAccount(serviceAccount)
-                .withActiveDeadlineSeconds( scanConfig.timeout.toSeconds() )
-                .withRestartPolicy("Never")
-                .addAllToVolumes(volumes)
-
-        final requests = new V1ResourceRequirements()
-        if( scanConfig.requestsCpu )
-            requests.putRequestsItem('cpu', new Quantity(scanConfig.requestsCpu))
-        if( scanConfig.requestsMemory )
-            requests.putRequestsItem('memory', new Quantity(scanConfig.requestsMemory))
-
-        //container section
-        spec.addNewContainer()
-                .withName(name)
-                .withImage(containerImage)
-                .withArgs(args)
-                .withVolumeMounts(mounts)
-                .withResources(requests)
-                .endContainer()
-                .endSpec()
-
-        builder.build()
-    }
-
     /**
      * Create a Job for blob transfer
      *

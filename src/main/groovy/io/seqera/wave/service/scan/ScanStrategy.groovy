@@ -75,39 +75,4 @@ abstract class ScanStrategy {
         return cmd
     }
 
-    @Deprecated
-    protected List<String> scanCommand(String targetImage, Path workDir, ContainerPlatform platform, ScanConfig config, ScanType mode) {
-        List<String> cmd = ['trivy', '--quiet', 'image']
-        if( platform ) {
-            cmd << '--platform'
-            cmd << platform.toString()
-        }
-        cmd << '--timeout'
-        cmd << "${config.timeout.toMinutes()}m".toString()
-        cmd << '--format'
-        cmd << mode.format
-        cmd << '--output'
-        cmd << workDir.resolve(mode.output).toString()
-        cmd << '--cache-dir'
-        cmd << Trivy.CACHE_MOUNT_PATH
-        if( config.severity && mode==ScanType.Default ) {
-            cmd << '--severity'
-            cmd << config.severity
-        }
-        cmd << targetImage
-        return cmd
-    }
-
-    @Deprecated
-    protected List<String> trivyCommand(String containerImage, Path workDir, ContainerPlatform platform, ScanConfig scanConfig) {
-        final cmd = new ArrayList<String>(50)
-        // the vulnerability scan command
-        cmd.addAll(scanCommand(containerImage, workDir, platform, scanConfig, ScanType.Default) )
-        // command separator
-        cmd.add("&&")
-        // the SBOM spdx scan
-        cmd.addAll(scanCommand(containerImage, workDir, platform, scanConfig, ScanType.Spdx) )
-        return List.of(cmd.join(' '))
-    }
-
 }
