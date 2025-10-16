@@ -67,7 +67,7 @@ Conda builds support the following arguments:
 - `--conda-base-image`: Specifies the base image for installing Conda packages (default: `mambaorg/micromamba:1.5.10-noble`).
 - `--conda-channels`: Specifies one or more comma-separated channels (default: `seqera,bioconda,conda-forge,defaults`).
 - `--conda-file`: Specifies a [Conda lock file][conda-lock] path or URL.
-- `--conda-package`: Specifies a Conda package to install. Supports expressions such as `bioconda::samtools=1.17` or `samtools>=1.0,<1.17`. Can be specified multiple times.
+- `--conda-package`: Specifies Conda packages to install. Supports expressions such as `bioconda::samtools=1.17` or `samtools>=1.0,<1.17`. Accepts a comma-separated list or can be specified multiple times.
 - `--conda-run-command`: Specifies a Docker `RUN` command to execute during the build. Can be specified multiple times.
 
 **Example usage**
@@ -165,7 +165,7 @@ Singularity container builds support the following arguments:
 - `--freeze`: Enables container freeze mode.
 - `--singularity`, `-s`: Enables Singularity container builds.
 - `--tower-token`: Specifies a Seqera access token to access private registry credentials stored in Platform (not required if the `TOWER_ACCESS_TOKEN` environment variable is set).
-- `--tower-workspace-id`: Specifies a Seqera workspace ID (e.g., `1234567890`) where credentials are stored. Requires `--tower-token` flag or `TOWER_ACCESS_TOKEN` environment variable to be set. 
+- `--tower-workspace-id`: Specifies a Seqera workspace ID (e.g., `1234567890`) where credentials are stored. Requires `--tower-token` flag or `TOWER_ACCESS_TOKEN` environment variable to be set.
 
 **Limitations**
 
