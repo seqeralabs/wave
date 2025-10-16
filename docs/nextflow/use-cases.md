@@ -6,7 +6,7 @@ last_update: "2025-10-16"
 tags: [nextflow, wave, use cases]
 ---
 
-With Nextflow and Wave, you can build, upload, and manage the container images automatically and on-demand during pipeline execution.
+With Nextflow and Wave, you can build, upload, and manage the container images automatically and on demand during pipeline execution.
 The following sections describe several common use cases.
 
 :::tip
@@ -19,7 +19,7 @@ Nextflow integration with Wave requires Nextflow 22.10.0 or later.
 
 ## Access private container repositories
 
-Wave to access private repositories for your Nextflow pipelines.
+Use Wave to access private repositories for your Nextflow pipelines.
 
 <details open>
 <summary>**Access private container repositories**</summary>
@@ -120,7 +120,7 @@ To enable Wave to provision Conda package containers:
     The `container` directive or a Dockerfile takes precedence over the `conda` directive by default.
     :::
 
-    :::note
+    :::info
     Nextflow 23.10.0 or later automatically includes the `conda-forge::procps-ng` package in provisioned containers. This package includes the `ps` command.
     :::
 
@@ -160,7 +160,7 @@ To enable provisioning of Singularity images:
 
 1. (Optional) To store your Singularity image files in a private registry:
 
-    1. Configure you repository access in Seqera. See [Seqera Platform credentials](https://docs.seqera.io/platform/latest/credentials/overview) for more information.
+    1. Configure your repository access in Seqera. See [Seqera Platform credentials](https://docs.seqera.io/platform-cloud/credentials/overview) for more information.
 
     1. Add your build repository to your Nextflow configuration:
 
@@ -177,7 +177,7 @@ To enable provisioning of Singularity images:
     singularity remote login <REMOTE_ENDPOINT>
     ```
 
-    Replace `<REMOTE_ENDPOINT>` with your Singularity remote endpoint. See the [Singularity remote login](https://docs.sylabs.io/guides/3.1/user-guide/cli/singularity_remote_login.html) for more information.
+    Replace `<REMOTE_ENDPOINT>` with your Singularity remote endpoint. See [Singularity remote login](https://docs.sylabs.io/guides/3.1/user-guide/cli/singularity_remote_login.html) for more information.
 
 1. (Optional) To build Singularity native images, disable both `singularity.ociAutoPull` and `singularity.ociMode` in your Nextflow configuration. See [Nextflow configuration](https://www.nextflow.io/docs/latest/config.html#config-singularity) for more information.
 
@@ -204,7 +204,7 @@ To enable container mirroring:
     Replace `<TOWER_ACCESS_TOKEN>` with your [Seqera access token](../tutorials/nextflow-wave.mdx#create-your-seqera-access-token).
 
 
-1. Configure your private repository access in Seqera. See [Seqera Platform credentials](https://docs.seqera.io/platform/latest/credentials/overview) for more information.
+1. Configure your private repository access in Seqera. See [Seqera Platform credentials](https://docs.seqera.io/platform-cloud/credentials/overview) for more information.
 
 1. Add your build repository to your Nextflow configuration:
 
@@ -244,7 +244,7 @@ To enable container security scanning:
     Accepted vulnerability levels include: `low`, `medium`, `high`, and `critical`.
 
 :::note
-When you set `wave.scan.mode` to `required`, Wave blocks pipeline execution if containers contain vulnerabilities above the specified threshold.
+When you set `wave.scan.mode` to `required`, Wave blocks pipeline execution if containers have vulnerabilities above the specified threshold.
 The scanning uses the [Common Vulnerabilities Scoring System (CVSS)](https://en.wikipedia.org/wiki/Common_Vulnerability_Scoring_System) to assess security risks.
 :::
 

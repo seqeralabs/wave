@@ -164,8 +164,8 @@ Singularity container builds support the following arguments:
 - `--build-repo`: Specifies the target repository to save the built container.
 - `--freeze`: Enables container freeze mode.
 - `--singularity`, `-s`: Enables Singularity container builds.
-- `--tower-token`: Specifies a Seqera access token for accessing private registry credentials (not required if the `TOWER_ACCESS_TOKEN` environment variable is set).
-- `--tower-workspace-id`: Specifies a Seqera workspace ID (e.g., `1234567890`) where credentials are stored.
+- `--tower-token`: Specifies a Seqera access token to access private registry credentials stored in Platform (not required if the `TOWER_ACCESS_TOKEN` environment variable is set).
+- `--tower-workspace-id`: Specifies a Seqera workspace ID (e.g., `1234567890`) where credentials are stored. Requires `--tower-token` flag or `TOWER_ACCESS_TOKEN` environment variable to be set. 
 
 **Limitations**
 
@@ -251,7 +251,7 @@ Container mirroring supports the following arguments:
 
 - `--mirror`: Enables container mirror mode.
 - `--build-repo`: Specifies the target repository to save the mirrored container.
-- `--tower-token`: Specifies a Seqera access token for accessing private registry credentials (not required if the `TOWER_ACCESS_TOKEN` environment variable is set).
+- `--tower-token`: Specifies a Seqera access token to access private registry credentials stored in Platform (not required if the `TOWER_ACCESS_TOKEN` environment variable is set).
 
 **Example usage**
 
