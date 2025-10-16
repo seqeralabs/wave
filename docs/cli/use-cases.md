@@ -164,8 +164,8 @@ Singularity container builds support the following arguments:
 - `--build-repo`: Specifies the target repository to save the built container.
 - `--freeze`: Enables container freeze mode.
 - `--singularity`, `-s`: Enables Singularity container builds.
-- `--tower-token`: Specifies a Seqera Platform authentication token for accessing private registry credentials (not required if the `TOWER_ACCESS_TOKEN` environment variable is set).
-- `--tower-workspace-id`: Specifies a Seqera Platform workspace ID (e.g., `1234567890`) where credentials are stored.
+- `--tower-token`: Specifies a Seqera access token for accessing private registry credentials (not required if the `TOWER_ACCESS_TOKEN` environment variable is set).
+- `--tower-workspace-id`: Specifies a Seqera workspace ID (e.g., `1234567890`) where credentials are stored.
 
 **Limitations**
 
@@ -207,7 +207,7 @@ The Wave CLI supports building a container and persisting the container to a con
 Ensure the following conditions are met:
 
 - You created a Seqera access token
-- You specified the destination container registry credentials in Seqera Platform
+- You specified the destination container registry credentials in Seqera
 - You specified the Seqera access token via either the `TOWER_ACCESS_TOKEN` environment variable or the `--tower-token` Wave command-line option
 
 **Related CLI arguments**
@@ -216,8 +216,8 @@ Container freeze builds support the following arguments:
 
 - `--build-repo`: Specifies the target repository to save the built container.
 - `--freeze`: Enables container freeze mode.
-- `--tower-token`: Specifies a Seqera Platform authentication token for accessing private registry credentials (not required if the `TOWER_ACCESS_TOKEN` environment variable is set).
-- `--tower-workspace-id`: Specifies a Seqera Platform workspace ID (e.g., `1234567890`) where credentials are stored.
+- `--tower-token`: Specifies a Seqera access token for accessing private registry credentials (not required if the `TOWER_ACCESS_TOKEN` environment variable is set).
+- `--tower-workspace-id`: Specifies a Seqera workspace ID (e.g., `1234567890`) where credentials are stored.
 
 **Example usage**
 
@@ -242,7 +242,7 @@ The Wave CLI supports mirroring, i.e., copying containers to a container registr
 Ensure the following conditions are met:
 
 - You created a Seqera access token.
-- You specified the destination container registry credentials in Seqera Platform.
+- You specified the destination container registry credentials in Seqera.
 - You specified the Seqera access token via either the `TOWER_ACCESS_TOKEN` environment variable or the `--tower-token` Wave command-line option.
 
 **Related CLI arguments**
@@ -251,7 +251,7 @@ Container mirroring supports the following arguments:
 
 - `--mirror`: Enables container mirror mode.
 - `--build-repo`: Specifies the target repository to save the mirrored container.
-- `--tower-token`: Specifies a Seqera Platform authentication token for accessing private registry credentials (not required if the `TOWER_ACCESS_TOKEN` environment variable is set).
+- `--tower-token`: Specifies a Seqera access token for accessing private registry credentials (not required if the `TOWER_ACCESS_TOKEN` environment variable is set).
 
 **Example usage**
 

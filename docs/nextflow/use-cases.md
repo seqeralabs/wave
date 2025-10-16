@@ -43,7 +43,7 @@ To enable private container repository access:
 
     Replace `<TOWER_WORKSPACE_ID>` with your Seqera workspace ID.
 
-1. Configure your repository access in Seqera Platform. See [Seqera Platform credentials](https://docs.seqera.io/platform/latest/credentials/overview) for more information.
+1. Configure your repository access in Seqera. See [Seqera Platform credentials](https://docs.seqera.io/platform/latest/credentials/overview) for more information.
 
 1. Add your build and build cache repository to your Nextflow configuration:
 
@@ -160,7 +160,7 @@ To enable provisioning of Singularity images:
 
 1. (Optional) To store your Singularity image files in a private registry:
 
-    1. Configure you repository access in Seqera Platform. See [Seqera Platform credentials](https://docs.seqera.io/platform/latest/credentials/overview) for more information.
+    1. Configure you repository access in Seqera. See [Seqera Platform credentials](https://docs.seqera.io/platform/latest/credentials/overview) for more information.
 
     1. Add your build repository to your Nextflow configuration:
 
@@ -204,7 +204,7 @@ To enable container mirroring:
     Replace `<TOWER_ACCESS_TOKEN>` with your [Seqera access token](../tutorials/nextflow-wave.mdx#create-your-seqera-access-token).
 
 
-1. Configure your private repository access in Seqera Platform. See [Seqera Platform credentials](https://docs.seqera.io/platform/latest/credentials/overview) for more information.
+1. Configure your private repository access in Seqera. See [Seqera Platform credentials](https://docs.seqera.io/platform/latest/credentials/overview) for more information.
 
 1. Add your build repository to your Nextflow configuration:
 
