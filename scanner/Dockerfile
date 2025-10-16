@@ -6,7 +6,7 @@ FROM aquasec/trivy:${version}
 # restrictions as part of security scanning operations.
 ENV UNZIP_DISABLE_ZIPBOMB_DETECTION=TRUE
 RUN apk add --no-cache curl unzip bash
-# Re-declare ARGs after FROM to use them in RUN commands
+# Redeclare ARGs after FROM to use them in RUN commands
 ARG oras_version=1.3.0
 ARG TARGETARCH
 RUN curl -LO "https://github.com/oras-project/oras/releases/download/v${oras_version}/oras_${oras_version}_linux_${TARGETARCH}.tar.gz" \
