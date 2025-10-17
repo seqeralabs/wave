@@ -2,7 +2,6 @@
 title: Frequently asked questions
 description: Find answers to common questions about Wave container provisioning
 date: "2023-11-11"
-last_update: "2025-10-16"
 tags: [wave, containers, nextflow, faq]
 ---
 

@@ -2,7 +2,6 @@
 title: Use cases
 description: Learn how to use Wave with Nextflow for container management, building, and security scanning
 date: "2024-08-22"
-last_update: "2025-10-16"
 tags: [nextflow, wave, use cases]
 ---
 
