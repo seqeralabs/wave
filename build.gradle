@@ -115,7 +115,7 @@ dependencies {
     implementation 'io.micronaut.views:micronaut-views-handlebars'
     // bump version to prevent security issue
     runtimeOnly 'org.apache.commons:commons-lang3:3.18.0'
-    runtimeOnly "io.netty:netty-bom:4.2.4.Final"
+    runtimeOnly "io.netty:netty-bom:4.2.5.Final"
 }
 
 application {
