@@ -130,7 +130,7 @@ To enable Wave to provision Conda package containers:
     conda.channels = '<CONDA_CHANNELS>'
     ```
 
-    Replace `<CONDA_CHANNELS>` with a comma-separated list of your channel priorities. For example, `seqera,conda-forge,bioconda,defaults`.
+    Replace `<CONDA_CHANNELS>` with a comma-separated list of your channel priorities.
 
 </details>
 
