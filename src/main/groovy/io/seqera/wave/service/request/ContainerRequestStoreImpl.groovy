@@ -22,7 +22,7 @@ import java.time.Duration
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.seqera.wave.configuration.TokenConfig
+import io.seqera.wave.configuration.ContainerRequestConfig
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.store.state.AbstractStateStore
 import io.seqera.wave.store.state.impl.StateProvider
@@ -37,12 +37,12 @@ import jakarta.inject.Singleton
 @CompileStatic
 class ContainerRequestStoreImpl extends AbstractStateStore<ContainerRequest> implements ContainerRequestStore {
 
-    private TokenConfig tokenConfig
+    private ContainerRequestConfig config
 
-    ContainerRequestStoreImpl(StateProvider<String, String> delegate, TokenConfig tokenConfig) {
+    ContainerRequestStoreImpl(StateProvider<String, String> delegate, ContainerRequestConfig config) {
         super(delegate, new MoshiEncodeStrategy<ContainerRequest>(){})
-        this.tokenConfig = tokenConfig
-        log.info "Creating Tokens cache store ― duration=${tokenConfig.cache.duration}"
+        this.config = config
+        log.info "Creating Tokens cache store ― duration=${config.cache.duration}"
     }
 
     @Override
@@ -52,7 +52,7 @@ class ContainerRequestStoreImpl extends AbstractStateStore<ContainerRequest> imp
 
     @Override
     protected Duration getDuration() {
-        return tokenConfig.cache.duration
+        return config.cache.duration
     }
 
     @Override
@@ -63,6 +63,11 @@ class ContainerRequestStoreImpl extends AbstractStateStore<ContainerRequest> imp
     @Override
     void put(String key, ContainerRequest value) {
         super.put(key, value)
+    }
+
+    @Override
+    void put(String key, ContainerRequest value, Duration ttl) {
+        super.put(key, value, ttl)
     }
 
     @Override

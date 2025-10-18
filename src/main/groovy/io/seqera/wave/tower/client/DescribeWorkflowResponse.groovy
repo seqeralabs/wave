@@ -16,36 +16,23 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.configuration
+package io.seqera.wave.tower.client
 
-import java.time.Duration
-import io.micronaut.core.annotation.Nullable
+import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
+import groovy.transform.ToString
+import io.seqera.wave.encoder.MoshiSerializable
 
-import io.micronaut.context.annotation.ConfigurationProperties
-import io.micronaut.core.bind.annotation.Bindable
 /**
- * Configuration to be used by a TokenService
+ * Model a Platform workflow response
  *
- * @author : jorge <jorge.aguilera@seqera.io>
- *
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@ConfigurationProperties('wave.tokens')
-interface TokenConfig {
+@EqualsAndHashCode
+@CompileStatic
+@ToString(includePackage = false, includeNames = true)
+class DescribeWorkflowResponse implements MoshiSerializable {
 
-    Cache getCache()
-
-    @ConfigurationProperties('cache')
-    interface Cache {
-
-        @Bindable(defaultValue = "1h")
-        @Nullable
-        Duration getDuration()
-
-        @Deprecated
-        @Bindable(defaultValue = "10000")
-        @Nullable
-        int getMaxSize()
-
-    }
+    Workflow workflow
 
 }

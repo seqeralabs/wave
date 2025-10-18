@@ -17,6 +17,9 @@
  */
 
 package io.seqera.wave.service.request
+
+import java.time.Duration
+
 /**
  * Define the container request token persistence operations
  * 
@@ -26,6 +29,8 @@ package io.seqera.wave.service.request
 interface ContainerRequestStore {
 
     void put(String key, ContainerRequest request)
+
+    void put(String key, ContainerRequest request, Duration ttl)
 
     ContainerRequest get(String key)
 

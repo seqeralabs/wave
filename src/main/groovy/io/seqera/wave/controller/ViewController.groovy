@@ -51,9 +51,9 @@ import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.mirror.ContainerMirrorService
 import io.seqera.wave.service.mirror.MirrorResult
-import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.request.ContainerRequestService
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanType
@@ -82,7 +82,7 @@ class ViewController {
     private String serverUrl
 
     @Inject
-    private PersistenceService persistenceService
+    private ContainerRequestService containerService
 
     @Inject
     @Nullable
@@ -275,8 +275,10 @@ class ViewController {
 
     @View("container-view")
     @Get('/containers/{token}')
-    HttpResponse viewContainer(String token) {
-        final data = persistenceService.loadContainerRequest(token)
+    HttpResponse<?> viewContainer(String token) {
+        final data = containerService.loadContainerRecord(token)
+        if( !data )
+            throw new NotFoundException("Unknown container token: $token")
         // return the response
         final binding = new HashMap(20)
         if( !data )
