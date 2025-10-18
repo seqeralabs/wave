@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.builder
 
+import java.nio.file.Path
+
 import groovy.transform.CompileStatic
 import io.seqera.wave.configuration.BuildConfig
 import jakarta.inject.Inject
