@@ -22,19 +22,9 @@ import java.lang.reflect.Type
 
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import groovy.transform.CompileStatic
-import io.seqera.serde.encode.StringEncodingStrategy
-import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
-import io.seqera.wave.service.pairing.socket.msg.PairingMessage
-import io.seqera.wave.service.pairing.socket.msg.PairingResponse
-import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
-import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
-import io.seqera.wave.storage.DigestStore
-import io.seqera.wave.storage.DockerDigestStore
-import io.seqera.wave.storage.HttpDigestStore
-import io.seqera.wave.storage.ZippedDigestStore
 import io.seqera.lang.type.TypeHelper
+import io.seqera.serde.encode.StringEncodingStrategy
 /**
  * Implements a JSON {@link StringEncodingStrategy} based on Mosh JSON serializer
  *
@@ -71,16 +61,6 @@ abstract class MoshiEncodeStrategy<V> implements StringEncodingStrategy<V> {
                 .add(new DateTimeAdapter())
                 .add(new PathAdapter())
                 .add(new UriAdapter())
-                .add(PolymorphicJsonAdapterFactory.of(DigestStore.class, "@type")
-                        .withSubtype(ZippedDigestStore, ZippedDigestStore.simpleName)
-                        .withSubtype(HttpDigestStore, HttpDigestStore.simpleName)
-                        .withSubtype(DockerDigestStore, DockerDigestStore.simpleName) )
-
-                .add(PolymorphicJsonAdapterFactory.of(PairingMessage.class, "@type")
-                        .withSubtype(ProxyHttpRequest.class, ProxyHttpRequest.simpleName)
-                        .withSubtype(ProxyHttpResponse.class, ProxyHttpResponse.simpleName)
-                        .withSubtype(PairingHeartbeat.class, PairingHeartbeat.simpleName)
-                        .withSubtype(PairingResponse.class, PairingResponse.simpleName) )
         // add custom factory if provider
         if( customFactory )
             builder.add(customFactory)
