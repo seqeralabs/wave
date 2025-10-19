@@ -26,7 +26,7 @@ import io.seqera.wave.service.pairing.socket.msg.PairingResponse
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class PairingMessageMoshiTypeAdapterTest extends Specification {
+class PairingMessageEncodeStrategyTest extends Specification {
 
     def 'should encode and decode pairing heartbeat message' () {
         given:

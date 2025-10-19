@@ -40,7 +40,7 @@ import io.seqera.wave.encoder.MoshiEncodeStrategy
 class DigestStoreEncodeStrategy {
 
     static MoshiEncodeStrategy<DigestStore> create() {
-        new MoshiEncodeStrategy<DigestStore>() {}
+        new MoshiEncodeStrategy<DigestStore>(factory()) {}
     }
 
     static JsonAdapter.Factory factory() {
