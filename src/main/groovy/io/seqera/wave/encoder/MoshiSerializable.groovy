@@ -17,7 +17,6 @@
  */
 
 package io.seqera.wave.encoder
-
 /**
  * Marker interface for Moshi serializable objects
  * 

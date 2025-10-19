@@ -75,6 +75,7 @@ abstract class MoshiEncodeStrategy<V> implements StringEncodingStrategy<V> {
                         .withSubtype(ZippedDigestStore, ZippedDigestStore.simpleName)
                         .withSubtype(HttpDigestStore, HttpDigestStore.simpleName)
                         .withSubtype(DockerDigestStore, DockerDigestStore.simpleName) )
+
                 .add(PolymorphicJsonAdapterFactory.of(PairingMessage.class, "@type")
                         .withSubtype(ProxyHttpRequest.class, ProxyHttpRequest.simpleName)
                         .withSubtype(ProxyHttpResponse.class, ProxyHttpResponse.simpleName)

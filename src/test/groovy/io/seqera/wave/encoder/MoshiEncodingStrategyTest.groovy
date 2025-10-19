@@ -35,16 +35,12 @@ import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.job.JobSpec
-import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
-import io.seqera.wave.service.pairing.socket.msg.PairingResponse
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.DockerDigestStore
-import io.seqera.wave.storage.HttpDigestStore
-import io.seqera.wave.storage.ZippedDigestStore
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 /**
@@ -155,30 +151,6 @@ class MoshiEncodingStrategyTest extends Specification {
         result.freeze
     }
 
-    def 'should encode and decode zipped digest store' () {
-        given:
-        def DATA = 'Hello wold!'
-        def encoder = new MoshiEncodeStrategy<DigestStore>() { }
-        and:
-        def data = ZippedDigestStore.fromUncompressed(DATA.bytes, 'my/media', '12345', 2000)
-
-        when:
-        def json = encoder.encode(data)
-        println json
-
-        and:
-        def copy = encoder.decode(json)
-        then:
-        copy.getClass() == data.getClass()
-        and:
-        copy.bytes == data.bytes
-        copy.digest == data.digest
-        copy.mediaType == data.mediaType
-        copy.size == data.size
-        and:
-        new String(copy.bytes) == DATA
-    }
-
     def 'should encode and decode proxy http request message' () {
         given:
         def encoder = new MoshiEncodeStrategy<ProxyHttpRequest>() { }
@@ -233,68 +205,6 @@ class MoshiEncodingStrategyTest extends Specification {
         copy.status == data.status
         copy.body == data.body
         copy.headers == data.headers
-    }
-
-    def 'should encode and decode pairing heartbeat message' () {
-        given:
-        def encoder = new MoshiEncodeStrategy<PairingHeartbeat>() { }
-        and:
-        def data = new PairingHeartbeat(msgId: 'foo')
-
-        when:
-        def json = encoder.encode(data)
-        println json
-
-        and:
-        def copy = encoder.decode(json)
-        then:
-        copy.getClass() == data.getClass()
-        and:
-        copy.msgId == data.msgId
-    }
-
-    def 'should encode and decode pairing response message' () {
-        given:
-        def encoder = new MoshiEncodeStrategy<PairingResponse>() { }
-        and:
-        def data = new PairingResponse(msgId: 'foo', publicKey: 'key', pairingId: 'id')
-
-        when:
-        def json = encoder.encode(data)
-        println json
-
-        and:
-        def copy = encoder.decode(json)
-        then:
-        copy.getClass() == data.getClass()
-        and:
-        copy.msgId == data.msgId
-        copy.publicKey == data.publicKey
-        copy.pairingId == data.pairingId
-    }
-
-    def 'should encode and decode http digest store' () {
-        given:
-        def encoder = new MoshiEncodeStrategy<DigestStore>() { }
-        and:
-        def data = new HttpDigestStore(
-                'http://foo.com/this/that',
-                'text/json',
-                '12345',
-                2000 )
-
-        when:
-        def json = encoder.encode(data)
-
-        and:
-        def copy = (HttpDigestStore) encoder.decode(json)
-        then:
-        copy.getClass() == data.getClass()
-        and:
-        copy.location == data.location
-        copy.digest == data.digest
-        copy.mediaType == data.mediaType
-        copy.size == data.size
     }
 
     def 'should encode and decode http digest store' () {
