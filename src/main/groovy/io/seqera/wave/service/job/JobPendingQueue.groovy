@@ -28,7 +28,7 @@ import io.seqera.data.stream.MessageStream
 import io.seqera.serde.encode.StringEncodingStrategy
 import io.seqera.wave.configuration.JobManagerConfig
 import io.seqera.wave.configuration.WaveLite
-import io.seqera.wave.encoder.MoshiEncodeStrategy
+import io.seqera.serde.moshi.MoshiEncodeStrategy
 import io.seqera.wave.service.data.stream.BaseMessageStream
 import jakarta.annotation.PreDestroy
 import jakarta.inject.Singleton

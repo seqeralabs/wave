@@ -21,7 +21,7 @@ package io.seqera.wave.service.aws.cache
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-import io.seqera.wave.encoder.MoshiSerializable
+import io.seqera.serde.moshi.MoshiSerializable
 /**
  * Model a tiered cache value for {@link AwsEcrCache}
  *

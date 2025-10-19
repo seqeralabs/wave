@@ -35,8 +35,8 @@ import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.serde.encode.StringEncodingStrategy
-import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.encoder.MoshiSerializable
+import io.seqera.serde.moshi.MoshiEncodeStrategy
+import io.seqera.serde.moshi.MoshiSerializable
 import org.jetbrains.annotations.Nullable
 /**
  * Implement a tiered-cache mechanism using a local caffeine cache as 1st level access

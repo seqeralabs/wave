@@ -20,7 +20,7 @@ package io.seqera.wave.storage
 
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
-import io.seqera.wave.encoder.MoshiEncodeStrategy
+import io.seqera.serde.moshi.MoshiEncodeStrategy
 /**
  * Factory class for creating a Moshi-based encoding strategy for polymorphic digest store types.
  * <p>
