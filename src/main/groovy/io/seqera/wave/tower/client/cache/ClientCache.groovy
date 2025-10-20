@@ -27,8 +27,8 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.seqera.serde.moshi.MoshiEncodeStrategy
 import io.seqera.serde.moshi.MoshiSerializable
-import io.seqera.wave.store.cache.AbstractTieredCache
-import io.seqera.wave.store.cache.L2TieredCache
+import io.seqera.cache.tiered.AbstractTieredCache
+import io.seqera.cache.tiered.L2TieredCache
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.client.GetCredentialsKeysResponse
@@ -56,7 +56,7 @@ class ClientCache extends AbstractTieredCache {
     }
 
     @Override
-    protected getName() {
+    protected String getName() {
         return 'pairing-cache'
     }
 

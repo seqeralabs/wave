@@ -28,8 +28,8 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.seqera.serde.moshi.MoshiEncodeStrategy
 import io.seqera.serde.moshi.MoshiSerializable
-import io.seqera.wave.store.cache.AbstractTieredCache
-import io.seqera.wave.store.cache.L2TieredCache
+import io.seqera.cache.tiered.AbstractTieredCache
+import io.seqera.cache.tiered.L2TieredCache
 import jakarta.inject.Singleton
 /**
  * Implement a tiered cache for {@link RegistryLookupService}
@@ -57,7 +57,7 @@ class RegistryLookupCache extends AbstractTieredCache<String, RegistryAuth> {
     }
 
     @Override
-    protected getName() {
+    protected String getName() {
         return 'registry-lookup-cache'
     }
 
