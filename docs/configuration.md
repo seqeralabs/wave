@@ -23,7 +23,7 @@ You can configure Wave using either the `config.yml` file or environment variabl
 Configure general Wave application settings, such as application name, port, anonymous access permissions, and platform URLs with the following options:
 
 `tower.endpoint.url` *(optional)*
-: The URL pointing to the Seqera platform API service (default: [`https://api.cloud.seqera.io`](https://api.cloud.seqera.io)).
+: The URL of the Seqera Platform API service (default: [`https://api.cloud.seqera.io`](https://api.cloud.seqera.io)).
   Can be set using the `${TOWER_ENDPOINT_URL}` environment variable.
 
 `wave.allowAnonymous` *(required)*
@@ -65,7 +65,7 @@ Configure container registry authentication with the following options:
   Can be set using the `${AWS_ACCESS_KEY_ID}` environment variable.
 
 `wave.registries.default` *(optional)*
-: The default container registry for Wave (default: `docker.io`).
+: The default container registry used by Wave (default: `docker.io`).
 
 `wave.registries.docker.io.password` *(optional)*
 : The Docker Hub password or PAT (Personal Access Token) for authentication.
@@ -76,7 +76,7 @@ Configure container registry authentication with the following options:
   Can be set using the `${DOCKER_USER}` environment variable.
 
 `wave.registries.quay.io.password` *(optional)*
-: The Quay.io password or PAT for authentication.
+: The Quay.io password or Personal Access Token (PAT) for authentication.
   Can be set using the `${QUAY_PAT}` environment variable.
 
 `wave.registries.quay.io.username` *(optional)*
@@ -91,7 +91,7 @@ Configure the HTTP client with the following options:
 : The connection timeout for the HTTP client (default: `20s`).
 
 `wave.httpclient.retry.attempts` *(optional)*
-: The number of HTTP client retry attempts (default: `5`).
+: The maximum number of HTTP client retry attempts (default: `5`).
 
 `wave.httpclient.retry.delay` *(optional)*
 : The delay for HTTP client retries (default: `1s`).
@@ -110,7 +110,7 @@ Configure the HTTP client with the following options:
 Configure how Wave builds container images and manages associated logs for monitoring, troubleshooting, and delivery with the following options:
 
 `wave.build.buildkit-image` *(required)*
-: The [Buildkit](https://github.com/moby/buildkit) container image used in the Wave build process (default: `moby/buildkit:v0.13.2-rootless`).
+: The [Buildkit](https://github.com/moby/buildkit) container image used for the Wave build process (default: `moby/buildkit:v0.13.2-rootless`).
 
 `wave.build.cache` *(required)*
 : The container repository used to cache layers of images built by Wave.
@@ -120,14 +120,14 @@ Configure how Wave builds container images and manages associated logs for monit
   For example, set to `OnSuccess` for cleanup only if a build is successful.
 
 `wave.build.compression` *(optional)*
-: The compression type to be applied to cache layers (default: `gzip`).
+: The compression type for cache layers (default: `gzip`).
   Options include: `uncompressed`,`estargz`, and `zstd`.
 
 `wave.build.force-compression` *(optional)*
 : Whether to force compression for all cache layers produced by the build process (default: `false`).
 
 `wave.build.oci-mediatypes` *(optional)*
-: Whether to use OCI media types in exported container manifests (default: `true`).
+: Whether to use OCI media types for container manifest exports (default: `true`).
 
 `wave.build.public-repo` *(optional)*
 : The public repository for the container images built by Wave.
@@ -138,7 +138,7 @@ Configure how Wave builds container images and manages associated logs for monit
 : The Docker container repository for the container images built by Wave.
 
 `wave.build.singularity-image` *(optional)*
-: The [Singularity](https://quay.io/repository/singularity/singularity?tab=tags) image used in the build process (default: `quay.io/singularity/singularity:v3.11.4-slim`).
+: The [Singularity](https://quay.io/repository/singularity/singularity?tab=tags) image for the build process (default: `quay.io/singularity/singularity:v3.11.4-slim`).
 
 `wave.build.singularity-image-arm64` *(optional)*
 : The ARM64 version of the Singularity image for the build process (default: `quay.io/singularity/singularity:v3.11.4-slim-arm64`).
@@ -147,17 +147,17 @@ Configure how Wave builds container images and manages associated logs for monit
 : The delay between build status checks (default: `5s`).
 
 `wave.build.status.duration` *(optional)*
-: The duration for build status checks (default: `1d`).
+: The duration of build status checks (default: `1d`).
 
 `wave.build.timeout` *(optional)*
-: The maximum duration for the build process (default: `5m`).
+: The maximum duration of the build process (default: `5m`).
 
 `wave.build.trusted-timeout` *(optional)*
-: The maximum duration for the build process for authenticated users when freeze mode is enabled (default: `10m`).
+: The maximum duration of the build process for authenticated users when freeze mode is enabled (default: `10m`).
   If set to less than `wave.build.timeout`, the longer `wave.build.timeout` value is used.
 
 `wave.build.workspace` *(required)*
-: The path to the directory used by Wave to store artifacts such as Containerfiles, Trivy cache for scan, Buildkit context, and authentication configuration files.
+: The path to the directory used by Wave to store artifacts, such as Containerfiles, Trivy cache for scan, Buildkit context, and authentication configuration files.
   For example, `/efs/wave/build`.
 
 ### Build process logs
@@ -184,7 +184,7 @@ Configure how Wave stores and delivers build logs from containers and Kubernetes
 Configure Kubernetes-specific settings for Wave, where build and scan processes share most configurations except for CPU and memory requirements, with the following options:
 
 `wave.build.k8s.labels` *(optional)*
-: The labels on Wave build Kubernetes pods.
+: The labels for Wave build Kubernetes pods.
 
 `wave.build.k8s.namespace` *(required)*
 : The Kubernetes namespace where Wave will run its build pods.
@@ -207,7 +207,7 @@ Configure Kubernetes-specific settings for Wave, where build and scan processes 
 : The volume claim name for the Wave build Kubernetes pods.
 
 `wave.build.k8s.storage.mountPath` *(optional)*
-: The volume mount path on Wave build Kubernetes pods.
+: The volume mount path for Wave build Kubernetes pods.
 
 ## Container scan process
 
@@ -267,7 +267,7 @@ Configure Redis with the following options:
 : The timeout duration (in milliseconds) for Redis client operations (default: `5000` (5 seconds)).
 
 `redis.password` *(optional)*
-: The password to authenticate with the Redis server.
+: The password for Redis server authentication.
   Can be set using the `${REDIS_PASSWORD}` environment variable.
 
 `redis.pool.enabled` *(optional)*

@@ -37,7 +37,7 @@ Use the following options to configure general Wave settings:
   Only compatible with `wave.strategy = 'container'` and cannot be used with `wave.freeze`.
 
 `wave.strategy`
-: The strategy used when resolving ambiguous Wave container requirements (default: `'container,dockerfile,conda'`).
+: The strategy used to resolve ambiguous Wave container requirements (default: `'container,dockerfile,conda'`).
 
 ## Build
 

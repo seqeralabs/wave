@@ -22,8 +22,8 @@ The Wave CLI supports container augmentation with a specified directory. You can
 
 Directory builds support the following arguments:
 
-- `--layer`: Specifies a directory containing layer content.
-- `--image`, `-i`: Specifies an existing container image (default: `docker.io`). Accepts image names (e.g., `alpine:latest`) or image URLs (e.g., `public.ecr.aws/docker/library/busybox`).
+- `--layer`: A directory containing layer content.
+- `--image`, `-i`: An existing container image (default: `docker.io`). Accepts image names (e.g., `alpine:latest`) or image URLs (e.g., `public.ecr.aws/docker/library/busybox`).
 
 **Limitations**
 
@@ -63,11 +63,11 @@ The Wave CLI supports building a container from a list of [Conda][conda] package
 
 Conda builds support the following arguments:
 
-- `--conda-base-image`: Specifies the base image for installing Conda packages (default: `mambaorg/micromamba:1.5.10-noble`).
-- `--conda-channels`: Specifies one or more comma-separated channels (default: `seqera,bioconda,conda-forge,defaults`).
-- `--conda-file`: Specifies a [Conda lock file][conda-lock] path or URL.
-- `--conda-package`: Specifies Conda packages to install. Supports expressions such as `bioconda::samtools=1.17` or `samtools>=1.0,<1.17`. Accepts a comma-separated list or can be specified multiple times.
-- `--conda-run-command`: Specifies a Docker `RUN` command to execute during the build. Can be specified multiple times.
+- `--conda-base-image`: The base image for installing Conda packages (default: `mambaorg/micromamba:1.5.10-noble`).
+- `--conda-channels`: One or more comma-separated channels (default: `seqera,bioconda,conda-forge,defaults`).
+- `--conda-file`: A [Conda lock file][conda-lock] path or URL.
+- `--conda-package`: Conda packages to install. Supports expressions such as `bioconda::samtools=1.17` or `samtools>=1.0,<1.17`. Accepts a comma-separated list or can be specified multiple times.
+- `--conda-run-command`: A Docker `RUN` command to execute during the build. Can be specified multiple times.
 
 **Example usage**
 
@@ -160,11 +160,11 @@ The Wave CLI supports building [Singularity][singularity] containers. A target b
 
 Singularity container builds support the following arguments:
 
-- `--build-repo`: Specifies the target repository to save the built container.
-- `--freeze`: Enables container freeze mode.
-- `--singularity`, `-s`: Enables Singularity container builds.
-- `--tower-token`: Specifies a Seqera access token to access private registry credentials stored in Platform (not required if the `TOWER_ACCESS_TOKEN` environment variable is set).
-- `--tower-workspace-id`: Specifies a Seqera workspace ID (e.g., `1234567890`) where credentials are stored. Requires `--tower-token` flag or `TOWER_ACCESS_TOKEN` environment variable to be set.
+- `--build-repo`: The target repository to save the built container.
+- `--freeze`: Whether to enable container freeze mode.
+- `--singularity`, `-s`: Whether to enable Singularity container builds.
+- `--tower-token`: A Seqera access token to access private registry credentials stored in Platform (not required if the `TOWER_ACCESS_TOKEN` environment variable is set).
+- `--tower-workspace-id`: A Seqera workspace ID (e.g., `1234567890`) where credentials are stored. Requires `--tower-token` flag or `TOWER_ACCESS_TOKEN` environment variable to be set.
 
 **Limitations**
 
@@ -213,10 +213,10 @@ Ensure the following conditions are met:
 
 Container freeze builds support the following arguments:
 
-- `--build-repo`: Specifies the target repository to save the built container.
-- `--freeze`: Enables container freeze mode.
-- `--tower-token`: Specifies a Seqera access token for accessing private registry credentials (not required if the `TOWER_ACCESS_TOKEN` environment variable is set).
-- `--tower-workspace-id`: Specifies a Seqera workspace ID (e.g., `1234567890`) where credentials are stored.
+- `--build-repo`: The target repository to save the built container.
+- `--freeze`: Whether to enable container freeze mode.
+- `--tower-token`: A Seqera access token for accessing private registry credentials (not required if the `TOWER_ACCESS_TOKEN` environment variable is set).
+- `--tower-workspace-id`: A Seqera workspace ID (e.g., `1234567890`) where credentials are stored.
 
 **Example usage**
 
@@ -248,9 +248,9 @@ Ensure the following conditions are met:
 
 Container mirroring supports the following arguments:
 
-- `--mirror`: Enables container mirror mode.
-- `--build-repo`: Specifies the target repository to save the mirrored container.
-- `--tower-token`: Specifies a Seqera access token to access private registry credentials stored in Platform (not required if the `TOWER_ACCESS_TOKEN` environment variable is set).
+- `--mirror`: Whether to enable container mirror mode.
+- `--build-repo`: A target repository to save the mirrored container.
+- `--tower-token`: A Seqera access token to access private registry credentials stored in Platform (not required if the `TOWER_ACCESS_TOKEN` environment variable is set).
 
 **Example usage**
 
