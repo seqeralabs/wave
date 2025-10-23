@@ -344,7 +344,9 @@ For additional configuration options and advanced features, see [Configuring Wav
 
 ## Bottlerocket support
 
-Bottlerocket sets `user.max_user_namespaces=0` by default for security. To use Buildkit with Bottlerocket, enable user namespaces for container builds by setting `user.max_user_namespaces=N` on your host nodes, where `N` is a positive integer, such as `63359`.
+Buildkit requires user namespaces. However, Bottlerocket sets `user.max_user_namespaces=0` by default for security.
+
+To use Buildkit with Bottlerocket, enable user namespaces for container builds by setting `user.max_user_namespaces=N` on your host nodes, where `N` is a positive integer.  Use a sufficiently high value (e.g., `62000`) to avoid build failures. Values that are too low (e.g., `10`) will limit concurrent build capacity and may cause build failures.
 
 You can configure this setting in two ways:
 
