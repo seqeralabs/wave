@@ -7,8 +7,8 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Container security scan report">
-    <title>Wave container scan {{scan_container_image}}</title>
+    <meta name="description" content="Security scan report">
+    <title>Wave security scan {{scan_container_image}}</title>
     <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600&display=swap" rel="stylesheet">
     <link href="/assets/style.css" rel="stylesheet">
     <script src="/assets/copy.js"></script>
@@ -19,18 +19,18 @@
 
 <div class="container">
     <div class="header-section">
-        <h1 class="main-title">Container Security Scan Report</h1>
+        <h1 class="main-title">Security Scan Report</h1>
     {{#if scan_exist}}
                 {{#if scan_completed}}
                     {{#if scan_failed}}
                         <div class="status-alert error">
                             <div class="status-icon">✗</div>
-                            <div class="status-message">Unable to complete the container security scan successfully</div>
+                            <div class="status-message">Unable to complete the security scan successfully</div>
                         </div>
                     {{else}}
                         <div class="status-alert" style="color: {{scan_color_fg}}; background-color: {{scan_color_bg}};">
                             <div class="status-icon">✓</div>
-                            <div class="status-message">Container security scan completed!</div>
+                            <div class="status-message">Security scan completed!</div>
                         </div>
                     {{/if}}
                 {{else}}
@@ -39,7 +39,7 @@
                         <div class="status-icon">
                             <div class="lds-dual-ring"></div>
                         </div>
-                        <div class="status-message">Container security scan in progress</div>
+                        <div class="status-message">Security scan in progress</div>
                     </div>
                 </div>
                 {{/if}}

@@ -132,12 +132,6 @@ class K8sServiceImpl implements K8sService {
     // check this link to know more about these options https://github.com/moby/buildkit/tree/master/examples/kubernetes#kubernetes-manifests-for-buildkit
     private final static Map<String,String> BUILDKIT_FLAGS = ['BUILDKITD_FLAGS': '--oci-worker-no-process-sandbox']
 
-    private Map<String, String> getBuildkitAnnotations(String containerName, boolean singularity) {
-        if( singularity )
-            return null
-        final key = "container.apparmor.security.beta.kubernetes.io/${containerName}".toString()
-        return Map.of(key, "unconfined")
-    }
 
     /**
      * Validate config setting
@@ -328,7 +322,6 @@ class K8sServiceImpl implements K8sService {
                 .withNamespace(namespace)
                 .withName(name)
                 .addToLabels(labels)
-                .addToAnnotations(getBuildkitAnnotations(name,singularity))
                 .endMetadata()
 
         //spec section
@@ -365,6 +358,12 @@ class K8sServiceImpl implements K8sService {
                     // buildCommand is to set entrypoint for buildkit
                     .withCommand(BUILDKIT_ENTRYPOINT)
                     .withArgs(args)
+                    .withNewSecurityContext()
+                        .withPrivileged(false)
+                        .withNewAppArmorProfile()
+                            .withType("Unconfined")
+                        .endAppArmorProfile()
+                    .endSecurityContext()
         }
 
         // spec section
@@ -405,57 +404,6 @@ class K8sServiceImpl implements K8sService {
                 .coreV1Api()
                 .deleteNamespacedPod(name, namespace)
                 .execute()
-    }
-
-    @Deprecated
-    V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig, Map<String,String> nodeSelector) {
-
-        final mounts = new ArrayList<V1VolumeMount>(5)
-        mounts.add(mountBuildStorage(workDir, storageMountPath, false))
-        mounts.add(mountScanCacheDir(scanConfig.cacheDirectory, storageMountPath))
-
-        final volumes = new ArrayList<V1Volume>(5)
-        volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
-
-        if( credsFile ){
-            mounts.add(0, mountHostPath(credsFile, storageMountPath, Trivy.CONFIG_MOUNT_PATH))
-        }
-
-        V1PodBuilder builder = new V1PodBuilder()
-
-        //metadata section
-        builder.withNewMetadata()
-                .withNamespace(namespace)
-                .withName(name)
-                .addToLabels(labels)
-                .endMetadata()
-
-        //spec section
-        def spec = builder
-                .withNewSpec()
-                .withNodeSelector(nodeSelector)
-                .withServiceAccount(serviceAccount)
-                .withActiveDeadlineSeconds( scanConfig.timeout.toSeconds() )
-                .withRestartPolicy("Never")
-                .addAllToVolumes(volumes)
-
-        final requests = new V1ResourceRequirements()
-        if( scanConfig.requestsCpu )
-            requests.putRequestsItem('cpu', new Quantity(scanConfig.requestsCpu))
-        if( scanConfig.requestsMemory )
-            requests.putRequestsItem('memory', new Quantity(scanConfig.requestsMemory))
-
-        //container section
-        spec.addNewContainer()
-                .withName(name)
-                .withImage(containerImage)
-                .withArgs(args)
-                .withVolumeMounts(mounts)
-                .withResources(requests)
-                .endContainer()
-                .endSpec()
-
-        builder.build()
     }
 
     /**
@@ -613,7 +561,6 @@ class K8sServiceImpl implements K8sService {
                 .withPodFailurePolicy(failurePolicy())
                 .withNewTemplate()
                 .withNewMetadata()
-                .addToAnnotations(getBuildkitAnnotations(name,singularity))
                 .endMetadata()
                 .editOrNewSpec()
                 .withDnsConfig(dnsConfig())
@@ -665,6 +612,12 @@ class K8sServiceImpl implements K8sService {
             // buildCommand is to set entrypoint for buildkit
                     .withCommand(BUILDKIT_ENTRYPOINT)
                     .withArgs(args)
+                    .withNewSecurityContext()
+                        .withPrivileged(false)
+                        .withNewAppArmorProfile()
+                            .withType("Unconfined")
+                        .endAppArmorProfile()
+                    .endSecurityContext()
         }
 
         // spec section
@@ -731,7 +684,6 @@ class K8sServiceImpl implements K8sService {
         final container = new V1ContainerBuilder()
                 .withName(name)
                 .withImage(containerImage)
-                .withCommand("sh", "-c")
                 .withArgs(args)
                 .withVolumeMounts(mounts)
                 .withResources(requests)
