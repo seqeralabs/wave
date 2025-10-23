@@ -50,7 +50,7 @@
     <div class="version-selector">
         <label>OpenAPI Spec:</label>
         <select id="spec-selector" onchange="changeSpec()">
-            <option value="./openapi-latest.yaml">Latest (YAML)</option>
+            <option value="/openapi/openapi-latest.yaml">Latest (YAML)</option>
         </select>
     </div>
     
@@ -90,14 +90,14 @@
         
         async function loadAvailableVersions() {
             try {
-                const response = await fetch('./versions.txt');
+                const response = await fetch('/openapi/versions.txt');
                 const text = await response.text();
                 const versions = text.trim().split('\n').filter(v => v.length > 0);
-                
+
                 const selector = document.getElementById('spec-selector');
                 versions.forEach(version => {
                     const option = document.createElement('option');
-                    option.value = `./openapi-${version}.yaml`;
+                    option.value = `/openapi/openapi-${version}.yaml`;
                     option.textContent = `Version ${version} (YAML)`;
                     selector.appendChild(option);
                 });
@@ -109,9 +109,9 @@
         window.onload = async function() {
             // Load available versions first
             await loadAvailableVersions();
-            
+
             // Default to latest YAML version
-            initSwaggerUI('./openapi-latest.yaml');
+            initSwaggerUI('/openapi/openapi-latest.yaml');
         };
     </script>
 </body>
