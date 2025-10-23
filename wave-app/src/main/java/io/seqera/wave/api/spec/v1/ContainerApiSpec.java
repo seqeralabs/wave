@@ -9,16 +9,16 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
-package io.seqera.wave.api.spec;
+package io.seqera.wave.api.spec.v1;
 
 import io.micronaut.http.annotation.*;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.core.convert.format.Format;
-import io.seqera.wave.api.schema.v0.ContainerStatusResponse;
-import io.seqera.wave.api.schema.v0.ErrorResponse;
+import io.seqera.wave.api.schema.v1.ContainerStatusResponse;
+import io.seqera.wave.api.schema.v1.ErrorResponse;
 import io.micronaut.http.HttpResponse;
-import io.seqera.wave.api.schema.v0.SubmitContainerTokenRequest;
-import io.seqera.wave.api.schema.v0.SubmitContainerTokenResponse;
+import io.seqera.wave.api.schema.v1.SubmitContainerTokenRequest;
+import io.seqera.wave.api.schema.v1.SubmitContainerTokenResponse;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
 import java.util.HashMap;

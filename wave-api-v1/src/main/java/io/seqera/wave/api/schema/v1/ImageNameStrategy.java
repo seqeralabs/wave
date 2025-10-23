@@ -9,7 +9,7 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
-package io.seqera.wave.api.schema.v0;
+package io.seqera.wave.api.schema.v1;
 
 import java.util.Objects;
 import java.util.Arrays;
@@ -24,25 +24,25 @@ import io.micronaut.core.annotation.Nullable;
 import jakarta.annotation.Generated;
 
 /**
- * Security scan mode
+ * Image naming strategy
  */
 @Generated("io.micronaut.openapi.generator.JavaMicronautServerCodegen")
-public enum ScanMode {
+public enum ImageNameStrategy {
 
     @JsonProperty("none")
     NONE("none"),
-    @JsonProperty("async")
-    ASYNC("async"),
-    @JsonProperty("required")
-    REQUIRED("required"),
+    @JsonProperty("tagPrefix")
+    TAG_PREFIX("tagPrefix"),
+    @JsonProperty("imageSuffix")
+    IMAGE_SUFFIX("imageSuffix"),
     ;
 
-    public static final Map<String, ScanMode> VALUE_MAPPING = Map.copyOf(Arrays.stream(values())
+    public static final Map<String, ImageNameStrategy> VALUE_MAPPING = Map.copyOf(Arrays.stream(values())
         .collect(Collectors.toMap(v -> v.value, Function.identity())));
 
     private final String value;
 
-    ScanMode(String value) {
+    ImageNameStrategy(String value) {
         this.value = value;
     }
 
@@ -67,7 +67,7 @@ public enum ScanMode {
      * @return The enum
      */
     @JsonCreator
-    public static ScanMode fromValue(String value) {
+    public static ImageNameStrategy fromValue(String value) {
         if (!VALUE_MAPPING.containsKey(value)) {
             throw new IllegalArgumentException("Unexpected value '" + value + "'");
         }

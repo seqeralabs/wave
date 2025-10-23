@@ -9,7 +9,7 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
-package io.seqera.wave.api.schema.v0;
+package io.seqera.wave.api.schema.v1;
 
 import java.util.Objects;
 import java.util.Arrays;

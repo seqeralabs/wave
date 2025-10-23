@@ -157,8 +157,8 @@ micronaut {
     }
     openapi {
         server(project(':wave-api-v1').file("build/openapi/openapi.yaml")) {
-            apiPackageName = "io.seqera.wave.api.spec"
-            modelPackageName = "io.seqera.wave.api.schema.v0"
+            apiPackageName = "io.seqera.wave.api.spec.v1"
+            modelPackageName = "io.seqera.wave.api.schema.v1"
             useReactive = false
             useAuth = false
             apiNameSuffix = "ApiSpec"
@@ -326,9 +326,9 @@ tasks.register('cleanApiCode') {
     
     doLast {
         // Clean generated files from both projects
-        delete fileTree('src/main/java/io/seqera/wave/api/spec') { include '**/*.java' }
-        delete fileTree(project(':wave-api-v1').file('src/main/java/io/seqera/wave/api/schema/v0')) { include '**/*.java' }
-        
+        delete fileTree('src/main/java/io/seqera/wave/api/spec/v1') { include '**/*.java' }
+        delete fileTree(project(':wave-api-v1').file('src/main/java/io/seqera/wave/api/schema/v1')) { include '**/*.java' }
+
         logger.info("Cleaned generated API files")
     }
 }
@@ -344,18 +344,18 @@ tasks.register('generateApiCode') {
     doLast {
         // Copy spec interfaces to app project (stay here)
         copy {
-            from 'build/generated/openapi/generateServerOpenApiApis/src/main/java/io/seqera/wave/api/spec'
-            into 'src/main/java/io/seqera/wave/api/spec'
+            from 'build/generated/openapi/generateServerOpenApiApis/src/main/java/io/seqera/wave/api/spec/v1'
+            into 'src/main/java/io/seqera/wave/api/spec/v1'
             include '**/*.java'
         }
-        
+
         // Copy model classes to API project (they belong there)
         copy {
-            from 'build/generated/openapi/generateServerOpenApiModels/src/main/java/io/seqera/wave/api/schema/v0'
-            into project(':wave-api-v1').file('src/main/java/io/seqera/wave/api/schema/v0')
+            from 'build/generated/openapi/generateServerOpenApiModels/src/main/java/io/seqera/wave/api/schema/v1'
+            into project(':wave-api-v1').file('src/main/java/io/seqera/wave/api/schema/v1')
             include '**/*.java'
         }
-        
+
         logger.info("Copied generated API spec interfaces to app and model classes to API project")
     }
 }

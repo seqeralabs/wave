@@ -9,7 +9,7 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
-package io.seqera.wave.api.schema.v0;
+package io.seqera.wave.api.schema.v1;
 
 import java.util.Objects;
 import java.util.Arrays;
@@ -24,27 +24,25 @@ import io.micronaut.core.annotation.Nullable;
 import jakarta.annotation.Generated;
 
 /**
- * Container status
+ * Security scan mode
  */
 @Generated("io.micronaut.openapi.generator.JavaMicronautServerCodegen")
-public enum ContainerStatus {
+public enum ScanMode {
 
-    @JsonProperty("PENDING")
-    PENDING("PENDING"),
-    @JsonProperty("BUILDING")
-    BUILDING("BUILDING"),
-    @JsonProperty("DONE")
-    DONE("DONE"),
-    @JsonProperty("ERROR")
-    ERROR("ERROR"),
+    @JsonProperty("none")
+    NONE("none"),
+    @JsonProperty("async")
+    ASYNC("async"),
+    @JsonProperty("required")
+    REQUIRED("required"),
     ;
 
-    public static final Map<String, ContainerStatus> VALUE_MAPPING = Map.copyOf(Arrays.stream(values())
+    public static final Map<String, ScanMode> VALUE_MAPPING = Map.copyOf(Arrays.stream(values())
         .collect(Collectors.toMap(v -> v.value, Function.identity())));
 
     private final String value;
 
-    ContainerStatus(String value) {
+    ScanMode(String value) {
         this.value = value;
     }
 
@@ -69,7 +67,7 @@ public enum ContainerStatus {
      * @return The enum
      */
     @JsonCreator
-    public static ContainerStatus fromValue(String value) {
+    public static ScanMode fromValue(String value) {
         if (!VALUE_MAPPING.containsKey(value)) {
             throw new IllegalArgumentException("Unexpected value '" + value + "'");
         }

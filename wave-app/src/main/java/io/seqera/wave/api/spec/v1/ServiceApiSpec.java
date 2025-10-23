@@ -9,13 +9,12 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
-package io.seqera.wave.api.spec;
+package io.seqera.wave.api.spec.v1;
 
 import io.micronaut.http.annotation.*;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.core.convert.format.Format;
-import io.seqera.wave.api.schema.v0.ErrorResponse;
-import io.seqera.wave.api.schema.v0.ValidateRegistryCredsRequest;
+import io.seqera.wave.api.schema.v1.ServiceInfoResponse;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,18 +25,14 @@ import jakarta.validation.constraints.*;
 
 @Generated("io.micronaut.openapi.generator.JavaMicronautServerCodegen")
 @Controller
-public interface ValidateApiSpec {
+public interface ServiceApiSpec {
 
     /**
-     * Validate registry credentials
+     * Get service information
      *
-     * @param validateRegistryCredsRequest (required)
      * @return The request has succeeded. (status code 200)
-     *         or An unexpected error response. (status code default)
      */
-    @Post("/validate-creds")
-    Map<String, Object> validateCredentials(
-        @Body @NotNull @Valid ValidateRegistryCredsRequest validateRegistryCredsRequest
-    );
+    @Get("/service-info")
+    ServiceInfoResponse getServiceInfo();
 
 }

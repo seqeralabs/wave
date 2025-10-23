@@ -9,7 +9,7 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
-package io.seqera.wave.api.schema.v0;
+package io.seqera.wave.api.schema.v1;
 
 import java.util.Objects;
 import java.util.Arrays;
@@ -24,25 +24,23 @@ import io.micronaut.core.annotation.Nullable;
 import jakarta.annotation.Generated;
 
 /**
- * Image naming strategy
+ * Build compression mode
  */
 @Generated("io.micronaut.openapi.generator.JavaMicronautServerCodegen")
-public enum ImageNameStrategy {
+public enum BuildCompression {
 
+    @JsonProperty("gzip")
+    GZIP("gzip"),
     @JsonProperty("none")
     NONE("none"),
-    @JsonProperty("tagPrefix")
-    TAG_PREFIX("tagPrefix"),
-    @JsonProperty("imageSuffix")
-    IMAGE_SUFFIX("imageSuffix"),
     ;
 
-    public static final Map<String, ImageNameStrategy> VALUE_MAPPING = Map.copyOf(Arrays.stream(values())
+    public static final Map<String, BuildCompression> VALUE_MAPPING = Map.copyOf(Arrays.stream(values())
         .collect(Collectors.toMap(v -> v.value, Function.identity())));
 
     private final String value;
 
-    ImageNameStrategy(String value) {
+    BuildCompression(String value) {
         this.value = value;
     }
 
@@ -67,7 +65,7 @@ public enum ImageNameStrategy {
      * @return The enum
      */
     @JsonCreator
-    public static ImageNameStrategy fromValue(String value) {
+    public static BuildCompression fromValue(String value) {
         if (!VALUE_MAPPING.containsKey(value)) {
             throw new IllegalArgumentException("Unexpected value '" + value + "'");
         }

@@ -9,14 +9,14 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
-package io.seqera.wave.api.schema.v0;
+package io.seqera.wave.api.schema.v1;
 
 import java.util.Objects;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import io.seqera.wave.api.schema.v0.ContainerStatus;
+import io.seqera.wave.api.schema.v1.ContainerStatus;
 import java.time.OffsetDateTime;
 import com.fasterxml.jackson.annotation.*;
 import jakarta.validation.constraints.*;

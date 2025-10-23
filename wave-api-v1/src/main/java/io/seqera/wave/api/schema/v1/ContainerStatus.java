@@ -9,7 +9,7 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
-package io.seqera.wave.api.schema.v0;
+package io.seqera.wave.api.schema.v1;
 
 import java.util.Objects;
 import java.util.Arrays;
@@ -24,27 +24,27 @@ import io.micronaut.core.annotation.Nullable;
 import jakarta.annotation.Generated;
 
 /**
- * Security scan vulnerability level
+ * Container status
  */
 @Generated("io.micronaut.openapi.generator.JavaMicronautServerCodegen")
-public enum ScanLevel {
+public enum ContainerStatus {
 
-    @JsonProperty("LOW")
-    LOW("LOW"),
-    @JsonProperty("MEDIUM")
-    MEDIUM("MEDIUM"),
-    @JsonProperty("HIGH")
-    HIGH("HIGH"),
-    @JsonProperty("CRITICAL")
-    CRITICAL("CRITICAL"),
+    @JsonProperty("PENDING")
+    PENDING("PENDING"),
+    @JsonProperty("BUILDING")
+    BUILDING("BUILDING"),
+    @JsonProperty("DONE")
+    DONE("DONE"),
+    @JsonProperty("ERROR")
+    ERROR("ERROR"),
     ;
 
-    public static final Map<String, ScanLevel> VALUE_MAPPING = Map.copyOf(Arrays.stream(values())
+    public static final Map<String, ContainerStatus> VALUE_MAPPING = Map.copyOf(Arrays.stream(values())
         .collect(Collectors.toMap(v -> v.value, Function.identity())));
 
     private final String value;
 
-    ScanLevel(String value) {
+    ContainerStatus(String value) {
         this.value = value;
     }
 
@@ -69,7 +69,7 @@ public enum ScanLevel {
      * @return The enum
      */
     @JsonCreator
-    public static ScanLevel fromValue(String value) {
+    public static ContainerStatus fromValue(String value) {
         if (!VALUE_MAPPING.containsKey(value)) {
             throw new IllegalArgumentException("Unexpected value '" + value + "'");
         }

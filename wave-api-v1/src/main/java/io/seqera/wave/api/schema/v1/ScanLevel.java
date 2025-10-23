@@ -9,7 +9,7 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
-package io.seqera.wave.api.schema.v0;
+package io.seqera.wave.api.schema.v1;
 
 import java.util.Objects;
 import java.util.Arrays;
@@ -24,23 +24,27 @@ import io.micronaut.core.annotation.Nullable;
 import jakarta.annotation.Generated;
 
 /**
- * Build compression mode
+ * Security scan vulnerability level
  */
 @Generated("io.micronaut.openapi.generator.JavaMicronautServerCodegen")
-public enum BuildCompression {
+public enum ScanLevel {
 
-    @JsonProperty("gzip")
-    GZIP("gzip"),
-    @JsonProperty("none")
-    NONE("none"),
+    @JsonProperty("LOW")
+    LOW("LOW"),
+    @JsonProperty("MEDIUM")
+    MEDIUM("MEDIUM"),
+    @JsonProperty("HIGH")
+    HIGH("HIGH"),
+    @JsonProperty("CRITICAL")
+    CRITICAL("CRITICAL"),
     ;
 
-    public static final Map<String, BuildCompression> VALUE_MAPPING = Map.copyOf(Arrays.stream(values())
+    public static final Map<String, ScanLevel> VALUE_MAPPING = Map.copyOf(Arrays.stream(values())
         .collect(Collectors.toMap(v -> v.value, Function.identity())));
 
     private final String value;
 
-    BuildCompression(String value) {
+    ScanLevel(String value) {
         this.value = value;
     }
 
@@ -65,7 +69,7 @@ public enum BuildCompression {
      * @return The enum
      */
     @JsonCreator
-    public static BuildCompression fromValue(String value) {
+    public static ScanLevel fromValue(String value) {
         if (!VALUE_MAPPING.containsKey(value)) {
             throw new IllegalArgumentException("Unexpected value '" + value + "'");
         }
