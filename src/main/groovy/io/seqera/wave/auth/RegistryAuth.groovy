@@ -23,7 +23,7 @@ import java.util.regex.Pattern
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
-import io.seqera.wave.encoder.MoshiSerializable
+import io.seqera.serde.moshi.MoshiSerializable
 
 /**
  * Model container registry authentication meta-info

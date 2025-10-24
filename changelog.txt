@@ -1,4 +1,11 @@
 # Wave changelog
+1.26.1 - 23 Oct 2025
+- Refactor MoshiEncodeStrategy to remove Wave-specific polymorphic type adapters (#922) [abc71280d]
+- Bump lib-retry version 2.0.0 [63edabf95]
+- docs: Fix error in docs last_update (#921) [650c39415]
+- Upgrade Netty to 4.2.5.Final to fix CVE-2025-58057 (#920) [485ce7cd9]
+- docs: Update Wave use cases and FAQ (#917) [1b137e4ce]
+
 1.26.0 - 16 Oct 2025
 - Add security scanning for Nextflow plugins in OCI registries (#912) [5acca4367]
 - Bump Micronaut to version 4.9.4 [b056aff91]

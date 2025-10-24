@@ -22,7 +22,6 @@ import java.time.Duration
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
-import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.data.future.AbstractFutureStore
 import io.seqera.wave.service.data.future.FutureHash
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
@@ -45,7 +44,7 @@ class PairingInboundStore extends AbstractFutureStore<PairingMessage> {
                         @Value('${wave.pairing.channel.timeout:5s}') Duration timeout,
                         @Value('${wave.pairing.channel.awaitTimeout:100ms}') Duration pollInterval )
     {
-        super(publisher, new MoshiEncodeStrategy<PairingMessage>() {})
+        super(publisher, PairingMessageEncodeStrategy.create())
         this.timeout = timeout
         this.pollInterval = pollInterval
     }
@@ -66,4 +65,5 @@ class PairingInboundStore extends AbstractFutureStore<PairingMessage> {
     Duration getPollInterval() {
         return pollInterval
     }
+
 }

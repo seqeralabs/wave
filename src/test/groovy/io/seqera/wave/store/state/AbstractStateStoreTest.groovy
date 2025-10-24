@@ -24,7 +24,7 @@ import java.time.Duration
 
 import groovy.transform.Canonical
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.encoder.MoshiEncodeStrategy
+import io.seqera.serde.moshi.MoshiEncodeStrategy
 import io.seqera.wave.store.state.impl.StateProvider
 import io.seqera.wave.store.state.impl.LocalStateProvider
 import jakarta.inject.Inject

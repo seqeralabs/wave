@@ -21,7 +21,7 @@ package io.seqera.wave.tower
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-import io.seqera.wave.encoder.MoshiSerializable
+import io.seqera.serde.moshi.MoshiSerializable
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 

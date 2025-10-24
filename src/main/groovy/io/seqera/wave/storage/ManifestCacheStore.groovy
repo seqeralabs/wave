@@ -24,7 +24,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.api.ContainerLayer
-import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.store.state.AbstractStateStore
 import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Singleton
@@ -44,7 +43,7 @@ class ManifestCacheStore extends AbstractStateStore<DigestStore> implements Stor
             StateProvider<String, String> provider,
             @Value('${wave.storage.cache.duration:`1h`}') Duration duration)
     {
-        super(provider, new MoshiEncodeStrategy<DigestStore>() {})
+        super(provider, DigestStoreEncodeStrategy.create())
         this.duration = duration
         log.info "Creating Manifests cache store ― duration=$duration"
     }
