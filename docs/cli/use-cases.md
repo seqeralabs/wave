@@ -1,10 +1,11 @@
 ---
 title: Use cases
+description: Learn how to use Wave CLI for building Docker and Singularity containers from various sources
+date: "2024-08-22"
+tags: [wave cli, use cases, containers, docker, singularity]
 ---
 
-With the Wave CLI you can build Docker and Singularity containers from a variety of sources, including a Dockerfile, Singularity def file, file system directory, and Conda packages.
-
-The following sections describe several common use cases.
+The Wave CLI enables you to build Docker and Singularity containers from various sources, including Dockerfiles, Singularity definition files, file system directories, and Conda packages. The following sections describe several common use cases.
 
 :::tip
 To get started with an example Nextflow pipeline that uses Wave CLI, see [Wave CLI][start].
@@ -12,42 +13,46 @@ To get started with an example Nextflow pipeline that uses Wave CLI, see [Wave C
 
 ## Augment a container with a directory
 
-The Wave CLI supports container augmentation with a specified directory. You can use container augmentation to dynamically add a layer to your container, so you can inject scripts or configuration files as a new layer.
+The Wave CLI supports container augmentation with a specified directory. You can use container augmentation to dynamically add layers, such as scripts or configuration files, to your container.
 
 <details open>
 <summary>**Augment a container with a directory**</summary>
 
-The following limitations apply:
-
-- A file must be no larger than 1 MB each.
-- A directory must be no larger than 10 MB, inclusive of all files.
-- A base image must be specified.
-
 **Related CLI arguments**
 
-The following arguments are used for a directory build:
+Directory builds support the following arguments:
 
-- `--layer`: A directory that contains layer content.
-- `--image` or `-i`: An existing container image. The default image registry is `docker.io`. Specify an image name such as `alpine:latest` or an image URL such as `public.ecr.aws/docker/library/busybox`.
+- `--layer`: Specifies a directory containing layer content.
+- `--image`, `-i`: Specifies an existing container image (default: `docker.io`). Accepts image names (e.g., `alpine:latest`) or image URLs (e.g., `public.ecr.aws/docker/library/busybox`).
+
+**Limitations**
+
+The following limitations apply:
+
+- A base image must be specified.
+- Each file must be no larger than 1 MB.
+- A directory must be no larger than 10 MB, inclusive of all files.
 
 **Example usage**
 
-Create a new context directory:
+Create a custom layer with a shell script and add it to an Alpine base image:
 
-```
-mkdir -p new-layer/usr/local/bin
-printf 'echo Hello world!' > new-layer/usr/local/bin/hello.sh
-chmod +x new-layer/usr/local/bin/hello.sh
-```
+1. Create a new context directory:
 
-Use the CLI to build the image and run the result with Docker:
+    ```bash
+    mkdir -p new-layer/usr/local/bin
+    printf 'echo Hello world!' > new-layer/usr/local/bin/hello.sh
+    chmod +x new-layer/usr/local/bin/hello.sh
+    ```
 
-```
-docker run $(wave -i alpine --layer new-layer) sh -c hello.sh
-```
+1. Build and run the image:
+
+    ```bash
+    docker run $(wave -i alpine --layer new-layer) sh -c hello.sh
+    ```
 </details>
 
-## Build a container from conda packages
+## Build a container from Conda packages
 
 The Wave CLI supports building a container from a list of [Conda][conda] packages.
 
@@ -58,22 +63,21 @@ The Wave CLI supports building a container from a list of [Conda][conda] package
 
 Conda builds support the following arguments:
 
-- `--conda-base-image`: A base image for installing Conda packages. The default value is `mambaorg/micromamba:1.5.10-noble`.
-- `--conda-channels`: One or more comma-separated channels. The default value is ` seqera,bioconda,conda-forge,defaults`.
-- `--conda-file`: A [Conda lock file][conda-lock]. Can be a local file or a URL to a remote file.
-- `--conda-package`: A Conda package to install. Can be specified multiple times. Expressions are supported, such as `bioconda::samtools=1.17` or `samtools>=1.0,<1.17`.
-- ` --conda-run-command`: A Docker `RUN` command used when containers are built. Can be specified multiple times.
+- `--conda-base-image`: Specifies the base image for installing Conda packages (default: `mambaorg/micromamba:1.5.10-noble`).
+- `--conda-channels`: Specifies one or more comma-separated channels (default: `seqera,bioconda,conda-forge,defaults`).
+- `--conda-file`: Specifies a [Conda lock file][conda-lock] path or URL.
+- `--conda-package`: Specifies Conda packages to install. Supports expressions such as `bioconda::samtools=1.17` or `samtools>=1.0,<1.17`. Accepts a comma-separated list or can be specified multiple times.
+- `--conda-run-command`: Specifies a Docker `RUN` command to execute during the build. Can be specified multiple times.
 
 **Example usage**
 
-In the following example, a container with the `samtools` and `bamtools` packages is built:
+Build a container with specific versions of the `samtools` and `bamtools` packages:
 
-```
+```bash
 wave \
   --conda-package bamtools=2.5.2 \
   --conda-package samtools=1.17
 ```
-
 </details>
 
 ## Build a container from a Dockerfile
@@ -81,7 +85,7 @@ wave \
 The Wave CLI supports building a container from a `Dockerfile`. Specifying an optional build context allows the use of `ADD` and `COPY` commands in a Dockerfile.
 
 :::note
-Building a Dockerfile that requires `--build-arg` for build time variables isn't currently supported.
+Dockerfile builds that require `--build-arg` for build time variables aren't currently supported.
 :::
 
 <details open>
@@ -89,98 +93,102 @@ Building a Dockerfile that requires `--build-arg` for build time variables isn't
 
 **Related CLI arguments**
 
-- `--containerfile` or `-f`: A Dockerfile to build. Build args aren't currently supported.
+Container builds support the following arguments:
+
+- `--containerfile`, `-f`: A Dockerfile to build. Build arguments aren't currently supported.
 - `--context`: A directory that contains the context for the build.
 
 **Example usage**
 
-In the following example `Dockerfile`, several packages are installed:
+Build a container that installs several packages from a `Dockerfile`:
 
-```
-cat << EOF > ./Dockerfile
-FROM alpine
+1. Create a Dockerfile:
 
-RUN apk update && apk add bash cowsay \
-        --update-cache \
-        --repository https://alpine.global.ssl.fastly.net/alpine/edge/community \
-        --repository https://alpine.global.ssl.fastly.net/alpine/edge/main \
-        --repository https://dl-3.alpinelinux.org/alpine/edge/testing
-EOF
-```
+    ```bash
+    cat << EOF > ./Dockerfile
+    FROM alpine
 
-Build and run the container based on the Dockerfile in the previous example by running the following command:
+    RUN apk update && apk add bash cowsay \
+            --update-cache \
+            --repository https://alpine.global.ssl.fastly.net/alpine/edge/community \
+            --repository https://alpine.global.ssl.fastly.net/alpine/edge/main \
+            --repository https://dl-3.alpinelinux.org/alpine/edge/testing
+    EOF
+    ```
 
-```
-container=$(wave --containerfile ./Dockerfile)
-docker run --rm $container cowsay "Hello world"
-```
+1. Build and run the container:
 
-In the following example `Dockerfile`, a local context is used:
+    ```
+    container=$(wave --containerfile ./Dockerfile)
+    docker run --rm $container cowsay "Hello world"
+    ```
 
-```
-cat << EOF > ./Dockerfile
-FROM alpine
-ADD hello.sh /usr/local/bin/
-EOF
-```
+Build a container from a Dockerfile with a local build context:
 
-Create the shell script referenced in the previous example by running the following commands in your terminal:
+1. Create a Dockerfile that references a local file:
 
-```
-mkdir -p build-context/
-printf 'echo Hello world!' > build-context/hello.sh
-chmod +x build-context/hello.sh
-```
+    ```bash
+    cat << EOF > ./Dockerfile
+    FROM alpine
+    ADD hello.sh /usr/local/bin/
+    EOF
+    ```
 
-Build and run the container based on the Dockerfile in the previous example by running the following command:
+1. Create the shell script in the build context directory:
 
-```
-docker run $(wave -f Dockerfile --context build-context) sh -c hello.sh
-```
+    ```bash
+    mkdir -p build-context/
+    printf 'echo Hello world!' > build-context/hello.sh
+    chmod +x build-context/hello.sh
+    ```
+
+1. Build and run the container with the build context:
+
+    ```bash
+    docker run $(wave -f Dockerfile --context build-context) sh -c hello.sh
+    ```
 </details>
 
 ## Build a Singularity container
 
-The Wave CLI supports building a [Singularity][singularity]. A target build repository, specified with the `--build-repo` argument, is required to build a Singularity container. You can build a Singularity container from several sources.
+The Wave CLI supports building [Singularity][singularity] containers. A target build repository, specified with the `--build-repo` argument, is required to build Singularity containers.
 
 <details open>
 <summary>**Build a Singularity container**</summary>
 
-- A [SingularityCE][singularityce] def file
-- A Docker container image with an optional local context directory
-- Conda packages
+**Related CLI arguments**
+
+Singularity container builds support the following arguments:
+
+- `--build-repo`: Specifies the target repository to save the built container.
+- `--freeze`: Enables container freeze mode.
+- `--singularity`, `-s`: Enables Singularity container builds.
+- `--tower-token`: Specifies a Seqera access token to access private registry credentials stored in Platform (not required if the `TOWER_ACCESS_TOKEN` environment variable is set).
+- `--tower-workspace-id`: Specifies a Seqera workspace ID (e.g., `1234567890`) where credentials are stored. Requires `--tower-token` flag or `TOWER_ACCESS_TOKEN` environment variable to be set.
+
+**Limitations**
 
 The following limitations apply:
 
-- The `linux/arm64` platform is not currently supported
-
-**Related CLI arguments**
-
-The following arguments are used to build a Singularity container:
-
-- `--build-repo`: A target repository to save the built container to.
-- `--freeze`: Enable a container freeze.
-- `--singularity` and `-s`: Build a Singularity container.
-- `--tower-token`: A Seqera Platform auth token so that Wave can access your private registry credentials. Not required if the `TOWER_ACCESS_TOKEN` environment variable is set.
-- `--tower-workspace-id`: A Seqera Platform workspace ID, such as `1234567890`, where credentials may be stored.
+- The `linux/arm64` platform is not currently supported.
 
 **Example usage**
 
-In the following example, a Docker base image is augmented:
+Augment a Docker base image and save it as a Singularity container:
 
-```
+```bash
 wave -i alpine --layer context-dir/ --build-repo docker.io/user/repo
 ```
 
-In the following example, a SingularityCE def file is specified:
+Build a Singularity container from a SingularityCE definition (`.def`) file:
 
-```
+```bash
 wave -f hello-world.def --singularity --freeze --build-repo docker.io/user/repo
 ```
 
-In the following example, two Conda packages are specified:
+Build a Singularity container from Conda packages:
 
-```
+```bash
 wave --conda-package bamtools=2.5.2 --conda-package samtools=1.17 --freeze --singularity --build-repo docker.io/user/repo
 ```
 
@@ -193,28 +201,30 @@ The Wave CLI supports building a container and persisting the container to a con
 <details open>
 <summary>**Build a container and freeze to a container registry**</summary>
 
-To freeze a container, you must ensure the following conditions are met:
+**Prerequisites**
 
-- You created a Seqera access token.
-- You specified the destination container registry credentials in Seqera Platform.
-- You specify the Seqera access token via either the `TOWER_ACCESS_TOKEN` environment variable or the `--tower-token` Wave command line option.
+Ensure the following conditions are met:
+
+- You created a Seqera access token
+- You specified the destination container registry credentials in Seqera
+- You specified the Seqera access token via either the `TOWER_ACCESS_TOKEN` environment variable or the `--tower-token` Wave command-line option
 
 **Related CLI arguments**
 
-The following arguments are used to freeze a container build:
+Container freeze builds support the following arguments:
 
-- `--build-repo`: A target repository to save the built container to.
-- `--freeze`: Enable a container freeze.
-- `--tower-token`: A Seqera Platform auth token so that Wave can access your private registry credentials. Not required if the `TOWER_ACCESS_TOKEN` environment variable is set.
-- `--tower-workspace-id`: A Seqera Platform workspace ID, such as `1234567890`, where credentials may be stored.
+- `--build-repo`: Specifies the target repository to save the built container.
+- `--freeze`: Enables container freeze mode.
+- `--tower-token`: Specifies a Seqera access token for accessing private registry credentials (not required if the `TOWER_ACCESS_TOKEN` environment variable is set).
+- `--tower-workspace-id`: Specifies a Seqera workspace ID (e.g., `1234567890`) where credentials are stored.
 
 **Example usage**
 
-In the following example, the `alpine` container image is frozen to a private DockerHub image registry. The `--tower-token` argument is not required if the `TOWER_ACCESS_TOKEN` environment variable is defined.
+Freeze the `alpine` container image to a private Docker Hub registry:
 
-```
+```bash
 wave -i alpine --freeze \
-  --build-repo docker.io/user/repo --tower-token <TOWER_TOKEN>
+  --build-repo docker.io/<USER>/repo --tower-token <TOWER_TOKEN>
 ```
 
 </details>
@@ -226,27 +236,29 @@ The Wave CLI supports mirroring, i.e., copying containers to a container registr
 <details open>
 <summary>**Mirror a container image to another registry**</summary>
 
-To mirror a container image, you must ensure the following conditions are met:
+**Prerequisites**
+
+Ensure the following conditions are met:
 
 - You created a Seqera access token.
-- You specified the destination container registry credentials in Seqera Platform.
-- You specify the Seqera access token via either the `TOWER_ACCESS_TOKEN` environment variable or the `--tower-token` Wave command line option.
+- You specified the destination container registry credentials in Seqera.
+- You specified the Seqera access token via either the `TOWER_ACCESS_TOKEN` environment variable or the `--tower-token` Wave command-line option.
 
 **Related CLI arguments**
 
-The following arguments are used to freeze a container build:
+Container mirroring supports the following arguments:
 
-- `--mirror`: Enable container mirror mode.
-- `--build-repo`: A target repository to save the built container to.
-- `--tower-token`: A Seqera Platform auth token so that Wave can access your private registry credentials. Not required if the `TOWER_ACCESS_TOKEN` environment variable is set.
+- `--mirror`: Enables container mirror mode.
+- `--build-repo`: Specifies the target repository to save the mirrored container.
+- `--tower-token`: Specifies a Seqera access token to access private registry credentials stored in Platform (not required if the `TOWER_ACCESS_TOKEN` environment variable is set).
 
 **Example usage**
 
-In the following example, the [`samtools:0.1.16--2`][samtools] container image is mirrored to a private DockerHub image registry. The `--tower-token` argument is not required if the `TOWER_ACCESS_TOKEN` environment variable is defined.
+Mirror the [`samtools:0.1.16--2`][samtools] container image to a private Docker Hub registry:
 
-```
+```bash
 wave -i quay.io/biocontainers/samtools:0.1.16--2 --mirror \
-  --build-repo docker.io/<USERNAME>/containers --tower-token <TOWER_TOKEN>
+  --build-repo docker.io/<USER>/containers --tower-token <TOWER_TOKEN>
 ```
 
 </details>

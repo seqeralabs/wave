@@ -28,7 +28,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.service.aws.cache.AwsEcrAuthToken
 import io.seqera.wave.service.aws.cache.AwsEcrCache
-import io.seqera.wave.store.cache.TieredKey
+import io.seqera.cache.tiered.TieredKey
 import io.seqera.wave.util.RegHelper
 import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
