@@ -26,7 +26,7 @@ import java.util.concurrent.TimeoutException
 
 import io.micronaut.context.annotation.Value
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.encoder.MoshiEncodeStrategy
+import io.seqera.serde.moshi.MoshiEncodeStrategy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
