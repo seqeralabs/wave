@@ -43,7 +43,8 @@ import jakarta.inject.Singleton
 class ScanConfig {
 
     /**
-     * Docker image of tool need to be used for container scanner
+     * Docker image of tool need to be used for container scanner.
+     * This unified image now handles both container and plugin scans via scan.sh script.
      */
     @Value('${wave.scan.image.name}')
     private String scanImage

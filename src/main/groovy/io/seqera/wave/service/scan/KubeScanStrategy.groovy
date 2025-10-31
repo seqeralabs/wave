@@ -68,9 +68,10 @@ class KubeScanStrategy extends ScanStrategy {
         try{
             Files.createDirectories(entry.workDir)
             final Path configFile = entry.configJson ? entry.workDir.resolve('config.json') : null
-            final command = trivyCommand(entry.containerImage, entry.workDir, entry.platform, scanConfig)
-            final selector = getSelectorLabel(entry.platform, nodeSelectorMap)
-            k8sService.launchScanJob(jobName, scanConfig.scanImage, command, entry.workDir, configFile, scanConfig, selector)
+
+            // Use unified scan image and command for both container and plugin scans
+            final command = buildScanCommand(entry.containerImage, entry.workDir, entry.platform, scanConfig)
+            k8sService.launchScanJob(jobName, scanConfig.scanImage, command, entry.workDir, configFile, scanConfig)
         }
         catch (ApiException e) {
             throw new BadRequestException("Unexpected scan failure: ${e.responseBody}", e)

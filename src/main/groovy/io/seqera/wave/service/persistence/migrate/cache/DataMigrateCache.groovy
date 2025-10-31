@@ -21,7 +21,7 @@ package io.seqera.wave.service.persistence.migrate.cache
 import java.time.Duration
 
 import groovy.transform.CompileStatic
-import io.seqera.wave.encoder.MoshiEncodeStrategy
+import io.seqera.serde.moshi.MoshiEncodeStrategy
 import io.seqera.wave.store.state.AbstractStateStore
 import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Singleton

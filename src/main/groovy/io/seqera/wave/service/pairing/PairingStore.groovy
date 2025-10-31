@@ -24,7 +24,7 @@ import javax.annotation.PostConstruct
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
-import io.seqera.wave.encoder.MoshiEncodeStrategy
+import io.seqera.serde.moshi.MoshiEncodeStrategy
 import io.seqera.wave.store.state.AbstractStateStore
 import io.seqera.wave.store.state.impl.StateProvider
 import jakarta.inject.Singleton
