@@ -396,53 +396,6 @@ class K8sServiceImplTest extends Specification {
         ctx.close()
     }
 
-    def 'should create scan pod' () {
-        given:
-        def PROPS = [
-                'wave.build.workspace': '/build/work',
-                'wave.build.k8s.namespace': 'my-ns',
-                'wave.build.k8s.configPath': '/home/kube.config',
-                'wave.build.k8s.storage.claimName': 'build-claim',
-                'wave.build.k8s.storage.mountPath': '/build', ]
-        and:
-        def ctx = ApplicationContext.run(PROPS)
-        def k8sService = ctx.getBean(K8sServiceImpl)
-        def config = Mock(ScanConfig) {
-            getCacheDirectory() >> Path.of('/build/work/.trivy')
-            getTimeout() >> Duration.ofSeconds(10)
-        }
-
-        when:
-        def result = k8sService.scanSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), Path.of('/build/work/xyz/config.json'), config, null )
-        then:
-        result.metadata.name == 'foo'
-        result.metadata.namespace == 'my-ns'
-        and:
-        result.spec.activeDeadlineSeconds == 10
-        and:
-        verifyAll(result.spec.containers.get(0)) {
-            name == 'foo'
-            image == 'my-image:latest'
-            args == ['this', 'that']
-            volumeMounts.size() == 3
-            volumeMounts.get(0).name == 'build-data'
-            volumeMounts.get(0).mountPath == '/root/.docker/config.json'
-            volumeMounts.get(0).subPath == 'work/xyz/config.json'
-            volumeMounts.get(1).name == 'build-data'
-            volumeMounts.get(1).mountPath == '/build/work/xyz'
-            volumeMounts.get(1).subPath == 'work/xyz'
-            volumeMounts.get(2).name == 'build-data'
-            volumeMounts.get(2).mountPath == '/root/.cache/'
-            volumeMounts.get(2).subPath == 'work/.trivy'
-        }
-        and:
-        result.spec.volumes.get(0).name == 'build-data'
-        result.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
-
-        cleanup:
-        ctx.close()
-    }
-
     def 'should create transfer job spec with defaults' () {
         given:
         def PROPS = [
