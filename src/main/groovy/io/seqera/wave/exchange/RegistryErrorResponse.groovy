@@ -23,7 +23,7 @@ import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Produces
-import io.seqera.wave.encoder.MoshiEncodeStrategy
+import io.seqera.serde.moshi.MoshiEncodeStrategy
 
 /**
  * Model a docker registry error response

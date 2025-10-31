@@ -28,7 +28,7 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.BuildEnabled
-import io.seqera.wave.encoder.MoshiEncodeStrategy
+import io.seqera.serde.moshi.MoshiEncodeStrategy
 import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildStateStore
