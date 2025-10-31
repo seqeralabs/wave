@@ -1,8 +1,8 @@
 ---
-title: Reduce Wave API calls
+title: Reducing Wave API calls
 description: Learn how to freeze containers and reduce API calls in large-scale Nextflow pipelines
 date created: 2025-09-30
-date edited: 2025-10-01
+date edited: 2025-10-31
 tags: [nextflow, wave, rate limits, guides]
 ---
 
@@ -31,9 +31,9 @@ When you pull a container image:
 
 Wave defines a pull as downloading both the container manifest and all layers. Therefore:
 
-- The manifest request to Wave counts as one pull against your rate limit.
-- Layer and blob requests don't count against rate limits.
-- A container image with 100 layers counts as 1 pull.
+- The manifest request to Wave counts as one pull against your rate limit
+- Layer and blob requests don't count against rate limits
+- A container image with 100 layers counts as 1 pull
 
 Rate limits affect pipelines with high concurrency. The following example demonstrates this issue:
 
@@ -143,7 +143,7 @@ Examples of native registries by cloud provider:
 - **Azure**: Azure Container Registry (ACR)
 - **Google Cloud**: Google Artifact Registry
 
-**Not recommended**: Third-party container registries
+**Not recommended**: Third-party container registries.
 
 Third-party registries (such as Docker Hub, Quay.io, or JFrog Artifactory) have the following limitations:
 
