@@ -6,18 +6,18 @@ date edited: 2025-10-01
 tags: [nextflow, wave, rate limits, guides]
 ---
 
-Wave rate limits can affect large-scale pipelines that pull container images across thousands of concurrent tasks. This guide shows you how to use Wave freeze to reduce API calls and avoid rate limits.
+Large-scale pipelines that pull container images across thousands of concurrent tasks can encounter Wave rate limits. This guide describes how to use Wave freeze to reduce API calls and avoid rate limits.
 
 ## API limits
 
 Wave applies rate limits to container builds and pulls (manifest requests). Authenticated users have higher rate limits than anonymous users.
 
-If an access token is provided, the following rate limits apply:
+If you provide a Platform access token, the following rate limits apply:
 
 - 250 container builds per hour
 - 2,000 container pulls (manifest requests) per minute
 
-If an access token isn't provided, the following rate limits apply:
+If you don't provide a Platform access token, the following rate limits apply:
 
 - 25 container builds per day
 - 100 container pulls (manifest requests) per hour
@@ -31,35 +31,38 @@ When you pull a container image:
 
 Wave defines a pull as downloading both the container manifest and all layers. Therefore:
 
-- The manifest request to Wave counts as one pull against your rate limit
-- Layer and blob requests don't count against rate limits
-- A container image with 100 layers counts as 1 pull
+- The manifest request to Wave counts as one pull against your rate limit.
+- Layer and blob requests don't count against rate limits.
+- A container image with 100 layers counts as 1 pull.
 
 Rate limits affect pipelines with high concurrency. The following example demonstrates this issue:
 
 - 50 concurrent pipeline runs
 - Each run spawns 10,000 tasks
 - Each task pulls a container image
-- Total: 500,000 manifest requests
+- 500,000 manifest requests are made
 
-This volume exceeds the 2,000 per minute limit and causes failed tasks and pipeline errors.
+This volume exceeds the 2,000 container pulls per minute limit and causes failed tasks and pipeline errors.
 
-## How Wave freeze to avoids rate limits
+## How Wave freeze avoids rate limits
 
-Wave freeze builds your container image once and stores it in your registry. After the initial build, the source for the container image manifest and layers are redirected to your private registry by Wave.
+Wave freeze builds your container image once and stores it in your registry. After the initial build, the source of the container image manifest and layers are redirected to your private registry by Wave.
 
 ### Building without Wave freeze
 
 When you run your pipeline without Wave freeze:
 
 1. Each task requests a manifest from Wave.
-1. Wave either retrieves the base image manifest from the source registry, builds the image from a Dockerfile, or builds the image from a Conda definition.
+1. Wave performs one of the following actions:
+    - Retrieves the base image manifest from the source registry
+    - Builds the image from a Dockerfile
+    - Builds the image from a Conda definition
 1. Wave injects the Fusion layer to the container image manifest.
 1. Wave stores the final manifest on Seqera infrastructure.
 1. Wave returns the modified manifest.
 1. Every task creates one API call to Wave.
 
-With thousands of concurrent tasks, this approach exceeds rate limits.
+This approach exceeds rate limits with thousands of concurrent tasks.
 
 ### Building with Wave freeze
 
@@ -77,14 +80,14 @@ When you run your pipeline with Wave freeze again:
 1. Wave finds the frozen images in your registry (matched by content hash).
 1. Wave returns the container URLs in the destination container registry without rebuilding.
 1. All tasks pull the image directly from your registry.
-1. The same frozen image serves many task executions.
+1. The frozen image serves many task executions.
 
-With freeze enabled, only the first API call to Wave counts towards your quota.
-Frozen images will be reused as long as the image and its configuration remain the same.
-Rate limit issues are eliminated because manifest requests happen at the registry level, not through Wave.
+With freeze enabled, only the first API call to Wave counts toward your quota.
+Wave reuses frozen images as long as the image and its configuration remain the same.
+This prevents rate limit issues because manifest requests happen at the registry level, not through Wave.
 
 :::note
-For stable container images, you can resolve container URLs using [`nextflow inspect`](https://nextflow.io/docs/latest/reference/cli.html#inspect) or [Wave CLI](../cli/index.md). Both tools generate Nextflow configuration files with resolved container registry URLs that you can you to configure your pipeline. Keep Wave enabled during active development or when using dynamic container features to build container images at runtime.
+For stable container images, you can resolve container URLs using [`nextflow inspect`](https://nextflow.io/docs/latest/reference/cli.html#inspect) or [Wave CLI](../cli/index.md). Both tools generate Nextflow configuration files with resolved container registry URLs that can be used to configure your pipeline. Keep Wave enabled during active development or when using dynamic container features to build container images at runtime.
 :::
 
 ## Configure Wave freeze
@@ -102,29 +105,30 @@ wave.build.cacheRepository = '<CACHE_REPOSITORY>' // Recommended
 
 Replace the following:
 
-- `<TOWER_ACCESS_TOKEN>`: your Seqera access token
+- `<TOWER_ACCESS_TOKEN>`: your Platform access token
 - `<BUILD_REPOSITORY>`: the container registry URL where Wave uploads built images
 - `<CACHE_REPOSITORY>`: the container registry URL for caching image layers built by the Wave service
 
 :::note
-Specify `wave.build.cacheRepository` to accelerate container builds.
+To accelerate container builds, specify `wave.build.cacheRepository`.
 The cache reuses unchanged layers to reduce build times and costs.
 :::
 
 :::note
-Fusion isn't required for Wave freeze.
-However, Fusion ensures that the frozen images contain the necessary components for optimal performance when when accessing cloud object storage.
+You can use Wave freeze without Fusion.
+However, it ensures that the frozen images contain the necessary components for optimal performance when accessing cloud object storage.
 :::
 
 ## Container image tags
 
 Use specific version tags (such as `ubuntu:22.04`) or SHA256 digests with Wave freeze.
-Specific tags enable Wave to match content hashes and reuse frozen images, which ensures reproducibility and eliminates unnecessary rebuilds.
-Avoid the `latest` tag because it points to different image versions over time.
+Specific tags enable Wave to match content hashes and reuse frozen images.
+This ensures reproducibility and eliminates unnecessary rebuilds.
+Avoid using the `latest` tag because it points to different image versions over time.
 
 ## Container registry selection
 
-**Recommended**: Use your cloud provider's native container registry for simplest setup and integration.
+**Recommended**: Use your cloud provider's native container registry for the simplest setup and integration.
 
 Native cloud registries have the following benefits:
 
@@ -147,4 +151,4 @@ Third-party registries (such as Docker Hub, Quay.io, or JFrog Artifactory) have 
 - Additional security overhead
 - More complex authentication setup
 
-If you use third-party registries, configure your credentials on each compute instance.
+If you use third-party registries, you must configure your credentials on each compute instance.
