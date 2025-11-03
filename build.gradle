@@ -101,12 +101,11 @@ dependencies {
     testRuntimeOnly 'com.h2database:h2'
     testImplementation testFixtures('io.seqera:lib-fixtures-redis:1.0.0')
     
-    // --
-    implementation 'ch.qos.logback:logback-classic:1.5.16'
-
     // rate limit
     implementation 'com.coveo:spillway:3.0.0'
-
+    // logging
+    implementation 'ch.qos.logback:logback-classic:1.5.20'
+    implementation 'ch.qos.logback:logback-core:1.5.20'
     // monitoring
     implementation 'io.micronaut.micrometer:micronaut-micrometer-core'
     implementation 'io.micronaut.micrometer:micronaut-micrometer-registry-prometheus'
