@@ -27,6 +27,7 @@ wave.log
 build-workspace/
 scan-workspace/
 /k8s/dev/config-k3d.yml
+/.wave-test
 
 # Docs
 .vercel
