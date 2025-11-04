@@ -24,7 +24,7 @@ import java.util.zip.DeflaterInputStream;
 import java.util.zip.InflaterInputStream;
 
 /**
- * Helper class to basic compress/decompress funcionality
+ * Helper class to basic compress/decompress functionality
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

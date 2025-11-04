@@ -32,7 +32,7 @@ public final class Base32 {
             -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, // `abcdefghijklmno
             15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25 // pqrstuvwxyz
     };
-    /* Messsages for Illegal Parameter Exceptions in decode() */
+    /* Messages for Illegal Parameter Exceptions in decode() */
     private static final String errorCanonicalLength = "non canonical Base32 string length";
     private static final String errorCanonicalEnd = "non canonical bits at end of Base32 string";
     private static final String errorInvalidChar = "invalid character in Base32 string";

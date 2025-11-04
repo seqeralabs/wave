@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 
 import io.seqera.wave.config.CondaOpts;
+import io.seqera.wave.config.CranOpts;
 
 /**
  * Model a Package environment requirements
@@ -29,7 +30,7 @@ import io.seqera.wave.config.CondaOpts;
  */
 public class PackagesSpec {
 
-    public enum Type { CONDA }
+    public enum Type { CONDA, CRAN }
 
     public Type type;
 
@@ -49,6 +50,11 @@ public class PackagesSpec {
     public CondaOpts condaOpts;
 
     /**
+     * CRAN build options
+     */
+    public CranOpts cranOpts;
+
+    /**
      * channels used for downloading packages
      */
     public List<String> channels;
@@ -62,12 +68,13 @@ public class PackagesSpec {
                 && Objects.equals(environment, that.environment)
                 && Objects.equals(entries, that.entries)
                 && Objects.equals(condaOpts, that.condaOpts)
+                && Objects.equals(cranOpts, that.cranOpts)
                 && Objects.equals(channels, that.channels);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, environment, entries, condaOpts, channels);
+        return Objects.hash(type, environment, entries, condaOpts, cranOpts, channels);
     }
 
     @Override
@@ -77,6 +84,7 @@ public class PackagesSpec {
                 ", envFile='" + environment + '\'' +
                 ", packages=" + entries +
                 ", condaOpts=" + condaOpts +
+                ", cranOpts=" + cranOpts +
                 ", channels=" + ObjectUtils.toString(channels) +
                 '}';
     }
@@ -103,6 +111,11 @@ public class PackagesSpec {
 
     public PackagesSpec withCondaOpts(CondaOpts opts) {
         this.condaOpts = opts;
+        return this;
+    }
+
+    public PackagesSpec withCranOpts(CranOpts opts) {
+        this.cranOpts = opts;
         return this;
     }
 
