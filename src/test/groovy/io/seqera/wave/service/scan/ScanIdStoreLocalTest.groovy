@@ -23,7 +23,7 @@ import spock.lang.Specification
 import java.time.Duration
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.store.state.CountParams
+import io.seqera.data.store.state.CountParams
 import jakarta.inject.Inject
 /**
  *

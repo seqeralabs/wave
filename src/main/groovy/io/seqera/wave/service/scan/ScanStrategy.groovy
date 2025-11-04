@@ -36,36 +36,45 @@ abstract class ScanStrategy {
 
     abstract void scanContainer(String jobName, ScanEntry entry)
 
-    protected List<String> scanCommand(String targetImage, Path workDir, ContainerPlatform platform, ScanConfig config, ScanType mode) {
-        List<String> cmd = ['trivy', '--quiet', 'image']
-        if( platform ) {
-            cmd << '--platform'
-            cmd << platform.toString()
-        }
-        cmd << '--timeout'
-        cmd << "${config.timeout.toMinutes()}m".toString()
-        cmd << '--format'
-        cmd << mode.format
-        cmd << '--output'
-        cmd << workDir.resolve(mode.output).toString()
-        cmd << '--cache-dir'
-        cmd << '/tmp/trivy-cache'
-        if( config.severity && mode==ScanType.Default ) {
+    /**
+     * Build unified scan command that works for both container and plugin scans
+     * The scan.sh script handles all the complexity internally
+     *
+     * Currently wave detects whether is a plugin or container scan based on the image name
+     * if image name container "nextflow/plugin" then it is a plugin scan otherwise container scan
+     * This is a work around we will improve using mediatype in future
+     * for more details see https://github.com/seqeralabs/wave/issues/919
+     *
+     * For container scans: [scanType, image, workDir, platform, timeout, severity, format]
+     * For plugin scans:    [scanType, plugin, workDir, timeout, severity, format]
+     */
+    protected List<String> buildScanCommand(String containerImage, Path workDir, ContainerPlatform platform, ScanConfig scanConfig) {
+        final scanType = containerImage.contains("nextflow/plugin") ? "plugin" : "container"
+
+        final platformStr = scanType == 'container' ? platform.toString() : "none"
+        final cmd = new ArrayList<String>()
+                << '/usr/local/bin/scan.sh'
+                << '--type'
+                << scanType
+                << '--target'
+                << containerImage
+                << '--work-dir'
+                << workDir.toString()
+                << '--platform'
+                << platformStr
+                << '--timeout'
+                << "${scanConfig.timeout.toMinutes()}".toString()
+                << '--format'
+                << 'default'
+                << '--cache-dir'
+                << Trivy.CACHE_MOUNT_PATH
+
+        if( scanConfig.severity ) {
             cmd << '--severity'
-            cmd << config.severity
+            cmd << scanConfig.severity
         }
-        cmd << targetImage
+
         return cmd
     }
 
-    protected List<String> trivyCommand(String containerImage, Path workDir, ContainerPlatform platform, ScanConfig scanConfig) {
-        final cmd = new ArrayList<String>(50)
-        // the vulnerability scan command
-        cmd.addAll(scanCommand(containerImage, workDir, platform, scanConfig, ScanType.Default) )
-        // command separator
-        cmd.add("&&")
-        // the SBOM spdx scan
-        cmd.addAll(scanCommand(containerImage, workDir, platform, scanConfig, ScanType.Spdx) )
-        return List.of(cmd.join(' '))
-    }
 }

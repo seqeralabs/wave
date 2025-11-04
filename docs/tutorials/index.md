@@ -4,11 +4,11 @@ description: Guides to get started with Wave.
 tags: [containers, nextflow, seqera containers, wave, wave cli]
 ---
 
-Wave is versatile and you can leverage it in your Nextflow pipelines in several ways. The following guides describe how to quickly get started with [Nextflow and Seqera Containers][seqera-containers-page], [Nextflow and Wave][nextflow-wave-page], and the [Wave CLI][wave-cli-page].
+You can leverage Wave in your Nextflow pipelines in several ways. The following guides show you how to get started with different Wave integration approaches:
 
-import DocCardList from "@theme/DocCardList";
-
-<DocCardList />
+- [Nextflow and Wave][nextflow-wave-page]: Provision containers with Wave directly from your Nextflow pipelines
+- [Nextflow and Seqera Containers][seqera-containers-page]: Provision containers through Seqera Containers and use them in your Nextflow pipelines
+- [Wave CLI][wave-cli-page]: Provision containers with the Wave CLI
 
 [seqera-containers-page]: /wave_docs/wave_repo/docs/tutorials/nextflow-seqera-containers.mdx
 [nextflow-wave-page]: /wave_docs/wave_repo/docs/tutorials/nextflow-wave.mdx

@@ -45,7 +45,7 @@ Use the following options to configure Wave build settings:
 
 `wave.build.cacheRepository`
 : Specifies the container repository URL for caching image layers built by the Wave service.
-  Requires corresponding credentials to be configured in your Platform account.
+  Requires corresponding credentials to be configured in your Seqera account.
 
 `wave.build.compression.force`
 : _Requires Nextflow version 25.05.0-edge or later._
@@ -71,7 +71,7 @@ Use the following options to configure Wave build settings:
 
 `wave.build.repository`
 : Specifies the container repository URL where Wave uploads built images.
-  Requires corresponding credentials to be configured in your Platform account.
+  Requires corresponding credentials to be configured in your Seqera account.
 
 ## Conda
 

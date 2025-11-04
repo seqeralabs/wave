@@ -23,7 +23,7 @@ import spock.lang.Specification
 import java.time.Instant
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.store.state.impl.LocalStateProvider
+import io.seqera.data.store.state.impl.LocalStateProvider
 import jakarta.inject.Inject
 
 @MicronautTest
