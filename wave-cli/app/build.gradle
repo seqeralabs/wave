@@ -105,6 +105,8 @@ graalvmNative {
             buildArgs.add('-R:MaxHeapSize=100M')
             buildArgs.add('-R:MinHeapSize=10M')
             buildArgs.add('-R:MaxNewSize=25M')
+            // Initialize logback classes at build time since they're used by static logger fields
+            buildArgs.add('--initialize-at-build-time=ch.qos.logback,org.slf4j')
         }
     }
     toolchainDetection = true
