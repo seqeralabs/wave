@@ -66,7 +66,7 @@ class YamlHelperTest extends Specification {
     def 'should convert response to yaml' () {
         given:
         def layers = [ new ObjectRef('text', 'sha256:12345', 100, null), new ObjectRef('text', 'sha256:67890', 200, null) ]
-        def manifest = new ManifestSpec(2, 'some/media', null, layers, [one: '1', two:'2'])
+        def manifest = new ManifestSpec(2, 'some/media', null, layers, [one: '1', two:'2'], 'application/vnd.oci.image.manifest.v1+json')
         def spec = new ContainerSpec('docker.io', 'https://docker.io', 'ubuntu','22.04','sha:12345', null, manifest)
         def resp = new ContainerInspectResponseEx(spec)
 
@@ -82,6 +82,7 @@ class YamlHelperTest extends Specification {
                 annotations:
                   one: '1'
                   two: '2'
+                artifactType: application/vnd.oci.image.manifest.v1+json
                 layers:
                 - digest: sha256:12345
                   mediaType: text

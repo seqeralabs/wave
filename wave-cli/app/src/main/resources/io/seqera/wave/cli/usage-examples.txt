@@ -15,6 +15,15 @@ Examples:
   # Build a container based on Conda lock file served via prefix.dev service
   wave --conda-package https://prefix.dev/envs/pditommaso/wave/conda-lock.yml
 
+  # Build a container based on CRAN packages
+  wave --cran-package dplyr=1.1.0 --cran-package ggplot2
+
+  # Build a container based on CRAN packages with custom R base image
+  wave --cran shiny --cran-base-image rocker/tidyverse:4.3.0
+
+  # Build a container based on CRAN packages using arm64 architecture
+  wave --cran dplyr --platform linux/arm64
+
   # Build a container getting a persistent image name
   wave -i alpine --freeze --build-repo docker.io/user/repo --tower-token <YOUR TOKEN>
 
@@ -23,6 +32,9 @@ Examples:
 
   # Build a Singularity container based on Conda packages
   wave --conda-package bamtools=2.5.2 --singularity --freeze --build-repo docker.io/user/repo
+
+  # Build a Singularity container based on CRAN packages
+  wave --cran-package dplyr --singularity --freeze --build-repo docker.io/user/repo
 
   # Copy a container image to another registry
   wave -i quay.io/biocontainers/bwa:0.7.15--0 --mirror --build-repository <YOUR REGISTRY> --tower-token <YOUR TOKEN>

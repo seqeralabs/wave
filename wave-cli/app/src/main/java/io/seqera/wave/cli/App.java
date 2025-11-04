@@ -55,6 +55,7 @@ import io.seqera.wave.cli.util.DurationConverter;
 import io.seqera.wave.cli.util.GptHelper;
 import io.seqera.wave.cli.util.YamlHelper;
 import io.seqera.wave.config.CondaOpts;
+import io.seqera.wave.config.CranOpts;
 import io.seqera.wave.util.DockerIgnoreFilter;
 import io.seqera.wave.util.Packer;
 import org.apache.commons.lang3.StringUtils;
@@ -156,6 +157,15 @@ public class App implements Runnable {
 
     @Option(names = {"--conda-channels"}, paramLabel = "''", description = "Conda channels used to build the container (default: ${DEFAULT-VALUE}).")
     private String condaChannels = DEFAULT_CONDA_CHANNELS;
+
+    @Option(names = {"--cran-package", "--cran"}, paramLabel = "''", description = "One or more CRAN packages used to build the container e.g. dplyr=1.1.0.")
+    private List<String> cranPackages;
+
+    @Option(names = {"--cran-base-image"}, paramLabel = "''", description = "R base image used to build the container (default: ${DEFAULT-VALUE}).")
+    private String cranBaseImage = CranOpts.DEFAULT_R_IMAGE;
+
+    @Option(names = {"--cran-run-command"}, paramLabel = "''", description = "Dockerfile RUN commands used to build the container.")
+    private List<String> cranRunCommands;
 
     @Option(names = {"--log-level"}, paramLabel = "''", description = "Set the application log level. One of: OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL")
     private String logLevel;
@@ -316,7 +326,7 @@ public class App implements Runnable {
         if( !isEmpty(image) && !isEmpty(containerFile) )
             throw new IllegalCliArgumentException("Argument --image and --containerfile conflict each other - Specify an image name or a container file for the container to be provisioned");
 
-        if( isEmpty(image) && isEmpty(containerFile) && isEmpty(condaFile) && condaPackages==null && isEmpty(prompt) )
+        if( isEmpty(image) && isEmpty(containerFile) && isEmpty(condaFile) && condaPackages==null && cranPackages==null && isEmpty(prompt) )
             throw new IllegalCliArgumentException("Provide either a image name or a container file for the Wave container to be provisioned");
 
         if( isEmpty(towerToken) && !isEmpty(buildRepository) )
@@ -337,6 +347,20 @@ public class App implements Runnable {
 
         if( condaPackages!=null && !isEmpty(containerFile) )
             throw new IllegalCliArgumentException("Option --conda-package and --containerfile conflict each other");
+
+        // -- check CRAN options
+        if( cranPackages!=null && !isEmpty(image) )
+            throw new IllegalCliArgumentException("Option --cran-package and --image conflict each other");
+
+        if( cranPackages!=null && !isEmpty(containerFile) )
+            throw new IllegalCliArgumentException("Option --cran-package and --containerfile conflict each other");
+
+        // -- mutual exclusivity between conda and CRAN
+        if( !isEmpty(condaFile) && cranPackages!=null )
+            throw new IllegalCliArgumentException("Option --conda-file and --cran-package conflict each other - conda packages and CRAN packages cannot be specified in the same command");
+
+        if( condaPackages!=null && cranPackages!=null )
+            throw new IllegalCliArgumentException("Option --conda-package and --cran-package conflict each other - conda packages and CRAN packages cannot be specified in the same command");
 
         if( !isEmpty(outputFormat) && !List.of("json","yaml").contains(outputFormat) ) {
             final String msg = String.format("Invalid output format: '%s' - expected value: json, yaml", outputFormat);
@@ -603,6 +627,13 @@ public class App implements Runnable {
                 ;
     }
 
+    private CranOpts cranOpts() {
+        return new CranOpts()
+                .withRImage(cranBaseImage)
+                .withCommands(cranRunCommands)
+                ;
+    }
+
     protected String containerFileBase64() {
         return !isEmpty(containerFile)
                 ? encodePathBase64(containerFile)
@@ -625,6 +656,14 @@ public class App implements Runnable {
                     .withCondaOpts(condaOpts())
                     .withEntries(condaPackages)
                     .withChannels(condaChannels())
+                    ;
+        }
+
+        if( !isEmpty(cranPackages) ) {
+            return new PackagesSpec()
+                    .withType(PackagesSpec.Type.CRAN)
+                    .withCranOpts(cranOpts())
+                    .withEntries(cranPackages)
                     ;
         }
 
