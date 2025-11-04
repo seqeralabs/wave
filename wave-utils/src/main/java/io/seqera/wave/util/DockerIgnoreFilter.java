@@ -44,7 +44,7 @@ public class DockerIgnoreFilter implements Predicate<Path> {
     final private Map<String, PathMatcher> mactherMap;
 
     /**
-     * Creates a filter with the specified list of glob ingore glob patterns
+     * Creates a filter with the specified list of glob ignore glob patterns
      *
      * @param ignoreGlobs A list of ignore glob patterns
      */
@@ -67,7 +67,7 @@ public class DockerIgnoreFilter implements Predicate<Path> {
      *      The {@link Path} to be tested
      * @return {@code true}
      *      when then path is valid i.e. should not be ignored; {@code false}
-     *      when the path matches one or more ignore globs and therefore it should not be acepted
+     *      when the path matches one or more ignore globs and therefore it should not be accepted
      */
     @Override
     public boolean test(Path path) {
