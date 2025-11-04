@@ -1,4 +1,7 @@
 # Wave changelog
+1.28.0 - 4 Nov 2024
+- Add CRAN package support for Wave container builds (#874) [81b4e6681]
+
 1.27.0 - 4 Nov 2024
 - Refactor state store to external library lib-data-store-state-redis [9b3fc3095]
 - Refactor future store to external library lib-data-store-future-redis [9b3fc3095]
