@@ -24,8 +24,8 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.serde.moshi.MoshiEncodeStrategy
-import io.seqera.wave.store.state.AbstractStateStore
-import io.seqera.wave.store.state.impl.StateProvider
+import io.seqera.data.store.state.AbstractStateStore
+import io.seqera.data.store.state.impl.StateProvider
 import jakarta.inject.Inject
 /**
  * Implement a distributed store for blob cache entry.
