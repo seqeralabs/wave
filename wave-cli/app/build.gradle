@@ -27,7 +27,6 @@ dependencies {
     implementation 'dev.failsafe:failsafe:3.1.0'
     implementation 'org.apache.commons:commons-lang3:3.19.0'
     implementation 'org.yaml:snakeyaml:2.1'
-    implementation 'dev.langchain4j:langchain4j-open-ai:0.29.0'
     implementation 'org.semver4j:semver4j:5.4.0'
     annotationProcessor 'info.picocli:picocli-codegen:4.6.1'
     // bump commons-io version to address security vulnerabilities

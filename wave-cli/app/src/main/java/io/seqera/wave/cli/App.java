@@ -32,7 +32,6 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
@@ -40,19 +39,30 @@ import java.util.stream.Collectors;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import io.seqera.wave.api.*;
+import io.seqera.wave.api.BuildCompression;
+import io.seqera.wave.api.BuildContext;
+import io.seqera.wave.api.ContainerConfig;
+import io.seqera.wave.api.ContainerInspectRequest;
+import io.seqera.wave.api.ContainerInspectResponse;
+import io.seqera.wave.api.ContainerLayer;
+import io.seqera.wave.api.ContainerStatusResponse;
+import io.seqera.wave.api.ImageNameStrategy;
+import io.seqera.wave.api.PackagesSpec;
+import io.seqera.wave.api.ScanLevel;
+import io.seqera.wave.api.ScanMode;
+import io.seqera.wave.api.ServiceInfo;
+import io.seqera.wave.api.SubmitContainerTokenRequest;
+import io.seqera.wave.api.SubmitContainerTokenResponse;
 import io.seqera.wave.cli.exception.BadClientResponseException;
 import io.seqera.wave.cli.exception.ClientConnectionException;
 import io.seqera.wave.cli.exception.IllegalCliArgumentException;
 import io.seqera.wave.cli.exception.ReadyTimeoutException;
 import io.seqera.wave.cli.json.JsonHelper;
 import io.seqera.wave.cli.model.ContainerInspectResponseEx;
-import io.seqera.wave.cli.model.ContainerSpecEx;
 import io.seqera.wave.cli.model.SubmitContainerTokenResponseEx;
 import io.seqera.wave.cli.util.BuildInfo;
 import io.seqera.wave.cli.util.CliVersionProvider;
 import io.seqera.wave.cli.util.DurationConverter;
-import io.seqera.wave.cli.util.GptHelper;
 import io.seqera.wave.cli.util.YamlHelper;
 import io.seqera.wave.config.CondaOpts;
 import io.seqera.wave.config.CranOpts;
@@ -64,7 +74,6 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import static io.seqera.wave.cli.util.Checkers.isEmpty;
 import static io.seqera.wave.cli.util.Checkers.isEnvVar;
-import static io.seqera.wave.cli.util.StreamHelper.tryReadStdin;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Option;
 
@@ -198,7 +207,7 @@ public class App implements Runnable {
     @Option(names = {"--name-strategy"}, paramLabel = "<value>", description = "Specify the name strategy for the container name, it can be 'none' or 'tagPrefix' or 'imageSuffix'")
     private ImageNameStrategy nameStrategy;
 
-    @Option(names = {"-m","--mirror"}, paramLabel = "false", description = "Enable container mirror mode'")
+    @Option(names = {"-m","--mirror"}, paramLabel = "false", description = "Enable container mirror mode")
     private boolean mirror;
 
     @Option(names = {"--scan-mode"}, paramLabel = "<value>", description = "Specify container security scan mode, it can be 'none', 'async' or 'required'")
@@ -209,21 +218,6 @@ public class App implements Runnable {
 
     @Option(names = {"--build-compression"}, paramLabel = "<value>", description = "Specify the compression algorithm to be used for the build context, it can be 'gzip', 'zstd' or 'estargz'")
     private BuildCompression.Mode buildCompression;
-
-
-    @CommandLine.Parameters
-    List<String> prompt;
-
-    static private String[] makeArgs(String[] args) {
-        String stdin = tryReadStdin();
-        if( stdin==null )
-            return args;
-
-        List<String> result = new ArrayList<>(Arrays.asList(args));
-        result.add("--");
-        result.add(stdin);
-        return result.toArray(new String[args.length+2]);
-    }
 
     public static void main(String[] args) {
         try {
@@ -239,11 +233,7 @@ public class App implements Runnable {
                 .usageMessage()
                 .footer(readExamples("usage-examples.txt"));
 
-            final CommandLine.ParseResult result = cli.parseArgs(makeArgs(args));
-            if( !result.originalArgs().contains("--") ) {
-                // reset prompt if `-- was not entered
-                app.prompt=null;
-            }
+            final CommandLine.ParseResult result = cli.parseArgs(args);
 
             if( result.matchedArgs().size()==0 || result.isUsageHelpRequested() ) {
                 cli.usage(System.out);
@@ -326,7 +316,7 @@ public class App implements Runnable {
         if( !isEmpty(image) && !isEmpty(containerFile) )
             throw new IllegalCliArgumentException("Argument --image and --containerfile conflict each other - Specify an image name or a container file for the container to be provisioned");
 
-        if( isEmpty(image) && isEmpty(containerFile) && isEmpty(condaFile) && condaPackages==null && cranPackages==null && isEmpty(prompt) )
+        if( isEmpty(image) && isEmpty(containerFile) && isEmpty(condaFile) && condaPackages==null && cranPackages==null )
             throw new IllegalCliArgumentException("Provide either a image name or a container file for the Wave container to be provisioned");
 
         if( isEmpty(towerToken) && !isEmpty(buildRepository) )
@@ -664,10 +654,6 @@ public class App implements Runnable {
                     .withCranOpts(cranOpts())
                     .withEntries(cranPackages)
                     ;
-        }
-
-        if( !isEmpty(prompt) ) {
-            return GptHelper.grabPackages(prompt.stream().collect(Collectors.joining(" ")));
         }
 
         return null;

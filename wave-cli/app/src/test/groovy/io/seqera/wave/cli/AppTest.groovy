@@ -475,17 +475,6 @@ class AppTest extends Specification {
         app.@await == Duration.ofMinutes(15)
     }
     
-    def 'should generate a container' () {
-        given:
-        def app = new App()
-        String[] args = [ 'Get a docker container']
-
-        when:
-        new CommandLine(app).parseArgs(args)
-        then:
-        app.prompt == ['Get a docker container']
-    }
-
     def 'should get the correct name strategy'(){
         given:
         def app = new App()
@@ -537,7 +526,7 @@ class AppTest extends Specification {
     def 'should fail when specifying mirror registry and container file' () {
         given:
         def app = new App()
-        String[] args = ["--mirror", "true", "-f", "foo"]
+        String[] args = ["--mirror", "-f", "foo"]
 
         when:
         def cli = new CommandLine(app)
@@ -553,7 +542,7 @@ class AppTest extends Specification {
     def 'should fail when specifying mirror registry and conda package' () {
         given:
         def app = new App()
-        String[] args = ["--mirror", "true", "--conda-package", "foo"]
+        String[] args = ["--mirror", "--conda-package", "foo"]
 
         when:
         def cli = new CommandLine(app)
@@ -569,7 +558,7 @@ class AppTest extends Specification {
     def 'should fail when specifying mirror registry and freeze' () {
         given:
         def app = new App()
-        String[] args = ["--mirror", "true", "--image", "foo", "--freeze"]
+        String[] args = ["--mirror", "--image", "foo", "--freeze"]
 
         when:
         def cli = new CommandLine(app)
@@ -585,7 +574,7 @@ class AppTest extends Specification {
     def 'should fail when specifying mirror and missing build repo' () {
         given:
         def app = new App()
-        String[] args = ["--mirror", "true"]
+        String[] args = ["--mirror", "--image", "foo"]
 
         when:
         def cli = new CommandLine(app)
