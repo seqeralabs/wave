@@ -617,7 +617,7 @@ class ContainerHelperTest extends Specification {
         then:
         result.contains('FROM rocker/r-ver:4.4.1')
         result.contains('install2.r')
-        result.contains('dplyr ggplot2 bioc::GenomicRanges')
+        result.contains("'dplyr' 'ggplot2' BiocManager::install('GenomicRanges')")
         result.contains('R_LIBS_USER="/usr/local/lib/R/site-library"')
     }
 
@@ -635,7 +635,7 @@ class ContainerHelperTest extends Specification {
         result.contains('BootStrap: docker')
         result.contains('From: rocker/r-ver:4.4.1')
         result.contains('install2.r')
-        result.contains('tidyverse data.table')
+        result.contains("'tidyverse' 'data.table'")
         result.contains('export R_LIBS_USER="/usr/local/lib/R/site-library"')
     }
 
