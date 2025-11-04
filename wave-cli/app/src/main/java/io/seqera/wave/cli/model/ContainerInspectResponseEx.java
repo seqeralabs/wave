@@ -19,6 +19,8 @@ package io.seqera.wave.cli.model;
 
 import io.seqera.wave.api.ContainerInspectResponse;
 import io.seqera.wave.core.spec.ContainerSpec;
+import io.seqera.wave.core.spec.IndexSpec;
+import io.seqera.wave.model.ContainerOrIndexSpec;
 
 /**
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -26,10 +28,27 @@ import io.seqera.wave.core.spec.ContainerSpec;
 public class ContainerInspectResponseEx extends ContainerInspectResponse  {
 
     public ContainerInspectResponseEx(ContainerInspectResponse response) {
-        super(new ContainerSpecEx(response.getContainer()));
+        // Convert to ContainerOrIndexSpec based on what's present
+        super(toContainerOrIndexSpec(response));
     }
 
     public ContainerInspectResponseEx(ContainerSpec spec) {
         super(new ContainerSpecEx(spec));
+    }
+
+    public ContainerInspectResponseEx(IndexSpec index) {
+        super(index);
+    }
+
+    private static ContainerOrIndexSpec toContainerOrIndexSpec(ContainerInspectResponse response) {
+        if( response.getContainer() != null ) {
+            return new ContainerOrIndexSpec(new ContainerSpecEx(response.getContainer()));
+        }
+        else if( response.getIndex() != null ) {
+            return new ContainerOrIndexSpec(response.getIndex());
+        }
+        else {
+            throw new IllegalArgumentException("Container inspect response contains neither container nor index");
+        }
     }
 }

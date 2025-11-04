@@ -461,8 +461,7 @@ public class App implements Runnable {
                 ;
 
         final ContainerInspectResponse resp = client.inspect(req);
-        final ContainerSpecEx spec = new ContainerSpecEx(resp.getContainer());
-        System.out.println(dumpOutput(new ContainerInspectResponseEx(spec)));
+        System.out.println(dumpOutput(new ContainerInspectResponseEx(resp)));
     }
 
     @Override
