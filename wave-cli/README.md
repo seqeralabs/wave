@@ -11,6 +11,7 @@ that it can be used in your Docker (replace-with-your-own-fav-container-engine) 
 
 * Build container images on-demand for a given container file (aka Dockerfile);
 * Build container images on-demand based on one or more [Conda](https://conda.io/) packages;
+* Build container images on-demand based on one or more R/[CRAN](https://cran.r-project.org/) packages;
 * Build container images for a specified target platform (currently linux/amd64 and linux/arm64);
 * Push and cache built containers to a user-provided container repository;
 * Push Singularity native container images to OCI-compliant registries;
