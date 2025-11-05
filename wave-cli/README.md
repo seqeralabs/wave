@@ -33,6 +33,9 @@ If you use [Homebrew](https://brew.sh/), you can install like this:
  brew install seqeralabs/tap/wave-cli
 ```
 
+> [!TIP]
+> If you cannot find the latest version, run `brew update` to refresh your local Homebrew database.
+
 ### Get started
 
 1. Create a basic Dockerfile file (or use an existing one)
