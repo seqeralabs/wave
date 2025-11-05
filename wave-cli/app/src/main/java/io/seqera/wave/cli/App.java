@@ -735,7 +735,7 @@ public class App implements Runnable {
     }
 
     protected String serviceVersion() {
-        return serviceVersion0(getServiceVersion(), "1.13.0");
+        return serviceVersion0(getServiceVersion(), "1.28.0");
     }
 
     protected String serviceVersion0(String current, String required) {
