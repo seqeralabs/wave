@@ -1,5 +1,15 @@
 WAVE CLI CHANGE-LOG
 ===================
+1.7.0 - 5 Nov 2025
+- Add support for CRAN packages (requires Wave backend 1.28.0 or later) [c647027]
+- Add support for container index inspection [d17c1c3]
+- Remove prompt support and AI-assisted package generation [906c776]
+- Fix GraalVM native image build failure [e8c5efe]
+- Bump commons-lang3 to version 3.19.0 [5183d15]
+- Bump foojay-resolver-convention to version 1.0.0 [c315925]
+- Bump wave-api and wave-utils to 1.28.0 [c647027]
+- Update vulnerable logback dependency [ca7143d]
+
 1.6.1 - 24 May 2025
 - Add --build-compression option 
 
