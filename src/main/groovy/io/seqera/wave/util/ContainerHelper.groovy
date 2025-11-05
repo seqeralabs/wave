@@ -28,6 +28,7 @@ import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.config.CondaOpts
+import io.seqera.wave.config.CranOpts
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.builder.BuildFormat
@@ -41,6 +42,10 @@ import static io.seqera.wave.util.DockerHelper.condaFileToSingularityFile
 import static io.seqera.wave.util.DockerHelper.condaPackagesToCondaYaml
 import static io.seqera.wave.util.DockerHelper.condaPackagesToDockerFile
 import static io.seqera.wave.util.DockerHelper.condaPackagesToSingularityFile
+import static io.seqera.wave.util.CranHelper.cranPackagesToDockerFile
+import static io.seqera.wave.util.CranHelper.cranPackagesToSingularityFile
+import static io.seqera.wave.util.CranHelper.cranFileToDockerFile
+import static io.seqera.wave.util.CranHelper.cranFileToSingularityFile
 /**
  * Container helper methods
  *
@@ -74,6 +79,23 @@ class ContainerHelper {
                 result = formatSingularity
                         ? condaFileToSingularityFile(spec.condaOpts)
                         : condaFileToDockerFile(spec.condaOpts)
+            }
+            return result
+        }
+
+        if( spec.type == PackagesSpec.Type.CRAN ) {
+            if( !spec.cranOpts )
+                spec.cranOpts = new CranOpts()
+            def result
+            if ( spec.entries ) {
+                final String packages = spec.entries.join(' ')
+                result = formatSingularity
+                        ? cranPackagesToSingularityFile(packages, spec.channels, spec.cranOpts)
+                        : cranPackagesToDockerFile(packages, spec.channels, spec.cranOpts)
+            } else {
+                result = formatSingularity
+                        ? cranFileToSingularityFile(spec.cranOpts)
+                        : cranFileToDockerFile(spec.cranOpts)
             }
             return result
         }

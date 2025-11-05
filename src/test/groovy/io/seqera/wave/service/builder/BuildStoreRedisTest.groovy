@@ -33,7 +33,7 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.impl.BuildStateStoreImpl
 import io.seqera.wave.service.job.JobFactory
 import io.seqera.wave.service.job.JobProcessingQueue
-import io.seqera.wave.store.state.impl.RedisStateProvider
+import io.seqera.data.store.state.impl.RedisStateProvider
 import io.seqera.wave.tower.PlatformId
 /**
  *

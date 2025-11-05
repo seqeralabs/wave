@@ -26,6 +26,7 @@ import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.data.queue.MessageQueue
+import io.seqera.serde.moshi.MoshiEncodeStrategy
 import io.seqera.wave.service.data.queue.BaseMessageQueue
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import jakarta.inject.Named
@@ -64,5 +65,10 @@ class PairingOutboundQueue extends BaseMessageQueue<PairingMessage> {
     @PreDestroy
     void close() {
         super.close()
+    }
+
+    @Override
+    protected MoshiEncodeStrategy<PairingMessage> createEncodingStrategy() {
+        return PairingMessageEncodeStrategy.create()
     }
 }

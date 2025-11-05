@@ -22,7 +22,7 @@ import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
-import io.seqera.wave.store.state.CountResult
+import io.seqera.data.store.state.CountResult
 
 /**
  * Define build request store operations

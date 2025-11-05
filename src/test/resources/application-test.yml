@@ -54,13 +54,13 @@ wave:
     workspace: 'build-workspace'
     logs:
       enabled: true
-      path: "wave-test/logs"
+      path: ".wave-test/logs"
     locks:
-      path: "wave-test/conda-locks"
+      path: ".wave-test/conda-locks"
   scan:
     enabled: true
     reports:
-      path: "wave-test/scans"
+      path: ".wave-test/scans"
 ---
 logger:
   levels:
