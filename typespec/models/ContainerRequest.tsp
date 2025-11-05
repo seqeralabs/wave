@@ -1,5 +1,5 @@
 import "./ContainerConfig.tsp";
-import "./CondaPackages.tsp";
+import "./PackagesSpec.tsp";
 import "./ScanMode.tsp";
 import "./ScanLevel.tsp";
 
@@ -39,8 +39,8 @@ model ContainerRequest {
   @doc("The name strategy to be used to create the name of the container built by Wave. Its values can be `none`, `tagPrefix`, or `imageSuffix`. ")
   nameStrategy?: "none" | "tagPrefix" | "imageSuffix";
   mirror?: boolean;
-  @doc("Conda packages to be installed in the container.")
-  packages?: CondaPackages;
+  @doc("Packages to be installed in the container.")
+  packages?: PackagesSpec;
   scanMode?: ScanMode;
   scanLevels?: ScanLevel[];
   @doc("Request submission timestamp using ISO-8601.")

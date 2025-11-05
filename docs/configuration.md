@@ -165,7 +165,7 @@ Configure how Wave builds container images and manages associated logs for monit
 Configure how Wave stores and delivers build logs from containers and Kubernetes pods, which can be retrieved later or included in build completion emails, with the following options:
 
 `wave.build.locks.path` *(required)*
-: Sets the path inside `wave.build.logs.bucket` where Wave will store conda lock files.
+: Sets the path inside `wave.build.logs.bucket` where Wave will store Conda lock files.
 
 `wave.build.logs.bucket` *(required)*
 : Sets the AWS S3 bucket where Wave will store build process logs.
@@ -211,13 +211,13 @@ Configure Kubernetes-specific settings for Wave, where build and scan processes 
 
 ## Container scan process
 
-Configure how Wave's vulnerability scanning process uses a [Trivy docker image](https://hub.docker.com/r/aquasec/trivy) with customizable tags and severity levels with the following options:
+Configure how Wave's vulnerability scanning process uses a [Trivy Docker image](https://hub.docker.com/r/aquasec/trivy) with customizable tags and severity levels with the following options:
 
 `wave.scan.enabled` *(optional)*
 : Enables vulnerability scanning (default: `true`).
 
 `wave.scan.image.name`  *(optional)*
-: Sets the [Trivy docker image](https://hub.docker.com/r/aquasec/trivy) to use for container security scanning (default: `aquasec/trivy:0.47.0`).
+: Sets the [Trivy Docker image](https://hub.docker.com/r/aquasec/trivy) to use for container security scanning (default: `aquasec/trivy:0.47.0`).
 
 `wave.scan.reports.path` *(required)*
 : Sets the path inside the S3 bucket where Wave will store SBOM reports.

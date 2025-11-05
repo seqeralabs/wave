@@ -28,6 +28,7 @@ import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.config.CondaOpts
+import io.seqera.wave.config.CranOpts
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.builder.BuildFormat
@@ -601,6 +602,75 @@ class ContainerHelperTest extends Specification {
         then:
         thrown(BadRequestException)
 
+    }
+
+    def 'should create cran docker file with packages'() {
+        given:
+        def REPOSITORIES = ['cran', 'bioconductor']
+        def CRAN_OPTS = new CranOpts([rImage: 'rocker/r-ver:4.4.1', basePackages: 'littler r-cran-docopt'])
+        def PACKAGES = ['dplyr', 'ggplot2', 'bioc::GenomicRanges']
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CRAN, entries: PACKAGES, channels: REPOSITORIES, cranOpts: CRAN_OPTS)
+
+        when:
+        def result = ContainerHelper.containerFileFromPackages(packages, false)
+
+        then:
+        result.contains('FROM rocker/r-ver:4.4.1')
+        result.contains('install2.r')
+        result.contains("'dplyr' 'ggplot2' BiocManager::install('GenomicRanges')")
+        result.contains('R_LIBS_USER="/usr/local/lib/R/site-library"')
+    }
+
+    def 'should create cran singularity file with packages'() {
+        given:
+        def REPOSITORIES = ['cran']
+        def CRAN_OPTS = new CranOpts([rImage: 'rocker/r-ver:4.4.1'])
+        def PACKAGES = ['tidyverse', 'data.table']
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CRAN, entries: PACKAGES, channels: REPOSITORIES, cranOpts: CRAN_OPTS)
+
+        when:
+        def result = ContainerHelper.containerFileFromPackages(packages, true)
+
+        then:
+        result.contains('BootStrap: docker')
+        result.contains('From: rocker/r-ver:4.4.1')
+        result.contains('install2.r')
+        result.contains("'tidyverse' 'data.table'")
+        result.contains('export R_LIBS_USER="/usr/local/lib/R/site-library"')
+    }
+
+    def 'should create cran docker file without packages (file mode)'() {
+        given:
+        def CRAN_OPTS = new CranOpts([rImage: 'rocker/r-ver:4.4.1'])
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CRAN, cranOpts: CRAN_OPTS)
+
+        when:
+        def result = ContainerHelper.containerFileFromPackages(packages, false)
+
+        then:
+        result.contains('FROM rocker/r-ver:4.4.1')
+        result.contains('COPY --from=wave_context_dir . .')
+        result.contains('renv.lock')
+        result.contains('install.R')
+        result.contains('R_LIBS_USER="/usr/local/lib/R/site-library"')
+    }
+
+    def 'should create cran singularity file without packages (file mode)'() {
+        given:
+        def CRAN_OPTS = new CranOpts([rImage: 'rocker/r-ver:4.4.1', basePackages: 'build-essential'])
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CRAN, cranOpts: CRAN_OPTS)
+
+        when:
+        def result = ContainerHelper.containerFileFromPackages(packages, true)
+
+        then:
+        result.contains('BootStrap: docker')
+        result.contains('From: rocker/r-ver:4.4.1')
+        result.contains('%files')
+        result.contains('/opt/wave_context_dir')
+        result.contains('build-essential')
+        result.contains('renv.lock')
+        result.contains('export R_LIBS_USER="/usr/local/lib/R/site-library"')
     }
 
 }

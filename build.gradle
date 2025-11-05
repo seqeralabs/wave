@@ -41,12 +41,14 @@ dependencies {
     implementation 'io.seqera:lib-retry:2.0.0'
     implementation 'io.seqera:lib-random:1.0.0'
     implementation 'io.seqera:lib-activator:1.0.0'
-    implementation 'io.seqera:wave-api:0.16.0'
-    implementation 'io.seqera:wave-utils:1.0.0'
+    implementation project(':wave-api')
+    implementation project(':wave-utils')
+    implementation 'io.seqera:lib-data-store-state-redis:1.0.0'
+    implementation 'io.seqera:lib-data-store-future-redis:1.0.0'
     implementation 'io.seqera:lib-crypto:1.0.0'
     implementation 'io.seqera:jedis-lock:1.0.0'
-    implementation 'io.seqera:lib-data-queue-redis:1.1.0'
-    implementation 'io.seqera:lib-data-stream-redis:1.1.0'
+    implementation 'io.seqera:lib-data-queue-redis:1.1.1'
+    implementation 'io.seqera:lib-data-stream-redis:1.1.2'
     implementation 'io.micronaut:micronaut-http-client'
     implementation 'io.micronaut:micronaut-jackson-databind'
     implementation 'io.micronaut.groovy:micronaut-runtime-groovy'
@@ -101,12 +103,11 @@ dependencies {
     testRuntimeOnly 'com.h2database:h2'
     testImplementation testFixtures('io.seqera:lib-fixtures-redis:1.0.0')
     
-    // --
-    implementation 'ch.qos.logback:logback-classic:1.5.16'
-
     // rate limit
     implementation 'com.coveo:spillway:3.0.0'
-
+    // logging
+    implementation 'ch.qos.logback:logback-classic:1.5.20'
+    implementation 'ch.qos.logback:logback-core:1.5.20'
     // monitoring
     implementation 'io.micronaut.micrometer:micronaut-micrometer-core'
     implementation 'io.micronaut.micrometer:micronaut-micrometer-registry-prometheus'

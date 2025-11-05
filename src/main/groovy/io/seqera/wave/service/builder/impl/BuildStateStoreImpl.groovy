@@ -32,10 +32,10 @@ import io.seqera.serde.moshi.MoshiEncodeStrategy
 import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildStateStore
-import io.seqera.wave.store.state.AbstractStateStore
-import io.seqera.wave.store.state.CountParams
-import io.seqera.wave.store.state.CountResult
-import io.seqera.wave.store.state.impl.StateProvider
+import io.seqera.data.store.state.AbstractStateStore
+import io.seqera.data.store.state.CountParams
+import io.seqera.data.store.state.CountResult
+import io.seqera.data.store.state.impl.StateProvider
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 /**

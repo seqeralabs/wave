@@ -30,7 +30,7 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.impl.BuildStateStoreImpl
-import io.seqera.wave.store.state.impl.LocalStateProvider
+import io.seqera.data.store.state.impl.LocalStateProvider
 import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
 import jakarta.inject.Named

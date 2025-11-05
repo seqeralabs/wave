@@ -1,4 +1,15 @@
 # Wave changelog
+1.28.0 - 4 Nov 2024
+- Add CRAN package support for Wave container builds (#874) [81b4e6681]
+
+1.27.0 - 4 Nov 2024
+- Refactor state store to external library lib-data-store-state-redis [9b3fc3095]
+- Refactor future store to external library lib-data-store-future-redis [9b3fc3095]
+- Upgrade lib-data-queue-redis to version 1.1.1 [9b3fc3095]
+- Upgrade lib-data-stream-redis to version 1.1.2 [9b3fc3095]
+- Extract distributed state management to reusable library [9b3fc3095]
+- Extract distributed future handling to reusable library [9b3fc3095]
+
 1.26.1 - 23 Oct 2025
 - Refactor MoshiEncodeStrategy to remove Wave-specific polymorphic type adapters (#922) [abc71280d]
 - Bump lib-retry version 2.0.0 [63edabf95]

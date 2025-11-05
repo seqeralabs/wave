@@ -24,7 +24,7 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.service.job.JobEntry
-import io.seqera.wave.store.state.StateEntry
+import io.seqera.data.store.state.StateEntry
 
 /**
  * Model a blob cache metadata entry

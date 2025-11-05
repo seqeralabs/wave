@@ -22,8 +22,8 @@ import java.time.Duration
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
-import io.seqera.wave.service.data.future.AbstractFutureStore
-import io.seqera.wave.service.data.future.FutureHash
+import io.seqera.data.store.future.AbstractFutureStore
+import io.seqera.data.store.future.FutureHash
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import jakarta.inject.Singleton
 /**
