@@ -54,9 +54,10 @@ class RedisFactory {
             @Value('${redis.pool.maxIdle:10}') int maxIdle,
             @Value('${redis.pool.maxTotal:50}') int maxTotal,
             @Value('${redis.client.timeout:5000}') int timeout,
-            @Nullable @Value('${redis.password}') String password
+            @Nullable @Value('${redis.password}') String password,
+            @Nullable @Value('${redis.database}') Integer database
     ) {
-        log.info "Using redis ${connection} as storage for rate limit - pool minIdle: ${minIdle}; maxIdle: ${maxIdle}; maxTotal: ${maxTotal}; timeout: ${timeout}"
+        log.info "Using redis ${connection} as storage for rate limit - pool minIdle: ${minIdle}; maxIdle: ${maxIdle}; maxTotal: ${maxTotal}; timeout: ${timeout}; database: ${database}"
 
         final uri = URI.create(connection)
         // pool config
@@ -65,7 +66,7 @@ class RedisFactory {
         config.setMaxIdle(maxIdle)
         config.setMaxTotal(maxTotal)
         // client config
-        final clientConfig = clientConfig(uri, password, timeout)
+        final clientConfig = clientConfig(uri, password, timeout, database)
         // create the jedis pool
         final result = new JedisPool(config, JedisURIHelper.getHostAndPort(uri), clientConfig)
         // Instrument the internal pool
@@ -74,20 +75,28 @@ class RedisFactory {
         return result
     }
 
-    protected JedisClientConfig clientConfig(URI uri, String password, int timeout) {
+    protected JedisClientConfig clientConfig(URI uri, String password, int timeout, Integer database) {
         if (!JedisURIHelper.isValid(uri)) {
             throw new InvalidURIException("Invalid Redis connection URI: ${uri}")
         }
 
-        return DefaultJedisClientConfig.builder().connectionTimeoutMillis(timeout)
+        final builder = DefaultJedisClientConfig.builder()
+                .connectionTimeoutMillis(timeout)
                 .socketTimeoutMillis(timeout)
                 .blockingSocketTimeoutMillis(timeout)
                 .user(JedisURIHelper.getUser(uri))
                 .password(password?:JedisURIHelper.getPassword(uri))
-                .database(JedisURIHelper.getDBIndex(uri))
                 .protocol(JedisURIHelper.getRedisProtocol(uri))
                 .ssl(JedisURIHelper.isRedisSSLScheme(uri))
-                .build()
+
+        // Prefer explicit database parameter over URI database index
+        if (database != null) {
+            builder.database(database)
+        } else {
+            builder.database(JedisURIHelper.getDBIndex(uri))
+        }
+
+        return builder.build()
     }
 
 }

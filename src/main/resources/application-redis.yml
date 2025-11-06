@@ -1,6 +1,7 @@
 ---
 redis:
   uri: redis://${REDIS_HOST:redis}:${REDIS_PORT:6379}
+  database: ${REDIS_DATABASE:0}
   pool:
     enabled: true
 ...

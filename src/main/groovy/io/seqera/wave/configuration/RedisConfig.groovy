@@ -32,4 +32,6 @@ interface RedisConfig {
 
     String getUri()
 
+    Integer getDatabase()
+
 }

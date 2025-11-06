@@ -266,6 +266,11 @@ Configure Redis with the following options:
 `redis.client.timeout` *(optional)*
 : Sets the timeout duration (in milliseconds) for Redis client operations (default: `5000` (5 seconds)).
 
+`redis.database` *(optional)*
+: Specifies the Redis database number to use (default: `0`).
+  Valid values are 0-15 for most Redis installations.
+  Can be set using the `${REDIS_DATABASE}` environment variable.
+
 `redis.password` *(optional)*
 : Specifies the password used to authenticate with the Redis server.
   Can be set using the `${REDIS_PASSWORD}` environment variable.
