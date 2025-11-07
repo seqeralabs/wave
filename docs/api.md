@@ -184,14 +184,17 @@ The endpoint returns the name of the container request made available by Wave.
 | `towerEndpoint`                     | Seqera Platform service endpoint from where container registry credentials are retrieved (optional). Default `https://api.cloud.seqera.io`.                       |
 | `towerAccessToken`                  | Access token of the user account granting access to the Seqera Platform service specified via `towerEndpoint` (optional).                      |
 | `towerWorkspaceId`                  | ID of the Seqera Platform workspace from where the container registry credentials are retrieved (optional). When omitted the personal workspace is used. |
-| `packages`                          | This object specifies Conda packages environment information.                                                                                         |
+| `packages`                          | This object specifies Conda or CRAN packages environment information.                                                                                         |
 | `environment`                       | The package environment file encoded as a base64 string.                                                                                                       |
-| `type`                              | This represents the type of package builder. Use `CONDA`.                                                                                   |
+| `type`                              | This represents the type of package builder. Use `CONDA` or `CRAN`.                                                                                   |
 | `entries`                           | List of the packages names.                                                                                                                                    |
-| `channels`                          | List of Conda channels, which will be used to download packages.                                                                                               |
+| `channels`                          | List of Conda channels or CRAN repositories, which will be used to download packages.                                                                                               |
+| `condaOpts`                         | Conda build options (when type is CONDA).                                                                                                                      |
 | `mambaImage`                        | Name of the Docker image used to build Conda containers.                                                                                              |
 | `commands`                          | Command to be included in the container.                                                                                                                       |
 | `basePackages`                      | Names of base packages.                                                                                                                                        |
+| `cranOpts`                          | CRAN build options (when type is CRAN).                                                                                                                        |
+| `rImage`                            | Name of the R Docker image used to build CRAN containers (e.g., `rocker/r-ver:4.4.1`).                                                                         |
 | `nameStrategy`                      | The name strategy to be used to create the name of the container built by Wave. Its values can be `none`, `tagPrefix`, or `imageSuffix`.                       |                                                     |
 
 ### Response
@@ -281,6 +284,83 @@ curl --location 'http://localhost:9090/v1alpha2/container' \
 
 :::note
 You must add your container registry credentials in Seqera Platform to use the freeze feature. This is a requirement for Singularity.
+:::
+
+3. Create Docker image with CRAN packages:
+
+##### Request
+
+```shell
+curl --location 'http://localhost:9090/v1alpha2/container' \
+--header 'Content-Type: application/json' \
+--data '{
+    "packages":{
+        "type": "CRAN",
+        "entries": ["dplyr", "ggplot2"],
+        "channels": ["cran"],
+        "cranOpts": {
+            "rImage": "rocker/r-ver:4.4.1",
+            "basePackages": "littler r-cran-docopt"
+        }
+    }
+}'
+```
+
+#### Response
+
+```json
+{
+    "containerToken":"a3f9c8d2e7b1",
+    "targetImage":"wave.seqera.io/wt/a3f9c8d2e7b1/library/r-base:dplyr_ggplot2--8a7c3f4d92e6b583",
+    "expiration":"2025-11-08T21:19:01.715321Z",
+    "buildId":"8a7c3f4d92e6b583_1",
+    "cached":false,
+    "freeze":false
+}
+```
+
+4. Create Singularity image with CRAN packages:
+
+##### Request
+
+```shell
+curl --location 'http://localhost:9090/v1alpha2/container' \
+--header 'Content-Type: application/json' \
+--data '{
+    "format": "sif",
+    "containerPlatform": "linux/amd64",
+    "packages":{
+        "type": "CRAN",
+        "entries": ["tidyverse", "data.table"],
+        "channels": ["cran"],
+        "cranOpts": {
+            "rImage": "rocker/r-ver:4.4.1",
+            "basePackages": "build-essential"
+        }
+    },
+    "freeze": true,
+    "buildRepository": <CONTAINER_REPOSITORY>,
+    "towerAccessToken":<YOUR_SEQERA_PLATFORM_TOWER_TOKEN>,
+    "towerEndpoint": "http://localhost:8008/api"
+}'
+```
+
+#### Response
+
+```json
+{
+    "targetImage":"oras://<CONTAINER_REPOSITORY>:tidyverse_data.table--9d5e2a8f1c4b7326",
+    "buildId":"9d5e2a8f1c4b7326_1",
+    "cached":false,
+    "freeze":true
+}
+```
+
+:::note
+- CRAN packages support both CRAN and Bioconductor repositories
+- You can specify Bioconductor packages using the `bioc::` prefix (e.g., `bioc::GenomicRanges`)
+- The `rImage` parameter specifies the base R Docker image (default: `rocker/r-ver:4.4.1`)
+- The `basePackages` parameter can be used to install system dependencies required by R packages
 :::
 
 ## GET `/v1alpha1/builds/{buildId}/status`
