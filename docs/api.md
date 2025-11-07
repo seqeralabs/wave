@@ -328,7 +328,7 @@ curl --location 'http://localhost:9090/v1alpha2/container' \
 ##### Request
 
 ```shell
-curl --location 'http://localhost:9090/v1alpha2/container' \
+curl --location 'https://wave.seqera.io/v1alpha2/container' \
 --header 'Content-Type: application/json' \
 --data '{
     "format": "sif",
@@ -343,9 +343,8 @@ curl --location 'http://localhost:9090/v1alpha2/container' \
         }
     },
     "freeze": true,
-    "buildRepository": <CONTAINER_REPOSITORY>,
-    "towerAccessToken":<YOUR_SEQERA_PLATFORM_TOWER_TOKEN>,
-    "towerEndpoint": "http://localhost:8008/api"
+    "buildRepository": "<CONTAINER_REPOSITORY>", # hrma017/test
+    "towerAccessToken": "<TOKEN>"
 }'
 ```
 
@@ -353,19 +352,14 @@ curl --location 'http://localhost:9090/v1alpha2/container' \
 
 ```json
 {
-    "targetImage":"oras://<CONTAINER_REPOSITORY>:tidyverse_data.table--9d5e2a8f1c4b7326",
-    "buildId":"9d5e2a8f1c4b7326_1",
-    "cached":false,
-    "freeze":true
+    "requestId": "6706d70da258",
+    "targetImage": "oras://hrma017/test:a4fd48144607aaa7",
+    "containerImage": "oras://hrma017/test:a4fd48144607aaa7",
+    "freeze": true,
+    "mirror": false,
+    "succeeded": true
 }
 ```
-
-:::note
-- CRAN packages support both CRAN and Bioconductor repositories
-- You can specify Bioconductor packages using the `bioc::` prefix (e.g., `bioc::GenomicRanges`)
-- The `rImage` parameter specifies the base R Docker image (default: `rocker/r-ver:4.4.1`)
-- The `basePackages` parameter can be used to install system dependencies required by R packages
-:::
 
 ## GET `/v1alpha1/builds/{buildId}/status`
 
