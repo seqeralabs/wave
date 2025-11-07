@@ -355,6 +355,7 @@ curl --location 'https://wave.seqera.io/v1alpha2/container' \
     "requestId": "6706d70da258",
     "targetImage": "oras://hrma017/test:a4fd48144607aaa7",
     "containerImage": "oras://hrma017/test:a4fd48144607aaa7",
+    "buildId": "bd-a4fd48144607aaa7_1",
     "freeze": true,
     "mirror": false,
     "succeeded": true
