@@ -310,12 +310,16 @@ curl --location 'http://localhost:9090/v1alpha2/container' \
 
 ```json
 {
-    "containerToken":"a3f9c8d2e7b1",
-    "targetImage":"wave.seqera.io/wt/a3f9c8d2e7b1/library/r-base:dplyr_ggplot2--8a7c3f4d92e6b583",
-    "expiration":"2025-11-08T21:19:01.715321Z",
-    "buildId":"8a7c3f4d92e6b583_1",
-    "cached":false,
-    "freeze":false
+    "requestId": "22d3c6c1cb06",
+    "containerToken": "22d3c6c1cb06",
+    "targetImage": "wave.seqera.io/wt/22d3c6c1cb06/wave/build:49b26ca0c3a07b1b",
+    "expiration": "2025-11-09T02:50:23.254497148Z",
+    "containerImage": "private.cr.seqera.io/wave/build:49b26ca0c3a07b1b",
+    "buildId": "bd-49b26ca0c3a07b1b_1",
+    "cached": false,
+    "freeze": false,
+    "mirror": false,
+    "scanId": "sc-a6acedfe6969f4bf_1"
 }
 ```
 
