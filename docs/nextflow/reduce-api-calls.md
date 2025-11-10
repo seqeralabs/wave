@@ -39,6 +39,7 @@ Rate limits affect pipelines with high concurrency. The following example demons
 
 - 50 concurrent pipeline runs
 - Each run spawns 10,000 tasks
+- Each task runs on it's own VM
 - Each task pulls a container image
 - 500,000 manifest requests are made
 
@@ -60,7 +61,6 @@ When you run your pipeline without Wave freeze:
 1. Wave injects the Fusion layer to the container image manifest.
 1. Wave stores the final manifest on Seqera infrastructure.
 1. Wave returns the modified manifest.
-1. Every task creates one API call to Wave.
 
 This approach exceeds rate limits with thousands of concurrent tasks.
 
@@ -80,14 +80,13 @@ When you run your pipeline with Wave freeze again:
 1. Wave finds the frozen images in your registry (matched by content hash).
 1. Wave returns the container URLs in the destination container registry without rebuilding.
 1. All tasks pull the image directly from your registry.
-1. The frozen image serves many task executions.
 
 With freeze enabled, only the first API call to Wave counts toward your quota.
 Wave reuses frozen images as long as the image and its configuration remain the same.
 This prevents rate limit issues because manifest requests happen at the registry level, not through Wave.
 
 :::note
-For stable container images, you can resolve container URLs using [`nextflow inspect`](https://nextflow.io/docs/latest/reference/cli.html#inspect) or [Wave CLI](../cli/index.md). Both tools generate Nextflow configuration files with resolved container registry URLs that can be used to configure your pipeline. Keep Wave enabled during active development or when using dynamic container features to build container images at runtime.
+For pipelines with stable containers, you can prevent Wave API calls by pre-resolving URLs with [`nextflow inspect`](https://nextflow.io/docs/latest/reference/cli.html#inspect) or [Wave CLI](../cli/index.md), then using the resolved registry URLs directly in your configuration. Keep Wave enabled during active development or when using dynamic container features to build container images at runtime.
 :::
 
 ## Configure Wave freeze
@@ -105,9 +104,9 @@ wave.build.cacheRepository = '<CACHE_REPOSITORY>' // Recommended
 
 Replace the following:
 
-- `<TOWER_ACCESS_TOKEN>`: your Platform access token
-- `<BUILD_REPOSITORY>`: the container registry URL where Wave uploads built images
-- `<CACHE_REPOSITORY>`: the container registry URL for caching image layers built by the Wave service
+- `<TOWER_ACCESS_TOKEN>`: your [Platform access token](../tutorials/nextflow-wave.mdx#create-your-seqera-access-token)
+- `<BUILD_REPOSITORY>`: the [container registry URL](./configuration.md#build-repository) where Wave uploads built images
+- `<CACHE_REPOSITORY>`: the [container registry URL](./configuration.md#build-cacherepository) for caching image layers built by the Wave service
 
 :::note
 To accelerate container builds, specify `wave.build.cacheRepository`.
@@ -143,12 +142,13 @@ Examples of native registries by cloud provider:
 - **Azure**: Azure Container Registry (ACR)
 - **Google Cloud**: Google Artifact Registry
 
-**Not recommended**: Third-party container registries.
+**Alternate**: Third-party container registries.
 
-Third-party registries (such as Docker Hub, Quay.io, or JFrog Artifactory) have the following limitations:
+Third-party registries (such as Docker Hub, Quay.io, or JFrog Artifactory) require additional setup and have the following requirements:
 
-- Requires manual credential configuration on each compute instance
-- Additional security overhead
-- More complex authentication setup
+- Manual credential configuration on each compute instance
+- Public endpoints for Wave to connect to
+- Additional security configuration
+- More complex authentication setup compared to native registries
 
 If you use third-party registries, you must configure your credentials on each compute instance.
