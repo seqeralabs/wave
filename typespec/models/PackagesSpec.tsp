@@ -7,6 +7,16 @@ import "./CranOpts.tsp";
     entries: #["salmon", "bwa"],
     channels: #["conda-forge", "bioconda"]
 })
+@example(#{
+    type: "CRAN",
+    entries: #["dplyr", "ggplot2"],
+    channels: #["cran"],
+    cranOpts: #{
+        rImage: "rocker/r-ver:4.4.1",
+        basePackages: "littler r-cran-docopt",
+        commands: #["apt-get update && apt-get install -y libcurl4-openssl-dev"]
+    }
+})
 model PackagesSpec {
   @doc("The type of package manager: CONDA or CRAN.")
   type: "CONDA" | "CRAN";

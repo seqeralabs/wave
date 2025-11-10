@@ -13,6 +13,20 @@ import "./ScanLevel.tsp";
         format: "docker",
         containerPlatform:"linux/amd64"
 })
+@example(#{
+    packages:#{
+            type: "CRAN",
+            entries: #["dplyr", "ggplot2", "bioc::GenomicRanges"],
+            channels: #["cran", "bioconductor"],
+            cranOpts: #{
+                rImage: "rocker/r-ver:4.4.1",
+                basePackages: "littler r-cran-docopt",
+                commands: #["apt-get update", "apt-get install -y libcurl4-openssl-dev"]
+            }
+        },
+        format: "docker",
+        containerPlatform:"linux/amd64"
+})
 model ContainerRequest {
   buildContext?: ContainerLayer;
   @doc("Container repository where container builds should be pushed, e.g., `docker.io/user/my-image` (optional).")
