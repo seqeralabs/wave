@@ -142,7 +142,7 @@ Examples of native registries by cloud provider:
 - **Azure**: Azure Container Registry (ACR)
 - **Google Cloud**: Google Artifact Registry
 
-**Alternate**: Third-party container registries.
+**Alternative option**: Third-party container registries.
 
 Third-party registries (such as Docker Hub, Quay.io, or JFrog Artifactory) require additional setup and have the following requirements:
 
