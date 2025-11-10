@@ -94,12 +94,12 @@ For pipelines with stable containers, you can prevent Wave API calls by pre-reso
 To configure Wave freeze, add the following configuration to your Nextflow pipeline:
 
 ```groovy
-fusion.enabled = true // Recommended
+fusion.enabled = true // Recommended (optimizes frozen images for cloud storage)
 tower.accessToken = '<TOWER_ACCESS_TOKEN>' // Required
 wave.enabled = true // Required
 wave.freeze = true // Required
 wave.build.repository = '<BUILD_REPOSITORY>' // Required
-wave.build.cacheRepository = '<CACHE_REPOSITORY>' // Recommended
+wave.build.cacheRepository = '<CACHE_REPOSITORY>' // Recommended (accelerates builds by reusing unchanged layers)
 ```
 
 Replace the following:
@@ -107,16 +107,6 @@ Replace the following:
 - `<TOWER_ACCESS_TOKEN>`: your [Platform access token](../tutorials/nextflow-wave.mdx#create-your-seqera-access-token)
 - `<BUILD_REPOSITORY>`: the [container registry URL](./configuration.md#build-repository) where Wave uploads built images
 - `<CACHE_REPOSITORY>`: the [container registry URL](./configuration.md#build-cacherepository) for caching image layers built by the Wave service
-
-:::note
-To accelerate container builds, specify `wave.build.cacheRepository`.
-The cache reuses unchanged layers to reduce build times and costs.
-:::
-
-:::note
-You can use Wave freeze without Fusion.
-However, it ensures that the frozen images contain the necessary components for optimal performance when accessing cloud object storage.
-:::
 
 ## Container image tags
 
