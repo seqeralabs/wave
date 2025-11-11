@@ -14,9 +14,10 @@ images.
 * Augment container images i.e. dynamically add one or more container layers to existing images;
 * Build container images on-demand for a given container file (aka Dockerfile);
 * Build container images on-demand based on one or more Conda packages;
+* Build container images on-demand based on one or more CRAN/R packages;
 * Build container images for a specified target platform (currently linux/amd64 and linux/arm64);
 * Push and cache built containers to a user-provided container repository;
-* Build Singularity native containers both using a Singularity spec file, Conda package(s);
+* Build Singularity native containers both using a Singularity spec file, Conda package(s), or CRAN package(s);
 * Push Singularity native container images to OCI-compliant registries;
 * Scan container images for security vulnerabilities
 

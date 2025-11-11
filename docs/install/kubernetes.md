@@ -27,7 +27,7 @@ The minimum system requirements for a Wave Kubernetes installation are:
 - **Storage**: Sufficient storage for your container images and temporary files
 
 :::info
-See [Configure Wave](./configure-wave.md) for detailed scaling and performance tuning guidance.
+See [Configure Wave](../configure-wave.md) for detailed scaling and performance tuning guidance.
 :::
 
 ## Assumptions
@@ -351,4 +351,4 @@ Wave requires access to AWS ECR for container image management. Create an IAM ro
 
 ### Advanced configuration
 
-See [Configuring Wave](./configure-wave.md) for advanced Wave features, scaling guidance, and integration options.
+See [Configure Wave](../configure-wave.md) for advanced Wave features, scaling guidance, and integration options.

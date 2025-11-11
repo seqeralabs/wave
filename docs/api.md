@@ -184,14 +184,17 @@ The endpoint returns the name of the container request made available by Wave.
 | `towerEndpoint`                     | Seqera Platform service endpoint from where container registry credentials are retrieved (optional). Default `https://api.cloud.seqera.io`.                       |
 | `towerAccessToken`                  | Access token of the user account granting access to the Seqera Platform service specified via `towerEndpoint` (optional).                      |
 | `towerWorkspaceId`                  | ID of the Seqera Platform workspace from where the container registry credentials are retrieved (optional). When omitted the personal workspace is used. |
-| `packages`                          | This object specifies Conda packages environment information.                                                                                         |
+| `packages`                          | This object specifies Conda or CRAN packages environment information.                                                                                         |
 | `environment`                       | The package environment file encoded as a base64 string.                                                                                                       |
-| `type`                              | This represents the type of package builder. Use `CONDA`.                                                                                   |
+| `type`                              | This represents the type of package builder. Use `CONDA` or `CRAN`.                                                                                   |
 | `entries`                           | List of the packages names.                                                                                                                                    |
-| `channels`                          | List of Conda channels, which will be used to download packages.                                                                                               |
-| `mambaImage`                        | Name of the docker image used to build Conda containers.                                                                                              |
+| `channels`                          | List of Conda channels or CRAN repositories, which will be used to download packages.                                                                                               |
+| `condaOpts`                         | Conda build options (when type is CONDA).                                                                                                                      |
+| `mambaImage`                        | Name of the Docker image used to build Conda containers.                                                                                              |
 | `commands`                          | Command to be included in the container.                                                                                                                       |
 | `basePackages`                      | Names of base packages.                                                                                                                                        |
+| `cranOpts`                          | CRAN build options (when type is CRAN).                                                                                                                        |
+| `rImage`                            | Name of the R Docker image used to build CRAN containers (e.g., `rocker/r-ver:4.4.1`).                                                                         |
 | `nameStrategy`                      | The name strategy to be used to create the name of the container built by Wave. Its values can be `none`, `tagPrefix`, or `imageSuffix`.                       |                                                     |
 
 ### Response
@@ -217,7 +220,7 @@ The endpoint returns the name of the container request made available by Wave.
 
 ### Examples
 
-1. Create docker image with conda packages
+1. Create Docker image with Conda packages:
 
 ##### Request
 
@@ -246,7 +249,7 @@ curl --location 'http://localhost:9090/v1alpha2/container' \
 }
 ```
 
-2. Create singularity image with conda packages
+2. Create Singularity image with Conda packages:
 
 ##### Request
 
@@ -282,6 +285,82 @@ curl --location 'http://localhost:9090/v1alpha2/container' \
 :::note
 You must add your container registry credentials in Seqera Platform to use the freeze feature. This is a requirement for Singularity.
 :::
+
+3. Create Docker image with CRAN packages:
+
+##### Request
+
+```shell
+curl --location 'http://localhost:9090/v1alpha2/container' \
+--header 'Content-Type: application/json' \
+--data '{
+    "packages":{
+        "type": "CRAN",
+        "entries": ["dplyr", "ggplot2"],
+        "channels": ["cran"],
+        "cranOpts": {
+            "rImage": "rocker/r-ver:4.4.1",
+            "basePackages": "littler r-cran-docopt"
+        }
+    }
+}'
+```
+
+#### Response
+
+```json
+{
+    "requestId": "22d3c6c1cb06",
+    "containerToken": "22d3c6c1cb06",
+    "targetImage": "wave.seqera.io/wt/22d3c6c1cb06/wave/build:49b26ca0c3a07b1b",
+    "expiration": "2025-11-09T02:50:23.254497148Z",
+    "containerImage": "private.cr.seqera.io/wave/build:49b26ca0c3a07b1b",
+    "buildId": "bd-49b26ca0c3a07b1b_1",
+    "cached": false,
+    "freeze": false,
+    "mirror": false,
+    "scanId": "sc-a6acedfe6969f4bf_1"
+}
+```
+
+4. Create Singularity image with CRAN packages:
+
+##### Request
+
+```shell
+curl --location 'https://wave.seqera.io/v1alpha2/container' \
+--header 'Content-Type: application/json' \
+--data '{
+    "format": "sif",
+    "containerPlatform": "linux/amd64",
+    "packages":{
+        "type": "CRAN",
+        "entries": ["tidyverse", "data.table"],
+        "channels": ["cran"],
+        "cranOpts": {
+            "rImage": "rocker/r-ver:4.4.1",
+            "basePackages": "build-essential"
+        }
+    },
+    "freeze": true,
+    "buildRepository": "<CONTAINER_REPOSITORY>", # hrma017/test
+    "towerAccessToken": "<TOKEN>"
+}'
+```
+
+#### Response
+
+```json
+{
+    "requestId": "6706d70da258",
+    "targetImage": "oras://hrma017/test:a4fd48144607aaa7",
+    "containerImage": "oras://hrma017/test:a4fd48144607aaa7",
+    "buildId": "bd-a4fd48144607aaa7_1",
+    "freeze": true,
+    "mirror": false,
+    "succeeded": true
+}
+```
 
 ## GET `/v1alpha1/builds/{buildId}/status`
 

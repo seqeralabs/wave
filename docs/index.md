@@ -18,8 +18,8 @@ To get started with Wave:
 Wave is also available as a hosted service on [Seqera Platform](https://cloud.seqera.io/). For Seqera Enterprise customers, a licensed self-hosted Wave solution is also available. [Contact us](https://seqera.io/contact-us/) for more information.
 :::
 
-[started]: ./get-started/index.mdx
-[nf]: ./nextflow.md
+[started]: ./tutorials/index.md
+[nf]: ./nextflow/index.md
 [cli]: ./cli/index.md
 
 ## Wave features
@@ -30,13 +30,13 @@ Wave is also available as a hosted service on [Seqera Platform](https://cloud.se
 
 Wave integrates with [Seqera Platform credentials management][private] enabling seamless access and publishing to private registries.
 
-[private]: ./nextflow.md#access-private-container-repositories
+[private]: ./nextflow/use-cases.md#access-private-container-repositories
 
 #### Seqera Containers - The community container registry
 
 [Seqera Containers] is a free community service operated by Seqera.
 
-It uses Wave to build images from Conda / PyPI packages on demand, either through the [web interface](https://seqera.io/containers/) or using the [Wave CLI](./cli/index.md) / [Nextflow integration](./nextflow.md).
+It uses Wave to build images from Conda / PyPI packages on demand, either through the [web interface](https://seqera.io/containers/) or using the [Wave CLI](./cli/index.md) / [Nextflow integration](./nextflow/index.md).
 
 These images are cached and hosted permanently, being served through a [Docker Distribution][docker] registry and hosted on AWS infrastructure. Images are cached and served via Cloudflare CDN.
 
@@ -51,7 +51,7 @@ Seqera Containers does not work with custom container files, augmentation, or au
 
 ### Augment existing containers
 
-Wave offers a flexible approach to container image management. It allows you to [dynamically add custom layers][augment] to existing docker images, creating new images tailored to your specific needs.
+Wave offers a flexible approach to container image management. It allows you to [dynamically add custom layers][augment] to existing Docker images, creating new images tailored to your specific needs.
 Any existing container can be extended without rebuilding it. You can add user-provided content such as custom scripts and logging agents, providing greater flexibility in the container’s configuration.
 
 [augment]: ./provisioning.md#container-augmentation
@@ -61,7 +61,7 @@ Any existing container can be extended without rebuilding it. You can add user-p
 Package management systems such as Conda and Bioconda simplify the installation of scientific software.
 Wave enables dynamic provisioning of container images from any Conda or Bioconda recipe. Just [declare the Conda packages][conda] in your Nextflow pipeline and Wave will assemble the required container.
 
-[conda]: ./nextflow.md#build-conda-based-containers
+[conda]: ./nextflow/use-cases.md#build-conda-based-containers
 
 ### Singularity containers
 
@@ -73,13 +73,13 @@ The advantage of this approach is that Singularity and Apptainer engines can pul
 Due to the Singularity image format's peculiarities, Wave's freeze mode is mandatory when provisioning Singularity images.
 :::
 
-[singularity]: ./nextflow.md#build-singularity-containers
+[singularity]: ./nextflow/use-cases.md#build-singularity-containers
 
 ### Deploying containers across multi-clouds
 
-Cloud vendors provide integrated container registries, providing better performance and cost-efficiency than central, remote registries.
-This requires mirroring container collections across multiple accounts, regions, and cloud providers when deploying multi-cloud pipelines.
-Wave streamlines this process by provisioning the required containers to the target registry on demand during pipeline execution.
+Cloud vendors provide integrated container registries with better performance and cost-efficiency than central, remote registries.
+Storing container images in a private registry also enhances security and provide faster access with greater control.
+Wave mirroring addresses these needs by copying containers to your chosen registry while preserving the original manifest, image name, and hash, and ensuring images remain unmodified and accessible via the original build hash.
 
 ### Container security scanning
 

@@ -28,7 +28,7 @@ import groovy.transform.ToString
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.job.JobEntry
 import io.seqera.wave.service.persistence.WaveScanRecord
-import io.seqera.wave.store.state.StateEntry
+import io.seqera.data.store.state.StateEntry
 /**
  * Model for scan result
  *

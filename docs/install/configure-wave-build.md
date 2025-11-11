@@ -134,18 +134,34 @@ data:
       # Enable build service
       build:
         enabled: true
-        workspace: '/build/work'
+        workspace: '/build/workspace'
+        # Optional: Retain failed builds to gather logs & inspect
+        cleanup: "OnSuccess"
         # Optional: Configure build timeouts
-        timeout: '1h'
-        # Optional: Configure resource limits for build pods
-        resources:
-          requests:
-            memory: '1Gi'
-            cpu: '500m'
-          limits:
-            memory: '4Gi'
-            cpu: '2000m'
-
+        timeout: '15m'
+        # Example additional kubernetes configuration for wave-build
+        k8s:
+          dns:
+            servers:
+              - "1.1.1.1"
+              - "8.8.8.8"
+          namespace: "wave-build"
+          storage:
+            mountPath: "/build"
+            # Relevant volume claim name should match the
+            claimName: "wave-build-pvc"
+          serviceAccount: "wave-build-sa"
+          resources:
+            requests:
+              memory: '1Gi'
+              cpu: '500m'
+            limits:
+              memory: '4Gi'
+              cpu: '2000m'
+          nodeSelector:
+            # this node selector binds the build pods to a separate cluster node group
+            linux/amd64: 'service=wave-build'
+            linux/arm64: 'service=wave-build-arm64'
       # Enable other build-dependent features
       mirror:
         enabled: true
@@ -167,15 +183,6 @@ data:
         endpoint:
           url: "https://your-platform-instance.com/api"
 
-      # Kubernetes-specific configuration for builds
-      k8s:
-        namespace: wave
-        serviceAccount: wave-sa
-        # Optional: Configure build pod settings
-        buildPod:
-          image: 'quay.io/buildah/stable:latest'
-          nodeSelector:
-            wave-builds: "true"
 ```
 
 ## Update Wave Deployment
@@ -224,7 +231,7 @@ spec:
             - name: wave-cfg
               mountPath: /work/config.yml
               subPath: "config.yml"
-            - name: build-storage  # Add EFS mount
+            - name: build-storage
               mountPath: /build
           readinessProbe:
             httpGet:
@@ -340,4 +347,61 @@ Set up monitoring for build operations:
 - **Storage access issues** - Ensure EFS access points are configured correctly
 - **Build timeouts** - Adjust build timeout settings based on workload requirements
 
-For additional configuration options and advanced features, see [Configuring Wave](./configure-wave.md).
+For additional configuration options and advanced features, see [Configuring Wave](../configure-wave.md).
+
+## Bottlerocket support
+
+Buildkit requires user namespaces. However, Bottlerocket sets `user.max_user_namespaces=0` by default for security.
+
+To use Buildkit with Bottlerocket, enable user namespaces for container builds by setting `user.max_user_namespaces=N` on your host nodes, where `N` is a positive integer.  Use a sufficiently high value (e.g., `62000`) to avoid build failures. Values that are too low (e.g., `10`) will limit concurrent build capacity and may cause build failures.
+
+You can configure this setting in two ways:
+
+#### Recommended: Node startup configuration
+
+Configure the user namespace setting in your node group's startup script or user data. This approach applies the configuration at boot time and doesn't require privileged containers in your cluster.
+
+#### Alternative: DaemonSet
+
+If you can't control the node configuration directly, use DaemonSet. This approach requires running a privileged container. We recommend you deploy it only on wave-build nodes and use a dedicated namespace for isolation.
+
+**Example manifest:**
+
+```yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app: sysctl-userns
+  name: sysctl-userns
+spec:
+  selector:
+    matchLabels:
+      app: sysctl-userns
+  template:
+    metadata:
+      labels:
+        app: sysctl-userns
+    spec:
+      containers:
+        - name: sysctl-userns
+          image: busybox
+          command: ["sh", "-euxc", "sysctl -w user.max_user_namespaces=63359 && sleep infinity"]
+          securityContext:
+            privileged: true
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: service
+                operator: In
+                values: ["wave-build", "wave-build-arm64"]
+```
+
+#### Additional resources
+
+For more information about Bottlerocket, see:
+
+- [Bottlerocket FAQs](https://bottlerocket.dev/en/faq/)
+- [Amazon Bottlerocket FAQs](https://aws.amazon.com/bottlerocket/faqs/)

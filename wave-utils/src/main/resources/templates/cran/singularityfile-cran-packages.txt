@@ -1,0 +1,9 @@
+BootStrap: docker
+From: {{base_image}}
+%post
+    {{repo_opts}}{{base_packages}}
+    install2.r {{target}}
+    rm -rf /tmp/downloaded_packages/ /tmp/*.rds
+    rm -rf /var/lib/apt/lists/*
+%environment
+    export R_LIBS_USER="/usr/local/lib/R/site-library"

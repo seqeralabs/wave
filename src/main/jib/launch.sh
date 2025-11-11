@@ -24,6 +24,7 @@ WAVE_JVM_OPTS="${WAVE_JVM_OPTS:-\
   -Xmx850m \
   -XX:MaxDirectMemorySize=100m \
   -Dio.netty.maxDirectMemory=0 \
+  -Dio.netty.allocator.type=pooled \
   -Djdk.httpclient.keepalive.timeout=10 \
   -Djdk.tracePinnedThreads=short \
   -Djdk.traceVirtualThreadInThreadDump=full \
