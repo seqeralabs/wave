@@ -104,9 +104,9 @@ wave.build.cacheRepository = '<CACHE_REPOSITORY>' // Recommended (accelerates bu
 
 Replace the following:
 
-- `<TOWER_ACCESS_TOKEN>`: your [Platform access token](../tutorials/nextflow-wave.mdx#create-your-seqera-access-token)
-- `<BUILD_REPOSITORY>`: the [container registry URL](./configuration.md#build-repository) where Wave uploads built images
-- `<CACHE_REPOSITORY>`: the [container registry URL](./configuration.md#build-cacherepository) for caching image layers built by the Wave service
+- [`<TOWER_ACCESS_TOKEN>`](../tutorials/nextflow-wave.mdx#create-your-seqera-access-token): your Platform access token
+- [`<BUILD_REPOSITORY>`](./configuration.md#build-repository): the container registry URL where Wave uploads built images
+- [`<CACHE_REPOSITORY>`](./configuration.md#build-cacherepository): the container registry URL for caching image layers built by the Wave service
 
 ## Container image tags
 
@@ -134,11 +134,9 @@ Examples of native registries by cloud provider:
 
 **Alternative option**: Third-party container registries.
 
-Third-party registries (such as Docker Hub, Quay.io, or JFrog Artifactory) require additional setup and have the following requirements:
+Third-party registries (e.g., Docker Hub or Quay.io) require additional setup and have the following requirements:
 
 - Manual credential configuration on each compute instance
 - Public endpoints for Wave to connect to
 - Additional security configuration
 - More complex authentication setup compared to native registries
-
-If you use third-party registries, you must configure your credentials on each compute instance.
