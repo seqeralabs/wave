@@ -609,7 +609,7 @@ class ContainerHelperTest extends Specification {
 
     def 'should create conda docker file with packages and pixi'() {
         given:
-        def CHANNELS = ['conda-forge', 'defaults']
+        def CHANNELS = ['conda-forge']
         def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
         def packages = new PackagesSpec(
                 type: PackagesSpec.Type.CONDA,
