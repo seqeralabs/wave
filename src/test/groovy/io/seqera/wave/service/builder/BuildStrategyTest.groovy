@@ -291,9 +291,9 @@ class BuildStrategyTest extends Specification {
 
         where:
         S3_PATH                           | REGION      | COMPRESSION | EXPECTED
-        's3://my-bucket/cache'            | 'us-east-1' | null        | 'type=s3,region=us-east-1,bucket=my-bucket,name=cache/abc123def456,mode=max,ignore-error=true'
-        's3://my-bucket/cache/prefix'     | 'us-west-2' | null        | 'type=s3,region=us-west-2,bucket=my-bucket,name=cache/prefix/abc123def456,mode=max,ignore-error=true'
-        's3://wave-cache/buildkit'        | 'eu-west-1' | 'gzip'      | 'type=s3,region=eu-west-1,bucket=wave-cache,name=buildkit/abc123def456,mode=max,ignore-error=true,compression=gzip'
+        's3://my-bucket/cache'            | 'us-east-1' | null        | 'type=s3,region=us-east-1,bucket=my-bucket,prefix=cache,name=abc123def456,mode=max,ignore-error=true'
+        's3://my-bucket/cache/prefix'     | 'us-west-2' | null        | 'type=s3,region=us-west-2,bucket=my-bucket,prefix=cache/prefix,name=abc123def456,mode=max,ignore-error=true'
+        's3://wave-cache/buildkit'        | 'eu-west-1' | 'gzip'      | 'type=s3,region=eu-west-1,bucket=wave-cache,prefix=buildkit,name=abc123def456,mode=max,ignore-error=true,compression=gzip'
         's3://my-bucket'                  | 'us-east-1' | null        | 'type=s3,region=us-east-1,bucket=my-bucket,name=abc123def456,mode=max,ignore-error=true'
     }
 
@@ -317,7 +317,7 @@ class BuildStrategyTest extends Specification {
         def result = BuildStrategy.s3ImportCacheOpts(req, config)
 
         then:
-        result == 'type=s3,region=ap-south-1,bucket=test-bucket,name=cache/path/xyz789abc123'
+        result == 'type=s3,region=ap-south-1,bucket=test-bucket,prefix=cache/path,name=xyz789abc123'
     }
 
     def 'should parse S3 bucket from path' () {
@@ -437,8 +437,8 @@ class BuildStrategyTest extends Specification {
 
         where:
         S3_PATH                             | REGION      | EXPECTED
-        's3://my-bucket/cache'              | 'us-east-1' | 'type=s3,region=us-east-1,bucket=my-bucket,name=cache/s3test456'
-        's3://wave-cache/buildkit/prod'     | 'eu-west-1' | 'type=s3,region=eu-west-1,bucket=wave-cache,name=buildkit/prod/s3test456'
+        's3://my-bucket/cache'              | 'us-east-1' | 'type=s3,region=us-east-1,bucket=my-bucket,prefix=cache,name=s3test456'
+        's3://wave-cache/buildkit/prod'     | 'eu-west-1' | 'type=s3,region=eu-west-1,bucket=wave-cache,prefix=buildkit/prod,name=s3test456'
         's3://test-bucket'                  | 'ap-south-1'| 'type=s3,region=ap-south-1,bucket=test-bucket,name=s3test456'
     }
 }

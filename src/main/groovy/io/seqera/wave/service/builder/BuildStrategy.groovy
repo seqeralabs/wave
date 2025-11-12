@@ -141,7 +141,6 @@ abstract class BuildStrategy {
         final bucket = parseBucketFromS3Path(req.cacheRepository)
         final prefix = parsePrefixFromS3Path(req.cacheRepository)
         final region = config.getCacheS3Region()
-        final name = prefix ? "${prefix}/${req.containerId}" : req.containerId
 
         final result = new StringBuilder()
         result << "type=s3"
@@ -149,7 +148,10 @@ abstract class BuildStrategy {
             result << ",region=${region}"
         }
         result << ",bucket=${bucket}"
-        result << ",name=${name}"
+        if (prefix) {
+            result << ",prefix=${prefix}"
+        }
+        result << ",name=${req.containerId}"
         result << ",mode=max"
         result << ",ignore-error=true"
         result << compressOpts(req, config)
@@ -160,7 +162,6 @@ abstract class BuildStrategy {
         final bucket = parseBucketFromS3Path(req.cacheRepository)
         final prefix = parsePrefixFromS3Path(req.cacheRepository)
         final region = config.getCacheS3Region()
-        final name = prefix ? "${prefix}/${req.containerId}" : req.containerId
 
         final result = new StringBuilder()
         result << "type=s3"
@@ -168,7 +169,10 @@ abstract class BuildStrategy {
             result << ",region=${region}"
         }
         result << ",bucket=${bucket}"
-        result << ",name=${name}"
+        if (prefix) {
+            result << ",prefix=${prefix}"
+        }
+        result << ",name=${req.containerId}"
         return result.toString()
     }
 
