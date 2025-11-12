@@ -43,8 +43,6 @@ Use the following options to configure general Wave settings:
 
 Use the following options to configure Wave build settings:
 
-<p id="build-cacherepository"></p>
-
 `wave.build.cacheRepository`
 : Specifies the container repository URL for caching image layers built by the Wave service.
   Requires corresponding credentials to be configured in your Seqera account.
@@ -70,8 +68,6 @@ Use the following options to configure Wave build settings:
 `wave.build.conda.mambaImage`
 : Specifies the Mamba container image used for building Conda-based containers.
   Must be a [micromamba-docker](https://github.com/mamba-org/micromamba-docker) compatible image.
-
-<p id="build-repository"></p>
 
 `wave.build.repository`
 : Specifies the container repository URL where Wave uploads built images.

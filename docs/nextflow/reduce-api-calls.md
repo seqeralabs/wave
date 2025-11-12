@@ -104,9 +104,9 @@ wave.build.cacheRepository = '<CACHE_REPOSITORY>' // Recommended (accelerates bu
 
 Replace the following:
 
-- [`<TOWER_ACCESS_TOKEN>`](../tutorials/nextflow-wave.mdx#create-your-seqera-access-token): your Platform access token
-- [`<BUILD_REPOSITORY>`](./configuration.md#build-repository): the container registry URL where Wave uploads built images
-- [`<CACHE_REPOSITORY>`](./configuration.md#build-cacherepository): the container registry URL for caching image layers built by the Wave service
+- `<TOWER_ACCESS_TOKEN>`: your [Platform access token](../tutorials/nextflow-wave.mdx#create-your-seqera-access-token)
+- `<BUILD_REPOSITORY>`: the container registry URL where Wave uploads built images
+- `<CACHE_REPOSITORY>`: the container registry URL for caching image layers built by the Wave service
 
 ## Container image tags
 
