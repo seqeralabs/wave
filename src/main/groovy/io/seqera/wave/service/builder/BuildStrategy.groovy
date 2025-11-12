@@ -110,11 +110,9 @@ abstract class BuildStrategy {
     }
 
     static protected String cacheExportOpts(BuildRequest req, BuildConfig config) {
-        if (config.isCacheS3()) {
-            return s3CacheOpts(req, config)
-        } else {
-            return registryCacheOpts(req, config)
-        }
+        return config.isCacheS3()
+                ? s3ExportCacheOpts(req, config)
+                : registryExportCacheOpts(req, config)
     }
 
     static protected String cacheImportOpts(BuildRequest req, BuildConfig config) {
@@ -123,7 +121,7 @@ abstract class BuildStrategy {
                 : registryImportCacheOpts(req, config)
     }
 
-    static protected String registryCacheOpts(BuildRequest req, BuildConfig config) {
+    static protected String registryExportCacheOpts(BuildRequest req, BuildConfig config) {
         final result = new StringBuilder()
         result << "type=registry"
         result << ",image-manifest=true"
@@ -139,7 +137,7 @@ abstract class BuildStrategy {
         return "type=registry,ref=${req.cacheRepository}:${req.containerId}".toString()
     }
 
-    static protected String s3CacheOpts(BuildRequest req, BuildConfig config) {
+    static protected String s3ExportCacheOpts(BuildRequest req, BuildConfig config) {
         final bucket = parseBucketFromS3Path(req.cacheRepository)
         final prefix = parsePrefixFromS3Path(req.cacheRepository)
         final region = config.getCacheS3Region()

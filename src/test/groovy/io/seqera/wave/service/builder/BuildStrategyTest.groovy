@@ -284,7 +284,7 @@ class BuildStrategyTest extends Specification {
                 cacheAwsRegion: REGION,
                 buildkitImage: 'moby/buildkit:v0.26.0-rootless')
         and:
-        def result = BuildStrategy.s3CacheOpts(req, config)
+        def result = BuildStrategy.s3ExportCacheOpts(req, config)
 
         then:
         result == EXPECTED
