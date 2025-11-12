@@ -53,6 +53,10 @@ class BuildConfig {
     String defaultCacheRepository
 
     @Nullable
+    @Value('${wave.build.cache-aws-region}')
+    String cacheAwsRegion
+
+    @Nullable
     @Value('${wave.build.public-repo}')
     String defaultPublicRepository
 
@@ -137,7 +141,8 @@ class BuildConfig {
                 "buildkit-image=${buildkitImage}; " +
                 "singularity-image=${singularityImage}; " +
                 "default-build-repository=${defaultBuildRepository}; " +
-                "default-cache-repository=${defaultCacheRepository}; " +
+                "default-cache-repository=${defaultCacheRepository}" + (isCacheS3() ? " (S3)" : "") + "; " +
+                "cache-aws-region=${cacheAwsRegion}; " +
                 "default-public-repository=${defaultPublicRepository}; " +
                 "build-workspace=${buildWorkspace}; " +
                 "build-timeout=${defaultTimeout}; " +
@@ -198,5 +203,25 @@ class BuildConfig {
             return null
         final store = BucketTokenizer.from(locksPath)
         return store.scheme ? store.getKey() : null
+    }
+
+    /**
+     * Check if the cache repository is an S3 bucket path
+     *
+     * @return {@code true} when the cache repository starts with {@code s3://} scheme
+     */
+    boolean isCacheS3() {
+        return defaultCacheRepository?.startsWith('s3://')
+    }
+
+    /**
+     * Get the AWS region for S3 cache.
+     *
+     * @return The AWS region to use for S3 cache operations, or {@code null} if not configured.
+     *         When {@code null}, BuildKit will use the AWS SDK default region resolution chain
+     *         (environment variables, EC2 instance metadata, etc.)
+     */
+    String getCacheS3Region() {
+        return cacheAwsRegion
     }
 }

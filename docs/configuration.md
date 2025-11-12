@@ -113,7 +113,17 @@ Configure how Wave builds container images and manages associated logs for monit
 : Sets the [Buildkit](https://github.com/moby/buildkit) container image used in the Wave build process (default: `moby/buildkit:v0.13.2-rootless`).
 
 `wave.build.cache` *(required)*
-: Sets the container repository used to cache layers of images built by Wave.
+: Sets the container repository or S3 bucket path used to cache layers of images built by Wave.
+  Supports both container registry paths and S3 bucket paths.
+  Examples:
+  - Registry: `registry.example.com/wave/cache`
+  - S3: `s3://my-bucket/wave/cache`
+
+`wave.build.cache-aws-region` *(optional)*
+: Specifies the AWS region for S3 cache when using an S3 bucket path in `wave.build.cache`.
+  If not specified, Wave uses the `AWS_REGION` or `AWS_DEFAULT_REGION` environment variable.
+  Example: `us-east-1`
+  This setting is ignored when using registry-based caching.
 
 `wave.build.cleanup` *(optional)*
 : Sets the cleanup strategy after the build process.
@@ -159,6 +169,87 @@ Configure how Wave builds container images and manages associated logs for monit
 `wave.build.workspace` *(required)*
 : Sets the path to the directory used by Wave to store artifacts such as Containerfiles, Trivy cache for scan, Buildkit context, and authentication configuration files.
   For example, `/efs/wave/build`.
+
+### S3 cache authentication
+
+When using S3 as the BuildKit cache backend (`wave.build.cache` configured with an `s3://` path), Wave relies on AWS native authentication mechanisms rather than static credentials in configuration files.
+
+#### Kubernetes deployments
+
+S3 cache uses **IAM Roles for Service Accounts (IRSA)** for secure, credential-free authentication.
+
+Configure your Kubernetes ServiceAccount with an IAM role annotation:
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: wave-build-sa
+  namespace: wave-build
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/WaveBuildRole
+```
+
+The IAM role must have permissions to access the S3 cache bucket:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::my-bucket/wave/cache",
+        "arn:aws:s3:::my-bucket/wave/cache/*"
+      ]
+    }
+  ]
+}
+```
+
+Update your Wave deployment to use the annotated ServiceAccount:
+
+```yaml
+spec:
+  template:
+    spec:
+      serviceAccountName: wave-build-sa
+```
+
+#### Docker deployments
+
+For Docker-based builds, use **EC2 Instance Profile** for automatic credential management.
+
+Attach an IAM role to the EC2 instance running Docker with the S3 permissions shown above. BuildKit automatically uses the instance metadata service to obtain temporary credentials.
+
+No additional configuration is required. The AWS SDK in BuildKit automatically discovers and uses the instance profile credentials.
+
+:::note
+For development and testing purposes only, you can provide AWS credentials via environment variables:
+
+```bash
+export AWS_ACCESS_KEY_ID=your_access_key
+export AWS_SECRET_ACCESS_KEY=your_secret_key
+export AWS_REGION=us-east-1
+```
+
+**Warning:** This approach is not recommended for production environments as it requires managing static credentials. Always use EC2 Instance Profile for production Docker deployments.
+:::
+
+#### Configuration example
+
+```yaml
+wave:
+  build:
+    cache: "s3://wave-cache-bucket/buildkit"
+    cache-aws-region: "us-east-1"  # Optional if AWS_REGION is set
+```
 
 ### Build process logs
 
