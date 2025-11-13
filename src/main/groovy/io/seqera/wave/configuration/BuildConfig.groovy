@@ -242,15 +242,6 @@ class BuildConfig {
     }
 
     /**
-     * Check if the cache is using an S3 bucket path
-     *
-     * @return {@code true} when {@link #cacheBucketPath} is configured
-     */
-    boolean isCacheBucket() {
-        return !defaultCacheRepository && cacheBucketPath
-    }
-
-    /**
      * Get the cache location for BuildKit cache operations.
      * Returns either the container registry cache repository or the S3 bucket path,
      * with registry taking precedence if both are configured.
@@ -270,5 +261,16 @@ class BuildConfig {
      */
     String getCacheBucketRegion() {
         return cacheBucketRegion
+    }
+
+    /**
+     * Check if the given path is an S3 bucket path (object storage).
+     * This is used to distinguish between container registry paths and object storage paths.
+     *
+     * @param path The path to check
+     * @return {@code true} if the path starts with {@code s3://}, {@code false} otherwise
+     */
+    static boolean isBucketPath(String path) {
+        return path?.startsWith('s3://')
     }
 }

@@ -110,13 +110,13 @@ abstract class BuildStrategy {
     }
 
     static protected String cacheExportOpts(BuildRequest req, BuildConfig config) {
-        return config.isCacheBucket()
+        return BuildConfig.isBucketPath(req.cacheRepository)
                 ? s3ExportCacheOpts(req, config)
                 : registryExportCacheOpts(req, config)
     }
 
     static protected String cacheImportOpts(BuildRequest req, BuildConfig config) {
-        return config.isCacheBucket()
+        return BuildConfig.isBucketPath(req.cacheRepository)
                 ? s3ImportCacheOpts(req, config)
                 : registryImportCacheOpts(req, config)
     }
