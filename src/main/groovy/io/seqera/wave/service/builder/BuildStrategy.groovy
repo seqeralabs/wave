@@ -141,6 +141,7 @@ abstract class BuildStrategy {
         final bucket = parseBucketFromS3Path(req.cacheRepository)
         final prefix = parsePrefixFromS3Path(req.cacheRepository)
         final region = config.getCacheBucketRegion()
+        final uploadParallelism = config.cacheBucketUploadParallelism
 
         final result = new StringBuilder()
         result << "type=s3"
@@ -154,6 +155,9 @@ abstract class BuildStrategy {
         result << ",name=${req.containerId}"
         result << ",mode=max"
         result << ",ignore-error=true"
+        if (uploadParallelism) {
+            result << ",upload_parallelism=${uploadParallelism}"
+        }
         result << compressOpts(req, config)
         return result.toString()
     }
@@ -184,8 +188,11 @@ abstract class BuildStrategy {
     private static String parsePrefixFromS3Path(String s3Path) {
         final tokenizer = BucketTokenizer.from(s3Path)
         final prefix = tokenizer.key
-        // ensure prefix always has a trailing slash if not null
-        return prefix && !prefix.endsWith('/') ? prefix + '/' : prefix
+        // return null if prefix is null or empty
+        if( !prefix )
+            return null
+        // ensure prefix always has a trailing slash
+        return prefix.endsWith('/') ? prefix : prefix + '/'
     }
 
 }

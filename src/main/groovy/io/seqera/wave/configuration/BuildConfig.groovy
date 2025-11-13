@@ -69,6 +69,15 @@ class BuildConfig {
     @Value('${wave.build.cache-bucket-region}')
     String cacheBucketRegion
 
+    /**
+     * Number of layers to upload to S3 in parallel during cache export.
+     * Each individual layer is uploaded with 5 threads using the AWS SDK Upload Manager.
+     * Only used when {@link #cacheBucketPath} is configured.
+     */
+    @Nullable
+    @Value('${wave.build.cache-bucket-upload-parallelism}')
+    Integer cacheBucketUploadParallelism
+
     @Nullable
     @Value('${wave.build.public-repo}')
     String defaultPublicRepository
@@ -157,6 +166,7 @@ class BuildConfig {
                 "default-cache-repository=${defaultCacheRepository}; " +
                 "cache-bucket-path=${cacheBucketPath}; " +
                 "cache-bucket-region=${cacheBucketRegion}; " +
+                "cache-bucket-upload-parallelism=${cacheBucketUploadParallelism}; " +
                 "default-public-repository=${defaultPublicRepository}; " +
                 "build-workspace=${buildWorkspace}; " +
                 "build-timeout=${defaultTimeout}; " +

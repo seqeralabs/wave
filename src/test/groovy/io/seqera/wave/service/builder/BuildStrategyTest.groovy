@@ -282,6 +282,7 @@ class BuildStrategyTest extends Specification {
         def config = new BuildConfig(
                 cacheBucketPath: S3_PATH,
                 cacheBucketRegion: REGION,
+                cacheBucketUploadParallelism: PARALLELISM,
                 buildkitImage: 'moby/buildkit:v0.26.0-rootless')
         and:
         def result = BuildStrategy.s3ExportCacheOpts(req, config)
@@ -290,13 +291,14 @@ class BuildStrategyTest extends Specification {
         result == EXPECTED
 
         where:
-        S3_PATH                           | REGION      | COMPRESSION | EXPECTED
-        's3://my-bucket/cache'            | 'us-east-1' | null        | 'type=s3,region=us-east-1,bucket=my-bucket,prefix=cache/,name=abc123def456,mode=max,ignore-error=true'
-        's3://my-bucket/cache/prefix'     | 'us-west-2' | null        | 'type=s3,region=us-west-2,bucket=my-bucket,prefix=cache/prefix/,name=abc123def456,mode=max,ignore-error=true'
-        's3://my-bucket/cache/prefix/'    | 'us-west-2' | null        | 'type=s3,region=us-west-2,bucket=my-bucket,prefix=cache/prefix/,name=abc123def456,mode=max,ignore-error=true'
-        's3://wave-cache/buildkit'        | 'eu-west-1' | 'gzip'      | 'type=s3,region=eu-west-1,bucket=wave-cache,prefix=buildkit/,name=abc123def456,mode=max,ignore-error=true,compression=gzip'
-        's3://my-bucket'                  | 'us-east-1' | null        | 'type=s3,region=us-east-1,bucket=my-bucket,name=abc123def456,mode=max,ignore-error=true'
-        's3://my-bucket/'                 | 'us-east-1' | null        | 'type=s3,region=us-east-1,bucket=my-bucket,name=abc123def456,mode=max,ignore-error=true'
+        S3_PATH                           | REGION      | PARALLELISM | COMPRESSION | EXPECTED
+        's3://my-bucket/cache'            | 'us-east-1' | null        | null        | 'type=s3,region=us-east-1,bucket=my-bucket,prefix=cache/,name=abc123def456,mode=max,ignore-error=true'
+        's3://my-bucket/cache/prefix'     | 'us-west-2' | null        | null        | 'type=s3,region=us-west-2,bucket=my-bucket,prefix=cache/prefix/,name=abc123def456,mode=max,ignore-error=true'
+        's3://my-bucket/cache/prefix/'    | 'us-west-2' | null        | null        | 'type=s3,region=us-west-2,bucket=my-bucket,prefix=cache/prefix/,name=abc123def456,mode=max,ignore-error=true'
+        's3://wave-cache/buildkit'        | 'eu-west-1' | null        | 'gzip'      | 'type=s3,region=eu-west-1,bucket=wave-cache,prefix=buildkit/,name=abc123def456,mode=max,ignore-error=true,compression=gzip'
+        's3://my-bucket'                  | 'us-east-1' | null        | null        | 'type=s3,region=us-east-1,bucket=my-bucket,name=abc123def456,mode=max,ignore-error=true'
+        's3://my-bucket/'                 | 'us-east-1' | null        | null        | 'type=s3,region=us-east-1,bucket=my-bucket,name=abc123def456,mode=max,ignore-error=true'
+        's3://my-bucket/cache'            | 'us-east-1' | 8           | null        | 'type=s3,region=us-east-1,bucket=my-bucket,prefix=cache/,name=abc123def456,mode=max,ignore-error=true,upload_parallelism=8'
     }
 
     def 'should create S3 import cache options' () {

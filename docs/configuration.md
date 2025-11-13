@@ -129,6 +129,13 @@ Configure how Wave builds container images and manages associated logs for monit
   Example: `us-east-1`
   This setting is only used when `wave.build.cache-bucket-path` is configured.
 
+`wave.build.cache-bucket-upload-parallelism` *(optional)*
+: Controls the number of layers uploaded to S3 in parallel during cache export.
+  Each individual layer is uploaded with 5 threads using the AWS SDK Upload Manager.
+  If not specified, BuildKit uses its default parallelism behavior.
+  Example: `8`
+  This setting is only used when `wave.build.cache-bucket-path` is configured.
+
 `wave.build.cleanup` *(optional)*
 : Sets the cleanup strategy after the build process.
   For example, set to `OnSuccess` for cleanup only if a build is successful.
@@ -256,6 +263,7 @@ wave:
   build:
     cache-bucket-path: "s3://wave-cache-bucket/buildkit"
     cache-bucket-region: "us-east-1"  # Optional if AWS_REGION is set
+    cache-bucket-upload-parallelism: 8  # Optional, controls parallel S3 uploads
 ```
 
 ### Build process logs
