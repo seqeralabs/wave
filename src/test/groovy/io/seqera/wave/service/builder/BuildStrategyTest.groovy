@@ -293,8 +293,10 @@ class BuildStrategyTest extends Specification {
         S3_PATH                           | REGION      | COMPRESSION | EXPECTED
         's3://my-bucket/cache'            | 'us-east-1' | null        | 'type=s3,region=us-east-1,bucket=my-bucket,prefix=cache/,name=abc123def456,mode=max,ignore-error=true'
         's3://my-bucket/cache/prefix'     | 'us-west-2' | null        | 'type=s3,region=us-west-2,bucket=my-bucket,prefix=cache/prefix/,name=abc123def456,mode=max,ignore-error=true'
+        's3://my-bucket/cache/prefix/'    | 'us-west-2' | null        | 'type=s3,region=us-west-2,bucket=my-bucket,prefix=cache/prefix/,name=abc123def456,mode=max,ignore-error=true'
         's3://wave-cache/buildkit'        | 'eu-west-1' | 'gzip'      | 'type=s3,region=eu-west-1,bucket=wave-cache,prefix=buildkit/,name=abc123def456,mode=max,ignore-error=true,compression=gzip'
         's3://my-bucket'                  | 'us-east-1' | null        | 'type=s3,region=us-east-1,bucket=my-bucket,name=abc123def456,mode=max,ignore-error=true'
+        's3://my-bucket/'                 | 'us-east-1' | null        | 'type=s3,region=us-east-1,bucket=my-bucket,name=abc123def456,mode=max,ignore-error=true'
     }
 
     def 'should create S3 import cache options' () {
