@@ -32,8 +32,6 @@ import static io.seqera.wave.WaveDefault.DOCKER_IO
 @CompileStatic
 class ContainerCoordinates implements ContainerPath {
 
-    private final static List<String> VALID_SCHEMES = Arrays.asList('oras', 's3')
-
     final String scheme
     final String registry
     final String image
@@ -59,8 +57,8 @@ class ContainerCoordinates implements ContainerPath {
             throw new IllegalArgumentException("Invalid container name - offending image: '$path'")
         final scheme = StringUtils.getUrlProtocol(path)
         if( scheme ) {
-            if( !VALID_SCHEMES.contains(scheme) ) throw new IllegalArgumentException("Invalid container scheme: '$scheme' - offending image: '$path'")
-            path = path.substring(scheme.length() + 3) // 3 is the length of '://' after scheme
+            if( scheme!='oras') throw new IllegalArgumentException("Invalid container scheme: '$scheme' - offending image: '$path'")
+            path = path.substring(7)
         }
 
         final coordinates = path.tokenize('/')
