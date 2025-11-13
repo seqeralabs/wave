@@ -327,8 +327,6 @@ class ContainerController {
             throw new BadRequestException("Missing dockerfile content")
         if( !buildConfig.defaultBuildRepository )
             throw new BadRequestException("Missing build repository attribute")
-        if( !buildConfig.defaultCacheRepository )
-            throw new BadRequestException("Missing build cache repository attribute")
 
         final containerSpec = decodeBase64OrFail(req.containerFile, 'containerFile')
         final condaContent = condaFileFromRequest(req)
@@ -338,7 +336,7 @@ class ContainerController {
                 ? buildConfig.defaultPublicRepository
                 : buildConfig.defaultBuildRepository), req.nameStrategy)
         final cacheRepository = !validationService.isCustomRepo(req.buildRepository)
-                ? (req.cacheRepository ?: buildConfig.defaultCacheRepository ?: buildConfig.cacheBucketPath)
+                ? (req.cacheRepository ?: buildConfig.cacheLocation)
                 : req.cacheRepository   // use custom cache repo, when is a custom build repo
         final configJson = inspectService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
         /**

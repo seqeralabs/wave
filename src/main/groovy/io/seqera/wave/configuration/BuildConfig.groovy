@@ -231,8 +231,19 @@ class BuildConfig {
      *
      * @return {@code true} when {@link #cacheBucketPath} is configured
      */
-    boolean isCacheS3() {
+    boolean isCacheBucket() {
         return !defaultCacheRepository && cacheBucketPath
+    }
+
+    /**
+     * Get the cache location for BuildKit cache operations.
+     * Returns either the container registry cache repository or the S3 bucket path,
+     * with registry taking precedence if both are configured.
+     *
+     * @return The cache location (registry or S3 bucket path), or {@code null} if neither is configured
+     */
+    String getCacheLocation() {
+        return defaultCacheRepository ?: cacheBucketPath
     }
 
     /**

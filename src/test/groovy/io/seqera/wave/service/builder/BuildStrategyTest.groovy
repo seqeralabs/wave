@@ -342,14 +342,14 @@ class BuildStrategyTest extends Specification {
         's3://prod-bucket'                | null
     }
 
-    def 'should detect S3 cache repository' () {
+    def 'should detect S3 cache bucket path' () {
         given:
         def config = new BuildConfig(
-                defaultCacheRepository: 's3://my-bucket/cache',
+                cacheBucketPath: 's3://my-bucket/cache',
                 buildkitImage: 'moby/buildkit:v0.26.0-rootless')
 
         expect:
-        config.isCacheS3() == true
+        config.isCacheBucket() == true
     }
 
     def 'should detect registry cache repository' () {
@@ -359,7 +359,19 @@ class BuildStrategyTest extends Specification {
                 buildkitImage: 'moby/buildkit:v0.26.0-rootless')
 
         expect:
-        config.isCacheS3() == false
+        config.isCacheBucket() == false
+    }
+
+    def 'should prioritize registry over bucket when both configured' () {
+        given:
+        def config = new BuildConfig(
+                defaultCacheRepository: 'registry.example.com/wave/cache',
+                cacheBucketPath: 's3://my-bucket/cache',
+                buildkitImage: 'moby/buildkit:v0.26.0-rootless')
+
+        expect:
+        config.isCacheBucket() == false
+        config.cacheLocation == 'registry.example.com/wave/cache'
     }
 
     def 'should create registry import cache options' () {

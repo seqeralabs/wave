@@ -741,6 +741,7 @@ class ContainerControllerTest extends Specification {
             getBuildWorkspace() >> '/some/path'
             getDefaultBuildRepository() >> 'default/build'
             getDefaultCacheRepository() >> 'default/cache'
+            getCacheLocation() >> 'default/cache'
         }
         def validation = new ValidationServiceImpl(buildConfig:config)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
