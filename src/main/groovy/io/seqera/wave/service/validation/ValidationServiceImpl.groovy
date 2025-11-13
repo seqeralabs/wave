@@ -117,8 +117,6 @@ class ValidationServiceImpl implements ValidationService {
             return false
         if( buildConfig.defaultCacheRepository && repo.startsWith(buildConfig.defaultCacheRepository) )
             return false
-        if( buildConfig.cacheBucketPath && repo.startsWith(buildConfig.cacheBucketPath) )
-            return false
         return true
     }
 
