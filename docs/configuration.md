@@ -112,18 +112,22 @@ Configure how Wave builds container images and manages associated logs for monit
 `wave.build.buildkit-image` *(required)*
 : Sets the [Buildkit](https://github.com/moby/buildkit) container image used in the Wave build process (default: `moby/buildkit:v0.26.0-rootless`).
 
-`wave.build.cache` *(required)*
-: Sets the container repository or S3 bucket path used to cache layers of images built by Wave.
-  Supports both container registry paths and S3 bucket paths.
-  Examples:
-  - Registry: `registry.example.com/wave/cache`
-  - S3: `s3://my-bucket/wave/cache`
+`wave.build.cache` *(optional)*
+: Sets the container registry repository used to cache layers of images built by Wave.
+  Example: `registry.example.com/wave/cache`
+  **Note:** This setting does not support S3 bucket paths. Use `wave.build.cache-bucket-path` for S3-based caching.
+  This setting is mutually exclusive with `wave.build.cache-bucket-path`.
 
-`wave.build.cache-aws-region` *(optional)*
-: Specifies the AWS region for S3 cache when using an S3 bucket path in `wave.build.cache`.
+`wave.build.cache-bucket-path` *(optional)*
+: Sets the S3 bucket path used to cache layers of images built by Wave.
+  Example: `s3://my-bucket/wave/cache`
+  This setting is mutually exclusive with `wave.build.cache`.
+
+`wave.build.cache-bucket-region` *(optional)*
+: Specifies the AWS region for the S3 cache bucket specified in `wave.build.cache-bucket-path`.
   If not specified, Wave uses the `AWS_REGION` or `AWS_DEFAULT_REGION` environment variable.
   Example: `us-east-1`
-  This setting is ignored when using registry-based caching.
+  This setting is only used when `wave.build.cache-bucket-path` is configured.
 
 `wave.build.cleanup` *(optional)*
 : Sets the cleanup strategy after the build process.
@@ -172,7 +176,7 @@ Configure how Wave builds container images and manages associated logs for monit
 
 ### S3 cache authentication
 
-When using S3 as the BuildKit cache backend (`wave.build.cache` configured with an `s3://` path), Wave relies on AWS native authentication mechanisms rather than static credentials in configuration files.
+When using S3 as the BuildKit cache backend (`wave.build.cache-bucket-path` configured), Wave relies on AWS native authentication mechanisms rather than static credentials in configuration files.
 
 #### Kubernetes deployments
 
@@ -247,8 +251,8 @@ export AWS_REGION=us-east-1
 ```yaml
 wave:
   build:
-    cache: "s3://wave-cache-bucket/buildkit"
-    cache-aws-region: "us-east-1"  # Optional if AWS_REGION is set
+    cache-bucket-path: "s3://wave-cache-bucket/buildkit"
+    cache-bucket-region: "us-east-1"  # Optional if AWS_REGION is set
 ```
 
 ### Build process logs

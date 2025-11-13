@@ -140,7 +140,7 @@ abstract class BuildStrategy {
     static protected String s3ExportCacheOpts(BuildRequest req, BuildConfig config) {
         final bucket = parseBucketFromS3Path(req.cacheRepository)
         final prefix = parsePrefixFromS3Path(req.cacheRepository)
-        final region = config.getCacheS3Region()
+        final region = config.getCacheBucketRegion()
 
         final result = new StringBuilder()
         result << "type=s3"
@@ -161,7 +161,7 @@ abstract class BuildStrategy {
     static protected String s3ImportCacheOpts(BuildRequest req, BuildConfig config) {
         final bucket = parseBucketFromS3Path(req.cacheRepository)
         final prefix = parsePrefixFromS3Path(req.cacheRepository)
-        final region = config.getCacheS3Region()
+        final region = config.getCacheBucketRegion()
 
         final result = new StringBuilder()
         result << "type=s3"

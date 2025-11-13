@@ -52,9 +52,21 @@ class BuildConfig {
     @Value('${wave.build.cache}')
     String defaultCacheRepository
 
+    /**
+     * S3 bucket path for BuildKit cache storage. Mutually exclusive with {@link #defaultCacheRepository}.
+     * Example: {@code s3://my-bucket/buildkit-cache}
+     */
     @Nullable
-    @Value('${wave.build.cache-aws-region}')
-    String cacheAwsRegion
+    @Value('${wave.build.cache-bucket-path}')
+    String cacheBucketPath
+
+    /**
+     * AWS region for the S3 cache bucket specified in {@link #cacheBucketPath}.
+     * Only used when {@link #cacheBucketPath} is configured.
+     */
+    @Nullable
+    @Value('${wave.build.cache-bucket-region}')
+    String cacheBucketRegion
 
     @Nullable
     @Value('${wave.build.public-repo}')
@@ -141,8 +153,9 @@ class BuildConfig {
                 "buildkit-image=${buildkitImage}; " +
                 "singularity-image=${singularityImage}; " +
                 "default-build-repository=${defaultBuildRepository}; " +
-                "default-cache-repository=${defaultCacheRepository}" + (isCacheS3() ? " (S3)" : "") + "; " +
-                "cache-aws-region=${cacheAwsRegion}; " +
+                "default-cache-repository=${defaultCacheRepository}; " +
+                "cache-bucket-path=${cacheBucketPath}; " +
+                "cache-bucket-region=${cacheBucketRegion}; " +
                 "default-public-repository=${defaultPublicRepository}; " +
                 "build-workspace=${buildWorkspace}; " +
                 "build-timeout=${defaultTimeout}; " +
@@ -160,6 +173,14 @@ class BuildConfig {
         // minimal validation
         if( trustedTimeout < defaultTimeout ) {
             log.warn "Trusted build timeout should be longer than default timeout - check configuration setting 'wave.build.trusted-timeout'"
+        }
+        // validate mutual exclusivity of cache settings
+        if( defaultCacheRepository && cacheBucketPath ) {
+            log.warn "Both 'wave.build.cache' and 'wave.build.cache-bucket-path' are configured - these settings are mutually exclusive. Using 'wave.build.cache' as priority."
+        }
+        // validate defaultCacheRepository does not contain S3 paths
+        if( defaultCacheRepository?.startsWith('s3://') ) {
+            throw new IllegalArgumentException("Setting 'wave.build.cache' should not contain S3 paths - use 'wave.build.cache-bucket-path' instead. Offending value: ${defaultCacheRepository}")
         }
     }
 
@@ -206,22 +227,22 @@ class BuildConfig {
     }
 
     /**
-     * Check if the cache repository is an S3 bucket path
+     * Check if the cache is using an S3 bucket path
      *
-     * @return {@code true} when the cache repository starts with {@code s3://} scheme
+     * @return {@code true} when {@link #cacheBucketPath} is configured
      */
     boolean isCacheS3() {
-        return defaultCacheRepository?.startsWith('s3://')
+        return !defaultCacheRepository && cacheBucketPath
     }
 
     /**
-     * Get the AWS region for S3 cache.
+     * Get the AWS region for S3 cache bucket.
      *
      * @return The AWS region to use for S3 cache operations, or {@code null} if not configured.
      *         When {@code null}, BuildKit will use the AWS SDK default region resolution chain
      *         (environment variables, EC2 instance metadata, etc.)
      */
-    String getCacheS3Region() {
-        return cacheAwsRegion
+    String getCacheBucketRegion() {
+        return cacheBucketRegion
     }
 }
