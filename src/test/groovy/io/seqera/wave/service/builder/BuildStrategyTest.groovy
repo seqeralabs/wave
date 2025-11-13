@@ -280,7 +280,7 @@ class BuildStrategyTest extends Specification {
 
         when:
         def config = new BuildConfig(
-                defaultCacheRepository: S3_PATH,
+                cacheBucketPath: S3_PATH,
                 cacheBucketRegion: REGION,
                 buildkitImage: 'moby/buildkit:v0.26.0-rootless')
         and:
@@ -310,7 +310,7 @@ class BuildStrategyTest extends Specification {
 
         when:
         def config = new BuildConfig(
-                defaultCacheRepository: 's3://test-bucket/cache/path',
+                cacheBucketPath: 's3://test-bucket/cache/path',
                 cacheBucketRegion: 'ap-south-1',
                 buildkitImage: 'moby/buildkit:v0.26.0-rootless')
         and:
@@ -437,7 +437,7 @@ class BuildStrategyTest extends Specification {
         )
         and:
         def config = new BuildConfig(
-                defaultCacheRepository: S3_PATH,
+                cacheBucketPath: S3_PATH,
                 cacheBucketRegion: REGION,
                 buildkitImage: 'moby/buildkit:v0.26.0-rootless')
 
