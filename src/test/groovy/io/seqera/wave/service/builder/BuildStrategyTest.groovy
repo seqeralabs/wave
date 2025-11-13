@@ -280,7 +280,7 @@ class BuildStrategyTest extends Specification {
 
         when:
         def config = new BuildConfig(
-                cacheBucketPath: S3_PATH,
+                defaultCacheRepository: S3_PATH,
                 cacheBucketRegion: REGION,
                 cacheBucketUploadParallelism: PARALLELISM,
                 buildkitImage: 'moby/buildkit:v0.26.0-rootless')
@@ -314,7 +314,7 @@ class BuildStrategyTest extends Specification {
 
         when:
         def config = new BuildConfig(
-                cacheBucketPath: 's3://test-bucket/cache/path',
+                defaultCacheRepository: 's3://test-bucket/cache/path',
                 cacheBucketRegion: 'ap-south-1',
                 buildkitImage: 'moby/buildkit:v0.26.0-rootless')
         and:
@@ -358,18 +358,6 @@ class BuildStrategyTest extends Specification {
         BuildConfig.isBucketPath('docker.io/library/ubuntu') == false
         BuildConfig.isBucketPath('quay.io/cache') == false
         BuildConfig.isBucketPath(null) == false
-    }
-
-    def 'should prioritize registry over bucket when both configured' () {
-        given:
-        def config = new BuildConfig(
-                defaultCacheRepository: 'registry.example.com/wave/cache',
-                cacheBucketPath: 's3://my-bucket/cache',
-                buildkitImage: 'moby/buildkit:v0.26.0-rootless')
-
-        expect:
-        config.cacheLocation == 'registry.example.com/wave/cache'
-        BuildConfig.isBucketPath(config.cacheLocation) == false
     }
 
     def 'should create registry import cache options' () {
@@ -435,7 +423,7 @@ class BuildStrategyTest extends Specification {
         )
         and:
         def config = new BuildConfig(
-                cacheBucketPath: S3_PATH,
+                defaultCacheRepository: S3_PATH,
                 cacheBucketRegion: REGION,
                 buildkitImage: 'moby/buildkit:v0.26.0-rootless')
 

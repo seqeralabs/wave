@@ -179,7 +179,7 @@ class ContainerController {
 
     @PostConstruct
     private void init() {
-        log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl; default-build-repo: ${buildConfig?.defaultBuildRepository}; default-cache-repo: ${buildConfig?.defaultCacheRepository}; cache-bucket-path: ${buildConfig?.cacheBucketPath}; default-public-repo: ${buildConfig?.defaultPublicRepository}"
+        log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl; default-build-repo: ${buildConfig?.defaultBuildRepository}; default-cache-repo: ${buildConfig?.defaultCacheRepository}; default-public-repo: ${buildConfig?.defaultPublicRepository}"
     }
 
     @Deprecated
@@ -336,7 +336,7 @@ class ContainerController {
                 ? buildConfig.defaultPublicRepository
                 : buildConfig.defaultBuildRepository), req.nameStrategy)
         final cacheRepository = !validationService.isCustomRepo(req.buildRepository)
-                ? (req.cacheRepository ?: buildConfig.cacheLocation)
+                ? (req.cacheRepository ?: buildConfig.defaultCacheRepository)
                 : req.cacheRepository   // use custom cache repo, when is a custom build repo
         final configJson = inspectService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
         /**

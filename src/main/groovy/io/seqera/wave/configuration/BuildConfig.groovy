@@ -54,16 +54,8 @@ class BuildConfig {
     String defaultCacheRepository
 
     /**
-     * S3 bucket path for BuildKit cache storage. Mutually exclusive with {@link #defaultCacheRepository}.
-     * Example: {@code s3://my-bucket/buildkit-cache}
-     */
-    @Nullable
-    @Value('${wave.build.cache-bucket-path}')
-    String cacheBucketPath
-
-    /**
-     * AWS region for the S3 cache bucket specified in {@link #cacheBucketPath}.
-     * Only used when {@link #cacheBucketPath} is configured.
+     * AWS region for the S3 cache bucket specified in {@link #defaultCacheRepository}.
+     * Only used when {@link #defaultCacheRepository} is an S3 bucket path.
      */
     @Nullable
     @Value('${wave.build.cache-bucket-region}')
@@ -72,7 +64,7 @@ class BuildConfig {
     /**
      * Number of layers to upload to S3 in parallel during cache export.
      * Each individual layer is uploaded with 5 threads using the AWS SDK Upload Manager.
-     * Only used when {@link #cacheBucketPath} is configured.
+     * Only used when {@link #defaultCacheRepository} is an S3 bucket path.
      */
     @Nullable
     @Value('${wave.build.cache-bucket-upload-parallelism}')
@@ -164,7 +156,6 @@ class BuildConfig {
                 "singularity-image=${singularityImage}; " +
                 "default-build-repository=${defaultBuildRepository}; " +
                 "default-cache-repository=${defaultCacheRepository}; " +
-                "cache-bucket-path=${cacheBucketPath}; " +
                 "cache-bucket-region=${cacheBucketRegion}; " +
                 "cache-bucket-upload-parallelism=${cacheBucketUploadParallelism}; " +
                 "default-public-repository=${defaultPublicRepository}; " +
@@ -185,17 +176,9 @@ class BuildConfig {
         if( trustedTimeout < defaultTimeout ) {
             log.warn "Trusted build timeout should be longer than default timeout - check configuration setting 'wave.build.trusted-timeout'"
         }
-        // validate mutual exclusivity of cache settings
-        if( defaultCacheRepository && cacheBucketPath ) {
-            log.warn "Both 'wave.build.cache' and 'wave.build.cache-bucket-path' are configured - these settings are mutually exclusive. Using 'wave.build.cache' as priority."
-        }
         // validate at least one cache location is configured
-        if( !defaultCacheRepository && !cacheBucketPath ) {
-            log.warn "No cache location configured - at least one of 'wave.build.cache' or 'wave.build.cache-bucket-path' must be set"
-        }
-        // validate defaultCacheRepository does not contain S3 paths
-        if( defaultCacheRepository?.startsWith('s3://') ) {
-            throw new IllegalArgumentException("Setting 'wave.build.cache' should not contain S3 paths - use 'wave.build.cache-bucket-path' instead. Offending value: ${defaultCacheRepository}")
+        if( !defaultCacheRepository ) {
+            log.warn "No cache location configured - 'wave.build.cache' should be set to a container registry or S3 bucket path"
         }
     }
 
@@ -239,17 +222,6 @@ class BuildConfig {
             return null
         final store = BucketTokenizer.from(locksPath)
         return store.scheme ? store.getKey() : null
-    }
-
-    /**
-     * Get the cache location for BuildKit cache operations.
-     * Returns either the container registry cache repository or the S3 bucket path,
-     * with registry taking precedence if both are configured.
-     *
-     * @return The cache location (registry or S3 bucket path), or {@code null} if neither is configured
-     */
-    String getCacheLocation() {
-        return defaultCacheRepository ?: cacheBucketPath
     }
 
     /**
