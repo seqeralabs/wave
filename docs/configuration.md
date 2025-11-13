@@ -110,7 +110,7 @@ Configure the HTTP client with the following options:
 Configure how Wave builds container images and manages associated logs for monitoring, troubleshooting, and delivery with the following options:
 
 `wave.build.buildkit-image` *(required)*
-: Sets the [Buildkit](https://github.com/moby/buildkit) container image used in the Wave build process (default: `moby/buildkit:v0.26.0-rootless`).
+: Sets the [Buildkit](https://github.com/moby/buildkit) container image used in the Wave build process (default: `moby/buildkit:v0.25.2-rootless`).
 
 `wave.build.cache` *(optional)*
 : Sets the cache repository for images built by Wave. Supports both container registry paths and S3 bucket paths.
