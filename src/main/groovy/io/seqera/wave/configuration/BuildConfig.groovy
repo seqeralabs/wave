@@ -49,6 +49,7 @@ class BuildConfig {
     @Value('${wave.build.repo}')
      String defaultBuildRepository
 
+    @Nullable
     @Value('${wave.build.cache}')
     String defaultCacheRepository
 
@@ -177,6 +178,10 @@ class BuildConfig {
         // validate mutual exclusivity of cache settings
         if( defaultCacheRepository && cacheBucketPath ) {
             log.warn "Both 'wave.build.cache' and 'wave.build.cache-bucket-path' are configured - these settings are mutually exclusive. Using 'wave.build.cache' as priority."
+        }
+        // validate at least one cache location is configured
+        if( !defaultCacheRepository && !cacheBucketPath ) {
+            log.warn "No cache location configured - at least one of 'wave.build.cache' or 'wave.build.cache-bucket-path' must be set"
         }
         // validate defaultCacheRepository does not contain S3 paths
         if( defaultCacheRepository?.startsWith('s3://') ) {
