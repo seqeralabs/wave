@@ -183,7 +183,9 @@ abstract class BuildStrategy {
 
     private static String parsePrefixFromS3Path(String s3Path) {
         final tokenizer = BucketTokenizer.from(s3Path)
-        return tokenizer.key ?: null
+        final prefix = tokenizer.key
+        // ensure prefix always has a trailing slash if not null
+        return prefix && !prefix.endsWith('/') ? prefix + '/' : prefix
     }
 
 }
