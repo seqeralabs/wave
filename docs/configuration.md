@@ -203,10 +203,13 @@ The IAM role must have permissions to access the S3 cache bucket:
     {
       "Effect": "Allow",
       "Action": [
-        "s3:GetObject",
         "s3:PutObject",
+        "s3:GetObject",
         "s3:DeleteObject",
-        "s3:ListBucket"
+        "s3:ListBucket",
+        "s3:AbortMultipartUpload",
+        "s3:ListMultipartUploadParts",
+        "s3:ListBucketMultipartUploads"
       ],
       "Resource": [
         "arn:aws:s3:::my-bucket/wave/cache",
