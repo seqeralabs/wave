@@ -135,12 +135,12 @@ data:
 
     # Redis configuration for caching and session management
     redis:
-      uri: "rediss://your-redis-host:6379"
+      uri: "redis://your-redis-host:6379"
 
     # Platform integration (optional)
     tower:
       endpoint:
-        url: "https://your-platform-server.com"
+        url: "https://your-platform-server.com/api"
 
     # Micronaut framework configuration
     micronaut:
