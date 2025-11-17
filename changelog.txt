@@ -1,4 +1,11 @@
 # Wave changelog
+1.29.0 - 13 Nov 2024
+- Add S3 cache support for BuildKit (#927) [8dac665a0]
+- Update buildkit to 0.25.2 (#928) [68a6a2e4a]
+- Add docs for CRAN package support (#925) [482fc1d3c]
+- Fix product name capitalization in documentation (#883) [f03025535]
+- Update local dev config [059b2e4e]
+
 1.28.0 - 4 Nov 2024
 - Add CRAN package support for Wave container builds (#874) [81b4e6681]
 
