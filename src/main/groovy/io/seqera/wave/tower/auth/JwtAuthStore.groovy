@@ -24,8 +24,8 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.serde.moshi.MoshiEncodeStrategy
-import io.seqera.wave.store.state.AbstractStateStore
-import io.seqera.wave.store.state.impl.StateProvider
+import io.seqera.data.store.state.AbstractStateStore
+import io.seqera.data.store.state.impl.StateProvider
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**

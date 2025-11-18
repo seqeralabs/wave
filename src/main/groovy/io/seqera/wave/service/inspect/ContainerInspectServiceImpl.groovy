@@ -28,6 +28,7 @@ import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.ContainerAugmenter
 import io.seqera.wave.core.ContainerPath
@@ -93,12 +94,14 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
             repos.addAll(findRepositories(containerFile))
         if( buildRepo )
             repos.add(buildRepo)
-        if( cacheRepo )
+        // skip S3 bucket paths - they don't require container registry credentials
+        if( cacheRepo && !BuildConfig.isBucketPath(cacheRepo) )
             repos.add(cacheRepo)
         final result = credsJson(repos, identity)
         if( buildRepo && result && !result.contains(host0(buildRepo)) )
             throw new BadRequestException("Missing credentials for container repository: $buildRepo")
-        if( cacheRepo && result && !result.contains(host0(cacheRepo)) )
+        // skip validation for S3 bucket paths
+        if( cacheRepo && !BuildConfig.isBucketPath(cacheRepo) && result && !result.contains(host0(cacheRepo)) )
             throw new BadRequestException("Missing credentials for container repository: $cacheRepo")
         return result
     }
