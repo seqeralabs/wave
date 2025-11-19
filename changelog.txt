@@ -1,4 +1,8 @@
 # Wave changelog
+1.29.1 - 19 Nov 2025
+- Fix scan requirement on createScanStorageOpts [33463ebd2]
+- Add node selectors in scan, mirror and transfer jobs (#905) [47a7c5ac4]
+
 1.29.0 - 13 Nov 2024
 - Add S3 cache support for BuildKit (#927) [8dac665a0]
 - Update buildkit to 0.25.2 (#928) [68a6a2e4a]
