@@ -30,7 +30,7 @@ When Fusion is enabled or when using the AWS Fargate executor, Wave bundles work
 Wave bundles module `bin` scripts into a container layer when you enable the module binaries feature.
 
 ```groovy
-nextflow.preview.module.binaries = true
+nextflow.enable.moduleBinaries = true
 
 wave {
   enabled = true
