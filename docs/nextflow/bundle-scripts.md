@@ -12,22 +12,22 @@ Wave bundles certain executable scripts from your Nextflow pipeline into contain
 
 Nextflow pipelines can store scripts in multiple locations. Wave treats each location differently:
 
-| Location     | Nextflow project path             | Wave behavior         |
-|--------------|-----------------------------------|-----------------------|
-| Workflow bin | `${projectDir}/bin/`              | Bundled conditionally |
-| Module bin   | `${moduleDir}/resources/usr/bin/` | Always bundled        |
-| Templates    | `${projectDir}/templates/`        | Not bundled           |
-| Library      | `${projectDir}/lib/`              | Not bundled           |
+| Location                                            | Nextflow project path             | Wave behavior         |
+|-----------------------------------------------------|-----------------------------------|-----------------------|
+| [Workflow `bin` directory](#workflow-bin-directory) | `${projectDir}/bin/`              | Bundled conditionally |
+| [Module `bin` directory](#module-bin-directory)     | `${moduleDir}/resources/usr/bin/` | Always bundled        |
+| [Templates directory](#template-directory)          | `${projectDir}/templates/`        | Not bundled           |
+| [Library directory](#library-directory)             | `${projectDir}/lib/`              | Not bundled           |
 
-### Workflow bin
+### Workflow `bin` directory
 
-By default, Wave does not receive scripts from the workflow `bin` directory. Nextflow uploads these scripts to the work directory at runtime using cloud storage APIs.
+Wave doesn't bundle scripts from the workflow `bin` directory by default. Nextflow uploads these scripts to the work directory at runtime using cloud storage APIs.
 
-When Fusion or AWS Fargate executor are enabled, Wave receives and bundles workflow `bin` scripts. Wave creates a container layer containing the scripts and adds them to the container.
+When Fusion is enabled or when using the AWS Fargate executor, Wave bundles workflow `bin` scripts into a container layer.
 
-### Module bin
+### Module `bin` directory
 
-Wave bundles module `bin` scripts when Nextflow's module binaries feature is enabled.
+Wave bundles module `bin` scripts into a container layer when you enable the module binaries feature.
 
 ```groovy
 nextflow.preview.module.binaries = true
@@ -37,46 +37,48 @@ wave {
 }
 ```
 
-Scripts are placed at `/usr/local/bin/` in the container and automatically available in `$PATH`.
+Module scripts must be placed in `<MODULE_DIRECTORY>/resources/usr/bin/`. Wave bundles them into a container layer at `/usr/local/bin/` and adds them to `$PATH`.
+
+:::info
+Wave uses content-based fingerprinting for bundled scripts, ignoring file timestamps. This ensures that modifying only timestamps (without changing file contents) won't invalidate Nextflow's task cache or trigger unnecessary container rebuilds.
+:::
 
 :::warning
 Module binaries do not work on cloud executors without Wave. Tasks will fail if Wave is not enabled.
 :::
 
-### Templates
+### Template directory
 
-Wave does not receive or bundle template files. Nextflow evaluates templates during task submission and embeds them directly into process execution scripts. Wave only sees the final evaluated process script, not the template source files.
+Wave does not bundle template files. When a process uses a template, Nextflow evaluates the template during task preparation (before submission) by substituting all variables with their actual values. The evaluated content is then embedded directly into the task's execution script (`.command.sh`). Wave only receives and containers only contain the final, fully-evaluated script—never the original template files with placeholders.
 
-### Library
+### Library directory
 
-Wave does not receive or bundle Groovy library files from `${projectDir}/lib/`. These files are loaded into Nextflow's JVM at pipeline launch and are not part of task execution environments. Library files are outside Wave's scope.
+Wave does not bundle Groovy library files from `${projectDir}/lib/`. These files contain custom classes and utilities that extend Nextflow's workflow orchestration capabilities. They are compiled and loaded into Nextflow's JVM classpath at pipeline startup, where they become part of the workflow engine itself—not the containerized task execution environments. Since library files operate at the workflow coordination layer rather than the task execution layer, they remain outside Wave's containerization scope.
 
 ## Modifying scripts
 
-- **Modify workflow bin script (with Fusion)**: Changes fingerprint → Wave rebuilds container
-- **Modify module bin script**: Changes fingerprint → Wave rebuilds container
-- **Add/remove scripts**: Changes fingerprint → Wave rebuilds container
-- **Modify base container image**: Changes fingerprint → Wave rebuilds container
-- **Change only timestamps**: No fingerprint change → Wave reuses cached container
+Wave uses content-based fingerprinting to determine when containers need rebuilding. This approach ensures reproducible builds and preserves Nextflow's resume functionality.
 
-## Test augmented containers
+Container fingerprints are included in Nextflow's task hash calculation. When fingerprints change, cached task results become invalid and tasks must re-run.
 
-Pull and inspect containers Wave created:
+## Pull and inspect scripts
 
-**Pull Wave-generated container**
+To pull and inspect containers:
 
-```bash
-docker pull wave.seqera.io/wt/<hash>/<image>
-```
+1. Pull Wave-generated containers:
 
-**List bundled scripts**
+    ```bash
+    docker pull wave.seqera.io/wt/<HASH>/<IMAGE>
+    ```
 
-```bash
-docker run --rm wave.seqera.io/wt/<hash>/<image> ls -la /usr/local/bin/
-```
+1. List bundled scripts
 
-**Verify script availability**
+    ```bash
+    docker run --rm wave.seqera.io/wt/<HASH>/<IMAGE> ls -la /usr/bin/
+    ```
 
-```bash
-docker run --rm wave.seqera.io/wt/<hash>/<image> which your-script.sh
-```
+1. Verify script availability
+
+    ```bash
+    docker run --rm wave.seqera.io/wt/<HASH>/<IMAGE> which <YOUR_SCRIPT>
+    ```
