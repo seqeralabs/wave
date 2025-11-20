@@ -59,11 +59,11 @@ Wave does not bundle Groovy library files from `${projectDir}/lib/`. These files
 
 Wave uses content-based fingerprinting to determine when containers need rebuilding. This approach ensures reproducible builds and preserves Nextflow's resume functionality.
 
-Container fingerprints are included in Nextflow's task hash calculation. When fingerprints change, cached task results become invalid and tasks must re-run.
+Container fingerprints are included in the Nextflow task hash calculation. When fingerprints change, cached task results become invalid and tasks must re-run.
 
 ## Pull and inspect scripts
 
-To pull and inspect containers:
+To pull and inspect Wave containers:
 
 1. Pull Wave-generated containers:
 
@@ -82,3 +82,7 @@ To pull and inspect containers:
     ```bash
     docker run --rm wave.seqera.io/wt/<HASH>/<IMAGE> which <YOUR_SCRIPT>
     ```
+
+:::note
+Update the container path if using a private container registry.
+:::
