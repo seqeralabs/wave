@@ -140,7 +140,7 @@ data:
     # Platform integration (optional)
     tower:
       endpoint:
-        url: "https://your-platform-server.com"
+        url: "https://your-platform-server.com/api"
 
     # Micronaut framework configuration
     micronaut:
