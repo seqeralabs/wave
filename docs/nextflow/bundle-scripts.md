@@ -1,37 +1,37 @@
 ---
 title: Bundling pipeline scripts
-description: Learn how Wave packages scripts from Nextflow pipelines into container images
+description: Learn how Wave bundles scripts from Nextflow pipelines into container images
 date created: 2025-11-19
 date edited: 2025-11-19
 tags: [nextflow, wave, scripts, guides]
 ---
 
-On cloud platforms without shared file systems, containerized tasks cannot access scripts from a shared directory. Wave solves this by packaging certain scripts directly into the container image, making them available in the task execution environment.
+On cloud platforms without shared file systems, containerized tasks cannot access scripts from a shared directory. Wave solves this by packaging certain scripts directly into the container image and making them available in the task execution environment.
 
-This guide explains which script directories Wave bundles when bundling or augmenting containers.
+This guide explains which `bin` script directories Wave bundles when building container images.
 
-## Script locations in Nextflow
+## Script location and behavior
 
-Nextflow pipelines can store scripts in multiple locations. Wave treats each location differently:
+Nextflow pipelines can store `bin` scripts in multiple locations. Wave treats each location differently:
 
 | Location                                                   | Nextflow project path             | Wave behavior         |
 |------------------------------------------------------------|-----------------------------------|-----------------------|
-| [Project `bin` directory](#projectbin-directory)           | `${projectDir}/bin/`              | Bundled conditionally |
+| [Project `bin` directory](#project-bin-directory)          | `${projectDir}/bin/`              | Bundled conditionally |
 | [Module `bin` directory](#module-bin-directory)            | `${moduleDir}/resources/usr/bin/` | Always bundled        |
-| [Module `templates` directory](#module-template-directory) | `${moduleDir}/templates/`         | Not bundled           |
-| [Project `lib` directory](#project-lib-directory)          | `${projectDir}/lib/`              | Not bundled           |
 
 ### Project `bin` directory
 
-Wave does not bundle scripts from the workflow `bin` directory by default. Nextflow uploads these scripts to the work directory at runtime using cloud storage APIs. This approach adds network overhead and can be inefficient when launching many tasks.
+Wave does not bundle scripts from the project [`bin` directory](https://nextflow.io/docs/latest/sharing.html#the-bin-directory) by default. Nextflow uploads these scripts to the work directory at runtime using cloud APIs. This approach adds network overhead and can be inefficient when launching many tasks.
 
-When you enable Fusion or when you use the AWS Fargate executor, Wave bundles workflow `bin` scripts into a container layer. This provides better performance but ties scripts to specific execution environments. For portable script bundling, use the [module `bin` directory](#module-bin-directory) instead.
+When you enable Fusion or use the AWS Fargate executor, Wave bundles scripts from the project `bin` directory into a container layer. This provides better performance but ties scripts to specific execution environments.
 
-See [The `bin` directory](https://nextflow.io/docs/latest/sharing.html#the-bin-directory) for more information.
+Modifying scripts in the project `bin` directory modify the container fingerprint for all Wave containers in the workflow. See [Wave container fingerprinting](#wave-container-fingerprinting) for more information.
 
 ### Module `bin` directory
 
-Wave bundles scripts from module `bin` directories into container layers when you enable Wave and the module binaries feature.
+Wave bundles scripts from [module `bin` directories](https://nextflow.io/docs/latest/module.html#module-binaries) into container layers. Module `bin` directories are a portable script solution that works across execution environments.
+
+You must enable Wave and the module binaries feature to bundle module scripts:
 
 ```groovy
 nextflow.enable.moduleBinaries = true
@@ -40,36 +40,28 @@ wave {
   enabled = true
 }
 ```
-
-Module scripts must be placed in `<MODULE_DIRECTORY>/resources/usr/bin/` folders. See [Module binaries](https://nextflow.io/docs/latest/module.html#module-binaries) for more information.
+Scripts are scoped to specific modules and only affect containers that use those modules. Modifying a script in a module `bin` directory only changes the container fingerprint for processes that use that module, leaving other containers unchanged. See [Wave container fingerprinting](#wave-container-fingerprinting) for more information.
 
 :::warning
 Module binaries do not work on cloud executors without Wave.
 :::
 
-:::info
-Wave uses content-based fingerprinting for bundled scripts, ignoring file timestamps. This ensures that modifying only timestamps (without changing file contents) won't invalidate Nextflow's task cache or trigger unnecessary container rebuilds.
+## Wave container fingerprinting
+
+Wave bundles `bin` scripts into container layers and generates fingerprints that become part of the task hash:
+
+- Scripts in module `bin` directory are added as a container layer
+- When Fusion or the AWS Fargate executor are enabled, scripts in project `bin` directory are added as a container layer
+- Script layers receive a fingerprint based on content, ignoring file timestamps
+- Script layer fingerprints are incorporated in the container fingerprint
+
+If you modify `bin` scripts, Wave generates a new layer fingerprint, which creates a new container fingerprint and invalidates the cache.
+
+:::note
+If Fusion or the AWS Fargate executor are enabled, Wave will include the project-level `bin` directory as a layer in all containers. Any changes to scripts in the project-level `bin` directory will change the layer and force recalculation of all containers in the workflow.
 :::
 
-### Module `templates` directory
-
-Wave does not bundle template files. When a process uses a template, Nextflow evaluates the template during task preparation (before submission) by substituting all variables with their actual values. The evaluated content is then embedded directly into the task's execution script (`.command.sh`). Wave receives only the final, fully-evaluated script, and containers contain only this evaluated version—never the original template files with placeholders.
-
-See [Module templates](https://nextflow.io/docs/latest/module.html#module-templates) for more information.
-
-### Project `lib` directory
-
-Wave does not bundle Groovy library files from `${projectDir}/lib/`. These files contain custom classes and utilities that extend Nextflow's workflow orchestration capabilities. They are compiled and loaded into Nextflow's JVM classpath at pipeline startup, where they become part of the workflow engine itself, not the containerized task execution environments. Since library files operate at the workflow coordination layer rather than the task execution layer, they remain outside Wave's containerization scope.
-
-See [The `lib` directory](https://nextflow.io/docs/latest/sharing.html#the-lib-directory) for more information.
-
-## Modifying scripts
-
-Wave uses content-based fingerprinting to determine when containers need rebuilding. This approach ensures reproducible builds and preserves Nextflow's resume functionality.
-
-Container fingerprints are included in the Nextflow task hash calculation. When fingerprints change, cached task results become invalid and tasks must re-run.
-
-## Pull and inspect container scripts
+## Inspect container scripts
 
 To pull and inspect Wave containers:
 
@@ -90,7 +82,3 @@ To pull and inspect Wave containers:
     ```bash
     docker run --rm wave.seqera.io/wt/<HASH>/<IMAGE> which <YOUR_SCRIPT>
     ```
-
-:::note
-Update the container path if you are using a private container registry.
-:::
