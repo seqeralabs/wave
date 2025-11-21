@@ -135,7 +135,7 @@ data:
 
     # Redis configuration for caching and session management
     redis:
-      uri: "redis://your-redis-host:6379"
+      uri: "rediss://your-redis-host:6379"
 
     # Platform integration (optional)
     tower:
