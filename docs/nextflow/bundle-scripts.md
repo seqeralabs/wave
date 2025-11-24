@@ -6,7 +6,7 @@ date edited: 2025-11-19
 tags: [nextflow, wave, scripts, guides]
 ---
 
-On cloud platforms without shared file systems, containerized tasks cannot access scripts from a shared directory. Wave solves this by packaging certain scripts directly into the container image and making them available in the task execution environment.
+On cloud platforms without POSIX-compliant shared file system for the work directory, containerized tasks cannot access scripts from a shared directory. Wave solves this by packaging certain scripts directly into the container image and making them available in the task execution environment.
 
 This guide explains which `bin` script directories Wave bundles when building container images.
 
@@ -29,7 +29,7 @@ Modifying scripts in the project `bin` directory modify the container fingerprin
 
 ### Module `bin` directory
 
-Wave bundles scripts from [module `bin` directories](https://nextflow.io/docs/latest/module.html#module-binaries) into container layers. Module `bin` directories are a portable script solution that works across execution environments.
+Wave bundles scripts from [module `bin` directories](https://nextflow.io/docs/latest/module.html#module-binaries) into a container layer. Scripts are added to `/usr/bin/` in the container image, making them directly executable without path qualification. The `bin` module directories provide a portable script solution that works across various execution environments.
 
 You must enable Wave and the module binaries feature to bundle module scripts:
 
@@ -55,7 +55,7 @@ Wave bundles `bin` scripts into container layers and generates fingerprints that
 - Script layers receive a fingerprint based on content, ignoring file timestamps
 - Script layer fingerprints are incorporated in the container fingerprint
 
-If you modify `bin` scripts, Wave generates a new layer fingerprint, which creates a new container fingerprint and invalidates the cache.
+If you modify `bin` scripts, Wave generates a new layer fingerprint, which creates a new container fingerprint and invalidates the task cache.
 
 :::note
 If Fusion or the AWS Fargate executor are enabled, Wave will include the project-level `bin` directory as a layer in all containers. Any changes to scripts in the project-level `bin` directory will change the layer and force recalculation of all containers in the workflow.
