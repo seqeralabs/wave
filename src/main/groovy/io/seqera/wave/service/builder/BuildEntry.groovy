@@ -22,8 +22,8 @@ import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import io.seqera.wave.service.job.JobEntry
-import io.seqera.wave.store.state.StateEntry
-import io.seqera.wave.store.state.RequestIdAware
+import io.seqera.data.store.state.StateEntry
+import io.seqera.data.store.state.RequestIdAware
 /**
  * Class to store build request and result in cache
  *

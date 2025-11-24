@@ -27,13 +27,13 @@ import java.time.Duration
 import java.time.Instant
 
 import io.micronaut.context.ApplicationContext
+import io.seqera.fixtures.redis.RedisTestContainer
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.impl.BuildStateStoreImpl
 import io.seqera.wave.service.job.JobFactory
 import io.seqera.wave.service.job.JobProcessingQueue
-import io.seqera.wave.store.state.impl.RedisStateProvider
-import io.seqera.wave.test.RedisTestContainer
+import io.seqera.data.store.state.impl.RedisStateProvider
 import io.seqera.wave.tower.PlatformId
 /**
  *

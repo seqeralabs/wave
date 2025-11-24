@@ -22,12 +22,14 @@ import java.time.Duration
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
+import io.seqera.data.stream.MessageConsumer
+import io.seqera.data.stream.MessageStream
+import io.seqera.serde.encode.StringEncodingStrategy
 import io.seqera.wave.configuration.JobManagerConfig
-import io.seqera.wave.encoder.EncodingStrategy
-import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.service.data.stream.AbstractMessageStream
-import io.seqera.wave.service.data.stream.MessageConsumer
-import io.seqera.wave.service.data.stream.MessageStream
+import io.seqera.wave.configuration.WaveLite
+import io.seqera.serde.moshi.MoshiEncodeStrategy
+import io.seqera.wave.service.data.stream.BaseMessageStream
 import jakarta.annotation.PreDestroy
 import jakarta.inject.Singleton
 /**
@@ -36,14 +38,15 @@ import jakarta.inject.Singleton
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Requires(missingBeans = WaveLite)
 @Slf4j
 @Singleton
 @CompileStatic
-class JobPendingQueue extends AbstractMessageStream<JobSpec> {
+class JobPendingQueue extends BaseMessageStream<JobSpec> {
 
     private final static String STREAM_NAME = 'jobs-pending/v2'
 
-    private EncodingStrategy<JobSpec> encoder
+    private StringEncodingStrategy<JobSpec> encoder
 
     private JobManagerConfig config
 

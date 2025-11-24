@@ -19,7 +19,7 @@
 package io.seqera.wave.proxy
 
 import groovy.transform.EqualsAndHashCode
-import io.seqera.wave.encoder.MoshiSerializable
+import io.seqera.serde.moshi.MoshiSerializable
 /**
  * Model a response object to be forwarded to the client
  * 

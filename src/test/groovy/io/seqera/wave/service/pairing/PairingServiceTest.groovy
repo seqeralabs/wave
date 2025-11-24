@@ -28,8 +28,8 @@ import java.time.Duration
 import java.util.concurrent.ThreadLocalRandom
 
 import groovy.util.logging.Slf4j
-import io.seqera.wave.store.state.impl.LocalStateProvider
-import io.seqera.wave.util.LongRndKey
+import io.seqera.data.store.state.impl.LocalStateProvider
+import io.seqera.random.LongRndKey
 
 @Slf4j
 class PairingServiceTest extends Specification{

@@ -21,16 +21,19 @@ package io.seqera.wave.service.scan
 import java.time.Duration
 
 import groovy.transform.CompileStatic
+import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.ScanConfig
-import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.store.state.AbstractStateStore
-import io.seqera.wave.store.state.impl.StateProvider
+import io.seqera.wave.configuration.ScanEnabled
+import io.seqera.serde.moshi.MoshiEncodeStrategy
+import io.seqera.data.store.state.AbstractStateStore
+import io.seqera.data.store.state.impl.StateProvider
 import jakarta.inject.Singleton
 /**
  * Implement a store for scan state
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Requires(bean = ScanEnabled)
 @Singleton
 @CompileStatic
 class ScanStateStore extends AbstractStateStore<ScanEntry> {

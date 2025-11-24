@@ -1,0 +1,60 @@
+wave:
+  debug: true
+  scan:
+    enabled: true
+    reports:
+      path: "${PWD}/build-workspace/scans"
+    failure:
+      duration: '30s'
+  build:
+    repo : "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/dev"
+    cache : "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/cache"
+    public-repo : "community.wave.seqera.io"
+    workspace: 'build-workspace'
+    logs:
+      path: "${PWD}/build-workspace/logs"
+    locks:
+      path: "${PWD}/build-workspace/locks"
+  metrics:
+    enabled: true
+  accounts:
+    ### password checksum 'bar'
+    foo: "fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9"
+  jwt:
+    refresh:
+      interval: '10s'
+    monitor:
+      interval: '5s'
+  cleanup:
+    succeeded: '10s'
+    failed: '45s'
+    strategy: 'onsuccess'
+  trace:
+    local-persistence:
+      threshold: 100
+    surreal-persistence:
+      threshold: 100
+    proxy-service:
+      threshold: 100
+---
+endpoints:
+  metrics:
+    enabled: true
+---
+# uses TOWER_xxx variable because the dev environment is expected to be
+# the same as of tower
+mail:
+  from: "${TOWER_CONTACT_EMAIL:wave-app+dev@seqera.io}"
+---
+logger:
+  levels:
+    io.seqera.wave.service.data: DEBUG
+    io.seqera.wave.service.pairing: TRACE
+    io.seqera.wave.service.job: DEBUG
+    io.seqera.wave.service.k8s.K8sServiceImpl: TRACE
+    io.seqera.wave.tower.client.connector: TRACE
+#    io.seqera.wave.tower.client: 'TRACE'
+#    io.seqera.wave.store.cache: 'TRACE'
+#    io.seqera.wave.tower.auth: 'TRACE'
+#    io.seqera.wave.core.RegistryProxyService: TRACE
+...

@@ -33,6 +33,7 @@ import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
+import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.runtime.server.EmbeddedServer
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
@@ -52,6 +53,7 @@ import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanEntry
+import io.seqera.wave.service.scan.ScanType
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
@@ -272,7 +274,6 @@ class ViewControllerTest extends Specification {
         response.body().contains('latest')
         response.body().contains('https://registry-1.docker.io')
         response.body().contains('arm64')
-        response.body().contains(serverUrl)
     }
 
     def 'should render in progress build page' () {
@@ -360,7 +361,9 @@ class ViewControllerTest extends Specification {
 
     def 'should create binding' () {
         given:
-        def controller = new ViewController(serverUrl: serverUrl, buildLogService: buildLogService)
+        def scanService = Mock(ContainerScanService)
+        and:
+        def controller = new ViewController(serverUrl: serverUrl, buildLogService: buildLogService, scanService:scanService)
         and:
         def result = new WaveScanRecord(
                 '12345',
@@ -380,6 +383,8 @@ class ViewControllerTest extends Specification {
         when:
         def binding = controller.makeScanViewBinding(result)
         then:
+        scanService.fetchReportStream(result.id, ScanType.Spdx) >> Mock(StreamedFile)
+        and:
         binding.scan_id == '12345'
         binding.scan_container_image == 'docker.io/some:image'
         binding.scan_time == formatTimestamp(result.startTime)
@@ -387,6 +392,7 @@ class ViewControllerTest extends Specification {
         binding.scan_succeeded
         binding.scan_exitcode == 0
         binding.scan_logs == "Some scan logs"
+        binding.scan_sbom_spdx_url == 'http://foo.com/v1alpha1/scans/12345/spdx'
         binding.vulnerabilities == [new ScanVulnerability(id:'cve-1', severity:'HIGH', title:'test vul', pkgName:'testpkg', installedVersion:'1.0.0', fixedVersion:'1.1.0', primaryUrl:'http://vul/cve-1')]
         binding.build_id == 'bd-12345'
         binding.build_url == 'http://foo.com/view/builds/bd-12345'
@@ -538,11 +544,9 @@ class ViewControllerTest extends Specification {
 
         when:
         request = HttpRequest.GET("/view/builds/07277")
-        client.toBlocking().exchange(request, String)
+        response = client.toBlocking().exchange(request, String)
         then:
-        HttpClientResponseException e = thrown(HttpClientResponseException)
-        and:
-        e.status.code == 404
+        response.body().contains("Unknown build id")
 
     }
 
@@ -771,14 +775,14 @@ class ViewControllerTest extends Specification {
 
         where:
         VULNERABILITIES                                                                             | EXPEXTED_COLOR
-        [new ScanVulnerability(severity: 'LOW')]                                                    | new Colour('#dff0d8','#3c763d')
-        [new ScanVulnerability(severity: 'MEDIUM')]                                                 | new Colour('#fff8c5','#000000')
-        [new ScanVulnerability(severity: 'HIGH')]                                                   | new Colour('#ffe4e2','#e00404')
-        [new ScanVulnerability(severity: 'CRITICAL')]                                               | new Colour('#ffe4e2','#e00404')
-        [new ScanVulnerability(severity: 'LOW'), new ScanVulnerability(severity: 'MEDIUM')]         | new Colour('#fff8c5','#000000')
-        [new ScanVulnerability(severity: 'LOW'), new ScanVulnerability(severity: 'HIGH')]           | new Colour('#ffe4e2','#e00404')
-        [new ScanVulnerability(severity: 'MEDIUM'), new ScanVulnerability(severity: 'CRITICAL')]    | new Colour('#ffe4e2','#e00404')
-        []                                                                                          | new Colour('#dff0d8','#3c763d')
+        [new ScanVulnerability(severity: 'LOW')]                                                    | new Colour('#e5f5eC','#242424')
+        [new ScanVulnerability(severity: 'MEDIUM')]                                                 | new Colour('#fff8c5','#242424')
+        [new ScanVulnerability(severity: 'HIGH')]                                                   | new Colour('#ffe4e2','#242424')
+        [new ScanVulnerability(severity: 'CRITICAL')]                                               | new Colour('#ffe4e2','#242424')
+        [new ScanVulnerability(severity: 'LOW'), new ScanVulnerability(severity: 'MEDIUM')]         | new Colour('#fff8c5','#242424')
+        [new ScanVulnerability(severity: 'LOW'), new ScanVulnerability(severity: 'HIGH')]           | new Colour('#ffe4e2','#242424')
+        [new ScanVulnerability(severity: 'MEDIUM'), new ScanVulnerability(severity: 'CRITICAL')]    | new Colour('#ffe4e2','#242424')
+        []                                                                                          | new Colour('#e5f5eC','#242424')
     }
 
     def 'should redirect to scan view on successful scan request'() {

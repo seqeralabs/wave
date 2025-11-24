@@ -25,8 +25,9 @@ import javax.annotation.PreDestroy
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
 import io.micronaut.scheduling.TaskExecutors
-import io.seqera.wave.service.data.queue.AbstractMessageQueue
-import io.seqera.wave.service.data.queue.MessageQueue
+import io.seqera.data.queue.MessageQueue
+import io.seqera.serde.moshi.MoshiEncodeStrategy
+import io.seqera.wave.service.data.queue.BaseMessageQueue
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -37,7 +38,7 @@ import jakarta.inject.Singleton
  */
 @Singleton
 @CompileStatic
-class PairingOutboundQueue extends AbstractMessageQueue<PairingMessage> {
+class PairingOutboundQueue extends BaseMessageQueue<PairingMessage> {
 
     final private Duration pollInterval
 
@@ -64,5 +65,10 @@ class PairingOutboundQueue extends AbstractMessageQueue<PairingMessage> {
     @PreDestroy
     void close() {
         super.close()
+    }
+
+    @Override
+    protected MoshiEncodeStrategy<PairingMessage> createEncodingStrategy() {
+        return PairingMessageEncodeStrategy.create()
     }
 }

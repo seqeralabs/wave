@@ -18,20 +18,24 @@
 
 package io.seqera.wave.service.mirror.strategy
 
-
 import java.nio.file.Path
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.openapi.ApiException
 import io.micronaut.context.annotation.Primary
+import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
+import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.configuration.MirrorConfig
+import io.seqera.wave.configuration.MirrorEnabled
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
 import io.seqera.wave.service.mirror.MirrorRequest
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+import static io.seqera.wave.util.K8sHelper.getSelectorLabel
+
 /**
  * Implements a container mirror runner based on Kubernetes
  *
@@ -39,6 +43,7 @@ import jakarta.inject.Singleton
  */
 @Slf4j
 @Primary
+@Requires(bean = MirrorEnabled)
 @Requires(property = 'wave.build.k8s')
 @Singleton
 @CompileStatic
@@ -50,10 +55,15 @@ class KubeMirrorStrategy extends MirrorStrategy {
     @Inject
     private K8sService k8sService
 
+    @Property(name='wave.build.k8s.node-selector')
+    @Nullable
+    private Map<String, String> nodeSelectorMap
+
     @Override
     void mirrorJob(String jobName, MirrorRequest request) {
         // docker auth json file
         final Path configFile = request.authJson ? request.workDir.resolve('config.json') : null
+        final selector = getSelectorLabel(request.platform, nodeSelectorMap)
 
         try {
             k8sService.launchMirrorJob(
@@ -62,7 +72,8 @@ class KubeMirrorStrategy extends MirrorStrategy {
                     copyCommand(request),
                     request.workDir,
                     configFile,
-                    config)
+                    config,
+                    selector)
         }
         catch (ApiException e) {
             throw new BadRequestException("Unexpected build failure - ${e.responseBody}", e)

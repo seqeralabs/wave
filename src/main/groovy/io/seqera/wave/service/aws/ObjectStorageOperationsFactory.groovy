@@ -24,6 +24,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Factory
+import io.micronaut.context.annotation.Requires
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.micronaut.objectstorage.InputStreamMapper
 import io.micronaut.objectstorage.ObjectStorageOperations
@@ -32,6 +33,9 @@ import io.micronaut.objectstorage.aws.AwsS3Operations
 import io.micronaut.objectstorage.local.LocalStorageConfiguration
 import io.micronaut.objectstorage.local.LocalStorageOperations
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.configuration.BuildEnabled
+import io.seqera.wave.configuration.ScanEnabled
 import io.seqera.wave.util.BucketTokenizer
 import jakarta.annotation.Nullable
 import jakarta.inject.Inject
@@ -52,6 +56,8 @@ class ObjectStorageOperationsFactory {
 
     public static final String BUILD_LOCKS = "build-locks"
 
+    public static final String SCAN_REPORTS = "scan-reports"
+
     @Inject
     private ApplicationContext context
 
@@ -59,8 +65,15 @@ class ObjectStorageOperationsFactory {
     @Nullable
     private BuildConfig buildConfig
 
+    @Inject
+    @Nullable
+    private ScanConfig scanConfig
+
+    ObjectStorageOperationsFactory() {}
+
     @Singleton
     @Named(BUILD_LOGS)
+    @Requires(bean = BuildEnabled)
     ObjectStorageOperations<?, ?, ?> createLogsStorageOps() {
         if( !buildConfig )
             throw new IllegalStateException("Build configuration is not defined")
@@ -69,10 +82,20 @@ class ObjectStorageOperationsFactory {
 
     @Singleton
     @Named(BUILD_LOCKS)
+    @Requires(bean = BuildEnabled)
     ObjectStorageOperations<?, ?, ?> createLocksStorageOpts() {
         if( !buildConfig )
             throw new IllegalStateException("Build configuration is not defined")
         return create0(BUILD_LOCKS, buildConfig.locksPath, "wave.build.locks.path")
+    }
+
+    @Singleton
+    @Named(SCAN_REPORTS)
+    @Requires(bean = ScanEnabled)
+    ObjectStorageOperations<?, ?, ?> createScanStorageOpts() {
+        if( !scanConfig )
+            throw new IllegalStateException("Scan configuration is not defined")
+        return create0(SCAN_REPORTS, scanConfig.reportsPath, "wave.scan.reports.path")
     }
 
     protected ObjectStorageOperations<?, ?, ?> create0(String scope, String path, String setting) {

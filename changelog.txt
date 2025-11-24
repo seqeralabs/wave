@@ -1,4 +1,101 @@
 # Wave changelog
+1.29.1 - 19 Nov 2025
+- Fix scan requirement on createScanStorageOpts [33463ebd2]
+- Add node selectors in scan, mirror and transfer jobs (#905) [47a7c5ac4]
+
+1.29.0 - 13 Nov 2024
+- Add S3 cache support for BuildKit (#927) [8dac665a0]
+- Update buildkit to 0.25.2 (#928) [68a6a2e4a]
+- Add docs for CRAN package support (#925) [482fc1d3c]
+- Fix product name capitalization in documentation (#883) [f03025535]
+- Update local dev config [059b2e4e]
+
+1.28.0 - 4 Nov 2024
+- Add CRAN package support for Wave container builds (#874) [81b4e6681]
+
+1.27.0 - 4 Nov 2024
+- Refactor state store to external library lib-data-store-state-redis [9b3fc3095]
+- Refactor future store to external library lib-data-store-future-redis [9b3fc3095]
+- Upgrade lib-data-queue-redis to version 1.1.1 [9b3fc3095]
+- Upgrade lib-data-stream-redis to version 1.1.2 [9b3fc3095]
+- Extract distributed state management to reusable library [9b3fc3095]
+- Extract distributed future handling to reusable library [9b3fc3095]
+
+1.26.1 - 23 Oct 2025
+- Refactor MoshiEncodeStrategy to remove Wave-specific polymorphic type adapters (#922) [abc71280d]
+- Bump lib-retry version 2.0.0 [63edabf95]
+- docs: Fix error in docs last_update (#921) [650c39415]
+- Upgrade Netty to 4.2.5.Final to fix CVE-2025-58057 (#920) [485ce7cd9]
+- docs: Update Wave use cases and FAQ (#917) [1b137e4ce]
+
+1.26.0 - 16 Oct 2025
+- Add security scanning for Nextflow plugins in OCI registries (#912) [5acca4367]
+- Bump Micronaut to version 4.9.4 [b056aff91]
+- docs: Replace cards that loose formatting in production (#913) [c6155c9dc]
+- docs: Style Wave db migration page (#915) [5af1639b0]
+- docs: Remove Wave metrics page (#909) [95e1cc32b]
+
+1.25.2 - 25 Sep 2025
+- Add CLAUDE.md documentation file [573c06ae]
+- Bump corretto-25-al2023-jemalloc as base image [715c594a]
+- Add Claude PR Assistant workflow [94f9f443]
+- Add ARM64 platform support to container build (#911) [12dd4978]
+
+1.25.1 - 22 Sep 2025
+- Fix links broken by renaming page (#892) [db0cacd9]
+- Remove unused env from jib task def [34718247]
+- Replace deprecated AppArmor annotation with securityContext field (#896) [e474e5c7]
+- Wv 217 remove app encoded values for seqera environment (#893) [e4eec429]
+- Bump buildkit to 0.23.2 in tests (#894) [fc24a4a0]
+- Bump MN version 4.9.3 [03b98e8d]
+- Bump buildkit version 0.23.2 [f31316d9]
+- Bump corretto-25-al2023-mimalloc as base image [46a6e2a9]
+
+1.25.0 - 1 Sep 2025
+- Fix Netty direct memory OOM after Micronaut 4.9.2 upgrade (#889) [d16ab5dd]
+- Support csi s3 driver in wave  (#875) [a425ddc5]
+- fixed build view (#879) [3c8d7ae4]
+- Bump security updates [e12b00af]
+
+1.24.0 - 12 Aug 2025
+- Add support for container SBOM report (#841) [919a4016]
+- Fix views (#877) [88db93f5]
+- Fix build view (#876) [3a6aa92e]
+- Bump trivy to version 0.65.0 [ad14e0f2]
+
+1.23.1 - 7 Aug 2025
+- Revert to MN 4.8.3 [b7ee0214]
+- Improve view titles [a59b623b]
+- Fix minor container view glitch [a745979e]
+
+1.23.0 - 7 Aug 2025
+- Redesign Wave reports (#871) [edae3c5f]
+- Add default jvm config (#864) [b7222304]
+- Fix potential deadlock in DockerJobOperation process handling [ecff3a5e]
+
+1.22.1 - 5 Aug 2025
+- Add lib-lang to import TypeHelper [9372f865]
+- Add lib-retry [8d4277ba]
+- Fix type casting [fac0623d]
+- Integrate Redis activator pattern for conditional component activation (#872) [71724421]
+- Refactor message queue and stream infrastructure (#870) [a8727181]
+- Remove unused fallback flag [1da3ebee]
+- Bump MN 4.9.1 [e83d3bb9]
+- Bump MN 4.9.2 [0adeb552]
+- Bump foojay-resolver-convention to version 1.0.0 [c705a2cf]
+- Bump k8s java client to 24.0.0 (#866) [f2be4b88]
+
+1.22.0 - 17 Jun 2025
+- Add lite configuration environment (#818) [4a4b09d8]
+- Add migration docs and update config docs (#854) [600426ab]
+- Fix azure tests [69062b26]
+- Patch openapi image version [3e729804]
+- Remove unwanted imports (#856) [07086eb0]
+- Bump Gradle version 8.14.2 [afc4f333]
+- Bump Micronaut 4.8.3 [8aeffc8b]
+- Bump lib-mail version 1.2.2 [4f8afe1a]
+- Bump postgresql version 42.7.7 [7fa95857]
+
 1.21.1 - 29 May 2025 
 - Fix Conda lock fallback logic [657316e8]
 

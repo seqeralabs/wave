@@ -132,12 +132,6 @@ class K8sServiceImpl implements K8sService {
     // check this link to know more about these options https://github.com/moby/buildkit/tree/master/examples/kubernetes#kubernetes-manifests-for-buildkit
     private final static Map<String,String> BUILDKIT_FLAGS = ['BUILDKITD_FLAGS': '--oci-worker-no-process-sandbox']
 
-    private Map<String, String> getBuildkitAnnotations(String containerName, boolean singularity) {
-        if( singularity )
-            return null
-        final key = "container.apparmor.security.beta.kubernetes.io/${containerName}".toString()
-        return Map.of(key, "unconfined")
-    }
 
     /**
      * Validate config setting
@@ -328,7 +322,6 @@ class K8sServiceImpl implements K8sService {
                 .withNamespace(namespace)
                 .withName(name)
                 .addToLabels(labels)
-                .addToAnnotations(getBuildkitAnnotations(name,singularity))
                 .endMetadata()
 
         //spec section
@@ -365,6 +358,12 @@ class K8sServiceImpl implements K8sService {
                     // buildCommand is to set entrypoint for buildkit
                     .withCommand(BUILDKIT_ENTRYPOINT)
                     .withArgs(args)
+                    .withNewSecurityContext()
+                        .withPrivileged(false)
+                        .withNewAppArmorProfile()
+                            .withType("Unconfined")
+                        .endAppArmorProfile()
+                    .endSecurityContext()
         }
 
         // spec section
@@ -407,57 +406,6 @@ class K8sServiceImpl implements K8sService {
                 .execute()
     }
 
-    @Deprecated
-    V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig, Map<String,String> nodeSelector) {
-
-        final mounts = new ArrayList<V1VolumeMount>(5)
-        mounts.add(mountBuildStorage(workDir, storageMountPath, false))
-        mounts.add(mountScanCacheDir(scanConfig.cacheDirectory, storageMountPath))
-
-        final volumes = new ArrayList<V1Volume>(5)
-        volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
-
-        if( credsFile ){
-            mounts.add(0, mountHostPath(credsFile, storageMountPath, Trivy.CONFIG_MOUNT_PATH))
-        }
-
-        V1PodBuilder builder = new V1PodBuilder()
-
-        //metadata section
-        builder.withNewMetadata()
-                .withNamespace(namespace)
-                .withName(name)
-                .addToLabels(labels)
-                .endMetadata()
-
-        //spec section
-        def spec = builder
-                .withNewSpec()
-                .withNodeSelector(nodeSelector)
-                .withServiceAccount(serviceAccount)
-                .withActiveDeadlineSeconds( scanConfig.timeout.toSeconds() )
-                .withRestartPolicy("Never")
-                .addAllToVolumes(volumes)
-
-        final requests = new V1ResourceRequirements()
-        if( scanConfig.requestsCpu )
-            requests.putRequestsItem('cpu', new Quantity(scanConfig.requestsCpu))
-        if( scanConfig.requestsMemory )
-            requests.putRequestsItem('memory', new Quantity(scanConfig.requestsMemory))
-
-        //container section
-        spec.addNewContainer()
-                .withName(name)
-                .withImage(containerImage)
-                .withArgs(args)
-                .withVolumeMounts(mounts)
-                .withResources(requests)
-                .endContainer()
-                .endSpec()
-
-        builder.build()
-    }
-
     /**
      * Create a Job for blob transfer
      *
@@ -473,8 +421,8 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Job} description the submitted job
      */
     @Override
-    V1Job launchTransferJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
-        final spec = createTransferJobSpec(name, containerImage, args, blobConfig)
+    V1Job launchTransferJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig, Map<String,String> nodeSelector) {
+        final spec = createTransferJobSpec(name, containerImage, args, blobConfig, nodeSelector)
 
         return k8sClient
                 .batchV1Api()
@@ -488,7 +436,7 @@ class K8sServiceImpl implements K8sService {
                 : null
     }
 
-    V1Job createTransferJobSpec(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
+    V1Job createTransferJobSpec(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig, Map<String,String> nodeSelector) {
 
         V1JobBuilder builder = new V1JobBuilder()
 
@@ -518,6 +466,7 @@ class K8sServiceImpl implements K8sService {
                     .withRestartPolicy("Never")
                     .withDnsConfig(dnsConfig())
                     .withDnsPolicy(dnsPolicy)
+                    .withNodeSelector(nodeSelector)
         //container section
                     .addNewContainer()
                         .withName(name)
@@ -613,7 +562,6 @@ class K8sServiceImpl implements K8sService {
                 .withPodFailurePolicy(failurePolicy())
                 .withNewTemplate()
                 .withNewMetadata()
-                .addToAnnotations(getBuildkitAnnotations(name,singularity))
                 .endMetadata()
                 .editOrNewSpec()
                 .withDnsConfig(dnsConfig())
@@ -665,6 +613,12 @@ class K8sServiceImpl implements K8sService {
             // buildCommand is to set entrypoint for buildkit
                     .withCommand(BUILDKIT_ENTRYPOINT)
                     .withArgs(args)
+                    .withNewSecurityContext()
+                        .withPrivileged(false)
+                        .withNewAppArmorProfile()
+                            .withType("Unconfined")
+                        .endAppArmorProfile()
+                    .endSecurityContext()
         }
 
         // spec section
@@ -674,15 +628,15 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
-    V1Job launchScanJob(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig) {
-        final spec = scanJobSpec(name, containerImage, args, workDir, creds, scanConfig)
+    V1Job launchScanJob(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
+        final spec = scanJobSpec(name, containerImage, args, workDir, creds, scanConfig, nodeSelector)
         return k8sClient
                 .batchV1Api()
                 .createNamespacedJob(namespace, spec)
                 .execute()
     }
 
-    V1Job scanJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig) {
+    V1Job scanJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig, Map<String,String> nodeSelector) {
 
         final mounts = new ArrayList<V1VolumeMount>(5)
         mounts.add(mountBuildStorage(workDir, storageMountPath, false))
@@ -716,6 +670,7 @@ class K8sServiceImpl implements K8sService {
                 .addAllToVolumes(volumes)
                 .withDnsConfig(dnsConfig())
                 .withDnsPolicy(dnsPolicy)
+                .withNodeSelector(nodeSelector)
 
         final requests = new V1ResourceRequirements()
         if( scanConfig.requestsCpu )
@@ -749,15 +704,15 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
-    V1Job launchMirrorJob(String name, String containerImage, List<String> args, Path workDir, Path creds, MirrorConfig config) {
-        final spec = mirrorJobSpec(name, containerImage, args, workDir, creds, config)
+    V1Job launchMirrorJob(String name, String containerImage, List<String> args, Path workDir, Path creds, MirrorConfig config, Map<String,String> nodeSelector) {
+        final spec = mirrorJobSpec(name, containerImage, args, workDir, creds, config, nodeSelector)
         return k8sClient
                 .batchV1Api()
                 .createNamespacedJob(namespace, spec)
                 .execute()
     }
 
-    V1Job mirrorJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, MirrorConfig config) {
+    V1Job mirrorJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, MirrorConfig config, Map<String,String> nodeSelector) {
 
         // required volumes
         final mounts = new ArrayList<V1VolumeMount>(5)
@@ -791,6 +746,7 @@ class K8sServiceImpl implements K8sService {
                 .addAllToVolumes(volumes)
                 .withDnsConfig(dnsConfig())
                 .withDnsPolicy(dnsPolicy)
+                .withNodeSelector(nodeSelector)
 
         final requests = new V1ResourceRequirements()
         if( config.requestsCpu )

@@ -193,7 +193,7 @@ class BuildStrategyTest extends Specification {
                 ociMediatypes: true,
                 compression: CONFIG_COMPRESS,
                 forceCompression: FORCE,
-                buildkitImage: 'moby/buildkit:v0.21.1-rootless')
+                buildkitImage: 'moby/buildkit:v0.25.2-rootless')
         and:
         def result = BuildStrategy.outputOpts(req, config)
         then:
@@ -238,9 +238,9 @@ class BuildStrategyTest extends Specification {
         def config = new BuildConfig(
                 ociMediatypes: true,
                 compression: CONFIG_COMPRESS,
-                buildkitImage: 'moby/buildkit:v0.21.1-rootless')
+                buildkitImage: 'moby/buildkit:v0.25.2-rootless')
         and:
-        def result = BuildStrategy.cacheOpts(req, config)
+        def result = BuildStrategy.cacheExportOpts(req, config)
         then:
         result == EXPECTED
 
@@ -263,5 +263,180 @@ class BuildStrategyTest extends Specification {
         and:
         null            | 'estargz'         | 1     | true  | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=estargz,compression-level=1,force-compression=true'
         'estargz'       | 'gzip'            | 2     | true  | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=estargz,compression-level=2,force-compression=true'
+    }
+
+    @Unroll
+    def 'should create S3 cache options' () {
+        given:
+        def req = new BuildRequest(
+                containerId: 'abc123def456',
+                buildId: 'bd-abc123def456_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'quay.io/wave:abc123def456',
+                cacheRepository: S3_PATH,
+                compression: new BuildCompression().withMode(COMPRESSION as BuildCompression.Mode)
+        )
+
+        when:
+        def config = new BuildConfig(
+                defaultCacheRepository: S3_PATH,
+                cacheBucketRegion: REGION,
+                cacheBucketUploadParallelism: PARALLELISM,
+                buildkitImage: 'moby/buildkit:v0.26.0-rootless')
+        and:
+        def result = BuildStrategy.s3ExportCacheOpts(req, config)
+
+        then:
+        result == EXPECTED
+
+        where:
+        S3_PATH                           | REGION      | PARALLELISM | COMPRESSION | EXPECTED
+        's3://my-bucket/cache'            | 'us-east-1' | null        | null        | 'type=s3,region=us-east-1,bucket=my-bucket,prefix=cache/,name=abc123def456,mode=max,ignore-error=true'
+        's3://my-bucket/cache/prefix'     | 'us-west-2' | null        | null        | 'type=s3,region=us-west-2,bucket=my-bucket,prefix=cache/prefix/,name=abc123def456,mode=max,ignore-error=true'
+        's3://my-bucket/cache/prefix/'    | 'us-west-2' | null        | null        | 'type=s3,region=us-west-2,bucket=my-bucket,prefix=cache/prefix/,name=abc123def456,mode=max,ignore-error=true'
+        's3://wave-cache/buildkit'        | 'eu-west-1' | null        | 'gzip'      | 'type=s3,region=eu-west-1,bucket=wave-cache,prefix=buildkit/,name=abc123def456,mode=max,ignore-error=true,compression=gzip'
+        's3://my-bucket'                  | 'us-east-1' | null        | null        | 'type=s3,region=us-east-1,bucket=my-bucket,name=abc123def456,mode=max,ignore-error=true'
+        's3://my-bucket/'                 | 'us-east-1' | null        | null        | 'type=s3,region=us-east-1,bucket=my-bucket,name=abc123def456,mode=max,ignore-error=true'
+        's3://my-bucket/cache'            | 'us-east-1' | 8           | null        | 'type=s3,region=us-east-1,bucket=my-bucket,prefix=cache/,name=abc123def456,mode=max,ignore-error=true,upload_parallelism=8'
+    }
+
+    def 'should create S3 import cache options' () {
+        given:
+        def req = new BuildRequest(
+                containerId: 'xyz789abc123',
+                buildId: 'bd-xyz789abc123_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'quay.io/wave:xyz789abc123',
+                cacheRepository: 's3://test-bucket/cache/path'
+        )
+
+        when:
+        def config = new BuildConfig(
+                defaultCacheRepository: 's3://test-bucket/cache/path',
+                cacheBucketRegion: 'ap-south-1',
+                buildkitImage: 'moby/buildkit:v0.26.0-rootless')
+        and:
+        def result = BuildStrategy.s3ImportCacheOpts(req, config)
+
+        then:
+        result == 'type=s3,region=ap-south-1,bucket=test-bucket,prefix=cache/path/,name=xyz789abc123'
+    }
+
+    def 'should parse S3 bucket from path' () {
+        expect:
+        BuildStrategy.parseBucketFromS3Path(PATH) == BUCKET
+
+        where:
+        PATH                              | BUCKET
+        's3://my-bucket/path/to/cache'    | 'my-bucket'
+        's3://wave-cache'                 | 'wave-cache'
+        's3://prod-bucket/deep/path'      | 'prod-bucket'
+    }
+
+    def 'should parse S3 prefix from path' () {
+        expect:
+        BuildStrategy.parsePrefixFromS3Path(PATH) == PREFIX
+
+        where:
+        PATH                              | PREFIX
+        's3://my-bucket/path/to/cache'    | 'path/to/cache/'
+        's3://wave-cache/buildkit'        | 'buildkit/'
+        's3://prod-bucket'                | null
+    }
+
+    def 'should detect S3 bucket path' () {
+        expect:
+        BuildConfig.isBucketPath('s3://my-bucket/cache') == true
+        BuildConfig.isBucketPath('s3://wave-cache/buildkit') == true
+    }
+
+    def 'should detect registry path' () {
+        expect:
+        BuildConfig.isBucketPath('registry.example.com/wave/cache') == false
+        BuildConfig.isBucketPath('docker.io/library/ubuntu') == false
+        BuildConfig.isBucketPath('quay.io/cache') == false
+        BuildConfig.isBucketPath(null) == false
+    }
+
+    def 'should create registry import cache options' () {
+        given:
+        def req = new BuildRequest(
+                containerId: 'abc123def456',
+                buildId: 'bd-abc123def456_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'quay.io/wave:abc123def456',
+                cacheRepository: 'reg.io/wave/build/cache'
+        )
+        and:
+        def config = new BuildConfig(
+                defaultCacheRepository: 'reg.io/wave/build/cache',
+                buildkitImage: 'moby/buildkit:v0.26.0-rootless')
+
+        when:
+        def result = BuildStrategy.registryImportCacheOpts(req, config)
+
+        then:
+        result == 'type=registry,ref=reg.io/wave/build/cache:abc123def456'
+    }
+
+    @Unroll
+    def 'should create cache import options for registry' () {
+        given:
+        def req = new BuildRequest(
+                containerId: 'test123',
+                buildId: 'bd-test123_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'quay.io/wave:test123',
+                cacheRepository: CACHE_REPO
+        )
+        and:
+        def config = new BuildConfig(
+                defaultCacheRepository: CACHE_REPO,
+                buildkitImage: 'moby/buildkit:v0.26.0-rootless')
+
+        when:
+        def result = BuildStrategy.cacheImportOpts(req, config)
+
+        then:
+        result == EXPECTED
+
+        where:
+        CACHE_REPO                          | EXPECTED
+        'reg.io/wave/cache'                 | 'type=registry,ref=reg.io/wave/cache:test123'
+        'docker.io/library/cache'           | 'type=registry,ref=docker.io/library/cache:test123'
+    }
+
+    @Unroll
+    def 'should create cache import options for S3' () {
+        given:
+        def req = new BuildRequest(
+                containerId: 's3test456',
+                buildId: 'bd-s3test456_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'quay.io/wave:s3test456',
+                cacheRepository: S3_PATH
+        )
+        and:
+        def config = new BuildConfig(
+                defaultCacheRepository: S3_PATH,
+                cacheBucketRegion: REGION,
+                buildkitImage: 'moby/buildkit:v0.26.0-rootless')
+
+        when:
+        def result = BuildStrategy.cacheImportOpts(req, config)
+
+        then:
+        result == EXPECTED
+
+        where:
+        S3_PATH                             | REGION      | EXPECTED
+        's3://my-bucket/cache'              | 'us-east-1' | 'type=s3,region=us-east-1,bucket=my-bucket,prefix=cache/,name=s3test456'
+        's3://wave-cache/buildkit/prod'     | 'eu-west-1' | 'type=s3,region=eu-west-1,bucket=wave-cache,prefix=buildkit/prod/,name=s3test456'
+        's3://test-bucket'                  | 'ap-south-1'| 'type=s3,region=ap-south-1,bucket=test-bucket,name=s3test456'
     }
 }

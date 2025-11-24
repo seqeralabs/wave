@@ -24,14 +24,13 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
-import io.micronaut.context.annotation.Value
-import io.micronaut.core.annotation.Nullable
+
 import io.seqera.mail.MailProvider
 import io.seqera.mail.Mailer
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Singleton
 import software.amazon.awssdk.core.SdkBytes
-import software.amazon.awssdk.regions.Region
+
 import software.amazon.awssdk.services.ses.SesClient
 import software.amazon.awssdk.services.ses.model.RawMessage
 import software.amazon.awssdk.services.ses.model.SendRawEmailRequest
@@ -68,7 +67,7 @@ class AwsMailProvider implements MailProvider {
                 .build()
         final email = SendRawEmailRequest.builder()
                 .rawMessage(rawMessage)
-                .build()
+                .build() as SendRawEmailRequest
         final result = client.sendRawEmail(email);
         log.debug "Mail message sent: ${result}"
     }

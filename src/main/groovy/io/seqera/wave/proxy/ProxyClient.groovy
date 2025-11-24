@@ -38,7 +38,7 @@ import io.seqera.wave.exception.RegistryUnauthorizedAccessException
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.util.RegHelper
-import io.seqera.wave.util.Retryable
+import io.seqera.util.retry.Retryable
 import reactor.core.publisher.Flux
 import static io.seqera.wave.WaveDefault.HTTP_REDIRECT_CODES
 import static io.seqera.wave.WaveDefault.HTTP_RETRYABLE_ERRORS

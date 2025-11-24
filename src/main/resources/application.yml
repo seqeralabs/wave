@@ -51,11 +51,8 @@ wave:
   server:
       url: "${WAVE_SERVER_URL:`http://localhost:9090`}"
   build:
-    buildkit-image: "moby/buildkit:v0.21.1-rootless"
+    buildkit-image: "moby/buildkit:v0.25.2-rootless"
     singularity-image: "public.cr.seqera.io/wave/singularity:v4.2.1-r4"
-    repo: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/dev"
-    cache: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/cache"
-    public-repo: "community.wave.seqera.io"
     # note changing this should be matching the micronaut.server.idle-timeout (see above)
     timeout: 900s
     status:
@@ -68,7 +65,7 @@ wave:
       multiplier: '1.75'
   scan:
     image:
-      name: aquasec/trivy:0.56.2
+      name: public.cr.seqera.io/wave/scanner:v1-0.65.0-oras-1.3.0
     environment:
       # see https://github.com/aquasecurity/trivy/discussions/7668#discussioncomment-11028887
       - "TRIVY_DB_REPOSITORY=public.ecr.aws/aquasecurity/trivy-db"

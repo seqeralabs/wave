@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutorService
 import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.scheduling.TaskExecutors
@@ -36,6 +37,7 @@ import io.seqera.wave.api.BuildContext
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.HttpServerRetryableErrorException
@@ -60,7 +62,7 @@ import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.stream.StreamService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.RegHelper
-import io.seqera.wave.util.Retryable
+import io.seqera.util.retry.Retryable
 import io.seqera.wave.util.TarUtils
 import jakarta.inject.Inject
 import jakarta.inject.Named
@@ -79,6 +81,7 @@ import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
  */
 @Slf4j
 @Singleton
+@Requires(bean = BuildEnabled)
 @Named('Build')
 @CompileStatic
 class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<BuildEntry> {
@@ -200,9 +203,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
                 final remoteFile = req.workDir.resolve('singularity-remote.yaml')
                 final content = RegHelper.singularityRemoteFile(req.targetImage)
                 Files.write(remoteFile, content.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
-                // set permissions 600 as required by Singularity
-                Files.setPosixFilePermissions(configFile, Set.of(OWNER_READ, OWNER_WRITE))
-                Files.setPosixFilePermissions(remoteFile, Set.of(OWNER_READ, OWNER_WRITE))
             }
             // save layers provided via the container config
             if( req.containerConfig ) {

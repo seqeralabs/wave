@@ -31,6 +31,7 @@ import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.persistence.PersistenceService
@@ -38,8 +39,8 @@ import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 import org.apache.commons.io.input.BoundedInputStream
-
-import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.* 
+import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_LOCKS
+import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.BUILD_LOGS
 
 /**
  * Implements Service  to manage logs from an Object store
@@ -49,7 +50,7 @@ import static io.seqera.wave.service.aws.ObjectStorageOperationsFactory.*
 @Slf4j
 @Singleton
 @CompileStatic
-@Requires(property = 'wave.build')
+@Requires(bean = BuildEnabled)
 class BuildLogServiceImpl implements BuildLogService {
 
     private static final String CONDA_LOCK_START = ">> CONDA_LOCK_START"
@@ -182,12 +183,6 @@ class BuildLogServiceImpl implements BuildLogService {
         final Optional<ObjectStorageEntry<?>> result = locksStoreOps.retrieve(condaLockKey(buildId))
         if( result.isPresent() )
             return result.get().toStreamedFile()
-        // implements a fallback to retrieve Conda locks from bucket root 
-        if( buildConfig.locksFallback ) {
-            final Optional<ObjectStorageEntry<?>> fallback = locksStoreOps.retrieve(buildId + '.lock')
-            if( fallback.isPresent() )
-                return fallback.get().toStreamedFile()
-        }
         return null
     }
 
