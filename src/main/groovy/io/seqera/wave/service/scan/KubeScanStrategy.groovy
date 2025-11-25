@@ -33,6 +33,8 @@ import io.seqera.wave.configuration.ScanEnabled
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Singleton
+import static io.seqera.wave.util.K8sHelper.getSelectorLabel
+
 /**
  * Implements ScanStrategy for Kubernetes
  *
@@ -69,7 +71,8 @@ class KubeScanStrategy extends ScanStrategy {
 
             // Use unified scan image and command for both container and plugin scans
             final command = buildScanCommand(entry.containerImage, entry.workDir, entry.platform, scanConfig)
-            k8sService.launchScanJob(jobName, scanConfig.scanImage, command, entry.workDir, configFile, scanConfig)
+            final selector = getSelectorLabel(entry.platform, nodeSelectorMap)
+            k8sService.launchScanJob(jobName, scanConfig.scanImage, command, entry.workDir, configFile, scanConfig, selector)
         }
         catch (ApiException e) {
             throw new BadRequestException("Unexpected scan failure: ${e.responseBody}", e)

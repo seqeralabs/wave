@@ -37,17 +37,21 @@ class KubeTransferStrategyTest extends Specification {
 
     K8sService k8sService = Mock(K8sService)
     BlobCacheConfig blobConfig = new BlobCacheConfig(s5Image: 's5cmd', transferTimeout: Duration.ofSeconds(10), retryAttempts: 3)
-    KubeTransferStrategy strategy = new KubeTransferStrategy(k8sService: k8sService, blobConfig: blobConfig)
+    KubeTransferStrategy strategy = new KubeTransferStrategy(k8sService: k8sService, blobConfig: blobConfig, nodeSelectorMap: [
+            'linux/amd64': 'service=wave-build',
+            'linux/arm64': 'service=wave-build-arm64'
+    ])
 
     def "transfer should start a transferJob"() {
         given:
+        final selector =  ['service': 'wave-build']
         def info = BlobEntry.create("https://test.com/blobs", "https://test.com/bucket/blobs", null, null)
         def command = ["transfer", "blob"]
         final jobName = "job-123"
         def podName = "$jobName-abc".toString()
         def pod = new V1Pod(metadata: [name: podName, creationTimestamp: OffsetDateTime.now()])
         pod.status = new V1PodStatus(phase: "Succeeded")
-        k8sService.launchTransferJob(_, _, _, _) >> new V1Job(metadata: [name: jobName])
+        k8sService.launchTransferJob(_, _, _, _, _) >> new V1Job(metadata: [name: jobName])
         k8sService.getPod(_) >> pod
         k8sService.logsPod(_) >> "transfer successful"
 
@@ -55,7 +59,7 @@ class KubeTransferStrategyTest extends Specification {
         strategy.launchJob(podName, command)
 
         then:
-        1 * k8sService.launchTransferJob(podName, blobConfig.s5Image, command, blobConfig)
+        1 * k8sService.launchTransferJob(podName, blobConfig.s5Image, command, blobConfig, selector)
     }
 
 }
