@@ -35,6 +35,7 @@ import io.micronaut.objectstorage.local.LocalStorageOperations
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.BuildEnabled
+import io.seqera.wave.configuration.ScanEnabled
 import io.seqera.wave.util.BucketTokenizer
 import jakarta.annotation.Nullable
 import jakarta.inject.Inject
@@ -90,6 +91,7 @@ class ObjectStorageOperationsFactory {
 
     @Singleton
     @Named(SCAN_REPORTS)
+    @Requires(bean = ScanEnabled)
     ObjectStorageOperations<?, ?, ?> createScanStorageOpts() {
         if( !scanConfig )
             throw new IllegalStateException("Scan configuration is not defined")
