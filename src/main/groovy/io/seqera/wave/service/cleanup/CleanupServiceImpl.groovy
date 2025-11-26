@@ -110,7 +110,7 @@ class CleanupServiceImpl implements Runnable, CleanupService {
         else if( entry.startsWith(DIR_PREFIX) ) {
             cleanupDir0(entry.substring(4))
         }
-        else if( entry.startsWith(SCANID_PREFIX) && scanIdStore) {
+        else if( entry.startsWith(SCANID_PREFIX) ) {
             cleanupScanId0(entry.substring(SCANID_PREFIX.length()))
         }
         else {
