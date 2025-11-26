@@ -45,5 +45,4 @@ class CleanupServiceTest extends Specification {
         then:
         1 * service.cleanupScanId0('foo:bar') >> null
     }
-
 }
