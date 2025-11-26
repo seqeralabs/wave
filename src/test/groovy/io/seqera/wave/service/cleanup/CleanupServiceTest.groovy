@@ -20,6 +20,8 @@ package io.seqera.wave.service.cleanup
 
 import spock.lang.Specification
 
+import io.seqera.wave.service.scan.ScanIdStore
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -28,7 +30,8 @@ class CleanupServiceTest extends Specification {
 
     def 'should validate cleanup entry' () {
         given:
-        def service = Spy(new CleanupServiceImpl())
+        def scanIdStore = Mock(ScanIdStore)
+        def service = Spy(new CleanupServiceImpl(scanIdStore: scanIdStore))
 
         when:
         service.cleanupEntry('job:foo')
