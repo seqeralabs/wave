@@ -30,8 +30,7 @@ class CleanupServiceTest extends Specification {
 
     def 'should validate cleanup entry' () {
         given:
-        def scanIdStore = Mock(ScanIdStore)
-        def service = Spy(new CleanupServiceImpl(scanIdStore: scanIdStore))
+        def service = Spy(new CleanupServiceImpl())
 
         when:
         service.cleanupEntry('job:foo')
@@ -42,6 +41,12 @@ class CleanupServiceTest extends Specification {
         service.cleanupEntry('dir:/some/data/dir')
         then:
         1 * service.cleanupDir0('/some/data/dir') >> null
+    }
+
+    def 'should validate cleanup scan id entry' () {
+        given:
+        def scanIdStore = Mock(ScanIdStore)
+        def service = Spy(new CleanupServiceImpl(scanIdStore: scanIdStore))
 
         when:
         service.cleanupEntry('scanid:foo:bar')
