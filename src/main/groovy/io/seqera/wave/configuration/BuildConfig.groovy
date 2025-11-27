@@ -46,6 +46,9 @@ class BuildConfig {
     @Value('${wave.build.singularity-image}')
     String singularityImage
 
+    @Value('${wave.build.singularity-image-init:`public.cr.seqera.io/wave/busybox:latest`}')
+    String singularityImageInit
+
     @Value('${wave.build.repo}')
      String defaultBuildRepository
 
