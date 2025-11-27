@@ -29,18 +29,18 @@ MICRONAUT_ENVIRONMENTS: "postgres,redis,lite,mail"
 
 ```yaml
 mail:
-    from: "wave-notifications@your-domain.com"
-    smtp:
-        host: "smtp.your-provider.com"
-        port: "587"
-        user: "your-smtp-username"
-        password: "your-smtp-password"
-        auth: true
-        starttls:
-            enable: true
-            required: true
-        ssl:
-            protocols: "TLSv1.2"
+  from: "wave-notifications@your-domain.com"
+  smtp:
+    host: "smtp.your-provider.com"
+    port: "587"
+    user: "your-smtp-username"
+    password: "your-smtp-password"
+    auth: true
+    starttls:
+      enable: true
+      required: true
+    ssl:
+      protocols: "TLSv1.2"
 ```
 
 #### Configuration Options
@@ -82,7 +82,7 @@ MICRONAUT_ENVIRONMENTS: "postgres,redis,lite,mail,aws-ses"
 
 ```yaml
 mail:
-    from: "wave-notifications@your-domain.com"
+  from: "wave-notifications@your-domain.com"
 ```
 
 #### IAM permissions
@@ -135,7 +135,8 @@ Wave can perform security scanning on container builds. This feature requires th
 wave:
   build:
     enabled: true
-    scan: true
+  scan:
+    enabled: true
 ```
 
 ## ECR cache repository
@@ -154,11 +155,11 @@ Configure ECR cache repository in your Wave configuration:
 
 ```yaml
 wave:
-    build:
-        enabled: true
-        cache:
-            enabled: true
-            repository: "123456789012.dkr.ecr.us-east-1.amazonaws.com/wave-cache"
+  build:
+    enabled: true
+    cache:
+      enabled: true
+      repository: "123456789012.dkr.ecr.us-east-1.amazonaws.com/wave-cache"
 ```
 
 #### IAM permissions

@@ -53,6 +53,7 @@ wave:
   build:
     buildkit-image: "moby/buildkit:v0.25.2-rootless"
     singularity-image: "public.cr.seqera.io/wave/singularity:v4.2.1-r4"
+    singularity-image-init: "public.cr.seqera.io/wave/busybox:latest"
     # note changing this should be matching the micronaut.server.idle-timeout (see above)
     timeout: 900s
     status:
