@@ -371,6 +371,7 @@ Configure Redis with the following options:
 : Specifies the password used to authenticate with the Redis server.
   Can be set using the `${REDIS_PASSWORD}` environment variable.
 
+- **`redis.password`**: specifies the password used to authenticate with the Redis server. This is needed when redis authentication is enabled. It can be set using the `${REDIS_PASSWORD}` environment variable. *Optional*.
 `redis.pool.enabled` *(optional)*
 : Enables the Redis pool (default: `true`).
 
