@@ -137,6 +137,9 @@
 - Remove unused h2 env [e4422b1e]
 - added jdbc binder for prometheus metrics (#840) [7094a366]
 
+1.19.7 - 6 May 2025 
+- Add K8s trace logs for troubleshooting
+
 1.19.6 - 30 Apr 2025
 - Bypass cache repo for custom build repos  (#828) [29a93053]
 
