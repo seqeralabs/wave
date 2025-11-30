@@ -22,11 +22,11 @@ import java.time.Duration
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.serde.moshi.MoshiEncodeStrategy
 import io.seqera.data.store.state.AbstractStateStore
 import io.seqera.data.store.state.impl.StateProvider
+import io.seqera.wave.configuration.MirrorEnabled
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -35,7 +35,7 @@ import jakarta.inject.Singleton
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Singleton
-@Requires(bean = BuildEnabled)
+@Requires(bean = MirrorEnabled)
 @CompileStatic
 class MirrorStateStore extends AbstractStateStore<MirrorEntry> {
 

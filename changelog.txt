@@ -1,4 +1,12 @@
 # Wave changelog
+1.30.0 - 27 Nov 2025
+- Add labels in ConfigSpec (#934) [67ac6c3dc]
+- Use Seqera-hosted buildkit image (#938) [c0c0b6465]
+- Add configurable singularity init container image (#937) [5c0fd3fce]
+- Fix YAML indentation in configure-wave.md (#936) [c09eba7ca]
+- Fix scan and mirror enabled flag bug (#935) [dc23d7bbe]
+- docs: Fix typos in Wave Kubernetes install (#930) [d3478f336]
+
 1.29.1 - 19 Nov 2025
 - Fix scan requirement on createScanStorageOpts [33463ebd2]
 - Add node selectors in scan, mirror and transfer jobs (#905) [47a7c5ac4]

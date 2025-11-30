@@ -44,6 +44,7 @@ public class ConfigSpec {
         public String image;
         public String workingDir;
         public List<String> entrypoint;
+        public Map<String, String> labels;
 
         Config() {
             this(Map.of());
@@ -62,6 +63,7 @@ public class ConfigSpec {
             this.image = (String) opts.get("Image");
             this.workingDir = (String) opts.get("WorkingDir");
             this.entrypoint = opts.containsKey("Entrypoint") ? (List<String>) opts.get("Entrypoint") : List.<String>of();
+            this.labels = opts.containsKey("Labels") ? (Map<String, String>) opts.get("Labels") : Map.of();
         }
 
         @Override
@@ -92,6 +94,7 @@ public class ConfigSpec {
                     ", image='" + image + '\'' +
                     ", workingDir='" + workingDir + '\'' +
                     ", entrypoint=" + entrypoint +
+                    ", labels=" + labels +
                     '}';
         }
     }
