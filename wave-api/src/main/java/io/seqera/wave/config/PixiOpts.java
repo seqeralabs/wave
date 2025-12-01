@@ -75,11 +75,11 @@ public class PixiOpts {
     public boolean equals(Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
-        CondaOpts condaOpts = (CondaOpts) object;
-        return Objects.equals(pixiImage, condaOpts.mambaImage)
-                && Objects.equals(commands, condaOpts.commands)
-                && Objects.equals(basePackages, condaOpts.basePackages)
-                && Objects.equals(baseImage, condaOpts.baseImage)
+        PixiOpts pixiOpts = (PixiOpts) object;
+        return Objects.equals(pixiImage, pixiOpts.pixiImage)
+                && Objects.equals(commands, pixiOpts.commands)
+                && Objects.equals(basePackages, pixiOpts.basePackages)
+                && Objects.equals(baseImage, pixiOpts.baseImage)
                 ;
     }
 
