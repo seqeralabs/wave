@@ -10,15 +10,15 @@ Wave solves this problem by provisioning containers on-demand during pipeline ex
 
 To get started with Wave:
 
-1. See the [Get started][started] guides.
-1. Learn about [Nextflow integration][nf].
-1. Learn about the [Wave CLI][cli].
+1. See the Wave [Tutorials][wave-tutorials]
+1. Learn about [Nextflow integration][nf]
+1. Learn about the [Wave CLI][cli]
 
 :::note
 Wave is also available as a hosted service on [Seqera Platform](https://cloud.seqera.io/). For Seqera Enterprise customers, a licensed self-hosted Wave solution is also available. [Contact us](https://seqera.io/contact-us/) for more information.
 :::
 
-[started]: ./tutorials/index.md
+[wave-tutorials]: ./tutorials/index.md
 [nf]: ./nextflow/index.md
 [cli]: ./cli/index.md
 
