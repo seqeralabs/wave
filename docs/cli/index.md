@@ -1,10 +1,10 @@
 ---
-title: CLI
+title: Wave CLI
 ---
 
-The Wave CLI is a command-line interface that provides convenient access to Wave's container provisioning capabilities through a simple wrapper around the Wave API.
+Wave CLI is a command-line interface that provides convenient access to Wave's container provisioning capabilities through a simple wrapper around the Wave API.
 
-Wave command line tool includes functionality to:
+Wave CLI includes functionality to:
 
 - Build container images on-demand using Dockerfiles or Conda packages
 - Augment existing images with additional layers
