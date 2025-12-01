@@ -1,5 +1,5 @@
 ---
-title: Overview
+title: CLI
 ---
 
 The Wave CLI is a command-line interface that provides convenient access to Wave's container provisioning capabilities through a simple wrapper around the Wave API.
