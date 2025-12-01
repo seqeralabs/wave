@@ -46,11 +46,32 @@ class BuildConfig {
     @Value('${wave.build.singularity-image}')
     String singularityImage
 
+    @Value('${wave.build.singularity-image-init:`public.cr.seqera.io/wave/busybox:latest`}')
+    String singularityImageInit
+
     @Value('${wave.build.repo}')
      String defaultBuildRepository
 
+    @Nullable
     @Value('${wave.build.cache}')
     String defaultCacheRepository
+
+    /**
+     * AWS region for the S3 cache bucket specified in {@link #defaultCacheRepository}.
+     * Only used when {@link #defaultCacheRepository} is an S3 bucket path.
+     */
+    @Nullable
+    @Value('${wave.build.cache-bucket-region}')
+    String cacheBucketRegion
+
+    /**
+     * Number of layers to upload to S3 in parallel during cache export.
+     * Each individual layer is uploaded with 5 threads using the AWS SDK Upload Manager.
+     * Only used when {@link #defaultCacheRepository} is an S3 bucket path.
+     */
+    @Nullable
+    @Value('${wave.build.cache-bucket-upload-parallelism}')
+    Integer cacheBucketUploadParallelism
 
     @Nullable
     @Value('${wave.build.public-repo}')
@@ -138,6 +159,8 @@ class BuildConfig {
                 "singularity-image=${singularityImage}; " +
                 "default-build-repository=${defaultBuildRepository}; " +
                 "default-cache-repository=${defaultCacheRepository}; " +
+                "cache-bucket-region=${cacheBucketRegion}; " +
+                "cache-bucket-upload-parallelism=${cacheBucketUploadParallelism}; " +
                 "default-public-repository=${defaultPublicRepository}; " +
                 "build-workspace=${buildWorkspace}; " +
                 "build-timeout=${defaultTimeout}; " +
@@ -155,6 +178,10 @@ class BuildConfig {
         // minimal validation
         if( trustedTimeout < defaultTimeout ) {
             log.warn "Trusted build timeout should be longer than default timeout - check configuration setting 'wave.build.trusted-timeout'"
+        }
+        // validate at least one cache location is configured
+        if( !defaultCacheRepository ) {
+            log.warn "No cache location configured - 'wave.build.cache' should be set to a container registry or S3 bucket path"
         }
     }
 
@@ -198,5 +225,27 @@ class BuildConfig {
             return null
         final store = BucketTokenizer.from(locksPath)
         return store.scheme ? store.getKey() : null
+    }
+
+    /**
+     * Get the AWS region for S3 cache bucket.
+     *
+     * @return The AWS region to use for S3 cache operations, or {@code null} if not configured.
+     *         When {@code null}, BuildKit will use the AWS SDK default region resolution chain
+     *         (environment variables, EC2 instance metadata, etc.)
+     */
+    String getCacheBucketRegion() {
+        return cacheBucketRegion
+    }
+
+    /**
+     * Check if the given path is an S3 bucket path (object storage).
+     * This is used to distinguish between container registry paths and object storage paths.
+     *
+     * @param path The path to check
+     * @return {@code true} if the path starts with {@code s3://}, {@code false} otherwise
+     */
+    static boolean isBucketPath(String path) {
+        return path?.startsWith('s3://')
     }
 }

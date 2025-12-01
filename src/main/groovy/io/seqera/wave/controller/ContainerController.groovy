@@ -327,8 +327,6 @@ class ContainerController {
             throw new BadRequestException("Missing dockerfile content")
         if( !buildConfig.defaultBuildRepository )
             throw new BadRequestException("Missing build repository attribute")
-        if( !buildConfig.defaultCacheRepository )
-            throw new BadRequestException("Missing build cache repository attribute")
 
         final containerSpec = decodeBase64OrFail(req.containerFile, 'containerFile')
         final condaContent = condaFileFromRequest(req)
