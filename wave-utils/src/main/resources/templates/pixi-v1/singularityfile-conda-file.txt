@@ -1,0 +1,24 @@
+BootStrap: docker
+From: {{pixi_image}}
+Stage: build
+%files
+    {{wave_context_dir}}/conda.yml /scratch/conda.yml
+%post
+    mkdir /opt/wave && cd /opt/wave
+    pixi init --import /scratch/conda.yml
+    {{base_packages}}
+    pixi shell-hook > /shell-hook.sh
+    echo 'exec "$@"' >> /shell-hook.sh
+    echo ">> CONDA_LOCK_START"
+    cat /opt/wave/pixi.lock
+    echo "<< CONDA_LOCK_END"
+
+Bootstrap: docker
+From: {{base_image}}
+Stage: final
+# install binary from stage one
+%files from build
+    /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
+    /shell-hook.sh /shell-hook.sh
+%environment
+    export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"

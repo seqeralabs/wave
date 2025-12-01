@@ -28,11 +28,18 @@ import java.util.Objects;
  */
 public class CondaOpts {
     final public static String DEFAULT_MAMBA_IMAGE = "mambaorg/micromamba:1.5.10-noble";
+    final public static String DEFAULT_MAMBA_IMAGE_V2 = "mambaorg/micromamba:2.1.1";
     final public static String DEFAULT_PACKAGES = "conda-forge::procps-ng";
+    final public static String DEFAULT_BASE_IMAGE = "ubuntu:24.04";
 
     public String mambaImage;
     public List<String> commands;
     public String basePackages;
+    public String baseImage;
+
+    static public CondaOpts v2() {
+        return new CondaOpts(Map.of("mambaImage", DEFAULT_MAMBA_IMAGE_V2));
+    }
 
     public CondaOpts() {
         this(Map.of());
@@ -41,6 +48,7 @@ public class CondaOpts {
         this.mambaImage = opts.containsKey("mambaImage") ? opts.get("mambaImage").toString(): DEFAULT_MAMBA_IMAGE;
         this.commands = opts.containsKey("commands") ? (List<String>)opts.get("commands") : null;
         this.basePackages = opts.containsKey("basePackages") ? (String)opts.get("basePackages") : DEFAULT_PACKAGES;
+        this.baseImage = opts.containsKey("baseImage") ? opts.get("baseImage").toString(): DEFAULT_BASE_IMAGE;
     }
 
     public CondaOpts withMambaImage(String value) {
@@ -60,10 +68,11 @@ public class CondaOpts {
 
     @Override
     public String toString() {
-        return String.format("CondaOpts(mambaImage=%s; basePackages=%s, commands=%s)",
+        return String.format("CondaOpts(mambaImage=%s; basePackages=%s, commands=%s, baseImage=%s)",
                 mambaImage,
                 basePackages,
-                commands != null ? String.join(",", commands) : "null"
+                commands != null ? String.join(",", commands) : "null",
+                baseImage
                 );
     }
 
@@ -72,11 +81,15 @@ public class CondaOpts {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
         CondaOpts condaOpts = (CondaOpts) object;
-        return Objects.equals(mambaImage, condaOpts.mambaImage) && Objects.equals(commands, condaOpts.commands) && Objects.equals(basePackages, condaOpts.basePackages);
+        return Objects.equals(mambaImage, condaOpts.mambaImage)
+                && Objects.equals(commands, condaOpts.commands)
+                && Objects.equals(basePackages, condaOpts.basePackages)
+                && Objects.equals(baseImage, condaOpts.baseImage)
+                ;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(mambaImage, commands, basePackages);
+        return Objects.hash(mambaImage, commands, basePackages, baseImage);
     }
 }

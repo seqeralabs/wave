@@ -124,7 +124,7 @@ public class SubmitContainerTokenRequest implements Cloneable {
     public String workflowId;
 
     /**
-     * One or more container should be included in upstream container request
+     * One or more container should be included in the upstream container request
      */
     public List<String> containerIncludes;
 
@@ -150,7 +150,7 @@ public class SubmitContainerTokenRequest implements Cloneable {
     public ScanMode scanMode;
 
     /**
-     * Define the allows security vulnerabilities in the container request.
+     * Define the allowed security vulnerabilities in the container request.
      * Empty or null means no vulnerabilities are allowed.
      */
     public List<ScanLevel> scanLevels;
@@ -159,6 +159,11 @@ public class SubmitContainerTokenRequest implements Cloneable {
      * The compression mode to be used when building a container image
      */
     public BuildCompression buildCompression;
+
+    /**
+     * The build template that should be used to build the container image.
+     */
+    public String buildTemplate;
 
     public SubmitContainerTokenRequest copyWith(Map opts) {
         try {
@@ -213,6 +218,8 @@ public class SubmitContainerTokenRequest implements Cloneable {
                 copy.scanLevels = (List<ScanLevel>) opts.get("scanLevels");
             if( opts.containsKey("buildCompression"))
                 copy.buildCompression = (BuildCompression) opts.get("buildCompression");
+            if( opts.containsKey("buildTemplate"))
+                copy.buildTemplate = (String) opts.get("buildTemplate");
             // done
             return copy;
         }
@@ -353,6 +360,11 @@ public class SubmitContainerTokenRequest implements Cloneable {
         return this;
     }
 
+    public SubmitContainerTokenRequest withBuildTemplate(String template) {
+        this.buildTemplate = template;
+        return this;
+    }
+
     public boolean formatSingularity() {
         return "sif".equals(format);
     }
@@ -385,6 +397,7 @@ public class SubmitContainerTokenRequest implements Cloneable {
                 ", scanMode=" + scanMode +
                 ", scanLevels=" + scanLevels +
                 ", buildCompression=" + buildCompression +
+                ", buildTemplate=" + buildTemplate +
                 '}';
     }
 }

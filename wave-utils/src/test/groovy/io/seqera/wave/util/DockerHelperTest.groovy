@@ -23,6 +23,9 @@ import java.nio.file.Files
 import io.seqera.wave.config.CondaOpts
 
 import spock.lang.Specification
+
+import io.seqera.wave.config.PixiOpts
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -680,6 +683,183 @@ class DockerHelperTest extends Specification {
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
                 %post
                     apt-get update -y && apt-get install -y procps
+                '''.stripIndent()
+    }
+
+    def 'should create dockerfile content from conda file using pixi' () {
+        given:
+        def PIXI_OPTS = new PixiOpts([basePackages: 'foo::bar'])
+
+        expect:
+        DockerHelper.condaFileToDockerFileUsingPixi(PIXI_OPTS)== '''\
+                FROM ghcr.io/prefix-dev/pixi:latest AS build
+
+                COPY conda.yml /opt/wave/conda.yml
+                WORKDIR /opt/wave
+
+                RUN pixi init --import /opt/wave/conda.yml \\
+                    && pixi add foo::bar \\
+                    && pixi shell-hook > /shell-hook.sh \\
+                    && echo 'exec "$@"' >> /shell-hook.sh \\
+                    && echo ">> CONDA_LOCK_START" \\
+                    && cat /opt/wave/pixi.lock \\
+                    && echo "<< CONDA_LOCK_END"
+
+                FROM ubuntu:24.04 AS final
+
+                # copy the pixi environment in the final container
+                COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
+                COPY --from=build /shell-hook.sh /shell-hook.sh
+
+                # set the entrypoint to the shell-hook script (activate the environment and run the command)
+                # no more pixi needed in the final container
+                ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]
+
+                # Default command for "docker run"
+                CMD ["/bin/bash"]
+                '''.stripIndent()
+    }
+
+    def 'should create dockerfile content from conda file using pixi with default options' () {
+        expect:
+        DockerHelper.condaFileToDockerFileUsingPixi(new PixiOpts([:])) == '''\
+                FROM ghcr.io/prefix-dev/pixi:latest AS build
+
+                COPY conda.yml /opt/wave/conda.yml
+                WORKDIR /opt/wave
+
+                RUN pixi init --import /opt/wave/conda.yml \\
+                    && pixi add conda-forge::procps-ng \\
+                    && pixi shell-hook > /shell-hook.sh \\
+                    && echo 'exec "$@"' >> /shell-hook.sh \\
+                    && echo ">> CONDA_LOCK_START" \\
+                    && cat /opt/wave/pixi.lock \\
+                    && echo "<< CONDA_LOCK_END"
+
+                FROM ubuntu:24.04 AS final
+
+                # copy the pixi environment in the final container
+                COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
+                COPY --from=build /shell-hook.sh /shell-hook.sh
+
+                # set the entrypoint to the shell-hook script (activate the environment and run the command)
+                # no more pixi needed in the final container
+                ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]
+
+                # Default command for "docker run"
+                CMD ["/bin/bash"]
+                '''.stripIndent()
+    }
+
+    def 'should create dockerfile content from conda file using pixi with custom base image' () {
+        given:
+        def PIXI_OPTS = new PixiOpts([baseImage: 'debian:12'])
+
+        expect:
+        DockerHelper.condaFileToDockerFileUsingPixi(PIXI_OPTS)== '''\
+                FROM ghcr.io/prefix-dev/pixi:latest AS build
+
+                COPY conda.yml /opt/wave/conda.yml
+                WORKDIR /opt/wave
+
+                RUN pixi init --import /opt/wave/conda.yml \\
+                    && pixi add conda-forge::procps-ng \\
+                    && pixi shell-hook > /shell-hook.sh \\
+                    && echo 'exec "$@"' >> /shell-hook.sh \\
+                    && echo ">> CONDA_LOCK_START" \\
+                    && cat /opt/wave/pixi.lock \\
+                    && echo "<< CONDA_LOCK_END"
+
+                FROM debian:12 AS final
+
+                # copy the pixi environment in the final container
+                COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
+                COPY --from=build /shell-hook.sh /shell-hook.sh
+
+                # set the entrypoint to the shell-hook script (activate the environment and run the command)
+                # no more pixi needed in the final container
+                ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]
+
+                # Default command for "docker run"
+                CMD ["/bin/bash"]
+                '''.stripIndent()
+    }
+
+    def 'should handle empty packages string' () {
+        expect:
+        DockerHelper.condaPackagesToCondaYaml('', ['conda-forge']) == null
+        DockerHelper.condaPackagesToCondaYaml(null, ['conda-forge']) == null
+    }
+
+    def 'should handle only pip packages' () {
+        expect:
+        DockerHelper.condaPackagesToCondaYaml('pip:requests pip:flask', null) ==
+                '''\
+                dependencies:
+                - pip
+                - pip:
+                  - requests
+                  - flask
+                '''.stripIndent()
+    }
+
+    def 'should handle packages with complex version specifications' () {
+        expect:
+        DockerHelper.condaPackagesToCondaYaml('numpy>=1.21.0,<2.0.0 pandas==1.5.3', ['conda-forge']) ==
+                '''\
+                channels:
+                - conda-forge
+                dependencies:
+                - numpy>=1.21.0,<2.0.0
+                - pandas==1.5.3
+                '''.stripIndent()
+    }
+
+    def 'should handle multiple pip packages correctly' () {
+        expect:
+        DockerHelper.condaPackagesToCondaYaml('pip:numpy==1.21.0 pip:pandas>=1.3.0 pip:matplotlib', ['defaults']) ==
+                '''\
+                channels:
+                - defaults
+                dependencies:
+                - pip
+                - pip:
+                  - numpy==1.21.0
+                  - pandas>=1.3.0
+                  - matplotlib
+                '''.stripIndent()
+    }
+
+    def 'should handle mixed conda and pip packages' () {
+        expect:
+        DockerHelper.condaPackagesToCondaYaml('bwa=0.7.15 pip:numpy pip:pandas salmon=1.1.1', ['conda-forge']) ==
+                '''\
+                channels:
+                - conda-forge
+                dependencies:
+                - bwa=0.7.15
+                - salmon=1.1.1
+                - pip
+                - pip:
+                  - numpy
+                  - pandas
+                '''.stripIndent()
+    }
+
+    def 'should handle packages with version specifiers' () {
+        given:
+        def packages = 'bwa>=0.7.15 salmon<=1.1.1 samtools==1.10'
+        def channels = ['bioconda']
+
+        expect:
+        DockerHelper.condaPackagesToCondaYaml(packages, channels) ==
+                '''\
+                channels:
+                - bioconda
+                dependencies:
+                - bwa>=0.7.15
+                - salmon<=1.1.1
+                - samtools==1.10
                 '''.stripIndent()
     }
 

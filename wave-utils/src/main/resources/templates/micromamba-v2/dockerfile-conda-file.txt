@@ -1,0 +1,15 @@
+FROM {{mamba_image}}:2.1.1 AS build
+COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
+RUN micromamba install -y -n base -f /tmp/conda.yml \
+    {{base_packages}}
+    && micromamba env export --name base --explicit > environment.lock \
+    && echo ">> CONDA_LOCK_START" \
+    && cat environment.lock \
+    && echo "<< CONDA_LOCK_END"
+
+FROM {{base_image}} AS prod
+ARG MAMBA_ROOT_PREFIX="/opt/conda"
+ENV MAMBA_ROOT_PREFIX=$MAMBA_ROOT_PREFIX
+COPY --from=build "$MAMBA_ROOT_PREFIX" "$MAMBA_ROOT_PREFIX"
+USER root
+ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
