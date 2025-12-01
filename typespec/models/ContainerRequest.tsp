@@ -27,6 +27,38 @@ import "./ScanLevel.tsp";
         format: "docker",
         containerPlatform:"linux/amd64"
 })
+@example(#{
+    packages:#{
+            type: "CONDA",
+            entries: #["numpy", "pandas"],
+            channels: #["conda-forge"],
+            pixiOpts: #{
+                pixiImage: "ghcr.io/prefix-dev/pixi:latest",
+                basePackages: "conda-forge::procps-ng",
+                baseImage: "ubuntu:24.04",
+                commands: #[]
+            }
+        },
+        buildTemplate: "pixi/v1",
+        format: "docker",
+        containerPlatform:"linux/amd64"
+})
+@example(#{
+    packages:#{
+            type: "CONDA",
+            entries: #["bwa=0.7.15", "salmon=1.1.1"],
+            channels: #["conda-forge", "bioconda"],
+            condaOpts: #{
+                mambaImage: "mambaorg/micromamba:2.1.1",
+                basePackages: "conda-forge::procps-ng",
+                baseImage: "ubuntu:24.04",
+                commands: #[]
+            }
+        },
+        buildTemplate: "micromamba/v2",
+        format: "docker",
+        containerPlatform:"linux/amd64"
+})
 model ContainerRequest {
   buildContext?: ContainerLayer;
   @doc("Container repository where container builds should be pushed, e.g., `docker.io/user/my-image` (optional).")
@@ -69,4 +101,6 @@ model ContainerRequest {
   towerWorkspaceId?: int64;
   @doc("ID of the Seqera Platform workspace from which this container request originates (optional).")
   workflowId?: string;
+  @doc("The build template that should be used to build the container image. Supported templates:\n- 'pixi/v1': Uses Pixi package manager for modern, reproducible conda environments with multi-stage builds\n- 'micromamba/v2': Uses Micromamba 2.x with multi-stage builds for optimized conda environments\n- Default: Uses standard conda/micromamba v1 template when not specified")
+  buildTemplate?: string;
 }

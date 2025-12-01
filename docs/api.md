@@ -193,8 +193,12 @@ The endpoint returns the name of the container request made available by Wave.
 | `mambaImage`                        | Name of the Docker image used to build Conda containers.                                                                                              |
 | `commands`                          | Command to be included in the container.                                                                                                                       |
 | `basePackages`                      | Names of base packages.                                                                                                                                        |
+| `baseImage`                         | Base image for the final stage of multi-stage builds (for Conda/Pixi).                                                                                        |
+| `pixiOpts`                          | Pixi build options (when type is CONDA and buildTemplate is `pixi/v1`).                                                                                        |
+| `pixiImage`                         | Name of the Docker image used for Pixi package manager (e.g., `ghcr.io/prefix-dev/pixi:latest`).                                                              |
 | `cranOpts`                          | CRAN build options (when type is CRAN).                                                                                                                        |
 | `rImage`                            | Name of the R Docker image used to build CRAN containers (e.g., `rocker/r-ver:4.4.1`).                                                                         |
+| `buildTemplate`                     | The build template to use for container builds. Supported values: `pixi/v1` (Pixi with multi-stage builds), `micromamba/v2` (Micromamba 2.x with multi-stage builds). Default: standard conda/micromamba v1 template. |
 | `nameStrategy`                      | The name strategy to be used to create the name of the container built by Wave. Its values can be `none`, `tagPrefix`, or `imageSuffix`.                       |                                                     |
 
 ### Response
@@ -361,6 +365,92 @@ curl --location 'https://wave.seqera.io/v1alpha2/container' \
     "succeeded": true
 }
 ```
+
+5. Create Docker image with Pixi v1 template (multi-stage build):
+
+##### Request
+
+```shell
+curl --location 'https://wave.seqera.io/v1alpha2/container' \
+--header 'Content-Type: application/json' \
+--data '{
+    "containerPlatform": "linux/amd64",
+    "format": "docker",
+    "buildTemplate": "pixi/v1",
+    "packages":{
+        "type": "CONDA",
+        "entries": ["numpy", "pandas", "scikit-learn"],
+        "channels": ["conda-forge"],
+        "pixiOpts": {
+            "pixiImage": "ghcr.io/prefix-dev/pixi:latest",
+            "basePackages": "conda-forge::procps-ng",
+            "baseImage": "ubuntu:24.04",
+            "commands": []
+        }
+    }
+}'
+```
+
+#### Response
+
+```json
+{
+    "requestId": "a3f4b5c6d789",
+    "containerToken": "a3f4b5c6d789",
+    "targetImage": "wave.seqera.io/wt/a3f4b5c6d789/wave/build:3c7d8e9f12a45678",
+    "expiration": "2025-11-09T02:50:23.254497148Z",
+    "containerImage": "wave.seqera.io/wave/build:3c7d8e9f12a45678",
+    "buildId": "bd-3c7d8e9f12a45678_1",
+    "cached": false,
+    "freeze": false,
+    "mirror": false
+}
+```
+
+6. Create Docker image with Micromamba v2 template (multi-stage build):
+
+##### Request
+
+```shell
+curl --location 'https://wave.seqera.io/v1alpha2/container' \
+--header 'Content-Type: application/json' \
+--data '{
+    "containerPlatform": "linux/amd64",
+    "format": "docker",
+    "buildTemplate": "micromamba/v2",
+    "packages":{
+        "type": "CONDA",
+        "entries": ["bwa=0.7.15", "salmon=1.10.0", "samtools=1.17"],
+        "channels": ["conda-forge", "bioconda"],
+        "condaOpts": {
+            "mambaImage": "mambaorg/micromamba:2.1.1",
+            "basePackages": "conda-forge::procps-ng",
+            "baseImage": "ubuntu:24.04",
+            "commands": []
+        }
+    }
+}'
+```
+
+#### Response
+
+```json
+{
+    "requestId": "b7e8f9a0c123",
+    "containerToken": "b7e8f9a0c123",
+    "targetImage": "wave.seqera.io/wt/b7e8f9a0c123/wave/build:4d8e9f0a23b56789",
+    "expiration": "2025-11-09T02:50:23.254497148Z",
+    "containerImage": "wave.seqera.io/wave/build:4d8e9f0a23b56789",
+    "buildId": "bd-4d8e9f0a23b56789_1",
+    "cached": false,
+    "freeze": false,
+    "mirror": false
+}
+```
+
+:::note
+Multi-stage build templates (`pixi/v1` and `micromamba/v2`) create optimized container images by separating the build environment from the final runtime environment. This results in smaller container images that only contain the installed packages and runtime dependencies, without the build tools.
+:::
 
 ## GET `/v1alpha1/builds/{buildId}/status`
 
