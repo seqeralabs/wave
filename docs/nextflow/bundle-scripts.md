@@ -23,7 +23,7 @@ Nextflow pipelines can store `bin` scripts in multiple locations. Wave treats ea
 
 Wave does not bundle scripts from the project [`bin` directory](https://nextflow.io/docs/latest/sharing.html#the-bin-directory) by default. Nextflow uploads these scripts to the work directory at runtime using cloud APIs. This approach adds network overhead and can be inefficient when launching many tasks.
 
-When you enable Fusion or use the AWS Fargate executor, Wave bundles scripts from the project `bin` directory into a container layer. This provides better performance but ties scripts to specific execution environments.
+When you enable Fusion or use the AWS Fargate executor, Wave bundles scripts from the project `bin` directory into a container layer. This provides better performance but ties scripts to specific execution environments. Scripts are added to `/usr/local/bin/` in the container image, making them directly executable without path qualification.
 
 Modifying scripts in the project `bin` directory modify the container fingerprint for all Wave containers in the workflow. See [Wave container fingerprinting](#wave-container-fingerprinting) for more information.
 
@@ -40,6 +40,7 @@ wave {
   enabled = true
 }
 ```
+
 Scripts are scoped to specific modules and only affect containers that use those modules. Modifying a script in a module `bin` directory only changes the container fingerprint for processes that use that module, leaving other containers unchanged. See [Wave container fingerprinting](#wave-container-fingerprinting) for more information.
 
 :::warning
