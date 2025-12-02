@@ -106,5 +106,3 @@ Third-party registries (e.g., Docker Hub or Quay.io) require additional setup an
 
 - Manual credential configuration on each compute instance
 - Public endpoints for Wave to connect to
-- Additional security configuration
-- More complex authentication setup compared to native registries
