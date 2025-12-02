@@ -18,21 +18,40 @@ If an access token isn't provided, the following rate limits apply:
 - 25 container builds per day
 - 100 container pulls per hour
 
-## APIs
+### How Wave pull rate limits work
 
-This section summarizes the API provided by the Wave container service.
+When you pull a container image:
+
+1. The Docker service downloads the container manifest (a JSON file detailing each layer of the final image).
+1. The Docker service downloads each layer listed in the manifest file.
+
+Wave defines a pull as downloading both the container manifest and all layers. Therefore:
+
+- The manifest request to Wave counts as one pull against your rate limit
+- Layer and blob requests don't count against rate limits
+- A container image with 100 layers counts as 1 pull
+
+Rate limits affect pipelines with high concurrency. The following example demonstrates this issue:
+
+- 50 concurrent pipeline runs
+- Each run spawns 10,000 tasks
+- Each task runs on it's own VM
+- Each task pulls a container image
+- 500,000 manifest requests are made
+
+This volume exceeds the 2,000 container pulls per minute limit and causes failed tasks and pipeline errors.
+
+## General API
 
 ### POST `/container-token`
 
-Deprecated endpoint allows you to submit a request to access a private container registry via Wave, or build a container image on-the-fly with a Dockerfile or Conda recipe file.
+:::warning
+This API endpoint is deprecated in current versions of Wave.
+:::
+
+Submit a request to access a private container registry via Wave, or build a container image on-the-fly with a Dockerfile or Conda recipe file.
 
 The endpoint returns the name of the container request made available by Wave.
-
-:::important
-
-This API endpoint is deprecated in current versions of Wave.
-
-:::
 
 #### Request body
 
@@ -114,9 +133,9 @@ This API endpoint is deprecated in current versions of Wave.
 
 ### POST `/v1alpha2/container`
 
-This endpoint allows you to submit a request to access a private container registry via Wave, or build a container image on-the-fly with a Dockerfile or Conda recipe file.
+Submit a request to access a private container registry via Wave, or build a container image on-the-fly with a Dockerfile or Conda recipe file.
 
-The endpoint returns the name of the container request made available by Wave.
+Returns the name of the container request made available by Wave.
 
 #### Request body
 
@@ -370,7 +389,7 @@ The endpoint returns the name of the container request made available by Wave.
 
 ### GET `/v1alpha1/builds/{buildId}/status`
 
-Provides status of build against buildId passed as path variable
+Get status of build against `buildId` passed as path variable
 
 #### Response
 
@@ -405,13 +424,13 @@ Status can only be `PENDING` or `COMPLETED`.
 
 Supply logs corresponding to the specified buildId within the API request.
 
-### Response
+#### Response
 
 ```text
 string
 ```
 
-#### Example
+#### Examples
 
 ```shell
 % curl --location 'http://localhost:9090/v1alpha1/builds/<BUILD_ID>/logs'
@@ -433,7 +452,7 @@ INFO[0005] Pushed index.docker.io/<REPO>/<IMAGE>
 
 ### GET `/service-info`
 
-Provides basic information about the service status.
+Get basic information about the service status.
 
 #### Response
 
@@ -448,7 +467,7 @@ Provides basic information about the service status.
 
 ### POST `/v1alpha1/inspect`
 
-This endpoint returns the metadata about provided container image
+Returns the metadata about provided container image
 
 #### Request
 
@@ -529,7 +548,7 @@ You can find the explanation of the response attributes (here)[https://github.co
 
 - API call
 
-    **Request**    
+    **Request**
 
     ```shell
     curl --location 'http://localhost:9090/v1alpha1/inspect' \
@@ -594,25 +613,21 @@ You can find the explanation of the response attributes (here)[https://github.co
     }
     ```
 
-## Metrics APIs based on Redis
+## Metrics API
 
-These APIs provide usage (builds and pulls) metrics of Wave for a specific date and/or a specific organization.
-These APIs require basic authentication, so you must provide a username and password while calling these APIs.
+These APIs provide usage (builds and pulls) metrics of Wave for a specific date and/or a organization.
+They require basic authentication (i.e., a username and password).
 
 All Metrics API endpoints use these query parameters:
 
 | Name | Description                                                           | sample Value |
 |------|-----------------------------------------------------------------------|--------------|
 | date | Format: `yyyy-mm-dd`, The date of the required metrics.               | 2024-04-08   |
-| org  | Domain of the organization used in emails, e.g., `org=seqera.io` | seqera.io    |
+| org  | Domain of the organization used in emails, e.g., `org=seqera.io`      | seqera.io    |
 
-### Build Metrics API
+### GET `/v1alpha2/metrics/builds`
 
-These APIs are used to retrieve metrics about container builds performed by Wave.
-
-#### GET `/v1alpha2/metrics/builds`
-
-This endpoint is used to retrieve the builds performed by Wave.
+Get the builds performed by Wave.
 
 #### Response
 
@@ -672,15 +687,11 @@ This endpoint is used to retrieve the builds performed by Wave.
     }
     ```
 
-### Pull Metrics API
-
-These APIs are used to get the metrics about the container pulls through Wave.
-
 ### GET `/v1alpha2/metrics/pulls`
 
-This endpoint is used to get the pulls performed through Wave.
+Get the pulls performed through Wave.
 
-### Response
+#### Response
 
 ```json
 {
@@ -736,15 +747,11 @@ curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/pulls?org=seqera.io"
 }
 ```
 
-### Fusion Pull Metrics API
-
-These APIs are used to get the metrics about the Fusion-based container pulls through Wave.
-
 ### GET `/v1alpha2/metrics/fusion/pulls`
 
-This endpoint is used to get the pulls of Fusion-based containers performed through Wave.
+Get the pulls of Fusion-based containers performed through Wave.
 
-### Response
+#### Response
 
 ```json
 {
