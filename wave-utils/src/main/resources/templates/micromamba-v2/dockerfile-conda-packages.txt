@@ -1,4 +1,4 @@
-FROM {{mamba_image}}:2.1.1 AS build
+FROM {{mamba_image}} AS build
 RUN \
     micromamba install -y -n base {{channel_opts}} {{target}} \
     {{base_packages}}

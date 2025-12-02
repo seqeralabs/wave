@@ -395,15 +395,16 @@ curl --location 'https://wave.seqera.io/v1alpha2/container' \
 
 ```json
 {
-    "requestId": "a3f4b5c6d789",
-    "containerToken": "a3f4b5c6d789",
-    "targetImage": "wave.seqera.io/wt/a3f4b5c6d789/wave/build:3c7d8e9f12a45678",
-    "expiration": "2025-11-09T02:50:23.254497148Z",
-    "containerImage": "wave.seqera.io/wave/build:3c7d8e9f12a45678",
-    "buildId": "bd-3c7d8e9f12a45678_1",
-    "cached": false,
-    "freeze": false,
-    "mirror": false
+    "requestId":"bf31a6445b41",
+    "containerToken":"bf31a6445b41",
+    "targetImage":"https://wave.seqera.io/wt/bf31a6445b41/hrma017/dev:numpy_pandas_scikit-learn--ad24e45802adb349",
+    "expiration":"2025-12-02T11:47:55.908498Z",
+    "containerImage":"hrma017/dev:numpy_pandas_scikit-learn--ad24e45802adb349",
+    "buildId":"bd-ad24e45802adb349_1",
+    "cached":false,
+    "freeze":false,
+    "mirror":false,
+    "scanId":"sc-98fd615516bd93d6_1"
 }
 ```
 
@@ -436,15 +437,100 @@ curl --location 'https://wave.seqera.io/v1alpha2/container' \
 
 ```json
 {
-    "requestId": "b7e8f9a0c123",
-    "containerToken": "b7e8f9a0c123",
-    "targetImage": "wave.seqera.io/wt/b7e8f9a0c123/wave/build:4d8e9f0a23b56789",
-    "expiration": "2025-11-09T02:50:23.254497148Z",
-    "containerImage": "wave.seqera.io/wave/build:4d8e9f0a23b56789",
-    "buildId": "bd-4d8e9f0a23b56789_1",
-    "cached": false,
-    "freeze": false,
-    "mirror": false
+    "requestId":"248eefc1fc14",
+    "containerToken":"248eefc1fc14",
+    "targetImage":"wave.local/wt/248eefc1fc14/hrma017/dev:bwa-0.7.15_salmon-1.10.0_samtools-1.17--40730eb5c2c3dc6e",
+    "expiration":"2025-12-02T12:14:59.672505Z",
+    "containerImage":"hrma017/dev:bwa-0.7.15_salmon-1.10.0_samtools-1.17--40730eb5c2c3dc6e",
+    "buildId":"bd-40730eb5c2c3dc6e_1",
+    "cached":false,
+    "freeze":false,
+    "mirror":false,
+    "scanId":"sc-f36486d1a7e3053a_1"
+}
+```
+
+7. Create Singularity image with Pixi v1 template (multi-stage build):
+
+##### Request
+
+```shell
+curl --location 'https://wave.seqera.io/v1alpha2/container' \
+--header 'Content-Type: application/json' \
+--data '{
+    "containerPlatform": "linux/amd64",
+    "format": "sif",
+    "buildTemplate": "pixi/v1",
+    "packages":{
+        "type": "CONDA",
+        "entries": ["numpy", "pandas", "scikit-learn"],
+        "channels": ["conda-forge"],
+        "pixiOpts": {
+            "pixiImage": "ghcr.io/prefix-dev/pixi:latest",
+            "basePackages": "conda-forge::procps-ng",
+            "baseImage": "ubuntu:24.04",
+            "commands": []
+        }
+    },
+    "freeze": true,
+    "buildRepository": "<CONTAINER_REPOSITORY>", # hrma017/test
+    "towerAccessToken": "<TOKEN>"
+}'
+```
+
+#### Response
+
+```json
+{
+    "requestId":"7159b38c6c04",
+    "targetImage":"oras://hrma017/test:numpy_pandas_scikit-learn--717309e30359606f",
+    "containerImage":"oras://hrma017/test:numpy_pandas_scikit-learn--717309e30359606f",
+    "buildId":"bd-717309e30359606f_1",
+    "cached":false,
+    "freeze":true,
+    "mirror":false
+}
+```
+
+8. Create Singularity image with Micromamba v2 template (multi-stage build):
+
+##### Request
+
+```shell
+curl --location 'https://wave.seqera.io/v1alpha2/container' \
+--header 'Content-Type: application/json' \
+--data '{
+    "containerPlatform": "linux/amd64",
+    "format": "sif",
+    "buildTemplate": "micromamba/v2",
+    "packages":{
+        "type": "CONDA",
+        "entries": ["bwa=0.7.15", "salmon=1.10.0", "samtools=1.17"],
+        "channels": ["conda-forge", "bioconda"],
+        "condaOpts": {
+            "mambaImage": "mambaorg/micromamba:2.1.1",
+            "basePackages": "conda-forge::procps-ng",
+            "baseImage": "ubuntu:24.04",
+            "commands": []
+        }
+    },
+    "freeze": true,
+    "buildRepository": "<CONTAINER_REPOSITORY>", # hrma017/test
+    "towerAccessToken": "<TOKEN>"
+}'
+```
+
+#### Response
+
+```json
+{
+    "requestId":"b93c35abca4e",
+    "targetImage":"oras://hrma017/test:bwa-0.7.15_salmon-1.10.0_samtools-1.17--e85b5c89438aa3ff",
+    "containerImage":"oras://hrma017/test:bwa-0.7.15_salmon-1.10.0_samtools-1.17--e85b5c89438aa3ff",
+    "buildId":"bd-e85b5c89438aa3ff_1",
+    "cached":false,
+    "freeze":true,
+    "mirror":false
 }
 ```
 

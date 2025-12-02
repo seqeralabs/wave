@@ -863,4 +863,464 @@ class DockerHelperTest extends Specification {
                 '''.stripIndent()
     }
 
+    /* *********************************************************************************
+     * Micromamba v2 template tests (multi-stage builds)
+     * *********************************************************************************/
+
+    def 'should create dockerfile using micromamba v2 template from conda file' () {
+        given:
+        def CONDA_OPTS = new CondaOpts([
+                mambaImage: 'mambaorg/micromamba:2.1.1',
+                baseImage: 'ubuntu:24.04',
+                basePackages: 'conda-forge::procps-ng'
+        ])
+
+        expect:
+        DockerHelper.condaFileToDockerFileUsingMicromamba(CONDA_OPTS) == '''\
+                FROM mambaorg/micromamba:2.1.1 AS build
+                COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
+                RUN micromamba install -y -n base -f /tmp/conda.yml \\
+                    && micromamba install -y -n base conda-forge::procps-ng \\
+                    && micromamba env export --name base --explicit > environment.lock \\
+                    && echo ">> CONDA_LOCK_START" \\
+                    && cat environment.lock \\
+                    && echo "<< CONDA_LOCK_END"
+
+                FROM ubuntu:24.04 AS prod
+                ARG MAMBA_ROOT_PREFIX="/opt/conda"
+                ENV MAMBA_ROOT_PREFIX=$MAMBA_ROOT_PREFIX
+                COPY --from=build "$MAMBA_ROOT_PREFIX" "$MAMBA_ROOT_PREFIX"
+                USER root
+                ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                '''.stripIndent()
+    }
+
+    def 'should create dockerfile using micromamba v2 template with default options' () {
+        expect:
+        DockerHelper.condaFileToDockerFileUsingMicromamba(new CondaOpts([:])) == '''\
+                FROM mambaorg/micromamba:1.5.10-noble AS build
+                COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
+                RUN micromamba install -y -n base -f /tmp/conda.yml \\
+                    && micromamba install -y -n base conda-forge::procps-ng \\
+                    && micromamba env export --name base --explicit > environment.lock \\
+                    && echo ">> CONDA_LOCK_START" \\
+                    && cat environment.lock \\
+                    && echo "<< CONDA_LOCK_END"
+
+                FROM ubuntu:24.04 AS prod
+                ARG MAMBA_ROOT_PREFIX="/opt/conda"
+                ENV MAMBA_ROOT_PREFIX=$MAMBA_ROOT_PREFIX
+                COPY --from=build "$MAMBA_ROOT_PREFIX" "$MAMBA_ROOT_PREFIX"
+                USER root
+                ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                '''.stripIndent()
+    }
+
+    def 'should create dockerfile using micromamba v2 template from packages' () {
+        given:
+        def PACKAGES = 'bwa=0.7.15 salmon=1.1.1'
+        def CHANNELS = ['conda-forge', 'bioconda']
+        def CONDA_OPTS = new CondaOpts([
+                mambaImage: 'mambaorg/micromamba:2.1.1',
+                baseImage: 'ubuntu:24.04',
+                basePackages: 'conda-forge::procps-ng'
+        ])
+
+        expect:
+        DockerHelper.condaPackagesToDockerFileUsingMicromamba(PACKAGES, CHANNELS, CONDA_OPTS) == '''\
+                FROM mambaorg/micromamba:2.1.1 AS build
+                RUN \\
+                    micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1 \\
+                    && micromamba install -y -n base conda-forge::procps-ng \\
+                    && micromamba env export --name base --explicit > environment.lock \\
+                    && echo ">> CONDA_LOCK_START" \\
+                    && cat environment.lock \\
+                    && echo "<< CONDA_LOCK_END"
+
+                FROM ubuntu:24.04 AS prod
+                ARG MAMBA_ROOT_PREFIX="/opt/conda"
+                ENV MAMBA_ROOT_PREFIX=$MAMBA_ROOT_PREFIX
+                COPY --from=build "$MAMBA_ROOT_PREFIX" "$MAMBA_ROOT_PREFIX"
+                USER root
+                ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                '''.stripIndent()
+    }
+
+    def 'should create dockerfile using micromamba v2 template with custom base image' () {
+        given:
+        def PACKAGES = 'numpy pandas'
+        def CHANNELS = ['conda-forge']
+        def CONDA_OPTS = new CondaOpts([
+                mambaImage: 'mambaorg/micromamba:2.1.1',
+                baseImage: 'debian:12',
+                basePackages: null
+        ])
+
+        expect:
+        DockerHelper.condaPackagesToDockerFileUsingMicromamba(PACKAGES, CHANNELS, CONDA_OPTS) == '''\
+                FROM mambaorg/micromamba:2.1.1 AS build
+                RUN \\
+                    micromamba install -y -n base -c conda-forge numpy pandas \\
+                    && micromamba env export --name base --explicit > environment.lock \\
+                    && echo ">> CONDA_LOCK_START" \\
+                    && cat environment.lock \\
+                    && echo "<< CONDA_LOCK_END"
+
+                FROM debian:12 AS prod
+                ARG MAMBA_ROOT_PREFIX="/opt/conda"
+                ENV MAMBA_ROOT_PREFIX=$MAMBA_ROOT_PREFIX
+                COPY --from=build "$MAMBA_ROOT_PREFIX" "$MAMBA_ROOT_PREFIX"
+                USER root
+                ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                '''.stripIndent()
+    }
+
+    def 'should create dockerfile using micromamba v2 template with commands' () {
+        given:
+        def PACKAGES = 'bwa=0.7.15 salmon=1.1.1'
+        def CHANNELS = ['conda-forge', 'bioconda']
+        def CONDA_OPTS = new CondaOpts([
+                mambaImage: 'mambaorg/micromamba:2.1.1',
+                baseImage: 'ubuntu:24.04',
+                basePackages: 'conda-forge::procps-ng',
+                commands: ['RUN apt-get update', 'RUN apt-get install -y vim']
+        ])
+
+        when:
+        def result = DockerHelper.condaPackagesToDockerFileUsingMicromamba(PACKAGES, CHANNELS, CONDA_OPTS)
+
+        then:
+        result.contains('FROM mambaorg/micromamba:2.1.1 AS build')
+        result.contains('FROM ubuntu:24.04 AS prod')
+        result.contains('RUN apt-get update')
+        result.contains('RUN apt-get install -y vim')
+    }
+
+    def 'should create dockerfile using micromamba v2 template with remote lock file' () {
+        given:
+        def PACKAGES = 'https://foo.com/some/conda-lock.yml'
+        def CHANNELS = ['conda-forge']
+        def CONDA_OPTS = new CondaOpts([
+                mambaImage: 'mambaorg/micromamba:2.1.1',
+                baseImage: 'ubuntu:24.04'
+        ])
+
+        when:
+        def result = DockerHelper.condaPackagesToDockerFileUsingMicromamba(PACKAGES, CHANNELS, CONDA_OPTS)
+
+        then:
+        result.contains('-f https://foo.com/some/conda-lock.yml')
+        result.contains('FROM mambaorg/micromamba:2.1.1 AS build')
+        result.contains('FROM ubuntu:24.04 AS prod')
+    }
+
+    /* *********************************************************************************
+     * Pixi v1 template tests (multi-stage builds)
+     * *********************************************************************************/
+
+    def 'should create singularityfile using pixi v1 template' () {
+        given:
+        def PIXI_OPTS = new PixiOpts([
+                pixiImage: 'ghcr.io/prefix-dev/pixi:latest',
+                baseImage: 'ubuntu:24.04',
+                basePackages: 'conda-forge::procps-ng'
+        ])
+
+        expect:
+        DockerHelper.condaFileToSingularityFileUsingPixi(PIXI_OPTS) == '''\
+                BootStrap: docker
+                From: ghcr.io/prefix-dev/pixi:latest
+                Stage: build
+                %files
+                    {{wave_context_dir}}/conda.yml /scratch/conda.yml
+                %post
+                    mkdir /opt/wave && cd /opt/wave
+                    pixi init --import /scratch/conda.yml
+                    pixi add conda-forge::procps-ng
+                    pixi shell-hook > /shell-hook.sh
+                    echo 'exec "$@"' >> /shell-hook.sh
+                    echo ">> CONDA_LOCK_START"
+                    cat /opt/wave/pixi.lock
+                    echo "<< CONDA_LOCK_END"
+
+                Bootstrap: docker
+                From: ubuntu:24.04
+                Stage: final
+                # install binary from stage one
+                %files from build
+                    /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
+                    /shell-hook.sh /shell-hook.sh
+                %environment
+                    export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                '''.stripIndent()
+    }
+
+    def 'should create singularityfile using pixi v1 template with default options' () {
+        expect:
+        DockerHelper.condaFileToSingularityFileUsingPixi(new PixiOpts([:])) == '''\
+                BootStrap: docker
+                From: ghcr.io/prefix-dev/pixi:latest
+                Stage: build
+                %files
+                    {{wave_context_dir}}/conda.yml /scratch/conda.yml
+                %post
+                    mkdir /opt/wave && cd /opt/wave
+                    pixi init --import /scratch/conda.yml
+                    pixi add conda-forge::procps-ng
+                    pixi shell-hook > /shell-hook.sh
+                    echo 'exec "$@"' >> /shell-hook.sh
+                    echo ">> CONDA_LOCK_START"
+                    cat /opt/wave/pixi.lock
+                    echo "<< CONDA_LOCK_END"
+
+                Bootstrap: docker
+                From: ubuntu:24.04
+                Stage: final
+                # install binary from stage one
+                %files from build
+                    /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
+                    /shell-hook.sh /shell-hook.sh
+                %environment
+                    export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                '''.stripIndent()
+    }
+
+    def 'should create singularityfile using pixi v1 template with custom images' () {
+        given:
+        def PIXI_OPTS = new PixiOpts([
+                pixiImage: 'ghcr.io/prefix-dev/pixi:0.35.0',
+                baseImage: 'debian:12',
+                basePackages: null
+        ])
+
+        expect:
+        DockerHelper.condaFileToSingularityFileUsingPixi(PIXI_OPTS) == '''\
+                BootStrap: docker
+                From: ghcr.io/prefix-dev/pixi:0.35.0
+                Stage: build
+                %files
+                    {{wave_context_dir}}/conda.yml /scratch/conda.yml
+                %post
+                    mkdir /opt/wave && cd /opt/wave
+                    pixi init --import /scratch/conda.yml
+                    pixi shell-hook > /shell-hook.sh
+                    echo 'exec "$@"' >> /shell-hook.sh
+                    echo ">> CONDA_LOCK_START"
+                    cat /opt/wave/pixi.lock
+                    echo "<< CONDA_LOCK_END"
+
+                Bootstrap: docker
+                From: debian:12
+                Stage: final
+                # install binary from stage one
+                %files from build
+                    /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
+                    /shell-hook.sh /shell-hook.sh
+                %environment
+                    export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                '''.stripIndent()
+    }
+
+    def 'should create dockerfile using pixi v1 template with custom commands' () {
+        given:
+        def PIXI_OPTS = new PixiOpts([
+                basePackages: 'conda-forge::procps-ng',
+                commands: ['RUN apt-get update', 'RUN apt-get install -y curl']
+        ])
+
+        when:
+        def result = DockerHelper.condaFileToDockerFileUsingPixi(PIXI_OPTS)
+
+        then:
+        result.contains('pixi add conda-forge::procps-ng')
+        result.contains('RUN apt-get update')
+        result.contains('RUN apt-get install -y curl')
+    }
+
+    def 'should create singularityfile using pixi v1 template with custom commands' () {
+        given:
+        def PIXI_OPTS = new PixiOpts([
+                basePackages: 'conda-forge::bash',
+                commands: ['apt-get update', 'apt-get install -y nano']
+        ])
+
+        when:
+        def result = DockerHelper.condaFileToSingularityFileUsingPixi(PIXI_OPTS)
+
+        then:
+        result.contains('pixi add conda-forge::bash')
+        result.contains('%post')
+        result.contains('apt-get update')
+        result.contains('apt-get install -y nano')
+    }
+
+    def 'should create singularityfile using micromamba v2 template from conda file' () {
+        given:
+        def CONDA_OPTS = new CondaOpts([
+                mambaImage: 'mambaorg/micromamba:2.1.1',
+                baseImage: 'ubuntu:24.04',
+                basePackages: 'conda-forge::procps-ng'
+        ])
+
+        expect:
+        DockerHelper.condaFileToSingularityFileUsingMicromamba(CONDA_OPTS) == '''\
+                BootStrap: docker
+                From: mambaorg/micromamba:2.1.1
+                Stage: build
+                %files
+                    {{wave_context_dir}}/conda.yml /tmp/conda.yml
+                %post
+                    micromamba install -y -n base -f /tmp/conda.yml
+                    micromamba install -y -n base conda-forge::procps-ng
+                    micromamba env export --name base --explicit > environment.lock
+                    echo ">> CONDA_LOCK_START"
+                    cat environment.lock
+                    echo "<< CONDA_LOCK_END"
+
+                Bootstrap: docker
+                From: ubuntu:24.04
+                Stage: final
+                %files from build
+                    /opt/conda /opt/conda
+                %environment
+                    export MAMBA_ROOT_PREFIX=/opt/conda
+                    export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                    '''.stripIndent()
+
+    }
+
+    def 'should create singularityfile using micromamba v2 template with default options' () {
+        expect:
+        DockerHelper.condaFileToSingularityFileUsingMicromamba(new CondaOpts([:])) == '''\
+                BootStrap: docker
+                From: mambaorg/micromamba:1.5.10-noble
+                Stage: build
+                %files
+                    {{wave_context_dir}}/conda.yml /tmp/conda.yml
+                %post
+                    micromamba install -y -n base -f /tmp/conda.yml
+                    micromamba install -y -n base conda-forge::procps-ng
+                    micromamba env export --name base --explicit > environment.lock
+                    echo ">> CONDA_LOCK_START"
+                    cat environment.lock
+                    echo "<< CONDA_LOCK_END"
+
+                Bootstrap: docker
+                From: ubuntu:24.04
+                Stage: final
+                %files from build
+                    /opt/conda /opt/conda
+                %environment
+                    export MAMBA_ROOT_PREFIX=/opt/conda
+                    export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                    '''.stripIndent()
+    }
+
+    def 'should create singularityfile using micromamba v2 template from packages' () {
+        given:
+        def PACKAGES = 'bwa=0.7.15 salmon=1.1.1'
+        def CHANNELS = ['conda-forge', 'bioconda']
+        def CONDA_OPTS = new CondaOpts([
+                mambaImage: 'mambaorg/micromamba:2.1.1',
+                baseImage: 'ubuntu:24.04',
+                basePackages: 'conda-forge::procps-ng'
+        ])
+
+        expect:
+        DockerHelper.condaPackagesToSingularityFileUsingMicromamba(PACKAGES, CHANNELS, CONDA_OPTS) == '''\
+                BootStrap: docker
+                From: mambaorg/micromamba:2.1.1
+                Stage: build
+                %post
+                    micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1
+                    micromamba install -y -n base conda-forge::procps-ng
+                    micromamba env export --name base --explicit > environment.lock
+                    echo ">> CONDA_LOCK_START"
+                    cat environment.lock
+                    echo "<< CONDA_LOCK_END"
+
+                Bootstrap: docker
+                From: ubuntu:24.04
+                Stage: final
+                %files from build
+                    /opt/conda /opt/conda
+                %environment
+                    export MAMBA_ROOT_PREFIX=/opt/conda
+                    export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                    '''.stripIndent()
+    }
+
+    def 'should create singularityfile using micromamba v2 template with custom base image' () {
+        given:
+        def PACKAGES = 'numpy pandas'
+        def CHANNELS = ['conda-forge']
+        def CONDA_OPTS = new CondaOpts([
+                mambaImage: 'mambaorg/micromamba:2.1.1',
+                baseImage: 'debian:12',
+                basePackages: null
+        ])
+
+        expect:
+        DockerHelper.condaPackagesToSingularityFileUsingMicromamba(PACKAGES, CHANNELS, CONDA_OPTS) == '''\
+                BootStrap: docker
+                From: mambaorg/micromamba:2.1.1
+                Stage: build
+                %post
+                    micromamba install -y -n base -c conda-forge numpy pandas
+                    micromamba env export --name base --explicit > environment.lock
+                    echo ">> CONDA_LOCK_START"
+                    cat environment.lock
+                    echo "<< CONDA_LOCK_END"
+
+                Bootstrap: docker
+                From: debian:12
+                Stage: final
+                %files from build
+                    /opt/conda /opt/conda
+                %environment
+                    export MAMBA_ROOT_PREFIX=/opt/conda
+                    export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                    '''.stripIndent()
+    }
+
+    def 'should create singularityfile using micromamba v2 template with commands' () {
+        given:
+        def PACKAGES = 'bwa=0.7.15 salmon=1.1.1'
+        def CHANNELS = ['conda-forge', 'bioconda']
+        def CONDA_OPTS = new CondaOpts([
+                mambaImage: 'mambaorg/micromamba:2.1.1',
+                baseImage: 'ubuntu:24.04',
+                basePackages: 'conda-forge::procps-ng',
+                commands: ['apt-get update', 'apt-get install -y vim']
+        ])
+
+        when:
+        def result = DockerHelper.condaPackagesToSingularityFileUsingMicromamba(PACKAGES, CHANNELS, CONDA_OPTS)
+
+        then:
+        result.contains('From: mambaorg/micromamba:2.1.1')
+        result.contains('From: ubuntu:24.04')
+        result.contains('%post')
+        result.contains('apt-get update')
+        result.contains('apt-get install -y vim')
+    }
+
+    def 'should create singularityfile using micromamba v2 template with remote lock file' () {
+        given:
+        def PACKAGES = 'https://foo.com/some/conda-lock.yml'
+        def CHANNELS = ['conda-forge']
+        def CONDA_OPTS = new CondaOpts([
+                mambaImage: 'mambaorg/micromamba:2.1.1',
+                baseImage: 'ubuntu:24.04'
+        ])
+
+        when:
+        def result = DockerHelper.condaPackagesToSingularityFileUsingMicromamba(PACKAGES, CHANNELS, CONDA_OPTS)
+
+        then:
+        result.contains('-f https://foo.com/some/conda-lock.yml')
+        result.contains('From: mambaorg/micromamba:2.1.1')
+        result.contains('From: ubuntu:24.04')
+    }
+
 }

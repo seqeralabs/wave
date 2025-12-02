@@ -271,11 +271,11 @@ public class DockerHelper {
     }
 
     static public String condaFileToDockerFileUsingMicromamba(CondaOpts opts) {
-        return condaFileTemplate0("/templates/micromamba/dockerfile-conda-file.txt", opts);
+        return condaFileTemplate2("/templates/micromamba-v2/dockerfile-conda-file.txt", opts);
     }
 
     static public String condaFileToSingularityFileUsingMicromamba(CondaOpts opts) {
-        return condaFileTemplate0("/templates/micromamba/singularityfile-conda-file.txt", opts);
+        return condaFileTemplate2("/templates/micromamba-v2" + "/singularityfile-conda-file.txt", opts);
     }
 
     static public String condaFileToDockerFileUsingPixi(PixiOpts opts) {
@@ -287,16 +287,16 @@ public class DockerHelper {
     }
 
     static public String condaPackagesToDockerFileUsingMicromamba(String packages, List<String> condaChannels, CondaOpts opts) {
-        return condaPackagesTemplate0(
-                "/templates/micromamba/dockerfile-conda-packages.txt",
+        return condaPackagesTemplate1(
+                "/templates/micromamba-v2/dockerfile-conda-packages.txt",
                 packages,
                 condaChannels,
                 opts);
     }
 
     static public String condaPackagesToSingularityFileUsingMicromamba(String packages, List<String> condaChannels, CondaOpts opts) {
-        return condaPackagesTemplate0(
-                "/templates/micromamba/singularityfile-conda-packages.txt",
+        return condaPackagesTemplate1(
+                "/templates/micromamba-v2/singularityfile-conda-packages.txt",
                 packages,
                 condaChannels,
                 opts);

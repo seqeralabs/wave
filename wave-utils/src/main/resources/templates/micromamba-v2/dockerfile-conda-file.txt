@@ -1,4 +1,4 @@
-FROM {{mamba_image}}:2.1.1 AS build
+FROM {{mamba_image}} AS build
 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
 RUN micromamba install -y -n base -f /tmp/conda.yml \
     {{base_packages}}
