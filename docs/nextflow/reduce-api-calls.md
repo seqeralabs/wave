@@ -8,19 +8,9 @@ tags: [nextflow, wave, rate limits, guides]
 
 Large-scale pipelines that pull container images across thousands of concurrent tasks can encounter Wave rate limits. This guide describes how to use Wave freeze to reduce API calls and avoid rate limits.
 
-## API limits
-
-Wave applies rate limits to container builds and pulls (manifest requests). Authenticated users have higher rate limits than anonymous users.
-
-If you provide a Platform access token, the following rate limits apply:
-
-- 250 container builds per hour
-- 2,000 container pulls (manifest requests) per minute
-
-If you don't provide a Platform access token, the following rate limits apply:
-
-- 25 container builds per day
-- 100 container pulls (manifest requests) per hour
+:::note
+Wave applies rate limits to container builds and pulls (manifest requests). Authenticated users have higher rate limits than anonymous users. See [API limits](../api/index.md#api-limits) for more information.
+:::
 
 ## How Wave pull rate limits work
 
