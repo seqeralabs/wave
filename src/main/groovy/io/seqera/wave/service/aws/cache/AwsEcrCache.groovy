@@ -26,8 +26,8 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.seqera.serde.Encodable
 import io.seqera.serde.moshi.MoshiEncodeStrategy
-import io.seqera.serde.moshi.MoshiSerializable
 import io.seqera.cache.tiered.AbstractTieredCache
 import io.seqera.cache.tiered.L2TieredCache
 import io.seqera.cache.tiered.TieredKey
@@ -76,7 +76,7 @@ class AwsEcrCache extends AbstractTieredCache<TieredKey, AwsEcrAuthToken> {
     }
 
     static JsonAdapter.Factory factory() {
-        PolymorphicJsonAdapterFactory.of(MoshiSerializable.class, "@type")
+        PolymorphicJsonAdapterFactory.of(Encodable.class, "@type")
                 .withSubtype(AbstractTieredCache.Entry.class, AbstractTieredCache.Entry.name)
                 .withSubtype(AwsEcrAuthToken.class, AwsEcrAuthToken.simpleName)
     }

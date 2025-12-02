@@ -25,6 +25,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Requires
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.scheduling.TaskScheduler
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.WaveLite
@@ -66,9 +67,11 @@ class CleanupServiceImpl implements Runnable, CleanupService {
     private JobOperation operation
 
     @Inject
+    @Nullable
     private ScanIdStore scanIdStore
 
     @Inject
+    @Nullable
     private ScanConfig scanConfig
 
     @PostConstruct

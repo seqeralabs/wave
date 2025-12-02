@@ -600,7 +600,7 @@ class K8sServiceImpl implements K8sService {
                 // init container to copy change owner of docker config and remote.yaml
                 spec.withInitContainers(new V1ContainerBuilder()
                         .withName("permissions-fix")
-                        .withImage("busybox")
+                        .withImage(buildConfig.singularityImageInit)
                         .withCommand("sh", "-c", "cp -r /tmp/singularity/* /singularity && chown -R 1000:1000 /singularity")
                         .withVolumeMounts(initMounts)
                         .build()
