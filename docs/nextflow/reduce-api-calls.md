@@ -9,7 +9,7 @@ tags: [nextflow, wave, rate limits, guides]
 Large-scale pipelines that pull container images across thousands of concurrent tasks can encounter Wave rate limits. This guide describes how to configure your Nextflow pipeline to use Wave freeze and reduce API calls to avoid rate limits.
 
 :::note
-Wave applies rate limits to container builds and pulls (manifest requests). Authenticated users have higher rate limits than anonymous users. See [API limits](../api/index.md#api-limits) for more information.
+Wave applies rate limits to container builds and pulls (manifest requests). Authenticated users have higher rate limits than anonymous users. See [API limits](../api.md#api-limits) for more information.
 :::
 
 ## How Wave freeze avoids rate limits
