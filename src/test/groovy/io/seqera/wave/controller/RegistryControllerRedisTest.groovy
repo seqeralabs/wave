@@ -105,7 +105,7 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         def jobQueue = applicationContext.getBean(JobProcessingQueue)
         def jobFactory = applicationContext.getBean(JobFactory)
         def res = BuildResult.create('1')
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 targetImage: 'library/hello-world',
                 containerId: '12345',
                 buildId: 'bd-12345_1',

@@ -45,7 +45,7 @@ class BuildStrategyTest extends Specification {
 
     def 'should get buildkit command' () {
         given:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 'c168dba125e28777',
                 buildId: 'bd-c168dba125e28777_1',
                 workspace: Path.of('/work/foo'),
@@ -80,7 +80,7 @@ class BuildStrategyTest extends Specification {
 
     def 'should get buildkit command with build context' () {
         given:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 'c168dba125e28777',
                 buildId: 'bd-c168dba125e28777_1',
                 workspace: Path.of('/work/foo'),
@@ -114,7 +114,7 @@ class BuildStrategyTest extends Specification {
 
     def 'should get singularity command' () {
         given:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 'c168dba125e28777',
                 buildId: 'bd-c168dba125e28777_1',
                 workspace: Path.of('/work/foo'),
@@ -140,7 +140,7 @@ class BuildStrategyTest extends Specification {
         def buildrepo = 'foo.com/repo'
         def containerId = ContainerHelper.makeContainerId(content, null, ContainerPlatform.of('amd64'), buildrepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildrepo, containerId, null, null)
-        def build = new BuildRequest(
+        def build = BuildRequest.of(
                 containerId,
                 content,
                 'condaFile',
@@ -175,7 +175,7 @@ class BuildStrategyTest extends Specification {
     @Unroll
     def 'should create output options' () {
         given:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 'c168dba125e28777',
                 buildId: 'bd-c168dba125e28777_1',
                 workspace: Path.of('/work/foo'),
@@ -221,7 +221,7 @@ class BuildStrategyTest extends Specification {
     @Unroll
     def 'should create cache options' () {
         given:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 'c168dba125e28777',
                 buildId: 'bd-c168dba125e28777_1',
                 workspace: Path.of('/work/foo'),
@@ -268,7 +268,7 @@ class BuildStrategyTest extends Specification {
     @Unroll
     def 'should create S3 cache options' () {
         given:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 'abc123def456',
                 buildId: 'bd-abc123def456_1',
                 workspace: Path.of('/work/foo'),
@@ -303,7 +303,7 @@ class BuildStrategyTest extends Specification {
 
     def 'should create S3 import cache options' () {
         given:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 'xyz789abc123',
                 buildId: 'bd-xyz789abc123_1',
                 workspace: Path.of('/work/foo'),
@@ -362,7 +362,7 @@ class BuildStrategyTest extends Specification {
 
     def 'should create registry import cache options' () {
         given:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 'abc123def456',
                 buildId: 'bd-abc123def456_1',
                 workspace: Path.of('/work/foo'),
@@ -385,7 +385,7 @@ class BuildStrategyTest extends Specification {
     @Unroll
     def 'should create cache import options for registry' () {
         given:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 'test123',
                 buildId: 'bd-test123_1',
                 workspace: Path.of('/work/foo'),
@@ -413,7 +413,7 @@ class BuildStrategyTest extends Specification {
     @Unroll
     def 'should create cache import options for S3' () {
         given:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 's3test456',
                 buildId: 'bd-s3test456_1',
                 workspace: Path.of('/work/foo'),

@@ -126,7 +126,7 @@ class ContainerBuildServiceTest extends Specification {
         def containerId = ContainerHelper.makeContainerId(dockerFile, condaFile, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, condaFile, null)
         def req =
-                new BuildRequest(
+                BuildRequest.of(
                         containerId: containerId,
                         containerFile: dockerFile,
                         condaFile: condaFile,
@@ -169,7 +169,7 @@ class ContainerBuildServiceTest extends Specification {
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
-                new BuildRequest(
+                BuildRequest.of(
                         containerId: containerId,
                         containerFile: dockerFile,
                         workspace: folder,
@@ -204,7 +204,7 @@ class ContainerBuildServiceTest extends Specification {
         def containerId = ContainerHelper.makeContainerId(containerFile, null, ContainerPlatform.of('amd64'), 'buildRepo', null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.SINGULARITY, 'foo.com/repo', containerId, null, null)
         def req =
-                new BuildRequest(
+                BuildRequest.of(
                         containerId: containerId,
                         containerFile: containerFile,
                         workspace: folder,
@@ -284,7 +284,7 @@ class ContainerBuildServiceTest extends Specification {
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
-                new BuildRequest(
+                BuildRequest.of(
                         containerId: containerId,
                         containerFile: dockerFile,
                         workspace: Path.of('/wsp'),
@@ -312,7 +312,7 @@ class ContainerBuildServiceTest extends Specification {
     void "an event insert a build"() {
         given:
         def containerId = 'container1234'
-        final request = new BuildRequest(
+        final request = BuildRequest.of(
                 containerId: containerId,
                 containerFile: 'test',
                 condaFile: 'test',
@@ -364,7 +364,7 @@ class ContainerBuildServiceTest extends Specification {
                 .withLaunchTime(Instant.now())
         def state = JobState.succeeded('logs')
         def res = BuildResult.create('1')
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 targetImage: 'docker.io/foo:0',
                 buildId: '1',
                 startTime: Instant.now(),
@@ -398,7 +398,7 @@ class ContainerBuildServiceTest extends Specification {
         def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
         def error = new Exception('error')
         def res = BuildResult.create('1')
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 targetImage: 'docker.io/foo:0',
                 buildId: '1',
                 startTime: Instant.now(),
@@ -427,7 +427,7 @@ class ContainerBuildServiceTest extends Specification {
         def service = new ContainerBuildServiceImpl(buildStore: buildStore, proxyService: proxyService, eventPublisher: eventPublisher, persistenceService:persistenceService, buildConfig: buildConfig)
         def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
         def res = BuildResult.create('1')
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 targetImage: 'docker.io/foo:0',
                 buildId: '1',
                 startTime: Instant.now(),

@@ -270,7 +270,7 @@ class ContainerScanServiceImplTest extends Specification {
         def workspace = Path.of('/some/workspace')
         def platform = ContainerPlatform.of('amd64')
         final build =
-                new BuildRequest(
+                BuildRequest.of(
                         containerId: containerId,
                         containerFile: 'FROM ubuntu',
                         workspace: workspace,

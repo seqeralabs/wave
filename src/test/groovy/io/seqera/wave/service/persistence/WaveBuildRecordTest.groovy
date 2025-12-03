@@ -42,24 +42,21 @@ class WaveBuildRecordTest extends Specification {
 
     def 'should serialise-deserialize build record' () {
         given:
-        final request = new BuildRequest(
-                'container1234',
-                'FROM foo:latest',
-                'conda::recipe',
-                Path.of("/some/path"),
-                'docker.io/my/repo:container1234',
-                PlatformId.NULL,
-                ContainerPlatform.of('amd64'),
-                'docker.io/my/cache',
-                '1.2.3.4',
-                '{"config":"json"}',
-                null,
-                null,
-                'scan12345',
-                null,
-                BuildFormat.DOCKER,
-                Duration.ofMinutes(1),
-                BuildCompression.gzip
+        final request = BuildRequest.of(
+                containerId: 'container1234',
+                containerFile: 'FROM foo:latest',
+                condaFile: 'conda::recipe',
+                workspace: Path.of("/some/path"),
+                targetImage: 'docker.io/my/repo:container1234',
+                identity: PlatformId.NULL,
+                platform: ContainerPlatform.of('amd64'),
+                cacheRepository: 'docker.io/my/cache',
+                ip: '1.2.3.4',
+                configJson: '{"config":"json"}',
+                scanId: 'scan12345',
+                format: BuildFormat.DOCKER,
+                maxDuration: Duration.ofMinutes(1),
+                compression: BuildCompression.gzip
         )
         final result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         final event = new BuildEvent(request, result)
@@ -74,24 +71,21 @@ class WaveBuildRecordTest extends Specification {
 
     def 'should convert to status response' () {
         given:
-        final request = new BuildRequest(
-                'container1234',
-                'FROM foo:latest',
-                'conda::recipe',
-                Path.of("/some/path"),
-                'docker.io/my/repo:container1234',
-                PlatformId.NULL,
-                ContainerPlatform.of('amd64'),
-                'docker.io/my/cache',
-                '1.2.3.4',
-                '{"config":"json"}',
-                null,
-                null,
-                'scan12345',
-                null,
-                BuildFormat.DOCKER,
-                Duration.ofMinutes(1),
-                BuildCompression.gzip
+        final request = BuildRequest.of(
+                containerId: 'container1234',
+                containerFile: 'FROM foo:latest',
+                condaFile: 'conda::recipe',
+                workspace: Path.of("/some/path"),
+                targetImage: 'docker.io/my/repo:container1234',
+                identity: PlatformId.NULL,
+                platform: ContainerPlatform.of('amd64'),
+                cacheRepository: 'docker.io/my/cache',
+                ip: '1.2.3.4',
+                configJson: '{"config":"json"}',
+                scanId: 'scan12345',
+                format: BuildFormat.DOCKER,
+                maxDuration: Duration.ofMinutes(1),
+                compression: BuildCompression.gzip
         )
 
         and:
@@ -130,24 +124,21 @@ class WaveBuildRecordTest extends Specification {
     @Unroll
     def 'should validate status and succeeded' () {
        given:
-        final request = new BuildRequest(
-                'container1234',
-                'FROM foo:latest',
-                'conda::recipe',
-                Path.of("/some/path"),
-                'docker.io/my/repo:container1234',
-                PlatformId.NULL,
-                ContainerPlatform.of('amd64'),
-                'docker.io/my/cache',
-                '1.2.3.4',
-                '{"config":"json"}',
-                null,
-                null,
-                'scan12345',
-                null,
-                BuildFormat.DOCKER,
-                Duration.ofMinutes(1),
-                BuildCompression.gzip
+        final request = BuildRequest.of(
+                containerId: 'container1234',
+                containerFile: 'FROM foo:latest',
+                condaFile: 'conda::recipe',
+                workspace: Path.of("/some/path"),
+                targetImage: 'docker.io/my/repo:container1234',
+                identity: PlatformId.NULL,
+                platform: ContainerPlatform.of('amd64'),
+                cacheRepository: 'docker.io/my/cache',
+                ip: '1.2.3.4',
+                configJson: '{"config":"json"}',
+                scanId: 'scan12345',
+                format: BuildFormat.DOCKER,
+                maxDuration: Duration.ofMinutes(1),
+                compression: BuildCompression.gzip
         )
 
         final result = new BuildResult(request.buildId, EXIT, "ok", Instant.now(), DURATION, null)

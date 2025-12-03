@@ -60,6 +60,7 @@ class WaveBuildRecord {
     BuildFormat format
     String digest
     BuildCompression compression
+    String buildTemplate
 
     Boolean succeeded() {
         return duration != null ? (exitStatus==0) : null
@@ -97,7 +98,8 @@ class WaveBuildRecord {
                 duration: result?.duration,
                 exitStatus: result?.exitStatus,
                 digest: result?.digest,
-                compression: request?.compression
+                compression: request?.compression,
+                buildTemplate: request?.buildTemplate
         )
     }
     

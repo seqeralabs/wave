@@ -249,6 +249,7 @@ class ViewController {
         binding.build_format = result.format?.render() ?: 'Docker'
         binding.build_compression = result.compression?.mode ?: '(default)'
         binding.build_platform = result.platform
+        binding.build_template = result.buildTemplate ?: '(default)'
         binding.build_containerfile = result.dockerFile ?: '-'
         binding.build_condafile = result.condaFile
         binding.build_digest = result.digest ?: '-'

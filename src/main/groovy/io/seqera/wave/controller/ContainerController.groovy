@@ -380,7 +380,8 @@ class ContainerController {
                 req.buildContext,
                 format,
                 maxDuration,
-                req.buildCompression
+                req.buildCompression,
+                req.buildTemplate
         )
     }
 
