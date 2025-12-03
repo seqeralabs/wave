@@ -698,6 +698,114 @@ class ContainerHelperTest extends Specification {
                 CMD ["/bin/bash"]
                 '''.stripIndent()
     }
+
+    // === build with micromamba v2 tests
+
+    def 'should create conda docker file with packages and micromamba v2'() {
+        given:
+        def CHANNELS = ['conda-forge', 'bioconda']
+        def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
+        def packages = new PackagesSpec(
+                type: PackagesSpec.Type.CONDA,
+                entries:  PACKAGES,
+                channels: CHANNELS)
+        and:
+        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.MICROMAMBA_V2)
+        when:
+        def result = ContainerHelper.containerFileFromRequest(req)
+
+        then:
+        result =='''\
+                FROM mambaorg/micromamba:2.1.1 AS build
+                COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
+                RUN micromamba install -y -n base -f /tmp/conda.yml \\
+                    && micromamba install -y -n base conda-forge::procps-ng \\
+                    && micromamba env export --name base --explicit > environment.lock \\
+                    && echo ">> CONDA_LOCK_START" \\
+                    && cat environment.lock \\
+                    && echo "<< CONDA_LOCK_END"
+
+                FROM ubuntu:24.04 AS prod
+                ARG MAMBA_ROOT_PREFIX="/opt/conda"
+                ENV MAMBA_ROOT_PREFIX=$MAMBA_ROOT_PREFIX
+                COPY --from=build "$MAMBA_ROOT_PREFIX" "$MAMBA_ROOT_PREFIX"
+                USER root
+                ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                '''.stripIndent()
+    }
+
+    def 'should create conda docker file with packages and micromamba v2 custom image'() {
+        given:
+        def CHANNELS = ['conda-forge', 'bioconda']
+        def CONDA_OPTS = new CondaOpts([
+                mambaImage: 'mambaorg/micromamba:2.0.0',
+                baseImage: 'debian:12',
+                basePackages: 'foo::one bar::two'
+        ])
+        def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
+        def packages = new PackagesSpec(
+                type: PackagesSpec.Type.CONDA,
+                entries:  PACKAGES,
+                channels: CHANNELS,
+                condaOpts: CONDA_OPTS)
+        and:
+        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.MICROMAMBA_V2)
+        when:
+        def result = ContainerHelper.containerFileFromRequest(req)
+
+        then:
+        result =='''\
+                FROM mambaorg/micromamba:2.0.0 AS build
+                COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
+                RUN micromamba install -y -n base -f /tmp/conda.yml \\
+                    && micromamba install -y -n base foo::one bar::two \\
+                    && micromamba env export --name base --explicit > environment.lock \\
+                    && echo ">> CONDA_LOCK_START" \\
+                    && cat environment.lock \\
+                    && echo "<< CONDA_LOCK_END"
+
+                FROM debian:12 AS prod
+                ARG MAMBA_ROOT_PREFIX="/opt/conda"
+                ENV MAMBA_ROOT_PREFIX=$MAMBA_ROOT_PREFIX
+                COPY --from=build "$MAMBA_ROOT_PREFIX" "$MAMBA_ROOT_PREFIX"
+                USER root
+                ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                '''.stripIndent()
+    }
+
+    def 'should create conda docker file with lock file and micromamba v2'() {
+        given:
+        def CHANNELS = ['conda-forge', 'bioconda']
+        def PACKAGES = ['https://foo.com/lock.yml']
+        def packages = new PackagesSpec(
+                type: PackagesSpec.Type.CONDA,
+                entries:  PACKAGES,
+                channels: CHANNELS)
+        and:
+        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.MICROMAMBA_V2)
+        when:
+        def result = ContainerHelper.containerFileFromRequest(req)
+
+        then:
+        result =='''\
+                FROM mambaorg/micromamba:2.1.1 AS build
+                RUN \\
+                    micromamba install -y -n base -c conda-forge -c bioconda -f https://foo.com/lock.yml \\
+                    && micromamba install -y -n base conda-forge::procps-ng \\
+                    && micromamba env export --name base --explicit > environment.lock \\
+                    && echo ">> CONDA_LOCK_START" \\
+                    && cat environment.lock \\
+                    && echo "<< CONDA_LOCK_END"
+
+                FROM ubuntu:24.04 AS prod
+                ARG MAMBA_ROOT_PREFIX="/opt/conda"
+                ENV MAMBA_ROOT_PREFIX=$MAMBA_ROOT_PREFIX
+                COPY --from=build "$MAMBA_ROOT_PREFIX" "$MAMBA_ROOT_PREFIX"
+                USER root
+                ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                '''.stripIndent()
+    }
+
     def 'should create cran docker file with packages'() {
         given:
         def REPOSITORIES = ['cran', 'bioconductor']

@@ -44,9 +44,9 @@ class PixiOptsTest extends Specification {
         opts.commands == null
     }
 
-    def "updates pixiImage with withMambaImage"() {
+    def "updates pixiImage with withPixiImage"() {
         when:
-        def opts = new PixiOpts().withMambaImage("new/image:2.0")
+        def opts = new PixiOpts().withPixiImage("new/image:2.0")
 
         then:
         opts.pixiImage == "new/image:2.0"

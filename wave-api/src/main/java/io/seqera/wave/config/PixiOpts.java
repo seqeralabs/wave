@@ -46,7 +46,7 @@ public class PixiOpts {
         this.basePackages = opts.containsKey("basePackages") ? (String)opts.get("basePackages") : DEFAULT_PACKAGES;
     }
 
-    public PixiOpts withMambaImage(String value) {
+    public PixiOpts withPixiImage(String value) {
         this.pixiImage = value;
         return this;
     }
