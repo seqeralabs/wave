@@ -83,7 +83,7 @@ class CranHelper {
 
     static String cranPackagesToDockerFile(String packages, List<String> repositories, CranOpts opts) {
         return cranPackagesTemplate0(
-                '/templates/cran/dockerfile-cran-packages.txt',
+                '/templates/cran-installr-v1/dockerfile-cran-packages.txt',
                 packages,
                 repositories,
                 opts)
@@ -91,7 +91,7 @@ class CranHelper {
 
     static String cranPackagesToSingularityFile(String packages, List<String> repositories, CranOpts opts) {
         return cranPackagesTemplate0(
-                '/templates/cran/singularityfile-cran-packages.txt',
+                '/templates/cran-installr-v1/singularityfile-cran-packages.txt',
                 packages,
                 repositories,
                 opts)
@@ -124,11 +124,11 @@ class CranHelper {
     }
 
     static String cranFileToDockerFile(CranOpts opts) {
-        return cranFileTemplate0('/templates/cran/dockerfile-cran-file.txt', opts)
+        return cranFileTemplate0('/templates/cran-installr-v1/dockerfile-cran-file.txt', opts)
     }
 
     static String cranFileToSingularityFile(CranOpts opts) {
-        return cranFileTemplate0('/templates/cran/singularityfile-cran-file.txt', opts)
+        return cranFileTemplate0('/templates/cran-installr-v1/singularityfile-cran-file.txt', opts)
     }
 
     protected static String cranFileTemplate0(String template, CranOpts opts) {
