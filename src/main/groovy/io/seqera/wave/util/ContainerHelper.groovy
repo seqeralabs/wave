@@ -95,22 +95,22 @@ class ContainerHelper {
      * @return
      *      The corresponding Containerfile
      */
-    static String containerFileFromPackages(PackagesSpec spec, boolean formatSingularity) {
+    static String containerFileFromPackagesSpec(PackagesSpec spec, boolean formatSingularity) {
         if( spec.type == PackagesSpec.Type.CONDA ) {
             // Check if 'entries' contains a remote lock file URI instead of package names.
             // Note: 'entries' can hold either package names (e.g., "numpy", "pandas") OR a single
             // HTTP/HTTPS URL pointing to a pre-resolved conda lock file. The naming is confusing
             // because 'condaPackagesToXxx' methods actually handle lock file URLs, not package names.
-            final lockFile = condaLockFile(spec.entries)
+            final lockFileUri = tryGetCondaLockFromPackageNames(spec.entries)
             if( !spec.condaOpts )
                 spec.condaOpts = new CondaOpts()
             def result
-            if ( lockFile ) {
+            if ( lockFileUri ) {
                 // Lock file URI detected: use '*-conda-packages.txt' templates that download
                 // and install dependencies from the remote lock file
                 result = formatSingularity
-                        ? condaPackagesToSingularityFile(lockFile, spec.channels, spec.condaOpts)
-                        : condaPackagesToDockerFile(lockFile, spec.channels, spec.condaOpts)
+                        ? condaPackagesToSingularityFile(lockFileUri, spec.channels, spec.condaOpts)
+                        : condaPackagesToDockerFile(lockFileUri, spec.channels, spec.condaOpts)
             } else {
                 // No lock file: use '*-conda-file.txt' templates that install from the
                 // local conda.yml environment file (already prepared by condaFileFromRequest)
@@ -143,12 +143,12 @@ class ContainerHelper {
     static String containerFileFromRequest(SubmitContainerTokenRequest req) {
         // without buildTemplate specified, fallback to legacy build template
         if( !req.buildTemplate )
-            return containerFileFromPackages(req.packages, req.formatSingularity())
+            return containerFileFromPackagesSpec(req.packages, req.formatSingularity())
         // build the container using the pixi template
         if( req.buildTemplate==BuildTemplate.PIXI_V1 ) {
             // check the type of the packages and apply
             if( req.packages.type == PackagesSpec.Type.CONDA ) {
-                final lockFile = condaLockFile(req.packages.entries)
+                final lockFile = tryGetCondaLockFromPackageNames(req.packages.entries)
                 final opts = req.packages.pixiOpts ?: new PixiOpts()
                 if( req.containerImage )
                     opts.baseImage = req.containerImage
@@ -164,7 +164,7 @@ class ContainerHelper {
         }
         if( req.buildTemplate==BuildTemplate.MICROMAMBA_V2 ) {
             if( req.packages.type == PackagesSpec.Type.CONDA ) {
-                final lockFile = condaLockFile(req.packages.entries)
+                final lockFile = tryGetCondaLockFromPackageNames(req.packages.entries)
                 final opts = req.packages.condaOpts ?: CondaOpts.v2()
                 if( req.containerImage )
                     opts.baseImage = req.containerImage
@@ -200,7 +200,7 @@ class ContainerHelper {
             return condaEnvironmentToCondaYaml(decoded, req.packages.channels)
         }
 
-        if ( req.packages.entries && !condaLockFile(req.packages.entries)) {
+        if ( req.packages.entries && !tryGetCondaLockFromPackageNames(req.packages.entries)) {
             // create a minimal conda file with package spec from user input
             final String packages = req.packages.entries.join(' ')
             return condaPackagesToCondaYaml(packages, req.packages.channels)
@@ -218,7 +218,7 @@ class ContainerHelper {
      * @return The lock file URI if found, null otherwise
      * @throws IllegalArgumentException if more than one lock file URI is specified
      */
-    static protected String condaLockFile(List<String> condaPackages) {
+    static protected String tryGetCondaLockFromPackageNames(List<String> condaPackages) {
         if( !condaPackages )
             return null;
         final result = condaPackages .findAll(it->it.startsWith("http://") || it.startsWith("https://"))

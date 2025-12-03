@@ -53,7 +53,7 @@ class ContainerHelperTest extends Specification {
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
 
         when:
-        def result = ContainerHelper.containerFileFromPackages(packages, true)
+        def result = ContainerHelper.containerFileFromPackagesSpec(packages, true)
 
         then:
         result =='''\
@@ -81,7 +81,7 @@ class ContainerHelperTest extends Specification {
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
 
         when:
-        def result = ContainerHelper.containerFileFromPackages(packages, false)
+        def result = ContainerHelper.containerFileFromPackagesSpec(packages, false)
 
         then:
         result =='''\
@@ -108,7 +108,7 @@ class ContainerHelperTest extends Specification {
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
 
         when:
-        def result = ContainerHelper.containerFileFromPackages(packages, true)
+        def result = ContainerHelper.containerFileFromPackagesSpec(packages, true)
 
         then:
         result =='''\
@@ -137,7 +137,7 @@ class ContainerHelperTest extends Specification {
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
 
         when:
-        def result = ContainerHelper.containerFileFromPackages(packages, false)
+        def result = ContainerHelper.containerFileFromPackagesSpec(packages, false)
 
         then:
         result =='''\
@@ -303,13 +303,13 @@ class ContainerHelperTest extends Specification {
 
     def 'should check if is a conda lock file' () {
         expect:
-        ContainerHelper.condaLockFile(null) == null
-        ContainerHelper.condaLockFile([]) == null
-        ContainerHelper.condaLockFile(['http://foo.com/some/lock']) == 'http://foo.com/some/lock'
-        ContainerHelper.condaLockFile(['https://foo.com/some/lock']) == 'https://foo.com/some/lock'
+        ContainerHelper.tryGetCondaLockFromPackageNames(null) == null
+        ContainerHelper.tryGetCondaLockFromPackageNames([]) == null
+        ContainerHelper.tryGetCondaLockFromPackageNames(['http://foo.com/some/lock']) == 'http://foo.com/some/lock'
+        ContainerHelper.tryGetCondaLockFromPackageNames(['https://foo.com/some/lock']) == 'https://foo.com/some/lock'
 
         when:
-        ContainerHelper.condaLockFile(['http://foo.com','http://bar.com'])
+        ContainerHelper.tryGetCondaLockFromPackageNames(['http://foo.com', 'http://bar.com'])
         then:
         thrown(IllegalArgumentException)
     }
@@ -814,7 +814,7 @@ class ContainerHelperTest extends Specification {
         def packages = new PackagesSpec(type: PackagesSpec.Type.CRAN, entries: PACKAGES, channels: REPOSITORIES, cranOpts: CRAN_OPTS)
 
         when:
-        def result = ContainerHelper.containerFileFromPackages(packages, false)
+        def result = ContainerHelper.containerFileFromPackagesSpec(packages, false)
 
         then:
         result.contains('FROM rocker/r-ver:4.4.1')
@@ -831,7 +831,7 @@ class ContainerHelperTest extends Specification {
         def packages = new PackagesSpec(type: PackagesSpec.Type.CRAN, entries: PACKAGES, channels: REPOSITORIES, cranOpts: CRAN_OPTS)
 
         when:
-        def result = ContainerHelper.containerFileFromPackages(packages, true)
+        def result = ContainerHelper.containerFileFromPackagesSpec(packages, true)
 
         then:
         result.contains('BootStrap: docker')
@@ -847,7 +847,7 @@ class ContainerHelperTest extends Specification {
         def packages = new PackagesSpec(type: PackagesSpec.Type.CRAN, cranOpts: CRAN_OPTS)
 
         when:
-        def result = ContainerHelper.containerFileFromPackages(packages, false)
+        def result = ContainerHelper.containerFileFromPackagesSpec(packages, false)
 
         then:
         result.contains('FROM rocker/r-ver:4.4.1')
@@ -863,7 +863,7 @@ class ContainerHelperTest extends Specification {
         def packages = new PackagesSpec(type: PackagesSpec.Type.CRAN, cranOpts: CRAN_OPTS)
 
         when:
-        def result = ContainerHelper.containerFileFromPackages(packages, true)
+        def result = ContainerHelper.containerFileFromPackagesSpec(packages, true)
 
         then:
         result.contains('BootStrap: docker')
