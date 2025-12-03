@@ -17,14 +17,9 @@
 
 package io.seqera.wave.util
 
-
-import java.nio.file.Files
-
 import io.seqera.wave.config.CondaOpts
-
-import spock.lang.Specification
-
 import io.seqera.wave.config.PixiOpts
+import spock.lang.Specification
 
 /**
  *
@@ -57,18 +52,6 @@ class DockerHelperTest extends Specification {
     def 'should convert conda packages to list' () {
         expect:
         DockerHelper.condaPackagesToList(STR) == EXPECTED
-
-        where:
-        STR                 | EXPECTED
-        "foo"               | ["foo"]
-        "foo bar"           | ["foo", "bar"]
-        "foo 'bar'"         | ["foo", "bar"]
-        "foo    'bar'  "    | ["foo", "bar"]
-    }
-
-    def 'should convert pip packages to list' () {
-        expect:
-        DockerHelper.pipPackagesToList(STR) == EXPECTED
 
         where:
         STR                 | EXPECTED
@@ -248,125 +231,6 @@ class DockerHelperTest extends Specification {
     }
 
 
-    def 'should add conda packages to conda file /1' () {
-        given:
-        def condaFile = Files.createTempFile('conda','yaml')
-        condaFile.text = '''\
-         dependencies:
-         - foo=1.0
-         - bar=2.0
-        '''.stripIndent(true)
-
-        when:
-        def result = DockerHelper.condaFileFromPath(condaFile.toString(), null)
-        then:
-        result.text == '''\
-         dependencies:
-         - foo=1.0
-         - bar=2.0
-        '''.stripIndent(true)
-
-        when:
-        result = DockerHelper.condaFileFromPath(condaFile.toString(), ['ch1', 'ch2'])
-        then:
-        result.text == '''\
-             dependencies:
-             - foo=1.0
-             - bar=2.0
-             channels:
-             - ch1
-             - ch2
-            '''.stripIndent(true)
-
-        cleanup:
-        if( condaFile ) Files.delete(condaFile)
-    }
-
-    def 'should add conda packages to conda file /2' () {
-        given:
-        def condaFile = Files.createTempFile('conda', 'yaml')
-        condaFile.text = '''\
-         dependencies:
-         - foo=1.0
-         - bar=2.0
-         channels:
-         - hola
-         - ciao
-        '''.stripIndent(true)
-
-        when:
-        def result = DockerHelper.condaFileFromPath(condaFile.toString(), null)
-        then:
-        result.text == '''\
-         dependencies:
-         - foo=1.0
-         - bar=2.0
-         channels:
-         - hola
-         - ciao
-        '''.stripIndent(true)
-
-        when:
-        result = DockerHelper.condaFileFromPath(condaFile.toString(), ['ch1', 'ch2'])
-        then:
-        result.text == '''\
-             dependencies:
-             - foo=1.0
-             - bar=2.0
-             channels:
-             - hola
-             - ciao
-             - ch1
-             - ch2
-            '''.stripIndent(true)
-
-        cleanup:
-        if (condaFile) Files.delete(condaFile)
-    }
-
-    def 'should add conda packages to conda file /3' () {
-        given:
-        def condaFile = Files.createTempFile('conda', 'yaml')
-        condaFile.text = '''\
-         channels:
-         - hola
-         - ciao
-        '''.stripIndent(true)
-
-        when:
-        def result = DockerHelper.condaFileFromPath(condaFile.toString(), null)
-        then:
-        result.text == '''\
-         channels:
-         - hola
-         - ciao
-        '''.stripIndent(true)
-
-        when:
-        result = DockerHelper.condaFileFromPath(condaFile.toString(), ['ch1', 'ch2'])
-        then:
-        result.text == '''\
-             channels:
-             - hola
-             - ciao
-             - ch1
-             - ch2
-            '''.stripIndent(true)
-
-        when:
-        result = DockerHelper.condaFileFromPath(condaFile.toString(), ['bioconda'])
-        then:
-        result.text == '''\
-             channels:
-             - hola
-             - ciao
-             - bioconda
-            '''.stripIndent(true)
-
-        cleanup:
-        if (condaFile) Files.delete(condaFile)
-    }
-    
     def 'should create dockerfile content from conda file' () {
         given:
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::bar'])

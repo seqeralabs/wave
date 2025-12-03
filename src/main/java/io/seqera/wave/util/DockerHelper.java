@@ -17,13 +17,9 @@
 
 package io.seqera.wave.util;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -46,24 +42,6 @@ import org.yaml.snakeyaml.representer.Representer;
  */
 public class DockerHelper {
 
-    /**
-     * Create a Conda environment file starting from one or more Conda package names
-     *
-     * @param packages
-     *      A string listing or more Conda package names separated with a blank character
-     *      e.g. {@code samtools=1.0 bedtools=2.0}
-     * @param condaChannels
-     *      A list of Conda channels
-     * @return
-     *      A path to the Conda environment YAML file. The file is automatically deleted then the JVM exit.
-     */
-    static public Path condaFileFromPackages(String packages, List<String> condaChannels) {
-        final String yaml = condaPackagesToCondaYaml(packages, condaChannels);
-        if (yaml == null || yaml.isEmpty())
-            return null;
-        return toYamlTempFile(yaml);
-    }
-
     static public List<String> condaPackagesToList(String packages) {
         if (packages == null || packages.isEmpty())
             return null;
@@ -72,11 +50,6 @@ public class DockerHelper {
                 .filter(it -> !StringUtils.isEmpty(it))
                 .map(it -> trim0(it)).collect(Collectors.toList());
     }
-
-    static List<String> pipPackagesToList(String packages) {
-        return condaPackagesToList(packages);
-    }
-
 
     protected static String trim0(String value) {
         if( value==null )
@@ -134,48 +107,6 @@ public class DockerHelper {
         return new Yaml(new Representer(dumperOpts), dumperOpts).dump(conda);
     }
 
-    /**
-     * Get a Conda environment file from a string path.
-     *
-     * @param condaFile
-     *      A file system path where the Conda environment file is located.
-     * @param channels
-     *      A list of Conda channels. If provided the channels are added to the ones
-     *      specified in the Conda environment files.
-     * @return
-     *      A {@link Path} to the Conda environment file. It can be the same file as specified
-     *      via the condaFile argument or a temporary file if the environment was modified due to
-     *      the channels or options specified. 
-     */
-    public static Path condaFileFromPath(String condaFile, List<String> channels) {
-        if( StringUtils.isEmpty(condaFile) )
-            throw new IllegalArgumentException("Argument 'condaFile' cannot be empty");
-        
-        final Path condaEnvPath = Path.of(condaFile);
-
-        // make sure the file exists
-        if( !Files.exists(condaEnvPath) ) {
-            throw new IllegalArgumentException("The specified Conda environment file cannot be found: " + condaFile);
-        }
-
-        // if there's nothing to be merged just return the conda file path
-        if( channels==null ) {
-            return condaEnvPath;
-        }
-
-        // => parse the conda file yaml, add the base packages to it
-        try {
-            final String result = condaEnvironmentToCondaYaml(Files.readString(condaEnvPath), channels);
-            return toYamlTempFile(result);
-        }
-        catch (FileNotFoundException e) {
-            throw new IllegalArgumentException("The specified Conda environment file cannot be found: " + condaFile, e);
-        }
-        catch (IOException e) {
-            throw new IllegalArgumentException("Unable to parse conda file: " + condaFile, e);
-        }
-    }
-
     public static String condaEnvironmentToCondaYaml(String env, List<String> channels) {
         final Yaml yaml = new Yaml();
         // 1. parse the file
@@ -194,19 +125,6 @@ public class DockerHelper {
         }
         // 3. return it
         return dumpCondaYaml(root);
-    }
-
-    static private Path toYamlTempFile(String yaml) {
-        try {
-            final File tempFile = File.createTempFile("nf-temp", ".yaml");
-            tempFile.deleteOnExit();
-            final Path result = tempFile.toPath();
-            Files.write(result, yaml.getBytes());
-            return result;
-        }
-        catch (IOException e) {
-            throw new IllegalStateException("Unable to write temporary file - Reason: " + e.getMessage(), e);
-        }
     }
 
     static public String condaPackagesToDockerFile(String packages, List<String> condaChannels, CondaOpts opts) {
@@ -384,18 +302,6 @@ public class DockerHelper {
             result += cmd + "\n";
         }
         return result;
-    }
-
-    static private String joinCommands(List<String> commands) {
-        if( commands==null || commands.size()==0 )
-            return null;
-        StringBuilder result = new StringBuilder();
-        for( String cmd : commands ) {
-            if( result.length()>0 )
-                result.append("\n");
-            result.append(cmd);
-        }
-        return result.toString();
     }
 
 }
