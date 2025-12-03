@@ -24,6 +24,7 @@ import spock.lang.Unroll
 
 import java.time.Instant
 
+import io.seqera.wave.api.BuildTemplate
 import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
@@ -616,7 +617,7 @@ class ContainerHelperTest extends Specification {
                 entries:  PACKAGES,
                 channels: CHANNELS)
         and:
-        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: 'pixi/v1')
+        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.PIXI_V1)
         when:
         def result = ContainerHelper.containerFileFromRequest(req)
 
@@ -664,7 +665,7 @@ class ContainerHelperTest extends Specification {
                 channels: CHANNELS,
                 pixiOpts: PIXI_OPTS)
         and:
-        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: 'pixi/v1')
+        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.PIXI_V1)
         when:
         def result = ContainerHelper.containerFileFromRequest(req)
 

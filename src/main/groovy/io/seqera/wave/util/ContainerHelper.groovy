@@ -22,6 +22,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.api.BuildContext
+import io.seqera.wave.api.BuildTemplate
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.PackagesSpec
@@ -144,7 +145,7 @@ class ContainerHelper {
         if( !req.buildTemplate )
             return containerFileFromPackages(req.packages, req.formatSingularity())
         // build the container using the pixi template
-        if( req.buildTemplate=='pixi/v1') {
+        if( req.buildTemplate==BuildTemplate.PIXI_V1 ) {
             // check the type of the packages and apply
             if( req.packages.type == PackagesSpec.Type.CONDA ) {
                 final lockFile = condaLockFile(req.packages.entries)
@@ -161,7 +162,7 @@ class ContainerHelper {
             else
                 throw new BadRequestException("Package type '${req.packages.type}' not supported by build template: ${req.buildTemplate}")
         }
-        if( req.buildTemplate=='micromamba/v2') {
+        if( req.buildTemplate==BuildTemplate.MICROMAMBA_V2 ) {
             if( req.packages.type == PackagesSpec.Type.CONDA ) {
                 final lockFile = condaLockFile(req.packages.entries)
                 final opts = req.packages.condaOpts ?: CondaOpts.v2()
