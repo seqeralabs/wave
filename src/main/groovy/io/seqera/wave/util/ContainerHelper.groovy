@@ -63,7 +63,27 @@ import static io.seqera.wave.util.CranHelper.cranFileToSingularityFile
 class ContainerHelper {
 
     /**
-     * Create a Containerfile from the specified packages specification
+     * Create a Containerfile from the specified packages specification.
+     *
+     * Build flow:
+     * 1. The {@link PackagesSpec} defines what packages should be configured in the container.
+     *
+     * 2. Packages can be specified in two ways:
+     *    - A list of package names via {@code PackagesSpec.entries}
+     *    - An environment definition file (YAML text) via {@code PackagesSpec.environment}
+     *
+     * 3. At this stage, package names have already been normalized to a conda environment file
+     *    by {@link #condaFileFromRequest}. This method only generates the Containerfile (Dockerfile
+     *    or Singularity definition) that references the environment file.
+     *
+     * 4. Before generating the Containerfile, we check if {@code entries} contains a remote lock
+     *    file URI (HTTP/HTTPS URL). This is an alternative way to specify pre-resolved dependencies.
+     *
+     * 5. Template selection based on lock file detection:
+     *    - If a lock file URI is found: uses {@code *-conda-packages.txt} templates
+     *      (these download and install from the remote lock file)
+     *    - If no lock file: uses {@code *-conda-file.txt} templates
+     *      (these install from the local conda.yml environment file)
      *
      * @param spec
      *      A {@link PackagesSpec} object modelling the packages to be included in the resulting container
@@ -74,15 +94,23 @@ class ContainerHelper {
      */
     static String containerFileFromPackages(PackagesSpec spec, boolean formatSingularity) {
         if( spec.type == PackagesSpec.Type.CONDA ) {
+            // Check if 'entries' contains a remote lock file URI instead of package names.
+            // Note: 'entries' can hold either package names (e.g., "numpy", "pandas") OR a single
+            // HTTP/HTTPS URL pointing to a pre-resolved conda lock file. The naming is confusing
+            // because 'condaPackagesToXxx' methods actually handle lock file URLs, not package names.
             final lockFile = condaLockFile(spec.entries)
             if( !spec.condaOpts )
                 spec.condaOpts = new CondaOpts()
             def result
             if ( lockFile ) {
+                // Lock file URI detected: use '*-conda-packages.txt' templates that download
+                // and install dependencies from the remote lock file
                 result = formatSingularity
                         ? condaPackagesToSingularityFile(lockFile, spec.channels, spec.condaOpts)
                         : condaPackagesToDockerFile(lockFile, spec.channels, spec.condaOpts)
             } else {
+                // No lock file: use '*-conda-file.txt' templates that install from the
+                // local conda.yml environment file (already prepared by condaFileFromRequest)
                 result = formatSingularity
                         ? condaFileToSingularityFile(spec.condaOpts)
                         : condaFileToDockerFile(spec.condaOpts)
@@ -178,6 +206,15 @@ class ContainerHelper {
         return null;
     }
 
+    /**
+     * Detects if the list of package names contains a conda lock file URI.
+     * A lock file is identified by an HTTP/HTTPS URL in the package list.
+     * Only one lock file URI is allowed at a time.
+     *
+     * @param condaPackages List of package names or URIs
+     * @return The lock file URI if found, null otherwise
+     * @throws IllegalArgumentException if more than one lock file URI is specified
+     */
     static protected String condaLockFile(List<String> condaPackages) {
         if( !condaPackages )
             return null;
