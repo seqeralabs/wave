@@ -194,11 +194,11 @@ The endpoint returns the name of the container request made available by Wave.
 | `commands`                          | Command to be included in the container.                                                                                                                       |
 | `basePackages`                      | Names of base packages.                                                                                                                                        |
 | `baseImage`                         | Base image for the final stage of multi-stage builds (for Conda/Pixi).                                                                                        |
-| `pixiOpts`                          | Pixi build options (when type is CONDA and buildTemplate is `pixi/v1`).                                                                                        |
+| `pixiOpts`                          | Pixi build options (when type is CONDA and buildTemplate is `conda-pixi/v1`).                                                                                  |
 | `pixiImage`                         | Name of the Docker image used for Pixi package manager (e.g., `ghcr.io/prefix-dev/pixi:latest`).                                                              |
 | `cranOpts`                          | CRAN build options (when type is CRAN).                                                                                                                        |
 | `rImage`                            | Name of the R Docker image used to build CRAN containers (e.g., `rocker/r-ver:4.4.1`).                                                                         |
-| `buildTemplate`                     | The build template to use for container builds. Supported values: `pixi/v1` (Pixi with multi-stage builds), `micromamba/v2` (Micromamba 2.x with multi-stage builds). Default: standard conda/micromamba v1 template. |
+| `buildTemplate`                     | The build template to use for container builds. Supported values: `conda-pixi/v1` (Pixi with multi-stage builds), `conda-micromamba/v2` (Micromamba 2.x with multi-stage builds). Default: standard conda/micromamba v1 template. |
 | `nameStrategy`                      | The name strategy to be used to create the name of the container built by Wave. Its values can be `none`, `tagPrefix`, or `imageSuffix`.                       |                                                     |
 
 ### Response
@@ -376,13 +376,13 @@ curl --location 'https://wave.seqera.io/v1alpha2/container' \
 --data '{
     "containerPlatform": "linux/amd64",
     "format": "docker",
-    "buildTemplate": "pixi/v1",
+    "buildTemplate": "conda-pixi/v1",
     "packages":{
         "type": "CONDA",
         "entries": ["numpy", "pandas", "scikit-learn"],
         "channels": ["conda-forge"],
         "pixiOpts": {
-            "pixiImage": "ghcr.io/prefix-dev/pixi:latest",
+            "pixiImage": "ghcr.io/prefix-dev/pixi:0.59.0-noble",
             "basePackages": "conda-forge::procps-ng",
             "baseImage": "ubuntu:24.04",
             "commands": []
@@ -418,7 +418,7 @@ curl --location 'https://wave.seqera.io/v1alpha2/container' \
 --data '{
     "containerPlatform": "linux/amd64",
     "format": "docker",
-    "buildTemplate": "micromamba/v2",
+    "buildTemplate": "conda-micromamba/v2",
     "packages":{
         "type": "CONDA",
         "entries": ["bwa=0.7.15", "salmon=1.10.0", "samtools=1.17"],
@@ -460,13 +460,13 @@ curl --location 'https://wave.seqera.io/v1alpha2/container' \
 --data '{
     "containerPlatform": "linux/amd64",
     "format": "sif",
-    "buildTemplate": "pixi/v1",
+    "buildTemplate": "conda-pixi/v1",
     "packages":{
         "type": "CONDA",
         "entries": ["numpy", "pandas", "scikit-learn"],
         "channels": ["conda-forge"],
         "pixiOpts": {
-            "pixiImage": "ghcr.io/prefix-dev/pixi:latest",
+            "pixiImage": "ghcr.io/prefix-dev/pixi:0.59.0-noble",
             "basePackages": "conda-forge::procps-ng",
             "baseImage": "ubuntu:24.04",
             "commands": []
@@ -502,7 +502,7 @@ curl --location 'https://wave.seqera.io/v1alpha2/container' \
 --data '{
     "containerPlatform": "linux/amd64",
     "format": "sif",
-    "buildTemplate": "micromamba/v2",
+    "buildTemplate": "conda-micromamba/v2",
     "packages":{
         "type": "CONDA",
         "entries": ["bwa=0.7.15", "salmon=1.10.0", "samtools=1.17"],
@@ -535,7 +535,7 @@ curl --location 'https://wave.seqera.io/v1alpha2/container' \
 ```
 
 :::note
-Multi-stage build templates (`pixi/v1` and `micromamba/v2`) create optimized container images by separating the build environment from the final runtime environment. This results in smaller container images that only contain the installed packages and runtime dependencies, without the build tools.
+Multi-stage build templates (`conda-pixi/v1` and `conda-micromamba/v2`) create optimized container images by separating the build environment from the final runtime environment. This results in smaller container images that only contain the installed packages and runtime dependencies, without the build tools.
 :::
 
 ## GET `/v1alpha1/builds/{buildId}/status`

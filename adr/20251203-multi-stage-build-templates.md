@@ -43,8 +43,8 @@ Wave's default container builds using Micromamba v1 include the package manager 
 | Value | Template | Package Manager |
 |-------|----------|-----------------|
 | `null` (default) | micromamba v1 | micromamba (single-stage) |
-| `pixi/v1` | pixi v1 | pixi (multi-stage) |
-| `micromamba/v2` | micromamba v2 | micromamba (multi-stage) |
+| `conda-pixi/v1` | pixi v1 | pixi (multi-stage) |
+| `conda-micromamba/v2` | micromamba v2 | micromamba (multi-stage) |
 
 **Rationale:**
 - Explicit selection avoids ambiguity
@@ -57,7 +57,7 @@ Wave's default container builds using Micromamba v1 include the package manager 
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `pixiImage` | `ghcr.io/prefix-dev/pixi:latest` | Build stage image |
+| `pixiImage` | `ghcr.io/prefix-dev/pixi:0.59.0-noble` | Build stage image |
 | `baseImage` | `ubuntu:24.04` | Final stage base |
 | `basePackages` | `conda-forge::procps-ng` | Additional runtime packages |
 | `commands` | (empty) | Custom commands |
@@ -85,7 +85,7 @@ Wave's default container builds using Micromamba v1 include the package manager 
 
 **Decision:** Generate shell-hook script for automatic environment activation
 
-- Pixi: `/opt/wave/entry.sh` generated via `pixi shell-hook`
+- Pixi: `/shell-hook.sh` generated via `pixi shell-hook`
 - Micromamba: Standard `/opt/conda` activation
 
 **Rationale:**
@@ -116,13 +116,13 @@ Wave's default container builds using Micromamba v1 include the package manager 
 | Template | `condaOpts` | `pixiOpts` |
 |----------|-------------|------------|
 | Default (v1) | Yes | No |
-| `micromamba/v2` | Yes | No |
-| `pixi/v1` | No | Yes |
+| `conda-micromamba/v2` | Yes | No |
+| `conda-pixi/v1` | No | Yes |
 
 ## Template Comparison
 
-| Aspect | Default (v1) | `micromamba/v2` | `pixi/v1` |
-|--------|--------------|-----------------|-----------|
+| Aspect | Default (v1) | `conda-micromamba/v2` | `conda-pixi/v1` |
+|--------|--------------|----------------------|-----------------|
 | Build stages | 1 | 2 | 2 |
 | Package manager in final | Yes | No | No |
 | Lock file | No | Yes | Yes |
