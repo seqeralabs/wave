@@ -73,8 +73,10 @@ class ContainerHelper {
      *    - An environment definition file (YAML text) via {@code PackagesSpec.environment}
      *
      * 3. At this stage, package names have already been normalized to a conda environment file
-     *    by {@link #condaFileFromRequest}. This method only generates the Containerfile (Dockerfile
-     *    or Singularity definition) that references the environment file.
+     *    by {@link #condaFileFromRequest}. The build process will use this conda.yml file with
+     *    the package manager (micromamba/pixi) to resolve and install dependencies. This method
+     *    only generates the Containerfile (Dockerfile or Singularity definition) that references
+     *    the environment file.
      *
      * 4. Before generating the Containerfile, we check if {@code entries} contains a remote lock
      *    file URI (HTTP/HTTPS URL). This is an alternative way to specify pre-resolved dependencies.
