@@ -22,7 +22,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.api.BuildContext
-import io.seqera.wave.api.BuildTemplate
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.PackagesSpec
@@ -34,6 +33,10 @@ import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.request.TokenData
 import org.yaml.snakeyaml.Yaml
+import static io.seqera.wave.api.BuildTemplate.CONDA_MICROMAMBA_V1
+import static io.seqera.wave.api.BuildTemplate.CONDA_MICROMAMBA_V2
+import static io.seqera.wave.api.BuildTemplate.CONDA_PIXI_V1
+import static io.seqera.wave.api.BuildTemplate.CRAN_INSTALLR_V1
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static io.seqera.wave.util.DockerHelper.condaEnvironmentToCondaYaml
 import static io.seqera.wave.util.DockerHelper.condaPackagesToCondaYaml
@@ -57,26 +60,21 @@ class ContainerHelper {
         final singularity = req.formatSingularity()
         final spec = req.packages
 
-        // Explicit template-based builds
-        if( req.buildTemplate == BuildTemplate.CONDA_PIXI_V1 ) {
-            return PixiHelper.containerFile(spec, req.containerImage, singularity)
-        }
-        if( req.buildTemplate == BuildTemplate.CONDA_MICROMAMBA_V2 ) {
-            return CondaHelper.containerFileV2(spec, req.containerImage, singularity)
-        }
-        if( req.buildTemplate == BuildTemplate.CRAN_INSTALLR_V1 ) {
-            return CranHelper.containerFile(spec, singularity)
-        }
-
         // Default templates based on package type (when no explicit template)
-        if( spec.type == PackagesSpec.Type.CONDA ) {
+        if( spec.type == PackagesSpec.Type.CONDA && (!req.buildTemplate || req.buildTemplate==CONDA_MICROMAMBA_V1) ) {
             return CondaHelper.containerFile(spec, singularity)
         }
-        if( spec.type == PackagesSpec.Type.CRAN ) {
+        if( req.buildTemplate == CONDA_MICROMAMBA_V2 ) {
+            return CondaHelper.containerFileV2(spec, req.containerImage, singularity)
+        }
+        if( req.buildTemplate == CONDA_PIXI_V1 ) {
+            return PixiHelper.containerFile(spec, req.containerImage, singularity)
+        }
+        if( spec.type == PackagesSpec.Type.CRAN && (!req.buildTemplate || req.buildTemplate == CRAN_INSTALLR_V1) ) {
             return CranHelper.containerFile(spec, singularity)
         }
 
-        throw new BadRequestException("Unexpected package type or build template")
+        throw new BadRequestException("Unexpected or missing package type '${spec?.type?:'-'}' or build template '${req.buildTemplate?:'-'}'")
     }
 
     static String condaFileFromRequest(SubmitContainerTokenRequest req) {

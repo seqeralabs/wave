@@ -32,6 +32,11 @@ public final class BuildTemplate {
     /**
      * Build template for Micromamba v2-based multi-stage builds
      */
+    public static final String CONDA_MICROMAMBA_V1 = "conda-micromamba/v1";
+
+    /**
+     * Build template for Micromamba v2-based multi-stage builds
+     */
     public static final String CONDA_MICROMAMBA_V2 = "conda-micromamba/v2";
 
     /**

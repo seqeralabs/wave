@@ -883,4 +883,17 @@ class ContainerHelperTest extends Specification {
         result.contains('export R_LIBS_USER="/usr/local/lib/R/site-library"')
     }
 
+    def 'should throw exception for invalid package type and build template'() {
+        given:
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['foo'])
+        def req = new SubmitContainerTokenRequest(packages: packages, buildTemplate: 'invalid-template')
+
+        when:
+        ContainerHelper.containerFileFromRequest(req)
+
+        then:
+        def e = thrown(BadRequestException)
+        e.message == "Unexpected or missing package type 'CONDA' or build template 'invalid-template'"
+    }
+
 }

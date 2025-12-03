@@ -83,17 +83,19 @@ class CondaHelper {
             throw new BadRequestException("Package type '${spec.type}' not supported by 'conda-micromamba/v2' build template")
         }
 
-        final lockFile = tryGetLockFile(spec.entries)
+        final lockFileUri = tryGetLockFile(spec.entries)
         final opts = spec.condaOpts ?: CondaOpts.v2()
         if( containerImage )
             opts.baseImage = containerImage
 
-        if( lockFile ) {
+        if( lockFileUri ) {
+            // use the lock file uri as special package name
             return singularity
-                    ? condaPackagesToSingularityFileV2(lockFile, spec.channels, opts)
-                    : condaPackagesToDockerFileUsingV2(lockFile, spec.channels, opts)
+                    ? condaPackagesToSingularityFileV2(lockFileUri, spec.channels, opts)
+                    : condaPackagesToDockerFileUsingV2(lockFileUri, spec.channels, opts)
         }
         else {
+            // No lock file: use templates that install from local conda.yml
             return singularity
                     ? condaFileToSingularityFileV2(opts)
                     : condaFileToDockerFileUsingV2(opts)
