@@ -6,7 +6,7 @@ date edited: 2025-10-31
 tags: [nextflow, wave, rate limits, guides]
 ---
 
-Large-scale pipelines that pull container images across thousands of concurrent tasks can encounter Wave rate limits. Wave freeze solves this by building your container once and storing it in your registry, so your head job communicates with Wave only once per container. Without freeze, all tasks communicate with Wave for every container, which may result in thousands of requests. This guide describes how to configure Wave freeze in your Nextflow pipeline to reduce API calls and avoid rate limits.
+Large-scale pipelines that pull container images across thousands of concurrent tasks can encounter Wave rate limits. Wave freeze solves this by building your container once and storing it in your registry, so your head job communicates with Wave only once per container. Without freeze, all tasks communicate with Wave for every container used within your pipeline. Depending on your specific pipeline configuration, this may result in a large volume of concurrent requests that trigger rate limits.
 
 :::note
 Wave applies rate limits to container builds and pulls (manifest requests). Authenticated users have higher rate limits than anonymous users. See [API limits](../api.md#api-limits) for more information.
