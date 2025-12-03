@@ -24,13 +24,13 @@ import io.seqera.wave.config.CondaOpts
 import io.seqera.wave.exception.BadRequestException
 
 import static io.seqera.wave.util.DockerHelper.condaFileToDockerFile
-import static io.seqera.wave.util.DockerHelper.condaFileToDockerFileUsingMicromamba
+import static io.seqera.wave.util.DockerHelper.condaFileToDockerFileUsingV2
 import static io.seqera.wave.util.DockerHelper.condaFileToSingularityFile
-import static io.seqera.wave.util.DockerHelper.condaFileToSingularityFileUsingMicromamba
+import static io.seqera.wave.util.DockerHelper.condaFileToSingularityFileV2
 import static io.seqera.wave.util.DockerHelper.condaPackagesToDockerFile
-import static io.seqera.wave.util.DockerHelper.condaPackagesToDockerFileUsingMicromamba
+import static io.seqera.wave.util.DockerHelper.condaPackagesToDockerFileUsingV2
 import static io.seqera.wave.util.DockerHelper.condaPackagesToSingularityFile
-import static io.seqera.wave.util.DockerHelper.condaPackagesToSingularityFileUsingMicromamba
+import static io.seqera.wave.util.DockerHelper.condaPackagesToSingularityFileV2
 
 /**
  * Helper class for Conda/Micromamba container builds.
@@ -90,13 +90,13 @@ class CondaHelper {
 
         if( lockFile ) {
             return singularity
-                    ? condaPackagesToSingularityFileUsingMicromamba(lockFile, spec.channels, opts)
-                    : condaPackagesToDockerFileUsingMicromamba(lockFile, spec.channels, opts)
+                    ? condaPackagesToSingularityFileV2(lockFile, spec.channels, opts)
+                    : condaPackagesToDockerFileUsingV2(lockFile, spec.channels, opts)
         }
         else {
             return singularity
-                    ? condaFileToSingularityFileUsingMicromamba(opts)
-                    : condaFileToDockerFileUsingMicromamba(opts)
+                    ? condaFileToSingularityFileV2(opts)
+                    : condaFileToDockerFileUsingV2(opts)
         }
     }
 

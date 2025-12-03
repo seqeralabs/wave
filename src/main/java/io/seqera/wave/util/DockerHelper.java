@@ -270,12 +270,12 @@ public class DockerHelper {
         return condaFileTemplate0("/templates/conda/singularityfile-conda-file.txt", opts);
     }
 
-    static public String condaFileToDockerFileUsingMicromamba(CondaOpts opts) {
-        return condaFileTemplate2("/templates/micromamba-v2/dockerfile-conda-file.txt", opts);
+    static public String condaFileToDockerFileUsingV2(CondaOpts opts) {
+        return condaFileTemplateV2("/templates/micromamba-v2/dockerfile-conda-file.txt", opts);
     }
 
-    static public String condaFileToSingularityFileUsingMicromamba(CondaOpts opts) {
-        return condaFileTemplate2("/templates/micromamba-v2" + "/singularityfile-conda-file.txt", opts);
+    static public String condaFileToSingularityFileV2(CondaOpts opts) {
+        return condaFileTemplateV2("/templates/micromamba-v2" + "/singularityfile-conda-file.txt", opts);
     }
 
     static public String condaFileToDockerFileUsingPixi(PixiOpts opts) {
@@ -286,7 +286,7 @@ public class DockerHelper {
         return condaFileTemplate1("/templates/pixi-v1/singularityfile-conda-file.txt", opts);
     }
 
-    static public String condaPackagesToDockerFileUsingMicromamba(String packages, List<String> condaChannels, CondaOpts opts) {
+    static public String condaPackagesToDockerFileUsingV2(String packages, List<String> condaChannels, CondaOpts opts) {
         return condaPackagesTemplate1(
                 "/templates/micromamba-v2/dockerfile-conda-packages.txt",
                 packages,
@@ -294,7 +294,7 @@ public class DockerHelper {
                 opts);
     }
 
-    static public String condaPackagesToSingularityFileUsingMicromamba(String packages, List<String> condaChannels, CondaOpts opts) {
+    static public String condaPackagesToSingularityFileV2(String packages, List<String> condaChannels, CondaOpts opts) {
         return condaPackagesTemplate1(
                 "/templates/micromamba-v2/singularityfile-conda-packages.txt",
                 packages,
@@ -313,7 +313,7 @@ public class DockerHelper {
         return addCommands(result, opts.commands, singularity);
     }
 
-    static protected String condaFileTemplate2(String template, CondaOpts opts) {
+    static protected String condaFileTemplateV2(String template, CondaOpts opts) {
         final boolean singularity = template.contains("/singularityfile");
         // create the binding map
         final Map<String,String> binding = new HashMap<>();

@@ -876,7 +876,7 @@ class DockerHelperTest extends Specification {
         ])
 
         expect:
-        DockerHelper.condaFileToDockerFileUsingMicromamba(CONDA_OPTS) == '''\
+        DockerHelper.condaFileToDockerFileUsingV2(CONDA_OPTS) == '''\
                 FROM mambaorg/micromamba:2.1.1 AS build
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
                 RUN micromamba install -y -n base -f /tmp/conda.yml \\
@@ -897,7 +897,7 @@ class DockerHelperTest extends Specification {
 
     def 'should create dockerfile using micromamba v2 template with default options' () {
         expect:
-        DockerHelper.condaFileToDockerFileUsingMicromamba(new CondaOpts([:])) == '''\
+        DockerHelper.condaFileToDockerFileUsingV2(new CondaOpts([:])) == '''\
                 FROM mambaorg/micromamba:1.5.10-noble AS build
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
                 RUN micromamba install -y -n base -f /tmp/conda.yml \\
@@ -927,7 +927,7 @@ class DockerHelperTest extends Specification {
         ])
 
         expect:
-        DockerHelper.condaPackagesToDockerFileUsingMicromamba(PACKAGES, CHANNELS, CONDA_OPTS) == '''\
+        DockerHelper.condaPackagesToDockerFileUsingV2(PACKAGES, CHANNELS, CONDA_OPTS) == '''\
                 FROM mambaorg/micromamba:2.1.1 AS build
                 RUN \\
                     micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1 \\
@@ -957,7 +957,7 @@ class DockerHelperTest extends Specification {
         ])
 
         expect:
-        DockerHelper.condaPackagesToDockerFileUsingMicromamba(PACKAGES, CHANNELS, CONDA_OPTS) == '''\
+        DockerHelper.condaPackagesToDockerFileUsingV2(PACKAGES, CHANNELS, CONDA_OPTS) == '''\
                 FROM mambaorg/micromamba:2.1.1 AS build
                 RUN \\
                     micromamba install -y -n base -c conda-forge numpy pandas \\
@@ -987,7 +987,7 @@ class DockerHelperTest extends Specification {
         ])
 
         when:
-        def result = DockerHelper.condaPackagesToDockerFileUsingMicromamba(PACKAGES, CHANNELS, CONDA_OPTS)
+        def result = DockerHelper.condaPackagesToDockerFileUsingV2(PACKAGES, CHANNELS, CONDA_OPTS)
 
         then:
         result.contains('FROM mambaorg/micromamba:2.1.1 AS build')
@@ -1006,7 +1006,7 @@ class DockerHelperTest extends Specification {
         ])
 
         when:
-        def result = DockerHelper.condaPackagesToDockerFileUsingMicromamba(PACKAGES, CHANNELS, CONDA_OPTS)
+        def result = DockerHelper.condaPackagesToDockerFileUsingV2(PACKAGES, CHANNELS, CONDA_OPTS)
 
         then:
         result.contains('-f https://foo.com/some/conda-lock.yml')
@@ -1163,7 +1163,7 @@ class DockerHelperTest extends Specification {
         ])
 
         expect:
-        DockerHelper.condaFileToSingularityFileUsingMicromamba(CONDA_OPTS) == '''\
+        DockerHelper.condaFileToSingularityFileV2(CONDA_OPTS) == '''\
                 BootStrap: docker
                 From: mambaorg/micromamba:2.1.1
                 Stage: build
@@ -1191,7 +1191,7 @@ class DockerHelperTest extends Specification {
 
     def 'should create singularityfile using micromamba v2 template with default options' () {
         expect:
-        DockerHelper.condaFileToSingularityFileUsingMicromamba(new CondaOpts([:])) == '''\
+        DockerHelper.condaFileToSingularityFileV2(new CondaOpts([:])) == '''\
                 BootStrap: docker
                 From: mambaorg/micromamba:1.5.10-noble
                 Stage: build
@@ -1227,7 +1227,7 @@ class DockerHelperTest extends Specification {
         ])
 
         expect:
-        DockerHelper.condaPackagesToSingularityFileUsingMicromamba(PACKAGES, CHANNELS, CONDA_OPTS) == '''\
+        DockerHelper.condaPackagesToSingularityFileV2(PACKAGES, CHANNELS, CONDA_OPTS) == '''\
                 BootStrap: docker
                 From: mambaorg/micromamba:2.1.1
                 Stage: build
@@ -1261,7 +1261,7 @@ class DockerHelperTest extends Specification {
         ])
 
         expect:
-        DockerHelper.condaPackagesToSingularityFileUsingMicromamba(PACKAGES, CHANNELS, CONDA_OPTS) == '''\
+        DockerHelper.condaPackagesToSingularityFileV2(PACKAGES, CHANNELS, CONDA_OPTS) == '''\
                 BootStrap: docker
                 From: mambaorg/micromamba:2.1.1
                 Stage: build
@@ -1295,7 +1295,7 @@ class DockerHelperTest extends Specification {
         ])
 
         when:
-        def result = DockerHelper.condaPackagesToSingularityFileUsingMicromamba(PACKAGES, CHANNELS, CONDA_OPTS)
+        def result = DockerHelper.condaPackagesToSingularityFileV2(PACKAGES, CHANNELS, CONDA_OPTS)
 
         then:
         result.contains('From: mambaorg/micromamba:2.1.1')
@@ -1315,7 +1315,7 @@ class DockerHelperTest extends Specification {
         ])
 
         when:
-        def result = DockerHelper.condaPackagesToSingularityFileUsingMicromamba(PACKAGES, CHANNELS, CONDA_OPTS)
+        def result = DockerHelper.condaPackagesToSingularityFileV2(PACKAGES, CHANNELS, CONDA_OPTS)
 
         then:
         result.contains('-f https://foo.com/some/conda-lock.yml')
