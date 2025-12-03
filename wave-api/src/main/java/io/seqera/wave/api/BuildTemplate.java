@@ -47,4 +47,20 @@ public final class BuildTemplate {
     private BuildTemplate() {
         // Prevent instantiation
     }
+
+    /**
+     * Returns the default build template based on the package type.
+     *
+     * @param packages The packages specification
+     * @return The default template for the package type, or null if packages is null or has no type
+     */
+    public static String defaultTemplate(PackagesSpec packages) {
+        if (packages == null) {
+            return null;
+        }
+        if( packages.type == PackagesSpec.Type.CRAN ) {
+            return CRAN_INSTALLR_V1;
+        }
+        return null;
+    }
 }

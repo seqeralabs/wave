@@ -40,6 +40,7 @@ import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.security.annotation.Secured
 import io.micronaut.security.authentication.AuthorizationException
 import io.micronaut.security.rules.SecurityRule
+import io.seqera.wave.api.BuildTemplate
 import io.seqera.wave.api.ContainerStatusResponse
 import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.ScanMode
@@ -327,6 +328,8 @@ class ContainerController {
             throw new BadRequestException("Missing dockerfile content")
         if( !buildConfig.defaultBuildRepository )
             throw new BadRequestException("Missing build repository attribute")
+        if( !req.buildTemplate )
+            req.buildTemplate = BuildTemplate.defaultTemplate(req.packages)
 
         final containerSpec = decodeBase64OrFail(req.containerFile, 'containerFile')
         final condaContent = condaFileFromRequest(req)
