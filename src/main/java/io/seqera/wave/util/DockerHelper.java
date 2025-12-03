@@ -189,24 +189,24 @@ public class DockerHelper {
     }
 
     static public String condaFileToDockerFileUsingV2(CondaOpts opts) {
-        return condaFileTemplateV2("/templates/micromamba-v2/dockerfile-conda-file.txt", opts);
+        return condaFileTemplateV2("/templates/conda-micromamba-v2/dockerfile-conda-file.txt", opts);
     }
 
     static public String condaFileToSingularityFileV2(CondaOpts opts) {
-        return condaFileTemplateV2("/templates/micromamba-v2" + "/singularityfile-conda-file.txt", opts);
+        return condaFileTemplateV2("/templates/conda-micromamba-v2/singularityfile-conda-file.txt", opts);
     }
 
     static public String condaFileToDockerFileUsingPixi(PixiOpts opts) {
-        return condaFileTemplate1("/templates/pixi-v1/dockerfile-conda-file.txt", opts);
+        return condaFileTemplate1("/templates/conda-pixi-v1/dockerfile-conda-file.txt", opts);
     }
 
     static public String condaFileToSingularityFileUsingPixi(PixiOpts opts) {
-        return condaFileTemplate1("/templates/pixi-v1/singularityfile-conda-file.txt", opts);
+        return condaFileTemplate1("/templates/conda-pixi-v1/singularityfile-conda-file.txt", opts);
     }
 
     static public String condaPackagesToDockerFileUsingV2(String packages, List<String> condaChannels, CondaOpts opts) {
         return condaPackagesTemplate1(
-                "/templates/micromamba-v2/dockerfile-conda-packages.txt",
+                "/templates/conda-micromamba-v2/dockerfile-conda-packages.txt",
                 packages,
                 condaChannels,
                 opts);
@@ -214,7 +214,7 @@ public class DockerHelper {
 
     static public String condaPackagesToSingularityFileV2(String packages, List<String> condaChannels, CondaOpts opts) {
         return condaPackagesTemplate1(
-                "/templates/micromamba-v2/singularityfile-conda-packages.txt",
+                "/templates/conda-micromamba-v2/singularityfile-conda-packages.txt",
                 packages,
                 condaChannels,
                 opts);
