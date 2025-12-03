@@ -424,7 +424,7 @@ curl --location 'https://wave.seqera.io/v1alpha2/container' \
         "entries": ["bwa=0.7.15", "salmon=1.10.0", "samtools=1.17"],
         "channels": ["conda-forge", "bioconda"],
         "condaOpts": {
-            "mambaImage": "mambaorg/micromamba:2.1.1",
+            "mambaImage": "mambaorg/micromamba:2-amazon2023",
             "basePackages": "conda-forge::procps-ng",
             "baseImage": "ubuntu:24.04",
             "commands": []
@@ -508,7 +508,7 @@ curl --location 'https://wave.seqera.io/v1alpha2/container' \
         "entries": ["bwa=0.7.15", "salmon=1.10.0", "samtools=1.17"],
         "channels": ["conda-forge", "bioconda"],
         "condaOpts": {
-            "mambaImage": "mambaorg/micromamba:2.1.1",
+            "mambaImage": "mambaorg/micromamba:2-amazon2023",
             "basePackages": "conda-forge::procps-ng",
             "baseImage": "ubuntu:24.04",
             "commands": []

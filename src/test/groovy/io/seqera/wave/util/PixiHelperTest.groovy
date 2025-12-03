@@ -41,7 +41,7 @@ class PixiHelperTest extends Specification {
         def result = PixiHelper.containerFile(packages, null, false)
 
         then:
-        result.contains('FROM ghcr.io/prefix-dev/pixi:latest AS build')
+        result.contains('FROM ghcr.io/prefix-dev/pixi:0.59.0-noble AS build')
         result.contains('COPY conda.yml /opt/wave/conda.yml')
         result.contains('pixi init --import /opt/wave/conda.yml')
         result.contains('pixi add conda-forge::procps-ng')
@@ -62,7 +62,7 @@ class PixiHelperTest extends Specification {
 
         then:
         result.contains('BootStrap: docker')
-        result.contains('From: ghcr.io/prefix-dev/pixi:latest')
+        result.contains('From: ghcr.io/prefix-dev/pixi:0.59.0-noble')
         result.contains('Stage: build')
         result.contains('pixi init --import /scratch/conda.yml')
         result.contains('pixi shell-hook > /shell-hook.sh')

@@ -149,7 +149,7 @@ class CondaHelperTest extends Specification {
         def result = CondaHelper.containerFileV2(packages, null, false)
 
         then:
-        result.contains('FROM mambaorg/micromamba:2.1.1 AS build')
+        result.contains('FROM mambaorg/micromamba:2-amazon2023 AS build')
         result.contains('COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml')
         result.contains('micromamba install -y -n base -f /tmp/conda.yml')
         result.contains('FROM ubuntu:24.04 AS prod')
@@ -167,7 +167,7 @@ class CondaHelperTest extends Specification {
 
         then:
         result.contains('BootStrap: docker')
-        result.contains('From: mambaorg/micromamba:2.1.1')
+        result.contains('From: mambaorg/micromamba:2-amazon2023')
         result.contains('Stage: build')
         result.contains('micromamba install -y -n base -f /tmp/conda.yml')
         result.contains('Bootstrap: docker')
@@ -184,7 +184,7 @@ class CondaHelperTest extends Specification {
         def result = CondaHelper.containerFileV2(packages, null, false)
 
         then:
-        result.contains('FROM mambaorg/micromamba:2.1.1 AS build')
+        result.contains('FROM mambaorg/micromamba:2-amazon2023 AS build')
         result.contains('micromamba install -y -n base -c conda-forge -c bioconda -f https://foo.com/lock.yml')
         result.contains('FROM ubuntu:24.04 AS prod')
     }

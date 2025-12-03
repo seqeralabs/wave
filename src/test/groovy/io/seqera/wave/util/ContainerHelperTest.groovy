@@ -627,7 +627,7 @@ class ContainerHelperTest extends Specification {
 
         then:
         result =='''\
-                FROM ghcr.io/prefix-dev/pixi:latest AS build
+                FROM ghcr.io/prefix-dev/pixi:0.59.0-noble AS build
                  
                 COPY conda.yml /opt/wave/conda.yml
                 WORKDIR /opt/wave
@@ -720,7 +720,7 @@ class ContainerHelperTest extends Specification {
 
         then:
         result =='''\
-                FROM mambaorg/micromamba:2.1.1 AS build
+                FROM mambaorg/micromamba:2-amazon2023 AS build
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
                 RUN micromamba install -y -n base -f /tmp/conda.yml \\
                     && micromamba install -y -n base conda-forge::procps-ng \\
@@ -792,7 +792,7 @@ class ContainerHelperTest extends Specification {
 
         then:
         result =='''\
-                FROM mambaorg/micromamba:2.1.1 AS build
+                FROM mambaorg/micromamba:2-amazon2023 AS build
                 RUN \\
                     micromamba install -y -n base -c conda-forge -c bioconda -f https://foo.com/lock.yml \\
                     && micromamba install -y -n base conda-forge::procps-ng \\

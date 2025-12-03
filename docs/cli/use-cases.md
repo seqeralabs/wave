@@ -68,6 +68,7 @@ Conda builds support the following arguments:
 - `--conda-file`: Specifies a [Conda lock file][conda-lock] path or URL.
 - `--conda-package`: Specifies Conda packages to install. Supports expressions such as `bioconda::samtools=1.17` or `samtools>=1.0,<1.17`. Accepts a comma-separated list or can be specified multiple times.
 - `--conda-run-command`: Specifies a Docker `RUN` command to execute during the build. Can be specified multiple times.
+- `--build-template`: Specifies the build template to use. See [Build templates](#build-templates) for more details.
 
 **Example usage**
 
@@ -78,6 +79,68 @@ wave \
   --conda-package bamtools=2.5.2 \
   --conda-package samtools=1.17
 ```
+</details>
+
+## Build templates
+
+Wave supports different build templates for creating container images from Conda packages. Build templates control how packages are installed and how the final container image is structured.
+
+<details open>
+<summary>**Build a container using a specific build template**</summary>
+
+**Available templates**
+
+| Template | Description |
+|----------|-------------|
+| (default) | Standard Micromamba v1 single-stage build. The final image includes the package manager. |
+| `conda-micromamba/v2` | Multi-stage build using Micromamba 2.x. Produces smaller images without the package manager in the final stage. |
+| `conda-pixi/v1` | Multi-stage build using [Pixi][pixi] package manager. Produces smaller images with faster dependency resolution. |
+
+**Related CLI arguments**
+
+Build template selection supports the following argument:
+
+- `--build-template`: Specifies the build template to use for container builds.
+
+**Benefits of multi-stage templates**
+
+Multi-stage build templates (`conda-micromamba/v2` and `conda-pixi/v1`) offer several advantages:
+
+- **Smaller images**: Build tools and package managers are excluded from the final image (30-50% size reduction typical).
+- **Reproducibility**: Lock files are generated for exact package version tracking.
+- **Security**: Fewer binaries in the final image reduces the attack surface.
+
+**Example usage**
+
+Build a container using the Pixi template:
+
+```bash
+wave \
+  --conda-package bamtools=2.5.2 \
+  --build-template conda-pixi/v1
+```
+
+Build a container using the Micromamba v2 multi-stage template:
+
+```bash
+wave \
+  --conda-package samtools=1.17 \
+  --conda-package bwa=0.7.15 \
+  --build-template conda-micromamba/v2
+```
+
+Build a Singularity container using Pixi:
+
+```bash
+wave \
+  --conda-package numpy \
+  --conda-package pandas \
+  --build-template conda-pixi/v1 \
+  --singularity \
+  --freeze \
+  --build-repo docker.io/user/repo
+```
+
 </details>
 
 ## Build a container from a Dockerfile
@@ -266,6 +329,7 @@ wave -i quay.io/biocontainers/samtools:0.1.16--2 --mirror \
 [conda]: https://anaconda.org/anaconda/repo
 [conda-lock]: https://github.com/conda/conda-lock
 [nextflow]: https://www.nextflow.io/
+[pixi]: https://pixi.sh/
 [samtools]: https://quay.io/repository/biocontainers/samtools?tab=tags
 [singularity]: https://docs.sylabs.io/guides/latest/user-guide/introduction.html
 [singularityce]: https://docs.sylabs.io/guides/latest/user-guide/definition_files.html

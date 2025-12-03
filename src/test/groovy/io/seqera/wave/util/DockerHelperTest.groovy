@@ -556,7 +556,7 @@ class DockerHelperTest extends Specification {
 
         expect:
         DockerHelper.condaFileToDockerFileUsingPixi(PIXI_OPTS)== '''\
-                FROM ghcr.io/prefix-dev/pixi:latest AS build
+                FROM ghcr.io/prefix-dev/pixi:0.59.0-noble AS build
 
                 COPY conda.yml /opt/wave/conda.yml
                 WORKDIR /opt/wave
@@ -587,7 +587,7 @@ class DockerHelperTest extends Specification {
     def 'should create dockerfile content from conda file using pixi with default options' () {
         expect:
         DockerHelper.condaFileToDockerFileUsingPixi(new PixiOpts([:])) == '''\
-                FROM ghcr.io/prefix-dev/pixi:latest AS build
+                FROM ghcr.io/prefix-dev/pixi:0.59.0-noble AS build
 
                 COPY conda.yml /opt/wave/conda.yml
                 WORKDIR /opt/wave
@@ -621,7 +621,7 @@ class DockerHelperTest extends Specification {
 
         expect:
         DockerHelper.condaFileToDockerFileUsingPixi(PIXI_OPTS)== '''\
-                FROM ghcr.io/prefix-dev/pixi:latest AS build
+                FROM ghcr.io/prefix-dev/pixi:0.59.0-noble AS build
 
                 COPY conda.yml /opt/wave/conda.yml
                 WORKDIR /opt/wave
@@ -923,7 +923,7 @@ class DockerHelperTest extends Specification {
         expect:
         DockerHelper.condaFileToSingularityFileUsingPixi(new PixiOpts([:])) == '''\
                 BootStrap: docker
-                From: ghcr.io/prefix-dev/pixi:latest
+                From: ghcr.io/prefix-dev/pixi:0.59.0-noble
                 Stage: build
                 %files
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml

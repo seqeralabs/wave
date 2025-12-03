@@ -49,7 +49,7 @@ import "./ScanLevel.tsp";
             entries: #["bwa=0.7.15", "salmon=1.1.1"],
             channels: #["conda-forge", "bioconda"],
             condaOpts: #{
-                mambaImage: "mambaorg/micromamba:2.1.1",
+                mambaImage: "mambaorg/micromamba:2-amazon2023",
                 basePackages: "conda-forge::procps-ng",
                 baseImage: "ubuntu:24.04",
                 commands: #[]

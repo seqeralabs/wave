@@ -27,7 +27,7 @@ import java.util.Objects;
  */
 public class PixiOpts {
 
-    final public static String DEFAULT_PIXI_IMAGE = "ghcr.io/prefix-dev/pixi:latest";
+    final public static String DEFAULT_PIXI_IMAGE = "ghcr.io/prefix-dev/pixi:0.59.0-noble";
     final public static String DEFAULT_BASE_IMAGE = "ubuntu:24.04";
     final public static String DEFAULT_PACKAGES = "conda-forge::procps-ng";
 

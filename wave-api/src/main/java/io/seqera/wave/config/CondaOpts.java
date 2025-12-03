@@ -28,7 +28,7 @@ import java.util.Objects;
  */
 public class CondaOpts {
     final public static String DEFAULT_MAMBA_IMAGE = "mambaorg/micromamba:1.5.10-noble";
-    final public static String DEFAULT_MAMBA_IMAGE_V2 = "mambaorg/micromamba:2.1.1";
+    final public static String DEFAULT_MAMBA_IMAGE_V2 = "mambaorg/micromamba:2-amazon2023";
     final public static String DEFAULT_PACKAGES = "conda-forge::procps-ng";
     final public static String DEFAULT_BASE_IMAGE = "ubuntu:24.04";
 
