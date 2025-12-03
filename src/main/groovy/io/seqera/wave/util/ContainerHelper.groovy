@@ -110,6 +110,7 @@ class ContainerHelper {
     }
 
     static String containerFileFromRequest(SubmitContainerTokenRequest req) {
+        // without buildTemplate specified, fallback to legacy build template
         if( !req.buildTemplate )
             return containerFileFromPackages(req.packages, req.formatSingularity())
         // build the container using the pixi template
