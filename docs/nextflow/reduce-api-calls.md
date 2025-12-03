@@ -6,7 +6,7 @@ date edited: 2025-10-31
 tags: [nextflow, wave, rate limits, guides]
 ---
 
-Large-scale pipelines that pull container images across thousands of concurrent tasks can encounter Wave rate limits. This guide describes how to configure your Nextflow pipeline to use Wave freeze and reduce API calls to avoid rate limits.
+Large-scale pipelines that pull container images across thousands of concurrent tasks can encounter Wave rate limits. Wave freeze solves this by building your container once and storing it in your registry, so your head job communicates with Wave only once per container. Without freeze, all tasks communicate with Wave for every container, which may result in thousands of requests. This guide describes how to configure Wave freeze in your Nextflow pipeline to reduce API calls and avoid rate limits.
 
 :::note
 Wave applies rate limits to container builds and pulls (manifest requests). Authenticated users have higher rate limits than anonymous users. See [API limits](../api.md#api-limits) for more information.
@@ -14,20 +14,27 @@ Wave applies rate limits to container builds and pulls (manifest requests). Auth
 
 ## How Wave freeze avoids rate limits
 
-Wave freeze builds your container image once and stores it in your registry. After the initial build, the source of the container image manifest and layers are redirected to your private registry by Wave.
+Wave freeze provisions container images on-demand with the following characteristics:
+
+- Containers are built on-demand from a user-provided Dockerfile or Conda packages
+- They have stable (non-ephemeral) container names
+- They are stored in the container repository specified by `wave.build.repository`
+- Build cache layers are stored in the repository specified by `wave.build.cacheRepository`
+
+After the initial build, Wave redirects the container manifest and layers to your private registry, so subsequent requests pull directly from your registry instead of making repeated Wave API calls.
 
 ### Building without Wave freeze
 
 When you run your pipeline without Wave freeze:
 
-1. Each task requests a manifest from Wave.
+1. Each task requests a manifest from Wave
 1. Wave performs one of the following actions:
     - Retrieves the base image manifest from the source registry
     - Builds the image from a Dockerfile
     - Builds the image from a Conda definition
-1. Wave injects the Fusion layer to the container image manifest.
-1. Wave stores the final manifest on Seqera infrastructure.
-1. Wave returns the modified manifest.
+1. Wave injects the Fusion layer to the container image manifest
+1. Wave stores the final manifest on Seqera infrastructure
+1. Wave returns the modified manifest
 
 This approach exceeds rate limits with thousands of concurrent tasks.
 
@@ -35,18 +42,21 @@ This approach exceeds rate limits with thousands of concurrent tasks.
 
 When you run your pipeline with Wave freeze for the first time:
 
-1. The Nextflow head job sends your build request to Wave.
-1. Wave checks whether the requested images already exist.
-1. Wave builds any missing images and pushes the manifest and layers to your registry.
-1. Wave returns the final registry URLs.
-1. Your compute tasks pull images directly from your registry.
+1. The Nextflow head job sends your build request to Wave
+1. Wave checks whether the requested image already exist
+    - The content hash does not match
+1. Wave builds of the container
+1. Wave stores the container in your destination container registry
+1. Wave returns the final registry URLs
+1. Your compute tasks pull images directly from your registry
 
 When you run your pipeline with Wave freeze again:
 
-1. The Nextflow head job contacts Wave to request the frozen images.
-1. Wave finds the frozen images in your registry (matched by content hash).
-1. Wave returns the container URLs in the destination container registry without rebuilding.
-1. All tasks pull the image directly from your registry.
+1. The Nextflow head job sends your build request to Wave
+1. Wave checks whether the requested image already exist
+    - The content hash matches the previous build
+1. Wave returns the container URLs in the destination container registry without rebuilding
+1. Nextflow tasks pull the image directly from your registry
 
 With freeze enabled, only the first API call to Wave counts toward your quota.
 Wave reuses frozen images as long as the image and its configuration remain the same.
