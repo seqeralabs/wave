@@ -141,23 +141,23 @@ class BuildStrategyTest extends Specification {
         def containerId = ContainerHelper.makeContainerId(content, null, ContainerPlatform.of('amd64'), buildrepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildrepo, containerId, null, null)
         def build = BuildRequest.of(
-                containerId,
-                content,
-                'condaFile',
-                workspace,
-                targetImage,
-                PlatformId.NULL,
-                ContainerPlatform.of('amd64'),
-                'caherepo',
-                "1.2.3.4",
-                '{"config":"json"}',
-                'GMT+1',
-                Mock(ContainerConfig),
-                'sc-12345',
-                Mock(BuildContext),
-                BuildFormat.DOCKER,
-                timeout,
-                BuildCompression.gzip
+                containerId: containerId,
+                containerFile: content,
+                condaFile: 'condaFile',
+                workspace: workspace,
+                targetImage: targetImage,
+                identity: PlatformId.NULL,
+                platform: ContainerPlatform.of('amd64'),
+                cacheRepository: 'caherepo',
+                ip: "1.2.3.4",
+                configJson: '{"config":"json"}',
+                offsetId: 'GMT+1',
+                containerConfig: Mock(ContainerConfig),
+                scanId: 'sc-12345',
+                buildContext: Mock(BuildContext),
+                format: BuildFormat.DOCKER,
+                maxDuration: timeout,
+                compression: BuildCompression.gzip
         )
 
         then:
