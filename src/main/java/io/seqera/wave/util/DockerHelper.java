@@ -129,7 +129,7 @@ public class DockerHelper {
 
     static public String condaPackagesToDockerFile(String packages, List<String> condaChannels, CondaOpts opts) {
         return condaPackagesTemplate0(
-                "/templates/conda/dockerfile-conda-packages.txt",
+                "/templates/conda-micromamba-v1/dockerfile-conda-packages.txt",
                 packages,
                 condaChannels,
                 opts);
@@ -137,7 +137,7 @@ public class DockerHelper {
 
     static public String condaPackagesToSingularityFile(String packages, List<String> condaChannels, CondaOpts opts) {
         return condaPackagesTemplate0(
-                "/templates/conda/singularityfile-conda-packages.txt",
+                "/templates/conda-micromamba-v1/singularityfile-conda-packages.txt",
                 packages,
                 condaChannels,
                 opts);
@@ -181,11 +181,11 @@ public class DockerHelper {
     }
 
     static public String condaFileToDockerFile(CondaOpts opts) {
-        return condaFileTemplate0("/templates/conda/dockerfile-conda-file.txt", opts);
+        return condaFileTemplate0("/templates/conda-micromamba-v1/dockerfile-conda-file.txt", opts);
     }
 
     static public String condaFileToSingularityFile(CondaOpts opts) {
-        return condaFileTemplate0("/templates/conda/singularityfile-conda-file.txt", opts);
+        return condaFileTemplate0("/templates/conda-micromamba-v1/singularityfile-conda-file.txt", opts);
     }
 
     static public String condaFileToDockerFileUsingV2(CondaOpts opts) {

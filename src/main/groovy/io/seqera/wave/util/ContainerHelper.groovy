@@ -58,13 +58,13 @@ class ContainerHelper {
         final spec = req.packages
 
         // Explicit template-based builds
-        if( req.buildTemplate == BuildTemplate.PIXI_V1 ) {
+        if( req.buildTemplate == BuildTemplate.CONDA_PIXI_V1 ) {
             return PixiHelper.containerFile(spec, req.containerImage, singularity)
         }
-        if( req.buildTemplate == BuildTemplate.MICROMAMBA_V2 ) {
+        if( req.buildTemplate == BuildTemplate.CONDA_MICROMAMBA_V2 ) {
             return CondaHelper.containerFileV2(spec, req.containerImage, singularity)
         }
-        if( req.buildTemplate == BuildTemplate.CRAN_V1 ) {
+        if( req.buildTemplate == BuildTemplate.CRAN_INSTALLR_V1 ) {
             return CranHelper.containerFile(spec, singularity)
         }
 

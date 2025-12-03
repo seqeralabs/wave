@@ -80,7 +80,7 @@ class CondaHelper {
      */
     static String containerFileV2(PackagesSpec spec, String containerImage, boolean singularity) {
         if( spec.type != PackagesSpec.Type.CONDA ) {
-            throw new BadRequestException("Package type '${spec.type}' not supported by micromamba/v2 build template")
+            throw new BadRequestException("Package type '${spec.type}' not supported by 'conda-micromamba/v2' build template")
         }
 
         final lockFile = tryGetLockFile(spec.entries)

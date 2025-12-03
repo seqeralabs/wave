@@ -621,7 +621,7 @@ class ContainerHelperTest extends Specification {
                 entries:  PACKAGES,
                 channels: CHANNELS)
         and:
-        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.PIXI_V1)
+        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.CONDA_PIXI_V1)
         when:
         def result = ContainerHelper.containerFileFromRequest(req)
 
@@ -669,7 +669,7 @@ class ContainerHelperTest extends Specification {
                 channels: CHANNELS,
                 pixiOpts: PIXI_OPTS)
         and:
-        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.PIXI_V1)
+        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.CONDA_PIXI_V1)
         when:
         def result = ContainerHelper.containerFileFromRequest(req)
 
@@ -714,7 +714,7 @@ class ContainerHelperTest extends Specification {
                 entries:  PACKAGES,
                 channels: CHANNELS)
         and:
-        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.MICROMAMBA_V2)
+        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V2)
         when:
         def result = ContainerHelper.containerFileFromRequest(req)
 
@@ -753,7 +753,7 @@ class ContainerHelperTest extends Specification {
                 channels: CHANNELS,
                 condaOpts: CONDA_OPTS)
         and:
-        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.MICROMAMBA_V2)
+        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V2)
         when:
         def result = ContainerHelper.containerFileFromRequest(req)
 
@@ -786,7 +786,7 @@ class ContainerHelperTest extends Specification {
                 entries:  PACKAGES,
                 channels: CHANNELS)
         and:
-        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.MICROMAMBA_V2)
+        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V2)
         when:
         def result = ContainerHelper.containerFileFromRequest(req)
 

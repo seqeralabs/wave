@@ -125,7 +125,7 @@ class CranHelperTest extends Specification {
 
         then:
         def ex = thrown(BadRequestException)
-        ex.message.contains("not supported by 'cran/v1' build template")
+        ex.message.contains("not supported by 'cran-installr/v1' build template")
     }
 
     // === Low-level helper tests ===
