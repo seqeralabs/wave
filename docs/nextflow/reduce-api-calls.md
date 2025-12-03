@@ -42,7 +42,7 @@ This approach exceeds rate limits with thousands of concurrent tasks.
 
 When you run your pipeline with Wave freeze for the first time:
 
-1. The Nextflow head job sends your build request to Wave
+1. The Nextflow head job sends your container request to Wave
 1. Wave checks whether the requested image already exist
     - The content hash does not match
 1. Wave builds of the container
