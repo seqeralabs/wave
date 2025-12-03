@@ -34,6 +34,11 @@ public final class BuildTemplate {
      */
     public static final String MICROMAMBA_V2 = "micromamba/v2";
 
+    /**
+     * Build template for R/CRAN package builds
+     */
+    public static final String CRAN_V1 = "cran/v1";
+
     private BuildTemplate() {
         // Prevent instantiation
     }

@@ -51,9 +51,10 @@ class ContainerHelperTest extends Specification {
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['https://foo.com/lock.yml']
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
+        def req = new SubmitContainerTokenRequest(packages: packages, format: 'sif')
 
         when:
-        def result = ContainerHelper.containerFileFromPackagesSpec(packages, true)
+        def result = ContainerHelper.containerFileFromRequest(req)
 
         then:
         result =='''\
@@ -79,9 +80,10 @@ class ContainerHelperTest extends Specification {
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['https://foo.com/lock.yml']
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
+        def req = new SubmitContainerTokenRequest(packages: packages)
 
         when:
-        def result = ContainerHelper.containerFileFromPackagesSpec(packages, false)
+        def result = ContainerHelper.containerFileFromRequest(req)
 
         then:
         result =='''\
@@ -106,9 +108,10 @@ class ContainerHelperTest extends Specification {
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
+        def req = new SubmitContainerTokenRequest(packages: packages, format: 'sif')
 
         when:
-        def result = ContainerHelper.containerFileFromPackagesSpec(packages, true)
+        def result = ContainerHelper.containerFileFromRequest(req)
 
         then:
         result =='''\
@@ -135,9 +138,10 @@ class ContainerHelperTest extends Specification {
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
+        def req = new SubmitContainerTokenRequest(packages: packages)
 
         when:
-        def result = ContainerHelper.containerFileFromPackagesSpec(packages, false)
+        def result = ContainerHelper.containerFileFromRequest(req)
 
         then:
         result =='''\
@@ -303,13 +307,13 @@ class ContainerHelperTest extends Specification {
 
     def 'should check if is a conda lock file' () {
         expect:
-        ContainerHelper.tryGetCondaLockFromPackageNames(null) == null
-        ContainerHelper.tryGetCondaLockFromPackageNames([]) == null
-        ContainerHelper.tryGetCondaLockFromPackageNames(['http://foo.com/some/lock']) == 'http://foo.com/some/lock'
-        ContainerHelper.tryGetCondaLockFromPackageNames(['https://foo.com/some/lock']) == 'https://foo.com/some/lock'
+        CondaHelper.tryGetLockFile(null) == null
+        CondaHelper.tryGetLockFile([]) == null
+        CondaHelper.tryGetLockFile(['http://foo.com/some/lock']) == 'http://foo.com/some/lock'
+        CondaHelper.tryGetLockFile(['https://foo.com/some/lock']) == 'https://foo.com/some/lock'
 
         when:
-        ContainerHelper.tryGetCondaLockFromPackageNames(['http://foo.com', 'http://bar.com'])
+        CondaHelper.tryGetLockFile(['http://foo.com', 'http://bar.com'])
         then:
         thrown(IllegalArgumentException)
     }
@@ -812,9 +816,10 @@ class ContainerHelperTest extends Specification {
         def CRAN_OPTS = new CranOpts([rImage: 'rocker/r-ver:4.4.1', basePackages: 'littler r-cran-docopt'])
         def PACKAGES = ['dplyr', 'ggplot2', 'bioc::GenomicRanges']
         def packages = new PackagesSpec(type: PackagesSpec.Type.CRAN, entries: PACKAGES, channels: REPOSITORIES, cranOpts: CRAN_OPTS)
+        def req = new SubmitContainerTokenRequest(packages: packages)
 
         when:
-        def result = ContainerHelper.containerFileFromPackagesSpec(packages, false)
+        def result = ContainerHelper.containerFileFromRequest(req)
 
         then:
         result.contains('FROM rocker/r-ver:4.4.1')
@@ -829,9 +834,10 @@ class ContainerHelperTest extends Specification {
         def CRAN_OPTS = new CranOpts([rImage: 'rocker/r-ver:4.4.1'])
         def PACKAGES = ['tidyverse', 'data.table']
         def packages = new PackagesSpec(type: PackagesSpec.Type.CRAN, entries: PACKAGES, channels: REPOSITORIES, cranOpts: CRAN_OPTS)
+        def req = new SubmitContainerTokenRequest(packages: packages, format: 'sif')
 
         when:
-        def result = ContainerHelper.containerFileFromPackagesSpec(packages, true)
+        def result = ContainerHelper.containerFileFromRequest(req)
 
         then:
         result.contains('BootStrap: docker')
@@ -845,9 +851,10 @@ class ContainerHelperTest extends Specification {
         given:
         def CRAN_OPTS = new CranOpts([rImage: 'rocker/r-ver:4.4.1'])
         def packages = new PackagesSpec(type: PackagesSpec.Type.CRAN, cranOpts: CRAN_OPTS)
+        def req = new SubmitContainerTokenRequest(packages: packages)
 
         when:
-        def result = ContainerHelper.containerFileFromPackagesSpec(packages, false)
+        def result = ContainerHelper.containerFileFromRequest(req)
 
         then:
         result.contains('FROM rocker/r-ver:4.4.1')
@@ -861,9 +868,10 @@ class ContainerHelperTest extends Specification {
         given:
         def CRAN_OPTS = new CranOpts([rImage: 'rocker/r-ver:4.4.1', basePackages: 'build-essential'])
         def packages = new PackagesSpec(type: PackagesSpec.Type.CRAN, cranOpts: CRAN_OPTS)
+        def req = new SubmitContainerTokenRequest(packages: packages, format: 'sif')
 
         when:
-        def result = ContainerHelper.containerFileFromPackagesSpec(packages, true)
+        def result = ContainerHelper.containerFileFromRequest(req)
 
         then:
         result.contains('BootStrap: docker')

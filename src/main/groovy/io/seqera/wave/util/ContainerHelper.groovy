@@ -28,9 +28,6 @@ import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
-import io.seqera.wave.config.CondaOpts
-import io.seqera.wave.config.PixiOpts
-import io.seqera.wave.config.CranOpts
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.builder.BuildFormat
@@ -39,21 +36,7 @@ import io.seqera.wave.service.request.TokenData
 import org.yaml.snakeyaml.Yaml
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static io.seqera.wave.util.DockerHelper.condaEnvironmentToCondaYaml
-import static io.seqera.wave.util.DockerHelper.condaFileToDockerFile
-import static io.seqera.wave.util.DockerHelper.condaFileToDockerFileUsingMicromamba
-import static io.seqera.wave.util.DockerHelper.condaFileToDockerFileUsingPixi
-import static io.seqera.wave.util.DockerHelper.condaFileToSingularityFile
-import static io.seqera.wave.util.DockerHelper.condaFileToSingularityFileUsingMicromamba
-import static io.seqera.wave.util.DockerHelper.condaFileToSingularityFileUsingPixi
 import static io.seqera.wave.util.DockerHelper.condaPackagesToCondaYaml
-import static io.seqera.wave.util.DockerHelper.condaPackagesToDockerFile
-import static io.seqera.wave.util.DockerHelper.condaPackagesToDockerFileUsingMicromamba
-import static io.seqera.wave.util.DockerHelper.condaPackagesToSingularityFile
-import static io.seqera.wave.util.DockerHelper.condaPackagesToSingularityFileUsingMicromamba
-import static io.seqera.wave.util.CranHelper.cranPackagesToDockerFile
-import static io.seqera.wave.util.CranHelper.cranPackagesToSingularityFile
-import static io.seqera.wave.util.CranHelper.cranFileToDockerFile
-import static io.seqera.wave.util.CranHelper.cranFileToSingularityFile
 /**
  * Container helper methods
  *
@@ -64,126 +47,36 @@ import static io.seqera.wave.util.CranHelper.cranFileToSingularityFile
 class ContainerHelper {
 
     /**
-     * Create a Containerfile from the specified packages specification.
+     * Generate a container file (Dockerfile or Singularity) from a request.
+     * Dispatches to the appropriate helper based on build template and package type.
      *
-     * Build flow:
-     * 1. The {@link PackagesSpec} defines what packages should be configured in the container.
-     *
-     * 2. Packages can be specified in two ways:
-     *    - A list of package names via {@code PackagesSpec.entries}
-     *    - An environment definition file (YAML text) via {@code PackagesSpec.environment}
-     *
-     * 3. At this stage, package names have already been normalized to a conda environment file
-     *    by {@link #condaFileFromRequest}. The build process will use this conda.yml file with
-     *    the package manager (micromamba/pixi) to resolve and install dependencies. This method
-     *    only generates the Containerfile (Dockerfile or Singularity definition) that references
-     *    the environment file.
-     *
-     * 4. Before generating the Containerfile, we check if {@code entries} contains a remote lock
-     *    file URI (HTTP/HTTPS URL). This is an alternative way to specify pre-resolved dependencies.
-     *
-     * 5. Template selection based on lock file detection:
-     *    - If a lock file URI is found: uses {@code *-conda-packages.txt} templates
-     *      (these download and install from the remote lock file)
-     *    - If no lock file: uses {@code *-conda-file.txt} templates
-     *      (these install from the local conda.yml environment file)
-     *
-     * @param spec
-     *      A {@link PackagesSpec} object modelling the packages to be included in the resulting container
-     * @param formatSingularity
-     *      When {@code false} creates a Dockerfile, when {@code true} creates a Singularity file
-     * @return
-     *      The corresponding Containerfile
+     * @param req The container token request
+     * @return The generated container file content
      */
-    static String containerFileFromPackagesSpec(PackagesSpec spec, boolean formatSingularity) {
-        if( spec.type == PackagesSpec.Type.CONDA ) {
-            // Check if 'entries' contains a remote lock file URI instead of package names.
-            // Note: 'entries' can hold either package names (e.g., "numpy", "pandas") OR a single
-            // HTTP/HTTPS URL pointing to a pre-resolved conda lock file. The naming is confusing
-            // because 'condaPackagesToXxx' methods actually handle lock file URLs, not package names.
-            final lockFileUri = tryGetCondaLockFromPackageNames(spec.entries)
-            if( !spec.condaOpts )
-                spec.condaOpts = new CondaOpts()
-            def result
-            if ( lockFileUri ) {
-                // Lock file URI detected: use '*-conda-packages.txt' templates that download
-                // and install dependencies from the remote lock file
-                result = formatSingularity
-                        ? condaPackagesToSingularityFile(lockFileUri, spec.channels, spec.condaOpts)
-                        : condaPackagesToDockerFile(lockFileUri, spec.channels, spec.condaOpts)
-            } else {
-                // No lock file: use '*-conda-file.txt' templates that install from the
-                // local conda.yml environment file (already prepared by condaFileFromRequest)
-                result = formatSingularity
-                        ? condaFileToSingularityFile(spec.condaOpts)
-                        : condaFileToDockerFile(spec.condaOpts)
-            }
-            return result
-        }
-
-        if( spec.type == PackagesSpec.Type.CRAN ) {
-            if( !spec.cranOpts )
-                spec.cranOpts = new CranOpts()
-            def result
-            if ( spec.entries ) {
-                final String packages = spec.entries.join(' ')
-                result = formatSingularity
-                        ? cranPackagesToSingularityFile(packages, spec.channels, spec.cranOpts)
-                        : cranPackagesToDockerFile(packages, spec.channels, spec.cranOpts)
-            } else {
-                result = formatSingularity
-                        ? cranFileToSingularityFile(spec.cranOpts)
-                        : cranFileToDockerFile(spec.cranOpts)
-            }
-            return result
-        }
-        throw new BadRequestException("Unexpected packages spec type: $spec.type")
-    }
-
     static String containerFileFromRequest(SubmitContainerTokenRequest req) {
-        // without buildTemplate specified, fallback to legacy build template
-        if( !req.buildTemplate )
-            return containerFileFromPackagesSpec(req.packages, req.formatSingularity())
-        // build the container using the pixi template
-        if( req.buildTemplate==BuildTemplate.PIXI_V1 ) {
-            // check the type of the packages and apply
-            if( req.packages.type == PackagesSpec.Type.CONDA ) {
-                final lockFile = tryGetCondaLockFromPackageNames(req.packages.entries)
-                final opts = req.packages.pixiOpts ?: new PixiOpts()
-                if( req.containerImage )
-                    opts.baseImage = req.containerImage
-                if( lockFile )
-                    throw new BadRequestException("Conda lock file is not supported by '${req}' template")
-                final result = req.formatSingularity()
-                        ? condaFileToSingularityFileUsingPixi(opts)
-                        : condaFileToDockerFileUsingPixi(opts)
-                return result
-            }
-            else
-                throw new BadRequestException("Package type '${req.packages.type}' not supported by build template: ${req.buildTemplate}")
+        final singularity = req.formatSingularity()
+        final spec = req.packages
+
+        // Explicit template-based builds
+        if( req.buildTemplate == BuildTemplate.PIXI_V1 ) {
+            return PixiHelper.containerFile(spec, req.containerImage, singularity)
         }
-        if( req.buildTemplate==BuildTemplate.MICROMAMBA_V2 ) {
-            if( req.packages.type == PackagesSpec.Type.CONDA ) {
-                final lockFile = tryGetCondaLockFromPackageNames(req.packages.entries)
-                final opts = req.packages.condaOpts ?: CondaOpts.v2()
-                if( req.containerImage )
-                    opts.baseImage = req.containerImage
-                def result
-                if ( lockFile ) {
-                    result = req.formatSingularity()
-                            ? condaPackagesToSingularityFileUsingMicromamba(lockFile, req.packages.channels, opts)
-                            : condaPackagesToDockerFileUsingMicromamba(lockFile, req.packages.channels, opts)
-                } else {
-                    result = req.formatSingularity()
-                            ? condaFileToSingularityFileUsingMicromamba(opts)
-                            : condaFileToDockerFileUsingMicromamba(opts)
-                }
-                return result
-            }
-            else
-                throw new BadRequestException("Package type '${req.packages.type}' not supported by build template: ${req.buildTemplate}")
+        if( req.buildTemplate == BuildTemplate.MICROMAMBA_V2 ) {
+            return CondaHelper.containerFileV2(spec, req.containerImage, singularity)
         }
-        throw new BadRequestException("Unexpected build template: ${req.buildTemplate}")
+        if( req.buildTemplate == BuildTemplate.CRAN_V1 ) {
+            return CranHelper.containerFile(spec, singularity)
+        }
+
+        // Default templates based on package type (when no explicit template)
+        if( spec.type == PackagesSpec.Type.CONDA ) {
+            return CondaHelper.containerFile(spec, singularity)
+        }
+        if( spec.type == PackagesSpec.Type.CRAN ) {
+            return CranHelper.containerFile(spec, singularity)
+        }
+
+        throw new BadRequestException("Unexpected package type or build template")
     }
 
     static String condaFileFromRequest(SubmitContainerTokenRequest req) {
@@ -200,34 +93,13 @@ class ContainerHelper {
             return condaEnvironmentToCondaYaml(decoded, req.packages.channels)
         }
 
-        if ( req.packages.entries && !tryGetCondaLockFromPackageNames(req.packages.entries)) {
+        if ( req.packages.entries && !CondaHelper.tryGetLockFile(req.packages.entries)) {
             // create a minimal conda file with package spec from user input
             final String packages = req.packages.entries.join(' ')
             return condaPackagesToCondaYaml(packages, req.packages.channels)
         }
 
         return null;
-    }
-
-    /**
-     * Detects if the list of package names contains a conda lock file URI.
-     * A lock file is identified by an HTTP/HTTPS URL in the package list.
-     * Only one lock file URI is allowed at a time.
-     *
-     * @param condaPackages List of package names or URIs
-     * @return The lock file URI if found, null otherwise
-     * @throws IllegalArgumentException if more than one lock file URI is specified
-     */
-    static protected String tryGetCondaLockFromPackageNames(List<String> condaPackages) {
-        if( !condaPackages )
-            return null;
-        final result = condaPackages .findAll(it->it.startsWith("http://") || it.startsWith("https://"))
-        if( !result )
-            return null;
-        if( condaPackages.size()>1 ) {
-            throw new IllegalArgumentException("No more than one Conda lock remote file can be specified at the same time");
-        }
-        return result[0]
     }
 
     static String decodeBase64OrFail(String value, String field) {
