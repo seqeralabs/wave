@@ -109,7 +109,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
             echo "Look ma' building 🐳🐳 on the fly!" > /hello.txt
         """
         def storage = applicationContext.getBean(SurrealPersistenceService)
-        final request = new BuildRequest(
+        final request = BuildRequest.of(
                 containerId: 'container1234',
                 containerFile: dockerFile,
                 condaFile: condaFile,
@@ -143,7 +143,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
     def 'should load a build record' () {
         given:
         def persistence = applicationContext.getBean(SurrealPersistenceService)
-        final request = new BuildRequest(
+        final request = BuildRequest.of(
                 containerId:  'container1234',
                 containerFile:  'FROM foo:latest',
                 condaFile:  'conda::recipe',
@@ -182,9 +182,9 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def target = 'docker.io/my/target'
         def digest = 'sha256:12345'
         and:
-        def request1 = new BuildRequest( targetImage: target, containerId: 'abc', buildId: 'bd-abc_1', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(30), identity: PlatformId.NULL)
-        def request2 = new BuildRequest( targetImage: target, containerId: 'abc', buildId: 'bd-abc_2', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(20), identity: PlatformId.NULL)
-        def request3 = new BuildRequest( targetImage: target, containerId: 'abc', buildId: 'bd-abc_3', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(10), identity: PlatformId.NULL)
+        def request1 = BuildRequest.of( targetImage: target, containerId: 'abc', buildId: 'bd-abc_1', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(30), identity: PlatformId.NULL)
+        def request2 = BuildRequest.of( targetImage: target, containerId: 'abc', buildId: 'bd-abc_2', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(20), identity: PlatformId.NULL)
+        def request3 = BuildRequest.of( targetImage: target, containerId: 'abc', buildId: 'bd-abc_3', workspace: Path.of('.'), startTime: Instant.now().minusSeconds(10), identity: PlatformId.NULL)
         and:
         def result1 = new BuildResult(request1.buildId, 1, "err", request1.startTime, Duration.ofSeconds(2), digest)
         def rec1 = WaveBuildRecord.fromEvent(new BuildEvent(request1, result1))
@@ -207,9 +207,9 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def surreal = applicationContext.getBean(SurrealClient)
         def persistence = applicationContext.getBean(SurrealPersistenceService)
         def auth = persistence.getAuthorization()
-        def request1 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_1' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(30), identity: PlatformId.NULL)
-        def request2 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_2' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(20), identity: PlatformId.NULL)
-        def request3 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_3' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(10), identity: PlatformId.NULL)
+        def request1 = BuildRequest.of( containerId: 'abc', buildId: 'bd-abc_1' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(30), identity: PlatformId.NULL)
+        def request2 = BuildRequest.of( containerId: 'abc', buildId: 'bd-abc_2' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(20), identity: PlatformId.NULL)
+        def request3 = BuildRequest.of( containerId: 'abc', buildId: 'bd-abc_3' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(10), identity: PlatformId.NULL)
 
         def result1 = new BuildResult(request1.buildId, -1, "ok", request1.startTime, Duration.ofSeconds(2), null)
         surreal.insertBuild(auth, WaveBuildRecord.fromEvent(new BuildEvent(request1, result1)))
@@ -229,7 +229,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
     def 'should save and update a build' () {
         given:
         def persistence = applicationContext.getBean(SurrealPersistenceService)
-        final request = new BuildRequest(
+        final request = BuildRequest.of(
                 containerId: 'container1234',
                 containerFile:  'FROM foo:latest',
                 condaFile:  'conda::recipe',
@@ -488,24 +488,21 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         given:
         def data = RandomStringUtils.random(25600, true, true)
         def persistence = applicationContext.getBean(SurrealPersistenceService)
-        final request = new BuildRequest(
-                'container1234',
-                data,
-                data,
-                Path.of("/some/path"),
-                'buildrepo:recipe-container1234',
-                PlatformId.NULL,
-                ContainerPlatform.of('amd64'),
-                'docker.io/my/cache',
-                '127.0.0.1',
-                '{"config":"json"}',
-                null,
-                null,
-                'scan12345',
-                null,
-                BuildFormat.DOCKER,
-                Duration.ofMinutes(1),
-                BuildCompression.gzip
+        final request = BuildRequest.of(
+                containerId: 'container1234',
+                containerFile: data,
+                condaFile: data,
+                workspace: Path.of("/some/path"),
+                targetImage: 'buildrepo:recipe-container1234',
+                identity: PlatformId.NULL,
+                platform: ContainerPlatform.of('amd64'),
+                cacheRepository: 'docker.io/my/cache',
+                ip: '127.0.0.1',
+                configJson: '{"config":"json"}',
+                scanId: 'scan12345',
+                format: BuildFormat.DOCKER,
+                maxDuration: Duration.ofMinutes(1),
+                compression: BuildCompression.gzip
         )
         and:
         def result = BuildResult.completed(request.buildId, 1, 'Hello', Instant.now().minusSeconds(60), 'xyz')
@@ -525,10 +522,10 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def surreal = applicationContext.getBean(SurrealClient)
         def persistence = applicationContext.getBean(SurrealPersistenceService)
         def auth = persistence.getAuthorization()
-        def request1 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_1' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(30), identity: PlatformId.NULL)
-        def request2 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_2' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(20), identity: PlatformId.NULL)
-        def request3 = new BuildRequest( containerId: 'abc', buildId: 'bd-abc_3' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(10), identity: PlatformId.NULL)
-        def request4 = new BuildRequest( containerId: 'abc', buildId: 'bd-xyz_3' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(0), identity: PlatformId.NULL)
+        def request1 = BuildRequest.of( containerId: 'abc', buildId: 'bd-abc_1' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(30), identity: PlatformId.NULL)
+        def request2 = BuildRequest.of( containerId: 'abc', buildId: 'bd-abc_2' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(20), identity: PlatformId.NULL)
+        def request3 = BuildRequest.of( containerId: 'abc', buildId: 'bd-abc_3' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(10), identity: PlatformId.NULL)
+        def request4 = BuildRequest.of( containerId: 'abc', buildId: 'bd-xyz_3' , workspace: Path.of('.'), startTime: Instant.now().minusSeconds(0), identity: PlatformId.NULL)
 
         def result1 = new BuildResult(request1.buildId, -1, "ok", request1.startTime, Duration.ofSeconds(2), null)
         def record1 = WaveBuildRecord.fromEvent(new BuildEvent(request1, result1))

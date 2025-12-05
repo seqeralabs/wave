@@ -79,7 +79,7 @@ class ContainerBuildServiceLiveTest extends Specification {
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
-                new BuildRequest(
+                BuildRequest.of(
                         containerId: containerId,
                         containerFile: dockerFile,
                         workspace: folder,
@@ -125,7 +125,7 @@ class ContainerBuildServiceLiveTest extends Specification {
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
-                new BuildRequest(
+                BuildRequest.of(
                         containerId: containerId,
                         containerFile: dockerFile,
                         workspace: folder,
@@ -171,7 +171,7 @@ class ContainerBuildServiceLiveTest extends Specification {
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('linux/arm64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
-                new BuildRequest(
+                BuildRequest.of(
                         containerId: containerId,
                         containerFile: dockerFile,
                         workspace: folder,
@@ -217,7 +217,7 @@ class ContainerBuildServiceLiveTest extends Specification {
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
-                new BuildRequest(
+                BuildRequest.of(
                         containerId: containerId,
                         containerFile: dockerFile,
                         workspace: folder,
@@ -269,7 +269,7 @@ class ContainerBuildServiceLiveTest extends Specification {
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
-                new BuildRequest(
+                BuildRequest.of(
                         containerId: containerId,
                         containerFile: dockerFile,
                         workspace: folder,

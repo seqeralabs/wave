@@ -75,7 +75,7 @@ class BuildServiceRateLimitTest extends Specification {
         and:
         def CONTAINER_ID = ContainerHelper.makeContainerId(dockerfile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def TARGET_IMAGE = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, CONTAINER_ID, null, null)
-        def REQ = new BuildRequest(
+        def REQ = BuildRequest.of(
                 containerId: CONTAINER_ID,
                 containerFile: dockerfile,
                 workspace:  folder,
@@ -109,7 +109,7 @@ class BuildServiceRateLimitTest extends Specification {
         and:
         def CONTAINER_ID = ContainerHelper.makeContainerId(dockerfile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def TARGET_IMAGE = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, CONTAINER_ID, null, null)
-        def REQ = new BuildRequest(
+        def REQ = BuildRequest.of(
                 containerId: CONTAINER_ID,
                 containerFile: dockerfile,
                 workspace: folder,

@@ -22,6 +22,7 @@ import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 import java.time.OffsetDateTime
+import java.time.ZoneId
 
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
@@ -143,6 +144,11 @@ class BuildRequest {
      */
     final String buildId
 
+    /**
+     * The build template used to generate the container file
+     */
+    final String buildTemplate
+
     BuildRequest(
             String containerId,
             String containerFile,
@@ -160,7 +166,8 @@ class BuildRequest {
             BuildContext buildContext,
             BuildFormat format,
             Duration maxDuration,
-            BuildCompression compression
+            BuildCompression compression,
+            String buildTemplate
     )
     {
         this.containerId = containerId
@@ -181,11 +188,15 @@ class BuildRequest {
         this.format = format
         this.maxDuration = maxDuration
         this.compression = compression
+        this.buildTemplate = buildTemplate
         // NOTE: this is meant to be updated - automatically - when the request is submitted
-        this.buildId = ID_PREFIX + containerId + SEP + '0'
+        this.buildId = computeBuildId(containerId)
     }
 
-    BuildRequest(Map opts) {
+    /**
+     * Map-based constructor for testing purposes where buildId and startTime need to be set manually
+     */
+    private BuildRequest(Map opts) {
         this.containerId = opts.containerId
         this.containerFile = opts.containerFile
         this.condaFile = opts.condaFile
@@ -194,17 +205,22 @@ class BuildRequest {
         this.identity = opts.identity as PlatformId
         this.platform = opts.platform as ContainerPlatform
         this.cacheRepository = opts.cacheRepository
-        this.startTime = opts.startTime as Instant
+        this.startTime = opts.startTime as Instant ?: Instant.now()
         this.ip = opts.ip
         this.configJson = opts.configJson
-        this.offsetId = opts.offesetId
+        this.offsetId = opts.offsetId ?: OffsetDateTime.ofInstant(this.startTime, ZoneId.systemDefault()).offset.id
         this.containerConfig = opts.containerConfig as ContainerConfig
         this.scanId = opts.scanId
         this.buildContext = opts.buildContext as BuildContext
         this.format = opts.format as BuildFormat
         this.maxDuration = opts.maxDuration as Duration
         this.compression = opts.compression as BuildCompression
-        this.buildId = opts.buildId
+        this.buildId = opts.buildId ?: computeBuildId(containerId)
+        this.buildTemplate = opts.buildTemplate
+    }
+
+    static BuildRequest of(Map opts) {
+        new BuildRequest(opts)
     }
 
     @Override
@@ -285,6 +301,10 @@ class BuildRequest {
         if( !id )
             return null
         return id.contains(SEP) ? id.tokenize(SEP)[0] : null
+    }
+
+    static private String computeBuildId(String containerId) {
+        ID_PREFIX + containerId + SEP + '0'
     }
 
 }

@@ -95,7 +95,7 @@ class DockerBuildStrategyTest extends Specification {
         and:
         def creds = Path.of('/work/creds.json')
         and:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: '89fb83ce6ec8627b',
                 buildId: 'bd-89fb83ce6ec8627b_1',
                 workspace: Path.of('/work/foo'),
@@ -146,7 +146,7 @@ class DockerBuildStrategyTest extends Specification {
         and:
         def creds = Path.of('/work/creds.json')
         and:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 'd4869cc39b8d7d55',
                 buildId: 'bd-d4869cc39b8d7d55_1',
                 workspace: Path.of('/work/foo'),
@@ -185,7 +185,7 @@ class DockerBuildStrategyTest extends Specification {
         and:
         def creds = Path.of('/work/creds.json')
         and:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: '9c68af894bb2419c',
                 buildId: 'bd-9c68af894bb2419c_1',
                 workspace: Path.of('/work/foo'),

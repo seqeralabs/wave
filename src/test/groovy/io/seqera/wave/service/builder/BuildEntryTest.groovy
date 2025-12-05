@@ -67,7 +67,7 @@ class BuildEntryTest extends Specification {
 
     def 'should  create entry with factory' () {
         given:
-        def request = new BuildRequest(
+        def request = BuildRequest.of(
                 containerId: '12345',
                 buildId: "bd-12345_1",
                 containerFile: 'FROM foo',

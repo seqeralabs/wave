@@ -1,0 +1,19 @@
+BootStrap: docker
+From: {{mamba_image}}
+Stage: build
+%post
+    micromamba install -y -n base {{channel_opts}} {{target}}
+    {{base_packages}}
+    micromamba env export --name base --explicit > environment.lock
+    echo ">> CONDA_LOCK_START"
+    cat environment.lock
+    echo "<< CONDA_LOCK_END"
+
+Bootstrap: docker
+From: {{base_image}}
+Stage: final
+%files from build
+    /opt/conda /opt/conda
+%environment
+    export MAMBA_ROOT_PREFIX=/opt/conda
+    export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"

@@ -193,8 +193,12 @@ The endpoint returns the name of the container request made available by Wave.
 | `mambaImage`                        | Name of the Docker image used to build Conda containers.                                                                                              |
 | `commands`                          | Command to be included in the container.                                                                                                                       |
 | `basePackages`                      | Names of base packages.                                                                                                                                        |
+| `baseImage`                         | Base image for the final stage of multi-stage builds (for Conda/Pixi).                                                                                        |
+| `pixiOpts`                          | Pixi build options (when type is CONDA and buildTemplate is `conda/pixi/v1`).                                                                                  |
+| `pixiImage`                         | Name of the Docker image used for Pixi package manager (e.g., `ghcr.io/prefix-dev/pixi:latest`).                                                              |
 | `cranOpts`                          | CRAN build options (when type is CRAN).                                                                                                                        |
 | `rImage`                            | Name of the R Docker image used to build CRAN containers (e.g., `rocker/r-ver:4.4.1`).                                                                         |
+| `buildTemplate`                     | The build template to use for container builds. Supported values: `conda/pixi/v1` (Pixi with multi-stage builds), `conda/micromamba/v2` (Micromamba 2.x with multi-stage builds). Default: standard conda/micromamba v1 template. |
 | `nameStrategy`                      | The name strategy to be used to create the name of the container built by Wave. Its values can be `none`, `tagPrefix`, or `imageSuffix`.                       |                                                     |
 
 ### Response
@@ -361,6 +365,190 @@ curl --location 'https://wave.seqera.io/v1alpha2/container' \
     "succeeded": true
 }
 ```
+
+5. Create Docker image with Pixi v1 template (multi-stage build):
+
+##### Request
+
+```shell
+curl --location 'https://wave.seqera.io/v1alpha2/container' \
+--header 'Content-Type: application/json' \
+--data '{
+    "containerPlatform": "linux/amd64",
+    "format": "docker",
+    "buildTemplate": "conda/pixi/v1",
+    "packages":{
+        "type": "CONDA",
+        "entries": ["numpy", "pandas", "scikit-learn"],
+        "channels": ["conda-forge"],
+        "pixiOpts": {
+            "pixiImage": "ghcr.io/prefix-dev/pixi:0.59.0-noble",
+            "basePackages": "conda-forge::procps-ng",
+            "baseImage": "ubuntu:24.04",
+            "commands": []
+        }
+    }
+}'
+```
+
+#### Response
+
+```json
+{
+    "requestId":"bf31a6445b41",
+    "containerToken":"bf31a6445b41",
+    "targetImage":"https://wave.seqera.io/wt/bf31a6445b41/hrma017/dev:numpy_pandas_scikit-learn--ad24e45802adb349",
+    "expiration":"2025-12-02T11:47:55.908498Z",
+    "containerImage":"hrma017/dev:numpy_pandas_scikit-learn--ad24e45802adb349",
+    "buildId":"bd-ad24e45802adb349_1",
+    "cached":false,
+    "freeze":false,
+    "mirror":false,
+    "scanId":"sc-98fd615516bd93d6_1"
+}
+```
+
+6. Create Docker image with Micromamba v2 template (multi-stage build):
+
+##### Request
+
+```shell
+curl --location 'https://wave.seqera.io/v1alpha2/container' \
+--header 'Content-Type: application/json' \
+--data '{
+    "containerPlatform": "linux/amd64",
+    "format": "docker",
+    "buildTemplate": "conda/micromamba/v2",
+    "packages":{
+        "type": "CONDA",
+        "entries": ["bwa=0.7.15", "salmon=1.10.0", "samtools=1.17"],
+        "channels": ["conda-forge", "bioconda"],
+        "condaOpts": {
+            "mambaImage": "mambaorg/micromamba:2-amazon2023",
+            "basePackages": "conda-forge::procps-ng",
+            "baseImage": "ubuntu:24.04",
+            "commands": []
+        }
+    }
+}'
+```
+
+#### Response
+
+```json
+{
+    "requestId":"248eefc1fc14",
+    "containerToken":"248eefc1fc14",
+    "targetImage":"wave.local/wt/248eefc1fc14/hrma017/dev:bwa-0.7.15_salmon-1.10.0_samtools-1.17--40730eb5c2c3dc6e",
+    "expiration":"2025-12-02T12:14:59.672505Z",
+    "containerImage":"hrma017/dev:bwa-0.7.15_salmon-1.10.0_samtools-1.17--40730eb5c2c3dc6e",
+    "buildId":"bd-40730eb5c2c3dc6e_1",
+    "cached":false,
+    "freeze":false,
+    "mirror":false,
+    "scanId":"sc-f36486d1a7e3053a_1"
+}
+```
+
+7. Create Singularity image with Pixi v1 template (multi-stage build):
+
+##### Request
+
+```shell
+curl --location 'https://wave.seqera.io/v1alpha2/container' \
+--header 'Content-Type: application/json' \
+--data '{
+    "containerPlatform": "linux/amd64",
+    "format": "sif",
+    "buildTemplate": "conda/pixi/v1",
+    "packages":{
+        "type": "CONDA",
+        "entries": ["numpy", "pandas", "scikit-learn"],
+        "channels": ["conda-forge"],
+        "pixiOpts": {
+            "pixiImage": "ghcr.io/prefix-dev/pixi:0.59.0-noble",
+            "basePackages": "conda-forge::procps-ng",
+            "baseImage": "ubuntu:24.04",
+            "commands": []
+        }
+    },
+    "freeze": true,
+    "buildRepository": "<CONTAINER_REPOSITORY>", # hrma017/test
+    "towerAccessToken": "<TOKEN>"
+}'
+```
+
+#### Response
+
+```json
+{
+    "requestId":"7159b38c6c04",
+    "targetImage":"oras://hrma017/test:numpy_pandas_scikit-learn--717309e30359606f",
+    "containerImage":"oras://hrma017/test:numpy_pandas_scikit-learn--717309e30359606f",
+    "buildId":"bd-717309e30359606f_1",
+    "cached":false,
+    "freeze":true,
+    "mirror":false
+}
+```
+
+8. Create Singularity image with Micromamba v2 template (multi-stage build):
+
+##### Request
+
+```shell
+curl --location 'https://wave.seqera.io/v1alpha2/container' \
+--header 'Content-Type: application/json' \
+--data '{
+    "containerPlatform": "linux/amd64",
+    "format": "sif",
+    "buildTemplate": "conda/micromamba/v2",
+    "packages":{
+        "type": "CONDA",
+        "entries": ["bwa=0.7.15", "salmon=1.10.0", "samtools=1.17"],
+        "channels": ["conda-forge", "bioconda"],
+        "condaOpts": {
+            "mambaImage": "mambaorg/micromamba:2-amazon2023",
+            "basePackages": "conda-forge::procps-ng",
+            "baseImage": "ubuntu:24.04",
+            "commands": []
+        }
+    },
+    "freeze": true,
+    "buildRepository": "<CONTAINER_REPOSITORY>", # hrma017/test
+    "towerAccessToken": "<TOKEN>"
+}'
+```
+
+#### Response
+
+```json
+{
+    "requestId":"b93c35abca4e",
+    "targetImage":"oras://hrma017/test:bwa-0.7.15_salmon-1.10.0_samtools-1.17--e85b5c89438aa3ff",
+    "containerImage":"oras://hrma017/test:bwa-0.7.15_salmon-1.10.0_samtools-1.17--e85b5c89438aa3ff",
+    "buildId":"bd-e85b5c89438aa3ff_1",
+    "cached":false,
+    "freeze":true,
+    "mirror":false
+}
+```
+
+:::note
+Multi-stage build templates (`conda/pixi/v1` and `conda/micromamba/v2`) create optimized container images by separating the build environment from the final runtime environment. This results in smaller container images that only contain the installed packages and runtime dependencies, without the build tools.
+:::
+
+:::important
+**Custom Image Requirements for Pixi and Micromamba v2 Templates**
+
+If you provide custom images for the `conda/pixi/v1` or `conda/micromamba/v2` build templates (via `pixiImage`, `mambaImage`, or `baseImage` options), you **must ensure that these images have the `tar` utility installed**.
+
+Both templates use `tar` to:
+- Compress conda/pixi environments in the build stage (`tar czf`)
+- Extract environments in the final stage (`tar xzf`)
+
+If `tar` is not available in your custom images, the build will fail. Most standard base images (Ubuntu, Debian, Alpine, etc.) include `tar` by default, but minimal or distroless images may require explicit installation.
+:::
 
 ## GET `/v1alpha1/builds/{buildId}/status`
 

@@ -1,5 +1,6 @@
 import "./CondaOpts.tsp";
 import "./CranOpts.tsp";
+import "./PixiOpts.tsp";
 
 @doc("Specification for packages to be installed in a container.")
 @example(#{
@@ -26,6 +27,8 @@ model PackagesSpec {
   entries?: string[];
   @doc("Conda build options (when type is CONDA).")
   condaOpts?: CondaOpts;
+  @doc("Pixi build options (when type is CONDA).")
+  pixiOpts?: PixiOpts;
   @doc("CRAN build options (when type is CRAN).")
   cranOpts?: CranOpts;
   @doc("Channels or repositories used for downloading packages.")
