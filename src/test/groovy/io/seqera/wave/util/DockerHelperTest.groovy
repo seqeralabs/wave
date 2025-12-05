@@ -1050,20 +1050,25 @@ class DockerHelperTest extends Specification {
                 From: mambaorg/micromamba:2.1.1
                 Stage: build
                 %files
-                    {{wave_context_dir}}/conda.yml /tmp/conda.yml
+                    {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
-                    micromamba install -y -n base -f /tmp/conda.yml
+                    micromamba install -y -n base -f /scratch/conda.yml
                     micromamba install -y -n base conda-forge::procps-ng
                     micromamba env export --name base --explicit > environment.lock
                     echo ">> CONDA_LOCK_START"
                     cat environment.lock
                     echo "<< CONDA_LOCK_END"
+                    tar czf /opt/conda.tar.gz -C /opt conda
 
                 Bootstrap: docker
                 From: ubuntu:24.04
                 Stage: final
                 %files from build
-                    /opt/conda /opt/conda
+                    /opt/conda.tar.gz /opt/conda.tar.gz
+                %post
+                    cd /opt
+                    tar xzf conda.tar.gz
+                    rm conda.tar.gz
                 %environment
                     export MAMBA_ROOT_PREFIX=/opt/conda
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
@@ -1078,20 +1083,25 @@ class DockerHelperTest extends Specification {
                 From: mambaorg/micromamba:1.5.10-noble
                 Stage: build
                 %files
-                    {{wave_context_dir}}/conda.yml /tmp/conda.yml
+                    {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
-                    micromamba install -y -n base -f /tmp/conda.yml
+                    micromamba install -y -n base -f /scratch/conda.yml
                     micromamba install -y -n base conda-forge::procps-ng
                     micromamba env export --name base --explicit > environment.lock
                     echo ">> CONDA_LOCK_START"
                     cat environment.lock
                     echo "<< CONDA_LOCK_END"
+                    tar czf /opt/conda.tar.gz -C /opt conda
 
                 Bootstrap: docker
                 From: ubuntu:24.04
                 Stage: final
                 %files from build
-                    /opt/conda /opt/conda
+                    /opt/conda.tar.gz /opt/conda.tar.gz
+                %post
+                    cd /opt
+                    tar xzf conda.tar.gz
+                    rm conda.tar.gz
                 %environment
                     export MAMBA_ROOT_PREFIX=/opt/conda
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
