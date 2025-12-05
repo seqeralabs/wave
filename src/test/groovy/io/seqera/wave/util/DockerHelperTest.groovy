@@ -906,14 +906,20 @@ class DockerHelperTest extends Specification {
                     echo ">> CONDA_LOCK_START"
                     cat /opt/wave/pixi.lock
                     echo "<< CONDA_LOCK_END"
+                    tar czf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs default
+                    ls -lh /opt/pixi-env.tar.gz
 
                 Bootstrap: docker
                 From: ubuntu:24.04
                 Stage: final
                 # install binary from stage one
                 %files from build
-                    /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
+                    /opt/pixi-env.tar.gz /opt/pixi-env.tar.gz
                     /shell-hook.sh /shell-hook.sh
+                %post
+                    mkdir -p /opt/wave/.pixi/envs
+                    tar xzf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs
+                    rm /opt/pixi-env.tar.gz
                 %environment
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
                 '''.stripIndent()
@@ -936,14 +942,20 @@ class DockerHelperTest extends Specification {
                     echo ">> CONDA_LOCK_START"
                     cat /opt/wave/pixi.lock
                     echo "<< CONDA_LOCK_END"
+                    tar czf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs default
+                    ls -lh /opt/pixi-env.tar.gz
 
                 Bootstrap: docker
                 From: ubuntu:24.04
                 Stage: final
                 # install binary from stage one
                 %files from build
-                    /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
+                    /opt/pixi-env.tar.gz /opt/pixi-env.tar.gz
                     /shell-hook.sh /shell-hook.sh
+                %post
+                    mkdir -p /opt/wave/.pixi/envs
+                    tar xzf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs
+                    rm /opt/pixi-env.tar.gz
                 %environment
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
                 '''.stripIndent()
@@ -972,14 +984,20 @@ class DockerHelperTest extends Specification {
                     echo ">> CONDA_LOCK_START"
                     cat /opt/wave/pixi.lock
                     echo "<< CONDA_LOCK_END"
+                    tar czf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs default
+                    ls -lh /opt/pixi-env.tar.gz
 
                 Bootstrap: docker
                 From: debian:12
                 Stage: final
                 # install binary from stage one
                 %files from build
-                    /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
+                    /opt/pixi-env.tar.gz /opt/pixi-env.tar.gz
                     /shell-hook.sh /shell-hook.sh
+                %post
+                    mkdir -p /opt/wave/.pixi/envs
+                    tar xzf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs
+                    rm /opt/pixi-env.tar.gz
                 %environment
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
                 '''.stripIndent()
