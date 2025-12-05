@@ -93,8 +93,8 @@ Wave supports different build templates for creating container images from Conda
 | Template | Description |
 |----------|-------------|
 | (default) | Standard Micromamba v1 single-stage build. The final image includes the package manager. |
-| `conda-micromamba/v2` | Multi-stage build using Micromamba 2.x. Produces smaller images without the package manager in the final stage. |
-| `conda-pixi/v1` | Multi-stage build using [Pixi][pixi] package manager. Produces smaller images with faster dependency resolution. |
+| `conda/micromamba/v2` | Multi-stage build using Micromamba 2.x. Produces smaller images without the package manager in the final stage. |
+| `conda/pixi/v1` | Multi-stage build using [Pixi][pixi] package manager. Produces smaller images with faster dependency resolution. |
 
 **Related CLI arguments**
 
@@ -104,7 +104,7 @@ Build template selection supports the following argument:
 
 **Benefits of multi-stage templates**
 
-Multi-stage build templates (`conda-micromamba/v2` and `conda-pixi/v1`) offer several advantages:
+Multi-stage build templates (`conda/micromamba/v2` and `conda/pixi/v1`) offer several advantages:
 
 - **Smaller images**: Build tools and package managers are excluded from the final image (30-50% size reduction typical).
 - **Reproducibility**: Lock files are generated for exact package version tracking.
@@ -117,7 +117,7 @@ Build a container using the Pixi template:
 ```bash
 wave \
   --conda-package bamtools=2.5.2 \
-  --build-template conda-pixi/v1
+  --build-template conda/pixi/v1
 ```
 
 Build a container using the Micromamba v2 multi-stage template:
@@ -126,7 +126,7 @@ Build a container using the Micromamba v2 multi-stage template:
 wave \
   --conda-package samtools=1.17 \
   --conda-package bwa=0.7.15 \
-  --build-template conda-micromamba/v2
+  --build-template conda/micromamba/v2
 ```
 
 Build a Singularity container using Pixi:
@@ -135,7 +135,7 @@ Build a Singularity container using Pixi:
 wave \
   --conda-package numpy \
   --conda-package pandas \
-  --build-template conda-pixi/v1 \
+  --build-template conda/pixi/v1 \
   --singularity \
   --freeze \
   --build-repo docker.io/user/repo

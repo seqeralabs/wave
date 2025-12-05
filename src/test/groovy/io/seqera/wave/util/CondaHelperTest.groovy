@@ -231,6 +231,6 @@ class CondaHelperTest extends Specification {
 
         then:
         def ex = thrown(BadRequestException)
-        ex.message.contains("not supported by 'conda-micromamba/v2' build template")
+        ex.message.contains("not supported by 'conda/micromamba/v2' build template")
     }
 }

@@ -43,7 +43,7 @@ class CranHelper {
      */
     static String containerFile(PackagesSpec spec, boolean singularity) {
         if( spec.type != PackagesSpec.Type.CRAN ) {
-            throw new BadRequestException("Package type '${spec.type}' not supported by 'cran-installr/v1' build template")
+            throw new BadRequestException("Package type '${spec.type}' not supported by 'cran/installr/v1' build template")
         }
 
         if( !spec.cranOpts )

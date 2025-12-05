@@ -46,12 +46,12 @@ class PixiHelper {
      */
     static String containerFile(PackagesSpec spec, String containerImage, boolean singularity) {
         if( spec.type != PackagesSpec.Type.CONDA ) {
-            throw new BadRequestException("Package type '${spec.type}' not supported by 'conda-pixi/v1' build template")
+            throw new BadRequestException("Package type '${spec.type}' not supported by 'conda/pixi/v1' build template")
         }
 
         final lockFile = CondaHelper.tryGetLockFile(spec.entries)
         if( lockFile ) {
-            throw new BadRequestException("Conda lock file is not supported by 'conda-pixi/v1' template")
+            throw new BadRequestException("Conda lock file is not supported by 'conda/pixi/v1' template")
         }
 
         final opts = spec.pixiOpts ?: new PixiOpts()

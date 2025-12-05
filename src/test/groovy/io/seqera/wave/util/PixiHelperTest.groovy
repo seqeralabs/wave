@@ -116,7 +116,7 @@ class PixiHelperTest extends Specification {
 
         then:
         def ex = thrown(BadRequestException)
-        ex.message.contains("not supported by 'conda-pixi/v1' build template")
+        ex.message.contains("not supported by 'conda/pixi/v1' build template")
     }
 
     def 'should throw exception for lock file'() {
@@ -131,6 +131,6 @@ class PixiHelperTest extends Specification {
 
         then:
         def ex = thrown(BadRequestException)
-        ex.message.contains("Conda lock file is not supported by 'conda-pixi/v1' template")
+        ex.message.contains("Conda lock file is not supported by 'conda/pixi/v1' template")
     }
 }
