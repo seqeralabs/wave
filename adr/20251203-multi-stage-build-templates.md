@@ -155,10 +155,28 @@ Wave's default container builds using Micromamba v1 include the package manager 
 - Build time slightly increased (two stages)
 - More template files to maintain
 - Users must learn new `buildTemplate` API field
+- Custom images require `tar` utility (dependency requirement)
 
 ### Neutral
 - Existing API behavior unchanged when `buildTemplate` not specified
 - Both Docker and Singularity supported equally
+
+## Important Requirements
+
+### Custom Image Dependencies
+
+Both `conda/pixi/v1` and `conda/micromamba/v2` templates require the `tar` utility to be present in all custom images:
+
+- **Build stage images** (`pixiImage`, `mambaImage`): Need `tar` to compress the conda/pixi environment
+- **Final stage images** (`baseImage`): Need `tar` to extract the compressed environment
+
+The templates use:
+- `tar czf` to create gzip-compressed archives of installed environments
+- `tar xzf` to extract these archives in the final stage
+
+**User Impact**: When providing custom images via `pixiOpts.pixiImage`, `condaOpts.mambaImage`, or `baseImage`, users must ensure `tar` is installed. Most standard base images (Ubuntu, Debian, Alpine, Amazon Linux, etc.) include `tar` by default. However, minimal or distroless images may require explicit installation of the tar package.
+
+**Example failure scenario**: Using a minimal distroless image as `baseImage` without tar will cause the build to fail during the extraction step with an error like `tar: command not found`.
 
 ## References
 

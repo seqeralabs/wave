@@ -538,6 +538,18 @@ curl --location 'https://wave.seqera.io/v1alpha2/container' \
 Multi-stage build templates (`conda/pixi/v1` and `conda/micromamba/v2`) create optimized container images by separating the build environment from the final runtime environment. This results in smaller container images that only contain the installed packages and runtime dependencies, without the build tools.
 :::
 
+:::important
+**Custom Image Requirements for Pixi and Micromamba v2 Templates**
+
+If you provide custom images for the `conda/pixi/v1` or `conda/micromamba/v2` build templates (via `pixiImage`, `mambaImage`, or `baseImage` options), you **must ensure that these images have the `tar` utility installed**.
+
+Both templates use `tar` to:
+- Compress conda/pixi environments in the build stage (`tar czf`)
+- Extract environments in the final stage (`tar xzf`)
+
+If `tar` is not available in your custom images, the build will fail. Most standard base images (Ubuntu, Debian, Alpine, etc.) include `tar` by default, but minimal or distroless images may require explicit installation.
+:::
+
 ## GET `/v1alpha1/builds/{buildId}/status`
 
 Provides status of build against buildId passed as path variable
