@@ -169,7 +169,7 @@ class CondaHelperTest extends Specification {
         result.contains('BootStrap: docker')
         result.contains('From: mambaorg/micromamba:2-amazon2023')
         result.contains('Stage: build')
-        result.contains('micromamba install -y -n base -f /tmp/conda.yml')
+        result.contains('micromamba install -y -n base -f /scratch/conda.yml')
         result.contains('Bootstrap: docker')
         result.contains('From: ubuntu:24.04')
     }
