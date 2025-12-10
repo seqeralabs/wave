@@ -110,6 +110,12 @@ Multi-stage build templates (`conda/micromamba/v2` and `conda/pixi/v1`) offer se
 - **Reproducibility**: Lock files are generated for exact package version tracking.
 - **Security**: Fewer binaries in the final image reduces the attack surface.
 
+**Singularity build requirements**
+
+When building Singularity containers (`--singularity`) with the `conda/micromamba/v2` or `conda/pixi/v1` templates, base images must have the `tar` utility installed. This is required because Singularity's multi-stage builds use `proot`, which cannot copy directory structures directly between build stages. The templates work around this by compressing the environment with `tar` and extracting it in the final stage.
+
+Docker builds are not affected by this requirement.
+
 **Example usage**
 
 Build a container using the Pixi template:

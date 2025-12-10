@@ -539,15 +539,15 @@ Multi-stage build templates (`conda/pixi/v1` and `conda/micromamba/v2`) create o
 :::
 
 :::important
-**Custom Image Requirements for Pixi and Micromamba v2 Templates**
+**Image Requirements for Singularity Builds with Pixi and Micromamba v2 Templates**
 
-If you provide custom images for the `conda/pixi/v1` or `conda/micromamba/v2` build templates (via `pixiImage`, `mambaImage`, or `baseImage` options), you **must ensure that these images have the `tar` utility installed**.
+When building **Singularity images** (`format: "sif"`) with the `conda/pixi/v1` or `conda/micromamba/v2` build templates, base images (via `baseImage` option) **must have the `tar` utility installed**.
 
-Both templates use `tar` to:
-- Compress conda/pixi environments in the build stage (`tar czf`)
-- Extract environments in the final stage (`tar xzf`)
+This requirement exists because Singularity's multi-stage builds use `proot` to emulate filesystem operations, which cannot reliably copy directory structures between build stages. The templates work around this by compressing the environment into a tarball (`tar czf`) and extracting it (`tar xzf`) in the final stage.
 
-If `tar` is not available in your custom images, the build will fail. Most standard base images (Ubuntu, Debian, Alpine, etc.) include `tar` by default, but minimal or distroless images may require explicit installation.
+**Docker builds are not affected** by this requirement, as Docker's native `COPY --from=build` directive handles directory copying directly.
+
+Most standard base images (Ubuntu, Debian, Alpine, etc.) include `tar` by default, but minimal or distroless images may require explicit installation.
 :::
 
 ## GET `/v1alpha1/builds/{buildId}/status`

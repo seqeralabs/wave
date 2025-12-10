@@ -161,22 +161,28 @@ Wave's default container builds using Micromamba v1 include the package manager 
 - Existing API behavior unchanged when `buildTemplate` not specified
 - Both Docker and Singularity supported equally
 
-## Important Requirements
+## Requirements
 
-### Custom Image Dependencies
+### Custom Image Dependencies (Singularity Only)
 
-Both `conda/pixi/v1` and `conda/micromamba/v2` templates require the `tar` utility to be present in all custom images:
+When building **Singularity images** (format `sif`), both `conda/pixi/v1` and `conda/micromamba/v2` templates require the `tar` utility to be present in all custom images:
 
 - **Build stage images** (`pixiImage`, `mambaImage`): Need `tar` to compress the conda/pixi environment
 - **Final stage images** (`baseImage`): Need `tar` to extract the compressed environment
 
-The templates use:
-- `tar czf` to create gzip-compressed archives of installed environments
-- `tar xzf` to extract these archives in the final stage
+**Why is `tar` required for Singularity?**
 
-**User Impact**: When providing custom images via `pixiOpts.pixiImage`, `condaOpts.mambaImage`, or `baseImage`, users must ensure `tar` is installed. Most standard base images (Ubuntu, Debian, Alpine, Amazon Linux, etc.) include `tar` by default. However, minimal or distroless images may require explicit installation of the tar package.
+Singularity's multi-stage build implementation uses `proot` to emulate filesystem operations. Unlike Docker's native `COPY --from=build` directive which can copy directories directly between build stages, Singularity's `%files from build` directive with `proot` cannot reliably copy directory structures. To work around this limitation, the templates:
 
-**Example failure scenario**: Using a minimal distroless image as `baseImage` without tar will cause the build to fail during the extraction step with an error like `tar: command not found`.
+1. Compress the conda/pixi environment into a tarball (`tar czf`) in the build stage
+2. Copy the single tarball file to the final stage
+3. Extract the environment (`tar xzf`) in the final stage
+
+**Docker builds are not affected**: Docker multi-stage builds use native `COPY --from=build` which handles directory copying natively without requiring `tar`.
+
+**User Impact**: When providing custom images via `pixiOpts.pixiImage`, `condaOpts.mambaImage`, or `baseImage` for **Singularity builds**, users must ensure `tar` is installed. Most standard base images (Ubuntu, Debian, Alpine, Amazon Linux, etc.) include `tar` by default. However, minimal or distroless images may require explicit installation of the tar package.
+
+**Example failure scenario**: Using a minimal distroless image as `baseImage` for a Singularity build without tar will cause the build to fail during the extraction step with an error like `tar: command not found`.
 
 ## References
 
