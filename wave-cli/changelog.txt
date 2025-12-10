@@ -1,5 +1,8 @@
 WAVE CLI CHANGE-LOG
 ===================
+1.8.0 - 10 Dec 2025
+- Add --build-template option for container build templates [8d0c309]
+
 1.7.0 - 5 Nov 2025
 - Add support for CRAN packages (requires Wave backend 1.28.0 or later) [c647027]
 - Add support for container index inspection [d17c1c3]

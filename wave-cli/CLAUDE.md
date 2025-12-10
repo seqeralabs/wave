@@ -216,8 +216,9 @@ The CLI supports three package ecosystems (mutually exclusive):
 
 ## Release Process
 
-1. Update the `VERSION` file with a semantic version.
-2. Update the README with the new version number.
-3. Update the `changelog.txt file with changes against previous release. Use `git log --oneline v<PREVIOUS VERSION>..HEAD` to determine the changes to be added.
-4. Commit VERSION and changelog.txt file adding the tag `[release]` in the commit comment first line.
-5. Git push to upstream master branch.
+1. Update the local Git repo and fetch latest tags
+2. Update the `VERSION` file with a semantic version.
+3. Update the README with the new version number.
+4. Update the `changelog.txt file with changes against previous release. Use `git log --oneline v<PREVIOUS VERSION>..HEAD` to determine the changes to be added.
+5. Commit VERSION and changelog.txt file adding the tag `[release]` in the commit comment first line.
+6. Git push to upstream master branch.
