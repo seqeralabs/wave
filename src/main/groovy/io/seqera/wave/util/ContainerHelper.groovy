@@ -38,8 +38,8 @@ import static io.seqera.wave.api.BuildTemplate.CONDA_MICROMAMBA_V2
 import static io.seqera.wave.api.BuildTemplate.CONDA_PIXI_V1
 import static io.seqera.wave.api.BuildTemplate.CRAN_INSTALLR_V1
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
-import static io.seqera.wave.util.DockerHelper.condaEnvironmentToCondaYaml
-import static io.seqera.wave.util.DockerHelper.condaPackagesToCondaYaml
+import static DockerHelper.condaEnvironmentToCondaYaml
+import static DockerHelper.condaPackagesToCondaYaml
 /**
  * Container helper methods
  *
