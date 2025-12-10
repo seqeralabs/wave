@@ -39,6 +39,12 @@ Use the following options to configure general Wave settings:
 `wave.strategy`
 : Sets the strategy used when resolving ambiguous Wave container requirements (default: `'container,dockerfile,conda'`).
 
+`wave.bundleProjectResources`
+: When enabled, bundles the workflow's `bin/` directory into the container image at `/usr/local/bin/` (default: `false`).
+  This is automatically enabled when Fusion is used.
+  Changes to bundled scripts will trigger a container rebuild.
+  See [Workflow bin scripts with Fusion](./use-cases.md#workflow-bin-scripts-with-fusion) for more information.
+
 ## Build
 
 Use the following options to configure Wave build settings:

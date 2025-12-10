@@ -275,3 +275,35 @@ For more information about Fusion capabilities and configuration options, see th
 :::
 
 </details>
+
+## Workflow bin scripts with Fusion
+
+When using Wave with Fusion, your workflow's `bin/` directory is automatically bundled into the container image. This differs from standard Nextflow behavior where bin scripts are staged separately to the work directory at runtime.
+
+<details open>
+<summary>**How bin script bundling works**</summary>
+
+**With Fusion enabled:**
+
+- The `bin/` directory contents are bundled into the container at `/usr/local/bin/`
+- Changes to bin scripts trigger a container rebuild (the fingerprint includes file content hashes)
+- Remote bin directory upload is disabled
+
+**Without Fusion (standard Wave):**
+
+- The `bin/` directory is NOT bundled into the container by default
+- Scripts are uploaded separately to cloud storage at runtime
+- Changes to bin scripts do NOT trigger a container rebuild
+
+**To explicitly enable bin bundling without Fusion:**
+
+```groovy
+wave.enabled = true
+wave.bundleProjectResources = true
+```
+
+</details>
+
+:::warning
+If you freeze an image with `wave.freeze=true` and later run with Wave disabled (`wave.enabled=false`), your pipeline will use the bin scripts that were baked into the frozen image at build time. Local changes to bin scripts will not be reflected. To pick up script changes, re-enable Wave to trigger a rebuild with the updated fingerprint.
+:::

@@ -63,11 +63,16 @@ Notable parts of this workflow include:
 
 - Container images provisioned with freeze mode are regular container builds.
 - Each container image is associated with a unique ID that is obtained by hashing the following elements:
-  - The Container file
-  - Any package dependencies
+  - The Container file (Dockerfile/Singularityfile)
+  - Any package dependencies (Conda, pip, etc.)
   - The target platform, which is either AMD64 or ARM64
   - The target repository name
+  - Any container layers included in the request
 - When a request for the same container is made, the same ID is assigned to it and therefore, the build is skipped.
+
+:::note
+When Nextflow is the Wave client, additional resources may be bundled as container layers, such as module resources and the workflow's `bin/` directory. Changes to these bundled files will affect the container fingerprint and trigger a rebuild. See [Wave with Nextflow](./nextflow/use-cases.md) for details.
+:::
 - The resulting images are hosted in your selected repository and not cached locally, unless a cache repository is specified.
 - The container images are stored permanently unless the repository owner deletes them.
 
