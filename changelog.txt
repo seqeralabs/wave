@@ -1,4 +1,12 @@
 # Wave changelog
+1.31.0 - 10 Dec 2025
+- Add support for build templates (and pixi) (#839) [21e9e425a]
+- docs: Add Wave api rate limit guide (#914) [aa347fdc3]
+- Add error warning (#943) [f56ae8e77]
+- docs: Apply new language to align with new reference style guide (#940) [df42fa059]
+- docs: Rename page title to match sidebar (#941) [799a3a3cc]
+- Update libseqera dependencies to latest versions (#939) [cb7bb5580]
+
 1.30.0 - 27 Nov 2025
 - Add labels in ConfigSpec (#934) [67ac6c3dc]
 - Use Seqera-hosted buildkit image (#938) [c0c0b6465]
