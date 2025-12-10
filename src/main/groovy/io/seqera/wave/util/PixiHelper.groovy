@@ -23,8 +23,8 @@ import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.config.PixiOpts
 import io.seqera.wave.exception.BadRequestException
 
-import static io.seqera.wave.util.DockerHelper.condaFileToDockerFileUsingPixi
-import static io.seqera.wave.util.DockerHelper.condaFileToSingularityFileUsingPixi
+import static TemplateUtils.condaFileToDockerFileUsingPixi
+import static TemplateUtils.condaFileToSingularityFileUsingPixi
 
 /**
  * Helper class for Pixi-based container builds (PIXI_V1 template).

@@ -23,14 +23,14 @@ import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.config.CondaOpts
 import io.seqera.wave.exception.BadRequestException
 
-import static io.seqera.wave.util.DockerHelper.condaFileToDockerFile
-import static io.seqera.wave.util.DockerHelper.condaFileToDockerFileUsingV2
-import static io.seqera.wave.util.DockerHelper.condaFileToSingularityFile
-import static io.seqera.wave.util.DockerHelper.condaFileToSingularityFileV2
-import static io.seqera.wave.util.DockerHelper.condaPackagesToDockerFile
-import static io.seqera.wave.util.DockerHelper.condaPackagesToDockerFileUsingV2
-import static io.seqera.wave.util.DockerHelper.condaPackagesToSingularityFile
-import static io.seqera.wave.util.DockerHelper.condaPackagesToSingularityFileV2
+import static TemplateUtils.condaFileToDockerFile
+import static TemplateUtils.condaFileToDockerFileUsingV2
+import static TemplateUtils.condaFileToSingularityFile
+import static TemplateUtils.condaFileToSingularityFileV2
+import static TemplateUtils.condaPackagesToDockerFile
+import static TemplateUtils.condaPackagesToDockerFileUsingV2
+import static TemplateUtils.condaPackagesToSingularityFile
+import static TemplateUtils.condaPackagesToSingularityFileV2
 
 /**
  * Helper class for Conda/Micromamba container builds.
