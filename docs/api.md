@@ -593,11 +593,11 @@ Docker builds are not affected by this requirement. Docker's native `COPY --from
 Most standard base images (Ubuntu, Debian, Alpine, etc.) include `tar` by default, but minimal or distroless images may require explicit installation.
 :::
 
-## GET `/v1alpha1/builds/{buildId}/status`
+### GET `/v1alpha1/builds/{buildId}/status`
 
 Provides status of build against buildId passed as path variable
 
-### Response
+#### Response
 
 ```json
 {
