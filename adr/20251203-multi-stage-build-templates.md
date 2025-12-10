@@ -43,8 +43,8 @@ Wave's default container builds using Micromamba v1 include the package manager 
 | Value | Template | Package Manager |
 |-------|----------|-----------------|
 | `null` (default) | micromamba v1 | micromamba (single-stage) |
-| `conda/pixi/v1` | pixi v1 | pixi (multi-stage) |
-| `conda/micromamba/v2` | micromamba v2 | micromamba (multi-stage) |
+| `conda/pixi:v1` | pixi v1 | pixi (multi-stage) |
+| `conda/micromamba:v2` | micromamba v2 | micromamba (multi-stage) |
 
 **Rationale:**
 - Explicit selection avoids ambiguity
@@ -116,12 +116,12 @@ Wave's default container builds using Micromamba v1 include the package manager 
 | Template | `condaOpts` | `pixiOpts` |
 |----------|-------------|------------|
 | Default (v1) | Yes | No |
-| `conda/micromamba/v2` | Yes | No |
-| `conda/pixi/v1` | No | Yes |
+| `conda/micromamba:v2` | Yes | No |
+| `conda/pixi:v1` | No | Yes |
 
 ## Template Comparison
 
-| Aspect | Default (v1) | `conda/micromamba/v2` | `conda/pixi/v1` |
+| Aspect | Default (v1) | `conda/micromamba:v2` | `conda/pixi:v1` |
 |--------|--------------|----------------------|-----------------|
 | Build stages | 1 | 2 | 2 |
 | Package manager in final | Yes | No | No |
@@ -165,7 +165,7 @@ Wave's default container builds using Micromamba v1 include the package manager 
 
 ### Custom Image Dependencies (Singularity Only)
 
-When building **Singularity images** (format `sif`), both `conda/pixi/v1` and `conda/micromamba/v2` templates require the `tar` utility to be present in all custom images:
+When building **Singularity images** (format `sif`), both `conda/pixi:v1` and `conda/micromamba:v2` templates require the `tar` utility to be present in all custom images:
 
 - **Build stage images** (`pixiImage`, `mambaImage`): Need `tar` to compress the conda/pixi environment
 - **Final stage images** (`baseImage`): Need `tar` to extract the compressed environment

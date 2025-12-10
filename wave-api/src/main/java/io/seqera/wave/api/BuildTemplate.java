@@ -27,22 +27,22 @@ public final class BuildTemplate {
     /**
      * Build template for Pixi-based multi-stage builds
      */
-    public static final String CONDA_PIXI_V1 = "conda/pixi/v1";
+    public static final String CONDA_PIXI_V1 = "conda/pixi:v1";
 
     /**
      * Build template for Micromamba v1-based multi-stage builds
      */
-    public static final String CONDA_MICROMAMBA_V1 = "conda/micromamba/v1";
+    public static final String CONDA_MICROMAMBA_V1 = "conda/micromamba:v1";
 
     /**
      * Build template for Micromamba v2-based multi-stage builds
      */
-    public static final String CONDA_MICROMAMBA_V2 = "conda/micromamba/v2";
+    public static final String CONDA_MICROMAMBA_V2 = "conda/micromamba:v2";
 
     /**
      * Build template for R/CRAN package builds
      */
-    public static final String CRAN_INSTALLR_V1 = "cran/installr/v1";
+    public static final String CRAN_INSTALLR_V1 = "cran/installr:v1";
 
     private BuildTemplate() {
         // Prevent instantiation
