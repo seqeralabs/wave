@@ -27,25 +27,19 @@ import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
-import io.seqera.wave.config.CondaOpts
-import io.seqera.wave.config.CranOpts
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.request.TokenData
 import org.yaml.snakeyaml.Yaml
+import static io.seqera.wave.api.BuildTemplate.CONDA_MICROMAMBA_V1
+import static io.seqera.wave.api.BuildTemplate.CONDA_MICROMAMBA_V2
+import static io.seqera.wave.api.BuildTemplate.CONDA_PIXI_V1
+import static io.seqera.wave.api.BuildTemplate.CRAN_INSTALLR_V1
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static io.seqera.wave.util.DockerHelper.condaEnvironmentToCondaYaml
-import static io.seqera.wave.util.DockerHelper.condaFileToDockerFile
-import static io.seqera.wave.util.DockerHelper.condaFileToSingularityFile
 import static io.seqera.wave.util.DockerHelper.condaPackagesToCondaYaml
-import static io.seqera.wave.util.DockerHelper.condaPackagesToDockerFile
-import static io.seqera.wave.util.DockerHelper.condaPackagesToSingularityFile
-import static io.seqera.wave.util.CranHelper.cranPackagesToDockerFile
-import static io.seqera.wave.util.CranHelper.cranPackagesToSingularityFile
-import static io.seqera.wave.util.CranHelper.cranFileToDockerFile
-import static io.seqera.wave.util.CranHelper.cranFileToSingularityFile
 /**
  * Container helper methods
  *
@@ -56,51 +50,31 @@ import static io.seqera.wave.util.CranHelper.cranFileToSingularityFile
 class ContainerHelper {
 
     /**
-     * Create a Containerfile from the specified packages specification
+     * Generate a container file (Dockerfile or Singularity) from a request.
+     * Dispatches to the appropriate helper based on build template and package type.
      *
-     * @param spec
-     *      A {@link PackagesSpec} object modelling the packages to be included in the resulting container
-     * @param formatSingularity
-     *      When {@code false} creates a Dockerfile, when {@code true} creates a Singularity file
-     * @return
-     *      The corresponding Containerfile
+     * @param req The container token request
+     * @return The generated container file content
      */
-    static String containerFileFromPackages(PackagesSpec spec, boolean formatSingularity) {
-        if( spec.type == PackagesSpec.Type.CONDA ) {
-            final lockFile = condaLockFile(spec.entries)
-            if( !spec.condaOpts )
-                spec.condaOpts = new CondaOpts()
-            def result
-            if ( lockFile ) {
-                result = formatSingularity
-                        ? condaPackagesToSingularityFile(lockFile, spec.channels, spec.condaOpts)
-                        : condaPackagesToDockerFile(lockFile, spec.channels, spec.condaOpts)
-            } else {
-                result = formatSingularity
-                        ? condaFileToSingularityFile(spec.condaOpts)
-                        : condaFileToDockerFile(spec.condaOpts)
-            }
-            return result
+    static String containerFileFromRequest(SubmitContainerTokenRequest req) {
+        final singularity = req.formatSingularity()
+        final spec = req.packages
+
+        // Default templates based on package type (when no explicit template)
+        if( spec.type == PackagesSpec.Type.CONDA && (!req.buildTemplate || req.buildTemplate==CONDA_MICROMAMBA_V1) ) {
+            return CondaHelper.containerFile(spec, singularity)
+        }
+        if( req.buildTemplate == CONDA_MICROMAMBA_V2 ) {
+            return CondaHelper.containerFileV2(spec, req.containerImage, singularity)
+        }
+        if( req.buildTemplate == CONDA_PIXI_V1 ) {
+            return PixiHelper.containerFile(spec, req.containerImage, singularity)
+        }
+        if( spec.type == PackagesSpec.Type.CRAN && (!req.buildTemplate || req.buildTemplate == CRAN_INSTALLR_V1) ) {
+            return CranHelper.containerFile(spec, singularity)
         }
 
-        if( spec.type == PackagesSpec.Type.CRAN ) {
-            if( !spec.cranOpts )
-                spec.cranOpts = new CranOpts()
-            def result
-            if ( spec.entries ) {
-                final String packages = spec.entries.join(' ')
-                result = formatSingularity
-                        ? cranPackagesToSingularityFile(packages, spec.channels, spec.cranOpts)
-                        : cranPackagesToDockerFile(packages, spec.channels, spec.cranOpts)
-            } else {
-                result = formatSingularity
-                        ? cranFileToSingularityFile(spec.cranOpts)
-                        : cranFileToDockerFile(spec.cranOpts)
-            }
-            return result
-        }
-
-        throw new BadRequestException("Unexpected packages spec type: $spec.type")
+        throw new BadRequestException("Unexpected or missing package type '${spec?.type?:'-'}' or build template '${req.buildTemplate?:'-'}'")
     }
 
     static String condaFileFromRequest(SubmitContainerTokenRequest req) {
@@ -117,25 +91,13 @@ class ContainerHelper {
             return condaEnvironmentToCondaYaml(decoded, req.packages.channels)
         }
 
-        if ( req.packages.entries && !condaLockFile(req.packages.entries)) {
+        if ( req.packages.entries && !CondaHelper.tryGetLockFile(req.packages.entries)) {
             // create a minimal conda file with package spec from user input
             final String packages = req.packages.entries.join(' ')
             return condaPackagesToCondaYaml(packages, req.packages.channels)
         }
 
         return null;
-    }
-
-    static protected String condaLockFile(List<String> condaPackages) {
-        if( !condaPackages )
-            return null;
-        final result = condaPackages .findAll(it->it.startsWith("http://") || it.startsWith("https://"))
-        if( !result )
-            return null;
-        if( condaPackages.size()>1 ) {
-            throw new IllegalArgumentException("No more than one Conda lock remote file can be specified at the same time");
-        }
-        return result[0]
     }
 
     static String decodeBase64OrFail(String value, String field) {

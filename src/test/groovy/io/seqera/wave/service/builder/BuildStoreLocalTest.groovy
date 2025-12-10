@@ -54,25 +54,25 @@ class BuildStoreLocalTest extends Specification {
     BuildResult twoResult = BuildResult.completed('2', 0, 'done', Instant.now(), 'abc')
     BuildResult threeResult = BuildResult.completed('3', 0, 'done', Instant.now(), 'abc')
 
-    def zeroRequest = new BuildRequest(
+    def zeroRequest = BuildRequest.of(
             targetImage: 'docker.io/foo:0',
             buildId: '0',
             startTime: Instant.now(),
             maxDuration: Duration.ofMinutes(1)
     )
-    def oneRequest = new BuildRequest(
+    def oneRequest = BuildRequest.of(
             targetImage: 'docker.io/foo:1',
             buildId: '1',
             startTime: Instant.now(),
             maxDuration: Duration.ofMinutes(1)
     )
-    def twoRequest = new BuildRequest(
+    def twoRequest = BuildRequest.of(
             targetImage: 'docker.io/foo:2',
             buildId: '2',
             startTime: Instant.now(),
             maxDuration: Duration.ofMinutes(1)
     )
-    def threeRequest = new BuildRequest(
+    def threeRequest = BuildRequest.of(
             targetImage: 'docker.io/foo:3',
             buildId: '3',
             startTime: Instant.now(),
@@ -188,7 +188,7 @@ class BuildStoreLocalTest extends Specification {
         def provider = new LocalStateProvider()
         def store = new BuildStateStoreImpl(provider, config, ioExecutor)
         and:
-        def request = new BuildRequest(
+        def request = BuildRequest.of(
                 containerId: '12345',
                 buildId: 'bd-12345_0',
                 containerFile: 'from foo',

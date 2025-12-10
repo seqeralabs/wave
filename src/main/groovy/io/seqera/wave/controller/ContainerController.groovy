@@ -40,6 +40,7 @@ import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.security.annotation.Secured
 import io.micronaut.security.authentication.AuthorizationException
 import io.micronaut.security.rules.SecurityRule
+import io.seqera.wave.api.BuildTemplate
 import io.seqera.wave.api.ContainerStatusResponse
 import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.ScanMode
@@ -88,7 +89,7 @@ import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static io.seqera.wave.service.pairing.PairingService.TOWER_SERVICE
 import static io.seqera.wave.util.ContainerHelper.checkContainerSpec
 import static io.seqera.wave.util.ContainerHelper.condaFileFromRequest
-import static io.seqera.wave.util.ContainerHelper.containerFileFromPackages
+import static io.seqera.wave.util.ContainerHelper.containerFileFromRequest
 import static io.seqera.wave.util.ContainerHelper.decodeBase64OrFail
 import static io.seqera.wave.util.ContainerHelper.makeContainerId
 import static io.seqera.wave.util.ContainerHelper.makeResponseV1
@@ -254,7 +255,7 @@ class ContainerController {
 
         if( v2 && req.packages ) {
             // generate the container file required to assemble the container
-            final generated = containerFileFromPackages(req.packages, req.formatSingularity())
+            final generated = containerFileFromRequest(req)
             req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
         }
         // make sure container platform is defined 
@@ -327,6 +328,8 @@ class ContainerController {
             throw new BadRequestException("Missing dockerfile content")
         if( !buildConfig.defaultBuildRepository )
             throw new BadRequestException("Missing build repository attribute")
+        if( !req.buildTemplate )
+            req.buildTemplate = BuildTemplate.defaultTemplate(req.packages)
 
         final containerSpec = decodeBase64OrFail(req.containerFile, 'containerFile')
         final condaContent = condaFileFromRequest(req)
@@ -380,7 +383,8 @@ class ContainerController {
                 req.buildContext,
                 format,
                 maxDuration,
-                req.buildCompression
+                req.buildCompression,
+                req.buildTemplate
         )
     }
 

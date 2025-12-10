@@ -78,7 +78,7 @@ class BuildControllerTest extends Specification {
         final platform = ContainerPlatform.of('amd64')
         final containerId = ContainerHelper.makeContainerId(containerFile, null, platform, 'buildrepo', null, Mock(ContainerConfig))
         final targetImage = ContainerHelper.makeTargetImage(format, repo, containerId, null, null)
-        final build = new BuildRequest(
+        final build = BuildRequest.of(
                 containerId: containerId,
                 containerFile: containerFile,
                 workspace: Path.of("/some/path"),

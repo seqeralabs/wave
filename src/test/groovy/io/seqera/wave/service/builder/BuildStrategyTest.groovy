@@ -45,7 +45,7 @@ class BuildStrategyTest extends Specification {
 
     def 'should get buildkit command' () {
         given:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 'c168dba125e28777',
                 buildId: 'bd-c168dba125e28777_1',
                 workspace: Path.of('/work/foo'),
@@ -80,7 +80,7 @@ class BuildStrategyTest extends Specification {
 
     def 'should get buildkit command with build context' () {
         given:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 'c168dba125e28777',
                 buildId: 'bd-c168dba125e28777_1',
                 workspace: Path.of('/work/foo'),
@@ -114,7 +114,7 @@ class BuildStrategyTest extends Specification {
 
     def 'should get singularity command' () {
         given:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 'c168dba125e28777',
                 buildId: 'bd-c168dba125e28777_1',
                 workspace: Path.of('/work/foo'),
@@ -140,24 +140,24 @@ class BuildStrategyTest extends Specification {
         def buildrepo = 'foo.com/repo'
         def containerId = ContainerHelper.makeContainerId(content, null, ContainerPlatform.of('amd64'), buildrepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildrepo, containerId, null, null)
-        def build = new BuildRequest(
-                containerId,
-                content,
-                'condaFile',
-                workspace,
-                targetImage,
-                PlatformId.NULL,
-                ContainerPlatform.of('amd64'),
-                'caherepo',
-                "1.2.3.4",
-                '{"config":"json"}',
-                'GMT+1',
-                Mock(ContainerConfig),
-                'sc-12345',
-                Mock(BuildContext),
-                BuildFormat.DOCKER,
-                timeout,
-                BuildCompression.gzip
+        def build = BuildRequest.of(
+                containerId: containerId,
+                containerFile: content,
+                condaFile: 'condaFile',
+                workspace: workspace,
+                targetImage: targetImage,
+                identity: PlatformId.NULL,
+                platform: ContainerPlatform.of('amd64'),
+                cacheRepository: 'caherepo',
+                ip: "1.2.3.4",
+                configJson: '{"config":"json"}',
+                offsetId: 'GMT+1',
+                containerConfig: Mock(ContainerConfig),
+                scanId: 'sc-12345',
+                buildContext: Mock(BuildContext),
+                format: BuildFormat.DOCKER,
+                maxDuration: timeout,
+                compression: BuildCompression.gzip
         )
 
         then:
@@ -175,7 +175,7 @@ class BuildStrategyTest extends Specification {
     @Unroll
     def 'should create output options' () {
         given:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 'c168dba125e28777',
                 buildId: 'bd-c168dba125e28777_1',
                 workspace: Path.of('/work/foo'),
@@ -221,7 +221,7 @@ class BuildStrategyTest extends Specification {
     @Unroll
     def 'should create cache options' () {
         given:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 'c168dba125e28777',
                 buildId: 'bd-c168dba125e28777_1',
                 workspace: Path.of('/work/foo'),
@@ -268,7 +268,7 @@ class BuildStrategyTest extends Specification {
     @Unroll
     def 'should create S3 cache options' () {
         given:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 'abc123def456',
                 buildId: 'bd-abc123def456_1',
                 workspace: Path.of('/work/foo'),
@@ -303,7 +303,7 @@ class BuildStrategyTest extends Specification {
 
     def 'should create S3 import cache options' () {
         given:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 'xyz789abc123',
                 buildId: 'bd-xyz789abc123_1',
                 workspace: Path.of('/work/foo'),
@@ -362,7 +362,7 @@ class BuildStrategyTest extends Specification {
 
     def 'should create registry import cache options' () {
         given:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 'abc123def456',
                 buildId: 'bd-abc123def456_1',
                 workspace: Path.of('/work/foo'),
@@ -385,7 +385,7 @@ class BuildStrategyTest extends Specification {
     @Unroll
     def 'should create cache import options for registry' () {
         given:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 'test123',
                 buildId: 'bd-test123_1',
                 workspace: Path.of('/work/foo'),
@@ -413,7 +413,7 @@ class BuildStrategyTest extends Specification {
     @Unroll
     def 'should create cache import options for S3' () {
         given:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 's3test456',
                 buildId: 'bd-s3test456_1',
                 workspace: Path.of('/work/foo'),

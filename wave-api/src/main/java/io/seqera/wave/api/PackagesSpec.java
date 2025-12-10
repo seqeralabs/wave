@@ -22,6 +22,7 @@ import java.util.Objects;
 
 import io.seqera.wave.config.CondaOpts;
 import io.seqera.wave.config.CranOpts;
+import io.seqera.wave.config.PixiOpts;
 
 /**
  * Model a Package environment requirements
@@ -50,6 +51,11 @@ public class PackagesSpec {
     public CondaOpts condaOpts;
 
     /**
+     * Pixi build options
+     */
+    public PixiOpts pixiOpts;
+
+    /**
      * CRAN build options
      */
     public CranOpts cranOpts;
@@ -68,6 +74,7 @@ public class PackagesSpec {
                 && Objects.equals(environment, that.environment)
                 && Objects.equals(entries, that.entries)
                 && Objects.equals(condaOpts, that.condaOpts)
+                && Objects.equals(pixiOpts, that.pixiOpts)
                 && Objects.equals(cranOpts, that.cranOpts)
                 && Objects.equals(channels, that.channels);
     }
@@ -85,6 +92,7 @@ public class PackagesSpec {
                 ", packages=" + entries +
                 ", condaOpts=" + condaOpts +
                 ", cranOpts=" + cranOpts +
+                ", pixiOpts=" + pixiOpts +
                 ", channels=" + ObjectUtils.toString(channels) +
                 '}';
     }
@@ -106,6 +114,11 @@ public class PackagesSpec {
 
     public PackagesSpec withChannels(List<String> channels) {
         this.channels = channels;
+        return this;
+    }
+
+    public PackagesSpec withPixiOpts(PixiOpts opts) {
+        this.pixiOpts = opts;
         return this;
     }
 
