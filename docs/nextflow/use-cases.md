@@ -295,13 +295,6 @@ When using Wave with Fusion, your workflow's `bin/` directory is automatically b
 - Scripts are uploaded separately to cloud storage at runtime
 - Changes to bin scripts do NOT trigger a container rebuild
 
-**To explicitly enable bin bundling without Fusion:**
-
-```groovy
-wave.enabled = true
-wave.bundleProjectResources = true
-```
-
 </details>
 
 :::warning
