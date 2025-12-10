@@ -1,4 +1,7 @@
 # Wave changelog
+1.31.1 - 10 Dec 2025
+- Add DockerHelper to wave-utils for Nextflow integration (#947) [cb48de01b]
+
 1.31.0 - 10 Dec 2025
 - Add support for build templates (and pixi) (#839) [21e9e425a]
 - docs: Add Wave api rate limit guide (#914) [aa347fdc3]
