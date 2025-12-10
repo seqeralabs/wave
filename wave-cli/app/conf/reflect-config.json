@@ -286,6 +286,11 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"io.seqera.wave.config.PixiOpts",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
   "name":"io.seqera.wave.config.SpackOpts",
   "allDeclaredFields":true,
   "methods":[{"name":"<init>","parameterTypes":[] }]

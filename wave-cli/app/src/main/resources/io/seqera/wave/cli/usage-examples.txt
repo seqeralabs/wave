@@ -15,6 +15,9 @@ Examples:
   # Build a container based on Conda lock file served via prefix.dev service
   wave --conda-package https://prefix.dev/envs/pditommaso/wave/conda-lock.yml
 
+  # Build a container based on Conda packages using Pixi build template
+  wave --conda-package bamtools=2.5.2 --build-template conda/pixi:v1
+
   # Build a container based on CRAN packages
   wave --cran-package dplyr=1.1.0 --cran-package ggplot2
 

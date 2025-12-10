@@ -335,6 +335,32 @@ class AppTest extends Specification {
         req.buildCompression == new BuildCompression().withMode(BuildCompression.Mode.estargz)
     }
 
+    def 'should set build template' () {
+        given:
+        def app = new App()
+        String[] args = ["--build-template", 'conda/pixi:v1']
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        and:
+        def req = app.createRequest()
+        then:
+        req.buildTemplate == 'conda/pixi:v1'
+    }
+
+    def 'should set build template micromamba' () {
+        given:
+        def app = new App()
+        String[] args = ["--build-template", 'conda/micromamba:v2']
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        and:
+        def req = app.createRequest()
+        then:
+        req.buildTemplate == 'conda/micromamba:v2'
+    }
+
     def 'should not allow dry-run and await' () {
         given:
         def app = new App()

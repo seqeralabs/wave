@@ -219,6 +219,9 @@ public class App implements Runnable {
     @Option(names = {"--build-compression"}, paramLabel = "<value>", description = "Specify the compression algorithm to be used for the build context, it can be 'gzip', 'zstd' or 'estargz'")
     private BuildCompression.Mode buildCompression;
 
+    @Option(names = {"--build-template"}, paramLabel = "<value>", description = "Specify the build template to be used for building the container, e.g. 'conda/pixi:v1', 'conda/micromamba:v1', 'conda/micromamba:v2', 'cran/installr:v1'")
+    private String buildTemplate;
+
     public static void main(String[] args) {
         try {
             final App app = new App();
@@ -432,6 +435,7 @@ public class App implements Runnable {
                 .withScanMode(scanMode)
                 .withScanLevels(scanLevels)
                 .withBuildCompression(compression(buildCompression))
+                .withBuildTemplate(buildTemplate)
                 ;
     }
 
@@ -735,7 +739,7 @@ public class App implements Runnable {
     }
 
     protected String serviceVersion() {
-        return serviceVersion0(getServiceVersion(), "1.28.0");
+        return serviceVersion0(getServiceVersion(), "1.31.0");
     }
 
     protected String serviceVersion0(String current, String required) {

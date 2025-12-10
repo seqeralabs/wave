@@ -25,3 +25,4 @@ include('app')
 
 // enable for local development
 // includeBuild("../libseqera")
+// includeBuild("../wave")
