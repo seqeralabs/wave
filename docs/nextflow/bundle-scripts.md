@@ -49,7 +49,7 @@ Module binaries do not work on cloud executors without Wave.
 
 ## Wave container fingerprinting
 
-Wave bundles `bin/` scripts into container layers and generates fingerprints that become part of the task hash:
+Wave bundles `bin/` scripts into container layers and generates fingerprints that become part of the task unique id (hash):
 
 - Scripts in module `bin/` directory are added as a container layer
 - When Fusion or the AWS Fargate executor are enabled, scripts in project `bin/` directory are added as a container layer
