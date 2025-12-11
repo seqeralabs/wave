@@ -1,8 +1,8 @@
 ---
 title: Bundling pipeline scripts
 description: Learn how Wave bundles scripts from Nextflow pipelines into container images
-date created: 2025-11-19
-date edited: 2025-11-19
+date created: 2025-12-11
+date edited: 2025-12-11
 tags: [nextflow, wave, scripts, guides]
 ---
 
@@ -61,6 +61,10 @@ If you modify `bin` scripts, Wave generates a new layer fingerprint, which creat
 :::note
 If Fusion or the AWS Fargate executor are enabled, Wave will include the project-level `bin` directory as a layer in all containers. Any changes to scripts in the project-level `bin` directory will change the layer and force recalculation of all containers in the workflow.
 :::
+
+## Wave freeze
+
+If you freeze an image with `wave.freeze=true` and later run with Wave disabled (`wave.enabled=false`), your pipeline will use the bin scripts that were baked into the frozen image at build time. Local changes to bin scripts will not be reflected. To pick up script changes, re-enable Wave to trigger a rebuild with the updated fingerprint.
 
 ## Inspect container scripts
 
