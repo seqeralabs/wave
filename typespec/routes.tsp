@@ -10,7 +10,7 @@ using TypeSpec.Versioning;
 })
 namespace wave {
     enum Versions {
-      v1: "0.0.0",
+      v1: "1.30.0",
     }
   @route("/v1alpha2/container")
   interface  ContainerService {

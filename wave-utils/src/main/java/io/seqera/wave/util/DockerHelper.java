@@ -20,26 +20,23 @@ package io.seqera.wave.util;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import io.seqera.wave.config.CondaOpts;
 import org.apache.commons.lang3.StringUtils;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.representer.Representer;
 
 /**
- * Helper class to create Dockerfile for Conda package manager
+ * Helper class to create Dockerfile for Conda package manager.
+ * This class provides file-based utility methods for Nextflow CLI integration.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -49,12 +46,12 @@ public class DockerHelper {
      * Create a Conda environment file starting from one or more Conda package names
      *
      * @param packages
-     *      A string listing or more Conda package names separated with a blank character
+     *      A string listing one or more Conda package names separated with a blank character
      *      e.g. {@code samtools=1.0 bedtools=2.0}
      * @param condaChannels
      *      A list of Conda channels
      * @return
-     *      A path to the Conda environment YAML file. The file is automatically deleted then the JVM exit.
+     *      A path to the Conda environment YAML file. The file is automatically deleted when the JVM exits.
      */
     static public Path condaFileFromPackages(String packages, List<String> condaChannels) {
         final String yaml = condaPackagesToCondaYaml(packages, condaChannels);
@@ -75,7 +72,6 @@ public class DockerHelper {
     static List<String> pipPackagesToList(String packages) {
         return condaPackagesToList(packages);
     }
-
 
     protected static String trim0(String value) {
         if( value==null )
@@ -144,12 +140,12 @@ public class DockerHelper {
      * @return
      *      A {@link Path} to the Conda environment file. It can be the same file as specified
      *      via the condaFile argument or a temporary file if the environment was modified due to
-     *      the channels or options specified. 
+     *      the channels or options specified.
      */
     public static Path condaFileFromPath(String condaFile, List<String> channels) {
         if( StringUtils.isEmpty(condaFile) )
             throw new IllegalArgumentException("Argument 'condaFile' cannot be empty");
-        
+
         final Path condaEnvPath = Path.of(condaFile);
 
         // make sure the file exists
@@ -206,112 +202,6 @@ public class DockerHelper {
         catch (IOException e) {
             throw new IllegalStateException("Unable to write temporary file - Reason: " + e.getMessage(), e);
         }
-    }
-
-    static public String condaPackagesToDockerFile(String packages, List<String> condaChannels, CondaOpts opts) {
-        return condaPackagesTemplate0(
-                "/templates/conda/dockerfile-conda-packages.txt",
-                packages,
-                condaChannels,
-                opts);
-    }
-
-    static public String condaPackagesToSingularityFile(String packages, List<String> condaChannels, CondaOpts opts) {
-        return condaPackagesTemplate0(
-                "/templates/conda/singularityfile-conda-packages.txt",
-                packages,
-                condaChannels,
-                opts);
-    }
-
-    static protected String condaPackagesTemplate0(String template, String packages, List<String> condaChannels, CondaOpts opts) {
-        final List<String> channels0 = condaChannels!=null ? condaChannels : List.of();
-        final String channelsOpts = channels0.stream().map(it -> "-c "+it).collect(Collectors.joining(" "));
-        final String image = opts.mambaImage;
-        final boolean singularity = template.contains("/singularityfile");
-        final String target = packages.startsWith("http://") || packages.startsWith("https://")
-                ? "-f " + packages
-                : packages;
-        final Map<String,String> binding = new HashMap<>();
-        binding.put("base_image", image);
-        binding.put("channel_opts", channelsOpts);
-        binding.put("target", target);
-        binding.put("base_packages", mambaInstallBasePackage0(opts.basePackages,singularity));
-
-        final String result = renderTemplate0(template, binding) ;
-        return addCommands(result, opts.commands, singularity);
-    }
-
-
-    static public String condaFileToDockerFile(CondaOpts opts) {
-        return condaFileTemplate0("/templates/conda/dockerfile-conda-file.txt", opts);
-    }
-
-    static public String condaFileToSingularityFile(CondaOpts opts) {
-        return condaFileTemplate0("/templates/conda/singularityfile-conda-file.txt", opts);
-    }
-
-    static protected String condaFileTemplate0(String template, CondaOpts opts) {
-        final boolean singularity = template.contains("/singularityfile");
-        // create the binding map
-        final Map<String,String> binding = new HashMap<>();
-        binding.put("base_image", opts.mambaImage);
-        binding.put("base_packages", mambaInstallBasePackage0(opts.basePackages,singularity));
-
-        final String result = renderTemplate0(template, binding, List.of("wave_context_dir"));
-        return addCommands(result, opts.commands, singularity);
-    }
-
-    static private String renderTemplate0(String templatePath, Map<String,String> binding) {
-        return renderTemplate0(templatePath, binding, List.of());
-    }
-
-    static private String renderTemplate0(String templatePath, Map<String,String> binding, List<String> ignore) {
-        final URL template = DockerHelper.class.getResource(templatePath);
-        if( template==null )
-            throw new IllegalStateException(String.format("Unable to load template '%s' from classpath", templatePath));
-        try {
-            final InputStream reader = template.openStream();
-            return new TemplateRenderer()
-                    .withIgnore(ignore)
-                    .render(reader, binding);
-        }
-        catch (IOException e) {
-            throw new IllegalStateException(String.format("Unable to read classpath template '%s'", templatePath), e);
-        }
-    }
-
-    private static String mambaInstallBasePackage0(String basePackages, boolean singularity) {
-        String result = !StringUtils.isEmpty(basePackages)
-                ? String.format("micromamba install -y -n base %s", basePackages)
-                : null;
-        return result==null || singularity
-                ? result
-                : "&& " + result + " \\";
-    }
-
-    static private String addCommands(String result, List<String> commands, boolean singularity) {
-        if( commands==null || commands.isEmpty() )
-            return result;
-        if( singularity )
-            result += "%post\n";
-        for( String cmd : commands ) {
-            if( singularity ) result += "    ";
-            result += cmd + "\n";
-        }
-        return result;
-    }
-
-    static private String joinCommands(List<String> commands) {
-        if( commands==null || commands.size()==0 )
-            return null;
-        StringBuilder result = new StringBuilder();
-        for( String cmd : commands ) {
-            if( result.length()>0 )
-                result.append("\n");
-            result.append(cmd);
-        }
-        return result.toString();
     }
 
 }

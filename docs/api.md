@@ -4,7 +4,7 @@ title: API
 
 This page summarizes the API provided by the Wave container service.
 
-**API limits**
+## API limits
 
 The Wave service implements API rate limits for API calls. Authenticated users have higher rate limits than anonymous users.
 
@@ -18,19 +18,42 @@ If an access token isn't provided, the following rate limits apply:
 - 25 container builds per day
 - 100 container pulls per hour
 
-## POST `/container-token`
+### How Wave pull rate limits work
 
-Deprecated endpoint allows you to submit a request to access a private container registry via Wave, or build a container image on-the-fly with a Dockerfile or Conda recipe file.
+When you pull a container image:
+
+1. The Docker service downloads the container manifest (a JSON file detailing each layer of the final image).
+1. The Docker service downloads each layer listed in the manifest file.
+
+Wave defines a pull as downloading both the container manifest and all layers. Therefore:
+
+- The manifest request to Wave counts as one pull against your rate limit
+- Layer and blob requests don't count against rate limits
+- A container image with 100 layers counts as 1 pull
+
+Rate limits affect pipelines with high concurrency. The following example demonstrates this issue:
+
+- 50 concurrent pipeline runs
+- Each run spawns 10,000 tasks
+- Each task runs on it's own VM
+- Each task pulls a container image
+- 500,000 manifest requests are made
+
+This volume exceeds the 2,000 container pulls per minute limit and causes failed tasks and pipeline errors.
+
+## General API
+
+### POST `/container-token`
+
+:::warning
+This API endpoint is deprecated in current versions of Wave.
+:::
+
+Submit a request to access a private container registry via Wave, or build a container image on-the-fly with a Dockerfile or Conda recipe file.
 
 The endpoint returns the name of the container request made available by Wave.
 
-:::important
-
-This API endpoint is deprecated in current versions of Wave.
-
-:::
-
-### Request body
+#### Request body
 
 ```json
 {
@@ -65,7 +88,7 @@ This API endpoint is deprecated in current versions of Wave.
 }
 ```
 
-#### Container token request attributes
+**Container token request attributes**
 
 | Attribute                           | Description                                                                                                                                        |
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -90,7 +113,7 @@ This API endpoint is deprecated in current versions of Wave.
 | `towerAccessToken`                  | Access token of the user account granting access to the Seqera Platform service specified via `towerEndpoint` (optional).                      |
 | `towerWorkspaceId`                  | ID of the Seqera Platform workspace from where the container registry credentials are retrieved (optional). When omitted the personal workspace is used. |
 
-### Response
+#### Response
 
 ```json
 {
@@ -100,19 +123,21 @@ This API endpoint is deprecated in current versions of Wave.
 }
 ```
 
+**Container token response attributes**
+
 | Attribute        | Description                                                                              |
 | ---------------- | ---------------------------------------------------------------------------------------- |
 | `containerToken` | The unique token identifying the Wave container request, e.g., `0123456789`.               |
 | `targetImage`    | The Wave container image name, e.g., `wave.seqera.io/wt/0123456789/library/ubuntu:latest`. |
 | `expiration`     | The expiration timestamp of the Wave container using ISO-8601 format.                    |
 
-## POST `/v1alpha2/container`
+### POST `/v1alpha2/container`
 
-This endpoint allows you to submit a request to access a private container registry via Wave, or build a container image on-the-fly with a Dockerfile or Conda recipe file.
+Submit a request to access a private container registry via Wave, or build a container image on-the-fly with a Dockerfile or Conda recipe file.
 
-The endpoint returns the name of the container request made available by Wave.
+Returns the name of the container request made available by Wave.
 
-### Request body
+#### Request body
 
 ```json
 {
@@ -160,7 +185,7 @@ The endpoint returns the name of the container request made available by Wave.
 }
 ```
 
-#### Container token request attributes
+**Container token request attributes**
 
 | Attribute                           | Description                                                                                                                                        |
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -193,11 +218,15 @@ The endpoint returns the name of the container request made available by Wave.
 | `mambaImage`                        | Name of the Docker image used to build Conda containers.                                                                                              |
 | `commands`                          | Command to be included in the container.                                                                                                                       |
 | `basePackages`                      | Names of base packages.                                                                                                                                        |
+| `baseImage`                         | Base image for the final stage of multi-stage builds (for Conda/Pixi).                                                                                        |
+| `pixiOpts`                          | Pixi build options (when type is CONDA and buildTemplate is `conda/pixi:v1`).                                                                                  |
+| `pixiImage`                         | Name of the Docker image used for Pixi package manager (e.g., `ghcr.io/prefix-dev/pixi:latest`).                                                              |
 | `cranOpts`                          | CRAN build options (when type is CRAN).                                                                                                                        |
 | `rImage`                            | Name of the R Docker image used to build CRAN containers (e.g., `rocker/r-ver:4.4.1`).                                                                         |
+| `buildTemplate`                     | The build template to use for container builds. Supported values: `conda/pixi:v1` (Pixi with multi-stage builds), `conda/micromamba:v2` (Micromamba 2.x with multi-stage builds). Default: standard conda/micromamba v1 template. |
 | `nameStrategy`                      | The name strategy to be used to create the name of the container built by Wave. Its values can be `none`, `tagPrefix`, or `imageSuffix`.                       |                                                     |
 
-### Response
+#### Response
 
 ```json
 {
@@ -209,7 +238,7 @@ The endpoint returns the name of the container request made available by Wave.
 }
 ```
 
-#### Container token response attributes
+**Container token response attributes**
 
 | Attribute        | Description                                                                              |
 | ---------------- | ---------------------------------------------------------------------------------------- |
@@ -218,135 +247,153 @@ The endpoint returns the name of the container request made available by Wave.
 | `expiration`     | The expiration timestamp of the Wave container using ISO-8601 format.                    |
 | `cached`         | Indicates if the requested image is built or in progress.                                |
 
-### Examples
+#### Examples
 
-1. Create Docker image with Conda packages:
+- Create Docker image with Conda packages:
 
-##### Request
+    **Request:**
 
-```shell
-curl --location 'http://localhost:9090/v1alpha2/container' \
---header 'Content-Type: application/json' \
---data '{
-    "packages":{
-        "type": "CONDA",
-        "entries": ["salmon", "bwa"],
-        "channels": ["conda-forge", "bioconda"]
-    }
-}'
-```
-
-#### Response
-
-```json
-{
-    "containerToken":"732b73aa17c8",
-    "targetImage":"0625dce899da.ngrok.app/wt/732b73aa17c8/hrma017/dev:salmon_bwa--5e49881e6ad74121",
-    "expiration":"2024-04-09T21:19:01.715321Z",
-    "buildId":"5e49881e6ad74121_1",
-    "cached":false,
-    "freeze":false
-}
-```
-
-2. Create Singularity image with Conda packages:
-
-##### Request
-
-```shell
-curl --location 'http://localhost:9090/v1alpha2/container' \
---header 'Content-Type: application/json' \
---data '{
-    "format": "sif",
-    "containerPlatform": "arm64",
-    "packages":{
-        "type": "CONDA",
-        "entries": ["salmon"],
-        "channels": ["conda-forge", "bioconda"]
-    },
-    "freeze": true,
-    "buildRepository": <CONTAINER_REPOSITORY>,
-    "towerAccessToken":<YOUR_SEQERA_PLATFORM_TOWER_TOKEN>,
-    "towerEndpoint": "http://localhost:8008/api"
-}'
-```
-
-#### Response
-
-```json
-{
-    "targetImage":"oras://<CONTAINER_REPOSITORY>:salmon--6c084f2e43f86a78",
-    "buildId":"6c084f2e43f86a78_1",
-    "cached":false,
-    "freeze":true
-}
-```
-
-:::note
-You must add your container registry credentials in Seqera Platform to use the freeze feature. This is a requirement for Singularity.
-:::
-
-3. Create Docker image with CRAN packages:
-
-##### Request
-
-```shell
-curl --location 'http://localhost:9090/v1alpha2/container' \
---header 'Content-Type: application/json' \
---data '{
-    "packages":{
-        "type": "CRAN",
-        "entries": ["dplyr", "ggplot2"],
-        "channels": ["cran"],
-        "cranOpts": {
-            "rImage": "rocker/r-ver:4.4.1",
-            "basePackages": "littler r-cran-docopt"
+    ```shell
+    curl --location 'http://localhost:9090/v1alpha2/container' \
+    --header 'Content-Type: application/json' \
+    --data '{
+        "packages":{
+            "type": "CONDA",
+            "entries": ["salmon", "bwa"],
+            "channels": ["conda-forge", "bioconda"]
         }
+    }'
+    ```
+
+    **Response**
+
+    ```json
+    {
+        "containerToken":"732b73aa17c8",
+        "targetImage":"0625dce899da.ngrok.app/wt/732b73aa17c8/hrma017/dev:salmon_bwa--5e49881e6ad74121",
+        "expiration":"2024-04-09T21:19:01.715321Z",
+        "buildId":"5e49881e6ad74121_1",
+        "cached":false,
+        "freeze":false
     }
-}'
-```
+    ```
 
-#### Response
+- Create Singularity image with Conda packages:
 
-```json
-{
-    "requestId": "22d3c6c1cb06",
-    "containerToken": "22d3c6c1cb06",
-    "targetImage": "wave.seqera.io/wt/22d3c6c1cb06/wave/build:49b26ca0c3a07b1b",
-    "expiration": "2025-11-09T02:50:23.254497148Z",
-    "containerImage": "private.cr.seqera.io/wave/build:49b26ca0c3a07b1b",
-    "buildId": "bd-49b26ca0c3a07b1b_1",
-    "cached": false,
-    "freeze": false,
-    "mirror": false,
-    "scanId": "sc-a6acedfe6969f4bf_1"
-}
-```
+    **Request**
 
-4. Create Singularity image with CRAN packages:
+    ```shell
+    curl --location 'http://localhost:9090/v1alpha2/container' \
+    --header 'Content-Type: application/json' \
+    --data '{
+        "format": "sif",
+        "containerPlatform": "arm64",
+        "packages":{
+            "type": "CONDA",
+            "entries": ["salmon"],
+            "channels": ["conda-forge", "bioconda"]
+        },
+        "freeze": true,
+        "buildRepository": <CONTAINER_REPOSITORY>,
+        "towerAccessToken":<YOUR_SEQERA_PLATFORM_TOWER_TOKEN>,
+        "towerEndpoint": "http://localhost:8008/api"
+    }'
+    ```
 
-##### Request
+    **Response**
 
-```shell
-curl --location 'https://wave.seqera.io/v1alpha2/container' \
---header 'Content-Type: application/json' \
---data '{
-    "format": "sif",
-    "containerPlatform": "linux/amd64",
-    "packages":{
-        "type": "CRAN",
-        "entries": ["tidyverse", "data.table"],
-        "channels": ["cran"],
-        "cranOpts": {
-            "rImage": "rocker/r-ver:4.4.1",
-            "basePackages": "build-essential"
+    ```json
+    {
+        "targetImage":"oras://<CONTAINER_REPOSITORY>:salmon--6c084f2e43f86a78",
+        "buildId":"6c084f2e43f86a78_1",
+        "cached":false,
+        "freeze":true
+    }
+    ```
+
+    :::note
+    To create Singularity images with the freeze feature, you must add your container registry credentials in Seqera Platform.
+    :::
+
+- Create Docker image with CRAN packages:
+
+    **Request**
+
+    ```shell
+    curl --location 'http://localhost:9090/v1alpha2/container' \
+    --header 'Content-Type: application/json' \
+    --data '{
+        "packages":{
+            "type": "CRAN",
+            "entries": ["dplyr", "ggplot2"],
+            "channels": ["cran"],
+            "cranOpts": {
+                "rImage": "rocker/r-ver:4.4.1",
+                "basePackages": "littler r-cran-docopt"
+            }
         }
-    },
-    "freeze": true,
-    "buildRepository": "<CONTAINER_REPOSITORY>", # hrma017/test
-    "towerAccessToken": "<TOKEN>"
-}'
-```
+    }'
+    ```
+
+    **Response**
+
+    ```json
+    {
+        "requestId": "22d3c6c1cb06",
+        "containerToken": "22d3c6c1cb06",
+        "targetImage": "wave.seqera.io/wt/22d3c6c1cb06/wave/build:49b26ca0c3a07b1b",
+        "expiration": "2025-11-09T02:50:23.254497148Z",
+        "containerImage": "private.cr.seqera.io/wave/build:49b26ca0c3a07b1b",
+        "buildId": "bd-49b26ca0c3a07b1b_1",
+        "cached": false,
+        "freeze": false,
+        "mirror": false,
+        "scanId": "sc-a6acedfe6969f4bf_1"
+    }
+    ```
+
+- Create Singularity image with CRAN packages:
+
+    **Request**
+
+    ```shell
+    curl --location 'https://wave.seqera.io/v1alpha2/container' \
+    --header 'Content-Type: application/json' \
+    --data '{
+        "format": "sif",
+        "containerPlatform": "linux/amd64",
+        "packages":{
+            "type": "CRAN",
+            "entries": ["tidyverse", "data.table"],
+            "channels": ["cran"],
+            "cranOpts": {
+                "rImage": "rocker/r-ver:4.4.1",
+                "basePackages": "build-essential"
+            }
+        },
+        "freeze": true,
+        "buildRepository": "<CONTAINER_REPOSITORY>", # hrma017/test
+        "towerAccessToken": "<TOKEN>"
+    }'
+    ```
+
+    **Response**
+
+    ```json
+    {
+        "requestId": "6706d70da258",
+        "targetImage": "oras://hrma017/test:a4fd48144607aaa7",
+        "containerImage": "oras://hrma017/test:a4fd48144607aaa7",
+        "buildId": "bd-a4fd48144607aaa7_1",
+        "freeze": true,
+        "mirror": false,
+        "succeeded": true
+    }
+    ```
+
+### GET `/v1alpha1/builds/{buildId}/status`
+
+Get status of build against `buildId` passed as path variable
 
 #### Response
 
@@ -361,6 +408,190 @@ curl --location 'https://wave.seqera.io/v1alpha2/container' \
     "succeeded": true
 }
 ```
+
+- Create Docker image with Pixi v1 template (multi-stage build):
+
+##### Request
+
+```shell
+curl --location 'https://wave.seqera.io/v1alpha2/container' \
+--header 'Content-Type: application/json' \
+--data '{
+    "containerPlatform": "linux/amd64",
+    "format": "docker",
+    "buildTemplate": "conda/pixi:v1",
+    "packages":{
+        "type": "CONDA",
+        "entries": ["numpy", "pandas", "scikit-learn"],
+        "channels": ["conda-forge"],
+        "pixiOpts": {
+            "pixiImage": "ghcr.io/prefix-dev/pixi:0.59.0-noble",
+            "basePackages": "conda-forge::procps-ng",
+            "baseImage": "ubuntu:24.04",
+            "commands": []
+        }
+    }
+}'
+```
+
+#### Response
+
+```json
+{
+    "requestId":"bf31a6445b41",
+    "containerToken":"bf31a6445b41",
+    "targetImage":"https://wave.seqera.io/wt/bf31a6445b41/hrma017/dev:numpy_pandas_scikit-learn--ad24e45802adb349",
+    "expiration":"2025-12-02T11:47:55.908498Z",
+    "containerImage":"hrma017/dev:numpy_pandas_scikit-learn--ad24e45802adb349",
+    "buildId":"bd-ad24e45802adb349_1",
+    "cached":false,
+    "freeze":false,
+    "mirror":false,
+    "scanId":"sc-98fd615516bd93d6_1"
+}
+```
+
+- Create Docker image with Micromamba v2 template (multi-stage build):
+
+##### Request
+
+```shell
+curl --location 'https://wave.seqera.io/v1alpha2/container' \
+--header 'Content-Type: application/json' \
+--data '{
+    "containerPlatform": "linux/amd64",
+    "format": "docker",
+    "buildTemplate": "conda/micromamba:v2",
+    "packages":{
+        "type": "CONDA",
+        "entries": ["bwa=0.7.15", "salmon=1.10.0", "samtools=1.17"],
+        "channels": ["conda-forge", "bioconda"],
+        "condaOpts": {
+            "mambaImage": "mambaorg/micromamba:2-amazon2023",
+            "basePackages": "conda-forge::procps-ng",
+            "baseImage": "ubuntu:24.04",
+            "commands": []
+        }
+    }
+}'
+```
+
+#### Response
+
+```json
+{
+    "requestId":"248eefc1fc14",
+    "containerToken":"248eefc1fc14",
+    "targetImage":"wave.local/wt/248eefc1fc14/hrma017/dev:bwa-0.7.15_salmon-1.10.0_samtools-1.17--40730eb5c2c3dc6e",
+    "expiration":"2025-12-02T12:14:59.672505Z",
+    "containerImage":"hrma017/dev:bwa-0.7.15_salmon-1.10.0_samtools-1.17--40730eb5c2c3dc6e",
+    "buildId":"bd-40730eb5c2c3dc6e_1",
+    "cached":false,
+    "freeze":false,
+    "mirror":false,
+    "scanId":"sc-f36486d1a7e3053a_1"
+}
+```
+
+- Create Singularity image with Pixi v1 template (multi-stage build):
+
+##### Request
+
+```shell
+curl --location 'https://wave.seqera.io/v1alpha2/container' \
+--header 'Content-Type: application/json' \
+--data '{
+    "containerPlatform": "linux/amd64",
+    "format": "sif",
+    "buildTemplate": "conda/pixi:v1",
+    "packages":{
+        "type": "CONDA",
+        "entries": ["numpy", "pandas", "scikit-learn"],
+        "channels": ["conda-forge"],
+        "pixiOpts": {
+            "pixiImage": "ghcr.io/prefix-dev/pixi:0.59.0-noble",
+            "basePackages": "conda-forge::procps-ng",
+            "baseImage": "ubuntu:24.04",
+            "commands": []
+        }
+    },
+    "freeze": true,
+    "buildRepository": "<CONTAINER_REPOSITORY>", # hrma017/test
+    "towerAccessToken": "<TOKEN>"
+}'
+```
+
+#### Response
+
+```json
+{
+    "requestId":"7159b38c6c04",
+    "targetImage":"oras://hrma017/test:numpy_pandas_scikit-learn--717309e30359606f",
+    "containerImage":"oras://hrma017/test:numpy_pandas_scikit-learn--717309e30359606f",
+    "buildId":"bd-717309e30359606f_1",
+    "cached":false,
+    "freeze":true,
+    "mirror":false
+}
+```
+
+- Create Singularity image with Micromamba v2 template (multi-stage build):
+
+##### Request
+
+```shell
+curl --location 'https://wave.seqera.io/v1alpha2/container' \
+--header 'Content-Type: application/json' \
+--data '{
+    "containerPlatform": "linux/amd64",
+    "format": "sif",
+    "buildTemplate": "conda/micromamba:v2",
+    "packages":{
+        "type": "CONDA",
+        "entries": ["bwa=0.7.15", "salmon=1.10.0", "samtools=1.17"],
+        "channels": ["conda-forge", "bioconda"],
+        "condaOpts": {
+            "mambaImage": "mambaorg/micromamba:2-amazon2023",
+            "basePackages": "conda-forge::procps-ng",
+            "baseImage": "ubuntu:24.04",
+            "commands": []
+        }
+    },
+    "freeze": true,
+    "buildRepository": "<CONTAINER_REPOSITORY>", # hrma017/test
+    "towerAccessToken": "<TOKEN>"
+}'
+```
+
+#### Response
+
+```json
+{
+    "requestId":"b93c35abca4e",
+    "targetImage":"oras://hrma017/test:bwa-0.7.15_salmon-1.10.0_samtools-1.17--e85b5c89438aa3ff",
+    "containerImage":"oras://hrma017/test:bwa-0.7.15_salmon-1.10.0_samtools-1.17--e85b5c89438aa3ff",
+    "buildId":"bd-e85b5c89438aa3ff_1",
+    "cached":false,
+    "freeze":true,
+    "mirror":false
+}
+```
+
+:::note
+Multi-stage build templates (`conda/pixi:v1` and `conda/micromamba:v2`) create optimized container images by separating the build environment from the final runtime environment. This results in smaller container images that only contain the installed packages and runtime dependencies, without the build tools.
+:::
+
+:::important
+**Image Requirements for Singularity Builds with Pixi and Micromamba v2 Templates**
+
+When building **Singularity images** (`format: "sif"`) with the `conda/pixi:v1` or `conda/micromamba:v2` build templates, base images (via `baseImage` option) **must have the `tar` utility installed**.
+
+This requirement exists because Singularity's multi-stage builds use `proot` to emulate filesystem operations, which cannot reliably copy directory structures between build stages. The templates work around this by compressing the environment into a tarball (`tar czf`) and extracting it (`tar xzf`) in the final stage.
+
+**Docker builds are not affected** by this requirement, as Docker's native `COPY --from=build` directive handles directory copying directly.
+
+Most standard base images (Ubuntu, Debian, Alpine, etc.) include `tar` by default, but minimal or distroless images may require explicit installation.
+:::
 
 ## GET `/v1alpha1/builds/{buildId}/status`
 
@@ -382,7 +613,7 @@ Provides status of build against buildId passed as path variable
 Status can only be `PENDING` or `COMPLETED`.
 :::
 
-### Example
+#### Examples
 
 ```shell
 % curl --location 'http://localhost:9090/v1alpha1/builds/6c084f2e43f86a78_1/status'
@@ -395,19 +626,19 @@ Status can only be `PENDING` or `COMPLETED`.
 }
 ```
 
-## GET `/v1alpha1/builds/{buildId}/logs`
+### GET `/v1alpha1/builds/{buildId}/logs`
 
 Supply logs corresponding to the specified buildId within the API request.
 
-### Response
+#### Response
 
 ```text
 string
 ```
 
-### Example
+#### Examples
 
-```
+```shell
 % curl --location 'http://localhost:9090/v1alpha1/builds/<BUILD_ID>/logs'
 INFO[0001] Retrieving image manifest alpine:latest
 INFO[0001] Retrieving image alpine:latest from registry index.docker.io
@@ -425,11 +656,11 @@ INFO[0002] Pushing image to <REPO>/<IMAGE>
 INFO[0005] Pushed index.docker.io/<REPO>/<IMAGE>
 ```
 
-## GET `/service-info`
+### GET `/service-info`
 
-Provides basic information about the service status.
+Get basic information about the service status.
 
-### Response
+#### Response
 
 ```json
 {
@@ -440,11 +671,11 @@ Provides basic information about the service status.
 }
 ```
 
-## POST `/v1alpha1/inspect`
+### POST `/v1alpha1/inspect`
 
-This endpoint returns the metadata about provided container image
+Returns the metadata about provided container image
 
-### Request
+#### Request
 
 ```json
 {
@@ -455,7 +686,7 @@ This endpoint returns the metadata about provided container image
 }
 ```
 
-#### Container inspect request attributes
+**Container inspect request attributes**
 
 | Attribute                           | Description                                                                                                                                                 |
 | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -464,7 +695,7 @@ This endpoint returns the metadata about provided container image
 | `towerAccessToken`                  | Access token of the user account granting the access to the Seqera Platform service specified via `towerEndpoint` (optional).                               |
 | `towerWorkspaceId`                  | ID of the Seqera Platform workspace from where the container registry credentials are retrieved (optional). When omitted the personal workspace is used.|
 
-### Response
+#### Response
 
 ```json
 {
@@ -519,94 +750,92 @@ This endpoint returns the metadata about provided container image
 You can find the explanation of the response attributes (here)[https://github.com/opencontainers/image-spec/blob/main/spec.md]
 :::
 
-### Example
+#### Examples
 
-#### API call
+- API call
 
-```shell
-curl --location 'http://localhost:9090/v1alpha1/inspect' \
---header 'Content-Type: application/json' \
---data '{
-    "containerImage": "docker.io/<REPO>/<IMAGE>",
-    "towerAccessToken": "<TOWER_TOKEN>",
-    "towerEndpoint": "http://localhost:8000/api"
-}'
-```
+    **Request**
 
-##### Response
+    ```shell
+    curl --location 'http://localhost:9090/v1alpha1/inspect' \
+    --header 'Content-Type: application/json' \
+    --data '{
+        "containerImage": "docker.io/<REPO>/<IMAGE>",
+        "towerAccessToken": "<TOWER_TOKEN>",
+        "towerEndpoint": "http://localhost:8000/api"
+    }'
+    ```
 
-```json
-{
-    "container": {
-        "registry": "docker.io",
-        "hostName": "https://registry-1.docker.io",
-        "imageName": "<WAVE_TOKEN>/<REPO>/<IMAGE>",
-        "reference": "9b80535d04eceefd",
-        "digest": "sha256:1fcabdb850dc7c46646b3796fca01aca5721330252b586058e0d326705374dd5",
-        "config": {
-            "architecture": "amd64",
+    **Response**
+
+    ```json
+    {
+        "container": {
+            "registry": "docker.io",
+            "hostName": "https://registry-1.docker.io",
+            "imageName": "<WAVE_TOKEN>/<REPO>/<IMAGE>",
+            "reference": "9b80535d04eceefd",
+            "digest": "sha256:1fcabdb850dc7c46646b3796fca01aca5721330252b586058e0d326705374dd5",
             "config": {
-                "env": [
-                    "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-                ],
-                "cmd": [
-                    "/bin/sh"
-                ],
-                "image": "sha256:9a5ce069f40cfe0f2270eafbff0a0f2fa08f1add73571af9f78209e96bb8a5e9"
-            },
-            "container": "4189cbc534955765760c227f328ec1cdd52e8550681c2bf9f8f990b27b644f9c",
-            "created": "2024-04-19T14:38:17.047396956Z",
-            "rootfs": {
-                "type": "layers",
-                "diff_ids": [
-                    "sha256:d4fc045c9e3a848011de66f34b81f052d4f2c15a17bb196d637e526349601820"
-                ]
-            }
-        },
-        "manifest": {
-            "schemaVersion": 2,
-            "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
-            "config": {
-                "mediaType": "application/vnd.docker.container.image.v1+json",
-                "digest": "sha256:639823e18eb8b62cf43e92bac114ae35c03c07449e4ee5c10f8ebf8d033877d6",
-                "size": 774
-            },
-            "layers": [
-                {
-                    "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
-                    "digest": "sha256:4abcf20661432fb2d719aaf90656f55c287f8ca915dc1c92ec14ff61e67fbaf8",
-                    "size": 3408729
+                "architecture": "amd64",
+                "config": {
+                    "env": [
+                        "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+                    ],
+                    "cmd": [
+                        "/bin/sh"
+                    ],
+                    "image": "sha256:9a5ce069f40cfe0f2270eafbff0a0f2fa08f1add73571af9f78209e96bb8a5e9"
+                },
+                "container": "4189cbc534955765760c227f328ec1cdd52e8550681c2bf9f8f990b27b644f9c",
+                "created": "2024-04-19T14:38:17.047396956Z",
+                "rootfs": {
+                    "type": "layers",
+                    "diff_ids": [
+                        "sha256:d4fc045c9e3a848011de66f34b81f052d4f2c15a17bb196d637e526349601820"
+                    ]
                 }
-            ]
-        },
-        "v1": false,
-        "v2": true,
-        "oci": false
+            },
+            "manifest": {
+                "schemaVersion": 2,
+                "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+                "config": {
+                    "mediaType": "application/vnd.docker.container.image.v1+json",
+                    "digest": "sha256:639823e18eb8b62cf43e92bac114ae35c03c07449e4ee5c10f8ebf8d033877d6",
+                    "size": 774
+                },
+                "layers": [
+                    {
+                        "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+                        "digest": "sha256:4abcf20661432fb2d719aaf90656f55c287f8ca915dc1c92ec14ff61e67fbaf8",
+                        "size": 3408729
+                    }
+                ]
+            },
+            "v1": false,
+            "v2": true,
+            "oci": false
+        }
     }
-}
-```
+    ```
 
-## Metrics APIs based on Redis
+## Metrics API
 
-These APIs provide usage (builds and pulls) metrics of Wave for a specific date and/or a specific organization.
-These APIs require basic authentication, so you must provide a username and password while calling these APIs.
+These APIs provide usage (builds and pulls) metrics of Wave for a specific date and/or a organization.
+They require basic authentication (i.e., a username and password).
 
 All Metrics API endpoints use these query parameters:
 
 | Name | Description                                                           | sample Value |
 |------|-----------------------------------------------------------------------|--------------|
 | date | Format: `yyyy-mm-dd`, The date of the required metrics.               | 2024-04-08   |
-| org  | Domain of the organization used in emails, e.g., `org=seqera.io` | seqera.io    |
-
-### Build Metrics API
-
-These APIs are used to retrieve metrics about container builds performed by Wave.
+| org  | Domain of the organization used in emails, e.g., `org=seqera.io`      | seqera.io    |
 
 ### GET `/v1alpha2/metrics/builds`
 
-This endpoint is used to retrieve the builds performed by Wave.
+Get the builds performed by Wave.
 
-### Response
+#### Response
 
 ```json
 {
@@ -622,54 +851,53 @@ This endpoint is used to retrieve the builds performed by Wave.
 
 #### Examples
 
-```shell
-curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/builds"
-{
-    "metric": "builds",
-    "count": 18,
-    "orgs": {
-        "seqera.io": 13,
-        "gmail.com": 5
+    **Requests**
+
+    ```shell
+    curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/builds"
+    {
+        "metric": "builds",
+        "count": 18,
+        "orgs": {
+            "seqera.io": 13,
+            "gmail.com": 5
+        }
     }
-}
-```
+    ```
 
-```shell
-curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/builds?date=2024-04-08&org=seqera.io"
-{"count":4}
-```
+    ```shell
+    curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/builds?date=2024-04-08&org=seqera.io"
+    {"count":4}
+    ```
 
-```shell
-curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/builds?date=2024-04-08"
-{
-    "metric": "builds",
-    "count": 8,
-    "orgs": {
-        "gmail.com": 4,
-        "seqera.io": 4
+    ```shell
+    curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/builds?date=2024-04-08"
+    {
+        "metric": "builds",
+        "count": 8,
+        "orgs": {
+            "gmail.com": 4,
+            "seqera.io": 4
+        }
     }
-}
-```
+    ```
 
-```shell
-curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/builds?org=seqera.io"
-{
-    "metric": "builds",
-    "count": 13,
-    "orgs": {
-        "seqera.io": 13
+    ```shell
+    curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/builds?org=seqera.io"
+    {
+        "metric": "builds",
+        "count": 13,
+        "orgs": {
+            "seqera.io": 13
+        }
     }
-}
-```
-### Pull Metrics API
-
-These APIs are used to get the metrics about the container pulls through Wave.
+    ```
 
 ### GET `/v1alpha2/metrics/pulls`
 
-This endpoint is used to get the pulls performed through Wave.
+Get the pulls performed through Wave.
 
-### Response
+#### Response
 
 ```json
 {
@@ -725,15 +953,11 @@ curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/pulls?org=seqera.io"
 }
 ```
 
-### Fusion Pull Metrics API
-
-These APIs are used to get the metrics about the Fusion-based container pulls through Wave.
-
 ### GET `/v1alpha2/metrics/fusion/pulls`
 
-This endpoint is used to get the pulls of Fusion-based containers performed through Wave.
+Get the pulls of Fusion-based containers performed through Wave.
 
-### Response
+#### Response
 
 ```json
 {
