@@ -68,7 +68,7 @@ Conda builds support the following arguments:
 - `--conda-file`: Specifies a [Conda lock file][conda-lock] path or URL.
 - `--conda-package`: Specifies Conda packages to install. Supports expressions such as `bioconda::samtools=1.17` or `samtools>=1.0,<1.17`. Accepts a comma-separated list or can be specified multiple times.
 - `--conda-run-command`: Specifies a Docker `RUN` command to execute during the build. Can be specified multiple times.
-- `--build-template`: Specifies the build template to use. See [Build templates](#build-templates) for more details.
+- `--build-template`: Specifies the build template to use. See [Build a container with a build template](#build-a-container-with-a-build-template) for more details.
 
 **Example usage**
 
@@ -81,20 +81,20 @@ wave \
 ```
 </details>
 
-## Build templates
+## Build a container with a build template
 
-Wave supports different build templates for creating container images from Conda packages. Build templates control how packages are installed and how the final container image is structured.
+The Wave CLI supports build templates for creating container images from Conda packages. Build templates control how packages are installed and how the final container image is structured.
 
 <details open>
-<summary>**Build a container using a specific build template**</summary>
+<summary>**Build a container using a build template**</summary>
 
 **Available templates**
 
-| Template | Description |
-|----------|-------------|
-| (default) | Standard Micromamba v1 single-stage build. The final image includes the package manager. |
-| `conda/micromamba:v2` | Multi-stage build using Micromamba 2.x. Produces smaller images without the package manager in the final stage. |
-| `conda/pixi:v1` | Multi-stage build using [Pixi][pixi] package manager. Produces smaller images with faster dependency resolution. |
+| Template              | Description                                                                                                      |
+|-----------------------|------------------------------------------------------------------------------------------------------------------|
+| `conda/micromamba:v1` | Single-stage build using Micromamba v1 (default). The final image includes the package manager.                  |
+| `conda/micromamba:v2` | Multi-stage build using Micromamba 2.x. Produces smaller images without the package manager in the final stage.  |
+| `conda/pixi:v1`       | Multi-stage build using [Pixi][pixi] package manager. Produces smaller images with faster dependency resolution. |
 
 **Related CLI arguments**
 
@@ -104,7 +104,7 @@ Build template selection supports the following argument:
 
 **Benefits of multi-stage templates**
 
-Multi-stage build templates (`conda/micromamba:v2` and `conda/pixi:v1`) offer several advantages:
+Multi-stage build templates offer several advantages:
 
 - **Smaller images**: Build tools and package managers are excluded from the final image (30-50% size reduction typical).
 - **Reproducibility**: Lock files are generated for exact package version tracking.
