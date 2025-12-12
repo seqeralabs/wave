@@ -211,7 +211,7 @@ Returns the name of the container request made available by Wave.
 | `towerWorkspaceId`                  | ID of the Seqera Platform workspace from where the container registry credentials are retrieved (optional). When omitted the personal workspace is used. |
 | `packages`                          | This object specifies Conda or CRAN packages environment information.                                                                                         |
 | `environment`                       | The package environment file encoded as a base64 string.                                                                                                       |
-| `type`                              | This represents the type of package builder. Use `CONDA` or `CRAN`.                                                                                   |
+| `type`                              | This represents the type of package builder. Use `CONDA`, `CRAN`, or `APT`.                                                                                   |
 | `entries`                           | List of the packages names.                                                                                                                                    |
 | `channels`                          | List of Conda channels or CRAN repositories, which will be used to download packages.                                                                                               |
 | `condaOpts`                         | Conda build options (when type is CONDA).                                                                                                                      |
@@ -223,7 +223,11 @@ Returns the name of the container request made available by Wave.
 | `pixiImage`                         | Name of the Docker image used for Pixi package manager (e.g., `ghcr.io/prefix-dev/pixi:latest`).                                                              |
 | `cranOpts`                          | CRAN build options (when type is CRAN).                                                                                                                        |
 | `rImage`                            | Name of the R Docker image used to build CRAN containers (e.g., `rocker/r-ver:4.4.1`).                                                                         |
-| `buildTemplate`                     | The build template to use for container builds. Supported values: `conda/pixi:v1` (Pixi with multi-stage builds), `conda/micromamba:v2` (Micromamba 2.x with multi-stage builds). Default: standard conda/micromamba v1 template. |
+| `aptOpts`                           | APT/Debian build options (when type is APT).                                                                                                                   |
+| `aptOpts.baseImage`                 | Base Docker image for APT builds (default: `ubuntu:24.04`).                                                                                                    |
+| `aptOpts.basePackages`              | Space-separated list of packages to always install before user packages (default: `ca-certificates`).                                                          |
+| `aptOpts.commands`                  | List of additional shell commands to run after package installation.                                                                                           |
+| `buildTemplate`                     | The build template to use for container builds. Supported values: `conda/pixi:v1` (Pixi with multi-stage builds), `conda/micromamba:v2` (Micromamba 2.x with multi-stage builds), `apt/debian:v1` (APT/Debian package builds). Default: standard conda/micromamba v1 template. |
 | `nameStrategy`                      | The name strategy to be used to create the name of the container built by Wave. Its values can be `none`, `tagPrefix`, or `imageSuffix`.                       |                                                     |
 
 #### Response
@@ -385,6 +389,109 @@ Returns the name of the container request made available by Wave.
         "targetImage": "oras://hrma017/test:a4fd48144607aaa7",
         "containerImage": "oras://hrma017/test:a4fd48144607aaa7",
         "buildId": "bd-a4fd48144607aaa7_1",
+        "freeze": true,
+        "mirror": false,
+        "succeeded": true
+    }
+    ```
+
+- Create Docker image with APT packages:
+
+    **Request**
+
+    ```shell
+    curl --location 'https://wave.seqera.io/v1alpha2/container' \
+    --header 'Content-Type: application/json' \
+    --data '{
+        "buildTemplate": "apt/debian:v1",
+        "packages":{
+            "type": "APT",
+            "entries": ["curl", "wget", "git", "build-essential"]
+        }
+    }'
+    ```
+
+    **Response**
+
+    ```json
+    {
+        "requestId": "abc123def456",
+        "containerToken": "abc123def456",
+        "targetImage": "wave.seqera.io/wt/abc123def456/wave/build:1234567890abcdef",
+        "expiration": "2025-12-12T12:00:00.000000Z",
+        "containerImage": "private.cr.seqera.io/wave/build:1234567890abcdef",
+        "buildId": "bd-1234567890abcdef_1",
+        "cached": false,
+        "freeze": false,
+        "mirror": false
+    }
+    ```
+
+- Create Docker image with APT packages and custom options:
+
+    **Request**
+
+    ```shell
+    curl --location 'https://wave.seqera.io/v1alpha2/container' \
+    --header 'Content-Type: application/json' \
+    --data '{
+        "buildTemplate": "apt/debian:v1",
+        "packages":{
+            "type": "APT",
+            "entries": ["nginx"],
+            "aptOpts": {
+                "baseImage": "ubuntu:22.04",
+                "basePackages": "ca-certificates locales",
+                "commands": ["locale-gen en_US.UTF-8"]
+            }
+        }
+    }'
+    ```
+
+    **Response**
+
+    ```json
+    {
+        "requestId": "xyz789abc012",
+        "containerToken": "xyz789abc012",
+        "targetImage": "wave.seqera.io/wt/xyz789abc012/wave/build:fedcba0987654321",
+        "expiration": "2025-12-12T12:00:00.000000Z",
+        "containerImage": "private.cr.seqera.io/wave/build:fedcba0987654321",
+        "buildId": "bd-fedcba0987654321_1",
+        "cached": false,
+        "freeze": false,
+        "mirror": false
+    }
+    ```
+
+- Create Singularity image with APT packages:
+
+    **Request**
+
+    ```shell
+    curl --location 'https://wave.seqera.io/v1alpha2/container' \
+    --header 'Content-Type: application/json' \
+    --data '{
+        "format": "sif",
+        "buildTemplate": "apt/debian:v1",
+        "packages":{
+            "type": "APT",
+            "entries": ["samtools", "bcftools"]
+        },
+        "freeze": true,
+        "buildRepository": "<CONTAINER_REPOSITORY>",
+        "towerAccessToken": "<TOKEN>"
+    }'
+    ```
+
+    **Response**
+
+    ```json
+    {
+        "requestId": "def456ghi789",
+        "targetImage": "oras://<CONTAINER_REPOSITORY>:abcd1234efgh5678",
+        "containerImage": "oras://<CONTAINER_REPOSITORY>:abcd1234efgh5678",
+        "buildId": "bd-abcd1234efgh5678_1",
         "freeze": true,
         "mirror": false,
         "succeeded": true

@@ -20,6 +20,7 @@ package io.seqera.wave.api;
 import java.util.List;
 import java.util.Objects;
 
+import io.seqera.wave.config.AptOpts;
 import io.seqera.wave.config.CondaOpts;
 import io.seqera.wave.config.CranOpts;
 import io.seqera.wave.config.PixiOpts;
@@ -31,7 +32,7 @@ import io.seqera.wave.config.PixiOpts;
  */
 public class PackagesSpec {
 
-    public enum Type { CONDA, CRAN }
+    public enum Type { CONDA, CRAN, APT }
 
     public Type type;
 
@@ -61,6 +62,11 @@ public class PackagesSpec {
     public CranOpts cranOpts;
 
     /**
+     * APT/Debian build options
+     */
+    public AptOpts aptOpts;
+
+    /**
      * channels used for downloading packages
      */
     public List<String> channels;
@@ -76,12 +82,13 @@ public class PackagesSpec {
                 && Objects.equals(condaOpts, that.condaOpts)
                 && Objects.equals(pixiOpts, that.pixiOpts)
                 && Objects.equals(cranOpts, that.cranOpts)
+                && Objects.equals(aptOpts, that.aptOpts)
                 && Objects.equals(channels, that.channels);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, environment, entries, condaOpts, cranOpts, channels);
+        return Objects.hash(type, environment, entries, condaOpts, cranOpts, aptOpts, channels);
     }
 
     @Override
@@ -93,6 +100,7 @@ public class PackagesSpec {
                 ", condaOpts=" + condaOpts +
                 ", cranOpts=" + cranOpts +
                 ", pixiOpts=" + pixiOpts +
+                ", aptOpts=" + aptOpts +
                 ", channels=" + ObjectUtils.toString(channels) +
                 '}';
     }
@@ -129,6 +137,11 @@ public class PackagesSpec {
 
     public PackagesSpec withCranOpts(CranOpts opts) {
         this.cranOpts = opts;
+        return this;
+    }
+
+    public PackagesSpec withAptOpts(AptOpts opts) {
+        this.aptOpts = opts;
         return this;
     }
 

@@ -44,6 +44,11 @@ public final class BuildTemplate {
      */
     public static final String CRAN_INSTALLR_V1 = "cran/installr:v1";
 
+    /**
+     * Build template for APT/Debian package builds
+     */
+    public static final String APT_DEBIAN_V1 = "apt/debian:v1";
+
     private BuildTemplate() {
         // Prevent instantiation
     }
