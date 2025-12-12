@@ -25,23 +25,7 @@ A bioinformatics user needs to create a container with system-level tools availa
 
 ---
 
-### User Story 2 - Build Container with APT Packages via Requirements File (Priority: P2)
-
-A user wants to define their APT package dependencies in a file (similar to conda's environment.yml) and have Wave build a container from that file specification. This allows version control of dependencies and easier sharing of environment definitions.
-
-**Why this priority**: File-based specification is important for reproducibility and CI/CD workflows, but users can achieve basic functionality with package lists first.
-
-**Independent Test**: Can be tested by submitting a request with a base64-encoded requirements file containing APT package names (one per line), then verifying the container has all listed packages installed.
-
-**Acceptance Scenarios**:
-
-1. **Given** a user submits a container token request with `buildTemplate: "apt/debian:v1"` and an `environment` field containing a base64-encoded file with package names, **When** Wave processes the request, **Then** a container is built with all packages from the file installed.
-
-2. **Given** a requirements file contains comments (lines starting with #) and empty lines, **When** Wave parses the file, **Then** comments and empty lines are ignored and only valid package names are processed.
-
----
-
-### User Story 3 - Customize APT Build with Base Image and Additional Commands (Priority: P3)
+### User Story 2 - Customize APT Build with Base Image and Additional Commands (Priority: P2)
 
 An advanced user needs to customize their APT-based container by specifying a different base image (e.g., Ubuntu 22.04 instead of default Debian) and running additional commands after package installation (e.g., downloading additional data, setting environment variables).
 
@@ -85,12 +69,12 @@ An advanced user needs to customize their APT-based container by specifying a di
 
 - **FR-004**: System MUST support specifying APT packages as a list of package names in the `packages.entries` field.
 
-- **FR-005**: System MUST support specifying APT packages via a file (base64-encoded in `packages.environment` field) with one package name per line.
+- **FR-005**: System MUST support specifying APT packages via a file (base64-encoded in `packages.environment` field) with one package name per line, ignoring empty lines and lines starting with `#`.
 
 - **FR-006**: System MUST support APT package version pinning using standard APT syntax (e.g., `package=version`).
 
 - **FR-007**: System MUST support an `aptOpts` configuration object in `PackagesSpec` with the following options:
-  - `baseImage`: Base Docker image to use (default: standard Debian-based image)
+  - `baseImage`: Base Docker image to use (default: ubuntu:24.04)
   - `basePackages`: List of packages to always install (e.g., ca-certificates)
   - `commands`: List of additional shell commands to run after package installation
 
@@ -113,8 +97,6 @@ An advanced user needs to customize their APT-based container by specifying a di
 - **PackagesSpec.Type**: Extended to include `APT` as a valid package type alongside `CONDA` and `CRAN`.
 
 - **AptOpts**: New configuration entity for APT-specific build options (baseImage, basePackages, commands).
-
-- **Requirements File**: Plain text file with one APT package name per line, supporting comments with `#` prefix.
 
 ## Success Criteria *(mandatory)*
 
@@ -144,4 +126,4 @@ An advanced user needs to customize their APT-based container by specifying a di
 - The default base image is `ubuntu:24.04` (Ubuntu 24.04 LTS), providing long-term support, broad package availability, and security updates through 2029.
 - Only official Debian/Ubuntu repositories are supported in v1; custom repository support may be added in future versions.
 - Package names follow standard APT naming conventions without architecture suffixes (architecture determined by build platform).
-- The requirements file format is intentionally simple (one package per line) to minimize parsing complexity and user errors.
+- The `environment` field for APT is a simple newline-separated list of packages (not a structured file like Conda's environment.yml).
