@@ -27,10 +27,10 @@
 
 **Purpose**: Add new types and constants to the wave-api module
 
-- [ ] T001 [P] Add `APT_DEBIAN_V1 = "apt/debian:v1"` constant in wave-api/src/main/java/io/seqera/wave/api/BuildTemplate.java
-- [ ] T002 [P] Add `APT` enum value to `PackagesSpec.Type` in wave-api/src/main/java/io/seqera/wave/api/PackagesSpec.java
-- [ ] T003 [P] Create `AptOpts.java` configuration class in wave-api/src/main/java/io/seqera/wave/config/AptOpts.java
-- [ ] T004 Add `aptOpts` field and `withAptOpts()` method to `PackagesSpec` in wave-api/src/main/java/io/seqera/wave/api/PackagesSpec.java (depends on T003)
+- [X] T001 [P] Add `APT_DEBIAN_V1 = "apt/debian:v1"` constant in wave-api/src/main/java/io/seqera/wave/api/BuildTemplate.java
+- [X] T002 [P] Add `APT` enum value to `PackagesSpec.Type` in wave-api/src/main/java/io/seqera/wave/api/PackagesSpec.java
+- [X] T003 [P] Create `AptOpts.java` configuration class in wave-api/src/main/java/io/seqera/wave/config/AptOpts.java
+- [X] T004 Add `aptOpts` field and `withAptOpts()` method to `PackagesSpec` in wave-api/src/main/java/io/seqera/wave/api/PackagesSpec.java (depends on T003)
 
 **Checkpoint**: API types ready - implementation can begin
 
@@ -42,10 +42,10 @@
 
 **CRITICAL**: No user story validation can occur until templates exist
 
-- [ ] T005 [P] Create Dockerfile template in src/main/resources/templates/apt-debian-v1/dockerfile-apt-packages.txt
-- [ ] T006 [P] Create Singularity template in src/main/resources/templates/apt-debian-v1/singularityfile-apt-packages.txt
-- [ ] T007 Create `AptHelper.groovy` with `containerFile()` method in src/main/groovy/io/seqera/wave/util/AptHelper.groovy (depends on T005, T006)
-- [ ] T008 Add APT dispatch logic to `containerFileFromRequest()` in src/main/groovy/io/seqera/wave/util/ContainerHelper.groovy (depends on T007)
+- [X] T005 [P] Create Dockerfile template in src/main/resources/templates/apt-debian-v1/dockerfile-apt-packages.txt
+- [X] T006 [P] Create Singularity template in src/main/resources/templates/apt-debian-v1/singularityfile-apt-packages.txt
+- [X] T007 Create `AptHelper.groovy` with `containerFile()` method in src/main/groovy/io/seqera/wave/util/AptHelper.groovy (depends on T005, T006)
+- [X] T008 Add APT dispatch logic to `containerFileFromRequest()` in src/main/groovy/io/seqera/wave/util/ContainerHelper.groovy (depends on T007)
 
 **Checkpoint**: Foundation ready - user story implementation can now be validated
 
@@ -59,18 +59,18 @@
 
 ### Tests for User Story 1
 
-- [ ] T009 [P] [US1] Create `AptHelperTest.groovy` with test for package list to Dockerfile in src/test/groovy/io/seqera/wave/util/AptHelperTest.groovy
-- [ ] T010 [P] [US1] Add test for package list to Singularity file in src/test/groovy/io/seqera/wave/util/AptHelperTest.groovy
-- [ ] T011 [P] [US1] Add test for environment file parsing (newline-separated packages) in src/test/groovy/io/seqera/wave/util/AptHelperTest.groovy
-- [ ] T012 [P] [US1] Add test for version-pinned packages (e.g., `nginx=1.18.0`) in src/test/groovy/io/seqera/wave/util/AptHelperTest.groovy
+- [X] T009 [P] [US1] Create `AptHelperTest.groovy` with test for package list to Dockerfile in src/test/groovy/io/seqera/wave/util/AptHelperTest.groovy
+- [X] T010 [P] [US1] Add test for package list to Singularity file in src/test/groovy/io/seqera/wave/util/AptHelperTest.groovy
+- [X] T011 [P] [US1] Add test for environment file parsing (newline-separated packages) in src/test/groovy/io/seqera/wave/util/AptHelperTest.groovy
+- [X] T012 [P] [US1] Add test for version-pinned packages (e.g., `nginx=1.18.0`) in src/test/groovy/io/seqera/wave/util/AptHelperTest.groovy
 
 ### Implementation for User Story 1
 
-- [ ] T013 [US1] Implement `aptPackagesToDockerFile()` method in src/main/groovy/io/seqera/wave/util/AptHelper.groovy
-- [ ] T014 [US1] Implement `aptPackagesToSingularityFile()` method in src/main/groovy/io/seqera/wave/util/AptHelper.groovy
-- [ ] T015 [US1] Implement `parseEnvironmentFile()` method for newline-separated package parsing in src/main/groovy/io/seqera/wave/util/AptHelper.groovy
-- [ ] T016 [US1] Verify Dockerfile template includes `DEBIAN_FRONTEND=noninteractive`, `--no-install-recommends`, and cache cleanup in src/main/resources/templates/apt-debian-v1/dockerfile-apt-packages.txt
-- [ ] T017 [US1] Verify Singularity template includes equivalent best practices in src/main/resources/templates/apt-debian-v1/singularityfile-apt-packages.txt
+- [X] T013 [US1] Implement `aptPackagesToDockerFile()` method in src/main/groovy/io/seqera/wave/util/AptHelper.groovy
+- [X] T014 [US1] Implement `aptPackagesToSingularityFile()` method in src/main/groovy/io/seqera/wave/util/AptHelper.groovy
+- [X] T015 [US1] Implement `parseEnvironmentFile()` method for newline-separated package parsing in src/main/groovy/io/seqera/wave/util/AptHelper.groovy
+- [X] T016 [US1] Verify Dockerfile template includes `DEBIAN_FRONTEND=noninteractive`, `--no-install-recommends`, and cache cleanup in src/main/resources/templates/apt-debian-v1/dockerfile-apt-packages.txt
+- [X] T017 [US1] Verify Singularity template includes equivalent best practices in src/main/resources/templates/apt-debian-v1/singularityfile-apt-packages.txt
 
 **Checkpoint**: User Story 1 complete - basic APT builds work for both Docker and Singularity
 
@@ -84,17 +84,17 @@
 
 ### Tests for User Story 2
 
-- [ ] T018 [P] [US2] Add test for custom baseImage in AptOpts in src/test/groovy/io/seqera/wave/util/AptHelperTest.groovy
-- [ ] T019 [P] [US2] Add test for basePackages injection in src/test/groovy/io/seqera/wave/util/AptHelperTest.groovy
-- [ ] T020 [P] [US2] Add test for custom commands appended to Dockerfile in src/test/groovy/io/seqera/wave/util/AptHelperTest.groovy
-- [ ] T021 [P] [US2] Add test for custom commands appended to Singularity file in src/test/groovy/io/seqera/wave/util/AptHelperTest.groovy
+- [X] T018 [P] [US2] Add test for custom baseImage in AptOpts in src/test/groovy/io/seqera/wave/util/AptHelperTest.groovy
+- [X] T019 [P] [US2] Add test for basePackages injection in src/test/groovy/io/seqera/wave/util/AptHelperTest.groovy
+- [X] T020 [P] [US2] Add test for custom commands appended to Dockerfile in src/test/groovy/io/seqera/wave/util/AptHelperTest.groovy
+- [X] T021 [P] [US2] Add test for custom commands appended to Singularity file in src/test/groovy/io/seqera/wave/util/AptHelperTest.groovy
 
 ### Implementation for User Story 2
 
-- [ ] T022 [US2] Add baseImage substitution support to template rendering in src/main/groovy/io/seqera/wave/util/AptHelper.groovy
-- [ ] T023 [US2] Add basePackages injection to package list in src/main/groovy/io/seqera/wave/util/AptHelper.groovy
-- [ ] T024 [US2] Add commands appending logic (RUN for Docker, %post for Singularity) in src/main/groovy/io/seqera/wave/util/AptHelper.groovy
-- [ ] T025 [US2] Ensure null/empty AptOpts uses defaults (baseImage: ubuntu:24.04, basePackages: ca-certificates) in src/main/groovy/io/seqera/wave/util/AptHelper.groovy
+- [X] T022 [US2] Add baseImage substitution support to template rendering in src/main/groovy/io/seqera/wave/util/AptHelper.groovy
+- [X] T023 [US2] Add basePackages injection to package list in src/main/groovy/io/seqera/wave/util/AptHelper.groovy
+- [X] T024 [US2] Add commands appending logic (RUN for Docker, %post for Singularity) in src/main/groovy/io/seqera/wave/util/AptHelper.groovy
+- [X] T025 [US2] Ensure null/empty AptOpts uses defaults (baseImage: ubuntu:24.04, basePackages: ca-certificates) in src/main/groovy/io/seqera/wave/util/AptHelper.groovy
 
 **Checkpoint**: User Story 2 complete - APT builds fully customizable
 
@@ -104,12 +104,12 @@
 
 **Purpose**: Documentation, validation, and cleanup
 
-- [ ] T026 [P] Update docs/api.md with APT type in packages.type enum
-- [ ] T027 [P] Update docs/api.md with aptOpts schema documentation
-- [ ] T028 [P] Update docs/api.md with buildTemplate `apt/debian:v1` value
-- [ ] T029 [P] Add APT build example (curl request) to docs/api.md
-- [ ] T030 Run full test suite to verify no regressions: `./gradlew test`
-- [ ] T031 Build project and verify compilation: `./gradlew assemble`
+- [X] T026 [P] Update docs/api.md with APT type in packages.type enum
+- [X] T027 [P] Update docs/api.md with aptOpts schema documentation
+- [X] T028 [P] Update docs/api.md with buildTemplate `apt/debian:v1` value
+- [X] T029 [P] Add APT build example (curl request) to docs/api.md
+- [X] T030 Run full test suite to verify no regressions: `./gradlew test`
+- [X] T031 Build project and verify compilation: `./gradlew assemble`
 
 **Checkpoint**: Feature complete and documented
 

@@ -33,6 +33,7 @@ import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.request.TokenData
 import org.yaml.snakeyaml.Yaml
+import static io.seqera.wave.api.BuildTemplate.APT_DEBIAN_V1
 import static io.seqera.wave.api.BuildTemplate.CONDA_MICROMAMBA_V1
 import static io.seqera.wave.api.BuildTemplate.CONDA_MICROMAMBA_V2
 import static io.seqera.wave.api.BuildTemplate.CONDA_PIXI_V1
@@ -72,6 +73,9 @@ class ContainerHelper {
         }
         if( spec.type == PackagesSpec.Type.CRAN && (!req.buildTemplate || req.buildTemplate == CRAN_INSTALLR_V1) ) {
             return CranHelper.containerFile(spec, singularity)
+        }
+        if( spec.type == PackagesSpec.Type.APT && req.buildTemplate == APT_DEBIAN_V1 ) {
+            return AptHelper.containerFile(spec, singularity)
         }
 
         throw new BadRequestException("Unexpected or missing package type '${spec?.type?:'-'}' or build template '${req.buildTemplate?:'-'}'")

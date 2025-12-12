@@ -1,0 +1,8 @@
+BootStrap: docker
+From: {{base_image}}
+%post
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends {{base_packages}} {{target}}
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
