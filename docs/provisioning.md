@@ -67,9 +67,14 @@ Notable parts of this workflow include:
   - Any package dependencies
   - The target platform, which is either AMD64 or ARM64
   - The target repository name
+  - Any container layers included in the request
 - When a request for the same container is made, the same ID is assigned to it and therefore, the build is skipped.
 - The resulting images are hosted in your selected repository and not cached locally, unless a cache repository is specified.
 - The container images are stored permanently unless the repository owner deletes them.
+
+:::note
+When Nextflow is the Wave client, additional resources may be bundled as container layers, such as module resources and the workflow or module `bin/` directories. Changes to these bundled files will affect the container fingerprint and trigger a rebuild. See [Bundling pipeline scripts](./nextflow/bundle-scripts.md) for details.
+:::
 
 ## Container provisioning capability matrix
 
