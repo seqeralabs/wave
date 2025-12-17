@@ -627,11 +627,11 @@ class ContainerHelperTest extends Specification {
 
         then:
         result =='''\
-                FROM ghcr.io/prefix-dev/pixi:0.59.0-noble AS build
-                 
+                FROM public.cr.seqera.io/wave/pixi:0.61.0-noble AS build
+
                 COPY conda.yml /opt/wave/conda.yml
                 WORKDIR /opt/wave
-                 
+
                 RUN pixi init --import /opt/wave/conda.yml \\
                     && pixi add conda-forge::procps-ng \\
                     && pixi shell-hook > /shell-hook.sh \\
@@ -639,17 +639,17 @@ class ContainerHelperTest extends Specification {
                     && echo ">> CONDA_LOCK_START" \\
                     && cat /opt/wave/pixi.lock \\
                     && echo "<< CONDA_LOCK_END"
-                 
+
                 FROM ubuntu:24.04 AS final
-                 
+
                 # copy the pixi environment in the final container
                 COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
                 COPY --from=build /shell-hook.sh /shell-hook.sh
-                 
+
                 # set the entrypoint to the shell-hook script (activate the environment and run the command)
                 # no more pixi needed in the final container
                 ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]
-                 
+
                 # Default command for "docker run"
                 CMD ["/bin/bash"]
                 '''.stripIndent()
