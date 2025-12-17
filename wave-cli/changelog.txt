@@ -1,5 +1,9 @@
 WAVE CLI CHANGE-LOG
 ===================
+1.8.1 - 17 Dec 2025
+- Add Pixi-specific CLI options for container builds [330377b]
+- Increase await timeout with tower token [8c85b26]
+
 1.8.0 - 10 Dec 2025
 - Add --build-template option for container build templates [8d0c309]
 
