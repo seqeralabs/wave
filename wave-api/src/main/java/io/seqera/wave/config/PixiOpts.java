@@ -23,22 +23,64 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
+ * Configuration options for Pixi-based container builds.
+ * <p>
+ * Pixi is a package manager that supports conda packages. This class holds
+ * the configuration needed to build containers using Pixi, including the
+ * builder image, base image, packages, and custom commands.
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 public class PixiOpts {
 
-    final public static String DEFAULT_PIXI_IMAGE = "ghcr.io/prefix-dev/pixi:0.59.0-noble";
+    /**
+     * Default Pixi builder image used for installing packages.
+     */
+    final public static String DEFAULT_PIXI_IMAGE = "public.cr.seqera.io/wave/pixi:0.61.0-noble";
+
+    /**
+     * Default base image for the final container.
+     */
     final public static String DEFAULT_BASE_IMAGE = "ubuntu:24.04";
+
+    /**
+     * Default packages to include in every Pixi-based container build.
+     */
     final public static String DEFAULT_PACKAGES = "conda-forge::procps-ng";
 
+    /**
+     * The Pixi builder image used to install packages.
+     */
     public String pixiImage;
+
+    /**
+     * Custom commands to execute during the container build.
+     */
     public List<String> commands;
+
+    /**
+     * Base packages to include in addition to user-specified packages.
+     */
     public String basePackages;
+
+    /**
+     * The base image for the final container.
+     */
     public String baseImage;
 
+    /**
+     * Creates a new instance with default values.
+     */
     public PixiOpts() {
         this(Map.of());
     }
+
+    /**
+     * Creates a new instance from a map of options.
+     *
+     * @param opts A map containing configuration options. Supported keys:
+     *             {@code pixiImage}, {@code baseImage}, {@code commands}, {@code basePackages}
+     */
     public PixiOpts(Map<String,?> opts) {
         this.pixiImage = opts.containsKey("pixiImage") ? opts.get("pixiImage").toString(): DEFAULT_PIXI_IMAGE;
         this.baseImage = opts.containsKey("baseImage") ? opts.get("baseImage").toString(): DEFAULT_BASE_IMAGE;
@@ -58,6 +100,11 @@ public class PixiOpts {
 
     public PixiOpts withBasePackages(String value) {
         this.basePackages = value;
+        return this;
+    }
+
+    public PixiOpts withBaseImage(String value) {
+        this.baseImage = value;
         return this;
     }
 
