@@ -1,4 +1,9 @@
 # Wave changelog
+1.31.2 - 17 Dec 2025
+- Add JavaDocs to PixiOpts and update tests for new default pixi image (#950) [7f49bb8b4]
+- docs: Style template build content (#948) [aa40d5513]
+- docs: Add guide for bin scripts (#933) [21e78e115]
+
 1.31.1 - 10 Dec 2025
 - Add DockerHelper to wave-utils for Nextflow integration (#947) [cb48de01b]
 

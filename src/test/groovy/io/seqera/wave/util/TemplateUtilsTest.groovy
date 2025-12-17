@@ -352,7 +352,7 @@ class TemplateUtilsTest extends Specification {
 
         expect:
         TemplateUtils.condaFileToDockerFileUsingPixi(PIXI_OPTS)== '''\
-                FROM ghcr.io/prefix-dev/pixi:0.59.0-noble AS build
+                FROM public.cr.seqera.io/wave/pixi:0.61.0-noble AS build
 
                 COPY conda.yml /opt/wave/conda.yml
                 WORKDIR /opt/wave
@@ -383,7 +383,7 @@ class TemplateUtilsTest extends Specification {
     def 'should create dockerfile content from conda file using pixi with default options' () {
         expect:
         TemplateUtils.condaFileToDockerFileUsingPixi(new PixiOpts([:])) == '''\
-                FROM ghcr.io/prefix-dev/pixi:0.59.0-noble AS build
+                FROM public.cr.seqera.io/wave/pixi:0.61.0-noble AS build
 
                 COPY conda.yml /opt/wave/conda.yml
                 WORKDIR /opt/wave
@@ -417,7 +417,7 @@ class TemplateUtilsTest extends Specification {
 
         expect:
         TemplateUtils.condaFileToDockerFileUsingPixi(PIXI_OPTS)== '''\
-                FROM ghcr.io/prefix-dev/pixi:0.59.0-noble AS build
+                FROM public.cr.seqera.io/wave/pixi:0.61.0-noble AS build
 
                 COPY conda.yml /opt/wave/conda.yml
                 WORKDIR /opt/wave
@@ -647,7 +647,7 @@ class TemplateUtilsTest extends Specification {
         expect:
         TemplateUtils.condaFileToSingularityFileUsingPixi(new PixiOpts([:])) == '''\
                 BootStrap: docker
-                From: ghcr.io/prefix-dev/pixi:0.59.0-noble
+                From: public.cr.seqera.io/wave/pixi:0.61.0-noble
                 Stage: build
                 %files
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml
