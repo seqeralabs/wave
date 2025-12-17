@@ -500,6 +500,24 @@ class AppTest extends Specification {
         and:
         app.@await == Duration.ofMinutes(15)
     }
+
+    def 'should get the default await duration when --tower-token is provided'(){
+        given:
+        def app = new App()
+        String[] args = ["-i", "ubuntu:latest", '--await', '--tower-token', 'token']
+
+        when:
+        def cli = new CommandLine(app)
+        cli.registerConverter(Duration.class, new DurationConverter())
+        cli.parseArgs(args)
+        and:
+        app.validateArgs()
+        app.defaultArgs()
+        then:
+        noExceptionThrown()
+        and:
+        app.@await == Duration.ofMinutes(25)
+    }
     
     def 'should get the correct name strategy'(){
         given:
