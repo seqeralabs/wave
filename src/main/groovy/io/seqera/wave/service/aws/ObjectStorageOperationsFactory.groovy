@@ -20,6 +20,7 @@ package io.seqera.wave.service.aws
 
 import java.nio.file.Path
 
+import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
@@ -30,8 +31,11 @@ import io.micronaut.objectstorage.InputStreamMapper
 import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.aws.AwsS3Configuration
 import io.micronaut.objectstorage.aws.AwsS3Operations
+import io.micronaut.objectstorage.local.LocalPresignStore
 import io.micronaut.objectstorage.local.LocalStorageConfiguration
 import io.micronaut.objectstorage.local.LocalStorageOperations
+import io.micronaut.context.env.Environment
+import io.micronaut.runtime.server.EmbeddedServer
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.BuildEnabled
@@ -111,20 +115,25 @@ class ObjectStorageOperationsFactory {
         throw new IllegalArgumentException("Unsupported storage scheme: '${store.scheme}' - offending setting '${setting}': ${path}" )
     }
 
+    @CompileDynamic
     protected ObjectStorageOperations<?, ?, ?> localFactory(String scope, String storageBucket) {
         log.debug "Using local ObjectStorageOperations scope='${scope}'; storageBucket='${storageBucket}'"
         final localPath = Path.of(storageBucket)
         LocalStorageConfiguration configuration = new LocalStorageConfiguration(scope)
         configuration.setPath(localPath)
-        return new LocalStorageOperations(configuration)
+        // Get dependencies from context - LocalPresignStore is package-private so we load it by class name
+        def embeddedServer = context.findBean(EmbeddedServer).orElse(null)
+        LocalPresignStore localPresignStore = context.getBean(Class.forName('io.micronaut.objectstorage.local.LocalPresignStore'))
+        return new LocalStorageOperations(configuration, embeddedServer, localPresignStore)
     }
 
     protected ObjectStorageOperations<?, ?, ?> awsFactory(String scope, String storageBucket) {
         log.debug "Using AWS S3 ObjectStorageOperations scope='${scope}'; storageBucket='${storageBucket}'"
         final s3Client = context.getBean(S3Client, Qualifiers.byName("DefaultS3Client"))
         final inputStreamMapper = context.getBean(InputStreamMapper)
+        final environment = context.findBean(Environment).orElse(null)
         AwsS3Configuration configuration = new AwsS3Configuration(scope)
         configuration.setBucket(storageBucket)
-        return new AwsS3Operations(configuration, s3Client, inputStreamMapper)
+        return new AwsS3Operations(configuration, s3Client, inputStreamMapper, environment)
     }
 }
