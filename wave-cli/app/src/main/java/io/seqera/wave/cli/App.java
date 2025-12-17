@@ -66,6 +66,7 @@ import io.seqera.wave.cli.util.DurationConverter;
 import io.seqera.wave.cli.util.YamlHelper;
 import io.seqera.wave.config.CondaOpts;
 import io.seqera.wave.config.CranOpts;
+import io.seqera.wave.config.PixiOpts;
 import io.seqera.wave.util.DockerIgnoreFilter;
 import io.seqera.wave.util.Packer;
 import org.apache.commons.lang3.StringUtils;
@@ -175,6 +176,18 @@ public class App implements Runnable {
 
     @Option(names = {"--cran-run-command"}, paramLabel = "''", description = "Dockerfile RUN commands used to build the container.")
     private List<String> cranRunCommands;
+
+    @Option(names = {"--pixi-image"}, paramLabel = "''", description = "Pixi builder image used to build the container (default: ${DEFAULT-VALUE}).")
+    private String pixiImage = PixiOpts.DEFAULT_PIXI_IMAGE;
+
+    @Option(names = {"--pixi-base-image"}, paramLabel = "''", description = "Base image for the final Pixi container (default: ${DEFAULT-VALUE}).")
+    private String pixiBaseImage = PixiOpts.DEFAULT_BASE_IMAGE;
+
+    @Option(names = {"--pixi-base-packages"}, paramLabel = "''", description = "Base packages to be installed in the Pixi container (default: ${DEFAULT-VALUE}).")
+    private String pixiBasePackages = PixiOpts.DEFAULT_PACKAGES;
+
+    @Option(names = {"--pixi-run-command"}, paramLabel = "''", description = "Dockerfile RUN commands used to build the container.")
+    private List<String> pixiRunCommands;
 
     @Option(names = {"--log-level"}, paramLabel = "''", description = "Set the application log level. One of: OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL")
     private String logLevel;
@@ -631,6 +644,15 @@ public class App implements Runnable {
                 ;
     }
 
+    private PixiOpts pixiOpts() {
+        return new PixiOpts()
+                .withPixiImage(pixiImage)
+                .withBaseImage(pixiBaseImage)
+                .withBasePackages(pixiBasePackages)
+                .withCommands(pixiRunCommands)
+                ;
+    }
+
     protected String containerFileBase64() {
         return !isEmpty(containerFile)
                 ? encodePathBase64(containerFile)
@@ -642,6 +664,7 @@ public class App implements Runnable {
             return new PackagesSpec()
                     .withType(PackagesSpec.Type.CONDA)
                     .withCondaOpts(condaOpts())
+                    .withPixiOpts(pixiOpts())
                     .withEnvironment(encodePathBase64(condaFile))
                     .withChannels(condaChannels())
                     ;
@@ -651,6 +674,7 @@ public class App implements Runnable {
             return new PackagesSpec()
                     .withType(PackagesSpec.Type.CONDA)
                     .withCondaOpts(condaOpts())
+                    .withPixiOpts(pixiOpts())
                     .withEntries(condaPackages)
                     .withChannels(condaChannels())
                     ;
