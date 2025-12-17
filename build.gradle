@@ -91,7 +91,6 @@ dependencies {
     implementation 'org.postgresql:postgresql:42.7.7'        // PostgreSQL Driver
     //object storage dependency
     implementation 'io.micronaut.objectstorage:micronaut-object-storage-aws'
-    implementation 'io.micronaut.objectstorage:micronaut-object-storage-local'
     // include sts to allow the use of service account role - https://stackoverflow.com/a/73306570
     // this sts dependency is require by micronaut-aws-parameter-store,
     // not directly used by the app, for this reason keeping `runtimeOnly`
