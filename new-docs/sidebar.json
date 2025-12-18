@@ -1,0 +1,94 @@
+{
+  "sidebar": [
+    {
+      "type": "category",
+      "label": "Wave containers",
+      "link": {"type": "doc", "id": "index"},
+      "collapsed": true,
+      "items": [
+          "provisioning"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Tutorials",
+      "link": {"type": "doc", "id": "tutorials/index"},
+      "collapsed": true,
+      "items": [
+          "tutorials/nextflow-wave",
+          "tutorials/nextflow-seqera-containers",
+          "tutorials/wave-cli" 
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Developer tools",
+      "collapsed": true,
+      "items": [
+        "api",
+        {
+          "type": "category",
+          "label": "CLI",
+          "link": {"type": "doc", "id": "cli/index"},
+          "collapsed": true,
+          "items": [
+            "cli/installation",
+            "cli/use-cases"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Self-hosted Wave",
+      "collapsed": true,
+      "items": [
+        {
+          "type": "category",
+          "label": "Installation",
+          "collapsed": true,
+          "items": [
+            "install/docker-compose",
+            "install/kubernetes",
+            "install/configure-wave-build"
+          ]
+        },
+        {
+          "type": "category",
+          "label": "Configuration",
+          "collapsed": true,
+          "items": [
+            "wave-lite",
+            "configure-wave",
+            "configuration"
+          ]
+        },
+        {
+          "type": "category",
+          "label": "Migration notes",
+          "link": {"type": "doc", "id": "migrations/index"},
+          "collapsed": true,
+          "items": [
+            "migrations/1-25-0",
+            "migrations/1-24-0",
+            "migrations/1-21-0"
+          ] 
+        },
+        {
+          "type": "category",
+          "label": "Guides",
+          "collapsed": true,
+          "items": [
+            "db-migration"
+          ]
+        }
+      ]
+    },
+    "faq",
+    {
+      "type": "link",
+      "label": "Changelog",
+      "href": "/changelog/tags/wave"
+    }
+  ]
+}
