@@ -29,6 +29,7 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.configuration.MirrorEnabled
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
 import io.seqera.wave.service.mirror.MirrorRequest
@@ -63,7 +64,7 @@ class KubeMirrorStrategy extends MirrorStrategy {
     void mirrorJob(String jobName, MirrorRequest request) {
         // docker auth json file
         final Path configFile = request.authJson ? request.workDir.resolve('config.json') : null
-        final selector = getSelectorLabel(request.platform, nodeSelectorMap)
+        final selector = getSelectorLabel(ContainerPlatform.DEFAULT, nodeSelectorMap)
 
         try {
             k8sService.launchMirrorJob(
