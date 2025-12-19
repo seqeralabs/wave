@@ -64,7 +64,9 @@ class KubeMirrorStrategy extends MirrorStrategy {
     void mirrorJob(String jobName, MirrorRequest request) {
         // docker auth json file
         final Path configFile = request.authJson ? request.workDir.resolve('config.json') : null
-        final selector = getSelectorLabel(ContainerPlatform.DEFAULT, nodeSelectorMap)
+        final selector = getSelectorLabel(
+                request.platform ?: ContainerPlatform.DEFAULT,
+                nodeSelectorMap)
 
         try {
             k8sService.launchMirrorJob(
