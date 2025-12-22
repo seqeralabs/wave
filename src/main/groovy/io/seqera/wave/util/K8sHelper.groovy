@@ -35,13 +35,14 @@ class K8sHelper {
      * @param platform
      *      The requested container platform e.g. {@code linux/amd64}
      * @param nodeSelectors
-     *      A map that associate the platform architecture with a corresponding node selector label
+     *      A map that associate the platform architecture with a corresponding node selector label.
+     *      An empty or null value for a platform key indicates no node selector constraint (multi-arch support).
      * @return
      *      A {@link Map} object representing a kubernetes label to be used as node selector for the specified
-     *      platform or a empty map when there's no matching
+     *      platform or a empty map when there's no matching or platform is null
      */
     static Map<String,String> getSelectorLabel(ContainerPlatform platform, Map<String,String> nodeSelectors) {
-        if( !nodeSelectors )
+        if( !nodeSelectors || !platform)
             return Collections.emptyMap()
 
         final key = platform.toString()

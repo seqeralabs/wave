@@ -54,4 +54,13 @@ class K8sHelperTest extends Specification {
         err.message == "Unsupported container platform 'linux/amd64'"
     }
 
+    def 'should return empty nodeselector when platform is null ' () {
+        expect:
+        K8sHelper.getSelectorLabel(PLATFORM, SELECTORS) == EXPECTED
+
+        where:
+        PLATFORM        | SELECTORS                                                     | EXPECTED
+        null            | ['linux/amd64': 'service=amd', 'linux/arm64': 'service=arm']  | [:]
+    }
+
 }
