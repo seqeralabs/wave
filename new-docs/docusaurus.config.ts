@@ -1,22 +1,31 @@
 import type { Config } from "@docusaurus/types";
-import { createSeqeraConfig, getSeqeraThemeConfig, getSeqeraPresetOptions } from "@seqera/docusaurus-preset-seqera";
+import {
+  createSeqeraConfig,
+  getSeqeraThemeConfig,
+  getSeqeraPresetOptions,
+} from "@seqeralabs/docusaurus-preset-seqera";
 
 export default async function createConfigAsync(): Promise<Config> {
-    return createSeqeraConfig({
-        plugins: [],
-        presets: [
-            [
-                "@seqera/docusaurus-preset-seqera",
-                getSeqeraPresetOptions({
-                    docs: {
-                        path: "wave-docs", 
-                        routeBasePath: "/", 
-                        sidebarPath: "./sidebars.ts",
-                    },
-                }),
-            ],
-        ],
-
-        themeConfig: getSeqeraThemeConfig({}),
-    }) satisfies Config;
+  return createSeqeraConfig({
+    plugins: [],
+    presets: [
+      [
+        "@seqeralabs/docusaurus-preset-seqera",
+        await getSeqeraPresetOptions({  
+          docs: {
+            routeBasePath: "/wave",
+            path: "wave-docs",
+            sidebarPath: "./sidebars.ts",
+            showLastUpdateAuthor: false,
+            showLastUpdateTime: false,
+          },
+          openapi: false,
+          theme: {
+            customCss: require.resolve("./src/css/custom.css"),
+          },
+        }),
+      ],
+    ],
+    themeConfig: getSeqeraThemeConfig({}),
+  }) satisfies Config;
 }
