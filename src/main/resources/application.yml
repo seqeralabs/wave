@@ -50,6 +50,17 @@ wave:
   allowAnonymous: true
   server:
       url: "${WAVE_SERVER_URL:`http://localhost:9090`}"
+  security:
+    headers:
+      enabled: true
+      hsts:
+        max-age: 31536000
+        include-sub-domains: true
+      frame-options: "DENY"
+      content-type-options: "nosniff"
+      referrer-policy: "strict-origin-when-cross-origin"
+      permissions-policy: "camera=(), microphone=(), geolocation=()"
+      csp: "default-src 'self'; frame-ancestors 'none'"
   build:
     buildkit-image: "public.cr.seqera.io/wave/buildkit:v0.25.2-rootless"
     singularity-image: "public.cr.seqera.io/wave/singularity:v4.2.1-r4"
