@@ -18,16 +18,15 @@
 
 package io.seqera.wave.service.job.impl
 
-
-import groovy.transform.Canonical
 import groovy.transform.CompileStatic
-import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
+import io.seqera.docker.cli.DockerCli
 import io.seqera.wave.service.job.JobOperation
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import jakarta.inject.Singleton
+
 /**
  * Docker implementation for {@link io.seqera.wave.service.job.JobService}
  *
@@ -39,24 +38,26 @@ import jakarta.inject.Singleton
 @Requires(missingProperty = 'wave.build.k8s')
 class DockerJobOperation implements JobOperation {
 
+    private final DockerCli docker = new DockerCli()
+
     @Override
     JobState status(JobSpec jobSpec) {
-        final state = getDockerContainerState(jobSpec.operationName)
+        final state = docker.inspect(jobSpec.operationName)
         log.trace "Docker container status name=${jobSpec.operationName}; state=${state}"
 
-        if (state.status == 'running') {
+        if (state.isRunning()) {
             return JobState.running()
         }
-        else if (state.status == 'exited') {
-            final logs = getDockerContainerLogs(jobSpec.operationName)
-            return JobState.completed(state.exitCode, logs)
+        else if (state.isExited()) {
+            final logs = docker.logs(jobSpec.operationName)
+            return JobState.completed(state.exitCode(), logs)
         }
-        else if (state.status == 'created' || state.status == 'paused') {
+        else if (state.isPending()) {
             return JobState.pending()
         }
         else {
             log.warn "Unexpected state for container state=${state}"
-            final logs = getDockerContainerLogs(jobSpec.operationName)
+            final logs = docker.logs(jobSpec.operationName)
             return JobState.unknown(logs)
         }
     }
@@ -68,72 +69,7 @@ class DockerJobOperation implements JobOperation {
 
     @Override
     void cleanup(String operationName) {
-        final cli = new ArrayList<String>()
-        cli.add('docker')
-        cli.add('rm')
-        cli.add(operationName)
-
-        final builder = new ProcessBuilder(cli)
-        builder.redirectErrorStream(true)
-        final process = builder.start()
-        process.waitFor()
-    }
-
-    @ToString(includePackage = false, includeNames = true)
-    @Canonical
-    static class State {
-        String status
-        Integer exitCode
-
-        static State parse(String result) {
-            final ret = result.tokenize(',')
-            final status = ret[0]
-            final exit = ret[1] ? Integer.valueOf(ret[1]) : null
-            new State(status,exit)
-        }
-    }
-
-    private static State getDockerContainerState(String containerName) {
-        final cli = new ArrayList<String>()
-        cli.add('docker')
-        cli.add('inspect')
-        cli.add('--format')
-        cli.add('{{.State.Status}},{{.State.ExitCode}}')
-        cli.add(containerName)
-
-        final builder = new ProcessBuilder(cli)
-        builder.redirectErrorStream(true)
-        final process = builder.start()
-        
-        // Use consumeProcessOutput to read stdout/stderr in background threads
-        // This prevents deadlock when process output buffer fills up
-        final output = new StringBuilder()
-        final error = new StringBuilder()
-        process.consumeProcessOutput(output, error)
-        process.waitFor()
-        
-        final result = output.toString().trim()
-        return State.parse(result)
-    }
-
-    private static String getDockerContainerLogs(String containerName) {
-        final cli = new ArrayList<String>()
-        cli.add('docker')
-        cli.add('logs')
-        cli.add(containerName)
-
-        final builder = new ProcessBuilder(cli)
-        builder.redirectErrorStream(true)
-        final process = builder.start()
-        
-        // Use consumeProcessOutput to read stdout/stderr in background threads
-        // This prevents deadlock when process output buffer fills up
-        final output = new StringBuilder()
-        final error = new StringBuilder()
-        process.consumeProcessOutput(output, error)
-        process.waitFor()
-        
-        return output.toString()
+        docker.rm(operationName, false)
     }
 
 }
