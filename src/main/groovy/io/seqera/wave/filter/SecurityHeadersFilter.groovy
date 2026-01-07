@@ -89,8 +89,8 @@ class SecurityHeadersFilter implements Ordered {
         }
 
         // Add Content-Security-Policy
-        if (config.csp) {
-            response.header('Content-Security-Policy', config.csp)
+        if (config.contentSecurityPolicy) {
+            response.header('Content-Security-Policy', config.contentSecurityPolicy)
         }
 
         log.trace "Added security headers to response"

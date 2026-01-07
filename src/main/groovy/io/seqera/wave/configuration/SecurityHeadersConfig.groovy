@@ -94,14 +94,14 @@ class SecurityHeadersConfig {
      * Content-Security-Policy header value
      */
     @Nullable
-    @Value('${wave.security.headers.csp:default-src \'self\'; frame-ancestors \'none\'}')
-    String csp
+    @Value('${wave.security.headers.contentSecurityPolicy:default-src \'self\'; frame-ancestors \'none\'}')
+    String contentSecurityPolicy
 
     @PostConstruct
     private void init() {
         log.info("Security headers config: enabled=${enabled}; hsts-max-age=${hstsMaxAge}; hsts-include-sub-domains=${hstsIncludeSubDomains}; " +
                 "frame-options=${frameOptions}; content-type-options=${contentTypeOptions}; referrer-policy=${referrerPolicy}; " +
-                "permissions-policy=${permissionsPolicy}; csp=${csp}")
+                "permissions-policy=${permissionsPolicy}; csp=${contentSecurityPolicy}")
     }
 
     /**
