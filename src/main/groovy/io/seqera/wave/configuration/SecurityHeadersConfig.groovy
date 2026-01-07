@@ -48,6 +48,10 @@ class SecurityHeadersConfig {
 
     /**
      * HSTS max-age in seconds
+     * default to 1 year (31536000 seconds)
+     * This tell browsers to only use HTTPS for one year (31,536,000 seconds) or custom value set by user,
+     * preventing downgrade attacks and improving security by ensuring encrypted connections by default,
+     * for more information check https://hstspreload.org/#submission-requirements
      */
     @Value('${wave.security.headers.hsts.max-age:31536000}')
     Long hstsMaxAge
