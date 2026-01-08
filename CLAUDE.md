@@ -51,7 +51,7 @@ Wave requires several environment variables for registry authentication:
 - Uses Micronaut's configuration system with property injection
 
 ## Technology Stack
-- **Framework**: Micronaut 4.10.4 with Netty runtime
+- **Framework**: Micronaut 4.10.6 with Netty runtime
 - **Language**: Groovy with Java 21+
 - **Build Tool**: Gradle with custom conventions
 - **Container**: JIB for multi-platform builds (AMD64/ARM64)
