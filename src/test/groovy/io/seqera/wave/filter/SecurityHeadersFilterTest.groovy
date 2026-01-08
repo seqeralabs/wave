@@ -90,7 +90,7 @@ class SecurityHeadersFilterTest extends Specification {
     def 'should not add security headers when disabled' () {
         given:
         def ctx = ApplicationContext.run([
-                'wave.security.headers.enabled': 'false',
+                'wave.security.http-headers.enabled': 'false',
                 'micronaut.server.port': -1
         ])
         def server = ctx.getBean(EmbeddedServer)
@@ -118,11 +118,11 @@ class SecurityHeadersFilterTest extends Specification {
     def 'should use custom header values from configuration' () {
         given:
         def ctx = ApplicationContext.run([
-                'wave.security.headers.enabled': 'true',
-                'wave.security.headers.frame-options': 'SAMEORIGIN',
-                'wave.security.headers.referrer-policy': 'no-referrer',
-                'wave.security.headers.hsts.max-age': '3600',
-                'wave.security.headers.hsts.include-sub-domains': 'false',
+                'wave.security.http-headers.enabled': 'true',
+                'wave.security.http-headers.frame-options': 'SAMEORIGIN',
+                'wave.security.http-headers.referrer-policy': 'no-referrer',
+                'wave.security.http-headers.hsts.max-age': '3600',
+                'wave.security.http-headers.hsts.include-sub-domains': 'false',
                 'micronaut.server.port': -1
         ])
         def server = ctx.getBean(EmbeddedServer)
@@ -149,9 +149,9 @@ class SecurityHeadersFilterTest extends Specification {
     def 'should handle null header values gracefully' () {
         given:
         def ctx = ApplicationContext.run([
-                'wave.security.headers.enabled': 'true',
-                'wave.security.headers.frame-options': '',
-                'wave.security.headers.permissions-policy': '',
+                'wave.security.http-headers.enabled': 'true',
+                'wave.security.http-headers.frame-options': '',
+                'wave.security.http-headers.permissions-policy': '',
                 'micronaut.server.port': -1
         ])
         def server = ctx.getBean(EmbeddedServer)

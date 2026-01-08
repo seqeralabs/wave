@@ -38,7 +38,7 @@ import static io.micronaut.http.annotation.ServerFilter.MATCH_ALL_PATTERN
 @Slf4j
 @CompileStatic
 @ServerFilter(MATCH_ALL_PATTERN)
-@Requires(property = 'wave.security.headers.enabled', value = 'true', defaultValue = 'true')
+@Requires(property = 'wave.security.http-headers.enabled', value = 'true', defaultValue = 'true')
 class SecurityHeadersFilter implements Ordered {
 
     @Inject

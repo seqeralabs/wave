@@ -37,13 +37,13 @@ import jakarta.inject.Singleton
 @CompileStatic
 @Slf4j
 @Singleton
-@Requires(property = 'wave.security.headers.enabled', value = 'true', defaultValue = 'true')
+@Requires(property = 'wave.security.http-headers.enabled', value = 'true', defaultValue = 'true')
 class SecurityHeadersConfig {
 
     /**
      * Enable or disable security headers globally
      */
-    @Value('${wave.security.headers.enabled:true}')
+    @Value('${wave.security.http-headers.enabled:true}')
     Boolean enabled
 
     /**
@@ -53,48 +53,48 @@ class SecurityHeadersConfig {
      * preventing downgrade attacks and improving security by ensuring encrypted connections by default,
      * for more information check https://hstspreload.org/#submission-requirements
      */
-    @Value('${wave.security.headers.hsts.max-age:31536000}')
+    @Value('${wave.security.http-headers.hsts.max-age:31536000}')
     Long hstsMaxAge
 
     /**
      * Include subdomains in HSTS
      */
-    @Value('${wave.security.headers.hsts.include-sub-domains:true}')
+    @Value('${wave.security.http-headers.hsts.include-sub-domains:true}')
     Boolean hstsIncludeSubDomains
 
     /**
-     * X-Frame-Options header value
+     * X-Frame-Options header value (default: `DENY`)
      */
     @Nullable
-    @Value('${wave.security.headers.frame-options:DENY}')
+    @Value('${wave.security.http-headers.frame-options}')
     String frameOptions
 
     /**
      * X-Content-Type-Options header value
      */
     @Nullable
-    @Value('${wave.security.headers.content-type-options:nosniff}')
+    @Value('${wave.security.http-headers.content-type-options}')
     String contentTypeOptions
 
     /**
      * Referrer-Policy header value
      */
     @Nullable
-    @Value('${wave.security.headers.referrer-policy:strict-origin-when-cross-origin}')
+    @Value('${wave.security.http-headers.referrer-policy}')
     String referrerPolicy
 
     /**
      * Permissions-Policy header value
      */
     @Nullable
-    @Value('${wave.security.headers.permissions-policy:camera=(), microphone=(), geolocation=()}')
+    @Value('${wave.security.http-headers.permissions-policy}')
     String permissionsPolicy
 
     /**
      * Content-Security-Policy header value
      */
     @Nullable
-    @Value('${wave.security.headers.contentSecurityPolicy:default-src \'self\'; frame-ancestors \'none\'}')
+    @Value('${wave.security.http-headers.content-security-policy}')
     String contentSecurityPolicy
 
     @PostConstruct
