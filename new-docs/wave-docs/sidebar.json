@@ -1,0 +1,51 @@
+{
+  "sidebar": [
+    {
+      "type": "category",
+      "label": "Wave",
+      "collapsed": false,
+      "items": [
+        "index",
+        "get-started",
+        "wave-lite",
+        "provisioning"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Installation",
+      "collapsed": false,
+      "items": [
+        "install/docker-compose",
+        "install/kubernetes"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Configuration",
+      "collapsed": false,
+      "items": [   
+        "wave-lite",     
+        "install/configure-wave",
+        "install/configure-wave-build"
+      ]
+    },
+    "nextflow",
+    {
+      "type": "category",
+      "label": "Developer tools",
+      "collapsed": false,
+      "items": [
+        "cli/index",
+        "cli/reference",
+        "api"
+      ]
+    },
+    "faq",
+    {
+      "type": "link",
+      "label": "Changelog",
+      "href": "/changelog/tags/wave"
+    }
+  ]
+}
