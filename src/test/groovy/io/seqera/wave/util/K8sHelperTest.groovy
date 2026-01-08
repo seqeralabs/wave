@@ -54,4 +54,17 @@ class K8sHelperTest extends Specification {
         err.message == "Unsupported container platform 'linux/amd64'"
     }
 
+    def 'should get noarch selector' () {
+        expect:
+        K8sHelper.getNoArchSelector(SELECTORS) == EXPECTED
+
+        where:
+        SELECTORS                                               | EXPECTED
+        null                                                    | [:]
+        [:]                                                     | [:]
+        ['noarch': 'foo=1']                                     | ['foo': '1']
+        ['amd64': 'bar=2', 'noarch': 'foo=1']                   | ['foo': '1']
+        ['amd64': 'bar=2', 'arm64': 'baz=3']                    | [:]     // logs warning
+    }
+
 }

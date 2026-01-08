@@ -23,7 +23,6 @@ import spock.lang.Specification
 import java.nio.file.Path
 
 import io.seqera.wave.configuration.MirrorConfig
-import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.k8s.K8sService
 import io.seqera.wave.service.mirror.MirrorRequest
 
@@ -32,7 +31,8 @@ import io.seqera.wave.service.mirror.MirrorRequest
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 class KubeMirrorStrategyTest extends Specification {
-    def "should create node selector with platform and merge with configured node selector"() {
+
+    def "should use noarch node selector for mirror job"() {
         given:
         def k8sService = Mock(K8sService)
         def strategy = new KubeMirrorStrategy(
@@ -41,12 +41,12 @@ class KubeMirrorStrategyTest extends Specification {
                 },
                 k8sService: k8sService,
                 nodeSelectorMap: ['linux/amd64': 'service=wave-build',
-                                  'linux/arm64': 'service=wave-build-arm64']
+                                  'linux/arm64': 'service=wave-build-arm64',
+                                  'noarch': 'service=wave-mirror']
         )
         def request = Mock(MirrorRequest) {
             getWorkDir() >> Path.of('/tmp/work')
             getAuthJson() >> null
-            getPlatform() >> ContainerPlatform.of('linux/arm64')
         }
 
         when:
@@ -54,11 +54,10 @@ class KubeMirrorStrategyTest extends Specification {
 
         then:
         1 * k8sService.launchMirrorJob('job-123', 'quay.io/skopeo/stable:latest', _, Path.of('/tmp/work'), null, _,
-                ['service':'wave-build-arm64'])
-
+                ['service':'wave-mirror'])
     }
 
-    def "should create node selector with default platform when platform is not specified"() {
+    def "should use empty selector when noarch is not configured"() {
         given:
         def k8sService = Mock(K8sService)
         def strategy = new KubeMirrorStrategy(
@@ -72,7 +71,6 @@ class KubeMirrorStrategyTest extends Specification {
         def request = Mock(MirrorRequest) {
             getWorkDir() >> Path.of('/tmp/work')
             getAuthJson() >> null
-            getPlatform() >> null
         }
 
         when:
@@ -80,7 +78,7 @@ class KubeMirrorStrategyTest extends Specification {
 
         then:
         1 * k8sService.launchMirrorJob('job-456', 'quay.io/skopeo/stable:latest', _, Path.of('/tmp/work'), null, _,
-                ['service':'wave-build'])
+                [:])
     }
 
 }
