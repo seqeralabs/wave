@@ -19,12 +19,14 @@
 package io.seqera.wave.util
 
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @CompileStatic
 class K8sHelper {
 
@@ -57,6 +59,26 @@ class K8sHelper {
         }
 
         throw new BadRequestException("Unsupported container platform '${platform}'")
+    }
+
+    /**
+     * Get the node selector for architecture-independent (noarch) workloads
+     *
+     * @param nodeSelectors
+     *      A map that associate the platform architecture with a corresponding node selector label
+     * @return
+     *      A {@link Map} object representing a kubernetes label to be used as node selector for noarch workloads,
+     *      or an empty map when there's no matching
+     */
+    static Map<String,String> getNoArchSelector(Map<String,String> nodeSelectors) {
+        if( !nodeSelectors )
+            return Collections.<String,String>emptyMap()
+        final value = nodeSelectors.get('noarch')
+        if( !value ) {
+            log.warn("Node selectors are configured but 'noarch' key is missing - available keys: ${nodeSelectors.keySet()}")
+            return Collections.<String,String>emptyMap()
+        }
+        return toLabelMap(value)
     }
 
     /**
