@@ -55,8 +55,8 @@ import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobServiceImpl
 import io.seqera.wave.service.mirror.ContainerMirrorService
-import io.seqera.wave.service.pairing.PairingService
-import io.seqera.wave.service.pairing.socket.PairingChannel
+import io.seqera.service.pairing.PairingService
+import io.seqera.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.request.ContainerRequestService

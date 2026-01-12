@@ -22,7 +22,7 @@ import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.service.pairing.socket.PairingWebSocket
+import io.seqera.service.pairing.socket.PairingWebSocket
 
 /**
  *

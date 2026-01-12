@@ -34,16 +34,16 @@ import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.exchange.DescribeWaveContainerResponse
-import io.seqera.wave.service.pairing.PairingRecord
-import io.seqera.wave.service.pairing.PairingService
-import io.seqera.wave.service.pairing.PairingServiceImpl
+import io.seqera.service.pairing.PairingRecord
+import io.seqera.service.pairing.PairingService
+import io.seqera.service.pairing.PairingServiceImpl
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.client.TowerClient
 import io.seqera.wave.tower.client.GetUserInfoResponse
 import jakarta.inject.Inject
-import static io.seqera.wave.service.pairing.PairingService.TOWER_SERVICE
+import static io.seqera.service.pairing.PairingService.TOWER_SERVICE
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  */

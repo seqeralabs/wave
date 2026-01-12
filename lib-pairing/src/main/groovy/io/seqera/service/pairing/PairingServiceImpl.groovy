@@ -1,22 +1,21 @@
 /*
- *  Wave, containers provisioning service
- *  Copyright (c) 2023-2024, Seqera Labs
+ * Copyright 2025, Seqera Labs
  *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Affero General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Affero General Public License for more details.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- *  You should have received a copy of the GNU Affero General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
  */
 
-package io.seqera.wave.service.pairing
+package io.seqera.service.pairing
 
 import java.security.KeyPair
 import java.time.Duration
@@ -24,9 +23,8 @@ import java.time.Instant
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Value
 import io.seqera.tower.crypto.AsymmetricCipher
-import io.seqera.wave.exchange.PairingResponse
+import io.seqera.service.pairing.exchange.PairingResponse
 import io.seqera.wave.util.DigestFunctions
 import io.seqera.random.LongRndKey
 import jakarta.inject.Inject
@@ -45,11 +43,8 @@ class PairingServiceImpl implements PairingService {
     @Inject
     private PairingStore store
 
-    /**
-     * The period of time after which the token should be renewed
-     */
-    @Value('${wave.pairing-key.lease:`1d`}')
-    private Duration lease
+    @Inject
+    private PairingConfig config
 
 
     @Override
@@ -61,7 +56,7 @@ class PairingServiceImpl implements PairingService {
             final pairingId = LongRndKey.rndLong().toString()
             log.debug "Pairing with service '${service}' at address $endpoint - pairing id: $pairingId (key: $key)"
             final keyPair = generate()
-            final expiration = Instant.now() + lease
+            final expiration = Instant.now() + config.keyLease
             final newEntry = new PairingRecord(service, endpoint, pairingId, keyPair.getPrivate().getEncoded(), keyPair.getPublic().getEncoded(), expiration)
             store.put(key,newEntry)
             entry = newEntry

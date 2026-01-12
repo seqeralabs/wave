@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023-2024, Seqera Labs
+ *  Copyright (c) 2023-2025, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,33 +16,37 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.exchange
+package io.seqera.wave.service.license
 
 import groovy.transform.CompileStatic
-import io.micronaut.core.annotation.Introspected
-import jakarta.validation.constraints.NotBlank
-import jakarta.validation.constraints.NotNull
+import io.micronaut.context.annotation.Requires
+import io.seqera.service.pairing.LicenseValidator
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
 
 /**
- * Model the request for a remote service instance to register
- * itself as Wave credentials provider
+ * Bridge implementation that adapts the Wave LicenseManClient to the
+ * lib-pairing LicenseValidator interface.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Singleton
 @CompileStatic
-@Introspected
-class PairingRequest {
+@Requires(bean = LicenseManClient)
+class LicenseManValidator implements LicenseValidator {
 
-    @NotBlank
-    @NotNull
-    String service
+    @Inject
+    private LicenseManClient licenseManClient
 
-    @NotBlank
-    @NotNull
-    String endpoint
-
-    PairingRequest(String service=null, String endpoint=null) {
-        this.service = service
-        this.endpoint = endpoint
+    @Override
+    LicenseCheckResult checkToken(String token, String product) {
+        final response = licenseManClient.checkToken(token, product)
+        if (response == null) {
+            return null
+        }
+        return new LicenseCheckResult(
+            id: response.id,
+            expiration: response.expiration
+        )
     }
 }
