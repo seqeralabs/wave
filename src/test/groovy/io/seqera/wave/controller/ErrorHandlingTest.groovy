@@ -26,6 +26,7 @@ import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
+import io.micronaut.http.hateoas.JsonError
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.exchange.RegistryErrorResponse
 import io.seqera.wave.model.ContentType
@@ -53,5 +54,82 @@ class ErrorHandlingTest extends Specification {
         final exception = thrown(HttpClientResponseException)
         RegistryErrorResponse error = exception.response.getBody(RegistryErrorResponse).get()
         error.errors.get(0).message == "repository 'quay.io/hello-world:latest' not found"
+    }
+
+    void 'should sanitize error messages and not expose internal class names'() {
+        given: 'a request with invalid enum value'
+        def request = HttpRequest
+                .POST("/v1alpha2/container", [
+                        packages: [type: "INVALID_TYPE"],
+                        format: "docker",
+                        containerPlatform: "linux/amd64"
+                ])
+                .contentType(MediaType.APPLICATION_JSON_TYPE)
+
+        when: 'submitting the request'
+        client.toBlocking().exchange(request, JsonError)
+
+        then: 'an exception is thrown'
+        def exception = thrown(HttpClientResponseException)
+        def error = exception.response.getBody(JsonError).get()
+
+        and: 'the error message does not contain internal class names'
+        !error.message.contains('io.seqera.wave')
+        !error.message.contains('PackagesSpec')
+        !error.message.contains('through reference chain')
+        !error.message.contains('at [Source:')
+
+        and: 'the error message contains an error ID'
+        error.message.contains('Error ID:')
+    }
+
+    void 'should sanitize error with XSS attempt in value'() {
+        given: 'a request with XSS payload in enum value'
+        def request = HttpRequest
+                .POST("/v1alpha2/container", [
+                        packages: [
+                                type: "CRANxkhg3<script>alert(1)</script>pentest",
+                                entries: ["dplyr"]
+                        ],
+                        format: "docker",
+                        containerPlatform: "linux/amd64"
+                ])
+                .contentType(MediaType.APPLICATION_JSON_TYPE)
+
+        when: 'submitting the request'
+        client.toBlocking().exchange(request, JsonError)
+
+        then: 'an exception is thrown'
+        def exception = thrown(HttpClientResponseException)
+        def error = exception.response.getBody(JsonError).get()
+
+        and: 'the error message does not expose internal implementation details'
+        !error.message.contains('io.seqera.wave.api.PackagesSpec')
+        !error.message.contains('through reference chain')
+        !error.message.contains('Cannot deserialize value of type')
+
+        and: 'the error message is user-friendly'
+        error.message.contains('Error ID:')
+    }
+
+    void 'should handle invalid JSON and not expose internal details'() {
+        given: 'a request with malformed JSON'
+        def request = HttpRequest
+                .POST("/v1alpha2/container", '{"packages": {"type": }')
+                .contentType(MediaType.APPLICATION_JSON_TYPE)
+
+        when: 'submitting the request'
+        client.toBlocking().exchange(request, JsonError)
+
+        then: 'an exception is thrown'
+        def exception = thrown(HttpClientResponseException)
+        def error = exception.response.getBody(JsonError).get()
+
+        and: 'the error message does not contain internal class paths'
+        !error.message.contains('io.seqera')
+        !error.message.contains('com.fasterxml.jackson')
+
+        and: 'error has an ID for tracking'
+        error.message.contains('Error ID:')
     }
 }
