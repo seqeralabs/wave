@@ -9,6 +9,6 @@ model CranOpts {
   rImage: string;
   @doc("Names of base system packages to install.")
   basePackages: string;
-  @doc("Valid Dockerfile instructions to be included in the container (e.g., RUN, CMD, ENTRYPOINT, USER, WORKDIR, ENV, COPY, ADD). Each command must start with a valid Dockerfile instruction keyword.")
+  @doc("Valid Dockerfile instructions to be included in the container (e.g., RUN, CMD). Each command must start with a valid Dockerfile instruction keyword.")
   commands: string[];
 }
