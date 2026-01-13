@@ -190,4 +190,72 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
         'nope'           | 'yepes'         | "https://quay.io"              | false
         'test'           | 'test'          | 'test'                         | true
     }
+
+    void 'should reject SSRF attempts with private IP'() {
+        given:
+        def req = [
+                userName: 'test',
+                password: 'test',
+                registry: '127.0.0.1'
+        ]
+        HttpRequest request = HttpRequest.POST("/v1alpha2/validate-creds", req)
+
+        when:
+        client.toBlocking().exchange(request, Boolean)
+
+        then:
+        def e = thrown(HttpClientResponseException)
+        e.status == HttpStatus.INTERNAL_SERVER_ERROR
+    }
+
+    void 'should reject SSRF attempts with localhost'() {
+        given:
+        def req = [
+                userName: 'test',
+                password: 'test',
+                registry: 'localhost'
+        ]
+        HttpRequest request = HttpRequest.POST("/v1alpha2/validate-creds", req)
+
+        when:
+        client.toBlocking().exchange(request, Boolean)
+
+        then:
+        def e = thrown(HttpClientResponseException)
+        e.status == HttpStatus.INTERNAL_SERVER_ERROR
+    }
+
+    void 'should reject SSRF attempts with AWS metadata IP'() {
+        given:
+        def req = [
+                userName: 'test',
+                password: 'test',
+                registry: '169.254.169.254'
+        ]
+        HttpRequest request = HttpRequest.POST("/v1alpha2/validate-creds", req)
+
+        when:
+        client.toBlocking().exchange(request, Boolean)
+
+        then:
+        def e = thrown(HttpClientResponseException)
+        e.status == HttpStatus.INTERNAL_SERVER_ERROR
+    }
+
+    void 'should reject SSRF attempts with private network IP'() {
+        given:
+        def req = [
+                userName: 'test',
+                password: 'test',
+                registry: '10.0.0.1'
+        ]
+        HttpRequest request = HttpRequest.POST("/v1alpha2/validate-creds", req)
+
+        when:
+        client.toBlocking().exchange(request, Boolean)
+
+        then:
+        def e = thrown(HttpClientResponseException)
+        e.status == HttpStatus.INTERNAL_SERVER_ERROR
+    }
 }
