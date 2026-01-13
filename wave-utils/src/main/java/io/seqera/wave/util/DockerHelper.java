@@ -213,7 +213,22 @@ public class DockerHelper {
      */
     private static final Set<String> VALID_DOCKER_KEYWORDS = Set.of(
             "FROM",
-            "RUN"
+            "RUN",
+            "CMD",
+            "LABEL",
+            "EXPOSE",
+            "ENV",
+            "ADD",
+            "COPY",
+            "ENTRYPOINT",
+            "VOLUME",
+            "USER",
+            "WORKDIR",
+            "ARG",
+            "ONBUILD",
+            "STOPSIGNAL",
+            "HEALTHCHECK",
+            "SHELL"
     );
 
     /**
@@ -258,7 +273,7 @@ public class DockerHelper {
             if (!isValidDockerCommand(command)) {
                 throw new IllegalArgumentException(
                         String.format(
-                                "Invalid Docker command at index %d: '%s'. Commands must start with FROM or RUN",
+                                "Invalid Docker command at index %d: '%s'. Commands must start with a valid Dockerfile instruction keyword (e.g., RUN, CMD, ENV, COPY, etc.)",
                                 i,
                                 command
                         )

@@ -400,13 +400,16 @@ class DockerHelperTest extends Specification {
         'RUN apt-get install -y curl'    | true
         'FROM ubuntu:22.04'              | true
         'FROM rocker/r-ver:4.4.1'        | true
+        'CMD echo hello'                 | true
+        'ENV VAR=value'                  | true
+        'COPY . /'                       | true
+        'WORKDIR /app'                   | true
+        'USER root'                      | true
         and:
         'run apt-get update'             | false  // lowercase not allowed
-        'CMD echo hello'                 | false  // CMD not in allowed list
-        'ENV VAR=value'                  | false  // ENV not in allowed list
-        'COPY . /'                       | false  // COPY not in allowed list
         'apt-get update'                 | false  // missing keyword
         'invalid command'                | false
+        'INVALID echo test'              | false  // invalid keyword
         null                             | false
         ''                               | false
         '   '                            | false
@@ -429,36 +432,39 @@ class DockerHelperTest extends Specification {
         DockerHelper.validateCommands(['apt-get update'])
         then:
         def e = thrown(IllegalArgumentException)
-        e.message == "Invalid Docker command at index 0: 'apt-get update'. Commands must start with FROM or RUN"
+        e.message.contains('Invalid Docker command at index 0')
+        e.message.contains('apt-get update')
+        e.message.contains('must start with a valid Dockerfile instruction keyword')
 
         when:
         DockerHelper.validateCommands(['RUN apt-get update', 'apt-get install -y curl'])
         then:
         e = thrown(IllegalArgumentException)
-        e.message == "Invalid Docker command at index 1: 'apt-get install -y curl'. Commands must start with FROM or RUN"
+        e.message.contains('Invalid Docker command at index 1')
+        e.message.contains('apt-get install -y curl')
+        e.message.contains('must start with a valid Dockerfile instruction keyword')
     }
 
-    def 'should reject disallowed docker keywords' () {
+    def 'should accept all valid docker keywords' () {
         when:
         DockerHelper.validateCommands(['CMD echo hello'])
         then:
-        def e = thrown(IllegalArgumentException)
-        e.message.contains("Invalid Docker command")
-        e.message.contains("CMD echo hello")
+        noExceptionThrown()
 
         when:
         DockerHelper.validateCommands(['ENV VAR=value'])
         then:
-        e = thrown(IllegalArgumentException)
-        e.message.contains("Invalid Docker command")
-        e.message.contains("ENV VAR=value")
+        noExceptionThrown()
 
         when:
         DockerHelper.validateCommands(['COPY . /'])
         then:
-        e = thrown(IllegalArgumentException)
-        e.message.contains("Invalid Docker command")
-        e.message.contains("COPY . /")
+        noExceptionThrown()
+
+        when:
+        DockerHelper.validateCommands(['WORKDIR /app', 'USER root', 'EXPOSE 8080'])
+        then:
+        noExceptionThrown()
     }
 
     def 'should handle null and empty command lists' () {
@@ -477,12 +483,25 @@ class DockerHelperTest extends Specification {
         when:
         def keywords = DockerHelper.getValidKeywords()
         then:
-        keywords == ['FROM', 'RUN'] as Set
-        keywords.size() == 2
+        keywords.size() == 17
         keywords.contains('FROM')
         keywords.contains('RUN')
-        !keywords.contains('CMD')
-        !keywords.contains('ENV')
+        keywords.contains('CMD')
+        keywords.contains('ENV')
+        keywords.contains('COPY')
+        keywords.contains('ADD')
+        keywords.contains('WORKDIR')
+        keywords.contains('USER')
+        keywords.contains('EXPOSE')
+        keywords.contains('LABEL')
+        keywords.contains('ENTRYPOINT')
+        keywords.contains('VOLUME')
+        keywords.contains('ARG')
+        keywords.contains('ONBUILD')
+        keywords.contains('STOPSIGNAL')
+        keywords.contains('HEALTHCHECK')
+        keywords.contains('SHELL')
+        !keywords.contains('INVALID')
     }
 
     def 'should validate commands with various formats' () {
