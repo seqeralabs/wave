@@ -15,7 +15,7 @@ import "./PixiOpts.tsp";
     cranOpts: #{
         rImage: "rocker/r-ver:4.4.1",
         basePackages: "littler r-cran-docopt",
-        commands: #["apt-get update && apt-get install -y libcurl4-openssl-dev"]
+        commands: #["RUN apt-get update && apt-get install -y libcurl4-openssl-dev"]
     }
 })
 model PackagesSpec {
