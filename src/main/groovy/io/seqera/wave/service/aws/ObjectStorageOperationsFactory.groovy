@@ -25,16 +25,16 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Requires
+import io.micronaut.context.env.Environment
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.micronaut.objectstorage.InputStreamMapper
 import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.aws.AwsS3Configuration
 import io.micronaut.objectstorage.aws.AwsS3Operations
-import io.micronaut.objectstorage.local.LocalStorageConfiguration
-import io.micronaut.objectstorage.local.LocalStorageOperations
+import io.seqera.wave.service.localfs.LocalStorageOperations
 import io.seqera.wave.configuration.BuildConfig
-import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.BuildEnabled
+import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.ScanEnabled
 import io.seqera.wave.util.BucketTokenizer
 import jakarta.annotation.Nullable
@@ -114,17 +114,16 @@ class ObjectStorageOperationsFactory {
     protected ObjectStorageOperations<?, ?, ?> localFactory(String scope, String storageBucket) {
         log.debug "Using local ObjectStorageOperations scope='${scope}'; storageBucket='${storageBucket}'"
         final localPath = Path.of(storageBucket)
-        LocalStorageConfiguration configuration = new LocalStorageConfiguration(scope)
-        configuration.setPath(localPath)
-        return new LocalStorageOperations(configuration)
+        return new LocalStorageOperations(localPath)
     }
 
     protected ObjectStorageOperations<?, ?, ?> awsFactory(String scope, String storageBucket) {
         log.debug "Using AWS S3 ObjectStorageOperations scope='${scope}'; storageBucket='${storageBucket}'"
         final s3Client = context.getBean(S3Client, Qualifiers.byName("DefaultS3Client"))
         final inputStreamMapper = context.getBean(InputStreamMapper)
+        final environment = context.findBean(Environment).orElse(null)
         AwsS3Configuration configuration = new AwsS3Configuration(scope)
         configuration.setBucket(storageBucket)
-        return new AwsS3Operations(configuration, s3Client, inputStreamMapper)
+        return new AwsS3Operations(configuration, s3Client, inputStreamMapper, environment)
     }
 }

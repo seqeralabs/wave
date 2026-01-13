@@ -39,12 +39,13 @@ class KubeTransferStrategyTest extends Specification {
     BlobCacheConfig blobConfig = new BlobCacheConfig(s5Image: 's5cmd', transferTimeout: Duration.ofSeconds(10), retryAttempts: 3)
     KubeTransferStrategy strategy = new KubeTransferStrategy(k8sService: k8sService, blobConfig: blobConfig, nodeSelectorMap: [
             'linux/amd64': 'service=wave-build',
-            'linux/arm64': 'service=wave-build-arm64'
+            'linux/arm64': 'service=wave-build-arm64',
+            'noarch': 'service=wave-transfer'
     ])
 
     def "transfer should start a transferJob"() {
         given:
-        final selector =  ['service': 'wave-build']
+        final selector = ['service': 'wave-transfer']
         def info = BlobEntry.create("https://test.com/blobs", "https://test.com/bucket/blobs", null, null)
         def command = ["transfer", "blob"]
         final jobName = "job-123"

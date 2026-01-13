@@ -272,25 +272,6 @@ class CranHelperTest extends Specification {
         result.contains('https://example.com/renv.lock')
     }
 
-    def 'should add custom commands' () {
-        given:
-        def CRAN_OPTS = new CranOpts([
-            rImage: 'rocker/r-ver:4.4.1',
-            commands: ['RUN echo "custom command"', 'RUN echo "another command"']
-        ])
-        def PACKAGES = 'dplyr'
-
-        when:
-        def dockerResult = CranHelper.cranPackagesToDockerFile(PACKAGES, [], CRAN_OPTS)
-        def singularityResult = CranHelper.cranPackagesToSingularityFile(PACKAGES, [], CRAN_OPTS)
-
-        then:
-        dockerResult.contains('RUN echo "custom command"')
-        dockerResult.contains('RUN echo "another command"')
-        singularityResult.contains('    RUN echo "custom command"')
-        singularityResult.contains('    RUN echo "another command"')
-    }
-
     def 'should handle empty repositories list - complete dockerfile test' () {
         given:
         def CRAN_OPTS = new CranOpts([rImage: 'rocker/r-ver:4.4.1'])
@@ -384,6 +365,66 @@ class CranHelperTest extends Specification {
                 && rm -rf /var/lib/apt/lists/*
             USER root
             ENV R_LIBS_USER="/usr/local/lib/R/site-library"
+            '''
+                .stripIndent(true)
+    }
+
+    def 'should create dockerfile with custom commands - complete test' () {
+        given:
+        def CRAN_OPTS = new CranOpts([
+            rImage: 'rocker/r-ver:4.4.1',
+            basePackages: 'littler r-cran-docopt',
+            commands: ['RUN apt-get update && apt-get install -y libcurl4-openssl-dev', 'RUN R -e "install.packages(\'devtools\')"']
+        ])
+        def PACKAGES = 'dplyr ggplot2'
+
+        when:
+        def result = CranHelper.cranPackagesToDockerFile(PACKAGES, ['cran'], CRAN_OPTS)
+
+        then:
+        result == '''\
+            FROM rocker/r-ver:4.4.1
+            RUN \\
+                R -e "options(repos = c(CRAN = 'https://cloud.r-project.org/'))" \\
+                && apt-get update && apt-get install -y littler r-cran-docopt \\
+                && install2.r 'dplyr' 'ggplot2' \\
+                && rm -rf /tmp/downloaded_packages/ /tmp/*.rds \\
+                && rm -rf /var/lib/apt/lists/*
+            USER root
+            ENV R_LIBS_USER="/usr/local/lib/R/site-library"
+            RUN apt-get update && apt-get install -y libcurl4-openssl-dev
+            RUN R -e "install.packages('devtools')"
+            '''
+                .stripIndent(true)
+    }
+
+    def 'should create singularity file with custom commands - complete test' () {
+        given:
+        def CRAN_OPTS = new CranOpts([
+            rImage: 'rocker/r-ver:4.4.1',
+            basePackages: 'littler r-cran-docopt',
+            commands: ['apt-get update && apt-get install -y libcurl4-openssl-dev', 'R -e "install.packages(\'devtools\')"']
+        ])
+        def PACKAGES = 'dplyr ggplot2'
+
+        when:
+        def result = CranHelper.cranPackagesToSingularityFile(PACKAGES, ['cran'], CRAN_OPTS)
+
+        then:
+        result == '''\
+            BootStrap: docker
+            From: rocker/r-ver:4.4.1
+            %post
+                R -e "options(repos = c(CRAN = 'https://cloud.r-project.org/'))"
+                apt-get update && apt-get install -y littler r-cran-docopt
+                install2.r 'dplyr' 'ggplot2'
+                rm -rf /tmp/downloaded_packages/ /tmp/*.rds
+                rm -rf /var/lib/apt/lists/*
+            %environment
+                export R_LIBS_USER="/usr/local/lib/R/site-library"
+            %post
+                apt-get update && apt-get install -y libcurl4-openssl-dev
+                R -e "install.packages('devtools')"
             '''
                 .stripIndent(true)
     }

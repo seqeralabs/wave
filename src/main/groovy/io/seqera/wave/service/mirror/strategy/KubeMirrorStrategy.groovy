@@ -34,8 +34,7 @@ import io.seqera.wave.service.k8s.K8sService
 import io.seqera.wave.service.mirror.MirrorRequest
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import static io.seqera.wave.util.K8sHelper.getSelectorLabel
-
+import static io.seqera.wave.util.K8sHelper.getNoArchSelector
 /**
  * Implements a container mirror runner based on Kubernetes
  *
@@ -63,7 +62,7 @@ class KubeMirrorStrategy extends MirrorStrategy {
     void mirrorJob(String jobName, MirrorRequest request) {
         // docker auth json file
         final Path configFile = request.authJson ? request.workDir.resolve('config.json') : null
-        final selector = getSelectorLabel(request.platform, nodeSelectorMap)
+        final selector = getNoArchSelector(nodeSelectorMap)
 
         try {
             k8sService.launchMirrorJob(

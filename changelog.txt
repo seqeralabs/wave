@@ -1,4 +1,10 @@
 # Wave changelog
+1.32.0 - 12 Jan 2026
+- Upgrade to Micronaut 4.10.6 (#951) [6dda24c2b]
+- Use noarch node selector for mirror and transfer jobs (#953) [54f985174]
+- Replace RedisFactory with JedisPoolFactory from lib-jedis-pool [c8040227b]
+- Add missing HTTP Security Header (#955) [c48b8511c]
+
 1.31.2 - 17 Dec 2025
 - Add JavaDocs to PixiOpts and update tests for new default pixi image (#950) [7f49bb8b4]
 - docs: Style template build content (#948) [aa40d5513]
