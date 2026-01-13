@@ -386,4 +386,121 @@ class DockerHelperTest extends Specification {
         DockerHelper.condaFileFromPackages('  ', ['conda-forge']) == null
     }
 
+    /* *********************************************************************************
+     * Command validation tests
+     * *********************************************************************************/
+
+    def 'should validate valid docker commands' () {
+        expect:
+        DockerHelper.isValidDockerCommand(COMMAND) == EXPECTED
+
+        where:
+        COMMAND                          | EXPECTED
+        'RUN apt-get update'             | true
+        'RUN apt-get install -y curl'    | true
+        'FROM ubuntu:22.04'              | true
+        'FROM rocker/r-ver:4.4.1'        | true
+        and:
+        'run apt-get update'             | false  // lowercase not allowed
+        'CMD echo hello'                 | false  // CMD not in allowed list
+        'ENV VAR=value'                  | false  // ENV not in allowed list
+        'COPY . /'                       | false  // COPY not in allowed list
+        'apt-get update'                 | false  // missing keyword
+        'invalid command'                | false
+        null                             | false
+        ''                               | false
+        '   '                            | false
+    }
+
+    def 'should validate list of commands' () {
+        when:
+        DockerHelper.validateCommands(['RUN apt-get update', 'FROM ubuntu:22.04'])
+        then:
+        noExceptionThrown()
+
+        when:
+        DockerHelper.validateCommands(['RUN apt-get update', 'RUN apt-get install -y curl'])
+        then:
+        noExceptionThrown()
+    }
+
+    def 'should reject invalid docker commands' () {
+        when:
+        DockerHelper.validateCommands(['apt-get update'])
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message == "Invalid Docker command at index 0: 'apt-get update'. Commands must start with FROM or RUN"
+
+        when:
+        DockerHelper.validateCommands(['RUN apt-get update', 'apt-get install -y curl'])
+        then:
+        e = thrown(IllegalArgumentException)
+        e.message == "Invalid Docker command at index 1: 'apt-get install -y curl'. Commands must start with FROM or RUN"
+    }
+
+    def 'should reject disallowed docker keywords' () {
+        when:
+        DockerHelper.validateCommands(['CMD echo hello'])
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message.contains("Invalid Docker command")
+        e.message.contains("CMD echo hello")
+
+        when:
+        DockerHelper.validateCommands(['ENV VAR=value'])
+        then:
+        e = thrown(IllegalArgumentException)
+        e.message.contains("Invalid Docker command")
+        e.message.contains("ENV VAR=value")
+
+        when:
+        DockerHelper.validateCommands(['COPY . /'])
+        then:
+        e = thrown(IllegalArgumentException)
+        e.message.contains("Invalid Docker command")
+        e.message.contains("COPY . /")
+    }
+
+    def 'should handle null and empty command lists' () {
+        when:
+        DockerHelper.validateCommands(null)
+        then:
+        noExceptionThrown()
+
+        when:
+        DockerHelper.validateCommands([])
+        then:
+        noExceptionThrown()
+    }
+
+    def 'should return valid keywords set' () {
+        when:
+        def keywords = DockerHelper.getValidKeywords()
+        then:
+        keywords == ['FROM', 'RUN'] as Set
+        keywords.size() == 2
+        keywords.contains('FROM')
+        keywords.contains('RUN')
+        !keywords.contains('CMD')
+        !keywords.contains('ENV')
+    }
+
+    def 'should validate commands with various formats' () {
+        expect:
+        DockerHelper.isValidDockerCommand(COMMAND) == EXPECTED
+
+        where:
+        COMMAND                                              | EXPECTED
+        'RUN apt-get update && apt-get install -y curl'      | true
+        'RUN echo "Hello World"'                             | true
+        'FROM ubuntu:22.04 AS builder'                       | true
+        '  RUN  apt-get update  '                            | true  // with whitespace
+        'RUN\tapt-get update'                                | true  // with tab
+        and:
+        'run apt-get update'                                 | false // lowercase
+        'Run apt-get update'                                 | false // mixed case
+        'RUNNING apt-get update'                             | false // wrong keyword
+        'RUNX apt-get update'                                | false // wrong keyword
+    }
+
 }

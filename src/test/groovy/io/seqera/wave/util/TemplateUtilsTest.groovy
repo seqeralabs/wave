@@ -933,4 +933,126 @@ class TemplateUtilsTest extends Specification {
         result.contains('From: ubuntu:24.04')
     }
 
+    /* *********************************************************************************
+     * Command validation tests
+     * *********************************************************************************/
+
+    def 'should reject dockerfile with invalid commands - missing Docker keyword' () {
+        given:
+        def PACKAGES = 'numpy pandas'
+        def CHANNELS = ['conda-forge']
+        def CONDA_OPTS = new CondaOpts([
+                commands: ['apt-get update && apt-get install -y curl']  // Missing RUN keyword
+        ])
+
+        when:
+        TemplateUtils.condaPackagesToDockerFile(PACKAGES, CHANNELS, CONDA_OPTS)
+
+        then:
+        def ex = thrown(IllegalArgumentException)
+        ex.message.contains('Invalid Docker command')
+        ex.message.contains('must start with a valid Dockerfile instruction keyword')
+    }
+
+    def 'should accept dockerfile with valid Docker commands' () {
+        given:
+        def PACKAGES = 'numpy pandas'
+        def CHANNELS = ['conda-forge']
+        def CONDA_OPTS = new CondaOpts([
+                commands: [
+                        'RUN apt-get update',
+                        'ENV MY_VAR=value',
+                        'USER nobody',
+                        'WORKDIR /app'
+                ]
+        ])
+
+        when:
+        def result = TemplateUtils.condaPackagesToDockerFile(PACKAGES, CHANNELS, CONDA_OPTS)
+
+        then:
+        result.contains('RUN apt-get update')
+        result.contains('ENV MY_VAR=value')
+        result.contains('USER nobody')
+        result.contains('WORKDIR /app')
+    }
+
+    def 'should allow singularity commands without Docker keywords' () {
+        given:
+        def PACKAGES = 'numpy pandas'
+        def CHANNELS = ['conda-forge']
+        def CONDA_OPTS = new CondaOpts([
+                commands: ['apt-get update && apt-get install -y curl']  // No RUN keyword needed for Singularity
+        ])
+
+        when:
+        def result = TemplateUtils.condaPackagesToSingularityFile(PACKAGES, CHANNELS, CONDA_OPTS)
+
+        then:
+        result.contains('apt-get update && apt-get install -y curl')
+        noExceptionThrown()
+    }
+
+    def 'should reject invalid Docker keyword for PixiOpts' () {
+        given:
+        def PIXI_OPTS = new PixiOpts([
+                commands: ['INVALID apt-get update']
+        ])
+
+        when:
+        TemplateUtils.condaFileToDockerFileUsingPixi(PIXI_OPTS)
+
+        then:
+        def ex = thrown(IllegalArgumentException)
+        ex.message.contains('Invalid Docker command')
+    }
+
+    def 'should accept valid Docker keywords for PixiOpts' () {
+        given:
+        def PIXI_OPTS = new PixiOpts([
+                commands: [keyword + ' test']
+        ])
+
+        when:
+        def result = TemplateUtils.condaFileToDockerFileUsingPixi(PIXI_OPTS)
+
+        then:
+        result.contains(keyword + ' test')
+
+        where:
+        keyword << ['RUN', 'CMD', 'ENV', 'COPY', 'ADD', 'WORKDIR', 'USER', 'EXPOSE', 'LABEL']
+    }
+
+    def 'should validate commands for micromamba v2 dockerfile' () {
+        given:
+        def PACKAGES = 'numpy pandas'
+        def CHANNELS = ['conda-forge']
+        def CONDA_OPTS = new CondaOpts([
+                commands: ['invalid-command']  // Missing valid Docker keyword
+        ])
+
+        when:
+        TemplateUtils.condaPackagesToDockerFileUsingV2(PACKAGES, CHANNELS, CONDA_OPTS)
+
+        then:
+        def ex = thrown(IllegalArgumentException)
+        ex.message.contains('Invalid Docker command')
+    }
+
+    def 'should not validate commands for singularity files' () {
+        given:
+        def PACKAGES = 'numpy pandas'
+        def CHANNELS = ['conda-forge']
+        def CONDA_OPTS = new CondaOpts([
+                commands: ['just-a-regular-shell-command']  // This is fine for Singularity
+        ])
+
+        when:
+        def result = TemplateUtils.condaPackagesToSingularityFileV2(PACKAGES, CHANNELS, CONDA_OPTS)
+
+        then:
+        result.contains('just-a-regular-shell-command')
+        noExceptionThrown()
+    }
+
 }

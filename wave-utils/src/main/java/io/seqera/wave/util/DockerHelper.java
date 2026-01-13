@@ -27,6 +27,9 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -202,6 +205,75 @@ public class DockerHelper {
         catch (IOException e) {
             throw new IllegalStateException("Unable to write temporary file - Reason: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Valid Dockerfile instruction keywords that can start a command.
+     * See: https://docs.docker.com/engine/reference/builder/
+     */
+    private static final Set<String> VALID_DOCKER_KEYWORDS = Set.of(
+            "FROM",
+            "RUN"
+    );
+
+    /**
+     * Pattern to extract the first word from a command (the instruction keyword).
+     * Matches the first non-whitespace sequence of characters.
+     */
+    private static final Pattern KEYWORD_PATTERN = Pattern.compile("^\\s*([A-Z]+)\\b");
+
+    /**
+     * Validates that a command starts with a valid Dockerfile instruction keyword.
+     *
+     * @param command The command to validate
+     * @return true if the command starts with a valid Docker keyword, false otherwise
+     */
+    public static boolean isValidDockerCommand(String command) {
+        if (command == null || command.trim().isEmpty()) {
+            return false;
+        }
+
+        Matcher matcher = KEYWORD_PATTERN.matcher(command);
+        if (!matcher.find()) {
+            return false;
+        }
+
+        String keyword = matcher.group(1);
+        return VALID_DOCKER_KEYWORDS.contains(keyword);
+    }
+
+    /**
+     * Validates a list of commands to ensure they all start with valid Dockerfile instruction keywords.
+     *
+     * @param commands The list of commands to validate
+     * @throws IllegalArgumentException if any command is invalid
+     */
+    public static void validateCommands(List<String> commands) {
+        if (commands == null || commands.isEmpty()) {
+            return;
+        }
+
+        for (int i = 0; i < commands.size(); i++) {
+            String command = commands.get(i);
+            if (!isValidDockerCommand(command)) {
+                throw new IllegalArgumentException(
+                        String.format(
+                                "Invalid Docker command at index %d: '%s'. Commands must start with FROM or RUN",
+                                i,
+                                command
+                        )
+                );
+            }
+        }
+    }
+
+    /**
+     * Gets the set of valid Docker instruction keywords.
+     *
+     * @return An unmodifiable set of valid Docker keywords
+     */
+    public static Set<String> getValidKeywords() {
+        return VALID_DOCKER_KEYWORDS;
     }
 
 }
