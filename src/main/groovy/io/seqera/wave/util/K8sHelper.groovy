@@ -31,6 +31,11 @@ import io.seqera.wave.exception.BadRequestException
 class K8sHelper {
 
     /**
+     * The key used for architecture-independent (noarch) workloads in node selector configuration
+     */
+    public static final String NOARCH_PLATFORM = 'noarch'
+
+    /**
      * Given the requested container platform and collection of node selector labels find the best
      * matching label
      *
@@ -73,9 +78,9 @@ class K8sHelper {
     static Map<String,String> getNoArchSelector(Map<String,String> nodeSelectors) {
         if( !nodeSelectors )
             return Collections.<String,String>emptyMap()
-        final value = nodeSelectors.get('noarch')
+        final value = nodeSelectors.get(NOARCH_PLATFORM)
         if( !value ) {
-            log.warn("Node selectors are configured but 'noarch' key is missing - available keys: ${nodeSelectors.keySet()}")
+            log.warn("Node selectors are configured but '${NOARCH_PLATFORM}' key is missing - available keys: ${nodeSelectors.keySet()}")
             return Collections.<String,String>emptyMap()
         }
         return toLabelMap(value)

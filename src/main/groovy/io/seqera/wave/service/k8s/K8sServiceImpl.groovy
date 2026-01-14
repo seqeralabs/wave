@@ -59,6 +59,7 @@ import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.scan.Trivy
+import io.seqera.wave.util.K8sHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.service.builder.BuildStrategy.BUILDKIT_ENTRYPOINT
@@ -150,6 +151,9 @@ class K8sServiceImpl implements K8sService {
         // validate node selectors
         final platforms = nodeSelectorMap ?: Collections.<String,String>emptyMap()
         for( Map.Entry<String,String> it : platforms ) {
+            // skip 'noarch' key as it's a special key for architecture-independent workloads
+            if( it.key == K8sHelper.NOARCH_PLATFORM )
+                continue
             log.debug "Checking container platform '$it.key'; selector '$it.value'"
             ContainerPlatform.of(it.key) // <-- if invalid it will throw an exception
         }
