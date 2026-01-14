@@ -57,12 +57,12 @@ import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.configuration.ScanConfig
-import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.scan.Trivy
-import io.seqera.wave.util.K8sHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+
 import static io.seqera.wave.service.builder.BuildStrategy.BUILDKIT_ENTRYPOINT
+import static io.seqera.wave.util.K8sHelper.validateNodeSelectorPlatforms
 /**
  * implements the support for Kubernetes cluster
  *
@@ -149,14 +149,7 @@ class K8sServiceImpl implements K8sService {
                 throw new IllegalArgumentException("Build workspace should be a sub-directory of 'wave.build.k8s.storage.mountPath' - offending value: '$buildConfig.buildWorkspace' - expected value: '$storageMountPath'")
         }
         // validate node selectors
-        final platforms = nodeSelectorMap ?: Collections.<String,String>emptyMap()
-        for( Map.Entry<String,String> it : platforms ) {
-            // skip 'noarch' key as it's a special key for architecture-independent workloads
-            if( it.key == K8sHelper.NOARCH_PLATFORM )
-                continue
-            log.debug "Checking container platform '$it.key'; selector '$it.value'"
-            ContainerPlatform.of(it.key) // <-- if invalid it will throw an exception
-        }
+        validateNodeSelectorPlatforms(nodeSelectorMap)
     }
 
     /**

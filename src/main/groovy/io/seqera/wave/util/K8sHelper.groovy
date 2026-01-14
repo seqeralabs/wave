@@ -99,4 +99,23 @@ class K8sHelper {
         return Map.of(parts[0], parts[1])
     }
 
+    /**
+     * Validate that all node selector keys are valid container platforms.
+     * The special 'noarch' key is skipped as it's used for architecture-independent workloads.
+     *
+     * @param nodeSelectors
+     *      A map that associate the platform architecture with a corresponding node selector label
+     * @throws BadRequestException if any key is not a valid container platform
+     */
+    static void validateNodeSelectorPlatforms(Map<String,String> nodeSelectors) {
+        if( !nodeSelectors )
+            return
+        for( Map.Entry<String,String> it : nodeSelectors ) {
+            // skip 'noarch' key as it's a special key for architecture-independent workloads
+            if( it.key == NOARCH_PLATFORM )
+                continue
+            ContainerPlatform.of(it.key) // throws BadRequestException if invalid
+        }
+    }
+
 }
