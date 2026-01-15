@@ -41,6 +41,7 @@ dependencies {
     implementation 'io.seqera:lib-retry:2.0.0'
     implementation 'io.seqera:lib-random:1.0.0'
     implementation 'io.seqera:lib-activator:1.0.0'
+    implementation 'io.seqera:lib-docker-cli:1.0.0'
     implementation project(':wave-api')
     implementation project(':wave-utils')
     implementation 'io.seqera:lib-data-store-state-redis:1.0.0'
