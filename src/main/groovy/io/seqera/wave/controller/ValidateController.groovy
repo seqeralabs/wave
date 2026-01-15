@@ -18,6 +18,7 @@
 
 package io.seqera.wave.controller
 
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.annotation.Body
@@ -31,6 +32,7 @@ import jakarta.inject.Inject
 import jakarta.validation.Valid
 
 @Slf4j
+@CompileStatic
 @Controller("/")
 @ExecuteOn(TaskExecutors.BLOCKING)
 class ValidateController {

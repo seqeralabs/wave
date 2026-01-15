@@ -34,7 +34,7 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.test.SecureDockerRegistryContainer
 import jakarta.inject.Inject
 
-@MicronautTest(environments = ['test'])
+@MicronautTest
 class ValidateCredsControllerTest extends Specification implements SecureDockerRegistryContainer {
 
     @Inject
@@ -192,7 +192,6 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
         'test'           | 'test'          | 'test'                         | true
     }
 
-    @Property(name = "wave.security.ssrf-protection.enabled", value = "true")
     void 'should reject SSRF attempts with private IP'() {
         given:
         def req = [
@@ -211,7 +210,6 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
         e.message.contains('loopback')
     }
 
-    @Property(name = "wave.security.ssrf-protection.enabled", value = "true")
     void 'should reject SSRF attempts with localhost'() {
         given:
         def req = [
@@ -230,7 +228,6 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
         e.message.contains('localhost')
     }
 
-    @Property(name = "wave.security.ssrf-protection.enabled", value = "true")
     void 'should reject SSRF attempts with AWS metadata IP'() {
         given:
         def req = [
@@ -249,7 +246,6 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
         e.message.contains('metadata')
     }
 
-    @Property(name = "wave.security.ssrf-protection.enabled", value = "true")
     void 'should reject SSRF attempts with private network IP'() {
         given:
         def req = [
