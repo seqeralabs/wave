@@ -24,13 +24,13 @@ import java.util.function.Function
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.service.pairing.socket.PairingChannel
-import io.seqera.wave.service.pairing.socket.msg.PairingMessage
-import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
-import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
+import io.seqera.service.pairing.socket.PairingChannel
+import io.seqera.service.pairing.socket.msg.PairingMessage
+import io.seqera.service.pairing.socket.msg.ProxyHttpRequest
+import io.seqera.service.pairing.socket.msg.ProxyHttpResponse
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import static io.seqera.wave.service.pairing.PairingService.TOWER_SERVICE
+import static io.seqera.service.pairing.PairingService.TOWER_SERVICE
 /**
  * Implements a Tower connector using a WebSocket connection
  *

@@ -1,0 +1,70 @@
+/*
+ * Copyright 2025, Seqera Labs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+plugins {
+    id 'io.seqera.wave.groovy-library-conventions'
+}
+
+group = 'io.seqera'
+version = "${project.file('VERSION').text.trim()}"
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://s3-eu-west-1.amazonaws.com/maven.seqera.io/releases' }
+    maven { url = 'https://s3-eu-west-1.amazonaws.com/maven.seqera.io/snapshots' }
+}
+
+dependencies {
+    // Wave utils for DigestFunctions
+    api project(':wave-utils')
+
+    // Core dependencies
+    api 'io.seqera:lib-crypto:1.0.0'
+    api 'io.seqera:lib-random:1.0.0'
+    api 'io.seqera:lib-serde:1.2.0'
+
+    // State/Queue stores
+    implementation 'io.seqera:lib-lang:1.1.0'
+    implementation 'io.seqera:lib-retry:2.0.0'
+    implementation 'io.seqera:lib-data-store-state-redis:1.0.0'
+    implementation 'io.seqera:lib-data-store-future-redis:1.0.0'
+    implementation 'io.seqera:lib-data-queue-redis:1.1.1'
+    implementation 'io.seqera:lib-serde-moshi:1.1.0'
+
+    // Micronaut
+    compileOnly 'io.micronaut:micronaut-inject-groovy'
+    implementation 'io.micronaut:micronaut-websocket'
+    implementation 'io.micronaut:micronaut-runtime'
+    implementation 'io.micronaut:micronaut-http-client'
+    implementation 'io.micronaut.validation:micronaut-validation'
+
+    // Jakarta APIs
+    implementation 'jakarta.annotation:jakarta.annotation-api:3.0.0'
+    implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
+
+    // Caching
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+
+    // JSON
+    implementation 'com.squareup.moshi:moshi:1.15.2'
+    implementation 'com.squareup.moshi:moshi-adapters:1.15.2'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.17.2'
+
+    // Testing
+    testImplementation testFixtures('io.seqera:lib-fixtures-redis:1.1.0')
+    testImplementation 'io.micronaut.test:micronaut-test-spock'
+}
