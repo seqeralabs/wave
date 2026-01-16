@@ -340,6 +340,20 @@ Configure Wave scanning process resource requirements for Kubernetes deployments
 : Sets the [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to Wave scan processes.
   For example, set to `3Gi` (3 Gigabytes) or `2000Mi` (2000 Megabytes).
 
+## Security
+
+### Client IP address resolution
+
+Wave uses client IP addresses for rate limiting. By default, Wave uses socket addresses (secure).
+
+For AWS ALB deployments, enable the `alb` profile:
+
+```bash
+export MICRONAUT_ENVIRONMENTS=alb
+```
+
+This trusts X-Forwarded-For headers from ALB for correct client IP resolution.
+
 ## Rate limits
 
 Configure how Wave controls rate limits for anonymous and authenticated user access with the following options:
