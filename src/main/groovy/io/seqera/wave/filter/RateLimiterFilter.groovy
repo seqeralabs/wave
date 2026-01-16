@@ -28,7 +28,6 @@ import io.github.resilience4j.ratelimiter.internal.AtomicRateLimiter.AtomicRateL
 import io.micronaut.cache.SyncCache
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Requires
-import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpHeaders
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
@@ -72,7 +71,6 @@ class RateLimiterFilter implements HttpServerFilter {
     private final SyncCache<AtomicRateLimiter> limiters
 
     @Inject
-    @Nullable
     private HttpClientAddressResolver addressResolver
 
     /**
@@ -129,13 +127,13 @@ class RateLimiterFilter implements HttpServerFilter {
     }
 
     private String getKey(HttpRequest<?> request) {
-        // When addressResolver is available (alb profile enabled), use it to trust X-Forwarded-For from ALB.
-        final address = addressResolver
-            ? addressResolver.resolve(request)
-            : request.getRemoteAddress().getAddress().getHostAddress()
+        // Use HttpClientAddressResolver which:
+        // - In default mode: returns socket address (secure, ignores headers)
+        // - In ALB mode (when client-address-header configured): trusts X-Forwarded-For from ALB
+        final address = addressResolver.resolve(request)
 
         if( log.isTraceEnabled() ) {
-            log.trace "Filter request\n- uri: ${request.getUri()}\n- address: ${address}\n- resolver: ${addressResolver ? 'enabled' : 'disabled'}\n- headers: ${request.getHeaders().asMap()}"
+            log.trace "Filter request\n- uri: ${request.getUri()}\n- address: ${address}\n- headers: ${request.getHeaders().asMap()}"
         }
         return address
     }
