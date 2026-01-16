@@ -28,6 +28,7 @@ import io.github.resilience4j.ratelimiter.internal.AtomicRateLimiter.AtomicRateL
 import io.micronaut.cache.SyncCache
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Requires
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpHeaders
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
@@ -36,8 +37,10 @@ import io.micronaut.http.MutableHttpResponse
 import io.micronaut.http.annotation.Filter
 import io.micronaut.http.filter.HttpServerFilter
 import io.micronaut.http.filter.ServerFilterChain
+import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.seqera.wave.exchange.ErrorResponse
 import io.seqera.wave.exchange.RegistryErrorResponse
+import jakarta.inject.Inject
 import jakarta.inject.Named
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Flux
@@ -67,6 +70,10 @@ class RateLimiterFilter implements HttpServerFilter {
     private final RateLimiterConfig config
 
     private final SyncCache<AtomicRateLimiter> limiters
+
+    @Inject
+    @Nullable
+    private HttpClientAddressResolver addressResolver
 
     /**
      * Creates the rate limiter with the provided config
@@ -122,9 +129,13 @@ class RateLimiterFilter implements HttpServerFilter {
     }
 
     private String getKey(HttpRequest<?> request) {
-        final address = request.getHeaders().get('X-Forwarded-For') ?: request.getRemoteAddress().getAddress().getHostAddress()
+        // When addressResolver is available (alb profile enabled), use it to trust X-Forwarded-For from ALB.
+        final address = addressResolver
+            ? addressResolver.resolve(request)
+            : request.getRemoteAddress().getAddress().getHostAddress()
+
         if( log.isTraceEnabled() ) {
-            log.trace "Filter request\n- uri: ${request.getUri()}\n- address: ${address}\n- headers: ${request.getHeaders().asMap()}"
+            log.trace "Filter request\n- uri: ${request.getUri()}\n- address: ${address}\n- resolver: ${addressResolver ? 'enabled' : 'disabled'}\n- headers: ${request.getHeaders().asMap()}"
         }
         return address
     }
