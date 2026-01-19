@@ -35,6 +35,30 @@ import static TemplateUtils.condaFileToSingularityFileUsingPixi
 class PixiHelper {
 
     /**
+     * Map of well-known conda channels to their prefix.dev mirrors.
+     * Using prefix.dev mirrors enables sharded repodata which provides
+     * 50-100x faster package resolution.
+     * See: https://prefix.dev/blog/sharded_repodata
+     */
+    static final Map<String, String> CHANNEL_TO_PREFIX_DEV = Map.of(
+            'conda-forge', 'https://prefix.dev/conda-forge',
+            'bioconda', 'https://prefix.dev/bioconda'
+    )
+
+    /**
+     * Maps conda channels to their prefix.dev mirrors for faster package resolution.
+     * Channels that don't have a known prefix.dev mirror are left unchanged.
+     *
+     * @param channels List of conda channel names
+     * @return List of channels with known channels mapped to prefix.dev mirrors
+     */
+    static List<String> mapChannelsToPixiServers(List<String> channels) {
+        if( !channels )
+            return channels
+        return channels.collect { ch -> CHANNEL_TO_PREFIX_DEV.getOrDefault(ch, ch) }
+    }
+
+    /**
      * Generate a container file (Dockerfile or Singularity) using the Pixi template.
      * Only supports CONDA package type. Lock files are not supported.
      *

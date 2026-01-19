@@ -133,4 +133,62 @@ class PixiHelperTest extends Specification {
         def ex = thrown(BadRequestException)
         ex.message.contains("Conda lock file is not supported by 'conda/pixi:v1' template")
     }
+
+    // ---- Tests for channel mapping to prefix.dev mirrors ----
+
+    def 'should map conda-forge channel to prefix.dev mirror'() {
+        when:
+        def result = PixiHelper.mapChannelsToPixiServers(['conda-forge'])
+
+        then:
+        result == ['https://prefix.dev/conda-forge']
+    }
+
+    def 'should map bioconda channel to prefix.dev mirror'() {
+        when:
+        def result = PixiHelper.mapChannelsToPixiServers(['bioconda'])
+
+        then:
+        result == ['https://prefix.dev/bioconda']
+    }
+
+    def 'should map multiple known channels to prefix.dev mirrors'() {
+        when:
+        def result = PixiHelper.mapChannelsToPixiServers(['conda-forge', 'bioconda'])
+
+        then:
+        result == ['https://prefix.dev/conda-forge', 'https://prefix.dev/bioconda']
+    }
+
+    def 'should leave unknown channels unchanged'() {
+        when:
+        def result = PixiHelper.mapChannelsToPixiServers(['defaults', 'my-custom-channel'])
+
+        then:
+        result == ['defaults', 'my-custom-channel']
+    }
+
+    def 'should handle mixed known and unknown channels'() {
+        when:
+        def result = PixiHelper.mapChannelsToPixiServers(['conda-forge', 'defaults', 'bioconda', 'my-channel'])
+
+        then:
+        result == ['https://prefix.dev/conda-forge', 'defaults', 'https://prefix.dev/bioconda', 'my-channel']
+    }
+
+    def 'should handle null channel list'() {
+        when:
+        def result = PixiHelper.mapChannelsToPixiServers(null)
+
+        then:
+        result == null
+    }
+
+    def 'should handle empty channel list'() {
+        when:
+        def result = PixiHelper.mapChannelsToPixiServers([])
+
+        then:
+        result == []
+    }
 }
