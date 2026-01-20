@@ -18,3 +18,66 @@ function copyToClipboard(textToCopy, copyBtn) {
         console.error('Failed to copy text: ', err);
     });
 }
+
+// Initialize event listeners when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle copy buttons with data-copy attribute
+    document.querySelectorAll('[data-copy]').forEach(button => {
+        button.addEventListener('click', function() {
+            const textToCopy = this.getAttribute('data-copy');
+            copyToClipboard(textToCopy, this);
+        });
+    });
+
+    // Handle copy buttons with data-copy-from-element attribute
+    document.querySelectorAll('[data-copy-from-element]').forEach(button => {
+        button.addEventListener('click', function() {
+            const elementId = this.getAttribute('data-copy-from-element');
+            const element = document.getElementById(elementId);
+            if (element) {
+                copyToClipboard(element.textContent, this);
+            }
+        });
+    });
+
+    // Handle download buttons with data-download-url attribute
+    document.querySelectorAll('[data-download-url]').forEach(button => {
+        button.addEventListener('click', function() {
+            const url = this.getAttribute('data-download-url');
+            if (url) {
+                window.open(url, '_blank');
+            }
+        });
+    });
+
+    // Handle evict from cache button
+    const evictButton = document.getElementById('evictFromCacheBtn');
+    if (evictButton) {
+        evictButton.addEventListener('click', evictFromCache);
+    }
+});
+
+function evictFromCache() {
+    const statusLabel = document.getElementById("statusLabel");
+    const evictTable = document.getElementById("evictTable");
+    const evictStatusTable = document.getElementById("evictStatusTable");
+    const evictButton = document.getElementById('evictFromCacheBtn');
+    const token = evictButton.getAttribute('data-token');
+    const serverUrl = evictButton.getAttribute('data-server-url');
+
+    fetch(`${serverUrl}/container-token/${token}`, {
+        method: 'DELETE'
+    }).then(response => {
+        if (response.ok) {
+            statusLabel.textContent = "This wave container record has been evicted from cache.";
+        } else if (response.status === 404) {
+            statusLabel.textContent = "This wave container record is already evicted from cache.";
+        } else {
+            statusLabel.textContent = "Error evicting the wave container record. Please try again later.";
+        }
+    }).catch(() => {
+        statusLabel.textContent = "Error evicting the wave container record. Please try again later.";
+    });
+    evictTable.style.display = "none";
+    evictStatusTable.style.display = "block";
+}
