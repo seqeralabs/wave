@@ -19,51 +19,29 @@ function copyToClipboard(textToCopy, copyBtn) {
     });
 }
 
-// Initialize event listeners when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    // Handle copy buttons with data-copy attribute
-    document.querySelectorAll('[data-copy]').forEach(button => {
-        button.addEventListener('click', function() {
-            const textToCopy = this.getAttribute('data-copy');
-            copyToClipboard(textToCopy, this);
-        });
-    });
+// Event delegation - single listener handles all button actions
+document.addEventListener('click', function(e) {
+    const target = e.target.closest('[data-copy], [data-copy-from-element], [data-download-url], #evictFromCacheBtn');
+    if (!target) return;
 
-    // Handle copy buttons with data-copy-from-element attribute
-    document.querySelectorAll('[data-copy-from-element]').forEach(button => {
-        button.addEventListener('click', function() {
-            const elementId = this.getAttribute('data-copy-from-element');
-            const element = document.getElementById(elementId);
-            if (element) {
-                copyToClipboard(element.textContent, this);
-            }
-        });
-    });
-
-    // Handle download buttons with data-download-url attribute
-    document.querySelectorAll('[data-download-url]').forEach(button => {
-        button.addEventListener('click', function() {
-            const url = this.getAttribute('data-download-url');
-            if (url) {
-                window.open(url, '_blank');
-            }
-        });
-    });
-
-    // Handle evict from cache button
-    const evictButton = document.getElementById('evictFromCacheBtn');
-    if (evictButton) {
-        evictButton.addEventListener('click', evictFromCache);
+    if (target.dataset.copy) {
+        copyToClipboard(target.dataset.copy, target);
+    } else if (target.dataset.copyFromElement) {
+        const el = document.getElementById(target.dataset.copyFromElement);
+        if (el) copyToClipboard(el.textContent, target);
+    } else if (target.dataset.downloadUrl) {
+        window.open(target.dataset.downloadUrl, '_blank');
+    } else if (target.id === 'evictFromCacheBtn') {
+        evictFromCache(target);
     }
 });
 
-function evictFromCache() {
+function evictFromCache(button) {
     const statusLabel = document.getElementById("statusLabel");
     const evictTable = document.getElementById("evictTable");
     const evictStatusTable = document.getElementById("evictStatusTable");
-    const evictButton = document.getElementById('evictFromCacheBtn');
-    const token = evictButton.getAttribute('data-token');
-    const serverUrl = evictButton.getAttribute('data-server-url');
+    const token = button.dataset.token;
+    const serverUrl = button.dataset.serverUrl;
 
     fetch(`${serverUrl}/container-token/${token}`, {
         method: 'DELETE'
