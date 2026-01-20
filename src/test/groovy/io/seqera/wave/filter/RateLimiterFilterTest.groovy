@@ -20,20 +20,18 @@ package io.seqera.wave.filter
 
 import spock.lang.Specification
 
+import java.time.Duration
+
+import io.micronaut.cache.SyncCache
+import io.micronaut.context.ApplicationContext
+import io.micronaut.http.HttpHeaders
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.server.util.HttpClientAddressResolver
-import java.net.InetSocketAddress
+import io.seqera.wave.util.SecureHttpClientAddressResolver
 
 /**
- * Unit test to verify RateLimiterFilter prevents IP spoofing via X-Forwarded-For header
  *
- * Security Issue: COMP-1149 - Client IP Address Spoofing
- *
- * This test verifies that the RateLimiterFilter uses HttpClientAddressResolver which
- * by default uses socket remote address (secure), but can be configured to trust
- * X-Forwarded-For from trusted proxies like AWS ALB.
- *
- * @author Claude Code <noreply@anthropic.com>
+ * @author Munish Chouhan <munish.chouhan@seqera.io
  */
 class RateLimiterFilterTest extends Specification {
 
@@ -45,7 +43,7 @@ class RateLimiterFilterTest extends Specification {
         and: 'Create a request with remote address'
         def request = Mock(HttpRequest) {
             getRemoteAddress() >> new InetSocketAddress(actualClientIp, 12345)
-            getHeaders() >> Mock(io.micronaut.http.HttpHeaders) {
+            getHeaders() >> Mock(HttpHeaders) {
                 get('X-Forwarded-For') >> spoofedIp
                 asMap() >> ['X-Forwarded-For': [spoofedIp]]
             }
@@ -58,11 +56,11 @@ class RateLimiterFilterTest extends Specification {
 
         and: 'A RateLimiterFilter instance'
         def filter = new RateLimiterFilter(
-            Mock(io.micronaut.cache.SyncCache),
+            Mock(SyncCache),
             Mock(RateLimiterOptions) {
-                getLimitRefreshPeriod() >> java.time.Duration.ofSeconds(1)
+                getLimitRefreshPeriod() >> Duration.ofSeconds(1)
                 getLimitForPeriod() >> 100
-                getTimeoutDuration() >> java.time.Duration.ofMillis(500)
+                getTimeoutDuration() >> Duration.ofMillis(500)
                 getStatusCode() >> 429
                 validate() >> {}
             }
@@ -89,11 +87,11 @@ class RateLimiterFilterTest extends Specification {
 
         and: 'A RateLimiterFilter instance'
         def filter = new RateLimiterFilter(
-            Mock(io.micronaut.cache.SyncCache),
+            Mock(SyncCache),
             Mock(RateLimiterOptions) {
-                getLimitRefreshPeriod() >> java.time.Duration.ofSeconds(1)
+                getLimitRefreshPeriod() >> Duration.ofSeconds(1)
                 getLimitForPeriod() >> 100
-                getTimeoutDuration() >> java.time.Duration.ofMillis(500)
+                getTimeoutDuration() >> Duration.ofMillis(500)
                 getStatusCode() >> 429
                 validate() >> {}
             }
@@ -104,7 +102,7 @@ class RateLimiterFilterTest extends Specification {
         def keys = spoofedIps.collect { spoofedIp ->
             def request = Mock(HttpRequest) {
                 getRemoteAddress() >> new InetSocketAddress(actualClientIp, 12345)
-                getHeaders() >> Mock(io.micronaut.http.HttpHeaders) {
+                getHeaders() >> Mock(HttpHeaders) {
                     get('X-Forwarded-For') >> spoofedIp
                     asMap() >> ['X-Forwarded-For': [spoofedIp]]
                 }
@@ -123,7 +121,7 @@ class RateLimiterFilterTest extends Specification {
 
         def request = Mock(HttpRequest) {
             getRemoteAddress() >> new InetSocketAddress(actualClientIp, 54321)
-            getHeaders() >> Mock(io.micronaut.http.HttpHeaders) {
+            getHeaders() >> Mock(HttpHeaders) {
                 get('X-Forwarded-For') >> null
                 asMap() >> [:]
             }
@@ -136,11 +134,11 @@ class RateLimiterFilterTest extends Specification {
 
         and: 'A RateLimiterFilter instance'
         def filter = new RateLimiterFilter(
-            Mock(io.micronaut.cache.SyncCache),
+            Mock(SyncCache),
             Mock(RateLimiterOptions) {
-                getLimitRefreshPeriod() >> java.time.Duration.ofSeconds(1)
+                getLimitRefreshPeriod() >> Duration.ofSeconds(1)
                 getLimitForPeriod() >> 100
-                getTimeoutDuration() >> java.time.Duration.ofMillis(500)
+                getTimeoutDuration() >> Duration.ofMillis(500)
                 getStatusCode() >> 429
                 validate() >> {}
             }
@@ -161,7 +159,7 @@ class RateLimiterFilterTest extends Specification {
 
         def request = Mock(HttpRequest) {
             getRemoteAddress() >> new InetSocketAddress(albIp, 12345)
-            getHeaders() >> Mock(io.micronaut.http.HttpHeaders) {
+            getHeaders() >> Mock(HttpHeaders) {
                 get('X-Forwarded-For') >> realClientIp
                 asMap() >> ['X-Forwarded-For': [realClientIp]]
             }
@@ -174,11 +172,11 @@ class RateLimiterFilterTest extends Specification {
 
         and: 'A RateLimiterFilter instance'
         def filter = new RateLimiterFilter(
-            Mock(io.micronaut.cache.SyncCache),
+            Mock(SyncCache),
             Mock(RateLimiterOptions) {
-                getLimitRefreshPeriod() >> java.time.Duration.ofSeconds(1)
+                getLimitRefreshPeriod() >> Duration.ofSeconds(1)
                 getLimitForPeriod() >> 100
-                getTimeoutDuration() >> java.time.Duration.ofMillis(500)
+                getTimeoutDuration() >> Duration.ofMillis(500)
                 getStatusCode() >> 429
                 validate() >> {}
             }
@@ -191,5 +189,105 @@ class RateLimiterFilterTest extends Specification {
         then: 'The key should be the real client IP from X-Forwarded-For (when configured for ALB)'
         key == realClientIp
         key != albIp
+    }
+
+    def 'should use rightmost IP from comma-separated X-Forwarded-For with SecureHttpClientAddressResolver'() {
+        given: 'ALB configuration context'
+        def ctx = ApplicationContext.run([
+                'micronaut.server.host-resolution.client-address-header': 'X-Forwarded-For'
+        ])
+
+        and: 'SecureHttpClientAddressResolver bean'
+        def resolver = ctx.getBean(HttpClientAddressResolver)
+
+        and: 'A RateLimiterFilter using the secure resolver'
+        def filter = new RateLimiterFilter(
+                Mock(SyncCache),
+                Mock(RateLimiterOptions) {
+                    getLimitRefreshPeriod() >> Duration.ofSeconds(1)
+                    getLimitForPeriod() >> 100
+                    getTimeoutDuration() >> Duration.ofMillis(500)
+                    getStatusCode() >> 429
+                    validate() >> {}
+                }
+        )
+        filter.addressResolver = resolver
+
+        when: 'Request with comma-separated X-Forwarded-For (spoofed IP, real IP from ALB)'
+        def spoofedIp = '192.168.1.99'
+        def realIp = '203.0.113.42'
+        def albIp = '10.0.1.50'
+
+        def request = Mock(HttpRequest) {
+            getRemoteAddress() >> new InetSocketAddress(albIp, 12345)
+            getHeaders() >> Mock(HttpHeaders) {
+                get('X-Forwarded-For') >> "$spoofedIp, $realIp"
+                asMap() >> ['X-Forwarded-For': ["$spoofedIp, $realIp"]]
+            }
+        }
+
+        and: 'Get the key used for rate limiting'
+        def key = filter.getKey(request)
+
+        then: 'Should use the RIGHTMOST IP (real client IP added by ALB), not the spoofed one'
+        key == realIp
+        key != spoofedIp
+        key != albIp
+
+        and: 'Verify resolver is our secure implementation'
+        resolver instanceof SecureHttpClientAddressResolver
+
+        cleanup:
+        ctx.close()
+    }
+
+    def 'should prevent IP spoofing attack with multiple comma-separated IPs'() {
+        given: 'ALB configuration context'
+        def ctx = ApplicationContext.run([
+                'micronaut.server.host-resolution.client-address-header': 'X-Forwarded-For'
+        ])
+
+        and: 'SecureHttpClientAddressResolver bean'
+        def resolver = ctx.getBean(HttpClientAddressResolver)
+
+        and: 'A RateLimiterFilter using the secure resolver'
+        def filter = new RateLimiterFilter(
+                Mock(SyncCache),
+                Mock(RateLimiterOptions) {
+                    getLimitRefreshPeriod() >> Duration.ofSeconds(1)
+                    getLimitForPeriod() >> 100
+                    getTimeoutDuration() >> Duration.ofMillis(500)
+                    getStatusCode() >> 429
+                    validate() >> {}
+                }
+        )
+        filter.addressResolver = resolver
+
+        when: 'Attacker sends requests with different spoofed IPs but same real IP'
+        def realClientIp = '203.0.113.100'
+        def albIp = '10.0.1.50'
+        def spoofedIps = ['1.1.1.1', '2.2.2.2', '3.3.3.3', '192.168.1.1']
+
+        def keys = spoofedIps.collect { spoofedIp ->
+            def request = Mock(HttpRequest) {
+                getRemoteAddress() >> new InetSocketAddress(albIp, 12345)
+                getHeaders() >> Mock(HttpHeaders) {
+                    // X-Forwarded-For: <spoofed-ip>, <real-client-ip>
+                    get('X-Forwarded-For') >> "$spoofedIp, $realClientIp"
+                    asMap() >> ['X-Forwarded-For': ["$spoofedIp, $realClientIp"]]
+                }
+            }
+            filter.getKey(request)
+        }
+
+        then: 'All requests should use the same rate limit key (real client IP), preventing bypass'
+        keys.every { it == realClientIp }
+        keys.unique().size() == 1
+
+        and: 'None of the spoofed IPs should be used'
+        !keys.any { it in spoofedIps }
+
+        cleanup:
+        ctx.close()
     }
 }

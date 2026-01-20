@@ -47,23 +47,35 @@ class SecureHttpClientAddressResolver extends DefaultHttpClientAddressResolver {
 
     @Override
     String resolve(HttpRequest request) {
-        // Get IP from parent (Micronaut's default logic)
-        final String resolvedIp = super.resolve(request)
+        // Read X-Forwarded-For header directly from the request
+        // We cannot use super.resolve() because it returns the FIRST IP, not the full list
+        final String headerValue = request.getHeaders().get('X-Forwarded-For')
 
-        if (!resolvedIp || !resolvedIp.contains(',')) {
-            // Single IP or null - return as is
-            return resolvedIp
+        if (!headerValue) {
+            // Header not present, use socket address
+            final String socketIp = request.getRemoteAddress().getAddress().getHostAddress()
+            if (log.isTraceEnabled()) {
+                log.trace "No X-Forwarded-For header, using socket address: '$socketIp'"
+            }
+            return socketIp
+        }
+
+        if (!headerValue.contains(',')) {
+            // Single IP in header, return as is
+            final String singleIp = headerValue.trim()
+            if (log.isTraceEnabled()) {
+                log.trace "Single IP in X-Forwarded-For: '$singleIp'"
+            }
+            return singleIp
         }
 
         // SECURITY FIX: Multiple IPs (comma-separated) - take the RIGHTMOST one
         // When behind ALB: X-Forwarded-For: <spoofed-ip>, <real-client-ip>
         // The rightmost IP is added by ALB and is trustworthy
-        final String[] ips = resolvedIp.split(',')
+        final String[] ips = headerValue.split(',')
         final String rightmostIp = ips[ips.length - 1].trim()
 
-        if (log.isTraceEnabled()) {
-            log.trace "Resolved IP '$resolvedIp' -> using rightmost: '$rightmostIp'"
-        }
+        log.info "Multiple IPs in X-Forwarded-For: '$headerValue' -> using rightmost: '$rightmostIp'"
 
         return rightmostIp
     }
