@@ -18,3 +18,44 @@ function copyToClipboard(textToCopy, copyBtn) {
         console.error('Failed to copy text: ', err);
     });
 }
+
+// Event delegation - single listener handles all button actions
+document.addEventListener('click', function(e) {
+    const target = e.target.closest('[data-copy], [data-copy-from-element], [data-download-url], #evictFromCacheBtn');
+    if (!target) return;
+
+    if (target.dataset.copy) {
+        copyToClipboard(target.dataset.copy, target);
+    } else if (target.dataset.copyFromElement) {
+        const el = document.getElementById(target.dataset.copyFromElement);
+        if (el) copyToClipboard(el.textContent, target);
+    } else if (target.dataset.downloadUrl) {
+        window.open(target.dataset.downloadUrl, '_blank');
+    } else if (target.id === 'evictFromCacheBtn') {
+        evictFromCache(target);
+    }
+});
+
+function evictFromCache(button) {
+    const statusLabel = document.getElementById("statusLabel");
+    const evictTable = document.getElementById("evictTable");
+    const evictStatusTable = document.getElementById("evictStatusTable");
+    const token = button.dataset.token;
+    const serverUrl = button.dataset.serverUrl;
+
+    fetch(`${serverUrl}/container-token/${token}`, {
+        method: 'DELETE'
+    }).then(response => {
+        if (response.ok) {
+            statusLabel.textContent = "This wave container record has been evicted from cache.";
+        } else if (response.status === 404) {
+            statusLabel.textContent = "This wave container record is already evicted from cache.";
+        } else {
+            statusLabel.textContent = "Error evicting the wave container record. Please try again later.";
+        }
+    }).catch(() => {
+        statusLabel.textContent = "Error evicting the wave container record. Please try again later.";
+    });
+    evictTable.style.display = "none";
+    evictStatusTable.style.display = "block";
+}

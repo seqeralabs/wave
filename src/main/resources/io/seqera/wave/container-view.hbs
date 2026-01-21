@@ -102,7 +102,7 @@
                 <td>Container image</td>
                 <td>
                     {{source_container_image}}
-                    <button class="action-btn" onclick="copyToClipboard(`{{source_container_image}}`, this)" title="Copy container image">
+                    <button class="action-btn" data-copy="{{source_container_image}}" title="Copy container image">
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
                             <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
                         </svg>
@@ -113,7 +113,7 @@
                 <td>Container digest</td>
                 <td>
                     {{source_container_digest}}
-                    <button class="action-btn" onclick="copyToClipboard(`{{source_container_digest}}`, this)" title="Copy digest">
+                    <button class="action-btn" data-copy="{{source_container_digest}}" title="Copy digest">
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
                             <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
                         </svg>
@@ -125,7 +125,7 @@
                     <td>Wave image</td>
                     <td>
                         {{wave_container_image}}
-                        <button class="action-btn" onclick="copyToClipboard(`{{wave_container_image}}`, this)" title="Copy container image">
+                        <button class="action-btn" data-copy="{{wave_container_image}}" title="Copy container image">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
                                 <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
                             </svg>
@@ -136,7 +136,7 @@
                     <td>Wave digest</td>
                     <td>
                         {{wave_container_digest}}
-                        <button class="action-btn" onclick="copyToClipboard(`{{wave_container_digest}}`, this)" title="Copy digest">
+                        <button class="action-btn" data-copy="{{wave_container_digest}}" title="Copy digest">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
                                 <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
                             </svg>
@@ -170,7 +170,7 @@
             <div class="code-section">
                 <div class="code-container">
                     <div class="code-actions">
-                        <button class="action-btn" onclick="copyToClipboard(document.getElementById('containerFileData').textContent, this)" title="Copy">
+                        <button class="action-btn" data-copy-from-element="containerFileData" title="Copy">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
                                 <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
                             </svg>
@@ -190,7 +190,7 @@
             <div class="code-section">
                 <div class="code-container">
                     <div class="code-actions">
-                        <button class="action-btn" onclick="copyToClipboard(document.getElementById('condaFileData').textContent, this)" title="Copy">
+                        <button class="action-btn" data-copy-from-element="condaFileData" title="Copy">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
                                 <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
                             </svg>
@@ -286,7 +286,7 @@
         <div class="admin-section">
             <div id="evictTable" class="evict-container">
                 Do you want to delete this wave container record from cache?
-                <button class="delete-btn" onclick="evictFromCache()">Delete</button>
+                <button id="evictFromCacheBtn" class="delete-btn" data-token="{{request_token}}" data-server-url="{{server_url}}">Delete</button>
             </div>
 
             <div id="evictStatusTable" class="status-container" style="display: none;">
@@ -297,28 +297,5 @@
 {{/if}}
     {{> io/seqera/wave/partials/footer}}
 </div>
-
-<script>
-    function evictFromCache() {
-        const statusLabel = document.getElementById("statusLabel");
-        const evictTable = document.getElementById("evictTable");
-        const evictStatusTable = document.getElementById("evictStatusTable");
-        fetch("{{server_url}}/container-token/{{request_token}}", {
-            method: 'DELETE'
-        }).then(response => {
-            if (response.ok) {
-                statusLabel.textContent = "This wave container record has been evicted from cache.";
-            } else if (response.status === 404) {
-                statusLabel.textContent = "This wave container record is already evicted from cache.";
-            } else {
-                statusLabel.textContent = "Error evicting the wave container record. Please try again later.";
-            }
-        }).catch(error => {
-            statusLabel.textContent = "Error evicting the wave container record. Please try again later.";
-        });
-        evictTable.style.display = "none";
-        evictStatusTable.style.display = "block";
-    }
-</script>
 </body>
 </html>
