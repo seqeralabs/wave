@@ -53,7 +53,7 @@ class SecureHttpClientAddressResolver extends DefaultHttpClientAddressResolver {
 
         if (!headerValue) {
             // Header not present, use socket address
-            final String socketIp = request.getRemoteAddress().getAddress().getHostAddress()
+            final String socketIp = super.resolve(request)
             if (log.isTraceEnabled()) {
                 log.trace "No X-Forwarded-For header, using socket address: '$socketIp'"
             }
