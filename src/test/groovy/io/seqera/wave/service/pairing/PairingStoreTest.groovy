@@ -18,8 +18,13 @@
 
 package io.seqera.wave.service.pairing
 
+import io.seqera.service.pairing.PairingConfig
+import io.seqera.service.pairing.PairingRecord
+import io.seqera.service.pairing.PairingStore
+
 import spock.lang.Specification
 
+import java.time.Duration
 import java.time.Instant
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
@@ -32,6 +37,17 @@ class PairingStoreTest extends Specification{
     @Inject
     PairingStore store
 
+    private PairingConfig mockConfig() {
+        return new PairingConfig() {
+            Duration getKeyLease() { Duration.ofDays(1) }
+            Duration getKeyDuration() { Duration.ofDays(30) }
+            Duration getChannelTimeout() { Duration.ofSeconds(5) }
+            Duration getChannelAwaitTimeout() { Duration.ofMillis(100) }
+            boolean getCloseSessionOnInvalidLicenseToken() { false }
+            List<String> getDenyHosts() { [] }
+        }
+    }
+
     def 'should return entry key' () {
         expect:
         store.key0('foo') == 'pairing-keys/v1:foo'
@@ -39,7 +55,9 @@ class PairingStoreTest extends Specification{
 
     def 'pairing cache store properly serializes/deserializes pairing record'() {
         given: 'a store'
+        final config = mockConfig()
         final store = new PairingStore(new LocalStateProvider())
+        store.config = config
         when: 'we put and get back a record'
         def now = Instant.now()
         store.put('key', new PairingRecord('tower','endpoint','pairingId', new byte[0], new byte[0],now))
