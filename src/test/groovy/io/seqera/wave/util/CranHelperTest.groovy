@@ -428,4 +428,94 @@ class CranHelperTest extends Specification {
             '''
                 .stripIndent(true)
     }
+
+    def 'should reject dockerfile with invalid commands - missing Docker keyword' () {
+        given:
+        def CRAN_OPTS = new CranOpts([
+            rImage: 'rocker/r-ver:4.4.1',
+            commands: ['apt-get update && apt-get install -y curl']  // Missing RUN keyword
+        ])
+        def PACKAGES = 'dplyr'
+
+        when:
+        CranHelper.cranPackagesToDockerFile(PACKAGES, ['cran'], CRAN_OPTS)
+
+        then:
+        def ex = thrown(IllegalArgumentException)
+        ex.message.contains('Invalid Docker command')
+        ex.message.contains('must start with a valid Dockerfile instruction keyword')
+    }
+
+    def 'should accept dockerfile with valid Docker commands' () {
+        given:
+        def CRAN_OPTS = new CranOpts([
+            rImage: 'rocker/r-ver:4.4.1',
+            commands: [
+                'RUN apt-get update && apt-get install -y curl',
+                'ENV MY_VAR=value',
+                'USER root',
+                'WORKDIR /app'
+            ]
+        ])
+        def PACKAGES = 'dplyr'
+
+        when:
+        def result = CranHelper.cranPackagesToDockerFile(PACKAGES, ['cran'], CRAN_OPTS)
+
+        then:
+        result.contains('RUN apt-get update && apt-get install -y curl')
+        result.contains('ENV MY_VAR=value')
+        result.contains('USER root')
+        result.contains('WORKDIR /app')
+    }
+
+    def 'should allow singularity commands without Docker keywords' () {
+        given:
+        def CRAN_OPTS = new CranOpts([
+            rImage: 'rocker/r-ver:4.4.1',
+            commands: ['apt-get update && apt-get install -y curl']  // No RUN keyword needed for Singularity
+        ])
+        def PACKAGES = 'dplyr'
+
+        when:
+        def result = CranHelper.cranPackagesToSingularityFile(PACKAGES, ['cran'], CRAN_OPTS)
+
+        then:
+        result.contains('apt-get update && apt-get install -y curl')
+        noExceptionThrown()
+    }
+
+    def 'should reject invalid Docker keyword' () {
+        given:
+        def CRAN_OPTS = new CranOpts([
+            rImage: 'rocker/r-ver:4.4.1',
+            commands: ['INVALID apt-get update']
+        ])
+        def PACKAGES = 'dplyr'
+
+        when:
+        CranHelper.cranPackagesToDockerFile(PACKAGES, ['cran'], CRAN_OPTS)
+
+        then:
+        def ex = thrown(IllegalArgumentException)
+        ex.message.contains('Invalid Docker command')
+    }
+
+    def 'should accept various valid Docker keywords' () {
+        given:
+        def CRAN_OPTS = new CranOpts([
+            rImage: 'rocker/r-ver:4.4.1',
+            commands: [keyword + ' test']
+        ])
+        def PACKAGES = 'dplyr'
+
+        when:
+        def result = CranHelper.cranPackagesToDockerFile(PACKAGES, ['cran'], CRAN_OPTS)
+
+        then:
+        result.contains(keyword + ' test')
+
+        where:
+        keyword << ['RUN', 'CMD', 'ENV', 'COPY', 'ADD', 'WORKDIR', 'USER', 'EXPOSE', 'LABEL', 'ENTRYPOINT', 'VOLUME', 'ARG']
+    }
 }
