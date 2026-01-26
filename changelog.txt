@@ -1,4 +1,9 @@
 # Wave changelog
+1.32.2 - 26 Jan 2026
+- Fix copy and download button in wave reports (#969) [22601f1d6]
+- Remove GitHub Action for generating Seqera Docs changelog (#965) [04492ded7]
+- Use lib-data-range-redis from libseqera (#964) [448edc1ee]
+
 1.32.1 - 14 Jan 2026
 - Fix noarch node selector validation in K8sServiceImpl (#963) [cd21beec2]
 - Add complete tests for CranOpts custom commands (#960) [913f7506d]
