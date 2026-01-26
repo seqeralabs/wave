@@ -36,6 +36,9 @@ wave:
       threshold: 100
     proxy-service:
       threshold: 100
+  security:
+    ssrf-protection:
+      enabled: false
 ---
 endpoints:
   metrics:
