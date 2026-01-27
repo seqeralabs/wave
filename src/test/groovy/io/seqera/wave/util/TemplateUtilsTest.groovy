@@ -624,7 +624,7 @@ class TemplateUtilsTest extends Specification {
                     echo ">> CONDA_LOCK_START"
                     cat /opt/wave/pixi.lock
                     echo "<< CONDA_LOCK_END"
-                    tar czf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs default
+                    tar czf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs default 2>/dev/null || true
                     ls -lh /opt/pixi-env.tar.gz
 
                 Bootstrap: docker
@@ -636,7 +636,7 @@ class TemplateUtilsTest extends Specification {
                     /shell-hook.sh /shell-hook.sh
                 %post
                     mkdir -p /opt/wave/.pixi/envs
-                    tar xzf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs
+                    tar xzf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs 2>/dev/null || true
                     rm /opt/pixi-env.tar.gz
                 %environment
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
@@ -660,7 +660,7 @@ class TemplateUtilsTest extends Specification {
                     echo ">> CONDA_LOCK_START"
                     cat /opt/wave/pixi.lock
                     echo "<< CONDA_LOCK_END"
-                    tar czf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs default
+                    tar czf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs default 2>/dev/null || true
                     ls -lh /opt/pixi-env.tar.gz
 
                 Bootstrap: docker
@@ -672,7 +672,7 @@ class TemplateUtilsTest extends Specification {
                     /shell-hook.sh /shell-hook.sh
                 %post
                     mkdir -p /opt/wave/.pixi/envs
-                    tar xzf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs
+                    tar xzf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs 2>/dev/null || true
                     rm /opt/pixi-env.tar.gz
                 %environment
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
@@ -702,7 +702,7 @@ class TemplateUtilsTest extends Specification {
                     echo ">> CONDA_LOCK_START"
                     cat /opt/wave/pixi.lock
                     echo "<< CONDA_LOCK_END"
-                    tar czf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs default
+                    tar czf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs default 2>/dev/null || true
                     ls -lh /opt/pixi-env.tar.gz
 
                 Bootstrap: docker
@@ -714,7 +714,7 @@ class TemplateUtilsTest extends Specification {
                     /shell-hook.sh /shell-hook.sh
                 %post
                     mkdir -p /opt/wave/.pixi/envs
-                    tar xzf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs
+                    tar xzf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs 2>/dev/null || true
                     rm /opt/pixi-env.tar.gz
                 %environment
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
@@ -776,7 +776,7 @@ class TemplateUtilsTest extends Specification {
                     echo ">> CONDA_LOCK_START"
                     cat environment.lock
                     echo "<< CONDA_LOCK_END"
-                    tar czf /opt/conda.tar.gz -C /opt conda
+                    tar czf /opt/conda.tar.gz -C /opt conda 2>/dev/null || true
 
                 Bootstrap: docker
                 From: ubuntu:24.04
@@ -785,7 +785,7 @@ class TemplateUtilsTest extends Specification {
                     /opt/conda.tar.gz /opt/conda.tar.gz
                 %post
                     cd /opt
-                    tar xzf conda.tar.gz
+                    tar xzf conda.tar.gz 2>/dev/null || true
                     rm conda.tar.gz
                 %environment
                     export MAMBA_ROOT_PREFIX=/opt/conda
@@ -809,7 +809,7 @@ class TemplateUtilsTest extends Specification {
                     echo ">> CONDA_LOCK_START"
                     cat environment.lock
                     echo "<< CONDA_LOCK_END"
-                    tar czf /opt/conda.tar.gz -C /opt conda
+                    tar czf /opt/conda.tar.gz -C /opt conda 2>/dev/null || true
 
                 Bootstrap: docker
                 From: ubuntu:24.04
@@ -818,7 +818,7 @@ class TemplateUtilsTest extends Specification {
                     /opt/conda.tar.gz /opt/conda.tar.gz
                 %post
                     cd /opt
-                    tar xzf conda.tar.gz
+                    tar xzf conda.tar.gz 2>/dev/null || true
                     rm conda.tar.gz
                 %environment
                     export MAMBA_ROOT_PREFIX=/opt/conda
