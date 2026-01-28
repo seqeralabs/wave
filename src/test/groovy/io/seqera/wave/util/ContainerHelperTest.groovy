@@ -646,6 +646,10 @@ class ContainerHelperTest extends Specification {
                 COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
                 COPY --from=build /shell-hook.sh /shell-hook.sh
 
+                # set user and environment variables for Python compatibility
+                USER root
+                ENV USER=root
+
                 # set the entrypoint to the shell-hook script (activate the environment and run the command)
                 # no more pixi needed in the final container
                 ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]
@@ -676,10 +680,10 @@ class ContainerHelperTest extends Specification {
         then:
         result =='''\
                 FROM ghcr.io/prefix-dev/pixi:0.47.0-jammy-cuda-12.8.1 AS build
-                 
+
                 COPY conda.yml /opt/wave/conda.yml
                 WORKDIR /opt/wave
-                 
+
                 RUN pixi init --import /opt/wave/conda.yml \\
                     && pixi add foo::one bar::two \\
                     && pixi shell-hook > /shell-hook.sh \\
@@ -687,17 +691,21 @@ class ContainerHelperTest extends Specification {
                     && echo ">> CONDA_LOCK_START" \\
                     && cat /opt/wave/pixi.lock \\
                     && echo "<< CONDA_LOCK_END"
-                 
+
                 FROM base/image AS final
-                 
+
                 # copy the pixi environment in the final container
                 COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
                 COPY --from=build /shell-hook.sh /shell-hook.sh
-                 
+
+                # set user and environment variables for Python compatibility
+                USER root
+                ENV USER=root
+
                 # set the entrypoint to the shell-hook script (activate the environment and run the command)
                 # no more pixi needed in the final container
                 ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]
-                 
+
                 # Default command for "docker run"
                 CMD ["/bin/bash"]
                 '''.stripIndent()
