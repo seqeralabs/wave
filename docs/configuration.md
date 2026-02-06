@@ -336,16 +336,16 @@ Configure Wave scanning process resource requirements for Kubernetes deployments
 Configure how Wave controls rate limits for anonymous and authenticated user access with the following options:
 
 `rate-limit.build.anonymous` *(required)*
-: Sets the rate limit for build requests from anonymous users (default: 25 build requests per day (`25/1d`); max: 25).
+: Sets the rate limit for build requests from anonymous users (default: `10/1h`).
 
 `rate-limit.build.authenticated` *(required)*
-: Sets the rate limit for build requests from authenticated users (default: 100 build requests per hour (`100/1h`); max: 100).
+: Sets the rate limit for build requests from authenticated users (default: `10/1m`).
 
 `rate-limit.pull.anonymous` *(required)*
-: Sets the rate limit for anonymous pull requests from anonymous users (default: 250 pull requests per hour (`250/1h`); max: 250).
+: Sets the rate limit for pull requests from anonymous users (default: `100/1h`).
 
 `rate-limit.pull.authenticated` *(required)*
-: Sets the rate limit for authenticated pull requests from authenticated users (default: 2k pull requests per minute (`2000/1m`); max: 2k).
+: Sets the rate limit for pull requests from authenticated users (default: `100/1m`).
 
 ## Database and cache
 
