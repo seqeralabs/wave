@@ -103,7 +103,7 @@ Configure the HTTP client with the following options:
 : Sets the maximum delay for HTTP client retries.
 
 `wave.httpclient.retry.multiplier` *(optional)*
-: Sets the multiplier for HTTP client retries (default: `1.0`).
+: Sets the multiplier for HTTP client retries (default: `1.75`).
 
 ## Container build process
 
