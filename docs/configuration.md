@@ -414,11 +414,17 @@ Configure how Wave caches container blobs to improve client performance and opti
 `wave.blobCache.enabled` *(optional)*
 : Enables the blob cache (default: `false`).
 
-`wave.blobCache.requestsCpu` *(optional)*
-: Sets the amount of [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to the k8s pod used for blob binary transfers.
+`wave.blobCache.k8s.resources.requests.cpu` *(optional)*
+: Sets the amount of [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) requested for the Kubernetes pod used for blob binary transfers.
 
-`wave.blobCache.requestsMemory` *(optional)*
-: Sets the [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to the k8s pod used for blob binary transfers.
+`wave.blobCache.k8s.resources.requests.memory` *(optional)*
+: Sets the [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) requested for the Kubernetes pod used for blob binary transfers.
+
+`wave.blobCache.k8s.resources.limits.cpu` *(optional)*
+: Sets the CPU resource [limit](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) for the Kubernetes pod used for blob binary transfers.
+
+`wave.blobCache.k8s.resources.limits.memory` *(optional)*
+: Sets the memory resource [limit](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) for the Kubernetes pod used for blob binary transfers.
 
 `wave.blobCache.s5cmdImage` *(optional)*
 : Sets the container image that supplies the [s5cmd tool](https://github.com/peak/s5cmd) to upload blob binaries to the S3 bucket (default: `public.cr.seqera.io/wave/s5cmd:v2.2.2`).
