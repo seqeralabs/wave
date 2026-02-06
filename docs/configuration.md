@@ -435,10 +435,10 @@ Configure how Wave caches container blobs to improve client performance and opti
   Options include: `aws-presigned-url` and `cloudflare-waf-token`.
 
 `wave.blobCache.status.delay` *(optional)*
-: Sets the time delay in checking the status of the transfer of the blob binary from the repository to the cache (default: `5s`).
+: Sets the time delay in checking the status of the transfer of the blob binary from the repository to the cache (default: `2s`).
 
 `wave.blobCache.status.duration` *(optional)*
-: Sets the time for which Wave will store the blob binary in cache (default: `5d`).
+: Sets the duration for which blob transfer status records are retained in cache (default: `1h`).
 
 `wave.blobCache.storage.accessKey` *(optional)*
 : Specifies the access key (part of credentials) to access the resources of the service used for caching.
@@ -457,7 +457,7 @@ Configure how Wave caches container blobs to improve client performance and opti
 : Specifies the secret key (part of credentials) to access the resources of the service used for caching.
 
 `wave.blobCache.timeout` *(optional)*
-: Sets the timeout for blob binary transfer, after which Wave will throw a `TransferTimeoutException` exception (default: `5m`).
+: Sets the timeout for blob binary transfer, after which Wave will throw a `TransferTimeoutException` exception (default: `10m`).
 
 ## Email configuration
 
