@@ -263,19 +263,13 @@ wave:
 Configure how Wave stores and delivers build logs from containers and Kubernetes pods, which can be retrieved later or included in build completion emails, with the following options:
 
 `wave.build.locks.path` *(required)*
-: Sets the path inside `wave.build.logs.bucket` where Wave will store Conda lock files.
-
-`wave.build.logs.bucket` *(required)*
-: Sets the AWS S3 bucket where Wave will store build process logs.
+: Sets the full path where Wave will store Conda lock files. Can be an S3 URI (e.g., `s3://my-bucket/wave/locks`) or a local filesystem path.
 
 `wave.build.logs.maxLength` *(optional)*
 : Determines the maximum number of bytes that can be read from a log file. If a log file exceeds this limit, it will be truncated (default: `100000` (100 KB)).
 
 `wave.build.logs.path` *(required)*
-: Sets the path inside `wave.build.logs.bucket` where Wave will store build logs.
-
-`wave.build.logs.prefix` *(optional)*
-: Sets the prefix for build process log files in the specified S3 bucket.
+: Sets the full path where Wave will store build logs. Can be an S3 URI (e.g., `s3://my-bucket/wave/logs`) or a local filesystem path. When using an S3 URI, Wave automatically extracts the key prefix for log file organization.
 
 ### Kubernetes container build process
 
