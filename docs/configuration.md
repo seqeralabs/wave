@@ -110,7 +110,7 @@ Configure the HTTP client with the following options:
 Configure how Wave builds container images and manages associated logs for monitoring, troubleshooting, and delivery with the following options:
 
 `wave.build.buildkit-image` *(required)*
-: Sets the [Buildkit](https://github.com/moby/buildkit) container image used in the Wave build process (default: `moby/buildkit:v0.25.2-rootless`).
+: Sets the [Buildkit](https://github.com/moby/buildkit) container image used in the Wave build process (default: `public.cr.seqera.io/wave/buildkit:v0.25.2-rootless`).
 
 `wave.build.cache` *(optional)*
 : Sets the cache repository for images built by Wave. Supports both container registry paths and S3 bucket paths.
@@ -131,7 +131,7 @@ Configure how Wave builds container images and manages associated logs for monit
   Example: `8`
   This setting is only used when `wave.build.cache` is configured with an S3 bucket path.
 
-`wave.build.cleanup` *(optional)*
+`wave.cleanup.strategy` *(optional)*
 : Sets the cleanup strategy after the build process.
   For example, set to `OnSuccess` for cleanup only if a build is successful.
 
@@ -154,10 +154,7 @@ Configure how Wave builds container images and manages associated logs for monit
 : Sets the Docker container repository for the container images built by Wave.
 
 `wave.build.singularity-image` *(optional)*
-: Sets the [Singularity](https://quay.io/repository/singularity/singularity?tab=tags) image used in the build process (default: `quay.io/singularity/singularity:v3.11.4-slim`).
-
-`wave.build.singularity-image-arm64` *(optional)*
-: Sets the ARM64 version of the Singularity image for the build process (default: `quay.io/singularity/singularity:v3.11.4-slim-arm64`).
+: Sets the [Singularity](https://quay.io/repository/singularity/singularity?tab=tags) image used in the build process (default: `public.cr.seqera.io/wave/singularity:v4.2.1-r4`).
 
 `wave.build.status.delay` *(optional)*
 : Sets the delay between build status checks (default: `5s`).
