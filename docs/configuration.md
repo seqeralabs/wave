@@ -408,7 +408,7 @@ Configure how Wave caches container blobs to improve client performance and opti
 `wave.blobCache.cloudflare.secret-key` *(optional)*
 : Specifies the [Cloudflare secret](https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/) to create the WAF token.
 
-`wave.blobCache.cloudflare.urlSignatureDuration` *(optional)*
+`wave.blobCache.url-signature-duration` *(optional)*
 : Sets the validity of the AWS S3 URL signature (default: `30m`).
 
 `wave.blobCache.enabled` *(optional)*
