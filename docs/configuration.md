@@ -440,7 +440,7 @@ Configure how Wave caches container blobs to improve client performance and opti
 `wave.blobCache.status.duration` *(optional)*
 : Sets the duration for which blob transfer status records are retained in cache (default: `1h`).
 
-`wave.blobCache.storage.accessKey` *(optional)*
+`wave.blobCache.storage.accessKey` *(required)*
 : Specifies the access key (part of credentials) to access the resources of the service used for caching.
 
 `wave.blobCache.storage.bucket` *(required)*
@@ -453,8 +453,12 @@ Configure how Wave caches container blobs to improve client performance and opti
 `wave.blobCache.storage.region` *(required)*
 : Sets the AWS region where the bucket is created.
 
-`wave.blobCache.storage.secretKey` *(optional)*
+`wave.blobCache.storage.secretKey` *(required)*
 : Specifies the secret key (part of credentials) to access the resources of the service used for caching.
+
+:::note
+Static credentials (`accessKey` and `secretKey`) are currently required for blob cache storage access. IAM-based authentication (such as EKS Pod Identity or IRSA) is not yet supported for the blob cache feature. This differs from the S3 build cache, which does support IAM-based authentication.
+:::
 
 `wave.blobCache.timeout` *(optional)*
 : Sets the timeout for blob binary transfer, after which Wave will throw a `TransferTimeoutException` exception (default: `10m`).
