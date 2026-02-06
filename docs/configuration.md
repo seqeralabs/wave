@@ -282,7 +282,7 @@ Configure Kubernetes-specific settings for Wave, where build and scan processes 
 : Sets the Kubernetes namespace where Wave will run its build pods.
 
 `wave.build.k8s.node-selector` *(optional)*
-: Sets the node selector for Wave build Kubernetes pods.
+: Sets the node selector for Wave build Kubernetes pods. Value must be a map entry in `key=value` format (e.g., `service=wave-build`).
 
 `wave.build.k8s.resources.requests.cpu` *(optional)*
 : Sets the [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) to allocate to Wave build processes.
