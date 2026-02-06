@@ -306,10 +306,10 @@ Configure Kubernetes-specific settings for Wave, where build and scan processes 
 Configure how Wave's vulnerability scanning process uses a [Trivy Docker image](https://hub.docker.com/r/aquasec/trivy) with customizable tags and severity levels with the following options:
 
 `wave.scan.enabled` *(optional)*
-: Enables vulnerability scanning (default: `true`).
+: Enables vulnerability scanning (default: `false`).
 
 `wave.scan.image.name`  *(optional)*
-: Sets the [Trivy Docker image](https://hub.docker.com/r/aquasec/trivy) to use for container security scanning (default: `aquasec/trivy:0.47.0`).
+: Sets the container image used for security scanning (default: `public.cr.seqera.io/wave/scanner:v1-0.65.0-oras-1.3.0`).
 
 `wave.scan.reports.path` *(required)*
 : Sets the path inside the S3 bucket where Wave will store SBOM reports.
