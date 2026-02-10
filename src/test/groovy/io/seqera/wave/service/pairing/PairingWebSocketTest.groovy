@@ -18,11 +18,18 @@
 
 package io.seqera.wave.service.pairing
 
+import java.time.Instant
+import java.util.concurrent.CompletableFuture
+
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.micronaut.websocket.CloseReason
+import io.micronaut.websocket.WebSocketSession
+import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.pairing.socket.PairingWebSocket
+import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 
 /**
  *
@@ -58,5 +65,49 @@ class PairingWebSocketTest extends Specification {
 
         cleanup:
         ctx.close()
+    }
+
+    def 'should close session on heartbeat when pairing record is missing from store'() {
+        given:
+        def pairingService = Mock(PairingService)
+        def channel = Mock(PairingChannel)
+        def session = Mock(WebSocketSession)
+        and:
+        def ws = new PairingWebSocket()
+        ws.@pairingService = pairingService
+        ws.@channel = channel
+
+        when: 'heartbeat received and pairing record is missing'
+        ws.onMessage('tower', 'token', 'http://tower.io', new PairingHeartbeat(msgId: 'test'), session)
+
+        then: 'the session is closed to force a reconnect'
+        1 * pairingService.getPairingRecord('tower', 'http://tower.io') >> null
+        1 * session.close(CloseReason.GOING_AWAY)
+        0 * session.sendAsync(_)
+    }
+
+    def 'should not re-acquire pairing record on heartbeat when present in store'() {
+        given:
+        def pairingService = Mock(PairingService)
+        def channel = Mock(PairingChannel)
+        def session = Mock(WebSocketSession)
+        and:
+        def existingRecord = new PairingRecord(
+                service: 'tower',
+                endpoint: 'http://tower.io',
+                pairingId: 'abc',
+                expiration: Instant.now().plusSeconds(3600))
+        and:
+        def ws = new PairingWebSocket()
+        ws.@pairingService = pairingService
+        ws.@channel = channel
+
+        when: 'heartbeat received and pairing record exists'
+        ws.onMessage('tower', 'token', 'http://tower.io', new PairingHeartbeat(msgId: 'test'), session)
+
+        then: 'the pairing record is checked but not re-acquired'
+        1 * pairingService.getPairingRecord('tower', 'http://tower.io') >> existingRecord
+        0 * pairingService.acquirePairingKey(_, _)
+        1 * session.sendAsync(_) >> CompletableFuture.completedFuture(null)
     }
 }
