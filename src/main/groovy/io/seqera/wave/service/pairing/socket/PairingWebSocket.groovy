@@ -110,6 +110,14 @@ class PairingWebSocket {
     void onMessage(String service, String token, String endpoint, PairingMessage message, WebSocketSession session) {
         if( message instanceof PairingHeartbeat ) {
             log.trace "Receiving heartbeat - endpoint: ${endpoint} [sessionId: $session.id]"
+            // verify the pairing record is still available in the store
+            // and close the session to force a reconnect if missing (e.g. after a Redis outage)
+            final record = pairingService.getPairingRecord(service, endpoint)
+            if( !record ) {
+                log.warn "Pairing record missing for endpoint: ${endpoint} - closing session to force reconnect [sessionId: $session.id]"
+                session.close(CloseReason.GOING_AWAY)
+                return
+            }
             // send pong message
             final msg = new PairingHeartbeat(msgId:rndHex())
             session
