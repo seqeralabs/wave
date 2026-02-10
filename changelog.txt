@@ -1,4 +1,8 @@
 # Wave changelog
+1.32.3 - 10 Feb 2026
+- Close pairing session on heartbeat when record is missing from Redis (#977) [779c14379]
+- Bump libseqera dependencies (#978) [fb2e98111]
+
 1.32.2 - 26 Jan 2026
 - Fix copy and download button in wave reports (#969) [22601f1d6]
 - Remove GitHub Action for generating Seqera Docs changelog (#965) [04492ded7]
