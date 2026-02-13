@@ -81,8 +81,21 @@ class CredentialServiceImpl implements CredentialsService {
         def creds = all.find {
             it.provider == 'container-reg'  && (it.registry ?: DOCKER_IO) == matchingRegistryName
         }
-        if (!creds && identity.workflowId && AwsEcrService.isEcrHost(registryName) ) {
-            creds = findComputeCreds(identity)
+
+        // For ECR registries, also look for AWS credentials or compute environment credentials
+        if (!creds && AwsEcrService.isEcrHost(registryName) ) {
+            // First, try to find AWS credentials (provider: 'aws')
+            creds = all.find { it.provider == 'aws' }
+            if (creds) {
+                log.debug "Found AWS credentials for ECR registry - credentialsId=${creds.id}"
+            }
+            // If no AWS credentials found and we have a workflowId, try compute environment credentials
+            else if (identity.workflowId) {
+                creds = findComputeCreds(identity)
+                if (creds) {
+                    log.debug "Found compute environment credentials - credentialsId=${creds.id}"
+                }
+            }
         }
         if (!creds) {
             log.debug "No credentials matching criteria registryName=$registryName; userId=$identity.userId; workspaceId=$identity.workspaceId; workflowId=${identity.workflowId}; endpoint=$identity.towerEndpoint"
@@ -90,7 +103,7 @@ class CredentialServiceImpl implements CredentialsService {
         }
 
         // log for debugging purposes
-        log.debug "Credentials matching criteria registryName=$registryName; userId=$identity.userId; workspaceId=$identity.workspaceId; endpoint=$identity.towerEndpoint => $creds"
+        log.debug "Credentials matching criteria registryName=$registryName; userId=$identity.userId; workspaceId=$identity.workspaceId; endpoint=$identity.towerEndpoint => credentialsId=${creds.id}; provider=${creds.provider}"
         // now fetch the encrypted key
         final encryptedCredentials = towerClient.fetchEncryptedCredentials(identity.towerEndpoint, JwtAuth.of(identity), creds.id, pairing.pairingId, identity.workspaceId, identity.workflowId)
         final privateKey = pairing.privateKey
@@ -117,6 +130,7 @@ class CredentialServiceImpl implements CredentialsService {
             return null
         if( computeEnv.platform != 'aws-batch' )
             return null
+        log.debug "Using AWS Batch compute credentials - credentialsId=${computeEnv.credentialsId}"
         return new CredentialsDescription(id: computeEnv.credentialsId, provider: 'aws')
     }
 
