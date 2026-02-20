@@ -84,17 +84,22 @@ class ContainerHelper {
         if( req.packages.type != PackagesSpec.Type.CONDA )
             return null
 
+        // Map channels to prefix.dev mirrors for pixi builds (enables sharded repodata for faster resolution)
+        final channels = req.buildTemplate == CONDA_PIXI_V1
+                ? PixiHelper.mapChannelsToPixiServers(req.packages.channels)
+                : req.packages.channels
+
         if( req.packages.environment ) {
             // parse the attribute as a conda file path *and* append the base packages if any
             // note 'channel' is null, because they are expected to be provided in the conda file
             final decoded = decodeBase64OrFail(req.packages.environment, 'packages.envFile')
-            return condaEnvironmentToCondaYaml(decoded, req.packages.channels)
+            return condaEnvironmentToCondaYaml(decoded, channels)
         }
 
         if ( req.packages.entries && !CondaHelper.tryGetLockFile(req.packages.entries)) {
             // create a minimal conda file with package spec from user input
             final String packages = req.packages.entries.join(' ')
-            return condaPackagesToCondaYaml(packages, req.packages.channels)
+            return condaPackagesToCondaYaml(packages, channels)
         }
 
         return null;
