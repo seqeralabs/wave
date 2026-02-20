@@ -103,14 +103,14 @@ Configure the HTTP client with the following options:
 : Sets the maximum delay for HTTP client retries.
 
 `wave.httpclient.retry.multiplier` *(optional)*
-: Sets the multiplier for HTTP client retries (default: `1.0`).
+: Sets the multiplier for HTTP client retries (default: `1.75`).
 
 ## Container build process
 
 Configure how Wave builds container images and manages associated logs for monitoring, troubleshooting, and delivery with the following options:
 
 `wave.build.buildkit-image` *(required)*
-: Sets the [Buildkit](https://github.com/moby/buildkit) container image used in the Wave build process (default: `moby/buildkit:v0.25.2-rootless`).
+: Sets the [Buildkit](https://github.com/moby/buildkit) container image used in the Wave build process (default: `public.cr.seqera.io/wave/buildkit:v0.25.2-rootless`).
 
 `wave.build.cache` *(optional)*
 : Sets the cache repository for images built by Wave. Supports both container registry paths and S3 bucket paths.
@@ -131,7 +131,7 @@ Configure how Wave builds container images and manages associated logs for monit
   Example: `8`
   This setting is only used when `wave.build.cache` is configured with an S3 bucket path.
 
-`wave.build.cleanup` *(optional)*
+`wave.cleanup.strategy` *(optional)*
 : Sets the cleanup strategy after the build process.
   For example, set to `OnSuccess` for cleanup only if a build is successful.
 
@@ -154,10 +154,7 @@ Configure how Wave builds container images and manages associated logs for monit
 : Sets the Docker container repository for the container images built by Wave.
 
 `wave.build.singularity-image` *(optional)*
-: Sets the [Singularity](https://quay.io/repository/singularity/singularity?tab=tags) image used in the build process (default: `quay.io/singularity/singularity:v3.11.4-slim`).
-
-`wave.build.singularity-image-arm64` *(optional)*
-: Sets the ARM64 version of the Singularity image for the build process (default: `quay.io/singularity/singularity:v3.11.4-slim-arm64`).
+: Sets the [Singularity](https://quay.io/repository/singularity/singularity?tab=tags) image used in the build process (default: `public.cr.seqera.io/wave/singularity:v4.2.1-r4`).
 
 `wave.build.status.delay` *(optional)*
 : Sets the delay between build status checks (default: `5s`).
@@ -266,19 +263,13 @@ wave:
 Configure how Wave stores and delivers build logs from containers and Kubernetes pods, which can be retrieved later or included in build completion emails, with the following options:
 
 `wave.build.locks.path` *(required)*
-: Sets the path inside `wave.build.logs.bucket` where Wave will store Conda lock files.
-
-`wave.build.logs.bucket` *(required)*
-: Sets the AWS S3 bucket where Wave will store build process logs.
+: Sets the full path where Wave will store Conda lock files. Can be an S3 URI (e.g., `s3://my-bucket/wave/locks`) or a local filesystem path.
 
 `wave.build.logs.maxLength` *(optional)*
 : Determines the maximum number of bytes that can be read from a log file. If a log file exceeds this limit, it will be truncated (default: `100000` (100 KB)).
 
 `wave.build.logs.path` *(required)*
-: Sets the path inside `wave.build.logs.bucket` where Wave will store build logs.
-
-`wave.build.logs.prefix` *(optional)*
-: Sets the prefix for build process log files in the specified S3 bucket.
+: Sets the full path where Wave will store build logs. Can be an S3 URI (e.g., `s3://my-bucket/wave/logs`) or a local filesystem path. When using an S3 URI, Wave automatically extracts the key prefix for log file organization.
 
 ### Kubernetes container build process
 
@@ -291,7 +282,7 @@ Configure Kubernetes-specific settings for Wave, where build and scan processes 
 : Sets the Kubernetes namespace where Wave will run its build pods.
 
 `wave.build.k8s.node-selector` *(optional)*
-: Sets the node selector for Wave build Kubernetes pods.
+: Sets the node selector for Wave build Kubernetes pods. Value must be a map entry in `key=value` format (e.g., `service=wave-build`).
 
 `wave.build.k8s.resources.requests.cpu` *(optional)*
 : Sets the [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) to allocate to Wave build processes.
@@ -315,10 +306,10 @@ Configure Kubernetes-specific settings for Wave, where build and scan processes 
 Configure how Wave's vulnerability scanning process uses a [Trivy Docker image](https://hub.docker.com/r/aquasec/trivy) with customizable tags and severity levels with the following options:
 
 `wave.scan.enabled` *(optional)*
-: Enables vulnerability scanning (default: `true`).
+: Enables vulnerability scanning (default: `false`).
 
 `wave.scan.image.name`  *(optional)*
-: Sets the [Trivy Docker image](https://hub.docker.com/r/aquasec/trivy) to use for container security scanning (default: `aquasec/trivy:0.47.0`).
+: Sets the container image used for security scanning (default: `public.cr.seqera.io/wave/scanner:v1-0.65.0-oras-1.3.0`).
 
 `wave.scan.reports.path` *(required)*
 : Sets the path inside the S3 bucket where Wave will store SBOM reports.
@@ -345,16 +336,16 @@ Configure Wave scanning process resource requirements for Kubernetes deployments
 Configure how Wave controls rate limits for anonymous and authenticated user access with the following options:
 
 `rate-limit.build.anonymous` *(required)*
-: Sets the rate limit for build requests from anonymous users (default: 25 build requests per day (`25/1d`); max: 25).
+: Sets the rate limit for build requests from anonymous users (default: `10/1h`).
 
 `rate-limit.build.authenticated` *(required)*
-: Sets the rate limit for build requests from authenticated users (default: 100 build requests per hour (`100/1h`); max: 100).
+: Sets the rate limit for build requests from authenticated users (default: `10/1m`).
 
 `rate-limit.pull.anonymous` *(required)*
-: Sets the rate limit for anonymous pull requests from anonymous users (default: 250 pull requests per hour (`250/1h`); max: 250).
+: Sets the rate limit for pull requests from anonymous users (default: `100/1h`).
 
 `rate-limit.pull.authenticated` *(required)*
-: Sets the rate limit for authenticated pull requests from authenticated users (default: 2k pull requests per minute (`2000/1m`); max: 2k).
+: Sets the rate limit for pull requests from authenticated users (default: `100/1m`).
 
 ## Database and cache
 
@@ -417,17 +408,23 @@ Configure how Wave caches container blobs to improve client performance and opti
 `wave.blobCache.cloudflare.secret-key` *(optional)*
 : Specifies the [Cloudflare secret](https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/) to create the WAF token.
 
-`wave.blobCache.cloudflare.urlSignatureDuration` *(optional)*
+`wave.blobCache.url-signature-duration` *(optional)*
 : Sets the validity of the AWS S3 URL signature (default: `30m`).
 
 `wave.blobCache.enabled` *(optional)*
 : Enables the blob cache (default: `false`).
 
-`wave.blobCache.requestsCpu` *(optional)*
-: Sets the amount of [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to the k8s pod used for blob binary transfers.
+`wave.blobCache.k8s.resources.requests.cpu` *(optional)*
+: Sets the amount of [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) requested for the Kubernetes pod used for blob binary transfers.
 
-`wave.blobCache.requestsMemory` *(optional)*
-: Sets the [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to the k8s pod used for blob binary transfers.
+`wave.blobCache.k8s.resources.requests.memory` *(optional)*
+: Sets the [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) requested for the Kubernetes pod used for blob binary transfers.
+
+`wave.blobCache.k8s.resources.limits.cpu` *(optional)*
+: Sets the CPU resource [limit](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) for the Kubernetes pod used for blob binary transfers.
+
+`wave.blobCache.k8s.resources.limits.memory` *(optional)*
+: Sets the memory resource [limit](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) for the Kubernetes pod used for blob binary transfers.
 
 `wave.blobCache.s5cmdImage` *(optional)*
 : Sets the container image that supplies the [s5cmd tool](https://github.com/peak/s5cmd) to upload blob binaries to the S3 bucket (default: `public.cr.seqera.io/wave/s5cmd:v2.2.2`).
@@ -438,12 +435,12 @@ Configure how Wave caches container blobs to improve client performance and opti
   Options include: `aws-presigned-url` and `cloudflare-waf-token`.
 
 `wave.blobCache.status.delay` *(optional)*
-: Sets the time delay in checking the status of the transfer of the blob binary from the repository to the cache (default: `5s`).
+: Sets the time delay in checking the status of the transfer of the blob binary from the repository to the cache (default: `2s`).
 
 `wave.blobCache.status.duration` *(optional)*
-: Sets the time for which Wave will store the blob binary in cache (default: `5d`).
+: Sets the duration for which blob transfer status records are retained in cache (default: `1h`).
 
-`wave.blobCache.storage.accessKey` *(optional)*
+`wave.blobCache.storage.accessKey` *(required)*
 : Specifies the access key (part of credentials) to access the resources of the service used for caching.
 
 `wave.blobCache.storage.bucket` *(required)*
@@ -456,11 +453,15 @@ Configure how Wave caches container blobs to improve client performance and opti
 `wave.blobCache.storage.region` *(required)*
 : Sets the AWS region where the bucket is created.
 
-`wave.blobCache.storage.secretKey` *(optional)*
+`wave.blobCache.storage.secretKey` *(required)*
 : Specifies the secret key (part of credentials) to access the resources of the service used for caching.
 
+:::note
+Static credentials (`accessKey` and `secretKey`) are currently required for blob cache storage access. IAM-based authentication (such as EKS Pod Identity or IRSA) is not yet supported for the blob cache feature. This differs from the S3 build cache, which does support IAM-based authentication.
+:::
+
 `wave.blobCache.timeout` *(optional)*
-: Sets the timeout for blob binary transfer, after which Wave will throw a `TransferTimeoutException` exception (default: `5m`).
+: Sets the timeout for blob binary transfer, after which Wave will throw a `TransferTimeoutException` exception (default: `10m`).
 
 ## Email configuration
 

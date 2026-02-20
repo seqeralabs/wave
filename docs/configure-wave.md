@@ -157,9 +157,7 @@ Configure ECR cache repository in your Wave configuration:
 wave:
   build:
     enabled: true
-    cache:
-      enabled: true
-      repository: "123456789012.dkr.ecr.us-east-1.amazonaws.com/wave-cache"
+    cache: "123456789012.dkr.ecr.us-east-1.amazonaws.com/wave-cache"
 ```
 
 #### IAM permissions
@@ -235,9 +233,8 @@ Using ECR as a cache repository provides:
 
 #### Configuration Options
 
-| Setting            | Description          | Example                                                   |
-| ------------------ | -------------------- | --------------------------------------------------------- |
-| `cache.enabled`    | Enable build caching | `true`                                                    |
-| `cache.repository` | ECR repository URL   | `123456789012.dkr.ecr.us-east-1.amazonaws.com/wave-cache` |
+| Setting                    | Description                       | Example                                                   |
+| -------------------------- | --------------------------------- | --------------------------------------------------------- |
+| `wave.build.cache`         | Cache repository URL or S3 path   | `123456789012.dkr.ecr.us-east-1.amazonaws.com/wave-cache` |
 
 **Note:** ECR cache requires Wave build service to be enabled and is only available in AWS deployments with proper ECR access configured.
