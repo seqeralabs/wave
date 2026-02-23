@@ -226,20 +226,24 @@ Wave correctly handles IAM role authentication across different AWS regions, all
 ### Key Entities
 
 - **AwsSecurityKeys (Platform)**: Represents AWS credentials configuration in Platform
-  - Key attributes: `registry`, `username` (access key ID or role ARN), `password` (secret key, unused for roles), `assumeRoleArn`, `externalId` (new)
+  - Key attributes: `registry`, `username` (access key ID **or** IAM role ARN), `password` (secret key **or** external ID when username is a role ARN)
+  - Note: Role ARN is detected at the Wave service layer via pattern matching (`^arn:aws:iam::\d{12}:role/.+`). No separate `assumeRoleArn` field is needed — the existing `username`/`password` fields are reused for backward compatibility.
   - Relationships: Associated with workspace/organization in Platform
 
-- **AwsCreds (Wave)**: Represents AWS credentials used by Wave
-  - Key attributes: `accessKey`, `secretKey`, `sessionToken` (new), `region`, `ecrPublic`
-  - Relationships: Used as cache key, temporary lifecycle for role-based credentials
+- **AwsCreds (Wave)**: Represents AWS credentials used by Wave for cache key computation
+  - Key attributes: `accessKey`, `secretKey`, `sessionToken` (nullable — null for static credentials), `region`, `ecrPublic`
+  - For role-based auth: cache key uses `roleArn` as `accessKey` and `externalId` as `secretKey` (with null `sessionToken`) to ensure stable cache keys across credential refreshes
+  - For static auth: cache key uses actual access key and secret key (with null `sessionToken`)
+  - Relationships: Used as tiered cache key via `stableHash()`, temporary lifecycle for role-based credentials
 
-- **TemporaryCredentials (Wave)**: Represents temporary credentials obtained from STS
-  - Key attributes: `accessKeyId`, `secretAccessKey`, `sessionToken`, `expiration` (new)
-  - Relationships: Stored in Wave's credential cache with expiration tracking
+- **AWS STS Credentials (transient)**: Temporary credentials obtained from STS AssumeRole
+  - Key attributes: `accessKeyId`, `secretAccessKey`, `sessionToken`, `expiration`
+  - Note: These are transient — not stored as a separate entity. They are used immediately to call ECR and the resulting auth token is cached with a TTL derived from `expiration` minus 5-minute buffer.
+  - Relationships: Returned by STS, used to construct ECR API calls
 
 - **AssumeRoleRequest**: STS API request for assuming IAM role
   - Key attributes: `roleArn`, `externalId`, `roleSessionName`, `durationSeconds`
-  - Relationships: Sent to AWS STS service, returns TemporaryCredentials
+  - Relationships: Sent to AWS STS service, returns temporary credentials
 
 ## Success Criteria *(mandatory)*
 

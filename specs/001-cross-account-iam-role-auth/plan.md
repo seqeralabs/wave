@@ -77,16 +77,13 @@ specs/001-cross-account-iam-role-auth/
 
 ```text
 src/main/groovy/io/seqera/wave/service/aws/
-├── AwsEcrService.groovy                # MODIFY: Add STS integration, role ARN detection
+├── AwsEcrService.groovy                # MODIFY: Add STS integration, role ARN detection, static stsClient() factory method
 ├── cache/
-│   └── AwsEcrCache.groovy              # MODIFY: Add expiration tracking for temporary credentials
-└── config/
-    └── AwsStsConfig.groovy             # NEW: STS client factory bean
+│   └── AwsEcrCache.groovy              # No changes needed - tiered cache supports dynamic TTL via Pair
 
 src/test/groovy/io/seqera/wave/service/aws/
-├── AwsEcrServiceSpec.groovy            # MODIFY: Add role-based auth tests
-├── AwsEcrCacheSpec.groovy              # MODIFY: Add credential expiration tests
-└── AwsEcrIntegrationSpec.groovy        # MODIFY: Add end-to-end role-based auth tests
+├── AwsEcrServiceSpec.groovy            # MODIFY: Add role-based auth tests, computeCacheTtl tests
+└── AwsEcrIamRoleIntegrationSpec.groovy # NEW: End-to-end role-based auth integration tests
 
 src/main/resources/
 └── application.yml                     # MODIFY: Add STS client configuration (if needed)
@@ -169,77 +166,63 @@ class AwsCreds {
 
 ---
 
-#### Task 1.2: Modify CachedEcrCredentials Class
+#### Task 1.2: Implement Dynamic Cache TTL for Role-Based Credentials
 
-**File**: `src/main/groovy/io/seqera/wave/service/aws/cache/AwsEcrCache.groovy`
+**File**: `src/main/groovy/io/seqera/wave/service/aws/AwsEcrService.groovy`
 
-**Changes**:
+**Approach**: Instead of modifying `CachedEcrCredentials`, use the existing `AbstractTieredCache.Pair<V, Duration>` pattern to set per-entry TTL based on STS credential expiration. The `AwsEcrCache` already supports this via `getOrCompute(key, loader)` with dynamic TTL.
+
+**New method** (`computeCacheTtl`):
 ```groovy
-@Canonical
-class CachedEcrCredentials {
-    String accessKeyId
-    String secretAccessKey
-    String sessionToken        // NEW - null for static credentials
-    Instant stsExpiration      // NEW - when STS credentials expire
-    String authToken
-    Instant tokenExpiration
+static final private Duration REFRESH_BUFFER = Duration.ofMinutes(5)
+static final private Duration MIN_CACHE_TTL = Duration.ofMinutes(1)
 
-    boolean isExpiring() {
-        def now = Instant.now()
-        def buffer = Duration.ofMinutes(5)
-
-        // Check STS credential expiration (role-based)
-        if (stsExpiration != null && now.plus(buffer).isAfter(stsExpiration)) {
-            return true
-        }
-
-        // Check ECR token expiration (both auth types)
-        return now.plus(buffer).isAfter(tokenExpiration)
-    }
-
-    Instant getEffectiveExpiration() {
-        if (stsExpiration == null) {
-            return tokenExpiration
-        }
-        return stsExpiration.isBefore(tokenExpiration) ? stsExpiration : tokenExpiration
-    }
+protected static Duration computeCacheTtl(Instant expiration, Duration maxDuration) {
+    if (expiration == null) return maxDuration
+    final timeUntilExpiry = Duration.between(Instant.now(), expiration)
+    final bufferedTtl = timeUntilExpiry.minus(REFRESH_BUFFER)
+    if (bufferedTtl.compareTo(MIN_CACHE_TTL) < 0) return MIN_CACHE_TTL
+    return bufferedTtl.compareTo(maxDuration) < 0 ? bufferedTtl : maxDuration
 }
+```
+
+**Usage** (in `getLoginTokenWithRole`):
+```groovy
+return cache.getOrCompute(key, (String k) -> {
+    final tempCreds = assumeRole(roleArn, externalId, region)
+    final ttl = computeCacheTtl(tempCreds.expiration(), cache.duration)
+    final token = load(new AwsCreds(tempCreds.accessKeyId(), tempCreds.secretAccessKey(), tempCreds.sessionToken(), region, isPublic))
+    return new AbstractTieredCache.Pair<AwsEcrAuthToken, Duration>(token, ttl)
+}).value
 ```
 
 **Test Coverage**:
-- Unit test: `isExpiring()` returns true when <5 min to STS expiration
-- Unit test: `isExpiring()` returns true when <5 min to token expiration
-- Unit test: `isExpiring()` returns false when >5 min remaining
-- Unit test: `getEffectiveExpiration()` returns earliest expiration
+- Unit test: `computeCacheTtl()` returns buffered TTL when expiration is > 5 min away
+- Unit test: `computeCacheTtl()` returns MIN_CACHE_TTL when expiration is < 6 min away
+- Unit test: `computeCacheTtl()` returns maxDuration when expiration is null
+- Unit test: `computeCacheTtl()` returns maxDuration when buffered TTL exceeds it
 
 ---
 
-#### Task 1.3: Create STS Client Bean
+#### Task 1.3: Add STS Client Factory Method
 
-**File**: `src/main/groovy/io/seqera/wave/service/aws/config/AwsStsConfig.groovy` (NEW)
+**File**: `src/main/groovy/io/seqera/wave/service/aws/AwsEcrService.groovy`
+
+**Approach**: Instead of a separate `AwsStsConfig.groovy` factory bean, use a static factory method within `AwsEcrService` that creates per-region STS clients. This follows the same pattern as the existing `ecrClient()` and `ecrPublicClient()` methods.
 
 **Implementation**:
 ```groovy
-package io.seqera.wave.service.aws.config
-
-import io.micronaut.context.annotation.Factory
-import jakarta.inject.Singleton
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.sts.StsClient
-
-@Factory
-class AwsStsConfig {
-
-    @Singleton
-    StsClient stsClient() {
-        return StsClient.builder()
-            .region(Region.AWS_GLOBAL)
-            .build()
-    }
+protected static StsClient stsClient(String region) {
+    return StsClient.builder()
+        .region(Region.of(region))
+        .credentialsProvider(DefaultCredentialsProvider.builder().build())
+        .build()
 }
 ```
 
-**Configuration**: Uses AWS SDK default credential provider chain (environment variables, EC2 instance profile, etc.)
+**Rationale**: Per-region clients ensure STS calls use the correct regional endpoint. Uses `DefaultCredentialsProvider` (environment variables, EC2 instance profile, ECS task role) — no separate bean needed.
+
+**Note**: No new file `AwsStsConfig.groovy` is created. Remove from project structure.
 
 ---
 
