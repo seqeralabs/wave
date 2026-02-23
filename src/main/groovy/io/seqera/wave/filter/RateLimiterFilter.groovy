@@ -126,7 +126,7 @@ class RateLimiterFilter implements HttpServerFilter {
         }
     }
 
-    private String getKey(HttpRequest<?> request) {
+    protected String getKey(HttpRequest<?> request) {
         // Use HttpClientAddressResolver which:
         // - In default mode: returns socket address (secure, ignores headers)
         // - In ALB mode (when client-address-header configured): trusts X-Forwarded-For from ALB

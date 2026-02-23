@@ -75,7 +75,15 @@ class SecureHttpClientAddressResolver extends DefaultHttpClientAddressResolver {
         final String[] ips = headerValue.split(',')
         final String rightmostIp = ips[ips.length - 1].trim()
 
-        log.info "Multiple IPs in X-Forwarded-For: '$headerValue' -> using rightmost: '$rightmostIp'"
+        // Guard against malformed headers (e.g. trailing comma)
+        if (!rightmostIp) {
+            log.warn "Malformed X-Forwarded-For header: '$headerValue' - falling back to socket address"
+            return super.resolve(request)
+        }
+
+        if (log.isTraceEnabled()) {
+            log.trace "Multiple IPs in X-Forwarded-For: '$headerValue' -> using rightmost: '$rightmostIp'"
+        }
 
         return rightmostIp
     }
