@@ -27,13 +27,13 @@ import java.util.regex.Pattern
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.retry.annotation.Retryable
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.service.aws.cache.AwsEcrAuthToken
 import io.seqera.wave.service.aws.cache.AwsEcrCache
 import io.seqera.cache.tiered.AbstractTieredCache
 import io.seqera.cache.tiered.TieredKey
 import io.seqera.wave.util.RegHelper
-import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -135,35 +135,38 @@ class AwsEcrService {
     }
 
     /**
-     * Assume an IAM role and return temporary credentials
+     * Assume an IAM role and return temporary credentials.
+     * Transient STS errors (5xx) are retried automatically via {@link StsRetryPredicate}.
      *
      * @param roleArn The ARN of the role to assume
      * @param externalId The external ID for cross-account role assumption (optional)
      * @param region AWS region
      * @return Temporary AWS credentials with session token
      */
+    @Retryable(
+            delay = '${wave.aws.sts.retry.delay:1s}',
+            maxDelay = '${wave.aws.sts.retry.max-delay:10s}',
+            attempts = '${wave.aws.sts.retry.attempts:3}',
+            multiplier = '${wave.aws.sts.retry.multiplier:2.0}',
+            predicate = StsRetryPredicate
+    )
     protected Credentials assumeRole(String roleArn, String externalId, String region) {
         log.trace "Assuming AWS role: $roleArn; region: $region; externalId: ${externalId ? 'provided' : 'none'}"
 
-        try {
-            final client = stsClient(region)
-            final requestBuilder = AssumeRoleRequest.builder()
-                    .roleArn(roleArn)
-                    .roleSessionName("wave-ecr-${System.currentTimeMillis()}")
-                    .durationSeconds(3600) // 1 hour
+        final client = stsClient(region)
+        final requestBuilder = AssumeRoleRequest.builder()
+                .roleArn(roleArn)
+                .roleSessionName("wave-ecr-${System.currentTimeMillis()}")
+                .durationSeconds(3600) // 1 hour
 
-            // Add external ID if provided
-            if (externalId) {
-                requestBuilder.externalId(externalId)
-            }
+        // Add external ID if provided
+        if (externalId) {
+            requestBuilder.externalId(externalId)
+        }
 
-            final request = requestBuilder.build()
-            final response = client.assumeRole(request as AssumeRoleRequest)
-            return response.credentials()
-        }
-        catch (StsException e) {
-            throw mapStsException(e)
-        }
+        final request = requestBuilder.build()
+        final response = client.assumeRole(request as AssumeRoleRequest)
+        return response.credentials()
     }
 
     /**
@@ -311,24 +314,29 @@ class AwsEcrService {
         return cache.getOrCompute(key, (String k) -> {
             log.trace "Cache miss for role $roleArn - assuming role to get temporary credentials"
 
-            // Assume the role to get temporary credentials
-            final Credentials tempCreds = assumeRole(roleArn, externalId, region)
+            try {
+                // Assume the role to get temporary credentials (retried automatically for transient errors)
+                final tempCreds = assumeRole(roleArn, externalId, region)
 
-            // Calculate cache TTL with 5-minute refresh buffer based on STS credential expiration
-            final ttl = computeCacheTtl(tempCreds.expiration(), cache.duration)
+                // Calculate cache TTL with 5-minute refresh buffer based on STS credential expiration
+                final ttl = computeCacheTtl(tempCreds.expiration(), cache.duration)
 
-            // Create temporary credentials for ECR API call
-            final tempKey = new AwsCreds(
-                    tempCreds.accessKeyId(),
-                    tempCreds.secretAccessKey(),
-                    tempCreds.sessionToken(),
-                    region,
-                    isPublic
-            )
+                // Create temporary credentials for ECR API call
+                final tempKey = new AwsCreds(
+                        tempCreds.accessKeyId(),
+                        tempCreds.secretAccessKey(),
+                        tempCreds.sessionToken(),
+                        region,
+                        isPublic
+                )
 
-            // Get ECR auth token using temporary credentials
-            final token = load(tempKey)
-            return new AbstractTieredCache.Pair<AwsEcrAuthToken, Duration>(token, ttl)
+                // Get ECR auth token using temporary credentials
+                final token = load(tempKey)
+                return new AbstractTieredCache.Pair<AwsEcrAuthToken, Duration>(token, ttl)
+            }
+            catch (StsException e) {
+                throw mapStsException(e)
+            }
         }).value
     }
 

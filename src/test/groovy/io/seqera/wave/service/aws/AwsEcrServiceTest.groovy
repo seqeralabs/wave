@@ -465,4 +465,100 @@ class AwsEcrServiceTest extends Specification {
         result instanceof AwsEcrAuthException
         result.message.contains('STS AssumeRole failed')
     }
+
+    // --- StsRetryPredicate tests ---
+
+    def 'should retry on 5xx STS errors' () {
+        given:
+        def predicate = new StsRetryPredicate()
+        def stsEx = (StsException) StsException.builder()
+                .message('Service Unavailable')
+                .awsErrorDetails(AwsErrorDetails.builder()
+                        .errorCode('ServiceUnavailable')
+                        .errorMessage('Service Unavailable')
+                        .sdkHttpResponse(SdkHttpResponse.builder().statusCode(503).build())
+                        .build())
+                .statusCode(503)
+                .build()
+
+        expect:
+        predicate.test(stsEx)
+    }
+
+    def 'should retry on 500 internal server error' () {
+        given:
+        def predicate = new StsRetryPredicate()
+        def stsEx = (StsException) StsException.builder()
+                .message('Internal Server Error')
+                .awsErrorDetails(AwsErrorDetails.builder()
+                        .errorCode('InternalError')
+                        .errorMessage('Internal Server Error')
+                        .sdkHttpResponse(SdkHttpResponse.builder().statusCode(500).build())
+                        .build())
+                .statusCode(500)
+                .build()
+
+        expect:
+        predicate.test(stsEx)
+    }
+
+    def 'should not retry on 4xx STS client errors' () {
+        given:
+        def predicate = new StsRetryPredicate()
+        def stsEx = (StsException) StsException.builder()
+                .message('Access Denied')
+                .awsErrorDetails(AwsErrorDetails.builder()
+                        .errorCode('AccessDenied')
+                        .errorMessage('Access Denied')
+                        .sdkHttpResponse(SdkHttpResponse.builder().statusCode(403).build())
+                        .build())
+                .statusCode(403)
+                .build()
+
+        expect:
+        !predicate.test(stsEx)
+    }
+
+    def 'should not retry on non-STS exceptions' () {
+        given:
+        def predicate = new StsRetryPredicate()
+
+        expect:
+        !predicate.test(new RuntimeException('something else'))
+        !predicate.test(new IOException('network error'))
+    }
+
+    def 'should map STS exception in getLoginTokenWithRole after retries exhausted' () {
+        given:
+        def cache = Mock(AwsEcrCache)
+        def service = Spy(AwsEcrService)
+        service.@cache = cache
+
+        def roleArn = 'arn:aws:iam::123456789012:role/WaveEcrAccess'
+        def region = 'us-east-1'
+
+        def stsEx = (StsException) StsException.builder()
+                .message('Access Denied')
+                .awsErrorDetails(AwsErrorDetails.builder()
+                        .errorCode('AccessDenied')
+                        .errorMessage('Access Denied')
+                        .sdkHttpResponse(SdkHttpResponse.builder().statusCode(403).build())
+                        .build())
+                .statusCode(403)
+                .build()
+
+        when:
+        service.getLoginTokenWithRole(roleArn, null, region, false)
+
+        then:
+        1 * cache.getOrCompute(_, _) >> { args ->
+            def loader = args[1] as Function
+            loader.apply('mock-key')
+        }
+        1 * service.assumeRole(roleArn, null, region) >> { throw stsEx }
+
+        and:
+        def e = thrown(AwsEcrAuthException)
+        e.message.contains("Wave's service role does not have permission")
+    }
 }
