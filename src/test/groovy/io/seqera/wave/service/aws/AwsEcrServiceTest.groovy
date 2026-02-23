@@ -18,11 +18,22 @@
 
 package io.seqera.wave.service.aws
 
+import java.time.Duration
+import java.time.Instant
+import java.util.function.Function
+
 import spock.lang.Requires
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.service.aws.cache.AwsEcrAuthToken
+import io.seqera.wave.service.aws.cache.AwsEcrCache
 import jakarta.inject.Inject
+import software.amazon.awssdk.awscore.exception.AwsErrorDetails
+import software.amazon.awssdk.http.SdkHttpResponse
+import software.amazon.awssdk.services.sts.model.Credentials
+import software.amazon.awssdk.services.sts.model.StsException
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -202,5 +213,256 @@ class AwsEcrServiceTest extends Specification {
 
         then:
         thrown(AssertionError)
+    }
+
+    // --- computeCacheTtl tests ---
+
+    def 'should compute TTL with 5-minute buffer for 1-hour expiration' () {
+        given:
+        def expiration = Instant.now().plus(Duration.ofHours(1))
+        def maxDuration = Duration.ofHours(3)
+
+        when:
+        def ttl = AwsEcrService.computeCacheTtl(expiration, maxDuration)
+
+        then:
+        // 1h - 5min = 55min, should be ~55 minutes (allow 1 min tolerance for test execution time)
+        ttl.toMinutes() >= 54
+        ttl.toMinutes() <= 55
+    }
+
+    def 'should use maxDuration when expiration is far in the future' () {
+        given:
+        def expiration = Instant.now().plus(Duration.ofHours(10))
+        def maxDuration = Duration.ofHours(3)
+
+        when:
+        def ttl = AwsEcrService.computeCacheTtl(expiration, maxDuration)
+
+        then:
+        ttl == maxDuration
+    }
+
+    def 'should return MIN_CACHE_TTL when credentials are nearly expired' () {
+        given:
+        def expiration = Instant.now().plus(Duration.ofMinutes(3)) // less than 5-min buffer
+        def maxDuration = Duration.ofHours(3)
+
+        when:
+        def ttl = AwsEcrService.computeCacheTtl(expiration, maxDuration)
+
+        then:
+        ttl == Duration.ofMinutes(1)
+    }
+
+    def 'should return MIN_CACHE_TTL when credentials are already expired' () {
+        given:
+        def expiration = Instant.now().minus(Duration.ofMinutes(1))
+        def maxDuration = Duration.ofHours(3)
+
+        when:
+        def ttl = AwsEcrService.computeCacheTtl(expiration, maxDuration)
+
+        then:
+        ttl == Duration.ofMinutes(1)
+    }
+
+    def 'should return maxDuration when expiration is null' () {
+        given:
+        def maxDuration = Duration.ofHours(3)
+
+        when:
+        def ttl = AwsEcrService.computeCacheTtl(null, maxDuration)
+
+        then:
+        ttl == maxDuration
+    }
+
+    @Unroll
+    def 'should compute correct TTL for expiration in #minutes minutes' () {
+        given:
+        def expiration = Instant.now().plus(Duration.ofMinutes(minutes))
+        def maxDuration = Duration.ofHours(3)
+
+        when:
+        def ttl = AwsEcrService.computeCacheTtl(expiration, maxDuration)
+
+        then:
+        ttl.toMinutes() >= expectedMinMinutes
+        ttl.toMinutes() <= expectedMaxMinutes
+
+        where:
+        minutes | expectedMinMinutes | expectedMaxMinutes
+        6       | 1                  | 1       // 6 - 5 = 1 min (at MIN_CACHE_TTL boundary)
+        10      | 4                  | 5       // 10 - 5 = 5 min
+        30      | 24                 | 25      // 30 - 5 = 25 min
+        60      | 54                 | 55      // 60 - 5 = 55 min
+        200     | 180                | 180     // 200 - 5 = 195 min, capped by maxDuration (180 min)
+    }
+
+    // --- End-to-end role assumption flow tests ---
+
+    def 'should get login token with role assumption using mocked STS' () {
+        given:
+        def cache = Mock(AwsEcrCache)
+        def service = Spy(AwsEcrService)
+        service.@cache = cache
+
+        def roleArn = 'arn:aws:iam::123456789012:role/WaveEcrAccess'
+        def externalId = 'ext-id-123'
+        def region = 'us-east-1'
+
+        def stsCreds = Credentials.builder()
+                .accessKeyId('ASIATEMPKEY')
+                .secretAccessKey('tempSecret')
+                .sessionToken('tempToken')
+                .expiration(Instant.now().plus(Duration.ofHours(1)))
+                .build()
+
+        when:
+        def result = service.getLoginTokenWithRole(roleArn, externalId, region, false)
+
+        then:
+        // Stub cache to invoke the loader lambda and return its result
+        1 * cache.getOrCompute(_, _) >> { args ->
+            def loader = args[1] as Function
+            def pair = loader.apply('mock-key')
+            return pair.first
+        }
+        1 * service.assumeRole(roleArn, externalId, region) >> stsCreds
+        1 * cache.getDuration() >> Duration.ofHours(3)
+        1 * service.load(_) >> new AwsEcrAuthToken('AWS:token123')
+
+        and:
+        result == 'AWS:token123'
+    }
+
+    def 'should get login token with role assumption for ECR public' () {
+        given:
+        def cache = Mock(AwsEcrCache)
+        def service = Spy(AwsEcrService)
+        service.@cache = cache
+
+        def roleArn = 'arn:aws:iam::123456789012:role/WaveEcrAccess'
+        def region = 'us-east-1'
+
+        def stsCreds = Credentials.builder()
+                .accessKeyId('ASIATEMPKEY')
+                .secretAccessKey('tempSecret')
+                .sessionToken('tempToken')
+                .expiration(Instant.now().plus(Duration.ofHours(1)))
+                .build()
+
+        when:
+        def result = service.getLoginTokenWithRole(roleArn, null, region, true)
+
+        then:
+        // Stub cache to invoke the loader lambda and return its result
+        1 * cache.getOrCompute(_, _) >> { args ->
+            def loader = args[1] as Function
+            def pair = loader.apply('mock-key')
+            return pair.first
+        }
+        1 * service.assumeRole(roleArn, null, region) >> stsCreds
+        1 * cache.getDuration() >> Duration.ofHours(3)
+        1 * service.load(_) >> new AwsEcrAuthToken('AWS:publictoken')
+
+        and:
+        result == 'AWS:publictoken'
+    }
+
+    def 'should route role ARN to getLoginTokenWithRole' () {
+        given:
+        def service = Spy(AwsEcrService)
+
+        def roleArn = 'arn:aws:iam::123456789012:role/WaveEcrAccess'
+        def externalId = 'ext-id-123'
+        def region = 'us-east-1'
+
+        when:
+        service.getLoginToken(roleArn, externalId, region, false)
+
+        then:
+        1 * service.getLoginTokenWithRole(roleArn, externalId, region, false) >> 'AWS:token'
+        0 * service.getLoginTokenWithStaticCredentials(_, _, _, _)
+    }
+
+    def 'should route static credentials to getLoginTokenWithStaticCredentials' () {
+        given:
+        def service = Spy(AwsEcrService)
+
+        def accessKey = 'AKIAIOSFODNN7EXAMPLE'
+        def secretKey = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+        def region = 'us-east-1'
+
+        when:
+        service.getLoginToken(accessKey, secretKey, region, false)
+
+        then:
+        0 * service.getLoginTokenWithRole(_, _, _, _)
+        1 * service.getLoginTokenWithStaticCredentials(accessKey, secretKey, region, false) >> 'AWS:token'
+    }
+
+    // --- Error handling tests ---
+
+    def 'should map AccessDenied STS exception' () {
+        given:
+        def stsEx = (StsException) StsException.builder()
+                .message('Access Denied')
+                .awsErrorDetails(AwsErrorDetails.builder()
+                        .errorCode('AccessDenied')
+                        .errorMessage('Access Denied')
+                        .sdkHttpResponse(SdkHttpResponse.builder().statusCode(403).build())
+                        .build())
+                .statusCode(403)
+                .build()
+
+        when:
+        def result = AwsEcrService.mapStsException(stsEx)
+
+        then:
+        result instanceof AwsEcrAuthException
+        result.message.contains("Wave's service role does not have permission")
+        result.message.contains('trust policy')
+    }
+
+    def 'should map RegionDisabledException STS exception' () {
+        given:
+        def stsEx = (StsException) StsException.builder()
+                .message('Region disabled')
+                .awsErrorDetails(AwsErrorDetails.builder()
+                        .errorCode('RegionDisabledException')
+                        .errorMessage('Region disabled')
+                        .sdkHttpResponse(SdkHttpResponse.builder().statusCode(403).build())
+                        .build())
+                .statusCode(403)
+                .build()
+
+        when:
+        def result = AwsEcrService.mapStsException(stsEx)
+
+        then:
+        result instanceof AwsEcrAuthException
+        result.message.contains('STS is not enabled')
+    }
+
+    def 'should map unknown STS exception to generic message' () {
+        given:
+        def stsEx = (StsException) StsException.builder()
+                .message('Something went wrong')
+                .awsErrorDetails(AwsErrorDetails.builder()
+                        .errorCode('UnknownError')
+                        .errorMessage('Something went wrong')
+                        .sdkHttpResponse(SdkHttpResponse.builder().statusCode(500).build())
+                        .build())
+                .statusCode(500)
+                .build()
+
+        when:
+        def result = AwsEcrService.mapStsException(stsEx)
+
+        then:
+        result instanceof AwsEcrAuthException
+        result.message.contains('STS AssumeRole failed')
     }
 }

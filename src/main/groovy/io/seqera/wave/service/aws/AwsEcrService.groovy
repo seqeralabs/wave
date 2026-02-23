@@ -19,6 +19,8 @@
 package io.seqera.wave.service.aws
 
 
+import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.ExecutorService
 import java.util.regex.Pattern
 
@@ -28,6 +30,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.service.aws.cache.AwsEcrAuthToken
 import io.seqera.wave.service.aws.cache.AwsEcrCache
+import io.seqera.cache.tiered.AbstractTieredCache
 import io.seqera.cache.tiered.TieredKey
 import io.seqera.wave.util.RegHelper
 import io.seqera.wave.util.StringUtils
@@ -62,6 +65,16 @@ class AwsEcrService {
     static final private Pattern AWS_ECR_PUBLIC = ~/public\.ecr\.aws/
 
     static final private Pattern AWS_ROLE_ARN = ~/^arn:aws:iam::\d{12}:role\/.+/
+
+    /**
+     * Buffer time before credential expiration to trigger refresh
+     */
+    static final private Duration REFRESH_BUFFER = Duration.ofMinutes(5)
+
+    /**
+     * Minimum cache TTL to avoid caching nearly-expired credentials
+     */
+    static final private Duration MIN_CACHE_TTL = Duration.ofMinutes(1)
 
     @Canonical
     private static class AwsCreds implements TieredKey {
@@ -145,7 +158,7 @@ class AwsEcrService {
             }
 
             final request = requestBuilder.build()
-            final response = client.assumeRole(request)
+            final response = client.assumeRole(request as AssumeRoleRequest)
             return response.credentials()
         }
         catch (StsException e) {
@@ -294,12 +307,15 @@ class AwsEcrService {
                 isPublic
         )
 
-        // Check cache first; assume role only on cache miss
-        return cache.getOrCompute(key, (k) -> {
+        // Use Pair-based getOrCompute to set TTL dynamically from STS credential expiration
+        return cache.getOrCompute(key, (String k) -> {
             log.trace "Cache miss for role $roleArn - assuming role to get temporary credentials"
 
             // Assume the role to get temporary credentials
             final Credentials tempCreds = assumeRole(roleArn, externalId, region)
+
+            // Calculate cache TTL with 5-minute refresh buffer based on STS credential expiration
+            final ttl = computeCacheTtl(tempCreds.expiration(), cache.duration)
 
             // Create temporary credentials for ECR API call
             final tempKey = new AwsCreds(
@@ -311,8 +327,33 @@ class AwsEcrService {
             )
 
             // Get ECR auth token using temporary credentials
-            return load(tempKey)
-        }, cache.duration).value
+            final token = load(tempKey)
+            return new AbstractTieredCache.Pair<AwsEcrAuthToken, Duration>(token, ttl)
+        }).value
+    }
+
+    /**
+     * Compute cache TTL based on STS credential expiration with 5-minute refresh buffer.
+     * Returns the shorter of (time until expiration minus buffer) and maxDuration.
+     *
+     * @param expiration The STS credential expiration time
+     * @param maxDuration The maximum cache duration
+     * @return The computed cache TTL
+     */
+    protected static Duration computeCacheTtl(Instant expiration, Duration maxDuration) {
+        if (expiration == null) {
+            return maxDuration
+        }
+        final timeUntilExpiry = Duration.between(Instant.now(), expiration)
+        final bufferedTtl = timeUntilExpiry.minus(REFRESH_BUFFER)
+
+        // Ensure TTL is at least MIN_CACHE_TTL
+        if (bufferedTtl.compareTo(MIN_CACHE_TTL) < 0) {
+            return MIN_CACHE_TTL
+        }
+
+        // Use the shorter of buffered TTL and max cache duration
+        return bufferedTtl.compareTo(maxDuration) < 0 ? bufferedTtl : maxDuration
     }
 
     /**
