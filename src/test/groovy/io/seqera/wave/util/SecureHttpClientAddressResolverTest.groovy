@@ -44,7 +44,7 @@ class SecureHttpClientAddressResolverTest extends Specification {
         def resolver = ctx.getBean(HttpClientAddressResolver)
 
         then: 'it should be our secure implementation'
-        resolver instanceof SecureHttpClientAddressResolver
+        SecureHttpClientAddressResolver.isInstance(resolver)
 
         cleanup:
         ctx.close()
@@ -58,7 +58,7 @@ class SecureHttpClientAddressResolverTest extends Specification {
         def resolver = ctx.getBean(HttpClientAddressResolver)
 
         then: 'it should NOT be our secure implementation'
-        !(resolver instanceof SecureHttpClientAddressResolver)
+        !SecureHttpClientAddressResolver.isInstance(resolver)
 
         cleanup:
         ctx.close()
