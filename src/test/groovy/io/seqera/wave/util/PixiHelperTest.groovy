@@ -63,12 +63,11 @@ class PixiHelperTest extends Specification {
         then:
         result.contains('BootStrap: docker')
         result.contains('From: public.cr.seqera.io/wave/pixi:0.61.0-noble')
-        result.contains('Stage: build')
         result.contains('pixi init --import /scratch/conda.yml')
         result.contains('pixi shell-hook > /shell-hook.sh')
-        result.contains('Bootstrap: docker')
-        result.contains('From: ubuntu:24.04')
-        result.contains('Stage: final')
+        result.contains('%files')
+        result.contains('%post')
+        result.contains('%environment')
     }
 
     def 'should use custom base image'() {

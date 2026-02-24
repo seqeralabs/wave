@@ -612,7 +612,6 @@ class TemplateUtilsTest extends Specification {
         TemplateUtils.condaFileToSingularityFileUsingPixi(PIXI_OPTS) == '''\
                 BootStrap: docker
                 From: ghcr.io/prefix-dev/pixi:latest
-                Stage: build
                 %files
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
@@ -624,20 +623,6 @@ class TemplateUtilsTest extends Specification {
                     echo ">> CONDA_LOCK_START"
                     cat /opt/wave/pixi.lock
                     echo "<< CONDA_LOCK_END"
-                    tar czf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs default
-                    ls -lh /opt/pixi-env.tar.gz
-
-                Bootstrap: docker
-                From: ubuntu:24.04
-                Stage: final
-                # install binary from stage one
-                %files from build
-                    /opt/pixi-env.tar.gz /opt/pixi-env.tar.gz
-                    /shell-hook.sh /shell-hook.sh
-                %post
-                    mkdir -p /opt/wave/.pixi/envs
-                    tar xzf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs
-                    rm /opt/pixi-env.tar.gz
                 %environment
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
                 '''.stripIndent()
@@ -648,7 +633,6 @@ class TemplateUtilsTest extends Specification {
         TemplateUtils.condaFileToSingularityFileUsingPixi(new PixiOpts([:])) == '''\
                 BootStrap: docker
                 From: public.cr.seqera.io/wave/pixi:0.61.0-noble
-                Stage: build
                 %files
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
@@ -660,20 +644,6 @@ class TemplateUtilsTest extends Specification {
                     echo ">> CONDA_LOCK_START"
                     cat /opt/wave/pixi.lock
                     echo "<< CONDA_LOCK_END"
-                    tar czf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs default
-                    ls -lh /opt/pixi-env.tar.gz
-
-                Bootstrap: docker
-                From: ubuntu:24.04
-                Stage: final
-                # install binary from stage one
-                %files from build
-                    /opt/pixi-env.tar.gz /opt/pixi-env.tar.gz
-                    /shell-hook.sh /shell-hook.sh
-                %post
-                    mkdir -p /opt/wave/.pixi/envs
-                    tar xzf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs
-                    rm /opt/pixi-env.tar.gz
                 %environment
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
                 '''.stripIndent()
@@ -691,7 +661,6 @@ class TemplateUtilsTest extends Specification {
         TemplateUtils.condaFileToSingularityFileUsingPixi(PIXI_OPTS) == '''\
                 BootStrap: docker
                 From: ghcr.io/prefix-dev/pixi:0.35.0
-                Stage: build
                 %files
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
@@ -702,20 +671,6 @@ class TemplateUtilsTest extends Specification {
                     echo ">> CONDA_LOCK_START"
                     cat /opt/wave/pixi.lock
                     echo "<< CONDA_LOCK_END"
-                    tar czf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs default
-                    ls -lh /opt/pixi-env.tar.gz
-
-                Bootstrap: docker
-                From: debian:12
-                Stage: final
-                # install binary from stage one
-                %files from build
-                    /opt/pixi-env.tar.gz /opt/pixi-env.tar.gz
-                    /shell-hook.sh /shell-hook.sh
-                %post
-                    mkdir -p /opt/wave/.pixi/envs
-                    tar xzf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs
-                    rm /opt/pixi-env.tar.gz
                 %environment
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
                 '''.stripIndent()
@@ -766,7 +721,6 @@ class TemplateUtilsTest extends Specification {
         TemplateUtils.condaFileToSingularityFileV2(CONDA_OPTS) == '''\
                 BootStrap: docker
                 From: mambaorg/micromamba:2.1.1
-                Stage: build
                 %files
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
@@ -776,21 +730,10 @@ class TemplateUtilsTest extends Specification {
                     echo ">> CONDA_LOCK_START"
                     cat environment.lock
                     echo "<< CONDA_LOCK_END"
-                    tar czf /opt/conda.tar.gz -C /opt conda
-
-                Bootstrap: docker
-                From: ubuntu:24.04
-                Stage: final
-                %files from build
-                    /opt/conda.tar.gz /opt/conda.tar.gz
-                %post
-                    cd /opt
-                    tar xzf conda.tar.gz
-                    rm conda.tar.gz
                 %environment
                     export MAMBA_ROOT_PREFIX=/opt/conda
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
-                    '''.stripIndent()
+                '''.stripIndent()
 
     }
 
@@ -799,7 +742,6 @@ class TemplateUtilsTest extends Specification {
         TemplateUtils.condaFileToSingularityFileV2(new CondaOpts([:])) == '''\
                 BootStrap: docker
                 From: mambaorg/micromamba:1.5.10-noble
-                Stage: build
                 %files
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
@@ -809,17 +751,6 @@ class TemplateUtilsTest extends Specification {
                     echo ">> CONDA_LOCK_START"
                     cat environment.lock
                     echo "<< CONDA_LOCK_END"
-                    tar czf /opt/conda.tar.gz -C /opt conda
-
-                Bootstrap: docker
-                From: ubuntu:24.04
-                Stage: final
-                %files from build
-                    /opt/conda.tar.gz /opt/conda.tar.gz
-                %post
-                    cd /opt
-                    tar xzf conda.tar.gz
-                    rm conda.tar.gz
                 %environment
                     export MAMBA_ROOT_PREFIX=/opt/conda
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
