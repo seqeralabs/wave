@@ -227,3 +227,29 @@ jacocoTestReport {
         }))
     }
 }
+
+configurations {
+    e2eTestCompileOnly.extendsFrom testCompileOnly, compileOnly
+    e2eTestImplementation.extendsFrom testImplementation, implementation
+    e2eTestRuntimeOnly.extendsFrom testRuntimeOnly, runtimeOnly
+}
+
+sourceSets {
+    e2eTest {
+        java {
+            srcDirs = ['src/e2eTest/groovy']
+        }
+        resources {
+            srcDirs = ['src/e2eTest/resources']
+        }
+        compileClasspath += sourceSets.main.output + sourceSets.test.output
+        runtimeClasspath += sourceSets.main.output + sourceSets.test.output
+    }
+}
+
+tasks.register('e2eTest', Test) {
+    group = 'verification'
+    testClassesDirs = sourceSets.e2eTest.output.classesDirs
+    classpath = sourceSets.e2eTest.runtimeClasspath
+    shouldRunAfter test
+}
