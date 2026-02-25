@@ -34,6 +34,7 @@ import io.seqera.wave.service.aws.cache.AwsEcrCache
 import io.seqera.cache.tiered.AbstractTieredCache
 import io.seqera.cache.tiered.TieredKey
 import io.seqera.wave.util.RegHelper
+import io.micronaut.context.annotation.Value
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -111,6 +112,12 @@ class AwsEcrService {
     @Inject
     private AwsEcrCache cache
 
+    @Value('${wave.aws.jump-role-arn:}')
+    private String jumpRoleArn
+
+    @Value('${wave.aws.jump-external-id:}')
+    private String jumpExternalId
+
     /**
      * Check if the provided access key is actually an AWS IAM role ARN
      *
@@ -135,7 +142,30 @@ class AwsEcrService {
     }
 
     /**
+     * Create an STS client using explicit session credentials (from a prior role assumption)
+     *
+     * @param region AWS region
+     * @param credentials Temporary credentials from a prior AssumeRole call
+     * @return StsClient instance using the provided session credentials
+     */
+    protected static StsClient stsClient(String region, Credentials credentials) {
+        final sessionCreds = AwsSessionCredentials.create(
+                credentials.accessKeyId(),
+                credentials.secretAccessKey(),
+                credentials.sessionToken()
+        )
+        return StsClient.builder()
+                .region(Region.of(region))
+                .credentialsProvider(StaticCredentialsProvider.create(sessionCreds))
+                .build()
+    }
+
+    /**
      * Assume an IAM role and return temporary credentials.
+     * When a jump role is configured ({@code wave.aws.jump-role-arn}), Wave first assumes the
+     * jump role using its default credentials, then uses the jump role's temporary credentials
+     * to assume the target role. This enables cross-account role chaining.
+     *
      * Transient STS errors (5xx) are retried automatically via {@link StsRetryPredicate}.
      *
      * @param roleArn The ARN of the role to assume
@@ -153,7 +183,16 @@ class AwsEcrService {
     protected Credentials assumeRole(String roleArn, String externalId, String region) {
         log.trace "Assuming AWS role: $roleArn; region: $region; externalId: ${externalId ? 'provided' : 'none'}"
 
-        final client = stsClient(region)
+        final StsClient client
+        if (jumpRoleArn) {
+            // Chain through jump role: first assume the jump role, then use its credentials
+            log.trace "Using jump role: $jumpRoleArn; jumpExternalId: ${jumpExternalId ? 'provided' : 'none'}"
+            final jumpCreds = assumeJumpRole(region)
+            client = stsClient(region, jumpCreds)
+        } else {
+            client = stsClient(region)
+        }
+
         final requestBuilder = AssumeRoleRequest.builder()
                 .roleArn(roleArn)
                 .roleSessionName("wave-ecr-${System.currentTimeMillis()}")
@@ -162,6 +201,31 @@ class AwsEcrService {
         // Add external ID if provided
         if (externalId) {
             requestBuilder.externalId(externalId)
+        }
+
+        final request = requestBuilder.build()
+        final response = client.assumeRole(request as AssumeRoleRequest)
+        return response.credentials()
+    }
+
+    /**
+     * Assume the jump role using Wave's default credentials.
+     * The jump role acts as an intermediate role for cross-account access.
+     *
+     * @param region AWS region
+     * @return Temporary credentials from the jump role
+     */
+    protected Credentials assumeJumpRole(String region) {
+        log.trace "Assuming jump role: $jumpRoleArn; region: $region"
+
+        final client = stsClient(region)
+        final requestBuilder = AssumeRoleRequest.builder()
+                .roleArn(jumpRoleArn)
+                .roleSessionName("wave-jump-${System.currentTimeMillis()}")
+                .durationSeconds(3600) // 1 hour
+
+        if (jumpExternalId) {
+            requestBuilder.externalId(jumpExternalId)
         }
 
         final request = requestBuilder.build()

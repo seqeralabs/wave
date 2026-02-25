@@ -528,6 +528,93 @@ class AwsEcrServiceTest extends Specification {
         !predicate.test(new IOException('network error'))
     }
 
+    // --- Jump role chaining tests ---
+
+    def 'should chain through jump role when configured' () {
+        given:
+        def service = Spy(AwsEcrService)
+        service.@jumpRoleArn = 'arn:aws:iam::128997144437:role/test-jump-role'
+        service.@jumpExternalId = 'ee79c296-cec7-4feb-9d0c-0c99f5a53cff'
+
+        def roleArn = 'arn:aws:iam::123456789012:role/CustomerRole'
+        def externalId = 'customer-ext-id'
+        def region = 'us-east-1'
+
+        def jumpCreds = Credentials.builder()
+                .accessKeyId('ASIAJUMPTEMPKEY')
+                .secretAccessKey('jumpTempSecret')
+                .sessionToken('jumpTempToken')
+                .expiration(Instant.now().plus(Duration.ofHours(1)))
+                .build()
+
+        when: 'assumeRole is called with jump role configured'
+        try {
+            service.assumeRole(roleArn, externalId, region)
+        } catch (Exception ignored) {
+            // Expected: STS call will fail with fake jump credentials
+        }
+
+        then: 'it should first assume the jump role'
+        1 * service.assumeJumpRole(region) >> jumpCreds
+    }
+
+    def 'should not use jump role when not configured' () {
+        given:
+        def service = Spy(AwsEcrService)
+        service.@jumpRoleArn = ''
+        service.@jumpExternalId = ''
+
+        def roleArn = 'arn:aws:iam::123456789012:role/WaveEcrAccess'
+        def externalId = 'ext-id-123'
+        def region = 'us-east-1'
+
+        when: 'assumeRole is called without jump role configured'
+        try {
+            service.assumeRole(roleArn, externalId, region)
+        } catch (Exception ignored) {
+            // Expected: STS call will fail without real credentials
+        }
+
+        then: 'it should NOT call assumeJumpRole'
+        0 * service.assumeJumpRole(_)
+    }
+
+    def 'should propagate jump role failure as AwsEcrAuthException' () {
+        given:
+        def cache = Mock(AwsEcrCache)
+        def service = Spy(AwsEcrService)
+        service.@cache = cache
+        service.@jumpRoleArn = 'arn:aws:iam::128997144437:role/test-jump-role'
+        service.@jumpExternalId = 'ee79c296-cec7-4feb-9d0c-0c99f5a53cff'
+
+        def roleArn = 'arn:aws:iam::123456789012:role/CustomerRole'
+        def region = 'us-east-1'
+
+        def stsEx = (StsException) StsException.builder()
+                .message('Access Denied')
+                .awsErrorDetails(AwsErrorDetails.builder()
+                        .errorCode('AccessDenied')
+                        .errorMessage('Access Denied')
+                        .sdkHttpResponse(SdkHttpResponse.builder().statusCode(403).build())
+                        .build())
+                .statusCode(403)
+                .build()
+
+        when:
+        service.getLoginTokenWithRole(roleArn, null, region, false)
+
+        then:
+        1 * cache.getOrCompute(_, _) >> { args ->
+            def loader = args[1] as Function
+            loader.apply('mock-key')
+        }
+        1 * service.assumeRole(roleArn, null, region) >> { throw stsEx }
+
+        and:
+        def e = thrown(AwsEcrAuthException)
+        e.message.contains("Wave's service role does not have permission")
+    }
+
     def 'should map STS exception in getLoginTokenWithRole after retries exhausted' () {
         given:
         def cache = Mock(AwsEcrCache)

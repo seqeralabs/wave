@@ -83,6 +83,31 @@ Configure container registry authentication with the following options:
 : Specifies the Quay.io username for authentication.
   Can be set using the `${QUAY_USER}` environment variable.
 
+## AWS cross-account role chaining
+
+When Wave needs to access ECR registries in customer AWS accounts using IAM role credentials provided by the Seqera Platform, you can configure an intermediate "jump role" for cross-account access. When configured, Wave first assumes the jump role using its own credentials, then uses the jump role's temporary credentials to assume the target role received from the Seqera Platform.
+
+This enables a two-hop role chaining pattern:
+
+1. Wave assumes the jump role (using its default credentials)
+2. Wave uses the jump role's temporary credentials to assume the customer's target role
+3. The target role's temporary credentials are used to authenticate with ECR
+
+Configure jump role chaining with the following options:
+
+`wave.aws.jump-role-arn` *(optional)*
+: Specifies the ARN of the intermediate IAM role that Wave assumes before assuming the target role from the Seqera Platform.
+  Can be set using the `WAVE_AWS_JUMP_ROLE_ARN` environment variable.
+  Example: `arn:aws:iam::128997144437:role/wave-jump-role`
+
+`wave.aws.jump-external-id` *(optional)*
+: Specifies the external ID used when assuming the jump role, for confused deputy protection.
+  Can be set using the `WAVE_AWS_JUMP_EXTERNAL_ID` environment variable.
+
+:::note
+When the jump role is not configured, Wave assumes target roles directly using its default credentials (the previous behavior). The jump role is only used for role-based ECR authentication, not for static AWS credential flows.
+:::
+
 ## HTTP client
 
 Configure the HTTP client with the following options:
