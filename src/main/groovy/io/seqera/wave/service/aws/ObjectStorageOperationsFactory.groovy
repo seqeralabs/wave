@@ -25,7 +25,6 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Requires
-import io.micronaut.context.env.Environment
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.micronaut.objectstorage.InputStreamMapper
 import io.micronaut.objectstorage.ObjectStorageOperations
@@ -121,9 +120,8 @@ class ObjectStorageOperationsFactory {
         log.debug "Using AWS S3 ObjectStorageOperations scope='${scope}'; storageBucket='${storageBucket}'"
         final s3Client = context.getBean(S3Client, Qualifiers.byName("DefaultS3Client"))
         final inputStreamMapper = context.getBean(InputStreamMapper)
-        final environment = context.findBean(Environment).orElse(null)
         AwsS3Configuration configuration = new AwsS3Configuration(scope)
         configuration.setBucket(storageBucket)
-        return new AwsS3Operations(configuration, s3Client, inputStreamMapper, environment)
+        return new AwsS3Operations(configuration, s3Client, inputStreamMapper)
     }
 }
