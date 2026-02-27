@@ -216,7 +216,7 @@ Returns the name of the container request made available by Wave.
 | `channels`                          | List of Conda channels or CRAN repositories, which will be used to download packages.                                                                                               |
 | `condaOpts`                         | Conda build options (when `type` is CONDA).                                                                                                                      |
 | `mambaImage`                        | Name of the Docker image used to build Conda containers.                                                                                              |
-| `commands`                          | Command to be included in the container.                                                                                                                       |
+| `commands`                          | Array of valid Dockerfile instructions to be included in the container (e.g., `RUN`, `CMD`). Each command must start with a valid Dockerfile instruction keyword.                                                                                                                       |
 | `basePackages`                      | Names of base packages.                                                                                                                                        |
 | `baseImage`                         | Base image for the final stage of multi-stage Conda/Pixi builds.                                                                                        |
 | `pixiOpts`                          | Pixi build options (when `type` is `CONDA` and `buildTemplate` is `conda/pixi:v1`).                                                                                  |
@@ -428,7 +428,7 @@ Get status of build against `buildId` passed as path variable
                 "pixiImage": "ghcr.io/prefix-dev/pixi:0.59.0-noble",
                 "basePackages": "conda-forge::procps-ng",
                 "baseImage": "ubuntu:24.04",
-                "commands": []
+                "commands": ["RUN apt-get update", "RUN apt-get install -y vim"]
             }
         }
     }'
