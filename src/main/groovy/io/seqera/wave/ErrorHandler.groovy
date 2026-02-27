@@ -75,16 +75,23 @@ class ErrorHandler {
             }
         }
         else {
+            // Log the original message for debugging
+            String logMsg = msg ?: t.cause?.message ?: "Unknown error"
+            String render = logMsg
+            if( request )
+                render += toString(request)
+            render += " - Error ID: ${errId}"
+            log.error(render, t)
+
+            // Sanitize the message for the client response
             if( debug && !msg )
                 msg = t.cause?.message
             if ( !debug && !msg )
                 msg = "Oops... Unable to process request"
+
+            // Remove internal class names and implementation details from client message
+            msg = sanitizeErrorMessage(msg)
             msg += " - Error ID: ${errId}"
-            // render the message for logging
-            String render = msg
-            if( request )
-                render += toString(request)
-            log.error(render, t)
         }
 
         if( t instanceof HttpStatusException ) {
@@ -145,6 +152,41 @@ class ErrorHandler {
         final resp = responseFactory.apply(msg, 'SERVER_ERROR')
         return HttpResponse.serverError(resp)
 
+    }
+
+    /**
+     * Sanitize error messages to remove internal class names and implementation details
+     * This prevents exposing internal structure to API clients
+     */
+    private static String sanitizeErrorMessage(String message) {
+        if (!message) {
+            return "Invalid request"
+        }
+
+        // Remove "Failed to convert argument [xxx] for value [xxx] due to:" prefix
+        if (message.contains("due to:")) {
+            message = message.substring(message.indexOf("due to:") + 7).trim()
+        }
+
+        // Remove Jackson source location (e.g., "at [Source: ...]")
+        message = message.replaceAll(/\n at \[Source:.*?\]/, '')
+
+        // Remove reference chain with internal class paths
+        message = message.replaceAll(/\(through reference chain:.*?\)/, '')
+
+        // Remove backtick-wrapped class names (e.g., `io.seqera.wave.api.PackagesSpec$Type`)
+        message = message.replaceAll(/`[a-z]+(\.[a-z]+)*\.[A-Z][a-zA-Z0-9$]*`/, 'the specified type')
+
+        // Remove unquoted fully qualified class names
+        message = message.replaceAll(/\b[a-z]+(\.[a-z]+)+\.[A-Z][a-zA-Z0-9$]*\b/, 'the specified type')
+
+        // Simplify "Cannot deserialize value of type" messages
+        message = message.replaceAll(/Cannot deserialize value of type the specified type from String /, 'Invalid value ')
+
+        // Clean up multiple spaces
+        message = message.replaceAll(/\s+/, ' ').trim()
+
+        return message ?: "Invalid request"
     }
 
     static String toString(HttpRequest request) {
