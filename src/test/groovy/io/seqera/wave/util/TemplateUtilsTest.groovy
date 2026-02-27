@@ -371,6 +371,10 @@ class TemplateUtilsTest extends Specification {
                 COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
                 COPY --from=build /shell-hook.sh /shell-hook.sh
 
+                # set user and environment variables for Python compatibility
+                USER root
+                ENV USER=root
+
                 # set the entrypoint to the shell-hook script (activate the environment and run the command)
                 # no more pixi needed in the final container
                 ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]
@@ -401,6 +405,10 @@ class TemplateUtilsTest extends Specification {
                 # copy the pixi environment in the final container
                 COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
                 COPY --from=build /shell-hook.sh /shell-hook.sh
+
+                # set user and environment variables for Python compatibility
+                USER root
+                ENV USER=root
 
                 # set the entrypoint to the shell-hook script (activate the environment and run the command)
                 # no more pixi needed in the final container
@@ -435,6 +443,10 @@ class TemplateUtilsTest extends Specification {
                 # copy the pixi environment in the final container
                 COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
                 COPY --from=build /shell-hook.sh /shell-hook.sh
+
+                # set user and environment variables for Python compatibility
+                USER root
+                ENV USER=root
 
                 # set the entrypoint to the shell-hook script (activate the environment and run the command)
                 # no more pixi needed in the final container
