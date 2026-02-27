@@ -18,6 +18,11 @@
 
 package io.seqera.wave.service.pairing
 
+import io.seqera.service.pairing.PairingConfig
+import io.seqera.service.pairing.PairingRecord
+import io.seqera.service.pairing.PairingServiceImpl
+import io.seqera.service.pairing.PairingStore
+
 import spock.lang.Specification
 
 import java.security.KeyFactory
@@ -34,12 +39,30 @@ import io.seqera.random.LongRndKey
 @Slf4j
 class PairingServiceTest extends Specification{
 
+    private PairingConfig mockConfig(Duration keyLease = Duration.ofSeconds(100), Duration keyDuration = Duration.ofDays(30)) {
+        return new PairingConfig() {
+            Duration getKeyLease() { keyLease }
+            Duration getKeyDuration() { keyDuration }
+            Duration getChannelTimeout() { Duration.ofSeconds(5) }
+            Duration getChannelAwaitTimeout() { Duration.ofMillis(100) }
+            boolean getCloseSessionOnInvalidLicenseToken() { false }
+            List<String> getDenyHosts() { [] }
+        }
+    }
+
+    private PairingStore createStore(PairingConfig config) {
+        def store = new PairingStore(new LocalStateProvider())
+        store.config = config
+        return store
+    }
+
     def 'check security service generates credentials'() {
         given: 'a cache store'
-        final store = new PairingStore(new LocalStateProvider())
+        final config = mockConfig()
+        final store = createStore(config)
 
         and: 'a security service using it'
-        final service = new PairingServiceImpl(store: store, lease: Duration.ofSeconds(100))
+        final service = new PairingServiceImpl(store: store, config: config)
 
         when: 'we get a public key'
         def key = PairingServiceImpl.makeKey("tower","tower.io:9090")
@@ -68,10 +91,11 @@ class PairingServiceTest extends Specification{
 
     def "skip generate keys if present and not expired"() {
         given: 'a cache store'
-        final store = new PairingStore(new LocalStateProvider())
+        final config = mockConfig(Duration.ofSeconds(1000))
+        final store = createStore(config)
 
         and: 'a security service using the cache store'
-        final service = new PairingServiceImpl(store: store, lease:  Duration.ofSeconds(1000))
+        final service = new PairingServiceImpl(store: store, config: config)
 
         when: 'we get the key two times for the same service and endpoint'
         def firstKey = service.acquirePairingKey("tower", "tower.io:9090")
@@ -84,7 +108,8 @@ class PairingServiceTest extends Specification{
 
     def "regenerates keys when they have no validUntil defined"() {
         given: 'a cache store'
-        final store = new PairingStore(new LocalStateProvider())
+        final config = mockConfig(Duration.ofSeconds(10))
+        final store = createStore(config)
 
         and: 'an old non timestamped pairing record coming from previous versions'
         final key = PairingServiceImpl.makeKey('tower','tower.io:9090')
@@ -93,7 +118,7 @@ class PairingServiceTest extends Specification{
         store.put(key,new PairingRecord('tower', 'tower.io:9090', pairingId, new byte[0], pKey, null))
 
         and: 'and a service using the store'
-        final service = new PairingServiceImpl(store: store, lease: Duration.ofSeconds(10))
+        final service = new PairingServiceImpl(store: store, config: config)
 
         when: 'we try to generate the same pairing key'
         final pairingKey = service.acquirePairingKey('tower','tower.io:9090')
@@ -105,10 +130,11 @@ class PairingServiceTest extends Specification{
 
     def "regenerate keys when expired"() {
         given: 'a cache store'
-        final store = new PairingStore(new LocalStateProvider())
+        final config = mockConfig(Duration.ofMillis(100))
+        final store = createStore(config)
 
         and: 'a security service using the cache store'
-        final service = new PairingServiceImpl(store: store, lease: Duration.ofMillis(100))
+        final service = new PairingServiceImpl(store: store, config: config)
 
         when: 'we get the key two times for the same service and endpoint waiting over the ttl interval'
         def firstKey = service.acquirePairingKey("tower", "tower.io:9090")

@@ -20,8 +20,9 @@ package io.seqera.wave.service.pairing.socket
 
 import spock.lang.Specification
 
-import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
-import io.seqera.wave.service.pairing.socket.msg.PairingResponse
+import io.seqera.service.pairing.socket.PairingMessageEncodeStrategy
+import io.seqera.service.pairing.socket.msg.PairingHeartbeat
+import io.seqera.service.pairing.socket.msg.PairingResponse
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>

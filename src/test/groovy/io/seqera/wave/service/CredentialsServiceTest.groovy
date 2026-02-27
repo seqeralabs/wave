@@ -27,8 +27,8 @@ import java.time.Instant
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.tower.crypto.AsymmetricCipher
-import io.seqera.wave.service.pairing.PairingRecord
-import io.seqera.wave.service.pairing.PairingService
+import io.seqera.service.pairing.PairingRecord
+import io.seqera.service.pairing.PairingService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuth

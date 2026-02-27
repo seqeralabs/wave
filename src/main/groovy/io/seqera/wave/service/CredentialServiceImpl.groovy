@@ -23,7 +23,7 @@ import groovy.util.logging.Slf4j
 import io.seqera.tower.crypto.AsymmetricCipher
 import io.seqera.tower.crypto.EncryptedPacket
 import io.seqera.wave.service.aws.AwsEcrService
-import io.seqera.wave.service.pairing.PairingService
+import io.seqera.service.pairing.PairingService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.client.CredentialsDescription
