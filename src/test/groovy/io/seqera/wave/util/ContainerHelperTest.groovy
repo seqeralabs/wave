@@ -896,4 +896,69 @@ class ContainerHelperTest extends Specification {
         e.message == "Unexpected or missing package type 'CONDA' or build template 'invalid-template'"
     }
 
+    // === Channel mapping tests for pixi builds ===
+
+    def 'should map channels to prefix.dev mirrors for pixi builds' () {
+        given:
+        def spec = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['bwa', 'samtools'], channels: ['conda-forge', 'bioconda'])
+        def req = new SubmitContainerTokenRequest(packages: spec, buildTemplate: BuildTemplate.CONDA_PIXI_V1)
+
+        when:
+        def result = ContainerHelper.condaFileFromRequest(req)
+
+        then:
+        result == '''\
+            channels:
+            - https://prefix.dev/conda-forge
+            - https://prefix.dev/bioconda
+            dependencies:
+            - bwa
+            - samtools
+            '''.stripIndent()
+    }
+
+    def 'should not map channels for non-pixi builds' () {
+        given:
+        def spec = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['bwa', 'samtools'], channels: ['conda-forge', 'bioconda'])
+        def req = new SubmitContainerTokenRequest(packages: spec, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V2)
+
+        when:
+        def result = ContainerHelper.condaFileFromRequest(req)
+
+        then:
+        result == '''\
+            channels:
+            - conda-forge
+            - bioconda
+            dependencies:
+            - bwa
+            - samtools
+            '''.stripIndent()
+    }
+
+    def 'should map channels in environment file for pixi builds' () {
+        given:
+        def CONDA = '''\
+            channels:
+            - conda-forge
+            dependencies:
+            - bwa
+            '''.stripIndent()
+        and:
+        def spec = new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: CONDA.bytes.encodeBase64().toString(), channels: ['bioconda'])
+        def req = new SubmitContainerTokenRequest(packages: spec, buildTemplate: BuildTemplate.CONDA_PIXI_V1)
+
+        when:
+        def result = ContainerHelper.condaFileFromRequest(req)
+
+        then:
+        result == '''\
+            channels:
+            - conda-forge
+            - https://prefix.dev/bioconda
+            dependencies:
+            - bwa
+            '''.stripIndent()
+    }
+
 }
