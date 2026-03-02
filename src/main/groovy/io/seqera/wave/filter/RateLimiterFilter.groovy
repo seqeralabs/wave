@@ -36,8 +36,10 @@ import io.micronaut.http.MutableHttpResponse
 import io.micronaut.http.annotation.Filter
 import io.micronaut.http.filter.HttpServerFilter
 import io.micronaut.http.filter.ServerFilterChain
+import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.seqera.wave.exchange.ErrorResponse
 import io.seqera.wave.exchange.RegistryErrorResponse
+import jakarta.inject.Inject
 import jakarta.inject.Named
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Flux
@@ -67,6 +69,9 @@ class RateLimiterFilter implements HttpServerFilter {
     private final RateLimiterConfig config
 
     private final SyncCache<AtomicRateLimiter> limiters
+
+    @Inject
+    private HttpClientAddressResolver addressResolver
 
     /**
      * Creates the rate limiter with the provided config
@@ -121,8 +126,12 @@ class RateLimiterFilter implements HttpServerFilter {
         }
     }
 
-    private String getKey(HttpRequest<?> request) {
-        final address = request.getHeaders().get('X-Forwarded-For') ?: request.getRemoteAddress().getAddress().getHostAddress()
+    protected String getKey(HttpRequest<?> request) {
+        // Use HttpClientAddressResolver which:
+        // - In default mode: returns socket address (secure, ignores headers)
+        // - In ALB mode (when client-address-header configured): trusts X-Forwarded-For from ALB
+        final address = addressResolver.resolve(request)
+
         if( log.isTraceEnabled() ) {
             log.trace "Filter request\n- uri: ${request.getUri()}\n- address: ${address}\n- headers: ${request.getHeaders().asMap()}"
         }
