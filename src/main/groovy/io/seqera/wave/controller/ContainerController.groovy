@@ -63,6 +63,7 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildTrack
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.FreezeService
+import io.seqera.wave.service.builder.MultiPlatformBuildService
 import io.seqera.wave.service.inclusion.ContainerInclusionService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.mirror.ContainerMirrorService
@@ -92,6 +93,7 @@ import static io.seqera.wave.util.ContainerHelper.condaFileFromRequest
 import static io.seqera.wave.util.ContainerHelper.containerFileFromRequest
 import static io.seqera.wave.util.ContainerHelper.decodeBase64OrFail
 import static io.seqera.wave.util.ContainerHelper.makeContainerId
+import static io.seqera.wave.util.ContainerHelper.makeMultiPlatformContainerId
 import static io.seqera.wave.util.ContainerHelper.makeResponseV1
 import static io.seqera.wave.util.ContainerHelper.makeResponseV2
 import static io.seqera.wave.util.ContainerHelper.makeTargetImage
@@ -178,6 +180,10 @@ class ContainerController {
     @Nullable
     private ContainerScanService scanService
 
+    @Inject
+    @Nullable
+    private MultiPlatformBuildService multiPlatformBuildService
+
     @PostConstruct
     private void init() {
         log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl; default-build-repo: ${buildConfig?.defaultBuildRepository}; default-cache-repo: ${buildConfig?.defaultCacheRepository}; default-public-repo: ${buildConfig?.defaultPublicRepository}"
@@ -252,6 +258,16 @@ class ContainerController {
 
         if( v2 && req.packages && req.freeze && !validationService.isCustomRepo(req.buildRepository) && !buildConfig.defaultPublicRepository )
             throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode [3]")
+
+        // multi-platform validation
+        if( req.multiPlatform ) {
+            if( !req.containerFile && !req.packages )
+                throw new BadRequestException("Multi-platform builds require either 'containerFile' or 'packages' attribute")
+            if( req.formatSingularity() )
+                throw new BadRequestException("Multi-platform builds are not supported for Singularity format")
+            if( !multiPlatformBuildService )
+                throw new UnsupportedBuildServiceException()
+        }
 
         if( v2 && req.packages ) {
             // generate the container file required to assemble the container
@@ -408,6 +424,27 @@ class ContainerController {
         }
     }
 
+    protected BuildTrack checkMultiPlatformBuild(BuildRequest templateBuild, SubmitContainerTokenRequest req, PlatformId identity, String ip) {
+        final containerSpec = templateBuild.containerFile
+        final condaContent = templateBuild.condaFile
+        final buildRepository = ContainerCoordinates.parse(templateBuild.targetImage).repository
+
+        // compute multi-platform container ID and target image
+        final containerId = makeMultiPlatformContainerId(containerSpec, condaContent, buildRepository, req.buildContext, req.freeze ? req.containerConfig : null)
+        final targetImage = makeTargetImage(templateBuild.format, buildRepository, containerId, condaContent, req.nameStrategy)
+
+        // check if the multi-platform image already exists
+        final digest = registryProxyService.getImageDigest(targetImage, identity)
+        if( digest ) {
+            log.debug "== Found cached multi-platform build for $targetImage"
+            final cache = persistenceService.loadBuildSucceed(targetImage, digest)
+            return new BuildTrack(cache?.buildId, targetImage, true, true)
+        }
+
+        // delegate to multi-platform build service
+        return multiPlatformBuildService.buildMultiPlatformImage(templateBuild, containerId, targetImage, identity)
+    }
+
     protected String getContainerDigest(String containerImage, PlatformId identity) {
         containerImage
                 ? registryProxyService.getImageDigest(containerImage, identity)
@@ -447,7 +484,20 @@ class ContainerController {
         boolean buildNew
         String scanId
         Boolean succeeded
-        if( req.containerFile ) {
+        if( req.containerFile && req.multiPlatform ) {
+            if( !buildService ) throw new UnsupportedBuildServiceException()
+            final build = makeBuildRequest(req, identity, ip)
+            final track = checkMultiPlatformBuild(build, req, identity, ip)
+            targetImage = track.targetImage
+            targetContent = build.containerFile
+            condaContent = build.condaFile
+            buildId = track.id
+            buildNew = !track.cached
+            scanId = build.scanId
+            succeeded = track.succeeded
+            type = ContainerRequest.Type.Build
+        }
+        else if( req.containerFile ) {
             if( !buildService ) throw new UnsupportedBuildServiceException()
             final build = makeBuildRequest(req, identity, ip)
             final track = checkBuild(build, req.dryRun)

@@ -36,6 +36,7 @@ import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.request.TokenData
 
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.request.ContainerRequest.Type
 
 /**
@@ -894,6 +895,32 @@ class ContainerHelperTest extends Specification {
         then:
         def e = thrown(BadRequestException)
         e.message == "Unexpected or missing package type 'CONDA' or build template 'invalid-template'"
+    }
+
+    def 'should create multi-platform container id distinct from single platform'() {
+        given:
+        def containerFile = 'FROM ubuntu:latest'
+        def repo = 'docker.io/wave'
+
+        when:
+        def singleId = ContainerHelper.makeContainerId(containerFile, null, ContainerPlatform.of('linux/amd64'), repo, null, null)
+        def multiId = ContainerHelper.makeMultiPlatformContainerId(containerFile, null, repo, null, null)
+
+        then:
+        singleId != multiId
+    }
+
+    def 'should create stable multi-platform container id'() {
+        given:
+        def containerFile = 'FROM ubuntu:latest'
+        def repo = 'docker.io/wave'
+
+        when:
+        def id1 = ContainerHelper.makeMultiPlatformContainerId(containerFile, null, repo, null, null)
+        def id2 = ContainerHelper.makeMultiPlatformContainerId(containerFile, null, repo, null, null)
+
+        then:
+        id1 == id2
     }
 
 }

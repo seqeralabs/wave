@@ -165,6 +165,11 @@ public class SubmitContainerTokenRequest implements Cloneable {
      */
     public String buildTemplate;
 
+    /**
+     * When {@code true}, build a multi-platform (linux/amd64 + linux/arm64) container image
+     */
+    public boolean multiPlatform;
+
     public SubmitContainerTokenRequest copyWith(Map opts) {
         try {
             final SubmitContainerTokenRequest copy = (SubmitContainerTokenRequest) this.clone();
@@ -220,6 +225,8 @@ public class SubmitContainerTokenRequest implements Cloneable {
                 copy.buildCompression = (BuildCompression) opts.get("buildCompression");
             if( opts.containsKey("buildTemplate"))
                 copy.buildTemplate = (String) opts.get("buildTemplate");
+            if( opts.containsKey("multiPlatform"))
+                copy.multiPlatform = (boolean) opts.get("multiPlatform");
             // done
             return copy;
         }
@@ -365,6 +372,11 @@ public class SubmitContainerTokenRequest implements Cloneable {
         return this;
     }
 
+    public SubmitContainerTokenRequest withMultiPlatform(boolean value) {
+        this.multiPlatform = value;
+        return this;
+    }
+
     public boolean formatSingularity() {
         return "sif".equals(format);
     }
@@ -398,6 +410,7 @@ public class SubmitContainerTokenRequest implements Cloneable {
                 ", scanLevels=" + scanLevels +
                 ", buildCompression=" + buildCompression +
                 ", buildTemplate=" + buildTemplate +
+                ", multiPlatform=" + multiPlatform +
                 '}';
     }
 }
