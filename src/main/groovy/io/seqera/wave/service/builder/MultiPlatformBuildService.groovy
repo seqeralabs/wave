@@ -19,13 +19,15 @@
 package io.seqera.wave.service.builder
 
 import java.time.Instant
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.job.JobEntry
+import io.seqera.wave.service.job.JobHandler
+import io.seqera.wave.service.job.JobService
+import io.seqera.wave.service.job.JobSpec
+import io.seqera.wave.service.job.JobState
 import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
 import jakarta.inject.Named
@@ -41,8 +43,9 @@ import static io.seqera.wave.util.ContainerHelper.makeTargetImage
  */
 @Slf4j
 @Singleton
+@Named('MultiBuild')
 @CompileStatic
-class MultiPlatformBuildService {
+class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
 
     @Inject
     ContainerBuildService buildService
@@ -51,11 +54,13 @@ class MultiPlatformBuildService {
     BuildStateStore buildStore
 
     @Inject
+    MultiBuildStateStore multiBuildStore
+
+    @Inject
     ManifestAssembler manifestAssembler
 
     @Inject
-    @Named(TaskExecutors.BLOCKING)
-    ExecutorService executor
+    JobService jobService
 
     static final ContainerPlatform PLATFORM_AMD64 = ContainerPlatform.of('linux/amd64')
     static final ContainerPlatform PLATFORM_ARM64 = ContainerPlatform.of('linux/arm64')
@@ -106,73 +111,105 @@ class MultiPlatformBuildService {
         final initialEntry = BuildEntry.create(syntheticRequest)
         buildStore.storeIfAbsent(finalTargetImage, initialEntry)
 
-        // Async: wait for both builds to complete, then assemble manifest list
-        CompletableFuture.runAsync({
-            try {
-                awaitAndAssemble(amd64Track, arm64Track, finalTargetImage, buildId, startTime, identity)
-            }
-            catch (Exception e) {
-                log.error "Multi-platform build failed for $finalTargetImage", e
-                // Store failure so status polling sees completion
-                final failedResult = BuildResult.failed(buildId, e.message, startTime)
-                storeBuildResult(finalTargetImage, buildId, failedResult)
-            }
-        }, executor)
+        // Create the multi-build request and entry, then launch via job queue
+        final multiBuildRequest = MultiBuildRequest.create(
+                finalContainerId,
+                finalTargetImage,
+                buildId,
+                amd64Track.targetImage,
+                arm64Track.targetImage,
+                amd64Track.cached,
+                arm64Track.cached,
+                identity,
+                templateRequest.maxDuration
+        )
+        final multiBuildEntry = MultiBuildEntry.of(multiBuildRequest)
+        multiBuildStore.put(finalTargetImage, multiBuildEntry)
+
+        // Launch the multi-build job — goes directly to processing queue
+        jobService.launchMultiBuild(multiBuildRequest)
 
         // Return immediately — build is in progress (succeeded=null)
         return new BuildTrack(buildId, finalTargetImage, false, null)
     }
 
-    protected void awaitAndAssemble(BuildTrack amd64Track, BuildTrack arm64Track, String finalTargetImage, String buildId, Instant startTime, PlatformId identity) {
-        // await both platform builds in parallel
-        final amd64Future = amd64Track.cached
-                ? CompletableFuture.completedFuture(true)
-                : CompletableFuture.supplyAsync({ awaitBuildResult(amd64Track, 'amd64', finalTargetImage) }, executor)
-        final arm64Future = arm64Track.cached
-                ? CompletableFuture.completedFuture(true)
-                : CompletableFuture.supplyAsync({ awaitBuildResult(arm64Track, 'arm64', finalTargetImage) }, executor)
+    // **************************************************************
+    // **               JobHandler implementation
+    // **************************************************************
 
-        CompletableFuture.allOf(amd64Future, arm64Future).join()
-        final boolean amd64Ok = amd64Future.get()
-        final boolean arm64Ok = arm64Future.get()
+    @Override
+    MultiBuildEntry getJobEntry(JobSpec job) {
+        multiBuildStore.get(job.entryKey)
+    }
 
-        log.debug "Platform build results: amd64=$amd64Ok, arm64=$arm64Ok"
+    @Override
+    JobSpec launchJob(JobSpec job, MultiBuildEntry entry) {
+        // no-op: multi-build jobs don't launch K8s/Docker processes
+        return job.withLaunchTime(Instant.now())
+    }
 
-        if( amd64Ok && arm64Ok ) {
-            final List<Map> platformEntries = [
-                [image: amd64Track.targetImage, platform: PLATFORM_AMD64],
-                [image: arm64Track.targetImage, platform: PLATFORM_ARM64]
-            ]
-            manifestAssembler.createAndPushManifestList(finalTargetImage, platformEntries, identity)
-            log.info "Multi-platform manifest list assembled for $finalTargetImage"
-            // store completed build result
-            final completedResult = BuildResult.completed(buildId, 0, 'Multi-platform build completed', startTime, null)
-            storeBuildResult(finalTargetImage, buildId, completedResult)
+    @Override
+    void onJobCompletion(JobSpec job, MultiBuildEntry entry, JobState state) {
+        final request = entry.request
+        final buildId = request.buildId
+        final startTime = request.creationTime
+
+        if( state.succeeded() ) {
+            try {
+                final List<Map> platformEntries = [
+                    [image: request.amd64TargetImage, platform: PLATFORM_AMD64],
+                    [image: request.arm64TargetImage, platform: PLATFORM_ARM64]
+                ]
+                manifestAssembler.createAndPushManifestList(request.targetImage, platformEntries, request.identity)
+                log.info "Multi-platform manifest list assembled for ${request.targetImage}"
+
+                final completedResult = BuildResult.completed(buildId, 0, 'Multi-platform build completed', startTime, null)
+                updateStores(entry, completedResult)
+            }
+            catch (Exception e) {
+                log.error "Multi-platform manifest assembly failed for ${request.targetImage}", e
+                final failedResult = BuildResult.failed(buildId, "Manifest assembly failed: ${e.message}", startTime)
+                updateStores(entry, failedResult)
+            }
         }
         else {
-            log.error "Multi-platform build failed — amd64Ok=$amd64Ok, arm64Ok=$arm64Ok"
-            final failedResult = BuildResult.failed(buildId, "Multi-platform build failed — amd64=$amd64Ok, arm64=$arm64Ok", startTime)
-            storeBuildResult(finalTargetImage, buildId, failedResult)
+            final failedResult = BuildResult.failed(buildId, state.stdout ?: "Multi-platform build failed", startTime)
+            updateStores(entry, failedResult)
         }
     }
 
-    private void storeBuildResult(String targetImage, String buildId, BuildResult result) {
+    @Override
+    void onJobException(JobSpec job, MultiBuildEntry entry, Throwable error) {
+        final request = entry.request
+        final result = BuildResult.failed(request.buildId, error.message, request.creationTime)
+        updateStores(entry, result)
+        log.error("Multi-platform build exception for '${request.targetImage}' - operation=${job.operationName}; cause=${error.message}", error)
+    }
+
+    @Override
+    void onJobTimeout(JobSpec job, MultiBuildEntry entry) {
+        final request = entry.request
+        final result = BuildResult.failed(request.buildId, "Multi-platform build timed out '${request.targetImage}'", request.creationTime)
+        updateStores(entry, result)
+        log.warn "Multi-platform build timed out '${request.targetImage}'; operation=${job.operationName}; duration=${result.duration}"
+    }
+
+    // **************************************************************
+    // **               helper methods
+    // **************************************************************
+
+    private void updateStores(MultiBuildEntry entry, BuildResult result) {
+        final targetImage = entry.request.targetImage
+        // update the multi-build state store
+        multiBuildStore.put(targetImage, entry.withResult(result))
+        // update the build state store for status polling
         final existing = buildStore.getBuild(targetImage)
         if( existing ) {
             buildStore.storeBuild(targetImage, existing.withResult(result))
         }
         else {
-            log.warn "Multi-platform build entry not found for $targetImage, buildId=$buildId"
+            log.warn "Multi-platform build entry not found in build store for $targetImage"
         }
-    }
-
-    private boolean awaitBuildResult(BuildTrack track, String arch, String finalTargetImage) {
-        final future = buildStore.awaitBuild(track.targetImage)
-        if( !future ) {
-            log.error "Multi-platform build: unable to await $arch build for $finalTargetImage"
-            return false
-        }
-        return future.get()?.succeeded()
     }
 
     protected BuildRequest createPlatformRequest(BuildRequest template, ContainerPlatform platform, String suffix) {

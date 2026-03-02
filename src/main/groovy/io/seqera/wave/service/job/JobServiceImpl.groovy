@@ -27,6 +27,10 @@ import io.seqera.wave.configuration.WaveLite
 import io.seqera.wave.service.blob.BlobEntry
 import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.builder.BuildStateStore
+import io.seqera.wave.service.builder.MultiBuildEntry
+import io.seqera.wave.service.builder.MultiBuildRequest
+import io.seqera.wave.service.builder.MultiBuildStateStore
 import io.seqera.wave.service.cleanup.CleanupService
 import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.scan.ScanRequest
@@ -61,6 +65,14 @@ class JobServiceImpl implements JobService {
     @Inject
     @Nullable
     private TransferStrategy transferStrategy
+
+    @Inject
+    @Nullable
+    private BuildStateStore buildStateStore
+
+    @Inject
+    @Nullable
+    private MultiBuildStateStore multiBuildStateStore
 
     @Override
     JobSpec launchTransfer(BlobEntry blob, List<String> command) {
@@ -108,7 +120,19 @@ class JobServiceImpl implements JobService {
     }
 
     @Override
+    JobSpec launchMultiBuild(MultiBuildRequest request) {
+        // create the unique job id for the multi-platform build
+        final job = jobFactory.multiBuild(request)
+        // multi-build jobs go directly to processing queue (no K8s resources needed)
+        processingQueue.offer(job.withLaunchTime(java.time.Instant.now()))
+        return job
+    }
+
+    @Override
     JobState status(JobSpec job) {
+        if( job.type == JobSpec.Type.MultiBuild ) {
+            return multiBuildStatus(job)
+        }
         try {
             return operations.status(job)
         }
@@ -121,5 +145,40 @@ class JobServiceImpl implements JobService {
     @Override
     void cleanup(JobSpec job, Integer exitStatus) {
         cleanupService.cleanupJob(job, exitStatus)
+    }
+
+    protected JobState multiBuildStatus(JobSpec job) {
+        try {
+            final entry = multiBuildStateStore?.get(job.entryKey) as MultiBuildEntry
+            if( !entry )
+                return new JobState(JobState.Status.UNKNOWN, null, null)
+
+            // check if both sub-builds are done
+            final amd64Entry = buildStateStore?.getBuild(entry.request.amd64TargetImage)
+            final arm64Entry = buildStateStore?.getBuild(entry.request.arm64TargetImage)
+
+            final amd64Done = entry.request.amd64Cached || amd64Entry?.done()
+            final arm64Done = entry.request.arm64Cached || arm64Entry?.done()
+
+            if( !amd64Done || !arm64Done ) {
+                return JobState.running()
+            }
+
+            // both done — check if both succeeded
+            final amd64Ok = entry.request.amd64Cached || amd64Entry?.result?.succeeded()
+            final arm64Ok = entry.request.arm64Cached || arm64Entry?.result?.succeeded()
+
+            if( amd64Ok && arm64Ok ) {
+                return JobState.succeeded(null)
+            }
+            else {
+                final msg = "Multi-platform sub-build failed — amd64=${amd64Ok}, arm64=${arm64Ok}"
+                return JobState.failed(null, msg)
+            }
+        }
+        catch (Throwable t) {
+            log.warn "Unable to obtain multi-build status for job=${job.operationName} - cause: ${t.message}", t
+            return new JobState(JobState.Status.UNKNOWN, null, t.message)
+        }
     }
 }

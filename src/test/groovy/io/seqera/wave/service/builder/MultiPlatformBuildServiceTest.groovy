@@ -23,10 +23,11 @@ import spock.lang.Specification
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Executors
 
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.job.JobService
+import io.seqera.wave.service.job.JobSpec
+import io.seqera.wave.service.job.JobState
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 
@@ -67,17 +68,20 @@ class MultiPlatformBuildServiceTest extends Specification {
         arm64Req.cacheRepository == 'docker.io/cache'
     }
 
-    def 'should return in-progress build track'() {
+    def 'should return in-progress build track and launch multi-build job'() {
         given:
         def buildService = Mock(ContainerBuildService)
         def buildStore = Mock(BuildStateStore)
+        def multiBuildStore = Mock(MultiBuildStateStore)
         def manifestAssembler = Mock(ManifestAssembler)
+        def jobService = Mock(JobService)
 
         def service = new MultiPlatformBuildService(
                 buildService: buildService,
                 buildStore: buildStore,
+                multiBuildStore: multiBuildStore,
                 manifestAssembler: manifestAssembler,
-                executor: Executors.newSingleThreadExecutor()
+                jobService: jobService
         )
 
         def template = BuildRequest.of(
@@ -102,86 +106,202 @@ class MultiPlatformBuildServiceTest extends Specification {
         track.cached == false
         track.succeeded == null
         track.id == 'bd-multi123_0'
+        and:
+        1 * buildStore.storeIfAbsent('docker.io/wave:multi123', _)
+        1 * multiBuildStore.put('docker.io/wave:multi123', _)
+        1 * jobService.launchMultiBuild(_)
     }
 
-    def 'should assemble manifest list on both builds succeeding'() {
+    def 'should assemble manifest on job completion with success'() {
         given:
         def buildStore = Mock(BuildStateStore)
+        def multiBuildStore = Mock(MultiBuildStateStore)
         def manifestAssembler = Mock(ManifestAssembler)
 
         def service = new MultiPlatformBuildService(
                 buildStore: buildStore,
-                manifestAssembler: manifestAssembler,
-                executor: Executors.newSingleThreadExecutor()
+                multiBuildStore: multiBuildStore,
+                manifestAssembler: manifestAssembler
         )
 
-        def amd64Track = new BuildTrack('bd-amd64_0', 'docker.io/wave:amd64', false, null)
-        def arm64Track = new BuildTrack('bd-arm64_0', 'docker.io/wave:arm64', false, null)
-        def identity = PlatformId.NULL
+        def identity = new PlatformId(new User(id: 1, email: 'foo@user.com'))
+        def request = MultiBuildRequest.of(
+                multiBuildId: 'mb-abc123',
+                targetImage: 'docker.io/wave:multi',
+                containerId: 'cid',
+                buildId: 'bd-cid_0',
+                amd64TargetImage: 'docker.io/wave:amd64',
+                arm64TargetImage: 'docker.io/wave:arm64',
+                amd64Cached: false,
+                arm64Cached: false,
+                identity: identity,
+                creationTime: Instant.now(),
+                maxDuration: Duration.ofMinutes(5)
+        )
+        def entry = MultiBuildEntry.of(request)
+        def job = JobSpec.multiBuild('docker.io/wave:multi', 'mb-abc123', Instant.now(), Duration.ofMinutes(5))
+        def state = JobState.succeeded(null)
 
         and:
-        def now = Instant.now()
-        def amd64Result = BuildResult.completed('bd-amd64_0', 0, 'ok', now, 'sha256:aaa')
-        def arm64Result = BuildResult.completed('bd-arm64_0', 0, 'ok', now, 'sha256:bbb')
-        buildStore.awaitBuild('docker.io/wave:amd64') >> CompletableFuture.completedFuture(amd64Result)
-        buildStore.awaitBuild('docker.io/wave:arm64') >> CompletableFuture.completedFuture(arm64Result)
+        def existingBuildEntry = BuildEntry.create(BuildRequest.of(
+                buildId: 'bd-cid_0',
+                containerId: 'cid',
+                targetImage: 'docker.io/wave:multi',
+                startTime: Instant.now()
+        ))
 
         when:
-        service.awaitAndAssemble(amd64Track, arm64Track, 'docker.io/wave:final', identity)
+        service.onJobCompletion(job, entry, state)
 
         then:
-        1 * manifestAssembler.createAndPushManifestList('docker.io/wave:final', ['docker.io/wave:amd64', 'docker.io/wave:arm64'], identity)
+        1 * manifestAssembler.createAndPushManifestList('docker.io/wave:multi', _, identity)
+        1 * multiBuildStore.put('docker.io/wave:multi', _)
+        1 * buildStore.getBuild('docker.io/wave:multi') >> existingBuildEntry
+        1 * buildStore.storeBuild('docker.io/wave:multi', _)
     }
 
-    def 'should not assemble manifest list when a build fails'() {
+    def 'should not assemble manifest on job completion with failure'() {
         given:
         def buildStore = Mock(BuildStateStore)
+        def multiBuildStore = Mock(MultiBuildStateStore)
         def manifestAssembler = Mock(ManifestAssembler)
 
         def service = new MultiPlatformBuildService(
                 buildStore: buildStore,
-                manifestAssembler: manifestAssembler,
-                executor: Executors.newSingleThreadExecutor()
+                multiBuildStore: multiBuildStore,
+                manifestAssembler: manifestAssembler
         )
 
-        def amd64Track = new BuildTrack('bd-amd64_0', 'docker.io/wave:amd64', false, null)
-        def arm64Track = new BuildTrack('bd-arm64_0', 'docker.io/wave:arm64', false, null)
-        def identity = PlatformId.NULL
+        def request = MultiBuildRequest.of(
+                multiBuildId: 'mb-abc123',
+                targetImage: 'docker.io/wave:multi',
+                containerId: 'cid',
+                buildId: 'bd-cid_0',
+                amd64TargetImage: 'docker.io/wave:amd64',
+                arm64TargetImage: 'docker.io/wave:arm64',
+                amd64Cached: false,
+                arm64Cached: false,
+                creationTime: Instant.now(),
+                maxDuration: Duration.ofMinutes(5)
+        )
+        def entry = MultiBuildEntry.of(request)
+        def job = JobSpec.multiBuild('docker.io/wave:multi', 'mb-abc123', Instant.now(), Duration.ofMinutes(5))
+        def state = JobState.failed(-1, 'sub-build failed')
 
         and:
-        def now = Instant.now()
-        def amd64Result = BuildResult.completed('bd-amd64_0', 0, 'ok', now, 'sha256:aaa')
-        def arm64Result = BuildResult.failed('bd-arm64_0', 'error', now)
-        buildStore.awaitBuild('docker.io/wave:amd64') >> CompletableFuture.completedFuture(amd64Result)
-        buildStore.awaitBuild('docker.io/wave:arm64') >> CompletableFuture.completedFuture(arm64Result)
+        def existingBuildEntry = BuildEntry.create(BuildRequest.of(
+                buildId: 'bd-cid_0',
+                containerId: 'cid',
+                targetImage: 'docker.io/wave:multi',
+                startTime: Instant.now()
+        ))
 
         when:
-        service.awaitAndAssemble(amd64Track, arm64Track, 'docker.io/wave:final', identity)
+        service.onJobCompletion(job, entry, state)
 
         then:
         0 * manifestAssembler.createAndPushManifestList(_, _, _)
+        1 * multiBuildStore.put('docker.io/wave:multi', _)
+        1 * buildStore.getBuild('docker.io/wave:multi') >> existingBuildEntry
+        1 * buildStore.storeBuild('docker.io/wave:multi', _)
     }
 
-    def 'should handle cached platform builds'() {
+    def 'should handle job timeout'() {
         given:
         def buildStore = Mock(BuildStateStore)
-        def manifestAssembler = Mock(ManifestAssembler)
+        def multiBuildStore = Mock(MultiBuildStateStore)
 
         def service = new MultiPlatformBuildService(
                 buildStore: buildStore,
-                manifestAssembler: manifestAssembler,
-                executor: Executors.newSingleThreadExecutor()
+                multiBuildStore: multiBuildStore
         )
 
-        def amd64Track = new BuildTrack('bd-amd64_0', 'docker.io/wave:amd64', true, true)
-        def arm64Track = new BuildTrack('bd-arm64_0', 'docker.io/wave:arm64', true, true)
-        def identity = PlatformId.NULL
+        def request = MultiBuildRequest.of(
+                multiBuildId: 'mb-abc123',
+                targetImage: 'docker.io/wave:multi',
+                containerId: 'cid',
+                buildId: 'bd-cid_0',
+                amd64TargetImage: 'docker.io/wave:amd64',
+                arm64TargetImage: 'docker.io/wave:arm64',
+                amd64Cached: false,
+                arm64Cached: false,
+                creationTime: Instant.now(),
+                maxDuration: Duration.ofMinutes(5)
+        )
+        def entry = MultiBuildEntry.of(request)
+        def job = JobSpec.multiBuild('docker.io/wave:multi', 'mb-abc123', Instant.now(), Duration.ofMinutes(5))
+
+        and:
+        def existingBuildEntry = BuildEntry.create(BuildRequest.of(
+                buildId: 'bd-cid_0',
+                containerId: 'cid',
+                targetImage: 'docker.io/wave:multi',
+                startTime: Instant.now()
+        ))
 
         when:
-        service.awaitAndAssemble(amd64Track, arm64Track, 'docker.io/wave:final', identity)
+        service.onJobTimeout(job, entry)
 
         then:
-        0 * buildStore.awaitBuild(_)
-        1 * manifestAssembler.createAndPushManifestList('docker.io/wave:final', ['docker.io/wave:amd64', 'docker.io/wave:arm64'], identity)
+        1 * multiBuildStore.put('docker.io/wave:multi', _)
+        1 * buildStore.getBuild('docker.io/wave:multi') >> existingBuildEntry
+        1 * buildStore.storeBuild('docker.io/wave:multi', _)
+    }
+
+    def 'should handle job exception'() {
+        given:
+        def buildStore = Mock(BuildStateStore)
+        def multiBuildStore = Mock(MultiBuildStateStore)
+
+        def service = new MultiPlatformBuildService(
+                buildStore: buildStore,
+                multiBuildStore: multiBuildStore
+        )
+
+        def request = MultiBuildRequest.of(
+                multiBuildId: 'mb-abc123',
+                targetImage: 'docker.io/wave:multi',
+                containerId: 'cid',
+                buildId: 'bd-cid_0',
+                amd64TargetImage: 'docker.io/wave:amd64',
+                arm64TargetImage: 'docker.io/wave:arm64',
+                amd64Cached: false,
+                arm64Cached: false,
+                creationTime: Instant.now(),
+                maxDuration: Duration.ofMinutes(5)
+        )
+        def entry = MultiBuildEntry.of(request)
+        def job = JobSpec.multiBuild('docker.io/wave:multi', 'mb-abc123', Instant.now(), Duration.ofMinutes(5))
+
+        and:
+        def existingBuildEntry = BuildEntry.create(BuildRequest.of(
+                buildId: 'bd-cid_0',
+                containerId: 'cid',
+                targetImage: 'docker.io/wave:multi',
+                startTime: Instant.now()
+        ))
+
+        when:
+        service.onJobException(job, entry, new RuntimeException('boom'))
+
+        then:
+        1 * multiBuildStore.put('docker.io/wave:multi', _)
+        1 * buildStore.getBuild('docker.io/wave:multi') >> existingBuildEntry
+        1 * buildStore.storeBuild('docker.io/wave:multi', _)
+    }
+
+    def 'launchJob should be a no-op returning job with launch time'() {
+        given:
+        def service = new MultiPlatformBuildService()
+        def job = JobSpec.multiBuild('docker.io/wave:multi', 'mb-abc123', Instant.now(), Duration.ofMinutes(5))
+        def entry = Mock(MultiBuildEntry)
+
+        when:
+        def result = service.launchJob(job, entry)
+
+        then:
+        result.id == job.id
+        result.type == job.type
+        result.launchTime != null
     }
 }
