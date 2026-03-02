@@ -149,6 +149,16 @@ class BuildRequest {
      */
     final String buildTemplate
 
+    /**
+     * When {@code true}, email notifications should not be sent for this build
+     */
+    final boolean noEmail
+
+    /**
+     * When {@code true}, this is a multi-platform composite build (linux/amd64 + linux/arm64)
+     */
+    final boolean multiPlatform
+
     BuildRequest(
             String containerId,
             String containerFile,
@@ -167,7 +177,8 @@ class BuildRequest {
             BuildFormat format,
             Duration maxDuration,
             BuildCompression compression,
-            String buildTemplate
+            String buildTemplate,
+            boolean noEmail = false
     )
     {
         this.containerId = containerId
@@ -189,6 +200,8 @@ class BuildRequest {
         this.maxDuration = maxDuration
         this.compression = compression
         this.buildTemplate = buildTemplate
+        this.noEmail = noEmail
+        this.multiPlatform = false
         // NOTE: this is meant to be updated - automatically - when the request is submitted
         this.buildId = computeBuildId(containerId)
     }
@@ -217,6 +230,8 @@ class BuildRequest {
         this.compression = opts.compression as BuildCompression
         this.buildId = opts.buildId ?: computeBuildId(containerId)
         this.buildTemplate = opts.buildTemplate
+        this.noEmail = opts.noEmail as boolean
+        this.multiPlatform = opts.multiPlatform as boolean
     }
 
     static BuildRequest of(Map opts) {

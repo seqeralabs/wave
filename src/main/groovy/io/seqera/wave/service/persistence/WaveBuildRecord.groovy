@@ -26,6 +26,7 @@ import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import io.seqera.wave.api.BuildCompression
 import io.seqera.wave.api.BuildStatusResponse
+import io.seqera.wave.core.MultiContainerPlatform
 import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
@@ -91,7 +92,7 @@ class WaveBuildRecord {
                 userId: request.identity.user?.id,
                 requestIp: request.ip,
                 startTime: request.startTime,
-                platform: request.platform,
+                platform: request.multiPlatform ? MultiContainerPlatform.MULTI_PLATFORM.toString() : request.platform?.toString(),
                 offsetId: request.offsetId,
                 scanId: request.scanId,
                 format: request.format,

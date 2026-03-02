@@ -340,7 +340,7 @@ class PostgresPersistentServiceTest extends Specification {
         def SCAN_ID = 'a1'
         def BUILD_ID = '100'
         def CONTAINER_IMAGE = 'docker.io/my/repo:container1234'
-        def PLATFORM = ContainerPlatform.of('linux/amd64')
+        def PLATFORM = 'linux/amd64'
         def CVE1 = new ScanVulnerability('cve-1', 'x1', 'title1', 'package1', 'version1', 'fixed1', 'url1')
         def CVE2 = new ScanVulnerability('cve-2', 'x2', 'title2', 'package2', 'version2', 'fixed2', 'url2')
         def CVE3 = new ScanVulnerability('cve-3', 'x3', 'title3', 'package3', 'version3', 'fixed3', 'url3')
@@ -374,7 +374,7 @@ class PostgresPersistentServiceTest extends Specification {
         def SCAN_ID = 'a1'
         def BUILD_ID = '100'
         def CONTAINER_IMAGE = 'docker.io/my/repo:container1234'
-        def PLATFORM = ContainerPlatform.of('linux/amd64')
+        def PLATFORM = 'linux/amd64'
         def CVE1 = new ScanVulnerability('cve-1', 'x1', 'title1', 'package1', 'version1', 'fixed1', 'url1')
         def scan = new WaveScanRecord(SCAN_ID, BUILD_ID, null, null, CONTAINER_IMAGE, PLATFORM, NOW, Duration.ofSeconds(10), 'SUCCEEDED', [CVE1], null, null, null)
 
@@ -390,7 +390,7 @@ class PostgresPersistentServiceTest extends Specification {
     def 'should find all scans' () {
         given:
         def CONTAINER_IMAGE = 'docker.io/my/repo:container1234'
-        def PLATFORM = ContainerPlatform.of('linux/amd64')
+        def PLATFORM = 'linux/amd64'
         def CVE1 = new ScanVulnerability('cve-1', 'x1', 'title1', 'package1', 'version1', 'fixed1', 'url1')
         def CVE2 = new ScanVulnerability('cve-2', 'x2', 'title2', 'package2', 'version2', 'fixed2', 'url2')
         def CVE3 = new ScanVulnerability('cve-3', 'x3', 'title3', 'package3', 'version3', 'fixed3', 'url3')

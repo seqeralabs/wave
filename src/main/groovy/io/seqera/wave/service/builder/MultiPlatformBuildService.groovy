@@ -22,13 +22,18 @@ import java.time.Instant
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.event.ApplicationEventPublisher
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.job.JobEntry
+import io.seqera.wave.core.MultiContainerPlatform
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
+import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.persistence.WaveBuildRecord
+import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.tower.PlatformId
+import jakarta.annotation.Nullable
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -61,6 +66,15 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
 
     @Inject
     JobService jobService
+
+    @Inject
+    ApplicationEventPublisher<BuildEvent> eventPublisher
+
+    @Inject
+    PersistenceService persistenceService
+
+    @Inject @Nullable
+    ContainerScanService scanService
 
     static final ContainerPlatform PLATFORM_AMD64 = ContainerPlatform.of('linux/amd64')
     static final ContainerPlatform PLATFORM_ARM64 = ContainerPlatform.of('linux/arm64')
@@ -100,13 +114,16 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
                 identity: templateRequest.identity,
                 containerFile: templateRequest.containerFile,
                 condaFile: templateRequest.condaFile,
-                platform: templateRequest.platform,
+                workspace: templateRequest.workspace,
+                platform: MultiContainerPlatform.MULTI_PLATFORM,
+                configJson: templateRequest.configJson,
                 ip: templateRequest.ip,
                 offsetId: templateRequest.offsetId,
                 scanId: templateRequest.scanId,
                 format: templateRequest.format,
                 compression: templateRequest.compression,
-                buildTemplate: templateRequest.buildTemplate
+                buildTemplate: templateRequest.buildTemplate,
+                multiPlatform: true
         )
         final initialEntry = BuildEntry.create(syntheticRequest)
         buildStore.storeIfAbsent(finalTargetImage, initialEntry)
@@ -202,10 +219,20 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
         final targetImage = entry.request.targetImage
         // update the multi-build state store
         multiBuildStore.put(targetImage, entry.withResult(result))
-        // update the build state store for status polling
+        // update the build state store for status polling and publish event
         final existing = buildStore.getBuild(targetImage)
         if( existing ) {
-            buildStore.storeBuild(targetImage, existing.withResult(result))
+            final updatedEntry = existing.withResult(result)
+            buildStore.storeBuild(targetImage, updatedEntry)
+            // trigger scan on the composite image before persisting the record
+            // (scan record must exist before build record to avoid status polling race condition)
+            scanService?.scanOnBuild(updatedEntry)
+            // persist the build record and publish event (triggers email notification)
+            // note: the multiPlatform flag on the request survives serialization and is used
+            // by WaveBuildRecord.create0() to render the correct platform string
+            final event = new BuildEvent(updatedEntry.request, result)
+            persistenceService.saveBuildAsync(WaveBuildRecord.fromEvent(event))
+            eventPublisher.publishEvent(event)
         }
         else {
             log.warn "Multi-platform build entry not found in build store for $targetImage"
@@ -237,12 +264,13 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
                 template.configJson,
                 template.offsetId,
                 template.containerConfig,
-                template.scanId,
+                null,       // scanId - suppress per-platform scans; scan runs on the composite image
                 template.buildContext,
                 template.format,
                 template.maxDuration,
                 template.compression,
-                template.buildTemplate
+                template.buildTemplate,
+                true    // noEmail - suppress individual sub-build notifications
         )
     }
 }

@@ -26,6 +26,7 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.core.MultiContainerPlatform
 import io.seqera.wave.service.job.JobEntry
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.data.store.state.StateEntry
@@ -114,6 +115,11 @@ class ScanEntry implements StateEntry<String>, JobEntry {
      */
     String logs
 
+    /**
+     * When {@code true}, this scan targets a multi-platform composite image (linux/amd64 + linux/arm64)
+     */
+    boolean multiPlatform
+
     @Override
     String getKey() {
         return scanId
@@ -142,7 +148,10 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 request.creationTime,
                 null,
                 PENDING,
-                List.of())
+                List.of(),
+                null,
+                null,
+                request.multiPlatform)
     }
 
     ScanEntry success(List<ScanVulnerability> vulnerabilities){
@@ -159,7 +168,9 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 Duration.between(this.startTime, Instant.now()),
                 SUCCEEDED,
                 vulnerabilities,
-                0 )
+                0,
+                null,
+                this.multiPlatform)
     }
 
     ScanEntry failure(Integer exitCode, String logs){
@@ -177,7 +188,8 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 FAILED,
                 List.of(),
                 exitCode,
-                logs)
+                logs,
+                this.multiPlatform)
     }
 
     static ScanEntry failure(ScanRequest request){
@@ -193,7 +205,10 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 request.creationTime,
                 Duration.between(request.creationTime, Instant.now()),
                 FAILED,
-                List.of())
+                List.of(),
+                null,
+                null,
+                request.multiPlatform)
     }
 
 
@@ -223,7 +238,8 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 opts.status as String,
                 opts.vulnerabilities as List<ScanVulnerability>,
                 opts.exitCode as Integer,
-                opts.logs as String
+                opts.logs as String,
+                opts.multiPlatform as boolean
         )
     }
 
@@ -234,7 +250,7 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 record.mirrorId,
                 record.requestId,
                 record.containerImage,
-                record.platform,
+                parsePlatform0(record.platform),
                 record.workDir,
                 null,
                 record.startTime,
@@ -242,8 +258,17 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 record.status,
                 record.vulnerabilities,
                 record.exitCode,
-                record.logs
+                record.logs,
+                record.platform?.contains(',') ?: false
         )
+    }
+
+    static private ContainerPlatform parsePlatform0(String value) {
+        if( !value )
+            return null
+        if( value.contains(',') )
+            return new MultiContainerPlatform(value.tokenize(',').collect { ContainerPlatform.of(it.trim()) })
+        return ContainerPlatform.of(value)
     }
 
 }

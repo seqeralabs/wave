@@ -371,7 +371,7 @@ class ViewControllerTest extends Specification {
                 'mr-12345',
                 'cr-12345',
                 'docker.io/some:image',
-                ContainerPlatform.DEFAULT,
+                ContainerPlatform.DEFAULT.toString(),
                 Instant.now(),
                 Duration.ofMinutes(1),
                 ScanEntry.SUCCEEDED,
@@ -410,7 +410,7 @@ class ViewControllerTest extends Specification {
                 'mr-12345',
                 'cr-12345',
                 'docker.io/some:image',
-                ContainerPlatform.DEFAULT,
+                ContainerPlatform.DEFAULT.toString(),
                 Instant.now(),
                 Duration.ofMinutes(1),
                 ScanEntry.SUCCEEDED,
@@ -684,7 +684,7 @@ class ViewControllerTest extends Specification {
         def service = Mock(ContainerScanService)
         def controller = new ViewController(scanService: service)
         def CONTAINER_IMAGE = 'docker.io/my/repo:container1234'
-        def PLATFORM = ContainerPlatform.of('linux/arm64')
+        def PLATFORM = 'linux/arm64'
         def CVE1 = new ScanVulnerability('cve-1', 'x1', 'title1', 'package1', 'version1', 'fixed1', 'url1')
         def CVE2 = new ScanVulnerability('cve-2', 'x2', 'title2', 'package2', 'version2', 'fixed2', 'url2')
         def CVE3 = new ScanVulnerability('cve-3', 'x3', 'title3', 'package3', 'version3', 'fixed3', 'url3')
@@ -730,7 +730,7 @@ class ViewControllerTest extends Specification {
     def 'should find all scans' () {
         given:
         def CONTAINER_IMAGE = 'docker.io/my/repo:container1234'
-        def PLATFORM = ContainerPlatform.of('linux/arm64')
+        def PLATFORM = 'linux/arm64'
         def CVE1 = new ScanVulnerability('cve-1', 'x1', 'title1', 'package1', 'version1', 'fixed1', 'url1')
         def CVE2 = new ScanVulnerability('cve-2', 'x2', 'title2', 'package2', 'version2', 'fixed2', 'url2')
         def CVE3 = new ScanVulnerability('cve-3', 'x3', 'title3', 'package3', 'version3', 'fixed3', 'url3')

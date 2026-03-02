@@ -36,6 +36,7 @@ import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.api.ScanMode
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.core.MultiContainerPlatform
 import io.seqera.wave.configuration.ScanEnabled
 import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildRequest
@@ -230,6 +231,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     
     protected ScanRequest fromBuild(BuildRequest request) {
         final workDir = request.workDir.resolveSibling(request.scanId)
+        final platform = request.multiPlatform ? MultiContainerPlatform.MULTI_PLATFORM : request.platform
         return new ScanRequest(
                 request.scanId,
                 request.buildId,
@@ -237,10 +239,11 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
                 null,
                 request.configJson,
                 request.targetImage,
-                request.platform,
+                platform,
                 workDir,
                 Instant.now(),
-                request.identity)
+                request.identity,
+                request.multiPlatform)
     }
 
     protected ScanRequest fromMirror(MirrorRequest request) {
@@ -255,7 +258,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
                 request.platform,
                 workDir,
                 Instant.now(),
-                request.identity)
+                request.identity,
+                false)
     }
 
     protected ScanRequest fromContainer(ContainerRequest request) {
@@ -271,7 +275,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
                 request.platform,
                 workDir,
                 Instant.now(),
-                request.identity)
+                request.identity,
+                false)
     }
 
     // **************************************************************
