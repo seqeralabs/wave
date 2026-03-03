@@ -507,7 +507,7 @@ class ContainerController {
         String buildId
         boolean buildNew
         String scanId
-        ChildEntries scanChildIds
+        ChildEntries scanChildIds = null
         Boolean succeeded
         if( req.containerFile && req.multiPlatform ) {
             if( !buildService ) throw new UnsupportedBuildServiceException()

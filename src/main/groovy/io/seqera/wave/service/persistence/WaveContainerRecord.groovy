@@ -234,7 +234,7 @@ class WaveContainerRecord {
         this.buildNew = that.buildNew
         this.freeze = that.freeze
         this.fusionVersion = that.fusionVersion
-        this.mirror == that.mirror
+        this.mirror = that.mirror
         this.scanId = that.scanId
         this.scanChildIds = that.scanChildIds
         // -- digest part 

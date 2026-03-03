@@ -18,6 +18,7 @@
 
 package io.seqera.wave.core
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -204,6 +205,36 @@ class ChildEntriesTest extends Specification {
         binding.build_entries[1].build_id == 'bd-def_0'
         binding.build_entries[1].build_platform == 'linux/arm64'
         binding.build_entries[1].build_url == 'https://wave.io/view/builds/bd-def_0'
+    }
+
+    def 'should roundtrip through Jackson serialization'() {
+        given:
+        def mapper = new ObjectMapper()
+        def original = new ChildEntries('sc-abc_1:linux/amd64,sc-def_2:linux/arm64')
+
+        when:
+        def json = mapper.writeValueAsString(original)
+        def restored = mapper.readValue(json, ChildEntries)
+
+        then:
+        json == '"sc-abc_1:linux/amd64,sc-def_2:linux/arm64"'
+        restored == original
+        restored.decode().size() == 2
+    }
+
+    def 'should handle null in Jackson serialization'() {
+        given:
+        def mapper = new ObjectMapper()
+
+        when:
+        def json = mapper.writeValueAsString([entries: null])
+        then:
+        json == '{"entries":null}'
+
+        when:
+        def restored = mapper.readValue('"sc-abc_1:linux/amd64"', ChildEntries)
+        then:
+        restored == new ChildEntries('sc-abc_1:linux/amd64')
     }
 
     def 'should populate build binding when null'() {

@@ -147,7 +147,7 @@ class ContainerRequest {
         return scanId
     }
 
-    ChildEntries getChildScanIds() {
+    ChildEntries getScanChildIds() {
         return scanChildIds
     }
 

@@ -244,34 +244,6 @@ class BuildRequest {
         new BuildRequest(opts)
     }
 
-    BuildRequest withScanId(String scanId) {
-        return BuildRequest.of(
-                containerId: this.containerId,
-                containerFile: this.containerFile,
-                condaFile: this.condaFile,
-                workspace: this.workspace,
-                targetImage: this.targetImage,
-                identity: this.identity,
-                platform: this.platform,
-                cacheRepository: this.cacheRepository,
-                startTime: this.startTime,
-                ip: this.ip,
-                configJson: this.configJson,
-                offsetId: this.offsetId,
-                containerConfig: this.containerConfig,
-                scanId: scanId,
-                buildContext: this.buildContext,
-                format: this.format,
-                maxDuration: this.maxDuration,
-                compression: this.compression,
-                buildId: this.buildId,
-                buildTemplate: this.buildTemplate,
-                noEmail: this.noEmail,
-                buildChildIds: this.buildChildIds,
-                scanChildIds: this.scanChildIds
-        )
-    }
-
     BuildRequest withChildScanIds(ChildEntries scanChildIds) {
         return BuildRequest.of(
                 containerId: this.containerId,
