@@ -78,7 +78,7 @@ interface PersistenceService {
     List<WaveBuildRecord> allBuilds(String containerId)
 
     /**
-     * Store a {@link WaveContainerRecord} object in the Surreal wave_request table.
+     * Store a {@link WaveContainerRecord} object in the persistence layer.
      *
      * @param data A {@link WaveContainerRecord} object representing a Wave request record
      */
@@ -101,7 +101,7 @@ interface PersistenceService {
     WaveContainerRecord loadContainerRequest(String token)
 
     /**
-     * Store a {@link WaveScanRecord} object in the Surreal wave_scan table.
+     * Store a {@link WaveScanRecord} object in the persistence layer.
      *
      * @param data A {@link WaveScanRecord} object representing the a container scan request
      */

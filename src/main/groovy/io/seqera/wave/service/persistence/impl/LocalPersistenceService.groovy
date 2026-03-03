@@ -39,7 +39,7 @@ import jakarta.inject.Singleton
 @Singleton
 @CompileStatic
 @Secondary
-@Requires(notEnv = "surrealdb")
+@Requires(notEnv = "postgres")
 @TraceElapsedTime(thresholdMillis = '${wave.trace.local-persistence.threshold:100}')
 class LocalPersistenceService implements PersistenceService {
 
