@@ -260,8 +260,20 @@ class ContainerController {
         if( v2 && req.packages && req.freeze && !validationService.isCustomRepo(req.buildRepository) && !buildConfig.defaultPublicRepository )
             throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode [3]")
 
+        if( v2 && req.packages ) {
+            // generate the container file required to assemble the container
+            final generated = containerFileFromRequest(req)
+            req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
+        }
+        // make sure container platform is defined
+        if( !req.containerPlatform )
+            req.containerPlatform = ContainerPlatform.DEFAULT.toString()
+
         // multi-platform validation
-        if( req.multiPlatform ) {
+        final parsedPlatform = ContainerPlatform.of(req.containerPlatform)
+        if( parsedPlatform.isMultiArch() ) {
+            if( parsedPlatform != ContainerPlatform.MULTI_PLATFORM )
+                throw new BadRequestException("Only linux/amd64,linux/arm64 multi-platform combination is currently supported")
             if( !req.containerFile && !req.packages )
                 throw new BadRequestException("Multi-platform builds require either 'containerFile' or 'packages' attribute")
             if( req.formatSingularity() )
@@ -269,15 +281,6 @@ class ContainerController {
             if( !multiPlatformBuildService )
                 throw new UnsupportedBuildServiceException()
         }
-
-        if( v2 && req.packages ) {
-            // generate the container file required to assemble the container
-            final generated = containerFileFromRequest(req)
-            req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
-        }
-        // make sure container platform is defined 
-        if( !req.containerPlatform )
-            req.containerPlatform = ContainerPlatform.DEFAULT.toString()
 
         final ip = addressResolver.resolve(httpRequest)
         // check the rate limit before continuing
@@ -406,9 +409,9 @@ class ContainerController {
     }
 
     protected ChildEntries makeChildScanIds(BuildRequest build, SubmitContainerTokenRequest req) {
-        if( !scanService || !req.multiPlatform )
+        if( !scanService || !build.platform.isMultiArch() )
             return null
-        final multiPlatform = ContainerPlatform.MULTI_PLATFORM
+        final multiPlatform = build.platform
         final scanMode = req.scanMode!=null ? req.scanMode : ScanMode.async
         final scanIdByPlatform = new LinkedHashMap<String, String>()
         for( ContainerPlatform.Platform p : multiPlatform.platforms ) {
@@ -509,7 +512,7 @@ class ContainerController {
         String scanId
         ChildEntries scanChildIds = null
         Boolean succeeded
-        if( req.containerFile && req.multiPlatform ) {
+        if( req.containerFile && ContainerPlatform.of(req.containerPlatform).isMultiArch() ) {
             if( !buildService ) throw new UnsupportedBuildServiceException()
             final build0 = makeBuildRequest(req, identity, ip)
             // create per-platform scan IDs for multi-arch builds

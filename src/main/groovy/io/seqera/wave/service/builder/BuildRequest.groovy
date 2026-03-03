@@ -24,6 +24,7 @@ import java.time.Instant
 import java.time.OffsetDateTime
 import java.time.ZoneId
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import io.seqera.wave.api.BuildCompression
@@ -40,6 +41,7 @@ import static io.seqera.wave.util.StringUtils.trunc
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@JsonPropertyOrder(['containerId','containerFile','condaFile','workspace','targetImage','identity','platform','cacheRepository','startTime','ip','configJson','offsetId','scanId','format','maxDuration','compression','buildId','buildTemplate','noEmail','buildChildIds','scanChildIds'])
 @EqualsAndHashCode(includes = 'containerId,targetImage,buildId')
 @CompileStatic
 class BuildRequest {
