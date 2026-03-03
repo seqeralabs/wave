@@ -23,6 +23,7 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.event.ApplicationEventPublisher
+import io.seqera.wave.core.ChildEntries
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.job.JobHandler
@@ -105,6 +106,9 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
         final buildId = BuildRequest.ID_PREFIX + finalContainerId + BuildRequest.SEP + '0'
         final startTime = Instant.now()
 
+        // Encode child build IDs for the parent build view
+        final buildChildIds = new ChildEntries("${amd64Track.id}:${PLATFORM_AMD64},${arm64Track.id}:${PLATFORM_ARM64}")
+
         // Store an in-progress build entry so status polling can find it
         final syntheticRequest = BuildRequest.of(
                 buildId: buildId,
@@ -122,7 +126,9 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
                 scanId: templateRequest.scanId,
                 format: templateRequest.format,
                 compression: templateRequest.compression,
-                buildTemplate: templateRequest.buildTemplate
+                buildTemplate: templateRequest.buildTemplate,
+                buildChildIds: buildChildIds,
+                scanChildIds: templateRequest.scanChildIds
         )
         final initialEntry = BuildEntry.create(syntheticRequest)
         final stored = buildStore.storeIfAbsent(finalTargetImage, initialEntry)

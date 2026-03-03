@@ -29,6 +29,7 @@ import groovy.transform.EqualsAndHashCode
 import io.seqera.wave.api.BuildCompression
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.core.ChildEntries
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
@@ -154,6 +155,16 @@ class BuildRequest {
      */
     final boolean noEmail
 
+    /**
+     * Child build IDs for multi-platform builds
+     */
+    final ChildEntries buildChildIds
+
+    /**
+     * Child scan IDs for multi-platform builds
+     */
+    final ChildEntries scanChildIds
+
     BuildRequest(
             String containerId,
             String containerFile,
@@ -225,6 +236,8 @@ class BuildRequest {
         this.buildId = opts.buildId ?: computeBuildId(containerId)
         this.buildTemplate = opts.buildTemplate
         this.noEmail = opts.noEmail as boolean
+        this.buildChildIds = opts.buildChildIds as ChildEntries
+        this.scanChildIds = opts.scanChildIds as ChildEntries
     }
 
     static BuildRequest of(Map opts) {
@@ -253,7 +266,37 @@ class BuildRequest {
                 compression: this.compression,
                 buildId: this.buildId,
                 buildTemplate: this.buildTemplate,
-                noEmail: this.noEmail
+                noEmail: this.noEmail,
+                buildChildIds: this.buildChildIds,
+                scanChildIds: this.scanChildIds
+        )
+    }
+
+    BuildRequest withChildScanIds(ChildEntries scanChildIds) {
+        return BuildRequest.of(
+                containerId: this.containerId,
+                containerFile: this.containerFile,
+                condaFile: this.condaFile,
+                workspace: this.workspace,
+                targetImage: this.targetImage,
+                identity: this.identity,
+                platform: this.platform,
+                cacheRepository: this.cacheRepository,
+                startTime: this.startTime,
+                ip: this.ip,
+                configJson: this.configJson,
+                offsetId: this.offsetId,
+                containerConfig: this.containerConfig,
+                scanId: this.scanId,
+                buildContext: this.buildContext,
+                format: this.format,
+                maxDuration: this.maxDuration,
+                compression: this.compression,
+                buildId: this.buildId,
+                buildTemplate: this.buildTemplate,
+                noEmail: this.noEmail,
+                buildChildIds: this.buildChildIds,
+                scanChildIds: scanChildIds
         )
     }
 

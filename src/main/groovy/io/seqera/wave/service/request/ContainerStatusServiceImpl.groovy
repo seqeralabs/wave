@@ -39,7 +39,6 @@ import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.mirror.ContainerMirrorService
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanEntry
-import io.seqera.wave.service.scan.ScanIds
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -105,7 +104,7 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
         }
 
         if( request.scanId && request.scanMode == ScanMode.required && scanService ) {
-            if( ScanIds.isMulti(request.scanId) ) {
+            if( request.scanChildIds ) {
                 return handleMultiScanStatus(request, state)
             }
             final scan = getScanState(request.scanId)
@@ -182,7 +181,7 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
     }
 
     protected ContainerStatusResponse handleMultiScanStatus(ContainerRequest request, ContainerState state) {
-        final entries = ScanIds.decode(request.scanId)
+        final entries = request.scanChildIds.decode()
         final List<ScanEntry> scans = new ArrayList<>(entries.size())
         boolean allDone = true
         boolean allSucceeded = true

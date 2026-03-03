@@ -96,6 +96,16 @@
                 <td>Platform</td>
                 <td>{{build_platform}}</td>
             </tr>
+            {{#if build_entries}}
+                {{#each build_entries}}
+                <tr>
+                    <td>Build ({{build_platform}})</td>
+                    <td>
+                        <a href="{{build_url}}">{{build_id}}</a>
+                    </td>
+                </tr>
+                {{/each}}
+            {{/if}}
             <tr>
                 <td>Build template</td>
                 <td>{{build_template}}</td>

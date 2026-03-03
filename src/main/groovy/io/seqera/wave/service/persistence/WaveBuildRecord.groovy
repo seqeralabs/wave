@@ -26,6 +26,7 @@ import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import io.seqera.wave.api.BuildCompression
 import io.seqera.wave.api.BuildStatusResponse
+import io.seqera.wave.core.ChildEntries
 import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
@@ -61,6 +62,8 @@ class WaveBuildRecord {
     String digest
     BuildCompression compression
     String buildTemplate
+    ChildEntries buildChildIds
+    ChildEntries scanChildIds
 
     Boolean succeeded() {
         return duration != null ? (exitStatus==0) : null
@@ -99,7 +102,9 @@ class WaveBuildRecord {
                 exitStatus: result?.exitStatus,
                 digest: result?.digest,
                 compression: request?.compression,
-                buildTemplate: request?.buildTemplate
+                buildTemplate: request?.buildTemplate,
+                buildChildIds: request?.buildChildIds,
+                scanChildIds: request?.scanChildIds
         )
     }
     

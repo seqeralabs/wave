@@ -33,7 +33,6 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.mail.MailService
 import io.seqera.wave.service.mail.MailSpooler
-import io.seqera.wave.service.scan.ScanIds
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.util.DataTimeUtils.formatDuration
@@ -104,7 +103,6 @@ class MailServiceImpl implements MailService {
         binding.build_condafile = req.condaFile
         binding.build_digest = result.digest ?: '-'
         binding.build_url = "$serverUrl/view/builds/${result.buildId}"
-        ScanIds.populateScanBinding(binding, req.scanId, result.succeeded(), serverUrl)
         binding.put('server_url', serverUrl)
         // result the main object
         Mail mail = new Mail()

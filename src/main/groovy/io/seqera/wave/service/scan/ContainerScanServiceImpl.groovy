@@ -127,14 +127,14 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     @Override
     void scanOnBuild(BuildEntry entry) {
         try {
-            if( entry.request.scanId && entry.result.succeeded() && entry.request.format == DOCKER ) {
-                if( ScanIds.isMulti(entry.request.scanId) ) {
+            if( entry.result.succeeded() && entry.request.format == DOCKER ) {
+                if( entry.request.scanChildIds ) {
                     // fan out one scan per architecture
-                    for( Map.Entry<String,String> pair : ScanIds.decode(entry.request.scanId) ) {
+                    for( Map.Entry<String,String> pair : entry.request.scanChildIds.decode() ) {
                         scan(fromBuild(entry.request, pair.key, ContainerPlatform.of(pair.value)))
                     }
                 }
-                else {
+                else if( entry.request.scanId ) {
                     scan(fromBuild(entry.request))
                 }
             }

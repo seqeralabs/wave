@@ -77,7 +77,7 @@ import io.seqera.wave.service.request.ContainerRequestService
 import io.seqera.wave.service.request.ContainerStatusService
 import io.seqera.wave.service.request.TokenData
 import io.seqera.wave.service.scan.ContainerScanService
-import io.seqera.wave.service.scan.ScanIds
+import io.seqera.wave.core.ChildEntries
 import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.PlatformId
@@ -405,9 +405,9 @@ class ContainerController {
         )
     }
 
-    protected String makeMultiPlatformScanId(BuildRequest build, SubmitContainerTokenRequest req) {
+    protected ChildEntries makeChildScanIds(BuildRequest build, SubmitContainerTokenRequest req) {
         if( !scanService || !req.multiPlatform )
-            return build.scanId
+            return null
         final multiPlatform = ContainerPlatform.MULTI_PLATFORM
         final scanMode = req.scanMode!=null ? req.scanMode : ScanMode.async
         final scanIdByPlatform = new LinkedHashMap<String, String>()
@@ -417,7 +417,7 @@ class ContainerController {
             if( id )
                 scanIdByPlatform.put(id, platform)
         }
-        return scanIdByPlatform ? ScanIds.encode(scanIdByPlatform) : null
+        return ChildEntries.of(scanIdByPlatform)
     }
 
     protected BuildTrack checkBuild(BuildRequest build, boolean dryRun) {
@@ -507,15 +507,14 @@ class ContainerController {
         String buildId
         boolean buildNew
         String scanId
+        ChildEntries scanChildIds
         Boolean succeeded
         if( req.containerFile && req.multiPlatform ) {
             if( !buildService ) throw new UnsupportedBuildServiceException()
             final build0 = makeBuildRequest(req, identity, ip)
-            // replace the single scanId with per-platform scanIds for multi-arch builds
-            final multiScanId = makeMultiPlatformScanId(build0, req)
-            final build = multiScanId != build0.scanId
-                    ? build0.withScanId(multiScanId)
-                    : build0
+            // create per-platform scan IDs for multi-arch builds
+            final childScans = makeChildScanIds(build0, req)
+            final build = childScans ? build0.withChildScanIds(childScans) : build0
             final track = checkMultiPlatformBuild(build, req, identity, req.dryRun)
             targetImage = track.targetImage
             targetContent = build.containerFile
@@ -523,6 +522,7 @@ class ContainerController {
             buildId = track.id
             buildNew = !track.cached
             scanId = build.scanId
+            scanChildIds = build.scanChildIds
             succeeded = track.succeeded
             type = ContainerRequest.Type.Build
         }
@@ -580,6 +580,7 @@ class ContainerController {
                 buildNew,
                 req.freeze,
                 scanId,
+                scanChildIds,
                 req.scanMode,
                 req.scanLevels,
                 req.dryRun,

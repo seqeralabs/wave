@@ -28,6 +28,7 @@ import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.core.ChildEntries
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.tower.User
 import io.seqera.wave.util.FusionVersionStringDeserializer
@@ -177,6 +178,11 @@ class WaveContainerRecord {
      */
     final String scanId
 
+    /**
+     * Child scan IDs for multi-platform builds
+     */
+    final ChildEntries scanChildIds
+
     WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequest data, String waveImage, String addr, Instant expiration) {
         this.id = data.requestId
         this.user = data.identity.user
@@ -203,6 +209,7 @@ class WaveContainerRecord {
         this.fusionVersion = request?.containerConfig?.fusionVersion()?.number
         this.mirror = data.mirror
         this.scanId = data.scanId
+        this.scanChildIds = data.scanChildIds
     }
 
     WaveContainerRecord(WaveContainerRecord that, String sourceDigest, String waveDigest) {
@@ -229,6 +236,7 @@ class WaveContainerRecord {
         this.fusionVersion = that.fusionVersion
         this.mirror == that.mirror
         this.scanId = that.scanId
+        this.scanChildIds = that.scanChildIds
         // -- digest part 
         this.sourceDigest = sourceDigest
         this.waveDigest = waveDigest
