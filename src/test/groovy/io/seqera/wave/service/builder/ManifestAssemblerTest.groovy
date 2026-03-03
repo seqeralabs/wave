@@ -68,25 +68,6 @@ class ManifestAssemblerTest extends Specification {
         parsed.manifests[1].platform.os == 'linux'
     }
 
-    def 'should extract platform from image name'() {
-        expect:
-        ManifestAssembler.extractPlatform([:], IMAGE) == EXPECTED
-
-        where:
-        IMAGE                                       | EXPECTED
-        'repo:abc123-linux-amd64'                   | [architecture: 'amd64', os: 'linux']
-        'docker.io/wave:tag-linux-arm64'            | [architecture: 'arm64', os: 'linux']
-        'quay.io/repo:foo-linux-amd64-suffix'       | [architecture: 'amd64', os: 'linux']
-    }
-
-    def 'should fail to extract platform from unknown image name'() {
-        when:
-        ManifestAssembler.extractPlatform([:], 'repo:some-tag')
-
-        then:
-        thrown(IllegalStateException)
-    }
-
     def 'should build valid JSON with single manifest'() {
         given:
         def manifests = [

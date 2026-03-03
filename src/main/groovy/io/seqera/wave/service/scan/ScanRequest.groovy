@@ -86,11 +86,6 @@ class ScanRequest {
      */
     final PlatformId identity
 
-    /**
-     * When {@code true}, this scan targets a multi-platform composite image (linux/amd64 + linux/arm64)
-     */
-    final boolean multiPlatform
-
     static ScanRequest of(Map opts) {
         new ScanRequest(
                 opts.scanId as String,
@@ -102,8 +97,7 @@ class ScanRequest {
                 opts.platform as ContainerPlatform,
                 opts.workDir as Path,
                 opts.creationTime as Instant,
-                opts.identity as PlatformId,
-                opts.multiPlatform as boolean
+                opts.identity as PlatformId
         )
     }
 

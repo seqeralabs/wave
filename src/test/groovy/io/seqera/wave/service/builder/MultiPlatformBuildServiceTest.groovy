@@ -46,7 +46,7 @@ class MultiPlatformBuildServiceTest extends Specification {
                 targetImage: 'docker.io/wave:multi',
                 startTime: Instant.now(),
                 identity: TEST_IDENTITY,
-                multiPlatform: true
+                platform: ContainerPlatform.MULTI_PLATFORM
         ))
     }
 
@@ -130,7 +130,7 @@ class MultiPlatformBuildServiceTest extends Specification {
         track.succeeded == null
         track.id == 'bd-multi123_0'
         and:
-        1 * buildStore.storeIfAbsent('docker.io/wave:multi123', _)
+        1 * buildStore.storeIfAbsent('docker.io/wave:multi123', _) >> true
         1 * multiBuildStore.put('docker.io/wave:multi123', _)
         1 * jobService.launchMultiBuild(_)
     }
@@ -181,7 +181,7 @@ class MultiPlatformBuildServiceTest extends Specification {
         1 * multiBuildStore.put('docker.io/wave:multi', _)
         1 * scanService.scanOnBuild({ BuildEntry e -> e.request.targetImage == 'docker.io/wave:multi' })
         1 * persistenceService.saveBuildAsync({ WaveBuildRecord r -> r.platform == 'linux/amd64,linux/arm64' })
-        1 * eventPublisher.publishEvent({ BuildEvent e -> e.request.multiPlatform == true })
+        1 * eventPublisher.publishEvent({ BuildEvent e -> e.request.platform?.isMultiArch() })
     }
 
     def 'should persist failure record when sub-build fails'() {

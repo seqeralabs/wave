@@ -153,9 +153,17 @@ class JobServiceImpl implements JobService {
             if( !entry )
                 return new JobState(JobState.Status.UNKNOWN, null, null)
 
-            // check if both sub-builds are done
-            final amd64Entry = buildStateStore?.getBuild(entry.request.amd64TargetImage)
-            final arm64Entry = buildStateStore?.getBuild(entry.request.arm64TargetImage)
+            // check if both sub-builds are done (skip store read for cached platforms)
+            final amd64Entry = entry.request.amd64Cached ? null : buildStateStore?.getBuild(entry.request.amd64TargetImage)
+            final arm64Entry = entry.request.arm64Cached ? null : buildStateStore?.getBuild(entry.request.arm64TargetImage)
+
+            // fail if a non-cached sub-build entry has been evicted from the store
+            if( !entry.request.amd64Cached && amd64Entry == null ) {
+                return JobState.failed(null, "amd64 sub-build entry not found in store")
+            }
+            if( !entry.request.arm64Cached && arm64Entry == null ) {
+                return JobState.failed(null, "arm64 sub-build entry not found in store")
+            }
 
             final amd64Done = entry.request.amd64Cached || amd64Entry?.done()
             final arm64Done = entry.request.arm64Cached || arm64Entry?.done()

@@ -231,7 +231,7 @@ class ProxyClient {
             copyHeaders(headers, builder)
             if( authorize ) {
                 // add authorisation header
-                final header = loginService.getAuthorization(image, registry.auth, credentials)
+                final header = getAuthHeader()
                 if( header )
                     builder.setHeader("Authorization", header)
             }
@@ -285,10 +285,10 @@ class ProxyClient {
         // https://zetcode.com/java/httpclient/
         final builder = HttpRequest.newBuilder(uri)
                 .method("HEAD", HttpRequest.BodyPublishers.noBody())
-        // copy headers 
+        // copy headers
         copyHeaders(headers, builder)
         // add authorisation header
-        final header = loginService.getAuthorization(image, registry.auth, credentials)
+        final header = getAuthHeader()
         if( header )
             builder.setHeader("Authorization", header)
         // build the request
@@ -375,7 +375,7 @@ class ProxyClient {
         // copy headers
         copyHeaders(headers, request)
         // add authorisation header
-        final header = loginService.getAuthorization(image, registry.auth, credentials)
+        final header = getAuthHeader()
         if( header )
             request.header("Authorization", header)
 
@@ -395,7 +395,7 @@ class ProxyClient {
             result.add("${entry.key}: $entry.value")
         }
         // add authorisation header
-        final header = loginService.getAuthorization(image, registry.auth, credentials)
+        final header = getAuthHeader()
         if( header ) {
             result.add('-H')
             result.add("Authorization: $header")

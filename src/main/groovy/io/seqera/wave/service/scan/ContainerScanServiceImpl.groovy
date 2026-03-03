@@ -36,7 +36,7 @@ import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.api.ScanMode
 import io.seqera.wave.configuration.ScanConfig
-import io.seqera.wave.core.MultiContainerPlatform
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.configuration.ScanEnabled
 import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildRequest
@@ -128,7 +128,15 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     void scanOnBuild(BuildEntry entry) {
         try {
             if( entry.request.scanId && entry.result.succeeded() && entry.request.format == DOCKER ) {
-                scan(fromBuild(entry.request))
+                if( ScanIds.isMulti(entry.request.scanId) ) {
+                    // fan out one scan per architecture
+                    for( Map.Entry<String,String> pair : ScanIds.decode(entry.request.scanId) ) {
+                        scan(fromBuild(entry.request, pair.key, ContainerPlatform.of(pair.value)))
+                    }
+                }
+                else {
+                    scan(fromBuild(entry.request))
+                }
             }
         }
         catch (Exception e) {
@@ -230,10 +238,13 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     }
     
     protected ScanRequest fromBuild(BuildRequest request) {
-        final workDir = request.workDir.resolveSibling(request.scanId)
-        final platform = request.multiPlatform ? MultiContainerPlatform.MULTI_PLATFORM : request.platform
+        return fromBuild(request, request.scanId, request.platform)
+    }
+
+    protected ScanRequest fromBuild(BuildRequest request, String scanId, ContainerPlatform platform) {
+        final workDir = request.workDir.resolveSibling(scanId)
         return new ScanRequest(
-                request.scanId,
+                scanId,
                 request.buildId,
                 null,
                 null,
@@ -242,8 +253,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
                 platform,
                 workDir,
                 Instant.now(),
-                request.identity,
-                request.multiPlatform)
+                request.identity)
     }
 
     protected ScanRequest fromMirror(MirrorRequest request) {
@@ -258,8 +268,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
                 request.platform,
                 workDir,
                 Instant.now(),
-                request.identity,
-                false)
+                request.identity)
     }
 
     protected ScanRequest fromContainer(ContainerRequest request) {
@@ -275,8 +284,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
                 request.platform,
                 workDir,
                 Instant.now(),
-                request.identity,
-                false)
+                request.identity)
     }
 
     // **************************************************************

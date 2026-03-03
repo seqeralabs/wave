@@ -154,11 +154,6 @@ class BuildRequest {
      */
     final boolean noEmail
 
-    /**
-     * When {@code true}, this is a multi-platform composite build (linux/amd64 + linux/arm64)
-     */
-    final boolean multiPlatform
-
     BuildRequest(
             String containerId,
             String containerFile,
@@ -201,7 +196,6 @@ class BuildRequest {
         this.compression = compression
         this.buildTemplate = buildTemplate
         this.noEmail = noEmail
-        this.multiPlatform = false
         // NOTE: this is meant to be updated - automatically - when the request is submitted
         this.buildId = computeBuildId(containerId)
     }
@@ -231,11 +225,36 @@ class BuildRequest {
         this.buildId = opts.buildId ?: computeBuildId(containerId)
         this.buildTemplate = opts.buildTemplate
         this.noEmail = opts.noEmail as boolean
-        this.multiPlatform = opts.multiPlatform as boolean
     }
 
     static BuildRequest of(Map opts) {
         new BuildRequest(opts)
+    }
+
+    BuildRequest withScanId(String scanId) {
+        return BuildRequest.of(
+                containerId: this.containerId,
+                containerFile: this.containerFile,
+                condaFile: this.condaFile,
+                workspace: this.workspace,
+                targetImage: this.targetImage,
+                identity: this.identity,
+                platform: this.platform,
+                cacheRepository: this.cacheRepository,
+                startTime: this.startTime,
+                ip: this.ip,
+                configJson: this.configJson,
+                offsetId: this.offsetId,
+                containerConfig: this.containerConfig,
+                scanId: scanId,
+                buildContext: this.buildContext,
+                format: this.format,
+                maxDuration: this.maxDuration,
+                compression: this.compression,
+                buildId: this.buildId,
+                buildTemplate: this.buildTemplate,
+                noEmail: this.noEmail
+        )
     }
 
     @Override

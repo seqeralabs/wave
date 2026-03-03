@@ -61,8 +61,11 @@ class MultiBuildRequest {
             PlatformId identity,
             Duration maxDuration
     ) {
+        assert containerId, "Argument 'containerId' cannot be empty"
         assert targetImage, "Argument 'targetImage' cannot be empty"
         assert buildId, "Argument 'buildId' cannot be empty"
+        assert amd64TargetImage, "Argument 'amd64TargetImage' cannot be empty"
+        assert arm64TargetImage, "Argument 'arm64TargetImage' cannot be empty"
 
         final multiBuildId = ID_PREFIX + LongRndKey.rndHex()
         return new MultiBuildRequest(

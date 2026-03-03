@@ -117,4 +117,52 @@ class ContainerPlatformTest extends Specification {
         'linux/arm64/v8'| [os:'linux', architecture:'arm64', variant: 'v9']
 
     }
+
+    def 'should parse multi-arch platform' () {
+        when:
+        def platform = ContainerPlatform.of('linux/amd64,linux/arm64')
+        then:
+        platform.os == 'linux'
+        platform.arch == 'amd64'
+        platform.archs == ['amd64', 'arm64']
+        platform.isMultiArch()
+        platform.toString() == 'linux/amd64,linux/arm64'
+    }
+
+    def 'should detect single-arch platform' () {
+        when:
+        def platform = ContainerPlatform.of('linux/amd64')
+        then:
+        platform.os == 'linux'
+        platform.arch == 'amd64'
+        platform.archs == ['amd64']
+        !platform.isMultiArch()
+        platform.toString() == 'linux/amd64'
+    }
+
+    def 'should round-trip multi-arch through toString and of' () {
+        when:
+        def original = ContainerPlatform.of('linux/amd64,linux/arm64')
+        def roundTripped = ContainerPlatform.of(original.toString())
+        then:
+        roundTripped == original
+        roundTripped.isMultiArch()
+        roundTripped.archs == ['amd64', 'arm64']
+    }
+
+    def 'should have MULTI_PLATFORM constant' () {
+        expect:
+        ContainerPlatform.MULTI_PLATFORM.isMultiArch()
+        ContainerPlatform.MULTI_PLATFORM.os == 'linux'
+        ContainerPlatform.MULTI_PLATFORM.arch == 'amd64'
+        ContainerPlatform.MULTI_PLATFORM.archs == ['amd64', 'arm64']
+        ContainerPlatform.MULTI_PLATFORM.toString() == 'linux/amd64,linux/arm64'
+    }
+
+    def 'should test equality for multi-arch' () {
+        expect:
+        ContainerPlatform.of('linux/amd64,linux/arm64') == ContainerPlatform.MULTI_PLATFORM
+        ContainerPlatform.of('linux/amd64,linux/arm64') == ContainerPlatform.of('linux/amd64,linux/arm64')
+        ContainerPlatform.of('linux/amd64') != ContainerPlatform.MULTI_PLATFORM
+    }
 }

@@ -114,7 +114,14 @@
                     <td>{{mirror_exitcode}}</td>
                 </tr>
             {{/if}}
-            {{#if scan_url}}
+            {{#if scan_entries}}
+                {{#each scan_entries}}
+                <tr>
+                    <td>Security scan ({{scan_platform}})</td>
+                    <td><a href="{{scan_url}}">{{scan_id}}</a></td>
+                </tr>
+                {{/each}}
+            {{else if scan_url}}
                 <tr>
                     <td>Security scan</td>
                     <td><a href="{{scan_url}}">{{scan_id}}</a></td>

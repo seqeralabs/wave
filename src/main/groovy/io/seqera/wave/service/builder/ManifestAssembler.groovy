@@ -118,7 +118,7 @@ class ManifestAssembler {
                 ]
             }
         ]
-        return JsonOutput.prettyPrint(JsonOutput.toJson(index))
+        return JsonOutput.toJson(index)
     }
 
     protected void pushManifest(String targetImage, String indexJson, PlatformId identity) {

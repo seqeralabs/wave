@@ -343,7 +343,14 @@
                                     ${build_exit_status}
                             </td>
                         </tr>
-                        <% if (scan_url) { %>
+                        <% if (scan_entries) { %>
+                        <% scan_entries.each { entry -> %>
+                        <tr>
+                            <td>Security Scan (${entry.scan_platform})</td>
+                            <td><a href="${entry.scan_url}" style="color: #007bff; text-decoration: none;">${entry.scan_id}</a></td>
+                        </tr>
+                        <% } %>
+                        <% } else if (scan_url) { %>
                         <tr>
                             <td>Security Scan</td>
                             <td><a href="${scan_url}" style="color: #007bff; text-decoration: none;">${scan_id}</a></td>

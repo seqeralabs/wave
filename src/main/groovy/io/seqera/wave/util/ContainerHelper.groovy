@@ -298,17 +298,8 @@ class ContainerHelper {
         return RegHelper.sipHash(attrs)
     }
 
-    static final String MULTI_PLATFORM = 'linux/amd64,linux/arm64'
-
     static String makeMultiPlatformContainerId(String containerFile, String condaFile, String repository, BuildContext buildContext, ContainerConfig containerConfig) {
-        final attrs = new LinkedHashMap<String,String>(10)
-        attrs.containerFile = containerFile
-        attrs.condaFile = condaFile
-        attrs.platform = MULTI_PLATFORM
-        attrs.repository = repository
-        if( buildContext ) attrs.buildContext = buildContext.tarDigest
-        if( containerConfig ) attrs.containerConfig = String.valueOf(containerConfig.hashCode())
-        return RegHelper.sipHash(attrs)
+        return makeContainerId(containerFile, condaFile, ContainerPlatform.MULTI_PLATFORM, repository, buildContext, containerConfig)
     }
 
     static void checkContainerSpec(String file) {

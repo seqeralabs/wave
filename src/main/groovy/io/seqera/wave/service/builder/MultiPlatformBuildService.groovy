@@ -24,7 +24,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.event.ApplicationEventPublisher
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.core.MultiContainerPlatform
+import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
@@ -115,18 +115,22 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
                 containerFile: templateRequest.containerFile,
                 condaFile: templateRequest.condaFile,
                 workspace: templateRequest.workspace,
-                platform: MultiContainerPlatform.MULTI_PLATFORM,
+                platform: ContainerPlatform.MULTI_PLATFORM,
                 configJson: templateRequest.configJson,
                 ip: templateRequest.ip,
                 offsetId: templateRequest.offsetId,
                 scanId: templateRequest.scanId,
                 format: templateRequest.format,
                 compression: templateRequest.compression,
-                buildTemplate: templateRequest.buildTemplate,
-                multiPlatform: true
+                buildTemplate: templateRequest.buildTemplate
         )
         final initialEntry = BuildEntry.create(syntheticRequest)
-        buildStore.storeIfAbsent(finalTargetImage, initialEntry)
+        final stored = buildStore.storeIfAbsent(finalTargetImage, initialEntry)
+        if( !stored ) {
+            // another request already started a build for this image — return the existing build track
+            log.debug "Multi-platform build already in progress for $finalTargetImage"
+            return new BuildTrack(buildId, finalTargetImage, false, null)
+        }
 
         // Create the multi-build request and entry, then launch via job queue
         final multiBuildRequest = MultiBuildRequest.create(
@@ -228,8 +232,6 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
             // (scan record must exist before build record to avoid status polling race condition)
             scanService?.scanOnBuild(updatedEntry)
             // persist the build record and publish event (triggers email notification)
-            // note: the multiPlatform flag on the request survives serialization and is used
-            // by WaveBuildRecord.create0() to render the correct platform string
             final event = new BuildEvent(updatedEntry.request, result)
             persistenceService.saveBuildAsync(WaveBuildRecord.fromEvent(event))
             eventPublisher.publishEvent(event)
@@ -240,7 +242,7 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
     }
 
     protected BuildRequest createPlatformRequest(BuildRequest template, ContainerPlatform platform, String suffix) {
-        final repo = template.targetImage.split(':')[0]
+        final repo = ContainerCoordinates.parse(template.targetImage).repository
         final platformId = makeContainerId(
                 template.containerFile,
                 template.condaFile,

@@ -18,18 +18,16 @@
 
 package io.seqera.wave.core
 
-import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
 import io.seqera.wave.exception.BadRequestException
 /**
  * Model a container platform
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Canonical
+@EqualsAndHashCode
 @CompileStatic
 class ContainerPlatform {
-
-    public static final ContainerPlatform DEFAULT = new ContainerPlatform(DEFAULT_OS, DEFAULT_ARCH)
 
     public static final List<String> ARM64 = ['arm64', 'aarch64']
     private static final List<String> V8 = ['8','v8']
@@ -38,11 +36,41 @@ class ContainerPlatform {
     public static final String DEFAULT_ARCH = 'amd64'
     public static final String DEFAULT_OS = 'linux'
 
+    public static final ContainerPlatform DEFAULT = new ContainerPlatform(DEFAULT_OS, DEFAULT_ARCH)
+
+    /**
+     * A composite platform representing linux/amd64 + linux/arm64 multi-arch builds
+     */
+    public static final ContainerPlatform MULTI_PLATFORM = new ContainerPlatform('linux', ['amd64', 'arm64'])
+
     final String os
     final String arch
     final String variant
+    final List<String> archs
+
+    ContainerPlatform(String os, String arch, String variant=null) {
+        this.os = os
+        this.arch = arch
+        this.variant = variant
+        this.archs = List.of(arch)
+    }
+
+    private ContainerPlatform(String os, List<String> archs) {
+        assert archs.size() >= 2, "Multi-arch platform requires at least 2 architectures"
+        this.os = os
+        this.arch = archs[0]
+        this.variant = null
+        this.archs = List.copyOf(archs)
+    }
+
+    boolean isMultiArch() {
+        return archs.size() > 1
+    }
 
     String toString() {
+        if( isMultiArch() ) {
+            return archs.collect { "${os}/${it}" }.join(',')
+        }
         def result = os + "/" + arch
         if( variant )
             result += "/" + variant
@@ -87,6 +115,16 @@ class ContainerPlatform {
     static ContainerPlatform of(String value) {
         if( !value )
             throw new BadRequestException("Missing container platform attribute")
+
+        // handle comma-separated multi-platform values e.g. "linux/amd64,linux/arm64"
+        if( value.contains(',') ) {
+            final parts = value.tokenize(',').collect { it.trim() }
+            final platforms = parts.collect { of(it) }
+            // all platforms must share the same OS
+            final os = platforms[0].os
+            final archs = platforms.collect { it.arch }
+            return new ContainerPlatform(os, archs)
+        }
 
         final items= value.tokenize('/')
         if( items.size()==1 )
