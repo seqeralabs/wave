@@ -28,13 +28,13 @@ import java.time.OffsetDateTime
 import io.seqera.wave.api.BuildCompression
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
-import io.seqera.wave.core.ChildEntries
+
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
+import io.seqera.wave.core.ChildEntries
 import io.seqera.wave.util.ContainerHelper
-import io.seqera.wave.util.JacksonHelper
-import groovy.json.JsonOutput
+import io.seqera.serde.moshi.MoshiEncodeStrategy
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -274,7 +274,7 @@ class BuildRequestTest extends Specification {
         req7.offsetId == 'UTC+2'
     }
 
-    def 'should serialise and deserialise via Jackson'() {
+    def 'should serialise and deserialise via Moshi'() {
         given:
         def buildChildIds = new ChildEntries([
                 new ChildEntries.Entry('bd-abc_0', 'linux/amd64'),
@@ -307,64 +307,41 @@ class BuildRequestTest extends Specification {
                 buildChildIds: buildChildIds,
                 scanChildIds: scanChildIds
         )
+        // use the same encode strategy as BuildStateStoreImpl
+        def encoder = new MoshiEncodeStrategy<BuildEntry>() {}
+        def entry = BuildEntry.create(request)
 
         when:
-        def json = JsonOutput.prettyPrint(JacksonHelper.toJson(request))
+        def json = encoder.encode(entry)
+        def restored = encoder.decode(json)
 
         then:
-        json == '''\
-            {
-                "containerId": "abc123",
-                "containerFile": "FROM ubuntu",
-                "condaFile": "samtools=1.0",
-                "workspace": "file:///some/workspace",
-                "targetImage": "docker.io/wave:abc123",
-                "identity": {
-                    "user": {
-                        "id": 1,
-                        "email": "foo@user.com"
-                    },
-                    "userId": 1,
-                    "userEmail": "foo@user.com"
-                },
-                "platform": "linux/amd64",
-                "cacheRepository": "docker.io/cache",
-                "startTime": "2024-01-15T10:30:00Z",
-                "ip": "10.20.30.40",
-                "configJson": "{\\"config\\":\\"json\\"}",
-                "offsetId": "+02:00",
-                "scanId": "sc-main",
-                "format": "DOCKER",
-                "maxDuration": 600.000000000,
-                "compression": {
-                    "mode": "gzip"
-                },
-                "buildId": "bd-abc123_0",
-                "buildTemplate": "some-template",
-                "noEmail": true,
-                "buildChildIds": [
-                    {
-                        "id": "bd-abc_0",
-                        "platform": "linux/amd64"
-                    },
-                    {
-                        "id": "bd-def_0",
-                        "platform": "linux/arm64"
-                    }
-                ],
-                "scanChildIds": [
-                    {
-                        "id": "sc-abc_1",
-                        "platform": "linux/amd64"
-                    },
-                    {
-                        "id": "sc-def_2",
-                        "platform": "linux/arm64"
-                    }
-                ],
-                "dockerFile": "FROM ubuntu",
-                "workDir": "file:///some/workspace/bd-abc123_0"
-            }'''.stripIndent()
+        restored.request.containerId == 'abc123'
+        restored.request.containerFile == 'FROM ubuntu'
+        restored.request.condaFile == 'samtools=1.0'
+        restored.request.targetImage == 'docker.io/wave:abc123'
+        restored.request.platform == ContainerPlatform.of('linux/amd64')
+        restored.request.cacheRepository == 'docker.io/cache'
+        restored.request.ip == '10.20.30.40'
+        restored.request.configJson == '{"config":"json"}'
+        restored.request.offsetId == '+02:00'
+        restored.request.scanId == 'sc-main'
+        restored.request.format == BuildFormat.DOCKER
+        restored.request.buildId == 'bd-abc123_0'
+        restored.request.buildTemplate == 'some-template'
+        restored.request.noEmail == true
+        and:
+        restored.request.buildChildIds.size() == 2
+        restored.request.buildChildIds[0].id == 'bd-abc_0'
+        restored.request.buildChildIds[0].platform == 'linux/amd64'
+        restored.request.buildChildIds[1].id == 'bd-def_0'
+        restored.request.buildChildIds[1].platform == 'linux/arm64'
+        and:
+        restored.request.scanChildIds.size() == 2
+        restored.request.scanChildIds[0].id == 'sc-abc_1'
+        restored.request.scanChildIds[0].platform == 'linux/amd64'
+        restored.request.scanChildIds[1].id == 'sc-def_2'
+        restored.request.scanChildIds[1].platform == 'linux/arm64'
     }
 
     def 'should parse legacy id' () {

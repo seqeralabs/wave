@@ -24,12 +24,13 @@ import groovy.transform.EqualsAndHashCode
 /**
  * A list of per-platform child IDs (builds or scans).
  *
- * Serialises to/from JSON as: [{"id":"sc-abc_1","platform":"linux/amd64"}, ...]
+ * Serialises to/from JSON via Moshi as: {"entries":[{"id":"sc-abc_1","platform":"linux/amd64"}, ...]}
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-class ChildEntries extends ArrayList<ChildEntries.Entry> {
+@EqualsAndHashCode(includes = 'entries')
+class ChildEntries implements Iterable<ChildEntries.Entry> {
 
     @CompileStatic
     @EqualsAndHashCode
@@ -43,14 +44,21 @@ class ChildEntries extends ArrayList<ChildEntries.Entry> {
             this.id = id
             this.platform = platform
         }
+
+        @Override
+        String toString() {
+            return "${id}:${platform}"
+        }
     }
 
+    List<Entry> entries
+
     ChildEntries() {
-        super()
+        this.entries = []
     }
 
     ChildEntries(List<Entry> entries) {
-        super(entries ?: Collections.<Entry>emptyList())
+        this.entries = entries != null ? new ArrayList<>(entries) : []
     }
 
     /**
@@ -68,18 +76,40 @@ class ChildEntries extends ArrayList<ChildEntries.Entry> {
         return result
     }
 
+    // -- delegate methods --
+
+    int size() { entries.size() }
+
+    boolean isEmpty() { entries.isEmpty() }
+
+    Entry getAt(int index) { entries[index] }
+
+    void add(Entry entry) { entries.add(entry) }
+
+    boolean asBoolean() { entries != null && !entries.isEmpty() }
+
+    @Override
+    Iterator<Entry> iterator() { entries.iterator() }
+
+    def <T> List<T> collect(Closure<T> closure) { entries.collect(closure) }
+
     /**
      * Get the first/primary ID
      */
     String primary() {
-        return this ? this[0].id : null
+        return entries ? entries[0].id : null
     }
 
     /**
      * Get all IDs
      */
     List<String> allIds() {
-        return this.collect { it.id }
+        return entries.collect { it.id }
+    }
+
+    @Override
+    String toString() {
+        return entries.collect { it.toString() }.toString()
     }
 
     // -- template binding helpers --

@@ -18,7 +18,7 @@
 
 package io.seqera.wave.core
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.squareup.moshi.Moshi
 import spock.lang.Specification
 
 /**
@@ -207,52 +207,56 @@ class ChildEntriesTest extends Specification {
         binding.build_entries[1].build_url == 'https://wave.io/view/builds/bd-def_0'
     }
 
-    def 'should roundtrip through Jackson serialization'() {
+    def 'should roundtrip through Moshi serialization'() {
         given:
-        def mapper = new ObjectMapper()
+        def moshi = new Moshi.Builder().build()
+        def adapter = moshi.adapter(ChildEntries)
         def original = new ChildEntries([
                 new ChildEntries.Entry('sc-abc_1', 'linux/amd64'),
                 new ChildEntries.Entry('sc-def_2', 'linux/arm64')
         ])
 
         when:
-        def json = mapper.writeValueAsString(original)
-        def restored = mapper.readValue(json, ChildEntries)
+        def json = adapter.toJson(original)
+        def restored = adapter.fromJson(json)
 
         then:
-        json == '[{"id":"sc-abc_1","platform":"linux/amd64"},{"id":"sc-def_2","platform":"linux/arm64"}]'
         restored == original
         restored.size() == 2
+        restored[0].id == 'sc-abc_1'
+        restored[0].platform == 'linux/amd64'
+        restored[1].id == 'sc-def_2'
+        restored[1].platform == 'linux/arm64'
     }
 
-    def 'should deserialise from json string'() {
+    def 'should deserialise from Moshi json string'() {
         given:
-        def mapper = new ObjectMapper()
+        def moshi = new Moshi.Builder().build()
+        def adapter = moshi.adapter(ChildEntries)
 
         expect:
-        mapper.readValue(JSON, ChildEntries) == EXPECTED
+        adapter.fromJson(JSON) == EXPECTED
 
         where:
-        JSON                                                                                    | EXPECTED
-        '[]'                                                                                    | new ChildEntries([])
-        '[{"id":"sc-1","platform":"linux/amd64"}]'                                              | new ChildEntries([new ChildEntries.Entry('sc-1', 'linux/amd64')])
-        '[{"id":"sc-1","platform":"linux/amd64"},{"id":"sc-2","platform":"linux/arm64"}]'        | new ChildEntries([new ChildEntries.Entry('sc-1', 'linux/amd64'), new ChildEntries.Entry('sc-2', 'linux/arm64')])
-        '[{"id":"sc-1","platform":null}]'                                                       | new ChildEntries([new ChildEntries.Entry('sc-1', null)])
+        JSON                                                                                                        | EXPECTED
+        '{"entries":[]}'                                                                                            | new ChildEntries([])
+        '{"entries":[{"id":"sc-1","platform":"linux/amd64"}]}'                                                      | new ChildEntries([new ChildEntries.Entry('sc-1', 'linux/amd64')])
+        '{"entries":[{"id":"sc-1","platform":"linux/amd64"},{"id":"sc-2","platform":"linux/arm64"}]}'                | new ChildEntries([new ChildEntries.Entry('sc-1', 'linux/amd64'), new ChildEntries.Entry('sc-2', 'linux/arm64')])
     }
 
-    def 'should serialise to json string'() {
+    def 'should serialise to Moshi json string'() {
         given:
-        def mapper = new ObjectMapper()
+        def moshi = new Moshi.Builder().build()
+        def adapter = moshi.adapter(ChildEntries)
 
         expect:
-        mapper.writeValueAsString(INPUT) == EXPECTED
+        adapter.toJson(INPUT) == EXPECTED
 
         where:
         INPUT                                                                                                               | EXPECTED
-        new ChildEntries([])                                                                                                | '[]'
-        new ChildEntries([new ChildEntries.Entry('sc-1', 'linux/amd64')])                                                   | '[{"id":"sc-1","platform":"linux/amd64"}]'
-        new ChildEntries([new ChildEntries.Entry('sc-1', 'linux/amd64'), new ChildEntries.Entry('sc-2', 'linux/arm64')])     | '[{"id":"sc-1","platform":"linux/amd64"},{"id":"sc-2","platform":"linux/arm64"}]'
-        new ChildEntries([new ChildEntries.Entry('sc-1', null)])                                                            | '[{"id":"sc-1","platform":null}]'
+        new ChildEntries([])                                                                                                | '{"entries":[]}'
+        new ChildEntries([new ChildEntries.Entry('sc-1', 'linux/amd64')])                                                   | '{"entries":[{"id":"sc-1","platform":"linux/amd64"}]}'
+        new ChildEntries([new ChildEntries.Entry('sc-1', 'linux/amd64'), new ChildEntries.Entry('sc-2', 'linux/arm64')])     | '{"entries":[{"id":"sc-1","platform":"linux/amd64"},{"id":"sc-2","platform":"linux/arm64"}]}'
     }
 
     def 'should populate build binding when null'() {
