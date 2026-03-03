@@ -474,7 +474,10 @@ class ContainerScanServiceImplTest extends Specification {
         def containerId = 'container1234'
         def workspace = Path.of('/some/workspace')
         def platform = ContainerPlatform.of('linux/amd64,linux/arm64')
-        def scanChildIds = new ChildEntries('sc-abc_1:linux/amd64,sc-def_2:linux/arm64')
+        def scanChildIds = new ChildEntries([
+                new ChildEntries.Entry('sc-abc_1', 'linux/amd64'),
+                new ChildEntries.Entry('sc-def_2', 'linux/arm64')
+        ])
         final build =
                 BuildRequest.of(
                         containerId: containerId,

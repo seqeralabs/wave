@@ -22,15 +22,19 @@ import spock.lang.Specification
 
 import java.nio.file.Path
 import java.time.Duration
+import java.time.Instant
 import java.time.OffsetDateTime
 
 import io.seqera.wave.api.BuildCompression
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.core.ChildEntries
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import io.seqera.wave.util.ContainerHelper
+import io.seqera.wave.util.JacksonHelper
+import groovy.json.JsonOutput
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -268,6 +272,99 @@ class BuildRequestTest extends Specification {
         and:
         req1.offsetId == OffsetDateTime.now().offset.id
         req7.offsetId == 'UTC+2'
+    }
+
+    def 'should serialise and deserialise via Jackson'() {
+        given:
+        def buildChildIds = new ChildEntries([
+                new ChildEntries.Entry('bd-abc_0', 'linux/amd64'),
+                new ChildEntries.Entry('bd-def_0', 'linux/arm64')
+        ])
+        def scanChildIds = new ChildEntries([
+                new ChildEntries.Entry('sc-abc_1', 'linux/amd64'),
+                new ChildEntries.Entry('sc-def_2', 'linux/arm64')
+        ])
+        def request = BuildRequest.of(
+                containerId: 'abc123',
+                containerFile: 'FROM ubuntu',
+                condaFile: 'samtools=1.0',
+                workspace: Path.of('/some/workspace'),
+                targetImage: 'docker.io/wave:abc123',
+                identity: new PlatformId(new User(id: 1, email: 'foo@user.com')),
+                platform: ContainerPlatform.of('linux/amd64'),
+                cacheRepository: 'docker.io/cache',
+                startTime: Instant.parse('2024-01-15T10:30:00Z'),
+                ip: '10.20.30.40',
+                configJson: '{"config":"json"}',
+                offsetId: '+02:00',
+                scanId: 'sc-main',
+                format: BuildFormat.DOCKER,
+                maxDuration: Duration.ofMinutes(10),
+                compression: BuildCompression.gzip,
+                buildId: 'bd-abc123_0',
+                buildTemplate: 'some-template',
+                noEmail: true,
+                buildChildIds: buildChildIds,
+                scanChildIds: scanChildIds
+        )
+
+        when:
+        def json = JsonOutput.prettyPrint(JacksonHelper.toJson(request))
+
+        then:
+        json == '''\
+            {
+                "containerId": "abc123",
+                "containerFile": "FROM ubuntu",
+                "condaFile": "samtools=1.0",
+                "workspace": "file:///some/workspace",
+                "targetImage": "docker.io/wave:abc123",
+                "identity": {
+                    "user": {
+                        "id": 1,
+                        "email": "foo@user.com"
+                    },
+                    "userId": 1,
+                    "userEmail": "foo@user.com"
+                },
+                "platform": "linux/amd64",
+                "cacheRepository": "docker.io/cache",
+                "startTime": "2024-01-15T10:30:00Z",
+                "ip": "10.20.30.40",
+                "configJson": "{\\"config\\":\\"json\\"}",
+                "offsetId": "+02:00",
+                "scanId": "sc-main",
+                "format": "DOCKER",
+                "maxDuration": 600.000000000,
+                "compression": {
+                    "mode": "gzip"
+                },
+                "buildId": "bd-abc123_0",
+                "buildTemplate": "some-template",
+                "noEmail": true,
+                "buildChildIds": [
+                    {
+                        "id": "bd-abc_0",
+                        "platform": "linux/amd64"
+                    },
+                    {
+                        "id": "bd-def_0",
+                        "platform": "linux/arm64"
+                    }
+                ],
+                "scanChildIds": [
+                    {
+                        "id": "sc-abc_1",
+                        "platform": "linux/amd64"
+                    },
+                    {
+                        "id": "sc-def_2",
+                        "platform": "linux/arm64"
+                    }
+                ],
+                "dockerFile": "FROM ubuntu",
+                "workDir": "file:///some/workspace/bd-abc123_0"
+            }'''.stripIndent()
     }
 
     def 'should parse legacy id' () {

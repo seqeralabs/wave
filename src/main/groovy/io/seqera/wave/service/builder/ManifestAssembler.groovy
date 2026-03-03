@@ -50,16 +50,16 @@ import static io.seqera.wave.model.ContentType.OCI_IMAGE_MANIFEST_V1
 class ManifestAssembler {
 
     @Inject
-    RegistryLookupService registryLookup
+    private RegistryLookupService registryLookup
 
     @Inject
-    RegistryCredentialsProvider credentialsProvider
+    private RegistryCredentialsProvider credentialsProvider
 
     @Inject
-    RegistryAuthService loginService
+    private RegistryAuthService loginService
 
     @Inject
-    HttpClientConfig httpConfig
+    private HttpClientConfig httpConfig
 
     /**
      * Create and push an OCI Image Index (manifest list) to the registry.

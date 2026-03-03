@@ -124,7 +124,7 @@ class ContainerPlatformTest extends Specification {
         then:
         platform.os == 'linux'
         platform.arch == 'amd64'
-        platform.archs == ['amd64', 'arm64']
+        platform.platforms == [new ContainerPlatform.Platform('linux','amd64'), new ContainerPlatform.Platform('linux','arm64')]
         platform.isMultiArch()
         platform.toString() == 'linux/amd64,linux/arm64'
     }
@@ -135,7 +135,7 @@ class ContainerPlatformTest extends Specification {
         then:
         platform.os == 'linux'
         platform.arch == 'amd64'
-        platform.archs == ['amd64']
+        platform.platforms == [new ContainerPlatform.Platform('linux','amd64')]
         !platform.isMultiArch()
         platform.toString() == 'linux/amd64'
     }
@@ -147,7 +147,7 @@ class ContainerPlatformTest extends Specification {
         then:
         roundTripped == original
         roundTripped.isMultiArch()
-        roundTripped.archs == ['amd64', 'arm64']
+        roundTripped.platforms == [new ContainerPlatform.Platform('linux','amd64'), new ContainerPlatform.Platform('linux','arm64')]
     }
 
     def 'should have MULTI_PLATFORM constant' () {
@@ -155,7 +155,7 @@ class ContainerPlatformTest extends Specification {
         ContainerPlatform.MULTI_PLATFORM.isMultiArch()
         ContainerPlatform.MULTI_PLATFORM.os == 'linux'
         ContainerPlatform.MULTI_PLATFORM.arch == 'amd64'
-        ContainerPlatform.MULTI_PLATFORM.archs == ['amd64', 'arm64']
+        ContainerPlatform.MULTI_PLATFORM.platforms == [new ContainerPlatform.Platform('linux','amd64'), new ContainerPlatform.Platform('linux','arm64')]
         ContainerPlatform.MULTI_PLATFORM.toString() == 'linux/amd64,linux/arm64'
     }
 

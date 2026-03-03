@@ -18,70 +18,52 @@
 
 package io.seqera.wave.core
 
-import com.fasterxml.jackson.annotation.JsonCreator
-import com.fasterxml.jackson.annotation.JsonValue
 import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
 
 /**
- * Value type representing a set of per-platform child IDs (builds or scans).
+ * A list of per-platform child IDs (builds or scans).
  *
- * Serialises to/from an encoded string:
- *   "id1:platform1,id2:platform2"
- *
- * Example: "sc-abc_1:linux/amd64,sc-def_2:linux/arm64"
- *
- * Used as the type for both {@code buildChildIds} and {@code scanChildIds}.
+ * Serialises to/from JSON as: [{"id":"sc-abc_1","platform":"linux/amd64"}, ...]
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-class ChildEntries {
+class ChildEntries extends ArrayList<ChildEntries.Entry> {
 
-    /**
-     * The encoded string representation
-     */
-    private final String encoded
+    @CompileStatic
+    @EqualsAndHashCode
+    static class Entry {
+        String id
+        String platform
 
-    @JsonCreator
-    ChildEntries(String encoded) {
-        this.encoded = encoded
+        Entry() {}
+
+        Entry(String id, String platform) {
+            this.id = id
+            this.platform = platform
+        }
+    }
+
+    ChildEntries() {
+        super()
+    }
+
+    ChildEntries(List<Entry> entries) {
+        super(entries ?: Collections.<Entry>emptyList())
     }
 
     /**
      * Create from a map of id-by-platform.
-     * @param idByPlatform Map where keys are IDs and values are platform strings (e.g. "linux/amd64")
+     * @param idByPlatform Map where keys are IDs and values are platform strings
      * @return A new ChildEntries, or null if the map is null/empty
      */
     static ChildEntries of(Map<String, String> idByPlatform) {
         if( !idByPlatform )
             return null
-        if( idByPlatform.size() == 1 ) {
-            final entry = idByPlatform.entrySet().first()
-            return new ChildEntries("${entry.key}:${entry.value}")
-        }
-        final encoded = idByPlatform
-                .collect { id, platform -> "${id}:${platform}" }
-                .join(',')
-        return new ChildEntries(encoded)
-    }
-
-    /**
-     * Decode into a list of (id, platform) pairs.
-     */
-    List<Map.Entry<String, String>> decode() {
-        if( !encoded )
-            return Collections.<Map.Entry<String, String>>emptyList()
-        final List<Map.Entry<String, String>> result = new ArrayList<>()
-        for( String part : encoded.tokenize(',') ) {
-            final idx = part.indexOf(':')
-            if( idx < 0 ) {
-                result.add(new AbstractMap.SimpleEntry<String, String>(part, null))
-            }
-            else {
-                final id = part.substring(0, idx)
-                final platform = part.substring(idx + 1)
-                result.add(new AbstractMap.SimpleEntry<String, String>(id, platform))
-            }
+        final result = new ChildEntries()
+        for( Map.Entry<String,String> it : idByPlatform.entrySet() ) {
+            result.add(new Entry(it.key, it.value))
         }
         return result
     }
@@ -90,60 +72,22 @@ class ChildEntries {
      * Get the first/primary ID
      */
     String primary() {
-        if( !encoded )
-            return null
-        final idx = encoded.indexOf(':')
-        if( idx < 0 )
-            return encoded
-        return encoded.substring(0, idx)
+        return this ? this[0].id : null
     }
 
     /**
      * Get all IDs
      */
     List<String> allIds() {
-        return decode().collect { it.key }
-    }
-
-    /**
-     * Jackson serialisation: serialise as the encoded string
-     */
-    @JsonValue
-    String toString() {
-        return encoded
-    }
-
-    /**
-     * Groovy truth: non-null and non-empty encoded string
-     */
-    boolean asBoolean() {
-        return encoded != null && !encoded.isEmpty()
-    }
-
-    @Override
-    boolean equals(Object o) {
-        if( this.is(o) ) return true
-        if( o == null || getClass() != o.getClass() ) return false
-        return encoded == ((ChildEntries) o).encoded
-    }
-
-    @Override
-    int hashCode() {
-        return encoded != null ? encoded.hashCode() : 0
+        return this.collect { it.id }
     }
 
     // -- template binding helpers --
 
-    /**
-     * Populate scan-related binding keys for view templates and emails.
-     * Handles both single-platform (scanId) and multi-platform (scanChildIds) scan IDs.
-     *
-     * Sets: scan_entries (list of maps), scan_url, scan_id
-     */
     static void populateScanBinding(Map binding, String scanId, ChildEntries scanChildIds, boolean succeeded, String serverUrl) {
         if( scanChildIds && succeeded ) {
-            binding.scan_entries = scanChildIds.decode().collect { Map.Entry<String, String> entry ->
-                [scan_id: entry.key, scan_platform: entry.value, scan_url: "${serverUrl}/view/scans/${entry.key}"] as Map<String,String>
+            binding.scan_entries = scanChildIds.collect { Entry entry ->
+                [scan_id: entry.id, scan_platform: entry.platform, scan_url: "${serverUrl}/view/scans/${entry.id}"] as Map<String,String>
             }
             binding.scan_url = null
             binding.scan_id = scanChildIds.primary()
@@ -155,15 +99,10 @@ class ChildEntries {
         }
     }
 
-    /**
-     * Populate build-related binding keys for child (per-arch) build entries.
-     *
-     * Sets: build_entries (list of maps with build_id, build_platform, build_url)
-     */
     static void populateBuildBinding(Map binding, ChildEntries buildChildIds, String serverUrl) {
         if( buildChildIds ) {
-            binding.build_entries = buildChildIds.decode().collect { Map.Entry<String, String> entry ->
-                [build_id: entry.key, build_platform: entry.value, build_url: "${serverUrl}/view/builds/${entry.key}"] as Map<String,String>
+            binding.build_entries = buildChildIds.collect { Entry entry ->
+                [build_id: entry.id, build_platform: entry.platform, build_url: "${serverUrl}/view/builds/${entry.id}"] as Map<String,String>
             }
         }
         else {

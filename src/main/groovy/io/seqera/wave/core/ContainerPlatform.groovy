@@ -27,7 +27,7 @@ import io.seqera.wave.exception.BadRequestException
  * Model a container platform
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@EqualsAndHashCode
+@EqualsAndHashCode(includes = 'platforms')
 @CompileStatic
 class ContainerPlatform {
 
@@ -38,46 +38,111 @@ class ContainerPlatform {
     public static final String DEFAULT_ARCH = 'amd64'
     public static final String DEFAULT_OS = 'linux'
 
-    public static final ContainerPlatform DEFAULT = new ContainerPlatform(DEFAULT_OS, DEFAULT_ARCH)
+    @EqualsAndHashCode
+    @CompileStatic
+    static class Platform implements Serializable {
+        final String os
+        final String arch
+        final String variant
 
-    /**
-     * A composite platform representing linux/amd64 + linux/arm64 multi-arch builds
-     */
-    public static final ContainerPlatform MULTI_PLATFORM = new ContainerPlatform('linux', ['amd64', 'arm64'])
+        Platform(String os, String arch, String variant=null) {
+            this.os = os
+            this.arch = arch
+            this.variant = variant
+        }
 
-    final String os
-    final String arch
-    final String variant
-    final List<String> archs
+        static Platform of(String value) {
+            if( !value )
+                throw new BadRequestException("Missing container platform attribute")
+
+            final items = value.tokenize('/')
+            if( items.size()==1 )
+                items.add(0, DEFAULT_OS)
+
+            if( items.size()==2 || items.size()==3 ) {
+                final os = os0(items[0])
+                final arch = arch0(items[1])
+                // variant v8 for amd64 is normalised to empty
+                // see https://github.com/containerd/containerd/blob/v1.4.3/platforms/database.go#L96
+                final variant = variant0(arch, items[2])
+                return new Platform(os, arch, variant)
+            }
+
+            throw new BadRequestException("Invalid container platform: $value -- offending value: $value")
+        }
+
+        @Override
+        String toString() {
+            def result = os + "/" + arch
+            if( variant )
+                result += "/" + variant
+            return result
+        }
+
+        static private String arch0(String value) {
+            if( !value )
+                return DEFAULT_ARCH
+            if( value !in ALLOWED_ARCH) throw new BadRequestException("Unsupported container platform: $value")
+            // see
+            // https://github.com/containerd/containerd/blob/v1.4.3/platforms/database.go#L89
+            if( value in AMD64 )
+                return AMD64.get(0)
+            if( value in ARM64 )
+                return ARM64.get(0)
+            return  value
+        }
+
+        static private String os0(String value) {
+            return value ?: DEFAULT_OS
+        }
+
+        static private String variant0(String arch, String variant) {
+            if( arch in ARM64 && variant in V8 ) {
+                // this also address this issue
+                //   https://github.com/GoogleContainerTools/kaniko/issues/1995#issuecomment-1327706161
+                return null
+            }
+            if( arch == 'arm' ) {
+                // arm defaults to variant v7
+                //   https://github.com/containerd/containerd/blob/v1.4.3/platforms/database.go#L89
+                if( (!variant || variant=='7') ) return 'v7'
+                if( variant in ['5','6','8']) return 'v'+variant
+            }
+            return variant
+        }
+    }
+
+    public static final ContainerPlatform DEFAULT = new ContainerPlatform([new Platform(DEFAULT_OS, DEFAULT_ARCH)])
+
+    public static final ContainerPlatform MULTI_PLATFORM = new ContainerPlatform([
+            new Platform('linux', 'amd64'),
+            new Platform('linux', 'arm64')
+    ])
+
+    final List<Platform> platforms
 
     ContainerPlatform(String os, String arch, String variant=null) {
-        this.os = os
-        this.arch = arch
-        this.variant = variant
-        this.archs = List.of(arch)
+        this.platforms = List.of(new Platform(os, arch, variant))
     }
 
-    private ContainerPlatform(String os, List<String> archs) {
-        assert archs.size() >= 2, "Multi-arch platform requires at least 2 architectures"
-        this.os = os
-        this.arch = archs[0]
-        this.variant = null
-        this.archs = List.copyOf(archs)
+    private ContainerPlatform(List<Platform> platforms) {
+        assert platforms.size() >= 1, "Platform list must not be empty"
+        this.platforms = List.copyOf(platforms)
     }
+
+    String getOs() { platforms[0].os }
+
+    String getArch() { platforms[0].arch }
+
+    String getVariant() { platforms[0].variant }
 
     boolean isMultiArch() {
-        return archs.size() > 1
+        return platforms.size() > 1
     }
 
     @JsonValue
     String toString() {
-        if( isMultiArch() ) {
-            return archs.collect { "${os}/${it}" }.join(',')
-        }
-        def result = os + "/" + arch
-        if( variant )
-            result += "/" + variant
-        return result
+        return platforms.collect { it.toString() }.join(',')
     }
 
     boolean matches(Map<String,String> record) {
@@ -120,61 +185,8 @@ class ContainerPlatform {
         if( !value )
             throw new BadRequestException("Missing container platform attribute")
 
-        // handle comma-separated multi-platform values e.g. "linux/amd64,linux/arm64"
-        if( value.contains(',') ) {
-            final parts = value.tokenize(',').collect { it.trim() }
-            final platforms = parts.collect { of(it) }
-            // all platforms must share the same OS
-            final os = platforms[0].os
-            final archs = platforms.collect { it.arch }
-            return new ContainerPlatform(os, archs)
-        }
-
-        final items= value.tokenize('/')
-        if( items.size()==1 )
-            items.add(0, DEFAULT_OS)
-
-        if( items.size()==2 || items.size()==3 ) {
-            final os = os0(items[0])
-            final arch = arch0(items[1])
-            // variant v8 for amd64 is normalised to empty
-            // see https://github.com/containerd/containerd/blob/v1.4.3/platforms/database.go#L96
-            final variant = variant0(arch,items[2])
-            return new ContainerPlatform(os, arch, variant)
-        }
-
-        throw new BadRequestException("Invalid container platform: $value -- offending value: $value")
-    }
-
-    static private String arch0(String value) {
-        if( !value )
-            return DEFAULT_ARCH
-        if( value !in ALLOWED_ARCH) throw new BadRequestException("Unsupported container platform: $value")
-        // see
-        // https://github.com/containerd/containerd/blob/v1.4.3/platforms/database.go#L89
-        if( value in AMD64 )
-            return AMD64.get(0)
-        if( value in ARM64 )
-            return ARM64.get(0)
-        return  value
-    }
-
-    static private String os0(String value) {
-        return value ?: DEFAULT_OS
-    }
-
-    static private String variant0(String arch, String variant) {
-        if( arch in ARM64 && variant in V8 ) {
-            // this also address this issue
-            //   https://github.com/GoogleContainerTools/kaniko/issues/1995#issuecomment-1327706161
-            return null
-        }
-        if( arch == 'arm' ) {
-            // arm defaults to variant v7
-            //   https://github.com/containerd/containerd/blob/v1.4.3/platforms/database.go#L89
-            if( (!variant || variant=='7') ) return 'v7'
-            if( variant in ['5','6','8']) return 'v'+variant
-        }
-        return variant
+        return new ContainerPlatform(value
+                    .tokenize(',')
+                    .collect(it-> Platform.of(it.trim())))
     }
 }

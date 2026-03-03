@@ -20,7 +20,6 @@ package io.seqera.wave.core
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import spock.lang.Specification
-import spock.lang.Unroll
 
 /**
  * Tests for {@link ChildEntries}
@@ -30,8 +29,12 @@ import spock.lang.Unroll
 class ChildEntriesTest extends Specification {
 
     def 'should create from map with single entry'() {
-        expect:
-        ChildEntries.of(['sc-abc_1': 'linux/amd64']).toString() == 'sc-abc_1:linux/amd64'
+        when:
+        def result = ChildEntries.of(['sc-abc_1': 'linux/amd64'])
+        then:
+        result.size() == 1
+        result[0].id == 'sc-abc_1'
+        result[0].platform == 'linux/amd64'
     }
 
     def 'should create from map with multiple entries'() {
@@ -40,8 +43,14 @@ class ChildEntriesTest extends Specification {
         map.put('sc-abc_1', 'linux/amd64')
         map.put('sc-def_2', 'linux/arm64')
 
-        expect:
-        ChildEntries.of(map).toString() == 'sc-abc_1:linux/amd64,sc-def_2:linux/arm64'
+        when:
+        def result = ChildEntries.of(map)
+        then:
+        result.size() == 2
+        result[0].id == 'sc-abc_1'
+        result[0].platform == 'linux/amd64'
+        result[1].id == 'sc-def_2'
+        result[1].platform == 'linux/arm64'
     }
 
     def 'should return null from null or empty map'() {
@@ -50,88 +59,70 @@ class ChildEntriesTest extends Specification {
         ChildEntries.of([:]) == null
     }
 
-    def 'should decode single entry'() {
+    def 'should create from list of entries'() {
         when:
-        def result = new ChildEntries('sc-abc_1:linux/amd64').decode()
-        then:
-        result.size() == 1
-        result[0].key == 'sc-abc_1'
-        result[0].value == 'linux/amd64'
-    }
-
-    def 'should decode bare id (no platform)'() {
-        when:
-        def result = new ChildEntries('sc-abc_1').decode()
-        then:
-        result.size() == 1
-        result[0].key == 'sc-abc_1'
-        result[0].value == null
-    }
-
-    def 'should decode multi entries'() {
-        when:
-        def result = new ChildEntries('sc-abc_1:linux/amd64,sc-def_2:linux/arm64').decode()
+        def result = new ChildEntries([
+                new ChildEntries.Entry('sc-abc_1', 'linux/amd64'),
+                new ChildEntries.Entry('sc-def_2', 'linux/arm64')
+        ])
         then:
         result.size() == 2
-        result[0].key == 'sc-abc_1'
-        result[0].value == 'linux/amd64'
-        result[1].key == 'sc-def_2'
-        result[1].value == 'linux/arm64'
+        result[0].id == 'sc-abc_1'
+        result[0].platform == 'linux/amd64'
+        result[1].id == 'sc-def_2'
+        result[1].platform == 'linux/arm64'
     }
 
-    @Unroll
-    def 'should get primary id from: #ENCODED'() {
+    def 'should get primary id'() {
         expect:
-        new ChildEntries(ENCODED).primary() == EXPECTED
-
-        where:
-        ENCODED                                             | EXPECTED
-        'sc-abc_1'                                          | 'sc-abc_1'
-        'sc-abc_1:linux/amd64,sc-def_2:linux/arm64'         | 'sc-abc_1'
+        new ChildEntries([new ChildEntries.Entry('sc-abc_1', null)]).primary() == 'sc-abc_1'
+        and:
+        new ChildEntries([
+                new ChildEntries.Entry('sc-abc_1', 'linux/amd64'),
+                new ChildEntries.Entry('sc-def_2', 'linux/arm64')
+        ]).primary() == 'sc-abc_1'
+        and:
+        new ChildEntries([]).primary() == null
     }
 
     def 'should get all ids'() {
         expect:
-        new ChildEntries('sc-abc_1').allIds() == ['sc-abc_1']
-        new ChildEntries('sc-abc_1:linux/amd64,sc-def_2:linux/arm64').allIds() == ['sc-abc_1', 'sc-def_2']
+        new ChildEntries([new ChildEntries.Entry('sc-abc_1', null)]).allIds() == ['sc-abc_1']
+        and:
+        new ChildEntries([
+                new ChildEntries.Entry('sc-abc_1', 'linux/amd64'),
+                new ChildEntries.Entry('sc-def_2', 'linux/arm64')
+        ]).allIds() == ['sc-abc_1', 'sc-def_2']
     }
 
-    def 'should roundtrip via of and decode'() {
+    def 'should roundtrip via of'() {
         given:
         def map = new LinkedHashMap<String,String>()
         map.put('sc-abc_1', 'linux/amd64')
         map.put('sc-def_2', 'linux/arm64')
 
         when:
-        def entries = ChildEntries.of(map)
-        def decoded = entries.decode()
+        def result = ChildEntries.of(map)
 
         then:
-        decoded.size() == 2
-        decoded[0].key == 'sc-abc_1'
-        decoded[0].value == 'linux/amd64'
-        decoded[1].key == 'sc-def_2'
-        decoded[1].value == 'linux/arm64'
-    }
-
-    def 'should serialize to string via toString'() {
-        given:
-        def entries = new ChildEntries('sc-abc_1:linux/amd64,sc-def_2:linux/arm64')
-        expect:
-        entries.toString() == 'sc-abc_1:linux/amd64,sc-def_2:linux/arm64'
+        result.size() == 2
+        result[0].id == 'sc-abc_1'
+        result[0].platform == 'linux/amd64'
+        result[1].id == 'sc-def_2'
+        result[1].platform == 'linux/arm64'
     }
 
     def 'should support groovy truth'() {
         expect:
-        new ChildEntries('sc-abc_1') as boolean == true
+        new ChildEntries([new ChildEntries.Entry('sc-abc_1', null)]) as boolean == true
         new ChildEntries(null) as boolean == false
-        new ChildEntries('') as boolean == false
+        new ChildEntries([]) as boolean == false
     }
 
     def 'should support equality'() {
         expect:
-        new ChildEntries('sc-abc_1:linux/amd64') == new ChildEntries('sc-abc_1:linux/amd64')
-        !new ChildEntries('sc-abc_1').equals(new ChildEntries('sc-def_2'))
+        new ChildEntries([new ChildEntries.Entry('sc-abc_1', 'linux/amd64')]) == new ChildEntries([new ChildEntries.Entry('sc-abc_1', 'linux/amd64')])
+        new ChildEntries([new ChildEntries.Entry('sc-abc_1', null)]) != new ChildEntries([new ChildEntries.Entry('sc-def_2', null)])
     }
 
     // -- template binding tests --
@@ -151,7 +142,10 @@ class ChildEntriesTest extends Specification {
     def 'should populate scan binding for multi-platform scanChildIds'() {
         given:
         def binding = new HashMap()
-        def scanChildIds = new ChildEntries('sc-abc_1:linux/amd64,sc-def_2:linux/arm64')
+        def scanChildIds = new ChildEntries([
+                new ChildEntries.Entry('sc-abc_1', 'linux/amd64'),
+                new ChildEntries.Entry('sc-def_2', 'linux/arm64')
+        ])
 
         when:
         ChildEntries.populateScanBinding(binding, null, scanChildIds, true, 'https://wave.io')
@@ -169,7 +163,10 @@ class ChildEntriesTest extends Specification {
     def 'should populate scan binding when not succeeded'() {
         given:
         def binding = new HashMap()
-        def scanChildIds = new ChildEntries('sc-abc_1:linux/amd64,sc-def_2:linux/arm64')
+        def scanChildIds = new ChildEntries([
+                new ChildEntries.Entry('sc-abc_1', 'linux/amd64'),
+                new ChildEntries.Entry('sc-def_2', 'linux/arm64')
+        ])
 
         when:
         ChildEntries.populateScanBinding(binding, null, scanChildIds, false, 'https://wave.io')
@@ -193,7 +190,10 @@ class ChildEntriesTest extends Specification {
     def 'should populate build binding for child builds'() {
         given:
         def binding = new HashMap()
-        def buildChildIds = new ChildEntries('bd-abc_0:linux/amd64,bd-def_0:linux/arm64')
+        def buildChildIds = new ChildEntries([
+                new ChildEntries.Entry('bd-abc_0', 'linux/amd64'),
+                new ChildEntries.Entry('bd-def_0', 'linux/arm64')
+        ])
 
         when:
         ChildEntries.populateBuildBinding(binding, buildChildIds, 'https://wave.io')
@@ -210,31 +210,49 @@ class ChildEntriesTest extends Specification {
     def 'should roundtrip through Jackson serialization'() {
         given:
         def mapper = new ObjectMapper()
-        def original = new ChildEntries('sc-abc_1:linux/amd64,sc-def_2:linux/arm64')
+        def original = new ChildEntries([
+                new ChildEntries.Entry('sc-abc_1', 'linux/amd64'),
+                new ChildEntries.Entry('sc-def_2', 'linux/arm64')
+        ])
 
         when:
         def json = mapper.writeValueAsString(original)
         def restored = mapper.readValue(json, ChildEntries)
 
         then:
-        json == '"sc-abc_1:linux/amd64,sc-def_2:linux/arm64"'
+        json == '[{"id":"sc-abc_1","platform":"linux/amd64"},{"id":"sc-def_2","platform":"linux/arm64"}]'
         restored == original
-        restored.decode().size() == 2
+        restored.size() == 2
     }
 
-    def 'should handle null in Jackson serialization'() {
+    def 'should deserialise from json string'() {
         given:
         def mapper = new ObjectMapper()
 
-        when:
-        def json = mapper.writeValueAsString([entries: null])
-        then:
-        json == '{"entries":null}'
+        expect:
+        mapper.readValue(JSON, ChildEntries) == EXPECTED
 
-        when:
-        def restored = mapper.readValue('"sc-abc_1:linux/amd64"', ChildEntries)
-        then:
-        restored == new ChildEntries('sc-abc_1:linux/amd64')
+        where:
+        JSON                                                                                    | EXPECTED
+        '[]'                                                                                    | new ChildEntries([])
+        '[{"id":"sc-1","platform":"linux/amd64"}]'                                              | new ChildEntries([new ChildEntries.Entry('sc-1', 'linux/amd64')])
+        '[{"id":"sc-1","platform":"linux/amd64"},{"id":"sc-2","platform":"linux/arm64"}]'        | new ChildEntries([new ChildEntries.Entry('sc-1', 'linux/amd64'), new ChildEntries.Entry('sc-2', 'linux/arm64')])
+        '[{"id":"sc-1","platform":null}]'                                                       | new ChildEntries([new ChildEntries.Entry('sc-1', null)])
+    }
+
+    def 'should serialise to json string'() {
+        given:
+        def mapper = new ObjectMapper()
+
+        expect:
+        mapper.writeValueAsString(INPUT) == EXPECTED
+
+        where:
+        INPUT                                                                                                               | EXPECTED
+        new ChildEntries([])                                                                                                | '[]'
+        new ChildEntries([new ChildEntries.Entry('sc-1', 'linux/amd64')])                                                   | '[{"id":"sc-1","platform":"linux/amd64"}]'
+        new ChildEntries([new ChildEntries.Entry('sc-1', 'linux/amd64'), new ChildEntries.Entry('sc-2', 'linux/arm64')])     | '[{"id":"sc-1","platform":"linux/amd64"},{"id":"sc-2","platform":"linux/arm64"}]'
+        new ChildEntries([new ChildEntries.Entry('sc-1', null)])                                                            | '[{"id":"sc-1","platform":null}]'
     }
 
     def 'should populate build binding when null'() {

@@ -107,7 +107,10 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
         final startTime = Instant.now()
 
         // Encode child build IDs for the parent build view
-        final buildChildIds = new ChildEntries("${amd64Track.id}:${PLATFORM_AMD64},${arm64Track.id}:${PLATFORM_ARM64}")
+        final buildChildIds = new ChildEntries([
+                new ChildEntries.Entry(amd64Track.id, PLATFORM_AMD64.toString()),
+                new ChildEntries.Entry(arm64Track.id, PLATFORM_ARM64.toString())
+        ])
 
         // Store an in-progress build entry so status polling can find it
         final syntheticRequest = BuildRequest.of(

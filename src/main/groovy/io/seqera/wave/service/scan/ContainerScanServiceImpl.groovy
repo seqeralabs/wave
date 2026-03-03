@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.wave.core.ChildEntries
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.server.types.files.StreamedFile
@@ -130,8 +131,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
             if( entry.result.succeeded() && entry.request.format == DOCKER ) {
                 if( entry.request.scanChildIds ) {
                     // fan out one scan per architecture
-                    for( Map.Entry<String,String> pair : entry.request.scanChildIds.decode() ) {
-                        scan(fromBuild(entry.request, pair.key, ContainerPlatform.of(pair.value)))
+                    for( ChildEntries.Entry pair : entry.request.scanChildIds ) {
+                        scan(fromBuild(entry.request, pair.id, ContainerPlatform.of(pair.platform)))
                     }
                 }
                 else if( entry.request.scanId ) {

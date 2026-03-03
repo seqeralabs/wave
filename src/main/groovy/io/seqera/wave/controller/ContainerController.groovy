@@ -411,8 +411,8 @@ class ContainerController {
         final multiPlatform = ContainerPlatform.MULTI_PLATFORM
         final scanMode = req.scanMode!=null ? req.scanMode : ScanMode.async
         final scanIdByPlatform = new LinkedHashMap<String, String>()
-        for( String arch : multiPlatform.archs ) {
-            final platform = "${multiPlatform.os}/${arch}" as String
+        for( ContainerPlatform.Platform p : multiPlatform.platforms ) {
+            final platform = p.toString()
             final id = scanService.getScanId("${build.targetImage}#${platform}", null, scanMode, req.format)
             if( id )
                 scanIdByPlatform.put(id, platform)
