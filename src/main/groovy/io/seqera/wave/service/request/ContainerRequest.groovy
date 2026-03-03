@@ -25,7 +25,7 @@ import groovy.transform.CompileStatic
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ScanLevel
 import io.seqera.wave.api.ScanMode
-import io.seqera.wave.core.ChildEntries
+import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.tower.PlatformId
@@ -54,7 +54,7 @@ class ContainerRequest {
     Boolean buildNew
     Boolean freeze
     String scanId
-    ChildEntries scanChildIds
+    ChildRefs scanChildIds
     ScanMode scanMode
     List<ScanLevel> scanLevels
     boolean dryRun
@@ -147,7 +147,7 @@ class ContainerRequest {
         return scanId
     }
 
-    ChildEntries getScanChildIds() {
+    ChildRefs getScanChildIds() {
         return scanChildIds
     }
 
@@ -183,7 +183,7 @@ class ContainerRequest {
             Boolean buildNew,
             Boolean freeze,
             String scanId,
-            ChildEntries scanChildIds,
+            ChildRefs scanChildIds,
             ScanMode scanMode,
             List<ScanLevel> scanLevels,
             boolean dryRun,
@@ -231,7 +231,7 @@ class ContainerRequest {
                 (Boolean) data.buildNew,
                 (Boolean) data.freeze,
                 data.scanId as String,
-                data.scanChildIds as ChildEntries,
+                data.scanChildIds as ChildRefs,
                 data.scanMode as ScanMode,
                 data.scanLevels as List<ScanLevel>,
                 data.dryRun as boolean,

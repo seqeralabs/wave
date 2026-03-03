@@ -77,7 +77,7 @@ import io.seqera.wave.service.request.ContainerRequestService
 import io.seqera.wave.service.request.ContainerStatusService
 import io.seqera.wave.service.request.TokenData
 import io.seqera.wave.service.scan.ContainerScanService
-import io.seqera.wave.core.ChildEntries
+import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.PlatformId
@@ -408,7 +408,7 @@ class ContainerController {
         )
     }
 
-    protected ChildEntries makeChildScanIds(BuildRequest build, SubmitContainerTokenRequest req) {
+    protected ChildRefs makeChildScanIds(BuildRequest build, SubmitContainerTokenRequest req) {
         if( !scanService || !build.platform.isMultiArch() )
             return null
         final multiPlatform = build.platform
@@ -420,7 +420,7 @@ class ContainerController {
             if( id )
                 scanIdByPlatform.put(id, platform)
         }
-        return ChildEntries.of(scanIdByPlatform)
+        return ChildRefs.of(scanIdByPlatform)
     }
 
     protected BuildTrack checkBuild(BuildRequest build, boolean dryRun) {
@@ -510,7 +510,7 @@ class ContainerController {
         String buildId
         boolean buildNew
         String scanId
-        ChildEntries scanChildIds = null
+        ChildRefs scanChildIds = null
         Boolean succeeded
         if( req.containerFile && ContainerPlatform.of(req.containerPlatform).isMultiArch() ) {
             if( !buildService ) throw new UnsupportedBuildServiceException()

@@ -18,7 +18,7 @@
 
 package io.seqera.wave.service.request
 
-import io.seqera.wave.core.ChildEntries
+import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.exception.UnsupportedBuildServiceException
 import io.seqera.wave.exception.UnsupportedMirrorServiceException
 import io.seqera.wave.exception.UnsupportedScanServiceException
@@ -186,7 +186,7 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
         boolean allDone = true
         boolean allSucceeded = true
         Duration maxScanDuration = Duration.ZERO
-        for( ChildEntries.Entry pair : request.scanChildIds ) {
+        for( ChildRefs.Ref pair : request.scanChildIds ) {
             final scan = getScanState(pair.id)
             if( !scan )
                 throw new NotFoundException("Missing container scan record with id: ${pair.id}")

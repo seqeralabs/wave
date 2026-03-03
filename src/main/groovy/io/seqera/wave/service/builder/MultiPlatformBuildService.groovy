@@ -23,7 +23,7 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.event.ApplicationEventPublisher
-import io.seqera.wave.core.ChildEntries
+import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.job.JobHandler
@@ -107,9 +107,9 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
         final startTime = Instant.now()
 
         // Encode child build IDs for the parent build view
-        final buildChildIds = new ChildEntries([
-                new ChildEntries.Entry(amd64Track.id, PLATFORM_AMD64.toString()),
-                new ChildEntries.Entry(arm64Track.id, PLATFORM_ARM64.toString())
+        final buildChildIds = new ChildRefs([
+                new ChildRefs.Ref(amd64Track.id, PLATFORM_AMD64.toString()),
+                new ChildRefs.Ref(arm64Track.id, PLATFORM_ARM64.toString())
         ])
 
         // Store an in-progress build entry so status polling can find it

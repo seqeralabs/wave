@@ -29,7 +29,7 @@ import java.time.Instant
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ScanMode
 import io.seqera.wave.configuration.ScanConfig
-import io.seqera.wave.core.ChildEntries
+import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildFormat
@@ -474,9 +474,9 @@ class ContainerScanServiceImplTest extends Specification {
         def containerId = 'container1234'
         def workspace = Path.of('/some/workspace')
         def platform = ContainerPlatform.of('linux/amd64,linux/arm64')
-        def scanChildIds = new ChildEntries([
-                new ChildEntries.Entry('sc-abc_1', 'linux/amd64'),
-                new ChildEntries.Entry('sc-def_2', 'linux/arm64')
+        def scanChildIds = new ChildRefs([
+                new ChildRefs.Ref('sc-abc_1', 'linux/amd64'),
+                new ChildRefs.Ref('sc-def_2', 'linux/arm64')
         ])
         final build =
                 BuildRequest.of(

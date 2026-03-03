@@ -32,7 +32,7 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
-import io.seqera.wave.core.ChildEntries
+import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.util.ContainerHelper
 import io.seqera.serde.moshi.MoshiEncodeStrategy
 /**
@@ -276,13 +276,13 @@ class BuildRequestTest extends Specification {
 
     def 'should serialise and deserialise via Moshi'() {
         given:
-        def buildChildIds = new ChildEntries([
-                new ChildEntries.Entry('bd-abc_0', 'linux/amd64'),
-                new ChildEntries.Entry('bd-def_0', 'linux/arm64')
+        def buildChildIds = new ChildRefs([
+                new ChildRefs.Ref('bd-abc_0', 'linux/amd64'),
+                new ChildRefs.Ref('bd-def_0', 'linux/arm64')
         ])
-        def scanChildIds = new ChildEntries([
-                new ChildEntries.Entry('sc-abc_1', 'linux/amd64'),
-                new ChildEntries.Entry('sc-def_2', 'linux/arm64')
+        def scanChildIds = new ChildRefs([
+                new ChildRefs.Ref('sc-abc_1', 'linux/amd64'),
+                new ChildRefs.Ref('sc-def_2', 'linux/arm64')
         ])
         def request = BuildRequest.of(
                 containerId: 'abc123',
@@ -333,15 +333,15 @@ class BuildRequestTest extends Specification {
         and:
         restored.request.buildChildIds.size() == 2
         restored.request.buildChildIds[0].id == 'bd-abc_0'
-        restored.request.buildChildIds[0].platform == 'linux/amd64'
+        restored.request.buildChildIds[0].value == 'linux/amd64'
         restored.request.buildChildIds[1].id == 'bd-def_0'
-        restored.request.buildChildIds[1].platform == 'linux/arm64'
+        restored.request.buildChildIds[1].value == 'linux/arm64'
         and:
         restored.request.scanChildIds.size() == 2
         restored.request.scanChildIds[0].id == 'sc-abc_1'
-        restored.request.scanChildIds[0].platform == 'linux/amd64'
+        restored.request.scanChildIds[0].value == 'linux/amd64'
         restored.request.scanChildIds[1].id == 'sc-def_2'
-        restored.request.scanChildIds[1].platform == 'linux/arm64'
+        restored.request.scanChildIds[1].value == 'linux/arm64'
     }
 
     def 'should parse legacy id' () {

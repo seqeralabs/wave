@@ -29,7 +29,7 @@ import groovy.transform.EqualsAndHashCode
 import io.seqera.wave.api.BuildCompression
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
-import io.seqera.wave.core.ChildEntries
+import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
@@ -158,12 +158,12 @@ class BuildRequest {
     /**
      * Child build IDs for multi-platform builds
      */
-    final ChildEntries buildChildIds
+    final ChildRefs buildChildIds
 
     /**
      * Child scan IDs for multi-platform builds
      */
-    final ChildEntries scanChildIds
+    final ChildRefs scanChildIds
 
     BuildRequest(
             String containerId,
@@ -236,15 +236,15 @@ class BuildRequest {
         this.buildId = opts.buildId ?: computeBuildId(containerId)
         this.buildTemplate = opts.buildTemplate
         this.noEmail = opts.noEmail as boolean
-        this.buildChildIds = opts.buildChildIds as ChildEntries
-        this.scanChildIds = opts.scanChildIds as ChildEntries
+        this.buildChildIds = opts.buildChildIds as ChildRefs
+        this.scanChildIds = opts.scanChildIds as ChildRefs
     }
 
     static BuildRequest of(Map opts) {
         new BuildRequest(opts)
     }
 
-    BuildRequest withChildScanIds(ChildEntries scanChildIds) {
+    BuildRequest withChildScanIds(ChildRefs scanChildIds) {
         return BuildRequest.of(
                 containerId: this.containerId,
                 containerFile: this.containerFile,

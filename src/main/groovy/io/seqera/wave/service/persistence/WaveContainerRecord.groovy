@@ -28,7 +28,7 @@ import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
-import io.seqera.wave.core.ChildEntries
+import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.tower.User
 import io.seqera.wave.util.FusionVersionStringDeserializer
@@ -181,7 +181,7 @@ class WaveContainerRecord {
     /**
      * Child scan IDs for multi-platform builds
      */
-    final ChildEntries scanChildIds
+    final ChildRefs scanChildIds
 
     WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequest data, String waveImage, String addr, Instant expiration) {
         this.id = data.requestId
