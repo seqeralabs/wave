@@ -18,6 +18,8 @@
 
 package io.seqera.wave.core
 
+import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonValue
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import io.seqera.wave.exception.BadRequestException
@@ -67,6 +69,7 @@ class ContainerPlatform {
         return archs.size() > 1
     }
 
+    @JsonValue
     String toString() {
         if( isMultiArch() ) {
             return archs.collect { "${os}/${it}" }.join(',')
@@ -112,6 +115,7 @@ class ContainerPlatform {
         return value ? of(value) : defaultPlatform
     }
 
+    @JsonCreator
     static ContainerPlatform of(String value) {
         if( !value )
             throw new BadRequestException("Missing container platform attribute")
