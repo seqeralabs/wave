@@ -1,4 +1,9 @@
 # Wave changelog
+1.32.4 - 25 Feb 2026
+- Revert Micronaut to 4.9.4 to mitigate memory leak [c6141213] - https://github.com/netty/netty/issues/16049
+- Add HttpClientAddressResolver in RateLimiterFilter (#966) [2d2b63d2f]
+- Fix configuration reference discrepancies (#976) [b36a083ad]
+
 1.32.3 - 10 Feb 2026
 - Close pairing session on heartbeat when record is missing from Redis (#977) [779c14379]
 - Bump libseqera dependencies (#978) [fb2e98111]
