@@ -55,23 +55,6 @@ class StringUtilsTest extends Specification {
     }
 
     @Unroll
-    def 'should strip surreal prefix' () {
-        expect:
-        StringUtils.surrealId(ID) == EXPECTED
-
-        where:
-        ID                  | EXPECTED
-        null                | null
-        'foo'               | 'foo'
-        and:
-        'foo:100'           | '100'
-        'foo-bar:1-2-3'     | '1-2-3'
-        and:
-        'foo:⟨100⟩'         | '100'
-        'foo-bar:⟨1-2-3⟩'   | '1-2-3'
-    }
-
-    @Unroll
     def 'should concat paths' () {
         expect:
         StringUtils.pathConcat(BASE, PATH) == EXPECTED

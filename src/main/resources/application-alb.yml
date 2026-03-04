@@ -1,0 +1,19 @@
+---
+# Configuration for Wave deployments behind AWS Application Load Balancer (ALB)
+#
+# Enable this profile by setting MICRONAUT_ENVIRONMENTS=alb
+#
+# Security Note: Only enable this profile when Wave is deployed behind a trusted
+# AWS Application Load Balancer. ALB automatically adds X-Forwarded-For with the
+# real client IP address. Do NOT enable this profile for direct internet exposure
+# as it would allow IP spoofing attacks.
+#
+micronaut:
+  server:
+    host-resolution:
+      # Trust X-Forwarded-For header from ALB for client IP resolution
+      client-address-header: X-Forwarded-For
+      protocol-header: X-Forwarded-Proto
+      port-header: X-Forwarded-Port
+      host-header: Host
+...
