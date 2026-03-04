@@ -1,4 +1,8 @@
 # Wave changelog
+1.32.5 - 3 Mar 2026
+- Updated wave logo and icon (#984) [ba9972fe3]
+- Updated seqera logo in wave reports and mail (#981) [7303e10ea]
+
 1.32.4 - 25 Feb 2026
 - Revert Micronaut to 4.9.4 to mitigate memory leak [c6141213] - https://github.com/netty/netty/issues/16049
 - Add HttpClientAddressResolver in RateLimiterFilter (#966) [2d2b63d2f]
