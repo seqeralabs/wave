@@ -73,7 +73,7 @@ interface PersistenceService {
      * Retrieve all {@link WaveBuildRecord} object for the given container id
      *
      * @param containerId The container id for which all the builds record should be retrieved
-     * @return The corresponding {@link WaveBuildRecord} object or {@code null} if no record is found
+     * @return The corresponding list of {@link WaveBuildRecord} objects or an empty list if no record is found
      */
     List<WaveBuildRecord> allBuilds(String containerId)
 
@@ -152,7 +152,7 @@ interface PersistenceService {
      * Retrieve all {@link WaveScanRecord} object for the given partial scan id
      *
      * @param scanId The scan id for which all the scan records should be retrieved
-     * @return The corresponding {@link WaveScanRecord} object or {@code null} if no record is found
+     * @return The corresponding list of {@link WaveScanRecord} objects or an empty list if no record is found
      */
     List<WaveScanRecord> allScans(String scanId)
 
