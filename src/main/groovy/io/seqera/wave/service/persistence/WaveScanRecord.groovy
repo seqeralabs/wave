@@ -28,7 +28,6 @@ import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
-import io.seqera.wave.util.StringUtils
 /**
  * Model a Wave container scan result
  *
@@ -74,7 +73,7 @@ class WaveScanRecord implements Cloneable {
             Path workDir
     )
     {
-        this.id = StringUtils.surrealId(id)
+        this.id = id
         this.buildId = buildId
         this.mirrorId = mirrorId
         this.requestId = requestId
@@ -92,7 +91,7 @@ class WaveScanRecord implements Cloneable {
     }
 
     WaveScanRecord(ScanEntry scan) {
-        this.id = StringUtils.surrealId(scan.scanId)
+        this.id = scan.scanId
         this.buildId = scan.buildId
         this.mirrorId = scan.mirrorId
         this.requestId = scan.requestId
@@ -120,7 +119,7 @@ class WaveScanRecord implements Cloneable {
     }
 
     void setId(String id) {
-        this.id = StringUtils.surrealId(id)
+        this.id = id
     }
 
     Boolean succeeded() {

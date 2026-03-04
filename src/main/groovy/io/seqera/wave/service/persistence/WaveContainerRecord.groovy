@@ -45,8 +45,7 @@ import static io.seqera.wave.util.DataTimeUtils.parseOffsetDateTime
 class WaveContainerRecord {
 
     /**
-     * wave request id, this will be the token
-     * This is container token and it is named as id for surrealdb requirement
+     * Wave request id, this will be the token
      */
     @PostgresIgnore
     final String id
