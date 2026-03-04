@@ -165,4 +165,27 @@ class ContainerPlatformTest extends Specification {
         ContainerPlatform.of('linux/amd64,linux/arm64') == ContainerPlatform.of('linux/amd64,linux/arm64')
         ContainerPlatform.of('linux/amd64') != ContainerPlatform.MULTI_PLATFORM
     }
+
+    def 'should validate single platform allows valid values' () {
+        when:
+        ContainerPlatform.validateSinglePlatform(VALUE)
+        then:
+        noExceptionThrown()
+
+        where:
+        VALUE           | _
+        null            | _
+        ''              | _
+        'linux/amd64'   | _
+        'linux/arm64'   | _
+        'amd64'         | _
+    }
+
+    def 'should validate single platform rejects multi-platform values' () {
+        when:
+        ContainerPlatform.validateSinglePlatform('linux/amd64,linux/arm64')
+        then:
+        def e = thrown(BadRequestException)
+        e.message.contains('Container multi-platform architecture not allowed')
+    }
 }

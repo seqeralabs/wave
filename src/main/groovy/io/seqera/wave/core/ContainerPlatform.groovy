@@ -180,6 +180,17 @@ class ContainerPlatform {
         return value ? of(value) : defaultPlatform
     }
 
+    /**
+     * Validate that the given platform string is a single platform value (not multi-arch).
+     * Throws {@link BadRequestException} if the value contains comma-separated platforms.
+     *
+     * @param value The platform string to validate
+     */
+    static void validateSinglePlatform(String value) {
+        if( value && value.contains(',') )
+            throw new BadRequestException("Container multi-platform architecture not allowed - offending value: $value")
+    }
+
     @JsonCreator
     static ContainerPlatform of(String value) {
         if( !value )
