@@ -32,8 +32,6 @@ wave:
   trace:
     local-persistence:
       threshold: 100
-    surreal-persistence:
-      threshold: 100
     proxy-service:
       threshold: 100
 ---
