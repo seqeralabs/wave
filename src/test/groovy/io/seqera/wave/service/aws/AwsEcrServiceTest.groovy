@@ -466,11 +466,10 @@ class AwsEcrServiceTest extends Specification {
         result.message.contains('STS AssumeRole failed')
     }
 
-    // --- StsRetryPredicate tests ---
+    // --- isRetryableStsError tests ---
 
     def 'should retry on 5xx STS errors' () {
         given:
-        def predicate = new StsRetryPredicate()
         def stsEx = (StsException) StsException.builder()
                 .message('Service Unavailable')
                 .awsErrorDetails(AwsErrorDetails.builder()
@@ -482,12 +481,11 @@ class AwsEcrServiceTest extends Specification {
                 .build()
 
         expect:
-        predicate.test(stsEx)
+        AwsEcrService.isRetryableStsError(stsEx)
     }
 
     def 'should retry on 500 internal server error' () {
         given:
-        def predicate = new StsRetryPredicate()
         def stsEx = (StsException) StsException.builder()
                 .message('Internal Server Error')
                 .awsErrorDetails(AwsErrorDetails.builder()
@@ -499,12 +497,11 @@ class AwsEcrServiceTest extends Specification {
                 .build()
 
         expect:
-        predicate.test(stsEx)
+        AwsEcrService.isRetryableStsError(stsEx)
     }
 
     def 'should not retry on 4xx STS client errors' () {
         given:
-        def predicate = new StsRetryPredicate()
         def stsEx = (StsException) StsException.builder()
                 .message('Access Denied')
                 .awsErrorDetails(AwsErrorDetails.builder()
@@ -516,16 +513,13 @@ class AwsEcrServiceTest extends Specification {
                 .build()
 
         expect:
-        !predicate.test(stsEx)
+        !AwsEcrService.isRetryableStsError(stsEx)
     }
 
     def 'should not retry on non-STS exceptions' () {
-        given:
-        def predicate = new StsRetryPredicate()
-
         expect:
-        !predicate.test(new RuntimeException('something else'))
-        !predicate.test(new IOException('network error'))
+        !AwsEcrService.isRetryableStsError(new RuntimeException('something else'))
+        !AwsEcrService.isRetryableStsError(new IOException('network error'))
     }
 
     // --- Jump role chaining tests ---
@@ -533,7 +527,7 @@ class AwsEcrServiceTest extends Specification {
     def 'should chain through jump role when configured' () {
         given:
         def service = Spy(AwsEcrService)
-        service.@jumpRoleArn = 'arn:aws:iam::128997144437:role/test-jump-role'
+        service.@jumpRoleArn = 'arn:aws:iam::111122223333:role/test-jump-role'
         service.@jumpExternalId = 'ee79c296-cec7-4feb-9d0c-0c99f5a53cff'
 
         def roleArn = 'arn:aws:iam::123456789012:role/CustomerRole'
@@ -584,7 +578,7 @@ class AwsEcrServiceTest extends Specification {
         def cache = Mock(AwsEcrCache)
         def service = Spy(AwsEcrService)
         service.@cache = cache
-        service.@jumpRoleArn = 'arn:aws:iam::128997144437:role/test-jump-role'
+        service.@jumpRoleArn = 'arn:aws:iam::111122223333:role/test-jump-role'
         service.@jumpExternalId = 'ee79c296-cec7-4feb-9d0c-0c99f5a53cff'
 
         def roleArn = 'arn:aws:iam::123456789012:role/CustomerRole'
@@ -647,5 +641,154 @@ class AwsEcrServiceTest extends Specification {
         and:
         def e = thrown(AwsEcrAuthException)
         e.message.contains("Wave's service role does not have permission")
+    }
+
+    // --- mapStsException coverage for InvalidParameterValue and ExpiredTokenException ---
+
+    def 'should map InvalidParameterValue STS exception' () {
+        given:
+        def stsEx = (StsException) StsException.builder()
+                .message('Invalid parameter')
+                .awsErrorDetails(AwsErrorDetails.builder()
+                        .errorCode('InvalidParameterValue')
+                        .errorMessage('Invalid parameter')
+                        .sdkHttpResponse(SdkHttpResponse.builder().statusCode(400).build())
+                        .build())
+                .statusCode(400)
+                .build()
+
+        when:
+        def result = AwsEcrService.mapStsException(stsEx)
+
+        then:
+        result instanceof AwsEcrAuthException
+        result.message.contains('Invalid role ARN or external ID format')
+    }
+
+    def 'should map ExpiredTokenException STS exception' () {
+        given:
+        def stsEx = (StsException) StsException.builder()
+                .message('Token expired')
+                .awsErrorDetails(AwsErrorDetails.builder()
+                        .errorCode('ExpiredTokenException')
+                        .errorMessage('Token expired')
+                        .sdkHttpResponse(SdkHttpResponse.builder().statusCode(403).build())
+                        .build())
+                .statusCode(403)
+                .build()
+
+        when:
+        def result = AwsEcrService.mapStsException(stsEx)
+
+        then:
+        result instanceof AwsEcrAuthException
+        result.message.contains('Temporary credentials have expired')
+    }
+
+    def 'should handle STS exception with null awsErrorDetails' () {
+        given:
+        def stsEx = (StsException) StsException.builder()
+                .message('Unknown error')
+                .statusCode(500)
+                .build()
+
+        when:
+        def result = AwsEcrService.mapStsException(stsEx)
+
+        then:
+        result instanceof AwsEcrAuthException
+        result.message.contains('STS AssumeRole failed')
+    }
+
+    // --- Double exception wrapping guard ---
+
+    def 'should preserve AwsEcrAuthException message through getLoginToken' () {
+        given:
+        def service = Spy(AwsEcrService)
+        def roleArn = 'arn:aws:iam::123456789012:role/WaveEcrAccess'
+        def region = 'us-east-1'
+        def originalEx = new AwsEcrAuthException("Wave's service role does not have permission to assume the specified role.", new RuntimeException('cause'))
+
+        when:
+        service.getLoginToken(roleArn, null, region, false)
+
+        then:
+        1 * service.getLoginTokenWithRole(roleArn, null, region, false) >> { throw originalEx }
+
+        and:
+        def e = thrown(AwsEcrAuthException)
+        e.is(originalEx)
+        e.message.contains("Wave's service role does not have permission")
+    }
+
+    // --- isRetryableStsError: wrapped exception and throttling ---
+
+    def 'should retry on wrapped STS 5xx exception' () {
+        given:
+        def stsEx = (StsException) StsException.builder()
+                .message('Service Unavailable')
+                .awsErrorDetails(AwsErrorDetails.builder()
+                        .errorCode('ServiceUnavailable')
+                        .errorMessage('Service Unavailable')
+                        .sdkHttpResponse(SdkHttpResponse.builder().statusCode(503).build())
+                        .build())
+                .statusCode(503)
+                .build()
+        def wrapped = new RuntimeException('wrapper', stsEx)
+
+        expect:
+        AwsEcrService.isRetryableStsError(wrapped)
+    }
+
+    def 'should retry on STS throttling exception' () {
+        given:
+        def stsEx = (StsException) StsException.builder()
+                .message('Rate exceeded')
+                .awsErrorDetails(AwsErrorDetails.builder()
+                        .errorCode('Throttling')
+                        .errorMessage('Rate exceeded')
+                        .sdkHttpResponse(SdkHttpResponse.builder().statusCode(400).build())
+                        .build())
+                .statusCode(400)
+                .build()
+
+        expect:
+        AwsEcrService.isRetryableStsError(stsEx)
+    }
+
+    def 'should not retry on wrapped non-retryable STS exception' () {
+        given:
+        def stsEx = (StsException) StsException.builder()
+                .message('Access Denied')
+                .awsErrorDetails(AwsErrorDetails.builder()
+                        .errorCode('AccessDenied')
+                        .errorMessage('Access Denied')
+                        .sdkHttpResponse(SdkHttpResponse.builder().statusCode(403).build())
+                        .build())
+                .statusCode(403)
+                .build()
+        def wrapped = new RuntimeException('wrapper', stsEx)
+
+        expect:
+        !AwsEcrService.isRetryableStsError(wrapped)
+    }
+
+    // --- Cross-class integration: fromJson output recognized by isRoleArn ---
+
+    def 'should recognize role ARN from ContainerRegistryKeys.fromJson' () {
+        given:
+        def json = '''
+        {
+            "discriminator": "aws",
+            "assumeRoleArn": "arn:aws:iam::123456789012:role/MyRole",
+            "externalId": "externalId123"
+        }
+        '''
+
+        when:
+        def keys = io.seqera.wave.service.ContainerRegistryKeys.fromJson(json)
+
+        then:
+        AwsEcrService.isRoleArn(keys.userName)
     }
 }

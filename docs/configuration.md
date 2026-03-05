@@ -98,7 +98,7 @@ Configure jump role chaining with the following options:
 `wave.aws.jump-role-arn` *(optional)*
 : Specifies the ARN of the intermediate IAM role that Wave assumes before assuming the target role from the Seqera Platform.
   Can be set using the `WAVE_AWS_JUMP_ROLE_ARN` environment variable.
-  Example: `arn:aws:iam::128997144437:role/wave-jump-role`
+  Example: `arn:aws:iam::123456789012:role/wave-jump-role`
 
 `wave.aws.jump-external-id` *(optional)*
 : Specifies the external ID used when assuming the jump role, for confused deputy protection.
