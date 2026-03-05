@@ -79,17 +79,6 @@ class AwsEcrService {
      */
     static final private Duration MIN_CACHE_TTL = Duration.ofMinutes(1)
 
-    /**
-     * Retry config for STS calls - retries transient 5xx errors and throttling
-     */
-    static final private Retryable.Config STS_RETRY_CONFIG = new Retryable.Config() {
-        Duration getDelay() { Duration.ofSeconds(1) }
-        Duration getMaxDelay() { Duration.ofSeconds(10) }
-        int getMaxAttempts() { 3 }
-        double getJitter() { 0.25d }
-        double getMultiplier() { 2.0d }
-    }
-
     @Canonical
     private static class AwsCreds implements TieredKey {
         String accessKey
@@ -127,6 +116,9 @@ class AwsEcrService {
 
     @Inject
     private AwsJumpRoleCache jumpRoleCache
+
+    @Inject
+    private StsClientConfig stsConfig
 
     @Value('${wave.aws.jump-role-arn:}')
     private String jumpRoleArn
@@ -229,7 +221,7 @@ class AwsEcrService {
         }
 
         client.withCloseable {
-            Retryable.<Credentials>of(STS_RETRY_CONFIG)
+            Retryable.<Credentials>of(stsConfig)
                     .retryCondition((Throwable t) -> isRetryableStsError(t))
                     .onRetry((event) -> log.debug("STS AssumeRole retry for $roleArn - attempt: ${event.attempt}; failure: ${event.failure?.message}"))
                     .apply(() -> {
@@ -262,7 +254,7 @@ class AwsEcrService {
             log.debug "Cache miss for jump role $jumpRoleArn - assuming role; region=$region"
 
             final creds = stsClient(region).withCloseable { client ->
-                Retryable.<Credentials>of(STS_RETRY_CONFIG)
+                Retryable.<Credentials>of(stsConfig)
                         .retryCondition((Throwable t) -> isRetryableStsError(t))
                         .onRetry((event) -> log.debug("STS AssumeRole retry for jump role $jumpRoleArn - attempt: ${event.attempt}; failure: ${event.failure?.message}"))
                         .apply(() -> {
