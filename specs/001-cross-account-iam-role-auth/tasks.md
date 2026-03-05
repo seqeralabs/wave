@@ -60,7 +60,7 @@
 
 ### Implementation for User Story 1
 
-- [x] T014 [US1] `isRoleArn()` method in `AwsEcrService.groovy:120` ✅ Pattern: `^arn:aws:iam::\d{12}:role/.+`
+- [x] T014 [US1] `isRoleArn()` method in `AwsEcrService.groovy:135` ✅ Pattern: `^arn:aws(-cn|-us-gov)?:iam::\d{12}:role/[\w+=,.@\/-]+$` (supports all AWS partitions)
 - [x] T015 [US1] Session name generated inline in `assumeRole()` as `"wave-ecr-${extractAccountId(roleArn)}-${System.currentTimeMillis()}"` at `AwsEcrService.groovy:230` ✅
 - [x] T016 [US1] `assumeRole(String roleArn, String externalId, String region)` in `AwsEcrService.groovy:145` ✅ Full STS integration with 1-hour duration
 - [x] T017 [US1] `getLoginToken()` detects role ARN and routes at `AwsEcrService.groovy:259` ✅
@@ -182,7 +182,7 @@
 
 - [x] T054 [US6] `AwsCreds.stableHash()` includes all fields at `AwsEcrService.groovy:88-91` ✅
 - [x] T055 [US6] `cache.getOrCompute()` from `AbstractTieredCache` provides atomic load at `AwsEcrService.groovy:311` ✅
-- [ ] T056 [US6] **REMAINING**: Add cache metrics using Micrometer (not yet implemented)
+- [ ] T056 [US6] **REMAINING**: Add cache metrics using Micrometer — cache hit rate gauge (NFR-002/SC-002), cache size, eviction count
 - [x] T057 [US6] Cache max-size configured via `wave.aws.ecr.cache.max-size` in `AwsEcrCache.groovy` (default: 10,000) ✅
 - [ ] T058 [US6] **REMAINING**: Add cache statistics logging (not yet implemented)
 
@@ -265,10 +265,10 @@
 
 **Purpose**: Metrics, monitoring, documentation, and quality improvements
 
-- [ ] T070 [P] **REMAINING**: Add Micrometer metrics for STS operations (same as T056)
+- [ ] T070 [P] **REMAINING**: Add Micrometer metrics for STS operations — success/failure counters (NFR-001/SC-001), latency timer (NFR-003/SC-004), credential refresh duration
 - [ ] T071 [P] **REMAINING**: Update `CLAUDE.md` with new STS authentication flow and architecture decisions
 - [x] T072 [P] JavaDoc comments on all public methods in `AwsEcrService.groovy` (lines 114-142, 244-252, 274-297, 335-341) ✅
-- [ ] T073 [P] **REMAINING**: Add @Retryable for transient STS errors (3 attempts, exponential backoff)
+- [x] T073 [P] STS retry implemented via `Retryable.of(stsConfig)` + `isRetryableStsError()` in `assumeTargetRole()` and `doAssumeJumpRole()` ✅ (duplicate of T090)
 - [x] T074 [P] `AwsCreds` is private inner class — `@Canonical` generates toString but credentials are only logged via explicit log statements which redact sensitive fields ✅
 - [ ] T075 **REMAINING**: Update changelog.txt with feature description and version bump
 - [ ] T076 Run quickstart.md validation for all 8 user stories

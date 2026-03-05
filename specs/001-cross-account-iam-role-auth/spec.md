@@ -211,7 +211,7 @@ When Wave's own IAM role cannot directly assume customer roles (e.g., due to org
 ### Functional Requirements
 
 - **FR-001**: System MUST detect when a username matches IAM role ARN pattern (`^arn:aws(-cn|-us-gov)?:iam::\d{12}:role/[\w+=,.@\/-]+$`) and automatically use STS AssumeRole authentication. The pattern supports all AWS partitions: standard (`aws`), China (`aws-cn`), and GovCloud (`aws-us-gov`).
-- **FR-002**: System MUST support both static credentials (backward compatible) and role-based authentication simultaneously in the same deployment
+- **FR-002**: System MUST support both static credentials (backward compatible) and role-based authentication simultaneously in the same deployment, including mixed configurations where some registries use static credentials and others use role-based authentication
 - **FR-003**: Platform MUST auto-generate a unique UUID as external ID when administrator configures IAM role-based credentials
 - **FR-004**: Wave MUST include the external ID in all STS AssumeRole API calls when authenticating with role-based credentials
 - **FR-005**: Wave MUST request temporary credentials with 1-hour (3600 second) session duration from STS
@@ -226,7 +226,6 @@ When Wave's own IAM role cannot directly assume customer roles (e.g., due to org
 - **FR-015**: Platform MUST display external ID in read-only field with copy-to-clipboard functionality
 - **FR-016**: External ID MUST remain immutable after generation (no automatic rotation)
 - **FR-017**: Cache key MUST include access key, secret key, session token, region, and ECR public flag to ensure uniqueness
-- **FR-018**: System MUST support credential configurations where some use static credentials and others use role-based authentication
 - **FR-019**: Wave MUST use session name format `wave-ecr-{accountId}-{timestamp}` for AssumeRole calls, where `accountId` is the 12-digit AWS account extracted from the role ARN (or `unknown` if unparsable) and `timestamp` is epoch millis. For jump role sessions, the format is `wave-jump-{accountId}-{timestamp}`.
 - **FR-020**: System MUST log all STS AssumeRole calls with sufficient context (role ARN, region, external ID presence, success/failure)
 - **FR-021**: Wave MUST support optional jump role chaining via `wave.aws.jump-role-arn` configuration. When set, Wave first assumes the jump role using default credentials, then uses jump role credentials to assume the target customer role.
@@ -271,8 +270,8 @@ When Wave's own IAM role cannot directly assume customer roles (e.g., due to org
 
 ### Measurable Outcomes
 
-- **SC-001**: STS AssumeRole authentication success rate exceeds 99.9% for correctly configured roles
-- **SC-002**: Average credential cache hit rate exceeds 95% across all deployments
+- **SC-001**: STS AssumeRole authentication success rate exceeds 99.9% for correctly configured roles (see NFR-001)
+- **SC-002**: Average credential cache hit rate exceeds 95% across all deployments (see NFR-002)
 - **SC-003**: Zero backward compatibility breaks - 100% of existing static credential configurations continue to work after deployment
 - **SC-004**: Credential refresh operations complete within 2 seconds (p95)
 - **SC-005**: Customer setup time for IAM role-based authentication is under 15 minutes with provided documentation (measured via quickstart walkthrough timing)

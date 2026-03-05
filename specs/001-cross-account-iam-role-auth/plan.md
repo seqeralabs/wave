@@ -66,7 +66,7 @@ specs/001-cross-account-iam-role-auth/
 ├── plan.md              # This file
 ├── research.md          # Technology choices, architecture decisions, Platform integration points
 ├── data-model.md        # AwsCreds and CachedEcrCredentials modifications
-├── quickstart.md        # Developer setup and testing guide for all 8 user stories
+├── quickstart.md        # Developer setup and testing guide for all 9 user stories
 ├── contracts/
 │   ├── sts-integration.md      # AWS STS AssumeRole API contract
 │   └── service-interface.md    # AwsEcrService interface changes
@@ -252,52 +252,59 @@ protected static boolean isRoleArn(String username) {
 
 **File**: `src/main/groovy/io/seqera/wave/service/aws/AwsEcrService.groovy`
 
-**New Private Method**:
+**Implementation** (4 methods replacing the original monolithic `assumeRole`):
 ```groovy
-@Inject StsClient stsClient  // Add field injection
+// 1. Assume a target role using provided STS client (retried for transient errors)
+protected Credentials assumeTargetRole(StsClient client, String roleArn, String externalId) {
+    Retryable.<Credentials>of(stsConfig)
+            .retryCondition((Throwable t) -> isRetryableStsError(t))
+            .onRetry((event) -> log.debug("STS AssumeRole retry for $roleArn - attempt: ${event.attempt}"))
+            .apply(() -> {
+                final requestBuilder = AssumeRoleRequest.builder()
+                        .roleArn(roleArn)
+                        .roleSessionName("wave-ecr-${extractAccountId(roleArn)}-${System.currentTimeMillis()}")
+                        .durationSeconds(3600)
+                if (externalId) { requestBuilder.externalId(externalId) }
+                return client.assumeRole(requestBuilder.build()).credentials()
+            })
+}
 
-private AssumeRoleResponse assumeRole(String roleArn, String externalId, String sessionName) {
-    AssumeRoleRequest request = AssumeRoleRequest.builder()
-        .roleArn(roleArn)
-        .roleSessionName(sessionName)
-        .externalId(externalId)
-        .durationSeconds(3600)
-        .build()
-
-    try {
-        return stsClient.assumeRole(request)
-    } catch (StsException e) {
-        throw mapStsException(e, roleArn)
+// 2. Orchestrator: chains through jump role when configured, with ExpiredTokenException retry (FR-011)
+protected Credentials assumeRole(String roleArn, String externalId, String region) {
+    if (jumpRoleArn) {
+        final jumpCreds = assumeJumpRole(region)
+        try {
+            return stsClient(region, jumpCreds).withCloseable { client ->
+                assumeTargetRole(client, roleArn, externalId)
+            }
+        } catch (StsException e) {
+            if (e.awsErrorDetails()?.errorCode() == 'ExpiredTokenException') {
+                final freshCreds = doAssumeJumpRole(region)
+                return stsClient(region, freshCreds).withCloseable { freshClient ->
+                    assumeTargetRole(freshClient, roleArn, externalId)
+                }
+            }
+            throw e
+        }
+    } else {
+        return stsClient(region).withCloseable { client ->
+            assumeTargetRole(client, roleArn, externalId)
+        }
     }
 }
 
-private WaveException mapStsException(StsException e, String roleArn) {
-    switch (e.awsErrorDetails().errorCode()) {
-        case 'AccessDenied':
-            return new UnauthorizedException(
-                "Wave's service role cannot assume the specified IAM role. " +
-                "Verify the trust policy allows Wave's service role and includes the correct external ID.",
-                e
-            )
-        case 'InvalidParameterValue':
-            return new BadRequestException(
-                "Invalid role ARN or external ID format: ${e.awsErrorDetails().errorMessage()}",
-                e
-            )
-        case 'RegionDisabledException':
-            return new BadRequestException(
-                "STS is not enabled in the specified region. Enable STS endpoints for this region in your AWS account.",
-                e
-            )
-        default:
-            return new WaveException("STS AssumeRole failed: ${e.awsErrorDetails().errorMessage()}", e)
+// Map STS exceptions to AwsEcrAuthException with actionable messages
+protected static Exception mapStsException(StsException e) {
+    switch (e.awsErrorDetails()?.errorCode()) {
+        case 'AccessDenied':      return new AwsEcrAuthException("Wave's service role does not have permission...", e)
+        case 'InvalidParameterValue': return new AwsEcrAuthException("Invalid role ARN or external ID format...", e)
+        case 'RegionDisabledException': return new AwsEcrAuthException("STS is not enabled in the specified region...", e)
+        case 'ExpiredTokenException':   return new AwsEcrAuthException("Temporary credentials have expired...", e)
+        default: return new AwsEcrAuthException("STS AssumeRole failed: ${e.message}", e)
     }
 }
 
-// Session name is generated inline in assumeRole() using extractAccountId():
-//   "wave-ecr-${extractAccountId(roleArn)}-${System.currentTimeMillis()}"
-// For jump role sessions:
-//   "wave-jump-${extractAccountId(jumpRoleArn)}-${System.currentTimeMillis()}"
+// Session name helper
 protected static String extractAccountId(String roleArn) {
     final m = roleArn =~ /arn:aws[^:]*:iam::(\d{12}):role\/.+/
     return m.matches() ? m.group(1) : 'unknown'
@@ -305,11 +312,11 @@ protected static String extractAccountId(String roleArn) {
 ```
 
 **Test Coverage**:
-- Unit test: Successful AssumeRole returns response
-- Unit test: AccessDenied throws UnauthorizedException
-- Unit test: InvalidParameterValue throws BadRequestException
-- Unit test: RegionDisabledException throws BadRequestException
-- Unit test: Session name format is correct
+- Unit test: Jump role chaining calls `assumeJumpRole` then `assumeTargetRole`
+- Unit test: ExpiredTokenException triggers retry via `doAssumeJumpRole` (cache bypass)
+- Unit test: Non-expired STS exceptions propagate without retry
+- Unit test: AccessDenied/InvalidParameterValue/RegionDisabledException/ExpiredTokenException mapped to `AwsEcrAuthException`
+- Unit test: `extractAccountId` for standard, China, GovCloud partitions and invalid ARNs
 
 ---
 
@@ -319,79 +326,58 @@ protected static String extractAccountId(String roleArn) {
 
 **Modified Logic**:
 ```groovy
-String getLoginToken(String registry, String username, String password) {
-    // NEW: Detect authentication type
-    if (isRoleArn(username)) {
-        log.debug("Detected role ARN, using STS AssumeRole authentication")
-        return getLoginTokenWithRole(registry, username, password)
-    } else {
-        log.debug("Detected access key ID, using static credential authentication")
-        return getLoginTokenWithStaticCredentials(registry, username, password)
+String getLoginToken(String accessKey, String secretKey, String region, boolean isPublic) {
+    assert accessKey, "Missing AWS accessKey argument"
+    assert region, "Missing AWS region argument"
+
+    try {
+        if (isRoleArn(accessKey)) {
+            return getLoginTokenWithRole(accessKey, secretKey, region, isPublic)
+        } else {
+            assert secretKey, "Missing AWS secretKey argument"
+            return getLoginTokenWithStaticCredentials(accessKey, secretKey, region, isPublic)
+        }
+    }
+    catch (AwsEcrAuthException e) { throw e }
+    catch (Exception e) {
+        throw new AwsEcrAuthException("Unable to acquire AWS ECR authorization token", e.cause ?: e)
     }
 }
 
-private String getLoginTokenWithRole(String registry, String roleArn, String externalId) {
-    String region = extractRegion(registry)
-    String sessionName = generateSessionName(registry)
+protected String getLoginTokenWithRole(String roleArn, String externalId, String region, boolean isPublic) {
+    log.debug "Getting ECR login token with role assumption - roleArn=$roleArn; region=$region"
 
-    // Check cache first
-    AwsCreds creds = new AwsCreds(
-        accessKey: null,  // Placeholder, will be filled after AssumeRole
-        secretKey: null,
-        sessionToken: null,
-        region: region,
-        ecrPublic: isEcrPublic(registry)
-    )
+    // Stable cache key using roleArn (not temp creds which change on each refresh)
+    final key = new AwsCreds(roleArn, externalId ?: '', null, region, isPublic)
 
-    // Get cached or load credentials
-    CachedEcrCredentials cached = ecrCache.get(creds.stableHash()) { key ->
-        // Assume role
-        AssumeRoleResponse response = assumeRole(roleArn, externalId, sessionName)
-        Credentials tempCreds = response.credentials()
-
-        // Create AwsCreds with temporary credentials
-        AwsCreds awsCreds = new AwsCreds(
-            accessKey: tempCreds.accessKeyId(),
-            secretKey: tempCreds.secretAccessKey(),
-            sessionToken: tempCreds.sessionToken(),
-            region: region,
-            ecrPublic: isEcrPublic(registry)
-        )
-
-        // Get ECR authorization token using temporary credentials
-        String ecrToken = getEcrAuthToken(awsCreds)
-
-        // Create cached entry
-        return new CachedEcrCredentials(
-            accessKeyId: tempCreds.accessKeyId(),
-            secretAccessKey: tempCreds.secretAccessKey(),
-            sessionToken: tempCreds.sessionToken(),
-            stsExpiration: tempCreds.expiration(),
-            authToken: ecrToken,
-            tokenExpiration: Instant.now().plus(Duration.ofHours(12))
-        )
-    }
-
-    // Check if credentials are expiring and invalidate if needed
-    if (cached.isExpiring()) {
-        ecrCache.invalidate(creds.stableHash())
-        return getLoginTokenWithRole(registry, roleArn, externalId)  // Retry
-    }
-
-    return cached.authToken
+    // Pair-based getOrCompute sets TTL dynamically from STS credential expiration
+    return cache.getOrCompute(key, (String k) -> {
+        log.debug "Cache miss for role $roleArn - assuming role to get temporary credentials"
+        try {
+            final tempCreds = assumeRole(roleArn, externalId, region)
+            final ttl = computeCacheTtl(tempCreds.expiration(), cache.duration)
+            final tempKey = new AwsCreds(
+                    tempCreds.accessKeyId(), tempCreds.secretAccessKey(),
+                    tempCreds.sessionToken(), region, isPublic)
+            final token = load(tempKey)
+            return new AbstractTieredCache.Pair<AwsEcrAuthToken, Duration>(token, ttl)
+        }
+        catch (StsException e) { throw mapStsException(e) }
+    }).value
 }
 
-private String getLoginTokenWithStaticCredentials(String registry, String accessKey, String secretKey) {
-    // Existing implementation unchanged
-    // ...
+protected String getLoginTokenWithStaticCredentials(String accessKey, String secretKey, String region, boolean isPublic) {
+    log.debug "Getting ECR login token with static credentials - region=$region"
+    final key = new AwsCreds(accessKey, secretKey, null, region, isPublic)
+    return cache.getOrCompute(key, (k) -> load(key), cache.duration).value
 }
 ```
 
 **Test Coverage**:
-- Integration test: End-to-end authentication with role ARN
-- Integration test: Cached credentials reused on second request
-- Integration test: Expired credentials automatically refreshed
-- Integration test: Static credentials still work (backward compatibility)
+- Unit test: Role ARN routed to `getLoginTokenWithRole`, static credentials to `getLoginTokenWithStaticCredentials`
+- Unit test: Mocked STS and cache verify end-to-end role assumption with `Pair`-based dynamic TTL
+- Unit test: `AwsEcrAuthException` preserved through `getLoginToken` (not double-wrapped)
+- Unit test: Static credentials still work (backward compatibility)
 
 ---
 
@@ -457,35 +443,30 @@ String getLoginToken(String registry, String username, String password) {
 
 **File**: `src/main/groovy/io/seqera/wave/service/aws/AwsEcrService.groovy`
 
-**Implementation**:
+**Implementation** (actual logging in `AwsEcrService.groovy`):
 ```groovy
-private AssumeRoleResponse assumeRole(String roleArn, String externalId, String sessionName) {
-    log.info("Assuming IAM role: {} with session: {}", roleArn, sessionName)
+// assumeRole() entry point
+log.debug "Assuming AWS role: $roleArn; region: $region; externalId: ${externalId ? 'provided' : 'none'}"
 
-    try {
-        AssumeRoleResponse response = stsClient.assumeRole(request)
-        Credentials creds = response.credentials()
+// Jump role chaining
+log.debug "Using jump role: $jumpRoleArn; jumpExternalId: ${jumpExternalId ? 'provided' : 'none'}"
 
-        log.info("Successfully assumed role: {}. Credentials expire at: {}",
-            roleArn, creds.expiration())
+// Cache miss logging in getLoginTokenWithRole
+log.debug "Cache miss for role $roleArn - assuming role to get temporary credentials"
 
-        return response
-    } catch (StsException e) {
-        log.error("Failed to assume role: {}. Error: {} - {}",
-            roleArn,
-            e.awsErrorDetails().errorCode(),
-            e.awsErrorDetails().errorMessage())
+// Retry logging
+log.debug("STS AssumeRole retry for $roleArn - attempt: ${event.attempt}")
 
-        throw mapStsException(e, roleArn)
-    }
-}
+// ECR token retrieval
+log.debug "Getting AWS ECR auth token - region=$region; accessKey=$accessKey; sessionToken=${sessionToken ? 'present' : 'none'}"
 ```
 
 **Logging Guidelines**:
 - Never log `secretAccessKey` or `sessionToken` in plaintext
-- Use structured logging with meaningful context
-- Log all STS calls at INFO level for audit trail
+- Use structured logging with meaningful context (role ARN, region, external ID presence)
+- Log all STS calls at DEBUG level (audit trail via AWS CloudTrail, not application logs)
 - Log cache hits/misses at DEBUG level
+- Log external ID presence (`'provided'`/`'none'`), never the value
 
 ---
 
@@ -562,48 +543,50 @@ class AwsEcrServiceTest extends Specification {
 
 **File**: `src/test/groovy/io/seqera/wave/service/aws/AwsEcrServiceTest.groovy` (cache-related tests)
 
-**Test Cases**:
+**Test Cases** (in `AwsEcrServiceTest.groovy`):
 ```groovy
-class AwsEcrCacheSpec extends Specification {
+// computeCacheTtl tests
+def 'should compute TTL with 5-minute buffer for 1-hour expiration' () {
+    given:
+    def expiration = Instant.now().plus(Duration.ofHours(1))
+    def maxDuration = Duration.ofHours(3)
+    when:
+    def ttl = AwsEcrService.computeCacheTtl(expiration, maxDuration)
+    then:
+    ttl.toMinutes() >= 54 && ttl.toMinutes() <= 55
+}
 
-    def "should invalidate expiring STS credentials"() {
-        given:
-        def cache = new AwsEcrCache()
-        def expiration = Instant.now().plus(Duration.ofMinutes(4))
-        def cached = new CachedEcrCredentials(
-            stsExpiration: expiration,
-            tokenExpiration: Instant.now().plus(Duration.ofHours(12))
-        )
+def 'should return MIN_CACHE_TTL when credentials are nearly expired' () {
+    given:
+    def expiration = Instant.now().plus(Duration.ofMinutes(3))
+    when:
+    def ttl = AwsEcrService.computeCacheTtl(expiration, Duration.ofHours(3))
+    then:
+    ttl == Duration.ofMinutes(1)
+}
 
-        expect:
-        cached.isExpiring() == true
-    }
+def 'should return maxDuration when expiration is null' () {
+    expect:
+    AwsEcrService.computeCacheTtl(null, Duration.ofHours(3)) == Duration.ofHours(3)
+}
 
-    def "should not invalidate credentials with >5 min remaining"() {
-        given:
-        def cache = new AwsEcrCache()
-        def expiration = Instant.now().plus(Duration.ofMinutes(30))
-        def cached = new CachedEcrCredentials(
-            stsExpiration: expiration,
-            tokenExpiration: Instant.now().plus(Duration.ofHours(12))
-        )
+@Unroll
+def 'should compute correct TTL for expiration in #minutes minutes' () {
+    // Parameterized test covering boundary cases: 6, 10, 30, 60, 200 minutes
+}
 
-        expect:
-        cached.isExpiring() == false
-    }
-
-    def "should use earliest expiration"() {
-        given:
-        def stsExp = Instant.now().plus(Duration.ofMinutes(30))
-        def tokenExp = Instant.now().plus(Duration.ofHours(12))
-        def cached = new CachedEcrCredentials(
-            stsExpiration: stsExp,
-            tokenExpiration: tokenExp
-        )
-
-        expect:
-        cached.getEffectiveExpiration() == stsExp
-    }
+// AwsStsCredentials round-trip test
+def 'should round-trip STS credentials through AwsStsCredentials' () {
+    given:
+    def sdkCreds = Credentials.builder()
+            .accessKeyId('ASIATESTKEY').secretAccessKey('testSecret')
+            .sessionToken('testToken').expiration(expiration).build()
+    when:
+    def cached = AwsStsCredentials.from(sdkCreds)
+    def restored = cached.toSdkCredentials()
+    then:
+    restored.accessKeyId() == 'ASIATESTKEY'
+    restored.expiration().toEpochMilli() == expiration.toEpochMilli()
 }
 ```
 
@@ -658,27 +641,32 @@ class AwsEcrIntegrationSpec extends Specification {
 
 **File**: `src/test/groovy/io/seqera/wave/service/aws/AwsEcrServiceTest.groovy` (backward compatibility tests)
 
-**Test Cases**:
+**Test Cases** (in `AwsEcrServiceTest.groovy`):
 ```groovy
-class BackwardCompatibilitySpec extends Specification {
+def 'should route role ARN to getLoginTokenWithRole' () {
+    given:
+    def service = Spy(AwsEcrService)
+    def roleArn = 'arn:aws:iam::123456789012:role/WaveEcrAccess'
+    when:
+    service.getLoginToken(roleArn, externalId, region, false)
+    then:
+    1 * service.getLoginTokenWithRole(roleArn, externalId, region, false) >> 'AWS:token'
+    0 * service.getLoginTokenWithStaticCredentials(_, _, _, _)
+}
 
-    def "existing static credential tests should pass unchanged"() {
-        // Run all existing AwsEcrServiceTest tests
-        // Verify no regressions
-    }
+def 'should route static credentials to getLoginTokenWithStaticCredentials' () {
+    given:
+    def service = Spy(AwsEcrService)
+    def accessKey = 'AKIAIOSFODNN7EXAMPLE'
+    when:
+    service.getLoginToken(accessKey, secretKey, region, false)
+    then:
+    0 * service.getLoginTokenWithRole(_, _, _, _)
+    1 * service.getLoginTokenWithStaticCredentials(accessKey, secretKey, region, false) >> 'AWS:token'
+}
 
-    def "mixed authentication methods should work"() {
-        given:
-        def service = new AwsEcrService()
-
-        when:
-        def token1 = service.getLoginToken(registry, roleArn, externalId)
-        def token2 = service.getLoginToken(registry, accessKey, secretKey)
-
-        then:
-        token1 != null
-        token2 != null
-    }
+def 'should require accessKey and region' () {
+    // Verifies assertion errors for missing required arguments
 }
 ```
 
@@ -762,8 +750,7 @@ class BackwardCompatibilitySpec extends Specification {
 | FR-006: Session token storage | CachedEcrCredentials includes session token | To be tested |
 | FR-007: Session token in API calls | ECR calls include session token | To be tested |
 | FR-008: Credential caching | Cache hit rate >95% | To be load tested |
-| FR-009: Automatic refresh | Credentials refresh 5 min before expiration | To be tested |
-| FR-010: Cache invalidation | Expiring credentials removed from cache | To be tested |
+| FR-009: Automatic refresh & invalidation | Credentials refresh 5 min before expiration via cache TTL | To be tested |
 | FR-011: Retry on expiration | ExpiredTokenException triggers retry | To be tested |
 | FR-012: Error messages | Specific messages for STS errors | To be tested |
 | FR-017: Unique cache key | Session token in cache key hash | To be tested |
