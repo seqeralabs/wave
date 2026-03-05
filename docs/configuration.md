@@ -108,6 +108,35 @@ Configure jump role chaining with the following options:
 When the jump role is not configured, Wave assumes target roles directly using its default credentials (the previous behavior). The jump role is only used for role-based ECR authentication, not for static AWS credential flows.
 :::
 
+### STS retry configuration
+
+Configure retry behavior for AWS STS AssumeRole calls:
+
+`wave.aws.sts.retry.delay` *(optional)*
+: Initial delay between retry attempts (default: `1s`).
+
+`wave.aws.sts.retry.maxDelay` *(optional)*
+: Maximum delay between retry attempts (default: `10s`).
+
+`wave.aws.sts.retry.attempts` *(optional)*
+: Maximum number of retry attempts (default: `3`).
+
+`wave.aws.sts.retry.multiplier` *(optional)*
+: Exponential backoff multiplier (default: `2.0`).
+
+`wave.aws.sts.retry.jitter` *(optional)*
+: Jitter factor for retry delays (default: `0.25`).
+
+### Jump role cache configuration
+
+Configure caching for jump role temporary credentials to avoid redundant STS calls:
+
+`wave.aws.jump-role-cache.duration` *(optional)*
+: Maximum cache duration for jump role credentials (default: `45m`). Actual TTL is dynamically computed based on credential expiration with a 5-minute refresh buffer.
+
+`wave.aws.jump-role-cache.max-size` *(optional)*
+: Maximum number of cached jump role credential entries (default: `100`).
+
 ## HTTP client
 
 Configure the HTTP client with the following options:
