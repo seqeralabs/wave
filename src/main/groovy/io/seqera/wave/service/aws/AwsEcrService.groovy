@@ -195,48 +195,56 @@ class AwsEcrService {
     }
 
     /**
-     * Assume an IAM role and return temporary credentials.
-     * When a jump role is configured ({@code wave.aws.jump-role-arn}), Wave first assumes the
-     * jump role using its default credentials, then uses the jump role's temporary credentials
-     * to assume the target role. This enables cross-account role chaining.
-     *
+     * Assume a target IAM role using the provided STS client.
      * Transient STS errors (5xx and throttling) are retried with exponential backoff.
      *
+     * @param client The STS client (may use default or jump role credentials)
      * @param roleArn The ARN of the role to assume
      * @param externalId The external ID for cross-account role assumption (optional)
-     * @param region AWS region
      * @return Temporary AWS credentials with session token
      */
-    protected Credentials assumeRole(String roleArn, String externalId, String region) {
-        log.debug "Assuming AWS role: $roleArn; region: $region; externalId: ${externalId ? 'provided' : 'none'}"
+    protected Credentials assumeTargetRole(StsClient client, String roleArn, String externalId) {
+        Retryable.<Credentials>of(stsConfig)
+                .retryCondition((Throwable t) -> isRetryableStsError(t))
+                .onRetry((event) -> log.debug("STS AssumeRole retry for $roleArn - attempt: ${event.attempt}; failure: ${event.failure?.message}"))
+                .apply(() -> {
+                    final requestBuilder = AssumeRoleRequest.builder()
+                            .roleArn(roleArn)
+                            .roleSessionName("wave-ecr-${extractAccountId(roleArn)}-${System.currentTimeMillis()}")
+                            .durationSeconds(3600) // 1 hour
 
-        StsClient client
-        if (jumpRoleArn) {
-            // Chain through jump role: first assume the jump role, then use its credentials
-            log.debug "Using jump role: $jumpRoleArn; jumpExternalId: ${jumpExternalId ? 'provided' : 'none'}"
-            final jumpCreds = assumeJumpRole(region)
-            client = stsClient(region, jumpCreds)
-        } else {
-            client = stsClient(region)
-        }
+                    // Add external ID if provided
+                    if (externalId) {
+                        requestBuilder.externalId(externalId)
+                    }
 
-        client.withCloseable {
+                    return client.assumeRole(requestBuilder.build()).credentials()
+                })
+    }
+
+    /**
+     * Directly assume the jump role using Wave's default credentials, bypassing the cache.
+     * Used both as the cache loader and as a fallback when cached credentials have expired.
+     *
+     * @param region AWS region
+     * @return Temporary credentials from the jump role
+     */
+    protected Credentials doAssumeJumpRole(String region) {
+        return stsClient(region).withCloseable { client ->
             Retryable.<Credentials>of(stsConfig)
                     .retryCondition((Throwable t) -> isRetryableStsError(t))
-                    .onRetry((event) -> log.debug("STS AssumeRole retry for $roleArn - attempt: ${event.attempt}; failure: ${event.failure?.message}"))
+                    .onRetry((event) -> log.debug("STS AssumeRole retry for jump role $jumpRoleArn - attempt: ${event.attempt}; failure: ${event.failure?.message}"))
                     .apply(() -> {
                         final requestBuilder = AssumeRoleRequest.builder()
-                                .roleArn(roleArn)
-                                .roleSessionName("wave-ecr-${extractAccountId(roleArn)}-${System.currentTimeMillis()}")
+                                .roleArn(jumpRoleArn)
+                                .roleSessionName("wave-jump-${extractAccountId(jumpRoleArn)}-${System.currentTimeMillis()}")
                                 .durationSeconds(3600) // 1 hour
 
-                        // Add external ID if provided
-                        if (externalId) {
-                            requestBuilder.externalId(externalId)
+                        if (jumpExternalId) {
+                            requestBuilder.externalId(jumpExternalId)
                         }
 
-                        final request = requestBuilder.build()
-                        return client.assumeRole(request).credentials()
+                        return client.assumeRole(requestBuilder.build()).credentials()
                     })
         }
     }
@@ -252,30 +260,54 @@ class AwsEcrService {
     protected Credentials assumeJumpRole(String region) {
         return jumpRoleCache.getOrCompute(region, (String k) -> {
             log.debug "Cache miss for jump role $jumpRoleArn - assuming role; region=$region"
-
-            final creds = stsClient(region).withCloseable { client ->
-                Retryable.<Credentials>of(stsConfig)
-                        .retryCondition((Throwable t) -> isRetryableStsError(t))
-                        .onRetry((event) -> log.debug("STS AssumeRole retry for jump role $jumpRoleArn - attempt: ${event.attempt}; failure: ${event.failure?.message}"))
-                        .apply(() -> {
-                            final requestBuilder = AssumeRoleRequest.builder()
-                                    .roleArn(jumpRoleArn)
-                                    .roleSessionName("wave-jump-${extractAccountId(jumpRoleArn)}-${System.currentTimeMillis()}")
-                                    .durationSeconds(3600) // 1 hour
-
-                            if (jumpExternalId) {
-                                requestBuilder.externalId(jumpExternalId)
-                            }
-
-                            final request = requestBuilder.build()
-                            return client.assumeRole(request).credentials()
-                        })
-            }
-
+            final creds = doAssumeJumpRole(region)
             final cached = AwsStsCredentials.from(creds)
             final ttl = computeCacheTtl(creds.expiration(), jumpRoleCache.duration)
             return new AbstractTieredCache.Pair<AwsStsCredentials, Duration>(cached, ttl)
         }).toSdkCredentials()
+    }
+
+    /**
+     * Assume an IAM role and return temporary credentials.
+     * When a jump role is configured ({@code wave.aws.jump-role-arn}), Wave first assumes the
+     * jump role using its default credentials, then uses the jump role's temporary credentials
+     * to assume the target role. This enables cross-account role chaining.
+     *
+     * If the jump role credentials have expired (race between cache TTL and actual expiry),
+     * retries once with fresh credentials bypassing the cache (FR-011).
+     *
+     * @param roleArn The ARN of the role to assume
+     * @param externalId The external ID for cross-account role assumption (optional)
+     * @param region AWS region
+     * @return Temporary AWS credentials with session token
+     */
+    protected Credentials assumeRole(String roleArn, String externalId, String region) {
+        log.debug "Assuming AWS role: $roleArn; region: $region; externalId: ${externalId ? 'provided' : 'none'}"
+
+        if (jumpRoleArn) {
+            log.debug "Using jump role: $jumpRoleArn; jumpExternalId: ${jumpExternalId ? 'provided' : 'none'}"
+            final jumpCreds = assumeJumpRole(region)
+            try {
+                return stsClient(region, jumpCreds).withCloseable { client ->
+                    assumeTargetRole(client, roleArn, externalId)
+                }
+            }
+            catch (StsException e) {
+                // Retry once on expired token — bypass cache to get fresh jump role credentials
+                if (e.awsErrorDetails()?.errorCode() == 'ExpiredTokenException') {
+                    log.debug "Expired jump role credentials for $roleArn - retrying with fresh credentials"
+                    final freshCreds = doAssumeJumpRole(region)
+                    return stsClient(region, freshCreds).withCloseable { freshClient ->
+                        assumeTargetRole(freshClient, roleArn, externalId)
+                    }
+                }
+                throw e
+            }
+        } else {
+            return stsClient(region).withCloseable { client ->
+                assumeTargetRole(client, roleArn, externalId)
+            }
+        }
     }
 
     /**

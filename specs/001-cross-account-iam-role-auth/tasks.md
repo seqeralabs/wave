@@ -89,10 +89,10 @@
 - [x] T024 [US2] Cache TTL is set dynamically per-entry via `AbstractTieredCache.Pair<V, Duration>` in `getLoginTokenWithRole()` at `AwsEcrService.groovy:311-332` ✅
 - [x] T025 [US2] `computeCacheTtl()` at `AwsEcrService.groovy:343-357` implements 5-min buffer with MIN_CACHE_TTL floor ✅
 - [x] T026 [US2] Cache auto-evicts when TTL expires, triggering fresh `assumeRole()` on next request ✅ No manual `isExpiring()` check needed
-- [ ] T027 [US2] **REMAINING**: Add retry logic for `ExpiredTokenException` - currently mapped to error but not auto-retried
+- [x] T027 [US2] Retry on `ExpiredTokenException`: `assumeRole()` catches expired token errors when using jump role, bypasses cache via `doAssumeJumpRole()`, and retries target role assumption once ✅
 - [x] T028 [US2] Cache miss logging at line 312 logs refresh reason ✅
 
-**Checkpoint**: ✅ User Story 2 mostly complete - Only T027 (ExpiredTokenException retry) remains
+**Checkpoint**: ✅ User Story 2 complete - Automatic credential refresh with TTL-based cache eviction and ExpiredTokenException retry
 
 ---
 

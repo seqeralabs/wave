@@ -548,15 +548,22 @@ class AwsEcrServiceTest extends Specification {
                 .expiration(Instant.now().plus(Duration.ofHours(1)))
                 .build()
 
-        when: 'assumeRole is called with jump role configured'
-        try {
-            service.assumeRole(roleArn, externalId, region)
-        } catch (Exception ignored) {
-            // Expected: STS call will fail with fake jump credentials
-        }
+        def targetCreds = Credentials.builder()
+                .accessKeyId('ASIATARGETKEY')
+                .secretAccessKey('targetSecret')
+                .sessionToken('targetToken')
+                .expiration(Instant.now().plus(Duration.ofHours(1)))
+                .build()
 
-        then: 'it should first assume the jump role'
+        when: 'assumeRole is called with jump role configured'
+        def result = service.assumeRole(roleArn, externalId, region)
+
+        then: 'it should first assume the jump role, then assume target role'
         1 * service.assumeJumpRole(region) >> jumpCreds
+        1 * service.assumeTargetRole(_, roleArn, externalId) >> targetCreds
+
+        and:
+        result == targetCreds
     }
 
     def 'should not use jump role when not configured' () {
@@ -578,6 +585,93 @@ class AwsEcrServiceTest extends Specification {
 
         then: 'it should NOT call assumeJumpRole'
         0 * service.assumeJumpRole(_)
+    }
+
+    def 'should retry with fresh credentials on ExpiredTokenException (FR-011)' () {
+        given:
+        def service = Spy(AwsEcrService)
+        service.@jumpRoleArn = 'arn:aws:iam::111122223333:role/test-jump-role'
+        service.@jumpExternalId = ''
+
+        def roleArn = 'arn:aws:iam::123456789012:role/CustomerRole'
+        def externalId = 'ext-id-123'
+        def region = 'us-east-1'
+
+        def expiredTokenEx = (StsException) StsException.builder()
+                .message('Token expired')
+                .awsErrorDetails(AwsErrorDetails.builder()
+                        .errorCode('ExpiredTokenException')
+                        .errorMessage('Token expired')
+                        .sdkHttpResponse(SdkHttpResponse.builder().statusCode(403).build())
+                        .build())
+                .statusCode(403)
+                .build()
+
+        def jumpCreds = Credentials.builder()
+                .accessKeyId('ASIAJUMPTEMPKEY')
+                .secretAccessKey('jumpTempSecret')
+                .sessionToken('jumpTempToken')
+                .expiration(Instant.now().plus(Duration.ofHours(1)))
+                .build()
+
+        def targetCreds = Credentials.builder()
+                .accessKeyId('ASIATARGETKEY')
+                .secretAccessKey('targetSecret')
+                .sessionToken('targetToken')
+                .expiration(Instant.now().plus(Duration.ofHours(1)))
+                .build()
+
+        when: 'assumeRole is called and first attempt fails with ExpiredTokenException'
+        def result = service.assumeRole(roleArn, externalId, region)
+
+        then: 'first attempt uses cached jump creds but target role fails with expired token'
+        1 * service.assumeJumpRole(region) >> jumpCreds
+        1 * service.assumeTargetRole(_, roleArn, externalId) >> { throw expiredTokenEx }
+
+        then: 'retries by bypassing cache to get fresh jump role credentials'
+        1 * service.doAssumeJumpRole(region) >> jumpCreds
+        1 * service.assumeTargetRole(_, roleArn, externalId) >> targetCreds
+
+        and: 'returns the result from the retry'
+        result == targetCreds
+    }
+
+    def 'should not retry on non-expired STS exception with jump role' () {
+        given:
+        def service = Spy(AwsEcrService)
+        service.@jumpRoleArn = 'arn:aws:iam::111122223333:role/test-jump-role'
+        service.@jumpExternalId = ''
+
+        def roleArn = 'arn:aws:iam::123456789012:role/CustomerRole'
+        def region = 'us-east-1'
+
+        def accessDeniedEx = (StsException) StsException.builder()
+                .message('Access Denied')
+                .awsErrorDetails(AwsErrorDetails.builder()
+                        .errorCode('AccessDenied')
+                        .errorMessage('Access Denied')
+                        .sdkHttpResponse(SdkHttpResponse.builder().statusCode(403).build())
+                        .build())
+                .statusCode(403)
+                .build()
+
+        def jumpCreds = Credentials.builder()
+                .accessKeyId('ASIAJUMPTEMPKEY')
+                .secretAccessKey('jumpTempSecret')
+                .sessionToken('jumpTempToken')
+                .expiration(Instant.now().plus(Duration.ofHours(1)))
+                .build()
+
+        when:
+        service.assumeRole(roleArn, null, region)
+
+        then: 'AccessDenied should NOT trigger retry'
+        1 * service.assumeJumpRole(region) >> jumpCreds
+        1 * service.assumeTargetRole(_, roleArn, null) >> { throw accessDeniedEx }
+        0 * service.doAssumeJumpRole(_)
+
+        and:
+        thrown(StsException)
     }
 
     def 'should propagate jump role failure as AwsEcrAuthException' () {
