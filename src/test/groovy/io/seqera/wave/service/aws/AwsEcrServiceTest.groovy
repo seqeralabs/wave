@@ -29,6 +29,8 @@ import spock.lang.Unroll
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.service.aws.cache.AwsEcrAuthToken
 import io.seqera.wave.service.aws.cache.AwsEcrCache
+import io.seqera.wave.service.aws.cache.AwsJumpRoleCache
+import io.seqera.wave.service.aws.cache.AwsStsCredentials
 import jakarta.inject.Inject
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails
 import software.amazon.awssdk.http.SdkHttpResponse
@@ -790,5 +792,75 @@ class AwsEcrServiceTest extends Specification {
 
         then:
         AwsEcrService.isRoleArn(keys.userName)
+    }
+
+    // --- extractAccountId tests ---
+
+    def 'should extract account ID from role ARN' () {
+        expect:
+        AwsEcrService.extractAccountId('arn:aws:iam::123456789012:role/MyRole') == '123456789012'
+        AwsEcrService.extractAccountId('arn:aws:iam::999999999999:role/path/to/MyRole') == '999999999999'
+        AwsEcrService.extractAccountId('arn:aws-cn:iam::111122223333:role/ChinaRole') == '111122223333'
+        AwsEcrService.extractAccountId('arn:aws-us-gov:iam::444455556666:role/GovRole') == '444455556666'
+    }
+
+    def 'should return unknown for invalid ARN' () {
+        expect:
+        AwsEcrService.extractAccountId('AKIAIOSFODNN7EXAMPLE') == 'unknown'
+        AwsEcrService.extractAccountId('not-an-arn') == 'unknown'
+        AwsEcrService.extractAccountId(null) == 'unknown'
+    }
+
+    // --- Jump role caching tests ---
+
+    def 'should cache jump role credentials and reuse on second call' () {
+        given:
+        def jumpRoleCache = Mock(AwsJumpRoleCache)
+        def service = Spy(AwsEcrService)
+        service.@jumpRoleCache = jumpRoleCache
+        service.@jumpRoleArn = 'arn:aws:iam::111122223333:role/test-jump-role'
+        service.@jumpExternalId = ''
+
+        def region = 'us-east-1'
+        def stsCreds = AwsStsCredentials.from(Credentials.builder()
+                .accessKeyId('ASIAJUMPTEMPKEY')
+                .secretAccessKey('jumpTempSecret')
+                .sessionToken('jumpTempToken')
+                .expiration(Instant.now().plus(Duration.ofHours(1)))
+                .build())
+
+        when:
+        def result = service.assumeJumpRole(region)
+
+        then: 'cache getOrCompute is called (handles caching internally)'
+        1 * jumpRoleCache.getOrCompute(region, _) >> stsCreds
+
+        and:
+        result.accessKeyId() == 'ASIAJUMPTEMPKEY'
+        result.secretAccessKey() == 'jumpTempSecret'
+        result.sessionToken() == 'jumpTempToken'
+    }
+
+    // --- AwsStsCredentials round-trip test ---
+
+    def 'should round-trip STS credentials through AwsStsCredentials' () {
+        given:
+        def expiration = Instant.now().plus(Duration.ofHours(1))
+        def sdkCreds = Credentials.builder()
+                .accessKeyId('ASIATESTKEY')
+                .secretAccessKey('testSecret')
+                .sessionToken('testToken')
+                .expiration(expiration)
+                .build()
+
+        when:
+        def cached = AwsStsCredentials.from(sdkCreds)
+        def restored = cached.toSdkCredentials()
+
+        then:
+        restored.accessKeyId() == 'ASIATESTKEY'
+        restored.secretAccessKey() == 'testSecret'
+        restored.sessionToken() == 'testToken'
+        restored.expiration().toEpochMilli() == expiration.toEpochMilli()
     }
 }

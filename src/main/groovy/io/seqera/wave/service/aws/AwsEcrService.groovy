@@ -30,6 +30,8 @@ import groovy.util.logging.Slf4j
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.service.aws.cache.AwsEcrAuthToken
 import io.seqera.wave.service.aws.cache.AwsEcrCache
+import io.seqera.wave.service.aws.cache.AwsJumpRoleCache
+import io.seqera.wave.service.aws.cache.AwsStsCredentials
 import io.seqera.cache.tiered.AbstractTieredCache
 import io.seqera.cache.tiered.TieredKey
 import io.seqera.wave.util.RegHelper
@@ -123,6 +125,9 @@ class AwsEcrService {
     @Inject
     private AwsEcrCache cache
 
+    @Inject
+    private AwsJumpRoleCache jumpRoleCache
+
     @Value('${wave.aws.jump-role-arn:}')
     private String jumpRoleArn
 
@@ -137,6 +142,17 @@ class AwsEcrService {
      */
     protected static boolean isRoleArn(String accessKey) {
         return accessKey?.matches(AWS_ROLE_ARN)
+    }
+
+    /**
+     * Extract the 12-digit AWS account ID from a role ARN for use in session names.
+     *
+     * @param roleArn The role ARN e.g. {@code arn:aws:iam::123456789012:role/MyRole}
+     * @return The account ID or {@code 'unknown'} if the ARN cannot be parsed
+     */
+    protected static String extractAccountId(String roleArn) {
+        final m = roleArn =~ /arn:aws[^:]*:iam::(\d{12}):role\/.+/
+        return m.matches() ? m.group(1) : 'unknown'
     }
 
     /**
@@ -219,7 +235,7 @@ class AwsEcrService {
                     .apply(() -> {
                         final requestBuilder = AssumeRoleRequest.builder()
                                 .roleArn(roleArn)
-                                .roleSessionName("wave-ecr-${System.currentTimeMillis()}")
+                                .roleSessionName("wave-ecr-${extractAccountId(roleArn)}-${System.currentTimeMillis()}")
                                 .durationSeconds(3600) // 1 hour
 
                         // Add external ID if provided
@@ -236,31 +252,38 @@ class AwsEcrService {
     /**
      * Assume the jump role using Wave's default credentials.
      * The jump role acts as an intermediate role for cross-account access.
+     * Results are cached to avoid redundant STS calls.
      *
      * @param region AWS region
      * @return Temporary credentials from the jump role
      */
     protected Credentials assumeJumpRole(String region) {
-        log.debug "Assuming jump role: $jumpRoleArn; region: $region"
+        return jumpRoleCache.getOrCompute(region, (String k) -> {
+            log.debug "Cache miss for jump role $jumpRoleArn - assuming role; region=$region"
 
-        stsClient(region).withCloseable { client ->
-            Retryable.<Credentials>of(STS_RETRY_CONFIG)
-                    .retryCondition((Throwable t) -> isRetryableStsError(t))
-                    .onRetry((event) -> log.debug("STS AssumeRole retry for jump role $jumpRoleArn - attempt: ${event.attempt}; failure: ${event.failure?.message}"))
-                    .apply(() -> {
-                        final requestBuilder = AssumeRoleRequest.builder()
-                                .roleArn(jumpRoleArn)
-                                .roleSessionName("wave-jump-${System.currentTimeMillis()}")
-                                .durationSeconds(3600) // 1 hour
+            final creds = stsClient(region).withCloseable { client ->
+                Retryable.<Credentials>of(STS_RETRY_CONFIG)
+                        .retryCondition((Throwable t) -> isRetryableStsError(t))
+                        .onRetry((event) -> log.debug("STS AssumeRole retry for jump role $jumpRoleArn - attempt: ${event.attempt}; failure: ${event.failure?.message}"))
+                        .apply(() -> {
+                            final requestBuilder = AssumeRoleRequest.builder()
+                                    .roleArn(jumpRoleArn)
+                                    .roleSessionName("wave-jump-${extractAccountId(jumpRoleArn)}-${System.currentTimeMillis()}")
+                                    .durationSeconds(3600) // 1 hour
 
-                        if (jumpExternalId) {
-                            requestBuilder.externalId(jumpExternalId)
-                        }
+                            if (jumpExternalId) {
+                                requestBuilder.externalId(jumpExternalId)
+                            }
 
-                        final request = requestBuilder.build()
-                        return client.assumeRole(request).credentials()
-                    })
-        }
+                            final request = requestBuilder.build()
+                            return client.assumeRole(request).credentials()
+                        })
+            }
+
+            final cached = AwsStsCredentials.from(creds)
+            final ttl = computeCacheTtl(creds.expiration(), jumpRoleCache.duration)
+            return new AbstractTieredCache.Pair<AwsStsCredentials, Duration>(cached, ttl)
+        }).toSdkCredentials()
     }
 
     /**
