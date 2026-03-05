@@ -67,7 +67,7 @@ class AwsEcrService {
 
     static final private Pattern AWS_ECR_PUBLIC = ~/public\.ecr\.aws/
 
-    static final private Pattern AWS_ROLE_ARN = ~/^arn:aws:iam::\d{12}:role\/[\w+=,.@\/-]+$/
+    static final private Pattern AWS_ROLE_ARN = ~/^arn:aws(-cn|-us-gov)?:iam::\d{12}:role\/[\w+=,.@\/-]+$/
 
     /**
      * Buffer time before credential expiration to trigger refresh

@@ -96,6 +96,11 @@ class AwsEcrServiceTest extends Specification {
         AwsEcrService.isRoleArn('arn:aws:iam::999999999999:role/WaveEcrAccess')
 
         and:
+        // Valid role ARNs - GovCloud and China partitions
+        AwsEcrService.isRoleArn('arn:aws-cn:iam::123456789012:role/ChinaRole')
+        AwsEcrService.isRoleArn('arn:aws-us-gov:iam::123456789012:role/GovRole')
+
+        and:
         // Invalid patterns - access keys
         !AwsEcrService.isRoleArn('AKIAIOSFODNN7EXAMPLE')
         !AwsEcrService.isRoleArn('ASIATESTACCESSKEY')
