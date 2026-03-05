@@ -16,8 +16,8 @@ Enable Wave to authenticate to customer AWS ECR registries using AWS STS AssumeR
 ## Technical Context
 
 **Language/Version**: Groovy with Java 21+, Micronaut 4.10.6 framework
-**Primary Dependencies**: AWS SDK for Java 2.x (STS), Micronaut Reactor, Caffeine cache, Spock 2 (testing)
-**Storage**: Redis (credential caching), no new database tables in Wave
+**Primary Dependencies**: AWS SDK for Java 2.x (STS), Micronaut Reactor, AbstractTieredCache (L1 in-memory + L2 Redis), Spock 2 (testing)
+**Storage**: AbstractTieredCache with Redis L2 (credential caching), no new database tables in Wave
 **Testing**: Spock 2 framework, Testcontainers for integration tests, JaCoCo for coverage
 **Target Platform**: JVM on Linux/macOS (Kubernetes for production), Docker container with Amazon Corretto 25
 **Project Type**: Single microservice (Wave)
@@ -45,7 +45,7 @@ Enable Wave to authenticate to customer AWS ECR registries using AWS STS AssumeR
 
 ✅ **Multi-Platform Build Support**: Not applicable - no container build changes.
 
-✅ **Data Layer Principles**: Uses Redis (via AwsEcrCache) for ephemeral credential caching. No database schema changes in Wave. Follows existing caching patterns with Caffeine.
+✅ **Data Layer Principles**: Uses AbstractTieredCache (L1 in-memory + L2 Redis) via `AwsEcrCache` and `AwsJumpRoleCache` for ephemeral credential caching. No database schema changes in Wave. Follows existing tiered cache patterns.
 
 ✅ **Authentication & Authorization**: Enhances existing authentication with more secure role-based approach. No changes to JWT tokens, rate limiting, or pod identity.
 
@@ -77,13 +77,15 @@ specs/001-cross-account-iam-role-auth/
 
 ```text
 src/main/groovy/io/seqera/wave/service/aws/
-├── AwsEcrService.groovy                # MODIFY: Add STS integration, role ARN detection, static stsClient() factory method
+├── AwsEcrService.groovy                # MODIFY: Add STS integration, role ARN detection, jump role chaining, extractAccountId
+├── StsClientConfig.groovy              # NEW: Retryable.Config bean for STS retry settings (follows HttpClientConfig pattern)
 ├── cache/
-│   └── AwsEcrCache.groovy              # No changes needed - tiered cache supports dynamic TTL via Pair
+│   ├── AwsEcrCache.groovy              # No changes needed - tiered cache supports dynamic TTL via Pair
+│   ├── AwsJumpRoleCache.groovy         # NEW: Tiered cache for jump role credentials (keyed by region)
+│   └── AwsStsCredentials.groovy        # NEW: MoshiSerializable wrapper for STS credentials (cache value)
 
 src/test/groovy/io/seqera/wave/service/aws/
-├── AwsEcrServiceSpec.groovy            # MODIFY: Add role-based auth tests, computeCacheTtl tests
-└── AwsEcrIamRoleIntegrationSpec.groovy # NEW: End-to-end role-based auth integration tests
+└── AwsEcrServiceTest.groovy            # MODIFY: Add role-based auth, jump role, extractAccountId, retry tests
 
 src/main/resources/
 └── application.yml                     # MODIFY: Add STS client configuration (if needed)
@@ -166,13 +168,23 @@ class AwsCreds {
 
 ---
 
-#### Task 1.2: Implement Dynamic Cache TTL for Role-Based Credentials
+#### Task 1.2: Implement Dynamic Cache TTL and Jump Role Caching
 
-**File**: `src/main/groovy/io/seqera/wave/service/aws/AwsEcrService.groovy`
+**Files**:
+- `src/main/groovy/io/seqera/wave/service/aws/AwsEcrService.groovy` — `computeCacheTtl()` method
+- `src/main/groovy/io/seqera/wave/service/aws/cache/AwsJumpRoleCache.groovy` — NEW tiered cache for jump role credentials
+- `src/main/groovy/io/seqera/wave/service/aws/cache/AwsStsCredentials.groovy` — NEW MoshiSerializable cache value
+- `src/main/groovy/io/seqera/wave/service/aws/StsClientConfig.groovy` — NEW Retryable.Config for STS retry settings
 
-**Approach**: Instead of modifying `CachedEcrCredentials`, use the existing `AbstractTieredCache.Pair<V, Duration>` pattern to set per-entry TTL based on STS credential expiration. The `AwsEcrCache` already supports this via `getOrCompute(key, loader)` with dynamic TTL.
+**Approach**: Two separate caches serve different purposes:
+1. **AwsEcrCache** — caches ECR auth tokens (existing). Uses `Pair<V, Duration>` for dynamic TTL based on STS credential expiration.
+2. **AwsJumpRoleCache** — NEW, caches jump role STS credentials (keyed by region). Extends `AbstractTieredCache<String, AwsStsCredentials>`. Avoids redundant STS calls when jump role chaining is configured.
 
-**New method** (`computeCacheTtl`):
+**AwsStsCredentials** implements `MoshiSerializable` with fields: `accessKeyId`, `secretAccessKey`, `sessionToken`, `expirationEpochMilli` (long, not Instant, for Moshi compatibility). Provides `from(Credentials)` factory and `toSdkCredentials()` round-trip.
+
+**StsClientConfig** follows the `HttpClientConfig implements Retryable.Config` pattern: `@Singleton` bean with `@Value`-injected properties for `wave.aws.sts.retry.{delay, maxDelay, attempts, multiplier, jitter}`.
+
+**computeCacheTtl method**:
 ```groovy
 static final private Duration REFRESH_BUFFER = Duration.ofMinutes(5)
 static final private Duration MIN_CACHE_TTL = Duration.ofMinutes(1)
@@ -186,21 +198,12 @@ protected static Duration computeCacheTtl(Instant expiration, Duration maxDurati
 }
 ```
 
-**Usage** (in `getLoginTokenWithRole`):
-```groovy
-return cache.getOrCompute(key, (String k) -> {
-    final tempCreds = assumeRole(roleArn, externalId, region)
-    final ttl = computeCacheTtl(tempCreds.expiration(), cache.duration)
-    final token = load(new AwsCreds(tempCreds.accessKeyId(), tempCreds.secretAccessKey(), tempCreds.sessionToken(), region, isPublic))
-    return new AbstractTieredCache.Pair<AwsEcrAuthToken, Duration>(token, ttl)
-}).value
-```
-
 **Test Coverage**:
 - Unit test: `computeCacheTtl()` returns buffered TTL when expiration is > 5 min away
 - Unit test: `computeCacheTtl()` returns MIN_CACHE_TTL when expiration is < 6 min away
 - Unit test: `computeCacheTtl()` returns maxDuration when expiration is null
 - Unit test: `computeCacheTtl()` returns maxDuration when buffered TTL exceeds it
+- Unit test: `AwsStsCredentials` round-trip (from SDK → cached → back to SDK)
 
 ---
 
@@ -232,8 +235,8 @@ protected static StsClient stsClient(String region) {
 
 **New Private Method**:
 ```groovy
-private boolean isRoleArn(String username) {
-    return username?.matches(/^arn:aws:iam::\d{12}:role\/.+/)
+protected static boolean isRoleArn(String username) {
+    return username?.matches(/^arn:aws(-cn|-us-gov)?:iam::\d{12}:role\/[\w+=,.@\/-]+$/)
 }
 ```
 
@@ -291,12 +294,13 @@ private WaveException mapStsException(StsException e, String roleArn) {
     }
 }
 
-private String generateSessionName(String registry) {
-    def matcher = registry =~ /^(\d{12})\.dkr\.ecr\./
-    if (matcher) {
-        return "wave-ecr-${matcher[0][1]}-${System.currentTimeMillis()}"
-    }
-    return "wave-ecr-access-${System.currentTimeMillis()}"
+// Session name is generated inline in assumeRole() using extractAccountId():
+//   "wave-ecr-${extractAccountId(roleArn)}-${System.currentTimeMillis()}"
+// For jump role sessions:
+//   "wave-jump-${extractAccountId(jumpRoleArn)}-${System.currentTimeMillis()}"
+protected static String extractAccountId(String roleArn) {
+    final m = roleArn =~ /arn:aws[^:]*:iam::(\d{12}):role\/.+/
+    return m.matches() ? m.group(1) : 'unknown'
 }
 ```
 
@@ -391,6 +395,32 @@ private String getLoginTokenWithStaticCredentials(String registry, String access
 
 ---
 
+#### Task 1.7: Jump Role Chaining
+
+**Files**:
+- `src/main/groovy/io/seqera/wave/service/aws/AwsEcrService.groovy` — `assumeJumpRole()` method
+- `src/main/groovy/io/seqera/wave/service/aws/cache/AwsJumpRoleCache.groovy` — NEW
+- `src/main/groovy/io/seqera/wave/service/aws/cache/AwsStsCredentials.groovy` — NEW
+- `src/main/groovy/io/seqera/wave/service/aws/StsClientConfig.groovy` — NEW
+
+**Implementation**:
+When `wave.aws.jump-role-arn` is configured, `assumeRole()` first calls `assumeJumpRole(region)` which:
+1. Checks `AwsJumpRoleCache` for cached jump role credentials (keyed by region)
+2. On cache miss, assumes the jump role using Wave's default credentials with `Retryable` retry
+3. Caches the `AwsStsCredentials` with dynamic TTL (expiration minus 5-min buffer)
+4. Returns SDK `Credentials` via `toSdkCredentials()`
+
+The jump role's temporary credentials are then used to create an STS client for assuming the target customer role.
+
+**Test Coverage**:
+- Unit test: Jump role chaining invoked when `jumpRoleArn` is configured
+- Unit test: Jump role NOT invoked when `jumpRoleArn` is empty
+- Unit test: Jump role failure propagates as `AwsEcrAuthException`
+- Unit test: Jump role credentials cached and reused
+- Unit test: `AwsStsCredentials` round-trip serialization
+
+---
+
 ### Phase 2: Error Handling & Logging
 
 **Goal**: Comprehensive error handling and observability
@@ -465,11 +495,11 @@ private AssumeRoleResponse assumeRole(String roleArn, String externalId, String 
 
 #### Task 3.1: Unit Tests
 
-**File**: `src/test/groovy/io/seqera/wave/service/aws/AwsEcrServiceSpec.groovy`
+**File**: `src/test/groovy/io/seqera/wave/service/aws/AwsEcrServiceTest.groovy`
 
 **Test Cases**:
 ```groovy
-class AwsEcrServiceSpec extends Specification {
+class AwsEcrServiceTest extends Specification {
 
     def "should detect role ARN pattern"() {
         given:
@@ -504,15 +534,12 @@ class AwsEcrServiceSpec extends Specification {
         0 * stsClient.assumeRole(_)
     }
 
-    def "should generate correct session name format"() {
-        given:
-        def service = new AwsEcrService()
-
-        when:
-        def sessionName = service.generateSessionName('123456789012.dkr.ecr.us-east-1.amazonaws.com')
-
-        then:
-        sessionName ==~ /wave-ecr-123456789012-\d+/
+    def "should extract account ID from role ARN"() {
+        expect:
+        AwsEcrService.extractAccountId('arn:aws:iam::123456789012:role/MyRole') == '123456789012'
+        AwsEcrService.extractAccountId('arn:aws-cn:iam::111122223333:role/ChinaRole') == '111122223333'
+        AwsEcrService.extractAccountId('arn:aws-us-gov:iam::444455556666:role/GovRole') == '444455556666'
+        AwsEcrService.extractAccountId('not-an-arn') == 'unknown'
     }
 
     def "should map STS exceptions correctly"() {
@@ -533,7 +560,7 @@ class AwsEcrServiceSpec extends Specification {
 
 #### Task 3.2: Cache Tests
 
-**File**: `src/test/groovy/io/seqera/wave/service/aws/cache/AwsEcrCacheSpec.groovy`
+**File**: `src/test/groovy/io/seqera/wave/service/aws/AwsEcrServiceTest.groovy` (cache-related tests)
 
 **Test Cases**:
 ```groovy
@@ -584,7 +611,7 @@ class AwsEcrCacheSpec extends Specification {
 
 #### Task 3.3: Integration Tests
 
-**File**: `src/test/groovy/io/seqera/wave/service/aws/AwsEcrIntegrationSpec.groovy`
+**File**: `src/test/groovy/io/seqera/wave/service/aws/AwsEcrServiceTest.groovy` (integration-level tests)
 
 **Test Cases**:
 ```groovy
@@ -629,14 +656,14 @@ class AwsEcrIntegrationSpec extends Specification {
 
 #### Task 3.4: Backward Compatibility Tests
 
-**File**: `src/test/groovy/io/seqera/wave/service/aws/BackwardCompatibilitySpec.groovy` (NEW)
+**File**: `src/test/groovy/io/seqera/wave/service/aws/AwsEcrServiceTest.groovy` (backward compatibility tests)
 
 **Test Cases**:
 ```groovy
 class BackwardCompatibilitySpec extends Specification {
 
     def "existing static credential tests should pass unchanged"() {
-        // Run all existing AwsEcrServiceSpec tests
+        // Run all existing AwsEcrServiceTest tests
         // Verify no regressions
     }
 
@@ -740,7 +767,7 @@ class BackwardCompatibilitySpec extends Specification {
 | FR-011: Retry on expiration | ExpiredTokenException triggers retry | To be tested |
 | FR-012: Error messages | Specific messages for STS errors | To be tested |
 | FR-017: Unique cache key | Session token in cache key hash | To be tested |
-| FR-019: Session name format | `wave-ecr-{account}-{timestamp}` | To be tested |
+| FR-019: Session name format | `wave-ecr-{accountId}-{timestamp}` via `extractAccountId()` | To be tested |
 | FR-020: Logging | All STS calls logged with context | To be tested |
 
 ### Non-Functional Requirements ✅

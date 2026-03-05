@@ -61,7 +61,7 @@
 ### Implementation for User Story 1
 
 - [x] T014 [US1] `isRoleArn()` method in `AwsEcrService.groovy:120` ✅ Pattern: `^arn:aws:iam::\d{12}:role/.+`
-- [x] T015 [US1] Session name generated inline in `assumeRole()` as `"wave-ecr-${System.currentTimeMillis()}"` at `AwsEcrService.groovy:152` ✅
+- [x] T015 [US1] Session name generated inline in `assumeRole()` as `"wave-ecr-${extractAccountId(roleArn)}-${System.currentTimeMillis()}"` at `AwsEcrService.groovy:230` ✅
 - [x] T016 [US1] `assumeRole(String roleArn, String externalId, String region)` in `AwsEcrService.groovy:145` ✅ Full STS integration with 1-hour duration
 - [x] T017 [US1] `getLoginToken()` detects role ARN and routes at `AwsEcrService.groovy:259` ✅
 - [x] T018 [US1] `ecrClient()` and `ecrPublicClient()` use `AwsSessionCredentials.create()` when session token present at `AwsEcrService.groovy:208-226` ✅
@@ -230,6 +230,37 @@
 
 ---
 
+## Phase 10a: User Story 9 - Jump Role Chaining (Priority: P1)
+
+**Goal**: Enable two-hop role assumption via an intermediate jump role for cross-account access across trust boundaries
+
+**Independent Test**: Configure `wave.aws.jump-role-arn` and `wave.aws.jump-external-id`, attempt ECR auth with a customer role ARN, verify two STS calls
+
+### Tests for User Story 9
+
+- [x] T079 [P] [US9] Unit test "should chain through jump role when configured" in `AwsEcrServiceTest.groovy:534` ✅
+- [x] T080 [P] [US9] Unit test "should not use jump role when not configured" in `AwsEcrServiceTest.groovy:562` ✅
+- [x] T081 [P] [US9] Unit test "should propagate jump role failure as AwsEcrAuthException" in `AwsEcrServiceTest.groovy:583` ✅
+- [x] T082 [P] [US9] Unit test "should cache jump role credentials and reuse on second call" in `AwsEcrServiceTest.groovy:821` ✅
+- [x] T083 [P] [US9] Unit test "should round-trip STS credentials through AwsStsCredentials" in `AwsEcrServiceTest.groovy:851` ✅
+
+### Implementation for User Story 9
+
+- [x] T084 [US9] `AwsJumpRoleCache.groovy` extends `AbstractTieredCache<String, AwsStsCredentials>` with config: `wave.aws.jump-role-cache.{duration:45m, max-size:100}` ✅
+- [x] T085 [US9] `AwsStsCredentials.groovy` implements `MoshiSerializable` with `from(Credentials)`, `toSdkCredentials()`, `expiration()` ✅
+- [x] T086 [US9] `StsClientConfig.groovy` implements `Retryable.Config` with `wave.aws.sts.retry.{delay:1s, maxDelay:10s, attempts:3, multiplier:2.0, jitter:0.25}` ✅
+- [x] T087 [US9] `assumeJumpRole(region)` in `AwsEcrService.groovy:252` uses `jumpRoleCache.getOrCompute()` with `Pair<AwsStsCredentials, Duration>` for dynamic TTL ✅
+- [x] T088 [US9] `assumeRole()` at `AwsEcrService.groovy:210` chains through jump role when `jumpRoleArn` is configured ✅
+- [x] T089 [US9] `extractAccountId()` at `AwsEcrService.groovy:145` extracts 12-digit account ID from role ARN for session names ✅
+- [x] T090 [US9] `isRetryableStsError()` at `AwsEcrService.groovy:186` determines retry eligibility (5xx + throttling) ✅
+- [x] T091 [US9] `stsClient(region, credentials)` overload at `AwsEcrService.groovy:170` creates STS client with session credentials from jump role ✅
+- [x] T092 [US9] Configuration: `wave.aws.jump-role-arn`, `wave.aws.jump-external-id` injected via `@Value` at `AwsEcrService.groovy:123-127` ✅
+- [x] T093 [US9] Documentation: `docs/configuration.md` updated with STS retry config and jump role cache config sections ✅
+
+**Checkpoint**: ✅ User Story 9 complete - Jump role chaining with caching, retry, and configurable settings
+
+---
+
 ## Phase 11: Polish & Cross-Cutting Concerns
 
 **Purpose**: Metrics, monitoring, documentation, and quality improvements
@@ -269,6 +300,7 @@
 - **US6 (Caching)**: Depends on US1, US2 → Optimizes credential lifecycle
 - **US7 (Platform UI)**: Depends on US1, US4 → Integration with Platform
 - **US8 (Multi-Region)**: Depends on US1 → Regional optimization
+- **US9 (Jump Role Chaining)**: Depends on US1, US6, US8 → Cross-account role chaining via intermediate jump role
 
 ### Within Each User Story
 
@@ -332,10 +364,11 @@ With 2 developers after Foundational phase:
 | Phase 8: US6 - Caching Performance | 5 | 4 |
 | Phase 9: US7 - Platform UI | 3 | 2 |
 | Phase 10: US8 - Multi-Region | 5 | 3 |
+| Phase 10a: US9 - Jump Role Chaining | 15 | 6 |
 | Phase 11: Polish | 9 | 5 |
-| **Total** | **63 tasks** | **40 hours** |
+| **Total** | **78 tasks** | **46 hours** |
 
-**MVP (P1 only)**: 27 tasks, ~23 hours
+**MVP (P1 only)**: 42 tasks, ~29 hours (includes US9 jump role chaining)
 
 ---
 

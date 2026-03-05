@@ -1,6 +1,6 @@
 # Feature Specification: Cross-Account IAM Role Authentication for AWS ECR
 
-**Feature Branch**: `cross-account-iam-role-authentication`
+**Feature Branch**: `001-cross-account-iam-role-auth`
 **Created**: 2026-02-09
 **Status**: Draft
 **Input**: User description: "Enable Wave to authenticate to customer AWS ECR registries using AWS STS AssumeRole with IAM roles instead of static credentials for more secure and auditable cross-account access"
@@ -152,6 +152,24 @@ Wave correctly handles IAM role authentication across different AWS regions, all
 
 ---
 
+### User Story 9 - Jump Role Chaining (Priority: P1)
+
+When Wave's own IAM role cannot directly assume customer roles (e.g., due to organizational policy), an intermediate "jump role" is used. Wave first assumes the jump role using its default credentials, then uses the jump role's temporary credentials to assume the customer's target role. This two-hop chaining enables cross-account access across trust boundaries.
+
+**Why this priority**: Required for production deployments where direct cross-account trust is not permitted by organizational security policies.
+
+**Independent Test**: Configure `wave.aws.jump-role-arn` and `wave.aws.jump-external-id`, then attempt ECR authentication with a customer role ARN. Verify Wave performs two STS AssumeRole calls in sequence.
+
+**Acceptance Scenarios**:
+
+1. **Given** `wave.aws.jump-role-arn` is configured, **When** Wave assumes a customer role, **Then** Wave first assumes the jump role, then uses jump role credentials to assume the customer role
+2. **Given** jump role credentials are obtained, **When** another request arrives for a different customer role in the same region, **Then** Wave reuses cached jump role credentials instead of re-assuming the jump role
+3. **Given** `wave.aws.jump-role-arn` is NOT configured (empty), **When** Wave assumes a customer role, **Then** Wave uses its default credentials directly (no jump role chaining)
+4. **Given** jump role assumption fails, **When** Wave attempts to authenticate, **Then** the error is propagated as a clear AwsEcrAuthException
+5. **Given** jump role credentials are cached, **When** they approach expiration (within 5-minute buffer), **Then** the cache evicts them and Wave re-assumes the jump role on next request
+
+---
+
 ### Edge Cases
 
 - **What happens when STS API is temporarily unavailable?**
@@ -160,7 +178,8 @@ Wave correctly handles IAM role authentication across different AWS regions, all
   - Cached credentials (if still valid) continue to work during STS outages
 
 - **How does the system handle role ARN format variations?**
-  - Validate role ARN matches pattern: `^arn:aws:iam::\d{12}:role/.+`
+  - Validate role ARN matches pattern: `^arn:aws(-cn|-us-gov)?:iam::\d{12}:role/[\w+=,.@\/-]+$`
+  - Supports all AWS partitions: standard (`arn:aws:`), China (`arn:aws-cn:`), and GovCloud (`arn:aws-us-gov:`)
   - Reject malformed ARNs with clear error message
   - Handle ARNs with path components (e.g., `arn:aws:iam::123456789012:role/service-role/MyRole`)
 
@@ -191,16 +210,15 @@ Wave correctly handles IAM role authentication across different AWS regions, all
 
 ### Functional Requirements
 
-- **FR-001**: System MUST detect when a username matches IAM role ARN pattern (`^arn:aws:iam::\d{12}:role/.+`) and automatically use STS AssumeRole authentication
+- **FR-001**: System MUST detect when a username matches IAM role ARN pattern (`^arn:aws(-cn|-us-gov)?:iam::\d{12}:role/[\w+=,.@\/-]+$`) and automatically use STS AssumeRole authentication. The pattern supports all AWS partitions: standard (`aws`), China (`aws-cn`), and GovCloud (`aws-us-gov`).
 - **FR-002**: System MUST support both static credentials (backward compatible) and role-based authentication simultaneously in the same deployment
 - **FR-003**: Platform MUST auto-generate a unique UUID as external ID when administrator configures IAM role-based credentials
 - **FR-004**: Wave MUST include the external ID in all STS AssumeRole API calls when authenticating with role-based credentials
 - **FR-005**: Wave MUST request temporary credentials with 1-hour (3600 second) session duration from STS
 - **FR-006**: Wave MUST store temporary credentials including access key ID, secret access key, session token, and expiration timestamp
 - **FR-007**: Wave MUST include session token in all ECR API calls when using temporary credentials
-- **FR-008**: Wave MUST cache temporary credentials to minimize STS API calls, achieving >95% cache hit rate
-- **FR-009**: Wave MUST automatically refresh temporary credentials 5 minutes before expiration
-- **FR-010**: Wave MUST invalidate cached credentials that are expired or within 5 minutes of expiration
+- **FR-008**: Wave MUST cache temporary credentials to minimize STS API calls (see NFR-002 for cache hit rate target)
+- **FR-009**: Wave MUST proactively refresh temporary credentials by setting cache TTL to (expiration minus 5-minute buffer), so credentials are automatically re-fetched before they expire. A minimum cache TTL of 1 minute applies when credentials are nearly expired.
 - **FR-011**: Wave MUST retry failed operations with fresh credentials when receiving ExpiredTokenException
 - **FR-012**: System MUST provide specific error messages for common STS failures: AccessDenied, InvalidParameterException, RegionDisabledException
 - **FR-013**: Platform MUST validate role ARN format before saving credentials
@@ -209,8 +227,12 @@ Wave correctly handles IAM role authentication across different AWS regions, all
 - **FR-016**: External ID MUST remain immutable after generation (no automatic rotation)
 - **FR-017**: Cache key MUST include access key, secret key, session token, region, and ECR public flag to ensure uniqueness
 - **FR-018**: System MUST support credential configurations where some use static credentials and others use role-based authentication
-- **FR-019**: Wave MUST use session name format `wave-ecr-access-{timestamp}` or similar for AssumeRole calls
+- **FR-019**: Wave MUST use session name format `wave-ecr-{accountId}-{timestamp}` for AssumeRole calls, where `accountId` is the 12-digit AWS account extracted from the role ARN (or `unknown` if unparsable) and `timestamp` is epoch millis. For jump role sessions, the format is `wave-jump-{accountId}-{timestamp}`.
 - **FR-020**: System MUST log all STS AssumeRole calls with sufficient context (role ARN, region, external ID presence, success/failure)
+- **FR-021**: Wave MUST support optional jump role chaining via `wave.aws.jump-role-arn` configuration. When set, Wave first assumes the jump role using default credentials, then uses jump role credentials to assume the target customer role.
+- **FR-022**: Wave MUST cache jump role credentials using a tiered cache (`AwsJumpRoleCache`) with configurable duration (default 45 minutes) and max size (default 100), keyed by region.
+- **FR-023**: Wave MUST use a dedicated `StsClientConfig` bean for STS retry settings (delay, maxDelay, attempts, multiplier, jitter), following the same `Retryable.Config` pattern as `HttpClientConfig`.
+- **FR-024**: Wave MUST extract the 12-digit AWS account ID from role ARNs via `extractAccountId()` for use in STS session names, supporting all AWS partitions. Returns `unknown` if the ARN cannot be parsed.
 
 ### Non-Functional Requirements
 
@@ -227,7 +249,7 @@ Wave correctly handles IAM role authentication across different AWS regions, all
 
 - **AwsSecurityKeys (Platform)**: Represents AWS credentials configuration in Platform
   - Key attributes: `registry`, `username` (access key ID **or** IAM role ARN), `password` (secret key **or** external ID when username is a role ARN)
-  - Note: Role ARN is detected at the Wave service layer via pattern matching (`^arn:aws:iam::\d{12}:role/.+`). No separate `assumeRoleArn` field is needed — the existing `username`/`password` fields are reused for backward compatibility.
+  - Note: Platform sends dedicated `assumeRoleArn` and `externalId` fields in the JSON payload. Wave's `ContainerRegistryKeys.fromJson()` maps `assumeRoleArn` → `userName` and `externalId` → `password`. Wave then detects the role ARN pattern (`^arn:aws(-cn|-us-gov)?:iam::\d{12}:role/[\w+=,.@\/-]+$`) in the `userName` field to route to role-based authentication.
   - Relationships: Associated with workspace/organization in Platform
 
 - **AwsCreds (Wave)**: Represents AWS credentials used by Wave for cache key computation
@@ -253,11 +275,11 @@ Wave correctly handles IAM role authentication across different AWS regions, all
 - **SC-002**: Average credential cache hit rate exceeds 95% across all deployments
 - **SC-003**: Zero backward compatibility breaks - 100% of existing static credential configurations continue to work after deployment
 - **SC-004**: Credential refresh operations complete within 2 seconds (p95)
-- **SC-005**: Customer setup time for IAM role-based authentication is under 15 minutes with provided documentation
-- **SC-006**: Support tickets related to AWS credential issues reduce by at least 30% after feature adoption
+- **SC-005**: Customer setup time for IAM role-based authentication is under 15 minutes with provided documentation (measured via quickstart walkthrough timing)
+- **SC-006**: Support tickets related to AWS credential issues reduce by at least 30% after feature adoption (measured via support ticket tagging, baseline from 3 months pre-launch)
 - **SC-007**: Zero security incidents related to confused deputy attacks (external ID working correctly)
 - **SC-008**: Average STS API calls per customer per hour is less than 2 (indicating effective caching)
-- **SC-009**: 90% of customers successfully configure role-based authentication on first attempt (measured via error rates)
+- **SC-009**: 90% of customers successfully configure role-based authentication on first attempt (measured via ratio of successful first AssumeRole calls per unique role ARN to total unique role ARNs configured)
 - **SC-010**: System maintains 99.9% uptime during credential refresh operations (no authentication failures due to expiration)
 - **SC-011**: Production deployment completes with zero rollbacks due to compatibility issues
 - **SC-012**: Customer audit requirements are met - 100% of role assumptions visible in AWS CloudTrail
