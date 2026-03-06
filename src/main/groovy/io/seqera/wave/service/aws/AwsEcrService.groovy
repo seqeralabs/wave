@@ -36,6 +36,7 @@ import io.seqera.cache.tiered.AbstractTieredCache
 import io.seqera.cache.tiered.TieredKey
 import io.seqera.wave.util.RegHelper
 import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
 import io.seqera.util.retry.Retryable
 import jakarta.inject.Inject
 import jakarta.inject.Named
@@ -84,6 +85,8 @@ class AwsEcrService {
      */
     static final private Duration MIN_CACHE_TTL = Duration.ofMinutes(1)
 
+    static final private String EXPIRED_TOKEN_ERROR = 'ExpiredTokenException'
+
     @Canonical
     private static class AwsCreds implements TieredKey {
         String accessKey
@@ -125,10 +128,12 @@ class AwsEcrService {
     @Inject
     private StsClientConfig stsConfig
 
-    @Value('${wave.aws.jump-role-arn:}')
+    @Nullable
+    @Value('${wave.aws.jump-role-arn}')
     private String jumpRoleArn
 
-    @Value('${wave.aws.jump-external-id:}')
+    @Nullable
+    @Value('${wave.aws.jump-external-id}')
     private String jumpExternalId
 
     /**
@@ -234,17 +239,20 @@ class AwsEcrService {
                 .retryCondition((Throwable t) -> isRetryableStsError(t))
                 .onRetry((event) -> log.debug("STS AssumeRole retry for $roleArn - attempt: ${event.attempt}; failure: ${event.failure?.message}"))
                 .apply(() -> {
-                    final requestBuilder = AssumeRoleRequest.builder()
-                            .roleArn(roleArn)
-                            .roleSessionName("${sessionPrefix}-${extractAccountId(roleArn)}-${System.currentTimeMillis()}")
-                            .durationSeconds(SESSION_DURATION_SECONDS)
-
-                    if (externalId) {
-                        requestBuilder.externalId(externalId)
-                    }
-
-                    return client.assumeRole(requestBuilder.build()).credentials()
+                    final request = buildAssumeRoleRequest(roleArn, externalId, sessionPrefix)
+                    return client.assumeRole(request).credentials()
                 })
+    }
+
+    protected static AssumeRoleRequest buildAssumeRoleRequest(String roleArn, String externalId, String sessionPrefix) {
+        final AssumeRoleRequest.Builder builder = AssumeRoleRequest.builder()
+                .roleArn(roleArn)
+                .roleSessionName("${sessionPrefix}-${extractAccountId(roleArn)}-${System.currentTimeMillis()}")
+                .durationSeconds(SESSION_DURATION_SECONDS)
+        if (externalId) {
+            builder.externalId(externalId)
+        }
+        return builder.build() as AssumeRoleRequest
     }
 
     /**
@@ -282,29 +290,31 @@ class AwsEcrService {
     protected Credentials assumeRole(String roleArn, String externalId, String region) {
         log.debug "Assuming AWS role: $roleArn; region: $region; externalId: ${externalId ? 'provided' : 'none'}"
 
-        if (jumpRoleArn) {
-            log.debug "Using jump role: $jumpRoleArn; jumpExternalId: ${jumpExternalId ? 'provided' : 'none'}"
-            final jumpCreds = assumeJumpRole(region)
-            try {
-                return stsClient(region, jumpCreds).withCloseable { client ->
-                    assumeTargetRole(client, roleArn, externalId)
-                }
-            }
-            catch (StsException e) {
-                // Retry once on expired token — bypass cache to get fresh jump role credentials
-                if (e.awsErrorDetails()?.errorCode() == 'ExpiredTokenException') {
-                    log.debug "Expired jump role credentials for $roleArn - retrying with fresh credentials"
-                    final freshCreds = doAssumeJumpRole(region)
-                    return stsClient(region, freshCreds).withCloseable { freshClient ->
-                        assumeTargetRole(freshClient, roleArn, externalId)
-                    }
-                }
-                throw e
-            }
-        } else {
+        // No jump role configured — assume target role directly
+        if (!jumpRoleArn) {
             return stsClient(region).withCloseable { client ->
                 assumeTargetRole(client, roleArn, externalId)
             }
+        }
+
+        // Jump role chaining: assume jump role first, then target role
+        log.debug "Using jump role: $jumpRoleArn; jumpExternalId: ${jumpExternalId ? 'provided' : 'none'}"
+        final jumpCreds = assumeJumpRole(region)
+        try {
+            return stsClient(region, jumpCreds).withCloseable { client ->
+                assumeTargetRole(client, roleArn, externalId)
+            }
+        }
+        catch (StsException e) {
+            // Retry once on expired token — bypass cache to get fresh jump role credentials
+            if (e.awsErrorDetails()?.errorCode() == EXPIRED_TOKEN_ERROR) {
+                log.debug "Expired jump role credentials for $roleArn - retrying with fresh credentials"
+                final freshCreds = doAssumeJumpRole(region)
+                return stsClient(region, freshCreds).withCloseable { freshClient ->
+                    assumeTargetRole(freshClient, roleArn, externalId)
+                }
+            }
+            throw e
         }
     }
 
@@ -457,31 +467,27 @@ class AwsEcrService {
         // Use Pair-based getOrCompute to set TTL dynamically from STS credential expiration
         return cache.getOrCompute(key, (String k) -> {
             log.debug "Cache miss for role $roleArn - assuming role to get temporary credentials"
-
-            try {
-                // Assume the role to get temporary credentials (retried automatically for transient errors)
-                final tempCreds = assumeRole(roleArn, externalId, region)
-
-                // Calculate cache TTL with 5-minute refresh buffer based on STS credential expiration
-                final ttl = computeCacheTtl(tempCreds.expiration(), cache.duration)
-
-                // Create temporary credentials for ECR API call
-                final tempKey = new AwsCreds(
-                        tempCreds.accessKeyId(),
-                        tempCreds.secretAccessKey(),
-                        tempCreds.sessionToken(),
-                        region,
-                        isPublic
-                )
-
-                // Get ECR auth token using temporary credentials
-                final token = load(tempKey)
-                return new AbstractTieredCache.Pair<AwsEcrAuthToken, Duration>(token, ttl)
-            }
-            catch (StsException e) {
-                throw mapStsException(e)
-            }
+            return assumeRoleAndLoadToken(roleArn, externalId, region, isPublic)
         }).value
+    }
+
+    protected AbstractTieredCache.Pair<AwsEcrAuthToken, Duration> assumeRoleAndLoadToken(String roleArn, String externalId, String region, boolean isPublic) {
+        try {
+            final tempCreds = assumeRole(roleArn, externalId, region)
+            final ttl = computeCacheTtl(tempCreds.expiration(), cache.duration)
+            final tempKey = new AwsCreds(
+                    tempCreds.accessKeyId(),
+                    tempCreds.secretAccessKey(),
+                    tempCreds.sessionToken(),
+                    region,
+                    isPublic
+            )
+            final token = load(tempKey)
+            return new AbstractTieredCache.Pair<AwsEcrAuthToken, Duration>(token, ttl)
+        }
+        catch (StsException e) {
+            throw mapStsException(e)
+        }
     }
 
     /**

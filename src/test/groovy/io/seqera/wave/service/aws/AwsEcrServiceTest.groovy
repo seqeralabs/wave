@@ -569,8 +569,8 @@ class AwsEcrServiceTest extends Specification {
     def 'should not use jump role when not configured' () {
         given:
         def service = Spy(AwsEcrService)
-        service.@jumpRoleArn = ''
-        service.@jumpExternalId = ''
+        service.@jumpRoleArn = null
+        service.@jumpExternalId = null
 
         def roleArn = 'arn:aws:iam::123456789012:role/WaveEcrAccess'
         def externalId = 'ext-id-123'
