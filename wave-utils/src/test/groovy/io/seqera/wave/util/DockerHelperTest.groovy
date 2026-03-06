@@ -386,4 +386,140 @@ class DockerHelperTest extends Specification {
         DockerHelper.condaFileFromPackages('  ', ['conda-forge']) == null
     }
 
+    /* *********************************************************************************
+     * Command validation tests
+     * *********************************************************************************/
+
+    def 'should validate valid docker commands' () {
+        expect:
+        DockerHelper.isValidDockerCommand(COMMAND) == EXPECTED
+
+        where:
+        COMMAND                          | EXPECTED
+        'RUN apt-get update'             | true
+        'RUN apt-get install -y curl'    | true
+        'FROM ubuntu:22.04'              | true
+        'FROM rocker/r-ver:4.4.1'        | true
+        'CMD echo hello'                 | true
+        'ENV VAR=value'                  | true
+        'COPY . /'                       | true
+        'WORKDIR /app'                   | true
+        'USER root'                      | true
+        and:
+        'run apt-get update'             | false  // lowercase not allowed
+        'apt-get update'                 | false  // missing keyword
+        'invalid command'                | false
+        'INVALID echo test'              | false  // invalid keyword
+        null                             | false
+        ''                               | false
+        '   '                            | false
+    }
+
+    def 'should validate list of commands' () {
+        when:
+        DockerHelper.validateCommands(['RUN apt-get update', 'FROM ubuntu:22.04'])
+        then:
+        noExceptionThrown()
+
+        when:
+        DockerHelper.validateCommands(['RUN apt-get update', 'RUN apt-get install -y curl'])
+        then:
+        noExceptionThrown()
+    }
+
+    def 'should reject invalid docker commands' () {
+        when:
+        DockerHelper.validateCommands(['apt-get update'])
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message.contains('Invalid Docker command at index 0')
+        e.message.contains('apt-get update')
+        e.message.contains('must start with a valid Dockerfile instruction keyword')
+
+        when:
+        DockerHelper.validateCommands(['RUN apt-get update', 'apt-get install -y curl'])
+        then:
+        e = thrown(IllegalArgumentException)
+        e.message.contains('Invalid Docker command at index 1')
+        e.message.contains('apt-get install -y curl')
+        e.message.contains('must start with a valid Dockerfile instruction keyword')
+    }
+
+    def 'should accept all valid docker keywords' () {
+        when:
+        DockerHelper.validateCommands(['CMD echo hello'])
+        then:
+        noExceptionThrown()
+
+        when:
+        DockerHelper.validateCommands(['ENV VAR=value'])
+        then:
+        noExceptionThrown()
+
+        when:
+        DockerHelper.validateCommands(['COPY . /'])
+        then:
+        noExceptionThrown()
+
+        when:
+        DockerHelper.validateCommands(['WORKDIR /app', 'USER root', 'EXPOSE 8080'])
+        then:
+        noExceptionThrown()
+    }
+
+    def 'should handle null and empty command lists' () {
+        when:
+        DockerHelper.validateCommands(null)
+        then:
+        noExceptionThrown()
+
+        when:
+        DockerHelper.validateCommands([])
+        then:
+        noExceptionThrown()
+    }
+
+    def 'should return valid keywords set' () {
+        when:
+        def keywords = DockerHelper.getValidKeywords()
+        then:
+        keywords.size() == 17
+        keywords.contains('FROM')
+        keywords.contains('RUN')
+        keywords.contains('CMD')
+        keywords.contains('ENV')
+        keywords.contains('COPY')
+        keywords.contains('ADD')
+        keywords.contains('WORKDIR')
+        keywords.contains('USER')
+        keywords.contains('EXPOSE')
+        keywords.contains('LABEL')
+        keywords.contains('ENTRYPOINT')
+        keywords.contains('VOLUME')
+        keywords.contains('ARG')
+        keywords.contains('ONBUILD')
+        keywords.contains('STOPSIGNAL')
+        keywords.contains('HEALTHCHECK')
+        keywords.contains('SHELL')
+        !keywords.contains('INVALID')
+    }
+
+    def 'should validate commands with various formats' () {
+        expect:
+        DockerHelper.isValidDockerCommand(COMMAND) == EXPECTED
+
+        where:
+        COMMAND                                              | EXPECTED
+        'RUN apt-get update && apt-get install -y curl'      | true
+        'RUN echo "Hello World"'                             | true
+        'FROM ubuntu:22.04 AS builder'                       | true
+        '  RUN  apt-get update  '                            | true  // with whitespace
+        'RUN\tapt-get update'                                | true  // with tab
+        and:
+        'run apt-get update'                                 | false // lowercase
+        'Run apt-get update'                                 | false // mixed case
+        'RUNNING apt-get update'                             | false // wrong keyword
+        'RUNX apt-get update'                                | false // wrong keyword
+    }
+
 }
