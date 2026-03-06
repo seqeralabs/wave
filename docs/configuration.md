@@ -83,6 +83,60 @@ Configure container registry authentication with the following options:
 : Specifies the Quay.io username for authentication.
   Can be set using the `${QUAY_USER}` environment variable.
 
+## AWS cross-account role chaining
+
+When Wave needs to access ECR registries in customer AWS accounts using IAM role credentials provided by the Seqera Platform, you can configure an intermediate "jump role" for cross-account access. When configured, Wave first assumes the jump role using its own credentials, then uses the jump role's temporary credentials to assume the target role received from the Seqera Platform.
+
+This enables a two-hop role chaining pattern:
+
+1. Wave assumes the jump role (using its default credentials)
+2. Wave uses the jump role's temporary credentials to assume the customer's target role
+3. The target role's temporary credentials are used to authenticate with ECR
+
+Configure jump role chaining with the following options:
+
+`wave.aws.jump-role-arn` *(optional)*
+: Specifies the ARN of the intermediate IAM role that Wave assumes before assuming the target role from the Seqera Platform.
+  Can be set using the `WAVE_AWS_JUMP_ROLE_ARN` environment variable.
+  Example: `arn:aws:iam::123456789012:role/wave-jump-role`
+
+`wave.aws.jump-external-id` *(optional)*
+: Specifies the external ID used when assuming the jump role, for confused deputy protection.
+  Can be set using the `WAVE_AWS_JUMP_EXTERNAL_ID` environment variable.
+
+:::note
+When the jump role is not configured, Wave assumes target roles directly using its default credentials (the previous behavior). The jump role is only used for role-based ECR authentication, not for static AWS credential flows.
+:::
+
+### STS retry configuration
+
+Configure retry behavior for AWS STS AssumeRole calls:
+
+`wave.aws.sts.retry.delay` *(optional)*
+: Initial delay between retry attempts (default: `1s`).
+
+`wave.aws.sts.retry.maxDelay` *(optional)*
+: Maximum delay between retry attempts (default: `10s`).
+
+`wave.aws.sts.retry.attempts` *(optional)*
+: Maximum number of retry attempts (default: `3`).
+
+`wave.aws.sts.retry.multiplier` *(optional)*
+: Exponential backoff multiplier (default: `2.0`).
+
+`wave.aws.sts.retry.jitter` *(optional)*
+: Jitter factor for retry delays (default: `0.25`).
+
+### Jump role cache configuration
+
+Configure caching for jump role temporary credentials to avoid redundant STS calls:
+
+`wave.aws.jump-role-cache.duration` *(optional)*
+: Maximum cache duration for jump role credentials (default: `45m`). Actual TTL is dynamically computed based on credential expiration with a 5-minute refresh buffer.
+
+`wave.aws.jump-role-cache.max-size` *(optional)*
+: Maximum number of cached jump role credential entries (default: `100`).
+
 ## HTTP client
 
 Configure the HTTP client with the following options:
