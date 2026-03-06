@@ -1,0 +1,101 @@
+---
+title: Nextflow and Seqera Containers
+description: Provision containers through Seqera Containers and use them in your Nextflow pipelines
+tags: [containers, nextflow, seqera containers, wave]
+---
+
+[Seqera Containers][sc] is a free, publicly available bioinformatics container solution launched by Seqera in collaboration with AWS that allows researchers to generate custom containers on demand for any combination of Conda and PyPI packages at the click of a button.
+
+This guide describes how to provision containers that include Conda packages through [Seqera Containers][sc] and use them directly in your Nextflow pipelines. It includes:
+
+- Requesting a Conda package from Seqera Containers.
+- Creating a Nextflow pipeline that uses the container.
+- Running the Nextflow pipeline.
+
+:::info[**Prerequisites**]
+You will need the following to get started:
+
+- Either [Docker Desktop] or [Podman] installed locally.
+- [Nextflow] 23.10.x or newer installed locally.
+- [Singularity][Singularity] 4.x or newer to run the Singularity containers.
+:::
+
+## Request a Conda package from Seqera Containers
+
+Seqera Containers enables users to generate custom Docker or Singularity containers by selecting Conda and PyPI packages through a web interface.
+
+To request a Conda package from Seqera Containers:
+
+1. Open [Seqera Containers][sc] in a browser.
+1. In the search box, enter `samtools`.
+1. In the search results, select **Add** in the `bioconda::samtools` result, and then **Get Container** to initiate the container build.
+1. From the **Fetching container** modal, copy the container image URI that Seqera Containers provides.
+1. Optional: Select **View build details** to watch Seqera Containers build the requested container in real time.
+
+## Create a Nextflow pipeline that uses the container
+
+Nextflow can use the container that Seqera Containers built in the previous section. Use the container URI from Seqera Containers in the `container` directive.
+
+1. In a terminal window, create a new directory for the Nextflow pipeline.
+1. Create a `nextflow.config` file with the following contents:
+
+    ```groovy
+    docker {
+      enabled = true
+    }
+    ```
+
+1. Create a `main.nf` file with the following contents:
+
+    ```nextflow
+    process SAMTOOLS {
+      container '<CONTAINER_URI>'
+      debug true
+      """
+      samtools --version-only
+      """
+    }
+    workflow {
+      SAMTOOLS()
+    }
+    ```
+
+    Replace `<CONTAINER_URI>` with the container URI that you received from Seqera Containers in the previous section. For example:
+
+    - `community.wave.seqera.io/library/samtools:1.20--b5dfbd93de237464` for linux/amd64.
+    - `community.wave.seqera.io/library/samtools:1.20--497854c5df637867` for linux/arm64.
+
+## Run the Nextflow pipeline
+
+To confirm that the `samtools` command is available from your pipeline, run the following command:
+
+```bash
+nextflow run main.nf
+```
+
+If successful, you will see output similar to the following:
+
+```console
+N E X T F L O W   ~  version 24.04.4
+
+Launching `main.nf` [furious_carlsson] DSL2 - revision: 04817f962f
+
+executor >  local (1)
+[2f/d2ccc7] process > SAMTOOLS [100%] 1 of 1 ✔
+1.20+htslib-1.20
+```
+
+## Next steps
+
+Visit [Seqera Containers][sc] to learn more about Seqera's container solutions.
+
+[sc]: https://seqera.io/containers/
+[conda]: https://docs.conda.io/en/latest/
+[Nextflow]: https://www.nextflow.io/docs/latest/install.html
+[Singularity]: https://docs.sylabs.io/guides/latest/user-guide/introduction.html
+[Podman]: https://podman.io/docs/installation
+[Docker Desktop]: https://www.docker.com/products/docker-desktop/
+
+[wave-build]: /wave_docs/wave_repo/docs/cli/use-cases.md#build-a-container
+[nf-config]: /wave_docs/wave_repo/docs/nextflow/configuration.md
+[wave-cli]: /wave_docs/wave_repo/docs/cli/index.md
