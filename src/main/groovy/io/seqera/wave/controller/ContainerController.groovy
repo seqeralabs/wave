@@ -461,11 +461,13 @@ class ContainerController {
         }
 
         // check if the multi-platform image already exists
-        final digest = registryProxyService.getImageDigest(targetImage, identity)
-        if( digest ) {
-            log.debug "== Found cached multi-platform build for $targetImage"
-            final cache = persistenceService.loadBuildSucceed(targetImage, digest)
-            return new BuildTrack(cache?.buildId, targetImage, true, true)
+        if( !buildConfig.skipCache ) {
+            final digest = registryProxyService.getImageDigest(targetImage, identity)
+            if( digest ) {
+                log.debug "== Found cached multi-platform build for $targetImage"
+                final cache = persistenceService.loadBuildSucceed(targetImage, digest)
+                return new BuildTrack(cache?.buildId, targetImage, true, true)
+            }
         }
 
         // delegate to multi-platform build service

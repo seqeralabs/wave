@@ -25,6 +25,8 @@ import java.time.Duration
 import java.time.Instant
 
 import io.micronaut.context.event.ApplicationEventPublisher
+import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
@@ -308,6 +310,70 @@ class MultiPlatformBuildServiceTest extends Specification {
         1 * multiBuildStore.put('docker.io/wave:multi', _)
         1 * persistenceService.saveBuildAsync(_)
         1 * eventPublisher.publishEvent(_ as BuildEvent)
+    }
+
+    def 'should filter fusion layers for target platform'() {
+        given:
+        def amd64Layer = new ContainerLayer(
+                location: 'https://fusionfs.seqera.io/releases/pkg/2/4/20/fusion-amd64.tar.gz',
+                gzipDigest: 'sha256:aaa',
+                gzipSize: 100,
+                tarDigest: 'sha256:bbb'
+        )
+        def arm64Layer = new ContainerLayer(
+                location: 'https://fusionfs.seqera.io/releases/pkg/2/4/20/fusion-arm64.tar.gz',
+                gzipDigest: 'sha256:ccc',
+                gzipSize: 200,
+                tarDigest: 'sha256:ddd'
+        )
+        def dataLayer = new ContainerLayer(
+                location: 'data:H4sIAAAAAAAA/+2STQ6C',
+                gzipDigest: 'sha256:eee',
+                gzipSize: 50,
+                tarDigest: 'sha256:fff'
+        )
+        def config = new ContainerConfig(
+                ['/usr/bin/fusion'] as List<String>,
+                null,
+                ['FUSION_CONFIG_PROFILE=nextflow'] as List<String>,
+                null,
+                [dataLayer, amd64Layer, arm64Layer]
+        )
+
+        when: 'filtering for amd64'
+        def amd64Config = MultiPlatformBuildService.filterLayersForPlatform(config, ContainerPlatform.of('linux/amd64'))
+        then:
+        amd64Config.layers.size() == 2
+        amd64Config.layers[0].location == dataLayer.location
+        amd64Config.layers[1].location == amd64Layer.location
+        amd64Config.entrypoint == ['/usr/bin/fusion']
+        amd64Config.env == ['FUSION_CONFIG_PROFILE=nextflow']
+
+        when: 'filtering for arm64'
+        def arm64Config = MultiPlatformBuildService.filterLayersForPlatform(config, ContainerPlatform.of('linux/arm64'))
+        then:
+        arm64Config.layers.size() == 2
+        arm64Config.layers[0].location == dataLayer.location
+        arm64Config.layers[1].location == arm64Layer.location
+    }
+
+    def 'should return config as-is when no fusion layers'() {
+        given:
+        def dataLayer = new ContainerLayer(location: 'data:H4sIAAAAAAAA/+2STQ6C')
+        def config = new ContainerConfig(null, null, null, null, [dataLayer])
+
+        when:
+        def result = MultiPlatformBuildService.filterLayersForPlatform(config, ContainerPlatform.of('linux/amd64'))
+
+        then:
+        result.layers.size() == 1
+        result.layers[0].location == dataLayer.location
+    }
+
+    def 'should handle null and empty config'() {
+        expect:
+        MultiPlatformBuildService.filterLayersForPlatform(null, ContainerPlatform.of('linux/amd64')) == null
+        MultiPlatformBuildService.filterLayersForPlatform(new ContainerConfig(), ContainerPlatform.of('linux/amd64')).layers == []
     }
 
     def 'launchJob should be a no-op returning job with launch time'() {

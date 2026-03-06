@@ -71,6 +71,45 @@ class ContainerPlatform {
             throw new BadRequestException("Invalid container platform: $value -- offending value: $value")
         }
 
+        /**
+         * Check if this platform matches a manifest index entry's platform record.
+         * Handles architecture aliases (x86_64→amd64, aarch64→arm64) and
+         * variant normalization (arm64/v8 matches arm64 with no variant).
+         *
+         * @param record a map with 'os', 'architecture', and optionally 'variant' keys
+         *               as found in a manifest index entry's platform field
+         */
+        boolean matches(Map<String,String> record) {
+            return sameOs(record) && sameArch(record) && sameVariant(record)
+        }
+
+        private boolean sameOs(Map<String,String> record) {
+            this.os == record.os
+        }
+
+        private boolean sameArch(Map<String,String> record) {
+            if( this.arch==record.architecture )
+                return true
+            if( this.arch=='amd64' && record.architecture in AMD64 )
+                return true
+            if( this.arch=='arm64' && record.architecture in ARM64 )
+                return true
+            else
+                return false
+        }
+
+        private boolean sameVariant(Map<String,String> record) {
+            if( this.variant == record.variant )
+                return true
+            if( this.arch=='arm64' ) {
+                if( !this.variant && (!record.variant || record.variant in V8))
+                    return true
+                if( this.variant && record.variant==this.variant )
+                    return true
+            }
+            return false
+        }
+
         @Override
         String toString() {
             def result = os + "/" + arch
@@ -130,11 +169,19 @@ class ContainerPlatform {
         this.platforms = List.copyOf(platforms)
     }
 
-    String getOs() { platforms[0].os }
+    @Deprecated
+    String getOs() { requireSinglePlatform(); platforms[0].os }
 
-    String getArch() { platforms[0].arch }
+    @Deprecated
+    String getArch() { requireSinglePlatform(); platforms[0].arch }
 
-    String getVariant() { platforms[0].variant }
+    @Deprecated
+    String getVariant() { requireSinglePlatform(); platforms[0].variant }
+
+    private void requireSinglePlatform() {
+        if( isMultiArch() )
+            throw new IllegalStateException("Cannot access single-platform property on multi-arch ContainerPlatform: ${toString()}")
+    }
 
     boolean isMultiArch() {
         return platforms.size() > 1
@@ -145,36 +192,6 @@ class ContainerPlatform {
         return platforms.collect { it.toString() }.join(',')
     }
 
-    boolean matches(Map<String,String> record) {
-        return sameOs(record) && sameArch(record) && sameVariant(record)
-    }
-
-    private boolean sameOs(Map<String,String> record) {
-        this.os == record.os
-    }
-
-    private boolean sameArch(Map<String,String> record) {
-        if( this.arch==record.architecture )
-            return true
-        if( this.arch=='amd64' && record.architecture in AMD64 )
-            return true
-        if( this.arch=='arm64' && record.architecture in ARM64 )
-            return true
-        else
-            return false
-    }
-
-    private boolean sameVariant(Map<String,String> record) {
-        if( this.variant == record.variant )
-            return true
-        if( this.arch=='arm64' ) {
-            if( !this.variant && (!record.variant || record.variant in V8))
-                return true
-            if( this.variant && record.variant==this.variant )
-                return true
-        }
-        return false
-    }
 
     static ContainerPlatform parseOrDefault(String value, ContainerPlatform defaultPlatform=DEFAULT) {
         return value ? of(value) : defaultPlatform

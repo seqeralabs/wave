@@ -19,10 +19,14 @@
 package io.seqera.wave.service.builder
 
 import java.time.Instant
+import java.util.regex.Pattern
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.event.ApplicationEventPublisher
+
+import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.model.ContainerCoordinates
@@ -250,15 +254,37 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
         }
     }
 
+    static final private Pattern FUSION_LAYER_ARCH = Pattern.compile('.*/fusion-(\\w+)\\.tar\\.gz$')
+
+    /**
+     * Filter container config layers to only include fusion layers matching the target platform arch.
+     * Non-fusion layers are kept as-is.
+     */
+    static ContainerConfig filterLayersForPlatform(ContainerConfig config, ContainerPlatform platform) {
+        if( !config?.layers || !platform || platform.isMultiArch() )
+            return config
+        final filtered = config.layers.findAll { ContainerLayer layer ->
+            final matcher = layer.location ? FUSION_LAYER_ARCH.matcher(layer.location) : null
+            final keep = !matcher?.matches() || matcher.group(1) == platform.arch
+            if( matcher?.matches() ) {
+                log.debug "Layer filter: platform=${platform}; layer=${layer.location}; arch=${matcher.group(1)}; keep=${keep}"
+            }
+            return keep
+        }
+        log.debug "Layer filter: platform=${platform}; input=${config.layers.size()} layers; output=${filtered.size()} layers"
+        return new ContainerConfig(config.entrypoint, config.cmd, config.env, config.workingDir, filtered)
+    }
+
     protected BuildRequest createPlatformRequest(BuildRequest template, ContainerPlatform platform, String suffix) {
         final repo = ContainerCoordinates.parse(template.targetImage).repository
+        final containerConfig = filterLayersForPlatform(template.containerConfig, platform)
         final platformId = makeContainerId(
                 template.containerFile,
                 template.condaFile,
                 platform,
                 repo,
                 template.buildContext,
-                template.containerConfig
+                containerConfig
         )
         final platformImage = makeTargetImage(template.format, repo, platformId, template.condaFile, null)
 
@@ -274,7 +300,7 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
                 template.ip,
                 template.configJson,
                 template.offsetId,
-                template.containerConfig,
+                containerConfig,
                 null,       // scanId - suppress per-platform scans; scan runs on the composite image
                 template.buildContext,
                 template.format,

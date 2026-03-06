@@ -301,7 +301,7 @@ class ContainerAugmenterTest extends Specification {
                 .withContainerConfig(config)
 
         when:
-        def digest = scanner.updateImageIndex(IMAGE, MANIFEST, DIGEST, NEW_DIGEST, NEW_SIZE, false)
+        def digest = scanner.updateImageIndex(IMAGE, MANIFEST, [(DIGEST): new ContainerAugmenter.AugmentedManifest(NEW_DIGEST, NEW_SIZE)], false)
 
         then:
         def entry = storage.getManifest("$REGISTRY/v2/$IMAGE/manifests/$digest").get()

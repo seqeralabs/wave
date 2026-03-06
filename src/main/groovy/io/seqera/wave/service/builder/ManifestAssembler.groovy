@@ -26,6 +26,7 @@ import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.HttpClientConfig
+import io.seqera.wave.util.RegHelper
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RoutePath
@@ -93,9 +94,10 @@ class ManifestAssembler {
             throw new IllegalStateException("Failed to GET manifest for '$image' — status: ${resp.statusCode()}, body: ${resp.body()}")
 
         final body = resp.body()
+        final bodyBytes = body.bytes
         final contentType = resp.headers().firstValue('content-type').orElse(OCI_IMAGE_MANIFEST_V1)
-        final digest = resp.headers().firstValue('docker-content-digest').orElse(null)
-        final size = body.bytes.length
+        final digest = resp.headers().firstValue('docker-content-digest').orElse(RegHelper.digest(bodyBytes))
+        final size = bodyBytes.length
 
         return [
             mediaType: contentType,

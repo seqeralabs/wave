@@ -83,7 +83,7 @@ class PullMetricsRequestsFilter implements HttpServerFilter {
         final contentType = response.headers.get(HttpHeaders.CONTENT_TYPE)
         if( contentType && contentType in MANIFEST_TYPES ) {
             final route = routeHelper.parse(request.path)
-            final arch = route.request.platform.arch
+            final arch = route.request.platform?.platforms?.collect(it->it.arch)?.join(',')
             CompletableFuture.runAsync(() -> metricsService.incrementPullsCounter(route.identity, arch), executor)
             final version = route.request?.containerConfig?.fusionVersion()
             if (version) {

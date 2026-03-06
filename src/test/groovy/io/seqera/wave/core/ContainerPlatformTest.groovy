@@ -83,7 +83,7 @@ class ContainerPlatformTest extends Specification {
     @Unroll
     def 'should match' () {
         expect:
-        ContainerPlatform.of(PLATFORM).matches(RECORD)
+        ContainerPlatform.of(PLATFORM).platforms[0].matches(RECORD)
         where:
         PLATFORM        | RECORD
         'amd64'         | [os:'linux', architecture:'amd64']
@@ -106,7 +106,7 @@ class ContainerPlatformTest extends Specification {
     @Unroll
     def 'should not match' () {
         expect:
-        !ContainerPlatform.of(PLATFORM).matches(RECORD)
+        !ContainerPlatform.of(PLATFORM).platforms[0].matches(RECORD)
         where:
         PLATFORM        | RECORD
         'amd64'         | [os:'linux', architecture:'arm64']
@@ -122,8 +122,8 @@ class ContainerPlatformTest extends Specification {
         when:
         def platform = ContainerPlatform.of('linux/amd64,linux/arm64')
         then:
-        platform.os == 'linux'
-        platform.arch == 'amd64'
+        platform.platforms[0].os == 'linux'
+        platform.platforms[0].arch == 'amd64'
         platform.platforms == [new ContainerPlatform.Platform('linux','amd64'), new ContainerPlatform.Platform('linux','arm64')]
         platform.isMultiArch()
         platform.toString() == 'linux/amd64,linux/arm64'
@@ -153,8 +153,8 @@ class ContainerPlatformTest extends Specification {
     def 'should have MULTI_PLATFORM constant' () {
         expect:
         ContainerPlatform.MULTI_PLATFORM.isMultiArch()
-        ContainerPlatform.MULTI_PLATFORM.os == 'linux'
-        ContainerPlatform.MULTI_PLATFORM.arch == 'amd64'
+        ContainerPlatform.MULTI_PLATFORM.platforms[0].os == 'linux'
+        ContainerPlatform.MULTI_PLATFORM.platforms[0].arch == 'amd64'
         ContainerPlatform.MULTI_PLATFORM.platforms == [new ContainerPlatform.Platform('linux','amd64'), new ContainerPlatform.Platform('linux','arm64')]
         ContainerPlatform.MULTI_PLATFORM.toString() == 'linux/amd64,linux/arm64'
     }
@@ -187,5 +187,34 @@ class ContainerPlatformTest extends Specification {
         then:
         def e = thrown(BadRequestException)
         e.message.contains('Container multi-platform architecture not allowed')
+    }
+
+    def 'should throw when accessing os/arch/variant on multi-arch platform' () {
+        given:
+        def platform = ContainerPlatform.of('linux/amd64,linux/arm64')
+
+        when:
+        platform.os
+        then:
+        thrown(IllegalStateException)
+
+        when:
+        platform.arch
+        then:
+        thrown(IllegalStateException)
+
+        when:
+        platform.variant
+        then:
+        thrown(IllegalStateException)
+    }
+
+    def 'should allow os/arch/variant on single-arch platform' () {
+        given:
+        def platform = ContainerPlatform.of('linux/amd64')
+        expect:
+        platform.os == 'linux'
+        platform.arch == 'amd64'
+        platform.variant == null
     }
 }
