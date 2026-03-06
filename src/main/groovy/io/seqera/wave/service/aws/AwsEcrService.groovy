@@ -70,6 +70,11 @@ class AwsEcrService {
     static final private Pattern AWS_ROLE_ARN = ~/^arn:aws(-cn|-us-gov)?:iam::\d{12}:role\/[\w+=,.@\/-]+$/
 
     /**
+     * Default STS session duration in seconds (1 hour)
+     */
+    static final private int SESSION_DURATION_SECONDS = 3600
+
+    /**
      * Buffer time before credential expiration to trigger refresh
      */
     static final private Duration REFRESH_BUFFER = Duration.ofMinutes(5)
@@ -168,14 +173,9 @@ class AwsEcrService {
      * @return StsClient instance using the provided session credentials
      */
     protected static StsClient stsClient(String region, Credentials credentials) {
-        final sessionCreds = AwsSessionCredentials.create(
-                credentials.accessKeyId(),
-                credentials.secretAccessKey(),
-                credentials.sessionToken()
-        )
         return StsClient.builder()
                 .region(Region.of(region))
-                .credentialsProvider(StaticCredentialsProvider.create(sessionCreds))
+                .credentialsProvider(credentialsProvider(credentials.accessKeyId(), credentials.secretAccessKey(), credentials.sessionToken()))
                 .build()
     }
 
@@ -204,22 +204,7 @@ class AwsEcrService {
      * @return Temporary AWS credentials with session token
      */
     protected Credentials assumeTargetRole(StsClient client, String roleArn, String externalId) {
-        Retryable.<Credentials>of(stsConfig)
-                .retryCondition((Throwable t) -> isRetryableStsError(t))
-                .onRetry((event) -> log.debug("STS AssumeRole retry for $roleArn - attempt: ${event.attempt}; failure: ${event.failure?.message}"))
-                .apply(() -> {
-                    final requestBuilder = AssumeRoleRequest.builder()
-                            .roleArn(roleArn)
-                            .roleSessionName("wave-ecr-${extractAccountId(roleArn)}-${System.currentTimeMillis()}")
-                            .durationSeconds(3600) // 1 hour
-
-                    // Add external ID if provided
-                    if (externalId) {
-                        requestBuilder.externalId(externalId)
-                    }
-
-                    return client.assumeRole(requestBuilder.build()).credentials()
-                })
+        return doAssumeRole(client, roleArn, externalId, "wave-ecr")
     }
 
     /**
@@ -231,22 +216,35 @@ class AwsEcrService {
      */
     protected Credentials doAssumeJumpRole(String region) {
         return stsClient(region).withCloseable { client ->
-            Retryable.<Credentials>of(stsConfig)
-                    .retryCondition((Throwable t) -> isRetryableStsError(t))
-                    .onRetry((event) -> log.debug("STS AssumeRole retry for jump role $jumpRoleArn - attempt: ${event.attempt}; failure: ${event.failure?.message}"))
-                    .apply(() -> {
-                        final requestBuilder = AssumeRoleRequest.builder()
-                                .roleArn(jumpRoleArn)
-                                .roleSessionName("wave-jump-${extractAccountId(jumpRoleArn)}-${System.currentTimeMillis()}")
-                                .durationSeconds(3600) // 1 hour
-
-                        if (jumpExternalId) {
-                            requestBuilder.externalId(jumpExternalId)
-                        }
-
-                        return client.assumeRole(requestBuilder.build()).credentials()
-                    })
+            doAssumeRole(client, jumpRoleArn, jumpExternalId, "wave-jump")
         }
+    }
+
+    /**
+     * Assume an IAM role with retry on transient STS errors.
+     *
+     * @param client The STS client to use
+     * @param roleArn The ARN of the role to assume
+     * @param externalId The external ID for cross-account role assumption (optional)
+     * @param sessionPrefix Prefix for the session name
+     * @return Temporary AWS credentials with session token
+     */
+    private Credentials doAssumeRole(StsClient client, String roleArn, String externalId, String sessionPrefix) {
+        Retryable.<Credentials>of(stsConfig)
+                .retryCondition((Throwable t) -> isRetryableStsError(t))
+                .onRetry((event) -> log.debug("STS AssumeRole retry for $roleArn - attempt: ${event.attempt}; failure: ${event.failure?.message}"))
+                .apply(() -> {
+                    final requestBuilder = AssumeRoleRequest.builder()
+                            .roleArn(roleArn)
+                            .roleSessionName("${sessionPrefix}-${extractAccountId(roleArn)}-${System.currentTimeMillis()}")
+                            .durationSeconds(SESSION_DURATION_SECONDS)
+
+                    if (externalId) {
+                        requestBuilder.externalId(externalId)
+                    }
+
+                    return client.assumeRole(requestBuilder.build()).credentials()
+                })
     }
 
     /**
