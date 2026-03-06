@@ -26,7 +26,6 @@ import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
-import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
 /**
@@ -46,7 +45,7 @@ class WaveScanRecord implements Cloneable {
     String mirrorId
     String requestId
     String containerImage
-    ContainerPlatform platform
+    String platform
     Instant startTime
     Duration duration
     String status
@@ -64,7 +63,7 @@ class WaveScanRecord implements Cloneable {
             String mirrorId,
             String requestId,
             String containerImage,
-            ContainerPlatform platform,
+            String platform,
             Instant startTime,
             Duration duration,
             String status,
@@ -97,7 +96,7 @@ class WaveScanRecord implements Cloneable {
         this.mirrorId = scan.mirrorId
         this.requestId = scan.requestId
         this.containerImage = scan.containerImage
-        this.platform = scan.platform
+        this.platform = scan.platform?.toString()
         this.startTime = scan.startTime
         this.duration = scan.duration
         this.status = scan.status

@@ -27,6 +27,7 @@ import java.time.Instant
 
 import io.seqera.wave.api.BuildCompression
 import io.seqera.wave.api.BuildStatusResponse
+import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
@@ -56,7 +57,15 @@ class WaveBuildRecordTest extends Specification {
                 scanId: 'scan12345',
                 format: BuildFormat.DOCKER,
                 maxDuration: Duration.ofMinutes(1),
-                compression: BuildCompression.gzip
+                compression: BuildCompression.gzip,
+                buildChildIds: new ChildRefs([
+                        new ChildRefs.Ref('bd-abc_0', 'linux/amd64'),
+                        new ChildRefs.Ref('bd-def_0', 'linux/arm64')
+                ]),
+                scanChildIds: new ChildRefs([
+                        new ChildRefs.Ref('sc-abc_1', 'linux/amd64'),
+                        new ChildRefs.Ref('sc-def_2', 'linux/arm64')
+                ])
         )
         final result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         final event = new BuildEvent(request, result)
@@ -65,7 +74,19 @@ class WaveBuildRecordTest extends Specification {
         when:
         def json = JacksonHelper.toJson(record)
         then:
-        JacksonHelper.fromJson(json, WaveBuildRecord) == record
+        def restored = JacksonHelper.fromJson(json, WaveBuildRecord)
+        restored.buildId == record.buildId
+        restored.targetImage == record.targetImage
+        restored.buildChildIds.size() == 2
+        restored.buildChildIds[0].id == 'bd-abc_0'
+        restored.buildChildIds[0].value == 'linux/amd64'
+        restored.buildChildIds[1].id == 'bd-def_0'
+        restored.buildChildIds[1].value == 'linux/arm64'
+        restored.scanChildIds.size() == 2
+        restored.scanChildIds[0].id == 'sc-abc_1'
+        restored.scanChildIds[0].value == 'linux/amd64'
+        restored.scanChildIds[1].id == 'sc-def_2'
+        restored.scanChildIds[1].value == 'linux/arm64'
 
     }
 

@@ -22,15 +22,19 @@ import spock.lang.Specification
 
 import java.nio.file.Path
 import java.time.Duration
+import java.time.Instant
 import java.time.OffsetDateTime
 
 import io.seqera.wave.api.BuildCompression
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
+
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
+import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.util.ContainerHelper
+import io.seqera.serde.moshi.MoshiEncodeStrategy
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -268,6 +272,76 @@ class BuildRequestTest extends Specification {
         and:
         req1.offsetId == OffsetDateTime.now().offset.id
         req7.offsetId == 'UTC+2'
+    }
+
+    def 'should serialise and deserialise via Moshi'() {
+        given:
+        def buildChildIds = new ChildRefs([
+                new ChildRefs.Ref('bd-abc_0', 'linux/amd64'),
+                new ChildRefs.Ref('bd-def_0', 'linux/arm64')
+        ])
+        def scanChildIds = new ChildRefs([
+                new ChildRefs.Ref('sc-abc_1', 'linux/amd64'),
+                new ChildRefs.Ref('sc-def_2', 'linux/arm64')
+        ])
+        def request = BuildRequest.of(
+                containerId: 'abc123',
+                containerFile: 'FROM ubuntu',
+                condaFile: 'samtools=1.0',
+                workspace: Path.of('/some/workspace'),
+                targetImage: 'docker.io/wave:abc123',
+                identity: new PlatformId(new User(id: 1, email: 'foo@user.com')),
+                platform: ContainerPlatform.of('linux/amd64'),
+                cacheRepository: 'docker.io/cache',
+                startTime: Instant.parse('2024-01-15T10:30:00Z'),
+                ip: '10.20.30.40',
+                configJson: '{"config":"json"}',
+                offsetId: '+02:00',
+                scanId: 'sc-main',
+                format: BuildFormat.DOCKER,
+                maxDuration: Duration.ofMinutes(10),
+                compression: BuildCompression.gzip,
+                buildId: 'bd-abc123_0',
+                buildTemplate: 'some-template',
+                noEmail: true,
+                buildChildIds: buildChildIds,
+                scanChildIds: scanChildIds
+        )
+        // use the same encode strategy as BuildStateStoreImpl
+        def encoder = new MoshiEncodeStrategy<BuildEntry>() {}
+        def entry = BuildEntry.create(request)
+
+        when:
+        def json = encoder.encode(entry)
+        def restored = encoder.decode(json)
+
+        then:
+        restored.request.containerId == 'abc123'
+        restored.request.containerFile == 'FROM ubuntu'
+        restored.request.condaFile == 'samtools=1.0'
+        restored.request.targetImage == 'docker.io/wave:abc123'
+        restored.request.platform == ContainerPlatform.of('linux/amd64')
+        restored.request.cacheRepository == 'docker.io/cache'
+        restored.request.ip == '10.20.30.40'
+        restored.request.configJson == '{"config":"json"}'
+        restored.request.offsetId == '+02:00'
+        restored.request.scanId == 'sc-main'
+        restored.request.format == BuildFormat.DOCKER
+        restored.request.buildId == 'bd-abc123_0'
+        restored.request.buildTemplate == 'some-template'
+        restored.request.noEmail == true
+        and:
+        restored.request.buildChildIds.size() == 2
+        restored.request.buildChildIds[0].id == 'bd-abc_0'
+        restored.request.buildChildIds[0].value == 'linux/amd64'
+        restored.request.buildChildIds[1].id == 'bd-def_0'
+        restored.request.buildChildIds[1].value == 'linux/arm64'
+        and:
+        restored.request.scanChildIds.size() == 2
+        restored.request.scanChildIds[0].id == 'sc-abc_1'
+        restored.request.scanChildIds[0].value == 'linux/amd64'
+        restored.request.scanChildIds[1].id == 'sc-def_2'
+        restored.request.scanChildIds[1].value == 'linux/arm64'
     }
 
     def 'should parse legacy id' () {

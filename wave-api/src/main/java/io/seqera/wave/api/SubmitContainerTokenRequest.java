@@ -165,6 +165,7 @@ public class SubmitContainerTokenRequest implements Cloneable {
      */
     public String buildTemplate;
 
+
     public SubmitContainerTokenRequest copyWith(Map opts) {
         try {
             final SubmitContainerTokenRequest copy = (SubmitContainerTokenRequest) this.clone();

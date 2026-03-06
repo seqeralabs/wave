@@ -61,6 +61,7 @@ class ProxyClient {
     private ContainerPath route
     private HttpClientConfig httpConfig
     private List<Integer> retryableHttpErrors = HTTP_RETRYABLE_ERRORS
+    private boolean pushMode
 
     ProxyClient(HttpClient httpClient, HttpClientConfig httpConfig) {
         if( httpClient.followRedirects()!= HttpClient.Redirect.NEVER )
@@ -101,6 +102,11 @@ class ProxyClient {
     ProxyClient withRetryableHttpErrors(List<Integer> errors) {
         if( errors!=null )
             retryableHttpErrors = errors
+        return this
+    }
+
+    ProxyClient withPushMode(boolean value) {
+        this.pushMode = value
         return this
     }
 
@@ -225,7 +231,7 @@ class ProxyClient {
             copyHeaders(headers, builder)
             if( authorize ) {
                 // add authorisation header
-                final header = loginService.getAuthorization(image, registry.auth, credentials)
+                final header = getAuthHeader()
                 if( header )
                     builder.setHeader("Authorization", header)
             }
@@ -279,10 +285,10 @@ class ProxyClient {
         // https://zetcode.com/java/httpclient/
         final builder = HttpRequest.newBuilder(uri)
                 .method("HEAD", HttpRequest.BodyPublishers.noBody())
-        // copy headers 
+        // copy headers
         copyHeaders(headers, builder)
         // add authorisation header
-        final header = loginService.getAuthorization(image, registry.auth, credentials)
+        final header = getAuthHeader()
         if( header )
             builder.setHeader("Authorization", header)
         // build the request
@@ -291,6 +297,59 @@ class ProxyClient {
         final response = httpClient.send(request, HttpResponse.BodyHandlers.discarding())
         traceResponse(response)
         return response
+    }
+
+    private String getAuthHeader() {
+        return pushMode
+            ? loginService.getAuthorizationForPush(image, registry.auth, credentials)
+            : loginService.getAuthorization(image, registry.auth, credentials)
+    }
+
+    HttpResponse<String> put(String path, byte[] body, String contentType, Map<String,List<String>> headers=null) {
+        final uri = makeUri(path)
+        final retryable = Retryable
+                .<HttpResponse<String>>of(httpConfig)
+                .retryIf((resp) -> resp.statusCode() in retryableHttpErrors)
+                .onRetry((event) -> "Failure on PUT request: $uri - event: $event")
+        return retryable.apply(()-> put0(uri, body, contentType, headers))
+    }
+
+    private HttpResponse<String> put0(URI uri, byte[] body, String contentType, Map<String,List<String>> headers) {
+        int authRetry = 0
+        while( true ) {
+            final result = put1(uri, body, contentType, headers)
+            if( result.statusCode()==401 && (authRetry++)<2 && registry.auth.isRefreshable() ) {
+                loginService.invalidateAuthorization(image, registry.auth, credentials)
+                continue
+            }
+            return result
+        }
+    }
+
+    private HttpResponse<String> put1(URI uri, byte[] body, String contentType, Map<String,List<String>> headers) {
+        try {
+            final builder = HttpRequest.newBuilder(uri)
+                    .PUT(HttpRequest.BodyPublishers.ofByteArray(body))
+            if( contentType )
+                builder.setHeader("Content-Type", contentType)
+            copyHeaders(headers, builder)
+            final header = getAuthHeader()
+            if( header )
+                builder.setHeader("Authorization", header)
+            final request = builder.build()
+            final response = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
+            traceResponse(response)
+            return response
+        }
+        catch (IOException e) {
+            throw e
+        }
+        catch (RegistryForwardException | RegistryUnauthorizedAccessException e) {
+            throw e
+        }
+        catch (Exception e) {
+            throw new InternalServerException("Unexpected error on HTTP PUT request '$uri'", e)
+        }
     }
 
     private void traceResponse(HttpResponse resp) {
@@ -316,7 +375,7 @@ class ProxyClient {
         // copy headers
         copyHeaders(headers, request)
         // add authorisation header
-        final header = loginService.getAuthorization(image, registry.auth, credentials)
+        final header = getAuthHeader()
         if( header )
             request.header("Authorization", header)
 
@@ -336,7 +395,7 @@ class ProxyClient {
             result.add("${entry.key}: $entry.value")
         }
         // add authorisation header
-        final header = loginService.getAuthorization(image, registry.auth, credentials)
+        final header = getAuthHeader()
         if( header ) {
             result.add('-H')
             result.add("Authorization: $header")

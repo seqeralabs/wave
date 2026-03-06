@@ -63,6 +63,7 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildTrack
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.FreezeService
+import io.seqera.wave.service.builder.MultiPlatformBuildService
 import io.seqera.wave.service.inclusion.ContainerInclusionService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.mirror.ContainerMirrorService
@@ -76,6 +77,7 @@ import io.seqera.wave.service.request.ContainerRequestService
 import io.seqera.wave.service.request.ContainerStatusService
 import io.seqera.wave.service.request.TokenData
 import io.seqera.wave.service.scan.ContainerScanService
+import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.PlatformId
@@ -92,6 +94,7 @@ import static io.seqera.wave.util.ContainerHelper.condaFileFromRequest
 import static io.seqera.wave.util.ContainerHelper.containerFileFromRequest
 import static io.seqera.wave.util.ContainerHelper.decodeBase64OrFail
 import static io.seqera.wave.util.ContainerHelper.makeContainerId
+import static io.seqera.wave.util.ContainerHelper.makeMultiPlatformContainerId
 import static io.seqera.wave.util.ContainerHelper.makeResponseV1
 import static io.seqera.wave.util.ContainerHelper.makeResponseV2
 import static io.seqera.wave.util.ContainerHelper.makeTargetImage
@@ -178,6 +181,10 @@ class ContainerController {
     @Nullable
     private ContainerScanService scanService
 
+    @Inject
+    @Nullable
+    private MultiPlatformBuildService multiPlatformBuildService
+
     @PostConstruct
     private void init() {
         log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl; default-build-repo: ${buildConfig?.defaultBuildRepository}; default-cache-repo: ${buildConfig?.defaultCacheRepository}; default-public-repo: ${buildConfig?.defaultPublicRepository}"
@@ -258,9 +265,22 @@ class ContainerController {
             final generated = containerFileFromRequest(req)
             req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
         }
-        // make sure container platform is defined 
+        // make sure container platform is defined
         if( !req.containerPlatform )
             req.containerPlatform = ContainerPlatform.DEFAULT.toString()
+
+        // multi-platform validation
+        final parsedPlatform = ContainerPlatform.of(req.containerPlatform)
+        if( parsedPlatform.isMultiArch() ) {
+            if( parsedPlatform != ContainerPlatform.MULTI_PLATFORM )
+                throw new BadRequestException("Only linux/amd64,linux/arm64 multi-platform combination is currently supported")
+            if( !req.containerFile && !req.packages )
+                throw new BadRequestException("Multi-platform builds require either 'containerFile' or 'packages' attribute")
+            if( req.formatSingularity() )
+                throw new BadRequestException("Multi-platform builds are not supported for Singularity format")
+            if( !multiPlatformBuildService )
+                throw new UnsupportedBuildServiceException()
+        }
 
         final ip = addressResolver.resolve(httpRequest)
         // check the rate limit before continuing
@@ -388,6 +408,21 @@ class ContainerController {
         )
     }
 
+    protected ChildRefs makeChildScanIds(BuildRequest build, SubmitContainerTokenRequest req) {
+        if( !scanService || !build.platform.isMultiArch() )
+            return null
+        final multiPlatform = build.platform
+        final scanMode = req.scanMode!=null ? req.scanMode : ScanMode.async
+        final scanIdByPlatform = new LinkedHashMap<String, String>()
+        for( ContainerPlatform.Platform p : multiPlatform.platforms ) {
+            final platform = p.toString()
+            final id = scanService.getScanId("${build.targetImage}#${platform}", null, scanMode, req.format)
+            if( id )
+                scanIdByPlatform.put(id, platform)
+        }
+        return ChildRefs.of(scanIdByPlatform)
+    }
+
     protected BuildTrack checkBuild(BuildRequest build, boolean dryRun) {
         final digest = registryProxyService.getImageDigest(build)
         // check for dry-run execution
@@ -406,6 +441,37 @@ class ContainerController {
         else {
             return buildService.buildImage(build)
         }
+    }
+
+    protected BuildTrack checkMultiPlatformBuild(BuildRequest templateBuild, SubmitContainerTokenRequest req, PlatformId identity, boolean dryRun) {
+        final containerSpec = templateBuild.containerFile
+        final condaContent = templateBuild.condaFile
+        final buildRepository = ContainerCoordinates.parse(templateBuild.targetImage).repository
+
+        // compute multi-platform container ID and target image
+        final containerId = makeMultiPlatformContainerId(containerSpec, condaContent, buildRepository, req.buildContext, req.freeze ? req.containerConfig : null)
+        final targetImage = makeTargetImage(templateBuild.format, buildRepository, containerId, condaContent, req.nameStrategy)
+
+        // check for dry-run execution
+        if( dryRun ) {
+            log.debug "== Dry-run multi-platform build request for $targetImage"
+            final dryId = containerId + BuildRequest.SEP + '0'
+            final digest = registryProxyService.getImageDigest(targetImage, identity)
+            return new BuildTrack(dryId, targetImage, digest!=null, true)
+        }
+
+        // check if the multi-platform image already exists
+        if( !buildConfig.skipCache ) {
+            final digest = registryProxyService.getImageDigest(targetImage, identity)
+            if( digest ) {
+                log.debug "== Found cached multi-platform build for $targetImage"
+                final cache = persistenceService.loadBuildSucceed(targetImage, digest)
+                return new BuildTrack(cache?.buildId, targetImage, true, true)
+            }
+        }
+
+        // delegate to multi-platform build service
+        return multiPlatformBuildService.buildMultiPlatformImage(templateBuild, containerId, targetImage, identity)
     }
 
     protected String getContainerDigest(String containerImage, PlatformId identity) {
@@ -446,8 +512,26 @@ class ContainerController {
         String buildId
         boolean buildNew
         String scanId
+        ChildRefs scanChildIds = null
         Boolean succeeded
-        if( req.containerFile ) {
+        if( req.containerFile && ContainerPlatform.of(req.containerPlatform).isMultiArch() ) {
+            if( !buildService ) throw new UnsupportedBuildServiceException()
+            final build0 = makeBuildRequest(req, identity, ip)
+            // create per-platform scan IDs for multi-arch builds
+            final childScans = makeChildScanIds(build0, req)
+            final build = childScans ? build0.withChildScanIds(childScans) : build0
+            final track = checkMultiPlatformBuild(build, req, identity, req.dryRun)
+            targetImage = track.targetImage
+            targetContent = build.containerFile
+            condaContent = build.condaFile
+            buildId = track.id
+            buildNew = !track.cached
+            scanId = build.scanId
+            scanChildIds = build.scanChildIds
+            succeeded = track.succeeded
+            type = ContainerRequest.Type.Build
+        }
+        else if( req.containerFile ) {
             if( !buildService ) throw new UnsupportedBuildServiceException()
             final build = makeBuildRequest(req, identity, ip)
             final track = checkBuild(build, req.dryRun)
@@ -501,6 +585,7 @@ class ContainerController {
                 buildNew,
                 req.freeze,
                 scanId,
+                scanChildIds,
                 req.scanMode,
                 req.scanLevels,
                 req.dryRun,

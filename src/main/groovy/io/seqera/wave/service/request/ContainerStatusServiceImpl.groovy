@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.request
 
+import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.exception.UnsupportedBuildServiceException
 import io.seqera.wave.exception.UnsupportedMirrorServiceException
 import io.seqera.wave.exception.UnsupportedScanServiceException
@@ -104,6 +105,9 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
         }
 
         if( request.scanId && request.scanMode == ScanMode.required && scanService ) {
+            if( request.scanChildIds ) {
+                return handleMultiScanStatus(request, state)
+            }
             final scan = getScanState(request.scanId)
             if ( !scan )
                 throw new NotFoundException("Missing container scan record with id: ${request.scanId}")
@@ -177,6 +181,42 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
         )
     }
 
+    protected ContainerStatusResponse handleMultiScanStatus(ContainerRequest request, ContainerState state) {
+        final List<ScanEntry> scans = new ArrayList<>(request.scanChildIds.size())
+        boolean allDone = true
+        boolean allSucceeded = true
+        Duration maxScanDuration = Duration.ZERO
+        for( ChildRefs.Ref pair : request.scanChildIds ) {
+            final scan = getScanState(pair.id)
+            if( !scan )
+                throw new NotFoundException("Missing container scan record with id: ${pair.id}")
+            scans.add(scan)
+            if( !scan.duration ) {
+                allDone = false
+            }
+            else {
+                if( scan.duration > maxScanDuration )
+                    maxScanDuration = scan.duration
+                if( !scan.succeeded() )
+                    allSucceeded = false
+            }
+        }
+
+        if( !allDone ) {
+            return createResponse0(SCANNING, request, new ContainerState(state.startTime))
+        }
+
+        // all scans completed — pick the first failure or the last success for the response
+        final combinedScan = allSucceeded
+                ? scans.last()
+                : scans.find { !it.succeeded() }
+        // use max duration since per-arch scans run in parallel
+        final newState = state
+                ? new ContainerState(state.startTime, state.duration + maxScanDuration, allSucceeded)
+                : new ContainerState(combinedScan.startTime, maxScanDuration, allSucceeded)
+        return createScanResponse(request, newState, combinedScan)
+    }
+
     protected StageResult buildResult(ContainerRequest request, ContainerState state) {
         if( state.succeeded )
               return new StageResult(true)
@@ -196,12 +236,13 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
     }
 
     protected StageResult scanResult(ContainerRequest request, ScanEntry scan) {
+        final scanDetailId = scan.scanId
         // scan was not successful
         if (!scan.succeeded()) {
             return new StageResult(
                     false,
                     "Container security scan did not complete successfully",
-                    "${serverUrl}/view/scans/${request.scanId}"
+                    "${serverUrl}/view/scans/${scanDetailId}"
             )
         }
 
@@ -219,7 +260,7 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
             return new StageResult(
                     false,
                     "Container security scan operation found one or more vulnerabilities with severity: ${foundLevels.join(',')}",
-                    "${serverUrl}/view/scans/${request.scanId}"
+                    "${serverUrl}/view/scans/${scanDetailId}"
             )
         }
 
@@ -227,7 +268,7 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
             return new StageResult(
                     true,
                     "Container security scan operation found one or more vulnerabilities that are compatible with requested security levels: ${allowedLevels.join(',')}",
-                    "${serverUrl}/view/scans/${request.scanId}"
+                    "${serverUrl}/view/scans/${scanDetailId}"
             )
         }
 
