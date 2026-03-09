@@ -19,6 +19,8 @@
 package io.seqera.wave.service.aws
 
 
+import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.ExecutorService
 import java.util.regex.Pattern
 
@@ -28,19 +30,31 @@ import groovy.util.logging.Slf4j
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.service.aws.cache.AwsEcrAuthToken
 import io.seqera.wave.service.aws.cache.AwsEcrCache
+import io.seqera.wave.service.aws.cache.AwsRoleCache
+import io.seqera.wave.service.aws.cache.AwsStsCredentials
+import io.seqera.cache.tiered.AbstractTieredCache
 import io.seqera.cache.tiered.TieredKey
 import io.seqera.wave.util.RegHelper
 import io.seqera.wave.util.StringUtils
+import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
+import io.seqera.util.retry.Retryable
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.ecr.EcrClient
 import software.amazon.awssdk.services.ecr.model.GetAuthorizationTokenRequest
 import software.amazon.awssdk.services.ecrpublic.EcrPublicClient
 import software.amazon.awssdk.services.ecrpublic.model.GetAuthorizationTokenRequest as GetPublicAuthorizationTokenRequest
+import software.amazon.awssdk.services.sts.StsClient
+import software.amazon.awssdk.services.sts.model.AssumeRoleRequest
+import software.amazon.awssdk.services.sts.model.Credentials
+import software.amazon.awssdk.services.sts.model.StsException
 /**
  * Implement AWS ECR login service
  *
@@ -55,16 +69,66 @@ class AwsEcrService {
 
     static final private Pattern AWS_ECR_PUBLIC = ~/public\.ecr\.aws/
 
+    static final private Pattern AWS_ROLE_ARN = ~/^arn:aws(-cn|-us-gov)?:iam::\d{12}:role\/[\w+=,.@\/-]+$/
+
+    /**
+     * Default STS session duration in seconds (1 hour)
+     */
+    static final private int SESSION_DURATION_SECONDS = 3600
+
+    /**
+     * Buffer time before credential expiration to trigger refresh
+     */
+    static final private Duration REFRESH_BUFFER = Duration.ofMinutes(5)
+
+    /**
+     * Minimum cache TTL to avoid caching nearly-expired credentials
+     */
+    static final private Duration MIN_CACHE_TTL = Duration.ofMinutes(1)
+
+    static final private String EXPIRED_TOKEN_ERROR = 'ExpiredTokenException'
+
+    /**
+     * Cache key for ECR auth tokens.
+     * Identifies a unique credential context without carrying actual AWS credentials.
+     * For static credentials: accessKey + secretKey identify the key.
+     * For role-based auth: roleArn + externalId identify the key.
+     */
     @Canonical
     private static class AwsCreds implements TieredKey {
+        // AWS access key ID (static credentials flow)
         String accessKey
+        // AWS secret access key (static credentials flow)
         String secretKey
+        // IAM role ARN (role-based auth flow)
+        String roleArn
+        // External ID for cross-account role assumption (role-based auth flow)
+        String externalId
+        // Temporary session token from STS AssumeRole
+        String sessionToken
+        // AWS region derived from the ECR registry hostname
         String region
+        // true for ECR Public (public.ecr.aws), false for private ECR
         boolean ecrPublic
 
         @Override
         String stableHash() {
-            RegHelper.sipHash(accessKey, secretKey, region, ecrPublic)
+            if (roleArn) {
+                return RegHelper.sipHash(roleArn, externalId, region, ecrPublic)
+            }
+            // sessionToken is only included when present to preserve backward-compatible hash values
+            // for static credentials (where sessionToken is always null)
+            final args = [accessKey, secretKey, region, ecrPublic] as List<Object>
+            if (sessionToken) args.add(sessionToken)
+            return RegHelper.sipHash(args.toArray())
+        }
+
+        static AwsCreds ofRole(String roleArn, String externalId, String region, boolean ecrPublic) {
+            new AwsCreds(roleArn: roleArn, externalId: externalId, region: region, ecrPublic: ecrPublic)
+        }
+
+        static AwsCreds ofKeys(String accessKey, String secretKey, String sessionToken, String region, boolean ecrPublic) {
+            new AwsCreds(accessKey: accessKey, secretKey: secretKey, sessionToken: sessionToken, region: region, ecrPublic: ecrPublic)
         }
     }
 
@@ -75,9 +139,10 @@ class AwsEcrService {
     }
 
     AwsEcrAuthToken load(AwsCreds creds) throws Exception {
+        assert !creds.roleArn, "Cannot load ECR token from role-based cache key — use temporary credentials"
         def token = creds.ecrPublic
-                ? getLoginToken1(creds.accessKey, creds.secretKey, creds.region)
-                : getLoginToken0(creds.accessKey, creds.secretKey, creds.region)
+                ? getLoginToken1(creds.accessKey, creds.secretKey, creds.sessionToken, creds.region)
+                : getLoginToken0(creds.accessKey, creds.secretKey, creds.sessionToken, creds.region)
         return new AwsEcrAuthToken(token)
     }
 
@@ -88,58 +153,389 @@ class AwsEcrService {
     @Inject
     private AwsEcrCache cache
 
-    private EcrClient ecrClient(String accessKey, String secretKey, String region) {
+    @Inject
+    private AwsRoleCache jumpRoleCache
+
+    @Inject
+    private StsClientConfig stsConfig
+
+    @Nullable
+    @Value('${wave.aws.jump-role-arn}')
+    private String jumpRoleArn
+
+    @Nullable
+    @Value('${wave.aws.jump-external-id}')
+    private String jumpExternalId
+
+    /**
+     * Check if the provided access key is actually an AWS IAM role ARN
+     *
+     * @param accessKey The access key or role ARN
+     * @return true if the accessKey matches the role ARN pattern
+     */
+    protected static boolean isRoleArn(String accessKey) {
+        return accessKey?.matches(AWS_ROLE_ARN)
+    }
+
+    /**
+     * Extract the 12-digit AWS account ID from a role ARN for use in session names.
+     *
+     * @param roleArn The role ARN e.g. {@code arn:aws:iam::123456789012:role/MyRole}
+     * @return The account ID or {@code 'unknown'} if the ARN cannot be parsed
+     */
+    protected static String extractAccountId(String roleArn) {
+        final m = roleArn =~ /arn:aws[^:]*:iam::(\d{12}):role\/.+/
+        return m.matches() ? m.group(1) : 'unknown'
+    }
+
+    /**
+     * Create an STS client using Wave's default credentials provider
+     *
+     * @param region AWS region
+     * @return StsClient instance
+     */
+    protected static StsClient stsClient(String region) {
+        return StsClient.builder()
+                .region(Region.of(region))
+                .credentialsProvider(DefaultCredentialsProvider.builder().build())
+                .build()
+    }
+
+    /**
+     * Create an STS client using explicit session credentials (from a prior role assumption)
+     *
+     * @param region AWS region
+     * @param credentials Temporary credentials from a prior AssumeRole call
+     * @return StsClient instance using the provided session credentials
+     */
+    protected static StsClient stsClient(String region, Credentials credentials) {
+        return StsClient.builder()
+                .region(Region.of(region))
+                .credentialsProvider(credentialsProvider(credentials.accessKeyId(), credentials.secretAccessKey(), credentials.sessionToken()))
+                .build()
+    }
+
+    /**
+     * Determine if an STS exception is transient and should be retried.
+     * Retries on 5xx server errors and throttling.
+     */
+    protected static boolean isRetryableStsError(Throwable t) {
+        final stsEx = t instanceof StsException ? (StsException) t
+                : t.cause instanceof StsException ? (StsException) t.cause
+                : null
+        if (stsEx == null)
+            return false
+        final retry = stsEx.statusCode() >= 500 || stsEx.awsErrorDetails()?.errorCode() == 'Throttling'
+        log.debug "STS error retry check [retry=$retry; code=${stsEx.statusCode()}; error=${stsEx.awsErrorDetails()?.errorCode()}]: ${stsEx.message}"
+        return retry
+    }
+
+    /**
+     * Assume a target IAM role using the provided STS client.
+     * Transient STS errors (5xx and throttling) are retried with exponential backoff.
+     *
+     * @param client The STS client (may use default or jump role credentials)
+     * @param roleArn The ARN of the role to assume
+     * @param externalId The external ID for cross-account role assumption (optional)
+     * @return Temporary AWS credentials with session token
+     */
+    protected Credentials assumeTargetRole(StsClient client, String roleArn, String externalId) {
+        return doAssumeRole(client, roleArn, externalId, "wave-ecr")
+    }
+
+    /**
+     * Directly assume the jump role using Wave's default credentials, bypassing the cache.
+     * Used both as the cache loader and as a fallback when cached credentials have expired.
+     *
+     * @param region AWS region
+     * @return Temporary credentials from the jump role
+     */
+    protected Credentials doAssumeJumpRole(String region) {
+        return stsClient(region).withCloseable { client ->
+            doAssumeRole(client, jumpRoleArn, jumpExternalId, "wave-jump")
+        }
+    }
+
+    /**
+     * Assume an IAM role with retry on transient STS errors.
+     *
+     * @param client The STS client to use
+     * @param roleArn The ARN of the role to assume
+     * @param externalId The external ID for cross-account role assumption (optional)
+     * @param sessionPrefix Prefix for the session name
+     * @return Temporary AWS credentials with session token
+     */
+    private Credentials doAssumeRole(StsClient client, String roleArn, String externalId, String sessionPrefix) {
+        Retryable.<Credentials>of(stsConfig)
+                .retryCondition((Throwable t) -> isRetryableStsError(t))
+                .onRetry((event) -> log.debug("STS AssumeRole retry for $roleArn - attempt: ${event.attempt}; failure: ${event.failure?.message}"))
+                .apply(() -> {
+                    final request = buildAssumeRoleRequest(roleArn, externalId, sessionPrefix)
+                    return client.assumeRole(request).credentials()
+                })
+    }
+
+    protected static AssumeRoleRequest buildAssumeRoleRequest(String roleArn, String externalId, String sessionPrefix) {
+        final AssumeRoleRequest.Builder builder = AssumeRoleRequest.builder()
+                .roleArn(roleArn)
+                .roleSessionName("${sessionPrefix}-${extractAccountId(roleArn)}-${System.currentTimeMillis()}")
+                .durationSeconds(SESSION_DURATION_SECONDS)
+        if (externalId) {
+            builder.externalId(externalId)
+        }
+        return builder.build() as AssumeRoleRequest
+    }
+
+    /**
+     * Assume the jump role using Wave's default credentials.
+     * The jump role acts as an intermediate role for cross-account access.
+     * Results are cached to avoid redundant STS calls.
+     *
+     * @param region AWS region
+     * @return Temporary credentials from the jump role
+     */
+    protected Credentials assumeJumpRole(String region) {
+        return jumpRoleCache.getOrCompute(region, (String k) -> {
+            log.debug "Cache miss for jump role $jumpRoleArn - assuming role; region=$region"
+            final creds = doAssumeJumpRole(region)
+            final cached = AwsStsCredentials.from(creds)
+            final ttl = computeCacheTtl(creds.expiration(), jumpRoleCache.duration)
+            return new AbstractTieredCache.Pair<AwsStsCredentials, Duration>(cached, ttl)
+        }).toSdkCredentials()
+    }
+
+    /**
+     * Assume an IAM role and return temporary credentials.
+     * When a jump role is configured ({@code wave.aws.jump-role-arn}), Wave first assumes the
+     * jump role using its default credentials, then uses the jump role's temporary credentials
+     * to assume the target role. This enables cross-account role chaining.
+     *
+     * If the jump role credentials have expired (race between cache TTL and actual expiry),
+     * retries once with fresh credentials bypassing the cache (FR-011).
+     *
+     * @param roleArn The ARN of the role to assume
+     * @param externalId The external ID for cross-account role assumption (optional)
+     * @param region AWS region
+     * @return Temporary AWS credentials with session token
+     */
+    protected Credentials assumeRole(String roleArn, String externalId, String region) {
+        log.debug "Assuming AWS role: $roleArn; region: $region; externalId: ${externalId ? 'provided' : 'none'}"
+
+        // No jump role configured — assume target role directly
+        if (!jumpRoleArn) {
+            return stsClient(region).withCloseable { client ->
+                assumeTargetRole(client, roleArn, externalId)
+            }
+        }
+
+        // Jump role chaining: assume jump role first, then target role
+        log.debug "Using jump role: $jumpRoleArn; jumpExternalId: ${StringUtils.redact(jumpExternalId)}"
+        final jumpCreds = assumeJumpRole(region)
+        try {
+            return stsClient(region, jumpCreds).withCloseable { client ->
+                assumeTargetRole(client, roleArn, externalId)
+            }
+        }
+        catch (StsException e) {
+            // Retry once on expired token — bypass cache to get fresh jump role credentials
+            if (e.awsErrorDetails()?.errorCode() == EXPIRED_TOKEN_ERROR) {
+                log.debug "Expired jump role credentials for $roleArn - retrying with fresh credentials"
+                final freshCreds = doAssumeJumpRole(region)
+                return stsClient(region, freshCreds).withCloseable { freshClient ->
+                    assumeTargetRole(freshClient, roleArn, externalId)
+                }
+            }
+            throw e
+        }
+    }
+
+    /**
+     * Map STS exceptions to more user-friendly error messages
+     *
+     * @param e The STS exception
+     * @return A Wave exception with helpful error message
+     */
+    protected static Exception mapStsException(StsException e) {
+        final code = e.awsErrorDetails()?.errorCode()
+
+        switch (code) {
+            case 'AccessDenied':
+                return new AwsEcrAuthException(
+                        "Wave's service role does not have permission to assume the specified role. " +
+                        "Verify the trust policy in your IAM role allows Wave to assume it. " +
+                        "Error: ${e.message}", e)
+
+            case 'InvalidParameterValue':
+                return new AwsEcrAuthException(
+                        "Invalid role ARN or external ID format. " +
+                        "Ensure the role ARN follows the pattern 'arn:aws:iam::ACCOUNT_ID:role/ROLE_NAME'. " +
+                        "Error: ${e.message}", e)
+
+            case 'RegionDisabledException':
+                return new AwsEcrAuthException(
+                        "STS is not enabled in the specified region. " +
+                        "Enable STS endpoints for this region in AWS. " +
+                        "Error: ${e.message}", e)
+
+            case 'ExpiredTokenException':
+                return new AwsEcrAuthException(
+                        "Temporary credentials have expired. " +
+                        "Error: ${e.message}", e)
+
+            default:
+                return new AwsEcrAuthException(
+                        "STS AssumeRole failed: ${e.message}", e)
+        }
+    }
+
+    private static StaticCredentialsProvider credentialsProvider(String accessKey, String secretKey, String sessionToken) {
+        sessionToken != null
+                ? StaticCredentialsProvider.create(AwsSessionCredentials.create(accessKey, secretKey, sessionToken))
+                : StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey))
+    }
+
+    private EcrClient ecrClient(String accessKey, String secretKey, String sessionToken, String region) {
         EcrClient.builder()
-                .region( Region.of(region))
-                .credentialsProvider( StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)))
+                .region(Region.of(region))
+                .credentialsProvider(credentialsProvider(accessKey, secretKey, sessionToken))
                 .build()
     }
 
-    private EcrPublicClient ecrPublicClient(String accessKey, String secretKey, String region) {
+    private EcrPublicClient ecrPublicClient(String accessKey, String secretKey, String sessionToken, String region) {
         EcrPublicClient.builder()
-                .region( Region.of(region))
-                .credentialsProvider( StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)))
+                .region(Region.of(region))
+                .credentialsProvider(credentialsProvider(accessKey, secretKey, sessionToken))
                 .build()
     }
 
-    protected String getLoginToken0(String accessKey, String secretKey, String region) {
-        log.debug "Getting AWS ECR auth token - region=$region; accessKey=$accessKey; secretKey=${StringUtils.redact(secretKey)}"
-        final client = ecrClient(accessKey,secretKey,region)
-        final resp = client.getAuthorizationToken(GetAuthorizationTokenRequest.builder().build() as GetAuthorizationTokenRequest)
-        final encoded = resp.authorizationData().get(0).authorizationToken()
-        return new String(encoded.decodeBase64())
+    protected String getLoginToken0(String accessKey, String secretKey, String sessionToken, String region) {
+        log.debug "Getting AWS ECR auth token - region=$region; accessKey=$accessKey; sessionToken=${sessionToken ? 'present' : 'none'}"
+        ecrClient(accessKey, secretKey, sessionToken, region).withCloseable { client ->
+            final resp = client.getAuthorizationToken(GetAuthorizationTokenRequest.builder().build())
+            final encoded = resp.authorizationData().get(0).authorizationToken()
+            return new String(encoded.decodeBase64())
+        }
     }
 
-    protected String getLoginToken1(String accessKey, String secretKey, String region) {
-        log.debug "Getting AWS ECR public auth token - region=$region; accessKey=$accessKey; secretKey=${StringUtils.redact(secretKey)}"
-        final client = ecrPublicClient(accessKey,secretKey,region)
-        final resp = client.getAuthorizationToken(GetPublicAuthorizationTokenRequest.builder().build() as GetPublicAuthorizationTokenRequest)
-        final encoded = resp.authorizationData().authorizationToken()
-        return new String(encoded.decodeBase64())
+    protected String getLoginToken1(String accessKey, String secretKey, String sessionToken, String region) {
+        log.debug "Getting AWS ECR public auth token - region=$region; accessKey=$accessKey"
+        ecrPublicClient(accessKey, secretKey, sessionToken, region).withCloseable { client ->
+            final resp = client.getAuthorizationToken(GetPublicAuthorizationTokenRequest.builder().build())
+            final encoded = resp.authorizationData().authorizationToken()
+            return new String(encoded.decodeBase64())
+        }
     }
 
     /**
      * Get AWS ECR login token
      *
-     * @param accessKey The AWS access key
-     * @param secretKey The AWS secret key
+     * @param accessKey The AWS access key or IAM role ARN
+     * @param secretKey The AWS secret key (or external ID if using role ARN)
      * @param region The AWS region
+     * @param isPublic Whether this is for ECR public
      * @return The ECR login token. The token is made up by the aws username and password separated by a `:`
      */
     String getLoginToken(String accessKey, String secretKey, String region, boolean isPublic) {
         assert accessKey, "Missing AWS accessKey argument"
-        assert secretKey, "Missing AWS secretKey argument"
         assert region, "Missing AWS region argument"
 
         try {
-            final key = new AwsCreds(accessKey,secretKey,region,isPublic)
-            return cache.getOrCompute(key, (k) -> load(key), cache.duration).value
+            // Detect if accessKey is actually a role ARN
+            if (isRoleArn(accessKey)) {
+                return getLoginTokenWithRole(accessKey, secretKey, region, isPublic)
+            } else {
+                // Static credentials flow (backward compatible)
+                assert secretKey, "Missing AWS secretKey argument"
+                return getLoginTokenWithStaticCredentials(accessKey, secretKey, region, isPublic)
+            }
+        }
+        catch (AwsEcrAuthException e) {
+            throw e
         }
         catch (Exception e) {
             final type = isPublic ? "ECR public" : "ECR"
             final msg = "Unable to acquire AWS $type authorization token"
             throw new AwsEcrAuthException(msg, e.cause ?: e)
         }
+    }
+
+    /**
+     * Get login token using static AWS credentials (backward compatible)
+     *
+     * @param accessKey AWS access key
+     * @param secretKey AWS secret key
+     * @param region AWS region
+     * @param isPublic Whether this is for ECR public
+     * @return ECR login token
+     */
+    protected String getLoginTokenWithStaticCredentials(String accessKey, String secretKey, String region, boolean isPublic) {
+        log.debug "Getting ECR login token with static credentials - region=$region"
+        final key = AwsCreds.ofKeys(accessKey, secretKey, null, region, isPublic)
+        return cache.getOrCompute(key, (k) -> load(key), cache.duration).value
+    }
+
+    /**
+     * Get login token by assuming an IAM role
+     *
+     * @param roleArn The ARN of the role to assume
+     * @param externalId External ID for cross-account role assumption (optional)
+     * @param region AWS region
+     * @param isPublic Whether this is for ECR public
+     * @return ECR login token
+     */
+    protected String getLoginTokenWithRole(String roleArn, String externalId, String region, boolean isPublic) {
+        log.debug "Getting ECR login token with role assumption - roleArn=$roleArn; region=$region"
+
+        final key = AwsCreds.ofRole(roleArn, externalId, region, isPublic)
+
+        // Use Pair-based getOrCompute to set TTL dynamically from STS credential expiration
+        return cache.getOrCompute(key, (String k) -> {
+            log.debug "Cache miss for role $roleArn - assuming role to get temporary credentials"
+            return assumeRoleAndLoadToken(roleArn, externalId, region, isPublic)
+        }).value
+    }
+
+    protected AbstractTieredCache.Pair<AwsEcrAuthToken, Duration> assumeRoleAndLoadToken(String roleArn, String externalId, String region, boolean isPublic) {
+        try {
+            final tempCreds = assumeRole(roleArn, externalId, region)
+            final ttl = computeCacheTtl(tempCreds.expiration(), cache.duration)
+            final tempKey = AwsCreds.ofKeys(
+                    tempCreds.accessKeyId(),
+                    tempCreds.secretAccessKey(),
+                    tempCreds.sessionToken(),
+                    region,
+                    isPublic
+            )
+            final token = load(tempKey)
+            return new AbstractTieredCache.Pair<AwsEcrAuthToken, Duration>(token, ttl)
+        }
+        catch (StsException e) {
+            throw mapStsException(e)
+        }
+    }
+
+    /**
+     * Compute cache TTL based on STS credential expiration with 5-minute refresh buffer.
+     * Returns the shorter of (time until expiration minus buffer) and maxDuration.
+     *
+     * @param expiration The STS credential expiration time
+     * @param maxDuration The maximum cache duration
+     * @return The computed cache TTL
+     */
+    protected static Duration computeCacheTtl(Instant expiration, Duration maxDuration) {
+        if (expiration == null) {
+            return maxDuration
+        }
+        final timeUntilExpiry = Duration.between(Instant.now(), expiration)
+        final bufferedTtl = timeUntilExpiry.minus(REFRESH_BUFFER)
+
+        // Ensure TTL is at least MIN_CACHE_TTL
+        if (bufferedTtl.compareTo(MIN_CACHE_TTL) < 0) {
+            return MIN_CACHE_TTL
+        }
+
+        // Use the shorter of buffered TTL and max cache duration
+        return bufferedTtl.compareTo(maxDuration) < 0 ? bufferedTtl : maxDuration
     }
 
     /**
