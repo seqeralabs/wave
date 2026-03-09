@@ -31,6 +31,11 @@ import io.seqera.wave.exception.BadRequestException
 class K8sHelper {
 
     /**
+     * The key used for architecture-independent (noarch) workloads in node selector configuration
+     */
+    public static final String NOARCH_PLATFORM = 'noarch'
+
+    /**
      * Given the requested container platform and collection of node selector labels find the best
      * matching label
      *
@@ -73,9 +78,9 @@ class K8sHelper {
     static Map<String,String> getNoArchSelector(Map<String,String> nodeSelectors) {
         if( !nodeSelectors )
             return Collections.<String,String>emptyMap()
-        final value = nodeSelectors.get('noarch')
+        final value = nodeSelectors.get(NOARCH_PLATFORM)
         if( !value ) {
-            log.warn("Node selectors are configured but 'noarch' key is missing - available keys: ${nodeSelectors.keySet()}")
+            log.warn("Node selectors are configured but '${NOARCH_PLATFORM}' key is missing - available keys: ${nodeSelectors.keySet()}")
             return Collections.<String,String>emptyMap()
         }
         return toLabelMap(value)
@@ -92,6 +97,25 @@ class K8sHelper {
         if( parts.size() != 2 )
             throw new IllegalArgumentException("Label should be specified as 'key=value' -- offending value: '$label'")
         return Map.of(parts[0], parts[1])
+    }
+
+    /**
+     * Validate that all node selector keys are valid container platforms.
+     * The special 'noarch' key is skipped as it's used for architecture-independent workloads.
+     *
+     * @param nodeSelectors
+     *      A map that associate the platform architecture with a corresponding node selector label
+     * @throws BadRequestException if any key is not a valid container platform
+     */
+    static void validateNodeSelectorPlatforms(Map<String,String> nodeSelectors) {
+        if( !nodeSelectors )
+            return
+        for( Map.Entry<String,String> it : nodeSelectors ) {
+            // skip 'noarch' key as it's a special key for architecture-independent workloads
+            if( it.key == NOARCH_PLATFORM )
+                continue
+            ContainerPlatform.of(it.key) // throws BadRequestException if invalid
+        }
     }
 
 }

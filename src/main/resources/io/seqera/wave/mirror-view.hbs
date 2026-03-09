@@ -67,7 +67,7 @@
                 <td>Source container</td>
                 <td>
                     {{mirror_source_image}}
-                    <button class="action-btn" onclick="copyToClipboard('{{mirror_source_image}}', this)" title="Copy source container">
+                    <button class="action-btn" data-copy="{{mirror_source_image}}" title="Copy source container">
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
                             <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
                         </svg>
@@ -78,7 +78,7 @@
                 <td>Target container</td>
                 <td>
                     {{mirror_target_image}}
-                    <button class="action-btn" onclick="copyToClipboard('{{mirror_target_image}}', this)" title="Copy target container">
+                    <button class="action-btn" data-copy="{{mirror_target_image}}" title="Copy target container">
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
                             <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
                         </svg>
@@ -89,7 +89,7 @@
                 <td>Container digest</td>
                 <td>
                     {{mirror_digest}}
-                    <button class="action-btn" onclick="copyToClipboard('{{mirror_digest}}', this)" title="Copy digest">
+                    <button class="action-btn" data-copy="{{mirror_digest}}" title="Copy digest">
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
                             <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
                         </svg>
@@ -132,12 +132,12 @@
                         <pre class="code-text" id="logData">{{mirror_logs}}</pre>
                     </div>
                     <div class="code-actions">
-                        <button class="action-btn" onclick="copyToClipboard(document.getElementById('logData').textContent, this)" title="Copy logs">
+                        <button class="action-btn" data-copy-from-element="logData" title="Copy logs">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
                                 <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
                             </svg>
                         </button>
-                        <button onclick="window.location.href='{{mirror_log_url}}'" class="action-btn" title="Download">
+                        <button class="action-btn" data-download-url="{{mirror_log_url}}" title="Download">
                             <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="black" d="M5 20h14v-2H5m14-9h-4V3H9v6H5l7 7z"/></svg>
                         </button>
                     </div>

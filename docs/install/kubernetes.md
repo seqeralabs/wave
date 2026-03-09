@@ -124,9 +124,7 @@ data:
       # Security scanning configuration - disabled for Wave base installation
       scan:
         enabled: false
-      # Blob caching configuration - disabled for Wave base installation
-      blobCache:
-        enabled: false
+      # Blob caching configuration - disabled by default (omit the blobCache stanza entirely when not in use)
       # Database connection settings
       db:
         uri: "jdbc:postgresql://your-postgres-host:5432/wave"
