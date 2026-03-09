@@ -76,7 +76,7 @@
                 <td>
                     {{build_digest}}
                     {{#if build_digest}}
-                        <button class="action-btn" onclick="copyToClipboard('{{build_digest}}', this)" title="Copy digest">
+                        <button class="action-btn" data-copy="{{build_digest}}" title="Copy digest">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
                                 <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
                             </svg>
@@ -128,7 +128,7 @@
         <div class="code-section">
             <div class="code-container">
                 <div class="code-actions">
-                    <button class="action-btn" onclick="copyToClipboard(document.getElementById('containerFileData').textContent, this)" title="Copy container file">
+                    <button class="action-btn" data-copy-from-element="containerFileData" title="Copy container file">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
                             <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
                         </svg>
@@ -147,7 +147,7 @@
             <div class="code-section">
                 <div class="code-container">
                     <div class="code-actions">
-                        <button class="action-btn" onclick="copyToClipboard(document.getElementById('condaFileData').textContent, this)" title="Copy Conda file">
+                        <button class="action-btn" data-copy-from-element="condaFileData" title="Copy Conda file">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
                                 <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
                             </svg>
@@ -168,12 +168,12 @@
                 <div class="code-section">
                     <div class="code-container">
                         <div class="code-actions">
-                            <button class="action-btn" onclick="copyToClipboard(document.getElementById('lockFileData').textContent, this)" title="Copy conda lockfile">
+                            <button class="action-btn" data-copy-from-element="lockFileData" title="Copy conda lockfile">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
                                     <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
                                 </svg>
                             </button>
-                            <button onclick="window.location.href='{{build_conda_lock_url}}'" class="action-btn" title="Download">
+                            <button class="action-btn" data-download-url="{{build_conda_lock_url}}" title="Download">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="black" d="M5 20h14v-2H5m14-9h-4V3H9v6H5l7 7z"/></svg>
                             </button>
                         </div>
@@ -192,12 +192,12 @@
             <div class="code-section">
                 <div class="code-container build-logs">
                     <div class="code-actions">
-                        <button class="action-btn" onclick="copyToClipboard(document.getElementById('logData').textContent, this)" title="Copy logs">
+                        <button class="action-btn" data-copy-from-element="logData" title="Copy logs">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
                                 <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
                             </svg>
                         </button>
-                        <button onclick="window.location.href='{{build_log_url}}'" class="action-btn" title="Download">
+                        <button class="action-btn" data-download-url="{{build_log_url}}" title="Download">
                             <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="black" d="M5 20h14v-2H5m14-9h-4V3H9v6H5l7 7z"/></svg>
                         </button>
                     </div>

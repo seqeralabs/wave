@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2025, Seqera Labs
+ *  Copyright (c) 2023-2025, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,35 +16,37 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.persistence.migrate.cache
-
-import java.time.Duration
+package io.seqera.wave.service.license
 
 import groovy.transform.CompileStatic
-import io.seqera.serde.moshi.MoshiEncodeStrategy
-import io.seqera.data.store.state.AbstractStateStore
-import io.seqera.data.store.state.impl.StateProvider
+import io.micronaut.context.annotation.Requires
+import io.seqera.service.pairing.LicenseValidator
+import jakarta.inject.Inject
 import jakarta.inject.Singleton
+
 /**
- * Cache for data migration entries
+ * Bridge implementation that adapts the Wave LicenseManClient to the
+ * lib-pairing LicenseValidator interface.
  *
- * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Singleton
 @CompileStatic
-class DataMigrateCache extends AbstractStateStore<DataMigrateEntry> {
+@Requires(bean = LicenseManClient)
+class LicenseManValidator implements LicenseValidator {
 
-    DataMigrateCache(StateProvider<String,String> provider) {
-        super(provider, new MoshiEncodeStrategy<DataMigrateEntry>() {})
-    }
-
-    @Override
-    protected String getPrefix() {
-        return 'migrate-surreal/v1'
-    }
+    @Inject
+    private LicenseManClient licenseManClient
 
     @Override
-    protected Duration getDuration() {
-        return Duration.ofDays(30)
+    LicenseCheckResult checkToken(String token, String product) {
+        final response = licenseManClient.checkToken(token, product)
+        if (response == null) {
+            return null
+        }
+        return new LicenseCheckResult(
+            id: response.id,
+            expiration: response.expiration
+        )
     }
 }

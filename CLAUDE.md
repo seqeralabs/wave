@@ -22,6 +22,7 @@ Wave requires several environment variables for registry authentication:
 - `QUAY_USER`/`QUAY_PAT` for Quay.io
 - `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` for AWS ECR
 - `AZURECR_USER`/`AZURECR_PAT` for Azure Container Registry
+- `WAVE_AWS_JUMP_ROLE_ARN`/`WAVE_AWS_JUMP_EXTERNAL_ID` for cross-account IAM role chaining
 
 ## Architecture
 
