@@ -87,18 +87,47 @@ class AwsEcrService {
 
     static final private String EXPIRED_TOKEN_ERROR = 'ExpiredTokenException'
 
+    /**
+     * Cache key for ECR auth tokens.
+     * Identifies a unique credential context without carrying actual AWS credentials.
+     * For static credentials: accessKey + secretKey identify the key.
+     * For role-based auth: roleArn + externalId identify the key.
+     */
     @Canonical
     private static class AwsCreds implements TieredKey {
+        // AWS access key ID (static credentials flow)
         String accessKey
+        // AWS secret access key (static credentials flow)
         String secretKey
+        // IAM role ARN (role-based auth flow)
+        String roleArn
+        // External ID for cross-account role assumption (role-based auth flow)
+        String externalId
+        // Temporary session token from STS AssumeRole
         String sessionToken
+        // AWS region derived from the ECR registry hostname
         String region
+        // true for ECR Public (public.ecr.aws), false for private ECR
         boolean ecrPublic
 
         @Override
         String stableHash() {
-            final token = sessionToken ?: ''
-            return RegHelper.sipHash(accessKey, secretKey, token, region, ecrPublic)
+            if (roleArn) {
+                return RegHelper.sipHash(roleArn, externalId, region, ecrPublic)
+            }
+            // sessionToken is only included when present to preserve backward-compatible hash values
+            // for static credentials (where sessionToken is always null)
+            final args = [accessKey, secretKey, region, ecrPublic] as List<Object>
+            if (sessionToken) args.add(sessionToken)
+            return RegHelper.sipHash(args.toArray())
+        }
+
+        static AwsCreds ofRole(String roleArn, String externalId, String region, boolean ecrPublic) {
+            new AwsCreds(roleArn: roleArn, externalId: externalId, region: region, ecrPublic: ecrPublic)
+        }
+
+        static AwsCreds ofKeys(String accessKey, String secretKey, String sessionToken, String region, boolean ecrPublic) {
+            new AwsCreds(accessKey: accessKey, secretKey: secretKey, sessionToken: sessionToken, region: region, ecrPublic: ecrPublic)
         }
     }
 
@@ -109,6 +138,7 @@ class AwsEcrService {
     }
 
     AwsEcrAuthToken load(AwsCreds creds) throws Exception {
+        assert !creds.roleArn, "Cannot load ECR token from role-based cache key — use temporary credentials"
         def token = creds.ecrPublic
                 ? getLoginToken1(creds.accessKey, creds.secretKey, creds.sessionToken, creds.region)
                 : getLoginToken0(creds.accessKey, creds.secretKey, creds.sessionToken, creds.region)
@@ -439,7 +469,7 @@ class AwsEcrService {
      */
     protected String getLoginTokenWithStaticCredentials(String accessKey, String secretKey, String region, boolean isPublic) {
         log.debug "Getting ECR login token with static credentials - region=$region"
-        final key = new AwsCreds(accessKey, secretKey, null, region, isPublic)
+        final key = AwsCreds.ofKeys(accessKey, secretKey, null, region, isPublic)
         return cache.getOrCompute(key, (k) -> load(key), cache.duration).value
     }
 
@@ -455,14 +485,7 @@ class AwsEcrService {
     protected String getLoginTokenWithRole(String roleArn, String externalId, String region, boolean isPublic) {
         log.debug "Getting ECR login token with role assumption - roleArn=$roleArn; region=$region"
 
-        // Create cache key using roleArn (stable) instead of temporary credentials (which change)
-        final key = new AwsCreds(
-                roleArn,
-                externalId ?: '',
-                null,  // no session token for role-based cache key
-                region,
-                isPublic
-        )
+        final key = AwsCreds.ofRole(roleArn, externalId, region, isPublic)
 
         // Use Pair-based getOrCompute to set TTL dynamically from STS credential expiration
         return cache.getOrCompute(key, (String k) -> {
@@ -475,7 +498,7 @@ class AwsEcrService {
         try {
             final tempCreds = assumeRole(roleArn, externalId, region)
             final ttl = computeCacheTtl(tempCreds.expiration(), cache.duration)
-            final tempKey = new AwsCreds(
+            final tempKey = AwsCreds.ofKeys(
                     tempCreds.accessKeyId(),
                     tempCreds.secretAccessKey(),
                     tempCreds.sessionToken(),
