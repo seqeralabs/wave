@@ -141,11 +141,14 @@ class AwsEcrServiceTest extends Specification {
 
         when: 'creating cache key with static credentials'
         def credsClass = service.class.getDeclaredClasses().find { it.simpleName == 'AwsCreds' }
-        def creds = credsClass.newInstance(accessKey, secretKey, null, region, false)
+        // Constructor order: accessKey, secretKey, roleArn, externalId, sessionToken, region, ecrPublic
+        def creds = credsClass.newInstance(accessKey, secretKey, null, null, null, region, false)
 
         then: 'credentials should be set correctly'
         creds.accessKey == accessKey
         creds.secretKey == secretKey
+        creds.roleArn == null
+        creds.externalId == null
         creds.sessionToken == null
         creds.region == region
         creds.ecrPublic == false
@@ -159,13 +162,16 @@ class AwsEcrServiceTest extends Specification {
         def sessionToken = 'tempSessionToken'
         def region = 'us-east-1'
 
-        when: 'creating cache key with session credentials'
+        when: 'creating cache key with session credentials (from STS)'
         def credsClass = service.class.getDeclaredClasses().find { it.simpleName == 'AwsCreds' }
-        def creds = credsClass.newInstance(accessKeyId, secretAccessKey, sessionToken, region, false)
+        // Constructor order: accessKey, secretKey, roleArn, externalId, sessionToken, region, ecrPublic
+        def creds = credsClass.newInstance(accessKeyId, secretAccessKey, null, null, sessionToken, region, false)
 
         then: 'credentials should be set correctly'
         creds.accessKey == accessKeyId
         creds.secretKey == secretAccessKey
+        creds.roleArn == null
+        creds.externalId == null
         creds.sessionToken == sessionToken
         creds.region == region
         creds.ecrPublic == false
@@ -176,21 +182,22 @@ class AwsEcrServiceTest extends Specification {
         def service = new AwsEcrService()
 
         when: 'creating cache key with session token'
+        // Constructor order: accessKey, secretKey, roleArn, externalId, sessionToken, region, ecrPublic
         def creds1 = service.class.getDeclaredClasses()
                 .find { it.simpleName == 'AwsCreds' }
-                .newInstance('accessKey', 'secretKey', 'sessionToken1', 'us-east-1', false)
+                .newInstance('accessKey', 'secretKey', null, null, 'sessionToken1', 'us-east-1', false)
         def hash1 = creds1.stableHash()
 
         and: 'creating cache key with different session token'
         def creds2 = service.class.getDeclaredClasses()
                 .find { it.simpleName == 'AwsCreds' }
-                .newInstance('accessKey', 'secretKey', 'sessionToken2', 'us-east-1', false)
+                .newInstance('accessKey', 'secretKey', null, null, 'sessionToken2', 'us-east-1', false)
         def hash2 = creds2.stableHash()
 
         and: 'creating cache key without session token'
         def creds3 = service.class.getDeclaredClasses()
                 .find { it.simpleName == 'AwsCreds' }
-                .newInstance('accessKey', 'secretKey', null, 'us-east-1', false)
+                .newInstance('accessKey', 'secretKey', null, null, null, 'us-east-1', false)
         def hash3 = creds3.stableHash()
 
         then: 'hashes should be different when session tokens differ'
