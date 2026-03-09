@@ -26,7 +26,7 @@ Wave fetches credentials from Tower API
          |
 Tower returns: { assumeRoleArn: "arn:...", externalId: "uuid-..." }
          |
-Wave detects role ARN pattern (arn:aws:iam::\d{12}:role/.+)
+Wave detects role ARN pattern (arn:aws(-cn|-us-gov)?:iam::\d{12}:role/[\w+=,.@\/-]+)
          |
 Wave calls STS AssumeRole using its own AWS identity
   - roleArn: customer's role
@@ -297,12 +297,76 @@ wave:
 
 Static AWS credentials (access key + secret key) continue to work unchanged. Wave auto-detects
 the credential type by matching the username against the IAM role ARN pattern
-`arn:aws:iam::\d{12}:role/.+`:
+`arn:aws(-cn|-us-gov)?:iam::\d{12}:role/[\w+=,.@\/-]+`:
 
 | Username | Detected As | Auth Flow |
 |----------|-------------|-----------|
 | `AKIAIOSFODNN7EXAMPLE` | Static credentials | Direct ECR auth |
 | `arn:aws:iam::123456789012:role/MyRole` | IAM Role ARN | STS AssumeRole → ECR auth |
+
+---
+
+## Jump Role Chaining (Optional)
+
+When Wave's own IAM identity cannot directly assume customer roles (e.g., due to organizational policy),
+configure an intermediate jump role. Wave first assumes the jump role, then uses those temporary
+credentials to assume the customer's target role.
+
+### Configuration
+
+Add to `application-local.yml` or environment variables:
+
+```yaml
+wave:
+  aws:
+    jump-role-arn: "arn:aws:iam::WAVE_ACCOUNT_ID:role/WaveJumpRole"
+    jump-external-id: "jump-role-external-id"   # optional
+    jump-role-cache:
+      duration: 45m    # cache duration for jump role credentials
+      max-size: 100    # max cached entries (one per region)
+```
+
+Or via environment variables:
+```bash
+export WAVE_AWS_JUMP_ROLE_ARN="arn:aws:iam::WAVE_ACCOUNT_ID:role/WaveJumpRole"
+export WAVE_AWS_JUMP_EXTERNAL_ID="jump-role-external-id"
+```
+
+### How It Works
+
+```
+Wave's default credentials
+    → STS AssumeRole (jump role) — cached in AwsRoleCache by region
+        → Jump role temporary credentials
+            → STS AssumeRole (customer's target role)
+                → Target role temporary credentials
+                    → ECR GetAuthorizationToken
+```
+
+### IAM Setup
+
+1. **Jump role trust policy**: Must trust Wave's default identity
+2. **Jump role permissions**: Must have `sts:AssumeRole` on customer roles
+3. **Customer role trust policy**: Must trust the jump role (not Wave's direct identity)
+
+When `wave.aws.jump-role-arn` is NOT configured, Wave assumes customer roles directly using
+its default credentials (no jump role overhead).
+
+### STS Retry Configuration
+
+STS calls are retried on transient errors (5xx, Throttling) with exponential backoff:
+
+```yaml
+wave:
+  aws:
+    sts:
+      retry:
+        delay: 1s
+        maxDelay: 10s
+        attempts: 3
+        multiplier: 2.0
+        jitter: 0.25
+```
 
 ---
 

@@ -225,7 +225,7 @@ When Wave's own IAM role cannot directly assume customer roles (e.g., due to org
 - **FR-014**: Platform MUST validate external ID format (2-1224 characters, pattern `[\w+=,.@:\/-]*`)
 - **FR-015**: Platform MUST display external ID in read-only field with copy-to-clipboard functionality
 - **FR-016**: External ID MUST remain immutable after generation (no automatic rotation)
-- **FR-017**: Cache key MUST include access key, secret key, session token, region, and ECR public flag to ensure uniqueness
+- **FR-017**: Cache key MUST ensure uniqueness per credential context. For static credentials: `stableHash()` uses access key, secret key, region, and ECR public flag (plus session token when present). For role-based credentials: `stableHash()` uses role ARN, external ID, region, and ECR public flag (stable across STS session refreshes).
 - **FR-019**: Wave MUST use session name format `wave-ecr-{accountId}-{timestamp}` for AssumeRole calls, where `accountId` is the 12-digit AWS account extracted from the role ARN (or `unknown` if unparsable) and `timestamp` is epoch millis. For jump role sessions, the format is `wave-jump-{accountId}-{timestamp}`.
 - **FR-020**: System MUST log all STS AssumeRole calls with sufficient context (role ARN, region, external ID presence, success/failure)
 - **FR-021**: Wave MUST support optional jump role chaining via `wave.aws.jump-role-arn` configuration. When set, Wave first assumes the jump role using default credentials, then uses jump role credentials to assume the target customer role.

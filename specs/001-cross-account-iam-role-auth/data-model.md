@@ -8,7 +8,7 @@ Wave's data model changes are minimal and focused on in-memory structures for cr
 
 ### 1. AwsCreds (Inner Class in AwsEcrService)
 
-**Location**: `src/main/groovy/io/seqera/wave/service/aws/AwsEcrService.groovy:58`
+**Location**: `src/main/groovy/io/seqera/wave/service/aws/AwsEcrService.groovy:96`
 
 **Purpose**: Cache key for ECR credentials
 
@@ -234,24 +234,43 @@ cache.getOrCompute(key, (k) -> load(key), cache.duration)
 
 ### Per Cache Entry Size
 
+**AwsEcrCache** (ECR auth tokens — `AwsEcrAuthToken`):
+
 | Field | Size | Notes |
 |-------|------|-------|
-| `accessKeyId` | 20 bytes | ASIA... or AKIA... format |
+| Cache key (`stableHash()`) | ~32 bytes | SipHash string |
+| `AwsEcrAuthToken.value` | ~1500 bytes | Base64-decoded ECR username:password |
+| Cache metadata (TTL, etc.) | ~64 bytes | AbstractTieredCache overhead |
+| **Total per entry** | **~1.6 KB** | Same for both role-based and static |
+
+**AwsRoleCache** (jump role credentials — `AwsStsCredentials`):
+
+| Field | Size | Notes |
+|-------|------|-------|
+| Cache key (region string) | ~16 bytes | e.g., "us-east-1" |
+| `accessKeyId` | 20 bytes | ASIA... format |
 | `secretAccessKey` | 40 bytes | Base64-like string |
-| `sessionToken` | ~1000 bytes | JWT-like token (role-based only) |
-| `stsExpiration` | 16 bytes | Instant timestamp |
-| `authToken` | ~1500 bytes | Base64 encoded ECR token |
-| `tokenExpiration` | 16 bytes | Instant timestamp |
-| **Total (role-based)** | **~2.6 KB** | |
-| **Total (static)** | **~1.6 KB** | No session token |
+| `sessionToken` | ~1000 bytes | JWT-like token |
+| `expirationEpochMilli` | 8 bytes | long |
+| Cache metadata | ~64 bytes | AbstractTieredCache overhead |
+| **Total per entry** | **~1.1 KB** | One per region (max ~100) |
 
 ### Scale Estimates
 
-| Customers | Memory (Role-based) | Memory (Static) |
-|-----------|---------------------|-----------------|
-| 100 | 260 KB | 160 KB |
-| 1,000 | 2.6 MB | 1.6 MB |
-| 10,000 | 26 MB | 16 MB |
+**AwsEcrCache scale** (one entry per unique credential context):
+
+| Customers | Memory |
+|-----------|--------|
+| 100 | 160 KB |
+| 1,000 | 1.6 MB |
+| 10,000 | 16 MB |
+
+**AwsRoleCache scale** (one entry per region, max 100):
+
+| Regions | Memory |
+|---------|--------|
+| 5 | 5.5 KB |
+| 20 | 22 KB |
 
 **Conclusion**: Negligible impact (Wave typically uses 2 GB heap)
 

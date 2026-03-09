@@ -270,7 +270,6 @@
 - [x] T072 [P] JavaDoc comments on all public methods in `AwsEcrService.groovy` (lines 114-142, 244-252, 274-297, 335-341) ✅
 - [x] T073 [P] STS retry implemented via `Retryable.of(stsConfig)` + `isRetryableStsError()` in `assumeTargetRole()` and `doAssumeJumpRole()` ✅ (duplicate of T090)
 - [x] T074 [P] `AwsCreds` is private inner class — `@Canonical` generates toString but credentials are only logged via explicit log statements which redact sensitive fields ✅
-- [ ] T075 **REMAINING**: Update changelog.txt with feature description and version bump
 - [ ] T076 Run quickstart.md validation for all 8 user stories
 - [ ] T077 Code review and security audit focusing on credential handling
 - [ ] T078 Performance testing under load: 1000 concurrent credential sessions

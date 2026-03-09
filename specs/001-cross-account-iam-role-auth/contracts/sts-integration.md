@@ -2,14 +2,14 @@
 
 ## Overview
 
-This document defines the contract between Wave and AWS STS (Security Token Service) for assuming IAM roles to obtain temporary credentials.
+This document defines the contract between Wave and AWS STS (Security Token Service) for assuming IAM roles to obtain temporary credentials, including jump role chaining.
 
 ## STS AssumeRole Request
 
 ### API Endpoint
 
 ```
-POST https://sts.amazonaws.com/
+POST https://sts.<region>.amazonaws.com/
 Action: AssumeRole
 Version: 2011-06-15
 ```
@@ -19,28 +19,31 @@ Version: 2011-06-15
 | Parameter | Type | Required | Description | Example |
 |-----------|------|----------|-------------|---------|
 | `RoleArn` | String | Yes | ARN of the IAM role to assume | `arn:aws:iam::123456789012:role/WaveEcrAccess` |
-| `RoleSessionName` | String | Yes | Identifier for the session (appears in CloudTrail) | `wave-ecr-access-1707494400000` |
-| `ExternalId` | String | Yes | Unique identifier to prevent confused deputy attacks | `a1b2c3d4-e5f6-7890-abcd-ef1234567890` |
+| `RoleSessionName` | String | Yes | Identifier for the session (appears in CloudTrail) | `wave-ecr-123456789012-1707494400000` |
+| `ExternalId` | String | No | Unique identifier to prevent confused deputy attacks (conditionally included when provided) | `a1b2c3d4-e5f6-7890-abcd-ef1234567890` |
 | `DurationSeconds` | Integer | Yes | Session duration in seconds (900 to 43200) | `3600` (1 hour) |
-| `Policy` | String | No | Session policy (not used in initial implementation) | - |
-| `Tags` | List | No | Session tags (not used in initial implementation) | - |
+| `Policy` | String | No | Session policy (not used) | - |
+| `Tags` | List | No | Session tags (not used) | - |
 
 ### Groovy/Java SDK Request
 
 ```groovy
 import software.amazon.awssdk.services.sts.StsClient
 import software.amazon.awssdk.services.sts.model.AssumeRoleRequest
-import software.amazon.awssdk.services.sts.model.AssumeRoleResponse
 
+// Built via AwsEcrService.buildAssumeRoleRequest()
 AssumeRoleRequest request = AssumeRoleRequest.builder()
     .roleArn('arn:aws:iam::123456789012:role/WaveEcrAccess')
-    .roleSessionName("wave-ecr-access-${System.currentTimeMillis()}")
-    .externalId('a1b2c3d4-e5f6-7890-abcd-ef1234567890')
+    .roleSessionName("wave-ecr-${extractAccountId(roleArn)}-${System.currentTimeMillis()}")
     .durationSeconds(3600)
+    .externalId('a1b2c3d4-e5f6-7890-abcd-ef1234567890')  // only set when provided
     .build()
-
-AssumeRoleResponse response = stsClient.assumeRole(request)
 ```
+
+**Session Name Format**:
+- Target role: `wave-ecr-{accountId}-{timestamp}` (e.g., `wave-ecr-123456789012-1707494400000`)
+- Jump role: `wave-jump-{accountId}-{timestamp}` (e.g., `wave-jump-128997144437-1707494400000`)
+- Account ID extracted via `extractAccountId(roleArn)` — returns `unknown` if ARN cannot be parsed
 
 ---
 
@@ -57,8 +60,8 @@ AssumeRoleResponse {
         expiration: "2024-02-09T12:00:00Z"    // When credentials expire (Instant)
     },
     assumedRoleUser: AssumedRoleUser {
-        assumedRoleId: "AROA...:wave-ecr-access-1707494400000",
-        arn: "arn:aws:sts::123456789012:assumed-role/WaveEcrAccess/wave-ecr-access-1707494400000"
+        assumedRoleId: "AROA...:wave-ecr-123456789012-1707494400000",
+        arn: "arn:aws:sts::123456789012:assumed-role/WaveEcrAccess/wave-ecr-123456789012-1707494400000"
     },
     packedPolicySize: 6  // Percentage of max policy size used
 }
@@ -73,8 +76,6 @@ String accessKeyId = creds.accessKeyId()
 String secretAccessKey = creds.secretAccessKey()
 String sessionToken = creds.sessionToken()
 Instant expiration = creds.expiration()
-
-log.info("Assumed role successfully. Credentials expire at: ${expiration}")
 ```
 
 ---
@@ -83,7 +84,7 @@ log.info("Assumed role successfully. Credentials expire at: ${expiration}")
 
 ### AccessDenied (HTTP 403)
 
-**Cause**: Wave's service role is not allowed to assume the target role
+**Cause**: Wave's service role (or jump role) is not allowed to assume the target role
 
 ```xml
 <ErrorResponse>
@@ -95,19 +96,15 @@ log.info("Assumed role successfully. Credentials expire at: ${expiration}")
 </ErrorResponse>
 ```
 
-**Resolution**: Customer must add Wave's service role to their IAM role's trust policy
+**Resolution**: Customer must add Wave's service role (or jump role) to their IAM role's trust policy
 
-**Groovy Exception**:
+**Wave Handling** (`AwsEcrService.mapStsException()`):
 ```groovy
-catch (StsException e) {
-    if (e.awsErrorDetails().errorCode() == 'AccessDenied') {
-        throw new UnauthorizedException(
-            "Wave's service role does not have permission to assume the specified role. " +
-            "Verify the trust policy in your IAM role.",
-            e
-        )
-    }
-}
+case 'AccessDenied':
+    return new AwsEcrAuthException(
+        "Wave's service role does not have permission to assume the specified role. " +
+        "Verify the trust policy in your IAM role allows Wave to assume it. " +
+        "Error: ${e.message}", e)
 ```
 
 ---
@@ -126,18 +123,15 @@ catch (StsException e) {
 </ErrorResponse>
 ```
 
-**Resolution**: Validate inputs before calling STS
+**Resolution**: Validate inputs — Wave delegates validation to AWS STS
 
-**Groovy Exception**:
+**Wave Handling**:
 ```groovy
-catch (StsException e) {
-    if (e.awsErrorDetails().errorCode() == 'InvalidParameterValue') {
-        throw new BadRequestException(
-            "Invalid external ID or role ARN format: ${e.awsErrorDetails().errorMessage()}",
-            e
-        )
-    }
-}
+case 'InvalidParameterValue':
+    return new AwsEcrAuthException(
+        "Invalid role ARN or external ID format. " +
+        "Ensure the role ARN follows the pattern 'arn:aws:iam::ACCOUNT_ID:role/ROLE_NAME'. " +
+        "Error: ${e.message}", e)
 ```
 
 ---
@@ -158,30 +152,26 @@ catch (StsException e) {
 
 **Resolution**: Customer must enable STS endpoints for the region
 
-**Groovy Exception**:
+**Wave Handling**:
 ```groovy
-catch (StsException e) {
-    if (e.awsErrorDetails().errorCode() == 'RegionDisabledException') {
-        throw new BadRequestException(
-            "STS is not enabled in the specified region. " +
-            "Enable STS endpoints for this region in AWS.",
-            e
-        )
-    }
-}
+case 'RegionDisabledException':
+    return new AwsEcrAuthException(
+        "STS is not enabled in the specified region. " +
+        "Enable STS endpoints for this region in AWS. " +
+        "Error: ${e.message}", e)
 ```
 
 ---
 
-### ExpiredToken (HTTP 400)
+### ExpiredTokenException (HTTP 400)
 
-**Cause**: Attempting to use credentials after expiration
+**Cause**: Attempting to use expired temporary credentials (e.g., expired jump role credentials)
 
 ```xml
 <ErrorResponse>
   <Error>
     <Type>Sender</Type>
-    <Code>ExpiredToken</Code>
+    <Code>ExpiredTokenException</Code>
     <Message>The security token included in the request is expired</Message>
   </Error>
 </ErrorResponse>
@@ -189,15 +179,65 @@ catch (StsException e) {
 
 **Resolution**: Automatically refresh credentials and retry
 
-**Groovy Exception**:
+**Wave Handling** — Two layers:
+1. **`mapStsException()`**: Maps to `AwsEcrAuthException` with "Temporary credentials have expired" message
+2. **`assumeRole()` retry**: When jump role credentials expire (race between cache TTL and actual expiry), catches `ExpiredTokenException` and retries once via `doAssumeJumpRole()` (bypasses cache for fresh credentials)
+
 ```groovy
-catch (AwsServiceException e) {
-    if (e.awsErrorDetails().errorCode() == 'ExpiredToken') {
-        log.warn("Temporary credentials expired. Refreshing...")
-        cache.invalidate(credKey)
-        return authenticateWithRetry(registry, roleArn, externalId)  // Retry
+// In assumeRole() — jump role expired token retry (FR-011)
+catch (StsException e) {
+    if (e.awsErrorDetails()?.errorCode() == 'ExpiredTokenException') {
+        final freshCreds = doAssumeJumpRole(region)
+        return stsClient(region, freshCreds).withCloseable { freshClient ->
+            assumeTargetRole(freshClient, roleArn, externalId)
+        }
     }
+    throw e
 }
+```
+
+---
+
+## Jump Role Chaining
+
+### Overview
+
+When `wave.aws.jump-role-arn` is configured, Wave performs two-hop role assumption:
+
+```
+Wave's default credentials
+    → STS AssumeRole (jump role)
+        → jump role temporary credentials
+            → STS AssumeRole (customer's target role)
+                → target role temporary credentials
+                    → ECR GetAuthorizationToken
+```
+
+### Jump Role Cache
+
+Jump role credentials are cached in `AwsRoleCache` (keyed by region) to avoid redundant STS calls:
+
+```groovy
+protected Credentials assumeJumpRole(String region) {
+    return jumpRoleCache.getOrCompute(region, (String k) -> {
+        final creds = doAssumeJumpRole(region)
+        final cached = AwsStsCredentials.from(creds)
+        final ttl = computeCacheTtl(creds.expiration(), jumpRoleCache.duration)
+        return new AbstractTieredCache.Pair<AwsStsCredentials, Duration>(cached, ttl)
+    }).toSdkCredentials()
+}
+```
+
+### Configuration
+
+```yaml
+wave:
+  aws:
+    jump-role-arn: "arn:aws:iam::WAVE_ACCOUNT_ID:role/WaveJumpRole"      # optional
+    jump-external-id: "jump-role-external-id"                             # optional
+    jump-role-cache:
+      duration: 45m    # max cache duration for jump role credentials
+      max-size: 100    # max cached entries (one per region)
 ```
 
 ---
@@ -227,6 +267,8 @@ catch (AwsServiceException e) {
   ]
 }
 ```
+
+**Note**: When jump role chaining is configured, the Principal should be the jump role ARN instead of Wave's direct identity.
 
 **Critical**: External ID MUST match exactly, or AssumeRole will fail with `AccessDenied`
 
@@ -301,56 +343,8 @@ catch (AwsServiceException e) {
 | Burst capacity | 10000 | Short-term burst |
 
 **Wave's Expected Usage**:
-- 1000 customers × 1 call/hour = **0.28 calls/second**
+- 1000 customers x 1 call/hour = **0.28 calls/second**
 - **Utilization**: 0.0056% of limit (no throttling concern)
-
----
-
-## Contract Validation
-
-### Pre-Request Validation (Wave)
-
-```groovy
-void validateAssumeRoleInputs(String roleArn, String externalId) {
-    // Validate role ARN format
-    if (!roleArn?.matches(/^arn:aws:iam::\d{12}:role\/.+/)) {
-        throw new BadRequestException("Invalid IAM role ARN format: ${roleArn}")
-    }
-
-    // Validate external ID format
-    if (externalId == null || externalId.length() < 2 || externalId.length() > 1224) {
-        throw new BadRequestException("External ID must be 2-1224 characters")
-    }
-
-    if (!externalId.matches(/[\w+=,.@:\/-]*/)) {
-        throw new BadRequestException("External ID contains invalid characters")
-    }
-}
-```
-
-### Post-Response Validation (Wave)
-
-```groovy
-void validateAssumeRoleResponse(AssumeRoleResponse response) {
-    Credentials creds = response.credentials()
-
-    // Validate credentials are present
-    if (creds == null || creds.accessKeyId() == null ||
-        creds.secretAccessKey() == null || creds.sessionToken() == null) {
-        throw new WaveException("STS returned incomplete credentials")
-    }
-
-    // Validate expiration is in the future
-    if (creds.expiration().isBefore(Instant.now())) {
-        throw new WaveException("STS returned already-expired credentials")
-    }
-
-    // Validate temporary access key format (starts with ASIA)
-    if (!creds.accessKeyId().startsWith('ASIA')) {
-        log.warn("Unexpected access key format: ${creds.accessKeyId().take(4)}...")
-    }
-}
-```
 
 ---
 
@@ -358,56 +352,64 @@ void validateAssumeRoleResponse(AssumeRoleResponse response) {
 
 ### Retryable Errors
 
-- `ServiceUnavailableException` (HTTP 503)
-- `RequestTimeout` (HTTP 408)
-- Network connectivity errors
+- HTTP 5xx server errors
+- `Throttling` error code
+
+### Non-Retryable Errors
+
+- `AccessDenied` (customer configuration issue)
+- `InvalidParameterValue` (invalid input)
+- `RegionDisabledException` (region configuration issue)
 
 ### Retry Configuration
 
+Uses `Retryable.of(stsConfig)` with `StsClientConfig` implementing `Retryable.Config`:
+
 ```groovy
-@Retryable(
-    attempts = '3',
-    delay = '500ms',
-    multiplier = '2.0',
-    includes = [StsException],
-    excludes = [AccessDeniedException, InvalidParameterException]
-)
-Mono<AssumeRoleResponse> assumeRoleWithRetry(AssumeRoleRequest request) {
-    return Mono.fromCallable(() -> stsClient.assumeRole(request))
+// StsClientConfig bean — wave.aws.sts.retry.* properties
+delay: 1s
+maxDelay: 10s
+attempts: 3
+multiplier: 2.0
+jitter: 0.25
+```
+
+**Implementation** (`AwsEcrService.doAssumeRole()`):
+```groovy
+private Credentials doAssumeRole(StsClient client, String roleArn, String externalId, String sessionPrefix) {
+    Retryable.<Credentials>of(stsConfig)
+            .retryCondition((Throwable t) -> isRetryableStsError(t))
+            .onRetry((event) -> log.debug("STS AssumeRole retry for $roleArn - attempt: ${event.attempt}"))
+            .apply(() -> {
+                final request = buildAssumeRoleRequest(roleArn, externalId, sessionPrefix)
+                return client.assumeRole(request).credentials()
+            })
 }
 ```
 
-**Retry Schedule**:
+**Retry Schedule** (typical):
 - Attempt 1: Immediate
-- Attempt 2: +500ms delay
-- Attempt 3: +1000ms delay
-- Total max: 1500ms of retries
+- Attempt 2: +1s delay (jittered)
+- Attempt 3: +2s delay (jittered)
+- Total max: ~3s of retries
 
 ---
 
 ## Monitoring & Observability
 
-### Metrics to Track
-
-```groovy
-@Timed(value = "wave.sts.assume_role", description = "STS AssumeRole duration")
-@Counted(value = "wave.sts.assume_role.calls", extraTags = ["result", "success"])
-AssumeRoleResponse assumeRole(AssumeRoleRequest request) {
-    // ...
-}
-```
-
-### Recommended Metrics
+### Recommended Metrics (MO-001 through MO-005)
 
 | Metric | Type | Tags | Description |
 |--------|------|------|-------------|
 | `wave.sts.assume_role.calls` | Counter | result={success\|failure}, error_code | Total AssumeRole calls |
 | `wave.sts.assume_role.duration` | Timer | - | AssumeRole call latency |
-| `wave.sts.credentials.expiring_soon` | Gauge | - | # credentials expiring in <5 min |
+| `wave.ecr.auth.cache.hit_rate` | Gauge | - | Cache hit rate |
+| `wave.ecr.auth.cache.size` | Gauge | - | Number of cached entries |
+| `wave.ecr.auth.method` | Counter | type={static\|role} | Auth method usage |
 
 ### CloudTrail Logging
 
-Every AssumeRole call generates a CloudTrail event in **customer's AWS account**:
+Every AssumeRole call generates a CloudTrail event in the **target account**:
 
 ```json
 {
@@ -420,7 +422,7 @@ Every AssumeRole call generates a CloudTrail event in **customer's AWS account**
   },
   "requestParameters": {
     "roleArn": "arn:aws:iam::123456789012:role/WaveEcrAccess",
-    "roleSessionName": "wave-ecr-access-1707494400000",
+    "roleSessionName": "wave-ecr-123456789012-1707494400000",
     "externalId": "HIDDEN_FOR_SECURITY"
   },
   "responseElements": {

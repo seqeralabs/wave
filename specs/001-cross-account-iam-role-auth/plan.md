@@ -39,7 +39,7 @@ Enable Wave to authenticate to customer AWS ECR registries using AWS STS AssumeR
 
 ✅ **Proxy Transparency**: Internal authentication change, invisible to Docker clients. No changes to Registry v2 API compliance.
 
-✅ **Async-by-Default Operations**: STS AssumeRole is I/O-bound external API call. Initial implementation uses synchronous SDK calls (simpler), but wrapped in reactive patterns for future async optimization if latency becomes issue.
+✅ **Async-by-Default Operations**: STS AssumeRole is I/O-bound external API call. Initial implementation uses synchronous SDK calls inside `cache.getOrCompute()`. **Justification**: The cache hit path (>95% of requests per NFR-002) involves zero I/O — only the cache miss path triggers a synchronous STS call, bounded by NFR-003 (<2s). The STS call is not made from an HTTP request handler directly; it runs inside the tiered cache's compute function. If latency profiling shows contention under load, wrap in `Mono.fromCallable()` on the blocking executor as a follow-up.
 
 ✅ **Security Scanning Integration**: Not applicable - authentication change doesn't affect scanning workflow.
 
@@ -65,7 +65,7 @@ Enable Wave to authenticate to customer AWS ECR registries using AWS STS AssumeR
 specs/001-cross-account-iam-role-auth/
 ├── plan.md              # This file
 ├── research.md          # Technology choices, architecture decisions, Platform integration points
-├── data-model.md        # AwsCreds and CachedEcrCredentials modifications
+├── data-model.md        # AwsCreds refactor, AwsEcrAuthToken, AwsStsCredentials, cache strategy
 ├── quickstart.md        # Developer setup and testing guide for all 9 user stories
 ├── contracts/
 │   ├── sts-integration.md      # AWS STS AssumeRole API contract
@@ -436,27 +436,14 @@ The jump role's temporary credentials are then used to create an STS client for 
 
 **File**: `src/main/groovy/io/seqera/wave/service/aws/AwsEcrService.groovy`
 
-**Implementation**:
-```groovy
-import io.micrometer.core.annotation.Timed
-import io.micrometer.core.annotation.Counted
+**Implementation** (to be added — see T070):
 
-@Timed(value = "wave.sts.assume_role", description = "STS AssumeRole duration")
-@Counted(value = "wave.sts.assume_role.calls", extraTags = ["result", "success"])
-private AssumeRoleResponse assumeRole(String roleArn, String externalId, String sessionName) {
-    // ... existing implementation
-}
-
-@Timed(value = "wave.ecr.get_login_token", description = "ECR authentication duration")
-String getLoginToken(String registry, String username, String password) {
-    // ... existing implementation
-}
-```
-
-**Additional Metrics**:
-- `wave.ecr.auth.cache.hit_rate` - Gauge for cache hit rate
-- `wave.ecr.credentials.expiring_soon` - Gauge for credentials expiring in <5 min
-- `wave.ecr.auth.method` - Counter with tags: static/role
+Metrics will be added using Micrometer programmatic API (not annotations) to `AwsEcrService`:
+- `wave.sts.assume_role.calls` — Counter with tags: result={success|failure}, error_code
+- `wave.sts.assume_role.duration` — Timer for STS AssumeRole latency
+- `wave.ecr.auth.cache.hit_rate` — Gauge for cache hit rate
+- `wave.ecr.auth.cache.size` — Gauge for number of cached entries
+- `wave.ecr.auth.method` — Counter with tags: type={static|role}
 
 ---
 
@@ -499,61 +486,52 @@ log.debug "Getting AWS ECR auth token - region=$region; accessKey=$accessKey; se
 
 **File**: `src/test/groovy/io/seqera/wave/service/aws/AwsEcrServiceTest.groovy`
 
-**Test Cases**:
+**Test Cases** (implemented in `AwsEcrServiceTest.groovy`):
 ```groovy
 class AwsEcrServiceTest extends Specification {
 
     def "should detect role ARN pattern"() {
-        given:
-        def service = new AwsEcrService()
-
         expect:
-        service.isRoleArn('arn:aws:iam::123456789012:role/MyRole') == true
-        service.isRoleArn('AKIAIOSFODNN7EXAMPLE') == false
+        AwsEcrService.isRoleArn('arn:aws:iam::123456789012:role/MyRole') == true
+        AwsEcrService.isRoleArn('arn:aws-cn:iam::111122223333:role/ChinaRole') == true
+        AwsEcrService.isRoleArn('AKIAIOSFODNN7EXAMPLE') == false
+        AwsEcrService.isRoleArn(null) == false
     }
 
-    def "should call STS AssumeRole for role ARN"() {
+    def "should route role ARN to getLoginTokenWithRole"() {
         given:
-        def stsClient = Mock(StsClient)
-        def service = new AwsEcrService(stsClient: stsClient)
-
+        def service = Spy(AwsEcrService)
+        def roleArn = 'arn:aws:iam::123456789012:role/WaveEcrAccess'
         when:
-        service.getLoginToken(registry, roleArn, externalId)
-
+        service.getLoginToken(roleArn, externalId, region, false)
         then:
-        1 * stsClient.assumeRole(_) >> mockAssumeRoleResponse()
+        1 * service.getLoginTokenWithRole(roleArn, externalId, region, false) >> 'AWS:token'
     }
 
-    def "should use static credentials for access key"() {
+    def "should route static credentials to getLoginTokenWithStaticCredentials"() {
         given:
-        def stsClient = Mock(StsClient)
-        def service = new AwsEcrService(stsClient: stsClient)
-
+        def service = Spy(AwsEcrService)
         when:
-        service.getLoginToken(registry, accessKey, secretKey)
-
+        service.getLoginToken(accessKey, secretKey, region, false)
         then:
-        0 * stsClient.assumeRole(_)
+        1 * service.getLoginTokenWithStaticCredentials(accessKey, secretKey, region, false) >> 'AWS:token'
     }
 
     def "should extract account ID from role ARN"() {
         expect:
         AwsEcrService.extractAccountId('arn:aws:iam::123456789012:role/MyRole') == '123456789012'
         AwsEcrService.extractAccountId('arn:aws-cn:iam::111122223333:role/ChinaRole') == '111122223333'
-        AwsEcrService.extractAccountId('arn:aws-us-gov:iam::444455556666:role/GovRole') == '444455556666'
         AwsEcrService.extractAccountId('not-an-arn') == 'unknown'
     }
 
-    def "should map STS exceptions correctly"() {
+    def "should map STS exceptions to AwsEcrAuthException"() {
         given:
-        def service = new AwsEcrService()
         def stsException = createStsException('AccessDenied', 'Not authorized')
-
         when:
-        service.mapStsException(stsException, roleArn)
-
+        def result = AwsEcrService.mapStsException(stsException)
         then:
-        thrown(UnauthorizedException)
+        result instanceof AwsEcrAuthException
+        result.message.contains('does not have permission')
     }
 }
 ```
@@ -617,7 +595,7 @@ def 'should round-trip STS credentials through AwsStsCredentials' () {
 
 **File**: `src/test/groovy/io/seqera/wave/service/aws/AwsEcrServiceTest.groovy` (integration-level tests)
 
-**Test Cases**:
+**Test Cases** (require real AWS credentials):
 ```groovy
 @MicronautTest
 class AwsEcrIntegrationSpec extends Specification {
@@ -627,12 +605,12 @@ class AwsEcrIntegrationSpec extends Specification {
 
     def "should authenticate with role ARN end-to-end"() {
         given:
-        def registry = '123456789012.dkr.ecr.us-east-1.amazonaws.com'
         def roleArn = 'arn:aws:iam::123456789012:role/WaveEcrAccess'
         def externalId = UUID.randomUUID().toString()
+        def region = 'us-east-1'
 
         when:
-        def token = ecrService.getLoginToken(registry, roleArn, externalId)
+        def token = ecrService.getLoginToken(roleArn, externalId, region, false)
 
         then:
         token != null
@@ -641,17 +619,16 @@ class AwsEcrIntegrationSpec extends Specification {
 
     def "should cache credentials and reuse on second request"() {
         given:
-        def registry = '123456789012.dkr.ecr.us-east-1.amazonaws.com'
         def roleArn = 'arn:aws:iam::123456789012:role/WaveEcrAccess'
         def externalId = UUID.randomUUID().toString()
+        def region = 'us-east-1'
 
         when:
-        def token1 = ecrService.getLoginToken(registry, roleArn, externalId)
-        def token2 = ecrService.getLoginToken(registry, roleArn, externalId)
+        def token1 = ecrService.getLoginToken(roleArn, externalId, region, false)
+        def token2 = ecrService.getLoginToken(roleArn, externalId, region, false)
 
         then:
         token1 == token2  // Same token = cache hit
-        // Verify only 1 STS call made (check logs or metrics)
     }
 }
 ```
@@ -743,8 +720,8 @@ def 'should require accessKey and region' () {
 - Metrics for STS authentication performance and cache hit rate
 
 ### Changed
-- Extended AwsCreds and CachedEcrCredentials to support session tokens
-- Enhanced credential caching to track STS credential expiration
+- Refactored AwsCreds with dedicated roleArn/externalId fields and factory methods ofRole()/ofKeys()
+- Enhanced credential caching with dynamic per-entry TTL via computeCacheTtl()
 
 ### Fixed
 - N/A (new feature)
@@ -768,7 +745,7 @@ def 'should require accessKey and region' () {
 | FR-003: External ID generation | Platform auto-generates UUID (Platform change) | Platform scope |
 | FR-004: External ID in STS calls | AssumeRole includes external ID | To be tested |
 | FR-005: 1-hour session duration | AssumeRole requests 3600 seconds | To be tested |
-| FR-006: Session token storage | CachedEcrCredentials includes session token | To be tested |
+| FR-006: Session token storage | AwsCreds.ofKeys() includes sessionToken; passed to ECR clients | To be tested |
 | FR-007: Session token in API calls | ECR calls include session token | To be tested |
 | FR-008: Credential caching | Cache hit rate >95% | To be load tested |
 | FR-009: Automatic refresh & invalidation | Credentials refresh 5 min before expiration via cache TTL | To be tested |
@@ -847,7 +824,7 @@ def 'should require accessKey and region' () {
 
 - [Spec Document](./spec.md) - User stories and requirements
 - [Research](./research.md) - Technology choices and architecture decisions
-- [Data Model](./data-model.md) - AwsCreds and CachedEcrCredentials changes
+- [Data Model](./data-model.md) - AwsCreds, AwsEcrAuthToken, and AwsStsCredentials changes
 - [Contracts](./contracts/) - STS and service interface contracts
 - [Quickstart](./quickstart.md) - Developer setup and testing guide
 - [AWS STS API](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html)
