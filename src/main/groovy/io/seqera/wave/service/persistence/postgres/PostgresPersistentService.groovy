@@ -26,7 +26,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
-import io.micronaut.core.annotation.Nullable
 import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.scheduling.TaskExecutors
@@ -36,8 +35,6 @@ import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
-import io.seqera.wave.service.persistence.impl.SurrealPersistenceService
-import io.seqera.wave.service.persistence.migrate.MigrationOnly
 import io.seqera.wave.service.persistence.postgres.data.BuildRepository
 import io.seqera.wave.service.persistence.postgres.data.BuildRow
 import io.seqera.wave.service.persistence.postgres.data.MirrorRepository
@@ -76,10 +73,6 @@ class PostgresPersistentService implements PersistenceService {
     private ScanRepository scanRepository
 
     @Inject
-    @Nullable
-    private SurrealPersistenceService surrealPersistenceService
-
-    @Inject
     @Named(TaskExecutors.BLOCKING)
     private ExecutorService ioExecutor
 
@@ -116,21 +109,12 @@ class PostgresPersistentService implements PersistenceService {
                 "Unable to save build record=$data"))
     }
 
-    @MigrationOnly
-    void saveBuild(WaveBuildRecord data) {
-        log.trace "Saving build record=$data"
-        final json = Mapper.toJson(data)
-        final row = new BuildRow(id:data.buildId, data:json, createdAt: Instant.now())
-        buildRepository.save(row)
-    }
-
     @Override
     WaveBuildRecord loadBuild(String buildId) {
         log.trace "Loading build record id=${buildId}"
         final row = buildRepository.findById(buildId).orElse(null)
-        if( !row ) {
-            return surrealPersistenceService?.loadBuild(buildId)
-        }
+        if( !row )
+            return null
         return Mapper.fromJson( WaveBuildRecord, row.data, [buildId: buildId] )
     }
 
@@ -138,9 +122,8 @@ class PostgresPersistentService implements PersistenceService {
     WaveBuildRecord loadBuildSucceed(String targetImage, String digest) {
         log.trace "Loading build record with image=${targetImage}; digest=${digest}"
         final row = buildRepository.findByTargetAndDigest(targetImage, digest)
-        if( !row ){
-            return surrealPersistenceService?.loadBuildSucceed(targetImage, digest)
-        }
+        if( !row )
+            return null
         return Mapper.fromJson( WaveBuildRecord, row.data, [buildId: row.id] )
     }
 
@@ -148,9 +131,8 @@ class PostgresPersistentService implements PersistenceService {
     WaveBuildRecord latestBuild(String containerId) {
         log.trace "Loading latest build with containerId=${containerId}"
         final row = buildRepository.findLatestByBuildId(containerId)
-        if( !row ){
-            return surrealPersistenceService?.latestBuild(containerId)
-        }
+        if( !row )
+            return null
         return Mapper.fromJson( WaveBuildRecord, row.data, [buildId: row.id] )
     }
 
@@ -160,17 +142,10 @@ class PostgresPersistentService implements PersistenceService {
         final result = buildRepository.findAllByBuildId(containerId)
         return result
                 ? result.collect((it)-> Mapper.fromJson(WaveBuildRecord, it.data, [buildId: it.id]))
-                : surrealPersistenceService?.allBuilds(containerId)
+                : List.<WaveBuildRecord>of()
     }
 
     // ===== --- container records ---- =====
-    @MigrationOnly
-    void saveContainerRequest(String id, WaveContainerRecord data) {
-        final json = Mapper.toJson(data)
-        final entity = new RequestRow(id: id, data:json, createdAt: Instant.now())
-        requestRepository.save(entity)
-    }
-
     @Override
     CompletableFuture<Void> saveContainerRequestAsync(WaveContainerRecord data) {
         log.trace "Saving container request data=${data}"
@@ -194,7 +169,7 @@ class PostgresPersistentService implements PersistenceService {
         log.trace "Loading container request token=${token}"
         final row = requestRepository.findById(token).orElse(null)
         if( !row || !row.data )
-            return surrealPersistenceService?.loadContainerRequest(token)
+            return null
         return Mapper.fromJson(WaveContainerRecord, row.data, [id: token])
     }
 
@@ -210,27 +185,19 @@ class PostgresPersistentService implements PersistenceService {
                 "Unable to save scan record data=${data}"))
     }
 
-    @MigrationOnly
-    void saveScanRecord(WaveScanRecord data) {
-        log.trace "Saving scan record data=${data}"
-        final json = Mapper.toJson(data)
-        final entity = new ScanRow(id: data.id, data:json, createdAt: Instant.now())
-        scanRepository.save(entity)
-    }
-
     @Override
     WaveScanRecord loadScanRecord(String scanId) {
         log.trace "Loading scan record id=${scanId}"
         final row = scanRepository.findById(scanId).orElse(null)
         if( !row || !row.data )
-            return surrealPersistenceService?.loadScanRecord(scanId)
+            return null
         return Mapper.fromJson(WaveScanRecord, row.data, [id: scanId])
     }
 
     @Override
     boolean existsScanRecord(String scanId) {
         log.trace "Exist scan record id=${scanId}"
-        return scanRepository.existsById(scanId) ?: surrealPersistenceService?.existsScanRecord(scanId)
+        return scanRepository.existsById(scanId)
     }
 
     @Override
@@ -239,7 +206,7 @@ class PostgresPersistentService implements PersistenceService {
         final result = scanRepository.findAllByScanId(scanId)
         return result
                 ? result.collect((it)-> Mapper.fromJson(WaveScanRecord, it.data, [id: it.id]))
-                : surrealPersistenceService?.allScans(scanId)
+                : List.<WaveScanRecord>of()
     }
 
     // ===== --- mirror records ---- =====
@@ -249,7 +216,7 @@ class PostgresPersistentService implements PersistenceService {
         log.trace "Loading mirror result with id=${mirrorId}"
         final row = mirrorRepository.findById(mirrorId).orElse(null)
         if( !row )
-            return surrealPersistenceService?.loadMirrorResult(mirrorId)
+            return null
         return Mapper.fromJson(MirrorResult, row.data, [mirrorId: mirrorId])
     }
 
@@ -258,7 +225,7 @@ class PostgresPersistentService implements PersistenceService {
         log.trace "Loading mirror succeed with image=${targetImage}; digest=${digest}"
         final row = mirrorRepository.findByTargetAndDigest(targetImage, digest, MirrorResult.Status.COMPLETED)
         if( !row )
-            return surrealPersistenceService?.loadMirrorSucceed(targetImage, digest)
+            return null
         return Mapper.fromJson(MirrorResult, row.data, [mirrorId: row.id])
     }
 
@@ -272,11 +239,4 @@ class PostgresPersistentService implements PersistenceService {
                 "Unable to save mirror result data=${data}"))
     }
 
-    @MigrationOnly
-    void saveMirrorResult(MirrorResult data) {
-        log.trace "Saving mirror result data=${data}"
-        final json = Mapper.toJson(data)
-        final entity = new MirrorRow(id: data.mirrorId, data:json, createdAt: Instant.now())
-        mirrorRepository.save(entity)
-    }
 }

@@ -197,7 +197,7 @@ class PostgresPersistentServiceTest extends Specification {
         and:
         persistentService.allBuilds('bd-abc') == [record3, record2, record1]
         and:
-        persistentService.allBuilds('ab') == null
+        persistentService.allBuilds('ab') == []
     }
 
     // ===== --- container request---- =====
@@ -409,6 +409,6 @@ class PostgresPersistentServiceTest extends Specification {
         then:
         persistentService.allScans("1234567890abcdef") == [scan3, scan2, scan1]
         and:
-        persistentService.allScans("1234567890") == null
+        persistentService.allScans("1234567890") == []
     }
 }

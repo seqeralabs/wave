@@ -474,15 +474,14 @@ a:hover {
     left: calc(var(--spacing) - var(--radius) - 1px);
     width: calc(2 * var(--radius));
     height: calc(2 * var(--radius));
-    border-radius: 2px;
+    border-radius: 50%;
     background: #e6e6ed;
     border: 1px solid #ddd;
 }
 
 .tree summary::before {
     z-index: 1;
-    background: #4256E7;
-    border: 1px solid #ddd;
+    background:  #201637;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 2v8M2 6h8' stroke='%23fff' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: center;
