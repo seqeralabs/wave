@@ -43,6 +43,7 @@ dependencies {
     implementation 'io.seqera:lib-activator:1.0.0'
     implementation project(':wave-api')
     implementation project(':wave-utils')
+    implementation 'io.seqera:lib-pairing:1.0.0'
     implementation 'io.seqera:lib-data-store-state-redis:1.0.0'
     implementation 'io.seqera:lib-data-store-future-redis:1.0.0'
     implementation 'io.seqera:lib-crypto:1.0.0'

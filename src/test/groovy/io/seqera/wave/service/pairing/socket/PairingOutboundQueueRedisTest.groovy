@@ -29,8 +29,10 @@ import java.util.concurrent.TimeUnit
 import io.micronaut.context.ApplicationContext
 import io.seqera.data.queue.impl.RedisMessageQueue
 import io.seqera.fixtures.redis.RedisTestContainer
-import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
-import io.seqera.wave.service.pairing.socket.msg.PairingMessage
+import io.seqera.service.pairing.PairingConfig
+import io.seqera.service.pairing.socket.PairingOutboundQueue
+import io.seqera.service.pairing.socket.msg.PairingHeartbeat
+import io.seqera.service.pairing.socket.msg.PairingMessage
 
 /**
  *
@@ -49,11 +51,22 @@ class PairingOutboundQueueRedisTest extends Specification implements RedisTestCo
         context.stop()
     }
 
+    private PairingConfig mockConfig(Duration awaitTimeout = Duration.ofMillis(100)) {
+        return new PairingConfig() {
+            Duration getKeyLease() { Duration.ofDays(1) }
+            Duration getKeyDuration() { Duration.ofDays(30) }
+            Duration getChannelTimeout() { Duration.ofSeconds(5) }
+            Duration getChannelAwaitTimeout() { awaitTimeout }
+            boolean getCloseSessionOnInvalidLicenseToken() { false }
+            List<String> getDenyHosts() { [] }
+        }
+    }
+
     def 'should send and consume a request'() {
         given:
         def executor = Executors.newCachedThreadPool()
         def broker = context.getBean(RedisMessageQueue)
-        def queue = new PairingOutboundQueue(broker, Duration.ofMillis(100), executor) .start()
+        def queue = new PairingOutboundQueue(broker, mockConfig(), executor) .start()
         and:
         def result = new CompletableFuture<PairingMessage>()
         when:
@@ -72,10 +85,10 @@ class PairingOutboundQueueRedisTest extends Specification implements RedisTestCo
         given:
         def executor = Executors.newCachedThreadPool()
         def broker1 = context.getBean(RedisMessageQueue)
-        def queue1 = new PairingOutboundQueue(broker1, Duration.ofMillis(100), executor) .start()
+        def queue1 = new PairingOutboundQueue(broker1, mockConfig(), executor) .start()
         and:
         def broker2 = context.getBean(RedisMessageQueue)
-        def queue2 = new PairingOutboundQueue(broker2, Duration.ofMillis(100), executor) .start()
+        def queue2 = new PairingOutboundQueue(broker2, mockConfig(), executor) .start()
         and:
         def result = new CompletableFuture<PairingMessage>()
 

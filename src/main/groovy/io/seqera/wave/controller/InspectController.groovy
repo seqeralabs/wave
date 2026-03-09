@@ -35,7 +35,7 @@ import io.seqera.wave.api.ContainerInspectResponse
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.UserService
 import io.seqera.wave.service.inspect.ContainerInspectService
-import io.seqera.wave.service.pairing.PairingService
+import io.seqera.service.pairing.PairingService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.auth.JwtAuth
 import jakarta.inject.Inject
