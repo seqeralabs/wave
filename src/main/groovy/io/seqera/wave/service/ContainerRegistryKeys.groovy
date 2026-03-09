@@ -32,12 +32,16 @@ import io.seqera.wave.util.StringUtils
 @CompileStatic
 class ContainerRegistryKeys {
     /**
-     * The registry user name
+     * The registry user name.
+     * For ECR with static credentials, this holds the AWS access key.
+     * For ECR with IAM role authentication, this holds the IAM role ARN.
      */
     String userName
 
     /**
-     * The registry secret
+     * The registry secret.
+     * For ECR with static credentials, this holds the AWS secret key.
+     * For ECR with IAM role authentication, this holds the role external ID.
      */
     String password
 

@@ -35,6 +35,7 @@ import io.seqera.wave.service.aws.cache.AwsStsCredentials
 import io.seqera.cache.tiered.AbstractTieredCache
 import io.seqera.cache.tiered.TieredKey
 import io.seqera.wave.util.RegHelper
+import io.seqera.wave.util.StringUtils
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.seqera.util.retry.Retryable
@@ -328,7 +329,7 @@ class AwsEcrService {
         }
 
         // Jump role chaining: assume jump role first, then target role
-        log.debug "Using jump role: $jumpRoleArn; jumpExternalId: ${jumpExternalId ? 'provided' : 'none'}"
+        log.debug "Using jump role: $jumpRoleArn; jumpExternalId: ${StringUtils.redact(jumpExternalId)}"
         final jumpCreds = assumeJumpRole(region)
         try {
             return stsClient(region, jumpCreds).withCloseable { client ->
