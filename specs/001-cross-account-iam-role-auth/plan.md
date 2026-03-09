@@ -131,40 +131,57 @@ No violations detected. Table intentionally left empty.
 
 **Goal**: Implement STS AssumeRole integration with credential caching and automatic refresh
 
-#### Task 1.1: Modify AwsCreds Class
+#### Task 1.1: Refactor AwsCreds Class with Dedicated Fields
 
-**File**: `src/main/groovy/io/seqera/wave/service/aws/AwsEcrService.groovy` (inner class, line ~58)
+**File**: `src/main/groovy/io/seqera/wave/service/aws/AwsEcrService.groovy` (inner class, line ~96)
 
 **Changes**:
 ```groovy
 @Canonical
-class AwsCreds {
+private static class AwsCreds implements TieredKey {
+    // Static credentials flow
     String accessKey
     String secretKey
-    String sessionToken    // NEW - null for static credentials
+    // Role-based auth flow
+    String roleArn
+    String externalId
+    // Temporary session token from STS AssumeRole
+    String sessionToken
+    // Common fields
     String region
     boolean ecrPublic
 
+    @Override
     String stableHash() {
-        Hashing.sha256()
-            .hashString("$accessKey:$secretKey:${sessionToken ?: ''}:$region:$ecrPublic", Charsets.UTF_8)
-            .toString()
+        if (roleArn) {
+            return RegHelper.sipHash(roleArn, externalId, region, ecrPublic)
+        }
+        // sessionToken only included when present to preserve backward-compatible hash values
+        final args = [accessKey, secretKey, region, ecrPublic] as List<Object>
+        if (sessionToken) args.add(sessionToken)
+        return RegHelper.sipHash(args.toArray())
     }
 
-    @Override
-    String toString() {
-        "AwsCreds(accessKey=${accessKey?.take(8)}..., " +
-        "secretKey=[REDACTED], " +
-        "sessionToken=${sessionToken ? '[REDACTED]' : 'null'}, " +
-        "region=$region, ecrPublic=$ecrPublic)"
+    static AwsCreds ofRole(String roleArn, String externalId, String region, boolean ecrPublic) {
+        new AwsCreds(roleArn: roleArn, externalId: externalId, region: region, ecrPublic: ecrPublic)
+    }
+
+    static AwsCreds ofKeys(String accessKey, String secretKey, String sessionToken, String region, boolean ecrPublic) {
+        new AwsCreds(accessKey: accessKey, secretKey: secretKey, sessionToken: sessionToken, region: region, ecrPublic: ecrPublic)
     }
 }
 ```
 
+**Key Design Decisions**:
+- Separate `roleArn`/`externalId` fields instead of overloading `accessKey`/`secretKey` — eliminates ambiguity
+- Factory methods `ofRole()` and `ofKeys()` enforce which fields are set per flow
+- `stableHash()` branches on `roleArn` presence — role-based keys are stable across STS refreshes
+- `load()` asserts `!creds.roleArn` to guard against accidental misuse with role-based cache keys
+
 **Test Coverage**:
-- Unit test: `stableHash()` includes session token
-- Unit test: `toString()` redacts sensitive fields
-- Unit test: Null session token handled correctly
+- Unit test: `stableHash()` produces different hashes for role-based vs static keys
+- Unit test: `stableHash()` includes session token only when present (backward compat)
+- Unit test: `ofRole()` sets only role fields, `ofKeys()` sets only static fields
 
 ---
 
@@ -349,20 +366,25 @@ protected String getLoginTokenWithRole(String roleArn, String externalId, String
 
     final key = AwsCreds.ofRole(roleArn, externalId, region, isPublic)
 
-    // Pair-based getOrCompute sets TTL dynamically from STS credential expiration
+    // Use Pair-based getOrCompute to set TTL dynamically from STS credential expiration
     return cache.getOrCompute(key, (String k) -> {
         log.debug "Cache miss for role $roleArn - assuming role to get temporary credentials"
-        try {
-            final tempCreds = assumeRole(roleArn, externalId, region)
-            final ttl = computeCacheTtl(tempCreds.expiration(), cache.duration)
-            final tempKey = AwsCreds.ofKeys(
-                    tempCreds.accessKeyId(), tempCreds.secretAccessKey(),
-                    tempCreds.sessionToken(), region, isPublic)
-            final token = load(tempKey)
-            return new AbstractTieredCache.Pair<AwsEcrAuthToken, Duration>(token, ttl)
-        }
-        catch (StsException e) { throw mapStsException(e) }
+        return assumeRoleAndLoadToken(roleArn, externalId, region, isPublic)
     }).value
+}
+
+protected AbstractTieredCache.Pair<AwsEcrAuthToken, Duration> assumeRoleAndLoadToken(
+        String roleArn, String externalId, String region, boolean isPublic) {
+    try {
+        final tempCreds = assumeRole(roleArn, externalId, region)
+        final ttl = computeCacheTtl(tempCreds.expiration(), cache.duration)
+        final tempKey = AwsCreds.ofKeys(
+                tempCreds.accessKeyId(), tempCreds.secretAccessKey(),
+                tempCreds.sessionToken(), region, isPublic)
+        final token = load(tempKey)  // assertion ensures roleArn is null here
+        return new AbstractTieredCache.Pair<AwsEcrAuthToken, Duration>(token, ttl)
+    }
+    catch (StsException e) { throw mapStsException(e) }
 }
 
 protected String getLoginTokenWithStaticCredentials(String accessKey, String secretKey, String region, boolean isPublic) {

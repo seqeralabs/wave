@@ -251,10 +251,12 @@ When Wave's own IAM role cannot directly assume customer roles (e.g., due to org
   - Note: Platform sends dedicated `assumeRoleArn` and `externalId` fields in the JSON payload. Wave's `ContainerRegistryKeys.fromJson()` maps `assumeRoleArn` → `userName` and `externalId` → `password`. Wave then detects the role ARN pattern (`^arn:aws(-cn|-us-gov)?:iam::\d{12}:role/[\w+=,.@\/-]+$`) in the `userName` field to route to role-based authentication.
   - Relationships: Associated with workspace/organization in Platform
 
-- **AwsCreds (Wave)**: Represents AWS credentials used by Wave for cache key computation
-  - Key attributes: `accessKey`, `secretKey`, `sessionToken` (nullable — null for static credentials), `region`, `ecrPublic`
-  - For role-based auth: cache key uses `roleArn` as `accessKey` and `externalId` as `secretKey` (with null `sessionToken`) to ensure stable cache keys across credential refreshes
-  - For static auth: cache key uses actual access key and secret key (with null `sessionToken`)
+- **AwsCreds (Wave)**: Cache key for ECR auth tokens with dedicated fields per authentication flow
+  - Key attributes: `accessKey`, `secretKey` (static flow); `roleArn`, `externalId` (role-based flow); `sessionToken` (nullable — only present for temporary credentials from STS); `region`, `ecrPublic`
+  - Factory methods: `ofRole(roleArn, externalId, region, ecrPublic)` for role-based auth; `ofKeys(accessKey, secretKey, sessionToken, region, ecrPublic)` for static/temporary credentials
+  - For role-based auth: `stableHash()` uses `roleArn` + `externalId` — stable across STS session refreshes
+  - For static auth: `stableHash()` uses `accessKey` + `secretKey` (plus `sessionToken` only when present for backward-compatible hashes)
+  - Guard: `load()` asserts `!roleArn` to prevent accidental misuse of role-based cache keys for direct ECR auth
   - Relationships: Used as tiered cache key via `stableHash()`, temporary lifecycle for role-based credentials
 
 - **AWS STS Credentials (transient)**: Temporary credentials obtained from STS AssumeRole

@@ -69,48 +69,41 @@ class AwsCreds {
 
 ---
 
-### 2. CachedEcrCredentials (AwsEcrCache)
+### 2. AwsEcrAuthToken (Cache Value)
 
-**Location**: `src/main/groovy/io/seqera/wave/service/aws/cache/AwsEcrCache.groovy`
+**Location**: `src/main/groovy/io/seqera/wave/service/aws/cache/AwsEcrAuthToken.groovy`
 
-**Purpose**: Stores cached ECR tokens and credentials with expiration tracking
+**Purpose**: Stores the ECR authorization token as the cache value in `AwsEcrCache`
 
-**Current Structure** (approximate):
+**Structure**:
 ```groovy
-class CachedEcrCredentials {
-    String username
-    String password
-    Instant expiration
+class AwsEcrAuthToken {
+    String value  // ECR authorization token (Base64-decoded username:password)
 }
 ```
 
-**Modified Structure**:
-```groovy
-@Canonical
-class CachedEcrCredentials {
-    String accessKeyId       // For re-authentication
-    String secretAccessKey   // For re-authentication
-    String sessionToken      // NEW - session token if using STS
-    Instant stsExpiration    // NEW - when STS credentials expire
-    String authToken         // ECR authorization token
-    Instant tokenExpiration  // When ECR token expires
+**No `isExpiring()` method** — credential lifecycle is managed entirely via cache TTL computed by `computeCacheTtl()`. When the cache entry expires (TTL = STS expiration minus 5-minute buffer), the next request triggers a fresh `assumeRole()` + ECR token load.
 
-    boolean isExpiring() {
-        // Check if STS credentials expire within 5 minutes
-        if (stsExpiration != null) {
-            return Instant.now().plus(Duration.ofMinutes(5)).isAfter(stsExpiration)
-        }
-        // Check if ECR token expires within 5 minutes
-        return Instant.now().plus(Duration.ofMinutes(5)).isAfter(tokenExpiration)
-    }
+### 3. AwsStsCredentials (Jump Role Cache Value)
+
+**Location**: `src/main/groovy/io/seqera/wave/service/aws/cache/AwsStsCredentials.groovy`
+
+**Purpose**: MoshiSerializable wrapper for STS temporary credentials, used as cache value in `AwsJumpRoleCache`
+
+**Structure**:
+```groovy
+@MoshiSerializable
+class AwsStsCredentials {
+    String accessKeyId
+    String secretAccessKey
+    String sessionToken
+    long expirationEpochMilli  // long for Moshi compatibility (not Instant)
+
+    static AwsStsCredentials from(Credentials creds) { /* ... */ }
+    Credentials toSdkCredentials() { /* ... */ }
+    Instant expiration() { Instant.ofEpochMilli(expirationEpochMilli) }
 }
 ```
-
-**Changes**:
-- Add `sessionToken` field (String, nullable)
-- Add `stsExpiration` field (Instant, nullable for static credentials)
-- Add `isExpiring()` method to check if credentials need refresh
-- Store temporary credentials for potential re-authentication
 
 ---
 
@@ -119,31 +112,30 @@ class CachedEcrCredentials {
 ### Authentication with Role-Based Credentials
 
 ```
-1. Platform sends: roleArn (as username), externalId (as password)
+1. Platform sends: assumeRoleArn + externalId in JSON payload
+   Wave maps: assumeRoleArn → userName, externalId → password (via ContainerRegistryKeys.fromJson())
                         ↓
-2. Wave detects role ARN pattern in username
+2. Wave detects role ARN pattern in userName via isRoleArn()
                         ↓
-3. Wave calls STS AssumeRole(roleArn, externalId)
+3. Wave creates cache key: AwsCreds.ofRole(roleArn, externalId, region, false)
+   stableHash() uses roleArn + externalId (stable across STS refreshes)
                         ↓
-4. AWS STS returns: accessKeyId, secretAccessKey, sessionToken, expiration
+4. Cache miss → assumeRoleAndLoadToken():
+   a. Calls assumeRole(roleArn, externalId, region) → STS AssumeRole
+   b. AWS STS returns: accessKeyId, secretAccessKey, sessionToken, expiration
+   c. Creates temp key: AwsCreds.ofKeys(accessKeyId, secretAccessKey, sessionToken, region, false)
+   d. Calls load(tempKey) → ECR GetAuthorizationToken using session credentials
+   e. Computes TTL: computeCacheTtl(expiration, maxDuration) → ~55 minutes
+   f. Returns Pair<AwsEcrAuthToken, Duration> with dynamic TTL
                         ↓
-5. Wave creates AwsCreds.ofKeys(accessKeyId, secretAccessKey, sessionToken, region, false)
+5. Wave returns ECR authToken to client
                         ↓
-6. Wave creates CachedEcrCredentials:
-   - Stores STS credentials (with sessionToken and stsExpiration)
-   - Calls ECR GetAuthorizationToken using session credentials
-   - Stores ECR authToken and tokenExpiration
+6. On next request within ~55 minutes:
+   - Cache hit on roleArn-based key → return cached AwsEcrAuthToken immediately
                         ↓
-7. Wave returns ECR authToken to client
-                        ↓
-8. On next request within 55 minutes:
-   - Cache hit (credentials not expiring)
-   - Return cached authToken immediately
-                        ↓
-9. After 55 minutes (5-minute buffer before expiration):
-   - isExpiring() returns true
-   - Wave invalidates cache entry
-   - Repeat from step 3
+7. After ~55 minutes (cache TTL expires):
+   - Cache evicts entry automatically
+   - Next request triggers cache miss → repeat from step 4
 ```
 
 ### Authentication with Static Credentials (Unchanged)
@@ -151,17 +143,15 @@ class CachedEcrCredentials {
 ```
 1. Platform sends: accessKey (as username), secretKey (as password)
                         ↓
-2. Wave detects static credential pattern
+2. Wave detects static credential pattern (isRoleArn returns false)
                         ↓
-3. Wave creates AwsCreds.ofKeys(accessKey, secretKey, null, region, false)
+3. Wave creates cache key: AwsCreds.ofKeys(accessKey, secretKey, null, region, false)
+   stableHash() uses accessKey + secretKey (no sessionToken for backward compat)
                         ↓
-4. Wave calls ECR GetAuthorizationToken directly
+4. Cache miss → load(key) → ECR GetAuthorizationToken directly
+   load() asserts !creds.roleArn before proceeding
                         ↓
-5. Wave creates CachedEcrCredentials:
-   - Stores static credentials (sessionToken = null, stsExpiration = null)
-   - Stores ECR authToken and tokenExpiration
-                        ↓
-6. Wave returns ECR authToken to client
+5. Wave returns ECR authToken to client
 ```
 
 ---
@@ -206,45 +196,36 @@ hash3 = sipHash(accessKey, secretKey, region, ecrPublic, sessionToken)
 - Provides buffer for STS API latency and retries
 - Small performance cost for much better reliability
 
-**Implementation**:
+**Implementation** — TTL-based cache eviction via `computeCacheTtl()`:
 ```groovy
-boolean isExpiring() {
-    def now = Instant.now()
-    def buffer = Duration.ofMinutes(5)
+static final private Duration REFRESH_BUFFER = Duration.ofMinutes(5)
+static final private Duration MIN_CACHE_TTL = Duration.ofMinutes(1)
 
-    // Check STS credential expiration (for role-based auth)
-    if (stsExpiration != null && now.plus(buffer).isAfter(stsExpiration)) {
-        return true
-    }
-
-    // Check ECR token expiration (for both auth types)
-    if (now.plus(buffer).isAfter(tokenExpiration)) {
-        return true
-    }
-
-    return false
+protected static Duration computeCacheTtl(Instant expiration, Duration maxDuration) {
+    if (expiration == null) return maxDuration
+    final timeUntilExpiry = Duration.between(Instant.now(), expiration)
+    final bufferedTtl = timeUntilExpiry.minus(REFRESH_BUFFER)
+    if (bufferedTtl.compareTo(MIN_CACHE_TTL) < 0) return MIN_CACHE_TTL
+    return bufferedTtl.compareTo(maxDuration) < 0 ? bufferedTtl : maxDuration
 }
 ```
 
+No `isExpiring()` method exists — the cache entry TTL is set at write time via `AbstractTieredCache.Pair<V, Duration>`. When the TTL expires, the cache evicts the entry automatically, and the next request triggers a fresh `assumeRole()` + ECR token load.
+
 ### Cache TTL Calculation
 
-**Caffeine Cache Configuration**:
+**AbstractTieredCache with dynamic per-entry TTL**:
 ```groovy
-cache = Caffeine.newBuilder()
-    .expireAfter(new Expiry<String, CachedEcrCredentials>() {
-        Duration expireAfterCreate(String key, CachedEcrCredentials value, long currentTime) {
-            // For role-based: expire 5 minutes before STS expiration
-            if (value.stsExpiration != null) {
-                long ttl = Duration.between(Instant.now(), value.stsExpiration).toMillis()
-                return Duration.ofMillis(ttl - Duration.ofMinutes(5).toMillis())
-            }
-            // For static: expire 5 minutes before ECR token expiration
-            long ttl = Duration.between(Instant.now(), value.tokenExpiration).toMillis()
-            return Duration.ofMillis(ttl - Duration.ofMinutes(5).toMillis())
-        }
-    })
-    .maximumSize(10_000)
-    .build()
+// Role-based: TTL derived from STS credential expiration
+cache.getOrCompute(key, (String k) -> {
+    final tempCreds = assumeRole(roleArn, externalId, region)
+    final ttl = computeCacheTtl(tempCreds.expiration(), cache.duration)  // ~55 min for 1-hour sessions
+    final token = load(tempKey)
+    return new AbstractTieredCache.Pair<AwsEcrAuthToken, Duration>(token, ttl)
+})
+
+// Static: uses default cache.duration (no STS expiration to consider)
+cache.getOrCompute(key, (k) -> load(key), cache.duration)
 ```
 
 ---
@@ -281,10 +262,10 @@ cache = Caffeine.newBuilder()
 ### Static Credentials Keep Working
 
 **No changes to existing flow**:
-- `sessionToken` remains `null` for static credentials
-- `stsExpiration` remains `null` for static credentials
-- Cache key calculation handles null values: `"${sessionToken ?: ''}"`
-- `isExpiring()` method falls back to checking `tokenExpiration` only
+- `AwsCreds.ofKeys()` with `sessionToken: null` produces the same hash as the pre-refactor code
+- `stableHash()` only appends `sessionToken` to the hash arguments when it is non-null
+- `load()` assertion (`!creds.roleArn`) passes for static credentials since `roleArn` is null
+- Static path uses default `cache.duration` (no `computeCacheTtl()` needed)
 
 **Example**:
 ```groovy
@@ -296,18 +277,16 @@ def staticCreds = AwsCreds.ofKeys(
     'us-east-1',
     false
 )
+// stableHash() = sipHash(accessKey, secretKey, region, ecrPublic) — same as before refactor
 
-def cached = new CachedEcrCredentials(
-    accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
-    secretAccessKey: 'wJalrX...',
-    sessionToken: null,           // NEW field, but null
-    stsExpiration: null,          // NEW field, but null
-    authToken: 'AWS:encoded_token',
-    tokenExpiration: Instant.now().plus(Duration.ofHours(12))
+// Role-based credentials use separate factory and fields
+def roleCreds = AwsCreds.ofRole(
+    'arn:aws:iam::123456789012:role/WaveEcrAccess',
+    'ext-id-uuid',
+    'us-east-1',
+    false
 )
-
-// isExpiring() only checks tokenExpiration when stsExpiration is null
-assert !cached.isExpiring()  // Works correctly
+// stableHash() = sipHash(roleArn, externalId, region, ecrPublic) — stable across STS refreshes
 ```
 
 ---
@@ -316,14 +295,17 @@ assert !cached.isExpiring()  // Works correctly
 
 Wave's data model changes are **minimal and non-breaking**:
 
-✅ **Two class modifications**:
-- `AwsCreds`: Separate `roleArn`/`externalId` fields, factory methods `ofRole()`/`ofKeys()`, backward-compatible hash
-- `CachedEcrCredentials`: Add `sessionToken` and `stsExpiration` fields + `isExpiring()` method
+✅ **One refactored class, two new classes**:
+- `AwsCreds`: Dedicated `roleArn`/`externalId` fields (no more overloading `accessKey`/`secretKey`), factory methods `ofRole()`/`ofKeys()`, `load()` assertion guard, backward-compatible hash
+- `AwsEcrAuthToken`: Simple cache value wrapper for ECR auth tokens
+- `AwsStsCredentials`: MoshiSerializable cache value for jump role credentials in `AwsRoleCache`
 
 ✅ **No database changes** in Wave (all persistence in Platform)
 
-✅ **Backward compatible**: Static credentials work unchanged (nullable fields)
+✅ **Backward compatible**: `ofKeys()` with null `sessionToken` produces identical hashes to pre-refactor code
+
+✅ **TTL-based expiration**: `computeCacheTtl()` sets per-entry TTL at cache write time (no `isExpiring()` polling)
 
 ✅ **Low memory overhead**: ~2.6 KB per customer = ~26 MB for 10K customers
 
-✅ **Proactive refresh**: 5-minute buffer prevents expiration failures
+✅ **Proactive refresh**: 5-minute buffer via cache TTL prevents expiration failures
