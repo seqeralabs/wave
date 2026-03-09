@@ -27,9 +27,11 @@ import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.micronaut.websocket.CloseReason
 import io.micronaut.websocket.WebSocketSession
-import io.seqera.wave.service.pairing.socket.PairingChannel
-import io.seqera.wave.service.pairing.socket.PairingWebSocket
-import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
+import io.seqera.service.pairing.PairingRecord
+import io.seqera.service.pairing.PairingService
+import io.seqera.service.pairing.socket.PairingChannel
+import io.seqera.service.pairing.socket.PairingWebSocket
+import io.seqera.service.pairing.socket.msg.PairingHeartbeat
 
 /**
  *
