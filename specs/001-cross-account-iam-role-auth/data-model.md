@@ -27,27 +27,45 @@ class AwsCreds {
 ```groovy
 @Canonical
 class AwsCreds {
+    // AWS access key ID (static credentials flow)
     String accessKey
+    // AWS secret access key (static credentials flow)
     String secretKey
-    String sessionToken    // NEW - null for static credentials
+    // IAM role ARN (role-based auth flow)
+    String roleArn
+    // External ID for cross-account role assumption (role-based auth flow)
+    String externalId
+    // Temporary session token from STS AssumeRole
+    String sessionToken
+    // AWS region derived from the ECR registry hostname
     String region
+    // true for ECR Public (public.ecr.aws), false for private ECR
     boolean ecrPublic
 
     String stableHash() {
-        Hashing.sha256()
-            .hashString(
-                "$accessKey:$secretKey:${sessionToken ?: ''}:$region:$ecrPublic",
-                Charsets.UTF_8
-            )
-            .toString()
+        if (roleArn) {
+            return RegHelper.sipHash(roleArn, externalId, region, ecrPublic)
+        }
+        // sessionToken only included when present to preserve backward-compatible hash values
+        final args = [accessKey, secretKey, region, ecrPublic] as List<Object>
+        if (sessionToken) args.add(sessionToken)
+        return RegHelper.sipHash(args.toArray())
+    }
+
+    static AwsCreds ofRole(String roleArn, String externalId, String region, boolean ecrPublic) {
+        new AwsCreds(roleArn: roleArn, externalId: externalId, region: region, ecrPublic: ecrPublic)
+    }
+
+    static AwsCreds ofKeys(String accessKey, String secretKey, String sessionToken, String region, boolean ecrPublic) {
+        new AwsCreds(accessKey: accessKey, secretKey: secretKey, sessionToken: sessionToken, region: region, ecrPublic: ecrPublic)
     }
 }
 ```
 
 **Changes**:
-- Add `sessionToken` field (String, nullable)
-- Update `stableHash()` to include session token in cache key
-- Session token must be part of cache key to distinguish different STS sessions
+- Separate `roleArn`/`externalId` fields for role-based auth (no longer overloads `accessKey`/`secretKey`)
+- Factory methods `ofRole()` and `ofKeys()` for self-documenting construction
+- `stableHash()` uses different fields per flow; sessionToken only included when present for backward compatibility
 
 ---
 
@@ -109,7 +127,7 @@ class CachedEcrCredentials {
                         ↓
 4. AWS STS returns: accessKeyId, secretAccessKey, sessionToken, expiration
                         ↓
-5. Wave creates AwsCreds(accessKeyId, secretAccessKey, sessionToken, region, false)
+5. Wave creates AwsCreds.ofKeys(accessKeyId, secretAccessKey, sessionToken, region, false)
                         ↓
 6. Wave creates CachedEcrCredentials:
    - Stores STS credentials (with sessionToken and stsExpiration)
@@ -135,7 +153,7 @@ class CachedEcrCredentials {
                         ↓
 2. Wave detects static credential pattern
                         ↓
-3. Wave creates AwsCreds(accessKey, secretKey, null, region, false)
+3. Wave creates AwsCreds.ofKeys(accessKey, secretKey, null, region, false)
                         ↓
 4. Wave calls ECR GetAuthorizationToken directly
                         ↓
@@ -150,26 +168,32 @@ class CachedEcrCredentials {
 
 ## Cache Key Strategy
 
-### Why Session Token Matters
+### Separate Fields for Role-Based vs Static Credentials
 
-**Problem**: Two different STS sessions can have same accessKeyId but different sessionToken
+**Problem**: Overloading `accessKey`/`secretKey` for both static credentials and role ARN/external ID
+made the code ambiguous and error-prone.
 
-**Example**:
+**Solution**: Dedicated fields for each flow with factory methods:
+
 ```groovy
-// Session 1 (assume role at 10:00 AM)
-creds1 = AwsCreds('ASIA...', 'secretKey1', 'FwoGZXIv...sessionToken1', 'us-east-1', false)
-hash1 = SHA256('ASIA...:secretKey1:FwoGZXIv...sessionToken1:us-east-1:false')
+// Role-based auth: cache key uses roleArn + externalId (stable across STS sessions)
+roleKey = AwsCreds.ofRole('arn:aws:iam::123456789012:role/MyRole', 'ext-id', 'us-east-1', false)
+hash1 = sipHash(roleArn, externalId, region, ecrPublic)
 
-// Session 2 (assume role at 11:00 AM, same role)
-creds2 = AwsCreds('ASIA...', 'secretKey2', 'FwoGZXIv...sessionToken2', 'us-east-1', false)
-hash2 = SHA256('ASIA...:secretKey2:FwoGZXIv...sessionToken2:us-east-1:false')
+// Static credentials: cache key uses accessKey + secretKey
+staticKey = AwsCreds.ofKeys('AKIA...', 'secretKey', null, 'us-east-1', false)
+hash2 = sipHash(accessKey, secretKey, region, ecrPublic)
 
-// Different sessions → different cache entries
-assert hash1 != hash2
+// Temporary credentials (from STS): includes sessionToken in hash only when present
+tempKey = AwsCreds.ofKeys('ASIA...', 'secretKey', 'sessionToken...', 'us-east-1', false)
+hash3 = sipHash(accessKey, secretKey, region, ecrPublic, sessionToken)
 ```
 
-**Without session token in hash**: Cache collision → wrong credentials returned
-**With session token in hash**: Unique cache entry per STS session ✅
+**Benefits**:
+- No field overloading — each field has a single clear purpose
+- Factory methods enforce which fields are set for each flow
+- `load()` asserts that role-based cache keys cannot be used directly for ECR auth
+- Backward-compatible hash: sessionToken only appended when present
 
 ---
 
@@ -265,12 +289,12 @@ cache = Caffeine.newBuilder()
 **Example**:
 ```groovy
 // Static credentials (before and after feature)
-def staticCreds = new AwsCreds(
-    accessKey: 'AKIAIOSFODNN7EXAMPLE',
-    secretKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
-    sessionToken: null,  // NEW field, but null for static
-    region: 'us-east-1',
-    ecrPublic: false
+def staticCreds = AwsCreds.ofKeys(
+    'AKIAIOSFODNN7EXAMPLE',
+    'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+    null,  // no session token for static credentials
+    'us-east-1',
+    false
 )
 
 def cached = new CachedEcrCredentials(
@@ -293,7 +317,7 @@ assert !cached.isExpiring()  // Works correctly
 Wave's data model changes are **minimal and non-breaking**:
 
 ✅ **Two class modifications**:
-- `AwsCreds`: Add nullable `sessionToken` field
+- `AwsCreds`: Separate `roleArn`/`externalId` fields, factory methods `ofRole()`/`ofKeys()`, backward-compatible hash
 - `CachedEcrCredentials`: Add `sessionToken` and `stsExpiration` fields + `isExpiring()` method
 
 ✅ **No database changes** in Wave (all persistence in Platform)

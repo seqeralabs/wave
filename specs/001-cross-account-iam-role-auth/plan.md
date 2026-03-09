@@ -347,8 +347,7 @@ String getLoginToken(String accessKey, String secretKey, String region, boolean 
 protected String getLoginTokenWithRole(String roleArn, String externalId, String region, boolean isPublic) {
     log.debug "Getting ECR login token with role assumption - roleArn=$roleArn; region=$region"
 
-    // Stable cache key using roleArn (not temp creds which change on each refresh)
-    final key = new AwsCreds(roleArn, externalId ?: '', null, region, isPublic)
+    final key = AwsCreds.ofRole(roleArn, externalId, region, isPublic)
 
     // Pair-based getOrCompute sets TTL dynamically from STS credential expiration
     return cache.getOrCompute(key, (String k) -> {
@@ -356,7 +355,7 @@ protected String getLoginTokenWithRole(String roleArn, String externalId, String
         try {
             final tempCreds = assumeRole(roleArn, externalId, region)
             final ttl = computeCacheTtl(tempCreds.expiration(), cache.duration)
-            final tempKey = new AwsCreds(
+            final tempKey = AwsCreds.ofKeys(
                     tempCreds.accessKeyId(), tempCreds.secretAccessKey(),
                     tempCreds.sessionToken(), region, isPublic)
             final token = load(tempKey)
@@ -368,7 +367,7 @@ protected String getLoginTokenWithRole(String roleArn, String externalId, String
 
 protected String getLoginTokenWithStaticCredentials(String accessKey, String secretKey, String region, boolean isPublic) {
     log.debug "Getting ECR login token with static credentials - region=$region"
-    final key = new AwsCreds(accessKey, secretKey, null, region, isPublic)
+    final key = AwsCreds.ofKeys(accessKey, secretKey, null, region, isPublic)
     return cache.getOrCompute(key, (k) -> load(key), cache.duration).value
 }
 ```
