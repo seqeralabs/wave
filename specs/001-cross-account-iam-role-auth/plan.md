@@ -45,7 +45,7 @@ Enable Wave to authenticate to customer AWS ECR registries using AWS STS AssumeR
 
 ✅ **Multi-Platform Build Support**: Not applicable - no container build changes.
 
-✅ **Data Layer Principles**: Uses AbstractTieredCache (L1 in-memory + L2 Redis) via `AwsEcrCache` and `AwsJumpRoleCache` for ephemeral credential caching. No database schema changes in Wave. Follows existing tiered cache patterns.
+✅ **Data Layer Principles**: Uses AbstractTieredCache (L1 in-memory + L2 Redis) via `AwsEcrCache` and `AwsRoleCache` for ephemeral credential caching. No database schema changes in Wave. Follows existing tiered cache patterns.
 
 ✅ **Authentication & Authorization**: Enhances existing authentication with more secure role-based approach. No changes to JWT tokens, rate limiting, or pod identity.
 
@@ -81,7 +81,7 @@ src/main/groovy/io/seqera/wave/service/aws/
 ├── StsClientConfig.groovy              # NEW: Retryable.Config bean for STS retry settings (follows HttpClientConfig pattern)
 ├── cache/
 │   ├── AwsEcrCache.groovy              # No changes needed - tiered cache supports dynamic TTL via Pair
-│   ├── AwsJumpRoleCache.groovy         # NEW: Tiered cache for jump role credentials (keyed by region)
+│   ├── AwsRoleCache.groovy         # NEW: Tiered cache for jump role credentials (keyed by region)
 │   └── AwsStsCredentials.groovy        # NEW: MoshiSerializable wrapper for STS credentials (cache value)
 
 src/test/groovy/io/seqera/wave/service/aws/
@@ -131,40 +131,57 @@ No violations detected. Table intentionally left empty.
 
 **Goal**: Implement STS AssumeRole integration with credential caching and automatic refresh
 
-#### Task 1.1: Modify AwsCreds Class
+#### Task 1.1: Refactor AwsCreds Class with Dedicated Fields
 
-**File**: `src/main/groovy/io/seqera/wave/service/aws/AwsEcrService.groovy` (inner class, line ~58)
+**File**: `src/main/groovy/io/seqera/wave/service/aws/AwsEcrService.groovy` (inner class, line ~96)
 
 **Changes**:
 ```groovy
 @Canonical
-class AwsCreds {
+private static class AwsCreds implements TieredKey {
+    // Static credentials flow
     String accessKey
     String secretKey
-    String sessionToken    // NEW - null for static credentials
+    // Role-based auth flow
+    String roleArn
+    String externalId
+    // Temporary session token from STS AssumeRole
+    String sessionToken
+    // Common fields
     String region
     boolean ecrPublic
 
+    @Override
     String stableHash() {
-        Hashing.sha256()
-            .hashString("$accessKey:$secretKey:${sessionToken ?: ''}:$region:$ecrPublic", Charsets.UTF_8)
-            .toString()
+        if (roleArn) {
+            return RegHelper.sipHash(roleArn, externalId, region, ecrPublic)
+        }
+        // sessionToken only included when present to preserve backward-compatible hash values
+        final args = [accessKey, secretKey, region, ecrPublic] as List<Object>
+        if (sessionToken) args.add(sessionToken)
+        return RegHelper.sipHash(args.toArray())
     }
 
-    @Override
-    String toString() {
-        "AwsCreds(accessKey=${accessKey?.take(8)}..., " +
-        "secretKey=[REDACTED], " +
-        "sessionToken=${sessionToken ? '[REDACTED]' : 'null'}, " +
-        "region=$region, ecrPublic=$ecrPublic)"
+    static AwsCreds ofRole(String roleArn, String externalId, String region, boolean ecrPublic) {
+        new AwsCreds(roleArn: roleArn, externalId: externalId, region: region, ecrPublic: ecrPublic)
+    }
+
+    static AwsCreds ofKeys(String accessKey, String secretKey, String sessionToken, String region, boolean ecrPublic) {
+        new AwsCreds(accessKey: accessKey, secretKey: secretKey, sessionToken: sessionToken, region: region, ecrPublic: ecrPublic)
     }
 }
 ```
 
+**Key Design Decisions**:
+- Separate `roleArn`/`externalId` fields instead of overloading `accessKey`/`secretKey` — eliminates ambiguity
+- Factory methods `ofRole()` and `ofKeys()` enforce which fields are set per flow
+- `stableHash()` branches on `roleArn` presence — role-based keys are stable across STS refreshes
+- `load()` asserts `!creds.roleArn` to guard against accidental misuse with role-based cache keys
+
 **Test Coverage**:
-- Unit test: `stableHash()` includes session token
-- Unit test: `toString()` redacts sensitive fields
-- Unit test: Null session token handled correctly
+- Unit test: `stableHash()` produces different hashes for role-based vs static keys
+- Unit test: `stableHash()` includes session token only when present (backward compat)
+- Unit test: `ofRole()` sets only role fields, `ofKeys()` sets only static fields
 
 ---
 
@@ -172,13 +189,13 @@ class AwsCreds {
 
 **Files**:
 - `src/main/groovy/io/seqera/wave/service/aws/AwsEcrService.groovy` — `computeCacheTtl()` method
-- `src/main/groovy/io/seqera/wave/service/aws/cache/AwsJumpRoleCache.groovy` — NEW tiered cache for jump role credentials
+- `src/main/groovy/io/seqera/wave/service/aws/cache/AwsRoleCache.groovy` — NEW tiered cache for jump role credentials
 - `src/main/groovy/io/seqera/wave/service/aws/cache/AwsStsCredentials.groovy` — NEW MoshiSerializable cache value
 - `src/main/groovy/io/seqera/wave/service/aws/StsClientConfig.groovy` — NEW Retryable.Config for STS retry settings
 
 **Approach**: Two separate caches serve different purposes:
 1. **AwsEcrCache** — caches ECR auth tokens (existing). Uses `Pair<V, Duration>` for dynamic TTL based on STS credential expiration.
-2. **AwsJumpRoleCache** — NEW, caches jump role STS credentials (keyed by region). Extends `AbstractTieredCache<String, AwsStsCredentials>`. Avoids redundant STS calls when jump role chaining is configured.
+2. **AwsRoleCache** — NEW, caches jump role STS credentials (keyed by region). Extends `AbstractTieredCache<String, AwsStsCredentials>`. Avoids redundant STS calls when jump role chaining is configured.
 
 **AwsStsCredentials** implements `MoshiSerializable` with fields: `accessKeyId`, `secretAccessKey`, `sessionToken`, `expirationEpochMilli` (long, not Instant, for Moshi compatibility). Provides `from(Credentials)` factory and `toSdkCredentials()` round-trip.
 
@@ -347,28 +364,32 @@ String getLoginToken(String accessKey, String secretKey, String region, boolean 
 protected String getLoginTokenWithRole(String roleArn, String externalId, String region, boolean isPublic) {
     log.debug "Getting ECR login token with role assumption - roleArn=$roleArn; region=$region"
 
-    // Stable cache key using roleArn (not temp creds which change on each refresh)
-    final key = new AwsCreds(roleArn, externalId ?: '', null, region, isPublic)
+    final key = AwsCreds.ofRole(roleArn, externalId, region, isPublic)
 
-    // Pair-based getOrCompute sets TTL dynamically from STS credential expiration
+    // Use Pair-based getOrCompute to set TTL dynamically from STS credential expiration
     return cache.getOrCompute(key, (String k) -> {
         log.debug "Cache miss for role $roleArn - assuming role to get temporary credentials"
-        try {
-            final tempCreds = assumeRole(roleArn, externalId, region)
-            final ttl = computeCacheTtl(tempCreds.expiration(), cache.duration)
-            final tempKey = new AwsCreds(
-                    tempCreds.accessKeyId(), tempCreds.secretAccessKey(),
-                    tempCreds.sessionToken(), region, isPublic)
-            final token = load(tempKey)
-            return new AbstractTieredCache.Pair<AwsEcrAuthToken, Duration>(token, ttl)
-        }
-        catch (StsException e) { throw mapStsException(e) }
+        return assumeRoleAndLoadToken(roleArn, externalId, region, isPublic)
     }).value
+}
+
+protected AbstractTieredCache.Pair<AwsEcrAuthToken, Duration> assumeRoleAndLoadToken(
+        String roleArn, String externalId, String region, boolean isPublic) {
+    try {
+        final tempCreds = assumeRole(roleArn, externalId, region)
+        final ttl = computeCacheTtl(tempCreds.expiration(), cache.duration)
+        final tempKey = AwsCreds.ofKeys(
+                tempCreds.accessKeyId(), tempCreds.secretAccessKey(),
+                tempCreds.sessionToken(), region, isPublic)
+        final token = load(tempKey)  // assertion ensures roleArn is null here
+        return new AbstractTieredCache.Pair<AwsEcrAuthToken, Duration>(token, ttl)
+    }
+    catch (StsException e) { throw mapStsException(e) }
 }
 
 protected String getLoginTokenWithStaticCredentials(String accessKey, String secretKey, String region, boolean isPublic) {
     log.debug "Getting ECR login token with static credentials - region=$region"
-    final key = new AwsCreds(accessKey, secretKey, null, region, isPublic)
+    final key = AwsCreds.ofKeys(accessKey, secretKey, null, region, isPublic)
     return cache.getOrCompute(key, (k) -> load(key), cache.duration).value
 }
 ```
@@ -385,13 +406,13 @@ protected String getLoginTokenWithStaticCredentials(String accessKey, String sec
 
 **Files**:
 - `src/main/groovy/io/seqera/wave/service/aws/AwsEcrService.groovy` — `assumeJumpRole()` method
-- `src/main/groovy/io/seqera/wave/service/aws/cache/AwsJumpRoleCache.groovy` — NEW
+- `src/main/groovy/io/seqera/wave/service/aws/cache/AwsRoleCache.groovy` — NEW
 - `src/main/groovy/io/seqera/wave/service/aws/cache/AwsStsCredentials.groovy` — NEW
 - `src/main/groovy/io/seqera/wave/service/aws/StsClientConfig.groovy` — NEW
 
 **Implementation**:
 When `wave.aws.jump-role-arn` is configured, `assumeRole()` first calls `assumeJumpRole(region)` which:
-1. Checks `AwsJumpRoleCache` for cached jump role credentials (keyed by region)
+1. Checks `AwsRoleCache` for cached jump role credentials (keyed by region)
 2. On cache miss, assumes the jump role using Wave's default credentials with `Retryable` retry
 3. Caches the `AwsStsCredentials` with dynamic TTL (expiration minus 5-min buffer)
 4. Returns SDK `Credentials` via `toSdkCredentials()`

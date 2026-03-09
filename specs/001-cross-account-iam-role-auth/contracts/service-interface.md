@@ -69,12 +69,12 @@ private String assumeRoleAndAuthenticate(String registry, String roleArn, String
     Credentials creds = response.credentials()
 
     // 4. Cache temporary credentials
-    AwsCreds awsCreds = new AwsCreds(
-        accessKey: creds.accessKeyId(),
-        secretKey: creds.secretAccessKey(),
-        sessionToken: creds.sessionToken(),
-        region: region,
-        ecrPublic: false
+    AwsCreds awsCreds = AwsCreds.ofKeys(
+        creds.accessKeyId(),
+        creds.secretAccessKey(),
+        creds.sessionToken(),
+        region,
+        false
     )
 
     CachedEcrCredentials cached = new CachedEcrCredentials(
@@ -152,37 +152,45 @@ String getLoginToken(String registry, String username, String password) {
 ```groovy
 @Canonical
 class AwsCreds {
+    // AWS access key ID (static credentials flow)
     String accessKey
+    // AWS secret access key (static credentials flow)
     String secretKey
-    String sessionToken    // NEW - null for static credentials
+    // IAM role ARN (role-based auth flow)
+    String roleArn
+    // External ID for cross-account role assumption (role-based auth flow)
+    String externalId
+    // Temporary session token from STS AssumeRole
+    String sessionToken
+    // AWS region derived from the ECR registry hostname
     String region
+    // true for ECR Public (public.ecr.aws), false for private ECR
     boolean ecrPublic
 
     String stableHash() {
-        return Hashing.sha256()
-            .hashString(
-                "$accessKey:$secretKey:${sessionToken ?: ''}:$region:$ecrPublic",
-                Charsets.UTF_8
-            )
-            .toString()
+        if (roleArn) {
+            return RegHelper.sipHash(roleArn, externalId, region, ecrPublic)
+        }
+        // sessionToken is only included when present to preserve backward-compatible hash values
+        final args = [accessKey, secretKey, region, ecrPublic] as List<Object>
+        if (sessionToken) args.add(sessionToken)
+        return RegHelper.sipHash(args.toArray())
     }
 
-    @Override
-    String toString() {
-        return "AwsCreds(" +
-            "accessKey=${accessKey?.take(8)}..., " +
-            "secretKey=[REDACTED], " +
-            "sessionToken=${sessionToken ? '[REDACTED]' : 'null'}, " +
-            "region=$region, " +
-            "ecrPublic=$ecrPublic)"
+    static AwsCreds ofRole(String roleArn, String externalId, String region, boolean ecrPublic) {
+        new AwsCreds(roleArn: roleArn, externalId: externalId, region: region, ecrPublic: ecrPublic)
+    }
+
+    static AwsCreds ofKeys(String accessKey, String secretKey, String sessionToken, String region, boolean ecrPublic) {
+        new AwsCreds(accessKey: accessKey, secretKey: secretKey, sessionToken: sessionToken, region: region, ecrPublic: ecrPublic)
     }
 }
 ```
 
 **Changes**:
-- Add `sessionToken` field (String, nullable)
-- Update `stableHash()` to include session token
-- Override `toString()` to redact sensitive fields
+- Separate `roleArn`/`externalId` fields for role-based auth (no longer overloads `accessKey`/`secretKey`)
+- Factory methods `ofRole()` and `ofKeys()` for self-documenting construction
+- `stableHash()` uses different fields per flow; sessionToken only included when present for backward compatibility
 
 ---
 

@@ -229,7 +229,7 @@ When Wave's own IAM role cannot directly assume customer roles (e.g., due to org
 - **FR-019**: Wave MUST use session name format `wave-ecr-{accountId}-{timestamp}` for AssumeRole calls, where `accountId` is the 12-digit AWS account extracted from the role ARN (or `unknown` if unparsable) and `timestamp` is epoch millis. For jump role sessions, the format is `wave-jump-{accountId}-{timestamp}`.
 - **FR-020**: System MUST log all STS AssumeRole calls with sufficient context (role ARN, region, external ID presence, success/failure)
 - **FR-021**: Wave MUST support optional jump role chaining via `wave.aws.jump-role-arn` configuration. When set, Wave first assumes the jump role using default credentials, then uses jump role credentials to assume the target customer role.
-- **FR-022**: Wave MUST cache jump role credentials using a tiered cache (`AwsJumpRoleCache`) with configurable duration (default 45 minutes) and max size (default 100), keyed by region.
+- **FR-022**: Wave MUST cache jump role credentials using a tiered cache (`AwsRoleCache`) with configurable duration (default 45 minutes) and max size (default 100), keyed by region.
 - **FR-023**: Wave MUST use a dedicated `StsClientConfig` bean for STS retry settings (delay, maxDelay, attempts, multiplier, jitter), following the same `Retryable.Config` pattern as `HttpClientConfig`.
 - **FR-024**: Wave MUST extract the 12-digit AWS account ID from role ARNs via `extractAccountId()` for use in STS session names, supporting all AWS partitions. Returns `unknown` if the ARN cannot be parsed.
 
@@ -251,10 +251,12 @@ When Wave's own IAM role cannot directly assume customer roles (e.g., due to org
   - Note: Platform sends dedicated `assumeRoleArn` and `externalId` fields in the JSON payload. Wave's `ContainerRegistryKeys.fromJson()` maps `assumeRoleArn` → `userName` and `externalId` → `password`. Wave then detects the role ARN pattern (`^arn:aws(-cn|-us-gov)?:iam::\d{12}:role/[\w+=,.@\/-]+$`) in the `userName` field to route to role-based authentication.
   - Relationships: Associated with workspace/organization in Platform
 
-- **AwsCreds (Wave)**: Represents AWS credentials used by Wave for cache key computation
-  - Key attributes: `accessKey`, `secretKey`, `sessionToken` (nullable — null for static credentials), `region`, `ecrPublic`
-  - For role-based auth: cache key uses `roleArn` as `accessKey` and `externalId` as `secretKey` (with null `sessionToken`) to ensure stable cache keys across credential refreshes
-  - For static auth: cache key uses actual access key and secret key (with null `sessionToken`)
+- **AwsCreds (Wave)**: Cache key for ECR auth tokens with dedicated fields per authentication flow
+  - Key attributes: `accessKey`, `secretKey` (static flow); `roleArn`, `externalId` (role-based flow); `sessionToken` (nullable — only present for temporary credentials from STS); `region`, `ecrPublic`
+  - Factory methods: `ofRole(roleArn, externalId, region, ecrPublic)` for role-based auth; `ofKeys(accessKey, secretKey, sessionToken, region, ecrPublic)` for static/temporary credentials
+  - For role-based auth: `stableHash()` uses `roleArn` + `externalId` — stable across STS session refreshes
+  - For static auth: `stableHash()` uses `accessKey` + `secretKey` (plus `sessionToken` only when present for backward-compatible hashes)
+  - Guard: `load()` asserts `!roleArn` to prevent accidental misuse of role-based cache keys for direct ECR auth
   - Relationships: Used as tiered cache key via `stableHash()`, temporary lifecycle for role-based credentials
 
 - **AWS STS Credentials (transient)**: Temporary credentials obtained from STS AssumeRole

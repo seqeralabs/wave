@@ -33,8 +33,8 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [x] T003 Modify `AwsCreds` class in `src/main/groovy/io/seqera/wave/service/aws/AwsEcrService.groovy:58` to add `String sessionToken` field (nullable) ✅ Already implemented
-- [x] T004 Update `AwsCreds.stableHash()` method to include session token in cache key: `"$accessKey:$secretKey:${sessionToken ?: ''}:$region:$ecrPublic"` ✅ Already implemented
+- [x] T003 Refactor `AwsCreds` class in `src/main/groovy/io/seqera/wave/service/aws/AwsEcrService.groovy:96` — replace overloaded `accessKey`/`secretKey` with dedicated `roleArn`/`externalId` fields for role-based auth, add `sessionToken` field, add factory methods `ofRole()` and `ofKeys()`, add `load()` assertion guard ✅ Already implemented
+- [x] T004 Update `AwsCreds.stableHash()` to branch on `roleArn` presence: role-based uses `sipHash(roleArn, externalId, region, ecrPublic)`, static uses `sipHash(accessKey, secretKey, region, ecrPublic[, sessionToken])` — backward-compatible hashes preserved ✅ Already implemented
 - [x] T005 Modify `CachedEcrCredentials` class - Not needed, using tiered cache pattern instead
 - [x] T006 Add `Instant stsExpiration` field - Not needed with current cache architecture
 - [x] T007 Implement `isExpiring()` method - Not needed, cache handles expiration via duration
@@ -110,7 +110,7 @@
 
 ### Implementation for User Story 3
 
-- [x] T032 [US3] `stableHash()` handles null via `sessionToken ?: ''` at `AwsEcrService.groovy:89` ✅ Tested in `AwsEcrServiceTest.groovy:167`
+- [x] T032 [US3] `stableHash()` only appends `sessionToken` when non-null (backward-compatible hash) at `AwsEcrService.groovy:118-122` ✅ Tested in `AwsEcrServiceTest.groovy:167`
 - [x] T033 [US3] Not applicable - using TTL-based cache pattern, no `isExpiring()` method needed ✅
 - [x] T034 [US3] `ecrClient()` creates `AwsBasicCredentials` when sessionToken is null at `AwsEcrService.groovy:211` ✅
 - [x] T035 [US3] `ecrClient()` creates `AwsSessionCredentials` when sessionToken is present at `AwsEcrService.groovy:210` ✅
@@ -180,7 +180,7 @@
 
 ### Implementation for User Story 6
 
-- [x] T054 [US6] `AwsCreds.stableHash()` includes all fields at `AwsEcrService.groovy:88-91` ✅
+- [x] T054 [US6] `AwsCreds.stableHash()` branches on `roleArn` presence at `AwsEcrService.groovy:114-123` ✅
 - [x] T055 [US6] `cache.getOrCompute()` from `AbstractTieredCache` provides atomic load at `AwsEcrService.groovy:311` ✅
 - [ ] T056 [US6] **REMAINING**: Add cache metrics using Micrometer — cache hit rate gauge (NFR-002/SC-002), cache size, eviction count
 - [x] T057 [US6] Cache max-size configured via `wave.aws.ecr.cache.max-size` in `AwsEcrCache.groovy` (default: 10,000) ✅
@@ -246,7 +246,7 @@
 
 ### Implementation for User Story 9
 
-- [x] T084 [US9] `AwsJumpRoleCache.groovy` extends `AbstractTieredCache<String, AwsStsCredentials>` with config: `wave.aws.jump-role-cache.{duration:45m, max-size:100}` ✅
+- [x] T084 [US9] `AwsRoleCache.groovy` extends `AbstractTieredCache<String, AwsStsCredentials>` with config: `wave.aws.jump-role-cache.{duration:45m, max-size:100}` ✅
 - [x] T085 [US9] `AwsStsCredentials.groovy` implements `MoshiSerializable` with `from(Credentials)`, `toSdkCredentials()`, `expiration()` ✅
 - [x] T086 [US9] `StsClientConfig.groovy` implements `Retryable.Config` with `wave.aws.sts.retry.{delay:1s, maxDelay:10s, attempts:3, multiplier:2.0, jitter:0.25}` ✅
 - [x] T087 [US9] `assumeJumpRole(region)` in `AwsEcrService.groovy:252` uses `jumpRoleCache.getOrCompute()` with `Pair<AwsStsCredentials, Duration>` for dynamic TTL ✅
