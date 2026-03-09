@@ -411,7 +411,8 @@ class AwsEcrService {
     protected String getLoginToken0(String accessKey, String secretKey, String sessionToken, String region) {
         log.debug "Getting AWS ECR auth token - region=$region; accessKey=$accessKey; sessionToken=${sessionToken ? 'present' : 'none'}"
         ecrClient(accessKey, secretKey, sessionToken, region).withCloseable { client ->
-            final resp = client.getAuthorizationToken(GetAuthorizationTokenRequest.builder().build())
+            final req = GetAuthorizationTokenRequest.builder().build() as GetAuthorizationTokenRequest
+            final resp = client.getAuthorizationToken(req)
             final encoded = resp.authorizationData().get(0).authorizationToken()
             return new String(encoded.decodeBase64())
         }
@@ -420,7 +421,8 @@ class AwsEcrService {
     protected String getLoginToken1(String accessKey, String secretKey, String sessionToken, String region) {
         log.debug "Getting AWS ECR public auth token - region=$region; accessKey=$accessKey"
         ecrPublicClient(accessKey, secretKey, sessionToken, region).withCloseable { client ->
-            final resp = client.getAuthorizationToken(GetPublicAuthorizationTokenRequest.builder().build())
+            final req = GetPublicAuthorizationTokenRequest.builder().build() as GetPublicAuthorizationTokenRequest
+            final resp = client.getAuthorizationToken(req)
             final encoded = resp.authorizationData().authorizationToken()
             return new String(encoded.decodeBase64())
         }
