@@ -28,7 +28,7 @@ import software.amazon.awssdk.services.sts.model.Credentials
 
 /**
  * Serializable wrapper for AWS STS temporary credentials, used as a cache value
- * in {@link AwsJumpRoleCache}
+ * in {@link AwsRoleCache}
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */

@@ -88,7 +88,7 @@ class AwsEcrAuthToken {
 
 **Location**: `src/main/groovy/io/seqera/wave/service/aws/cache/AwsStsCredentials.groovy`
 
-**Purpose**: MoshiSerializable wrapper for STS temporary credentials, used as cache value in `AwsJumpRoleCache`
+**Purpose**: MoshiSerializable wrapper for STS temporary credentials, used as cache value in `AwsRoleCache`
 
 **Structure**:
 ```groovy

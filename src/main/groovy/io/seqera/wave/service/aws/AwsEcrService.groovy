@@ -30,7 +30,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.service.aws.cache.AwsEcrAuthToken
 import io.seqera.wave.service.aws.cache.AwsEcrCache
-import io.seqera.wave.service.aws.cache.AwsJumpRoleCache
+import io.seqera.wave.service.aws.cache.AwsRoleCache
 import io.seqera.wave.service.aws.cache.AwsStsCredentials
 import io.seqera.cache.tiered.AbstractTieredCache
 import io.seqera.cache.tiered.TieredKey
@@ -153,7 +153,7 @@ class AwsEcrService {
     private AwsEcrCache cache
 
     @Inject
-    private AwsJumpRoleCache jumpRoleCache
+    private AwsRoleCache jumpRoleCache
 
     @Inject
     private StsClientConfig stsConfig

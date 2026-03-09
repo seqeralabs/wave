@@ -29,7 +29,7 @@ import spock.lang.Unroll
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.service.aws.cache.AwsEcrAuthToken
 import io.seqera.wave.service.aws.cache.AwsEcrCache
-import io.seqera.wave.service.aws.cache.AwsJumpRoleCache
+import io.seqera.wave.service.aws.cache.AwsRoleCache
 import io.seqera.wave.service.aws.cache.AwsStsCredentials
 import jakarta.inject.Inject
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails
@@ -914,7 +914,7 @@ class AwsEcrServiceTest extends Specification {
 
     def 'should cache jump role credentials and reuse on second call' () {
         given:
-        def jumpRoleCache = Mock(AwsJumpRoleCache)
+        def jumpRoleCache = Mock(AwsRoleCache)
         def service = Spy(AwsEcrService)
         service.@jumpRoleCache = jumpRoleCache
         service.@jumpRoleArn = 'arn:aws:iam::111122223333:role/test-jump-role'

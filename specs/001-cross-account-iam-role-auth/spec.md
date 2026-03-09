@@ -229,7 +229,7 @@ When Wave's own IAM role cannot directly assume customer roles (e.g., due to org
 - **FR-019**: Wave MUST use session name format `wave-ecr-{accountId}-{timestamp}` for AssumeRole calls, where `accountId` is the 12-digit AWS account extracted from the role ARN (or `unknown` if unparsable) and `timestamp` is epoch millis. For jump role sessions, the format is `wave-jump-{accountId}-{timestamp}`.
 - **FR-020**: System MUST log all STS AssumeRole calls with sufficient context (role ARN, region, external ID presence, success/failure)
 - **FR-021**: Wave MUST support optional jump role chaining via `wave.aws.jump-role-arn` configuration. When set, Wave first assumes the jump role using default credentials, then uses jump role credentials to assume the target customer role.
-- **FR-022**: Wave MUST cache jump role credentials using a tiered cache (`AwsJumpRoleCache`) with configurable duration (default 45 minutes) and max size (default 100), keyed by region.
+- **FR-022**: Wave MUST cache jump role credentials using a tiered cache (`AwsRoleCache`) with configurable duration (default 45 minutes) and max size (default 100), keyed by region.
 - **FR-023**: Wave MUST use a dedicated `StsClientConfig` bean for STS retry settings (delay, maxDelay, attempts, multiplier, jitter), following the same `Retryable.Config` pattern as `HttpClientConfig`.
 - **FR-024**: Wave MUST extract the 12-digit AWS account ID from role ARNs via `extractAccountId()` for use in STS session names, supporting all AWS partitions. Returns `unknown` if the ARN cannot be parsed.
 

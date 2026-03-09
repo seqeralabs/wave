@@ -246,7 +246,7 @@
 
 ### Implementation for User Story 9
 
-- [x] T084 [US9] `AwsJumpRoleCache.groovy` extends `AbstractTieredCache<String, AwsStsCredentials>` with config: `wave.aws.jump-role-cache.{duration:45m, max-size:100}` ✅
+- [x] T084 [US9] `AwsRoleCache.groovy` extends `AbstractTieredCache<String, AwsStsCredentials>` with config: `wave.aws.jump-role-cache.{duration:45m, max-size:100}` ✅
 - [x] T085 [US9] `AwsStsCredentials.groovy` implements `MoshiSerializable` with `from(Credentials)`, `toSdkCredentials()`, `expiration()` ✅
 - [x] T086 [US9] `StsClientConfig.groovy` implements `Retryable.Config` with `wave.aws.sts.retry.{delay:1s, maxDelay:10s, attempts:3, multiplier:2.0, jitter:0.25}` ✅
 - [x] T087 [US9] `assumeJumpRole(region)` in `AwsEcrService.groovy:252` uses `jumpRoleCache.getOrCompute()` with `Pair<AwsStsCredentials, Duration>` for dynamic TTL ✅

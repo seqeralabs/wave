@@ -45,7 +45,7 @@ Enable Wave to authenticate to customer AWS ECR registries using AWS STS AssumeR
 
 ✅ **Multi-Platform Build Support**: Not applicable - no container build changes.
 
-✅ **Data Layer Principles**: Uses AbstractTieredCache (L1 in-memory + L2 Redis) via `AwsEcrCache` and `AwsJumpRoleCache` for ephemeral credential caching. No database schema changes in Wave. Follows existing tiered cache patterns.
+✅ **Data Layer Principles**: Uses AbstractTieredCache (L1 in-memory + L2 Redis) via `AwsEcrCache` and `AwsRoleCache` for ephemeral credential caching. No database schema changes in Wave. Follows existing tiered cache patterns.
 
 ✅ **Authentication & Authorization**: Enhances existing authentication with more secure role-based approach. No changes to JWT tokens, rate limiting, or pod identity.
 
@@ -81,7 +81,7 @@ src/main/groovy/io/seqera/wave/service/aws/
 ├── StsClientConfig.groovy              # NEW: Retryable.Config bean for STS retry settings (follows HttpClientConfig pattern)
 ├── cache/
 │   ├── AwsEcrCache.groovy              # No changes needed - tiered cache supports dynamic TTL via Pair
-│   ├── AwsJumpRoleCache.groovy         # NEW: Tiered cache for jump role credentials (keyed by region)
+│   ├── AwsRoleCache.groovy         # NEW: Tiered cache for jump role credentials (keyed by region)
 │   └── AwsStsCredentials.groovy        # NEW: MoshiSerializable wrapper for STS credentials (cache value)
 
 src/test/groovy/io/seqera/wave/service/aws/
@@ -189,13 +189,13 @@ private static class AwsCreds implements TieredKey {
 
 **Files**:
 - `src/main/groovy/io/seqera/wave/service/aws/AwsEcrService.groovy` — `computeCacheTtl()` method
-- `src/main/groovy/io/seqera/wave/service/aws/cache/AwsJumpRoleCache.groovy` — NEW tiered cache for jump role credentials
+- `src/main/groovy/io/seqera/wave/service/aws/cache/AwsRoleCache.groovy` — NEW tiered cache for jump role credentials
 - `src/main/groovy/io/seqera/wave/service/aws/cache/AwsStsCredentials.groovy` — NEW MoshiSerializable cache value
 - `src/main/groovy/io/seqera/wave/service/aws/StsClientConfig.groovy` — NEW Retryable.Config for STS retry settings
 
 **Approach**: Two separate caches serve different purposes:
 1. **AwsEcrCache** — caches ECR auth tokens (existing). Uses `Pair<V, Duration>` for dynamic TTL based on STS credential expiration.
-2. **AwsJumpRoleCache** — NEW, caches jump role STS credentials (keyed by region). Extends `AbstractTieredCache<String, AwsStsCredentials>`. Avoids redundant STS calls when jump role chaining is configured.
+2. **AwsRoleCache** — NEW, caches jump role STS credentials (keyed by region). Extends `AbstractTieredCache<String, AwsStsCredentials>`. Avoids redundant STS calls when jump role chaining is configured.
 
 **AwsStsCredentials** implements `MoshiSerializable` with fields: `accessKeyId`, `secretAccessKey`, `sessionToken`, `expirationEpochMilli` (long, not Instant, for Moshi compatibility). Provides `from(Credentials)` factory and `toSdkCredentials()` round-trip.
 
@@ -406,13 +406,13 @@ protected String getLoginTokenWithStaticCredentials(String accessKey, String sec
 
 **Files**:
 - `src/main/groovy/io/seqera/wave/service/aws/AwsEcrService.groovy` — `assumeJumpRole()` method
-- `src/main/groovy/io/seqera/wave/service/aws/cache/AwsJumpRoleCache.groovy` — NEW
+- `src/main/groovy/io/seqera/wave/service/aws/cache/AwsRoleCache.groovy` — NEW
 - `src/main/groovy/io/seqera/wave/service/aws/cache/AwsStsCredentials.groovy` — NEW
 - `src/main/groovy/io/seqera/wave/service/aws/StsClientConfig.groovy` — NEW
 
 **Implementation**:
 When `wave.aws.jump-role-arn` is configured, `assumeRole()` first calls `assumeJumpRole(region)` which:
-1. Checks `AwsJumpRoleCache` for cached jump role credentials (keyed by region)
+1. Checks `AwsRoleCache` for cached jump role credentials (keyed by region)
 2. On cache miss, assumes the jump role using Wave's default credentials with `Retryable` retry
 3. Caches the `AwsStsCredentials` with dynamic TTL (expiration minus 5-min buffer)
 4. Returns SDK `Credentials` via `toSdkCredentials()`

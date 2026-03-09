@@ -41,7 +41,7 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-class AwsJumpRoleCache extends AbstractTieredCache<String, AwsStsCredentials> {
+class AwsRoleCache extends AbstractTieredCache<String, AwsStsCredentials> {
 
     @Value('${wave.aws.jump-role-cache.duration:45m}')
     private Duration duration
@@ -49,7 +49,7 @@ class AwsJumpRoleCache extends AbstractTieredCache<String, AwsStsCredentials> {
     @Value('${wave.aws.jump-role-cache.max-size:100}')
     private int maxSize
 
-    AwsJumpRoleCache(@Nullable L2TieredCache l2) {
+    AwsRoleCache(@Nullable L2TieredCache l2) {
         super(l2, encoder())
     }
 
@@ -60,12 +60,12 @@ class AwsJumpRoleCache extends AbstractTieredCache<String, AwsStsCredentials> {
 
     @Override
     protected String getName() {
-        return 'aws-jump-role-cache'
+        return 'aws-role-cache'
     }
 
     @Override
     protected String getPrefix() {
-        return 'aws-jump-role-cache/v1'
+        return 'aws-role-cache/v1'
     }
 
     Duration getDuration() {
