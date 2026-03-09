@@ -222,12 +222,6 @@ class CranHelper {
     private static String addCommands(String result, List<String> commands, boolean singularity) {
         if( commands == null || commands.isEmpty() )
             return result
-
-        // Validate commands for Dockerfile format (not needed for Singularity)
-        if( !singularity ) {
-            DockerHelper.validateCommands(commands)
-        }
-
         if( singularity )
             result += '%post\n'
         for( String cmd : commands ) {
