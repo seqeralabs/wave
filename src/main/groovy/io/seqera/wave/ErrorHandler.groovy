@@ -86,7 +86,7 @@ class ErrorHandler {
             // In debug mode, show the original error for troubleshooting
             // In production, never propagate raw exception messages to the client
             if( debug )
-                msg = ((msg ?: t.cause?.message ?: "Unknown error") + " - Error ID: ${errId}").toString()
+                msg = (logMsg + " - Error ID: ${errId}").toString()
             else
                 msg = "Oops... Unable to process request - Error ID: ${errId}".toString()
         }
