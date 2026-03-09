@@ -59,7 +59,7 @@ class ErrorHandler {
     <T> HttpResponse<T> handle(HttpRequest request, Throwable t, Mapper<T> responseFactory) {
         final errId = LongRndKey.rndHex()
         final knownException = t instanceof WaveException || t instanceof HttpStatusException
-        String msg = t.message
+        def msg = t.message
         if( knownException && msg ) {
             // the the error cause
             if( t.cause ) msg += " - Cause: ${t.cause.message ?: t.cause}".toString()
@@ -83,9 +83,12 @@ class ErrorHandler {
             render += " - Error ID: ${errId}"
             log.error(render, t)
 
-            // Never propagate raw exception messages to the client
-            // Use only controlled messages and rely on Error ID for debugging
-            msg = "Oops... Unable to process request - Error ID: ${errId}"
+            // In debug mode, show the original error for troubleshooting
+            // In production, never propagate raw exception messages to the client
+            if( debug )
+                msg = ((msg ?: t.cause?.message ?: "Unknown error") + " - Error ID: ${errId}").toString()
+            else
+                msg = "Oops... Unable to process request - Error ID: ${errId}".toString()
         }
 
         if( t instanceof HttpStatusException ) {
