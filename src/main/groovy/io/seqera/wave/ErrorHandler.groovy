@@ -57,7 +57,6 @@ class ErrorHandler {
     private Boolean debug
 
     <T> HttpResponse<T> handle(HttpRequest request, Throwable t, Mapper<T> responseFactory) {
-        final errId = LongRndKey.rndHex()
         final knownException = t instanceof WaveException || t instanceof HttpStatusException
         def msg = t.message
         if( knownException && msg ) {
@@ -75,20 +74,22 @@ class ErrorHandler {
             }
         }
         else {
+            final errId = LongRndKey.rndHex()
+            final errorIdSuffix = " - Error ID: ${errId}".toString()
             // Log the original message for debugging
             String logMsg = msg ?: t.cause?.message ?: "Unknown error"
             String render = logMsg
             if( request )
                 render += toString(request)
-            render += " - Error ID: ${errId}"
+            render += errorIdSuffix
             log.error(render, t)
 
             // In debug mode, show the original error for troubleshooting
-            // In production, never propagate raw exception messages to the client
+            // In production, strip stack traces and internal class names from the client response
             if( debug )
-                msg = (logMsg + " - Error ID: ${errId}").toString()
+                msg = logMsg + errorIdSuffix
             else
-                msg = "Oops... Unable to process request - Error ID: ${errId}".toString()
+                msg = sanitizeErrorMessage(logMsg) + errorIdSuffix
         }
 
         if( t instanceof HttpStatusException ) {
@@ -149,6 +150,32 @@ class ErrorHandler {
         final resp = responseFactory.apply(msg, 'SERVER_ERROR')
         return HttpResponse.serverError(resp)
 
+    }
+
+    /**
+     * Strip stack traces and internal class names from error messages
+     * while keeping the useful error description intact
+     */
+    static String sanitizeErrorMessage(String message) {
+        if( !message )
+            return "Unexpected error"
+        // take only the first line to remove stack traces
+        def result = message.split('\n')[0].trim()
+        // strip "Failed to convert argument ... due to:" prefix
+        final dueToIdx = result.indexOf('due to:')
+        if( dueToIdx >= 0 )
+            result = result.substring(dueToIdx + 7).trim()
+        // strip fully qualified class names (e.g. io.seqera.wave.api.PackagesSpec$Type)
+        result = result.replaceAll(/`?[a-z]+(\.[a-z]+)+\.[A-Z][\w$]*`?/, '').trim()
+        // strip Jackson source references (e.g. "at [Source: ...]")
+        result = result.replaceAll(/\s*at \[Source:.*/, '').trim()
+        // strip reference chains (e.g. "(through reference chain: ...)")
+        result = result.replaceAll(/\(through reference chain:.*?\)/, '').trim()
+        // strip quoted user input values to prevent XSS reflection (e.g. from String "user-input": ...)
+        result = result.replaceAll(/from String ".*?"(:[^"']*)?\s*/, '').trim()
+        // collapse multiple spaces
+        result = result.replaceAll(/\s{2,}/, ' ').trim()
+        return result ?: "Unexpected error"
     }
 
     static String toString(HttpRequest request) {

@@ -28,6 +28,7 @@ import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.http.hateoas.JsonError
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.ErrorHandler
 import io.seqera.wave.exchange.RegistryErrorResponse
 import io.seqera.wave.model.ContentType
 import jakarta.inject.Inject
@@ -69,19 +70,18 @@ class ErrorHandlingTest extends Specification {
         when: 'submitting the request'
         client.toBlocking().exchange(request, JsonError)
 
-        then: 'an exception is thrown with a controlled error message'
+        then: 'an exception is thrown'
         def exception = thrown(HttpClientResponseException)
         def error = exception.response.getBody(JsonError).get()
 
-        and: 'the error message is the controlled fallback with an error ID'
-        error.message.startsWith('Oops... Unable to process request - Error ID:')
+        and: 'the error message contains an error ID'
+        error.message.contains('Error ID:')
 
         and: 'no internal details are leaked'
         !error.message.contains('io.seqera.wave')
         !error.message.contains('PackagesSpec')
         !error.message.contains('through reference chain')
         !error.message.contains('at [Source:')
-        !error.message.contains('Cannot deserialize')
     }
 
     void 'should not expose internal details for XSS attempt in value'() {
@@ -100,12 +100,12 @@ class ErrorHandlingTest extends Specification {
         when: 'submitting the request'
         client.toBlocking().exchange(request, JsonError)
 
-        then: 'an exception is thrown with a controlled error message'
+        then: 'an exception is thrown'
         def exception = thrown(HttpClientResponseException)
         def error = exception.response.getBody(JsonError).get()
 
-        and: 'the error message is the controlled fallback'
-        error.message.startsWith('Oops... Unable to process request - Error ID:')
+        and: 'the error message contains an error ID'
+        error.message.contains('Error ID:')
 
         and: 'no internal details or user input are reflected'
         !error.message.contains('io.seqera.wave')
@@ -122,15 +122,30 @@ class ErrorHandlingTest extends Specification {
         when: 'submitting the request'
         client.toBlocking().exchange(request, JsonError)
 
-        then: 'an exception is thrown with a controlled error message'
+        then: 'an exception is thrown'
         def exception = thrown(HttpClientResponseException)
         def error = exception.response.getBody(JsonError).get()
 
-        and: 'the error message is the controlled fallback'
-        error.message.startsWith('Oops... Unable to process request - Error ID:')
+        and: 'the error message contains an error ID'
+        error.message.contains('Error ID:')
 
         and: 'no internal details are leaked'
         !error.message.contains('io.seqera')
         !error.message.contains('com.fasterxml.jackson')
+    }
+
+    def 'sanitizeErrorMessage should handle edge cases'() {
+        expect:
+        ErrorHandler.sanitizeErrorMessage(input) == expected
+
+        where:
+        input                                                                           | expected
+        null                                                                            | 'Unexpected error'
+        ''                                                                              | 'Unexpected error'
+        '   '                                                                           | 'Unexpected error'
+        'Invalid request: missing required field'                                       | 'Invalid request: missing required field'
+        'Cannot deserialize value of type `io.seqera.wave.api.PackagesSpec\$Type`'      | 'Cannot deserialize value of type'
+        'Error with io.seqera.wave.Foo and java.lang.String in it'                      | 'Error with and in it'
+        'Something from String "malicious<script>": not valid'                          | 'Something'
     }
 }
