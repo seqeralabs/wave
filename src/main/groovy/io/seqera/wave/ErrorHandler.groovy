@@ -54,7 +54,7 @@ class ErrorHandler {
     // pre-compiled patterns for sanitizeErrorMessage (CWE-209: strip deserialization internals and XSS vectors)
     private static final Pattern JACKSON_SOURCE = Pattern.compile(/\s*at \[Source:.*/)
     private static final Pattern REF_CHAIN = Pattern.compile(/\(through reference chain:.*?\)/)
-    private static final Pattern QUOTED_INPUT = Pattern.compile(/from String ".*?":?\s*/)
+    private static final Pattern QUOTED_INPUT = Pattern.compile(/(?<=value of type\s.{0,200})from String ".*?":?\s*/)
     private static final Pattern HTML_TAG = Pattern.compile(/<[^>]+>/)
     private static final Pattern MULTI_SPACE = Pattern.compile(/\s{2,}/)
 

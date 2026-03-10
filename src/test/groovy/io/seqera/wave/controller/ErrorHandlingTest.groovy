@@ -142,7 +142,8 @@ class ErrorHandlingTest extends Specification {
         'Invalid request: missing required field'                                       | 'Invalid request: missing required field'
         'Cannot deserialize value of type `io.seqera.wave.api.PackagesSpec\$Type`'      | 'Cannot deserialize value of type `io.seqera.wave.api.PackagesSpec\$Type`'
         'Error with io.seqera.wave.Foo and java.lang.String in it'                      | 'Error with io.seqera.wave.Foo and java.lang.String in it'
-        'Something from String "malicious<script>": not valid'                          | 'Something not valid'
+        'Something from String "malicious<script>": not valid'                          | 'Something from String "malicious": not valid'
+        'Cannot deserialize value of type X from String "<script>alert(1)</script>": bad' | 'Cannot deserialize value of type X bad'
         'payload <script>alert(1)</script> end'                                         | 'payload alert(1) end'
         'xss <img onerror="alert(1)" src=x> test'                                      | 'xss test'
     }
