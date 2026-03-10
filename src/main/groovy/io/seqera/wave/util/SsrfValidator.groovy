@@ -31,9 +31,6 @@ import io.seqera.wave.exception.BadRequestException
 class SsrfValidator {
 
     // Cloud metadata service IPs
-    /*
-
-     */
     private static final Set<String> METADATA_IPS = [
         '169.254.169.254',  // AWS metadata service- https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-retrieval.html
         '169.254.170.2',    // AWS ECS metadata service - https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html

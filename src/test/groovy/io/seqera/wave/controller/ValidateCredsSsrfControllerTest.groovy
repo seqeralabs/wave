@@ -19,6 +19,7 @@
 package io.seqera.wave.controller
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import io.micronaut.context.annotation.Property
 import io.micronaut.http.HttpRequest
@@ -37,12 +38,13 @@ class ValidateCredsSsrfControllerTest extends Specification {
     @Client("/")
     HttpClient client
 
-    void 'should reject SSRF attempts with private IP'() {
+    @Unroll
+    void 'should reject SSRF attempts with #description'() {
         given:
         def req = [
                 userName: 'test',
                 password: 'test',
-                registry: '127.0.0.1'
+                registry: registry
         ]
         HttpRequest request = HttpRequest.POST("/v1alpha2/validate-creds", req)
 
@@ -52,60 +54,13 @@ class ValidateCredsSsrfControllerTest extends Specification {
         then:
         def e = thrown(HttpClientResponseException)
         e.status == HttpStatus.BAD_REQUEST
-        e.message.contains('loopback')
-    }
+        e.message.contains(expectedMsg)
 
-    void 'should reject SSRF attempts with localhost'() {
-        given:
-        def req = [
-                userName: 'test',
-                password: 'test',
-                registry: 'localhost'
-        ]
-        HttpRequest request = HttpRequest.POST("/v1alpha2/validate-creds", req)
-
-        when:
-        client.toBlocking().exchange(request, Boolean)
-
-        then:
-        def e = thrown(HttpClientResponseException)
-        e.status == HttpStatus.BAD_REQUEST
-        e.message.contains('localhost')
-    }
-
-    void 'should reject SSRF attempts with AWS metadata IP'() {
-        given:
-        def req = [
-                userName: 'test',
-                password: 'test',
-                registry: '169.254.169.254'
-        ]
-        HttpRequest request = HttpRequest.POST("/v1alpha2/validate-creds", req)
-
-        when:
-        client.toBlocking().exchange(request, Boolean)
-
-        then:
-        def e = thrown(HttpClientResponseException)
-        e.status == HttpStatus.BAD_REQUEST
-        e.message.contains('metadata')
-    }
-
-    void 'should reject SSRF attempts with private network IP'() {
-        given:
-        def req = [
-                userName: 'test',
-                password: 'test',
-                registry: '10.0.0.1'
-        ]
-        HttpRequest request = HttpRequest.POST("/v1alpha2/validate-creds", req)
-
-        when:
-        client.toBlocking().exchange(request, Boolean)
-
-        then:
-        def e = thrown(HttpClientResponseException)
-        e.status == HttpStatus.BAD_REQUEST
-        e.message.contains('private')
+        where:
+        registry          | description        | expectedMsg
+        '127.0.0.1'       | 'loopback IP'      | 'loopback'
+        'localhost'        | 'localhost'         | 'localhost'
+        '169.254.169.254' | 'AWS metadata IP'  | 'metadata'
+        '10.0.0.1'        | 'private network'  | 'private'
     }
 }
