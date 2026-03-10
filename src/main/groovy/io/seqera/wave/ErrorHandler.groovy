@@ -55,7 +55,7 @@ class ErrorHandler {
     private static final Pattern FQN_CLASS_NAME = Pattern.compile(/`?[a-z]+(\.[a-z]+)+\.[A-Z][\w$]*`?/)
     private static final Pattern JACKSON_SOURCE = Pattern.compile(/\s*at \[Source:.*/)
     private static final Pattern REF_CHAIN = Pattern.compile(/\(through reference chain:.*?\)/)
-    private static final Pattern QUOTED_INPUT = Pattern.compile(/from String ".*?"(:[^"']*)?\s*/)
+    private static final Pattern QUOTED_INPUT = Pattern.compile(/from String ".*?":?\s*/)
     private static final Pattern HTML_TAG = Pattern.compile(/<[^>]+>/)
     private static final Pattern MULTI_SPACE = Pattern.compile(/\s{2,}/)
 
