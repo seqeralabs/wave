@@ -51,8 +51,7 @@ import jakarta.inject.Singleton
 @CompileStatic
 class ErrorHandler {
 
-    // pre-compiled patterns for sanitizeErrorMessage (CWE-209: strip verbose backend details)
-    private static final Pattern FQN_CLASS_NAME = Pattern.compile(/`?[a-z]+(\.[a-z]+)+\.[A-Z][\w$]*`?/)
+    // pre-compiled patterns for sanitizeErrorMessage (CWE-209: strip deserialization internals and XSS vectors)
     private static final Pattern JACKSON_SOURCE = Pattern.compile(/\s*at \[Source:.*/)
     private static final Pattern REF_CHAIN = Pattern.compile(/\(through reference chain:.*?\)/)
     private static final Pattern QUOTED_INPUT = Pattern.compile(/from String ".*?":?\s*/)
@@ -164,8 +163,9 @@ class ErrorHandler {
 
     /**
      * Sanitize error messages for client responses (CWE-209/CWE-210).
-     * Strips verbose backend details (class names, deserialization internals,
-     * stack traces) and HTML tags to prevent information disclosure and XSS.
+     * Strips deserialization internals (Jackson source refs, reference chains),
+     * reflected user input, stack traces, and HTML tags to prevent
+     * information disclosure and XSS.
      */
     static String sanitizeErrorMessage(String message) {
         if( !message )
@@ -177,11 +177,9 @@ class ErrorHandler {
         final dueToIdx = result.indexOf('due to:')
         if( dueToIdx >= 0 )
             result = result.substring(dueToIdx + 7).trim()
-        // strip fully qualified class names that reveal backend technology (e.g. io.seqera.wave.api.PackagesSpec$Type)
-        result = FQN_CLASS_NAME.matcher(result).replaceAll('')
         // strip Jackson source references (e.g. "at [Source: (String)"..."]")
         result = JACKSON_SOURCE.matcher(result).replaceAll('')
-        // strip reference chains that reveal object structure (e.g. "(through reference chain: ...)")
+        // strip reference chains (e.g. "(through reference chain: ...)")
         result = REF_CHAIN.matcher(result).replaceAll('')
         // strip reflected user input to prevent XSS (e.g. from String "CRANxkhg3<script>...": ...)
         result = QUOTED_INPUT.matcher(result).replaceAll('')

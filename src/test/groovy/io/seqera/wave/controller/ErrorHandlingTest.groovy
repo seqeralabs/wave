@@ -57,7 +57,7 @@ class ErrorHandlingTest extends Specification {
         error.errors.get(0).message == "repository 'quay.io/hello-world:latest' not found"
     }
 
-    void 'should not expose internal class names for invalid enum value'() {
+    void 'should not expose deserialization internals for invalid enum value'() {
         given: 'a request with invalid enum value'
         def request = HttpRequest
                 .POST("/v1alpha2/container", [
@@ -77,14 +77,12 @@ class ErrorHandlingTest extends Specification {
         and: 'the error message contains an error ID'
         error.message.contains('Error ID:')
 
-        and: 'no internal details are leaked'
-        !error.message.contains('io.seqera.wave')
-        !error.message.contains('PackagesSpec')
+        and: 'no deserialization internals are leaked'
         !error.message.contains('through reference chain')
         !error.message.contains('at [Source:')
     }
 
-    void 'should not expose internal details for XSS attempt in value'() {
+    void 'should not reflect XSS payload in error response'() {
         given: 'a request with XSS payload in enum value'
         def request = HttpRequest
                 .POST("/v1alpha2/container", [
@@ -107,9 +105,7 @@ class ErrorHandlingTest extends Specification {
         and: 'the error message contains an error ID'
         error.message.contains('Error ID:')
 
-        and: 'no internal details or user input are reflected'
-        !error.message.contains('io.seqera.wave')
-        !error.message.contains('PackagesSpec')
+        and: 'no XSS payload or reflected input'
         !error.message.contains('<script>')
     }
 
@@ -144,8 +140,8 @@ class ErrorHandlingTest extends Specification {
         ''                                                                              | 'Unexpected error'
         '   '                                                                           | 'Unexpected error'
         'Invalid request: missing required field'                                       | 'Invalid request: missing required field'
-        'Cannot deserialize value of type `io.seqera.wave.api.PackagesSpec\$Type`'      | 'Cannot deserialize value of type'
-        'Error with io.seqera.wave.Foo and java.lang.String in it'                      | 'Error with and in it'
+        'Cannot deserialize value of type `io.seqera.wave.api.PackagesSpec\$Type`'      | 'Cannot deserialize value of type `io.seqera.wave.api.PackagesSpec\\$Type`'
+        'Error with io.seqera.wave.Foo and java.lang.String in it'                      | 'Error with io.seqera.wave.Foo and java.lang.String in it'
         'Something from String "malicious<script>": not valid'                          | 'Something not valid'
         'payload <script>alert(1)</script> end'                                         | 'payload alert(1) end'
         'xss <img onerror="alert(1)" src=x> test'                                      | 'xss test'
