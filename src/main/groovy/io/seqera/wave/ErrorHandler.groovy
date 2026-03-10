@@ -51,11 +51,11 @@ import jakarta.inject.Singleton
 @CompileStatic
 class ErrorHandler {
 
-    // pre-compiled patterns for sanitizeErrorMessage
+    // pre-compiled patterns for sanitizeErrorMessage (CWE-209: strip verbose backend details)
     private static final Pattern FQN_CLASS_NAME = Pattern.compile(/`?[a-z]+(\.[a-z]+)+\.[A-Z][\w$]*`?/)
     private static final Pattern JACKSON_SOURCE = Pattern.compile(/\s*at \[Source:.*/)
     private static final Pattern REF_CHAIN = Pattern.compile(/\(through reference chain:.*?\)/)
-    private static final Pattern QUOTED_STRING_VALUE = Pattern.compile(/from String ".*?"(:[^"']*)?\s*/)
+    private static final Pattern QUOTED_INPUT = Pattern.compile(/from String ".*?"(:[^"']*)?\s*/)
     private static final Pattern HTML_TAG = Pattern.compile(/<[^>]+>/)
     private static final Pattern MULTI_SPACE = Pattern.compile(/\s{2,}/)
 
@@ -95,7 +95,7 @@ class ErrorHandler {
             log.error(render, t)
 
             // In debug mode, show the original error for troubleshooting
-            // In production, strip stack traces and internal class names from the client response
+            // In production, sanitize verbose backend details from client response (CWE-209)
             if( debug )
                 msg = logMsg + errorIdSuffix
             else
@@ -163,9 +163,9 @@ class ErrorHandler {
     }
 
     /**
-     * Sanitize error messages for client responses by replacing internal details
-     * with [...] placeholders and stripping HTML tags to mitigate XSS.
-     * The message structure is preserved to aid troubleshooting.
+     * Sanitize error messages for client responses (CWE-209/CWE-210).
+     * Strips verbose backend details (class names, deserialization internals,
+     * stack traces) and HTML tags to prevent information disclosure and XSS.
      */
     static String sanitizeErrorMessage(String message) {
         if( !message )
@@ -173,18 +173,18 @@ class ErrorHandler {
         // take only the first line to remove stack traces
         final nlIdx = message.indexOf('\n')
         def result = (nlIdx >= 0 ? message.substring(0, nlIdx) : message).trim()
-        // strip "Failed to convert argument ... due to:" prefix
+        // strip verbose "Failed to convert argument ... due to:" prefix
         final dueToIdx = result.indexOf('due to:')
         if( dueToIdx >= 0 )
             result = result.substring(dueToIdx + 7).trim()
-        // replace fully qualified class names (e.g. io.seqera.wave.api.PackagesSpec$Type)
-        result = FQN_CLASS_NAME.matcher(result).replaceAll('[type]')
-        // replace Jackson source references (e.g. "at [Source: ...]")
-        result = JACKSON_SOURCE.matcher(result).replaceAll(' [source]')
-        // replace reference chains (e.g. "(through reference chain: ...)")
-        result = REF_CHAIN.matcher(result).replaceAll('[ref-chain]')
-        // replace quoted user input values to prevent XSS reflection (e.g. from String "user-input": ...)
-        result = QUOTED_STRING_VALUE.matcher(result).replaceAll('from [value] ')
+        // strip fully qualified class names that reveal backend technology (e.g. io.seqera.wave.api.PackagesSpec$Type)
+        result = FQN_CLASS_NAME.matcher(result).replaceAll('')
+        // strip Jackson source references (e.g. "at [Source: (String)"..."]")
+        result = JACKSON_SOURCE.matcher(result).replaceAll('')
+        // strip reference chains that reveal object structure (e.g. "(through reference chain: ...)")
+        result = REF_CHAIN.matcher(result).replaceAll('')
+        // strip reflected user input to prevent XSS (e.g. from String "CRANxkhg3<script>...": ...)
+        result = QUOTED_INPUT.matcher(result).replaceAll('')
         // strip HTML tags to mitigate XSS (e.g. <script>, <img onerror=...>)
         result = HTML_TAG.matcher(result).replaceAll('')
         // collapse multiple spaces
