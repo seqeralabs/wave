@@ -205,7 +205,7 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
 
         then:
         def e = thrown(HttpClientResponseException)
-        e.status == HttpStatus.INTERNAL_SERVER_ERROR
+        e.status == HttpStatus.BAD_REQUEST
         e.message.contains('loopback')
     }
 
@@ -223,7 +223,7 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
 
         then:
         def e = thrown(HttpClientResponseException)
-        e.status == HttpStatus.INTERNAL_SERVER_ERROR
+        e.status == HttpStatus.BAD_REQUEST
         e.message.contains('localhost')
     }
 
@@ -241,7 +241,7 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
 
         then:
         def e = thrown(HttpClientResponseException)
-        e.status == HttpStatus.INTERNAL_SERVER_ERROR
+        e.status == HttpStatus.BAD_REQUEST
         e.message.contains('metadata')
     }
 
@@ -259,7 +259,7 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
 
         then:
         def e = thrown(HttpClientResponseException)
-        e.status == HttpStatus.INTERNAL_SERVER_ERROR
+        e.status == HttpStatus.BAD_REQUEST
         e.message.contains('private')
     }
 }

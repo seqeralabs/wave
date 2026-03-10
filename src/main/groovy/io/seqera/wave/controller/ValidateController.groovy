@@ -19,19 +19,17 @@
 package io.seqera.wave.controller
 
 import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
 import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Post
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.auth.RegistryAuthService
-import io.seqera.wave.configuration.SSRFConfig
+import io.seqera.wave.configuration.SsrfConfig
 import io.seqera.wave.util.SsrfValidator
 import jakarta.inject.Inject
 import jakarta.validation.Valid
 
-@Slf4j
 @CompileStatic
 @Controller("/")
 @ExecuteOn(TaskExecutors.BLOCKING)
@@ -39,27 +37,25 @@ class ValidateController {
 
     @Inject RegistryAuthService loginService
 
-    @Inject SSRFConfig ssrfConfig
+    @Inject SsrfConfig ssrfConfig
 
     @Deprecated
     @Post("/validate-creds")
     Boolean validateCreds(@Valid ValidateRegistryCredsRequest request){
-        // Validate registry to prevent SSRF attacks
-        if (ssrfConfig.ssrfProtectionEnabled && request.registry) {
-            log.debug "SSRF protection enabled, validating registry: ${request.registry}"
-            SsrfValidator.validateHost(request.registry)
-        }
+        validateRegistry(request.registry)
         loginService.validateUser(request.registry, request.userName, request.password)
     }
 
     @Post("/v1alpha2/validate-creds")
     Boolean validateCredsV2(@Valid @Body ValidateRegistryCredsRequest request){
-        // Validate registry to prevent SSRF attacks
-        if (ssrfConfig.ssrfProtectionEnabled && request.registry) {
-            log.debug "SSRF protection enabled, validating registry: ${request.registry}"
-            SsrfValidator.validateHost(request.registry)
-        }
+        validateRegistry(request.registry)
         loginService.validateUser(request.registry, request.userName, request.password)
+    }
+
+    private void validateRegistry(String registry) {
+        if (ssrfConfig.ssrfProtectionEnabled) {
+            SsrfValidator.validateHost(registry)
+        }
     }
 
 }

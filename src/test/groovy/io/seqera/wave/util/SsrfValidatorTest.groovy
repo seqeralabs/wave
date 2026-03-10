@@ -18,6 +18,7 @@
 
 package io.seqera.wave.util
 
+import io.seqera.wave.exception.BadRequestException
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -34,7 +35,7 @@ class SsrfValidatorTest extends Specification {
         SsrfValidator.validateHost(ip)
 
         then:
-        def e = thrown(IllegalArgumentException)
+        def e = thrown(BadRequestException)
         e.message.contains('private') || e.message.contains('loopback') || e.message.contains('link-local') || e.message.contains('metadata') || e.message.contains('localhost')
 
         where:
@@ -58,7 +59,7 @@ class SsrfValidatorTest extends Specification {
         SsrfValidator.validateHost(host)
 
         then:
-        def e = thrown(IllegalArgumentException)
+        def e = thrown(BadRequestException)
         e.message.contains('localhost') || e.message.contains('loopback')
 
         where:
@@ -95,13 +96,13 @@ class SsrfValidatorTest extends Specification {
         SsrfValidator.validateHost(null)
 
         then:
-        thrown(IllegalArgumentException)
+        thrown(BadRequestException)
 
         when:
         SsrfValidator.validateHost('')
 
         then:
-        thrown(IllegalArgumentException)
+        thrown(BadRequestException)
     }
 
     def 'should reject cloud metadata service IPs'() {
@@ -109,7 +110,7 @@ class SsrfValidatorTest extends Specification {
         SsrfValidator.validateHost('169.254.169.254')
 
         then:
-        def e = thrown(IllegalArgumentException)
+        def e = thrown(BadRequestException)
         e.message.contains('metadata')
     }
 }

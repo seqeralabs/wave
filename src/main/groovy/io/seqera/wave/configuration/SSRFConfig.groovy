@@ -19,9 +19,9 @@
 package io.seqera.wave.configuration
 
 import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import jakarta.inject.Singleton
+
 /**
  * Configuration for SSRF protection
  *
@@ -29,8 +29,7 @@ import jakarta.inject.Singleton
  */
 @CompileStatic
 @Singleton
-@Slf4j
-class SSRFConfig {
+class SsrfConfig {
 
     @Value('${wave.security.ssrf-protection.enabled:true}')
     Boolean ssrfProtectionEnabled
