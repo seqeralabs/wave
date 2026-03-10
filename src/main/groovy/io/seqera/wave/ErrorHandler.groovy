@@ -18,6 +18,8 @@
 
 package io.seqera.wave
 
+import java.util.regex.Pattern
+
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
@@ -48,6 +50,14 @@ import jakarta.inject.Singleton
 @Singleton
 @CompileStatic
 class ErrorHandler {
+
+    // pre-compiled patterns for sanitizeErrorMessage
+    private static final Pattern FQN_CLASS_NAME = Pattern.compile(/`?[a-z]+(\.[a-z]+)+\.[A-Z][\w$]*`?/)
+    private static final Pattern JACKSON_SOURCE = Pattern.compile(/\s*at \[Source:.*/)
+    private static final Pattern REF_CHAIN = Pattern.compile(/\(through reference chain:.*?\)/)
+    private static final Pattern QUOTED_STRING_VALUE = Pattern.compile(/from String ".*?"(:[^"']*)?\s*/)
+    private static final Pattern HTML_TAG = Pattern.compile(/<[^>]+>/)
+    private static final Pattern MULTI_SPACE = Pattern.compile(/\s{2,}/)
 
     static interface Mapper<T> {
         T apply(String message, String errorCode)
@@ -153,28 +163,32 @@ class ErrorHandler {
     }
 
     /**
-     * Strip stack traces and internal class names from error messages
-     * while keeping the useful error description intact
+     * Sanitize error messages for client responses by replacing internal details
+     * with [...] placeholders and stripping HTML tags to mitigate XSS.
+     * The message structure is preserved to aid troubleshooting.
      */
     static String sanitizeErrorMessage(String message) {
         if( !message )
             return "Unexpected error"
         // take only the first line to remove stack traces
-        def result = message.split('\n')[0].trim()
+        final nlIdx = message.indexOf('\n')
+        def result = (nlIdx >= 0 ? message.substring(0, nlIdx) : message).trim()
         // strip "Failed to convert argument ... due to:" prefix
         final dueToIdx = result.indexOf('due to:')
         if( dueToIdx >= 0 )
             result = result.substring(dueToIdx + 7).trim()
-        // strip fully qualified class names (e.g. io.seqera.wave.api.PackagesSpec$Type)
-        result = result.replaceAll(/`?[a-z]+(\.[a-z]+)+\.[A-Z][\w$]*`?/, '').trim()
-        // strip Jackson source references (e.g. "at [Source: ...]")
-        result = result.replaceAll(/\s*at \[Source:.*/, '').trim()
-        // strip reference chains (e.g. "(through reference chain: ...)")
-        result = result.replaceAll(/\(through reference chain:.*?\)/, '').trim()
-        // strip quoted user input values to prevent XSS reflection (e.g. from String "user-input": ...)
-        result = result.replaceAll(/from String ".*?"(:[^"']*)?\s*/, '').trim()
+        // replace fully qualified class names (e.g. io.seqera.wave.api.PackagesSpec$Type)
+        result = FQN_CLASS_NAME.matcher(result).replaceAll('[type]')
+        // replace Jackson source references (e.g. "at [Source: ...]")
+        result = JACKSON_SOURCE.matcher(result).replaceAll(' [source]')
+        // replace reference chains (e.g. "(through reference chain: ...)")
+        result = REF_CHAIN.matcher(result).replaceAll('[ref-chain]')
+        // replace quoted user input values to prevent XSS reflection (e.g. from String "user-input": ...)
+        result = QUOTED_STRING_VALUE.matcher(result).replaceAll('from [value] ')
+        // strip HTML tags to mitigate XSS (e.g. <script>, <img onerror=...>)
+        result = HTML_TAG.matcher(result).replaceAll('')
         // collapse multiple spaces
-        result = result.replaceAll(/\s{2,}/, ' ').trim()
+        result = MULTI_SPACE.matcher(result).replaceAll(' ').trim()
         return result ?: "Unexpected error"
     }
 
