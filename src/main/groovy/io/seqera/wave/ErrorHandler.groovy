@@ -66,8 +66,8 @@ class ErrorHandler {
     private Boolean debug
 
     <T> HttpResponse<T> handle(HttpRequest request, Throwable t, Mapper<T> responseFactory) {
-        final knownException = t instanceof WaveException || t instanceof HttpStatusException
-        def msg = t.message
+        final knownException = (t instanceof WaveException || t instanceof HttpStatusException)
+        String msg = t.getMessage()
         if( knownException && msg ) {
             // the the error cause
             if( t.cause ) msg += " - Cause: ${t.cause.message ?: t.cause}".toString()
