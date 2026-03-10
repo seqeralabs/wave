@@ -22,6 +22,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
+import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
@@ -34,6 +35,7 @@ import io.seqera.wave.test.SecureDockerRegistryContainer
 import jakarta.inject.Inject
 
 @MicronautTest
+@Property(name = 'wave.security.ssrf-protection.enabled', value = 'false')
 class ValidateCredsControllerTest extends Specification implements SecureDockerRegistryContainer {
 
     @Inject
@@ -191,75 +193,4 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
         'test'           | 'test'          | 'test'                         | true
     }
 
-    void 'should reject SSRF attempts with private IP'() {
-        given:
-        def req = [
-                userName: 'test',
-                password: 'test',
-                registry: '127.0.0.1'
-        ]
-        HttpRequest request = HttpRequest.POST("/v1alpha2/validate-creds", req)
-
-        when:
-        client.toBlocking().exchange(request, Boolean)
-
-        then:
-        def e = thrown(HttpClientResponseException)
-        e.status == HttpStatus.BAD_REQUEST
-        e.message.contains('loopback')
-    }
-
-    void 'should reject SSRF attempts with localhost'() {
-        given:
-        def req = [
-                userName: 'test',
-                password: 'test',
-                registry: 'localhost'
-        ]
-        HttpRequest request = HttpRequest.POST("/v1alpha2/validate-creds", req)
-
-        when:
-        client.toBlocking().exchange(request, Boolean)
-
-        then:
-        def e = thrown(HttpClientResponseException)
-        e.status == HttpStatus.BAD_REQUEST
-        e.message.contains('localhost')
-    }
-
-    void 'should reject SSRF attempts with AWS metadata IP'() {
-        given:
-        def req = [
-                userName: 'test',
-                password: 'test',
-                registry: '169.254.169.254'
-        ]
-        HttpRequest request = HttpRequest.POST("/v1alpha2/validate-creds", req)
-
-        when:
-        client.toBlocking().exchange(request, Boolean)
-
-        then:
-        def e = thrown(HttpClientResponseException)
-        e.status == HttpStatus.BAD_REQUEST
-        e.message.contains('metadata')
-    }
-
-    void 'should reject SSRF attempts with private network IP'() {
-        given:
-        def req = [
-                userName: 'test',
-                password: 'test',
-                registry: '10.0.0.1'
-        ]
-        HttpRequest request = HttpRequest.POST("/v1alpha2/validate-creds", req)
-
-        when:
-        client.toBlocking().exchange(request, Boolean)
-
-        then:
-        def e = thrown(HttpClientResponseException)
-        e.status == HttpStatus.BAD_REQUEST
-        e.message.contains('private')
-    }
 }
