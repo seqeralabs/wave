@@ -113,4 +113,41 @@ class SsrfValidatorTest extends Specification {
         def e = thrown(BadRequestException)
         e.message.contains('metadata')
     }
+
+    @Unroll
+    def 'should extract hostname from URL and accept public registries: #url'() {
+        when:
+        SsrfValidator.validateHost(url)
+
+        then:
+        noExceptionThrown()
+
+        where:
+        url << [
+            'https://registry-1.docker.io',
+            'https://quay.io',
+            'https://ghcr.io',
+            'http://registry-1.docker.io',
+            'https://gcr.io/some/path',
+        ]
+    }
+
+    @Unroll
+    def 'should extract hostname from URL and reject private hosts: #url'() {
+        when:
+        SsrfValidator.validateHost(url)
+
+        then:
+        thrown(BadRequestException)
+
+        where:
+        url << [
+            'http://localhost:8080',
+            'https://localhost/v2',
+            'http://127.0.0.1:5000',
+            'http://10.0.0.1:8080',
+            'http://192.168.1.1:5000',
+            'https://169.254.169.254/latest/meta-data',
+        ]
+    }
 }

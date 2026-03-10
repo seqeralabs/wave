@@ -60,6 +60,9 @@ class SsrfValidator {
         // Normalize host (lowercase, trim)
         host = host.toLowerCase().trim()
 
+        // Extract hostname from URL if scheme is present
+        host = extractHostname(host)
+
         // Check localhost variations
         if (LOCALHOST_NAMES.contains(host)) {
             throw new BadRequestException("Access to localhost is not allowed: ${host}")
@@ -75,6 +78,20 @@ class SsrfValidator {
             // Fail closed - reject hosts that cannot be resolved
             throw new BadRequestException("Unable to resolve host: ${host}")
         }
+    }
+
+    /**
+     * Extracts the hostname from a registry string
+     */
+    private static String extractHostname(String host) {
+        if (host.startsWith('http://') || host.startsWith('https://')) {
+            try {
+                return new URL(host).getHost()
+            } catch (MalformedURLException ignored) {
+                return host
+            }
+        }
+        return host
     }
 
     /**
