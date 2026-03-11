@@ -19,6 +19,7 @@
 package io.seqera.wave.util
 
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.seqera.wave.exception.BadRequestException
 
 /**
@@ -27,6 +28,7 @@ import io.seqera.wave.exception.BadRequestException
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
+@Slf4j
 @CompileStatic
 class SsrfValidator {
 
@@ -86,10 +88,23 @@ class SsrfValidator {
     private static String extractHostname(String host) {
         if (host.startsWith('http://') || host.startsWith('https://')) {
             try {
-                return new URL(host).getHost()
-            } catch (MalformedURLException ignored) {
+                return new URI(host).getHost()
+            } catch (URISyntaxException ignored) {
                 return host
             }
+        }
+        // Handle bracketed IPv6 with optional port: [::1]:8080
+        if (host.startsWith('[')) {
+            int closeBracket = host.indexOf(']')
+            if (closeBracket > 0) {
+                return host.substring(1, closeBracket)
+            }
+        }
+        // Strip port from bare host:port (e.g. 192.168.1.1:5000)
+        // Only when there is exactly one colon (not IPv6 which has multiple)
+        int colonIdx = host.lastIndexOf(':')
+        if (colonIdx > 0 && host.indexOf(':') == colonIdx) {
+            return host.substring(0, colonIdx)
         }
         return host
     }
@@ -102,26 +117,31 @@ class SsrfValidator {
 
         // Check metadata service IPs first (before link-local, for a specific error message)
         if (METADATA_IPS.contains(ip)) {
-            throw new BadRequestException("Access to cloud metadata service is not allowed: ${ip}")
+            log.debug("SSRF validation rejected cloud metadata service IP: ${ip}")
+            throw new BadRequestException("Invalid registry hostname")
         }
 
         if (address.isLoopbackAddress()) {
-            throw new BadRequestException("Access to loopback address is not allowed: ${ip}")
+            log.debug("SSRF validation rejected loopback address: ${ip}")
+            throw new BadRequestException("Invalid registry hostname")
         }
 
         if (address.isLinkLocalAddress()) {
-            throw new BadRequestException("Access to link-local address is not allowed: ${ip}")
+            log.debug("SSRF validation rejected link-local address: ${ip}")
+            throw new BadRequestException("Invalid registry hostname")
         }
 
         if (address.isSiteLocalAddress()) {
-            throw new BadRequestException("Access to private IP address is not allowed: ${ip}")
+            log.debug("SSRF validation rejected private IP address: ${ip}")
+            throw new BadRequestException("Invalid registry hostname")
         }
 
         // Check for IPv6 unique local addresses (fc00::/7)
         if (address instanceof Inet6Address) {
             byte[] bytes = address.address
             if ((bytes[0] & 0xfe) == 0xfc) {
-                throw new BadRequestException("Access to IPv6 unique local address is not allowed: ${ip}")
+                log.debug("SSRF validation rejected IPv6 unique local address: ${ip}")
+                throw new BadRequestException("Invalid registry hostname")
             }
         }
     }

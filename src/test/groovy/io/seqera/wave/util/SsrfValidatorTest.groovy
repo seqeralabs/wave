@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023-2024, Seqera Labs
+ *  Copyright (c) 2023-2026, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -36,7 +36,7 @@ class SsrfValidatorTest extends Specification {
 
         then:
         def e = thrown(BadRequestException)
-        e.message.contains('private') || e.message.contains('loopback') || e.message.contains('link-local') || e.message.contains('metadata') || e.message.contains('localhost')
+        e.message.contains('Invalid registry hostname') || e.message.contains('localhost')
 
         where:
         ip << [
@@ -60,7 +60,7 @@ class SsrfValidatorTest extends Specification {
 
         then:
         def e = thrown(BadRequestException)
-        e.message.contains('localhost') || e.message.contains('loopback')
+        e.message.contains('localhost') || e.message.contains('Invalid registry hostname')
 
         where:
         host << [
@@ -111,7 +111,39 @@ class SsrfValidatorTest extends Specification {
 
         then:
         def e = thrown(BadRequestException)
-        e.message.contains('metadata')
+        e.message.contains('Invalid registry hostname')
+    }
+
+    @Unroll
+    def 'should strip port and reject private host:port inputs: #hostPort'() {
+        when:
+        SsrfValidator.validateHost(hostPort)
+
+        then:
+        thrown(BadRequestException)
+
+        where:
+        hostPort << [
+            '192.168.1.1:5000',
+            '10.0.0.1:8080',
+            '127.0.0.1:5000',
+        ]
+    }
+
+    @Unroll
+    def 'should reject IPv6 loopback and private addresses: #host'() {
+        when:
+        SsrfValidator.validateHost(host)
+
+        then:
+        thrown(BadRequestException)
+
+        where:
+        host << [
+            '::1',
+            '0000:0000:0000:0000:0000:0000:0000:0001',
+            '[::1]:5000',
+        ]
     }
 
     @Unroll
