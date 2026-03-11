@@ -58,9 +58,9 @@ class ValidateCredsSsrfControllerTest extends Specification {
 
         where:
         registry          | description        | expectedMsg
-        '127.0.0.1'       | 'loopback IP'      | 'loopback'
+        '127.0.0.1'       | 'loopback IP'      | 'Invalid registry hostname'
         'localhost'        | 'localhost'         | 'localhost'
-        '169.254.169.254' | 'AWS metadata IP'  | 'metadata'
-        '10.0.0.1'        | 'private network'  | 'private'
+        '169.254.169.254' | 'AWS metadata IP'  | 'Invalid registry hostname'
+        '10.0.0.1'        | 'private network'  | 'Invalid registry hostname'
     }
 }
