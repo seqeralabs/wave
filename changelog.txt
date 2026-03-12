@@ -1,4 +1,7 @@
 # Wave changelog
+1.32.7 - 12 Mar 2026
+- Bump s5cmd 2.3.0 [80cafbc7b]
+
 1.32.6 - 6 Mar 2026
 - Fixed inspect view (#988) [dc47180c5]
 - Added max-width and height in build-notification.html (#987) [ae6162699]
