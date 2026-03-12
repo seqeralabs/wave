@@ -1,0 +1,84 @@
+---
+title: Installation
+---
+
+The Wave CLI is distributed as an easy to use self-installing package and via Homebrew.
+
+The following sections describe how to install the Wave CLI on your system.
+
+## Self-install
+
+To self-install the latest Wave release from GitHub:
+
+1.  Download the [latest version of the Wave CLI][download] for your platform.
+
+1.  In a new terminal, complete the following steps:
+
+    1. Move the executable from your downloads folder to a location in your `PATH`, such as `~/bin`. For example:
+
+        ```bash
+        mv wave-cli-0.8.0-macos-x86_64 ~/bin/wave
+        ```
+
+    1. Ensure that the executable permission is set. For example:
+
+        ```bash
+        chmod u+x ~/bin/wave
+        ```
+
+1.  Verify that you can build containers with Wave:
+
+    1.  Create a basic `Dockerfile`:
+
+        ```Dockerfile
+        cat << EOF > ./Dockerfile
+        FROM busybox:latest
+        EOF
+        ```
+
+    1.  Use the CLI to build the container:
+
+        ```bash
+        wave -f Dockerfile
+        ```
+
+        Example output:
+
+        ```console
+        wave.seqera.io/wt/xxxxxxxxxxxx/wave/build:xxxxxxxxxxxxxxxx
+        ```
+
+## Homebrew
+
+To install the latest version with [Homebrew]:
+
+1. Install Wave CLI with the following command:
+
+    ```bash
+    brew install seqeralabs/tap/wave-cli
+    ```
+
+1.  Verify that you can build containers with Wave:
+
+    1.  Create a basic `Dockerfile`:
+
+        ```dockerfile
+        cat << EOF > ./Dockerfile
+        FROM busybox:latest
+        EOF
+        ```
+
+    1.  Use the CLI to build the container:
+
+        ```bash
+        wave -f Dockerfile
+        ```
+
+        Example output:
+
+        ```console
+        wave.seqera.io/wt/xxxxxxxxxxxx/wave/build:xxxxxxxxxxxxxxxx
+        ```
+
+[download]: https://github.com/seqeralabs/wave-cli/releases
+[Homebrew]: https://brew.sh/
