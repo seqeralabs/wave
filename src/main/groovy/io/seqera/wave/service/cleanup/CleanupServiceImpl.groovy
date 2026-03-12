@@ -150,8 +150,10 @@ class CleanupServiceImpl implements Runnable, CleanupService {
                 ? config.succeededDuration
                 : config.failedDuration
         final expirationSecs = Instant.now().plus(ttl).epochSecond
-        // schedule the job deletion
-        store.add(JOB_PREFIX + job.operationName, expirationSecs)
+        // schedule the job deletion (skip for MultiBuild — no K8s/Docker job to delete)
+        if( job.type != JobSpec.Type.MultiBuild ) {
+            store.add(JOB_PREFIX + job.operationName, expirationSecs)
+        }
         // schedule work dir path deletion
         if( job.workDir ) {
             store.add(DIR_PREFIX + job.workDir, expirationSecs)

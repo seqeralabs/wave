@@ -20,6 +20,7 @@ package io.seqera.wave.service.job
 
 import io.seqera.wave.service.blob.BlobEntry
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.builder.MultiBuildRequest
 import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.scan.ScanRequest
 
@@ -37,6 +38,8 @@ interface JobService {
     JobSpec launchScan(ScanRequest request)
 
     JobSpec launchMirror(MirrorRequest request)
+
+    JobSpec launchMultiBuild(MultiBuildRequest request)
 
     JobState status(JobSpec jobSpec)
 

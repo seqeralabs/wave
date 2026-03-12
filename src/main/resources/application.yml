@@ -83,7 +83,7 @@ wave:
       - "TRIVY_DB_REPOSITORY=public.ecr.aws/aquasecurity/trivy-db"
       - "TRIVY_JAVA_DB_REPOSITORY=public.ecr.aws/aquasecurity/trivy-java-db"
   blobCache:
-    s5cmdImage: public.cr.seqera.io/wave/s5cmd:v2.2.2
+    s5cmdImage: public.cr.seqera.io/wave/s5cmd:v2.3.0
 ---
 jackson:
   serialization:

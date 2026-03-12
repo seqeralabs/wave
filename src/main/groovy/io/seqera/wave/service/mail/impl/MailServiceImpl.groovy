@@ -59,6 +59,8 @@ class MailServiceImpl implements MailService {
 
     @EventListener
     void onBuildEvent(BuildEvent event) {
+        if( event.request.noEmail )
+            return
         try {
             sendCompletionEmail(event.request, event.result)
         }
@@ -101,8 +103,6 @@ class MailServiceImpl implements MailService {
         binding.build_condafile = req.condaFile
         binding.build_digest = result.digest ?: '-'
         binding.build_url = "$serverUrl/view/builds/${result.buildId}"
-        binding.scan_url = req.scanId && result.succeeded() ? "$serverUrl/view/scans/${req.scanId}" : null
-        binding.scan_id = req.scanId
         binding.put('server_url', serverUrl)
         // result the main object
         Mail mail = new Mail()

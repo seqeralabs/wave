@@ -56,6 +56,7 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanEntry
+import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.service.scan.ScanType
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.JacksonHelper
@@ -137,8 +138,7 @@ class ViewController {
         binding.mirror_digest = result.digest ?: '-'
         binding.mirror_user = result.userName ?: '-'
         binding.put('server_url', serverUrl)
-        binding.scan_url = result.scanId && result.succeeded() ? "$serverUrl/view/scans/${result.scanId}" : null
-        binding.scan_id = result.scanId
+        ChildRefs.populateScanBinding(binding, result.scanId, null, result.succeeded(), serverUrl)
         return binding
     }
 
@@ -254,8 +254,8 @@ class ViewController {
         binding.build_condafile = result.condaFile
         binding.build_digest = result.digest ?: '-'
         binding.put('server_url', serverUrl)
-        binding.scan_url = result.scanId && result.succeeded() ? "$serverUrl/view/scans/${result.scanId}" : null
-        binding.scan_id = result.scanId
+        ChildRefs.populateScanBinding(binding, result.scanId, result.scanChildIds, result.succeeded(), serverUrl)
+        ChildRefs.populateBuildBinding(binding, result.buildChildIds, serverUrl)
         // inspect uri
         binding.inspect_url = result.succeeded() ? "$serverUrl/view/inspect?image=${result.targetImage}&platform=${result.platform}" : null
         // configure build logs when available
@@ -314,8 +314,7 @@ class ViewController {
         binding.build_url = data.buildId ? "$serverUrl/view/builds/${data.buildId}" : null
         binding.fusion_version = data.fusionVersion ?: '-'
 
-        binding.scan_id = data.scanId
-        binding.scan_url = data.scanId ? "$serverUrl/view/scans/${data.scanId}" : null
+        ChildRefs.populateScanBinding(binding, data.scanId, data.scanChildIds, true, serverUrl)
 
         binding.mirror_id = data.mirror ? data.buildId : null
         binding.mirror_url =  data.mirror ? "$serverUrl/view/mirrors/${data.buildId}" : null

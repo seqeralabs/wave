@@ -244,7 +244,14 @@
                     <td>{{mirror_cached}}</td>
                 </tr>
             {{/if}}
-            {{#if scan_id}}
+            {{#if scan_entries}}
+                {{#each scan_entries}}
+                <tr>
+                    <td>Security scan ({{scan_platform}})</td>
+                    <td><a href="{{scan_url}}">{{scan_id}}</a></td>
+                </tr>
+                {{/each}}
+            {{else if scan_id}}
                 <tr>
                     <td>Security scan</td>
                     <td><a href="{{scan_url}}">{{scan_id}}</a></td>

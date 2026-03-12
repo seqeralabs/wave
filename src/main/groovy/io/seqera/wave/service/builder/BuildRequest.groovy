@@ -29,6 +29,7 @@ import groovy.transform.EqualsAndHashCode
 import io.seqera.wave.api.BuildCompression
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
@@ -149,6 +150,21 @@ class BuildRequest {
      */
     final String buildTemplate
 
+    /**
+     * When {@code true}, email notifications should not be sent for this build
+     */
+    final boolean noEmail
+
+    /**
+     * Child build IDs for multi-platform builds
+     */
+    final ChildRefs buildChildIds
+
+    /**
+     * Child scan IDs for multi-platform builds
+     */
+    final ChildRefs scanChildIds
+
     BuildRequest(
             String containerId,
             String containerFile,
@@ -167,7 +183,8 @@ class BuildRequest {
             BuildFormat format,
             Duration maxDuration,
             BuildCompression compression,
-            String buildTemplate
+            String buildTemplate,
+            boolean noEmail = false
     )
     {
         this.containerId = containerId
@@ -189,6 +206,7 @@ class BuildRequest {
         this.maxDuration = maxDuration
         this.compression = compression
         this.buildTemplate = buildTemplate
+        this.noEmail = noEmail
         // NOTE: this is meant to be updated - automatically - when the request is submitted
         this.buildId = computeBuildId(containerId)
     }
@@ -217,10 +235,41 @@ class BuildRequest {
         this.compression = opts.compression as BuildCompression
         this.buildId = opts.buildId ?: computeBuildId(containerId)
         this.buildTemplate = opts.buildTemplate
+        this.noEmail = opts.noEmail as boolean
+        this.buildChildIds = opts.buildChildIds as ChildRefs
+        this.scanChildIds = opts.scanChildIds as ChildRefs
     }
 
     static BuildRequest of(Map opts) {
         new BuildRequest(opts)
+    }
+
+    BuildRequest withChildScanIds(ChildRefs scanChildIds) {
+        return BuildRequest.of(
+                containerId: this.containerId,
+                containerFile: this.containerFile,
+                condaFile: this.condaFile,
+                workspace: this.workspace,
+                targetImage: this.targetImage,
+                identity: this.identity,
+                platform: this.platform,
+                cacheRepository: this.cacheRepository,
+                startTime: this.startTime,
+                ip: this.ip,
+                configJson: this.configJson,
+                offsetId: this.offsetId,
+                containerConfig: this.containerConfig,
+                scanId: this.scanId,
+                buildContext: this.buildContext,
+                format: this.format,
+                maxDuration: this.maxDuration,
+                compression: this.compression,
+                buildId: this.buildId,
+                buildTemplate: this.buildTemplate,
+                noEmail: this.noEmail,
+                buildChildIds: this.buildChildIds,
+                scanChildIds: scanChildIds
+        )
     }
 
     @Override

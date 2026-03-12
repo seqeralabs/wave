@@ -152,6 +152,9 @@ class BuildConfig {
     @Value('${wave.build.logs.maxLength:100000}')
     long maxLength
 
+    @Value('${wave.build.skip-cache:false}')
+    boolean skipCache
+
     @PostConstruct
     private void init() {
         log.info("Builder config: " +

@@ -83,7 +83,7 @@ class ContainerPlatformTest extends Specification {
     @Unroll
     def 'should match' () {
         expect:
-        ContainerPlatform.of(PLATFORM).matches(RECORD)
+        ContainerPlatform.of(PLATFORM).platforms[0].matches(RECORD)
         where:
         PLATFORM        | RECORD
         'amd64'         | [os:'linux', architecture:'amd64']
@@ -106,7 +106,7 @@ class ContainerPlatformTest extends Specification {
     @Unroll
     def 'should not match' () {
         expect:
-        !ContainerPlatform.of(PLATFORM).matches(RECORD)
+        !ContainerPlatform.of(PLATFORM).platforms[0].matches(RECORD)
         where:
         PLATFORM        | RECORD
         'amd64'         | [os:'linux', architecture:'arm64']
@@ -116,5 +116,105 @@ class ContainerPlatformTest extends Specification {
         'linux/arm64/v7'| [os:'linux', architecture:'arm64', variant: 'v8']
         'linux/arm64/v8'| [os:'linux', architecture:'arm64', variant: 'v9']
 
+    }
+
+    def 'should parse multi-arch platform' () {
+        when:
+        def platform = ContainerPlatform.of('linux/amd64,linux/arm64')
+        then:
+        platform.platforms[0].os == 'linux'
+        platform.platforms[0].arch == 'amd64'
+        platform.platforms == [new ContainerPlatform.Platform('linux','amd64'), new ContainerPlatform.Platform('linux','arm64')]
+        platform.isMultiArch()
+        platform.toString() == 'linux/amd64,linux/arm64'
+    }
+
+    def 'should detect single-arch platform' () {
+        when:
+        def platform = ContainerPlatform.of('linux/amd64')
+        then:
+        platform.os == 'linux'
+        platform.arch == 'amd64'
+        platform.platforms == [new ContainerPlatform.Platform('linux','amd64')]
+        !platform.isMultiArch()
+        platform.toString() == 'linux/amd64'
+    }
+
+    def 'should round-trip multi-arch through toString and of' () {
+        when:
+        def original = ContainerPlatform.of('linux/amd64,linux/arm64')
+        def roundTripped = ContainerPlatform.of(original.toString())
+        then:
+        roundTripped == original
+        roundTripped.isMultiArch()
+        roundTripped.platforms == [new ContainerPlatform.Platform('linux','amd64'), new ContainerPlatform.Platform('linux','arm64')]
+    }
+
+    def 'should have MULTI_PLATFORM constant' () {
+        expect:
+        ContainerPlatform.MULTI_PLATFORM.isMultiArch()
+        ContainerPlatform.MULTI_PLATFORM.platforms[0].os == 'linux'
+        ContainerPlatform.MULTI_PLATFORM.platforms[0].arch == 'amd64'
+        ContainerPlatform.MULTI_PLATFORM.platforms == [new ContainerPlatform.Platform('linux','amd64'), new ContainerPlatform.Platform('linux','arm64')]
+        ContainerPlatform.MULTI_PLATFORM.toString() == 'linux/amd64,linux/arm64'
+    }
+
+    def 'should test equality for multi-arch' () {
+        expect:
+        ContainerPlatform.of('linux/amd64,linux/arm64') == ContainerPlatform.MULTI_PLATFORM
+        ContainerPlatform.of('linux/amd64,linux/arm64') == ContainerPlatform.of('linux/amd64,linux/arm64')
+        ContainerPlatform.of('linux/amd64') != ContainerPlatform.MULTI_PLATFORM
+    }
+
+    def 'should validate single platform allows valid values' () {
+        when:
+        ContainerPlatform.validateSinglePlatform(VALUE)
+        then:
+        noExceptionThrown()
+
+        where:
+        VALUE           | _
+        null            | _
+        ''              | _
+        'linux/amd64'   | _
+        'linux/arm64'   | _
+        'amd64'         | _
+    }
+
+    def 'should validate single platform rejects multi-platform values' () {
+        when:
+        ContainerPlatform.validateSinglePlatform('linux/amd64,linux/arm64')
+        then:
+        def e = thrown(BadRequestException)
+        e.message.contains('Container multi-platform architecture not allowed')
+    }
+
+    def 'should throw when accessing os/arch/variant on multi-arch platform' () {
+        given:
+        def platform = ContainerPlatform.of('linux/amd64,linux/arm64')
+
+        when:
+        platform.os
+        then:
+        thrown(IllegalStateException)
+
+        when:
+        platform.arch
+        then:
+        thrown(IllegalStateException)
+
+        when:
+        platform.variant
+        then:
+        thrown(IllegalStateException)
+    }
+
+    def 'should allow os/arch/variant on single-arch platform' () {
+        given:
+        def platform = ContainerPlatform.of('linux/amd64')
+        expect:
+        platform.os == 'linux'
+        platform.arch == 'amd64'
+        platform.variant == null
     }
 }
