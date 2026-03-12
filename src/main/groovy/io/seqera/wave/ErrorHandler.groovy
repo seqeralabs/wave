@@ -18,6 +18,8 @@
 
 package io.seqera.wave
 
+import java.util.regex.Pattern
+
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
@@ -49,6 +51,13 @@ import jakarta.inject.Singleton
 @CompileStatic
 class ErrorHandler {
 
+    // pre-compiled patterns for sanitizeErrorMessage (CWE-209: strip deserialization internals and XSS vectors)
+    private static final Pattern JACKSON_SOURCE = Pattern.compile(/\s*at \[Source:.*/)
+    private static final Pattern REF_CHAIN = Pattern.compile(/\(through reference chain:.*?\)/)
+    private static final Pattern QUOTED_INPUT = Pattern.compile(/(?<=value of type\s.{0,200})from String ".*?":?\s*/)
+    private static final Pattern HTML_TAG = Pattern.compile(/<[^>]+>/)
+    private static final Pattern MULTI_SPACE = Pattern.compile(/\s{2,}/)
+
     static interface Mapper<T> {
         T apply(String message, String errorCode)
     }
@@ -57,9 +66,8 @@ class ErrorHandler {
     private Boolean debug
 
     <T> HttpResponse<T> handle(HttpRequest request, Throwable t, Mapper<T> responseFactory) {
-        final errId = LongRndKey.rndHex()
-        final knownException = t instanceof WaveException || t instanceof HttpStatusException
-        String msg = t.message
+        final knownException = (t instanceof WaveException || t instanceof HttpStatusException)
+        String msg = t.getMessage()
         if( knownException && msg ) {
             // the the error cause
             if( t.cause ) msg += " - Cause: ${t.cause.message ?: t.cause}".toString()
@@ -75,16 +83,22 @@ class ErrorHandler {
             }
         }
         else {
-            if( debug && !msg )
-                msg = t.cause?.message
-            if ( !debug && !msg )
-                msg = "Oops... Unable to process request"
-            msg += " - Error ID: ${errId}"
-            // render the message for logging
-            String render = msg
+            final errId = LongRndKey.rndHex()
+            final errorIdSuffix = " - Error ID: ${errId}".toString()
+            // Log the original message for debugging
+            String logMsg = msg ?: t.cause?.message ?: "Unknown error"
+            String render = logMsg
             if( request )
                 render += toString(request)
+            render += errorIdSuffix
             log.error(render, t)
+
+            // In debug mode, show the original error for troubleshooting
+            // In production, sanitize verbose backend details from client response (CWE-209)
+            if( debug )
+                msg = logMsg + errorIdSuffix
+            else
+                msg = sanitizeErrorMessage(logMsg) + errorIdSuffix
         }
 
         if( t instanceof HttpStatusException ) {
@@ -145,6 +159,35 @@ class ErrorHandler {
         final resp = responseFactory.apply(msg, 'SERVER_ERROR')
         return HttpResponse.serverError(resp)
 
+    }
+
+    /**
+     * Sanitize error messages for client responses (CWE-209/CWE-210).
+     * Strips deserialization internals (Jackson source refs, reference chains),
+     * reflected user input, stack traces, and HTML tags to prevent
+     * information disclosure and XSS.
+     */
+    static String sanitizeErrorMessage(String message) {
+        if( !message )
+            return "Unexpected error"
+        // take only the first line to remove stack traces
+        final nlIdx = message.indexOf('\n')
+        def result = (nlIdx >= 0 ? message.substring(0, nlIdx) : message).trim()
+        // strip verbose "Failed to convert argument ... due to:" prefix
+        final dueToIdx = result.indexOf('due to:')
+        if( dueToIdx >= 0 )
+            result = result.substring(dueToIdx + 7).trim()
+        // strip Jackson source references (e.g. "at [Source: (String)"..."]")
+        result = JACKSON_SOURCE.matcher(result).replaceAll('')
+        // strip reference chains (e.g. "(through reference chain: ...)")
+        result = REF_CHAIN.matcher(result).replaceAll('')
+        // strip reflected user input to prevent XSS (e.g. from String "CRANxkhg3<script>...": ...)
+        result = QUOTED_INPUT.matcher(result).replaceAll('')
+        // strip HTML tags to mitigate XSS (e.g. <script>, <img onerror=...>)
+        result = HTML_TAG.matcher(result).replaceAll('')
+        // collapse multiple spaces
+        result = MULTI_SPACE.matcher(result).replaceAll(' ').trim()
+        return result ?: "Unexpected error"
     }
 
     static String toString(HttpRequest request) {

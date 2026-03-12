@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023-2024, Seqera Labs
+ *  Copyright (c) 2026, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,33 +16,22 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.pairing
+package io.seqera.wave.configuration
 
-import java.time.Instant
-
-import groovy.transform.Canonical
-import groovy.transform.ToString
+import groovy.transform.CompileStatic
+import io.micronaut.context.annotation.Value
+import jakarta.inject.Singleton
 
 /**
- * Model a security key record associated with a registered service endpoint
+ * Configuration for SSRF protection
  *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-@Canonical
-@ToString(excludes = 'privateKey')
-class PairingRecord {
-    String service
-    String endpoint
-    String pairingId
-    byte[] privateKey
-    byte[] publicKey
-    Instant expiration
+@CompileStatic
+@Singleton
+class SsrfConfig {
 
-    boolean isExpiredAt(Instant time) {
-        return expiration == null || expiration.isBefore(time)
-    }
+    @Value('${wave.security.ssrf-protection.enabled:true}')
+    Boolean ssrfProtectionEnabled
 
-    boolean isExpired() {
-        return isExpiredAt(Instant.now())
-    }
 }

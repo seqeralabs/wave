@@ -28,8 +28,10 @@ import java.util.concurrent.TimeUnit
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.data.queue.MessageQueue
-import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
-import io.seqera.wave.service.pairing.socket.msg.PairingMessage
+import io.seqera.service.pairing.PairingConfig
+import io.seqera.service.pairing.socket.PairingOutboundQueue
+import io.seqera.service.pairing.socket.msg.PairingHeartbeat
+import io.seqera.service.pairing.socket.msg.PairingMessage
 import jakarta.inject.Inject
 import jakarta.inject.Named
 
@@ -46,9 +48,20 @@ class PairingOutboundQueueLocalTest extends Specification {
     @Named(TaskExecutors.BLOCKING)
     private ExecutorService ioExecutor
 
+    private PairingConfig mockConfig(Duration awaitTimeout = Duration.ofMillis(100)) {
+        return new PairingConfig() {
+            Duration getKeyLease() { Duration.ofDays(1) }
+            Duration getKeyDuration() { Duration.ofDays(30) }
+            Duration getChannelTimeout() { Duration.ofSeconds(5) }
+            Duration getChannelAwaitTimeout() { awaitTimeout }
+            boolean getCloseSessionOnInvalidLicenseToken() { false }
+            List<String> getDenyHosts() { [] }
+        }
+    }
+
     def 'should send and consume a request'() {
         given:
-        def queue = new PairingOutboundQueue(broker, Duration.ofMillis(100), ioExecutor) .start()
+        def queue = new PairingOutboundQueue(broker, mockConfig(), ioExecutor) .start()
 
         when:
         def result = new CompletableFuture<PairingMessage>()
@@ -64,7 +77,7 @@ class PairingOutboundQueueLocalTest extends Specification {
 
     def 'should validate keys prefixes'() {
         given:
-        def queue = new PairingOutboundQueue(broker, Duration.ofMillis(100), ioExecutor)
+        def queue = new PairingOutboundQueue(broker, mockConfig(), ioExecutor)
 
         expect:
         queue.targetKey('foo') == 'pairing-outbound-queue/v1:foo'

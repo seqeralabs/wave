@@ -68,7 +68,7 @@ class SecurityHeadersFilterTest extends Specification {
         response.headers.get('X-Content-Type-Options') == 'nosniff'
         response.headers.get('Referrer-Policy') == 'strict-origin-when-cross-origin'
         response.headers.get('Permissions-Policy') == 'camera=(), microphone=(), geolocation=()'
-        response.headers.get('Content-Security-Policy') == "default-src 'self'; frame-ancestors 'none'"
+        response.headers.get('Content-Security-Policy') == "default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; frame-ancestors 'none'"
     }
 
     def 'should add security headers to all endpoints' () {

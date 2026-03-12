@@ -40,8 +40,8 @@ import io.micronaut.http.HttpStatus
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.ratelimit.impl.SpillwayRateLimiter
-import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
-import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
+import io.seqera.service.pairing.socket.msg.ProxyHttpRequest
+import io.seqera.service.pairing.socket.msg.ProxyHttpResponse
 import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.tower.client.TowerClient
