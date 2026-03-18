@@ -323,6 +323,11 @@ Wave requires access to AWS ECR for container image management. Create an IAM ro
 ```json
 "Statement": [
         {
+            "Effect": "Allow",
+            "Action": "ecr:GetAuthorizationToken",
+            "Resource": "*"
+        },
+        {
             "Action": [
                 "ecr:BatchCheckLayerAvailability",
                 "ecr:GetDownloadUrlForLayer",
