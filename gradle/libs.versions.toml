@@ -148,6 +148,7 @@ spock-junit4 = { module = "org.spockframework:spock-junit4", version.ref = "spoc
 
 # Test (version managed by Micronaut BOM)
 h2 = { module = "com.h2database:h2" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 testcontainers = { module = "org.testcontainers:testcontainers" }
 testcontainers-postgresql = { module = "org.testcontainers:postgresql" }
 

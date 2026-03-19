@@ -98,6 +98,7 @@ dependencies {
     testImplementation libs.testcontainers
     testImplementation libs.testcontainers.postgresql
     testRuntimeOnly libs.h2
+    testRuntimeOnly libs.junit.platform.launcher
     testImplementation testFixtures(libs.seqera.lib.fixtures.redis)
 
     // rate limit
