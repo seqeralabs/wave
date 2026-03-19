@@ -15,8 +15,8 @@ String gitVersion() {
     return r==0 ? p.text.trim() : '(unknown)'
 }
 
-group "io.seqera"
-version "${rootProject.file('VERSION').text.trim()}"
+group = "io.seqera"
+version = rootProject.file('VERSION').text.trim()
 ext.commitId = gitVersion()
 
 repositories {
@@ -205,7 +205,7 @@ buildInfo.dependsOn processResources
 compileGroovy.dependsOn buildInfo
 
 jacoco {
-    toolVersion '0.8.12'
+    toolVersion = '0.8.12'
 }
 /**
  * Code coverage with JaCoCo.
