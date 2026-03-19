@@ -190,19 +190,27 @@ test {
 }
 
 /** Update version number for backend app and modules */
-task buildInfo { doLast {
-    def info = """\
-                name=${project.name}
-                group=${project.group}
-                version=${version}
-                commitId=${project.property('commitId')}
-            """.stripIndent().toString()
-    def f = file("${buildDir}/resources/main/META-INF/build-info.properties")
-    f.parentFile.mkdirs()
-    f.text = info
-} }
-buildInfo.dependsOn processResources
-compileGroovy.dependsOn buildInfo
+tasks.register('buildInfo') {
+    // Capture project values at configuration time to avoid Task.project access at execution time
+    def projectName = project.name
+    def projectGroup = project.group.toString()
+    def projectVersion = project.version.toString()
+    def projectCommitId = project.ext.commitId.toString()
+    def outputFile = layout.buildDirectory.file("resources/main/META-INF/build-info.properties")
+    dependsOn tasks.named('processResources')
+    outputs.file(outputFile)
+    doLast {
+        def f = outputFile.get().asFile
+        f.parentFile.mkdirs()
+        f.text = """\
+                name=${projectName}
+                group=${projectGroup}
+                version=${projectVersion}
+                commitId=${projectCommitId}
+            """.stripIndent()
+    }
+}
+tasks.named('compileGroovy') { dependsOn tasks.named('buildInfo') }
 
 jacoco {
     toolVersion = '0.8.12'
