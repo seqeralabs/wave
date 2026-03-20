@@ -1,0 +1,159 @@
+[versions]
+# Gradle plugins
+foojay = "1.0.0"
+jib = "3.4.5"
+micronaut-plugin = "4.1.1"
+
+# Seqera internal libraries
+jedis-lock = "1.0.0"
+lib-activator = "1.0.0"
+lib-cache-tiered-redis = "1.1.0"
+lib-crypto = "1.0.0"
+lib-data-queue-redis = "1.1.2"
+lib-data-range-redis = "1.0.0"
+lib-data-store-future-redis = "1.0.0"
+lib-data-store-state-redis = "1.0.0"
+lib-data-stream-redis = "1.2.0"
+lib-fixtures-redis = "1.1.0"
+lib-jedis-pool = "1.0.0"
+lib-lang = "1.1.0"
+lib-mail = "1.3.1"
+lib-pairing = "1.0.0"
+lib-pool = "1.0.0"
+lib-random = "1.0.0"
+lib-retry = "2.0.0"
+lib-serde = "1.2.0"
+lib-serde-moshi = "1.1.0"
+
+# Third-party libraries
+byte-buddy = "1.14.17"
+caffeine = "3.1.8"
+commons-compress = "1.27.1"
+commons-lang3 = "3.18.0"
+failsafe = "3.1.0"
+gson = "2.10.1"
+guava = "33.3.1-jre"
+jakarta-persistence-api = "3.0.0"
+jaxb-api = "2.3.1"
+jedis = "5.1.3"
+kubernetes-client = "24.0.0"
+logback = "1.5.20"
+luaj = "3.0.1"
+moshi = "1.15.2"
+netty-bom = "4.2.5.Final"
+netty-tcnative = "2.0.0.Final"
+objenesis = "3.4"
+postgresql = "42.7.7"
+resilience4j = "0.17.0"
+slf4j = "2.0.16"
+snakeyaml = "2.2"
+spillway = "3.0.0"
+spock = "2.3-groovy-4.0"
+
+[libraries]
+# Jakarta
+jakarta-annotation-api = { module = "jakarta.annotation:jakarta.annotation-api" }
+jakarta-persistence-api = { module = "jakarta.persistence:jakarta.persistence-api", version.ref = "jakarta-persistence-api" }
+
+# Seqera internal
+seqera-jedis-lock = { module = "io.seqera:jedis-lock", version.ref = "jedis-lock" }
+seqera-lib-activator = { module = "io.seqera:lib-activator", version.ref = "lib-activator" }
+seqera-lib-cache-tiered-redis = { module = "io.seqera:lib-cache-tiered-redis", version.ref = "lib-cache-tiered-redis" }
+seqera-lib-crypto = { module = "io.seqera:lib-crypto", version.ref = "lib-crypto" }
+seqera-lib-data-queue-redis = { module = "io.seqera:lib-data-queue-redis", version.ref = "lib-data-queue-redis" }
+seqera-lib-data-range-redis = { module = "io.seqera:lib-data-range-redis", version.ref = "lib-data-range-redis" }
+seqera-lib-data-store-future-redis = { module = "io.seqera:lib-data-store-future-redis", version.ref = "lib-data-store-future-redis" }
+seqera-lib-data-store-state-redis = { module = "io.seqera:lib-data-store-state-redis", version.ref = "lib-data-store-state-redis" }
+seqera-lib-data-stream-redis = { module = "io.seqera:lib-data-stream-redis", version.ref = "lib-data-stream-redis" }
+seqera-lib-fixtures-redis = { module = "io.seqera:lib-fixtures-redis", version.ref = "lib-fixtures-redis" }
+seqera-lib-jedis-pool = { module = "io.seqera:lib-jedis-pool", version.ref = "lib-jedis-pool" }
+seqera-lib-lang = { module = "io.seqera:lib-lang", version.ref = "lib-lang" }
+seqera-lib-mail = { module = "io.seqera:lib-mail", version.ref = "lib-mail" }
+seqera-lib-pairing = { module = "io.seqera:lib-pairing", version.ref = "lib-pairing" }
+seqera-lib-pool = { module = "io.seqera:lib-pool", version.ref = "lib-pool" }
+seqera-lib-random = { module = "io.seqera:lib-random", version.ref = "lib-random" }
+seqera-lib-retry = { module = "io.seqera:lib-retry", version.ref = "lib-retry" }
+seqera-lib-serde = { module = "io.seqera:lib-serde", version.ref = "lib-serde" }
+seqera-lib-serde-moshi = { module = "io.seqera:lib-serde-moshi", version.ref = "lib-serde-moshi" }
+
+# Micronaut (version managed by BOM via micronautVersion in gradle.properties)
+micronaut-aws-parameter-store = { module = "io.micronaut.aws:micronaut-aws-parameter-store" }
+micronaut-cache-caffeine = { module = "io.micronaut.cache:micronaut-cache-caffeine" }
+micronaut-cache-core = { module = "io.micronaut.cache:micronaut-cache-core" }
+micronaut-data-jdbc = { module = "io.micronaut.data:micronaut-data-jdbc" }
+micronaut-data-processor = { module = "io.micronaut.data:micronaut-data-processor" }
+micronaut-groovy-runtime = { module = "io.micronaut.groovy:micronaut-runtime-groovy" }
+micronaut-http-client = { module = "io.micronaut:micronaut-http-client" }
+micronaut-http-validation = { module = "io.micronaut:micronaut-http-validation" }
+micronaut-inject-groovy = { module = "io.micronaut:micronaut-inject-groovy" }
+micronaut-jackson-databind = { module = "io.micronaut:micronaut-jackson-databind" }
+micronaut-jdbc-hikari = { module = "io.micronaut.sql:micronaut-jdbc-hikari" }
+micronaut-management = { module = "io.micronaut:micronaut-management" }
+micronaut-micrometer-core = { module = "io.micronaut.micrometer:micronaut-micrometer-core" }
+micronaut-micrometer-registry-prometheus = { module = "io.micronaut.micrometer:micronaut-micrometer-registry-prometheus" }
+micronaut-object-storage-aws = { module = "io.micronaut.objectstorage:micronaut-object-storage-aws" }
+micronaut-reactor = { module = "io.micronaut.reactor:micronaut-reactor" }
+micronaut-reactor-http-client = { module = "io.micronaut.reactor:micronaut-reactor-http-client" }
+micronaut-retry = { module = "io.micronaut:micronaut-retry" }
+micronaut-security = { module = "io.micronaut.security:micronaut-security" }
+micronaut-validation = { module = "io.micronaut.validation:micronaut-validation" }
+micronaut-validation-processor = { module = "io.micronaut.validation:micronaut-validation-processor" }
+micronaut-views-handlebars = { module = "io.micronaut.views:micronaut-views-handlebars" }
+micronaut-websocket = { module = "io.micronaut:micronaut-websocket" }
+
+# AWS SDK (version managed by Micronaut AWS BOM)
+aws-ecr = { module = "software.amazon.awssdk:ecr" }
+aws-ecrpublic = { module = "software.amazon.awssdk:ecrpublic" }
+aws-ses = { module = "software.amazon.awssdk:ses" }
+aws-sts = { module = "software.amazon.awssdk:sts" }
+
+# Kubernetes
+kubernetes-client-java = { module = "io.kubernetes:client-java", version.ref = "kubernetes-client" }
+kubernetes-client-java-api-fluent = { module = "io.kubernetes:client-java-api-fluent", version.ref = "kubernetes-client" }
+
+# Jackson (version managed by BOM)
+jackson-dataformat-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml" }
+jackson-datatype-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310" }
+
+# Groovy (version managed by BOM in main project)
+groovy-json = { module = "org.apache.groovy:groovy-json" }
+groovy-nio = { module = "org.apache.groovy:groovy-nio" }
+
+# Third-party with explicit versions
+byte-buddy = { module = "net.bytebuddy:byte-buddy", version.ref = "byte-buddy" }
+caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "caffeine" }
+commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commons-compress" }
+commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3" }
+failsafe = { module = "dev.failsafe:failsafe", version.ref = "failsafe" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
+jaxb-api = { module = "javax.xml.bind:jaxb-api", version.ref = "jaxb-api" }
+jedis = { module = "redis.clients:jedis", version.ref = "jedis" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+logback-core = { module = "ch.qos.logback:logback-core", version.ref = "logback" }
+luaj-jse = { module = "org.luaj:luaj-jse", version.ref = "luaj" }
+moshi = { module = "com.squareup.moshi:moshi", version.ref = "moshi" }
+moshi-adapters = { module = "com.squareup.moshi:moshi-adapters", version.ref = "moshi" }
+netty-bom = { module = "io.netty:netty-bom", version.ref = "netty-bom" }
+netty-tcnative-boringssl-static = { module = "io.netty:netty-tcnative-boringssl-static", version.ref = "netty-tcnative" }
+objenesis = { module = "org.objenesis:objenesis", version.ref = "objenesis" }
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
+resilience4j-ratelimiter = { module = "io.github.resilience4j:resilience4j-ratelimiter", version.ref = "resilience4j" }
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+slf4j-jdk-platform-logging = { module = "org.slf4j:slf4j-jdk-platform-logging", version.ref = "slf4j" }
+snakeyaml = { module = "org.yaml:snakeyaml", version.ref = "snakeyaml" }
+spillway = { module = "com.coveo:spillway", version.ref = "spillway" }
+spock-core = { module = "org.spockframework:spock-core", version.ref = "spock" }
+spock-junit4 = { module = "org.spockframework:spock-junit4", version.ref = "spock" }
+
+# Test (version managed by Micronaut BOM)
+h2 = { module = "com.h2database:h2" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+testcontainers = { module = "org.testcontainers:testcontainers" }
+testcontainers-postgresql = { module = "org.testcontainers:postgresql" }
+
+[plugins]
+foojay-resolver-convention = { id = "org.gradle.toolchains.foojay-resolver-convention", version.ref = "foojay" }
+jib = { id = "com.google.cloud.tools.jib", version.ref = "jib" }
+micronaut-minimal-application = { id = "io.micronaut.minimal.application", version.ref = "micronaut-plugin" }
+micronaut-minimal-library = { id = "io.micronaut.minimal.library", version.ref = "micronaut-plugin" }

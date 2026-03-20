@@ -1,4 +1,4 @@
-version ?= 2.2.2
+version ?= 2.3.0
 
 build:
 	docker buildx build \
