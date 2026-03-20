@@ -162,34 +162,7 @@ wave:
 
 #### IAM permissions
 
-Wave requires the following IAM permissions for ECR cache operations:
-
-```json
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "ecr:GetAuthorizationToken",
-                "ecr:BatchCheckLayerAvailability",
-                "ecr:GetDownloadUrlForLayer",
-                "ecr:BatchGetImage",
-                "ecr:PutImage",
-                "ecr:InitiateLayerUpload",
-                "ecr:UploadLayerPart",
-                "ecr:CompleteLayerUpload"
-            ],
-            "Resource": ["arn:aws:ecr:us-east-1:123456789012:repository/wave-cache"]
-        },
-        {
-            "Effect": "Allow",
-            "Action": ["ecr:GetAuthorizationToken"],
-            "Resource": "*"
-        }
-    ]
-}
-```
+ECR cache IAM permissions are defined in [AWS credentials to access ECR](../docs/install/kubernetes.md#aws-credentials-to-access-ecr).  Ensure your cache ARN is an allowed `Resource`.
 
 #### ECR repository setup
 
