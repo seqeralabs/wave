@@ -21,9 +21,9 @@ plugins {
 
 dependencies {
     implementation project(':wave-api')
-    implementation 'org.apache.commons:commons-compress:1.27.1'
-    implementation 'org.apache.commons:commons-lang3:3.18.0'
-    implementation 'org.yaml:snakeyaml:2.0'
+    implementation libs.commons.compress
+    implementation libs.commons.lang3
+    implementation libs.snakeyaml
 }
 
 group = 'io.seqera'
