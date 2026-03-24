@@ -631,6 +631,60 @@ class AppTest extends Specification {
         e.getMessage() == "Option --mirror and requires the use of a build repository"
     }
 
+    def 'should set multi-platform via --platform' () {
+        given:
+        def app = new App()
+        String[] args = ["--platform", "linux/amd64,linux/arm64", "-f", "Dockerfile"]
+
+        when:
+        new CommandLine(app).parseArgs(args)
+
+        then:
+        app.@platform == "linux/amd64,linux/arm64"
+    }
+
+    def 'should fail when specifying multi-platform and singularity' () {
+        given:
+        def app = new App()
+        String[] args = ["--platform", "linux/amd64,linux/arm64", "--singularity", "--freeze", "-f", "Dockerfile"]
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        app.validateArgs()
+
+        then:
+        def e = thrown(IllegalCliArgumentException)
+        e.getMessage() == "Multi-platform builds are not supported for Singularity format"
+    }
+
+    def 'should fail when specifying multi-platform and mirror' () {
+        given:
+        def app = new App()
+        String[] args = ["--platform", "linux/amd64,linux/arm64", "--mirror", "--image", "foo", "--build-repo", "bar", "--tower-token", "tok"]
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        app.validateArgs()
+
+        then:
+        def e = thrown(IllegalCliArgumentException)
+        e.getMessage() == "Multi-platform builds and --mirror conflict each other"
+    }
+
+    def 'should fail when specifying multi-platform with only image' () {
+        given:
+        def app = new App()
+        String[] args = ["--platform", "linux/amd64,linux/arm64", "--image", "ubuntu:latest"]
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        app.validateArgs()
+
+        then:
+        def e = thrown(IllegalCliArgumentException)
+        e.getMessage() == "Multi-platform builds require a container file or packages to build"
+    }
+
     @Unroll
     def 'should check service version'() {
         given:

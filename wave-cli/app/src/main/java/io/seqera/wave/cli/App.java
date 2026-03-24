@@ -126,7 +126,7 @@ public class App implements Runnable {
     @Option(names = {"--freeze", "-F"}, paramLabel = "false",  description = "Request a container freeze.")
     private boolean freeze;
 
-    @Option(names = {"--platform"}, paramLabel = "''", description = "Platform to be used for the container build. One of: linux/amd64, linux/arm64.")
+    @Option(names = {"--platform"}, paramLabel = "''", description = "Platform to be used for the container build: linux/amd64, linux/arm64, or both separated by comma for multi-platform builds.")
     private String platform;
 
     @Option(names = {"--await"}, paramLabel = "false", arity = "0..1", description = "Await the container build to be available. you can provide a timeout like --await 10m or 2s, by default its 15 minutes.")
@@ -420,9 +420,26 @@ public class App implements Runnable {
         if( dryRun && await != null )
             throw new IllegalCliArgumentException("Options --dry-run and --await conflicts each other");
 
-        if( !isEmpty(platform) && !VALID_PLATFORMS.contains(platform) )
-            throw new IllegalCliArgumentException(String.format("Unsupported container platform: '%s'", platform));
+        if( !isEmpty(platform) ) {
+            for( String p : platform.split(",") ) {
+                if( !VALID_PLATFORMS.contains(p.trim()) )
+                    throw new IllegalCliArgumentException(String.format("Unsupported container platform: '%s'", platform));
+            }
+        }
 
+        if( isMultiPlatform() && singularity )
+            throw new IllegalCliArgumentException("Multi-platform builds are not supported for Singularity format");
+
+        if( isMultiPlatform() && mirror )
+            throw new IllegalCliArgumentException("Multi-platform builds and --mirror conflict each other");
+
+        if( isMultiPlatform() && !isEmpty(image) && isEmpty(containerFile) && condaPackages==null && isEmpty(condaFile) && cranPackages==null )
+            throw new IllegalCliArgumentException("Multi-platform builds require a container file or packages to build");
+
+    }
+
+    private boolean isMultiPlatform() {
+        return !isEmpty(platform) && platform.contains(",");
     }
 
     protected Client client() {

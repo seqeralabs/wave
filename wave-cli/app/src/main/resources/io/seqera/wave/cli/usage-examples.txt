@@ -9,8 +9,11 @@ Examples:
   # Build a container based on Conda packages
   wave --conda-package bamtools=2.5.2 --conda-package samtools=1.17
 
-  # Build a container based on Conda packages using arm64 architecture
+  # Build a container based on Conda packages using arm64 CPU architecture
   wave --conda-package fastp --platform linux/arm64
+
+  # Build a container based on Conda packages using both amd64 and arm64 CPU architectures
+  wave --conda-package fastp --platform linux/amd64,linux/arm64
 
   # Build a container based on Conda lock file served via prefix.dev service
   wave --conda-package https://prefix.dev/envs/pditommaso/wave/conda-lock.yml
