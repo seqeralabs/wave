@@ -5,3 +5,16 @@
 # Ignore Gradle build output directory
 build
 *.log
+
+/build-context
+/dev.sh
+/Dockerfile
+/mr.sh
+/remote.sh
+/stage.sh
+/stress.sh
+/test.sh
+/scratch
+/layer-dir
+/local.sh
+/Singularityfile
