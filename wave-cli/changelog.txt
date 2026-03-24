@@ -1,5 +1,10 @@
 WAVE CLI CHANGE-LOG
 ===================
+1.8.2 - 24 Mar 2026
+- Add multi-platform build support [4f82a24]
+- Upgrade test deps to Groovy 4, Spock 2.4, JUnit 5.11 [6da9ade]
+- Upgrade SLF4J to 2.0.17 and Shadow plugin to 8.1.1 [651a8a2]
+
 1.8.1 - 17 Dec 2025
 - Add Pixi-specific CLI options for container builds [330377b]
 - Increase await timeout with tower token [8c85b26]
