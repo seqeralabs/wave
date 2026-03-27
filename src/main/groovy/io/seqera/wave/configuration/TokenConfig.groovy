@@ -37,7 +37,7 @@ interface TokenConfig {
     @ConfigurationProperties('cache')
     interface Cache {
 
-        @Bindable(defaultValue = "1h")
+        @Bindable(defaultValue = "36h")
         @Nullable
         Duration getDuration()
 
