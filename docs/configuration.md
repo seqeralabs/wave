@@ -30,6 +30,10 @@ Configure general Wave application settings, such as application name, port, ano
 : Enables anonymous access to the Wave server (default: `false`).
 : Modify this option based on your security requirements.
 
+`wave.denyHosts` *(optional)*
+: A list of hostname patterns to deny. Requests targeting these hosts are rejected.
+  Example patterns: `ngrok.app`, `ngrok-free.app`, `//localhost`.
+
 `wave.denyPaths` *(optional)*
 : Filter out API calls for specific artifacts, like manifests, that don't exist.
 
@@ -338,8 +342,25 @@ Configure Kubernetes-specific settings for Wave, where build and scan processes 
 `wave.build.k8s.namespace` *(required)*
 : Sets the Kubernetes namespace where Wave will run its build pods.
 
+`wave.build.k8s.dns.policy` *(optional)*
+: Sets the DNS policy for Wave build Kubernetes pods (e.g., `None`, `Default`, `ClusterFirst`).
+  When set to `None`, you must also configure `wave.build.k8s.dns.servers`.
+
+`wave.build.k8s.dns.servers` *(optional)*
+: A list of custom DNS server IP addresses for Wave build pods. Used when `wave.build.k8s.dns.policy` is set to `None`.
+  Example: `['1.1.1.1', '8.8.8.8']`.
+
 `wave.build.k8s.node-selector` *(optional)*
-: Sets the node selector for Wave build Kubernetes pods. Value must be a map entry in `key=value` format (e.g., `service=wave-build`).
+: Sets the node selector for Wave build Kubernetes pods. Value is a map where keys are platform identifiers
+  and values are Kubernetes node label selectors in `label=value` format.
+  Supported platform keys: `linux/amd64`, `linux/arm64`, `noarch`.
+  Example:
+  ```yaml
+  wave.build.k8s.nodeSelector:
+    linux/amd64: 'seqera.io/wave-build-amd64=true'
+    linux/arm64: 'seqera.io/wave-build-arm64=true'
+    noarch: 'seqera.io/wave-build=true'
+  ```
 
 `wave.build.k8s.resources.requests.cpu` *(optional)*
 : Sets the [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) to allocate to Wave build processes.
@@ -376,6 +397,9 @@ Configure how Wave's vulnerability scanning process uses a [Trivy Docker image](
 : Sets the [severity levels](https://aquasecurity.github.io/trivy/v0.22.0/vulnerability/examples/filter/) to report in vulnerability scanning.
 : Options include: `MEDIUM`,`HIGH`, and `CRITICAL`.
 
+`wave.scan.status.duration` *(optional)*
+: Sets the duration for which scan status records are retained (default: `5d`).
+
 ### Kubernetes Wave scan process
 
 Configure Wave scanning process resource requirements for Kubernetes deployments with the following options:
@@ -387,6 +411,35 @@ Configure Wave scanning process resource requirements for Kubernetes deployments
 `wave.scan.k8s.resources.requests.memory` *(optional)*
 : Sets the [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to Wave scan processes.
   For example, set to `3Gi` (3 Gigabytes) or `2000Mi` (2000 Megabytes).
+
+## Container mirror process
+
+Configure Kubernetes resource requirements for Wave's container mirroring operations with the following options:
+
+`wave.mirror.k8s.resources.requests.cpu` *(optional)*
+: Sets the CPU resources requested for mirror Kubernetes pods.
+
+`wave.mirror.k8s.resources.requests.memory` *(optional)*
+: Sets the memory resources requested for mirror Kubernetes pods.
+
+`wave.mirror.k8s.resources.limits.cpu` *(optional)*
+: Sets the CPU resource limit for mirror Kubernetes pods.
+
+`wave.mirror.k8s.resources.limits.memory` *(optional)*
+: Sets the memory resource limit for mirror Kubernetes pods.
+
+## Proxy cache
+
+Configure Wave's in-memory proxy cache for registry responses with the following options:
+
+`wave.proxy-cache.enabled` *(optional)*
+: Enables the proxy cache (default: `false`).
+
+`wave.proxy-cache.duration` *(optional)*
+: Sets the cache entry expiration duration (default: `120s`).
+
+`wave.proxy-cache.max-size` *(optional)*
+: Sets the maximum number of entries in the proxy cache (default: `10000`).
 
 ## Security
 
@@ -417,6 +470,9 @@ Configure how Wave controls rate limits for anonymous and authenticated user acc
 
 `rate-limit.pull.authenticated` *(required)*
 : Sets the rate limit for pull requests from authenticated users (default: `100/1m`).
+
+`rate-limit.timeout-errors.max-rate` *(optional)*
+: Sets the maximum rate of timeout errors before Wave begins rejecting requests (default: `10/1m`).
 
 ## Database and cache
 
@@ -556,4 +612,50 @@ Configure user credentials for accessing authenticated Wave APIs and services wi
 `wave.accounts` *(required)*
 : Sets a list of credentials to access authenticated Wave APIs like metrics APIs.
   Format of the credential list: `- <USERNAME>:<PASSWORD_CHECKSUM>`
+
+## License server
+
+Configure the connection to the Seqera license management server:
+
+`license.server.url` *(optional)*
+: Specifies the URL of the Seqera license management server.
+  Required when license validation is enabled.
+  Example: `https://licenses.seqera.io`.
+
+## Advanced
+
+These settings control internal operational behavior. The defaults are suitable for most deployments, but may need tuning at scale.
+
+### Job manager
+
+`wave.job-manager.poll-interval` *(optional)*
+: Sets the polling interval for checking job status (default: `1s`).
+
+`wave.job-manager.scheduler-interval` *(optional)*
+: Sets the interval for the job scheduler to process queued jobs (default: `1s`).
+
+### Message stream
+
+`wave.message-stream.claim-timeout` *(optional)*
+: Sets the timeout for claiming messages from the Redis stream (default: `5s`).
+
+`wave.message-stream.consume-warn-timeout` *(optional)*
+: Sets the threshold duration after which a slow message consumer triggers a warning (default: `4s`).
+
+### Thread monitor
+
+`wave.thread-monitor.dump-file` *(optional)*
+: Sets the file path where thread dumps are written when the thread count exceeds the threshold.
+  Example: `/efs/wave/dump/threads-dump.txt`.
+
+`wave.thread-monitor.dump-threshold` *(optional)*
+: Sets the thread count threshold that triggers a thread dump (default: `200`).
+
+`wave.thread-monitor.interval` *(optional)*
+: Sets the interval for the thread monitor check (default: `5m`).
+
+### Trace
+
+`wave.trace.slow-endpoint.duration` *(optional)*
+: Sets the threshold duration for logging slow HTTP endpoints (default: `1m`).
 
