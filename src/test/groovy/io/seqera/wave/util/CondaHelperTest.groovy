@@ -168,10 +168,10 @@ class CondaHelperTest extends Specification {
         then:
         result.contains('BootStrap: docker')
         result.contains('From: mambaorg/micromamba:2-amazon2023')
-        result.contains('Stage: build')
         result.contains('micromamba install -y -n base -f /scratch/conda.yml')
-        result.contains('Bootstrap: docker')
-        result.contains('From: ubuntu:24.04')
+        result.contains('%files')
+        result.contains('%post')
+        result.contains('%environment')
     }
 
     def 'should create v2 docker file with lock file'() {
