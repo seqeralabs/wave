@@ -41,6 +41,7 @@ import io.micronaut.security.annotation.Secured
 import io.micronaut.security.authentication.AuthorizationException
 import io.micronaut.security.rules.SecurityRule
 import io.seqera.wave.api.BuildTemplate
+import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerStatusResponse
 import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.ScanMode
@@ -683,6 +684,8 @@ class ContainerController {
         // check container file size
         if( req.containerFile && buildConfig && req.containerFile.length() > buildConfig.maxContainerFileSize )
             throw new BadRequestException("Container file size exceeds the maximum allowed size of ${buildConfig.maxContainerFileSize} bytes")
+        // check layer size
+        validateLayersSize(req.containerConfig)
         // check valid image name
         msg = validationService.checkContainerName(req.containerImage)
         if( msg ) throw new BadRequestException(msg)
@@ -696,6 +699,15 @@ class ContainerController {
         // check cache repository
         msg = validationService.checkBuildRepository(req.cacheRepository, ValidationServiceImpl.RepoType.Cache)
         if( msg ) throw new BadRequestException(msg)
+    }
+
+    protected void validateLayersSize(ContainerConfig config) throws BadRequestException {
+        if( !config?.layers || !buildConfig )
+            return
+        for( def layer : config.layers ) {
+            if( layer.location && layer.location.length() > buildConfig.maxDataLayerSize )
+                throw new BadRequestException("Container layer exceeds the maximum allowed size")
+        }
     }
 
     void validateMirrorRequest(SubmitContainerTokenRequest req, boolean v2) throws BadRequestException {
