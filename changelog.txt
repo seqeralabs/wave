@@ -1,4 +1,11 @@
 # Wave changelog
+1.33.1 - 30 Mar 2026
+- Update token cache duration and clarify public-repo docs (#1007) [2e47f9bd5]
+- Bump Netty to 4.2.10.Final and Micronaut to 4.10.10 (#1001) [970ec3876]
+- Refactor build vs cache IAM permission structure (#999) [2241a129f]
+- Migrate dependencies to Gradle version catalog (#996) [ac0664ce2]
+- Updated copyright to 2026 (#1003) [ba1209d0b]
+
 1.33.0 - 13 Mar 2026
 - Support cross AWS account IAM role authentication (#979) [d59370c20]
 - Add multi-platform container builds for amd64 and arm64 (#985) [5a90dc5bc]
