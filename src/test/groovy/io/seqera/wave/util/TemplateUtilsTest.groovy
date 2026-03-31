@@ -459,6 +459,16 @@ class TemplateUtilsTest extends Specification {
 
     /* *********************************************************************************
      * Micromamba v2 template tests
+     *
+     * Singularity templates use single-stage builds because Singularity's proot-based
+     * builder cannot preserve file permissions when transferring files across stages.
+     * Tar extraction and %files from build both fail with permission errors such as:
+     *
+     *   tar: conda/conda-meta: Cannot change mode to rwxrwxrwx: No such file or directory
+     *
+     * The conda environment is installed directly in a single stage using the mamba
+     * image as the base. Note that {{base_image}} is not used in the Singularity
+     * templates — the container uses the mamba image as its base instead.
      * *********************************************************************************/
 
     def 'should create dockerfile using micromamba v2 template from conda file' () {
@@ -609,7 +619,17 @@ class TemplateUtilsTest extends Specification {
     }
 
     /* *********************************************************************************
-     * Pixi v1 template tests (single-stage builds)
+     * Pixi v1 template tests (single-stage Singularity builds)
+     *
+     * Singularity templates use single-stage builds because Singularity's proot-based
+     * builder cannot preserve file permissions when transferring files across stages.
+     * Tar extraction and %files from build both fail with permission errors such as:
+     *
+     *   tar: conda/conda-meta: Cannot change mode to rwxrwxrwx: No such file or directory
+     *
+     * The conda/pixi environment is installed directly in a single stage using the
+     * pixi image as the base. Note that {{base_image}} is not used in the Singularity
+     * templates — the container uses the pixi image as its base instead.
      * *********************************************************************************/
 
     def 'should create singularityfile using pixi v1 template' () {
