@@ -32,6 +32,7 @@ import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.api.ContainerInspectRequest
 import io.seqera.wave.api.ContainerInspectResponse
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.UserService
 import io.seqera.wave.service.inspect.ContainerInspectService
@@ -73,6 +74,9 @@ class InspectController {
 
         if( !req.containerImage )
             throw new BadRequestException("Missing 'containerImage' attribute")
+
+        // multi-platform values are not allowed for inspect requests
+        ContainerPlatform.validateSinglePlatform(platform)
 
         // this is needed for backward compatibility with old clients
         if( !req.towerEndpoint ) {

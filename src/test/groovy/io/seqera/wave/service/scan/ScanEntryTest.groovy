@@ -274,7 +274,7 @@ class ScanEntryTest extends Specification {
                 'mr-12345',
                 'cr-12345',
                 'docker.io/some:image',
-                ContainerPlatform.DEFAULT,
+                ContainerPlatform.DEFAULT.toString(),
                 Instant.now(),
                 Duration.ofMinutes(1),
                 ScanEntry.SUCCEEDED,
@@ -292,7 +292,7 @@ class ScanEntryTest extends Specification {
         entry.mirrorId == recrd.mirrorId
         entry.requestId == recrd.requestId
         entry.containerImage == recrd.containerImage
-        entry.platform == recrd.platform
+        entry.platform == ContainerPlatform.DEFAULT
         entry.startTime == recrd.startTime
         entry.duration == recrd.duration
         entry.status == recrd.status

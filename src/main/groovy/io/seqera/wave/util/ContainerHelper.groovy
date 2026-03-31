@@ -298,6 +298,10 @@ class ContainerHelper {
         return RegHelper.sipHash(attrs)
     }
 
+    static String makeMultiPlatformContainerId(String containerFile, String condaFile, String repository, BuildContext buildContext, ContainerConfig containerConfig) {
+        return makeContainerId(containerFile, condaFile, ContainerPlatform.MULTI_PLATFORM, repository, buildContext, containerConfig)
+    }
+
     static void checkContainerSpec(String file) {
         if( !file )
             return
