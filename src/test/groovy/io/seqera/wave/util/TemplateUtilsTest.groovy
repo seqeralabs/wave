@@ -458,7 +458,7 @@ class TemplateUtilsTest extends Specification {
     }
 
     /* *********************************************************************************
-     * Micromamba v2 template tests (multi-stage builds)
+     * Micromamba v2 template tests
      * *********************************************************************************/
 
     def 'should create dockerfile using micromamba v2 template from conda file' () {
@@ -609,7 +609,7 @@ class TemplateUtilsTest extends Specification {
     }
 
     /* *********************************************************************************
-     * Pixi v1 template tests (multi-stage builds)
+     * Pixi v1 template tests (single-stage builds)
      * *********************************************************************************/
 
     def 'should create singularityfile using pixi v1 template' () {
@@ -783,7 +783,6 @@ class TemplateUtilsTest extends Specification {
         TemplateUtils.condaPackagesToSingularityFileV2(PACKAGES, CHANNELS, CONDA_OPTS) == '''\
                 BootStrap: docker
                 From: mambaorg/micromamba:2.1.1
-                Stage: build
                 %post
                     micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1
                     micromamba install -y -n base conda-forge::procps-ng
@@ -791,16 +790,10 @@ class TemplateUtilsTest extends Specification {
                     echo ">> CONDA_LOCK_START"
                     cat environment.lock
                     echo "<< CONDA_LOCK_END"
-
-                Bootstrap: docker
-                From: ubuntu:24.04
-                Stage: final
-                %files from build
-                    /opt/conda /opt/conda
                 %environment
                     export MAMBA_ROOT_PREFIX=/opt/conda
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
-                    '''.stripIndent()
+                '''.stripIndent()
     }
 
     def 'should create singularityfile using micromamba v2 template with custom base image' () {
@@ -817,23 +810,16 @@ class TemplateUtilsTest extends Specification {
         TemplateUtils.condaPackagesToSingularityFileV2(PACKAGES, CHANNELS, CONDA_OPTS) == '''\
                 BootStrap: docker
                 From: mambaorg/micromamba:2.1.1
-                Stage: build
                 %post
                     micromamba install -y -n base -c conda-forge numpy pandas
                     micromamba env export --name base --explicit > environment.lock
                     echo ">> CONDA_LOCK_START"
                     cat environment.lock
                     echo "<< CONDA_LOCK_END"
-
-                Bootstrap: docker
-                From: debian:12
-                Stage: final
-                %files from build
-                    /opt/conda /opt/conda
                 %environment
                     export MAMBA_ROOT_PREFIX=/opt/conda
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
-                    '''.stripIndent()
+                '''.stripIndent()
     }
 
     def 'should create singularityfile using micromamba v2 template with commands' () {
@@ -852,7 +838,7 @@ class TemplateUtilsTest extends Specification {
 
         then:
         result.contains('From: mambaorg/micromamba:2.1.1')
-        result.contains('From: ubuntu:24.04')
+        !result.contains('Stage: build')
         result.contains('%post')
         result.contains('apt-get update')
         result.contains('apt-get install -y vim')
@@ -873,7 +859,7 @@ class TemplateUtilsTest extends Specification {
         then:
         result.contains('-f https://foo.com/some/conda-lock.yml')
         result.contains('From: mambaorg/micromamba:2.1.1')
-        result.contains('From: ubuntu:24.04')
+        !result.contains('Stage: build')
     }
 
 }
