@@ -40,6 +40,7 @@ dependencies {
     implementation libs.seqera.lib.pool
     implementation libs.seqera.lib.retry
     implementation libs.seqera.lib.random
+    implementation libs.seqera.lib.util.time
     implementation libs.seqera.lib.activator
     implementation project(':wave-api')
     implementation project(':wave-utils')
