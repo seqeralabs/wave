@@ -1,5 +1,5 @@
 ---
-title: Troubleshooting Wave build errors
+title: Wave build errors
 description: Troubleshoot Wave build errors that originate from container registries behind reverse proxies such as Cloudflare
 date created: 2026-04-01
 date edited: 2026-04-01
@@ -8,27 +8,13 @@ tags: [wave, buildkit, troubleshooting, cloudflare, proxied-registries]
 
 # Troubleshooting Wave build errors
 
-When building containers with Wave, you might encounter the following issues.
-
-## Get more detail from build logs
-
-The Wave build page shows a single-line summary of the BuildKit error. To see the full build log:
-
-1. Open the Wave build report link in the Wave UI.
-2. Review the complete log output — the layer identifier (for example, `sha256:8d2d10...`) and the target URL in the error message are the key clues for identifying the failure point.
-3. Look at the HTTP status code returned in the failed `PUT` or `POST` request to determine whether the error originated in your registry infrastructure, a proxy layer, or the Wave service itself.
-
-:::note
-The current Wave build page displays only a single-line error message from BuildKit. This can make it difficult to distinguish infrastructure errors from Wave service issues without inspecting the full build log.
-:::
+When you build containers with Wave, you might encounter the following issues.
 
 ## Build errors in proxied environments
 
 If your build repository (`wave.build.repository`) is behind a reverse proxy, build errors may originate from the proxy rather than Wave or BuildKit. Wave orchestrates BuildKit, which pushes layers to your configured repository. If your registry is behind a reverse proxy, the proxy receives the request first. If the backend times out or returns an unexpected response, the proxy returns its own HTTP error code to BuildKit, which surfaces it in the build log. The Wave build page displays only that single-line BuildKit error. The origin of the failure is not visible in the UI.
 
-:::note
-Errors that appear to be Wave or BuildKit failures may actually originate in your registry infrastructure or network.
-:::
+To see the full build log, open the Wave build report link in the Wave UI.
 
 Use the following signals to determine where the error originated:
 
@@ -46,10 +32,10 @@ If your registry hostname resolves through Cloudflare, BuildKit push requests pa
 
 #### Detect Cloudflare in the path
 
-Before troubleshooting, confirm whether your registry hostname resolves through Cloudflare:
+Before you troubleshoot, confirm whether your registry hostname resolves through Cloudflare:
 
 ```bash
-dig <your-registry-hostname> +short
+dig <registry-hostname> +short
 ```
 
 If the output includes a CNAME ending in `.cdn.cloudflare.net`, or IP addresses in the Cloudflare ranges (e.g., `104.x.x.x` or `172.64.x.x`),
@@ -58,13 +44,13 @@ Cloudflare is in the path between Wave/BuildKit and your registry.
 **Example output for a registry behind Cloudflare:**
 
 ```bash
-dig <your-registry-hostname> +short
-<your-registry-hostname>.cdn.cloudflare.net.
+dig <registry-hostname> +short
+<registry-hostname>.cdn.cloudflare.net.
 104.18.x.x
 172.64.x.x
 ```
 
-Use the following signals to determine which Cloudflare error you are seeing:
+Use the following signals to determine which Cloudflare error you see:
 
 | HTTP code | Likely cause |
 |---|---|
@@ -78,7 +64,7 @@ You might see an error like the following in your Wave build log:
 
 ```plaintext
 error: failed to copy: unexpected status from PUT request to
-https://<your-registry>/v2/<namespace>/blobs/uploads/<id>: 520 <none>
+https://<registry>/v2/<namespace>/blobs/uploads/<id>: 520 <none>
 ```
 
 This issue occurs when Cloudflare receives an invalid or unexpected response from your registry while proxying a chunked `PUT` upload. A common root cause is a large image layer timing out on the registry side while Cloudflare waits for a response.
@@ -94,7 +80,7 @@ To resolve this issue:
 
 #### Error: `522` on blob upload
 
-You might see a `522` error in your Wave build log when pushing to a Cloudflare-proxied registry.
+You might see a `522` error in your Wave build log when you push to a Cloudflare-proxied registry.
 
 This issue occurs when Cloudflare cannot establish or complete a connection to your registry backend. Cloudflare returns a `522` if the origin server does not return a SYN+ACK before the connection is established, or does not acknowledge Cloudflare's request after the connection is established.
 
@@ -107,9 +93,9 @@ To resolve this issue:
 
 #### Error: `524` on blob upload
 
-You might see a `524` error in your Wave build log when pushing to a Cloudflare-proxied registry.
+You might see a `524` error in your Wave build log when you push to a Cloudflare-proxied registry.
 
-This issue occurs when your registry successfully accepts the connection from Cloudflare but does not send a response before Cloudflare's proxy timeout expires. This is common when pushing large image layers.
+This issue occurs when your registry successfully accepts the connection from Cloudflare but does not send a response before Cloudflare's proxy timeout expires. This is common when you push large image layers.
 
 To resolve this issue:
 
