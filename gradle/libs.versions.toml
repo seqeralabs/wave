@@ -21,6 +21,7 @@ lib-mail = "1.3.1"
 lib-pairing = "1.0.0"
 lib-pool = "1.0.0"
 lib-random = "1.0.0"
+lib-util-time = "1.0.0"
 lib-retry = "2.0.0"
 lib-serde = "1.2.0"
 lib-serde-moshi = "1.1.0"
@@ -73,6 +74,7 @@ seqera-lib-pairing = { module = "io.seqera:lib-pairing", version.ref = "lib-pair
 seqera-lib-pool = { module = "io.seqera:lib-pool", version.ref = "lib-pool" }
 seqera-lib-random = { module = "io.seqera:lib-random", version.ref = "lib-random" }
 seqera-lib-retry = { module = "io.seqera:lib-retry", version.ref = "lib-retry" }
+seqera-lib-util-time = { module = "io.seqera:lib-util-time", version.ref = "lib-util-time" }
 seqera-lib-serde = { module = "io.seqera:lib-serde", version.ref = "lib-serde" }
 seqera-lib-serde-moshi = { module = "io.seqera:lib-serde-moshi", version.ref = "lib-serde-moshi" }
 
