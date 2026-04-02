@@ -93,8 +93,8 @@ The Wave CLI supports build templates for creating container images from Conda p
 | Template              | Description                                                                                                      |
 |-----------------------|------------------------------------------------------------------------------------------------------------------|
 | `conda/micromamba:v1` | Single-stage build using Micromamba v1 (default). The final image includes the package manager.                  |
-| `conda/micromamba:v2` | Multi-stage build (Docker) or single-stage build (Singularity) using Micromamba 2.x. Produces smaller Docker images without the package manager in the final stage.  |
-| `conda/pixi:v1`       | Multi-stage build (Docker) or single-stage build (Singularity) using [Pixi][pixi] package manager. Produces smaller Docker images with faster dependency resolution. |
+| `conda/micromamba:v2` | Multi-stage build using Micromamba 2.x. Produces smaller images by excluding the package manager from the final stage (Singularity still uses a single-stage build). |
+| `conda/pixi:v1`       | Multi-stage build using [Pixi][pixi] package manager. Produces smaller images with faster dependency resolution (Singularity still uses a single-stage build). |
 
 **Related CLI arguments**
 

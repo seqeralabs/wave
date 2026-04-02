@@ -223,7 +223,7 @@ Returns the name of the container request made available by Wave.
 | `pixiImage`                         | Name of the Docker image used for Pixi package manager (e.g., `ghcr.io/prefix-dev/pixi:latest`).                                                              |
 | `cranOpts`                          | CRAN build options (when `type` is `CRAN`).                                                                                                                        |
 | `rImage`                            | Name of the R Docker image used to build CRAN containers (e.g., `rocker/r-ver:4.4.1`).                                                                         |
-| `buildTemplate`                     | The build template to use for container builds. Supported values: `conda/pixi:v1` (Pixi with multi-stage Docker builds, single-stage Singularity builds), `conda/micromamba:v2` (Micromamba 2.x with multi-stage Docker builds, single-stage Singularity builds). Default: `conda/micromamba:v1` template. |
+| `buildTemplate`                     | The build template to use for container builds. Supported values: `conda/pixi:v1` (multi-stage build using Pixi), `conda/micromamba:v2` (multi-stage build using Micromamba 2.x). Both produce smaller images by excluding the package manager from the final stage (Singularity still uses a single-stage build). Default: `conda/micromamba:v1`. |
 | `nameStrategy`                      | The name strategy to be used to create the name of the container built by Wave. Options: `none`, `tagPrefix`, `imageSuffix`.                       |                                                     |
 
 #### Response
