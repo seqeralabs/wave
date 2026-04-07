@@ -22,7 +22,7 @@ import io.seqera.data.stream.AbstractMessageStream
 import io.seqera.data.stream.MessageStream
 import io.seqera.lang.type.TypeHelper
 import io.seqera.serde.encode.StringEncodingStrategy
-import io.seqera.wave.encoder.MoshiEncodeStrategy
+import io.seqera.serde.moshi.MoshiEncodeStrategy
 
 /**
  * Base abstract class for implementing message streams in the Wave application.

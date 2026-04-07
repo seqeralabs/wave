@@ -29,8 +29,8 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.http.HttpMethod
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.http.HttpClientFactory
-import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
-import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
+import io.seqera.service.pairing.socket.msg.ProxyHttpRequest
+import io.seqera.service.pairing.socket.msg.ProxyHttpResponse
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**

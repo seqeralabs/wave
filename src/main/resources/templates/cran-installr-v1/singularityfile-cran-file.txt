@@ -1,0 +1,18 @@
+BootStrap: docker
+From: {{base_image}}
+%files
+    . /opt/wave_context_dir
+%post
+    {{base_packages}}
+    rm -rf /var/lib/apt/lists/*
+    cd /opt/wave_context_dir
+    if [ -f "renv.lock" ]; then
+        R -e "install.packages('renv'); renv::restore()"
+    elif [ -f "install.R" ]; then
+        Rscript install.R
+    else
+        echo "No renv.lock or install.R file found"
+    fi
+    rm -rf /tmp/downloaded_packages/ /tmp/*.rds
+%environment
+    export R_LIBS_USER="/usr/local/lib/R/site-library"

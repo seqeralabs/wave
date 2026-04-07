@@ -1,0 +1,36 @@
+name: Build and publish Scanner container image
+
+on:
+  workflow_dispatch:
+    inputs:
+      trivy_version:
+        description: 'trivy version (e.g., 0.65.0)'
+        required: true
+        default: '0.65.0'
+      oras_version :
+        description : 'oras version (e.g., 1.3.0)'
+        required : true
+        default : '1.3.0'
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Docker Login
+        uses: docker/login-action@v3
+        with:
+          registry: public.cr.seqera.io
+          username: ${{ vars.SEQERA_PUBLIC_CR_USERNAME  }}
+          password: ${{ secrets.SEQERA_PUBLIC_CR_PASSWORD }}
+
+      - name: Build and Push Image to public.cr.seqera.io
+        run: |
+          cd plugin-scanner
+          make all trivy_version=${{ github.event.inputs.trivy_version }} oras_version=${{ github.event.inputs.oras_version }}

@@ -1,0 +1,8 @@
+FROM {{base_image}}
+RUN \
+    {{repo_opts}}{{base_packages}}
+    && install2.r {{target}} \
+    && rm -rf /tmp/downloaded_packages/ /tmp/*.rds \
+    && rm -rf /var/lib/apt/lists/*
+USER root
+ENV R_LIBS_USER="/usr/local/lib/R/site-library"

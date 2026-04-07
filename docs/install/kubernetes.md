@@ -27,7 +27,7 @@ The minimum system requirements for a Wave Kubernetes installation are:
 - **Storage**: Sufficient storage for your container images and temporary files
 
 :::info
-See [Configure Wave](./configure-wave.md) for detailed scaling and performance tuning guidance.
+See [Configure Wave](../configure-wave.md) for detailed scaling and performance tuning guidance.
 :::
 
 ## Assumptions
@@ -124,9 +124,7 @@ data:
       # Security scanning configuration - disabled for Wave base installation
       scan:
         enabled: false
-      # Blob caching configuration - disabled for Wave base installation
-      blobCache:
-        enabled: false
+      # Blob caching configuration - disabled by default (omit the blobCache stanza entirely when not in use)
       # Database connection settings
       db:
         uri: "jdbc:postgresql://your-postgres-host:5432/wave"
@@ -140,7 +138,7 @@ data:
     # Platform integration (optional)
     tower:
       endpoint:
-        url: "https://your-platform-server.com"
+        url: "https://your-platform-server.com/api"
 
     # Micronaut framework configuration
     micronaut:
@@ -323,32 +321,51 @@ Consider implementing the following for production deployments:
 Wave requires access to AWS ECR for container image management. Create an IAM role with the following permissions:
 
 ```json
-"Statement": [
-        {
-            "Action": [
-                "ecr:BatchCheckLayerAvailability",
-                "ecr:GetDownloadUrlForLayer",
-                "ecr:GetRepositoryPolicy",
-                "ecr:DescribeRepositories",
-                "ecr:ListImages",
-                "ecr:DescribeImages",
-                "ecr:BatchGetImage",
-                "ecr:GetLifecyclePolicy",
-                "ecr:GetLifecyclePolicyPreview",
-                "ecr:ListTagsForResource",
-                "ecr:DescribeImageScanFindings",
-                "ecr:CompleteLayerUpload",
-                "ecr:UploadLayerPart",
-                "ecr:InitiateLayerUpload",
-                "ecr:PutImage"
-            ],
-            "Effect": "Allow",
-            "Resource": [
-                "<REPO>/wave/*"
-            ]
-        }
-  ```
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "ecr:GetAuthorizationToken",
+      "Resource": "*"
+    },
+    {
+      "Sid": "CorePermissionsForBuildAndCache",
+      "Action": [
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:BatchGetImage",
+          "ecr:CompleteLayerUpload",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:InitiateLayerUpload",
+          "ecr:PutImage",
+          "ecr:UploadLayerPart"  
+      ],
+      "Effect": "Allow",
+      "Resource": [
+          "<REPO>/wave/*"
+      ]
+    },
+    {
+      "Sid": "ExtraPermissionsForBuild"
+      "Action": [
+          "ecr:DescribeImageScanFindings",
+          "ecr:DescribeImages",
+          "ecr:DescribeRepositories",
+          "ecr:GetLifecyclePolicy",
+          "ecr:GetLifecyclePolicyPreview",
+          "ecr:GetRepositoryPolicy",
+          "ecr:ListImages",
+          "ecr:ListTagsForResource"  
+      ],
+      "Effect": "Allow",
+      "Resource": [
+          "<REPO>/wave/<BUILD>"
+      ]
+    },
+  ]
+}    
+```
 
 ### Advanced configuration
 
-See [Configuring Wave](./configure-wave.md) for advanced Wave features, scaling guidance, and integration options.
+See [Configure Wave](../configure-wave.md) for advanced Wave features, scaling guidance, and integration options.

@@ -73,7 +73,7 @@ class KubeBuildStrategy extends BuildStrategy {
             final buildImage = getBuildImage(req)
             final buildCmd = launchCmd(req)
             final timeout = req.maxDuration ?: buildConfig.defaultTimeout
-            final selector= getSelectorLabel(req.platform, nodeSelectorMap)
+            final selector = getSelectorLabel(req.platform, nodeSelectorMap)
             k8sService.launchBuildJob(jobName, buildImage, buildCmd, req.workDir, configFile, timeout, selector)
         }
         catch (ApiException e) {

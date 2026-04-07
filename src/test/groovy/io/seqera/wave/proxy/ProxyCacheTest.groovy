@@ -26,7 +26,7 @@ import java.time.Duration
 import io.micronaut.context.ApplicationContext
 import io.seqera.fixtures.redis.RedisTestContainer
 import io.seqera.wave.configuration.ProxyCacheConfig
-import io.seqera.wave.store.cache.RedisL2TieredCache
+import io.seqera.cache.tiered.RedisL2TieredCache
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>

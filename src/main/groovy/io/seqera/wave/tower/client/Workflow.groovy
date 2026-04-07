@@ -23,7 +23,7 @@ import java.time.OffsetDateTime
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-import io.seqera.wave.encoder.MoshiSerializable
+import io.seqera.serde.moshi.MoshiSerializable
 
 /**
  * Model a Platform workflow run

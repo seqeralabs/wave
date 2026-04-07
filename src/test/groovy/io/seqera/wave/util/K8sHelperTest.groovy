@@ -54,4 +54,41 @@ class K8sHelperTest extends Specification {
         err.message == "Unsupported container platform 'linux/amd64'"
     }
 
+    def 'should get noarch selector' () {
+        expect:
+        K8sHelper.getNoArchSelector(SELECTORS) == EXPECTED
+
+        where:
+        SELECTORS                                               | EXPECTED
+        null                                                    | [:]
+        [:]                                                     | [:]
+        ['noarch': 'foo=1']                                     | ['foo': '1']
+        ['amd64': 'bar=2', 'noarch': 'foo=1']                   | ['foo': '1']
+        ['amd64': 'bar=2', 'arm64': 'baz=3']                    | [:]     // logs warning
+    }
+
+    def 'should validate node selector platforms' () {
+        when:
+        K8sHelper.validateNodeSelectorPlatforms(SELECTORS)
+        then:
+        noExceptionThrown()
+
+        where:
+        SELECTORS                                                           | _
+        null                                                                | _
+        [:]                                                                 | _
+        ['linux/amd64': 'foo=1']                                            | _
+        ['linux/amd64': 'foo=1', 'linux/arm64': 'bar=2']                    | _
+        ['linux/amd64': 'foo=1', 'noarch': 'baz=3']                         | _
+        ['linux/amd64': 'foo=1', 'linux/arm64': 'bar=2', 'noarch': 'baz=3'] | _
+        ['noarch': 'foo=1']                                                 | _
+    }
+
+    def 'should fail validation for invalid platform' () {
+        when:
+        K8sHelper.validateNodeSelectorPlatforms(['invalid-platform': 'foo=1'])
+        then:
+        thrown(BadRequestException)
+    }
+
 }

@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023-2024, Seqera Labs
+ *  Copyright (c) 2023-2026, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -18,30 +18,44 @@
 
 package io.seqera.wave.controller
 
+import groovy.transform.CompileStatic
 import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Post
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.auth.RegistryAuthService
+import io.seqera.wave.configuration.SsrfConfig
+import io.seqera.wave.util.SsrfValidator
 import jakarta.inject.Inject
 import jakarta.validation.Valid
 
+@CompileStatic
 @Controller("/")
 @ExecuteOn(TaskExecutors.BLOCKING)
 class ValidateController {
 
     @Inject RegistryAuthService loginService
 
+    @Inject SsrfConfig ssrfConfig
+
     @Deprecated
     @Post("/validate-creds")
     Boolean validateCreds(@Valid ValidateRegistryCredsRequest request){
+        validateRegistry(request.registry)
         loginService.validateUser(request.registry, request.userName, request.password)
     }
 
     @Post("/v1alpha2/validate-creds")
     Boolean validateCredsV2(@Valid @Body ValidateRegistryCredsRequest request){
+        validateRegistry(request.registry)
         loginService.validateUser(request.registry, request.userName, request.password)
+    }
+
+    private void validateRegistry(String registry) {
+        if (ssrfConfig.ssrfProtectionEnabled) {
+            SsrfValidator.validateHost(registry)
+        }
     }
 
 }

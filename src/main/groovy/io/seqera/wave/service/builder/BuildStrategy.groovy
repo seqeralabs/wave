@@ -20,6 +20,7 @@ package io.seqera.wave.service.builder
 
 import groovy.transform.CompileStatic
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.util.BucketTokenizer
 import jakarta.inject.Inject
 /**
  * Defines an abstract container build strategy.
@@ -71,9 +72,9 @@ abstract class BuildStrategy {
 
         if( req.cacheRepository ) {
             result << "--export-cache"
-            result << cacheOpts(req, buildConfig)
+            result << cacheExportOpts(req, buildConfig)
             result << "--import-cache"
-            result << "type=registry,ref=$req.cacheRepository:$req.containerId".toString()
+            result << cacheImportOpts(req, buildConfig)
         }
 
         return result
@@ -108,7 +109,19 @@ abstract class BuildStrategy {
         return result.toString()
     }
 
-    static protected String cacheOpts(BuildRequest req, BuildConfig config) {
+    static protected String cacheExportOpts(BuildRequest req, BuildConfig config) {
+        return BuildConfig.isBucketPath(req.cacheRepository)
+                ? s3ExportCacheOpts(req, config)
+                : registryExportCacheOpts(req, config)
+    }
+
+    static protected String cacheImportOpts(BuildRequest req, BuildConfig config) {
+        return BuildConfig.isBucketPath(req.cacheRepository)
+                ? s3ImportCacheOpts(req, config)
+                : registryImportCacheOpts(req, config)
+    }
+
+    static protected String registryExportCacheOpts(BuildRequest req, BuildConfig config) {
         final result = new StringBuilder()
         result << "type=registry"
         result << ",image-manifest=true"
@@ -118,6 +131,68 @@ abstract class BuildStrategy {
         result << ",oci-mediatypes=${config.ociMediatypes}"
         result << compressOpts(req, config)
         return result.toString()
+    }
+
+    static protected String registryImportCacheOpts(BuildRequest req, BuildConfig config) {
+        return "type=registry,ref=${req.cacheRepository}:${req.containerId}".toString()
+    }
+
+    static protected String s3ExportCacheOpts(BuildRequest req, BuildConfig config) {
+        final bucket = parseBucketFromS3Path(req.cacheRepository)
+        final prefix = parsePrefixFromS3Path(req.cacheRepository)
+        final region = config.getCacheBucketRegion()
+        final uploadParallelism = config.cacheBucketUploadParallelism
+
+        final result = new StringBuilder()
+        result << "type=s3"
+        if (region) {
+            result << ",region=${region}"
+        }
+        result << ",bucket=${bucket}"
+        if (prefix) {
+            result << ",prefix=${prefix}"
+        }
+        result << ",name=${req.containerId}"
+        result << ",mode=max"
+        result << ",ignore-error=true"
+        if (uploadParallelism) {
+            result << ",upload_parallelism=${uploadParallelism}"
+        }
+        result << compressOpts(req, config)
+        return result.toString()
+    }
+
+    static protected String s3ImportCacheOpts(BuildRequest req, BuildConfig config) {
+        final bucket = parseBucketFromS3Path(req.cacheRepository)
+        final prefix = parsePrefixFromS3Path(req.cacheRepository)
+        final region = config.getCacheBucketRegion()
+
+        final result = new StringBuilder()
+        result << "type=s3"
+        if (region) {
+            result << ",region=${region}"
+        }
+        result << ",bucket=${bucket}"
+        if (prefix) {
+            result << ",prefix=${prefix}"
+        }
+        result << ",name=${req.containerId}"
+        return result.toString()
+    }
+
+    private static String parseBucketFromS3Path(String s3Path) {
+        final tokenizer = BucketTokenizer.from(s3Path)
+        return tokenizer.bucket
+    }
+
+    private static String parsePrefixFromS3Path(String s3Path) {
+        final tokenizer = BucketTokenizer.from(s3Path)
+        final prefix = tokenizer.key
+        // return null if prefix is null or empty
+        if( !prefix )
+            return null
+        // ensure prefix always has a trailing slash
+        return prefix.endsWith('/') ? prefix : prefix + '/'
     }
 
 }

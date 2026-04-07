@@ -40,7 +40,6 @@ class DigestStoreFactoryTest extends Specification {
         ret1.digest == 'sha:1'
         ret1.mediaType == 'application/vnd.docker.image.rootfs.diff.tar.gzip'
 
-
         when:
         def l2 = new ContainerLayer('docker://foo.com/this/that', 'sha:2', 200, "sha:22" )
         def r2 = DigestStoreFactory.of( l2 )
@@ -50,7 +49,6 @@ class DigestStoreFactoryTest extends Specification {
         r2.size == 200
         r2.digest == 'sha:2'
         r2.mediaType == 'application/vnd.docker.image.rootfs.diff.tar.gzip'
-
 
         when:
         def d3 = "data:" + 'Hello world'.bytes.encodeBase64().toString()
@@ -62,7 +60,6 @@ class DigestStoreFactoryTest extends Specification {
         r3.size == 300
         r3.digest == 'sha:3'
         r3.mediaType == 'application/vnd.docker.image.rootfs.diff.tar.gzip'
-
 
         when:
         def d4 = "gzip:" + ZipUtils.compress('Hello world').encodeBase64().toString()

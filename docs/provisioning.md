@@ -43,7 +43,7 @@ The container _freeze mode_ allows the provisioning of non-ephemeral containers 
 
 This approach supports use cases such as the following:
 
-- Create container images on-demand from Conda packages
+- Create container images on-demand from Conda or CRAN packages
 - Deliver multi-architecture (AMD64 and ARM64) and multi-format (Docker and Singularity) container collections
 - Deliver container images in the same region where compute is performed
 
@@ -67,9 +67,14 @@ Notable parts of this workflow include:
   - Any package dependencies
   - The target platform, which is either AMD64 or ARM64
   - The target repository name
+  - Any container layers included in the request
 - When a request for the same container is made, the same ID is assigned to it and therefore, the build is skipped.
 - The resulting images are hosted in your selected repository and not cached locally, unless a cache repository is specified.
 - The container images are stored permanently unless the repository owner deletes them.
+
+:::note
+When Nextflow is the Wave client, additional resources may be bundled as container layers, such as module resources and the workflow or module `bin/` directories. Changes to these bundled files will affect the container fingerprint and trigger a rebuild. See [Bundling pipeline scripts](./nextflow/bundle-scripts.md) for details.
+:::
 
 ## Container provisioning capability matrix
 
@@ -80,9 +85,13 @@ Wave supports the following types of container builds:
 |Ephemeral|Augmentation|Container image|No|n/a|Temporary token|Docker|
 |Ephemeral|Build|Container file|No|Default|Temporary token|Docker|
 |Ephemeral|Build|Conda package|No|Default|Temporary token|Docker|
+|Ephemeral|Build|CRAN package|No|Default|Temporary token|Docker|
 |Ephemeral|Build|Container file|No|Custom|Temporary token|Docker|
 |Ephemeral|Build|Conda package|No|Custom|Temporary token|Docker|
+|Ephemeral|Build|CRAN package|No|Custom|Temporary token|Docker|
 |Durable|Build|Container file|Yes|Custom|Docker auth|Docker /Singularity|
 |Durable|Build|Conda package|Yes|Custom|Docker auth|Docker /Singularity|
+|Durable|Build|CRAN package|Yes|Custom|Docker auth|Docker /Singularity|
 |Community (durable)|Build|Container file|Yes|Default|Public|Docker /Singularity|
 |Community (durable)|Build|Conda package|Yes|Default|Public|Docker /Singularity|
+|Community (durable)|Build|CRAN package|Yes|Default|Public|Docker /Singularity|

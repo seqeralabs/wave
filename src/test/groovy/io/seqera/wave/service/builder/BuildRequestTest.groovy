@@ -22,15 +22,19 @@ import spock.lang.Specification
 
 import java.nio.file.Path
 import java.time.Duration
+import java.time.Instant
 import java.time.OffsetDateTime
 
 import io.seqera.wave.api.BuildCompression
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
+
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
+import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.util.ContainerHelper
+import io.seqera.serde.moshi.MoshiEncodeStrategy
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -56,24 +60,24 @@ class BuildRequestTest extends Specification {
         def TARGET_IMAGE = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID, null, null)
 
         when:
-        def req = new BuildRequest(
-                CONTAINER_ID,
-                CONTENT,
-                null,
-                PATH,
-                TARGET_IMAGE,
-                USER,
-                PLATFORM,
-                CACHE_REPO,
-                IP_ADDR,
-                '{"config":"json"}',
-                OFFSET,
-                CONFIG,
-                SCAN_ID,
-                CONTEXT,
-                FORMAT,
-                TIMEOUT,
-                BuildCompression.gzip
+        def req = BuildRequest.of(
+                containerId: CONTAINER_ID,
+                containerFile: CONTENT,
+                condaFile: null,
+                workspace: PATH,
+                targetImage: TARGET_IMAGE,
+                identity: USER,
+                platform: PLATFORM,
+                cacheRepository: CACHE_REPO,
+                ip: IP_ADDR,
+                configJson: '{"config":"json"}',
+                offsetId: OFFSET,
+                containerConfig: CONFIG,
+                scanId: SCAN_ID,
+                buildContext: CONTEXT,
+                format: FORMAT,
+                maxDuration: TIMEOUT,
+                compression: BuildCompression.gzip
         )
 
         then:
@@ -102,24 +106,24 @@ class BuildRequestTest extends Specification {
         and:
         CONTAINER_ID = ContainerHelper.makeContainerId(CONTENT, CONDA_RECIPE, PLATFORM, BUILD_REPO, CONTEXT, Mock(ContainerConfig))
         TARGET_IMAGE = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID, CONDA_RECIPE, null)
-        req = new BuildRequest(
-                CONTAINER_ID,
-                CONTENT,
-                CONDA_RECIPE,
-                PATH,
-                TARGET_IMAGE,
-                USER,
-                PLATFORM,
-                CACHE_REPO,
-                IP_ADDR,
-                '{"config":"json"}',
-                OFFSET,
-                CONFIG,
-                SCAN_ID,
-                CONTEXT,
-                FORMAT,
-                TIMEOUT,
-                BuildCompression.gzip
+        req = BuildRequest.of(
+                containerId: CONTAINER_ID,
+                containerFile: CONTENT,
+                condaFile: CONDA_RECIPE,
+                workspace: PATH,
+                targetImage: TARGET_IMAGE,
+                identity: USER,
+                platform: PLATFORM,
+                cacheRepository: CACHE_REPO,
+                ip: IP_ADDR,
+                configJson: '{"config":"json"}',
+                offsetId: OFFSET,
+                containerConfig: CONFIG,
+                scanId: SCAN_ID,
+                buildContext: CONTEXT,
+                format: FORMAT,
+                maxDuration: TIMEOUT,
+                compression: BuildCompression.gzip
         )
         then:
         req.containerId == '8026e3a63b5c863f'
@@ -129,24 +133,24 @@ class BuildRequestTest extends Specification {
         when:
         CONTAINER_ID = ContainerHelper.makeContainerId(CONTENT, null, PLATFORM, BUILD_REPO, CONTEXT, Mock(ContainerConfig))
         TARGET_IMAGE = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID, null, null)
-        req = new BuildRequest(
-                CONTAINER_ID,
-                CONTENT,
-                null,
-                PATH,
-                TARGET_IMAGE,
-                USER,
-                PLATFORM,
-                CACHE_REPO,
-                IP_ADDR,
-                '{"config":"json"}',
-                OFFSET,
-                CONFIG,
-                SCAN_ID,
-                CONTEXT,
-                FORMAT,
-                TIMEOUT,
-                BuildCompression.gzip
+        req = BuildRequest.of(
+                containerId: CONTAINER_ID,
+                containerFile: CONTENT,
+                condaFile: null,
+                workspace: PATH,
+                targetImage: TARGET_IMAGE,
+                identity: USER,
+                platform: PLATFORM,
+                cacheRepository: CACHE_REPO,
+                ip: IP_ADDR,
+                configJson: '{"config":"json"}',
+                offsetId: OFFSET,
+                containerConfig: CONFIG,
+                scanId: SCAN_ID,
+                buildContext: CONTEXT,
+                format: FORMAT,
+                maxDuration: TIMEOUT,
+                compression: BuildCompression.gzip
         )
         then:
         req.containerId == '181ec22b26ae6d04'
@@ -172,24 +176,24 @@ class BuildRequestTest extends Specification {
         def TARGET_IMAGE = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID, null, null)
 
         when:
-        def req = new BuildRequest(
-                CONTAINER_ID,
-                CONTENT,
-                null,
-                PATH,
-                TARGET_IMAGE,
-                USER,
-                PLATFORM,
-                CACHE_REPO,
-                IP_ADDR,
-                '{"config":"json"}',
-                OFFSET,
-                CONFIG,
-                null,
-                CONTEXT,
-                FORMAT,
-                TIMEOUT,
-                BuildCompression.gzip
+        def req = BuildRequest.of(
+                containerId: CONTAINER_ID,
+                containerFile: CONTENT,
+                condaFile: null,
+                workspace: PATH,
+                targetImage: TARGET_IMAGE,
+                identity: USER,
+                platform: PLATFORM,
+                cacheRepository: CACHE_REPO,
+                ip: IP_ADDR,
+                configJson: '{"config":"json"}',
+                offsetId: OFFSET,
+                containerConfig: CONFIG,
+                scanId: null,
+                buildContext: CONTEXT,
+                format: FORMAT,
+                maxDuration: TIMEOUT,
+                compression: BuildCompression.gzip
         )
         then:
         req.containerId == 'd78ba9cb01188668'
@@ -223,26 +227,26 @@ class BuildRequestTest extends Specification {
         and:
         def CONTAINER_ID1 = ContainerHelper.makeContainerId(FOO_CONTENT, null, PLATFORM, BUILD_REPO, null, Mock(ContainerConfig))
         def TARGET_IMAGE1 = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID1, null, null)
-        def req1 = new BuildRequest(CONTAINER_ID1, FOO_CONTENT, null, PATH, TARGET_IMAGE1, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT, BuildCompression.gzip)
+        def req1 = BuildRequest.of(containerId: CONTAINER_ID1, containerFile: FOO_CONTENT, workspace: PATH, targetImage: TARGET_IMAGE1, identity: USER, platform: PLATFORM, cacheRepository: CACHE_REPO, ip: "10.20.30.40", configJson: '{"config":"json"}', format: FORMAT, maxDuration: TIMEOUT, compression: BuildCompression.gzip)
         and:
-        def req2 = new BuildRequest(CONTAINER_ID1, FOO_CONTENT, null, PATH, TARGET_IMAGE1, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT, BuildCompression.gzip)
+        def req2 = BuildRequest.of(containerId: CONTAINER_ID1, containerFile: FOO_CONTENT, workspace: PATH, targetImage: TARGET_IMAGE1, identity: USER, platform: PLATFORM, cacheRepository: CACHE_REPO, ip: "10.20.30.40", configJson: '{"config":"json"}', format: FORMAT, maxDuration: TIMEOUT, compression: BuildCompression.gzip)
         and:
         def CONTAINER_ID3 = ContainerHelper.makeContainerId(BAR_CONTENT, null, PLATFORM, BUILD_REPO, null, Mock(ContainerConfig))
         def TARGET_IMAGE3 = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID3, null, null)
-        def req3 = new BuildRequest(CONTAINER_ID3, BAR_CONTENT, null, PATH, TARGET_IMAGE3, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT, BuildCompression.gzip)
+        def req3 = BuildRequest.of(containerId: CONTAINER_ID3, containerFile: BAR_CONTENT, workspace: PATH, targetImage: TARGET_IMAGE3, identity: USER, platform: PLATFORM, cacheRepository: CACHE_REPO, ip: "10.20.30.40", configJson: '{"config":"json"}', format: FORMAT, maxDuration: TIMEOUT, compression: BuildCompression.gzip)
         and:
         def CONTAINER_ID4 = ContainerHelper.makeContainerId(BAR_CONTENT, CONDA_CONTENT, PLATFORM, BUILD_REPO, null, Mock(ContainerConfig))
         def TARGET_IMAGE4 = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID4, CONDA_CONTENT, null)
-        def req4 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, PATH, TARGET_IMAGE4, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT, BuildCompression.gzip)
+        def req4 = BuildRequest.of(containerId: CONTAINER_ID4, containerFile: BAR_CONTENT, condaFile: CONDA_CONTENT, workspace: PATH, targetImage: TARGET_IMAGE4, identity: USER, platform: PLATFORM, cacheRepository: CACHE_REPO, ip: "10.20.30.40", configJson: '{"config":"json"}', format: FORMAT, maxDuration: TIMEOUT, compression: BuildCompression.gzip)
         and:
-        def req5 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, PATH, TARGET_IMAGE4, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT, BuildCompression.gzip)
+        def req5 = BuildRequest.of(containerId: CONTAINER_ID4, containerFile: BAR_CONTENT, condaFile: CONDA_CONTENT, workspace: PATH, targetImage: TARGET_IMAGE4, identity: USER, platform: PLATFORM, cacheRepository: CACHE_REPO, ip: "10.20.30.40", configJson: '{"config":"json"}', format: FORMAT, maxDuration: TIMEOUT, compression: BuildCompression.gzip)
         and:
         CONDA_CONTENT = 'salmon=1.2.5'
         def CONTAINER_ID6 = ContainerHelper.makeContainerId(BAR_CONTENT, CONDA_CONTENT, PLATFORM, BUILD_REPO, null, Mock(ContainerConfig))
         def TARGET_IMAGE6 = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID6, CONDA_CONTENT, null)
-        def req6 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, PATH, TARGET_IMAGE6, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT, TIMEOUT, BuildCompression.gzip)
+        def req6 = BuildRequest.of(containerId: CONTAINER_ID4, containerFile: BAR_CONTENT, condaFile: CONDA_CONTENT, workspace: PATH, targetImage: TARGET_IMAGE6, identity: USER, platform: PLATFORM, cacheRepository: CACHE_REPO, ip: "10.20.30.40", configJson: '{"config":"json"}', format: FORMAT, maxDuration: TIMEOUT, compression: BuildCompression.gzip)
         and:
-        def req7 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, PATH, TARGET_IMAGE6, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', "UTC+2", null, null, null, FORMAT, TIMEOUT, BuildCompression.gzip)
+        def req7 = BuildRequest.of(containerId: CONTAINER_ID4, containerFile: BAR_CONTENT, condaFile: CONDA_CONTENT, workspace: PATH, targetImage: TARGET_IMAGE6, identity: USER, platform: PLATFORM, cacheRepository: CACHE_REPO, ip: "10.20.30.40", configJson: '{"config":"json"}', offsetId: "UTC+2", format: FORMAT, maxDuration: TIMEOUT, compression: BuildCompression.gzip)
 
         expect:
         req1 == req2
@@ -268,6 +272,76 @@ class BuildRequestTest extends Specification {
         and:
         req1.offsetId == OffsetDateTime.now().offset.id
         req7.offsetId == 'UTC+2'
+    }
+
+    def 'should serialise and deserialise via Moshi'() {
+        given:
+        def buildChildIds = new ChildRefs([
+                new ChildRefs.Ref('bd-abc_0', 'linux/amd64'),
+                new ChildRefs.Ref('bd-def_0', 'linux/arm64')
+        ])
+        def scanChildIds = new ChildRefs([
+                new ChildRefs.Ref('sc-abc_1', 'linux/amd64'),
+                new ChildRefs.Ref('sc-def_2', 'linux/arm64')
+        ])
+        def request = BuildRequest.of(
+                containerId: 'abc123',
+                containerFile: 'FROM ubuntu',
+                condaFile: 'samtools=1.0',
+                workspace: Path.of('/some/workspace'),
+                targetImage: 'docker.io/wave:abc123',
+                identity: new PlatformId(new User(id: 1, email: 'foo@user.com')),
+                platform: ContainerPlatform.of('linux/amd64'),
+                cacheRepository: 'docker.io/cache',
+                startTime: Instant.parse('2024-01-15T10:30:00Z'),
+                ip: '10.20.30.40',
+                configJson: '{"config":"json"}',
+                offsetId: '+02:00',
+                scanId: 'sc-main',
+                format: BuildFormat.DOCKER,
+                maxDuration: Duration.ofMinutes(10),
+                compression: BuildCompression.gzip,
+                buildId: 'bd-abc123_0',
+                buildTemplate: 'some-template',
+                noEmail: true,
+                buildChildIds: buildChildIds,
+                scanChildIds: scanChildIds
+        )
+        // use the same encode strategy as BuildStateStoreImpl
+        def encoder = new MoshiEncodeStrategy<BuildEntry>() {}
+        def entry = BuildEntry.create(request)
+
+        when:
+        def json = encoder.encode(entry)
+        def restored = encoder.decode(json)
+
+        then:
+        restored.request.containerId == 'abc123'
+        restored.request.containerFile == 'FROM ubuntu'
+        restored.request.condaFile == 'samtools=1.0'
+        restored.request.targetImage == 'docker.io/wave:abc123'
+        restored.request.platform == ContainerPlatform.of('linux/amd64')
+        restored.request.cacheRepository == 'docker.io/cache'
+        restored.request.ip == '10.20.30.40'
+        restored.request.configJson == '{"config":"json"}'
+        restored.request.offsetId == '+02:00'
+        restored.request.scanId == 'sc-main'
+        restored.request.format == BuildFormat.DOCKER
+        restored.request.buildId == 'bd-abc123_0'
+        restored.request.buildTemplate == 'some-template'
+        restored.request.noEmail == true
+        and:
+        restored.request.buildChildIds.size() == 2
+        restored.request.buildChildIds[0].id == 'bd-abc_0'
+        restored.request.buildChildIds[0].value == 'linux/amd64'
+        restored.request.buildChildIds[1].id == 'bd-def_0'
+        restored.request.buildChildIds[1].value == 'linux/arm64'
+        and:
+        restored.request.scanChildIds.size() == 2
+        restored.request.scanChildIds[0].id == 'sc-abc_1'
+        restored.request.scanChildIds[0].value == 'linux/amd64'
+        restored.request.scanChildIds[1].id == 'sc-def_2'
+        restored.request.scanChildIds[1].value == 'linux/arm64'
     }
 
     def 'should parse legacy id' () {

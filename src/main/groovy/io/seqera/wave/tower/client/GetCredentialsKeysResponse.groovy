@@ -21,7 +21,7 @@ package io.seqera.wave.tower.client
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-import io.seqera.wave.encoder.MoshiSerializable
+import io.seqera.serde.moshi.MoshiSerializable
 
 /**
  * Models an encrypted credentials keys response

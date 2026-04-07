@@ -82,11 +82,16 @@ jobs:
       - name: Release
         if: "contains(github.event.head_commit.message, '[release]')"
         run: |
+          bash publish.sh wave-api
+          bash publish.sh wave-utils
           bash tag-and-push.sh
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
           AWS_ACCESS_KEY_ID: ${{secrets.TOWER_CI_AWS_ACCESS}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.TOWER_CI_AWS_SECRET}}
+          AWS_JAVA_V1_DISABLE_DEPRECATION_ANNOUNCEMENT: true
+          AWS_DEFAULT_REGION: 'eu-west-1'
+          PUBLISH_REPO_URL: "s3://maven.seqera.io/releases"
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
           QUAY_PAT: ${{ secrets.QUAY_PAT }}

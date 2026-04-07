@@ -24,15 +24,19 @@ import spock.lang.Unroll
 
 import java.time.Instant
 
+import io.seqera.wave.api.BuildTemplate
 import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.config.CondaOpts
+import io.seqera.wave.config.PixiOpts
+import io.seqera.wave.config.CranOpts
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.request.TokenData
 
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.request.ContainerRequest.Type
 
 /**
@@ -48,9 +52,10 @@ class ContainerHelperTest extends Specification {
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['https://foo.com/lock.yml']
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
+        def req = new SubmitContainerTokenRequest(packages: packages, format: 'sif')
 
         when:
-        def result = ContainerHelper.containerFileFromPackages(packages, true)
+        def result = ContainerHelper.containerFileFromRequest(req)
 
         then:
         result =='''\
@@ -76,9 +81,10 @@ class ContainerHelperTest extends Specification {
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['https://foo.com/lock.yml']
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
+        def req = new SubmitContainerTokenRequest(packages: packages)
 
         when:
-        def result = ContainerHelper.containerFileFromPackages(packages, false)
+        def result = ContainerHelper.containerFileFromRequest(req)
 
         then:
         result =='''\
@@ -103,9 +109,10 @@ class ContainerHelperTest extends Specification {
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
+        def req = new SubmitContainerTokenRequest(packages: packages, format: 'sif')
 
         when:
-        def result = ContainerHelper.containerFileFromPackages(packages, true)
+        def result = ContainerHelper.containerFileFromRequest(req)
 
         then:
         result =='''\
@@ -132,9 +139,10 @@ class ContainerHelperTest extends Specification {
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
+        def req = new SubmitContainerTokenRequest(packages: packages)
 
         when:
-        def result = ContainerHelper.containerFileFromPackages(packages, false)
+        def result = ContainerHelper.containerFileFromRequest(req)
 
         then:
         result =='''\
@@ -300,13 +308,13 @@ class ContainerHelperTest extends Specification {
 
     def 'should check if is a conda lock file' () {
         expect:
-        ContainerHelper.condaLockFile(null) == null
-        ContainerHelper.condaLockFile([]) == null
-        ContainerHelper.condaLockFile(['http://foo.com/some/lock']) == 'http://foo.com/some/lock'
-        ContainerHelper.condaLockFile(['https://foo.com/some/lock']) == 'https://foo.com/some/lock'
+        CondaHelper.tryGetLockFile(null) == null
+        CondaHelper.tryGetLockFile([]) == null
+        CondaHelper.tryGetLockFile(['http://foo.com/some/lock']) == 'http://foo.com/some/lock'
+        CondaHelper.tryGetLockFile(['https://foo.com/some/lock']) == 'https://foo.com/some/lock'
 
         when:
-        ContainerHelper.condaLockFile(['http://foo.com','http://bar.com'])
+        CondaHelper.tryGetLockFile(['http://foo.com', 'http://bar.com'])
         then:
         thrown(IllegalArgumentException)
     }
@@ -601,6 +609,326 @@ class ContainerHelperTest extends Specification {
         then:
         thrown(BadRequestException)
 
+    }
+
+    // === build with pixi tests
+
+    def 'should create conda docker file with packages and pixi'() {
+        given:
+        def CHANNELS = ['conda-forge']
+        def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
+        def packages = new PackagesSpec(
+                type: PackagesSpec.Type.CONDA,
+                entries:  PACKAGES,
+                channels: CHANNELS)
+        and:
+        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.CONDA_PIXI_V1)
+        when:
+        def result = ContainerHelper.containerFileFromRequest(req)
+
+        then:
+        result =='''\
+                FROM public.cr.seqera.io/wave/pixi:0.61.0-noble AS build
+
+                COPY conda.yml /opt/wave/conda.yml
+                WORKDIR /opt/wave
+
+                RUN pixi init --import /opt/wave/conda.yml \\
+                    && pixi add conda-forge::procps-ng \\
+                    && pixi shell-hook > /shell-hook.sh \\
+                    && echo 'exec "$@"' >> /shell-hook.sh \\
+                    && echo ">> CONDA_LOCK_START" \\
+                    && cat /opt/wave/pixi.lock \\
+                    && echo "<< CONDA_LOCK_END"
+
+                FROM ubuntu:24.04 AS final
+
+                # copy the pixi environment in the final container
+                COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
+                COPY --from=build /shell-hook.sh /shell-hook.sh
+
+                # set user and environment variables for Python compatibility
+                USER root
+                ENV USER=root
+
+                # set the entrypoint to the shell-hook script (activate the environment and run the command)
+                # no more pixi needed in the final container
+                ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]
+
+                # Default command for "docker run"
+                CMD ["/bin/bash"]
+                '''.stripIndent()
+    }
+
+    def 'should create conda docker file with packages and pixi custom image'() {
+        given:
+        def CHANNELS = ['conda-forge', 'defaults']
+        def PIXI_OPTS = new PixiOpts(
+                basePackages: 'foo::one bar::two',
+                baseImage: 'base/image',
+                pixiImage: 'ghcr.io/prefix-dev/pixi:0.47.0-jammy-cuda-12.8.1')
+        def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
+        def packages = new PackagesSpec(
+                type: PackagesSpec.Type.CONDA,
+                entries:  PACKAGES,
+                channels: CHANNELS,
+                pixiOpts: PIXI_OPTS)
+        and:
+        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.CONDA_PIXI_V1)
+        when:
+        def result = ContainerHelper.containerFileFromRequest(req)
+
+        then:
+        result =='''\
+                FROM ghcr.io/prefix-dev/pixi:0.47.0-jammy-cuda-12.8.1 AS build
+                 
+                COPY conda.yml /opt/wave/conda.yml
+                WORKDIR /opt/wave
+                 
+                RUN pixi init --import /opt/wave/conda.yml \\
+                    && pixi add foo::one bar::two \\
+                    && pixi shell-hook > /shell-hook.sh \\
+                    && echo 'exec "$@"' >> /shell-hook.sh \\
+                    && echo ">> CONDA_LOCK_START" \\
+                    && cat /opt/wave/pixi.lock \\
+                    && echo "<< CONDA_LOCK_END"
+                 
+                FROM base/image AS final
+                 
+                # copy the pixi environment in the final container
+                COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
+                COPY --from=build /shell-hook.sh /shell-hook.sh
+
+                # set user and environment variables for Python compatibility
+                USER root
+                ENV USER=root
+                 
+                # set the entrypoint to the shell-hook script (activate the environment and run the command)
+                # no more pixi needed in the final container
+                ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]
+                 
+                # Default command for "docker run"
+                CMD ["/bin/bash"]
+                '''.stripIndent()
+    }
+
+    // === build with micromamba v2 tests
+
+    def 'should create conda docker file with packages and micromamba v2'() {
+        given:
+        def CHANNELS = ['conda-forge', 'bioconda']
+        def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
+        def packages = new PackagesSpec(
+                type: PackagesSpec.Type.CONDA,
+                entries:  PACKAGES,
+                channels: CHANNELS)
+        and:
+        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V2)
+        when:
+        def result = ContainerHelper.containerFileFromRequest(req)
+
+        then:
+        result =='''\
+                FROM mambaorg/micromamba:2-amazon2023 AS build
+                COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
+                RUN micromamba install -y -n base -f /tmp/conda.yml \\
+                    && micromamba install -y -n base conda-forge::procps-ng \\
+                    && micromamba env export --name base --explicit > environment.lock \\
+                    && echo ">> CONDA_LOCK_START" \\
+                    && cat environment.lock \\
+                    && echo "<< CONDA_LOCK_END"
+
+                FROM ubuntu:24.04 AS prod
+                ARG MAMBA_ROOT_PREFIX="/opt/conda"
+                ENV MAMBA_ROOT_PREFIX=$MAMBA_ROOT_PREFIX
+                COPY --from=build "$MAMBA_ROOT_PREFIX" "$MAMBA_ROOT_PREFIX"
+                USER root
+                ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                '''.stripIndent()
+    }
+
+    def 'should create conda docker file with packages and micromamba v2 custom image'() {
+        given:
+        def CHANNELS = ['conda-forge', 'bioconda']
+        def CONDA_OPTS = new CondaOpts([
+                mambaImage: 'mambaorg/micromamba:2.0.0',
+                baseImage: 'debian:12',
+                basePackages: 'foo::one bar::two'
+        ])
+        def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
+        def packages = new PackagesSpec(
+                type: PackagesSpec.Type.CONDA,
+                entries:  PACKAGES,
+                channels: CHANNELS,
+                condaOpts: CONDA_OPTS)
+        and:
+        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V2)
+        when:
+        def result = ContainerHelper.containerFileFromRequest(req)
+
+        then:
+        result =='''\
+                FROM mambaorg/micromamba:2.0.0 AS build
+                COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
+                RUN micromamba install -y -n base -f /tmp/conda.yml \\
+                    && micromamba install -y -n base foo::one bar::two \\
+                    && micromamba env export --name base --explicit > environment.lock \\
+                    && echo ">> CONDA_LOCK_START" \\
+                    && cat environment.lock \\
+                    && echo "<< CONDA_LOCK_END"
+
+                FROM debian:12 AS prod
+                ARG MAMBA_ROOT_PREFIX="/opt/conda"
+                ENV MAMBA_ROOT_PREFIX=$MAMBA_ROOT_PREFIX
+                COPY --from=build "$MAMBA_ROOT_PREFIX" "$MAMBA_ROOT_PREFIX"
+                USER root
+                ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                '''.stripIndent()
+    }
+
+    def 'should create conda docker file with lock file and micromamba v2'() {
+        given:
+        def CHANNELS = ['conda-forge', 'bioconda']
+        def PACKAGES = ['https://foo.com/lock.yml']
+        def packages = new PackagesSpec(
+                type: PackagesSpec.Type.CONDA,
+                entries:  PACKAGES,
+                channels: CHANNELS)
+        and:
+        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V2)
+        when:
+        def result = ContainerHelper.containerFileFromRequest(req)
+
+        then:
+        result =='''\
+                FROM mambaorg/micromamba:2-amazon2023 AS build
+                RUN \\
+                    micromamba install -y -n base -c conda-forge -c bioconda -f https://foo.com/lock.yml \\
+                    && micromamba install -y -n base conda-forge::procps-ng \\
+                    && micromamba env export --name base --explicit > environment.lock \\
+                    && echo ">> CONDA_LOCK_START" \\
+                    && cat environment.lock \\
+                    && echo "<< CONDA_LOCK_END"
+
+                FROM ubuntu:24.04 AS prod
+                ARG MAMBA_ROOT_PREFIX="/opt/conda"
+                ENV MAMBA_ROOT_PREFIX=$MAMBA_ROOT_PREFIX
+                COPY --from=build "$MAMBA_ROOT_PREFIX" "$MAMBA_ROOT_PREFIX"
+                USER root
+                ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                '''.stripIndent()
+    }
+
+    def 'should create cran docker file with packages'() {
+        given:
+        def REPOSITORIES = ['cran', 'bioconductor']
+        def CRAN_OPTS = new CranOpts([rImage: 'rocker/r-ver:4.4.1', basePackages: 'littler r-cran-docopt'])
+        def PACKAGES = ['dplyr', 'ggplot2', 'bioc::GenomicRanges']
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CRAN, entries: PACKAGES, channels: REPOSITORIES, cranOpts: CRAN_OPTS)
+        def req = new SubmitContainerTokenRequest(packages: packages)
+
+        when:
+        def result = ContainerHelper.containerFileFromRequest(req)
+
+        then:
+        result.contains('FROM rocker/r-ver:4.4.1')
+        result.contains('install2.r')
+        result.contains("'dplyr' 'ggplot2' BiocManager::install('GenomicRanges')")
+        result.contains('R_LIBS_USER="/usr/local/lib/R/site-library"')
+    }
+
+    def 'should create cran singularity file with packages'() {
+        given:
+        def REPOSITORIES = ['cran']
+        def CRAN_OPTS = new CranOpts([rImage: 'rocker/r-ver:4.4.1'])
+        def PACKAGES = ['tidyverse', 'data.table']
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CRAN, entries: PACKAGES, channels: REPOSITORIES, cranOpts: CRAN_OPTS)
+        def req = new SubmitContainerTokenRequest(packages: packages, format: 'sif')
+
+        when:
+        def result = ContainerHelper.containerFileFromRequest(req)
+
+        then:
+        result.contains('BootStrap: docker')
+        result.contains('From: rocker/r-ver:4.4.1')
+        result.contains('install2.r')
+        result.contains("'tidyverse' 'data.table'")
+        result.contains('export R_LIBS_USER="/usr/local/lib/R/site-library"')
+    }
+
+    def 'should create cran docker file without packages (file mode)'() {
+        given:
+        def CRAN_OPTS = new CranOpts([rImage: 'rocker/r-ver:4.4.1'])
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CRAN, cranOpts: CRAN_OPTS)
+        def req = new SubmitContainerTokenRequest(packages: packages)
+
+        when:
+        def result = ContainerHelper.containerFileFromRequest(req)
+
+        then:
+        result.contains('FROM rocker/r-ver:4.4.1')
+        result.contains('COPY --from=wave_context_dir . .')
+        result.contains('renv.lock')
+        result.contains('install.R')
+        result.contains('R_LIBS_USER="/usr/local/lib/R/site-library"')
+    }
+
+    def 'should create cran singularity file without packages (file mode)'() {
+        given:
+        def CRAN_OPTS = new CranOpts([rImage: 'rocker/r-ver:4.4.1', basePackages: 'build-essential'])
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CRAN, cranOpts: CRAN_OPTS)
+        def req = new SubmitContainerTokenRequest(packages: packages, format: 'sif')
+
+        when:
+        def result = ContainerHelper.containerFileFromRequest(req)
+
+        then:
+        result.contains('BootStrap: docker')
+        result.contains('From: rocker/r-ver:4.4.1')
+        result.contains('%files')
+        result.contains('/opt/wave_context_dir')
+        result.contains('build-essential')
+        result.contains('renv.lock')
+        result.contains('export R_LIBS_USER="/usr/local/lib/R/site-library"')
+    }
+
+    def 'should throw exception for invalid package type and build template'() {
+        given:
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['foo'])
+        def req = new SubmitContainerTokenRequest(packages: packages, buildTemplate: 'invalid-template')
+
+        when:
+        ContainerHelper.containerFileFromRequest(req)
+
+        then:
+        def e = thrown(BadRequestException)
+        e.message == "Unexpected or missing package type 'CONDA' or build template 'invalid-template'"
+    }
+
+    def 'should create multi-platform container id distinct from single platform'() {
+        given:
+        def containerFile = 'FROM ubuntu:latest'
+        def repo = 'docker.io/wave'
+
+        when:
+        def singleId = ContainerHelper.makeContainerId(containerFile, null, ContainerPlatform.of('linux/amd64'), repo, null, null)
+        def multiId = ContainerHelper.makeMultiPlatformContainerId(containerFile, null, repo, null, null)
+
+        then:
+        singleId != multiId
+    }
+
+    def 'should create stable multi-platform container id'() {
+        given:
+        def containerFile = 'FROM ubuntu:latest'
+        def repo = 'docker.io/wave'
+
+        when:
+        def id1 = ContainerHelper.makeMultiPlatformContainerId(containerFile, null, repo, null, null)
+        def id2 = ContainerHelper.makeMultiPlatformContainerId(containerFile, null, repo, null, null)
+
+        then:
+        id1 == id2
     }
 
 }

@@ -10,7 +10,7 @@ Wave Lite enables the use of [Fusion file system](https://docs.seqera.io/fusion)
 ## Installation
 
 - [Docker Compose](./install/docker-compose.md)
-- [Kubernetes](./install/docker-compose.md)
+- [Kubernetes](./install/kubernetes.md)
 
 :::info
 Docker Compose installations only support Wave in Lite mode. Wave's full build capabilities require specific integrations with Kubernetes and AWS EFS Storage, making EKS and AWS a hard dependency for fully-featured deployments. After you have successfully deployed Wave Lite in Kubernetes, see [Configure Wave Build](./install/configure-wave-build.md) to extend your installation to support build capabilities. 

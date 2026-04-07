@@ -7,8 +7,8 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Container security scan report">
-    <title>Wave container scan {{scan_container_image}}</title>
+    <meta name="description" content="Security scan report">
+    <title>Wave security scan {{scan_container_image}}</title>
     <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600&display=swap" rel="stylesheet">
     <link href="/assets/style.css" rel="stylesheet">
     <script src="/assets/copy.js"></script>
@@ -19,18 +19,18 @@
 
 <div class="container">
     <div class="header-section">
-        <h1 class="main-title">Container Security Scan Report</h1>
+        <h1 class="main-title">Security Scan Report</h1>
     {{#if scan_exist}}
                 {{#if scan_completed}}
                     {{#if scan_failed}}
                         <div class="status-alert error">
                             <div class="status-icon">✗</div>
-                            <div class="status-message">Unable to complete the container security scan successfully</div>
+                            <div class="status-message">Unable to complete the security scan successfully</div>
                         </div>
                     {{else}}
                         <div class="status-alert" style="color: {{scan_color_fg}}; background-color: {{scan_color_bg}};">
                             <div class="status-icon">✓</div>
-                            <div class="status-message">Container security scan completed!</div>
+                            <div class="status-message">Security scan completed!</div>
                         </div>
                     {{/if}}
                 {{else}}
@@ -39,7 +39,7 @@
                         <div class="status-icon">
                             <div class="lds-dual-ring"></div>
                         </div>
-                        <div class="status-message">Container security scan in progress</div>
+                        <div class="status-message">Security scan in progress</div>
                     </div>
                 </div>
                 {{/if}}
@@ -83,7 +83,7 @@
                         <td>Container image</td>
                         <td>
                             {{scan_container_image}}
-                            <button class="action-btn" onclick="copyToClipboard('{{scan_container_image}}', this)" title="Copy digest">
+                            <button class="action-btn" data-copy="{{scan_container_image}}" title="Copy digest">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
                                     <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
                                 </svg>
@@ -130,12 +130,12 @@
                                 <pre class="code-text" id="logData">{{scan_logs}}</pre>
                             </div>
                             <div class="code-actions">
-                                <button class="action-btn" onclick="copyToClipboard(document.getElementById('logData').textContent, this)" title="Copy logs">
+                                <button class="action-btn" data-copy-from-element="logData" title="Copy logs">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
                                         <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
                                     </svg>
                                 </button>
-                                <button onclick="window.location.href='{{scan_log_url}}'" class="action-btn" title="Download">
+                                <button class="action-btn" data-download-url="{{scan_log_url}}" title="Download">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="black" d="M5 20h14v-2H5m14-9h-4V3H9v6H5l7 7z"/></svg>
                                 </button>
                             </div>

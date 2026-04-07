@@ -1,5 +1,5 @@
 import "./ContainerConfig.tsp";
-import "./CondaPackages.tsp";
+import "./PackagesSpec.tsp";
 import "./ScanMode.tsp";
 import "./ScanLevel.tsp";
 
@@ -10,6 +10,52 @@ import "./ScanLevel.tsp";
             entries: #["salmon", "bwa"],
             channels: #["conda-forge", "bioconda"]
         },
+        format: "docker",
+        containerPlatform:"linux/amd64"
+})
+@example(#{
+    packages:#{
+            type: "CRAN",
+            entries: #["dplyr", "ggplot2", "bioc::GenomicRanges"],
+            channels: #["cran", "bioconductor"],
+            cranOpts: #{
+                rImage: "rocker/r-ver:4.4.1",
+                basePackages: "littler r-cran-docopt",
+                commands: #["apt-get update", "apt-get install -y libcurl4-openssl-dev"]
+            }
+        },
+        format: "docker",
+        containerPlatform:"linux/amd64"
+})
+@example(#{
+    packages:#{
+            type: "CONDA",
+            entries: #["numpy", "pandas"],
+            channels: #["conda-forge"],
+            pixiOpts: #{
+                pixiImage: "ghcr.io/prefix-dev/pixi:0.59.0-noble",
+                basePackages: "conda-forge::procps-ng",
+                baseImage: "ubuntu:24.04",
+                commands: #[]
+            }
+        },
+        buildTemplate: "conda-pixi/v1",
+        format: "docker",
+        containerPlatform:"linux/amd64"
+})
+@example(#{
+    packages:#{
+            type: "CONDA",
+            entries: #["bwa=0.7.15", "salmon=1.1.1"],
+            channels: #["conda-forge", "bioconda"],
+            condaOpts: #{
+                mambaImage: "mambaorg/micromamba:2-amazon2023",
+                basePackages: "conda-forge::procps-ng",
+                baseImage: "ubuntu:24.04",
+                commands: #[]
+            }
+        },
+        buildTemplate: "conda-micromamba/v2",
         format: "docker",
         containerPlatform:"linux/amd64"
 })
@@ -39,8 +85,8 @@ model ContainerRequest {
   @doc("The name strategy to be used to create the name of the container built by Wave. Its values can be `none`, `tagPrefix`, or `imageSuffix`. ")
   nameStrategy?: "none" | "tagPrefix" | "imageSuffix";
   mirror?: boolean;
-  @doc("Conda packages to be installed in the container.")
-  packages?: CondaPackages;
+  @doc("Packages to be installed in the container.")
+  packages?: PackagesSpec;
   scanMode?: ScanMode;
   scanLevels?: ScanLevel[];
   @doc("Request submission timestamp using ISO-8601.")
@@ -55,4 +101,6 @@ model ContainerRequest {
   towerWorkspaceId?: int64;
   @doc("ID of the Seqera Platform workspace from which this container request originates (optional).")
   workflowId?: string;
+  @doc("The build template that should be used to build the container image. Supported templates:\n- 'conda-pixi/v1': Uses Pixi package manager for modern, reproducible conda environments with multi-stage builds\n- 'conda-micromamba/v2': Uses Micromamba 2.x with multi-stage builds for optimized conda environments\n- Default: Uses standard conda/micromamba v1 template when not specified")
+  buildTemplate?: string;
 }

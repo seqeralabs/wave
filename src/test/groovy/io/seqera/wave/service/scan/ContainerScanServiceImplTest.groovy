@@ -29,9 +29,12 @@ import java.time.Instant
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ScanMode
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.cleanup.CleanupService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.job.JobService
@@ -270,7 +273,7 @@ class ContainerScanServiceImplTest extends Specification {
         def workspace = Path.of('/some/workspace')
         def platform = ContainerPlatform.of('amd64')
         final build =
-                new BuildRequest(
+                BuildRequest.of(
                         containerId: containerId,
                         containerFile: 'FROM ubuntu',
                         workspace: workspace,
@@ -430,6 +433,72 @@ class ContainerScanServiceImplTest extends Specification {
         'sc-123'| 'bd-123'  | false     | false     | ScanMode.async    | null      | false         | 0
         'sc-123'| 'bd-123'  | false     | null      | ScanMode.async    | null      | true          | 0
         'sc-123'| 'bd-123'  | false     | null      | ScanMode.async    | true      | false         | 0
+    }
+
+    def 'should create scan request from build with overridden platform' () {
+        given:
+        def scanService = new ContainerScanServiceImpl()
+        def containerId = 'container1234'
+        and:
+        def workspace = Path.of('/some/workspace')
+        def platform = ContainerPlatform.of('linux/amd64,linux/arm64')
+        final build =
+                BuildRequest.of(
+                        containerId: containerId,
+                        containerFile: 'FROM ubuntu',
+                        workspace: workspace,
+                        targetImage: 'docker.io/my/repo:container1234',
+                        identity: PlatformId.NULL,
+                        platform: platform,
+                        configJson: '{"config":"json"}',
+                        scanId: 'sc-abc_1:linux/amd64,sc-def_2:linux/arm64',
+                        format: BuildFormat.DOCKER,
+                        buildId: "${containerId}_1",
+                )
+
+        when:
+        def scan = scanService.fromBuild(build, 'sc-abc_1', ContainerPlatform.of('linux/amd64'))
+        then:
+        scan.scanId == 'sc-abc_1'
+        scan.buildId == build.buildId
+        scan.configJson == build.configJson
+        scan.targetImage == build.targetImage
+        scan.platform == ContainerPlatform.of('linux/amd64')
+        scan.workDir.startsWith(workspace)
+        scan.workDir.fileName.toString() == 'sc-abc_1'
+    }
+
+    def 'should fan out multi-platform scans on build' () {
+        given:
+        def scanService = Spy(new ContainerScanServiceImpl())
+        def containerId = 'container1234'
+        def workspace = Path.of('/some/workspace')
+        def platform = ContainerPlatform.of('linux/amd64,linux/arm64')
+        def scanChildIds = new ChildRefs([
+                new ChildRefs.Ref('sc-abc_1', 'linux/amd64'),
+                new ChildRefs.Ref('sc-def_2', 'linux/arm64')
+        ])
+        final build =
+                BuildRequest.of(
+                        containerId: containerId,
+                        containerFile: 'FROM ubuntu',
+                        workspace: workspace,
+                        targetImage: 'docker.io/my/repo:container1234',
+                        identity: PlatformId.NULL,
+                        platform: platform,
+                        configJson: '{"config":"json"}',
+                        scanChildIds: scanChildIds,
+                        format: BuildFormat.DOCKER,
+                        buildId: "${containerId}_1",
+                )
+
+        and:
+        def entry = new BuildEntry(build, BuildResult.completed(build.buildId, 0, '', Instant.now(), null))
+
+        when:
+        scanService.scanOnBuild(entry)
+        then:
+        2 * scanService.scan(_)
     }
 
     def 'should store scan entry' () {

@@ -51,7 +51,7 @@ class DockerBuildStrategyTest extends Specification {
                 '-v', '/work/foo:/work/foo',
                 '--entrypoint',
                 'buildctl-daemonless.sh',
-                'moby/buildkit:v0.21.1-rootless']
+                'public.cr.seqera.io/wave/buildkit:v0.25.2-rootless']
 
         when:
         cmd = service.cmdForBuildkit('build-job-name', work, Path.of('/foo/creds.json'), ContainerPlatform.of('arm64'))
@@ -67,7 +67,7 @@ class DockerBuildStrategyTest extends Specification {
                 'buildctl-daemonless.sh',
                 '-v', '/foo/creds.json:/home/user/.docker/config.json:ro',
                 '--platform', 'linux/arm64',
-                'moby/buildkit:v0.21.1-rootless']
+                'public.cr.seqera.io/wave/buildkit:v0.25.2-rootless']
 
         when:
         cmd = service.cmdForBuildkit('build-job-name', work, Path.of('/foo/creds.json'), null)
@@ -82,7 +82,7 @@ class DockerBuildStrategyTest extends Specification {
                 '--entrypoint',
                 'buildctl-daemonless.sh',
                 '-v', '/foo/creds.json:/home/user/.docker/config.json:ro',
-                'moby/buildkit:v0.21.1-rootless']
+                'public.cr.seqera.io/wave/buildkit:v0.25.2-rootless']
 
         cleanup:
         ctx.close()
@@ -95,7 +95,7 @@ class DockerBuildStrategyTest extends Specification {
         and:
         def creds = Path.of('/work/creds.json')
         and:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: '89fb83ce6ec8627b',
                 buildId: 'bd-89fb83ce6ec8627b_1',
                 workspace: Path.of('/work/foo'),
@@ -116,7 +116,7 @@ class DockerBuildStrategyTest extends Specification {
                 'buildctl-daemonless.sh',
                 '-v', '/work/creds.json:/home/user/.docker/config.json:ro',
                 '--platform', 'linux/amd64',
-                'moby/buildkit:v0.21.1-rootless',
+                'public.cr.seqera.io/wave/buildkit:v0.25.2-rootless',
                 'build',
                 '--frontend',
                 'dockerfile.v0',
@@ -146,7 +146,7 @@ class DockerBuildStrategyTest extends Specification {
         and:
         def creds = Path.of('/work/creds.json')
         and:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 'd4869cc39b8d7d55',
                 buildId: 'bd-d4869cc39b8d7d55_1',
                 workspace: Path.of('/work/foo'),
@@ -185,7 +185,7 @@ class DockerBuildStrategyTest extends Specification {
         and:
         def creds = Path.of('/work/creds.json')
         and:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: '9c68af894bb2419c',
                 buildId: 'bd-9c68af894bb2419c_1',
                 workspace: Path.of('/work/foo'),

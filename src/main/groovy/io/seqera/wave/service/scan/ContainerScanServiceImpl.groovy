@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.wave.core.ChildRefs
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.server.types.files.StreamedFile
@@ -36,6 +37,7 @@ import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.api.ScanMode
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.configuration.ScanEnabled
 import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildRequest
@@ -126,8 +128,16 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     @Override
     void scanOnBuild(BuildEntry entry) {
         try {
-            if( entry.request.scanId && entry.result.succeeded() && entry.request.format == DOCKER ) {
-                scan(fromBuild(entry.request))
+            if( entry.result.succeeded() && entry.request.format == DOCKER ) {
+                if( entry.request.scanChildIds ) {
+                    // fan out one scan per architecture
+                    for( ChildRefs.Ref pair : entry.request.scanChildIds ) {
+                        scan(fromBuild(entry.request, pair.id, ContainerPlatform.of(pair.value)))
+                    }
+                }
+                else if( entry.request.scanId ) {
+                    scan(fromBuild(entry.request))
+                }
             }
         }
         catch (Exception e) {
@@ -220,7 +230,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     protected void incrScanMetrics(ScanRequest request) {
         try {
             //increment metrics
-            metricsService.incrementScansCounter(request.identity, request.platform.arch)
+            if (request.platform)
+                metricsService.incrementScansCounter(request.identity, request.platform.arch)
         }
         catch (Throwable e) {
             log.warn "Enable to increase scan metrics - cause: ${e.cause}", e
@@ -228,15 +239,19 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     }
     
     protected ScanRequest fromBuild(BuildRequest request) {
-        final workDir = request.workDir.resolveSibling(request.scanId)
+        return fromBuild(request, request.scanId, request.platform)
+    }
+
+    protected ScanRequest fromBuild(BuildRequest request, String scanId, ContainerPlatform platform) {
+        final workDir = request.workDir.resolveSibling(scanId)
         return new ScanRequest(
-                request.scanId,
+                scanId,
                 request.buildId,
                 null,
                 null,
                 request.configJson,
                 request.targetImage,
-                request.platform,
+                platform,
                 workDir,
                 Instant.now(),
                 request.identity)

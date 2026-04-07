@@ -24,9 +24,9 @@ import java.time.Instant
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.store.range.AbstractRangeStore
-import io.seqera.wave.store.range.impl.RangeProvider
+import io.seqera.serde.moshi.MoshiEncodeStrategy
+import io.seqera.data.range.AbstractRangeStore
+import io.seqera.data.range.impl.RangeProvider
 import jakarta.inject.Singleton
 /**
  * Model a range store for container request ids.
