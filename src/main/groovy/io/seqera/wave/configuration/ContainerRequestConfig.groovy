@@ -22,7 +22,7 @@ import java.time.Duration
 
 import groovy.transform.ToString
 import io.micronaut.context.annotation.Value
-import io.seqera.wave.util.DurationUtils
+import io.seqera.util.time.DurationUtils
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
