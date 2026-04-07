@@ -24,7 +24,7 @@ import javax.annotation.Nullable
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.micronaut.context.annotation.Value
-import io.seqera.wave.util.DurationUtils
+import io.seqera.util.time.DurationUtils
 import jakarta.inject.Singleton
 
 /**

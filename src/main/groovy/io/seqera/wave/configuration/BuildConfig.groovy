@@ -46,6 +46,9 @@ class BuildConfig {
     @Value('${wave.build.singularity-image}')
     String singularityImage
 
+    @Value('${wave.build.singularity-image-init:`public.cr.seqera.io/wave/busybox:latest`}')
+    String singularityImageInit
+
     @Value('${wave.build.repo}')
      String defaultBuildRepository
 
@@ -127,6 +130,10 @@ class BuildConfig {
     @Value('${wave.build.max-container-file-size:10000}')
     int maxContainerFileSize
 
+    // ~10 MiB payload limit including base64 encoding overhead (4/3 ratio)
+    @Value('${wave.build.max-data-layer-size:14000000}')
+    int maxDataLayerSize
+
     /**
      * The path where build logs locks files are stored. Can be either
      * a S3 path e.g. {@code s3://some-bucket/data/path} or a local file system
@@ -148,6 +155,9 @@ class BuildConfig {
      */
     @Value('${wave.build.logs.maxLength:100000}')
     long maxLength
+
+    @Value('${wave.build.skip-cache:false}')
+    boolean skipCache
 
     @PostConstruct
     private void init() {

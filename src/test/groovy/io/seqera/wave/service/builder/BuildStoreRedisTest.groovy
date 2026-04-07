@@ -64,7 +64,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
     def 'should get and put key values' () {
         given:
         def res = BuildResult.create('1')
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 targetImage: 'docker.io/foo:0',
                 buildId: '1',
                 startTime: Instant.now(),
@@ -87,7 +87,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
     def 'should expire entry' () {
         given:
         def res = BuildResult.create('1')
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 targetImage: 'docker.io/foo:0',
                 buildId: '1',
                 startTime: Instant.now(),
@@ -123,7 +123,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
     def 'should store if absent' () {
         given:
         def res1 = BuildResult.create('1')
-        def req1 = new BuildRequest(
+        def req1 = BuildRequest.of(
                 targetImage: 'docker.io/foo:1',
                 buildId: '1',
                 startTime: Instant.now(),
@@ -131,7 +131,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
         )
         def entry1 = new BuildEntry(req1, res1)
         def res2 = BuildResult.create('2')
-        def req2 = new BuildRequest(
+        def req2 = BuildRequest.of(
                 targetImage: 'docker.io/foo:2',
                 buildId: '2',
                 startTime: Instant.now(),
@@ -159,7 +159,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
     def 'should remove a build entry' () {
         given:
         def res = BuildResult.create('0')
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 targetImage: 'docker.io/foo:0',
                 buildId: '0',
                 startTime: Instant.now(),
@@ -184,7 +184,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
     def 'should await for a value' () {
         given:
         def res = BuildResult.create('1')
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 targetImage: 'docker.io/foo:1',
                 buildId: '1',
                 startTime: Instant.now(),
@@ -220,7 +220,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
         def jobQueue = applicationContext.getBean(JobProcessingQueue)
         def jobFactory = applicationContext.getBean(JobFactory)
         def res = BuildResult.create('1')
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 targetImage: 'docker.io/foo:1',
                 buildId: '1',
                 startTime: Instant.now(),
@@ -248,7 +248,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
         def provider = applicationContext.getBean(RedisStateProvider)
         def store = new BuildStateStoreImpl(provider, config, null)
         and:
-        def request = new BuildRequest(
+        def request = BuildRequest.of(
                 containerId: '12345',
                 buildId: 'bd-12345_0',
                 containerFile: 'from foo',

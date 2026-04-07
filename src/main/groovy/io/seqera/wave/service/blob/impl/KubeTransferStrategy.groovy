@@ -18,19 +18,16 @@
 
 package io.seqera.wave.service.blob.impl
 
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.configuration.BlobCacheConfig
-import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Inject
-import static io.seqera.wave.util.K8sHelper.getSelectorLabel
-
+import static io.seqera.wave.util.K8sHelper.getNoArchSelector
 /**
  * Implements {@link TransferStrategy} that runs s5cmd using a
  * Kubernetes job
@@ -55,9 +52,7 @@ class KubeTransferStrategy implements TransferStrategy {
 
     @Override
     void launchJob(String jobName, List<String> command) {
-
-        final selector = getSelectorLabel(ContainerPlatform.DEFAULT, nodeSelectorMap)
-
+        final selector = getNoArchSelector(nodeSelectorMap)
         // run the transfer job
         k8sService.launchTransferJob(jobName, blobConfig.s5Image, command, blobConfig, selector)
     }

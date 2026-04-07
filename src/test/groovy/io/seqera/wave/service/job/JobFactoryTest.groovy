@@ -44,7 +44,7 @@ class JobFactoryTest extends Specification {
         def ts = Instant.parse('2024-08-18T19:23:33.650722Z')
         def factory = new JobFactory()
         and:
-        def request = new BuildRequest(
+        def request = BuildRequest.of(
                 containerId: '12345',
                 targetImage: 'docker.io/foo:bar',
                 buildId: 'bd-12345_9',

@@ -1,4 +1,79 @@
 # Wave changelog
+1.33.1 - 30 Mar 2026
+- Update token cache duration and clarify public-repo docs (#1007) [2e47f9bd5]
+- Bump Netty to 4.2.10.Final and Micronaut to 4.10.10 (#1001) [970ec3876]
+- Refactor build vs cache IAM permission structure (#999) [2241a129f]
+- Migrate dependencies to Gradle version catalog (#996) [ac0664ce2]
+- Updated copyright to 2026 (#1003) [ba1209d0b]
+
+1.33.0 - 13 Mar 2026
+- Support cross AWS account IAM role authentication (#979) [d59370c20]
+- Add multi-platform container builds for amd64 and arm64 (#985) [5a90dc5bc]
+- Added SSRF protection to the validate-creds API (#962) [b5969fa94]
+- Add explicit type casts for ECR auth token requests (#992) [9b647a5a6]
+- Externalize lib-pairing module to libseqera (#958) [1b57e6817]
+- Fix error messages (#957) [e664b548f]
+- Bump s5cmd 2.3.0 [193a30dac]
+
+1.32.6 - 6 Mar 2026
+- Fixed inspect view (#988) [dc47180c5]
+- Added max-width and height in build-notification.html (#987) [ae6162699]
+- Fix no user in docker container when using build template condapixiv1 (#974) [c2042fa58]
+- Remove all SurrealDB references (#986) [860d2a191]
+- Simplify inspect.js code (#990) [065c2771a]
+
+1.32.5 - 3 Mar 2026
+- Updated wave logo and icon (#984) [ba9972fe3]
+- Updated seqera logo in wave reports and mail (#981) [7303e10ea]
+
+1.32.4 - 25 Feb 2026
+- Revert Micronaut to 4.9.4 to mitigate memory leak [c6141213] - https://github.com/netty/netty/issues/16049
+- Add HttpClientAddressResolver in RateLimiterFilter (#966) [2d2b63d2f]
+- Fix configuration reference discrepancies (#976) [b36a083ad]
+
+1.32.3 - 10 Feb 2026
+- Close pairing session on heartbeat when record is missing from Redis (#977) [779c14379]
+- Bump libseqera dependencies (#978) [fb2e98111]
+
+1.32.2 - 26 Jan 2026
+- Fix copy and download button in wave reports (#969) [22601f1d6]
+- Remove GitHub Action for generating Seqera Docs changelog (#965) [04492ded7]
+- Use lib-data-range-redis from libseqera (#964) [448edc1ee]
+
+1.32.1 - 14 Jan 2026
+- Fix noarch node selector validation in K8sServiceImpl (#963) [cd21beec2]
+- Add complete tests for CranOpts custom commands (#960) [913f7506d]
+
+1.32.0 - 12 Jan 2026
+- Upgrade to Micronaut 4.10.6 (#951) [6dda24c2b]
+- Use noarch node selector for mirror and transfer jobs (#953) [54f985174]
+- Replace RedisFactory with JedisPoolFactory from lib-jedis-pool [c8040227b]
+- Add missing HTTP Security Header (#955) [c48b8511c]
+
+1.31.2 - 17 Dec 2025
+- Add JavaDocs to PixiOpts and update tests for new default pixi image (#950) [7f49bb8b4]
+- docs: Style template build content (#948) [aa40d5513]
+- docs: Add guide for bin scripts (#933) [21e78e115]
+
+1.31.1 - 10 Dec 2025
+- Add DockerHelper to wave-utils for Nextflow integration (#947) [cb48de01b]
+
+1.31.0 - 10 Dec 2025
+- Add support for build templates (and pixi) (#839) [21e9e425a]
+- docs: Add Wave api rate limit guide (#914) [aa347fdc3]
+- Add error warning (#943) [f56ae8e77]
+- docs: Apply new language to align with new reference style guide (#940) [df42fa059]
+- docs: Rename page title to match sidebar (#941) [799a3a3cc]
+- Update libseqera dependencies to latest versions (#939) [cb7bb5580]
+
+1.30.0 - 27 Nov 2025
+- Add labels in ConfigSpec (#934) [67ac6c3dc]
+- Use Seqera-hosted buildkit image (#938) [c0c0b6465]
+- Add configurable singularity init container image (#937) [5c0fd3fce]
+- Fix YAML indentation in configure-wave.md (#936) [c09eba7ca]
+- Fix scan and mirror enabled flag bug (#935) [dc23d7bbe]
+- docs: Fix typos in Wave Kubernetes install (#930) [d3478f336]
+
 1.29.1 - 19 Nov 2025
 - Fix scan requirement on createScanStorageOpts [33463ebd2]
 - Add node selectors in scan, mirror and transfer jobs (#905) [47a7c5ac4]
@@ -128,6 +203,9 @@
 - Promote job queues config logs to info [d8e3d9f0]
 - Remove unused h2 env [e4422b1e]
 - added jdbc binder for prometheus metrics (#840) [7094a366]
+
+1.19.7 - 6 May 2025 
+- Add K8s trace logs for troubleshooting
 
 1.19.6 - 30 Apr 2025
 - Bypass cache repo for custom build repos  (#828) [29a93053]

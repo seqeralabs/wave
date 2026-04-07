@@ -29,18 +29,18 @@ MICRONAUT_ENVIRONMENTS: "postgres,redis,lite,mail"
 
 ```yaml
 mail:
-    from: "wave-notifications@your-domain.com"
-    smtp:
-        host: "smtp.your-provider.com"
-        port: "587"
-        user: "your-smtp-username"
-        password: "your-smtp-password"
-        auth: true
-        starttls:
-            enable: true
-            required: true
-        ssl:
-            protocols: "TLSv1.2"
+  from: "wave-notifications@your-domain.com"
+  smtp:
+    host: "smtp.your-provider.com"
+    port: "587"
+    user: "your-smtp-username"
+    password: "your-smtp-password"
+    auth: true
+    starttls:
+      enable: true
+      required: true
+    ssl:
+      protocols: "TLSv1.2"
 ```
 
 #### Configuration Options
@@ -82,7 +82,7 @@ MICRONAUT_ENVIRONMENTS: "postgres,redis,lite,mail,aws-ses"
 
 ```yaml
 mail:
-    from: "wave-notifications@your-domain.com"
+  from: "wave-notifications@your-domain.com"
 ```
 
 #### IAM permissions
@@ -135,7 +135,8 @@ Wave can perform security scanning on container builds. This feature requires th
 wave:
   build:
     enabled: true
-    scan: true
+  scan:
+    enabled: true
 ```
 
 ## ECR cache repository
@@ -154,43 +155,14 @@ Configure ECR cache repository in your Wave configuration:
 
 ```yaml
 wave:
-    build:
-        enabled: true
-        cache:
-            enabled: true
-            repository: "123456789012.dkr.ecr.us-east-1.amazonaws.com/wave-cache"
+  build:
+    enabled: true
+    cache: "123456789012.dkr.ecr.us-east-1.amazonaws.com/wave-cache"
 ```
 
 #### IAM permissions
 
-Wave requires the following IAM permissions for ECR cache operations:
-
-```json
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "ecr:GetAuthorizationToken",
-                "ecr:BatchCheckLayerAvailability",
-                "ecr:GetDownloadUrlForLayer",
-                "ecr:BatchGetImage",
-                "ecr:PutImage",
-                "ecr:InitiateLayerUpload",
-                "ecr:UploadLayerPart",
-                "ecr:CompleteLayerUpload"
-            ],
-            "Resource": ["arn:aws:ecr:us-east-1:123456789012:repository/wave-cache"]
-        },
-        {
-            "Effect": "Allow",
-            "Action": ["ecr:GetAuthorizationToken"],
-            "Resource": "*"
-        }
-    ]
-}
-```
+ECR cache IAM permissions are defined in [AWS credentials to access ECR](../docs/install/kubernetes.md#aws-credentials-to-access-ecr).  Ensure your cache ARN is an allowed `Resource`.
 
 #### ECR repository setup
 
@@ -234,9 +206,8 @@ Using ECR as a cache repository provides:
 
 #### Configuration Options
 
-| Setting            | Description          | Example                                                   |
-| ------------------ | -------------------- | --------------------------------------------------------- |
-| `cache.enabled`    | Enable build caching | `true`                                                    |
-| `cache.repository` | ECR repository URL   | `123456789012.dkr.ecr.us-east-1.amazonaws.com/wave-cache` |
+| Setting                    | Description                       | Example                                                   |
+| -------------------------- | --------------------------------- | --------------------------------------------------------- |
+| `wave.build.cache`         | Cache repository URL or S3 path   | `123456789012.dkr.ecr.us-east-1.amazonaws.com/wave-cache` |
 
 **Note:** ECR cache requires Wave build service to be enabled and is only available in AWS deployments with proper ECR access configured.

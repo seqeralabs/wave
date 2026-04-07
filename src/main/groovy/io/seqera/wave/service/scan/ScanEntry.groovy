@@ -142,7 +142,9 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 request.creationTime,
                 null,
                 PENDING,
-                List.of())
+                List.of(),
+                null,
+                null)
     }
 
     ScanEntry success(List<ScanVulnerability> vulnerabilities){
@@ -159,7 +161,8 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 Duration.between(this.startTime, Instant.now()),
                 SUCCEEDED,
                 vulnerabilities,
-                0 )
+                0,
+                null)
     }
 
     ScanEntry failure(Integer exitCode, String logs){
@@ -193,7 +196,9 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 request.creationTime,
                 Duration.between(request.creationTime, Instant.now()),
                 FAILED,
-                List.of())
+                List.of(),
+                null,
+                null)
     }
 
 
@@ -234,7 +239,7 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 record.mirrorId,
                 record.requestId,
                 record.containerImage,
-                record.platform,
+                record.platform ? ContainerPlatform.of(record.platform) : null,
                 record.workDir,
                 null,
                 record.startTime,

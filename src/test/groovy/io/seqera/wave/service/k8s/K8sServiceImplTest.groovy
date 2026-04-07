@@ -580,6 +580,10 @@ class K8sServiceImplTest extends Specification {
         and:
         job.spec.template.spec.dnsPolicy == null
         job.spec.template.spec.dnsConfig == null
+        and: 'init container should use configured singularity-image-init'
+        job.spec.template.spec.initContainers.size() == 1
+        job.spec.template.spec.initContainers[0].name == 'permissions-fix'
+        job.spec.template.spec.initContainers[0].image == 'public.cr.seqera.io/wave/busybox:latest'
 
         cleanup:
         ctx.close()

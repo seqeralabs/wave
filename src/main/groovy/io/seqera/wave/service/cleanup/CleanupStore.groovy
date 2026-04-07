@@ -19,8 +19,8 @@
 package io.seqera.wave.service.cleanup
 
 import groovy.transform.CompileStatic
-import io.seqera.wave.store.range.AbstractRangeStore
-import io.seqera.wave.store.range.impl.RangeProvider
+import io.seqera.data.range.AbstractRangeStore
+import io.seqera.data.range.impl.RangeProvider
 import jakarta.inject.Singleton
 /**
  * Implements a timed range to store and retrieve IDs

@@ -55,14 +55,20 @@ To create your access token in Docker Hub:
 
 1. Log in to [Docker Hub](https://hub.docker.com/).
 2. Select your username in the top right corner and select **Account Settings**.
-3. Select **Security > New Access Token**.
-4. Enter a token description. Select **Access permissions > Read-only**, then select **Generate**.
+3. Select **Personal access tokens**.
+3. Select **Generate new token**.
+4. Enter a token description. Select **Access permissions > Read, Write, Delete**, then select **Generate**.
+
+   :::caution
+   Wave requires **Write** permissions to push containers to your registry. Read-only tokens will result in authentication failures.
+   :::
+
 5. Copy and save the generated access token (this is only displayed once).
 
 To add your credentials to Seqera:
 
 1.  Add your credentials to your organization or personal workspace:
-    - From an organization workspace: Go to **Credentials > Add Credentials**.
+    - From an organization workspace: Go to **Your credentials > Add user credentials**.
     - From your personal workspace: From the user menu, go to **Your credentials > Add credentials**.
 
 2.  Complete the following fields:
@@ -87,7 +93,7 @@ In the same terminal window from the previous section, run the Wave CLI to build
 wave --conda-package 'faker' --freeze --build-repo <REPO_URI> --await
 ```
 
-Replace `<REPO_URI>` with the URI for the repository for which you added an access token to Seqera.
+Replace `<REPO_URI>` with the URI for the repository for which you added an access token to Seqera. For example, `docker.io/example-user/repo`.
 
 If successful, you will see output similar to the following:
 

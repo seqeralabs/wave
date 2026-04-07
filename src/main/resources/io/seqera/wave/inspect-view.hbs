@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600&display=swap" rel="stylesheet">
     <link href="/assets/style.css" rel="stylesheet">
     <script src="/assets/copy.js"></script>
+    <script src="/assets/inspect.js"></script>
 </head>
 <body>
 
@@ -33,7 +34,7 @@
                     <td>Image Name</td>
                     <td>
                         {{imageName}}
-                        <button class="action-btn" onclick="copyToClipboard('{{imageName}}', this)" title="Copy image name">
+                        <button class="action-btn" data-copy="{{imageName}}" title="Copy image name">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
                                 <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
                             </svg>
@@ -44,7 +45,7 @@
                     <td>Digest</td>
                     <td>
                         {{digest}}
-                        <button class="action-btn" onclick="copyToClipboard('{{digest}}', this)" title="Copy digest">
+                        <button class="action-btn" data-copy="{{digest}}" title="Copy digest">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
                                 <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
                             </svg>
@@ -81,7 +82,7 @@
                     <td>Image Name</td>
                     <td>
                         {{imageName}}
-                        <button class="action-btn" onclick="copyToClipboard('{{imageName}}', this)" title="Copy image name">
+                        <button class="action-btn" data-copy="{{imageName}}" title="Copy image name">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
                                 <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
                             </svg>
@@ -96,7 +97,7 @@
                     <td>Digest</td>
                     <td>
                         {{digest}}
-                        <button class="action-btn" onclick="copyToClipboard('{{digest}}', this)" title="Copy digest">
+                        <button class="action-btn" data-copy="{{digest}}" title="Copy digest">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
                                 <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
                             </svg>
@@ -143,151 +144,13 @@
 
 </div>
 
-<script>
-        {{#if schemaVersion}}
-        function createManifestTreeView(data, divId, serverUrl, imageName) {
-            const div = document.getElementById(divId);
-            const ul = document.createElement("ul");
-            ul.className = "tree";
-
-            data.forEach((item, index) => {
-                const li = document.createElement("li");
-                const details = document.createElement("details");
-                const summary = document.createElement("summary");
-                summary.textContent = `Manifest ${index + 1}`;
-                details.appendChild(summary);
-
-                const subTree = createNestedTree(item, serverUrl, imageName);
-                if (subTree) {
-                    details.appendChild(subTree);
-                }
-
-                li.appendChild(details);
-                ul.appendChild(li);
-                setTimeout(() => summary.click(), 10);
-            });
-
-            div.appendChild(ul);
-        }
-
-        function createNestedTree(data, serverUrl, imageName) {
-            if (typeof data !== "object" || data === null) {
-                const span = document.createElement('span');
-                span.className = 'tree-text';
-                span.textContent = data;
-                return span;
-            }
-
-            const ul = document.createElement("ul");
-
-            Object.entries(data).forEach(([key, value]) => {
-                const li = document.createElement("li");
-
-                if (key === "digest") {
-                    const span = document.createElement('span');
-                    span.className = 'tree-text';
-                    span.textContent = `${key}: `;
-
-                    const link = document.createElement("a");
-                    const name = imageName.split(':')[0];
-                    link.href = `${serverUrl}/view/inspect?image=${name}@${value}&platform=${data.platform?.architecture || ''}`;
-                    link.textContent = `${value}`;
-
-                    li.appendChild(span);
-                    li.appendChild(link);
-                } else if (typeof value === "object" && value !== null) {
-                    const details = document.createElement("details");
-                    const summary = document.createElement("summary");
-                    summary.textContent = key;
-
-                    details.appendChild(summary);
-                    details.appendChild(createNestedTree(value, serverUrl, imageName));
-
-                    li.appendChild(details);
-                    setTimeout(() => summary.click(), 10);
-                } else {
-                    const span = document.createElement('span');
-                    span.className = 'tree-text';
-                    span.textContent = `${key}: ${value}`;
-                    li.appendChild(span);
-                }
-
-                ul.appendChild(li);
-            });
-
-            return ul;
-        }
-
-        createManifestTreeView({{{manifests}}}, "manifests-div", "{{{server_url}}}", "{{{imageName}}}");
-
-        {{else}}
-        function createTreeView(data) {
-            const ul = document.createElement('ul');
-            ul.classList.add('tree');
-
-            for (const key in data) {
-                if (data.hasOwnProperty(key)) {
-                    const li = document.createElement('li');
-
-                    if (typeof data[key] === 'object' && !Array.isArray(data[key]) && data[key] !== null && Object.keys(data[key]).length > 0) {
-                        const details = document.createElement('details');
-                        const summary = document.createElement('summary');
-                        summary.textContent = key;
-                        details.appendChild(summary);
-                        details.appendChild(createTreeView(data[key]));
-                        li.appendChild(details);
-
-                        // Auto-expand first level
-                        setTimeout(() => summary.click(), 10);
-                    } else if (Array.isArray(data[key]) && data[key].length > 0) {
-                        const details = document.createElement('details');
-                        const summary = document.createElement('summary');
-                        summary.textContent = key;
-                        details.appendChild(summary);
-
-                        const nestedUl = document.createElement('ul');
-                        nestedUl.classList.add('tree');
-                        data[key].forEach((item, index) => {
-                            const nestedLi = document.createElement('li');
-
-                            if (typeof item === 'object' && item !== null) {
-                                const itemDetails = document.createElement('details');
-                                const itemSummary = document.createElement('summary');
-                                itemSummary.textContent = `Item ${index + 1}`;
-                                itemDetails.appendChild(itemSummary);
-                                itemDetails.appendChild(createTreeView(item));
-                                nestedLi.appendChild(itemDetails);
-                                setTimeout(() => itemSummary.click(), 10);
-                            } else {
-                                const span = document.createElement('span');
-                                span.className = 'tree-text';
-                                span.textContent = item;
-                                nestedLi.appendChild(span);
-                            }
-
-                            nestedUl.appendChild(nestedLi);
-                        });
-
-                        details.appendChild(nestedUl);
-                        li.appendChild(details);
-                        setTimeout(() => summary.click(), 10);
-                    } else {
-                        const span = document.createElement('span');
-                        span.className = 'tree-text';
-                        span.textContent = `${key}: ${JSON.stringify(data[key])}`;
-                        li.appendChild(span);
-                    }
-
-                    ul.appendChild(li);
-                }
-            }
-
-            return ul;
-        }
-
-        document.getElementById('config-div').appendChild(createTreeView({{{config}}}));
-        document.getElementById('manifest-div').appendChild(createTreeView({{{manifest}}}));
-        {{/if}}
-</script>
+{{#if schemaVersion}}
+<textarea id="inspect-manifests" hidden>{{{manifests}}}</textarea>
+<div id="inspect-data" data-type="index" data-server-url="{{{server_url}}}" data-image-name="{{{imageName}}}"></div>
+{{else}}
+<textarea id="inspect-config" hidden>{{{config}}}</textarea>
+<textarea id="inspect-manifest" hidden>{{{manifest}}}</textarea>
+<div id="inspect-data" data-type="container"></div>
+{{/if}}
 </body>
 </html>

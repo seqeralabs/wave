@@ -34,6 +34,7 @@ import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.ContainerStatusResponse
 import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.PackagesSpec
@@ -55,8 +56,8 @@ import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobServiceImpl
 import io.seqera.wave.service.mirror.ContainerMirrorService
-import io.seqera.wave.service.pairing.PairingService
-import io.seqera.wave.service.pairing.socket.PairingChannel
+import io.seqera.service.pairing.PairingService
+import io.seqera.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.request.ContainerRequestService
@@ -456,6 +457,30 @@ class ContainerControllerTest extends Specification {
         err = thrown(BadRequestException)
         err.message == "Invalid container image name — offending value: 'http:docker.io/foo:latest'"
 
+    }
+
+    def 'should validate layer size' () {
+        given:
+        def validation = new ValidationServiceImpl()
+        def pairing = Mock(PairingService)
+        def channel = Mock(PairingChannel)
+        def buildConfig = new BuildConfig(maxDataLayerSize: 1000)
+        def controller = new ContainerController(validationService: validation, pairingService: pairing, pairingChannel: channel, buildConfig: buildConfig)
+
+        when: 'layer within limit'
+        def smallLayer = new ContainerLayer(location: 'data:' + 'A' * 500)
+        def config = new ContainerConfig(layers: [smallLayer])
+        controller.validateContainerRequest(new SubmitContainerTokenRequest(containerConfig: config))
+        then:
+        noExceptionThrown()
+
+        when: 'layer exceeds limit'
+        def largeLayer = new ContainerLayer(location: 'data:' + 'A' * 1001)
+        config = new ContainerConfig(layers: [largeLayer])
+        controller.validateContainerRequest(new SubmitContainerTokenRequest(containerConfig: config))
+        then:
+        def err = thrown(BadRequestException)
+        err.message == 'Container layer exceeds the maximum allowed size'
     }
 
     def 'should validate mirror request' () {

@@ -54,7 +54,8 @@ class ConfigSpecTest extends Specification {
                 "Entrypoint": ["/some","entry.sh"],
                 "OnBuild":null,
                 "Labels":{
-            
+                    "org.opencontainers.image.ref.name": "ubuntu",
+                    "org.opencontainers.image.version": "24.04"
                 }
               },
               "container":"4be9f6b4406ec142e457fd7c43ff338511ab338b33585c30805ba2d5d3da29e3",
@@ -87,6 +88,9 @@ class ConfigSpecTest extends Specification {
         and:
         manifest.rootfs.type == 'layers'
         manifest.rootfs.diff_ids == ['sha256:e07ee1baac5fae6a26f30cabfe54a36d3402f96afda318fe0a96cec4ca393359']
+        and:
+        manifest.config.labels == ["org.opencontainers.image.ref.name": "ubuntu",
+                                   "org.opencontainers.image.version": "24.04"]
     }
 
     def 'should parse spec v1' () {

@@ -22,12 +22,14 @@ import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 import java.time.OffsetDateTime
+import java.time.ZoneId
 
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import io.seqera.wave.api.BuildCompression
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
@@ -143,6 +145,26 @@ class BuildRequest {
      */
     final String buildId
 
+    /**
+     * The build template used to generate the container file
+     */
+    final String buildTemplate
+
+    /**
+     * When {@code true}, email notifications should not be sent for this build
+     */
+    final boolean noEmail
+
+    /**
+     * Child build IDs for multi-platform builds
+     */
+    final ChildRefs buildChildIds
+
+    /**
+     * Child scan IDs for multi-platform builds
+     */
+    final ChildRefs scanChildIds
+
     BuildRequest(
             String containerId,
             String containerFile,
@@ -160,7 +182,9 @@ class BuildRequest {
             BuildContext buildContext,
             BuildFormat format,
             Duration maxDuration,
-            BuildCompression compression
+            BuildCompression compression,
+            String buildTemplate,
+            boolean noEmail = false
     )
     {
         this.containerId = containerId
@@ -181,11 +205,16 @@ class BuildRequest {
         this.format = format
         this.maxDuration = maxDuration
         this.compression = compression
+        this.buildTemplate = buildTemplate
+        this.noEmail = noEmail
         // NOTE: this is meant to be updated - automatically - when the request is submitted
-        this.buildId = ID_PREFIX + containerId + SEP + '0'
+        this.buildId = computeBuildId(containerId)
     }
 
-    BuildRequest(Map opts) {
+    /**
+     * Map-based constructor for testing purposes where buildId and startTime need to be set manually
+     */
+    private BuildRequest(Map opts) {
         this.containerId = opts.containerId
         this.containerFile = opts.containerFile
         this.condaFile = opts.condaFile
@@ -194,17 +223,53 @@ class BuildRequest {
         this.identity = opts.identity as PlatformId
         this.platform = opts.platform as ContainerPlatform
         this.cacheRepository = opts.cacheRepository
-        this.startTime = opts.startTime as Instant
+        this.startTime = opts.startTime as Instant ?: Instant.now()
         this.ip = opts.ip
         this.configJson = opts.configJson
-        this.offsetId = opts.offesetId
+        this.offsetId = opts.offsetId ?: OffsetDateTime.ofInstant(this.startTime, ZoneId.systemDefault()).offset.id
         this.containerConfig = opts.containerConfig as ContainerConfig
         this.scanId = opts.scanId
         this.buildContext = opts.buildContext as BuildContext
         this.format = opts.format as BuildFormat
         this.maxDuration = opts.maxDuration as Duration
         this.compression = opts.compression as BuildCompression
-        this.buildId = opts.buildId
+        this.buildId = opts.buildId ?: computeBuildId(containerId)
+        this.buildTemplate = opts.buildTemplate
+        this.noEmail = opts.noEmail as boolean
+        this.buildChildIds = opts.buildChildIds as ChildRefs
+        this.scanChildIds = opts.scanChildIds as ChildRefs
+    }
+
+    static BuildRequest of(Map opts) {
+        new BuildRequest(opts)
+    }
+
+    BuildRequest withChildScanIds(ChildRefs scanChildIds) {
+        return BuildRequest.of(
+                containerId: this.containerId,
+                containerFile: this.containerFile,
+                condaFile: this.condaFile,
+                workspace: this.workspace,
+                targetImage: this.targetImage,
+                identity: this.identity,
+                platform: this.platform,
+                cacheRepository: this.cacheRepository,
+                startTime: this.startTime,
+                ip: this.ip,
+                configJson: this.configJson,
+                offsetId: this.offsetId,
+                containerConfig: this.containerConfig,
+                scanId: this.scanId,
+                buildContext: this.buildContext,
+                format: this.format,
+                maxDuration: this.maxDuration,
+                compression: this.compression,
+                buildId: this.buildId,
+                buildTemplate: this.buildTemplate,
+                noEmail: this.noEmail,
+                buildChildIds: this.buildChildIds,
+                scanChildIds: scanChildIds
+        )
     }
 
     @Override
@@ -285,6 +350,10 @@ class BuildRequest {
         if( !id )
             return null
         return id.contains(SEP) ? id.tokenize(SEP)[0] : null
+    }
+
+    static private String computeBuildId(String containerId) {
+        ID_PREFIX + containerId + SEP + '0'
     }
 
 }

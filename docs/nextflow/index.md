@@ -1,6 +1,6 @@
 ---
-title: Overview
-description: Learn about using Wave with Nextflow
+title: Nextflow integration
+description: Learn about integrating Wave with Nextflow
 tags: [nextflow, wave, get started]
 ---
 
