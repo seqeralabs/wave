@@ -99,7 +99,7 @@ jobs:
 
       - name: Publish tests report
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: test-reports-jdk-${{ matrix.java_version }}
           path: |
@@ -107,7 +107,7 @@ jobs:
 
       - name : Publish code coverage report
         if: success()
-        uses : actions/upload-artifact@v4
+        uses : actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with :
           name : code-coverage-reports-jdk-${{ matrix.java_version }}
           path : |
