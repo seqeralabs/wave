@@ -51,12 +51,12 @@ class ContainerRequestRangeTest extends Specification {
         and:
         range.add(e1, now- Duration.ofSeconds(2))
         range.add(e2, now- Duration.ofSeconds(1))
-        range.add(e3, now+ Duration.ofMillis(600))
+        range.add(e3, now+ Duration.ofSeconds(2))
 
         expect:
         range.getEntriesUntil(now, 10) == [e1, e2]
         and:
-        range.getEntriesUntil(now.plusSeconds(1), 10) == [e3]
+        range.getEntriesUntil(now.plusSeconds(3), 10) == [e3]
     }
 
 }
