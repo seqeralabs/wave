@@ -49,7 +49,7 @@ jobs:
 
       - name : Login to Amazon ECR
         id : login-ecr
-        uses : aws-actions/amazon-ecr-login@v1
+        uses : aws-actions/amazon-ecr-login@5a88a04c91d5c6f97aae0d9be790e64d9b1d47b7 # v1.7.1
 
       - name: Release OpenAPI docs
         if: "contains(github.event.head_commit.message, '[release]')"
