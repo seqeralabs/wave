@@ -91,8 +91,6 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
 
     // =============== watcher implementation ===============
 
-    private static final String PREFIX = 'request/v1/'
-
     @Inject
     private TaskScheduler scheduler
 
@@ -152,7 +150,7 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
         // 2. check if the request is near to expiration
         final deadline = entry.expiration - config.cache.checkInterval
         if(  now < deadline  ) {
-            log.debug "Container request '${entry.requestId}' does not requires refresh - deadline=${deadline}; expiration=${entry.expiration}"
+            log.debug "Container request '${entry.requestId}' does not require refresh - deadline=${deadline}; expiration=${entry.expiration}"
             scheduleRefresh(entry)
             return
         }
@@ -167,14 +165,14 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
         // 4. check the workflow is still running
         final workflow = describeWorkflow(request)
         if( !isWorkflowActive(workflow) ) {
-            log.debug "Container request '${entry.requestId}' does not require refresh - workflow ${workflow.id} is not running"
+            log.debug "Container request '${entry.requestId}' does not require refresh - workflow ${workflow?.id} is not running"
             return
         }
 
         // 5. check the expiration is not beyond the max allowed
         final newExpire = entry.expiration + config.cache.checkInterval.multipliedBy(2)
         if(Duration.between(request.creationTime, newExpire) > config.cache.maxDuration) {
-            log.info "Container request '${entry.requestId}' reached max allowed duration - expiration=${entry.expiration}; new expiration=${newExpire}; worklow=${workflow.id}"
+            log.info "Container request '${entry.requestId}' reached max allowed duration - expiration=${entry.expiration}; new expiration=${newExpire}; workflow=${workflow.id}"
             return
         }
 
@@ -208,7 +206,7 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
     protected boolean isWorkflowActive(Workflow workflow) {
         return workflow
                 ? workflow.status==Workflow.WorkflowStatus.SUBMITTED || workflow.status==Workflow.WorkflowStatus.RUNNING
-                : null
+                : false
     }
 
 }

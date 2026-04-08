@@ -78,6 +78,7 @@ class ContainerRequestConfig {
      * Model container request watcher configuration settings
      */
     @ToString(includePackage = false, includeNames = true)
+    @Singleton
     static class Watcher {
 
         /**

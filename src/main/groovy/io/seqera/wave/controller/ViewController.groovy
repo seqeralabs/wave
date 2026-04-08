@@ -282,8 +282,6 @@ class ViewController {
             throw new NotFoundException("Unknown container token: $token")
         // return the response
         final binding = new HashMap(20)
-        if( !data )
-            return HttpResponse.notFound(["error_message": "Unknown container request id '$token'"])
         binding.request_token = token
         binding.request_container_image = data.containerImage ?: '-'
         binding.request_contaiener_platform = data.platform ?: '-'
