@@ -16,7 +16,7 @@ jobs:
         java-version: 21
 
     - name: Generate and submit dependency graph for wave-cli
-      uses: gradle/actions/dependency-submission@v4
+      uses: gradle/actions/dependency-submission@748248ddd2a24f49513d8f472f81c3a07d4d50e1 # v4.4.4
       with:
         dependency-resolution-task: ":app:dependencies"
         additional-arguments: "--configuration runtimeClasspath"
