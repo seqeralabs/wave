@@ -128,6 +128,8 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
             }
             catch (Throwable t) {
                 log.error("Unexpected error in container request watcher while processing key: $it", t)
+                // reschedule the entry to avoid permanent loss on transient failures
+                scheduleRefresh(it)
             }
         }
     }
@@ -184,7 +186,11 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
         }
 
         // 7. store the request with update expiration
-        final newTtl = Duration.between(Instant.now(), newExpire)
+        final newTtl = Duration.between(now, newExpire)
+        if( newTtl.isNegative() || newTtl.isZero() ) {
+            log.warn "Container request '${entry.requestId}' computed TTL is not positive: ${newTtl}; skipping extension"
+            return
+        }
         log.info "Container request '${entry.requestId}' expiration is extended by: ${newTtl}; at: ${newExpire}; (was: ${entry.expiration})"
         containerRequestStore.put(entry.requestId, request, newTtl)
         // update the expiration record

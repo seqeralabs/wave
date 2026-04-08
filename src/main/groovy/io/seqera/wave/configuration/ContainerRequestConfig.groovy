@@ -20,6 +20,7 @@ package io.seqera.wave.configuration
 
 import java.time.Duration
 
+import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.micronaut.context.annotation.Value
 import io.seqera.util.time.DurationUtils
@@ -31,6 +32,7 @@ import jakarta.inject.Singleton
  * @author: Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  *
  */
+@CompileStatic
 @ToString(includePackage = false, includeNames = true)
 @Singleton
 class ContainerRequestConfig {
