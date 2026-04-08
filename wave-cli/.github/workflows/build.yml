@@ -62,7 +62,7 @@ jobs:
 
       - name: Upload fat JAR artifact
         if: ${{ matrix.fatjar }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: wave-jar
           path: ./app/build/libs/wave.jar
@@ -106,14 +106,14 @@ jobs:
           xcrun notarytool submit "notarization.zip" --keychain-profile "notarytool-profile" --wait
 
       - name: Upload Binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: nativeCompile-${{ matrix.os }}
           path: ./app/build/native/nativeCompile
 
       - name: Publish tests report
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: test-reports-jdk-${{ matrix.java_version }}
           path: |
@@ -168,7 +168,7 @@ jobs:
 
       - name: JReleaser release output
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: jreleaser-release
           path: |
