@@ -160,7 +160,7 @@ jobs:
           fi
 
       - name: Run JReleaser
-        uses: jreleaser/release-action@v2
+        uses: jreleaser/release-action@90ac653bb9c79d11179e65d81499f3f34527dcd5 # 2.5.0
         env:
           JRELEASER_GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
           JRELEASER_PROJECT_VERSION: ${{ steps.version.outputs.VERSION }}
