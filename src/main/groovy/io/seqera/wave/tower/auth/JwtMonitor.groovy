@@ -58,7 +58,7 @@ class JwtMonitor implements Runnable {
     private JwtConfig jwtConfig
 
     @Inject
-    private ContainerRequestConfig tokenConfig
+    private ContainerRequestConfig requestConfig
 
     @PostConstruct
     private init() {
@@ -111,7 +111,7 @@ class JwtMonitor implements Runnable {
             return
         }
         // check if the JWT record is expired
-        final deadline = entry.createdAt + tokenConfig.cache.duration
+        final deadline = entry.createdAt + requestConfig.cache.duration
         if( now > deadline ) {
             log.debug "JWT record expired - entry=$entry; deadline=$deadline; "
             return
