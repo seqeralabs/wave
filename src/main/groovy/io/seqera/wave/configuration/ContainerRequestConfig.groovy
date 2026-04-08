@@ -53,7 +53,7 @@ class ContainerRequestConfig {
          * This determines how long a container token is valid, and
          * therefore an ephemeral container can be accessed.
          */
-        @Value('${wave.tokens.cache.duration:3h}')
+        @Value('${wave.tokens.cache.duration:36h}')
         Duration duration
 
         /**
