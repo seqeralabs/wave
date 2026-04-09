@@ -58,6 +58,9 @@ public final class BuildTemplate {
         if (packages == null) {
             return null;
         }
+        if( packages.type == PackagesSpec.Type.CONDA ) {
+            return CONDA_MICROMAMBA_V2;
+        }
         if( packages.type == PackagesSpec.Type.CRAN ) {
             return CRAN_INSTALLR_V1;
         }
