@@ -30,7 +30,7 @@ class BuildTemplateTest extends Specification {
         where:
         PACKAGES                                              | EXPECTED
         new PackagesSpec(type: PackagesSpec.Type.CRAN)        | BuildTemplate.CRAN_INSTALLR_V1
-        new PackagesSpec(type: PackagesSpec.Type.CONDA)       | null 
+        new PackagesSpec(type: PackagesSpec.Type.CONDA)       | BuildTemplate.CONDA_MICROMAMBA_V2
         null                                                  | null
         new PackagesSpec()                                    | null
     }
