@@ -947,6 +947,45 @@ class AwsEcrServiceTest extends Specification {
         result.sessionToken() == 'jumpTempToken'
     }
 
+    // --- getLoginTokenWithDefaultProvider tests ---
+
+    def 'should return null when default credentials are not available' () {
+        given:
+        def service = new AwsEcrService()
+
+        when:
+        def result = service.getLoginTokenWithDefaultProvider('us-east-1', false)
+
+        then: 'returns null gracefully when no AWS credentials are in the environment'
+        result == null
+    }
+
+    def 'should return null for public ECR when default credentials are not available' () {
+        given:
+        def service = new AwsEcrService()
+
+        when:
+        def result = service.getLoginTokenWithDefaultProvider('us-east-1', true)
+
+        then:
+        result == null
+    }
+
+    @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
+    def 'should get ECR token with default provider when AWS credentials are available' () {
+        given:
+        def service = new AwsEcrService()
+
+        when:
+        def result = service.getLoginTokenWithDefaultProvider('eu-west-1', false)
+
+        then:
+        result != null
+        def parts = result.tokenize(':')
+        parts[0] == 'AWS'
+        parts[1].size() > 0
+    }
+
     // --- AwsStsCredentials round-trip test ---
 
     def 'should round-trip STS credentials through AwsStsCredentials' () {

@@ -429,6 +429,47 @@ class AwsEcrService {
     }
 
     /**
+     * Get AWS ECR login token using the default credentials provider (IRSA, instance profile, env vars).
+     * This is used as a fallback when no explicit credentials are configured for an ECR registry.
+     *
+     * @param region The AWS region
+     * @param isPublic Whether this is for ECR public
+     * @return The ECR login token (username:password), or {@code null} if default credentials are not available
+     */
+    String getLoginTokenWithDefaultProvider(String region, boolean isPublic) {
+        log.debug "Getting ECR login token with default credentials provider - region=$region; isPublic=$isPublic"
+        try {
+            final provider = DefaultCredentialsProvider.builder().build()
+            if( isPublic ) {
+                EcrPublicClient.builder()
+                        .region(Region.of(region))
+                        .credentialsProvider(provider)
+                        .build().withCloseable { client ->
+                    final req = GetPublicAuthorizationTokenRequest.builder().build() as GetPublicAuthorizationTokenRequest
+                    final resp = client.getAuthorizationToken(req)
+                    final encoded = resp.authorizationData().authorizationToken()
+                    return new String(encoded.decodeBase64())
+                }
+            }
+            else {
+                EcrClient.builder()
+                        .region(Region.of(region))
+                        .credentialsProvider(provider)
+                        .build().withCloseable { client ->
+                    final req = GetAuthorizationTokenRequest.builder().build() as GetAuthorizationTokenRequest
+                    final resp = client.getAuthorizationToken(req)
+                    final encoded = resp.authorizationData().get(0).authorizationToken()
+                    return new String(encoded.decodeBase64())
+                }
+            }
+        }
+        catch (Exception e) {
+            log.debug "Unable to get ECR login token with default credentials provider - region=$region; isPublic=$isPublic; cause=${e.message}"
+            return null
+        }
+    }
+
+    /**
      * Get AWS ECR login token
      *
      * @param accessKey The AWS access key or IAM role ARN

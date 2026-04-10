@@ -25,6 +25,7 @@ import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.service.CredentialsService
+import io.seqera.wave.service.aws.AwsEcrService
 import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -48,6 +49,9 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
 
     @Inject
     private CredentialsService credentialsService
+
+    @Inject
+    private AwsEcrService awsEcrService
 
     @Inject
     @Nullable
@@ -74,11 +78,22 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
 
     protected RegistryCredentials getDefaultCredentials0(String registry) {
         final config = registryConfig?.getRegistryKeys(registry)
-        if( !config ){
-            log.debug "Unable to find default credentials for registry '$registry'"
-            return null
+        if( config ){
+            return credentialsFactory.create(registry, config.username, config.password)
         }
-        return credentialsFactory.create(registry, config.username, config.password)
+        // fallback: if this is an ECR registry, try using default AWS credentials (IRSA, instance profile, env vars)
+        final ecrHost = awsEcrService.getEcrHostInfo(registry)
+        if( ecrHost ) {
+            final isPublic = ecrHost.account == null
+            final token = awsEcrService.getLoginTokenWithDefaultProvider(ecrHost.region, isPublic)
+            if( token ) {
+                log.debug "Using default AWS credentials for ECR registry '$registry'"
+                final parts = token.tokenize(':')
+                return new BasicRegistryCredentials(parts[0], parts[1])
+            }
+        }
+        log.debug "Unable to find default credentials for registry '$registry'"
+        return null
     }
 
     protected RegistryCredentials getDefaultRepoCredentials0(ContainerPath container) {

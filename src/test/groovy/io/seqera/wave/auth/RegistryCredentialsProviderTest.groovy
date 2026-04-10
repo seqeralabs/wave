@@ -99,6 +99,95 @@ class RegistryCredentialsProviderTest extends Specification {
         credentialsProvider.getDefaultCredentials('foo') == null
     }
 
+    def 'should fallback to IRSA for ECR when no config credentials exist' () {
+        given:
+        def awsEcrService = Mock(AwsEcrService)
+        def provider = new RegistryCredentialsProviderImpl(
+                registryConfig: null,
+                credentialsFactory: new RegistryCredentialsFactoryImpl(awsEcrService: Mock(AwsEcrService)),
+                credentialsService: Mock(CredentialsService),
+                awsEcrService: awsEcrService
+        )
+        def ecrRegistry = '579728144645.dkr.ecr.eu-west-1.amazonaws.com'
+
+        when:
+        def result = provider.getDefaultCredentials(ecrRegistry)
+
+        then:
+        1 * awsEcrService.getEcrHostInfo(ecrRegistry) >> new AwsEcrService.AwsEcrHostInfo('579728144645', 'eu-west-1')
+        1 * awsEcrService.getLoginTokenWithDefaultProvider('eu-west-1', false) >> 'AWS:mockToken123'
+
+        and:
+        result instanceof BasicRegistryCredentials
+        result.username == 'AWS'
+        result.password == 'mockToken123'
+    }
+
+    def 'should fallback to IRSA for public ECR when no config credentials exist' () {
+        given:
+        def awsEcrService = Mock(AwsEcrService)
+        def provider = new RegistryCredentialsProviderImpl(
+                registryConfig: null,
+                credentialsFactory: new RegistryCredentialsFactoryImpl(awsEcrService: Mock(AwsEcrService)),
+                credentialsService: Mock(CredentialsService),
+                awsEcrService: awsEcrService
+        )
+
+        when:
+        def result = provider.getDefaultCredentials('public.ecr.aws')
+
+        then:
+        1 * awsEcrService.getEcrHostInfo('public.ecr.aws') >> new AwsEcrService.AwsEcrHostInfo(null, 'us-east-1')
+        1 * awsEcrService.getLoginTokenWithDefaultProvider('us-east-1', true) >> 'AWS:publicToken'
+
+        and:
+        result instanceof BasicRegistryCredentials
+        result.username == 'AWS'
+        result.password == 'publicToken'
+    }
+
+    def 'should return null for ECR when IRSA fallback fails' () {
+        given:
+        def awsEcrService = Mock(AwsEcrService)
+        def provider = new RegistryCredentialsProviderImpl(
+                registryConfig: null,
+                credentialsFactory: new RegistryCredentialsFactoryImpl(awsEcrService: Mock(AwsEcrService)),
+                credentialsService: Mock(CredentialsService),
+                awsEcrService: awsEcrService
+        )
+        def ecrRegistry = '579728144645.dkr.ecr.eu-west-1.amazonaws.com'
+
+        when:
+        def result = provider.getDefaultCredentials(ecrRegistry)
+
+        then:
+        1 * awsEcrService.getEcrHostInfo(ecrRegistry) >> new AwsEcrService.AwsEcrHostInfo('579728144645', 'eu-west-1')
+        1 * awsEcrService.getLoginTokenWithDefaultProvider('eu-west-1', false) >> null
+
+        and:
+        result == null
+    }
+
+    def 'should return null for non-ECR registry when no config exists' () {
+        given:
+        def awsEcrService = Mock(AwsEcrService)
+        def provider = new RegistryCredentialsProviderImpl(
+                registryConfig: null,
+                credentialsFactory: new RegistryCredentialsFactoryImpl(awsEcrService: Mock(AwsEcrService)),
+                credentialsService: Mock(CredentialsService),
+                awsEcrService: awsEcrService
+        )
+
+        when:
+        def result = provider.getDefaultCredentials('ghcr.io')
+
+        then:
+        1 * awsEcrService.getEcrHostInfo('ghcr.io') >> null
+
+        and:
+        result == null
+    }
+
     def 'should get credentials from user' () {
         given:
         def REGISTRY = 'foo'
