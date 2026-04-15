@@ -484,6 +484,7 @@ class TemplateUtilsTest extends Specification {
                 FROM mambaorg/micromamba:2.1.1 AS build
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
                 RUN (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
+                    && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="12" micromamba install -y -n base -f /tmp/conda.yml)) \\
                     && micromamba install -y -n base conda-forge::procps-ng \\
@@ -507,6 +508,7 @@ class TemplateUtilsTest extends Specification {
                 FROM mambaorg/micromamba:1.5.10-noble AS build
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
                 RUN (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
+                    && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="12" micromamba install -y -n base -f /tmp/conda.yml)) \\
                     && micromamba install -y -n base conda-forge::procps-ng \\
@@ -539,6 +541,7 @@ class TemplateUtilsTest extends Specification {
                 FROM mambaorg/micromamba:2.1.1 AS build
                 RUN \\
                     (micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1 > /tmp/mamba.log 2>&1 \\
+                    && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="12" micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1)) \\
                     && micromamba install -y -n base conda-forge::procps-ng \\
@@ -571,6 +574,7 @@ class TemplateUtilsTest extends Specification {
                 FROM mambaorg/micromamba:2.1.1 AS build
                 RUN \\
                     (micromamba install -y -n base -c conda-forge numpy pandas > /tmp/mamba.log 2>&1 \\
+                    && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="12" micromamba install -y -n base -c conda-forge numpy pandas)) \\
                     && micromamba env export --name base --explicit > environment.lock \\
@@ -765,6 +769,7 @@ class TemplateUtilsTest extends Specification {
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
                     micromamba install -y -n base -f /scratch/conda.yml > /tmp/mamba.log 2>&1 \\
+                        && cat /tmp/mamba.log \\
                         || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                             && CONDA_OVERRIDE_CUDA="12" micromamba install -y -n base -f /scratch/conda.yml)
                     micromamba install -y -n base conda-forge::procps-ng
@@ -788,6 +793,7 @@ class TemplateUtilsTest extends Specification {
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
                     micromamba install -y -n base -f /scratch/conda.yml > /tmp/mamba.log 2>&1 \\
+                        && cat /tmp/mamba.log \\
                         || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                             && CONDA_OVERRIDE_CUDA="12" micromamba install -y -n base -f /scratch/conda.yml)
                     micromamba install -y -n base conda-forge::procps-ng
@@ -817,6 +823,7 @@ class TemplateUtilsTest extends Specification {
                 From: mambaorg/micromamba:2.1.1
                 %post
                     micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1 > /tmp/mamba.log 2>&1 \\
+                        && cat /tmp/mamba.log \\
                         || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                             && CONDA_OVERRIDE_CUDA="12" micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1)
                     micromamba install -y -n base conda-forge::procps-ng
@@ -846,6 +853,7 @@ class TemplateUtilsTest extends Specification {
                 From: mambaorg/micromamba:2.1.1
                 %post
                     micromamba install -y -n base -c conda-forge numpy pandas > /tmp/mamba.log 2>&1 \\
+                        && cat /tmp/mamba.log \\
                         || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                             && CONDA_OVERRIDE_CUDA="12" micromamba install -y -n base -c conda-forge numpy pandas)
                     micromamba env export --name base --explicit > environment.lock

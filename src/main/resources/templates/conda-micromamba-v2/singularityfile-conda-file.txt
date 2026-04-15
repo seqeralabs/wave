@@ -4,6 +4,7 @@ From: {{mamba_image}}
     {{wave_context_dir}}/conda.yml /scratch/conda.yml
 %post
     micromamba install -y -n base -f /scratch/conda.yml > /tmp/mamba.log 2>&1 \
+        && cat /tmp/mamba.log \
         || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \
             && CONDA_OVERRIDE_CUDA="12" micromamba install -y -n base -f /scratch/conda.yml)
     {{base_packages}}
