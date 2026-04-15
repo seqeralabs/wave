@@ -734,7 +734,7 @@ class ContainerHelperTest extends Specification {
                 RUN (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
-                        && CONDA_OVERRIDE_CUDA="12" micromamba install -y -n base -f /tmp/conda.yml)) \\
+                        && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /tmp/conda.yml)) \\
                     && micromamba install -y -n base conda-forge::procps-ng \\
                     && micromamba env export --name base --explicit > environment.lock \\
                     && echo ">> CONDA_LOCK_START" \\
@@ -776,7 +776,7 @@ class ContainerHelperTest extends Specification {
                 RUN (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
-                        && CONDA_OVERRIDE_CUDA="12" micromamba install -y -n base -f /tmp/conda.yml)) \\
+                        && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /tmp/conda.yml)) \\
                     && micromamba install -y -n base foo::one bar::two \\
                     && micromamba env export --name base --explicit > environment.lock \\
                     && echo ">> CONDA_LOCK_START" \\
@@ -812,7 +812,7 @@ class ContainerHelperTest extends Specification {
                     (micromamba install -y -n base -c conda-forge -c bioconda -f https://foo.com/lock.yml > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
-                        && CONDA_OVERRIDE_CUDA="12" micromamba install -y -n base -c conda-forge -c bioconda -f https://foo.com/lock.yml)) \\
+                        && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -c conda-forge -c bioconda -f https://foo.com/lock.yml)) \\
                     && micromamba install -y -n base conda-forge::procps-ng \\
                     && micromamba env export --name base --explicit > environment.lock \\
                     && echo ">> CONDA_LOCK_START" \\
