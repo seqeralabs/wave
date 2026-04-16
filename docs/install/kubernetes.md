@@ -209,9 +209,9 @@ spec:
               value: "postgres,redis,lite"
           resources:
             requests:
-              memory: "4000Mi"
+              memory: "1500Mi"
             limits:
-              memory: "4000Mi"
+              memory: "1500Mi"
           workingDir: "/work"
           volumeMounts:
             - name: wave-cfg
@@ -338,7 +338,7 @@ Wave requires access to AWS ECR for container image management. Create an IAM ro
           "ecr:GetDownloadUrlForLayer",
           "ecr:InitiateLayerUpload",
           "ecr:PutImage",
-          "ecr:UploadLayerPart"  
+          "ecr:UploadLayerPart"
       ],
       "Effect": "Allow",
       "Resource": [
@@ -355,7 +355,7 @@ Wave requires access to AWS ECR for container image management. Create an IAM ro
           "ecr:GetLifecyclePolicyPreview",
           "ecr:GetRepositoryPolicy",
           "ecr:ListImages",
-          "ecr:ListTagsForResource"  
+          "ecr:ListTagsForResource"
       ],
       "Effect": "Allow",
       "Resource": [
@@ -363,7 +363,7 @@ Wave requires access to AWS ECR for container image management. Create an IAM ro
       ]
     },
   ]
-}    
+}
 ```
 
 ### Advanced configuration

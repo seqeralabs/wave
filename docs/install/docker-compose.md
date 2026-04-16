@@ -160,11 +160,10 @@ services:
       replicas: 2
       resources:
         limits:
-          memory: 4G
-          cpus: '1.0'
+          memory: 1500M
         reservations:
-          memory: 4G
-          cpus: '1'
+          memory: 1500M
+          cpus: '0.2'
     # Health check configuration
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9090/health"]
