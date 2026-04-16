@@ -24,12 +24,12 @@ jobs:
 
     steps:
       - name : Checkout
-        uses : actions/checkout@v4
+        uses : actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name : Setup Node.js environment
-        uses : actions/setup-node@v4
+        uses : actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with :
-          node-version : '20.9.0'
+          node-version : '20.20.2'
 
       - name : Install tsp
         run : npm install -g @typespec/compiler@0.64.0
@@ -41,7 +41,7 @@ jobs:
           tsp compile .
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # v1.7.0
         with:
           aws-access-key-id: ${{secrets.TOWER_CI_AWS_ACCESS}}
           aws-secret-access-key: ${{secrets.TOWER_CI_AWS_SECRET}}
@@ -49,7 +49,7 @@ jobs:
 
       - name : Login to Amazon ECR
         id : login-ecr
-        uses : aws-actions/amazon-ecr-login@v1
+        uses : aws-actions/amazon-ecr-login@5a88a04c91d5c6f97aae0d9be790e64d9b1d47b7 # v1.7.1
 
       - name: Release OpenAPI docs
         if: "contains(github.event.head_commit.message, '[release]')"

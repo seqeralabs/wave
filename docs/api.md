@@ -218,12 +218,12 @@ Returns the name of the container request made available by Wave.
 | `mambaImage`                        | Name of the Docker image used to build Conda containers.                                                                                              |
 | `commands`                          | Command to be included in the container.                                                                                                                       |
 | `basePackages`                      | Names of base packages.                                                                                                                                        |
-| `baseImage`                         | Base image for the final stage of multi-stage Conda/Pixi builds.                                                                                        |
+| `baseImage`                         | Base image for the final stage of multi-stage Conda/Pixi Docker builds. Has no effect on Singularity builds.                                            |
 | `pixiOpts`                          | Pixi build options (when `type` is `CONDA` and `buildTemplate` is `conda/pixi:v1`).                                                                                  |
 | `pixiImage`                         | Name of the Docker image used for Pixi package manager (e.g., `ghcr.io/prefix-dev/pixi:latest`).                                                              |
 | `cranOpts`                          | CRAN build options (when `type` is `CRAN`).                                                                                                                        |
 | `rImage`                            | Name of the R Docker image used to build CRAN containers (e.g., `rocker/r-ver:4.4.1`).                                                                         |
-| `buildTemplate`                     | The build template to use for container builds. Supported values: `conda/pixi:v1` (Pixi with multi-stage builds), `conda/micromamba:v2` (Micromamba 2.x with multi-stage builds). Default: `conda/micromamba:v1` template. |
+| `buildTemplate`                     | The build template to use for container builds. Supported values: `conda/pixi:v1` (multi-stage build using Pixi), `conda/micromamba:v2` (multi-stage build using Micromamba 2.x). Both produce smaller images by excluding the package manager from the final stage (Singularity still uses a single-stage build). Default: `conda/micromamba:v1`. |
 | `nameStrategy`                      | The name strategy to be used to create the name of the container built by Wave. Options: `none`, `tagPrefix`, `imageSuffix`.                       |                                                     |
 
 #### Response
@@ -493,7 +493,7 @@ Get status of build against `buildId` passed as path variable
     }
     ```
 
-- Create Singularity image with Pixi v1 template (multi-stage build):
+- Create Singularity image with Pixi v1 template (single-stage build):
 
     **Request**
 
@@ -535,7 +535,7 @@ Get status of build against `buildId` passed as path variable
     }
     ```
 
-- Create Singularity image with Micromamba v2 template (multi-stage build):
+- Create Singularity image with Micromamba v2 template (single-stage build):
 
     **Request**
 
@@ -578,19 +578,15 @@ Get status of build against `buildId` passed as path variable
     ```
 
 :::note
-Multi-stage build templates (`conda/pixi:v1` and `conda/micromamba:v2`) create optimized container images by separating the build environment from the final runtime environment. This results in smaller container images that only contain the installed packages and runtime dependencies, without the build tools.
+Multi-stage build templates (`conda/pixi:v1` and `conda/micromamba:v2`) create optimized Docker container images by separating the build environment from the final runtime environment. This results in smaller container images that only contain the installed packages and runtime dependencies, without the build tools.
 :::
 
 :::important
-**Image Requirements for Singularity Builds with Pixi and Micromamba v2 Templates**
+**Singularity builds use single-stage**
 
-When building Singularity images (`format: "sif"`) with the `conda/pixi:v1` or `conda/micromamba:v2` build templates, base images (via `baseImage` option) must have the `tar` utility installed.
+When building Singularity images (`format: "sif"`) with the `conda/pixi:v1` or `conda/micromamba:v2` build templates, single-stage builds are used. Singularity's proot-based builder cannot preserve file permissions when transferring files across stages, so the conda/pixi environment is installed directly in a single stage using the mamba/pixi image as the base.
 
-This requirement exists because Singularity's multi-stage builds use `proot` to emulate filesystem operations, which cannot reliably copy directory structures between build stages. The templates support this by compressing the environment into a tarball (`tar czf`) and extracting it (`tar xzf`) in the final stage.
-
-Docker builds are not affected by this requirement. Docker's native `COPY --from=build` directive handles directory copying directly.
-
-Most standard base images (Ubuntu, Debian, Alpine, etc.) include `tar` by default, but minimal or distroless images may require explicit installation.
+As a result, the `baseImage` option has no effect on Singularity builds — it only applies to Docker builds. The multi-stage image size optimization is also not available for Singularity.
 :::
 
 ### GET `/v1alpha1/builds/{buildId}/status`

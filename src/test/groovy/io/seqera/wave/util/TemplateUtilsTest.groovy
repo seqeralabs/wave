@@ -458,7 +458,17 @@ class TemplateUtilsTest extends Specification {
     }
 
     /* *********************************************************************************
-     * Micromamba v2 template tests (multi-stage builds)
+     * Micromamba v2 template tests
+     *
+     * Singularity templates use single-stage builds because Singularity's proot-based
+     * builder cannot preserve file permissions when transferring files across stages.
+     * Tar extraction and %files from build both fail with permission errors such as:
+     *
+     *   tar: conda/conda-meta: Cannot change mode to rwxrwxrwx: No such file or directory
+     *
+     * The conda environment is installed directly in a single stage using the mamba
+     * image as the base. Note that {{base_image}} is not used in the Singularity
+     * templates — the container uses the mamba image as its base instead.
      * *********************************************************************************/
 
     def 'should create dockerfile using micromamba v2 template from conda file' () {
@@ -473,7 +483,10 @@ class TemplateUtilsTest extends Specification {
         TemplateUtils.condaFileToDockerFileUsingV2(CONDA_OPTS) == '''\
                 FROM mambaorg/micromamba:2.1.1 AS build
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
-                RUN micromamba install -y -n base -f /tmp/conda.yml \\
+                RUN (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
+                    && cat /tmp/mamba.log \\
+                    || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
+                        && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /tmp/conda.yml)) \\
                     && micromamba install -y -n base conda-forge::procps-ng \\
                     && micromamba env export --name base --explicit > environment.lock \\
                     && echo ">> CONDA_LOCK_START" \\
@@ -494,7 +507,10 @@ class TemplateUtilsTest extends Specification {
         TemplateUtils.condaFileToDockerFileUsingV2(new CondaOpts([:])) == '''\
                 FROM mambaorg/micromamba:1.5.10-noble AS build
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
-                RUN micromamba install -y -n base -f /tmp/conda.yml \\
+                RUN (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
+                    && cat /tmp/mamba.log \\
+                    || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
+                        && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /tmp/conda.yml)) \\
                     && micromamba install -y -n base conda-forge::procps-ng \\
                     && micromamba env export --name base --explicit > environment.lock \\
                     && echo ">> CONDA_LOCK_START" \\
@@ -524,7 +540,10 @@ class TemplateUtilsTest extends Specification {
         TemplateUtils.condaPackagesToDockerFileUsingV2(PACKAGES, CHANNELS, CONDA_OPTS) == '''\
                 FROM mambaorg/micromamba:2.1.1 AS build
                 RUN \\
-                    micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1 \\
+                    (micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1 > /tmp/mamba.log 2>&1 \\
+                    && cat /tmp/mamba.log \\
+                    || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
+                        && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1)) \\
                     && micromamba install -y -n base conda-forge::procps-ng \\
                     && micromamba env export --name base --explicit > environment.lock \\
                     && echo ">> CONDA_LOCK_START" \\
@@ -554,7 +573,10 @@ class TemplateUtilsTest extends Specification {
         TemplateUtils.condaPackagesToDockerFileUsingV2(PACKAGES, CHANNELS, CONDA_OPTS) == '''\
                 FROM mambaorg/micromamba:2.1.1 AS build
                 RUN \\
-                    micromamba install -y -n base -c conda-forge numpy pandas \\
+                    (micromamba install -y -n base -c conda-forge numpy pandas > /tmp/mamba.log 2>&1 \\
+                    && cat /tmp/mamba.log \\
+                    || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
+                        && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -c conda-forge numpy pandas)) \\
                     && micromamba env export --name base --explicit > environment.lock \\
                     && echo ">> CONDA_LOCK_START" \\
                     && cat environment.lock \\
@@ -609,7 +631,17 @@ class TemplateUtilsTest extends Specification {
     }
 
     /* *********************************************************************************
-     * Pixi v1 template tests (multi-stage builds)
+     * Pixi v1 template tests (single-stage Singularity builds)
+     *
+     * Singularity templates use single-stage builds because Singularity's proot-based
+     * builder cannot preserve file permissions when transferring files across stages.
+     * Tar extraction and %files from build both fail with permission errors such as:
+     *
+     *   tar: conda/conda-meta: Cannot change mode to rwxrwxrwx: No such file or directory
+     *
+     * The conda/pixi environment is installed directly in a single stage using the
+     * pixi image as the base. Note that {{base_image}} is not used in the Singularity
+     * templates — the container uses the pixi image as its base instead.
      * *********************************************************************************/
 
     def 'should create singularityfile using pixi v1 template' () {
@@ -624,7 +656,6 @@ class TemplateUtilsTest extends Specification {
         TemplateUtils.condaFileToSingularityFileUsingPixi(PIXI_OPTS) == '''\
                 BootStrap: docker
                 From: ghcr.io/prefix-dev/pixi:latest
-                Stage: build
                 %files
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
@@ -636,20 +667,6 @@ class TemplateUtilsTest extends Specification {
                     echo ">> CONDA_LOCK_START"
                     cat /opt/wave/pixi.lock
                     echo "<< CONDA_LOCK_END"
-                    tar czf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs default
-                    ls -lh /opt/pixi-env.tar.gz
-
-                Bootstrap: docker
-                From: ubuntu:24.04
-                Stage: final
-                # install binary from stage one
-                %files from build
-                    /opt/pixi-env.tar.gz /opt/pixi-env.tar.gz
-                    /shell-hook.sh /shell-hook.sh
-                %post
-                    mkdir -p /opt/wave/.pixi/envs
-                    tar xzf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs
-                    rm /opt/pixi-env.tar.gz
                 %environment
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
                 '''.stripIndent()
@@ -660,7 +677,6 @@ class TemplateUtilsTest extends Specification {
         TemplateUtils.condaFileToSingularityFileUsingPixi(new PixiOpts([:])) == '''\
                 BootStrap: docker
                 From: public.cr.seqera.io/wave/pixi:0.61.0-noble
-                Stage: build
                 %files
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
@@ -672,20 +688,6 @@ class TemplateUtilsTest extends Specification {
                     echo ">> CONDA_LOCK_START"
                     cat /opt/wave/pixi.lock
                     echo "<< CONDA_LOCK_END"
-                    tar czf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs default
-                    ls -lh /opt/pixi-env.tar.gz
-
-                Bootstrap: docker
-                From: ubuntu:24.04
-                Stage: final
-                # install binary from stage one
-                %files from build
-                    /opt/pixi-env.tar.gz /opt/pixi-env.tar.gz
-                    /shell-hook.sh /shell-hook.sh
-                %post
-                    mkdir -p /opt/wave/.pixi/envs
-                    tar xzf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs
-                    rm /opt/pixi-env.tar.gz
                 %environment
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
                 '''.stripIndent()
@@ -703,7 +705,6 @@ class TemplateUtilsTest extends Specification {
         TemplateUtils.condaFileToSingularityFileUsingPixi(PIXI_OPTS) == '''\
                 BootStrap: docker
                 From: ghcr.io/prefix-dev/pixi:0.35.0
-                Stage: build
                 %files
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
@@ -714,20 +715,6 @@ class TemplateUtilsTest extends Specification {
                     echo ">> CONDA_LOCK_START"
                     cat /opt/wave/pixi.lock
                     echo "<< CONDA_LOCK_END"
-                    tar czf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs default
-                    ls -lh /opt/pixi-env.tar.gz
-
-                Bootstrap: docker
-                From: debian:12
-                Stage: final
-                # install binary from stage one
-                %files from build
-                    /opt/pixi-env.tar.gz /opt/pixi-env.tar.gz
-                    /shell-hook.sh /shell-hook.sh
-                %post
-                    mkdir -p /opt/wave/.pixi/envs
-                    tar xzf /opt/pixi-env.tar.gz -C /opt/wave/.pixi/envs
-                    rm /opt/pixi-env.tar.gz
                 %environment
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
                 '''.stripIndent()
@@ -778,31 +765,22 @@ class TemplateUtilsTest extends Specification {
         TemplateUtils.condaFileToSingularityFileV2(CONDA_OPTS) == '''\
                 BootStrap: docker
                 From: mambaorg/micromamba:2.1.1
-                Stage: build
                 %files
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
-                    micromamba install -y -n base -f /scratch/conda.yml
+                    micromamba install -y -n base -f /scratch/conda.yml > /tmp/mamba.log 2>&1 \\
+                        && cat /tmp/mamba.log \\
+                        || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
+                            && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /scratch/conda.yml)
                     micromamba install -y -n base conda-forge::procps-ng
                     micromamba env export --name base --explicit > environment.lock
                     echo ">> CONDA_LOCK_START"
                     cat environment.lock
                     echo "<< CONDA_LOCK_END"
-                    tar czf /opt/conda.tar.gz -C /opt conda
-
-                Bootstrap: docker
-                From: ubuntu:24.04
-                Stage: final
-                %files from build
-                    /opt/conda.tar.gz /opt/conda.tar.gz
-                %post
-                    cd /opt
-                    tar xzf conda.tar.gz
-                    rm conda.tar.gz
                 %environment
                     export MAMBA_ROOT_PREFIX=/opt/conda
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
-                    '''.stripIndent()
+                '''.stripIndent()
 
     }
 
@@ -811,27 +789,18 @@ class TemplateUtilsTest extends Specification {
         TemplateUtils.condaFileToSingularityFileV2(new CondaOpts([:])) == '''\
                 BootStrap: docker
                 From: mambaorg/micromamba:1.5.10-noble
-                Stage: build
                 %files
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
-                    micromamba install -y -n base -f /scratch/conda.yml
+                    micromamba install -y -n base -f /scratch/conda.yml > /tmp/mamba.log 2>&1 \\
+                        && cat /tmp/mamba.log \\
+                        || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
+                            && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /scratch/conda.yml)
                     micromamba install -y -n base conda-forge::procps-ng
                     micromamba env export --name base --explicit > environment.lock
                     echo ">> CONDA_LOCK_START"
                     cat environment.lock
                     echo "<< CONDA_LOCK_END"
-                    tar czf /opt/conda.tar.gz -C /opt conda
-
-                Bootstrap: docker
-                From: ubuntu:24.04
-                Stage: final
-                %files from build
-                    /opt/conda.tar.gz /opt/conda.tar.gz
-                %post
-                    cd /opt
-                    tar xzf conda.tar.gz
-                    rm conda.tar.gz
                 %environment
                     export MAMBA_ROOT_PREFIX=/opt/conda
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
@@ -852,24 +821,20 @@ class TemplateUtilsTest extends Specification {
         TemplateUtils.condaPackagesToSingularityFileV2(PACKAGES, CHANNELS, CONDA_OPTS) == '''\
                 BootStrap: docker
                 From: mambaorg/micromamba:2.1.1
-                Stage: build
                 %post
-                    micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1
+                    micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1 > /tmp/mamba.log 2>&1 \\
+                        && cat /tmp/mamba.log \\
+                        || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
+                            && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1)
                     micromamba install -y -n base conda-forge::procps-ng
                     micromamba env export --name base --explicit > environment.lock
                     echo ">> CONDA_LOCK_START"
                     cat environment.lock
                     echo "<< CONDA_LOCK_END"
-
-                Bootstrap: docker
-                From: ubuntu:24.04
-                Stage: final
-                %files from build
-                    /opt/conda /opt/conda
                 %environment
                     export MAMBA_ROOT_PREFIX=/opt/conda
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
-                    '''.stripIndent()
+                '''.stripIndent()
     }
 
     def 'should create singularityfile using micromamba v2 template with custom base image' () {
@@ -886,23 +851,19 @@ class TemplateUtilsTest extends Specification {
         TemplateUtils.condaPackagesToSingularityFileV2(PACKAGES, CHANNELS, CONDA_OPTS) == '''\
                 BootStrap: docker
                 From: mambaorg/micromamba:2.1.1
-                Stage: build
                 %post
-                    micromamba install -y -n base -c conda-forge numpy pandas
+                    micromamba install -y -n base -c conda-forge numpy pandas > /tmp/mamba.log 2>&1 \\
+                        && cat /tmp/mamba.log \\
+                        || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
+                            && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -c conda-forge numpy pandas)
                     micromamba env export --name base --explicit > environment.lock
                     echo ">> CONDA_LOCK_START"
                     cat environment.lock
                     echo "<< CONDA_LOCK_END"
-
-                Bootstrap: docker
-                From: debian:12
-                Stage: final
-                %files from build
-                    /opt/conda /opt/conda
                 %environment
                     export MAMBA_ROOT_PREFIX=/opt/conda
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
-                    '''.stripIndent()
+                '''.stripIndent()
     }
 
     def 'should create singularityfile using micromamba v2 template with commands' () {
@@ -921,7 +882,7 @@ class TemplateUtilsTest extends Specification {
 
         then:
         result.contains('From: mambaorg/micromamba:2.1.1')
-        result.contains('From: ubuntu:24.04')
+        !result.contains('Stage: build')
         result.contains('%post')
         result.contains('apt-get update')
         result.contains('apt-get install -y vim')
@@ -942,7 +903,7 @@ class TemplateUtilsTest extends Specification {
         then:
         result.contains('-f https://foo.com/some/conda-lock.yml')
         result.contains('From: mambaorg/micromamba:2.1.1')
-        result.contains('From: ubuntu:24.04')
+        !result.contains('Stage: build')
     }
 
 }

@@ -213,12 +213,7 @@ Configure how Wave builds container images and manages associated logs for monit
 : When `true`, includes OCI media types in exported manifests (default: `true`).
 
 `wave.build.public-repo` *(optional)*
-: Public repository for container images built by Wave. It is used as the target repository
-  when a freeze mode build is requested with packages (Conda/pip) via the v2 API and no custom `buildRepository`
-  is provided in the request. When set, images stored in this repository default to the `imageSuffix` naming strategy.
-  The registry hostname for this repository must be unique (i.e., not shared with `wave.build.repo` or `wave.build.cache-repo`)
-  so that Wave's default credentials are resolved correctly.
-  When not configured, you must specify a `buildRepository` in the request for freeze mode operations with packages.
+: Public repository for container images built by Wave. Wave uses this repository as the build target when a freeze mode build is requested with Conda or pip packages via the v2 API and no `buildRepository` is provided. Images stored here default to the `imageSuffix` naming strategy. The registry hostname must be unique so that Wave can resolve default credentials correctly (i.e, it cannot be shared with `wave.build.repo` or `wave.build cache-repo`). If not set, a `buildRepository` must be specified in each freeze mode operations with packages.
 
 `wave.build.repo` *(required)*
 : Docker container repository for container images built by Wave.
