@@ -13,16 +13,20 @@ Before installing Wave, you need the following infrastructure components:
 - **PostgreSQL instance** - Version 12, or higher
 - **Redis instance** - Version 6.2, or higher
 
+:::note
+Use managed services for PostgreSQL and Redis (e.g., Amazon RDS, Amazon ElastiCache, or equivalent) rather than running them in Docker Compose. Managed services provide automated backups, failover, patching, and monitoring that are difficult to replicate with containerized databases. Running PostgreSQL or Redis in Docker Compose is suitable only for local development and testing.
+:::
+
 ## System requirements
 
 The minimum system requirements for self-hosted Wave in Docker Compose are:
 
 - Current, supported versions of **Docker Engine** and **Docker Compose**.
 - Compute instance minimum requirements:
-  - **Memory**: 32 GB RAM available to be used by the Wave application on the host system.
-  - **CPU**: 8 CPU cores available on the host system.
+  - **Memory**: 12 GB RAM available on the host system (8 GB for Wave replicas + headroom for OS and Docker).
+  - **CPU**: 4 CPU cores available on the host system (2 for Wave replicas + headroom for OS and Docker).
   - **Storage**: 10 GB in addition to sufficient disk space for your container images and temporary files.
-  - For example, in AWS EC2, `m5a.2xlarge` or greater
+  - For example, in AWS EC2, `m5a.xlarge` or greater
   - **Network**: Connectivity to your PostgreSQL and Redis instances.
 
 ## Database configuration
@@ -62,34 +66,24 @@ Wave will automatically handle schema migrations on startup and create the requi
 
 Create a configuration file that defines Wave's behavior and integrations. Save this as `config/wave-config.yml` in your Docker Compose directory.
 
+Database, Redis, and Platform connection settings are provided via the `wave.env` environment file (see [Deploy Wave](#deploy-wave) below).
+
 ```yaml
 wave:
-  # Build service configuration - disabled for Docker Compose
-  build:
-    enabled: false
-  # Mirror service configuration - disabled for Docker Compose
-  mirror:
-    enabled: false
-  # Security scanning configuration - disabled for Docker Compose
-  scan:
-    enabled: false
-  # Blob caching configuration - disabled for Docker Compose
-  blobCache:
-    enabled: false
-  # Database connection settings
-  db:
-    uri: "jdbc:postgresql://your-postgres-host:5432/wave"
-    user: "wave_user"
-    password: "your_secure_password"
+  debug: false
+  tokens:
+    cache:
+      duration: "36h"
+  metrics:
+    enabled: true
 
-# Redis configuration for caching and session management
-redis:
-  uri: "redis://your-redis-host:6379"
-
-# Platform integration (optional)
-tower:
-  endpoint:
-    url: "https://your-platform-server.com"
+# Rate limiting configuration
+rate-limit:
+  pull:
+    anonymous: 250/1h
+    authenticated: 2000/1m
+  timeout-errors:
+    max-rate: 100/1m
 
 # Micronaut framework configuration
 micronaut:
@@ -98,18 +92,15 @@ micronaut:
     event-loops:
       default:
         num-threads: 64
-      stream-pool:
-        executor: stream-executor
   # HTTP client configuration
   http:
     services:
       stream-client:
-        read-timeout: 30s
-        read-idle-timeout: 5m
-        event-loop-group: stream-pool
+        read-timeout: '30s'
+        read-idle-timeout: '5m'
 
 # Management endpoints configuration
-loggers:
+endpoints:
   env:
     enabled: false
   bean:
@@ -136,8 +127,7 @@ loggers:
 
 Configuration notes:
 
-- Replace `your-postgres-host` and `your-redis-host` with your service endpoints.
-- Adjust `number-of-threads` (16) and `num-threads` (64) based on your CPU cores — Use between 2x and 4x your CPU core count.
+- Adjust `num-threads` (64) based on your CPU cores — use between 2x and 4x your CPU core count.
 
 ## Docker Compose
 
@@ -145,16 +135,18 @@ Add the following to your `docker-compose.yml`:
 
 ```yaml
 services:
-  wave-app:
-    image: your-registry.com/wave:latest
-    container_name: wave-app
+  wave:
+    # Replace with your Wave image registry path
+    image: <WAVE CONTAINER IMAGE>
     ports:
-      # Bind to the host on 9100 vs 9090
-      - "9100:9090"
+      - "9090:9090"
     environment:
-      - MICRONAUT_ENVIRONMENTS=lite,redis,postgres
+      - MICRONAUT_ENVIRONMENTS=lite,rate-limit,redis,postgres,prometheus
     volumes:
       - ./config/wave-config.yml:/work/config.yml:ro
+    env_file:
+      - wave.env
+    working_dir: /work
     deploy:
       mode: replicated
       replicas: 2
@@ -171,7 +163,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-    # Restart policy
     restart: unless-stopped
 ```
 
