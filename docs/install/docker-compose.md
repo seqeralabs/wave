@@ -23,8 +23,8 @@ The minimum system requirements for self-hosted Wave in Docker Compose are:
 
 - Current, supported versions of **Docker Engine** and **Docker Compose**.
 - Compute instance minimum requirements:
-  - **Memory**: 16 GB RAM available to be used by the Wave application on the host system.
-  - **CPU**: 4 CPU cores available on the host system.
+  - **Memory**: 12 GB RAM available on the host system (8 GB for Wave replicas + headroom for OS and Docker).
+  - **CPU**: 4 CPU cores available on the host system (2 for Wave replicas + headroom for OS and Docker).
   - **Storage**: 10 GB in addition to sufficient disk space for your container images and temporary files.
   - For example, in AWS EC2, `m5a.xlarge` or greater
   - **Network**: Connectivity to your PostgreSQL and Redis instances.
@@ -156,7 +156,7 @@ services:
           cpus: '1.0'
         reservations:
           memory: 2G
-          cpus: '0.5'
+          cpus: '0.2'
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9090/health"]
       interval: 30s
