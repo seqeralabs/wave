@@ -18,13 +18,13 @@
 
 package io.seqera.wave.service.scan
 
-
 import java.nio.file.Path
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.configuration.ScanEnabled
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -35,6 +35,7 @@ import jakarta.inject.Singleton
  */
 @Slf4j
 @Singleton
+@Requires(bean = ScanEnabled)
 @Requires(missingProperty = 'wave.build.k8s')
 @CompileStatic
 class DockerScanStrategy extends ScanStrategy {
@@ -51,12 +52,12 @@ class DockerScanStrategy extends ScanStrategy {
         log.info("Launching container scan job: $jobName for entry: $entry}")
         // config (docker auth) file name
         final Path configFile = entry.configJson ? entry.workDir.resolve('config.json') : null
-        // outfile file name
-        final reportFile = entry.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
         // create the launch command
         final dockerCommand = dockerWrapper(jobName, entry.workDir, configFile, scanConfig.environment)
-        final trivyCommand = List.of(scanConfig.scanImage) + scanCommand(entry.containerImage, reportFile, entry.platform, scanConfig)
-        final command = dockerCommand + trivyCommand
+
+        // Use unified scan command for both container and plugin scans
+        final scanCommand = buildScanCommand(entry.containerImage, entry.workDir, entry.platform, scanConfig)
+        final command = dockerCommand + scanConfig.scanImage + scanCommand
 
         //launch scanning
         log.debug("Container scan command: ${command.join(' ')}")
@@ -76,7 +77,6 @@ class DockerScanStrategy extends ScanStrategy {
         wrapper.add('--detach')
         wrapper.add('--name')
         wrapper.add(jobName)
-
         // scan work dir
         wrapper.add('-w')
         wrapper.add(scanDir.toString())

@@ -104,8 +104,15 @@ class DockerJobOperation implements JobOperation {
         final builder = new ProcessBuilder(cli)
         builder.redirectErrorStream(true)
         final process = builder.start()
+        
+        // Use consumeProcessOutput to read stdout/stderr in background threads
+        // This prevents deadlock when process output buffer fills up
+        final output = new StringBuilder()
+        final error = new StringBuilder()
+        process.consumeProcessOutput(output, error)
         process.waitFor()
-        final result = process.inputStream.text.trim()
+        
+        final result = output.toString().trim()
         return State.parse(result)
     }
 
@@ -118,8 +125,15 @@ class DockerJobOperation implements JobOperation {
         final builder = new ProcessBuilder(cli)
         builder.redirectErrorStream(true)
         final process = builder.start()
+        
+        // Use consumeProcessOutput to read stdout/stderr in background threads
+        // This prevents deadlock when process output buffer fills up
+        final output = new StringBuilder()
+        final error = new StringBuilder()
+        process.consumeProcessOutput(output, error)
         process.waitFor()
-        process.inputStream.text
+        
+        return output.toString()
     }
 
 }

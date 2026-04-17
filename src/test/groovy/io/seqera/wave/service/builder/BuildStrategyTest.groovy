@@ -19,11 +19,13 @@
 package io.seqera.wave.service.builder
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.nio.file.Path
 import java.time.Duration
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.api.BuildCompression
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.configuration.BuildConfig
@@ -43,7 +45,7 @@ class BuildStrategyTest extends Specification {
 
     def 'should get buildkit command' () {
         given:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 'c168dba125e28777',
                 buildId: 'bd-c168dba125e28777_1',
                 workspace: Path.of('/work/foo'),
@@ -70,7 +72,7 @@ class BuildStrategyTest extends Specification {
                 '--opt',
                 'platform=linux/amd64',
                 '--export-cache',
-                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip,force-compression=false',
+                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true',
                 '--import-cache',
                 'type=registry,ref=reg.io/wave/build/cache:c168dba125e28777'
         ]
@@ -78,7 +80,7 @@ class BuildStrategyTest extends Specification {
 
     def 'should get buildkit command with build context' () {
         given:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 'c168dba125e28777',
                 buildId: 'bd-c168dba125e28777_1',
                 workspace: Path.of('/work/foo'),
@@ -104,7 +106,7 @@ class BuildStrategyTest extends Specification {
                 '--opt',
                 'platform=linux/amd64',
                 '--export-cache',
-                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip,force-compression=false',
+                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true',
                 '--import-cache',
                 'type=registry,ref=reg.io/wave/build/cache:c168dba125e28777'
         ]
@@ -112,7 +114,7 @@ class BuildStrategyTest extends Specification {
 
     def 'should get singularity command' () {
         given:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 'c168dba125e28777',
                 buildId: 'bd-c168dba125e28777_1',
                 workspace: Path.of('/work/foo'),
@@ -136,25 +138,26 @@ class BuildStrategyTest extends Specification {
         def content = 'FROM foo:latest'
         def workspace = Path.of("some/path")
         def buildrepo = 'foo.com/repo'
-        def containerId = ContainerHelper.makeContainerId(content, null, ContainerPlatform.of('amd64'), buildrepo, null)
+        def containerId = ContainerHelper.makeContainerId(content, null, ContainerPlatform.of('amd64'), buildrepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildrepo, containerId, null, null)
-        def build = new BuildRequest(
-                containerId,
-                content,
-                'condaFile',
-                workspace,
-                targetImage,
-                PlatformId.NULL,
-                ContainerPlatform.of('amd64'),
-                'caherepo',
-                "1.2.3.4",
-                '{"config":"json"}',
-                'GMT+1',
-                Mock(ContainerConfig),
-                'sc-12345',
-                Mock(BuildContext),
-                BuildFormat.DOCKER,
-                timeout
+        def build = BuildRequest.of(
+                containerId: containerId,
+                containerFile: content,
+                condaFile: 'condaFile',
+                workspace: workspace,
+                targetImage: targetImage,
+                identity: PlatformId.NULL,
+                platform: ContainerPlatform.of('amd64'),
+                cacheRepository: 'caherepo',
+                ip: "1.2.3.4",
+                configJson: '{"config":"json"}',
+                offsetId: 'GMT+1',
+                containerConfig: Mock(ContainerConfig),
+                scanId: 'sc-12345',
+                buildContext: Mock(BuildContext),
+                format: BuildFormat.DOCKER,
+                maxDuration: timeout,
+                compression: BuildCompression.gzip
         )
 
         then:
@@ -169,36 +172,271 @@ class BuildStrategyTest extends Specification {
         build.maxDuration == timeout
     }
 
+    @Unroll
     def 'should create output options' () {
         given:
-        def req = new BuildRequest(
+        def req = BuildRequest.of(
                 containerId: 'c168dba125e28777',
                 buildId: 'bd-c168dba125e28777_1',
                 workspace: Path.of('/work/foo'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'quay.io/wave:c168dba125e28777',
-                cacheRepository: 'reg.io/wave/build/cache' )
+                cacheRepository: 'reg.io/wave/build/cache',
+                compression: new BuildCompression()
+                        .withMode(REQ_COMPRESS as BuildCompression.Mode)
+                        .withLevel(LEVEL)
+                        .withForce(FORCE),
+        )
 
         when:
         def config = new BuildConfig(
                 ociMediatypes: true,
-                compression: 'gzip',
-                forceCompression: false,
-                buildkitImage: 'moby/buildkit:v0.18.2-rootless')
+                compression: CONFIG_COMPRESS,
+                forceCompression: FORCE,
+                buildkitImage: 'public.cr.seqera.io/wave/buildkit:v0.25.2-rootless')
         and:
         def result = BuildStrategy.outputOpts(req, config)
         then:
-        result == 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true'
+        result == EXPECTED
+
+        where:
+        REQ_COMPRESS    | CONFIG_COMPRESS   | LEVEL | FORCE | EXPECTED
+        null            | null              | null  | null  | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true'
+        null            | 'gzip'            | null  | null  | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=gzip'
+        'gzip'          | null              | null  | false | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=gzip,force-compression=false'
+        'gzip'          | null              | 10    | true  | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=gzip,compression-level=10,force-compression=true'
+        'gzip'          | 'estargz'         | null  | null  | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=gzip'
+        and:
+        null            | 'estargz'         | null  | null  | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=estargz,force-compression=true'
+        'estargz'       | 'gzip'            | null  | null  | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=estargz,force-compression=true'
+        and:
+        null            | 'estargz'         | null  | false | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=estargz,force-compression=false'
+        'estargz'       | 'gzip'            | null  | false | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=estargz,force-compression=false'
+        and:
+        null            | 'estargz'         | 1     | true | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=estargz,compression-level=1,force-compression=true'
+        'estargz'       | 'gzip'            | 2     | true | 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=estargz,compression-level=2,force-compression=true'
+    }
+
+
+    @Unroll
+    def 'should create cache options' () {
+        given:
+        def req = BuildRequest.of(
+                containerId: 'c168dba125e28777',
+                buildId: 'bd-c168dba125e28777_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'quay.io/wave:c168dba125e28777',
+                cacheRepository: 'reg.io/wave/build/cache',
+                compression: new BuildCompression()
+                        .withMode(REQ_COMPRESS as BuildCompression.Mode)
+                        .withLevel(LEVEL)
+                        .withForce(FORCE),
+        )
 
         when:
-        config = new BuildConfig(
+        def config = new BuildConfig(
                 ociMediatypes: true,
-                compression: 'estargz',
-                forceCompression: true,
-                buildkitImage: 'moby/buildkit:v0.18.2-rootless')
+                compression: CONFIG_COMPRESS,
+                buildkitImage: 'public.cr.seqera.io/wave/buildkit:v0.25.2-rootless')
         and:
-        result = BuildStrategy.outputOpts(req, config)
+        def result = BuildStrategy.cacheExportOpts(req, config)
         then:
-        result == 'type=image,name=quay.io/wave:c168dba125e28777,push=true,oci-mediatypes=true,compression=estargz,force-compression=true'
+        result == EXPECTED
+
+        where:
+        REQ_COMPRESS    | CONFIG_COMPRESS   | LEVEL | FORCE | EXPECTED
+        null            | null              | null  | null | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true'
+        null            | 'gzip'            | null  | null | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip'
+        'gzip'          | null              | null  | null | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip'
+        'gzip'          | null              | null  | true  | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip,force-compression=true'
+        'gzip'          | null              | 10    | true  | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip,compression-level=10,force-compression=true'
+        and:
+        'gzip'          | 'estargz'         | null  | null  | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip'
+        'gzip'          | 'estargz'         | null  | true  | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip,force-compression=true'
+        and:
+        null            | 'estargz'         | null  | null  | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=estargz,force-compression=true'   // <-- default to force compression when using 'estargz'
+        'estargz'       | 'gzip'            | null  | null  | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=estargz,force-compression=true'   // <-- default to force compression when using 'estargz'
+        and:
+        null            | 'estargz'         | null  | false | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=estargz,force-compression=false'
+        'estargz'       | 'gzip'            | null  | false | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=estargz,force-compression=false'
+        and:
+        null            | 'estargz'         | 1     | true  | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=estargz,compression-level=1,force-compression=true'
+        'estargz'       | 'gzip'            | 2     | true  | 'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=estargz,compression-level=2,force-compression=true'
+    }
+
+    @Unroll
+    def 'should create S3 cache options' () {
+        given:
+        def req = BuildRequest.of(
+                containerId: 'abc123def456',
+                buildId: 'bd-abc123def456_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'quay.io/wave:abc123def456',
+                cacheRepository: S3_PATH,
+                compression: new BuildCompression().withMode(COMPRESSION as BuildCompression.Mode)
+        )
+
+        when:
+        def config = new BuildConfig(
+                defaultCacheRepository: S3_PATH,
+                cacheBucketRegion: REGION,
+                cacheBucketUploadParallelism: PARALLELISM,
+                buildkitImage: 'moby/buildkit:v0.26.0-rootless')
+        and:
+        def result = BuildStrategy.s3ExportCacheOpts(req, config)
+
+        then:
+        result == EXPECTED
+
+        where:
+        S3_PATH                           | REGION      | PARALLELISM | COMPRESSION | EXPECTED
+        's3://my-bucket/cache'            | 'us-east-1' | null        | null        | 'type=s3,region=us-east-1,bucket=my-bucket,prefix=cache/,name=abc123def456,mode=max,ignore-error=true'
+        's3://my-bucket/cache/prefix'     | 'us-west-2' | null        | null        | 'type=s3,region=us-west-2,bucket=my-bucket,prefix=cache/prefix/,name=abc123def456,mode=max,ignore-error=true'
+        's3://my-bucket/cache/prefix/'    | 'us-west-2' | null        | null        | 'type=s3,region=us-west-2,bucket=my-bucket,prefix=cache/prefix/,name=abc123def456,mode=max,ignore-error=true'
+        's3://wave-cache/buildkit'        | 'eu-west-1' | null        | 'gzip'      | 'type=s3,region=eu-west-1,bucket=wave-cache,prefix=buildkit/,name=abc123def456,mode=max,ignore-error=true,compression=gzip'
+        's3://my-bucket'                  | 'us-east-1' | null        | null        | 'type=s3,region=us-east-1,bucket=my-bucket,name=abc123def456,mode=max,ignore-error=true'
+        's3://my-bucket/'                 | 'us-east-1' | null        | null        | 'type=s3,region=us-east-1,bucket=my-bucket,name=abc123def456,mode=max,ignore-error=true'
+        's3://my-bucket/cache'            | 'us-east-1' | 8           | null        | 'type=s3,region=us-east-1,bucket=my-bucket,prefix=cache/,name=abc123def456,mode=max,ignore-error=true,upload_parallelism=8'
+    }
+
+    def 'should create S3 import cache options' () {
+        given:
+        def req = BuildRequest.of(
+                containerId: 'xyz789abc123',
+                buildId: 'bd-xyz789abc123_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'quay.io/wave:xyz789abc123',
+                cacheRepository: 's3://test-bucket/cache/path'
+        )
+
+        when:
+        def config = new BuildConfig(
+                defaultCacheRepository: 's3://test-bucket/cache/path',
+                cacheBucketRegion: 'ap-south-1',
+                buildkitImage: 'moby/buildkit:v0.26.0-rootless')
+        and:
+        def result = BuildStrategy.s3ImportCacheOpts(req, config)
+
+        then:
+        result == 'type=s3,region=ap-south-1,bucket=test-bucket,prefix=cache/path/,name=xyz789abc123'
+    }
+
+    def 'should parse S3 bucket from path' () {
+        expect:
+        BuildStrategy.parseBucketFromS3Path(PATH) == BUCKET
+
+        where:
+        PATH                              | BUCKET
+        's3://my-bucket/path/to/cache'    | 'my-bucket'
+        's3://wave-cache'                 | 'wave-cache'
+        's3://prod-bucket/deep/path'      | 'prod-bucket'
+    }
+
+    def 'should parse S3 prefix from path' () {
+        expect:
+        BuildStrategy.parsePrefixFromS3Path(PATH) == PREFIX
+
+        where:
+        PATH                              | PREFIX
+        's3://my-bucket/path/to/cache'    | 'path/to/cache/'
+        's3://wave-cache/buildkit'        | 'buildkit/'
+        's3://prod-bucket'                | null
+    }
+
+    def 'should detect S3 bucket path' () {
+        expect:
+        BuildConfig.isBucketPath('s3://my-bucket/cache') == true
+        BuildConfig.isBucketPath('s3://wave-cache/buildkit') == true
+    }
+
+    def 'should detect registry path' () {
+        expect:
+        BuildConfig.isBucketPath('registry.example.com/wave/cache') == false
+        BuildConfig.isBucketPath('docker.io/library/ubuntu') == false
+        BuildConfig.isBucketPath('quay.io/cache') == false
+        BuildConfig.isBucketPath(null) == false
+    }
+
+    def 'should create registry import cache options' () {
+        given:
+        def req = BuildRequest.of(
+                containerId: 'abc123def456',
+                buildId: 'bd-abc123def456_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'quay.io/wave:abc123def456',
+                cacheRepository: 'reg.io/wave/build/cache'
+        )
+        and:
+        def config = new BuildConfig(
+                defaultCacheRepository: 'reg.io/wave/build/cache',
+                buildkitImage: 'moby/buildkit:v0.26.0-rootless')
+
+        when:
+        def result = BuildStrategy.registryImportCacheOpts(req, config)
+
+        then:
+        result == 'type=registry,ref=reg.io/wave/build/cache:abc123def456'
+    }
+
+    @Unroll
+    def 'should create cache import options for registry' () {
+        given:
+        def req = BuildRequest.of(
+                containerId: 'test123',
+                buildId: 'bd-test123_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'quay.io/wave:test123',
+                cacheRepository: CACHE_REPO
+        )
+        and:
+        def config = new BuildConfig(
+                defaultCacheRepository: CACHE_REPO,
+                buildkitImage: 'moby/buildkit:v0.26.0-rootless')
+
+        when:
+        def result = BuildStrategy.cacheImportOpts(req, config)
+
+        then:
+        result == EXPECTED
+
+        where:
+        CACHE_REPO                          | EXPECTED
+        'reg.io/wave/cache'                 | 'type=registry,ref=reg.io/wave/cache:test123'
+        'docker.io/library/cache'           | 'type=registry,ref=docker.io/library/cache:test123'
+    }
+
+    @Unroll
+    def 'should create cache import options for S3' () {
+        given:
+        def req = BuildRequest.of(
+                containerId: 's3test456',
+                buildId: 'bd-s3test456_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'quay.io/wave:s3test456',
+                cacheRepository: S3_PATH
+        )
+        and:
+        def config = new BuildConfig(
+                defaultCacheRepository: S3_PATH,
+                cacheBucketRegion: REGION,
+                buildkitImage: 'moby/buildkit:v0.26.0-rootless')
+
+        when:
+        def result = BuildStrategy.cacheImportOpts(req, config)
+
+        then:
+        result == EXPECTED
+
+        where:
+        S3_PATH                             | REGION      | EXPECTED
+        's3://my-bucket/cache'              | 'us-east-1' | 'type=s3,region=us-east-1,bucket=my-bucket,prefix=cache/,name=s3test456'
+        's3://wave-cache/buildkit/prod'     | 'eu-west-1' | 'type=s3,region=eu-west-1,bucket=wave-cache,prefix=buildkit/prod/,name=s3test456'
+        's3://test-bucket'                  | 'ap-south-1'| 'type=s3,region=ap-south-1,bucket=test-bucket,name=s3test456'
     }
 }

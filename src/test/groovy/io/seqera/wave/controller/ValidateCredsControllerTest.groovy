@@ -22,6 +22,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
+import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
@@ -34,6 +35,7 @@ import io.seqera.wave.test.SecureDockerRegistryContainer
 import jakarta.inject.Inject
 
 @MicronautTest
+@Property(name = 'wave.security.ssrf-protection.enabled', value = 'false')
 class ValidateCredsControllerTest extends Specification implements SecureDockerRegistryContainer {
 
     @Inject
@@ -190,4 +192,5 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
         'nope'           | 'yepes'         | "https://quay.io"              | false
         'test'           | 'test'          | 'test'                         | true
     }
+
 }

@@ -20,6 +20,7 @@ package io.seqera.wave.service.builder
 
 import groovy.transform.CompileStatic
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.util.BucketTokenizer
 import jakarta.inject.Inject
 /**
  * Defines an abstract container build strategy.
@@ -71,24 +72,32 @@ abstract class BuildStrategy {
 
         if( req.cacheRepository ) {
             result << "--export-cache"
-            def exportCache = new StringBuilder()
-            exportCache << "type=registry,"
-            exportCache << "image-manifest=true,"
-            exportCache << "ref=${req.cacheRepository}:${req.containerId},"
-            exportCache << "mode=max,"
-            exportCache << "ignore-error=true,"
-            exportCache << "oci-mediatypes=${buildConfig.ociMediatypes},"
-            exportCache << "compression=${buildConfig.compression},"
-            exportCache << "force-compression=${buildConfig.forceCompression}"
-            result << exportCache.toString()
-
+            result << cacheExportOpts(req, buildConfig)
             result << "--import-cache"
-            result << "type=registry,ref=$req.cacheRepository:$req.containerId".toString()
+            result << cacheImportOpts(req, buildConfig)
         }
 
         return result
     }
 
+
+    static protected String compressOpts(BuildRequest req, BuildConfig config) {
+        final result = new StringBuilder()
+        final compression = req.compression?.mode?.toString() ?: config.compression
+        final level = req.compression?.level
+        final force = req.compression?.force!=null
+                ? req.compression.force
+                : ( config.forceCompression != null
+                ? config.forceCompression
+                : (compression=='estargz' ? true : null) )
+        if( compression )
+            result << ",compression=${compression}"
+        if( level!=null )
+            result << ",compression-level=${level}"
+        if( force!=null )
+            result << ",force-compression=${force}"
+        return result.toString()
+    }
 
     static protected String outputOpts(BuildRequest req, BuildConfig config) {
         final result = new StringBuilder()
@@ -96,12 +105,94 @@ abstract class BuildStrategy {
         result << ",name=${req.targetImage}"
         result << ",push=true"
         result << ",oci-mediatypes=${config.ociMediatypes}"
-        if( config.compression && config.compression != 'gzip' )
-            result << ",compression=${config.compression}"
-        if( config.forceCompression )
-            result << ",force-compression=${config.forceCompression}"
-
+        result << compressOpts(req, config)
         return result.toString()
+    }
+
+    static protected String cacheExportOpts(BuildRequest req, BuildConfig config) {
+        return BuildConfig.isBucketPath(req.cacheRepository)
+                ? s3ExportCacheOpts(req, config)
+                : registryExportCacheOpts(req, config)
+    }
+
+    static protected String cacheImportOpts(BuildRequest req, BuildConfig config) {
+        return BuildConfig.isBucketPath(req.cacheRepository)
+                ? s3ImportCacheOpts(req, config)
+                : registryImportCacheOpts(req, config)
+    }
+
+    static protected String registryExportCacheOpts(BuildRequest req, BuildConfig config) {
+        final result = new StringBuilder()
+        result << "type=registry"
+        result << ",image-manifest=true"
+        result << ",ref=${req.cacheRepository}:${req.containerId}"
+        result << ",mode=max"
+        result << ",ignore-error=true"
+        result << ",oci-mediatypes=${config.ociMediatypes}"
+        result << compressOpts(req, config)
+        return result.toString()
+    }
+
+    static protected String registryImportCacheOpts(BuildRequest req, BuildConfig config) {
+        return "type=registry,ref=${req.cacheRepository}:${req.containerId}".toString()
+    }
+
+    static protected String s3ExportCacheOpts(BuildRequest req, BuildConfig config) {
+        final bucket = parseBucketFromS3Path(req.cacheRepository)
+        final prefix = parsePrefixFromS3Path(req.cacheRepository)
+        final region = config.getCacheBucketRegion()
+        final uploadParallelism = config.cacheBucketUploadParallelism
+
+        final result = new StringBuilder()
+        result << "type=s3"
+        if (region) {
+            result << ",region=${region}"
+        }
+        result << ",bucket=${bucket}"
+        if (prefix) {
+            result << ",prefix=${prefix}"
+        }
+        result << ",name=${req.containerId}"
+        result << ",mode=max"
+        result << ",ignore-error=true"
+        if (uploadParallelism) {
+            result << ",upload_parallelism=${uploadParallelism}"
+        }
+        result << compressOpts(req, config)
+        return result.toString()
+    }
+
+    static protected String s3ImportCacheOpts(BuildRequest req, BuildConfig config) {
+        final bucket = parseBucketFromS3Path(req.cacheRepository)
+        final prefix = parsePrefixFromS3Path(req.cacheRepository)
+        final region = config.getCacheBucketRegion()
+
+        final result = new StringBuilder()
+        result << "type=s3"
+        if (region) {
+            result << ",region=${region}"
+        }
+        result << ",bucket=${bucket}"
+        if (prefix) {
+            result << ",prefix=${prefix}"
+        }
+        result << ",name=${req.containerId}"
+        return result.toString()
+    }
+
+    private static String parseBucketFromS3Path(String s3Path) {
+        final tokenizer = BucketTokenizer.from(s3Path)
+        return tokenizer.bucket
+    }
+
+    private static String parsePrefixFromS3Path(String s3Path) {
+        final tokenizer = BucketTokenizer.from(s3Path)
+        final prefix = tokenizer.key
+        // return null if prefix is null or empty
+        if( !prefix )
+            return null
+        // ensure prefix always has a trailing slash
+        return prefix.endsWith('/') ? prefix : prefix + '/'
     }
 
 }

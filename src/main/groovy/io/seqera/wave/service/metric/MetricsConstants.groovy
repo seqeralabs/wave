@@ -17,9 +17,6 @@
  */
 
 package io.seqera.wave.service.metric
-
-import io.seqera.wave.core.ContainerPlatform
-
 /**
  * Metric constants
  *

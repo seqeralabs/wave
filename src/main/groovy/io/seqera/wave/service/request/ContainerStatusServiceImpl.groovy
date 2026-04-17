@@ -18,6 +18,10 @@
 
 package io.seqera.wave.service.request
 
+import io.seqera.wave.core.ChildRefs
+import io.seqera.wave.exception.UnsupportedBuildServiceException
+import io.seqera.wave.exception.UnsupportedMirrorServiceException
+import io.seqera.wave.exception.UnsupportedScanServiceException
 import static io.seqera.wave.api.ContainerStatus.*
 
 import java.time.Duration
@@ -56,9 +60,11 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
     }
 
     @Inject
+    @Nullable
     private ContainerBuildService buildService
 
     @Inject
+    @Nullable
     private ContainerMirrorService mirrorService
 
     @Inject
@@ -73,6 +79,8 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
     private String serverUrl
 
     protected ScanEntry getScanState(String scanId) {
+        if( !scanService )
+            throw new UnsupportedScanServiceException()
         final entry = scanService.getScanState(scanId)
         if( entry!=null )
             return entry
@@ -97,6 +105,9 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
         }
 
         if( request.scanId && request.scanMode == ScanMode.required && scanService ) {
+            if( request.scanChildIds ) {
+                return handleMultiScanStatus(request, state)
+            }
             final scan = getScanState(request.scanId)
             if ( !scan )
                 throw new NotFoundException("Missing container scan record with id: ${request.scanId}")
@@ -116,12 +127,15 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
 
     protected ContainerState getContainerState(ContainerRequest request) {
         if( request.mirror && request.buildId ) {
+            if( !mirrorService )
+                throw new UnsupportedMirrorServiceException()
             final mirror = mirrorService.getMirrorResult(request.buildId)
             if (!mirror)
                 throw new NotFoundException("Missing container mirror record with id: ${request.buildId}")
             return ContainerState.from(mirror)
         }
         if( request.buildId ) {
+            if( !buildService ) throw new UnsupportedBuildServiceException()
             final build = buildService.getBuildRecord(request.buildId)
             if (!build)
                 throw new NotFoundException("Missing container build record with id: ${request.buildId}")
@@ -167,6 +181,42 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
         )
     }
 
+    protected ContainerStatusResponse handleMultiScanStatus(ContainerRequest request, ContainerState state) {
+        final List<ScanEntry> scans = new ArrayList<>(request.scanChildIds.size())
+        boolean allDone = true
+        boolean allSucceeded = true
+        Duration maxScanDuration = Duration.ZERO
+        for( ChildRefs.Ref pair : request.scanChildIds ) {
+            final scan = getScanState(pair.id)
+            if( !scan )
+                throw new NotFoundException("Missing container scan record with id: ${pair.id}")
+            scans.add(scan)
+            if( !scan.duration ) {
+                allDone = false
+            }
+            else {
+                if( scan.duration > maxScanDuration )
+                    maxScanDuration = scan.duration
+                if( !scan.succeeded() )
+                    allSucceeded = false
+            }
+        }
+
+        if( !allDone ) {
+            return createResponse0(SCANNING, request, new ContainerState(state.startTime))
+        }
+
+        // all scans completed — pick the first failure or the last success for the response
+        final combinedScan = allSucceeded
+                ? scans.last()
+                : scans.find { !it.succeeded() }
+        // use max duration since per-arch scans run in parallel
+        final newState = state
+                ? new ContainerState(state.startTime, state.duration + maxScanDuration, allSucceeded)
+                : new ContainerState(combinedScan.startTime, maxScanDuration, allSucceeded)
+        return createScanResponse(request, newState, combinedScan)
+    }
+
     protected StageResult buildResult(ContainerRequest request, ContainerState state) {
         if( state.succeeded )
               return new StageResult(true)
@@ -186,12 +236,13 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
     }
 
     protected StageResult scanResult(ContainerRequest request, ScanEntry scan) {
+        final scanDetailId = scan.scanId
         // scan was not successful
         if (!scan.succeeded()) {
             return new StageResult(
                     false,
                     "Container security scan did not complete successfully",
-                    "${serverUrl}/view/scans/${request.scanId}"
+                    "${serverUrl}/view/scans/${scanDetailId}"
             )
         }
 
@@ -209,7 +260,7 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
             return new StageResult(
                     false,
                     "Container security scan operation found one or more vulnerabilities with severity: ${foundLevels.join(',')}",
-                    "${serverUrl}/view/scans/${request.scanId}"
+                    "${serverUrl}/view/scans/${scanDetailId}"
             )
         }
 
@@ -217,7 +268,7 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
             return new StageResult(
                     true,
                     "Container security scan operation found one or more vulnerabilities that are compatible with requested security levels: ${allowedLevels.join(',')}",
-                    "${serverUrl}/view/scans/${request.scanId}"
+                    "${serverUrl}/view/scans/${scanDetailId}"
             )
         }
 

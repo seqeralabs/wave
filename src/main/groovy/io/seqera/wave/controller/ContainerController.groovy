@@ -40,6 +40,8 @@ import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.security.annotation.Secured
 import io.micronaut.security.authentication.AuthorizationException
 import io.micronaut.security.rules.SecurityRule
+import io.seqera.wave.api.BuildTemplate
+import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerStatusResponse
 import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.ScanMode
@@ -49,7 +51,10 @@ import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
+import io.seqera.wave.exception.UnsupportedBuildServiceException
+import io.seqera.wave.exception.UnsupportedMirrorServiceException
 import io.seqera.wave.exception.NotFoundException
+import io.seqera.wave.exception.UnsupportedScanServiceException
 import io.seqera.wave.exchange.DescribeWaveContainerResponse
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.ratelimit.AcquireRequest
@@ -59,12 +64,13 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildTrack
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.FreezeService
+import io.seqera.wave.service.builder.MultiPlatformBuildService
 import io.seqera.wave.service.inclusion.ContainerInclusionService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.mirror.ContainerMirrorService
 import io.seqera.wave.service.mirror.MirrorRequest
-import io.seqera.wave.service.pairing.PairingService
-import io.seqera.wave.service.pairing.socket.PairingChannel
+import io.seqera.service.pairing.PairingService
+import io.seqera.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.request.ContainerRequest
@@ -72,6 +78,7 @@ import io.seqera.wave.service.request.ContainerRequestService
 import io.seqera.wave.service.request.ContainerStatusService
 import io.seqera.wave.service.request.TokenData
 import io.seqera.wave.service.scan.ContainerScanService
+import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.PlatformId
@@ -82,12 +89,13 @@ import jakarta.inject.Inject
 import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
-import static io.seqera.wave.service.pairing.PairingService.TOWER_SERVICE
+import static io.seqera.service.pairing.PairingService.TOWER_SERVICE
 import static io.seqera.wave.util.ContainerHelper.checkContainerSpec
 import static io.seqera.wave.util.ContainerHelper.condaFileFromRequest
-import static io.seqera.wave.util.ContainerHelper.containerFileFromPackages
+import static io.seqera.wave.util.ContainerHelper.containerFileFromRequest
 import static io.seqera.wave.util.ContainerHelper.decodeBase64OrFail
 import static io.seqera.wave.util.ContainerHelper.makeContainerId
+import static io.seqera.wave.util.ContainerHelper.makeMultiPlatformContainerId
 import static io.seqera.wave.util.ContainerHelper.makeResponseV1
 import static io.seqera.wave.util.ContainerHelper.makeResponseV2
 import static io.seqera.wave.util.ContainerHelper.makeTargetImage
@@ -128,9 +136,11 @@ class ContainerController {
     private String towerEndpointUrl
 
     @Inject
+    @Nullable
     private BuildConfig buildConfig
 
     @Inject
+    @Nullable
     private ContainerBuildService buildService
 
     @Inject
@@ -162,6 +172,7 @@ class ContainerController {
     private RateLimiterService rateLimiterService
 
     @Inject
+    @Nullable
     private ContainerMirrorService mirrorService
 
     @Inject
@@ -171,9 +182,13 @@ class ContainerController {
     @Nullable
     private ContainerScanService scanService
 
+    @Inject
+    @Nullable
+    private MultiPlatformBuildService multiPlatformBuildService
+
     @PostConstruct
     private void init() {
-        log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl; default-build-repo: $buildConfig.defaultBuildRepository; default-cache-repo: $buildConfig.defaultCacheRepository; default-public-repo: $buildConfig.defaultPublicRepository"
+        log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl; default-build-repo: ${buildConfig?.defaultBuildRepository}; default-cache-repo: ${buildConfig?.defaultCacheRepository}; default-public-repo: ${buildConfig?.defaultPublicRepository}"
     }
 
     @Deprecated
@@ -248,8 +263,24 @@ class ContainerController {
 
         if( v2 && req.packages ) {
             // generate the container file required to assemble the container
-            final generated = containerFileFromPackages(req.packages, req.formatSingularity())
+            final generated = containerFileFromRequest(req)
             req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
+        }
+        // make sure container platform is defined
+        if( !req.containerPlatform )
+            req.containerPlatform = ContainerPlatform.DEFAULT.toString()
+
+        // multi-platform validation
+        final parsedPlatform = ContainerPlatform.of(req.containerPlatform)
+        if( parsedPlatform.isMultiArch() ) {
+            if( parsedPlatform != ContainerPlatform.MULTI_PLATFORM )
+                throw new BadRequestException("Only linux/amd64,linux/arm64 multi-platform combination is currently supported")
+            if( !req.containerFile && !req.packages )
+                throw new BadRequestException("Multi-platform builds require either 'containerFile' or 'packages' attribute")
+            if( req.formatSingularity() )
+                throw new BadRequestException("Multi-platform builds are not supported for Singularity format")
+            if( !multiPlatformBuildService )
+                throw new UnsupportedBuildServiceException()
         }
 
         final ip = addressResolver.resolve(httpRequest)
@@ -292,7 +323,7 @@ class ContainerController {
 
         // check if the repository does use any reserved word
         final parts = repo.tokenize('/')
-        if( parts.size()>1 && buildConfig.reservedWords ) {
+        if( parts.size()>1 && buildConfig?.reservedWords ) {
             for( String it : parts[1..-1] ) {
                 if( buildConfig.reservedWords.contains(it) )
                     throw new BadRequestException("Use of repository '$repo' is not allowed")
@@ -312,22 +343,31 @@ class ContainerController {
     }
 
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
+        if( !buildConfig )
+            throw new UnsupportedBuildServiceException()
         if( !req.containerFile )
             throw new BadRequestException("Missing dockerfile content")
         if( !buildConfig.defaultBuildRepository )
             throw new BadRequestException("Missing build repository attribute")
-        if( !buildConfig.defaultCacheRepository )
-            throw new BadRequestException("Missing build cache repository attribute")
+        if( !req.buildTemplate )
+            req.buildTemplate = BuildTemplate.defaultTemplate(req.packages)
 
         final containerSpec = decodeBase64OrFail(req.containerFile, 'containerFile')
         final condaContent = condaFileFromRequest(req)
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
-        final platform = ContainerPlatform.of(req.containerPlatform)
+        final platform = ContainerPlatform.parseOrDefault(req.containerPlatform)
         final buildRepository = targetRepo( req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository
                 ? buildConfig.defaultPublicRepository
                 : buildConfig.defaultBuildRepository), req.nameStrategy)
-        final cacheRepository = req.cacheRepository ?: buildConfig.defaultCacheRepository
+        final cacheRepository = !validationService.isCustomRepo(req.buildRepository)
+                ? (req.cacheRepository ?: buildConfig.defaultCacheRepository)
+                : req.cacheRepository   // use custom cache repo, when is a custom build repo
         final configJson = inspectService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
+        /**
+         * Use the container config for build purposes only when "freeze" is enabled.
+         * For non-freeze requests, it's applied during the argumentation phase.
+         * See also {@link io.seqera.wave.core.ContainerAugmenter#resolve(io.seqera.wave.core.RoutePath, java.util.Map)}
+         */
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
         // use 'imageSuffix' strategy by default for public repo images
@@ -339,7 +379,7 @@ class ContainerController {
         checkContainerSpec(containerSpec)
 
         // create a unique digest to identify the build req
-        final containerId = makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext)
+        final containerId = makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext, containerConfig)
         final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, nameStrategy)
         final maxDuration = buildConfig.buildMaxDuration(req)
         // default to async scan for build req for backward compatibility
@@ -363,8 +403,25 @@ class ContainerController {
                 scanId,
                 req.buildContext,
                 format,
-                maxDuration
+                maxDuration,
+                req.buildCompression,
+                req.buildTemplate
         )
+    }
+
+    protected ChildRefs makeChildScanIds(BuildRequest build, SubmitContainerTokenRequest req) {
+        if( !scanService || !build.platform.isMultiArch() )
+            return null
+        final multiPlatform = build.platform
+        final scanMode = req.scanMode!=null ? req.scanMode : ScanMode.async
+        final scanIdByPlatform = new LinkedHashMap<String, String>()
+        for( ContainerPlatform.Platform p : multiPlatform.platforms ) {
+            final platform = p.toString()
+            final id = scanService.getScanId("${build.targetImage}#${platform}", null, scanMode, req.format)
+            if( id )
+                scanIdByPlatform.put(id, platform)
+        }
+        return ChildRefs.of(scanIdByPlatform)
     }
 
     protected BuildTrack checkBuild(BuildRequest build, boolean dryRun) {
@@ -387,6 +444,37 @@ class ContainerController {
         }
     }
 
+    protected BuildTrack checkMultiPlatformBuild(BuildRequest templateBuild, SubmitContainerTokenRequest req, PlatformId identity, boolean dryRun) {
+        final containerSpec = templateBuild.containerFile
+        final condaContent = templateBuild.condaFile
+        final buildRepository = ContainerCoordinates.parse(templateBuild.targetImage).repository
+
+        // compute multi-platform container ID and target image
+        final containerId = makeMultiPlatformContainerId(containerSpec, condaContent, buildRepository, req.buildContext, req.freeze ? req.containerConfig : null)
+        final targetImage = makeTargetImage(templateBuild.format, buildRepository, containerId, condaContent, req.nameStrategy)
+
+        // check for dry-run execution
+        if( dryRun ) {
+            log.debug "== Dry-run multi-platform build request for $targetImage"
+            final dryId = containerId + BuildRequest.SEP + '0'
+            final digest = registryProxyService.getImageDigest(targetImage, identity)
+            return new BuildTrack(dryId, targetImage, digest!=null, true)
+        }
+
+        // check if the multi-platform image already exists
+        if( !buildConfig.skipCache ) {
+            final digest = registryProxyService.getImageDigest(targetImage, identity)
+            if( digest ) {
+                log.debug "== Found cached multi-platform build for $targetImage"
+                final cache = persistenceService.loadBuildSucceed(targetImage, digest)
+                return new BuildTrack(cache?.buildId, targetImage, true, true)
+            }
+        }
+
+        // delegate to multi-platform build service
+        return multiPlatformBuildService.buildMultiPlatformImage(templateBuild, containerId, targetImage, identity)
+    }
+
     protected String getContainerDigest(String containerImage, PlatformId identity) {
         containerImage
                 ? registryProxyService.getImageDigest(containerImage, identity)
@@ -402,8 +490,8 @@ class ContainerController {
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
         if( req.formatSingularity() && !req.freeze )
             throw new BadRequestException("Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting")
-        if( !req.containerPlatform )
-            req.containerPlatform = ContainerPlatform.DEFAULT.toString()
+        if( req.scanMode && !scanService )
+            throw new UnsupportedScanServiceException()
 
         // expand inclusions
         inclusionService.addContainerInclusions(req, identity)
@@ -425,8 +513,27 @@ class ContainerController {
         String buildId
         boolean buildNew
         String scanId
+        ChildRefs scanChildIds = null
         Boolean succeeded
-        if( req.containerFile ) {
+        if( req.containerFile && ContainerPlatform.of(req.containerPlatform).isMultiArch() ) {
+            if( !buildService ) throw new UnsupportedBuildServiceException()
+            final build0 = makeBuildRequest(req, identity, ip)
+            // create per-platform scan IDs for multi-arch builds
+            final childScans = makeChildScanIds(build0, req)
+            final build = childScans ? build0.withChildScanIds(childScans) : build0
+            final track = checkMultiPlatformBuild(build, req, identity, req.dryRun)
+            targetImage = track.targetImage
+            targetContent = build.containerFile
+            condaContent = build.condaFile
+            buildId = track.id
+            buildNew = !track.cached
+            scanId = build.scanId
+            scanChildIds = build.scanChildIds
+            succeeded = track.succeeded
+            type = ContainerRequest.Type.Build
+        }
+        else if( req.containerFile ) {
+            if( !buildService ) throw new UnsupportedBuildServiceException()
             final build = makeBuildRequest(req, identity, ip)
             final track = checkBuild(build, req.dryRun)
             targetImage = track.targetImage
@@ -439,6 +546,7 @@ class ContainerController {
             type = ContainerRequest.Type.Build
         }
         else if( req.mirror ) {
+            if( !mirrorService ) throw new UnsupportedMirrorServiceException()
             final mirror = makeMirrorRequest(req, identity, digest)
             final track = checkMirror(mirror, identity, req.dryRun)
             targetImage = track.targetImage
@@ -478,6 +586,7 @@ class ContainerController {
                 buildNew,
                 req.freeze,
                 scanId,
+                scanChildIds,
                 req.scanMode,
                 req.scanLevels,
                 req.dryRun,
@@ -487,6 +596,8 @@ class ContainerController {
     }
 
     protected MirrorRequest makeMirrorRequest(SubmitContainerTokenRequest request, PlatformId identity, String digest) {
+        if( !mirrorService || !buildConfig )
+            throw new UnsupportedMirrorServiceException()
         final coords = ContainerCoordinates.parse(request.containerImage)
         final target = ContainerCoordinates.parse(request.buildRepository)
         if( !coords.imageAndTag )
@@ -568,11 +679,13 @@ class ContainerController {
     void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException {
         String msg
         //check conda file size
-        if( req.condaFile && req.condaFile.length() > buildConfig.maxCondaFileSize )
+        if( req.condaFile && buildConfig && req.condaFile.length() > buildConfig.maxCondaFileSize )
             throw new BadRequestException("Conda file size exceeds the maximum allowed size of ${buildConfig.maxCondaFileSize} bytes")
         // check container file size
-        if( req.containerFile && req.containerFile.length() > buildConfig.maxContainerFileSize )
+        if( req.containerFile && buildConfig && req.containerFile.length() > buildConfig.maxContainerFileSize )
             throw new BadRequestException("Container file size exceeds the maximum allowed size of ${buildConfig.maxContainerFileSize} bytes")
+        // check layer size
+        validateLayersSize(req.containerConfig)
         // check valid image name
         msg = validationService.checkContainerName(req.containerImage)
         if( msg ) throw new BadRequestException(msg)
@@ -586,6 +699,15 @@ class ContainerController {
         // check cache repository
         msg = validationService.checkBuildRepository(req.cacheRepository, ValidationServiceImpl.RepoType.Cache)
         if( msg ) throw new BadRequestException(msg)
+    }
+
+    protected void validateLayersSize(ContainerConfig config) throws BadRequestException {
+        if( !config?.layers || !buildConfig )
+            return
+        for( def layer : config.layers ) {
+            if( layer.location && layer.location.length() > buildConfig.maxDataLayerSize )
+                throw new BadRequestException("Container layer exceeds the maximum allowed size")
+        }
     }
 
     void validateMirrorRequest(SubmitContainerTokenRequest req, boolean v2) throws BadRequestException {

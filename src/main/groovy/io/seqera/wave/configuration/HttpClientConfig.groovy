@@ -25,7 +25,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
-import io.seqera.wave.util.Retryable
+import io.seqera.util.retry.Retryable
 import jakarta.inject.Singleton
 /**
  * Model  Http Client settings

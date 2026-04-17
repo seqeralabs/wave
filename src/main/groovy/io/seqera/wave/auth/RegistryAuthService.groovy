@@ -59,6 +59,16 @@ interface RegistryAuthService {
     String getAuthorization(String image, RegistryAuth auth, RegistryCredentials creds) throws RegistryUnauthorizedAccessException
 
     /**
+     * Get the authorization header for push operations (pull,push scope).
+     *
+     * @param image The image name for which the authorisation is needed
+     * @param auth The {@link RegistryAuth} information modelling the target registry
+     * @param creds The user credentials
+     * @return The authorization header including the 'Basic' or 'Bearer' prefix
+     */
+    String getAuthorizationForPush(String image, RegistryAuth auth, RegistryCredentials creds) throws RegistryUnauthorizedAccessException
+
+    /**
      * Invalidate a cached authorization token
      *
      * @param image The image name for which the authorisation is needed

@@ -34,6 +34,7 @@ import io.micronaut.reactor.http.client.ReactorStreamingHttpClient
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.WaveDefault
+import io.seqera.cache.tiered.AbstractTieredCache
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryCredentialsProvider
@@ -51,7 +52,7 @@ import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.RegHelper
-import io.seqera.wave.util.Retryable
+import io.seqera.util.retry.Retryable
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -236,7 +237,7 @@ class RegistryProxyService {
             final resp = handleRequest0(route, headers)
             // when the response is not cacheable, return null as TTL
             final ttl = route.isDigest() && resp.isCacheable() ? cache.duration : null
-            return new Tuple2<DelegateResponse, Duration>(resp, ttl)
+            return new AbstractTieredCache.Pair<>(resp, ttl)
         })
     }
 

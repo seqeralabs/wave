@@ -76,10 +76,10 @@ class ContainerBuildServiceLiveTest extends Specification {
         '''.stripIndent()
         and:
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, cacheRepo, Mock(PlatformId))
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
-                new BuildRequest(
+                BuildRequest.of(
                         containerId: containerId,
                         containerFile: dockerFile,
                         workspace: folder,
@@ -122,10 +122,10 @@ class ContainerBuildServiceLiveTest extends Specification {
         '''.stripIndent()
         and:
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
-                new BuildRequest(
+                BuildRequest.of(
                         containerId: containerId,
                         containerFile: dockerFile,
                         workspace: folder,
@@ -159,7 +159,7 @@ class ContainerBuildServiceLiveTest extends Specification {
         given:
         def folder = Files.createTempDirectory('test')
         def cacheRepo = buildConfig.defaultCacheRepository
-        def duration = Duration.ofMinutes(1)
+        def duration = Duration.ofSeconds(90)
         and:
         def dockerFile = '''
         FROM busybox
@@ -168,10 +168,10 @@ class ContainerBuildServiceLiveTest extends Specification {
         and:
         def buildRepo = "quay.io/pditommaso/wave-tests"
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('linux/arm64'), buildRepo, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('linux/arm64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
-                new BuildRequest(
+                BuildRequest.of(
                         containerId: containerId,
                         containerFile: dockerFile,
                         workspace: folder,
@@ -204,7 +204,7 @@ class ContainerBuildServiceLiveTest extends Specification {
     def 'should build & push container to azure' () {
         given:
         def folder = Files.createTempDirectory('test')
-        def buildRepo = "seqeralabs.azurecr.io/wave-tests"
+        def buildRepo = "wavetest.azurecr.io/wave-tests"
         def cacheRepo = buildConfig.defaultCacheRepository
         and:
         def dockerFile = '''
@@ -214,10 +214,10 @@ class ContainerBuildServiceLiveTest extends Specification {
         and:
         def duration = Duration.ofMinutes(1)
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
-                new BuildRequest(
+                BuildRequest.of(
                         containerId: containerId,
                         containerFile: dockerFile,
                         workspace: folder,
@@ -266,10 +266,10 @@ class ContainerBuildServiceLiveTest extends Specification {
         and:
         def duration = Duration.ofMinutes(1)
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
-                new BuildRequest(
+                BuildRequest.of(
                         containerId: containerId,
                         containerFile: dockerFile,
                         workspace: folder,

@@ -20,6 +20,7 @@ package io.seqera.wave.service.k8s
 
 import java.nio.file.Path
 import java.time.Duration
+import java.util.regex.Pattern
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
@@ -31,12 +32,17 @@ import io.kubernetes.client.openapi.models.V1EnvVar
 import io.kubernetes.client.openapi.models.V1HostPathVolumeSource
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1JobBuilder
+import io.kubernetes.client.openapi.models.V1JobCondition
 import io.kubernetes.client.openapi.models.V1JobStatus
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
 import io.kubernetes.client.openapi.models.V1PodDNSConfig
 import io.kubernetes.client.openapi.models.V1PodDNSConfigBuilder
+import io.kubernetes.client.openapi.models.V1PodFailurePolicy
+import io.kubernetes.client.openapi.models.V1PodFailurePolicyOnExitCodesRequirement
+import io.kubernetes.client.openapi.models.V1PodFailurePolicyOnPodConditionsPattern
+import io.kubernetes.client.openapi.models.V1PodFailurePolicyRule
 import io.kubernetes.client.openapi.models.V1ResourceRequirements
 import io.kubernetes.client.openapi.models.V1Volume
 import io.kubernetes.client.openapi.models.V1VolumeBuilder
@@ -46,15 +52,17 @@ import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.configuration.ScanConfig
-import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.scan.Trivy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+
 import static io.seqera.wave.service.builder.BuildStrategy.BUILDKIT_ENTRYPOINT
+import static io.seqera.wave.util.K8sHelper.validateNodeSelectorPlatforms
 /**
  * implements the support for Kubernetes cluster
  *
@@ -125,12 +133,6 @@ class K8sServiceImpl implements K8sService {
     // check this link to know more about these options https://github.com/moby/buildkit/tree/master/examples/kubernetes#kubernetes-manifests-for-buildkit
     private final static Map<String,String> BUILDKIT_FLAGS = ['BUILDKITD_FLAGS': '--oci-worker-no-process-sandbox']
 
-    private Map<String, String> getBuildkitAnnotations(String containerName, boolean singularity) {
-        if( singularity )
-            return null
-        final key = "container.apparmor.security.beta.kubernetes.io/${containerName}".toString()
-        return Map.of(key, "unconfined")
-    }
 
     /**
      * Validate config setting
@@ -147,11 +149,7 @@ class K8sServiceImpl implements K8sService {
                 throw new IllegalArgumentException("Build workspace should be a sub-directory of 'wave.build.k8s.storage.mountPath' - offending value: '$buildConfig.buildWorkspace' - expected value: '$storageMountPath'")
         }
         // validate node selectors
-        final platforms = nodeSelectorMap ?: Collections.<String,String>emptyMap()
-        for( Map.Entry<String,String> it : platforms ) {
-            log.debug "Checking container platform '$it.key'; selector '$it.value'"
-            ContainerPlatform.of(it.key) // <-- if invalid it will throw an exception
-        }
+        validateNodeSelectorPlatforms(nodeSelectorMap)
     }
 
     /**
@@ -161,6 +159,7 @@ class K8sServiceImpl implements K8sService {
      * @return  An instance of {@link JobStatus}
      */
     @Override
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
     JobStatus getJobStatus(String name) {
         final job = k8sClient
                 .batchV1Api()
@@ -186,9 +185,26 @@ class K8sServiceImpl implements K8sService {
                 return JobStatus.Failed
             if( backoffLimit!=null && status.failed > backoffLimit )
                 return JobStatus.Failed
+            if( status.conditions?.any( c-> isPodFailCondition(c)) )
+                return JobStatus.Failed
         }
         return JobStatus.Pending
     }
+
+    /**
+     * Determines if the job has failed due the rules defined by {@link #failurePolicy()}
+     *
+     * @param condition The job condition to be evaluated
+     * @return {@code true} if the job condition identifies a failure, {@code false otherwise}
+     */
+    static final private Pattern FAIL_MESSAGE = ~/Container .+ failed .+ matching FailJob rule at index 2/
+
+    static protected boolean isPodFailCondition(V1JobCondition condition) {
+        return condition.reason=='PodFailurePolicy'
+                && condition.message
+                && FAIL_MESSAGE.matcher(condition.message).matches()
+    }
+
     /**
      * Get pod description
      *
@@ -303,7 +319,6 @@ class K8sServiceImpl implements K8sService {
                 .withNamespace(namespace)
                 .withName(name)
                 .addToLabels(labels)
-                .addToAnnotations(getBuildkitAnnotations(name,singularity))
                 .endMetadata()
 
         //spec section
@@ -340,6 +355,12 @@ class K8sServiceImpl implements K8sService {
                     // buildCommand is to set entrypoint for buildkit
                     .withCommand(BUILDKIT_ENTRYPOINT)
                     .withArgs(args)
+                    .withNewSecurityContext()
+                        .withPrivileged(false)
+                        .withNewAppArmorProfile()
+                            .withType("Unconfined")
+                        .endAppArmorProfile()
+                    .endSecurityContext()
         }
 
         // spec section
@@ -357,6 +378,7 @@ class K8sServiceImpl implements K8sService {
      * @return The logs as a string or when logs are not available or cannot be accessed
      */
     @Override
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
     String logsPod(V1Pod pod) {
         try {
             final logs = k8sClient.podLogs()
@@ -381,57 +403,6 @@ class K8sServiceImpl implements K8sService {
                 .execute()
     }
 
-    @Deprecated
-    V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig, Map<String,String> nodeSelector) {
-
-        final mounts = new ArrayList<V1VolumeMount>(5)
-        mounts.add(mountBuildStorage(workDir, storageMountPath, false))
-        mounts.add(mountScanCacheDir(scanConfig.cacheDirectory, storageMountPath))
-
-        final volumes = new ArrayList<V1Volume>(5)
-        volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
-
-        if( credsFile ){
-            mounts.add(0, mountHostPath(credsFile, storageMountPath, Trivy.CONFIG_MOUNT_PATH))
-        }
-
-        V1PodBuilder builder = new V1PodBuilder()
-
-        //metadata section
-        builder.withNewMetadata()
-                .withNamespace(namespace)
-                .withName(name)
-                .addToLabels(labels)
-                .endMetadata()
-
-        //spec section
-        def spec = builder
-                .withNewSpec()
-                .withNodeSelector(nodeSelector)
-                .withServiceAccount(serviceAccount)
-                .withActiveDeadlineSeconds( scanConfig.timeout.toSeconds() )
-                .withRestartPolicy("Never")
-                .addAllToVolumes(volumes)
-
-        final requests = new V1ResourceRequirements()
-        if( scanConfig.requestsCpu )
-            requests.putRequestsItem('cpu', new Quantity(scanConfig.requestsCpu))
-        if( scanConfig.requestsMemory )
-            requests.putRequestsItem('memory', new Quantity(scanConfig.requestsMemory))
-
-        //container section
-        spec.addNewContainer()
-                .withName(name)
-                .withImage(containerImage)
-                .withArgs(args)
-                .withVolumeMounts(mounts)
-                .withResources(requests)
-                .endContainer()
-                .endSpec()
-
-        builder.build()
-    }
-
     /**
      * Create a Job for blob transfer
      *
@@ -447,8 +418,8 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Job} description the submitted job
      */
     @Override
-    V1Job launchTransferJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
-        final spec = createTransferJobSpec(name, containerImage, args, blobConfig)
+    V1Job launchTransferJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig, Map<String,String> nodeSelector) {
+        final spec = createTransferJobSpec(name, containerImage, args, blobConfig, nodeSelector)
 
         return k8sClient
                 .batchV1Api()
@@ -462,7 +433,7 @@ class K8sServiceImpl implements K8sService {
                 : null
     }
 
-    V1Job createTransferJobSpec(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
+    V1Job createTransferJobSpec(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig, Map<String,String> nodeSelector) {
 
         V1JobBuilder builder = new V1JobBuilder()
 
@@ -492,6 +463,7 @@ class K8sServiceImpl implements K8sService {
                     .withRestartPolicy("Never")
                     .withDnsConfig(dnsConfig())
                     .withDnsPolicy(dnsPolicy)
+                    .withNodeSelector(nodeSelector)
         //container section
                     .addNewContainer()
                         .withName(name)
@@ -524,6 +496,7 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Pod} description the submitted pod
      */
     @Override
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
     V1Job launchBuildJob(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, Map<String,String> nodeSelector) {
         final spec = buildJobSpec(name, containerImage, args, workDir, creds, timeout, nodeSelector)
         return k8sClient
@@ -580,12 +553,12 @@ class K8sServiceImpl implements K8sService {
                 .endMetadata()
 
         //spec section
-        def spec = builder
+        final spec = builder
                 .withNewSpec()
                 .withBackoffLimit(buildConfig.retryAttempts)
+                .withPodFailurePolicy(failurePolicy())
                 .withNewTemplate()
                 .withNewMetadata()
-                .addToAnnotations(getBuildkitAnnotations(name,singularity))
                 .endMetadata()
                 .editOrNewSpec()
                 .withDnsConfig(dnsConfig())
@@ -624,7 +597,7 @@ class K8sServiceImpl implements K8sService {
                 // init container to copy change owner of docker config and remote.yaml
                 spec.withInitContainers(new V1ContainerBuilder()
                         .withName("permissions-fix")
-                        .withImage("busybox")
+                        .withImage(buildConfig.singularityImageInit)
                         .withCommand("sh", "-c", "cp -r /tmp/singularity/* /singularity && chown -R 1000:1000 /singularity")
                         .withVolumeMounts(initMounts)
                         .build()
@@ -637,6 +610,12 @@ class K8sServiceImpl implements K8sService {
             // buildCommand is to set entrypoint for buildkit
                     .withCommand(BUILDKIT_ENTRYPOINT)
                     .withArgs(args)
+                    .withNewSecurityContext()
+                        .withPrivileged(false)
+                        .withNewAppArmorProfile()
+                            .withType("Unconfined")
+                        .endAppArmorProfile()
+                    .endSecurityContext()
         }
 
         // spec section
@@ -646,15 +625,15 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
-    V1Job launchScanJob(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig) {
-        final spec = scanJobSpec(name, containerImage, args, workDir, creds, scanConfig)
+    V1Job launchScanJob(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
+        final spec = scanJobSpec(name, containerImage, args, workDir, creds, scanConfig, nodeSelector)
         return k8sClient
                 .batchV1Api()
                 .createNamespacedJob(namespace, spec)
                 .execute()
     }
 
-    V1Job scanJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig) {
+    V1Job scanJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig, Map<String,String> nodeSelector) {
 
         final mounts = new ArrayList<V1VolumeMount>(5)
         mounts.add(mountBuildStorage(workDir, storageMountPath, false))
@@ -679,7 +658,8 @@ class K8sServiceImpl implements K8sService {
         //spec section
         def spec = builder
                 .withNewSpec()
-                .withBackoffLimit(scanConfig.retryAttempts)
+                .withBackoffLimit(buildConfig.retryAttempts)
+                .withPodFailurePolicy(failurePolicy())
                 .withNewTemplate()
                 .editOrNewSpec()
                 .withServiceAccount(serviceAccount)
@@ -687,6 +667,7 @@ class K8sServiceImpl implements K8sService {
                 .addAllToVolumes(volumes)
                 .withDnsConfig(dnsConfig())
                 .withDnsPolicy(dnsPolicy)
+                .withNodeSelector(nodeSelector)
 
         final requests = new V1ResourceRequirements()
         if( scanConfig.requestsCpu )
@@ -720,15 +701,15 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
-    V1Job launchMirrorJob(String name, String containerImage, List<String> args, Path workDir, Path creds, MirrorConfig config) {
-        final spec = mirrorJobSpec(name, containerImage, args, workDir, creds, config)
+    V1Job launchMirrorJob(String name, String containerImage, List<String> args, Path workDir, Path creds, MirrorConfig config, Map<String,String> nodeSelector) {
+        final spec = mirrorJobSpec(name, containerImage, args, workDir, creds, config, nodeSelector)
         return k8sClient
                 .batchV1Api()
                 .createNamespacedJob(namespace, spec)
                 .execute()
     }
 
-    V1Job mirrorJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, MirrorConfig config) {
+    V1Job mirrorJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, MirrorConfig config, Map<String,String> nodeSelector) {
 
         // required volumes
         final mounts = new ArrayList<V1VolumeMount>(5)
@@ -753,7 +734,8 @@ class K8sServiceImpl implements K8sService {
         //spec section
         def spec = builder
                 .withNewSpec()
-                .withBackoffLimit(config.retryAttempts)
+                .withBackoffLimit(buildConfig.retryAttempts)
+                .withPodFailurePolicy(failurePolicy())
                 .withNewTemplate()
                 .editOrNewSpec()
                 .withServiceAccount(serviceAccount)
@@ -761,6 +743,7 @@ class K8sServiceImpl implements K8sService {
                 .addAllToVolumes(volumes)
                 .withDnsConfig(dnsConfig())
                 .withDnsPolicy(dnsPolicy)
+                .withNodeSelector(nodeSelector)
 
         final requests = new V1ResourceRequirements()
         if( config.requestsCpu )
@@ -809,6 +792,7 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
     V1Pod getLatestPodForJob(String jobName) {
         // list all pods for the given job
         final allPods = k8sClient
@@ -828,6 +812,31 @@ class K8sServiceImpl implements K8sService {
             }
         }
         return latest
+    }
+
+    protected V1PodFailurePolicy failurePolicy() {
+        // retry policy
+        // read more here
+        // https://kubernetes.io/blog/2024/08/19/kubernetes-1-31-pod-failure-policy-for-jobs-goes-ga/
+        //
+        return new V1PodFailurePolicy()
+                // not count the failure towards the backoffLimit
+                // for pod failure due to "DisruptionTarget" reason
+                // this cause the pod to be retried. NOTE this requires "backoffLimit" > 0
+                .addRulesItem(new V1PodFailurePolicyRule()
+                        .action("Ignore")
+                        .addOnPodConditionsItem( new V1PodFailurePolicyOnPodConditionsPattern()
+                                .type("DisruptionTarget")) )
+                // fail to job for any configuration issue
+                .addRulesItem(new V1PodFailurePolicyRule()
+                        .action("FailJob")
+                        .addOnPodConditionsItem( new V1PodFailurePolicyOnPodConditionsPattern()
+                                .type("ConfigIssue")) )
+                // fail the job for any non-zero exit status
+                .addRulesItem(new V1PodFailurePolicyRule()
+                        .action("FailJob")
+                        .onExitCodes(new V1PodFailurePolicyOnExitCodesRequirement()
+                                .operator("NotIn").values([0]) ))
     }
 
 }

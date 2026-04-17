@@ -34,6 +34,7 @@ import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.ContainerStatusResponse
 import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.PackagesSpec
@@ -55,8 +56,8 @@ import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobServiceImpl
 import io.seqera.wave.service.mirror.ContainerMirrorService
-import io.seqera.wave.service.pairing.PairingService
-import io.seqera.wave.service.pairing.socket.PairingChannel
+import io.seqera.service.pairing.PairingService
+import io.seqera.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.request.ContainerRequestService
@@ -116,7 +117,7 @@ class ContainerControllerTest extends Specification {
         def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry)
 
         when:
-        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest')
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', containerPlatform: 'linux/amd64')
         def data = controller.makeRequestData(req, PlatformId.NULL, "")
         then:
         data.containerImage == 'docker.io/library/ubuntu:latest'
@@ -151,21 +152,19 @@ class ContainerControllerTest extends Specification {
         def freeze = Mock(FreezeService)
         def containerImage = 'ubuntu:latest'
         and:
-        def controller = Spy(new ContainerController(freezeService: freeze, inclusionService: Mock(ContainerInclusionService)))
+        def controller = Spy(new ContainerController(freezeService: freeze, inclusionService: Mock(ContainerInclusionService), buildService: Mock(ContainerBuildService)))
         and:
         def target = 'docker.io/repo/ubuntu:latest'
-        def BUILD = Mock(BuildRequest) {
-            getTargetImage() >> target
-        }
+        def build = Mock(BuildRequest) { getTargetImage() >> target }
         and:
-        def req = new SubmitContainerTokenRequest(containerImage: containerImage, freeze: true, buildRepository: 'docker.io/foo/bar')
+        def req = new SubmitContainerTokenRequest(containerImage: containerImage, containerPlatform: 'linux/amd64', freeze: true, buildRepository: 'docker.io/foo/bar')
 
         when:
         def data = controller.makeRequestData(req, PlatformId.NULL, "")
         then:
         1 * freeze.freezeBuildRequest(req, _) >> req.copyWith(containerFile: 'FROM ubuntu:latest')
-        1 * controller.makeBuildRequest(_,_,_) >> BUILD
-        1 * controller.checkBuild(BUILD,false) >> new BuildTrack('1', target, false, false)
+        1 * controller.makeBuildRequest(_,_,_) >> build
+        1 * controller.checkBuild(build,false) >> new BuildTrack('1', target, false, false)
         1 * controller.getContainerDigest(containerImage, PlatformId.NULL) >> 'sha256:12345'
         and:
         data.containerImage == target
@@ -185,7 +184,7 @@ class ContainerControllerTest extends Specification {
         given:
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def controller = new ContainerController(buildService: builder, inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
+        def controller = new ContainerController(buildService: builder, inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService), validationService: validationService)
         def DOCKER = 'FROM foo'
         def user = new PlatformId(new User(id: 100))
         def cfg = new ContainerConfig()
@@ -214,7 +213,7 @@ class ContainerControllerTest extends Specification {
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
         def persistenceService = Mock(PersistenceService)
-        def controller = new ContainerController(buildService: builder, inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, persistenceService:persistenceService, inclusionService: Mock(ContainerInclusionService))
+        def controller = new ContainerController(buildService: builder, inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, persistenceService:persistenceService, inclusionService: Mock(ContainerInclusionService), validationService: validationService)
         def DOCKER = 'FROM foo'
         def user = new PlatformId(new User(id: 100))
         def cfg = new ContainerConfig()
@@ -241,7 +240,7 @@ class ContainerControllerTest extends Specification {
         given:
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def controller = new ContainerController(buildService: builder, inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig:buildConfig, inclusionService: Mock(ContainerInclusionService))
+        def controller = new ContainerController(buildService: builder, inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig:buildConfig, inclusionService: Mock(ContainerInclusionService), validationService: validationService)
         def DOCKER = 'FROM foo'
         def user = new PlatformId(new User(id: 100))
         def cfg = new ContainerConfig()
@@ -302,7 +301,7 @@ class ContainerControllerTest extends Specification {
     def 'should create build request' () {
         given:
         def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig)
+        def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig, validationService: validationService)
 
         when:
         def submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'))
@@ -341,20 +340,17 @@ class ContainerControllerTest extends Specification {
         build.condaFile == 'some::conda-recipe'
         build.targetImage == 'wave/build:c6dac2e544419f71'
         build.platform == ContainerPlatform.of('arm64')
-
     }
 
     def 'should return a bad request exception when field is not encoded' () {
         given:
         def dockerAuth = Mock(ContainerInspectServiceImpl)
         def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig)
+        def request = new SubmitContainerTokenRequest(containerFile: 'FROM some:container', containerPlatform: 'linux/amd64')
 
         // validate containerFile
         when:
-        controller.makeBuildRequest(
-                new SubmitContainerTokenRequest(containerFile: 'FROM some:container'),
-                Mock(PlatformId),
-                null)
+        controller.makeBuildRequest(request, Mock(PlatformId), null)
         then:
         def e = thrown(BadRequestException)
         e.message == "Invalid 'containerFile' attribute - make sure it encoded as a base64 string"
@@ -461,6 +457,30 @@ class ContainerControllerTest extends Specification {
         err = thrown(BadRequestException)
         err.message == "Invalid container image name — offending value: 'http:docker.io/foo:latest'"
 
+    }
+
+    def 'should validate layer size' () {
+        given:
+        def validation = new ValidationServiceImpl()
+        def pairing = Mock(PairingService)
+        def channel = Mock(PairingChannel)
+        def buildConfig = new BuildConfig(maxDataLayerSize: 1000)
+        def controller = new ContainerController(validationService: validation, pairingService: pairing, pairingChannel: channel, buildConfig: buildConfig)
+
+        when: 'layer within limit'
+        def smallLayer = new ContainerLayer(location: 'data:' + 'A' * 500)
+        def config = new ContainerConfig(layers: [smallLayer])
+        controller.validateContainerRequest(new SubmitContainerTokenRequest(containerConfig: config))
+        then:
+        noExceptionThrown()
+
+        when: 'layer exceeds limit'
+        def largeLayer = new ContainerLayer(location: 'data:' + 'A' * 1001)
+        config = new ContainerConfig(layers: [largeLayer])
+        controller.validateContainerRequest(new SubmitContainerTokenRequest(containerConfig: config))
+        then:
+        def err = thrown(BadRequestException)
+        err.message == 'Container layer exceeds the maximum allowed size'
     }
 
     def 'should validate mirror request' () {
@@ -732,5 +752,68 @@ class ContainerControllerTest extends Specification {
         result.succeeded
         result.creationTime
         result.duration
+    }
+
+    @Unroll
+    def 'should validate build cache repository'() {
+        given:
+        def req = new SubmitContainerTokenRequest(
+                containerFile: encode('FROM ubuntu:latest'),
+                buildRepository: BUILD,
+                cacheRepository: CACHE
+        )
+        def config = Mock(BuildConfig) {
+            getBuildWorkspace() >> '/some/path'
+            getDefaultBuildRepository() >> 'default/build'
+            getDefaultCacheRepository() >> 'default/cache'
+        }
+        def validation = new ValidationServiceImpl(buildConfig:config)
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def controller = new ContainerController(inspectService: dockerAuth, buildConfig: config, validationService: validation)
+
+        when:
+        def buildRequest = controller.makeBuildRequest(req, PlatformId.NULL, "127.0.0.1")
+
+        then:
+        buildRequest.cacheRepository == EXPECTED
+
+        where:
+        BUILD           | CACHE             | EXPECTED
+        null            | null              | 'default/cache'
+        'default/build' | null              | 'default/cache'
+        'default/build' | 'default/cache'   | 'default/cache'
+        and:
+        'custom/repo'   | null              | null
+        'custom/repo'   | 'custom/cache'    | 'custom/cache'
+    }
+
+    def 'should create different container id for different request and freeze enabled' () {
+        given:
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig, validationService: validationService)
+        and:
+        def request1 = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), freeze: true, containerConfig: new ContainerConfig(env: ["FOO=one"]))
+        def request2 = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), freeze: true, containerConfig: new ContainerConfig(env: ["FOO=two"]))
+
+        when:
+        def build1 = controller.makeBuildRequest(request1, PlatformId.NULL, "")
+        def build2 = controller.makeBuildRequest(request2, PlatformId.NULL,"")
+        then:
+        build1.containerId != build2.containerId
+    }
+
+    def 'should create same container id for different request and freeze disabled' () {
+        given:
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig, validationService: validationService)
+        and:
+        def request1 = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), freeze: false, containerConfig: new ContainerConfig(env: ["FOO=one"]))
+        def request2 = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), freeze: false, containerConfig: new ContainerConfig(env: ["FOO=two"]))
+
+        when:
+        def build1 = controller.makeBuildRequest(request1, PlatformId.NULL, "")
+        def build2 = controller.makeBuildRequest(request2, PlatformId.NULL,"")
+        then:
+        build1.containerId == build2.containerId
     }
 }

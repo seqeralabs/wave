@@ -26,10 +26,8 @@ import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
-import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
-import io.seqera.wave.util.StringUtils
 /**
  * Model a Wave container scan result
  *
@@ -41,12 +39,13 @@ import io.seqera.wave.util.StringUtils
 @CompileStatic
 class WaveScanRecord implements Cloneable {
 
+    @PostgresIgnore
     String id
     String buildId
     String mirrorId
     String requestId
     String containerImage
-    ContainerPlatform platform
+    String platform
     Instant startTime
     Duration duration
     String status
@@ -64,7 +63,7 @@ class WaveScanRecord implements Cloneable {
             String mirrorId,
             String requestId,
             String containerImage,
-            ContainerPlatform platform,
+            String platform,
             Instant startTime,
             Duration duration,
             String status,
@@ -74,7 +73,7 @@ class WaveScanRecord implements Cloneable {
             Path workDir
     )
     {
-        this.id = StringUtils.surrealId(id)
+        this.id = id
         this.buildId = buildId
         this.mirrorId = mirrorId
         this.requestId = requestId
@@ -92,12 +91,12 @@ class WaveScanRecord implements Cloneable {
     }
 
     WaveScanRecord(ScanEntry scan) {
-        this.id = StringUtils.surrealId(scan.scanId)
+        this.id = scan.scanId
         this.buildId = scan.buildId
         this.mirrorId = scan.mirrorId
         this.requestId = scan.requestId
         this.containerImage = scan.containerImage
-        this.platform = scan.platform
+        this.platform = scan.platform?.toString()
         this.startTime = scan.startTime
         this.duration = scan.duration
         this.status = scan.status
@@ -120,7 +119,7 @@ class WaveScanRecord implements Cloneable {
     }
 
     void setId(String id) {
-        this.id = StringUtils.surrealId(id)
+        this.id = id
     }
 
     Boolean succeeded() {

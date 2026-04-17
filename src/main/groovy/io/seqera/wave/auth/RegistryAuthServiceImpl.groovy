@@ -40,7 +40,7 @@ import io.seqera.wave.exception.RegistryForwardException
 import io.seqera.wave.exception.RegistryUnauthorizedAccessException
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.util.RegHelper
-import io.seqera.wave.util.Retryable
+import io.seqera.util.retry.Retryable
 import io.seqera.wave.util.StringUtils
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
@@ -110,6 +110,15 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
 
     private LoadingCache<CacheKey, String> cacheTokens
 
+    private CacheLoader<CacheKey, String> pushLoader = new CacheLoader<CacheKey, String>() {
+        @Override
+        String load(CacheKey key) throws Exception {
+            return getPushToken(key)
+        }
+    }
+
+    private LoadingCache<CacheKey, String> cachePushTokens
+
     @Inject
     private RegistryLookupService lookupService
 
@@ -124,6 +133,13 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
                 .expireAfterAccess(_1_HOUR.toMillis(), TimeUnit.MILLISECONDS)
                 .executor(ioExecutor)
                 .build(loader)
+
+        cachePushTokens = Caffeine
+                .newBuilder()
+                .maximumSize(1_000)
+                .expireAfterAccess(_1_HOUR.toMillis(), TimeUnit.MILLISECONDS)
+                .executor(ioExecutor)
+                .build(pushLoader)
     }
 
     /**
@@ -215,23 +231,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
      */
     @Override
     String getAuthorization(String image, RegistryAuth auth, RegistryCredentials creds) throws RegistryUnauthorizedAccessException {
-        if( !auth )
-            throw new RegistryUnauthorizedAccessException("Missing authentication credentials")
-
-        if( !auth.type )
-            return null
-
-        if( auth.type == RegistryAuth.Type.Bearer ) {
-            final token = getAuthToken(image, auth, creds)
-            return "Bearer $token"
-        }
-
-        if( auth.type == RegistryAuth.Type.Basic ) {
-            final String basic = creds ? "$creds.username:$creds.password".bytes.encodeBase64() : null
-            return basic ? "Basic $basic" : null
-        }
-
-        throw new RegistryUnauthorizedAccessException("Unknown authentication type: $auth.type")
+        return getAuthorization0(image, auth, creds, false)
     }
 
     /**
@@ -242,9 +242,12 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
      * @return The resulting bearer token to authorise a pull request
      */
     protected String getToken0(CacheKey key) {
+        return fetchToken(buildLoginUrl(key.auth.realm, key.image, key.auth.service), key.creds)
+    }
+
+    private String fetchToken(String login, RegistryCredentials creds) {
         final httpClient = HttpClientFactory.followRedirectsHttpClient()
-        final login = buildLoginUrl(key.auth.realm, key.image, key.auth.service)
-        final req = makeRequest(login, key.creds)
+        final req = makeRequest(login, creds)
         log.trace "Token request=$req"
 
         // retry strategy
@@ -272,24 +275,61 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         throw new RegistryForwardException("Unexpected response acquiring token for '$login' [${response.statusCode()}]", response)
     }
 
-    String buildLoginUrl(URI realm, String image, String service){
-        String result = "${realm}?scope=repository:${image}:pull"
-        if(service) {
+    String buildLoginUrl(URI realm, String image, String service, String scope='pull') {
+        String result = "${realm}?scope=repository:${image}:${scope}"
+        if( service ) {
             result += "&service=$service"
         }
         return result
     }
 
     protected String getAuthToken(String image, RegistryAuth auth, RegistryCredentials creds) {
+        return getCachedToken(cacheTokens, image, auth, creds)
+    }
+
+    protected String getPushToken(CacheKey key) {
+        return fetchToken(buildLoginUrl(key.auth.realm, key.image, key.auth.service, 'pull,push'), key.creds)
+    }
+
+    protected String getPushAuthToken(String image, RegistryAuth auth, RegistryCredentials creds) {
+        return getCachedToken(cachePushTokens, image, auth, creds)
+    }
+
+    private String getCachedToken(LoadingCache<CacheKey, String> cache, String image, RegistryAuth auth, RegistryCredentials creds) {
         final key = new CacheKey(image, auth, creds)
         try {
-            return cacheTokens.get(key)
+            return cache.get(key)
         }
         catch (CompletionException e) {
             // this catches the exception thrown in the cache loader lookup
             // and throws the causing exception that should be `RegistryUnauthorizedAccessException`
             throw e.cause
         }
+    }
+
+    @Override
+    String getAuthorizationForPush(String image, RegistryAuth auth, RegistryCredentials creds) throws RegistryUnauthorizedAccessException {
+        return getAuthorization0(image, auth, creds, true)
+    }
+
+    private String getAuthorization0(String image, RegistryAuth auth, RegistryCredentials creds, boolean push) {
+        if( !auth )
+            throw new RegistryUnauthorizedAccessException("Missing authentication credentials")
+
+        if( !auth.type )
+            return null
+
+        if( auth.type == RegistryAuth.Type.Bearer ) {
+            final token = push ? getPushAuthToken(image, auth, creds) : getAuthToken(image, auth, creds)
+            return "Bearer $token"
+        }
+
+        if( auth.type == RegistryAuth.Type.Basic ) {
+            final String basic = creds ? "$creds.username:$creds.password".bytes.encodeBase64() : null
+            return basic ? "Basic $basic" : null
+        }
+
+        throw new RegistryUnauthorizedAccessException("Unknown authentication type: $auth.type")
     }
 
     /**
@@ -302,6 +342,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     void invalidateAuthorization(String image, RegistryAuth auth, RegistryCredentials creds) {
         final key = new CacheKey(image, auth, creds)
         cacheTokens.invalidate(key)
+        cachePushTokens.invalidate(key)
         tokenStore.remove(getStableKey(key))
     }
 

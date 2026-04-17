@@ -54,10 +54,10 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
     String quayPassword
 
     @Shared
-    @Value('${wave.registries.seqeralabs.azurecr.io.username}')
+    @Value('${wave.registries.wavetest.azurecr.io.username}')
     String azureUsername
     @Shared
-    @Value('${wave.registries.seqeralabs.azurecr.io.password}')
+    @Value('${wave.registries.wavetest.azurecr.io.password}')
     String azurePassword
 
     @Shared
@@ -98,7 +98,7 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
     @IgnoreIf({!System.getenv('AZURECR_USER')})
     void 'test valid azure login'() {
         given:
-        def REGISTRY_URL = 'seqeralabs.azurecr.io'
+        def REGISTRY_URL = 'wavetest.azurecr.io'
 
         expect:
         loginService.login(REGISTRY_URL, azureUsername, azurePassword)

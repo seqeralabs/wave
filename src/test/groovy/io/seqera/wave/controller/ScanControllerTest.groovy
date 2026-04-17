@@ -106,4 +106,47 @@ class ScanControllerTest extends Specification {
         def e = thrown(HttpClientResponseException)
         e.status.code == 404
     }
+
+    def "should return 200 and logs "() {
+        given:
+        def startTime = Instant.now()
+        def duration = Duration.ofMinutes(2)
+        def platform = ContainerPlatform.DEFAULT
+        def scanId = 'sc123'
+        def buildId = "bd-123"
+        def mirrorId = 'mr-123'
+        def requestId = 'rq-123'
+        def containerImage = "testcontainerimage"
+        def workDir = Path.of('/some/work/dir')
+        def configJson = '{auth}'
+        def scan = new WaveScanRecord(
+                new ScanEntry(
+                        scanId,
+                        buildId,
+                        mirrorId,
+                        requestId,
+                        containerImage,
+                        platform,
+                        workDir,
+                        configJson,
+                        startTime,
+                        duration,
+                        'FAILED',
+                        null,
+                        1,
+                        'scan failed'))
+        and:
+        persistenceService.saveScanRecordAsync(scan)
+
+        when:
+        def req = HttpRequest.GET("/v1alpha1/scans/${scan.id}/logs")
+        def res = client.toBlocking().exchange(req, String)
+
+        then:
+        res.status.code == 200
+        res.header("Content-Disposition") == "attachment; filename=${scanId}.log"
+
+        and:
+        res.body() == "scan failed"
+    }
 }

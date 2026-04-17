@@ -26,7 +26,9 @@ import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
+import io.micronaut.http.hateoas.JsonError
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.ErrorHandler
 import io.seqera.wave.exchange.RegistryErrorResponse
 import io.seqera.wave.model.ContentType
 import jakarta.inject.Inject
@@ -53,5 +55,96 @@ class ErrorHandlingTest extends Specification {
         final exception = thrown(HttpClientResponseException)
         RegistryErrorResponse error = exception.response.getBody(RegistryErrorResponse).get()
         error.errors.get(0).message == "repository 'quay.io/hello-world:latest' not found"
+    }
+
+    void 'should not expose deserialization internals for invalid enum value'() {
+        given: 'a request with invalid enum value'
+        def request = HttpRequest
+                .POST("/v1alpha2/container", [
+                        packages: [type: "INVALID_TYPE"],
+                        format: "docker",
+                        containerPlatform: "linux/amd64"
+                ])
+                .contentType(MediaType.APPLICATION_JSON_TYPE)
+
+        when: 'submitting the request'
+        client.toBlocking().exchange(request, JsonError)
+
+        then: 'an exception is thrown'
+        def exception = thrown(HttpClientResponseException)
+        def error = exception.response.getBody(JsonError).get()
+
+        and: 'the error message contains an error ID'
+        error.message.contains('Error ID:')
+
+        and: 'no deserialization internals are leaked'
+        !error.message.contains('through reference chain')
+        !error.message.contains('at [Source:')
+    }
+
+    void 'should not reflect XSS payload in error response'() {
+        given: 'a request with XSS payload in enum value'
+        def request = HttpRequest
+                .POST("/v1alpha2/container", [
+                        packages: [
+                                type: "CRANxkhg3<script>alert(1)</script>pentest",
+                                entries: ["dplyr"]
+                        ],
+                        format: "docker",
+                        containerPlatform: "linux/amd64"
+                ])
+                .contentType(MediaType.APPLICATION_JSON_TYPE)
+
+        when: 'submitting the request'
+        client.toBlocking().exchange(request, JsonError)
+
+        then: 'an exception is thrown'
+        def exception = thrown(HttpClientResponseException)
+        def error = exception.response.getBody(JsonError).get()
+
+        and: 'the error message contains an error ID'
+        error.message.contains('Error ID:')
+
+        and: 'no XSS payload or reflected input'
+        !error.message.contains('<script>')
+    }
+
+    void 'should not expose internal details for invalid JSON'() {
+        given: 'a request with malformed JSON'
+        def request = HttpRequest
+                .POST("/v1alpha2/container", '{"packages": {"type": }')
+                .contentType(MediaType.APPLICATION_JSON_TYPE)
+
+        when: 'submitting the request'
+        client.toBlocking().exchange(request, JsonError)
+
+        then: 'an exception is thrown'
+        def exception = thrown(HttpClientResponseException)
+        def error = exception.response.getBody(JsonError).get()
+
+        and: 'the error message contains an error ID'
+        error.message.contains('Error ID:')
+
+        and: 'no internal details are leaked'
+        !error.message.contains('io.seqera')
+        !error.message.contains('com.fasterxml.jackson')
+    }
+
+    def 'sanitizeErrorMessage should handle edge cases'() {
+        expect:
+        ErrorHandler.sanitizeErrorMessage(input) == expected
+
+        where:
+        input                                                                           | expected
+        null                                                                            | 'Unexpected error'
+        ''                                                                              | 'Unexpected error'
+        '   '                                                                           | 'Unexpected error'
+        'Invalid request: missing required field'                                       | 'Invalid request: missing required field'
+        'Cannot deserialize value of type `io.seqera.wave.api.PackagesSpec\$Type`'      | 'Cannot deserialize value of type `io.seqera.wave.api.PackagesSpec\$Type`'
+        'Error with io.seqera.wave.Foo and java.lang.String in it'                      | 'Error with io.seqera.wave.Foo and java.lang.String in it'
+        'Something from String "malicious<script>": not valid'                          | 'Something from String "malicious": not valid'
+        'Cannot deserialize value of type X from String "<script>alert(1)</script>": bad' | 'Cannot deserialize value of type X bad'
+        'payload <script>alert(1)</script> end'                                         | 'payload alert(1) end'
+        'xss <img onerror="alert(1)" src=x> test'                                      | 'xss test'
     }
 }

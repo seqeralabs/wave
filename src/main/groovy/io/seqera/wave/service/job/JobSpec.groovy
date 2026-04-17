@@ -25,7 +25,7 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-import io.seqera.wave.util.LongRndKey
+import io.seqera.random.LongRndKey
 
 /**
  * Model a unique job to be managed
@@ -37,7 +37,7 @@ import io.seqera.wave.util.LongRndKey
 @CompileStatic
 class JobSpec {
 
-    enum Type { Transfer, Build, Scan, Mirror }
+    enum Type { Transfer, Build, Scan, Mirror, MultiBuild }
 
     /**
      * The job unique identifier
@@ -141,6 +141,19 @@ class JobSpec {
                 null,
                 maxDuration,
                 workDir
+        )
+    }
+
+    static JobSpec multiBuild(String recordId, String operationName, Instant creationTime, Duration maxDuration) {
+        new JobSpec(
+                LongRndKey.rndHex(),
+                Type.MultiBuild,
+                recordId,
+                operationName,
+                creationTime,
+                null,
+                maxDuration,
+                null
         )
     }
 

@@ -28,7 +28,7 @@ import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.exception.RegistryForwardException
 import io.seqera.wave.http.HttpClientFactory
-import io.seqera.wave.util.Retryable
+import io.seqera.util.retry.Retryable
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton

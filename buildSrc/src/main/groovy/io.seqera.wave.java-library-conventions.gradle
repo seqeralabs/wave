@@ -46,6 +46,7 @@ dependencies {
     testImplementation 'net.bytebuddy:byte-buddy:1.14.17'
     testImplementation 'org.spockframework:spock-core:2.3-groovy-4.0'
     testImplementation 'org.spockframework:spock-junit4:2.3-groovy-4.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.withType(Test).configureEach {
@@ -72,7 +73,7 @@ tasks.withType(Test).configureEach {
 publishing {
     repositories {
         maven {
-            name = "SeqeraRepository"
+            name = "Seqera"
             url = project.findProperty('publish_repo_url') ?: System.getenv('PUBLISH_REPO_URL') ?: "s3://maven.seqera.io/snapshots"
             credentials(AwsCredentials) {
                 accessKey = project.findProperty('aws_access_key_id') ?: System.getenv('AWS_ACCESS_KEY_ID')

@@ -26,7 +26,7 @@ import io.micronaut.context.annotation.Property
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.BlobCacheConfig
-import io.seqera.wave.store.state.impl.StateProvider
+import io.seqera.data.store.state.impl.StateProvider
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import software.amazon.awssdk.services.s3.S3Client
@@ -55,7 +55,6 @@ class BlobStateStoreImplTest extends Specification {
         expect:
         store.key0('foo') == 'wave-blobcache/v1:foo'
     }
-
 
     def 'should get and store an entry' () {
         given:
@@ -126,7 +125,6 @@ class BlobStateStoreImplTest extends Specification {
         1 * config.getFailureDuration() >> DELAY_TWO
         and:
         1 * cache.put(key, info_err, DELAY_TWO)  >> null
-
     }
 
 }

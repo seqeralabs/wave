@@ -25,10 +25,11 @@ import groovy.transform.CompileStatic
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ScanLevel
 import io.seqera.wave.api.ScanMode
+import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.tower.PlatformId
-import io.seqera.wave.util.LongRndKey
+import io.seqera.random.LongRndKey
 import static io.seqera.wave.util.StringUtils.trunc
 /**
  * Model a container request
@@ -53,6 +54,7 @@ class ContainerRequest {
     Boolean buildNew
     Boolean freeze
     String scanId
+    ChildRefs scanChildIds
     ScanMode scanMode
     List<ScanLevel> scanLevels
     boolean dryRun
@@ -88,6 +90,7 @@ class ContainerRequest {
                 "buildNew=${buildNew}; " +
                 "freeze=${freeze}; " +
                 "scanId=${scanId}; " +
+                "scanChildIds=${scanChildIds}; " +
                 "scanMode=${scanMode}; " +
                 "scanLevels=${scanLevels}; " +
                 "dryRun=${dryRun}; " +
@@ -144,6 +147,10 @@ class ContainerRequest {
         return scanId
     }
 
+    ChildRefs getScanChildIds() {
+        return scanChildIds
+    }
+
     ScanMode getScanMode() {
         return scanMode
     }
@@ -176,6 +183,7 @@ class ContainerRequest {
             Boolean buildNew,
             Boolean freeze,
             String scanId,
+            ChildRefs scanChildIds,
             ScanMode scanMode,
             List<ScanLevel> scanLevels,
             boolean dryRun,
@@ -196,6 +204,7 @@ class ContainerRequest {
                 buildNew,
                 freeze,
                 scanId,
+                scanChildIds,
                 scanMode,
                 scanLevels,
                 dryRun,
@@ -222,6 +231,7 @@ class ContainerRequest {
                 (Boolean) data.buildNew,
                 (Boolean) data.freeze,
                 data.scanId as String,
+                data.scanChildIds as ChildRefs,
                 data.scanMode as ScanMode,
                 data.scanLevels as List<ScanLevel>,
                 data.dryRun as boolean,

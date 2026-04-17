@@ -27,6 +27,7 @@ package io.seqera.wave.filter
  */
 interface FilterOrder {
 
+    final int SECURITY_HEADERS = -120
     final int DENY_CRAWLER = -110
     final int DENY_PATHS = -100
     final int RATE_LIMITER = -50

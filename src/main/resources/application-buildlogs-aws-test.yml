@@ -2,7 +2,7 @@
 wave:
   build:
     logs:
-      bucket: "nextflow-ci"
-      prefix: 'wave-build/logs'
-      conda-lock-prefix: 'wave-build/conda-locks'
+      path: "s3://nextflow-ci/test/l1"
+    locks:
+      path: "s3://nextflow-ci"
 ...

@@ -1,0 +1,9 @@
+wave:
+  build:
+    enabled: false
+  mirror:
+    enabled: false
+  scan:
+    enabled: false
+  blobCache:
+    enabled: false

@@ -19,6 +19,7 @@
 package io.seqera.wave.service.validation
 
 import groovy.transform.CompileStatic
+import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.util.StringUtils
@@ -38,6 +39,7 @@ class ValidationServiceImpl implements ValidationService {
     static private final List<String> VALID_PROTOCOLS = ['http','https']
 
     @Inject
+    @Nullable
     private BuildConfig buildConfig
 
     @Override
@@ -107,6 +109,8 @@ class ValidationServiceImpl implements ValidationService {
     boolean isCustomRepo(String repo) {
         if( !repo )
             return false
+        if( !buildConfig )
+            return true
         if( buildConfig.defaultPublicRepository && repo.startsWith(buildConfig.defaultPublicRepository) )
             return false
         if( buildConfig.defaultBuildRepository && repo.startsWith(buildConfig.defaultBuildRepository) )

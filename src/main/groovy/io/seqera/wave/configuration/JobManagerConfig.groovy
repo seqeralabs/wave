@@ -21,6 +21,7 @@ package io.seqera.wave.configuration
 import java.time.Duration
 
 import groovy.transform.ToString
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import jakarta.inject.Singleton
 
@@ -29,6 +30,7 @@ import jakarta.inject.Singleton
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Requires(missingBeans = WaveLite)
 @ToString(includeNames = true, includePackage = false)
 @Singleton
 class JobManagerConfig {

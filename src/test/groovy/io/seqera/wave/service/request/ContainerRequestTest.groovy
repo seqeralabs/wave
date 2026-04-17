@@ -67,6 +67,7 @@ class ContainerRequestTest extends Specification {
                 BUILD_NEW,
                 FREEZE,
                 'scan-1234',
+                null,       // scanChildIds
                 ScanMode.required,
                 List.of(ScanLevel.HIGH),
                 DRY_RUN,

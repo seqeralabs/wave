@@ -22,16 +22,19 @@ import javax.annotation.Nullable
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
+import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.api.SubmitContainerTokenRequest
-import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.util.BucketTokenizer
 import jakarta.inject.Singleton
 /**
  * Model Wave build config settings
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
+@Requires(bean = BuildEnabled)
 @CompileStatic
 @Singleton
 @Slf4j
@@ -43,11 +46,32 @@ class BuildConfig {
     @Value('${wave.build.singularity-image}')
     String singularityImage
 
+    @Value('${wave.build.singularity-image-init:`public.cr.seqera.io/wave/busybox:latest`}')
+    String singularityImageInit
+
     @Value('${wave.build.repo}')
      String defaultBuildRepository
 
+    @Nullable
     @Value('${wave.build.cache}')
     String defaultCacheRepository
+
+    /**
+     * AWS region for the S3 cache bucket specified in {@link #defaultCacheRepository}.
+     * Only used when {@link #defaultCacheRepository} is an S3 bucket path.
+     */
+    @Nullable
+    @Value('${wave.build.cache-bucket-region}')
+    String cacheBucketRegion
+
+    /**
+     * Number of layers to upload to S3 in parallel during cache export.
+     * Each individual layer is uploaded with 5 threads using the AWS SDK Upload Manager.
+     * Only used when {@link #defaultCacheRepository} is an S3 bucket path.
+     */
+    @Nullable
+    @Value('${wave.build.cache-bucket-upload-parallelism}')
+    Integer cacheBucketUploadParallelism
 
     @Nullable
     @Value('${wave.build.public-repo}')
@@ -89,17 +113,15 @@ class BuildConfig {
     Boolean ociMediatypes
 
     //check here for other options https://github.com/moby/buildkit?tab=readme-ov-file#registry-push-image-and-cache-separately
-    @Value('${wave.build.compression:gzip}')
+    @Value('${wave.build.compression}')
+    @Nullable
     String compression
 
-    @Value('${wave.build.force-compression:false}')
+    @Value('${wave.build.force-compression}')
+    @Nullable
     Boolean forceCompression
 
-    /**
-     * The number of times a build job should be retries. Since failures are expected due to
-     * invalid Dockerfile or Conda environment, retry is disabled.
-     */
-    @Value('${wave.build.retry-attempts:0}')
+    @Value('${wave.build.retry-attempts:1}')
     int retryAttempts
 
     @Value('${wave.build.max-conda-file-size:50000}')
@@ -108,6 +130,35 @@ class BuildConfig {
     @Value('${wave.build.max-container-file-size:10000}')
     int maxContainerFileSize
 
+    // ~10 MiB payload limit including base64 encoding overhead (4/3 ratio)
+    @Value('${wave.build.max-data-layer-size:14000000}')
+    int maxDataLayerSize
+
+    /**
+     * The path where build logs locks files are stored. Can be either
+     * a S3 path e.g. {@code s3://some-bucket/data/path} or a local file system
+     * path e.g. {@code /some/data/path}
+     */
+    @Value('${wave.build.logs.path}')
+    String logsPath
+
+    /**
+     * The path where Conda locks files are stored. Can be either
+     * a S3 path e.g. {@code s3://some-bucket/data/path} or a local file system
+     * path e.g. {@code /some/data/path}
+     */
+    @Value('${wave.build.locks.path}')
+    String locksPath
+
+    /**
+     * Max length allowed for build logs download
+     */
+    @Value('${wave.build.logs.maxLength:100000}')
+    long maxLength
+
+    @Value('${wave.build.skip-cache:false}')
+    boolean skipCache
+
     @PostConstruct
     private void init() {
         log.info("Builder config: " +
@@ -115,10 +166,14 @@ class BuildConfig {
                 "singularity-image=${singularityImage}; " +
                 "default-build-repository=${defaultBuildRepository}; " +
                 "default-cache-repository=${defaultCacheRepository}; " +
+                "cache-bucket-region=${cacheBucketRegion}; " +
+                "cache-bucket-upload-parallelism=${cacheBucketUploadParallelism}; " +
                 "default-public-repository=${defaultPublicRepository}; " +
                 "build-workspace=${buildWorkspace}; " +
                 "build-timeout=${defaultTimeout}; " +
                 "build-trusted-timeout=${trustedTimeout}; " +
+                "build-logs-path=${logsPath}; " +
+                "build-locks-path=${locksPath}; " +
                 "status-delay=${statusDelay}; " +
                 "status-duration=${statusDuration}; " +
                 "failure-duration=${getFailureDuration()}; " +
@@ -131,6 +186,10 @@ class BuildConfig {
         if( trustedTimeout < defaultTimeout ) {
             log.warn "Trusted build timeout should be longer than default timeout - check configuration setting 'wave.build.trusted-timeout'"
         }
+        // validate at least one cache location is configured
+        if( !defaultCacheRepository ) {
+            log.warn "No cache location configured - 'wave.build.cache' should be set to a container registry or S3 bucket path"
+        }
     }
 
     Duration buildMaxDuration(SubmitContainerTokenRequest request) {
@@ -139,5 +198,61 @@ class BuildConfig {
         return request.towerAccessToken && request.freeze && trustedTimeout>defaultTimeout
                 ? trustedTimeout
                 : defaultTimeout
+    }
+
+    /**
+     * The file name prefix applied when storing a build logs file into an object storage.
+     * For example having {@link #logsPath} as {@code s3://bucket-name/foo/bar} the
+     * value returned by this method is {@code foo/bar}.
+     *
+     * When using a local path the prefix is {@code null}.
+     *
+     * @return the log file name prefix
+     */
+    @Memoized
+    String getLogsPrefix() {
+        if( !logsPath )
+            return null
+        final store = BucketTokenizer.from(logsPath)
+        return store.scheme ? store.getKey() : null
+    }
+
+    /**
+     * The file name prefix applied when storing a Conda lock file into an object storage.
+     * For example having {@link #logsPath} as {@code s3://bucket-name/foo/bar} the
+     * value returned by this method is {@code foo/bar}.
+     *
+     * When using a local path the prefix is {@code null}.
+     *
+     * @return the log file name prefix
+     */
+    @Memoized
+    String getLocksPrefix() {
+        if( !locksPath )
+            return null
+        final store = BucketTokenizer.from(locksPath)
+        return store.scheme ? store.getKey() : null
+    }
+
+    /**
+     * Get the AWS region for S3 cache bucket.
+     *
+     * @return The AWS region to use for S3 cache operations, or {@code null} if not configured.
+     *         When {@code null}, BuildKit will use the AWS SDK default region resolution chain
+     *         (environment variables, EC2 instance metadata, etc.)
+     */
+    String getCacheBucketRegion() {
+        return cacheBucketRegion
+    }
+
+    /**
+     * Check if the given path is an S3 bucket path (object storage).
+     * This is used to distinguish between container registry paths and object storage paths.
+     *
+     * @param path The path to check
+     * @return {@code true} if the path starts with {@code s3://}, {@code false} otherwise
+     */
+    static boolean isBucketPath(String path) {
+        return path?.startsWith('s3://')
     }
 }

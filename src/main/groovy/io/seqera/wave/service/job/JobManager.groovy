@@ -27,8 +27,11 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
+import io.micronaut.context.annotation.Requires
 import io.micronaut.scheduling.TaskExecutors
+import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.configuration.JobManagerConfig
+import io.seqera.wave.configuration.WaveLite
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
@@ -39,6 +42,7 @@ import jakarta.inject.Named
  */
 @Slf4j
 @Context
+@Requires(missingBeans = WaveLite)
 @CompileStatic
 class JobManager {
 
@@ -75,6 +79,7 @@ class JobManager {
         processingQueue.addConsumer((job)-> processJob(job))
     }
 
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:500}')
     protected boolean launchJob0(JobSpec job) {
         final processingQueueLen = processingQueue.length()
         final canLaunchNewJobs = processingQueueLen < config.maxRunningJobs
@@ -159,6 +164,7 @@ class JobManager {
         return new JobState(JobState.Status.FAILED, null, state.stdout)
     }
 
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:500}')
     protected boolean processJob0(JobSpec jobSpec) {
         final duration = Duration.between(jobSpec.launchTime, Instant.now())
         final state = state(jobSpec)

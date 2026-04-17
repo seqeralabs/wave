@@ -22,7 +22,6 @@ import java.util.Base64;
 
 import io.seqera.wave.api.ContainerLayer;
 import io.seqera.wave.model.ContentType;
-
 import static io.seqera.wave.util.StringUtils.trunc;
 
 /**

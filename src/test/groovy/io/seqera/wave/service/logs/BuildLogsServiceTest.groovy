@@ -26,6 +26,7 @@ import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.aws.AwsS3Configuration
 import io.micronaut.objectstorage.aws.AwsS3ObjectStorageEntry
 import io.micronaut.objectstorage.aws.AwsS3Operations
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.test.AwsS3TestContainer
@@ -44,15 +45,20 @@ class BuildLogsServiceTest extends Specification implements AwsS3TestContainer {
 
     @Unroll
     def 'should make log key name' () {
+        given:
+        def config = new BuildConfig(logsPath: PATH)
         expect:
-        new BuildLogServiceImpl(prefix: PREFIX).logKey(BUILD) == EXPECTED
+        new BuildLogServiceImpl(buildConfig: config).logKey(BUILD) == EXPECTED
 
         where:
-        PREFIX          | BUILD         | EXPECTED
-        null            | null          | null
-        null            | '123'         | '123.log'
-        'foo'           | '123'         | 'foo/123.log'
-        '/foo/bar/'     | '123'         | 'foo/bar/123.log'
+        PATH            | BUILD         | EXPECTED
+        's3://foo'      | null          | null
+        's3://foo'      | '123'         | '123.log'
+        's3://foo/'     | '123'         | '123.log'
+        's3://foo/bar'  | '123'         | 'bar/123.log'
+        's3://foo/bar/' | '123'         | 'bar/123.log'
+        and:
+        '/foo/bar'      | '234'         | '234.log'
     }
 
     def 'should remove conda lockfile from logs' () {
@@ -78,14 +84,12 @@ class BuildLogsServiceTest extends Specification implements AwsS3TestContainer {
     @Unroll
     def 'should make conda lock key name' () {
         expect:
-        new BuildLogServiceImpl(condaLockPrefix: PREFIX).condaLockKey(BUILD) == EXPECTED
+        new BuildLogServiceImpl().condaLockKey(BUILD) == EXPECTED
 
         where:
-        PREFIX          | BUILD         | EXPECTED
-        null            | null          | null
-        null            | '123'         | '123.lock'
-        'foo'           | '123'         | 'foo/123.lock'
-        '/foo/bar/'     | '123'         | 'foo/bar/123.lock'
+        BUILD         | EXPECTED
+        null          | null
+        '123'         | '123.lock'
     }
 
     def 'should extract conda lockfile' () {
@@ -120,20 +124,21 @@ class BuildLogsServiceTest extends Specification implements AwsS3TestContainer {
                 .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("accesskey", "secretkey")))
                 .forcePathStyle(true)
                 .build()
-
-
+        and:
         def inputStreamMapper = Mock(InputStreamMapper)
+        and:
+        def config = new BuildConfig(locksPath: "s3://test-bucket/build-logs/conda-lock")
 
         and: "create s3 bucket"
         def storageBucket = "test-bucket"
         s3Client.createBucket { it.bucket(storageBucket) }
         and:
-        def configuration = new AwsS3Configuration('build-logs')
+        def configuration = new AwsS3Configuration('build-locks')
         configuration.setBucket(storageBucket)
         and:
         AwsS3Operations awsS3Operations = new AwsS3Operations(configuration, s3Client, inputStreamMapper)
         and:
-        def service = new BuildLogServiceImpl(objectStorageOperations: awsS3Operations, condaLockPrefix: "build-logs/conda-lock")
+        def service = new BuildLogServiceImpl(locksStoreOps: awsS3Operations, buildConfig: config)
         and:
         def buildID = "123"
         def logs = """
@@ -177,7 +182,9 @@ class BuildLogsServiceTest extends Specification implements AwsS3TestContainer {
         given:
         def persistenceService = Mock(PersistenceService)
         def objectStorageOperations = Mock(ObjectStorageOperations)
-        def service = new BuildLogServiceImpl(persistenceService: persistenceService, objectStorageOperations: objectStorageOperations)
+        def service = new BuildLogServiceImpl(persistenceService: persistenceService, locksStoreOps: objectStorageOperations)
+        and:
+
         def build1 = Mock(WaveBuildRecord) {
             succeeded() >> false
             buildId >> 'bd-abc_1'
@@ -207,7 +214,7 @@ class BuildLogsServiceTest extends Specification implements AwsS3TestContainer {
         given:
         def persistenceService = Mock(PersistenceService)
         def objectStorageOperations = Mock(ObjectStorageOperations)
-        def service = new BuildLogServiceImpl(persistenceService: persistenceService, objectStorageOperations: objectStorageOperations)
+        def service = new BuildLogServiceImpl(persistenceService: persistenceService, logsStoreOps: objectStorageOperations)
         def build1 = Mock(WaveBuildRecord) {
             succeeded() >> false
             buildId >> 'bd-abc_1'

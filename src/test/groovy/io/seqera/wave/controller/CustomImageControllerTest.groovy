@@ -51,7 +51,7 @@ import jakarta.inject.Inject
  *
  * @author Jorge Aguilera <jorge.aguilera@seqera.io>
  */
-@MicronautTest(environments = ['test', 'h2', 'build'])
+@MicronautTest(environments = ['test', 'build'])
 @Timeout(value = 3, unit = TimeUnit.MINUTES)
 class CustomImageControllerTest extends Specification implements DockerRegistryContainer {
 

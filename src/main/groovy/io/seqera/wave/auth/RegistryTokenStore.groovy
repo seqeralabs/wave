@@ -22,9 +22,9 @@ import java.time.Duration
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.store.state.AbstractStateStore
-import io.seqera.wave.store.state.impl.StateProvider
+import io.seqera.serde.moshi.MoshiEncodeStrategy
+import io.seqera.data.store.state.AbstractStateStore
+import io.seqera.data.store.state.impl.StateProvider
 import jakarta.inject.Singleton
 /**
  * Implement a cache store for {@link io.seqera.wave.auth.RegistryAuthServiceImpl.CacheKey} object and token that

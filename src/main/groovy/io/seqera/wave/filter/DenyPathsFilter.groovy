@@ -22,13 +22,13 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
-import io.micronaut.http.HttpRequest;
+import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.MutableHttpResponse
 import io.micronaut.http.annotation.Filter
-import io.micronaut.http.filter.HttpServerFilter;
-import  io.micronaut.http.filter.ServerFilterChain
+import io.micronaut.http.filter.HttpServerFilter
+import io.micronaut.http.filter.ServerFilterChain
 import io.seqera.wave.util.RegHelper
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Flux

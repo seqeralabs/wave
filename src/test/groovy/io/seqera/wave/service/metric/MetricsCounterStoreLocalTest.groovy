@@ -20,7 +20,6 @@ package io.seqera.wave.service.metric
 
 import spock.lang.Specification
 
-import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest

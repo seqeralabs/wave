@@ -21,7 +21,7 @@ package io.seqera.wave.tower.compute
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-import io.seqera.wave.encoder.MoshiSerializable
+import io.seqera.serde.moshi.MoshiSerializable
 
 /**
  * Model the response of workflow launch response from seqera platform
