@@ -21,8 +21,8 @@ Wave's full build capabilities require specific integrations with Kubernetes and
 
 The minimum system requirements for a Wave Kubernetes installation are:
 
-- **Memory**: Minimum 4GB RAM per Wave pod
-- **CPU**: Minimum 1 CPU core per pod
+- **Memory**: Minimum 1500 MiB RAM per Wave pod
+- **CPU**: Minimum 0.2 CPU core per pod
 - **Network**: Connectivity to your external PostgreSQL and Redis instances
 - **Storage**: Sufficient storage for your container images and temporary files
 
