@@ -23,9 +23,11 @@ import java.util.regex.Pattern
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.event.ApplicationEventPublisher
 
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.core.ContainerPlatform
@@ -55,6 +57,7 @@ import static io.seqera.wave.util.ContainerHelper.makeTargetImage
 @Singleton
 @Named('MultiBuild')
 @CompileStatic
+@Requires(bean = BuildEnabled)
 class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
 
     @Inject
@@ -193,7 +196,7 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
                 final List<Map> platformEntries = [
                     [image: request.amd64TargetImage, platform: PLATFORM_AMD64],
                     [image: request.arm64TargetImage, platform: PLATFORM_ARM64]
-                ]
+                ] as List<Map>
                 manifestAssembler.createAndPushManifestList(request.targetImage, platformEntries, request.identity)
                 log.info "Multi-platform manifest list assembled for ${request.targetImage}"
 
