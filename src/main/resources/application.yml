@@ -49,7 +49,7 @@ micronaut:
 wave:
   allowAnonymous: true
   server:
-      url: "${WAVE_SERVER_URL:`http://localhost:9090`}"
+      url: "${WAVE_SERVER_URL:`http://localhost:${WAVE_SERVER_PORT:9090}`}"
   security:
     http-headers:
       enabled: true
