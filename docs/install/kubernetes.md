@@ -346,7 +346,7 @@ Wave requires access to AWS ECR for container image management. Create an IAM ro
       ]
     },
     {
-      "Sid": "ExtraPermissionsForBuild"
+      "Sid": "ExtraPermissionsForBuild",
       "Action": [
           "ecr:DescribeImageScanFindings",
           "ecr:DescribeImages",
