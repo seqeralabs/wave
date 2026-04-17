@@ -66,7 +66,7 @@ Wave will automatically handle schema migrations on startup and create the requi
 
 Create a configuration file that defines Wave's behavior and integrations. Save this as `config/wave-config.yml` in your Docker Compose directory.
 
-Database, Redis, and Platform connection settings are provided via the `wave.env` environment file (see [Deploy Wave](#deploy-wave) below), so they do not need to be duplicated here.
+Database, Redis, and Platform connection settings are provided via the `wave.env` environment file (see [Deploy Wave](#deploy-wave) below).
 
 ```yaml
 wave:
@@ -137,7 +137,7 @@ Add the following to your `docker-compose.yml`:
 services:
   wave:
     # Replace with your Wave image registry path
-    image: cr.seqera.io/public/wave:latest
+    image: <WAVE CONTAINER IMAGE>
     ports:
       - "9090:9090"
     environment:
