@@ -1,4 +1,8 @@
 # Wave changelog
+1.33.3 - 17 Apr 2026
+- Fix MultiPlatformBuildService failing to load in lite mode (#1030) [88bff95aa]
+- Add missing configuration documentation (#1025) [ec29df888]
+
 1.33.2 - 15 Apr 2026
 - Fix conda builds for packages requiring __cuda virtual package (#1027) [67542ce25]
 - Fix build error with --build-template conda/micromamba:v2 for singularity (#972) [17273e544]
