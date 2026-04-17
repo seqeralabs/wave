@@ -21,8 +21,8 @@ Wave's full build capabilities require specific integrations with Kubernetes and
 
 The minimum system requirements for a Wave Kubernetes installation are:
 
-- **Memory**: Minimum 4GB RAM per Wave pod
-- **CPU**: Minimum 1 CPU core per pod
+- **Memory**: Minimum 1500 MiB RAM per Wave pod
+- **CPU**: Minimum 0.2 CPU core per pod
 - **Network**: Connectivity to your external PostgreSQL and Redis instances
 - **Storage**: Sufficient storage for your container images and temporary files
 
@@ -209,9 +209,9 @@ spec:
               value: "postgres,redis,lite"
           resources:
             requests:
-              memory: "4000Mi"
+              memory: "1500Mi"
             limits:
-              memory: "4000Mi"
+              memory: "1500Mi"
           workingDir: "/work"
           volumeMounts:
             - name: wave-cfg
@@ -338,7 +338,7 @@ Wave requires access to AWS ECR for container image management. Create an IAM ro
           "ecr:GetDownloadUrlForLayer",
           "ecr:InitiateLayerUpload",
           "ecr:PutImage",
-          "ecr:UploadLayerPart"  
+          "ecr:UploadLayerPart"
       ],
       "Effect": "Allow",
       "Resource": [
@@ -346,7 +346,7 @@ Wave requires access to AWS ECR for container image management. Create an IAM ro
       ]
     },
     {
-      "Sid": "ExtraPermissionsForBuild"
+      "Sid": "ExtraPermissionsForBuild",
       "Action": [
           "ecr:DescribeImageScanFindings",
           "ecr:DescribeImages",
@@ -355,7 +355,7 @@ Wave requires access to AWS ECR for container image management. Create an IAM ro
           "ecr:GetLifecyclePolicyPreview",
           "ecr:GetRepositoryPolicy",
           "ecr:ListImages",
-          "ecr:ListTagsForResource"  
+          "ecr:ListTagsForResource"
       ],
       "Effect": "Allow",
       "Resource": [
@@ -363,7 +363,7 @@ Wave requires access to AWS ECR for container image management. Create an IAM ro
       ]
     },
   ]
-}    
+}
 ```
 
 ### Advanced configuration
