@@ -25,7 +25,7 @@ services:
 
   wave:
     # Replace with your Wave image registry path
-    image: hrma017/wave:1.33.2
+    image: #<WAVE Container Image>
     ports:
       - "9090:9090"
     volumes:
