@@ -52,7 +52,7 @@ class ContainerHelperTest extends Specification {
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['https://foo.com/lock.yml']
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
-        def req = new SubmitContainerTokenRequest(packages: packages, format: 'sif')
+        def req = new SubmitContainerTokenRequest(packages: packages, format: 'sif', buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V1)
 
         when:
         def result = ContainerHelper.containerFileFromRequest(req)
@@ -81,7 +81,7 @@ class ContainerHelperTest extends Specification {
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['https://foo.com/lock.yml']
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
-        def req = new SubmitContainerTokenRequest(packages: packages)
+        def req = new SubmitContainerTokenRequest(packages: packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V1)
 
         when:
         def result = ContainerHelper.containerFileFromRequest(req)
@@ -109,7 +109,7 @@ class ContainerHelperTest extends Specification {
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
-        def req = new SubmitContainerTokenRequest(packages: packages, format: 'sif')
+        def req = new SubmitContainerTokenRequest(packages: packages, format: 'sif', buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V1)
 
         when:
         def result = ContainerHelper.containerFileFromRequest(req)
@@ -139,7 +139,7 @@ class ContainerHelperTest extends Specification {
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
-        def req = new SubmitContainerTokenRequest(packages: packages)
+        def req = new SubmitContainerTokenRequest(packages: packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V1)
 
         when:
         def result = ContainerHelper.containerFileFromRequest(req)
