@@ -1,4 +1,10 @@
 # Wave changelog
+1.33.2 - 15 Apr 2026
+- Fix conda builds for packages requiring __cuda virtual package (#1027) [67542ce25]
+- Fix build error with --build-template conda/micromamba:v2 for singularity (#972) [17273e544]
+- Upgrade third-party dependencies to latest stable versions (#998) [3396554d0]
+- Pin dependencies (#1012) [7e1a05ee4]
+
 1.33.1 - 30 Mar 2026
 - Update token cache duration and clarify public-repo docs (#1007) [2e47f9bd5]
 - Bump Netty to 4.2.10.Final and Micronaut to 4.10.10 (#1001) [970ec3876]
