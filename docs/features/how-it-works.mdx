@@ -30,23 +30,23 @@ Dynamic modification of images lets you customize containers for specific workfl
 By default Wave returns ephemeral containers. These are temporary URIs for single use. They expire after 36 hours. Ephemeral image names use the format:
 
 ```
-wave.seqera.io/wt/<ACCESS_TOKEN>/wave/build:<CHECKSUM>
+wave.seqera.io/wt/<access-token>/wave/build:<checksum>
 ```
 
 In the example:
 
-- `<ACCESS_TOKEN>` is a 12-character unique access token. It acts as a one-time key to the image. It unlocks retrieval using credentials stored in Seqera Platform. No Docker-client authentication is needed.
-- `<CHECKSUM>` is a 16-character unique build identifier. It ensures correct caching by the Wave backend and by the client. The checksum changes whenever the build recipe or source changes.
+- `<access-token>` is a 12-character unique access token. It acts as a one-time key to the image. It unlocks retrieval using credentials stored in Seqera Platform. No Docker-client authentication is needed.
+- `<checksum>` is a 16-character unique build identifier. It ensures correct caching by the Wave backend and by the client. The checksum changes whenever the build recipe or source changes.
 
 ### Stable containers
 
 Wave can persist, or freeze, a container build to a registry. Wave then returns the registry URI in place of an ephemeral URI. These URIs are stable. They include no access token. They do not expire. They point at the target registry directly. The client pulls straight from that registry. Stable image names use the format:
 
 ```
-your.registry.com/library/imagename:<CHECKSUM>
+your.registry.com/library/imagename:<checksum>
 ```
 
-`<CHECKSUM>` is the same 16-character build hash used by ephemeral images. It ties the image to its build inputs. You get reproducible, cache-friendly identifiers.
+`<checksum>` is the same 16-character build hash used by ephemeral images. It ties the image to its build inputs. You get reproducible, cache-friendly identifiers.
 
 ### Seqera Containers
 

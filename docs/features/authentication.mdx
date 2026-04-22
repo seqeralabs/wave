@@ -32,7 +32,7 @@ See [Credentials overview](https://docs.seqera.io/platform/latest/credentials/ov
 5. Wave authenticates to the source registry with the stored Seqera Platform credentials. Wave retrieves the manifest and caches the image blobs. Blobs are served to the Docker client via Cloudflare CDN.
 6. After 36 hours, the layer cache and ephemeral token expire.
 
-## Detailed authentication flow
+## Authentication flow
 
 ```mermaid
 sequenceDiagram

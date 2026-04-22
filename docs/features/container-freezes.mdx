@@ -29,3 +29,15 @@ To copy an existing image to another registry *without* modifying or renaming it
 3. Wave checks whether the image already exists in the target registry.
 4. If the image is missing, Wave launches a build job and pushes the result to the target registry.
 5. Wave responds with the frozen image name — for example, `your.registry.com/some/image/build:1a2b3c4d5e6f7890`.
+
+## Notable features
+
+- Frozen images are regular container builds. There are no special image formats or restrictions.
+- Each image is assigned a unique ID derived from a hash of:
+    - The container file.
+    - Any package dependencies.
+    - The target platform (AMD64 or ARM64).
+    - The target repository name.
+- A second request for the same container produces the same ID. Wave skips the build and returns the existing image.
+- Images live in the repository you selected. Wave does not cache them locally unless you configure a cache repository.
+- Images are stored permanently unless the repository owner deletes them.

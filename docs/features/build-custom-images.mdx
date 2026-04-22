@@ -19,23 +19,6 @@ Use cases include:
 2. If the image already exists in the cache or remote registry, Wave returns it immediately. Otherwise Wave builds the image on demand. Wave returns a unique image URI straight away and runs the build and security scan in the background.
 3. The Docker client (or any compatible tool) pulls the image from the returned URI. If the image is still building, the pull waits for the build to finish.
 
-```mermaid
-flowchart TB
-    subgraph first["First request: Wave builds image"]
-        direction LR
-        U1([User]) -- Request image --> W1[Wave]
-        W1 -- Image returned to user --> U1
-        W1 -- Image pushed to registry --> R1[Upstream Docker registry]
-    end
-
-    subgraph subsequent["Subsequent requests: Wave returns from registry"]
-        direction LR
-        U2([User]) -- Request image --> W2[Wave]
-        W2 -- Image returned to user --> U2
-        R2[Upstream Docker registry] -- Image fetched from registry --> W2
-    end
-```
-
 ## Build from a container file
 
 Wave builds containers from Dockerfiles and Singularity build files. You define the environment. Wave handles the build and picks the right infrastructure and CPU architecture.

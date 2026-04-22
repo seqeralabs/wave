@@ -66,3 +66,37 @@ wave.build.repository = '<BUILD_REPOSITORY>'
 ```
 
 Replace `<BUILD_REPOSITORY>` with the repository where your image files should be uploaded.
+
+## What data does a Wave client send to Wave for an augmentation request?
+
+Nextflow or the Wave CLI sends:
+
+- Information about the container to be augmented.
+- The user's identity.
+- The user's Platform access token.
+
+The full request and response structure is documented under the `POST /v1alpha2/container` endpoint in the [Wave API documentation](https://wave.seqera.io/openapi/).
+
+## How long does an augmented container remain accessible?
+
+An augmented container remains accessible for 36 hours from the time of the initial request.
+
+## Is an augmented container published through a Seqera-managed registry?
+
+No. Augmented containers are not stored or published in any container registry managed by Seqera. They are only accessible via the unique, temporary name assigned to them.
+
+## Can an augmented container be accessed after its unique name expires?
+
+No. Once the unique name expires, the container is no longer accessible by any means.
+
+## Can the unique name of an augmented container be predicted?
+
+No. Each ephemeral container name includes a 6-byte randomly generated component — for example, `wave.seqera.io/wt/<RANDOM>/some/library:tag` — which makes the name unpredictable.
+
+## Can access to an augmented container be revoked before it expires?
+
+Yes. A system administrator can revoke access using the following URL format:
+
+```
+https://<WAVE_URL>/view/containers/<ID_TOKEN>
+```
