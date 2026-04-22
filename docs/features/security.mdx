@@ -1,0 +1,42 @@
+---
+title: Security scanning
+description: Scan container images for known vulnerabilities with Trivy and generate SBOMs.
+---
+
+Security scanning catches known vulnerabilities, outdated packages, and malicious content before a container runs. Wave uses the [Trivy](https://trivy.dev/) scanner. Wave can also produce a software bill of materials (SBOM) in SPDX format.
+
+Wave scans both Wave-built images and external images served through Wave. Scans run asynchronously alongside builds and pulls. Pipelines do not block on scan completion unless explicitly configured to.
+
+The user who requested the image receives an email with a link to the security report. Wave clients can halt execution when vulnerabilities exceed a configured threshold.
+
+Use cases include:
+
+- **Secure workflows**: Block vulnerable containers so workflows meet internal security and compliance requirements.
+- **Audit and compliance**: Generate vulnerability reports and SBOMs as compliance evidence.
+- **Dynamic pipelines**: Run pipelines with containers from varied sources. Maintain a consistent security bar. Halt execution when new vulnerabilities affect an image in use.
+- **SBOM generation**: Attach an SPDX SBOM to each build for provenance and supply-chain visibility.
+
+## How it works
+
+1. Wave scans containers with Trivy. Both Wave-built and external containers are eligible.
+2. Scan results are available via the scan service endpoints:
+    - `GET /v1alpha1/scans/{scanId}` — scan report.
+    - `GET /v1alpha1/scans/{scanId}/spdx` — SPDX-format SBOM.
+    - `GET /v1alpha1/scans/{scanId}/logs` — scan logs.
+3. When vulnerabilities exceed the configured threshold, Wave halts execution and surfaces a report listing each finding.
+4. Scans expire after one week. If a container is accessed again after seven days, Wave re-runs the scan.
+
+## Scan thresholds
+
+Wave clients set an acceptable vulnerability threshold. Levels align with industry-standard scoring systems:
+
+| Level | Typical meaning |
+| :-- | :-- |
+| `low` | Minor issues. Accept when exploitation requires unlikely conditions. |
+| `medium` | Moderate issues. Address during normal maintenance cycles. |
+| `high` | Serious issues. Address promptly. |
+| `critical` | Severe issues. Block deployment. |
+
+:::note
+In self-hosted Wave installations, scanning is **off by default**. Enable it with `wave.scan.enabled=true`. The hosted Wave service at `wave.seqera.io` runs scans on eligible image requests.
+:::

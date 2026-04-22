@@ -1,0 +1,31 @@
+---
+title: Container freeze
+description: Build a permanent container image and push it to a registry of your choice.
+---
+
+Freeze mode stores containers permanently in a registry of your choice. Use it when you want a stable image URI. The URI has no Wave access token. It does not expire. It lives in your own registry.
+
+On the first request, Wave builds, fetches, and augments the image as normal. Wave then pushes the result to your registry and returns the final URI. Subsequent pulls go straight to the registry and bypass Wave. On later requests for the same image, Wave sees that the container already exists and returns the URI immediately. No rebuild. No re-augmentation.
+
+Use cases include:
+
+- **Reproducibility and collaboration**: Finalized containers live in a permanent registry. Collaborators and future workflows use the exact same environment. No reliance on ephemeral builds.
+- **Reusability**: Central storage of pre-built images avoids repeated builds. Overhead drops. Pipelines run faster.
+- **Archiving for compliance**: Store containers permanently for auditing. Keep a traceable, unaltered record of the environment used for an analysis.
+- **Portability**: Deliver images to the same region or cloud account where compute runs. Pull latency and egress costs drop.
+
+:::tip
+To copy an existing image to another registry *without* modifying or renaming it, use [Wave mirroring](./mirroring.mdx). Mirroring preserves the original name and digest. Freeze mode returns a new, Wave-built image under a name you choose.
+:::
+
+## How it works
+
+1. The client (Nextflow, the Wave CLI, or the API) submits a container request with:
+    - The user's Seqera Platform identity.
+    - The base image to augment, or instructions to build a container.
+    - The container extension configuration — a custom payload, one or more extension layers, or additional images.
+    - The target repository for the new container.
+2. Wave validates the request and authorizes the user against the Seqera Platform service.
+3. Wave checks whether the image already exists in the target registry.
+4. If the image is missing, Wave launches a build job and pushes the result to the target registry.
+5. Wave responds with the frozen image name — for example, `your.registry.com/some/image/build:1a2b3c4d5e6f7890`.

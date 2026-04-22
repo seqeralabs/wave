@@ -1,0 +1,25 @@
+---
+title: Container inspection
+description: Retrieve manifest, config, and layer information for a container without pulling the image.
+---
+
+Container inspection returns the metadata of a container image. The response includes the manifest, image config, layer digests, and platform. Wave does not pull the image layers. A single request gives you everything you need to decide whether to pull the image, trigger an augmentation, or record the image in an audit trail.
+
+Inspection runs as an authenticated registry operation. Wave applies Seqera Platform credentials transparently, so you can inspect images in private registries without handling registry tokens yourself.
+
+Use cases include:
+
+- **Pre-flight validation**: Confirm a referenced image exists, matches the expected architecture, and resolves to the expected digest before a pipeline runs.
+- **CI and governance checks**: Block pipeline submissions that reference images outside an approved registry. Enforce that all images are pinned by digest.
+- **Platform UI and tooling**: Populate container details — tags, digests, platform, layer sizes — in dashboards and reports. No layer downloads required.
+- **Audit and compliance**: Record the exact manifest digest used in a pipeline run for reproducibility and traceability.
+- **Private registry reachability**: Verify that Seqera Platform credentials can pull from a private registry before committing to a workload.
+
+## How it works
+
+1. A client sends a container inspection request with the image URI. The target platform is optional (`linux/amd64` or `linux/arm64`). Typical callers are Seqera Platform, a CI check, or the Wave CLI.
+2. Wave authenticates the user against Seqera Platform and resolves any registry credentials in the requester's workspace.
+3. Wave queries the source registry, follows the manifest list to the platform-specific manifest, and retrieves the image config.
+4. Wave returns a single response with the image reference, manifest digest, config digest, architecture, OS, layer digests, and layer sizes.
+
+Inspection creates no tokens. It pulls no layers. It does not touch the build or scan pipelines. Each request is independent.

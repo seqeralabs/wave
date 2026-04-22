@@ -1,0 +1,51 @@
+---
+title: Docker and Singularity
+description: Runtime compatibility for Docker, Podman, Singularity, and Apptainer.
+---
+
+Wave provisions images for both the Docker and Singularity container ecosystems. Docker-format images are delivered through a standard OCI registry interface and run on any compliant runtime. Singularity images are delivered natively in SIF format, removing the Docker-to-SIF conversion step that most pipelines rely on. Either format is available from the same build pipeline.
+
+## Docker containers
+
+Wave builds containers that are fully compatible with standard Docker clients. They also work with any runtime that implements the [Docker registry v2 API](https://docs.docker.com/registry/spec/api/).
+
+Images built through Wave run directly on:
+
+- Docker
+- Podman
+- Sarus
+- Charliecloud
+- Shifter
+
+This compatibility plugs Wave into existing container workflows and infrastructure.
+
+## Singularity containers
+
+Singularity and Apptainer use a proprietary container format called the Singularity Image Format (SIF). Wave provisions containers directly in SIF from a Singularityfile or from a Conda environment specification.
+
+SIF images produced by Wave are stored as OCI Registry as Storage (ORAS) artifacts. You can publish these artifacts to the Wave community registry or to any OCI-compliant registry.
+
+Wave removes the image-conversion step typical of Docker-to-Singularity workflows. Containers ship directly in SIF format.
+
+:::note
+Freeze mode is required when provisioning Singularity images. SIF artifacts must be pushed to a registry rather than streamed ephemerally.
+:::
+
+### The ORAS protocol
+
+Wave uses the [OCI Registry as Storage (ORAS)](https://oras.land/) protocol to manage and distribute SIF containers. ORAS lets SIF images live in OCI-compliant registries alongside Docker images. Singularity and Docker share the same registry infrastructure.
+
+Advantages of ORAS with Nextflow:
+
+- **Improved resource utilization**: Singularity pulls container images inside each process task instead of the Nextflow head job. Head-job pressure drops. Tasks parallelize better.
+- **Private registry access**: Singularity supports authenticated pulls from private registries. See [Singularity registry](https://docs.sylabs.io/guides/main/user-guide/cli/singularity_registry.html).
+
+Considerations and limitations:
+
+- **Shared cache limitations**: Nextflow shared-cache options like `$NXF_SINGULARITY_CACHEDIR` and `$NXF_SINGULARITY_LIBRARYDIR` do not apply to ORAS distribution.
+- **Offline image availability**: Offline environments need a local Singularity install to download and use images.
+- **Version compatibility**: `oras://` is only supported by recent versions of Singularity and Apptainer.
+
+:::note
+When a registry does not support ORAS, Wave falls back to `https://` downloads for Singularity images.
+:::
