@@ -663,12 +663,11 @@ class TemplateUtilsTest extends Specification {
                     pixi init --import /scratch/conda.yml
                     pixi add conda-forge::procps-ng
                     pixi shell-hook > /shell-hook.sh
-                    echo 'exec "$@"' >> /shell-hook.sh
                     echo ">> CONDA_LOCK_START"
                     cat /opt/wave/pixi.lock
                     echo "<< CONDA_LOCK_END"
                 %environment
-                    export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                    . /shell-hook.sh
                 '''.stripIndent()
     }
 
@@ -684,12 +683,11 @@ class TemplateUtilsTest extends Specification {
                     pixi init --import /scratch/conda.yml
                     pixi add conda-forge::procps-ng
                     pixi shell-hook > /shell-hook.sh
-                    echo 'exec "$@"' >> /shell-hook.sh
                     echo ">> CONDA_LOCK_START"
                     cat /opt/wave/pixi.lock
                     echo "<< CONDA_LOCK_END"
                 %environment
-                    export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                    . /shell-hook.sh
                 '''.stripIndent()
     }
 
@@ -711,12 +709,11 @@ class TemplateUtilsTest extends Specification {
                     mkdir /opt/wave && cd /opt/wave
                     pixi init --import /scratch/conda.yml
                     pixi shell-hook > /shell-hook.sh
-                    echo 'exec "$@"' >> /shell-hook.sh
                     echo ">> CONDA_LOCK_START"
                     cat /opt/wave/pixi.lock
                     echo "<< CONDA_LOCK_END"
                 %environment
-                    export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                    . /shell-hook.sh
                 '''.stripIndent()
     }
 
