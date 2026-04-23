@@ -24,77 +24,64 @@ Wave is also available as a hosted service on [Seqera Platform](https://cloud.se
 
 ## Wave features
 
-### Container registries
+### Private registry authentication
 
-#### Private container registries
+Wave integrates with Seqera Platform credentials management, which enables seamless access to private container registries and publishing to them for freeze and mirror operations.
 
-Wave integrates with [Seqera Platform credentials management][private] enabling seamless access and publishing to private registries.
+See [Private registry authentication](./features/authentication.mdx) for more information.
 
-[private]: ./nextflow/use-cases.md#access-private-container-repositories
+### Seqera Containers
 
-#### Seqera Containers - The community container registry
+[Seqera Containers](https://seqera.io/containers/) is a free community service operated by Seqera. It uses Wave to build images from Conda and PyPI packages on demand through the [web interface](https://seqera.io/containers/), the [Wave CLI](./cli/index.md), or the [Nextflow integration](./nextflow/index.md).
 
-[Seqera Containers] is a free community service operated by Seqera.
-
-It uses Wave to build images from Conda / PyPI packages on demand, either through the [web interface](https://seqera.io/containers/) or using the [Wave CLI](./cli/index.md) / [Nextflow integration](./nextflow/index.md).
-
-These images are cached and hosted permanently, being served through a [Docker Distribution][docker] registry and hosted on AWS infrastructure. Images are cached and served via Cloudflare CDN.
-
-Images are publicly accessible to anyone for free and will be stored for at least 5 years. They can be pulled using any infrastructure (local, HPC, cloud) as Docker or native Singularity images. Images can be built for both `linux/aarch64` and `linux/arm64` architectures.
+Images are cached and hosted permanently in a [Docker Distribution][docker] registry on AWS infrastructure, served through a Cloudflare CDN. Images are publicly accessible to anyone free of charge and are stored for at least five years. They can be pulled from any infrastructure (local, HPC, or cloud) as Docker or native Singularity images, and can be built for `linux/amd64` and `linux/arm64` architectures.
 
 :::note
-Seqera Containers does not work with custom container files, augmentation, or authorization. It provides only Conda based containers.
+Seqera Containers does not work with custom container files, augmentation, or authorization. It provides only Conda- and PyPI-based containers.
 :::
+
+See [Seqera Containers](./seqera-containers/index.mdx) for more information.
 
 [docker]: https://github.com/distribution/distribution
-[Seqera Containers]: https://seqera.io/containers/
 
-### Augment existing containers
+### Container augmentation
 
-Wave offers a flexible approach to container image management. It allows you to [dynamically add custom layers][augment] to existing Docker images, creating new images tailored to your specific needs.
-Any existing container can be extended without rebuilding it. You can add user-provided content such as custom scripts and logging agents, providing greater flexibility in the container’s configuration.
+Wave offers a flexible approach to container image management. It allows you to dynamically add custom layers to existing container images, creating new images tailored to your specific needs. Any existing container can be extended without rebuilding it. User-provided content, such as custom scripts, configuration files, and logging agents, can be integrated into pre-existing container images.
 
-[augment]: ./provisioning.md#container-augmentation
+See [Container augmentation](./features/augmentation.mdx) for more information.
 
-### Conda-based containers
+### Conda-based container builds
 
-Package management systems such as Conda and Bioconda simplify the installation of scientific software.
-Wave enables dynamic provisioning of container images from any Conda or Bioconda recipe. Just [declare the Conda packages][conda] in your Nextflow pipeline and Wave will assemble the required container.
+Package management systems such as Conda and Bioconda simplify the installation of scientific software. Wave enables dynamic provisioning of container images from any Conda or Bioconda recipe. Declare the Conda packages in your Nextflow pipeline and Wave assembles the required container.
 
-[conda]: ./nextflow/use-cases.md#build-conda-based-containers
+See [On-demand container builds](./features/container-builds.mdx) for more information.
 
-### Singularity containers
+### Singularity container builds
 
-Singularity and Apptainer use a proprietary format called _Singularity Image Format_ (SIF). The Wave service can [provision containers based on the Singularity image format][singularity] either by using a `Singularityfile` file or Conda packages. The resulting Singularity image file is stored as an ORAS artifact in an OCI-compliant container registry of your choice or the Wave Community registry.
+Singularity and Apptainer use a proprietary format called Singularity Image Format (SIF). Wave can provision containers in SIF format from a Singularityfile or a Conda environment specification. The resulting Singularity image is stored as an ORAS artifact in an OCI-compliant container registry of your choice or in the Wave community registry.
 
-The advantage of this approach is that Singularity and Apptainer engines can pull and execute container images natively without the extra conversion steps needed when using Docker images with these engines.
+Singularity and Apptainer engines can pull and execute these images natively without the image-conversion step required for Docker images.
 
 :::note
-Due to the Singularity image format's peculiarities, Wave's freeze mode is mandatory when provisioning Singularity images.
+Wave's freeze mode is required when provisioning Singularity images because the monolithic SIF format does not support dynamic layer injection.
 :::
 
-[singularity]: ./nextflow/use-cases.md#build-singularity-containers
+See [On-demand container builds](./features/container-builds.mdx) for more information.
 
 ### Deploying containers across multi-clouds
 
-Cloud vendors provide integrated container registries with better performance and cost-efficiency than central, remote registries.
-Storing container images in a private registry also enhances security and provide faster access with greater control.
-Wave mirroring addresses these needs by copying containers to your chosen registry while preserving the original manifest, image name, and hash, and ensuring images remain unmodified and accessible via the original build hash.
+Cloud vendors provide integrated container registries with better performance and cost-efficiency than central, remote registries. Storing container images in a private registry also enhances security and provides faster access with greater control. Wave mirroring addresses these needs by copying containers to your chosen registry while preserving the original manifest, image name, and hash, and ensuring that images remain unmodified and accessible via the original build hash.
+
+See [Container mirroring](./features/mirroring.mdx) for more information.
 
 ### Container security scanning
 
-Builds for OCI-compliant container images are automatically scanned for known security vulnerabilities. Wave conducts a vulnerability scan using the [Trivy](https://trivy.dev/) security scanner. Seqera Platform customers receive an email that includes a link to the security report listing any vulnerabilities discovered.
+Builds for OCI-compliant container images are scanned for known security vulnerabilities. Wave conducts a vulnerability scan using the [Trivy](https://trivy.dev/) security scanner. Seqera Platform customers receive an email with a link to the security report listing any vulnerabilities discovered.
 
-### Optimize workloads for specific architectures
-
-Modern data pipelines can be deployed across different data centers having different hardware architectures such as AMD64, ARM64, and others. This requires curating different collections of containers for each architecture.
-Wave allows for the on-demand provisioning of containers, depending on the target execution platform (in development).
-
-### Near caching
-
-The deployment of production pipelines at scale often requires the use of multiple cloud regions to enable efficient resource allocation.
-However, this can result in an increased overhead when pulling container images from a central container registry. Wave allows the transparent caching of container images in the same region where computation occurs, reducing data transfer costs and time (in development).
+See [Security scanning](./features/security.mdx) for more information.
 
 ### Wave Lite
 
-Wave can be used in [Lite](./wave-lite.md) mode for container augmentation and inspection capabilities. Wave Lite can be deployed in both Docker Compose and Kubernetes installations.
+Wave can be used in Lite mode for container augmentation, container inspection, and private registry authentication. Wave Lite can be deployed with Docker Compose or Kubernetes.
+
+See [Features](./features/index.mdx) for more information.

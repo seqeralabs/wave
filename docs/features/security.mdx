@@ -3,40 +3,51 @@ title: Security scanning
 description: Scan container images for known vulnerabilities with Trivy and generate SBOMs.
 ---
 
-Security scanning catches known vulnerabilities, outdated packages, and malicious content before a container runs. Wave uses the [Trivy](https://trivy.dev/) scanner. Wave can also produce a software bill of materials (SBOM) in SPDX format.
+Security scanning identifies known vulnerabilities and outdated packages before a container runs. Wave uses the [Trivy](https://trivy.dev/) scanner. Wave can also produce a software bill of materials (SBOM) in SPDX format.
 
-Wave scans both Wave-built images and external images served through Wave. Scans run asynchronously alongside builds and pulls. Pipelines do not block on scan completion unless explicitly configured to.
+Wave scans both Wave-built images and external images served through Wave. Scans run asynchronously. Container requests do not block on scan completion unless explicitly configured. Scans can be requested from Nextflow, the Wave CLI, or the Wave API. Seqera Containers runs scans internally on every image it builds and exposes results through the build details view.
 
-The user who requested the image receives an email with a link to the security report. Wave clients can halt execution when vulnerabilities exceed a configured threshold.
+The user who requested the image receives an email with a link to the security report. Wave clients can be configured to fail container requests, or halt pipeline execution, when vulnerabilities exceed a configured threshold.
 
-Use cases include:
+## Use cases
 
-- **Secure workflows**: Block vulnerable containers so workflows meet internal security and compliance requirements.
+Use cases for security scanning include:
+
+- **Secure workflows**: Prevent vulnerable containers from running so that workloads meet internal security and compliance requirements.
 - **Audit and compliance**: Generate vulnerability reports and SBOMs as compliance evidence.
-- **Dynamic pipelines**: Run pipelines with containers from varied sources. Maintain a consistent security bar. Halt execution when new vulnerabilities affect an image in use.
+- **Dynamic environments**: Use containers from varied sources and maintain a consistent security bar. Block or halt execution when new vulnerabilities are identified in an image that is in use.
 - **SBOM generation**: Attach an SPDX SBOM to each build for provenance and supply-chain visibility.
 
 ## How it works
 
-1. Wave scans containers with Trivy. Both Wave-built and external containers are eligible.
-2. Scan results are available via the scan service endpoints:
-    - `GET /v1alpha1/scans/{scanId}` — scan report.
-    - `GET /v1alpha1/scans/{scanId}/spdx` — SPDX-format SBOM.
-    - `GET /v1alpha1/scans/{scanId}/logs` — scan logs.
-3. When vulnerabilities exceed the configured threshold, Wave halts execution and surfaces a report listing each finding.
-4. Scans expire after one week. If a container is accessed again after seven days, Wave re-runs the scan.
+The scan flow involves the client, Wave, the Trivy scanner, and the image requester:
 
-## Scan thresholds
+1. A Wave client submits a container request. Wave clients include Nextflow, the Wave CLI, and the Wave API.
+2. Wave builds or resolves the requested image and returns a container URI to the client.
+3. Wave triggers an asynchronous Trivy scan of the image.
+4. When the scan completes, Trivy returns a vulnerability report and SBOM to Wave. The image requester receives an email with a link to the report.
+5. If vulnerabilities exceed the configured threshold, the Wave client enforces the policy by failing the container request or halting pipeline execution.
 
-Wave clients set an acceptable vulnerability threshold. Levels align with industry-standard scoring systems:
+```mermaid
+sequenceDiagram
+    participant Client as Client<br/>(Nextflow, Wave CLI, or API)
+    participant Wave
+    participant Trivy
+    participant User
 
-| Level | Typical meaning |
-| :-- | :-- |
-| `low` | Minor issues. Accept when exploitation requires unlikely conditions. |
-| `medium` | Moderate issues. Address during normal maintenance cycles. |
-| `high` | Serious issues. Address promptly. |
-| `critical` | Severe issues. Block deployment. |
+    Client->>Wave: Container request
+    Wave->>Wave: Build or resolve image
+    Wave-->>Client: Return container token
+    Wave->>Trivy: Trigger scan (async)
+    Trivy-->>Wave: Scan report and SBOM
+    Wave->>User: Email with report link
+    Client->>Wave: Fetch scan report
+    Wave-->>Client: Scan result
+    alt Vulnerabilities exceed threshold
+        Wave-->>Client: Enforce policy (fail request or halt execution)
+    end
+```
 
-:::note
-In self-hosted Wave installations, scanning is **off by default**. Enable it with `wave.scan.enabled=true`. The hosted Wave service at `wave.seqera.io` runs scans on eligible image requests.
-:::
+Scan results are available through the Wave API once the scan completes. Results include the vulnerability report, the SPDX SBOM, and scan logs.
+
+Scans expire after one week. If a container is accessed again after seven days, Wave re-runs the scan.

@@ -1,35 +1,16 @@
 ---
 title: Features
-description: An overview of Wave's features and the two deployment flavours.
+description: An overview of Wave's features and deployment configurations.
 ---
 
-Wave provisions container images on demand during pipeline execution. Each feature is activated by a different parameter in the container request.
+Wave features depend on the configuration you deploy. The following table shows which features each configuration provides.
 
-## Wave and Wave Lite
-
-**Wave** is the full service. It runs every feature: augmentation, inspection, builds, freeze mode, mirroring, security scanning, and the Wave registry proxy. It powers the hosted service at `wave.seqera.io` and the self-hosted deployment used by Seqera Enterprise customers.
-
-**Wave Lite** is a reduced-footprint configuration. It runs the registry proxy, container augmentation, and container inspection only. It has no dependency on a Kubernetes build cluster, EFS, or a build registry. Wave Lite is the right fit for teams that only need augmentation and inspection and want a lightweight self-hosted deployment.
-
-Both expose the same OCI-compatible registry interface. Both integrate with Seqera Platform credentials.
-
-## Feature list
-
-Features tagged **Wave + Wave Lite** run in both. Features tagged **Wave** run only in the full service.
-
-| Feature | Availability | Summary |
-| :-- | :-- | :-- |
-| [Container augmentation](./augmentation.mdx) | Wave + Wave Lite | Inject custom layers — scripts, config, Fusion, module binaries — into existing container images at pull time. No rebuild. |
-| [Container inspection](./inspection.mdx) | Wave + Wave Lite | Retrieve manifest, config, and layer metadata for any container without pulling the layers. |
-| [Private registry authentication](./authentication.mdx) | Wave + Wave Lite | Access private registries using credentials managed in Seqera Platform. No secrets in pipeline code. |
-| [Build custom images on demand](./build-custom-images.mdx) | Wave | Build container images just-in-time from a Dockerfile, Singularity recipe, Conda, PyPI, or Pixi specification. |
-| [Container freeze](./container-freezes.mdx) | Wave | Build a permanent image and push it to a registry of your choice for a stable URI. |
-| [Container mirroring](./mirroring.mdx) | Wave | Copy a container image to a registry of your choice while preserving its original name and digest. |
-| [Security scanning](./security.mdx) | Wave | Scan images for known vulnerabilities with Trivy. Generate SPDX SBOMs. |
-| [Multi-architecture support](./architectures.mdx) | Wave + Wave Lite | Provision containers for `linux/amd64` and `linux/arm64`. Wave builds; Wave Lite serves through augmentation. |
-| [Seqera Containers](./seqera-containers.mdx) | Public service | A free community registry powered by Wave for Conda and PyPI images. Pull from either flavour. |
-| [Docker and Singularity](./docker-singularity.mdx) | Wave + Wave Lite | Runtime compatibility for Docker, Podman, Singularity, and Apptainer (via ORAS). |
-
-## How Wave works
-
-For the underlying request and delivery model, see [How it works](./how-it-works.mdx).
+| Feature | Wave | Wave&nbsp;Lite | Summary |
+| :-- | :-: | :-: | :-- |
+| [Container augmentation](./augmentation.mdx) | ✓ | ✓ | Inject custom layers such as scripts, config, Fusion, or module binaries into existing container images at pull time. Rebuilds are not required. |
+| [Container inspection](./inspection.mdx) | ✓ | ✓ | Retrieve manifest, config, and layer metadata for any container without pulling the layers. |
+| [Private registry authentication](./authentication.mdx) | ✓ | ✓ | Access private container registries using credentials stored in Seqera Platform. No secrets in pipeline code. |
+| [On-demand container builds](./container-builds.mdx) | ✓ | | Build container images just-in-time from a Dockerfile, Singularity recipe, Conda, PyPI, or Pixi specification. |
+| [Container freeze](./container-freezes.mdx) | ✓ | | Build a permanent image and push it to a registry of your choice for a stable URI. |
+| [Container mirroring](./mirroring.mdx) | ✓ | | Copy a container image to a registry of your choice while preserving its original name and digest. |
+| [Security scanning](./security.mdx) | ✓ | | Scan images for known vulnerabilities with Trivy. Generate SPDX SBOMs. |

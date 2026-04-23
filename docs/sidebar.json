@@ -3,37 +3,38 @@
     {
       "type": "category",
       "label": "Wave",
-      "collapsed": false,
+      "link": {
+        "type": "doc",
+        "id": "index"
+      },
+      "collapsed": true,
       "items": [
-        "index",
-        "get-started",
-        "wave-lite",
-        "provisioning"
-      ]
-    },
-    {
-      "type": "category",
-      "label": "Features",
-      "collapsed": false,
+        "concepts/how-it-works",
+        {
+          "type": "category",
+          "label": "Features",
+          "link": {
+            "type": "doc",
+            "id": "features/index"
+        },
+      "collapsed": true,
       "items": [
-        "features/index",
-        "features/how-it-works",
         "features/augmentation",
         "features/inspection",
         "features/authentication",
-        "features/build-custom-images",
+        "features/container-builds",
         "features/container-freezes",
         "features/mirroring",
-        "features/security",
-        "features/architectures",
-        "features/seqera-containers",
-        "features/docker-singularity"
+        "features/security"
+      ]
+    }
       ]
     },
+    "seqera-containers/index",
     {
       "type": "category",
       "label": "Installation",
-      "collapsed": false,
+      "collapsed": true,
       "items": [
         "install/docker-compose",
         "install/kubernetes"
@@ -42,21 +43,21 @@
     {
       "type": "category",
       "label": "Configuration",
-      "collapsed": false,
-      "items": [   
-        "wave-lite",     
-        "install/configure-wave",
+      "collapsed": true,
+      "items": [
+        "configure-wave",
         "install/configure-wave-build"
       ]
     },
-    "nextflow",
+    "nextflow/index",
     {
       "type": "category",
       "label": "Developer tools",
-      "collapsed": false,
+      "collapsed": true,
       "items": [
         "cli/index",
-        "cli/reference",
+        "cli/installation",
+        "cli/use-cases",
         "api"
       ]
     },

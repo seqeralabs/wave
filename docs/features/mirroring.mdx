@@ -5,27 +5,44 @@ description: Copy a container image to a registry of your choice while preservin
 
 Storing container images in a registry you control improves security, supports policy compliance, and gives faster access. Wave mirroring automates the copy. Wave pulls the image from its source and pushes it to your registry on demand. The image name and digest stay identical to the source.
 
-Mirroring and [container freeze](./container-freezes.mdx) both produce a permanent image in your registry. They differ in identity:
+Wave runs the copy with Skopeo. Tools that pin the image by digest continue to work against the mirrored copy. Mirror operations are asynchronous and dispatched through the job manager.
 
-- **Freeze** returns a new, Wave-built image under a name you choose. The tag is a 16-character build hash.
-- **Mirror** copies the image byte-for-byte. The manifest, name, and digest all match the source. Any tool that pins the image by digest continues to work.
+:::tip
+To produce a new, Wave-built image and push it under a name you choose, use [container freeze](./container-freezes.mdx). Freeze returns a new image with a 16-character build-hash tag. Mirroring copies the existing image byte-for-byte with its original name and digest.
+:::
 
-Choose mirroring when the original image must keep its identity.
+## Use cases
 
-Use cases include:
+Use cases for container mirroring include:
 
 - **Region-specific deployments**: Place containers in the right geographic region to meet data residency requirements or cut latency.
 - **Enhanced security**: Serve images from a registry behind a firewall or inside tight networking controls.
-- **Cost and performance**: Pull from a cloud-native registry co-located with compute. Egress costs drop compared with pulls from remote registries.
+- **Cost and performance**: Pull from a cloud-native registry co-located with compute. Egress costs are reduced compared with pulls from remote registries.
 - **Multi-cloud pipelines**: Deploy workflows across AWS, Google Cloud, and Azure. Each cloud pulls from its local registry.
+- **Mitigating upstream rate limits**: Mirror a public image once and serve many pulls from your own registry.
 
 ## How it works
 
-1. When a pipeline runs, Wave identifies the target environment and the associated registry.
-2. If the image is missing from the target registry, Wave mirrors it. Wave pulls the image from the source and pushes it to the destination. The manifest does not change.
-3. Later requests in the same region or account use the mirrored copy. No repeated transfers.
+The mirror flow involves the client, Wave, the source registry, and the target registry:
 
-Mirror status and logs are available via the mirror service endpoints:
+1. A client (Nextflow, the Wave CLI, or the Wave API) requests a container and asks for mirroring to a target registry.
+2. Wave validates the request. The source and target registries must differ and the caller must be authenticated.
+3. If the target image is already mirrored or in progress, Wave returns the target URI straight away. Otherwise Wave launches a Skopeo copy job that pulls every layer and manifest from the source and pushes them to the target.
+4. Wave returns the target registry URI to the client. The client pulls the image directly from the target registry with no further involvement from Wave.
 
-- `GET /v1alpha1/mirrors/{mirrorId}` — status and metadata.
-- `GET /v1alpha1/mirrors/{mirrorId}/logs` — full mirror log output.
+```mermaid
+sequenceDiagram
+    participant Client as Client<br/>(Nextflow, Wave CLI, or API)
+    participant Wave
+    participant Source as Source registry
+    participant Target as Target registry
+
+    Client->>Wave: Request container (mirror to target)
+    Wave->>Source: Pull layers and manifests (Skopeo)
+    Source-->>Wave: Image data
+    Wave->>Target: Push layers and manifests
+    Target-->>Wave: Push complete
+    Wave-->>Client: Target registry URI
+    Client->>Target: Pull image directly
+    Target-->>Client: Image data
+```
