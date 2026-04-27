@@ -24,7 +24,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
 import io.micronaut.scheduling.TaskScheduler
-import io.seqera.wave.configuration.TokenConfig
+import io.seqera.wave.configuration.ContainerRequestConfig
 import io.seqera.wave.tower.client.TowerClient
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
@@ -58,7 +58,7 @@ class JwtMonitor implements Runnable {
     private JwtConfig jwtConfig
 
     @Inject
-    private TokenConfig tokenConfig
+    private ContainerRequestConfig requestConfig
 
     @PostConstruct
     private init() {
@@ -111,7 +111,7 @@ class JwtMonitor implements Runnable {
             return
         }
         // check if the JWT record is expired
-        final deadline = entry.createdAt + tokenConfig.cache.duration
+        final deadline = entry.createdAt + requestConfig.cache.duration
         if( now > deadline ) {
             log.debug "JWT record expired - entry=$entry; deadline=$deadline; "
             return
