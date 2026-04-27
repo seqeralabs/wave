@@ -488,6 +488,7 @@ class TemplateUtilsTest extends Specification {
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /tmp/conda.yml)) \\
                     && micromamba install -y -n base conda-forge::procps-ng \\
+                    && micromamba clean -a -y \\
                     && micromamba env export --name base --explicit > environment.lock \\
                     && echo ">> CONDA_LOCK_START" \\
                     && cat environment.lock \\
@@ -512,6 +513,7 @@ class TemplateUtilsTest extends Specification {
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /tmp/conda.yml)) \\
                     && micromamba install -y -n base conda-forge::procps-ng \\
+                    && micromamba clean -a -y \\
                     && micromamba env export --name base --explicit > environment.lock \\
                     && echo ">> CONDA_LOCK_START" \\
                     && cat environment.lock \\
@@ -545,6 +547,7 @@ class TemplateUtilsTest extends Specification {
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1)) \\
                     && micromamba install -y -n base conda-forge::procps-ng \\
+                    && micromamba clean -a -y \\
                     && micromamba env export --name base --explicit > environment.lock \\
                     && echo ">> CONDA_LOCK_START" \\
                     && cat environment.lock \\
@@ -577,6 +580,7 @@ class TemplateUtilsTest extends Specification {
                     && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -c conda-forge numpy pandas)) \\
+                    && micromamba clean -a -y \\
                     && micromamba env export --name base --explicit > environment.lock \\
                     && echo ">> CONDA_LOCK_START" \\
                     && cat environment.lock \\
@@ -663,12 +667,11 @@ class TemplateUtilsTest extends Specification {
                     pixi init --import /scratch/conda.yml
                     pixi add conda-forge::procps-ng
                     pixi shell-hook > /shell-hook.sh
-                    echo 'exec "$@"' >> /shell-hook.sh
                     echo ">> CONDA_LOCK_START"
                     cat /opt/wave/pixi.lock
                     echo "<< CONDA_LOCK_END"
                 %environment
-                    export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                    . /shell-hook.sh
                 '''.stripIndent()
     }
 
@@ -684,12 +687,11 @@ class TemplateUtilsTest extends Specification {
                     pixi init --import /scratch/conda.yml
                     pixi add conda-forge::procps-ng
                     pixi shell-hook > /shell-hook.sh
-                    echo 'exec "$@"' >> /shell-hook.sh
                     echo ">> CONDA_LOCK_START"
                     cat /opt/wave/pixi.lock
                     echo "<< CONDA_LOCK_END"
                 %environment
-                    export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                    . /shell-hook.sh
                 '''.stripIndent()
     }
 
@@ -711,12 +713,11 @@ class TemplateUtilsTest extends Specification {
                     mkdir /opt/wave && cd /opt/wave
                     pixi init --import /scratch/conda.yml
                     pixi shell-hook > /shell-hook.sh
-                    echo 'exec "$@"' >> /shell-hook.sh
                     echo ">> CONDA_LOCK_START"
                     cat /opt/wave/pixi.lock
                     echo "<< CONDA_LOCK_END"
                 %environment
-                    export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                    . /shell-hook.sh
                 '''.stripIndent()
     }
 
@@ -773,6 +774,7 @@ class TemplateUtilsTest extends Specification {
                         || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                             && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /scratch/conda.yml)
                     micromamba install -y -n base conda-forge::procps-ng
+                    micromamba clean -a -y
                     micromamba env export --name base --explicit > environment.lock
                     echo ">> CONDA_LOCK_START"
                     cat environment.lock
@@ -797,6 +799,7 @@ class TemplateUtilsTest extends Specification {
                         || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                             && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /scratch/conda.yml)
                     micromamba install -y -n base conda-forge::procps-ng
+                    micromamba clean -a -y
                     micromamba env export --name base --explicit > environment.lock
                     echo ">> CONDA_LOCK_START"
                     cat environment.lock
@@ -827,6 +830,7 @@ class TemplateUtilsTest extends Specification {
                         || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                             && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1)
                     micromamba install -y -n base conda-forge::procps-ng
+                    micromamba clean -a -y
                     micromamba env export --name base --explicit > environment.lock
                     echo ">> CONDA_LOCK_START"
                     cat environment.lock
@@ -856,6 +860,7 @@ class TemplateUtilsTest extends Specification {
                         && cat /tmp/mamba.log \\
                         || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                             && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -c conda-forge numpy pandas)
+                    micromamba clean -a -y
                     micromamba env export --name base --explicit > environment.lock
                     echo ">> CONDA_LOCK_START"
                     cat environment.lock
