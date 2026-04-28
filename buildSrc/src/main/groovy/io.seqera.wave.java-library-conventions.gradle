@@ -46,7 +46,6 @@ dependencies {
     testImplementation 'net.bytebuddy:byte-buddy:1.14.17'
     testImplementation 'org.spockframework:spock-core:2.3-groovy-4.0'
     testImplementation 'org.spockframework:spock-junit4:2.3-groovy-4.0'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.withType(Test).configureEach {
