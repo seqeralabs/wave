@@ -15,7 +15,7 @@ micronaut:
     discovery-client :
       enabled : false
   server:
-    port: 9090
+    port: "${WAVE_SERVER_PORT:9090}"
     # https://docs.micronaut.io/latest/guide/#atBlocking
     thread-selection: AUTO
     # note this should be >= the build timeout (which is 15 minutes) see below
@@ -49,7 +49,7 @@ micronaut:
 wave:
   allowAnonymous: true
   server:
-      url: "${WAVE_SERVER_URL:`http://localhost:9090`}"
+      url: "${WAVE_SERVER_URL:`http://localhost:${WAVE_SERVER_PORT:9090}`}"
   security:
     http-headers:
       enabled: true
