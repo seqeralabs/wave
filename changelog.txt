@@ -1,4 +1,16 @@
 # Wave changelog
+1.33.3 - 28 Apr 2026
+- Revert Gradle build files and dependencies to v1.33.0 [087a85935]
+- Add lib-util-time dependency [d894f5ca9]
+- Add micromamba clean to v2 templates to reduce image size (#1038) [6d57360a6]
+- Fix pixi Singularity template PATH environment (#1036) [a199953e5]
+- Update third-party dependency versions to latest stable (#1037) [03cc67e4c]
+- Minor clarity suggestions (#1034) [c862ee670]
+- Reduce wave resource requirements in installation manifests (#1028) [a2f670990]
+- Refine Docker Compose setup for Wave Lite (#1033) [00a7c8537]
+- Add BuildEnabled in MultiPlatformBuildService (#1030) [88bff95aa]
+- Add missing configuration documentation (#1025) [ec29df888]
+
 1.33.2 - 15 Apr 2026
 - Fix conda builds for packages requiring __cuda virtual package (#1027) [67542ce25]
 - Fix build error with --build-template conda/micromamba:v2 for singularity (#972) [17273e544]
