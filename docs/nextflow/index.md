@@ -16,10 +16,10 @@ To enable Wave in your Nextflow pipeline, add the following to your Nextflow con
 
 ```groovy
 wave.enabled = true
-tower.accessToken = '<TOWER_ACCESS_TOKEN>'
+tower.accessToken = '<tower-access-token>'
 ```
 
-Replace `<TOWER_ACCESS_TOKEN>` with your Seqera access token.
+Replace `<tower-access-token>` with your Seqera access token.
 
 :::note
 

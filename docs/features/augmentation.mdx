@@ -28,10 +28,10 @@ The augmentation flow runs as follows:
     - The target container architecture.
     - The name of the container image to augment.
     - A `containerConfig` describing the layers, environment variables, or entrypoint to inject.
-2. Wave authenticates the caller. If the request includes a Seqera Platform access token, Wave verifies it. If the Wave deployment permits anonymous access and no token is supplied, Wave processes the request anonymously.
+2. Wave authenticates the caller. If the request includes a Seqera Platform access token, Wave verifies it. If the Wave deployment permits anonymous access and the request omits a token, Wave processes the request anonymously.
 3. Wave returns an ephemeral image name, for example, `wave.seqera.io/wt/<access-token>/library/alpine:latest`. The 12-character access token identifies and authorizes the follow-up pull.
 4. The container runtime pulls the ephemeral image. Wave intercepts the manifest request and returns a modified manifest that references both the original layers and the injected layers.
-5. The container runtime pulls base layer blobs from the source registry — Wave redirects these requests rather than serving the bytes itself. Injected layer blobs are pulled from Wave or from the source URL Wave returns, depending on how the layer was supplied.
+5. The container runtime pulls base layer blobs from the source registry — Wave redirects these requests rather than serving the bytes itself. The runtime pulls injected layer blobs from Wave or from the source URL Wave returns, depending on how you supplied the layer.
 6. The container runtime assembles the final image from all layers.
 
 ```mermaid

@@ -7,6 +7,8 @@ description: A free community registry powered by Wave for building Conda and Py
 
 Images are hosted in the Wave community container registry at [`community.wave.seqera.io`](https://community.wave.seqera.io/). Seqera stores them for at least five years. Images are public and free of charge. They can be pulled from local, HPC, or cloud infrastructure as Docker or native Singularity images. Supported architectures are `linux/amd64` and `linux/arm64`.
 
+## Use cases
+
 Use cases include:
 
 - **Rapid prototyping**: Get a container for any Conda or PyPI package without a local build.
@@ -16,7 +18,7 @@ Use cases include:
 :::note
 Seqera Containers only builds Conda- and PyPI-based images. It does not support custom container files, augmentation, or private registry authentication.
 
-You can still use a Seqera Containers image as a base for Wave augmentation, mirroring, freeze mode, and other features in either Wave flavour.
+You can still use a Seqera Containers image as a base for Wave augmentation, mirroring, freeze mode, and other features.
 :::
 
 ## Web interface
@@ -46,26 +48,3 @@ Request an image from Seqera Containers without a software installation or regis
 Build and request images from the Seqera Containers registry directly from Nextflow or the Wave CLI and API. This is the recommended method for Nextflow pipelines.
 
 The flow matches [container freeze](../features/container-freezes.mdx), but you do not specify a custom build repository. Only Conda and PyPI builds are available.
-
-## How it works
-
-Wave builds the images, freezes them, and pushes them to the community registry. A [Docker distribution registry](https://github.com/distribution/distribution) hosted on AWS serves the images on demand. Cloudflare CDN sits in front of the storage layer. Image blobs are stored in AWS S3. AWS credits fund the AWS infrastructure costs.
-
-## Who pays for this service?
-
-Seqera Containers is a collaboration between Seqera and AWS. Seqera builds and manages the service. Costs split as follows:
-
-Seqera:
-
-- Wave service registry and builds.
-- Cloudflare CDN provisioning.
-
-AWS:
-
-- AWS S3 for long-term storage of image blobs.
-
-## Are containers reproducible?
-
-Seqera Containers builds images on demand and stores them in the Wave community registry. Image names derive from a hash of the requested packages and versions. Request the same packages and versions twice and you get the same hash. Wave returns the stored image directly instead of building it again. Anyone requesting the same packages pulls the exact same container.
-
-Hardcode the returned container URI to guarantee reproducibility. Wave returns the exact same layers even after infrastructure updates such as a new Conda base image.

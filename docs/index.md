@@ -8,18 +8,20 @@ Wave removes the need to pre-build and maintain a catalog of images for every pi
 
 ## Wave and Wave Lite
 
-The hosted Wave service on Seqera Platform supports the full feature set and is available to anyone using Nextflow, the Wave CLI, or the API.
+The Seqera Wave service supports the full feature set and is available to anyone using Nextflow, the Wave CLI, or the API.
 
 Seqera Enterprise customers can also license a self-hosted deployment in two configurations:
 
 - **Wave Lite**: container augmentation, inspection, and private registry authentication.
 - **Wave**: Wave Lite plus on-demand builds, freeze, mirroring, and security scanning.
 
-[Contact us](https://seqera.io/contact-us/) for more information.
+[Contact Seqera](https://seqera.io/contact-us/) for more information.
 
 ## Seqera Containers
 
 [Seqera Containers](./seqera-containers/index.mdx) is a free public registry operated by Seqera and powered by Wave. It produces Conda and PyPI images on demand and publishes them to `community.wave.seqera.io`. Images are public, free of charge, and require no account.
+
+See [Seqera Containers](./seqera-containers/index.mdx) for more information.
 
 ## Next steps
 

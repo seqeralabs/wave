@@ -17,18 +17,18 @@ Use cases for container mirroring include:
 
 - **Region-specific deployments**: Place containers in the right geographic region to meet data residency requirements or cut latency.
 - **Enhanced security**: Serve images from a registry behind a firewall or inside tight networking controls.
-- **Cost and performance**: Pull from a cloud-native registry co-located with compute. Egress costs are reduced compared with pulls from remote registries.
+- **Cost and performance**: Pull from a cloud-native registry co-located with compute. This reduces egress costs compared with pulls from remote registries.
 - **Multi-cloud pipelines**: Deploy workflows across AWS, Google Cloud, and Azure. Each cloud pulls from its local registry.
 - **Mitigating upstream rate limits**: Mirror a public image once and serve many pulls from your own registry.
 
 ## How it works
 
-The mirror flow involves the client, Wave, Seqera Platform, the source registry, and the target registry:
+The mirror flow runs as follows:
 
 1. A client (Nextflow, the Wave CLI, or the Wave API) requests a container and asks for mirroring to a target registry.
-2. Wave authenticates the caller against Seqera Platform. Mirror requests require a Seqera Platform access token. Platform supplies the registry credentials Wave uses to pull from the source and push to the target.
+2. Wave authenticates the caller against Seqera Platform. Mirror requests require a Seqera Platform access token. Seqera Platform supplies the registry credentials Wave uses to pull from the source and push to the target.
 3. Wave validates the request. The source and target registry hosts must differ, and the request must use the v2 API.
-4. If the target image is already mirrored or in progress, Wave returns the target URI straight away. Otherwise Wave launches a Skopeo copy job that pulls every layer and manifest from the source and pushes them to the target.
+4. If the target image is already mirrored or in progress, Wave returns the target URI straight away. Otherwise, Wave launches a Skopeo copy job that pulls every layer and manifest from the source and pushes them to the target.
 5. Wave returns the target registry URI to the client. The client pulls the image directly from the target registry with no further involvement from Wave.
 
 ```mermaid
@@ -50,5 +50,3 @@ sequenceDiagram
     Client->>Target: Pull image directly
     Target-->>Client: Image data
 ```
-
-Container mirroring is not available in Wave Lite — see the [feature matrix](./index.mdx) for the capabilities supported by each deployment.

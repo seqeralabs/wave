@@ -3,7 +3,7 @@ title: How Wave works
 description: How Wave provisions and serves container images on demand.
 ---
 
-Wave builds, augments, and serves container images on demand. This page describes how that happens. See [Features](./features/index.mdx) for the full set of capabilities.
+Wave builds, augments, and serves container images on demand. Clients submit a request — referencing an existing image or supplying build instructions — and Wave returns a URI that any OCI-compliant container runtime can pull from.
 
 ## Requesting and serving images
 
@@ -34,8 +34,6 @@ sequenceDiagram
     User->>+Registry: Pull image URI
     Registry-->>-User: Image manifest and layers
 ```
-
-See the [provisioning modes table](./features/index.mdx#provisioning-modes) on the Features page for a summary of how each mode combines inputs, outputs, and storage.
 
 ## Serving image layers
 

@@ -29,32 +29,32 @@ To enable private container repository access:
 
     ```groovy
     wave.enabled = true
-    tower.accessToken = '<TOWER_ACCESS_TOKEN>'
+    tower.accessToken = '<tower-access-token>'
     ```
 
-    Replace `<TOWER_ACCESS_TOKEN>` with your [Seqera access token](../tutorials/nextflow-wave.mdx#create-your-seqera-access-token).
+    Replace `<tower-access-token>` with your [Seqera access token](../tutorials/nextflow-wave.mdx#create-your-seqera-access-token).
 
 1. (Optional) If you created your credentials in an organization workspace, add your workspace ID to your Nextflow configuration:
 
     ```groovy
-    tower.workspaceId = '<TOWER_WORKSPACE_ID>'
+    tower.workspaceId = '<tower-workspace-id>'
     ```
 
-    Replace `<TOWER_WORKSPACE_ID>` with your Seqera workspace ID.
+    Replace `<tower-workspace-id>` with your Seqera workspace ID.
 
 1. Configure your repository access in Seqera. See [Seqera Platform credentials](https://docs.seqera.io/platform/latest/credentials/overview) for more information.
 
 1. Add your build and build cache repository to your Nextflow configuration:
 
     ```groovy
-    wave.build.repository = '<BUILD_REPOSITORY>'
-    wave.build.cacheRepository = '<CACHE_REPOSITORY>'
+    wave.build.repository = '<build-repository>'
+    wave.build.cacheRepository = '<cache-repository>'
     ```
 
     Replace the following:
 
-    - `<BUILD_REPOSITORY>`: the repository to store your built container images
-    - `<CACHE_REPOSITORY>`: the repository to store image layers for caching
+    - `<build-repository>`: the repository to store your built container images
+    - `<cache-repository>`: the repository to store image layers for caching
 
 </details>
 
@@ -126,10 +126,10 @@ To enable Wave to provision Conda package containers:
 1. Set your Conda channel priority:
 
     ```groovy
-    conda.channels = '<CONDA_CHANNELS>'
+    conda.channels = '<conda-channels>'
     ```
 
-    Replace `<CONDA_CHANNELS>` with a comma-separated list of your channel priorities.
+    Replace `<conda-channels>` with a comma-separated list of your channel priorities.
 
 </details>
 
@@ -164,19 +164,19 @@ To enable provisioning of Singularity images:
     1. Add your build repository to your Nextflow configuration:
 
         ```groovy
-        wave.build.repository = '<BUILD_REPOSITORY>'
+        wave.build.repository = '<build-repository>'
         ```
 
-        Replace `<BUILD_REPOSITORY>` with your OCI-compliant container registry.
+        Replace `<build-repository>` with your OCI-compliant container registry.
 
 
 1. Grant access to the repository on compute nodes:
 
     ```bash
-    singularity remote login <REMOTE_ENDPOINT>
+    singularity remote login <remote-endpoint>
     ```
 
-    Replace `<REMOTE_ENDPOINT>` with your Singularity remote endpoint. See [Singularity remote login](https://docs.sylabs.io/guides/3.1/user-guide/cli/singularity_remote_login.html) for more information.
+    Replace `<remote-endpoint>` with your Singularity remote endpoint. See [Singularity remote login](https://docs.sylabs.io/guides/3.1/user-guide/cli/singularity_remote_login.html) for more information.
 
 1. (Optional) To build Singularity native images, disable both `singularity.ociAutoPull` and `singularity.ociMode` in your Nextflow configuration. See [Nextflow configuration](https://www.nextflow.io/docs/latest/config.html#config-singularity) for more information.
 
@@ -197,10 +197,10 @@ To enable container mirroring:
     ```groovy
     wave.enabled = true
     wave.mirror = true
-    tower.accessToken = '<TOWER_ACCESS_TOKEN>'
+    tower.accessToken = '<tower-access-token>'
     ```
 
-    Replace `<TOWER_ACCESS_TOKEN>` with your [Seqera access token](../tutorials/nextflow-wave.mdx#create-your-seqera-access-token).
+    Replace `<tower-access-token>` with your [Seqera access token](../tutorials/nextflow-wave.mdx#create-your-seqera-access-token).
 
 
 1. Configure your private repository access in Seqera. See [Seqera Platform credentials](https://docs.seqera.io/platform-cloud/credentials/overview) for more information.
@@ -208,10 +208,10 @@ To enable container mirroring:
 1. Add your build repository to your Nextflow configuration:
 
     ```groovy
-    wave.build.repository = '<BUILD_REPOSITORY>'
+    wave.build.repository = '<build-repository>'
     ```
 
-    Replace `<BUILD_REPOSITORY>` with your container registry.
+    Replace `<build-repository>` with your container registry.
 
 </details>
 
@@ -229,10 +229,10 @@ To enable container security scanning:
         ```groovy
         wave.enabled = true
         wave.scan.mode = 'required'
-        tower.accessToken = '<TOWER_ACCESS_TOKEN>'
+        tower.accessToken = '<tower-access-token>'
         ```
 
-    Replace `<TOWER_ACCESS_TOKEN>` with your [Seqera access token](../tutorials/nextflow-wave.mdx#create-your-seqera-access-token).
+    Replace `<tower-access-token>` with your [Seqera access token](../tutorials/nextflow-wave.mdx#create-your-seqera-access-token).
 
 1. Add the acceptable vulnerability levels to your Nextflow configuration:
 
@@ -265,10 +265,10 @@ To enable Wave with Fusion, add the following to your Nextflow configuration:
     ```groovy
     wave.enabled = true
     fusion.enabled = true
-    tower.accessToken = '<TOWER_ACCESS_TOKEN>'
+    tower.accessToken = '<tower-access-token>'
     ```
 
-    Replace `<TOWER_ACCESS_TOKEN>` with your [Seqera access token](../tutorials/nextflow-wave.mdx#create-your-seqera-access-token).
+    Replace `<tower-access-token>` with your [Seqera access token](../tutorials/nextflow-wave.mdx#create-your-seqera-access-token).
 
 :::note
 For more information about Fusion capabilities and configuration options, see the [Fusion file system documentation](https://docs.seqera.io/fusion).
