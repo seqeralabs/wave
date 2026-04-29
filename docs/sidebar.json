@@ -9,28 +9,28 @@
       },
       "collapsed": true,
       "items": [
-        "concepts/how-it-works",
+        "how-it-works",
         {
           "type": "category",
           "label": "Features",
           "link": {
             "type": "doc",
             "id": "features/index"
+          },
+          "collapsed": true,
+          "items": [
+            "features/augmentation",
+            "features/inspection",
+            "features/authentication",
+            "features/container-builds",
+            "features/container-freezes",
+            "features/mirroring",
+            "features/security"
+          ]
         },
-      "collapsed": true,
-      "items": [
-        "features/augmentation",
-        "features/inspection",
-        "features/authentication",
-        "features/container-builds",
-        "features/container-freezes",
-        "features/mirroring",
-        "features/security"
-      ]
-    }
+        "seqera-containers/index"
       ]
     },
-    "seqera-containers/index",
     {
       "type": "category",
       "label": "Installation",

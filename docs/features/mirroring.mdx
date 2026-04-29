@@ -3,12 +3,12 @@ title: Container mirroring
 description: Copy a container image to a registry of your choice while preserving its original name and digest.
 ---
 
-Storing container images in a registry you control improves security, supports policy compliance, and gives faster access. Wave mirroring automates the copy. Wave pulls the image from its source and pushes it to your registry on demand. The image name and digest stay identical to the source.
+Storing container images in a registry you control improves security, supports policy compliance, and gives faster access. Wave mirroring automates the copy: Wave pulls the image from its source and pushes it to your registry on demand, preserving the original tag and digest so only the registry hostname changes.
 
-Wave runs the copy with Skopeo. Tools that pin the image by digest continue to work against the mirrored copy. Mirror operations are asynchronous and dispatched through the job manager.
+Wave runs the copy with Skopeo, and mirror operations run asynchronously. Tools that pin the image by digest continue to work against the mirrored copy.
 
 :::tip
-To produce a new, Wave-built image and push it under a name you choose, use [container freeze](./container-freezes.mdx). Freeze returns a new image with a 16-character build-hash tag. Mirroring copies the existing image byte-for-byte with its original name and digest.
+To produce a new, Wave-built image and push it under a name you choose, use [container freeze](./container-freezes.mdx). Freeze returns a new image with a build-hash-derived tag. Mirroring copies the existing image byte-for-byte and preserves its tag and digest.
 :::
 
 ## Use cases
@@ -23,21 +23,25 @@ Use cases for container mirroring include:
 
 ## How it works
 
-The mirror flow involves the client, Wave, the source registry, and the target registry:
+The mirror flow involves the client, Wave, Seqera Platform, the source registry, and the target registry:
 
 1. A client (Nextflow, the Wave CLI, or the Wave API) requests a container and asks for mirroring to a target registry.
-2. Wave validates the request. The source and target registries must differ and the caller must be authenticated.
-3. If the target image is already mirrored or in progress, Wave returns the target URI straight away. Otherwise Wave launches a Skopeo copy job that pulls every layer and manifest from the source and pushes them to the target.
-4. Wave returns the target registry URI to the client. The client pulls the image directly from the target registry with no further involvement from Wave.
+2. Wave authenticates the caller against Seqera Platform. Mirror requests require a Seqera Platform access token. Platform supplies the registry credentials Wave uses to pull from the source and push to the target.
+3. Wave validates the request. The source and target registry hosts must differ, and the request must use the v2 API.
+4. If the target image is already mirrored or in progress, Wave returns the target URI straight away. Otherwise Wave launches a Skopeo copy job that pulls every layer and manifest from the source and pushes them to the target.
+5. Wave returns the target registry URI to the client. The client pulls the image directly from the target registry with no further involvement from Wave.
 
 ```mermaid
 sequenceDiagram
     participant Client as Client<br/>(Nextflow, Wave CLI, or API)
     participant Wave
+    participant Platform as Seqera Platform
     participant Source as Source registry
     participant Target as Target registry
 
     Client->>Wave: Request container (mirror to target)
+    Wave->>Platform: Authenticate user, resolve credentials
+    Platform-->>Wave: Identity and registry credentials
     Wave->>Source: Pull layers and manifests (Skopeo)
     Source-->>Wave: Image data
     Wave->>Target: Push layers and manifests
@@ -46,3 +50,5 @@ sequenceDiagram
     Client->>Target: Pull image directly
     Target-->>Client: Image data
 ```
+
+Container mirroring is not available in Wave Lite — see the [feature matrix](./index.mdx) for the capabilities supported by each deployment.

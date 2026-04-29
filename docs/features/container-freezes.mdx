@@ -3,7 +3,7 @@ title: Container freeze
 description: Build a permanent container image and push it to a registry of your choice.
 ---
 
-Freeze mode produces a permanent container image in a registry you control. Wave builds the image, pushes it to the target registry, and returns a stable URI. The URI carries no Wave access token and does not expire. Subsequent pulls go directly to the registry and bypass Wave.
+Freeze mode produces a permanent container image in a registry you control. Wave builds the image, pushes it to the target registry, and returns a stable URI that carries no Wave access token and does not expire. Subsequent pulls go directly to the registry and bypass Wave.
 
 At build time, Wave rewrites the build file to bake augmentation layers directly into the image rather than injecting them at pull time. Augmentation layers include container config files, environment variables, and entrypoints. Freeze requests must specify a target build repository, either supplied by the client or configured as a default. Singularity (SIF) images always use freeze mode because the monolithic format does not support dynamic layer injection.
 
@@ -28,27 +28,28 @@ Use cases for container freeze include:
 The freeze flow involves the client, Wave, Seqera Platform, the build runtime, and the target registry:
 
 1. The client (Nextflow, the Wave CLI, or the Wave API) submits a container request with:
-    - The user's Seqera Platform identity.
     - The base image to augment, or instructions to build a container.
     - The container extension configuration, which can be a custom payload, one or more extension layers, or additional images.
     - The target repository for the new container.
-2. Wave validates the request and authorizes the user against the Seqera Platform service.
+2. Wave authenticates the caller. If the request includes a Seqera Platform access token, Wave verifies it. If the Wave deployment permits anonymous access and no token is supplied, Wave processes the request anonymously.
 3. Wave rewrites the Dockerfile (or Singularity definition) to bake augmentation layers into the build.
 4. Wave computes a build ID from the rewritten build inputs and checks whether the image already exists in the target registry.
 5. If the image is missing, Wave launches a build job and pushes the result to the target registry.
-6. Wave responds with the frozen image name, for example `your.registry.com/some/image/build:1a2b3c4d5e6f7890`.
+6. Wave responds with the frozen image URI, for example `your.registry.com/some/image/build:1a2b3c4d5e6f7890`. The tag is derived from the build hash and may include a recipe prefix for Conda builds. Singularity images use the `oras://` scheme.
 
 ```mermaid
 sequenceDiagram
     participant Client as Client<br/>(Nextflow, Wave CLI, or API)
     participant Wave
     participant Platform as Seqera Platform
-    participant Builder as Build runtime
+    participant Builder as Build backend
     participant Registry as Target registry
 
     Client->>Wave: Container request (freeze=true)
-    Wave->>Platform: Authenticate user
-    Platform-->>Wave: Identity confirmed
+    opt Token provided
+        Wave->>Platform: Authenticate user
+        Platform-->>Wave: Identity confirmed
+    end
     Note over Wave: Rewrite build file to bake in<br/>augmentation layers.<br/>Compute build ID from inputs.
     Wave->>Registry: Does image with this ID exist?
 
@@ -67,3 +68,9 @@ sequenceDiagram
 ```
 
 Frozen images are regular container builds with no special formats or restrictions. Wave assigns each image a unique ID derived from a hash of the container file, any package dependencies, the target platform (AMD64 or ARM64), and the target repository name. A second request for the same container produces the same ID, so Wave skips the build and returns the existing image. Images reside in the repository you selected. Wave does not cache them locally unless you configure a cache repository. Images are stored permanently unless the repository owner deletes them.
+
+:::note
+When Nextflow is the Wave client, additional resources may be bundled as container layers — such as module resources and the workflow or module `bin/` directories. Changes to these bundled files affect the container fingerprint and trigger a rebuild. See [Bundling pipeline scripts](../nextflow/bundle-scripts.md) for details.
+:::
+
+Container freeze is not available in Wave Lite — see the [feature matrix](./index.mdx) for the capabilities supported by each deployment.

@@ -3,7 +3,7 @@ title: On-demand container builds
 description: Build container images just-in-time from a Dockerfile, Singularity recipe, Conda, PyPI, or Pixi specification.
 ---
 
-Wave builds container images from a Dockerfile, a Singularity recipe, Conda packages, a Conda environment file, PyPI requirements, or a Pixi manifest. This *just-in-time (JIT)* strategy creates images on demand. Users are not required to pre-build and curate images ahead of each pipeline run. Wave returns an image URI immediately and runs the build in the background.
+Wave builds container images from a Dockerfile, a Singularity recipe, Conda packages, a Conda environment file (which can include PyPI packages), or a list of CRAN packages. This *just-in-time (JIT)* strategy creates images on demand. Users are not required to pre-build and curate images ahead of each pipeline run. Wave returns an image URI immediately and runs the build in the background.
 
 ## Use cases
 
@@ -18,23 +18,29 @@ Use cases for building custom images on demand include:
 
 ## How it works
 
-The build flow involves the client, Wave, the build backend, the build registry, and the container runtime:
+The build flow involves the client, Wave, Seqera Platform, the build backend, the build registry, and the container runtime:
 
 1. A client submits build instructions. Instructions come from a Nextflow pipeline, the Wave CLI, a direct Wave API call, or the Seqera Containers web interface for Conda and PyPI builds.
-2. Wave computes a content-based build ID from the inputs. If the image already exists in the target registry, Wave returns the existing image URI. Otherwise Wave starts a build in the background and returns a URI immediately.
-3. A container runtime pulls the image from the returned URI. If the build is still running, the pull waits until the build completes.
+2. Wave authenticates the caller. If the request includes a Seqera Platform access token, Wave verifies it. If the Wave deployment permits anonymous access and no token is supplied, Wave processes the request anonymously.
+3. Wave computes a content-based build ID from the inputs. If the image already exists in the target registry, Wave returns the existing image URI. Otherwise Wave starts a build in the background and returns a URI immediately.
+4. A container runtime pulls the image from the returned URI. If the build is still running, the pull waits until the build completes.
 
 The build ID is a 16-character hash derived from the container file, Conda file, platform, target repository, build context, and container config. Identical inputs always produce the same ID, so concurrent requests for the same image share a single build.
 
 ```mermaid
 sequenceDiagram
-    participant Client as Client<br/>(Nextflow, CLI, API,<br/>Seqera Containers)
+    participant Client as Client<br/>(Nextflow, Wave CLI, or API)
     participant Wave
-    participant Registry as Build<br/>registry
-    participant Builder as Build<br/>backend
-    participant Runtime as Container<br/>runtime
+    participant Platform as Seqera Platform
+    participant Registry as Build registry
+    participant Builder as Build backend
+    participant Runtime as Container runtime<br/>(Docker / containerd)
 
     Client->>Wave: Submit build request
+    opt Token provided
+        Wave->>Platform: Authenticate user
+        Platform-->>Wave: Identity confirmed
+    end
     Wave->>Wave: Compute build ID from inputs
     Wave->>Registry: Check if image exists
 
@@ -55,7 +61,7 @@ sequenceDiagram
     Registry-->>Runtime: Return image layers
 ```
 
-Wave runs the build either as a local Docker build or as a Kubernetes job, depending on the deployment. Both Wave and Wave Lite follow the same request-and-pull flow.
+Wave runs the build either as a local Docker build or as a Kubernetes job, depending on the deployment. On-demand builds are not available in Wave Lite — see the [feature matrix](./index.mdx) for the capabilities supported by each deployment.
 
 ### Build from a Dockerfile or Singularity recipe
 
@@ -106,12 +112,19 @@ dependencies:
 
 This setup installs both Conda and PyPI packages during the build.
 
-### Build from Pixi manifests
+### Multi-stage Conda builds
 
-Wave builds container images from a [Pixi](https://pixi.sh/) manifest. Pixi is a package manager built on the Conda ecosystem. It uses a per-project `pixi.toml` (or `pyproject.toml`) and a `pixi.lock` lock file to produce fast, reproducible environments across platforms. Pixi support was added in Wave 1.31.0.
+By default, Wave produces single-stage Conda images that bundle the package manager with the runtime environment. Two build templates run a two-stage build instead: the first stage installs the environment, and the second stage copies only the resolved environment into a minimal base image. Multi-stage builds typically reduce image size by 30–50%, exclude build tools from the final image, and emit a lock file for reproducibility.
 
-Pixi builds follow the same JIT pattern as Dockerfile and Conda builds. Submit the manifest, receive an image URI, and pull once the build completes. Pixi is appropriate when the source environment is already defined for Pixi elsewhere in the project. It is particularly suitable when the reproducibility guarantees of a committed `pixi.lock` are required.
+Two multi-stage templates are available:
 
-The Pixi template accepts Conda packages only. Conda lock files are not supported through the Pixi template.
+- **`conda/micromamba:v2`** uses Micromamba and produces an `environment.lock` file.
+- **`conda/pixi:v1`** uses [Pixi](https://pixi.sh/) and produces a `pixi.lock` file. Conda lock files are not supported through this template. Pixi support was added in Wave 1.31.0.
+
+Select a template with the `buildTemplate` field on the build request. Both templates accept Conda packages and Conda environment files, and both produce Docker and Singularity images.
+
+### Build from CRAN packages
+
+Wave builds container images from a list of [CRAN](https://cran.r-project.org/) packages for R-based workflows. Wave generates a Dockerfile based on a Rocker R image and installs the requested packages at build time.
 
 Every build produces logs, and Conda builds also produce a lock file. Wave exposes build status, log output, and the generated Conda lock file to clients through the Wave API.

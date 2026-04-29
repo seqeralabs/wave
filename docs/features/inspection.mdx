@@ -3,9 +3,9 @@ title: Container inspection
 description: Retrieve manifest, config, and layer metadata for a container without pulling the image.
 ---
 
-Container inspection returns the metadata of a container image. The response includes the manifest, image config, layer digests, and the platform-specific digest. Wave does not pull the image layers. A single request provides the information required to decide whether to pull the image, trigger an augmentation, or record the image in an audit trail.
+Container inspection returns the metadata of a container image — the manifest, image config, layer digests, and platform-specific digest — without pulling the image layers. A single request provides the information required to decide whether to pull the image, trigger an augmentation, or record the image in an audit trail.
 
-Inspection runs as an authenticated registry operation. If a Seqera Platform access token is provided, Wave resolves any matching registry credentials from the workspace. Public images can be inspected anonymously. In either case, users do not handle registry tokens directly.
+Inspection runs as an authenticated registry operation. If a Seqera Platform access token is provided, Wave resolves any matching registry credentials from the workspace; public images can be inspected anonymously. In either case, users do not handle registry tokens directly.
 
 ## Use cases
 
@@ -21,28 +21,30 @@ Use cases for container inspection include:
 
 The inspection flow involves the client, Wave, Seqera Platform, and the source registry:
 
-1. A client sends an inspect request with the image URI. The `platform` parameter is optional. It must be a single value such as `linux/amd64` or `linux/arm64`. Multi-platform values are rejected. Typical callers are Seqera Platform, a CI check, Nextflow, the Wave CLI, or the Wave API.
-2. Wave validates the request. If a Platform access token is supplied, Wave verifies the caller against Seqera Platform and resolves any matching registry credentials from the workspace. Requests without a token proceed as anonymous.
-3. Wave queries the source registry, follows the manifest list to the platform-specific manifest, and fetches the image config blob.
+1. A client (Nextflow, the Wave CLI, or the Wave API) sends an inspect request with the image URI. The `platform` parameter is optional. It must be a single value such as `linux/amd64` or `linux/arm64`. Multi-platform values are rejected.
+2. Wave authenticates the caller. If the request includes a Seqera Platform access token, Wave verifies it and resolves the user's workspace credentials. Requests without a token proceed anonymously.
+3. Wave queries the source registry. For platform-resolved images Wave also fetches the image config blob. For multi-architecture requests with no platform specified, Wave returns the manifest index without descending into a platform manifest.
 4. Wave returns a single response containing either a `container` spec (for a resolved platform-specific image) or an `index` spec (for a multi-architecture image when no platform is specified). The response includes the registry, image name, reference, manifest digest, layer digests and sizes, and the image config.
 
-Inspection creates no tokens. It pulls no layers. It does not touch the build or scan pipelines. Each request is independent.
+Inspection creates no tokens, pulls no layers, and does not touch the build or scan pipelines. Each request is independent.
 
 ```mermaid
 sequenceDiagram
-    participant C as Client<br/>(Platform, CI, Nextflow, CLI, API)
+    participant C as Client<br/>(Nextflow, Wave CLI, or API)
     participant W as Wave
     participant P as Seqera Platform
     participant R as Source registry
 
     C->>W: Inspect request<br/>(image, platform?)
-    alt Token provided
-        W->>P: Verify token, resolve credentials
-        P-->>W: User identity + registry credentials
+    opt Token provided
+        W->>P: Authenticate user, resolve credentials
+        P-->>W: Identity and registry credentials
     end
     W->>R: GET manifest (auth if needed)
     R-->>W: Manifest or index
-    W->>R: GET image config blob
-    R-->>W: Config
+    opt Platform-resolved image
+        W->>R: GET image config blob
+        R-->>W: Config
+    end
     W-->>C: ContainerInspectResponse<br/>(manifest + config + layers)
 ```
