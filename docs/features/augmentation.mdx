@@ -3,12 +3,12 @@ title: Container augmentation
 description: Inject custom layers into existing container images at pull time, without a rebuild.
 ---
 
-Wave augmentation extends existing container images without a rebuild. Wave adds user-provided content as extra layers when the image is pulled, leaving the original image untouched and its layer checksums preserved.
+Wave augmentation extends existing container images without a rebuild. Wave generates a new manifest and image config that reference both the original layers and user-injected layers. The base image's blobs are untouched and their checksums are preserved.
 
-Augmentation activates when a container request supplies a `containerConfig` with one or more layers. Wave returns an ephemeral image name, and when the container runtime pulls that image, it fetches the base layers directly from the source registry while Wave injects the additional layers.
+Augmentation applies when a container request supplies a `containerConfig` with one or more layers. Wave returns an ephemeral image name, and when the container runtime pulls that image, it fetches the base layers directly from the source registry while Wave injects the additional layers.
 
-:::note
-Image references that pin to a SHA256 digest, such as `ubuntu@sha256:...`, cannot be augmented. To customize a digest-pinned image, use [container freeze](./container-freezes.mdx) instead.
+:::tip
+Augmented containers are ephemeral by default and are accessible for 36 hours before the access token expires. To produce a permanent image with a stable URI, use [Container freeze](./container-freezes.mdx) to push the augmented image to a registry of your choice.
 :::
 
 ## Use cases
@@ -22,14 +22,14 @@ Use cases for container augmentation include:
 
 ## How it works
 
-The augmentation flow involves the client, Wave, Seqera Platform, the container runtime, and the source registry:
+The augmentation flow runs as follows:
 
 1. A Wave client (Nextflow, the Wave CLI, or the Wave API) submits a container request with:
-    - The target container architecture (AMD64 or ARM64).
+    - The target container architecture.
     - The name of the container image to augment.
     - A `containerConfig` describing the layers, environment variables, or entrypoint to inject.
 2. Wave authenticates the caller. If the request includes a Seqera Platform access token, Wave verifies it. If the Wave deployment permits anonymous access and no token is supplied, Wave processes the request anonymously.
-3. Wave returns an ephemeral image name, for example `wave.seqera.io/wt/<access-token>/library/alpine:latest`. The 12-character access token identifies and authorizes the follow-up pull.
+3. Wave returns an ephemeral image name, for example, `wave.seqera.io/wt/<access-token>/library/alpine:latest`. The 12-character access token identifies and authorizes the follow-up pull.
 4. The container runtime pulls the ephemeral image. Wave intercepts the manifest request and returns a modified manifest that references both the original layers and the injected layers.
 5. The container runtime pulls base layer blobs from the source registry — Wave redirects these requests rather than serving the bytes itself. Injected layer blobs are pulled from Wave or from the source URL Wave returns, depending on how the layer was supplied.
 6. The container runtime assembles the final image from all layers.
@@ -66,7 +66,3 @@ sequenceDiagram
 
     Note over RT: Assemble and run container
 ```
-
-Augmentation runs no hidden build operations. Wave generates a new manifest and image config that reference the original layers and the injected layers. The base image's layer blobs are untouched, so their checksums are preserved.
-
-Augmented containers are ephemeral by default and are accessible for 36 hours before the access token expires. To produce a permanent image with a stable URI, use [container freeze](./container-freezes.mdx) to push the augmented image to a registry of your choice.
