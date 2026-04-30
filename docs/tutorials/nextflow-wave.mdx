@@ -1,6 +1,6 @@
 ---
 title: Nextflow and Wave
-description: Provision containers with Wave directly from your Nextflow pipelines
+description: Provision containers with Nextflow
 tags: [containers, nextflow, wave]
 ---
 
@@ -41,10 +41,10 @@ To create a Seqera access token:
 1. In a terminal window, assign your access token to the `TOWER_ACCESS_TOKEN` environment variable:
 
     ```bash
-    export TOWER_ACCESS_TOKEN=<ACCESS_TOKEN>
+    export TOWER_ACCESS_TOKEN=<access-token>
     ```
 
-    Replace `<ACCESS_TOKEN>` with the Seqera access token you created.
+    Replace `<access-token>` with the Seqera access token you created.
 
 ## Add your container registry credentials to Seqera
 
@@ -84,13 +84,13 @@ Nextflow can use Wave to seamlessly build a container directly from a Dockerfile
 
 1. Create a `nextflow.config` file with the following contents:
 
-    ```groovy
+    ```groovy title="nextflow.config"
     docker {
       enabled = true
     }
 
     wave {
-      build.repository = '<REPO_URI>'
+      build.repository = '<repo-uri>'
       wave.freeze = true
     }
 
@@ -99,7 +99,7 @@ Nextflow can use Wave to seamlessly build a container directly from a Dockerfile
     }
     ```
 
-    Replace `<REPO_URI>` with your private container repository.
+    Replace `<repo-uri>` with your private container repository.
 
 1. Create a `main.nf` file with the following contents:
 
@@ -119,7 +119,7 @@ Nextflow can use Wave to seamlessly build a container directly from a Dockerfile
 
 1. Create the `modules/gamma/main.nf` file for the module with the following contents:
 
-    ```nextflow
+    ```nextflow title="modules/gamma/main.nf"
     process HELLO {
       debug true
 
@@ -131,7 +131,7 @@ Nextflow can use Wave to seamlessly build a container directly from a Dockerfile
 
 1. Create the `modules/gamma/Dockerfile` file for the module and add following contents:
 
-    ```docker
+    ```dockerfile title="modules/gamma/Dockerfile"
     FROM alpine
 
     RUN apk update && apk add bash cowsay \

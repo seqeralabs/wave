@@ -1,5 +1,5 @@
 ---
-title: How Wave works
+title: Architecture
 description: How Wave provisions and serves container images on demand.
 date: 2026-04-29
 tags: [architecture, lifecycle, oci, registry, proxy]
@@ -15,7 +15,7 @@ When the runtime pulls the URI, Wave holds the connection open until any in-prog
 
 ```mermaid
 sequenceDiagram
-    participant Client as Client<br/>(Nextflow, Wave CLI, Docker, API)
+    participant Client as Client<br/>(Nextflow, Wave CLI, API)
     participant Wave
     participant Source as Source registry<br/>or build backend
 

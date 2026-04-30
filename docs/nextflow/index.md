@@ -14,7 +14,7 @@ Nextflow integration with Wave requires Nextflow 22.10.0 or later.
 
 To enable Wave in your Nextflow pipeline, add the following to your Nextflow configuration file:
 
-```groovy
+```groovy title="nextflow.config"
 wave.enabled = true
 tower.accessToken = '<tower-access-token>'
 ```

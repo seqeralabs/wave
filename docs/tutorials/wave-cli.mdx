@@ -110,7 +110,7 @@ Nextflow can use the container that Wave froze to the build repository that you 
 1. In a terminal window, create a new directory for the Nextflow pipeline.
 1. Create a `nextflow.config` file with the following contents:
 
-    ```groovy
+    ```groovy title="nextflow.config"
     docker {
       enabled = true
     }
@@ -122,7 +122,7 @@ Nextflow can use the container that Wave froze to the build repository that you 
 
 1. Create a `main.nf` file with the following contents:
 
-    ```nextflow
+    ```nextflow title="main.nf"
     process FAKER {
       container 'docker.io/example-user/repo:faker--2aa7a4d826a76301'
       debug true
