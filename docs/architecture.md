@@ -9,9 +9,9 @@ Wave builds, augments, and serves container images on demand. Clients submit a r
 
 ## The request lifecycle
 
-Wave clients such as Nextflow and the Wave CLI call the container-provisioning API. Wave authenticates the caller against Seqera Platform when a token is supplied and returns a unique image URI immediately. Builds, augmentations, and scans run asynchronously in the background.
+Wave clients such as Nextflow and the Wave CLI call the container-provisioning API. Wave authenticates the caller against Seqera Platform when you supply a token. It returns a unique image URI immediately. Builds, augmentations, and scans run asynchronously in the background.
 
-When the runtime pulls the URI, Wave holds the connection open until any in-progress work completes. Wave then serves a manifest that combines base layers from the source registry with any layers it injects. Containers behave as if they came from a standard registry, so existing tooling needs no change.
+When the runtime pulls the URI, Wave holds the connection open until any in-progress work completes. Wave then serves a manifest that combines base layers from the source registry with any layers it injects. Containers behave like images from any standard registry. Existing tooling works unchanged.
 
 ```mermaid
 sequenceDiagram
@@ -42,7 +42,7 @@ See [API limits](./api.md#api-limits) for examples and edge cases.
 
 ## Image URIs
 
-Wave returns one of two URI formats. Both embed a content-based build identifier, so identical inputs always resolve to the same URI and reuse the cached image.
+Wave returns one of two URI formats. Both embed a content-based build identifier. Identical inputs always resolve to the same URI and reuse the cached image.
 
 ### Ephemeral URIs
 
@@ -54,24 +54,24 @@ wave.seqera.io/wt/<access-token>/wave/build:<checksum>
 
 In the example:
 
-- `<access-token>` is a 12-character one-time key with a random component. Wave uses it to authorize the pull and to look up the registry credentials stored in Seqera Platform. The token cannot be predicted or reused after it expires.
-- `<checksum>` is a 16-character build identifier derived from the request inputs: the container file, package list, target platform, target repository, and any injected layers.
+- `<access-token>` is a 12-character random short-lived key, valid for the request lifetime (~36 hours). Wave uses it to authorize the pull and to look up the registry credentials stored in Seqera Platform.
+- `<checksum>` is a 16-character build identifier derived from the request inputs: the container file, the Conda file, the target platform, the target repository, the build context, and the container config.
 
 ### Stable URIs
 
 Freeze mode returns the registry URI directly. Stable URIs carry no access token, never expire, and route the runtime to the target registry without involving Wave. Stable image names use the following format:
 
 ```
-your.registry.com/library/<image-name>:<checksum>
+your.registry.com/<image-path>:<checksum>
 ```
 
 In the example:
 
-- `<image-name>` is the image name in your target registry, set when you configure freeze.
+- `<image-path>` is the path in your target registry, set when you configure freeze. The path is whatever you provide in `wave.build.repository`; Wave does not auto-add a `library/` segment.
 - `<checksum>` is the same 16-character build identifier used by ephemeral URIs.
 
 ## Serving image layers
 
-Wave acts as an HTTP proxy during a pull. Most public registries (Docker Hub, Quay.io, AWS ECR, Google Artifact Registry) host metadata themselves and offload binary storage to services such as AWS S3, AWS CloudFront, or Cloudflare. Wave returns HTTP redirects in those cases and the runtime pulls the bytes directly from the storage service.
+Wave acts as an HTTP proxy during a pull. Most public registries (Docker Hub, Quay.io, AWS ECR, Google Artifact Registry) host metadata themselves. They offload binary storage to services such as AWS S3, AWS CloudFront, or Cloudflare. Wave returns HTTP redirects in those cases. The runtime pulls the bytes directly from the storage service.
 
 Self-hosted or custom registries sometimes serve layer binaries directly. When Wave fronts such a registry it caches the binaries in object storage and serves them through a CDN. The hosted Wave service uses Cloudflare, the [same approach Docker Hub uses](https://www.cloudflare.com/case-studies/docker/).

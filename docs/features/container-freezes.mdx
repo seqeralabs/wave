@@ -5,11 +5,11 @@ date: 2026-04-22
 tags: [freeze, build, persistent, registry]
 ---
 
-Freeze mode produces a permanent container image in a registry you control. Wave builds the image, pushes it to the target registry, and returns a stable URI that does not expire. Subsequent pulls go directly to the registry and bypass Wave.
+Freeze mode produces a permanent container image in a registry you control. Wave builds the image and pushes it to the target registry. The response is a stable URI that does not expire. Subsequent pulls go directly to the registry and bypass Wave.
 
-Wave rewrites the build file to bake augmentation layers (container config, environment variables, and entrypoints) into the image rather than injecting them at pull time. Freeze requests must specify a target build repository, set in the request or as a default. Singularity (SIF) images always use freeze because their monolithic format cannot accept dynamic layers.
+Wave rewrites the build file to bake augmentation layers into the image. Augmentation layers include container config, environment variables, and entrypoints. Baking them in avoids dynamic injection at pull time. Freeze requests must specify a target build repository, set in the request or as a default. Singularity (SIF) images always use freeze because their monolithic format cannot accept dynamic layers.
 
-Wave hashes the build inputs to produce a deterministic image ID. Inputs include the build file, package dependencies, target platform (AMD64 or ARM64), and target repository. Identical inputs return the existing image. With Nextflow, workflow `bin/` directories and module resources are also bundled, so changes trigger a rebuild (see [Bundling pipeline scripts](../guides/bundle-scripts.md)). Wave does not cache images locally unless you configure a cache repository.
+Wave hashes the build inputs to produce a deterministic image ID. Inputs include the container file, the Conda file, the target platform, the target repository, the build context, and the container config. Identical inputs return the existing image. With Nextflow, the build context bundles workflow `bin/` directories and module resources. Changes trigger a rebuild (see [Bundling pipeline scripts](../guides/bundle-scripts.md)). Wave does not cache images locally unless you configure a cache repository.
 
 [Seqera Containers](../seqera-containers.md) is a managed application of freeze that pushes Conda and PyPI images to `community.wave.seqera.io`.
 
@@ -32,14 +32,14 @@ Use cases for container freeze include:
 The freeze flow runs as follows:
 
 1. The client (Nextflow, the Wave CLI, or the Wave API) submits a container request with:
-    - The base image to augment, or instructions to build a container.
-    - The container extension configuration, which can be a custom payload, one or more extension layers, or additional images.
-    - The target repository for the new container.
+    - Either a `containerImage` to base the freeze on, or a `containerFile` with build instructions. At least one is required, and you cannot supply both. Even when you supply only `containerImage`, Wave generates a Dockerfile (`FROM <image>`) and runs a build.
+    - An optional `containerConfig` that augments the build with additional layers, environment variables, or entrypoints.
+    - The target build repository for the new image.
 2. Wave authenticates the caller. If the request includes a Seqera Platform access token, Wave verifies it. If the Wave deployment permits anonymous access and no token is supplied, Wave processes the request anonymously.
 3. Wave rewrites the Dockerfile (or Singularity definition) to bake augmentation layers into the build.
 4. Wave computes a build ID from the rewritten build inputs and checks whether the image already exists in the target registry.
-5. If the image is missing, Wave launches a build job and pushes the result to the target registry.
-6. Wave responds with the frozen image URI, for example `your.registry.com/some/image/build:1a2b3c4d5e6f7890`. The tag is derived from the build hash and includes a recipe prefix for Conda builds. Singularity images use the `oras://` scheme.
+5. Wave responds immediately with the frozen image URI, for example `your.registry.com/<image-path>:1a2b3c4d5e6f7890`. The path comes from the `buildRepository` you supplied. The tag is derived from the build hash and includes a recipe prefix for Conda builds. Singularity images use the `oras://` scheme.
+6. If the image is missing, Wave launches a build job in the background and pushes the result to the target registry. The URI returned in step 5 is usable only after the build completes. Pulls before then will fail.
 
 ```mermaid
 sequenceDiagram
@@ -59,8 +59,9 @@ sequenceDiagram
 
     alt First request: image missing
         Registry-->>Wave: Not found
-        Wave-->>Client: Return frozen image URI (build starts)
+        Wave-->>Client: Return frozen image URI
         Wave->>Builder: Launch build job
+        Note over Client,Builder: Pulls before the build<br/>completes will fail.
         Builder->>Registry: Push built image
         Registry-->>Builder: Image stored
     else Subsequent request: image exists

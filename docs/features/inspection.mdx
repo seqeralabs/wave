@@ -5,11 +5,11 @@ date: 2026-04-22
 tags: [inspection, manifest, metadata]
 ---
 
-Container inspection returns a container image's metadata. The response includes the manifest, image config, layer digests, and platform-specific digest. A single request provides the information you need to decide whether to pull the image, trigger an augmentation, or record the image in an audit trail.
+Container inspection returns a container image's metadata. The response includes the manifest, image config, layer digests, and platform-specific digest. Use one request to decide whether to pull the image, trigger an augmentation, or record it in an audit trail.
 
 With a Seqera Platform access token, Wave resolves matching registry credentials from your workspace. Without a token, Wave inspects public images anonymously. You never handle registry tokens directly.
 
-Inspection issues no tokens, pulls no layers, and runs independently of container builds and scans.
+Inspection returns metadata only. It does not pull layers, issue Wave container tokens, or share state with builds or scans.
 
 ## Use cases
 
@@ -27,7 +27,7 @@ The inspection flow runs as follows:
 1. A client (Nextflow, the Wave CLI, or the Wave API) sends an inspect request with the image URI. The `platform` parameter is optional. It must be a single value such as `linux/amd64` or `linux/arm64`. Wave rejects multi-platform values.
 2. Wave authenticates the caller. If the request includes a Seqera Platform access token, Wave verifies it and resolves your workspace credentials. Requests without a token proceed anonymously.
 3. Wave queries the source registry. For platform-resolved images, Wave also fetches the image config blob. For multi-architecture requests with no platform specified, Wave returns the manifest index without descending into a platform manifest.
-4. Wave returns a single response containing either a `container` spec (for a resolved platform-specific image) or an `index` spec (for a multi-architecture image when no platform is specified). The response includes the registry, image name, reference, manifest digest, layer digests and sizes, and the image config.
+4. Wave returns a single response. The response is either a `container` spec for a resolved platform-specific image, or an `index` spec for a multi-architecture image when no platform is specified. A `container` spec includes the registry, image name, reference, manifest digest, layer digests and sizes, and the image config.
 
 ```mermaid
 sequenceDiagram

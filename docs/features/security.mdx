@@ -5,11 +5,11 @@ date: 2026-04-22
 tags: [security, vulnerability, trivy, sbom, scanning, oras]
 ---
 
-Security scanning identifies known vulnerabilities and outdated packages in container images. Wave uses [Trivy](https://trivy.dev/) and can produce a software bill of materials (SBOM) in SPDX format.
+Security scanning identifies known vulnerabilities and outdated packages in container images. Wave uses [Trivy](https://trivy.dev/) to scan images. It can also produce a software bill of materials (SBOM) in SPDX format.
 
-Wave scans both Wave-built and external images asynchronously, so container requests do not block on scan completion. You can request scans from Nextflow, the Wave CLI, or the Wave API. Seqera Containers scans every image it builds and surfaces results in the build details view.
+Wave scans both Wave-built and external images asynchronously. Container requests do not block on scan completion. You can request scans from Nextflow, the Wave CLI, or the Wave API. Seqera Containers scans every image it builds and surfaces results in the build details view.
 
-Wave also scans Nextflow plugin artifacts in OCI (Open Container Initiative) registries, using [ORAS](https://oras.land/) to retrieve the artifact and Trivy's filesystem scanner.
+Wave also scans Nextflow plugin artifacts in OCI (Open Container Initiative) registries. It uses [ORAS](https://oras.land/) to retrieve the artifact and runs Trivy's filesystem scanner against it.
 
 Scans expire after one week and re-run on next access. If vulnerabilities exceed a client-configured threshold, Wave clients fail the container request or halt pipeline execution.
 

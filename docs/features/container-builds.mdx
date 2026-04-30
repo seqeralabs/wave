@@ -1,11 +1,11 @@
 ---
 title: On-demand container builds
-description: Build container images just-in-time from a Dockerfile, Singularity recipe, Conda, PyPI, or Pixi specification.
+description: Build container images just-in-time from a Dockerfile, Singularity recipe, Conda environment, Conda lock file, or list of PyPI or CRAN packages.
 date: 2026-04-23
-tags: [build, conda, pypi, dockerfile, singularity, pixi, multi-architecture]
+tags: [build, conda, pypi, cran, dockerfile, singularity, multi-stage, multi-architecture]
 ---
 
-Wave builds container images from a Dockerfile, a Singularity recipe, Conda packages, a Conda environment file (which can include PyPI packages), or a list of CRAN packages. This *just-in-time (JIT)* strategy creates images on demand. You don't need to pre-build and curate images ahead of each pipeline run. Wave returns an image URI immediately and runs the build in the background.
+Wave builds container images from a Dockerfile, Singularity recipe, Conda packages, Conda environment file (which can include PyPI packages), Conda lock file, or list of CRAN packages. Conda builds can use Micromamba or Pixi templates. This *just-in-time (JIT)* strategy creates images on demand. You don't need to pre-build and curate images ahead of each pipeline run. Wave returns an image URI immediately. The build runs in the background.
 
 ## Use cases
 
@@ -27,7 +27,7 @@ The build flow runs as follows:
 3. Wave computes a content-based build ID from the inputs. If the image already exists in the target registry, Wave returns the existing image URI. Otherwise Wave starts a build in the background and returns a URI immediately.
 4. A container runtime pulls the image from the returned URI. If the build is still running, the pull waits until the build completes.
 
-The build ID is a 16-character hash derived from the container file, Conda file, platform, target repository, build context, and container config. Identical inputs always produce the same ID, so concurrent requests for the same image share a single build.
+The build ID is a 16-character hash derived from the container file, Conda file, platform, target repository, build context, and container config. Identical inputs always produce the same ID. Concurrent requests for the same image share a single build.
 
 ```mermaid
 sequenceDiagram
@@ -71,7 +71,7 @@ Wave builds containers from Dockerfiles and Singularity build files. You define 
 
 The Wave CLI accepts an optional build context directory. Dockerfiles can then use `ADD` and `COPY` instructions to include local files. Nextflow supplies the build context automatically from the pipeline. See [Module binaries](https://www.nextflow.io/docs/latest/module.html#module-binaries).
 
-Set the `platform` request parameter to `linux/amd64` or `linux/arm64` to target a specific architecture. The same Dockerfile or Conda specification builds for either target, and Wave returns an image URI that resolves to the matching binary. Both Wave and Wave Lite support `linux/amd64` and `linux/arm64`.
+Set the `containerPlatform` field on the build request to `linux/amd64` or `linux/arm64` to target a specific architecture (the Wave CLI exposes this as `--platform`). The same Dockerfile or Conda specification builds for either target. Wave returns an image URI that resolves to the matching binary. Both Wave and Wave Lite support `linux/amd64` and `linux/arm64`.
 
 :::note
 `linux/arm64` is not the same as Apple Silicon. Apple Silicon uses a system-on-chip design for macOS. `linux/arm64` is the Linux ARM specification used on server and cloud distributions. Wave does not build images for `macos/arm64`.
@@ -91,7 +91,7 @@ Anaconda Inc., the company behind Conda, applies commercial licensing to parts o
 
 ### Build from Conda lock files
 
-Conda lock files make environments reproducible. A lock file records the exact version of every dependency, the build specification, the source channel, and the package `md5sum`. Running the same lock file recreates the same environment on any system. Lock files also skip the environment-resolution step, which reduces setup time significantly.
+Conda lock files make environments reproducible. A lock file records the exact version of every dependency, the build specification, the source channel, and the package `md5sum`. Running the same lock file recreates the same environment on any system. Lock files also skip the environment-resolution step. This reduces setup time significantly.
 
 Wave generates a Conda lock file as part of every Conda build. A lock file provides a means to reproduce any Wave-built image exactly. Lock files also provide a useful record for debugging, sharing, and archiving pipelines. Wave can also build images directly from an existing Conda lock file.
 
@@ -116,7 +116,7 @@ This setup installs both Conda and PyPI packages during the build.
 
 ### Multi-stage Conda builds
 
-By default, Wave produces single-stage Conda images that bundle the package manager with the runtime environment. Two build templates run a two-stage build instead: the first stage installs the environment, and the second stage copies only the resolved environment into a minimal base image. Multi-stage builds typically reduce image size by 30–50%, exclude build tools from the final image, and emit a lock file for reproducibility.
+By default, Wave produces single-stage Conda images that bundle the package manager with the runtime environment. Two build templates run a two-stage build instead. The first stage installs the environment. The second stage copies only the resolved environment into a minimal base image. Multi-stage builds typically reduce image size by 30–50%. They exclude build tools from the final image and emit a lock file for reproducibility.
 
 Two multi-stage templates are available:
 

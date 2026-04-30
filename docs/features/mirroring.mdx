@@ -5,9 +5,9 @@ date: 2026-04-22
 tags: [mirroring, registry, skopeo, copy]
 ---
 
-Storing container images in a registry you control improves security, supports policy compliance, and gives faster access. Wave mirroring automates the copy: Wave pulls the image from its source and pushes it to your registry on demand, preserving the original tag and digest so only the registry hostname changes.
+Storing container images in a registry you control improves security, supports policy compliance, and gives faster access. Wave mirroring automates the copy. Wave pulls the image from its source and pushes it to your registry on demand. The tag and digest stay the same, so only the registry hostname changes.
 
-Wave runs the copy with Skopeo, and mirror operations run asynchronously. Tools that pin the image by digest continue to work against the mirrored copy.
+Wave runs the copy with Skopeo. Mirror operations run asynchronously. Tools that pin the image by digest continue to work against the mirrored copy.
 
 :::tip
 To produce a new, Wave-built image and push it under a name you choose, use [container freeze](./container-freezes.mdx). Freeze returns a new image with a build-hash-derived tag. Mirroring copies the existing image byte-for-byte and preserves its tag and digest.
@@ -29,8 +29,8 @@ The mirror flow runs as follows:
 
 1. A client (Nextflow, the Wave CLI, or the Wave API) requests a container and asks for mirroring to a target registry.
 2. Wave authenticates the caller against Seqera Platform. Mirror requests require a Seqera Platform access token. Seqera Platform supplies the registry credentials Wave uses to pull from the source and push to the target.
-3. Wave validates the request. The source and target registry hosts must differ, and the request must use the v2 API.
-4. If the target image is already mirrored or in progress, Wave returns the target URI straight away. Otherwise, Wave launches a Skopeo copy job that pulls every layer and manifest from the source and pushes them to the target.
+3. Wave validates the request. The source and target registry hosts must differ. The request must use the v2 API.
+4. If the target image is already mirrored or in progress, Wave returns the target URI straight away. Otherwise, Wave launches a Skopeo copy job. The job pulls every layer and manifest from the source and pushes them to the target.
 5. Wave returns the target registry URI to the client. The client pulls the image directly from the target registry with no further involvement from Wave.
 
 ```mermaid
