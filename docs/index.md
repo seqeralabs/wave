@@ -1,5 +1,5 @@
 ---
-title: Wave containers
+title: Wave
 date: 2023-03-11
 tags: [overview, deployment, hosted, self-hosted, enterprise]
 ---
@@ -10,7 +10,7 @@ Wave removes the need to pre-build and maintain a catalog of images for every pi
 
 ## Wave deployments
 
-The hosted Wave containers service is free and supports every feature. Anyone using Nextflow, the Wave CLI, or the API can use it.
+Seqera runs Wave as a free hosted service. It supports every feature and is open to anyone using Nextflow, the Wave CLI, or the Wave API.
 
 Seqera Enterprise customers can also license Wave for self-hosted deployment. Self-hosted Wave is available in two configurations:
 

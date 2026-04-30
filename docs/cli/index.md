@@ -4,16 +4,6 @@ title: Wave CLI
 
 Wave CLI is a command-line interface that provides convenient access to Wave's container provisioning capabilities through a simple wrapper around the Wave API.
 
-Wave CLI exposes Wave's features on the command line:
-
-- On-demand container builds from Dockerfiles or Conda packages, including multi-platform images for `linux/amd64` and `linux/arm64` and native Singularity images for OCI-compliant registries
-- Container augmentation to inject additional layers into existing images
-- Container inspection to retrieve manifest, config, and layer metadata without pulling the image
-- Container mirroring between registries
-- Security scanning of containers during provisioning
-- Container freeze to push and cache built images to a registry of your choice
-- Private registry authentication through Seqera Platform for credentials management and persistent storage
-
 See [Features](../features/index.mdx) for more information.
 
 ## Seqera Platform integration
