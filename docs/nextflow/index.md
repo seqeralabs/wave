@@ -1,5 +1,5 @@
 ---
-title: Nextflow integration
+title: Nextflow and Wave
 description: Learn about integrating Wave with Nextflow
 tags: [nextflow, wave, get started]
 ---
@@ -10,28 +10,19 @@ Wave's container provisioning service seamlessly integrates with Nextflow pipeli
 Nextflow integration with Wave requires Nextflow 22.10.0 or later.
 :::
 
-## Get started
+## Getting started
 
-To enable Wave in your Nextflow pipeline, add the following to your Nextflow configuration file:
+To enable Wave in a Nextflow pipeline, add the following to your Nextflow configuration file:
 
 ```groovy title="nextflow.config"
 wave.enabled = true
 tower.accessToken = '<tower-access-token>'
 ```
 
-Replace `<tower-access-token>` with your Seqera access token.
+Replace `<tower-access-token>` with your Seqera access token. The token is optional. With a token you gain access to private repositories and higher API request limits than anonymous users.
 
-:::note
+For additional examples and configuration options see [Use cases](./use-cases.mdx) and [Configuration reference](./configuration.mdx).
 
-Using a Seqera access token is optional but provides additional capabilities:
-
-- Access to private repositories
-- Higher API request limits than anonymous users
-
+:::tip
+For a step-by-step walkthrough, see the [Nextflow and Wave tutorial](../tutorials/nextflow-wave.mdx).
 :::
-
-## Configuration
-
-Wave provides extensive configuration options to customize container provisioning behavior, scanning behavior, caching strategies, and repository settings.
-
-For detailed configuration options and advanced settings, see [Configuration reference](./configuration.md).
