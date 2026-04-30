@@ -23,6 +23,6 @@ Seqera Enterprise customers can also license Wave for self-hosted deployment. Se
 
 ## Seqera Containers
 
-[Seqera Containers](./seqera-containers/index.mdx) is a free public registry operated by Seqera and powered by Wave. It produces Conda and PyPI images on demand and publishes them to `community.wave.seqera.io`. Images are public, free of charge, and require no account.
+[Seqera Containers](./seqera-containers.md) is a free public registry operated by Seqera and powered by Wave. It produces Conda and PyPI images on demand and publishes them to `community.wave.seqera.io`. Images are public, free of charge, and require no account.
 
-See [Seqera Containers](./seqera-containers/index.mdx) for more information.
+See [Seqera Containers](./seqera-containers.md) for more information.
