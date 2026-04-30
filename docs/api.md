@@ -1,5 +1,5 @@
 ---
-title: API
+title: Wave API
 ---
 
 This page summarizes the API provided by the Wave container service.
