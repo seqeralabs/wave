@@ -67,7 +67,7 @@ your.registry.com/<image-path>:<checksum>
 
 In the example:
 
-- `<image-path>` is the path in your target registry, set when you configure freeze. The path is whatever you provide in `wave.build.repository`; Wave does not auto-add a `library/` segment.
+- `<image-path>` is the path in your target registry, set when you configure freeze. The path is whatever you provide in `wave.build.repository`.
 - `<checksum>` is the same 16-character build identifier used by ephemeral URIs.
 
 ## Serving image layers

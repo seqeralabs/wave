@@ -27,7 +27,7 @@ To enable private container repository access:
 
 1. Add the following to your Nextflow configuration:
 
-    ```groovy
+    ```groovy title="nextflow.config"
     wave.enabled = true
     tower.accessToken = '<tower-access-token>'
     ```
@@ -36,7 +36,7 @@ To enable private container repository access:
 
 1. (Optional) If you created your credentials in an organization workspace, add your workspace ID to your Nextflow configuration:
 
-    ```groovy
+    ```groovy title="nextflow.config"
     tower.workspaceId = '<tower-workspace-id>'
     ```
 
@@ -46,7 +46,7 @@ To enable private container repository access:
 
 1. Add your build and build cache repository to your Nextflow configuration:
 
-    ```groovy
+    ```groovy title="nextflow.config"
     wave.build.repository = '<build-repository>'
     wave.build.cacheRepository = '<cache-repository>'
     ```
@@ -71,13 +71,13 @@ To enable Wave to build Nextflow module containers:
 
 1. Enable Wave in your Nextflow configuration:
 
-    ```groovy
+    ```groovy title="nextflow.config"
     wave.enabled = true
     ```
 
 1. (Optional) Set your Wave strategy to prioritize Dockerfiles in your Nextflow configuration:
 
-    ```groovy
+    ```groovy title="nextflow.config"
     wave.strategy = ['dockerfile','container']
     ```
 
@@ -105,13 +105,13 @@ To enable Wave to provision Conda package containers:
 
 1. Enable Wave in your Nextflow configuration:
 
-    ```groovy
+    ```groovy title="nextflow.config"
     wave.enabled = true
     ```
 
 1. (Optional) Set your Wave strategy to prioritize `conda` in your Nextflow configuration:
 
-    ```groovy
+    ```groovy title="nextflow.config"
     wave.strategy = ['conda']
     ```
 
@@ -125,7 +125,7 @@ To enable Wave to provision Conda package containers:
 
 1. Set your Conda channel priority:
 
-    ```groovy
+    ```groovy title="nextflow.config"
     conda.channels = '<conda-channels>'
     ```
 
@@ -149,7 +149,7 @@ To enable provisioning of Singularity images:
 
 1. Add the following to your Nextflow configuration:
 
-    ```groovy
+    ```groovy title="nextflow.config"
     wave.enabled = true
     wave.freeze = true
     wave.strategy = ['conda']
@@ -163,7 +163,7 @@ To enable provisioning of Singularity images:
 
     1. Add your build repository to your Nextflow configuration:
 
-        ```groovy
+        ```groovy title="nextflow.config"
         wave.build.repository = '<build-repository>'
         ```
 
@@ -194,7 +194,7 @@ To enable container mirroring:
 
 1. Add the following to your Nextflow configuration:
 
-    ```groovy
+    ```groovy title="nextflow.config"
     wave.enabled = true
     wave.mirror = true
     tower.accessToken = '<tower-access-token>'
@@ -207,7 +207,7 @@ To enable container mirroring:
 
 1. Add your build repository to your Nextflow configuration:
 
-    ```groovy
+    ```groovy title="nextflow.config"
     wave.build.repository = '<build-repository>'
     ```
 
@@ -226,7 +226,7 @@ To enable container security scanning:
 
 1. Add the following to your Nextflow configuration:
 
-        ```groovy
+        ```groovy title="nextflow.config"
         wave.enabled = true
         wave.scan.mode = 'required'
         tower.accessToken = '<tower-access-token>'
@@ -236,7 +236,7 @@ To enable container security scanning:
 
 1. Add the acceptable vulnerability levels to your Nextflow configuration:
 
-    ```groovy
+    ```groovy title="nextflow.config"
     wave.scan.allowedLevels = 'low,medium'
     ```
 
@@ -262,7 +262,7 @@ Wave containers allow you to run your containerized pipelines with the Fusion fi
 
 To enable Wave with Fusion, add the following to your Nextflow configuration:
 
-    ```groovy
+    ```groovy title="nextflow.config"
     wave.enabled = true
     fusion.enabled = true
     tower.accessToken = '<tower-access-token>'
