@@ -4,7 +4,7 @@ title: Docker Compose installation
 
 Wave enables you to provision container images on demand, removing the need to build and upload them manually to a container registry. Wave can provision both ephemeral and regular registry-persisted container images.
 
-Docker Compose installations support Wave Lite, a configuration mode for Wave that includes only container augmentation and inspection capabilities, and enables the use of Fusion file system in Nextflow pipelines.
+Docker Compose installations support Wave Lite, the self-hosted Wave configuration that includes container augmentation and inspection only and enables the use of the Fusion file system in Nextflow pipelines.
 
 ## Prerequisites
 
@@ -127,7 +127,7 @@ endpoints:
 
 Configuration notes:
 
-- Adjust `num-threads` (64) based on your CPU cores — use between 2x and 4x your CPU core count.
+- Adjust `num-threads` (64) based on your CPU cores. Use between 2x and 4x your CPU core count.
 
 ## Docker Compose
 

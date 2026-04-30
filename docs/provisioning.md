@@ -76,6 +76,36 @@ Notable parts of this workflow include:
 When Nextflow is the Wave client, additional resources may be bundled as container layers, such as module resources and the workflow or module `bin/` directories. Changes to these bundled files will affect the container fingerprint and trigger a rebuild. See [Bundling pipeline scripts](./nextflow/bundle-scripts.md) for details.
 :::
 
+## Image URIs
+
+Wave returns one of two URI formats. Both embed a content-based build identifier, so identical inputs always resolve to the same URI and reuse the cached image.
+
+### Ephemeral URIs
+
+Augmentation and on-demand build requests return ephemeral URIs by default. They suit single-use pipeline tasks and expire 36 hours after the request. Ephemeral image names use the following format:
+
+```
+wave.seqera.io/wt/<access-token>/wave/build:<checksum>
+```
+
+In the example:
+
+- `<access-token>` is a 12-character one-time key with a random component. Wave uses it to authorize the pull and to look up the registry credentials stored in Seqera Platform. The token cannot be predicted or reused after it expires.
+- `<checksum>` is a 16-character build identifier derived from the request inputs: the container file, package list, target platform, target repository, and any injected layers.
+
+### Stable URIs
+
+Freeze mode returns the registry URI directly. Stable URIs carry no access token, never expire, and route the runtime to the target registry without involving Wave. Stable image names use the following format:
+
+```
+your.registry.com/library/<image-name>:<checksum>
+```
+
+In the example:
+
+- `<image-name>` is the image name in your target registry, set when you configure freeze.
+- `<checksum>` is the same 16-character build identifier used by ephemeral URIs.
+
 ## Container provisioning capability matrix
 
 Wave supports the following types of container builds:

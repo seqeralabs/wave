@@ -91,7 +91,7 @@ No. Once the unique name expires, the container is no longer accessible by any m
 
 ## Can the unique name of an augmented container be predicted?
 
-No. Each ephemeral container name includes a 6-byte randomly generated component — for example, `wave.seqera.io/wt/<RANDOM>/some/library:tag` — which makes the name unpredictable.
+No. Each ephemeral container name includes a 6-byte randomly generated component, for example `wave.seqera.io/wt/<RANDOM>/some/library:tag`. This makes the name unpredictable.
 
 ## Can access to an augmented container be revoked before it expires?
 

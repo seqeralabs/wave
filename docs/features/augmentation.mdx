@@ -1,6 +1,8 @@
 ---
 title: Container augmentation
 description: Inject custom layers into existing container images at pull time, without a rebuild.
+date: 2026-04-22
+tags: [augmentation, layers, fusion, manifest, ephemeral]
 ---
 
 Wave augmentation extends existing container images without a rebuild. Wave generates a new manifest and image config that reference both the original layers and user-injected layers. The base image's blobs are untouched and their checksums are preserved.
@@ -31,7 +33,7 @@ The augmentation flow runs as follows:
 2. Wave authenticates the caller. If the request includes a Seqera Platform access token, Wave verifies it. If the Wave deployment permits anonymous access and the request omits a token, Wave processes the request anonymously.
 3. Wave returns an ephemeral image name, for example, `wave.seqera.io/wt/<access-token>/library/alpine:latest`. The 12-character access token identifies and authorizes the follow-up pull.
 4. The container runtime pulls the ephemeral image. Wave intercepts the manifest request and returns a modified manifest that references both the original layers and the injected layers.
-5. The container runtime pulls base layer blobs from the source registry — Wave redirects these requests rather than serving the bytes itself. The runtime pulls injected layer blobs from Wave or from the source URL Wave returns, depending on how you supplied the layer.
+5. The container runtime pulls base layer blobs from the source registry. Wave redirects these requests rather than serving the bytes itself. The runtime pulls injected layer blobs from Wave or from the source URL Wave returns, depending on how you supplied the layer.
 6. The container runtime assembles the final image from all layers.
 
 ```mermaid

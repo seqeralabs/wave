@@ -1,6 +1,8 @@
 ---
 title: On-demand container builds
 description: Build container images just-in-time from a Dockerfile, Singularity recipe, Conda, PyPI, or Pixi specification.
+date: 2026-04-23
+tags: [build, conda, pypi, dockerfile, singularity, pixi, multi-architecture]
 ---
 
 Wave builds container images from a Dockerfile, a Singularity recipe, Conda packages, a Conda environment file (which can include PyPI packages), or a list of CRAN packages. This *just-in-time (JIT)* strategy creates images on demand. You don't need to pre-build and curate images ahead of each pipeline run. Wave returns an image URI immediately and runs the build in the background.
@@ -61,7 +63,7 @@ sequenceDiagram
     Registry-->>Runtime: Return image layers
 ```
 
-Wave runs the build either as a local Docker build or as a Kubernetes job, depending on the deployment. On-demand builds are not available in Wave Lite — see the [feature matrix](./index.mdx) for the capabilities supported by each deployment.
+Wave runs the build either as a local Docker build or as a Kubernetes job, depending on the deployment. On-demand builds are not available in Wave Lite. See the [feature matrix](./index.mdx) for the capabilities supported by each deployment.
 
 ### Build from a Dockerfile or Singularity recipe
 

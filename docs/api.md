@@ -586,7 +586,7 @@ Multi-stage build templates (`conda/pixi:v1` and `conda/micromamba:v2`) create o
 
 When building Singularity images (`format: "sif"`) with the `conda/pixi:v1` or `conda/micromamba:v2` build templates, single-stage builds are used. Singularity's proot-based builder cannot preserve file permissions when transferring files across stages, so the conda/pixi environment is installed directly in a single stage using the mamba/pixi image as the base.
 
-As a result, the `baseImage` option has no effect on Singularity builds — it only applies to Docker builds. The multi-stage image size optimization is also not available for Singularity.
+As a result, the `baseImage` option has no effect on Singularity builds. It only applies to Docker builds. The multi-stage image size optimization is also not available for Singularity.
 :::
 
 ### GET `/v1alpha1/builds/{buildId}/status`
