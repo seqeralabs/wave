@@ -5,7 +5,7 @@ date: 2026-04-22
 tags: [seqera-containers, conda, pypi, public-registry, community]
 ---
 
-[Seqera Containers](https://seqera.io/containers/) is a free public registry operated by Seqera and powered by Wave. It uses Wave's [on-demand build](../features/container-builds.mdx) and [freeze](../features/container-freezes.mdx) capabilities to produce Conda and PyPI container images, then publishes them to `community.wave.seqera.io`. Anyone can request an image through the [web interface](https://seqera.io/containers/), the [Wave CLI](https://docs.seqera.io/wave/cli), or the [Nextflow integration](https://docs.seqera.io/wave/nextflow). No account is required.
+[Seqera Containers](https://seqera.io/containers/) is a free public registry operated by Seqera and powered by Wave. It uses Wave's [on-demand build](./features/container-builds.mdx) and [freeze](./features/container-freezes.mdx) capabilities to produce Conda and PyPI container images, then publishes them to `community.wave.seqera.io`. Anyone can request an image through the [web interface](https://seqera.io/containers/), the [Wave CLI](./cli/index.md), or the [Nextflow integration](./nextflow/index.md). No account is required.
 
 Images are hosted in the Wave community container registry at [`community.wave.seqera.io`](https://community.wave.seqera.io/). Seqera stores them for at least five years. Images are public and free of charge. They can be pulled from local, HPC, or cloud infrastructure as Docker or native Singularity images.
 
