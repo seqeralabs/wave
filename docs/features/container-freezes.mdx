@@ -9,7 +9,7 @@ Freeze mode produces a permanent container image in a registry you control. Wave
 
 Wave rewrites the build file to bake augmentation layers (container config, environment variables, and entrypoints) into the image rather than injecting them at pull time. Freeze requests must specify a target build repository, set in the request or as a default. Singularity (SIF) images always use freeze because their monolithic format cannot accept dynamic layers.
 
-Wave hashes the build inputs to produce a deterministic image ID. Inputs include the build file, package dependencies, target platform (AMD64 or ARM64), and target repository. Identical inputs return the existing image. With Nextflow, workflow `bin/` directories and module resources are also bundled, so changes trigger a rebuild (see [Bundling pipeline scripts](../nextflow/bundle-scripts.md)). Wave does not cache images locally unless you configure a cache repository.
+Wave hashes the build inputs to produce a deterministic image ID. Inputs include the build file, package dependencies, target platform (AMD64 or ARM64), and target repository. Identical inputs return the existing image. With Nextflow, workflow `bin/` directories and module resources are also bundled, so changes trigger a rebuild (see [Bundling pipeline scripts](../guides/bundle-scripts.md)). Wave does not cache images locally unless you configure a cache repository.
 
 [Seqera Containers](../seqera-containers.md) is a managed application of freeze that pushes Conda and PyPI images to `community.wave.seqera.io`.
 

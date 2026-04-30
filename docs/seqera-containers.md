@@ -19,9 +19,9 @@ You can still use a Seqera Containers image as a base for Wave augmentation, mir
 
 ## Use cases
 
-Use cases include:
+Use cases for Seqera Containers include:
 
-- **Rapid prototyping**: Get a container for any Conda or PyPI package without a local build.
+- **Rapid prototyping**: Create a container for any Conda or PyPI package without a local build.
 - **Reproducibility**: Share a stable image URI with collaborators. The same hash returns the same image for at least five years.
 - **Community tooling**: Use pre-built images in tutorials, workshops, and demos.
 

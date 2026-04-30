@@ -33,7 +33,7 @@ Wave bundles scripts from [module `bin/` directories](https://nextflow.io/docs/l
 
 You must enable Wave and the module binaries feature to bundle module scripts:
 
-```groovy
+```groovy title="nextflow.config"
 nextflow.enable.moduleBinaries = true
 
 wave {

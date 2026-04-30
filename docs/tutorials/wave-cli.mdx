@@ -6,7 +6,7 @@ tags: [containers, nextflow, wave, wave cli]
 
 Wave CLI is a command line tool for the Wave containers provisioning service that allows you to build container images on demand for various sources.
 
-This guide describes how to build containers using the Wave CLI and freeze them in your private container repository. It includes:
+This tutorial describes how to build containers using the Wave CLI and freeze them in your private container repository. It includes:
 
 - Creating a Seqera access token.
 - Adding your container registry credentials to Seqera.
@@ -42,10 +42,10 @@ To create a Seqera access token:
 1. In a terminal window, assign your access token to the `TOWER_ACCESS_TOKEN` environment variable:
 
     ```bash
-    export TOWER_ACCESS_TOKEN=<ACCESS_TOKEN>
+    export TOWER_ACCESS_TOKEN=<tower-access-token>
     ```
 
-    Replace `<ACCESS_TOKEN>` with the access token you created.
+    Replace `<tower-access-token>` with the access token you created.
 
 ## Add your container registry credentials to Seqera
 
@@ -90,10 +90,10 @@ Wave lets you build a container from a Conda package or a set of Conda packages 
 In the same terminal window from the previous section, run the Wave CLI to build and freeze a container with the `faker` Conda package to the repository that you specify:
 
 ```bash
-wave --conda-package 'faker' --freeze --build-repo <REPO_URI> --await
+wave --conda-package 'faker' --freeze --build-repo <repo-uri> --await
 ```
 
-Replace `<REPO_URI>` with the URI for the repository for which you added an access token to Seqera. For example, `docker.io/example-user/repo`.
+Replace `<repo-uri>` with the URI for the repository for which you added an access token to Seqera. For example, `docker.io/example-user/repo`.
 
 If successful, you will see output similar to the following:
 
