@@ -4,33 +4,17 @@ title: Wave CLI
 
 Wave CLI is a command-line interface that provides convenient access to Wave's container provisioning capabilities through a simple wrapper around the Wave API.
 
-Wave CLI includes functionality to:
+Wave CLI exposes Wave's features on the command line:
 
-- Build container images on-demand using Dockerfiles or Conda packages
-- Augment existing images with additional layers
-- Generate multi-platform containers for linux/amd64 and linux/arm64 architectures
-- Create Singularity native images and push them to OCI-compliant registries
-- Mirror containers between registries by copying images on-demand to target repositories
-- Scan containers for security vulnerabilities automatically during provisioning
-- Push and cache built containers to user-specified repositories
-- Integrate with Seqera Platform for credentials management and persistent storage
+- On-demand container builds from Dockerfiles or Conda packages, including multi-platform images for `linux/amd64` and `linux/arm64` and native Singularity images for OCI-compliant registries
+- Container augmentation to inject additional layers into existing images
+- Container inspection to retrieve manifest, config, and layer metadata without pulling the image
+- Container mirroring between registries
+- Security scanning of containers during provisioning
+- Container freeze to push and cache built images to a registry of your choice
+- Private registry authentication through Seqera Platform for credentials management and persistent storage
 
-## Container URLs
-
-The Wave CLI is designed for composability with other command-line tools. Upon successful completion, it outputs the container URL to stdout in this format:
-
-```console
-wave.seqera.io/wt/xxxxxxxxxxxx/wave/build:xxxxxxxxxxxxxxxx
-```
-
-In the above example:
-
-- The first 12-character sequence is a unique access token
-- The second 16-character sequence is a checksum that uniquely identifies the build
-
-## Container persistence
-
-By default, Wave container builds are ephemeral. You can persist, or _freeze_, a container build by saving it in a private container registry. For Wave to freeze your container image, you must provide a Seqera access token so that Wave can access your private registry credentials.
+See [Features](../features/index.mdx) for more information.
 
 ## Seqera Platform integration
 
@@ -83,13 +67,5 @@ This caching behavior doesn't apply when building Singularity containers, where 
 :::
 
 To avoid unnecessary image downloads, you can freeze the built container to provide a stable URL.
-
-## Image security scans
-
-As part of the build process, for containers that build successfully, Wave conducts a vulnerability scan using the [Trivy](https://trivy.dev/) security scanner. You must specify a Seqera access token to receive an email that links to the result of the security scan.
-
-:::note
-Singularity containers are not currently scanned.
-:::
 
 [context]: https://docs.docker.com/build/building/context/

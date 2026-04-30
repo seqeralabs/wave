@@ -171,10 +171,9 @@ Container builds support the following arguments:
 
 Build a container that installs several packages from a `Dockerfile`:
 
-1. Create a Dockerfile:
+1. Create a `Dockerfile`:
 
-    ```bash
-    cat << EOF > ./Dockerfile
+    ```dockerfile title="Dockerfile"
     FROM alpine
 
     RUN apk update && apk add bash cowsay \
@@ -182,7 +181,6 @@ Build a container that installs several packages from a `Dockerfile`:
             --repository https://alpine.global.ssl.fastly.net/alpine/edge/community \
             --repository https://alpine.global.ssl.fastly.net/alpine/edge/main \
             --repository https://dl-3.alpinelinux.org/alpine/edge/testing
-    EOF
     ```
 
 1. Build and run the container:
@@ -194,13 +192,11 @@ Build a container that installs several packages from a `Dockerfile`:
 
 Build a container from a Dockerfile with a local build context:
 
-1. Create a Dockerfile that references a local file:
+1. Create a `Dockerfile` that references a local file:
 
-    ```bash
-    cat << EOF > ./Dockerfile
+    ```dockerfile title="Dockerfile"
     FROM alpine
     ADD hello.sh /usr/local/bin/
-    EOF
     ```
 
 1. Create the shell script in the build context directory:
@@ -246,19 +242,28 @@ The following limitations apply:
 Augment a Docker base image and save it as a Singularity container:
 
 ```bash
-wave -i alpine --layer context-dir/ --build-repo docker.io/user/repo
+wave -i alpine \
+  --layer context-dir/ \
+  --build-repo docker.io/user/repo
 ```
 
 Build a Singularity container from a SingularityCE definition (`.def`) file:
 
 ```bash
-wave -f hello-world.def --singularity --freeze --build-repo docker.io/user/repo
+wave -f hello-world.def \
+  --singularity \
+  --freeze \
+  --build-repo docker.io/user/repo
 ```
 
 Build a Singularity container from Conda packages:
 
 ```bash
-wave --conda-package bamtools=2.5.2 --conda-package samtools=1.17 --freeze --singularity --build-repo docker.io/user/repo
+wave --conda-package bamtools=2.5.2 \
+  --conda-package samtools=1.17 \
+  --freeze \
+  --singularity \
+  --build-repo docker.io/user/repo
 ```
 
 </details>
@@ -292,8 +297,46 @@ Container freeze builds support the following arguments:
 Freeze the `alpine` container image to a private Docker Hub registry:
 
 ```bash
-wave -i alpine --freeze \
-  --build-repo docker.io/<USER>/repo --tower-token <TOWER_TOKEN>
+wave -i alpine \
+  --freeze \
+  --build-repo docker.io/<USER>/repo \
+  --tower-token <TOWER_TOKEN>
+```
+
+</details>
+
+## Scan a container for security vulnerabilities
+
+Wave automatically scans successfully built containers for vulnerabilities using the [Trivy](https://trivy.dev/) security scanner.
+
+<details open>
+<summary>**Scan a container for security vulnerabilities**</summary>
+
+**Prerequisites**
+
+Specify a Seqera access token via either the `TOWER_ACCESS_TOKEN` environment variable or the `--tower-token` Wave command-line option to receive an email link to the scan result.
+
+**Related CLI arguments**
+
+Container scans support the following arguments:
+
+- `--scan-mode`: Sets the scan mode. Accepts `none`, `async`, or `required`.
+- `--scan-level`: Specifies one or more vulnerability severity levels allowed in the container. Accepts `low`, `medium`, `high`, and `critical`.
+- `--await`: Waits for the build and scan to complete before returning.
+
+**Limitations**
+
+- Singularity containers are not currently scanned.
+
+**Example usage**
+
+Build the `bamtools` container and require a scan that only allows `low` and `medium` severity vulnerabilities:
+
+```bash
+wave --conda-package bamtools=2.5.2 \
+  --scan-mode required \
+  --scan-level low,medium \
+  --await
 ```
 
 </details>
@@ -326,8 +369,10 @@ Container mirroring supports the following arguments:
 Mirror the [`samtools:0.1.16--2`][samtools] container image to a private Docker Hub registry:
 
 ```bash
-wave -i quay.io/biocontainers/samtools:0.1.16--2 --mirror \
-  --build-repo docker.io/<USER>/containers --tower-token <TOWER_TOKEN>
+wave -i quay.io/biocontainers/samtools:0.1.16--2 \
+  --mirror \
+  --build-repo docker.io/<USER>/containers \
+  --tower-token <TOWER_TOKEN>
 ```
 
 </details>

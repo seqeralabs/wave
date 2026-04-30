@@ -30,13 +30,11 @@ To self-install the latest Wave release from GitHub:
 
     1.  Create a basic `Dockerfile`:
 
-        ```Dockerfile
-        cat << EOF > ./Dockerfile
+        ```Dockerfile title="Dockerfile"
         FROM busybox:latest
-        EOF
         ```
 
-    1.  Use the CLI to build the container:
+    1.  Use the Wave CLI to build the container:
 
         ```bash
         wave -f Dockerfile
@@ -62,13 +60,11 @@ To install the latest version with [Homebrew]:
 
     1.  Create a basic `Dockerfile`:
 
-        ```dockerfile
-        cat << EOF > ./Dockerfile
+        ```dockerfile title="Dockerfile"
         FROM busybox:latest
-        EOF
         ```
 
-    1.  Use the CLI to build the container:
+    1.  Use the Wave CLI to build the container:
 
         ```bash
         wave -f Dockerfile
