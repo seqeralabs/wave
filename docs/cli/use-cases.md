@@ -1,8 +1,8 @@
 ---
 title: Use cases
-description: Learn how to use Wave CLI for building Docker and Singularity containers from various sources
-date: "2024-08-22"
-tags: [wave cli, use cases, containers, docker, singularity]
+description: Use Wave CLI for building Docker and Singularity containers from various sources
+date: 2024-08-22
+tags: [wave cli, use cases]
 ---
 
 The Wave CLI enables you to build Docker and Singularity containers from various sources, including Dockerfiles, Singularity definition files, file system directories, and Conda packages. The following sections describe several common use cases.

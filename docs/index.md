@@ -10,7 +10,7 @@ Wave removes the need to pre-build and maintain a catalog of images for every pi
 
 ## Wave deployments
 
-Seqera runs Wave as a free hosted service. It supports every feature and is open to anyone using Nextflow, the Wave CLI, or the Wave API.
+Seqera runs Wave as a free hosted service at `https://wave.seqera.io`. It supports every feature and is open to anyone using Nextflow, the Wave CLI, or the Wave API.
 
 Seqera Enterprise customers can also license Wave for self-hosted deployment. Self-hosted Wave is available in two configurations:
 
