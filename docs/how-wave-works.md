@@ -15,7 +15,7 @@ For details on each capability, see [Features](./features/index.mdx).
 
 ### Proxy lifecycle
 
-The proxy lifecycle covers augmentation, private registry authentication, and default on-demand builds. Wave stays in the pull path and the runtime fetches the image through Wave.
+The proxy lifecycle covers [container augmentation](./features/augmentation.mdx), [private registry authentication](./features/authentication.mdx), and default [on-demand container builds](./features/container-builds.mdx). Wave stays in the pull path and the runtime fetches the image through Wave.
 
 A Wave client (Nextflow, the Wave CLI, or any caller of the Wave API) submits a container request. Wave authenticates the caller against Seqera Platform when you supply a token. Wave returns an ephemeral image URI immediately. Builds and augmentation work run asynchronously in the background.
 
@@ -23,39 +23,15 @@ When the runtime pulls the URI, Wave holds the connection open until any in-prog
 
 ### Pass-through lifecycle
 
-The pass-through lifecycle covers container freeze and container mirroring. Wave returns a stable URI in a registry you control and stays out of the pull path.
+The pass-through lifecycle covers [container freeze](./features/container-freezes.mdx) and [container mirroring](./features/mirroring.mdx). Wave returns a stable URI in a registry you control and stays out of the pull path.
 
-Wave runs the build or copy in the background and pushes the result to your target registry. The runtime pulls from that registry directly. Pulls before the underlying job finishes fail rather than block.
+Wave runs the build or copy in the background and pushes the result to your target registry. The runtime pulls from that registry directly. Pulls before the underlying job finishes fail rather than block. This is the opposite of the proxy lifecycle when a pull from a default on-demand build URI waits on Wave until the build completes, but a pull from a freeze or mirror URI fails fast because Wave is not in the pull path.
 
 ### Inspection and scanning
 
-Inspection is a synchronous request. Wave queries the source registry and returns metadata in one round trip. There is no URI and no pull phase.
+[Container inspection](./features/inspection.mdx) is a synchronous request. Wave queries the source registry and returns metadata in one round trip. There is no URI and no pull phase.
 
-Security scanning runs as a parallel asynchronous track. Scans do not block pulls. Clients fetch scan results through a separate API and can abort based on results.
-
-```mermaid
-sequenceDiagram
-    participant Client as Client<br/>(Nextflow, Wave CLI, API)
-    participant Wave
-    participant Source as Source registry<br/>or build backend
-    participant Target as Target registry<br/>(freeze and mirror only)
-
-    Client->>Wave: Container request
-    Note over Wave: Builds, copies, and augmentation<br/>run asynchronously
-
-    alt Proxy lifecycle (ephemeral URI)
-        Wave-->>Client: Ephemeral URI
-        Client->>Wave: Pull image URI
-        Wave->>Source: Fetch manifest and layers
-        Source-->>Wave: Manifest and layers
-        Wave-->>Client: Manifest with any injected layers
-    else Pass-through lifecycle (stable URI)
-        Wave-->>Client: Stable URI in target registry
-        Note over Wave,Target: Wave pushes the built or<br/>copied image to the target
-        Client->>Target: Pull image directly
-        Target-->>Client: Manifest and layers
-    end
-```
+[Security scanning](./features/security.mdx) runs as a parallel asynchronous track. Scans do not block pulls. Clients fetch scan results through a separate API and can abort based on results.
 
 ## Image URIs
 
@@ -65,7 +41,7 @@ Wave returns one of two URI formats. Both embed a content-based build identifier
 
 Augmentation and default on-demand build requests return ephemeral URIs. They suit single-use pipeline tasks and expire 36 hours after the request is submitted. Ephemeral image names take this form:
 
-```
+```console
 wave.seqera.io/wt/<access-token>/<image-path>:<tag>
 ```
 
@@ -74,13 +50,15 @@ The `<image-path>:<tag>` segment depends on the request. Builds use `wave/build:
 In this example:
 
 - `<access-token>` is a 12-character random key, valid for the request lifetime of around 36 hours. Wave uses it to authorize the pull and to look up the registry credentials stored in Seqera Platform.
-- `<checksum>` is a 16-character build identifier derived from the request inputs. Inputs include the container file, the package recipe, the target platform, the target repository, the build context, and the container config.
+- `<checksum>` is a 16-character build identifier derived from the request inputs. Inputs include the container file, the Conda environment file, the target platform, the target repository, the build context, and the container config.
+
+The 36-hour expiry applies to the access token in the URI, not the image. On the hosted Wave service, Wave-built images stay in the private build registry for around seven days, governed by the registry's lifecycle policy. After the token expires, the image may still exist, but the ephemeral URI no longer authorizes a pull. To keep a stable, long-lived URI, use [container freeze](./features/container-freezes.mdx) and push the image to a registry you control.
 
 ### Stable URIs
 
 Freeze and mirror return URIs that point at a registry you control. Stable URIs carry no access token, never expire, and route the runtime to the target registry without involving Wave. Stable image names take this form:
 
-```
+```console
 your.registry.com/<image-path>:<checksum>
 ```
 
@@ -101,18 +79,20 @@ The pass-through lifecycle has no proxy step. Stable URIs send the runtime to yo
 
 ## API limits
 
-Wave applies rate limits to every API request. Nextflow and the Wave CLI both call the Wave API on your behalf, meaning a single pipeline run can consume many requests. A Seqera Platform access token raises the limits:
+Wave applies rate limits to every API request. Nextflow and the Wave CLI both call the Wave API on your behalf. A single pipeline run can consume many requests. Authenticating with a Seqera Platform access token is the recommended way to use Wave.
 
-If an access token is provided, the following rate limits apply:
+With a Seqera Platform access token, the following rate limits apply:
 
 - 250 container builds per hour
 - 2,000 container pulls per minute
 
-If an access token isn't provided, the following rate limits apply:
+Without a token, requests fall back to the anonymous limits:
 
 - 25 container builds per day
 - 100 container pulls per hour
 
+These limits apply to the hosted `wave.seqera.io` service. Self-hosted Wave deployments configure their own limits and can disable anonymous access entirely.
+
 Only the manifest request counts as a pull. Layer and blob fetches do not count, so a 100-layer image still costs one pull.
 
-See [API limits](./api.md#api-limits) for more information.
+To authenticate, generate an access token in Seqera Platform and supply it to your Wave client. See [API limits](./api.md#api-limits) for more information.

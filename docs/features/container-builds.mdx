@@ -27,7 +27,7 @@ The build flow runs as follows:
 3. Wave computes a content-based build ID from the inputs. If the image already exists in the target registry, Wave returns the existing image URI. Otherwise Wave starts a build in the background and returns a URI immediately.
 4. A container runtime pulls the image from the returned URI. If the build is still running, the pull waits until the build completes.
 
-The build ID is a 16-character hash derived from the container file, Conda file, platform, target repository, build context, and container config. Identical inputs always produce the same ID. Concurrent requests for the same image share a single build.
+The build ID is a 16-character hash derived from the container file, the Conda environment file, the target platform, the target repository, the build context, and the container config. Identical inputs always produce the same ID. Concurrent requests for the same image share a single build.
 
 ```mermaid
 sequenceDiagram
@@ -71,7 +71,7 @@ Wave builds containers from Dockerfiles and Singularity build files. You define 
 
 The Wave CLI accepts an optional build context directory. Dockerfiles can then use `ADD` and `COPY` instructions to include local files. Nextflow supplies the build context automatically from the pipeline. See [Module binaries](https://www.nextflow.io/docs/latest/module.html#module-binaries).
 
-Set the `containerPlatform` field on the build request to `linux/amd64` or `linux/arm64` to target a specific architecture (the Wave CLI exposes this as `--platform`). The same Dockerfile or Conda specification builds for either target. Wave returns an image URI that resolves to the matching binary. Both Wave and Wave Lite support `linux/amd64` and `linux/arm64`.
+Set the `containerPlatform` field on the build request to `linux/amd64` or `linux/arm64` to target a specific architecture (the Wave CLI exposes this as `--platform`). The same Dockerfile or Conda specification builds for either target. Wave returns an image URI that resolves to the matching binary.
 
 :::note
 `linux/arm64` is not the same as Apple Silicon. Apple Silicon uses a system-on-chip design for macOS. `linux/arm64` is the Linux ARM specification used on server and cloud distributions. Wave does not build images for `macos/arm64`.
