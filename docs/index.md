@@ -18,7 +18,7 @@ Self-hosted Wave is available in two configurations:
 - **Wave Lite**: a reduced configuration with container augmentation, inspection, and private registry authentication. It suits regulated or air-gapped environments that do not need on-cluster builds.
 
 :::info
-Seqera Enterprise customers can also license Wave for self-hosted deployment. [Contact us](https://seqera.io/contact-us/) for more information about self-hosted deployments.
+Seqera Enterprise customers can also license Wave for self-hosted deployment. [Contact us](https://seqera.io/contact-us/) for more information.
 :::
 
 ## Seqera Containers

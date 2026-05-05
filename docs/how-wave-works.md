@@ -93,6 +93,8 @@ Without a token, requests fall back to the anonymous limits:
 
 These limits apply to the hosted `wave.seqera.io` service. Self-hosted Wave deployments configure their own limits and can disable anonymous access entirely.
 
-Only the manifest request counts as a pull. Layer and blob fetches do not count, so a 100-layer image still costs one pull.
+:::note
+Only the manifest request counts as a pull. Layer and blob fetches do not count. For example, a 100-layer image costs one pull.
+:::
 
 To authenticate, generate an access token in Seqera Platform and supply it to your Wave client. See [API limits](./api.md#api-limits) for more information.
