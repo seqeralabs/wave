@@ -77,7 +77,11 @@ Self-hosted or custom registries sometimes serve layer binaries inline. When Wav
 
 The pass-through lifecycle has no proxy step. Stable URIs send the runtime to your target registry, which serves manifests and layers itself.
 
-## API limits
+## Usage limits
+
+The hosted `wave.seqera.io` service applies the following limits to API requests, builds, and image storage. Self-hosted deployments can configure their own values.
+
+### API limits
 
 Wave applies rate limits to every API request. Nextflow and the Wave CLI both call the Wave API on your behalf. A single pipeline run can consume many requests. Authenticating with a Seqera Platform access token is the recommended way to use Wave.
 
@@ -98,3 +102,32 @@ Only the manifest request counts as a pull. Layer and blob fetches do not count.
 :::
 
 To authenticate, generate an access token in Seqera Platform and supply it to your Wave client. See [API limits](./api.md#api-limits) for more information.
+
+### Memory limit
+
+Wave builds use up to 3600 MiB (approximately 3.6 GB) of memory. Builds that exceed this limit fail.
+
+### Time limits
+
+Wave builds have a maximum build time of 15 minutes. Builds that exceed this limit are cancelled and fail.
+
+When you supply an access token and enable container freeze, the maximum build time increases to 25 minutes.
+
+### Cache duration
+
+Wave stores ephemeral images in the Cloudflare CDN for 90 days, after which it deletes them.
+
+### Ephemeral token access
+
+Ephemeral images that include an access token in their URI are available for 36 hours after creation. System admins can revoke images before this limit.
+
+### Context directory size limits
+
+When you specify a context directory, the following file size limits apply:
+
+- Each file must be no larger than 1 MB.
+- Each directory must be no larger than 10 MB, including all files.
+
+### Self-hosted limits
+
+If you self-host Wave, you can configure limits in `config.yml`.
