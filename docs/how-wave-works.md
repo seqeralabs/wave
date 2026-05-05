@@ -95,7 +95,7 @@ Without a token, requests fall back to the anonymous limits:
 - 25 container builds per day
 - 100 container pulls per hour
 
-These limits apply to the hosted `wave.seqera.io` service. Self-hosted Wave deployments configure their own limits and can disable anonymous access entirely.
+These limits apply to the hosted `https://wave.seqera.io` service. Self-hosted Wave deployments configure their own limits and can disable anonymous access entirely.
 
 :::note
 Only the manifest request counts as a pull. Layer and blob fetches do not count. For example, a 100-layer image costs one pull.
