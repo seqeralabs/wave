@@ -109,9 +109,7 @@ Wave builds use up to 3600 MiB (approximately 3.6 GB) of memory. Builds that exc
 
 ### Time limits
 
-Wave builds have a maximum build time of 15 minutes. Builds that exceed this limit are cancelled and fail.
-
-When you supply an access token and enable container freeze, the maximum build time increases to 25 minutes.
+Wave builds have a maximum build time of 15 minutes. Builds that exceed this limit are cancelled and fail. When you supply an access token and enable container freeze, the maximum build time increases to 25 minutes.
 
 ### Cache duration
 
