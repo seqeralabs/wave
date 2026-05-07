@@ -21,8 +21,8 @@ tower.accessToken = '<tower-access-token>'
 
 Replace `<tower-access-token>` with your Seqera access token. The token is optional. With a token you gain access to private repositories and higher API request limits than anonymous users.
 
-For additional examples and configuration options see [Use cases](./use-cases.mdx) and [Configuration reference](./configuration.mdx).
+## Next steps
 
-:::tip
-For a step-by-step walkthrough, see the [Nextflow and Wave tutorial](../tutorials/nextflow-wave.mdx).
-:::
+- [Use cases](./use-cases.mdx): See common patterns for building, augmenting, and freezing containers from a Nextflow pipeline.
+- [Configuration reference](./configuration.mdx): See the full list of `wave.*` options for tuning Wave behavior in Nextflow.
+- [Nextflow and Wave tutorial](../tutorials/nextflow-wave.mdx): Follow a step-by-step walkthrough of running a pipeline with Wave.
