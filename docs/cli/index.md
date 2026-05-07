@@ -5,39 +5,27 @@ date: 2026-05-07
 tags: [wave cli, overview]
 ---
 
-Wave CLI is a command-line wrapper around the Wave API. Use it to build, augment, freeze, mirror, and scan container images from your terminal.
+Wave CLI is a command-line wrapper around the Wave API. Use it to build, augment, freeze, mirror, and scan container images from your terminal. It works with hosted Wave and self-hosted deployments. Run it interactively or in CI pipelines to automate container workflows.
 
 ## Getting started
 
-To build a container with Wave CLI:
+To get started with Wave CLI:
 
-1. Install Wave CLI with [Homebrew](https://brew.sh/):
+1. Install Wave CLI. See [Installation](./installation.md) for details.
 
-    ```bash
-    brew install seqeralabs/tap/wave-cli
-    ```
-
-    :::tip
-    Wave CLI is also available as a self-install package. See [Installation](./installation.md) for details.
-    :::
-
-2. Create a basic `Dockerfile` in the current directory:
+2. Create a `Dockerfile` in the current directory:
 
     ```dockerfile title="Dockerfile"
     FROM busybox:latest
     ```
 
-3. Build the container with Wave:
+3. Build the container:
 
     ```bash
     wave -f Dockerfile
     ```
 
-    A successful build returns a `wave.seqera.io` URL you can pull or run:
-
-    ```console
-    wave.seqera.io/wt/xxxxxxxxxxxx/wave/build:xxxxxxxxxxxxxxxx
-    ```
+    A successful build returns a `wave.seqera.io` URL you can pull or run.
 
 ## Next steps
 

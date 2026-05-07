@@ -300,7 +300,7 @@ Freeze the `alpine` container image to a private Docker Hub registry:
 wave -i alpine \
   --freeze \
   --build-repo docker.io/<user>/repo \
-  --tower-token <tower-token>
+  --tower-token <tower-access-token>
 ```
 
 </details>
@@ -372,7 +372,7 @@ Mirror the [`samtools:0.1.16--2`][samtools] container image to a private Docker 
 wave -i quay.io/biocontainers/samtools:0.1.16--2 \
   --mirror \
   --build-repo docker.io/<user>/containers \
-  --tower-token <tower-token>
+  --tower-token <tower-access-token>
 ```
 
 </details>
