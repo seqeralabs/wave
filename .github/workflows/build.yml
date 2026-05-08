@@ -117,18 +117,61 @@ jobs:
           docker push 195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/app:$TAG
           docker push 195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/wave:$TAG
 
+      # Internal ECR push - inlined from seqeralabs/actions/push@a78e62713a7895bef99f404d736b72451dbdb917
+      # because seqeralabs/actions is private and Wave is a public repo. See SEC-1409.
+      - name: Configure AWS credentials for action role
+        if: "contains(github.event.head_commit.message, '[release]')"
+        uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37 # ratchet:aws-actions/configure-aws-credentials@v6.1.0
+        with:
+          aws-region: eu-west-2
+          role-to-assume: arn:aws:iam::232933512461:role/gha-seqeralabs-action-role
+          role-session-name: GitHubActions-${{ github.run_id }}
+
+      - name: Configure AWS credentials for internal pusher
+        if: "contains(github.event.head_commit.message, '[release]')"
+        uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37 # ratchet:aws-actions/configure-aws-credentials@v6.1.0
+        with:
+          aws-region: eu-west-2
+          role-to-assume: arn:aws:iam::232933512461:role/gha-generic-internal-pusher
+          role-session-name: ${{ github.event.repository.name }}
+          role-chaining: true
+
+      - name: Login to internal Amazon ECR
+        if: "contains(github.event.head_commit.message, '[release]')"
+        id: login-ecr-internal
+        uses: aws-actions/amazon-ecr-login@19d944daaa35f0fa1d3f7f8af1d3f2e5de25c5b7 # ratchet:aws-actions/amazon-ecr-login@v2.1.4
+
       - name: Push image to internal registry
         if: "contains(github.event.head_commit.message, '[release]')"
-        uses: seqeralabs/actions/push@a78e62713a7895bef99f404d736b72451dbdb917 # ratchet:exclude
+        shell: bash
+        run: |
+          LOCAL=app:${{ steps.release.outputs.version }}
+          REMOTE="${{ steps.login-ecr-internal.outputs.registry }}/internal/${{ github.repository }}/${LOCAL}"
+          docker tag "$LOCAL" "$REMOTE"
+          docker push "$REMOTE"
+
+      # Enterprise ECR push - inlined from seqeralabs/actions/push@a78e62713a7895bef99f404d736b72451dbdb917 with custom-role-arn
+      - name: Configure AWS credentials for platform pusher
+        if: "contains(github.event.head_commit.message, '[release]')"
+        uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37 # ratchet:aws-actions/configure-aws-credentials@v6.1.0
         with:
-          image-tag: app:${{ steps.release.outputs.version }}
+          aws-region: eu-west-2
+          role-to-assume: arn:aws:iam::232933512461:role/platform-ecr-pusher
+          role-session-name: GitHubActions-${{ github.run_id }}
+
+      - name: Login to enterprise Amazon ECR
+        if: "contains(github.event.head_commit.message, '[release]')"
+        id: login-ecr-platform
+        uses: aws-actions/amazon-ecr-login@19d944daaa35f0fa1d3f7f8af1d3f2e5de25c5b7 # ratchet:aws-actions/amazon-ecr-login@v2.1.4
 
       - name: Push image to enterprise registry
         if: "contains(github.event.head_commit.message, '[release]')"
-        uses: seqeralabs/actions/push@a78e62713a7895bef99f404d736b72451dbdb917 # ratchet:exclude
-        with:
-          image-tag: platform/wave:${{ steps.release.outputs.version }}
-          custom-role-arn: arn:aws:iam::232933512461:role/platform-ecr-pusher
+        shell: bash
+        run: |
+          LOCAL=platform/wave:${{ steps.release.outputs.version }}
+          REMOTE="${{ steps.login-ecr-platform.outputs.registry }}/${LOCAL}"
+          docker tag "$LOCAL" "$REMOTE"
+          docker push "$REMOTE"
 
       - name: Publish tests report
         if: failure()
