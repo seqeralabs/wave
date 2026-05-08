@@ -168,7 +168,7 @@ jobs:
         if: "contains(github.event.head_commit.message, '[release]')"
         shell: bash
         run: |
-          LOCAL=platform/wave:${{ steps.release.outputs.version }}
+          LOCAL=wave/server:${{ steps.release.outputs.version }}
           REMOTE="${{ steps.login-ecr-platform.outputs.registry }}/${LOCAL}"
           docker tag "$LOCAL" "$REMOTE"
           docker push "$REMOTE"
