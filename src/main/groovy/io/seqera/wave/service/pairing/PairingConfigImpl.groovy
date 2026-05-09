@@ -91,6 +91,6 @@ class PairingConfigImpl implements PairingConfig {
 
     @Override
     List<String> getDenyHosts() {
-        return denyHosts ?: List.of()
+        return denyHosts ?: List.<String>of()
     }
 }
