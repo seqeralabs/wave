@@ -1,4 +1,8 @@
 # Wave changelog
+1.33.4 - 8 May 2026
+- Truncate verbose DEBUG log payloads to reduce heap pressure (#1041) [ac708f08a]
+- Minor compiler syntax fix [214266462]
+
 1.33.3 - 28 Apr 2026
 - Revert Gradle build files and dependencies to v1.33.0 [087a85935]
 - Add lib-util-time dependency [d894f5ca9]
