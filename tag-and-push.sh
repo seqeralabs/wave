@@ -47,11 +47,11 @@ if [[ $RELEASE ]]; then
   # Push happens from the workflow so we can also push to the new internal/enterprise ECR repos.
   echo "Building non-enterprise image $TAG"
   ./gradlew jibDockerBuild
-  docker tag 195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/app:$TAG app:$TAG
+  docker tag 195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/app:$TAG server:$TAG
 
   echo "Building enterprise image $TAG"
   ./gradlew -PjibRepo=195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/wave:$TAG jibDockerBuild
-  docker tag 195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/wave:$TAG platform/wave:$TAG
+  docker tag 195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/wave:$TAG wave/server:$TAG
 
   # check for "draft" release
   grep -Ei '.*-(A[0-9]+|B[0-9]+|RC[0-9]+)$' VERSION  &>/dev/null && DRAFT='--draft' || DRAFT=''
