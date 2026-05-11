@@ -92,7 +92,7 @@ dependencies {
     // add postgresql dependencies
     implementation 'io.micronaut.data:micronaut-data-jdbc'
     implementation 'io.micronaut.sql:micronaut-jdbc-hikari'  // HikariCP for connection pooling
-    implementation 'org.postgresql:postgresql:42.7.7'        // PostgreSQL Driver
+    implementation 'org.postgresql:postgresql:42.7.11'       // PostgreSQL Driver
     //object storage dependency
     implementation 'io.micronaut.objectstorage:micronaut-object-storage-aws'
     implementation 'software.amazon.awssdk:sts'
@@ -118,6 +118,9 @@ dependencies {
     // bump version to prevent security issue
     runtimeOnly 'org.apache.commons:commons-lang3:3.18.0'
     runtimeOnly "io.netty:netty-bom:4.2.5.Final"
+    runtimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.84'
+    runtimeOnly 'org.bouncycastle:bcprov-jdk18on:1.84'
+    runtimeOnly 'org.bouncycastle:bcutil-jdk18on:1.84'
 }
 
 application {
