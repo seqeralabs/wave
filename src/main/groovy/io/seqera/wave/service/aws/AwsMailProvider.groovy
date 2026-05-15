@@ -28,6 +28,7 @@ import io.micronaut.context.annotation.Requires
 import io.seqera.mail.MailProvider
 import io.seqera.mail.Mailer
 import jakarta.annotation.PostConstruct
+import jakarta.annotation.PreDestroy
 import jakarta.inject.Singleton
 import software.amazon.awssdk.core.SdkBytes
 
@@ -48,15 +49,21 @@ import software.amazon.awssdk.services.ses.model.SendRawEmailRequest
 @Slf4j
 class AwsMailProvider implements MailProvider {
 
+    private SesClient client
+
     @PostConstruct
     private void init() {
         log.debug "+ Creating AWS SES mail provider"
+        client = SesClient.builder().build()
+    }
+
+    @PreDestroy
+    private void shutdown() {
+        client?.close()
     }
 
     @Override
     void send(MimeMessage message, Mailer mailer) {
-        //get mail client
-        final client = SesClient.builder().build()
         // dump the message to a buffer
         final outputStream = new ByteArrayOutputStream()
         message.writeTo(outputStream)
