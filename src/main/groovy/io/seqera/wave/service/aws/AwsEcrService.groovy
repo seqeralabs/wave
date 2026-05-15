@@ -39,8 +39,6 @@ import io.seqera.wave.util.StringUtils
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.seqera.util.retry.Retryable
-import jakarta.annotation.PostConstruct
-import jakarta.annotation.PreDestroy
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -169,18 +167,6 @@ class AwsEcrService {
     @Value('${wave.aws.jump-external-id}')
     private String jumpExternalId
 
-    private DefaultCredentialsProvider defaultCredsProvider
-
-    @PostConstruct
-    private void init() {
-        defaultCredsProvider = DefaultCredentialsProvider.create()
-    }
-
-    @PreDestroy
-    private void shutdown() {
-        defaultCredsProvider?.close()
-    }
-
     /**
      * Check if the provided access key is actually an AWS IAM role ARN
      *
@@ -208,10 +194,10 @@ class AwsEcrService {
      * @param region AWS region
      * @return StsClient instance
      */
-    protected StsClient stsClient(String region) {
+    protected static StsClient stsClient(String region) {
         return StsClient.builder()
                 .region(Region.of(region))
-                .credentialsProvider(defaultCredsProvider)
+                .credentialsProvider(DefaultCredentialsProvider.builder().build())
                 .build()
     }
 
