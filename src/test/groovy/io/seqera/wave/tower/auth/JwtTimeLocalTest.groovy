@@ -61,4 +61,28 @@ class JwtTimeLocalTest extends Specification {
         timer.getRange(0, now+5, 5) == []
     }
 
+    def 'should keep earlier score when using addIfLess' () {
+        given:
+        def now = Instant.now().epochSecond
+
+        when:
+        timer.addIfLess('foo', now+10)
+        then: 'new member is added'
+        timer.getRange(0, now+20, 5) == ['foo']
+
+        when:
+        timer.addIfLess('foo', now+10)
+        timer.addIfLess('foo', now+20)
+        then: 'later score is ignored, earlier score wins'
+        timer.getRange(0, now+15, 5) == ['foo']
+        timer.getRange(0, now+15, 5) == []
+
+        when:
+        timer.addIfLess('foo', now+20)
+        timer.addIfLess('foo', now+5)
+        then: 'earlier score replaces the existing one'
+        timer.getRange(0, now+10, 5) == ['foo']
+        timer.getRange(0, now+10, 5) == []
+    }
+
 }
