@@ -1,4 +1,12 @@
 # Wave changelog
+1.33.5 - 17 May 2026
+- Use addIfLess for JWT refresh timer scheduling (#1045) [e80058ca4]
+- Embed OpenAPI spec and Swagger UI in main Wave container (#1043) [b9c0daf91]
+- Bump pgjdbc to 42.7.11 and Bouncy Castle to 1.84 to patch CVEs [83ffa4ea5]
+- Gate CI release steps on first-line `[release]` and exclude PR merges [ff8c7af80]
+- Update dependency node to v24 (#1023) [00231d138]
+- Port wave CI to push to internal ECR SEC-1395 (#1039) [9df3340a8]
+
 1.33.4 - 8 May 2026
 - Truncate verbose DEBUG log payloads to reduce heap pressure (#1041) [ac708f08a]
 - Minor compiler syntax fix [214266462]
