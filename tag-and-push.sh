@@ -42,15 +42,10 @@ if [[ $RELEASE ]]; then
   # tag repo
   git tag $TAG $FORCE
   git push $REMOTE $TAG $FORCE
-  # Build images locally (jibDockerBuild loads to the local docker daemon).
-  # Push happens from the workflow so we can also push to the new internal/enterprise ECR repos.
-  echo "Building non-enterprise image $TAG"
-  ./gradlew -PjibRepo=195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/app:$TAG jibDockerBuild
-  docker tag 195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/app:$TAG server:$TAG
-
-  echo "Building enterprise image $TAG"
-  ./gradlew -PjibRepo=195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/wave:$TAG jibDockerBuild
-  docker tag 195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/wave:$TAG wave/server:$TAG
+  # Build image locally with a generic name (jibDockerBuild loads to the local docker daemon).
+  # The workflow retags and pushes to legacy and enterprise ECR repos.
+  echo "Building image $TAG"
+  ./gradlew -PjibRepo=wave/server:$TAG jibDockerBuild
   # check for "draft" release
   grep -Ei '.*-(A[0-9]+|B[0-9]+|RC[0-9]+)$' VERSION  &>/dev/null && DRAFT='--draft' || DRAFT=''
   # publish release notes
