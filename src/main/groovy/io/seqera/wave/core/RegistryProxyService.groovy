@@ -18,7 +18,7 @@
 
 package io.seqera.wave.core
 
-import java.time.Duration
+
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
@@ -32,9 +32,10 @@ import io.micronaut.core.io.buffer.ByteBuffer
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.reactor.http.client.ReactorStreamingHttpClient
 import io.micronaut.scheduling.TaskExecutors
+import io.seqera.cache.tiered.AbstractTieredCache
+import io.seqera.util.retry.Retryable
 import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.WaveDefault
-import io.seqera.cache.tiered.AbstractTieredCache
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryCredentialsProvider
@@ -52,7 +53,6 @@ import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.RegHelper
-import io.seqera.util.retry.Retryable
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -243,7 +243,7 @@ class RegistryProxyService {
 
     @TraceElapsedTime(thresholdMillis = '${wave.trace.proxy-service.threshold:1000}')
     protected DelegateResponse handleRequest0(RoutePath route, Map<String,List<String>> headers) {
-        log.debug "Request processing ${route}"
+        log.trace "Request processing ${route}"
         ProxyClient proxyClient = client(route)
         final resp1 = proxyClient.getStream(route.path, headers, false)
         final redirect = resp1.headers().firstValue('Location').orElse(null)
