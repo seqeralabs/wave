@@ -12,7 +12,7 @@ namespace wave {
     enum Versions {
       @doc("1.0.0") v1: "1.0.0",
     }
-  @route("/v1alpha2/container")
+  @route("/w1/containers")
   interface  ContainerService {
 
     @doc("This endpoint allows you to submit a request to access a private container registry via Wave, or build a container image on-the-fly with a Dockerfile or Conda recipe file and returns the name of the container request made available by Wave.")
@@ -21,18 +21,18 @@ namespace wave {
     @statusCode statusCode: 200;
     };
 
-    @route("/{requestId}")
+    @route("/{id}")
     @doc("This endpoint allows you to get the details of a container request made to Wave.")
-    @get op getContainerDetails(@path requestId: string): {
+    @get op getContainerDetails(@path id: string): {
       @body response: WaveContainerRecord;
       @statusCode statusCode: 200;
     }|{
       @statusCode statusCode: 404;
       };
 
-    @route("/{requestId}/status")
+    @route("/{id}/status")
     @doc("This endpoint allows you to get the status of a container request made to Wave.")
-    @get op getContainerStatus(@path requestId: string): {
+    @get op getContainerStatus(@path id: string): {
       @body response: ContainerStatusResponse;
       @statusCode statusCode: 200;
     }|{
@@ -40,52 +40,52 @@ namespace wave {
       };
   }
 
-  @route("/v1alpha1/builds/{buildId}")
+  @route("/w1/builds/{id}")
   interface BuildService {
 
     @doc("Provides status of build against buildId passed as path variable.")
-    @get op getBuildRecord(@path buildId: string): {
+    @get op getBuildRecord(@path id: string): {
       @body response: WaveBuildRecord;
       @statusCode statusCode: 200;
-    }|{ 
+    }|{
       @statusCode statusCode: 404;
      };
 
     @route("/status")
     @doc("Provides status of build against buildId passed as path variable.")
-    @get op getBuildStatus(@path buildId: string): {
+    @get op getBuildStatus(@path id: string): {
       @body response: BuildStatusResponse;
       @statusCode statusCode: 200;
-    }|{ 
+    }|{
       @statusCode statusCode: 404;
      };
-    
+
     @route("/logs")
     @doc("Supply logs corresponding to the specified buildId within the API request.")
-    @get op getBuildLogs(@path buildId: string): {
+    @get op getBuildLogs(@path id: string): {
       @body response: string;
       @statusCode statusCode: 200;
-    }|{ 
+    }|{
       @statusCode statusCode: 404;
      };
 
   }
 
-  @route("/v1alpha1/scans")
+  @route("/w1/scans")
   interface scanService{
 
-    @route("{scanId}")
+    @route("{id}")
     @doc("This endpoint allows you to get the details of a container scan request made to Wave.")
-    @get op scanImage(@path scanId: string) : { 
+    @get op scanImage(@path id: string) : {
       @body response: WaveScanRecord;
       @statusCode statusCode: 200;
-     }|{ 
+     }|{
       @statusCode statusCode: 404;
      };
 
-    @route("{scanId}/logs")
+    @route("{id}/logs")
     @doc("This endpoint allows you to get the logs of a container scan request made to Wave.")
-    @get op getScanLogs(@path scanId: string): {
+    @get op getScanLogs(@path id: string): {
         @body response: string;
         @statusCode statusCode: 200;
         @header("Content-Disposition")
@@ -95,37 +95,37 @@ namespace wave {
     };
     }
 
-  @route("/v1alpha1/inspect")
+  @route("/w1/inspections")
   interface InspectService {
     @doc("This endpoint returns the metadata about provided container image.")
     @post op inspectContainer(@body requestBody: ContainerInspectRequest): {
       @body response: ContainerInspectResponse;
       @statusCode statusCode: 200;
-     }|{ 
+     }|{
       @statusCode statusCode: 404;
      };
 
   }
 
-  @route("/v1alpha2/validate-creds")
+  @route("/w1/credentials/validate")
   @doc("This endpoint allows you to validate the credentials of a container registry.")
   @post op validateCredsV2(@body request: ValidateRegistryCredsRequest):  boolean;
 
-  @route("/v1alpha1/mirrors")
+  @route("/w1/mirrors")
   interface getMirrorRecord {
 
-    @route("/{mirrorId}")
+    @route("/{id}")
     @doc("This endpoint allows you to get the details of a container mirror request made to Wave.")
-    @get op containerMirror(@path mirrorId: string): {
+    @get op containerMirror(@path id: string): {
       @body response: ContainerMirrorResponse;
       @statusCode statusCode: 200;
      }|{
       @statusCode statusCode: 404;
     };
 
-    @route("/{mirrorId}/logs")
+    @route("/{id}/logs")
     @doc("This endpoint allows you to get the logs of a container mirror request made to Wave.")
-    @get op getMirrorLogs(@path mirrorId: string): {
+    @get op getMirrorLogs(@path id: string): {
         @body response: string;
         @statusCode statusCode: 200;
         @header("Content-Disposition")
