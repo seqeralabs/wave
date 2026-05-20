@@ -29,7 +29,7 @@ Consolidate Wave's REST API into a stable v1 surface, with TypeSpec as the sourc
 | Generated interfaces | Committed back into `wave-api-v1/src/main/java/io/seqera/wave/api/v1/spec/`               |
 | Service reuse        | New controllers delegate to existing `ContainerRequestService`, etc. — zero service edits |
 | Alpha compatibility  | Alpha endpoints kept, mark responses with `Deprecation: true` + `Sunset` HTTP headers     |
-| API scope            | Container, builds, mirrors, scans, inspect, validate-creds, service-info                  |
+| API scope            | Container, builds, mirrors, scans, inspect, validate-creds, service-info (alpha endpoints renamed) + new POST /w1/scans for resource-shape symmetry |
 | Out of v1            | Metrics, registry proxy (`/v2/*`), view controller                                        |
 
 ## Module layout
@@ -88,7 +88,7 @@ All v1 routes are JSON over HTTPS. Authentication, rate limiting, and headers be
 | Build conda lock  | GET    | `/w1/builds/{id}/condalock`       | `GET /v1alpha1/builds/{buildId}/condalock`   | `text/plain` response                       |
 | Mirror            | GET    | `/w1/mirrors/{id}`                | `GET /v1alpha1/mirrors/{mirrorId}`           |                                             |
 | Mirror logs       | GET    | `/w1/mirrors/{id}/logs`           | `GET /v1alpha1/mirrors/{mirrorId}/logs`      | `text/plain`                                |
-| Scan              | POST   | `/w1/scans`                       | `POST /scans`                                | New v1 also gets a stable POST path         |
+| Scan submit       | POST   | `/w1/scans`                       | *(no alpha equivalent — new in v1)*          | One small enrichment over a pure rename, added for resource-shape symmetry. |
 | Scan              | GET    | `/w1/scans/{id}`                  | `GET /v1alpha1/scans/{scanId}`               |                                             |
 | Scan logs         | GET    | `/w1/scans/{id}/logs`             | `GET /v1alpha1/scans/{scanId}/logs`          | `text/plain`                                |
 | Scan SPDX         | GET    | `/w1/scans/{id}/spdx`             | `GET /v1alpha1/scans/{scanId}/spdx`          | `application/json` SPDX format              |
@@ -100,61 +100,18 @@ The DTO payload shapes are kept byte-identical to current alpha responses. The T
 
 ## TypeSpec spec organization
 
-Single file `wave-api-v1/spec/main.tsp` (matches sched-api). Structure:
+Multi-file layout, migrated from the repo's existing `typespec/` directory:
 
-```typespec
-import "@typespec/http";
-import "@typespec/rest";
-import "@typespec/openapi3";
-import "@typespec/versioning";
-
-using TypeSpec.Http;
-using TypeSpec.Rest;
-using TypeSpec.Versioning;
-
-@service(#{ title: "Wave API" })
-@versioned(Versions)
-namespace WaveApi;
-
-enum Versions {
-  @doc("1.0.0") v1: "1.0.0",
-}
-
-// ----- Shared types: enums, error responses
-enum ContainerStatus { ... }
-enum BuildStatus { ... }
-enum ScanStatus { ... }
-enum MirrorStatus { ... }
-enum ScanMode { ... }
-enum ScanLevel { ... }
-enum ImageNameStrategy { ... }
-model ErrorResponse { message: string; }
-
-// ----- Resource models
-model ContainerRequest { ... }
-model ContainerResponse { ... }
-model ContainerStatusResponse { ... }
-model BuildResponse { ... }
-model BuildStatusResponse { ... }
-model MirrorResponse { ... }
-model ScanRequest { ... }
-model ScanResponse { ... }
-model SpdxDocument { ... }
-model InspectRequest { ... }
-model InspectResponse { ... }
-model ValidateCredsRequest { ... }
-model ValidateCredsResponse { ... }
-model ServiceInfoResponse { ... }
-
-// ----- API interfaces
-@route("/w1/containers")   interface ContainersApi   { ... }
-@route("/w1/builds")       interface BuildsApi       { ... }
-@route("/w1/mirrors")      interface MirrorsApi      { ... }
-@route("/w1/scans")        interface ScansApi        { ... }
-@route("/w1/inspections")  interface InspectionsApi  { ... }
-@route("/w1/credentials")  interface CredentialsApi  { ... }
-@route("/w1/service-info") interface ServiceInfoApi  { ... }
 ```
+wave-api-v1/spec/
+├─ main.tsp        # imports routes.tsp
+├─ routes.tsp      # imports models/models.tsp, defines all @route interfaces
+└─ models/
+   ├─ models.tsp   # aggregates the model imports
+   └─ *.tsp        # one file per model
+```
+
+Wave already maintains a TypeSpec spec in this shape for documentation purposes. Migrating it (rather than rewriting in a single file) preserves the careful per-model layout and the `@example` annotations the team has already built up, and avoids losing review work.
 
 The model field names, types, and optionality mirror the current Java DTOs in `wave-api/src/main/java/io/seqera/wave/api/` (`SubmitContainerTokenRequest`, `ContainerStatusResponse`, `BuildStatusResponse`, `ContainerInspectRequest`, etc.). Where current DTOs use Groovy classes in `src/main/groovy/io/seqera/wave/exchange/` or controller-local request classes (e.g. `ValidateRegistryCredsRequest.groovy`), the TypeSpec model carries the same fields.
 
@@ -179,7 +136,7 @@ openapi {
   server('v1', project(':wave-api-v1').file('build/openapi/openapi-latest.yaml')) {
     apiPackageName = 'io.seqera.wave.api.v1.spec'
     modelPackageName = 'io.seqera.wave.api.v1.model'
-    useReactive = true
+    useReactive = false
     fluxForArrays = false
     serializationLibrary = 'MICRONAUT_SERDE_JACKSON'
   }
