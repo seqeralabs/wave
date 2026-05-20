@@ -43,7 +43,7 @@ namespace wave {
   @route("/w1/builds/{id}")
   interface BuildService {
 
-    @doc("Provides status of build against buildId passed as path variable.")
+    @doc("Provides the record of a build identified by the id path variable.")
     @get op getBuildRecord(@path id: string): {
       @body response: WaveBuildRecord;
       @statusCode statusCode: 200;
@@ -52,7 +52,7 @@ namespace wave {
      };
 
     @route("/status")
-    @doc("Provides status of build against buildId passed as path variable.")
+    @doc("Provides the status of a build identified by the id path variable.")
     @get op getBuildStatus(@path id: string): {
       @body response: BuildStatusResponse;
       @statusCode statusCode: 200;
@@ -61,7 +61,7 @@ namespace wave {
      };
 
     @route("/logs")
-    @doc("Supply logs corresponding to the specified buildId within the API request.")
+    @doc("Supply build logs identified by the id path variable.")
     @get op getBuildLogs(@path id: string): {
       @body response: string;
       @statusCode statusCode: 200;
