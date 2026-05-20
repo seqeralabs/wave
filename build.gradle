@@ -136,6 +136,11 @@ evaluationDependsOn(':wave-api-v1')
 afterEvaluate {
     tasks.findByName('generateV1OpenApiModels')?.dependsOn project(':wave-api-v1').tasks.named('generateOpenApi')
     tasks.findByName('generateV1OpenApiApis')?.dependsOn project(':wave-api-v1').tasks.named('generateOpenApi')
+    // processResources reads build/generated/openapi; declare ordering to avoid implicit-dependency warning
+    def genApis   = tasks.findByName('generateV1OpenApiApis')
+    def genModels = tasks.findByName('generateV1OpenApiModels')
+    if (genApis)   processResources.mustRunAfter(genApis)
+    if (genModels) processResources.mustRunAfter(genModels)
 }
 
 micronaut {
@@ -295,4 +300,61 @@ jacocoTestReport {
             fileTree(dir: dir, excludes: ['**/*$*_closure*'])
         }))
     }
+}
+
+// ----------------------------------------------------------------------------
+// API Code Generation — copy the OpenAPI-plugin output into wave-api-v1 sources
+//
+// The Micronaut OpenAPI plugin writes generated server interfaces and models
+// to build/generated/openapi/.  We copy them into wave-api-v1/src/main/java
+// so the generated files are committed (downstream clients can consume the
+// module without running TypeSpec) and so IDEs see them as ordinary sources.
+// ----------------------------------------------------------------------------
+
+def v1SpecSrc   = file("${buildDir}/generated/openapi/generateV1OpenApiApis/src/main/java/io/seqera/wave/api/v1/spec")
+def v1ModelSrc  = file("${buildDir}/generated/openapi/generateV1OpenApiModels/src/main/java/io/seqera/wave/api/v1/model")
+def v1SpecDst   = project(':wave-api-v1').file('src/main/java/io/seqera/wave/api/v1/spec')
+def v1ModelDst  = project(':wave-api-v1').file('src/main/java/io/seqera/wave/api/v1/model')
+
+tasks.register('cleanApiCode') {
+    group = 'code generation'
+    description = 'Remove previously-copied v1 API spec and model classes'
+    doLast {
+        delete fileTree(v1SpecDst)  { include '**/*.java' }
+        delete fileTree(v1ModelDst) { include '**/*.java' }
+        delete file("${buildDir}/generated/openapi/generateV1OpenApiApis")
+        delete file("${buildDir}/generated/openapi/generateV1OpenApiModels")
+    }
+}
+
+tasks.register('generateApiCode') {
+    group = 'code generation'
+    description = 'Copy generated v1 API interfaces and model classes into wave-api-v1 sources'
+    dependsOn 'cleanApiCode', 'generateV1OpenApiApis', 'generateV1OpenApiModels'
+    mustRunAfter 'cleanApiCode'
+
+    doLast {
+        copy {
+            from v1SpecSrc
+            into v1SpecDst
+            include '**/*.java'
+        }
+        copy {
+            from v1ModelSrc
+            into v1ModelDst
+            include '**/*.java'
+        }
+    }
+}
+
+afterEvaluate {
+    tasks.findByName('generateV1OpenApiApis')  ?.mustRunAfter 'cleanApiCode'
+    tasks.findByName('generateV1OpenApiModels')?.mustRunAfter 'cleanApiCode'
+
+    // The Micronaut OpenAPI plugin registers the generated source dirs on the main
+    // project's sourceSet.  We copy those files into wave-api-v1 instead, so we
+    // remove them from the main sourceSet to avoid duplicate compilation.
+    def genApisOut   = file("${buildDir}/generated/openapi/generateV1OpenApiApis/src/main/java")
+    def genModelsOut = file("${buildDir}/generated/openapi/generateV1OpenApiModels/src/main/java")
+    sourceSets.main.java.srcDirs = sourceSets.main.java.srcDirs.findAll { it != genApisOut && it != genModelsOut }
 }
