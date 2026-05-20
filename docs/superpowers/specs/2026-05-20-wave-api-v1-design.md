@@ -209,7 +209,7 @@ No client-facing breakage. Nextflow and Tower keep working as-is. The OpenAPI YA
 ## Risks and open questions
 
 - **DTO field name drift between TypeSpec and current Java models.** Hand-checking required during spec authoring. The parallel-with-alpha tests catch any drift at runtime.
-- **The Micronaut OpenAPI plugin's generated style** (reactive vs imperative, validation annotations, Optional vs nullable). Need to match what `sched-app` uses — `useReactive = true`, `serializationLibrary = MICRONAUT_SERDE_JACKSON`. Confirm during scaffolding.
+- **The Micronaut OpenAPI plugin's generated style** (validation annotations, Optional vs nullable). Aligned with `sched-app`: `useReactive = false`, `serializationLibrary = MICRONAUT_SERDE_JACKSON`. Other minor option choices to confirm during scaffolding.
 - **Sunset date.** Need a stakeholder call on how long alphas are supported. Provisionally 12 months from v1 GA. Not blocking the design.
 - **Existing `wave-api` module versioning.** It stays at its current version and continues to be released; no new feature work lands in it. Documented but not changed.
 
