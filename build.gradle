@@ -214,57 +214,29 @@ compileGroovy.dependsOn buildInfo
 // ----------------------------------------------------------------------------
 // OpenAPI / Swagger UI bundling
 //
-// Compiles the TypeSpec sources in `typespec/` to `openapi.yaml` and generates
-// a Swagger UI page from `src/main/resources/swagger-ui-template.html`.
-// Both artifacts are copied into `build/resources/main/public/openapi/` so they
-// are bundled into the main Wave application container and served at /openapi/.
-//
-// This replaces the previous separate `wave/openapi` nginx container.
+// The TypeSpec source of truth lives in `wave-api-v1`. This block consumes
+// the generated `openapi-latest.yaml`, substitutes the project version,
+// and stages it (plus the Swagger UI HTML) into the served public/openapi
+// directory inside the main application.
 // ----------------------------------------------------------------------------
-def typespecDir = file('typespec')
-def typespecOutput = file("${typespecDir}/tsp-output/@typespec/openapi3/openapi.yaml")
+def openapiYaml = project(':wave-api-v1').file('build/openapi/openapi-latest.yaml')
 def openapiBuildDir = file("${buildDir}/generated/openapi")
-
-tasks.register('installTypeSpec', Exec) {
-    group = 'documentation'
-    description = 'Install TypeSpec compiler and dependencies via npm'
-    workingDir typespecDir
-    commandLine 'npm', 'install'
-
-    inputs.file("${typespecDir}/package.json")
-    outputs.dir("${typespecDir}/node_modules")
-}
-
-tasks.register('generateOpenApi', Exec) {
-    group = 'documentation'
-    description = 'Compile TypeSpec sources into openapi.yaml'
-    dependsOn 'installTypeSpec'
-    workingDir typespecDir
-    commandLine 'npx', 'tsp', 'compile', '.'
-
-    inputs.files(fileTree(typespecDir) {
-        include 'main.tsp', 'routes.tsp', 'tspconfig.yaml', 'models/**/*.tsp'
-    })
-    outputs.file(typespecOutput)
-}
 
 tasks.register('generateSwaggerUI') {
     group = 'documentation'
-    description = 'Stage openapi.yaml and a Swagger UI page under public/openapi'
-    dependsOn 'generateOpenApi'
+    description = 'Stage openapi-latest.yaml and a Swagger UI page under public/openapi'
+    dependsOn ':wave-api-v1:generateOpenApi'
 
-    inputs.file(typespecOutput)
+    inputs.file(openapiYaml)
     inputs.file('src/main/resources/swagger-ui-template.html')
     outputs.dir(openapiBuildDir)
 
     doLast {
         openapiBuildDir.mkdirs()
 
-        // Copy spec and substitute the placeholder version (typespec emits `version: 0.0.0`)
-        def specText = typespecOutput.text.replace('version: 0.0.0', "version: ${version}")
+        def specText = openapiYaml.text.replace('version: 0.0.0', "version: ${version}")
         new File(openapiBuildDir, 'openapi.yaml').text = specText
 
-        // Render the Swagger UI page with the project version
         def template = file('src/main/resources/swagger-ui-template.html').text
         new File(openapiBuildDir, 'index.html').text = template.replace('${PROJECT_VERSION}', version.toString())
     }
