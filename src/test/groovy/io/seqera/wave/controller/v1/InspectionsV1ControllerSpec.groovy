@@ -25,6 +25,8 @@ import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.service.pairing.PairingRecord
+import io.seqera.service.pairing.PairingService
 import io.seqera.wave.api.v1.model.ContainerInspectRequest
 import io.seqera.wave.api.v1.model.ContainerInspectResponse
 import io.seqera.wave.core.spec.ConfigSpec
@@ -32,8 +34,11 @@ import io.seqera.wave.core.spec.ContainerSpec
 import io.seqera.wave.core.spec.ManifestSpec
 import io.seqera.wave.core.spec.ObjectRef
 import io.seqera.wave.model.ContainerOrIndexSpec
+import io.seqera.wave.service.UserService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.User
+import io.seqera.wave.tower.auth.JwtAuth
 import jakarta.inject.Inject
 import spock.lang.Specification
 
@@ -42,17 +47,37 @@ class InspectionsV1ControllerSpec extends Specification {
 
     @Inject @Client('/') HttpClient client
     @Inject ContainerInspectService inspectService
+    @Inject PairingService pairingService
+    @Inject UserService userService
 
     @MockBean(ContainerInspectService)
     ContainerInspectService mockInspectService() { Mock(ContainerInspectService) }
 
-    def 'POST /w1/inspections returns 200 with mapped ContainerInspectResponse'() {
+    @MockBean(PairingService)
+    PairingService mockPairingService() { Mock(PairingService) }
+
+    @MockBean(UserService)
+    UserService mockUserService() { Mock(UserService) }
+
+    private ContainerOrIndexSpec buildSpec(String image) {
+        def configSpec = new ConfigSpec(['architecture': 'amd64', 'container': 'abc123', 'config': [:], 'rootfs': [type: 'layers', diff_ids: ['sha256:abc']]])
+        def manifestSpec = new ManifestSpec(
+                2,
+                'application/vnd.docker.distribution.manifest.v2+json',
+                new ObjectRef('application/vnd.docker.container.image.v1+json', 'sha256:config', 1234L, Map.of()),
+                [new ObjectRef('application/vnd.docker.image.rootfs.diff.tar.gzip', 'sha256:layer1', 5678L, Map.of())],
+                Map.of(),
+                null
+        )
+        def (registry, repo, tag) = [image.split('/')[0], image.split('/')[1..-2].join('/') + '/' + image.split('/')[-1].split(':')[0], image.split(':')[-1]]
+        def containerSpec = new ContainerSpec(registry, "registry-1.${registry}", repo, tag, 'sha256:deadbeef', configSpec, manifestSpec)
+        return new ContainerOrIndexSpec(containerSpec)
+    }
+
+    def 'POST /w1/inspections returns 200 with mapped ContainerInspectResponse (anonymous)'() {
         given:
         def req = new ContainerInspectRequest()
                 .containerImage('docker.io/library/busybox:latest')
-                .towerAccessToken('anon')
-                .towerEndpoint('https://api.cloud.seqera.io')
-                .towerWorkspaceId(0L)
 
         def configSpec = new ConfigSpec(['architecture': 'amd64', 'container': 'abc123', 'config': [:], 'rootfs': [type: 'layers', diff_ids: ['sha256:abc']]])
         def manifestSpec = new ManifestSpec(
@@ -94,9 +119,6 @@ class InspectionsV1ControllerSpec extends Specification {
         given:
         def req = new ContainerInspectRequest()
                 .containerImage('docker.io/library/notfound:latest')
-                .towerAccessToken('anon')
-                .towerEndpoint('https://api.cloud.seqera.io')
-                .towerWorkspaceId(0L)
 
         inspectService.containerOrIndexSpec('docker.io/library/notfound:latest', null, PlatformId.NULL) >> null
 
@@ -107,5 +129,44 @@ class InspectionsV1ControllerSpec extends Specification {
         then:
         def e = thrown(HttpClientResponseException)
         e.status == HttpStatus.NOT_FOUND
+    }
+
+    def 'POST /w1/inspections resolves PlatformId when Tower credentials are provided'() {
+        given:
+        def token = 'my-tower-token'
+        def endpoint = 'https://api.cloud.seqera.io'
+        def workspaceId = 42L
+        def req = new ContainerInspectRequest()
+                .containerImage('docker.io/library/alpine:3')
+                .towerAccessToken(token)
+                .towerEndpoint(endpoint)
+                .towerWorkspaceId(workspaceId)
+
+        def mockUser = new User(id: 1L, email: 'user@example.com', userName: 'testuser')
+        def registration = new PairingRecord(endpoint: endpoint)
+        def configSpec = new ConfigSpec(['architecture': 'amd64', 'container': 'abc123', 'config': [:], 'rootfs': [type: 'layers', diff_ids: ['sha256:abc']]])
+        def manifestSpec = new ManifestSpec(
+                2,
+                'application/vnd.docker.distribution.manifest.v2+json',
+                new ObjectRef('application/vnd.docker.container.image.v1+json', 'sha256:config', 100L, Map.of()),
+                [new ObjectRef('application/vnd.docker.image.rootfs.diff.tar.gzip', 'sha256:layer1', 200L, Map.of())],
+                Map.of(),
+                null
+        )
+        def containerSpec = new ContainerSpec('docker.io', 'registry-1.docker.io', 'library/alpine', '3', 'sha256:alpine', configSpec, manifestSpec)
+        def spec = new ContainerOrIndexSpec(containerSpec)
+
+        pairingService.getPairingRecord(PairingService.TOWER_SERVICE, endpoint) >> registration
+        userService.getUserByAccessToken(endpoint, _ as JwtAuth) >> mockUser
+        inspectService.containerOrIndexSpec('docker.io/library/alpine:3', null, _ as PlatformId) >> spec
+
+        when:
+        def resp = client.toBlocking()
+                .exchange(HttpRequest.POST('/w1/inspections', req), ContainerInspectResponse)
+
+        then:
+        resp.status == HttpStatus.OK
+        resp.body().container.imageName == 'library/alpine'
+        resp.body().container.digest == 'sha256:alpine'
     }
 }

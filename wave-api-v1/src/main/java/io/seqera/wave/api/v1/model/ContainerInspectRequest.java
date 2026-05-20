@@ -42,35 +42,38 @@ public class ContainerInspectRequest {
     public static final String JSON_PROPERTY_TOWER_WORKSPACE_ID = "towerWorkspaceId";
 
     /**
-     * Name of the container to be inpected, e.g., &#x60;docker.io/library/ubuntu:latest&#x60;
+     * Name of the container to be inspected, e.g., &#x60;docker.io/library/ubuntu:latest&#x60;.
      */
     @NotNull
     @JsonProperty(JSON_PROPERTY_CONTAINER_IMAGE)
     private String containerImage;
 
     /**
-     * Access token of the user account granting the access to the Seqera Platform service specified via &#x60;towerEndpoint&#x60; (optional).
+     * Access token of the user account granting access to the Seqera Platform service specified via &#x60;towerEndpoint&#x60; (optional).
      */
-    @NotNull
+    @Nullable(inherited = true)
     @JsonProperty(JSON_PROPERTY_TOWER_ACCESS_TOKEN)
+    @JsonInclude(JsonInclude.Include.USE_DEFAULTS)
     private String towerAccessToken;
 
     /**
      * Seqera Platform service endpoint from where container registry credentials are retrieved (optional). Default &#x60;https://api.cloud.seqera.io&#x60;.
      */
-    @NotNull
+    @Nullable(inherited = true)
     @JsonProperty(JSON_PROPERTY_TOWER_ENDPOINT)
+    @JsonInclude(JsonInclude.Include.USE_DEFAULTS)
     private String towerEndpoint;
 
     /**
      * ID of the Seqera Platform workspace from where the container registry credentials are retrieved (optional). When omitted the personal workspace is used.
      */
-    @NotNull
+    @Nullable(inherited = true)
     @JsonProperty(JSON_PROPERTY_TOWER_WORKSPACE_ID)
+    @JsonInclude(JsonInclude.Include.USE_DEFAULTS)
     private Long towerWorkspaceId;
 
     /**
-     * Name of the container to be inpected, e.g., &#x60;docker.io/library/ubuntu:latest&#x60;
+     * Name of the container to be inspected, e.g., &#x60;docker.io/library/ubuntu:latest&#x60;.
      *
      * @return the containerImage property value
      */
@@ -98,7 +101,7 @@ public class ContainerInspectRequest {
     }
 
     /**
-     * Access token of the user account granting the access to the Seqera Platform service specified via &#x60;towerEndpoint&#x60; (optional).
+     * Access token of the user account granting access to the Seqera Platform service specified via &#x60;towerEndpoint&#x60; (optional).
      *
      * @return the towerAccessToken property value
      */

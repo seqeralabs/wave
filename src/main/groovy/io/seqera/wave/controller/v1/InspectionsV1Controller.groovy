@@ -20,7 +20,7 @@ package io.seqera.wave.controller.v1
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.http.HttpResponse
+import io.micronaut.context.annotation.Value
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.exceptions.HttpStatusException
 import io.micronaut.scheduling.TaskExecutors
@@ -39,18 +39,24 @@ import io.seqera.wave.core.spec.ConfigSpec
 import io.seqera.wave.core.spec.ContainerSpec
 import io.seqera.wave.core.spec.ManifestSpec
 import io.seqera.wave.core.spec.ObjectRef
+import io.seqera.wave.exception.BadRequestException
+import io.seqera.wave.service.UserService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.User
+import io.seqera.wave.tower.auth.JwtAuth
+import io.seqera.service.pairing.PairingService
 import jakarta.inject.Inject
 
 import static io.micronaut.http.HttpStatus.NOT_FOUND
+import static io.seqera.wave.util.ContainerHelper.patchPlatformEndpoint
 
 /**
  * Implements the v1 container inspect endpoint POST /w1/inspections.
  *
- * Only anonymous (no Tower token) access is supported: authenticated requests
- * require the full pairing/user-lookup flow present in the alpha controller,
- * which is out of scope for the v1 thin adapter.
+ * Supports both anonymous (no Tower token) and authenticated access. When
+ * {@code towerAccessToken} is present the same pairing/user-lookup flow as
+ * the alpha controller is used to derive a {@link PlatformId}.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -63,16 +69,44 @@ class InspectionsV1Controller implements InspectionsApiSpec {
     @Inject
     private ContainerInspectService inspectService
 
+    @Inject
+    private PairingService pairingService
+
+    @Inject
+    private UserService userService
+
+    @Inject
+    @Value('${wave.server.url}')
+    private String serverUrl
+
+    @Inject
+    @Value('${tower.endpoint.url:`https://api.cloud.seqera.io`}')
+    private String towerEndpointUrl
+
     @Override
-    ContainerInspectResponse inspectContainer(ContainerInspectRequest containerInspectRequest) {
-        final spec = inspectService.containerOrIndexSpec(
-                containerInspectRequest.getContainerImage(),
-                null,
-                PlatformId.NULL
-        )
+    ContainerInspectResponse inspectContainer(ContainerInspectRequest req) {
+        final identity = resolveIdentity(req)
+        final spec = inspectService.containerOrIndexSpec(req.getContainerImage(), null, identity)
         if( spec == null || spec.getContainer() == null )
             throw new HttpStatusException(NOT_FOUND, "Container not found")
         return toV1Response(spec.getContainer())
+    }
+
+    protected PlatformId resolveIdentity(ContainerInspectRequest req) {
+        if( !req.getTowerAccessToken() )
+            return PlatformId.NULL
+        // resolve the effective endpoint
+        final endpoint = req.getTowerEndpoint()
+                ? patchPlatformEndpoint(req.getTowerEndpoint())
+                : towerEndpointUrl
+        // check that the Tower instance is paired with this Wave server
+        final registration = pairingService.getPairingRecord(PairingService.TOWER_SERVICE, endpoint)
+        if( !registration )
+            throw new BadRequestException("Tower instance '${endpoint}' has not enabled to connect Wave service '${serverUrl}'")
+        // look up the user associated with the supplied access token
+        final auth = JwtAuth.of(endpoint, req.getTowerAccessToken())
+        final User user = userService.getUserByAccessToken(registration.endpoint, auth)
+        return new PlatformId(user, req.getTowerWorkspaceId(), req.getTowerAccessToken(), endpoint)
     }
 
     // --- mapping helpers ---
