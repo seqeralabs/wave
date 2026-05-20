@@ -1,0 +1,31 @@
+/*
+ * Copyright 2026, Seqera Labs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ */
+
+plugins {
+    id 'io.seqera.wave.java-library-conventions'
+}
+
+group = 'io.seqera'
+version = "${rootProject.file('VERSION').text.trim()}"
+
+dependencies {
+    // Annotations required by the generated DTOs / API interfaces
+    annotationProcessor platform("io.micronaut.platform:micronaut-platform:${micronautVersion}")
+    annotationProcessor 'io.micronaut.serde:micronaut-serde-processor'
+    annotationProcessor 'io.micronaut:micronaut-inject-java'
+
+    compileOnly platform("io.micronaut.platform:micronaut-platform:${micronautVersion}")
+    compileOnly 'io.micronaut.serde:micronaut-serde-jackson'
+    compileOnly 'io.micronaut:micronaut-inject'
+    compileOnly 'io.micronaut:micronaut-http'
+
+    api 'jakarta.validation:jakarta.validation-api:3.1.1'
+    api 'jakarta.annotation:jakarta.annotation-api:2.1.1'
+    api 'com.fasterxml.jackson.core:jackson-annotations:2.19.2'
+
+    testImplementation "org.apache.groovy:groovy:4.0.24"
+    testImplementation 'org.spockframework:spock-core:2.3-groovy-4.0'
+}
