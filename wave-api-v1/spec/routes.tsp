@@ -38,6 +38,14 @@ namespace wave {
     }|{
       @statusCode statusCode: 404;
       };
+
+    @route("/{id}")
+    @doc("Revoke the container token for a request identified by the id path variable.")
+    @delete op deleteContainer(@path id: string): {
+      @statusCode statusCode: 204;
+    }|{
+      @statusCode statusCode: 404;
+    };
   }
 
   @route("/w1/builds/{id}")
@@ -69,10 +77,25 @@ namespace wave {
       @statusCode statusCode: 404;
      };
 
+    @route("/condalock")
+    @doc("Return the conda lock file used during the build.")
+    @get op getBuildCondaLock(@path id: string): {
+      @body response: string;
+      @statusCode statusCode: 200;
+    }|{
+      @statusCode statusCode: 404;
+    };
+
   }
 
   @route("/w1/scans")
   interface scanService{
+
+    @doc("Submit a container scan request.")
+    @post op submitScan(@body request: ScanSubmitRequest): {
+      @body response: ScanSubmitResponse;
+      @statusCode statusCode: 200;
+    };
 
     @route("{id}")
     @doc("This endpoint allows you to get the details of a container scan request made to Wave.")
@@ -92,6 +115,15 @@ namespace wave {
         contentDisposition: string
          }|{
         @statusCode statusCode: 404;
+    };
+
+    @route("{id}/spdx")
+    @doc("Return the SPDX SBOM document for a completed scan identified by the id path variable.")
+    @get op getScanSpdx(@path id: string): {
+      @body response: string;
+      @statusCode statusCode: 200;
+    }|{
+      @statusCode statusCode: 404;
     };
     }
 
@@ -134,4 +166,13 @@ namespace wave {
         @statusCode statusCode: 404;
     }
     }
+
+  @route("/w1/service-info")
+  interface ServiceInfoApi {
+    @doc("Return Wave service version and build info.")
+    @get op getServiceInfo(): {
+      @body response: ServiceInfoResponse;
+      @statusCode statusCode: 200;
+    };
+  }
 }
