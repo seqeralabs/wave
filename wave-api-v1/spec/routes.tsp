@@ -12,8 +12,9 @@ namespace wave {
     enum Versions {
       @doc("1.0.0") v1: "1.0.0",
     }
+  @tag("Containers")
   @route("/w1/containers")
-  interface  ContainerService {
+  interface ContainersApi {
 
     @doc("This endpoint allows you to submit a request to access a private container registry via Wave, or build a container image on-the-fly with a Dockerfile or Conda recipe file and returns the name of the container request made available by Wave.")
     @post op createContainer(@body requestBody: ContainerRequest): {
@@ -48,8 +49,9 @@ namespace wave {
     };
   }
 
+  @tag("Builds")
   @route("/w1/builds/{id}")
-  interface BuildService {
+  interface BuildsApi {
 
     @doc("Provides the record of a build identified by the id path variable.")
     @get op getBuildRecord(@path id: string): {
@@ -88,8 +90,9 @@ namespace wave {
 
   }
 
+  @tag("Scans")
   @route("/w1/scans")
-  interface scanService{
+  interface ScansApi {
 
     @doc("Submit a container scan request.")
     @post op submitScan(@body request: ScanSubmitRequest): {
@@ -127,8 +130,9 @@ namespace wave {
     };
     }
 
+  @tag("Inspections")
   @route("/w1/inspections")
-  interface InspectService {
+  interface InspectionsApi {
     @doc("This endpoint returns the metadata about provided container image.")
     @post op inspectContainer(@body requestBody: ContainerInspectRequest): {
       @body response: ContainerInspectResponse;
@@ -139,12 +143,16 @@ namespace wave {
 
   }
 
+  @tag("Credentials")
   @route("/w1/credentials/validate")
-  @doc("This endpoint allows you to validate the credentials of a container registry.")
-  @post op validateCredsV2(@body request: ValidateRegistryCredsRequest):  boolean;
+  interface CredentialsApi {
+    @doc("This endpoint allows you to validate the credentials of a container registry.")
+    @post op validate(@body request: ValidateRegistryCredsRequest): boolean;
+  }
 
+  @tag("Mirrors")
   @route("/w1/mirrors")
-  interface getMirrorRecord {
+  interface MirrorsApi {
 
     @route("/{id}")
     @doc("This endpoint allows you to get the details of a container mirror request made to Wave.")
@@ -167,6 +175,7 @@ namespace wave {
     }
     }
 
+  @tag("ServiceInfo")
   @route("/w1/service-info")
   interface ServiceInfoApi {
     @doc("Return Wave service version and build info.")
