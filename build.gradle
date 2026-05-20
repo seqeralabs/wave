@@ -158,13 +158,14 @@ micronaut {
             useAuth = false
             apiNameSuffix = 'ApiSpec'
             additionalProperties = [
-                "removeOperationIdPrefix"        : "true",
-                "operationIdCaseFormat"          : "camelCase",
-                "interfaceOnly"                  : "true",
                 "dateLibrary"                    : "java8",
+                "generateConstructorWithAllArgs" : "false",
+                "interfaceOnly"                  : "true",
                 "openApiNullable"                : "false",
+                "operationIdCaseFormat"          : "camelCase",
+                "removeOperationIdPrefix"        : "true",
                 "requiredPropertiesInConstructor": "false",
-                "generateConstructorWithAllArgs" : "false"
+                "useTags"                        : "true"
             ]
         }
     }
