@@ -40,3 +40,45 @@ dependencies {
     testImplementation "org.apache.groovy:groovy:4.0.24"
     testImplementation 'org.spockframework:spock-core:2.3-groovy-4.0'
 }
+
+// ----------------------------------------------------------------------------
+// API Generation: TypeSpec to OpenAPI Conversion
+//
+// Compiles spec/main.tsp into versioned OpenAPI YAML at build/openapi/.
+// The latest version is copied to openapi-latest.yaml for stable downstream
+// references. The main `wave/` build then runs io.micronaut.openapi against
+// openapi-latest.yaml to generate Java interfaces and DTOs.
+// ----------------------------------------------------------------------------
+
+tasks.register('installTypeSpec', Exec) {
+    group = 'api generation'
+    description = 'Install TypeSpec compiler and dependencies from package.json'
+    commandLine 'sh', '-c', 'npm install'
+    inputs.file('package.json')
+    if (file('package-lock.json').exists()) {
+        inputs.file('package-lock.json')
+    }
+    outputs.dir('node_modules')
+}
+
+tasks.register('generateOpenApi', Exec) {
+    group = 'api generation'
+    description = 'Compile TypeSpec sources into versioned OpenAPI YAML and write openapi-latest.yaml'
+    dependsOn 'installTypeSpec'
+
+    commandLine 'sh', '-c', '''
+        npm run typespec:compile \\
+        && find build/openapi -maxdepth 1 -name 'openapi-*.yaml' -not -name 'openapi-latest.yaml' \\
+           | sort -V | tail -1 \\
+           | xargs -I {} cp {} build/openapi/openapi-latest.yaml
+    '''.stripIndent()
+
+    inputs.files(fileTree('spec') { include '**/*.tsp' })
+    inputs.files('tspconfig.yaml', 'package.json')
+    outputs.dir('build/openapi')
+}
+
+clean {
+    delete 'build/openapi'
+    delete 'node_modules'
+}
