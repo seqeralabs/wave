@@ -5,6 +5,7 @@ plugins {
     id 'io.seqera.wave.java-library-conventions'
     id 'io.seqera.wave.groovy-application-conventions'
     id "io.micronaut.minimal.application" version "4.1.1"
+    id "io.micronaut.openapi" version "4.5.4"
     id "com.google.cloud.tools.jib" version "3.4.5"
     id 'jacoco'
 }
@@ -43,6 +44,7 @@ dependencies {
     implementation 'io.seqera:lib-util-time:1.0.0'
     implementation 'io.seqera:lib-activator:1.0.0'
     implementation project(':wave-api')
+    implementation project(':wave-api-v1')
     implementation project(':wave-utils')
     implementation 'io.seqera:lib-pairing:1.0.0'
     implementation 'io.seqera:lib-data-store-state-redis:1.0.0'
@@ -129,12 +131,37 @@ application {
     mainClass.set("io.seqera.wave.Application")
 }
 
+// Ensure OpenAPI generation happens before server code generation
+evaluationDependsOn(':wave-api-v1')
+afterEvaluate {
+    tasks.findByName('generateV1OpenApiModels')?.dependsOn project(':wave-api-v1').tasks.named('generateOpenApi')
+    tasks.findByName('generateV1OpenApiApis')?.dependsOn project(':wave-api-v1').tasks.named('generateOpenApi')
+}
+
 micronaut {
     runtime("netty")
     testRuntime("spock2")
     processing {
         incremental(true)
         annotations("io.seqera.*")
+    }
+    openapi {
+        server('v1', project(':wave-api-v1').file('build/openapi/openapi-latest.yaml')) {
+            apiPackageName = 'io.seqera.wave.api.v1.spec'
+            modelPackageName = 'io.seqera.wave.api.v1.model'
+            useReactive = false
+            useAuth = false
+            apiNameSuffix = 'ApiSpec'
+            additionalProperties = [
+                "removeOperationIdPrefix"        : "true",
+                "operationIdCaseFormat"          : "camelCase",
+                "interfaceOnly"                  : "true",
+                "dateLibrary"                    : "java8",
+                "openApiNullable"                : "false",
+                "requiredPropertiesInConstructor": "false",
+                "generateConstructorWithAllArgs" : "false"
+            ]
+        }
     }
 }
 
