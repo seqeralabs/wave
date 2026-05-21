@@ -43,7 +43,7 @@ import jakarta.inject.Inject
 import spock.lang.Specification
 
 @MicronautTest
-class InspectionsV1ControllerSpec extends Specification {
+class InspectionsV1ControllerTest extends Specification {
 
     @Inject @Client('/') HttpClient client
     @Inject ContainerInspectService inspectService

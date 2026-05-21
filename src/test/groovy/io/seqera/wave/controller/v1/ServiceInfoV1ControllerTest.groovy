@@ -12,7 +12,7 @@ import jakarta.inject.Inject
 import spock.lang.Specification
 
 @MicronautTest
-class ServiceInfoV1ControllerSpec extends Specification {
+class ServiceInfoV1ControllerTest extends Specification {
 
     @Inject @Client('/') HttpClient client
 

@@ -48,7 +48,7 @@ import spock.lang.Unroll
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-class V1AlphaParityIntegrationSpec extends Specification {
+class V1AlphaParityIntegrationTest extends Specification {
 
     @Inject @Client('/') HttpClient client
 

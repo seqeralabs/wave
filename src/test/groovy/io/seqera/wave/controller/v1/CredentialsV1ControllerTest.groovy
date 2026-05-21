@@ -33,7 +33,7 @@ import spock.lang.Specification
 
 @MicronautTest
 @Property(name = 'wave.security.ssrf-protection.enabled', value = 'false')
-class CredentialsV1ControllerSpec extends Specification {
+class CredentialsV1ControllerTest extends Specification {
 
     @Inject @Client('/') HttpClient client
     @Inject RegistryAuthService registryAuthService

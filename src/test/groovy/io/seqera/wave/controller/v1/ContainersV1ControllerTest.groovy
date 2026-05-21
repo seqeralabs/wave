@@ -32,6 +32,7 @@ import io.seqera.wave.api.ContainerStatus as InternalContainerStatus
 import io.seqera.wave.api.ContainerStatusResponse as InternalContainerStatusResponse
 import io.seqera.wave.api.SubmitContainerTokenResponse as InternalSubmitResponse
 import io.seqera.wave.api.v1.model.ContainerRequest
+import io.seqera.wave.api.v1.model.ContainerRequestFormat
 import io.seqera.wave.api.v1.model.ContainerResponse
 import io.seqera.wave.api.v1.model.ContainerStatus
 import io.seqera.wave.api.v1.model.ContainerStatusResponse
@@ -48,7 +49,7 @@ import spock.lang.Specification
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-class ContainersV1ControllerSpec extends Specification {
+class ContainersV1ControllerTest extends Specification {
 
     @Inject @Client('/') HttpClient client
     @Inject ContainerRequestHandler handler
@@ -135,7 +136,7 @@ class ContainersV1ControllerSpec extends Specification {
         def req = new ContainerRequest()
                 .containerImage('docker.io/library/ubuntu:22.04')
                 .containerPlatform('linux/amd64')
-                .format(io.seqera.wave.api.v1.model.ContainerRequestFormat.DOCKER)
+                .format(ContainerRequestFormat.DOCKER)
 
         when:
         def resp = client.toBlocking().exchange(

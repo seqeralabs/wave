@@ -43,7 +43,7 @@ import spock.lang.Specification
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-class MirrorsV1ControllerSpec extends Specification {
+class MirrorsV1ControllerTest extends Specification {
 
     @Inject @Client('/') HttpClient client
     @Inject ContainerMirrorService mirrorService

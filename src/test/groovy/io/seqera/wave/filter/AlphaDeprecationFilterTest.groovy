@@ -33,7 +33,7 @@ import spock.lang.Unroll
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-class AlphaDeprecationFilterSpec extends Specification {
+class AlphaDeprecationFilterTest extends Specification {
 
     @Inject
     @Client('/')

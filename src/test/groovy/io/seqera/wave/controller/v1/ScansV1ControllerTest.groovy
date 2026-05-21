@@ -46,7 +46,7 @@ import spock.lang.Specification
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-class ScansV1ControllerSpec extends Specification {
+class ScansV1ControllerTest extends Specification {
 
     @Inject @Client('/') HttpClient client
     @Inject ContainerScanService scanService
