@@ -6,12 +6,12 @@ on:
     branches:
       - '**'
     paths :
-      - 'typespec/**'
+      - 'wave-api-v1/**'
       - VERSION
   pull_request:
     types: [opened, reopened, synchronize]
     paths:
-      - 'typespec/**'
+      - 'wave-api-v1/**'
       - VERSION
 
 permissions:
@@ -36,6 +36,6 @@ jobs:
 
       - name : Validate tsp files
         run : |
-          cd typespec
+          cd wave-api-v1
           tsp install
-          tsp compile .
+          tsp compile spec/main.tsp
