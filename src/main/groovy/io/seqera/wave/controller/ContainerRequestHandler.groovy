@@ -26,6 +26,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpRequest
+import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.seqera.wave.api.BuildTemplate
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerStatusResponse
@@ -96,7 +97,7 @@ import static io.seqera.wave.util.ContainerHelper.patchPlatformEndpoint
 class ContainerRequestHandler {
 
     @Inject
-    protected io.micronaut.http.server.util.HttpClientAddressResolver addressResolver
+    protected HttpClientAddressResolver addressResolver
 
     @Inject
     protected ContainerRequestService containerService

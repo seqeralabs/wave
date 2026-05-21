@@ -26,7 +26,7 @@ Wave's v1 REST API is hosted under the `/w1/` URL prefix. All routes return JSON
 | Scan              | GET    | `/w1/scans/{id}`                  | Get scan record                             |
 | Scan logs         | GET    | `/w1/scans/{id}/logs`             | Scan log stream                             |
 | Scan SPDX         | GET    | `/w1/scans/{id}/spdx`             | SPDX SBOM document                          |
-| Inspection       | POST   | `/w1/inspections`                 | Inspect a container image                   |
+| Inspection        | POST   | `/w1/inspections`                 | Inspect a container image                   |
 | Credentials check | POST   | `/w1/credentials/validate`        | Validate registry credentials               |
 | Service info      | GET    | `/w1/service-info`                | Wave version and build commit id            |
 
