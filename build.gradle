@@ -119,7 +119,7 @@ dependencies {
     implementation 'io.micronaut.views:micronaut-views-handlebars'
     // bump version to prevent security issue
     runtimeOnly 'org.apache.commons:commons-lang3:3.18.0'
-    implementation platform("io.netty:netty-bom:4.2.13.Final")
+    runtimeOnly platform("io.netty:netty-bom:4.2.13.Final")
     runtimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.84'
     runtimeOnly 'org.bouncycastle:bcprov-jdk18on:1.84'
     runtimeOnly 'org.bouncycastle:bcutil-jdk18on:1.84'
