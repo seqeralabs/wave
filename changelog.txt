@@ -1,4 +1,7 @@
 # Wave changelog
+1.33.6 - 21 May 2026
+- Demote 'Request processing' log to trace in RegistryProxyService (#1047) [3881377c0]
+
 1.33.5 - 17 May 2026
 - Use addIfLess for JWT refresh timer scheduling (#1045) [e80058ca4]
 - Embed OpenAPI spec and Swagger UI in main Wave container (#1043) [b9c0daf91]
