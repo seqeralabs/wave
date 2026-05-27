@@ -1,0 +1,14 @@
+BootStrap: docker
+From: {{pixi_image}}
+%post
+    cd /opt/wave
+    printf '[project]\nname = "wave-env"\nchannels = ["conda-forge"]\nplatforms = ["linux-64", "linux-aarch64"]\n' > pixi.toml
+    curl -fsSL {{lock_url}} -o pixi.lock
+    pixi install --frozen
+    {{base_packages}}
+    pixi shell-hook > /shell-hook.sh
+    echo ">> CONDA_LOCK_START"
+    cat /opt/wave/pixi.lock
+    echo "<< CONDA_LOCK_END"
+%environment
+    . /shell-hook.sh

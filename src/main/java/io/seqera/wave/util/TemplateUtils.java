@@ -113,6 +113,22 @@ public class TemplateUtils {
         return condaFileTemplate1("/templates/conda-pixi-v1/singularityfile-conda-file.txt", opts);
     }
 
+    static public String pixiLockUrlToDockerFile(String lockUrl, PixiOpts opts) {
+        return pixiLockUrlTemplate("/templates/conda-pixi-lock-v1/dockerfile-pixi-lock-url.txt", lockUrl, opts);
+    }
+
+    static public String pixiLockUrlToSingularityFile(String lockUrl, PixiOpts opts) {
+        return pixiLockUrlTemplate("/templates/conda-pixi-lock-v1/singularityfile-pixi-lock-url.txt", lockUrl, opts);
+    }
+
+    static public String pixiLockFileToDockerFile(PixiOpts opts) {
+        return pixiLockFileTemplate("/templates/conda-pixi-lock-v1/dockerfile-pixi-lock-file.txt", opts);
+    }
+
+    static public String pixiLockFileToSingularityFile(PixiOpts opts) {
+        return pixiLockFileTemplate("/templates/conda-pixi-lock-v1/singularityfile-pixi-lock-file.txt", opts);
+    }
+
     static public String condaPackagesToDockerFileUsingV2(String packages, List<String> condaChannels, CondaOpts opts) {
         return condaPackagesTemplate1(
                 "/templates/conda-micromamba-v2/dockerfile-conda-packages.txt",
@@ -159,6 +175,29 @@ public class TemplateUtils {
         binding.put("base_image", opts.baseImage);
         binding.put("pixi_image", opts.pixiImage);
         binding.put("base_packages", pixiAddBasePackage0(opts.basePackages,singularity));
+
+        final String result = renderTemplate0(template, binding, List.of("wave_context_dir"));
+        return addCommands(result, opts.commands, singularity);
+    }
+
+    static protected String pixiLockUrlTemplate(String template, String lockUrl, PixiOpts opts) {
+        final boolean singularity = template.contains("/singularityfile");
+        final Map<String,String> binding = new HashMap<>();
+        binding.put("base_image", opts.baseImage);
+        binding.put("pixi_image", opts.pixiImage);
+        binding.put("lock_url", lockUrl);
+        binding.put("base_packages", pixiAddBasePackage0(opts.basePackages, singularity));
+
+        final String result = renderTemplate0(template, binding);
+        return addCommands(result, opts.commands, singularity);
+    }
+
+    static protected String pixiLockFileTemplate(String template, PixiOpts opts) {
+        final boolean singularity = template.contains("/singularityfile");
+        final Map<String,String> binding = new HashMap<>();
+        binding.put("base_image", opts.baseImage);
+        binding.put("pixi_image", opts.pixiImage);
+        binding.put("base_packages", pixiAddBasePackage0(opts.basePackages, singularity));
 
         final String result = renderTemplate0(template, binding, List.of("wave_context_dir"));
         return addCommands(result, opts.commands, singularity);

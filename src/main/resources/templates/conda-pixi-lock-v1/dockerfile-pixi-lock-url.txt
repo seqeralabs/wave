@@ -1,0 +1,23 @@
+FROM {{pixi_image}} AS build
+
+WORKDIR /opt/wave
+RUN printf '[project]\nname = "wave-env"\nchannels = ["conda-forge"]\nplatforms = ["linux-64", "linux-aarch64"]\n' > pixi.toml \
+    && curl -fsSL {{lock_url}} -o pixi.lock \
+    && pixi install --frozen \
+    {{base_packages}}
+    && pixi shell-hook > /shell-hook.sh \
+    && echo 'exec "$@"' >> /shell-hook.sh \
+    && echo ">> CONDA_LOCK_START" \
+    && cat /opt/wave/pixi.lock \
+    && echo "<< CONDA_LOCK_END"
+
+FROM {{base_image}} AS final
+
+COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
+COPY --from=build /shell-hook.sh /shell-hook.sh
+
+USER root
+ENV USER=root
+
+ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]
+CMD ["/bin/bash"]
