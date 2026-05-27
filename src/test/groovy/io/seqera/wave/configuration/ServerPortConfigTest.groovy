@@ -26,7 +26,9 @@ class ServerPortConfigTest extends Specification {
 
     def 'should default server port to 9090'() {
         given:
-        def ctx = ApplicationContext.run([:])
+        def ctx = ApplicationContext.builder()
+            .deduceEnvironment(false)
+            .start()
 
         expect:
         ctx.getProperty('micronaut.server.port', Integer).get() == 9090
@@ -37,9 +39,10 @@ class ServerPortConfigTest extends Specification {
 
     def 'should allow overriding server port via WAVE_SERVER_PORT env variable'() {
         given:
-        def ctx = ApplicationContext.run([
-            'WAVE_SERVER_PORT': '7070',
-        ])
+        def ctx = ApplicationContext.builder()
+            .deduceEnvironment(false)
+            .properties(['WAVE_SERVER_PORT': '7070'])
+            .start()
 
         expect:
         ctx.getProperty('micronaut.server.port', Integer).get() == 7070
