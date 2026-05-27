@@ -2,7 +2,7 @@ FROM {{pixi_image}} AS build
 
 COPY conda.yml /opt/wave/pixi.lock
 WORKDIR /opt/wave
-RUN printf '[project]\nname = "wave-env"\nchannels = ["conda-forge"]\nplatforms = ["linux-64", "linux-aarch64"]\n' > pixi.toml \
+RUN {{manifest_generate}}
     && pixi install --frozen \
     {{base_packages}}
     && pixi shell-hook > /shell-hook.sh \

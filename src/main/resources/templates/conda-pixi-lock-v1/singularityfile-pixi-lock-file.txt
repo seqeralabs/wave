@@ -4,7 +4,7 @@ From: {{pixi_image}}
     {{wave_context_dir}}/conda.yml /opt/wave/pixi.lock
 %post
     cd /opt/wave
-    printf '[project]\nname = "wave-env"\nchannels = ["conda-forge"]\nplatforms = ["linux-64", "linux-aarch64"]\n' > pixi.toml
+    {{manifest_generate}}
     pixi install --frozen
     {{base_packages}}
     pixi shell-hook > /shell-hook.sh

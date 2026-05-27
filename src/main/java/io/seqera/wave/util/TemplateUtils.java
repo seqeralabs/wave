@@ -20,6 +20,7 @@ package io.seqera.wave.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -187,6 +188,7 @@ public class TemplateUtils {
         binding.put("pixi_image", opts.pixiImage);
         binding.put("lock_url", lockUrl);
         binding.put("base_packages", pixiAddBasePackage0(opts.basePackages, singularity));
+        binding.put("manifest_generate", pixiManifestGenerate(opts.manifest, singularity));
 
         final String result = renderTemplate0(template, binding);
         return addCommands(result, opts.commands, singularity);
@@ -198,9 +200,38 @@ public class TemplateUtils {
         binding.put("base_image", opts.baseImage);
         binding.put("pixi_image", opts.pixiImage);
         binding.put("base_packages", pixiAddBasePackage0(opts.basePackages, singularity));
+        binding.put("manifest_generate", pixiManifestGenerate(opts.manifest, singularity));
 
         final String result = renderTemplate0(template, binding, List.of("wave_context_dir"));
         return addCommands(result, opts.commands, singularity);
+    }
+
+    /**
+     * Generate the shell commands to create pixi.toml from either a provided manifest
+     * or by extracting metadata from the lock file.
+     */
+    private static String pixiManifestGenerate(String manifest, boolean singularity) {
+        if (manifest != null && !manifest.isEmpty()) {
+            // Manifest provided: decode from base64 at build time
+            final String encoded = Base64.getEncoder().encodeToString(manifest.getBytes());
+            if (singularity) {
+                return "echo '" + encoded + "' | base64 -d > pixi.toml";
+            } else {
+                return "echo '" + encoded + "' | base64 -d > pixi.toml \\";
+            }
+        }
+        // No manifest: generate from lock file by extracting channels, platforms, and deps
+        final String awkDeps = "awk '/- conda:/{n=split($NF,u,\"/\");f=u[n];sub(/\\.(conda|tar\\.bz2)$/,\"\",f);m=split(f,s,\"-\");v=0;for(i=2;i<=m;i++)if(s[i]~/^[0-9]/&&index(s[i],\".\")>0){v=i;break};if(!v)for(i=2;i<=m;i++)if(s[i]~/^[0-9]/){v=i;break};nm=\"\";for(i=1;i<(v?v:m+1);i++){if(nm)nm=nm\"-\";nm=nm s[i]};if(nm)print nm\" = \\\\\"*\\\\\"\"}' pixi.lock | sort -u > /tmp/deps.toml";
+        final String awkPlatforms = "PLATFORMS=$(awk '/- conda:/{n=split($NF,u,\"/\");p=u[n-1];if(p!=\"noarch\")print p}' pixi.lock | sort -u | awk '{printf \"\\\\\"%s\\\\\", \", $0}' | sed 's/, $//')";
+        final String awkChannels = "CHANNELS=$(awk '/^    channels:/{ch=1;next} ch&&/- url:/{gsub(/^ *- url: */,\"\");gsub(/https:\\/\\/conda\\.anaconda\\.org\\//,\"\");gsub(/\\/$/,\"\");printf \"\\\\\"%s\\\\\", \",$0;next} ch&&!/^    -/{exit}' pixi.lock | sed 's/, $//')";
+        final String printfToml = "printf \"[workspace]\\nname = \\\"wave-env\\\"\\nchannels = [%s]\\nplatforms = [%s]\\n\\n[dependencies]\\n\" \"$CHANNELS\" \"$PLATFORMS\" > pixi.toml";
+        final String catDeps = "cat /tmp/deps.toml >> pixi.toml";
+
+        if (singularity) {
+            return awkPlatforms + "\n    " + awkChannels + "\n    " + awkDeps + "\n    " + printfToml + "\n    " + catDeps;
+        } else {
+            return awkPlatforms + " \\\n    && " + awkChannels + " \\\n    && " + awkDeps + " \\\n    && " + printfToml + " \\\n    && " + catDeps + " \\";
+        }
     }
 
     static private String renderTemplate0(String templatePath, Map<String,String> binding) {
