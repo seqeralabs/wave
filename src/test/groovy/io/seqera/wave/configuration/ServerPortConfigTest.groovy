@@ -21,33 +21,38 @@ package io.seqera.wave.configuration
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
+import io.micronaut.context.env.PropertySource
 
 class ServerPortConfigTest extends Specification {
 
     def 'should default server port to 9090'() {
         given:
-        def ctx = ApplicationContext.builder()
+        def env = ApplicationContext.builder()
             .deduceEnvironment(false)
-            .start()
+            .build()
+            .environment
+        env.start()
 
         expect:
-        ctx.getProperty('micronaut.server.port', Integer).get() == 9090
+        env.getProperty('micronaut.server.port', Integer).get() == 9090
 
         cleanup:
-        ctx.close()
+        env.stop()
     }
 
     def 'should allow overriding server port via WAVE_SERVER_PORT env variable'() {
         given:
-        def ctx = ApplicationContext.builder()
+        def env = ApplicationContext.builder()
             .deduceEnvironment(false)
-            .properties(['WAVE_SERVER_PORT': '7070'])
-            .start()
+            .propertySources(PropertySource.of('test', [WAVE_SERVER_PORT: '7070']))
+            .build()
+            .environment
+        env.start()
 
         expect:
-        ctx.getProperty('micronaut.server.port', Integer).get() == 7070
+        env.getProperty('micronaut.server.port', Integer).get() == 7070
 
         cleanup:
-        ctx.close()
+        env.stop()
     }
 }
