@@ -44,6 +44,25 @@ jobs:
           fetch-depth: 1
           submodules: true
 
+      - name: Detect release commit
+        id: detect-release
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          # Only direct pushes whose first line tags `[release]` should publish.
+          # Squash merges append "(#NNN)" and merge commits start with "Merge pull request #NNN" —
+          # both must be excluded so a PR body mentioning [release] does not trigger a release.
+          first_line=$(printf '%s\n' "$COMMIT_MSG" | head -n1)
+          if [[ "$first_line" == *"[release]"* ]] \
+             && [[ ! "$first_line" =~ \(#[0-9]+\)$ ]] \
+             && [[ ! "$first_line" =~ ^Merge\ pull\ request\ #[0-9]+ ]]; then
+            echo "Detected release commit — release steps will run"
+            echo "is_release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Not a release commit — release steps will be skipped"
+            echo "is_release=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Setup Java ${{ matrix.java_version }}
         uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
         with:
@@ -80,7 +99,7 @@ jobs:
           sudo rm -rf /home/runner/work/wave/wave/build-workspace
 
       - name: Release
-        if: "contains(github.event.head_commit.message, '[release]')"
+        if: "steps.detect-release.outputs.is_release == 'true'"
         run: |
           bash publish.sh wave-api
           bash publish.sh wave-utils

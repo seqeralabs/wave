@@ -475,7 +475,7 @@ class ContainerAugmenter {
     }
 
     protected Map layerBlob(String image, ContainerLayer layer) {
-        log.debug "Adding layer: $layer to image: $client.registry.name/$image"
+        log.debug "Adding layer: gzipDigest=$layer.gzipDigest; size=$layer.gzipSize to image: $client.registry.name/$image"
         // store the layer blob in the cache
         final String path = "$client.registry.name/v2/$image/blobs/$layer.gzipDigest"
         final store = storage.saveBlob(path, layer)

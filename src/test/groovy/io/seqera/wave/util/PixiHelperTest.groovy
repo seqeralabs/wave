@@ -68,6 +68,8 @@ class PixiHelperTest extends Specification {
         result.contains('%files')
         result.contains('%post')
         result.contains('%environment')
+        result.contains('. /shell-hook.sh')
+        !result.contains('MAMBA_ROOT_PREFIX')
     }
 
     def 'should use custom base image'() {
