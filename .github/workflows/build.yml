@@ -114,7 +114,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37 # ratchet:aws-actions/configure-aws-credentials@v6.1.0
         with:
           aws-region: eu-west-2
-          role-to-assume: arn:aws:iam::232933512461:role/platform-ecr-pusher
+          role-to-assume: arn:aws:iam::232933512461:role/wave-ecr-pusher
           role-session-name: GitHubActions-${{ github.run_id }}
 
       - name: Login to enterprise Amazon ECR
@@ -125,14 +125,45 @@ jobs:
         id: release
         if: "steps.detect-release.outputs.is_release == 'true'"
         run: |
+          set -e
+          set -x
           # Drop the session token injected by configure-aws-credentials so publish.sh / gradle
           # sign maven S3 uploads with the static TOWER_CI keys only (mixing static keys with a
           # session token from a different role produces SignatureDoesNotMatch).
           unset AWS_SESSION_TOKEN
           bash publish.sh wave-api
           bash publish.sh wave-utils
-          bash tag-and-push.sh
-          echo "version=v$(cat VERSION)" >> $GITHUB_OUTPUT
+
+          # Parse release modifiers from the commit message
+          FORCE=$(git show -s --format='%s' | sed -rn 's/.*\[(force)\].*/\1/p')
+          TAG=v$(cat VERSION)
+          [[ $FORCE == 'force' ]] && FORCE='-f' || FORCE=''
+
+          # Tag repo
+          REMOTE=https://oauth:$GITHUB_TOKEN@github.com/${GITHUB_REPOSITORY}.git
+          git tag $TAG $FORCE
+          git push $REMOTE $TAG $FORCE
+
+          # Build container image locally with a generic name
+          ./gradlew -PjibRepo=wave/server:$TAG jibDockerBuild
+
+          # Push to legacy ECR (wave/app + nf-tower-enterprise/wave)
+          LEGACY_ECR=195996028523.dkr.ecr.eu-west-1.amazonaws.com
+          docker tag wave/server:$TAG $LEGACY_ECR/wave/app:$TAG
+          docker tag wave/server:$TAG $LEGACY_ECR/nf-tower-enterprise/wave:$TAG
+          docker push $LEGACY_ECR/wave/app:$TAG
+          docker push $LEGACY_ECR/nf-tower-enterprise/wave:$TAG
+
+          # Push to enterprise ECR (new central registry)
+          ENTERPRISE_ECR=232933512461.dkr.ecr.eu-west-2.amazonaws.com
+          docker tag wave/server:$TAG $ENTERPRISE_ECR/wave/server:$TAG
+          docker push $ENTERPRISE_ECR/wave/server:$TAG
+
+          # Create GitHub release (draft for alpha/beta/RC tags)
+          grep -Ei '.*-(A[0-9]+|B[0-9]+|RC[0-9]+)$' VERSION &>/dev/null && DRAFT='--draft' || DRAFT=''
+          gh release create $TAG --generate-notes $DRAFT
+
+          echo "version=$TAG" >> $GITHUB_OUTPUT
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
           AWS_ACCESS_KEY_ID: ${{secrets.TOWER_CI_AWS_ACCESS}}
