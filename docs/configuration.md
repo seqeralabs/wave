@@ -580,3 +580,15 @@ Configure slow endpoint logging to identify HTTP endpoints that exceed expected 
 
 `wave.trace.slow-endpoint.duration` *(optional)*
 : Threshold duration for logging slow HTTP endpoints (default: `1m`).
+
+## Logging
+
+Configure the Logback STDOUT log pattern per deployment. Useful when the runtime environment (for example, a log collector) already prefixes each line with a timestamp and you want to omit Wave's own date prefix.
+
+`WAVE_LOG_STDOUT_PATTERN` *(optional, environment variable only)*
+: Logback pattern used by the STDOUT appender (default: `%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg >> wt=%X{requestId}%n`).
+  To omit the date/time prefix, set the variable to a pattern without the leading `%d{...}` token, for example:
+
+  ```
+  WAVE_LOG_STDOUT_PATTERN=[%thread] %-5level %logger{36} - %msg >> wt=%X{requestId}%n
+  ```
