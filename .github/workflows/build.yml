@@ -144,11 +144,9 @@ jobs:
           # Build container image locally with a generic name
           ./gradlew -PjibRepo=wave/server:$TAG jibDockerBuild
 
-          # Push to legacy ECR (wave/app + nf-tower-enterprise/wave)
+          # Push nf-tower-enterprise/wave to legacy ECR
           LEGACY_ECR=195996028523.dkr.ecr.eu-west-1.amazonaws.com
-          docker tag wave/server:$TAG $LEGACY_ECR/wave/app:$TAG
           docker tag wave/server:$TAG $LEGACY_ECR/nf-tower-enterprise/wave:$TAG
-          docker push $LEGACY_ECR/wave/app:$TAG
           docker push $LEGACY_ECR/nf-tower-enterprise/wave:$TAG
 
           # Push to enterprise ECR (new central registry)
