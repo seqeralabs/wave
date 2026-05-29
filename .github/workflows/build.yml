@@ -134,15 +134,12 @@ jobs:
           bash publish.sh wave-api
           bash publish.sh wave-utils
 
-          # Parse release modifiers from the commit message
-          FORCE=$(git show -s --format='%s' | sed -rn 's/.*\[(force)\].*/\1/p')
           TAG=v$(cat VERSION)
-          [[ $FORCE == 'force' ]] && FORCE='-f' || FORCE=''
 
           # Tag repo
           REMOTE=https://oauth:$GITHUB_TOKEN@github.com/${GITHUB_REPOSITORY}.git
-          git tag $TAG $FORCE
-          git push $REMOTE $TAG $FORCE
+          git tag $TAG
+          git push $REMOTE $TAG
 
           # Build container image locally with a generic name
           ./gradlew -PjibRepo=wave/server:$TAG jibDockerBuild
