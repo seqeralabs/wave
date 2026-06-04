@@ -1,5 +1,13 @@
 wave:
   debug: false
+  build:
+    enabled: false
+  mirror:
+    enabled: false
+  scan:
+    enabled: false
+  blobCache:
+    enabled: false
   tokens:
     cache:
       duration: "36h"

@@ -50,7 +50,7 @@ class JwtTimeStore extends AbstractRangeStore {
     }
 
     void setRefreshTimer(String key) {
-        this.add(key, expireSecs0())
+        this.addIfLess(key, expireSecs0())
     }
 
     private long expireSecs0() {

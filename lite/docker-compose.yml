@@ -1,17 +1,64 @@
-version: "3.9"
 services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: wave
+      POSTGRES_USER: wave
+      POSTGRES_PASSWORD: wave
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wave"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   wave:
+    # Replace <wave-container-image> with your Wave image registry path
+    image: <wave-container-image>
     ports:
       - "9090:9090"
     volumes:
-      - $PWD:/work
-      - ./config.yml:/work/config.yml
+      - ./config.yml:/work/config.yml:ro
     environment:
       - MICRONAUT_ENVIRONMENTS=lite,rate-limit,redis,postgres,prometheus
-      - WAVE_JVM_OPTS=-XX:+UseG1GC -Xms512m -Xmx850m -XX:MaxDirectMemorySize=100m -Dio.netty.maxDirectMemory=0 -Dio.netty.allocator.type=pooled -Djdk.httpclient.keepalive.timeout=10 -Djdk.tracePinnedThreads=short -Djdk.traceVirtualThreadInThreadDump=full
     env_file:
       - wave.env
     working_dir: /work
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     deploy:
       mode: replicated
-      replicas: 2
+      # Use 2 replicas with `docker stack deploy` (Swarm mode).
+      # For `docker compose up`, use 1 to avoid port conflicts.
+      replicas: 1
+      resources:
+        limits:
+          memory: 4G
+          cpus: '1.0'
+        reservations:
+          memory: 2G
+          cpus: '0.2'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+volumes:
+  db-data:

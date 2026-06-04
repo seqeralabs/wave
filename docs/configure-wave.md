@@ -211,3 +211,102 @@ Using ECR as a cache repository provides:
 | `wave.build.cache`         | Cache repository URL or S3 path   | `123456789012.dkr.ecr.us-east-1.amazonaws.com/wave-cache` |
 
 **Note:** ECR cache requires Wave build service to be enabled and is only available in AWS deployments with proper ECR access configured.
+
+## S3 cache authentication
+
+When using S3 as the BuildKit cache backend (by configuring `wave.build.cache` with an S3 bucket path), Wave relies on AWS native authentication mechanisms rather than static credentials in configuration files.
+
+For the related configuration options (`wave.build.cache`, `wave.build.cache-bucket-region`, `wave.build.cache-bucket-upload-parallelism`), see [Container build process](./configuration.md#container-build-process).
+
+### Kubernetes deployments
+
+S3 cache uses **IAM Roles for Service Accounts (IRSA)** for secure, credential-free authentication.
+
+Configure your Kubernetes ServiceAccount with an IAM role annotation:
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: wave-build-sa
+  namespace: wave-build
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/WaveBuildRole
+```
+
+The IAM role must have permissions to access the S3 cache bucket:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:DeleteObject",
+        "s3:ListBucket",
+        "s3:AbortMultipartUpload",
+        "s3:ListMultipartUploadParts",
+        "s3:ListBucketMultipartUploads"
+      ],
+      "Resource": [
+        "arn:aws:s3:::my-bucket/wave/cache",
+        "arn:aws:s3:::my-bucket/wave/cache/*"
+      ]
+    }
+  ]
+}
+```
+
+Update your Wave deployment to use the annotated ServiceAccount:
+
+```yaml
+spec:
+  template:
+    spec:
+      serviceAccountName: wave-build-sa
+```
+
+### Docker deployments
+
+For Docker-based builds, use **EC2 Instance Profile** for automatic credential management.
+
+Attach an IAM role to the EC2 instance running Docker with the S3 permissions shown above. BuildKit automatically uses the instance metadata service to obtain temporary credentials.
+
+No additional configuration is required. The AWS SDK in BuildKit automatically discovers and uses the instance profile credentials.
+
+:::note
+For development and testing purposes only, you can provide AWS credentials via environment variables:
+
+```bash
+export AWS_ACCESS_KEY_ID=your_access_key
+export AWS_SECRET_ACCESS_KEY=your_secret_key
+export AWS_REGION=us-east-1
+```
+
+**Warning:** This approach is not recommended for production environments as it requires managing static credentials. Always use EC2 Instance Profile for production Docker deployments.
+:::
+
+### Configuration example
+
+```yaml
+wave:
+  build:
+    cache: "s3://wave-cache-bucket/buildkit"
+    cache-bucket-region: "us-east-1"  # Optional if AWS_REGION is set
+    cache-bucket-upload-parallelism: 8  # Optional, controls parallel S3 uploads
+```
+
+## Client IP address resolution
+
+Wave uses client IP addresses for rate limiting. By default, Wave uses socket addresses (secure).
+
+For AWS ALB deployments, enable the `alb` profile:
+
+```bash
+export MICRONAUT_ENVIRONMENTS=alb
+```
+
+This trusts X-Forwarded-For headers from ALB for correct client IP resolution.

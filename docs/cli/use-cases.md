@@ -93,8 +93,8 @@ The Wave CLI supports build templates for creating container images from Conda p
 | Template              | Description                                                                                                      |
 |-----------------------|------------------------------------------------------------------------------------------------------------------|
 | `conda/micromamba:v1` | Single-stage build using Micromamba v1 (default). The final image includes the package manager.                  |
-| `conda/micromamba:v2` | Multi-stage build using Micromamba 2.x. Produces smaller images without the package manager in the final stage.  |
-| `conda/pixi:v1`       | Multi-stage build using [Pixi][pixi] package manager. Produces smaller images with faster dependency resolution. |
+| `conda/micromamba:v2` | Multi-stage build using Micromamba 2.x. Produces smaller images by excluding the package manager from the final stage (Singularity still uses a single-stage build). |
+| `conda/pixi:v1`       | Multi-stage build using [Pixi][pixi] package manager. Produces smaller images with faster dependency resolution (Singularity still uses a single-stage build). |
 
 **Related CLI arguments**
 
@@ -110,11 +110,11 @@ Multi-stage build templates offer several advantages:
 - **Reproducibility**: Lock files are generated for exact package version tracking.
 - **Security**: Fewer binaries in the final image reduces the attack surface.
 
-**Singularity build requirements**
+**Singularity builds use single-stage**
 
-When building Singularity containers (`--singularity`) with the `conda/micromamba:v2` or `conda/pixi:v1` templates, base images must have the `tar` utility installed. This is required because Singularity's multi-stage builds use `proot`, which cannot copy directory structures directly between build stages. The templates work around this by compressing the environment with `tar` and extracting it in the final stage.
+When building Singularity containers (`--singularity`) with the `conda/micromamba:v2` or `conda/pixi:v1` templates, single-stage builds are used. Singularity's proot-based builder cannot preserve file permissions when transferring files across stages, so the conda/pixi environment is installed directly in a single stage using the mamba/pixi image as the base.
 
-Docker builds are not affected by this requirement.
+As a result, the `baseImage` option has no effect on Singularity builds — it only applies to Docker builds. The multi-stage image size optimization is also not available for Singularity.
 
 **Example usage**
 
@@ -126,7 +126,7 @@ wave \
   --build-template conda/pixi:v1
 ```
 
-Build a container using the Micromamba v2 multi-stage template:
+Build a container using the Micromamba v2 template:
 
 ```bash
 wave \
