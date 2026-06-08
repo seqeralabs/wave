@@ -8,6 +8,7 @@ From: {{mamba_image}}
         || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \
             && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /scratch/conda.yml)
     {{base_packages}}
+    micromamba clean -a -y
     micromamba env export --name base --explicit > environment.lock
     echo ">> CONDA_LOCK_START"
     cat environment.lock

@@ -84,7 +84,7 @@ class ContainerRequest {
                 "containerImage=$containerImage; " +
                 "containerFile=${trunc(containerFile)}; " +
                 "condaFile=${trunc(condaFile)}; " +
-                "containerConfig=${containerConfig}; " +
+                "containerConfig=${trunc(containerConfig?.toString(), 500)}; " +
                 "platform=${platform}; " +
                 "buildId=${buildId}; " +
                 "buildNew=${buildNew}; " +
