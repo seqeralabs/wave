@@ -91,7 +91,7 @@ Anaconda Inc., the company behind Conda, applies commercial licensing to parts o
 
 ### Build from Conda lock files
 
-Conda lock files make environments reproducible. A lock file records the exact version of every dependency, the build specification, the source channel, and the package `md5sum`. Running the same lock file recreates the same environment on any system. Lock files also skip the environment-resolution step. This reduces setup time significantly.
+Conda lock files make environments reproducible. A lock file records the exact version of every dependency, the build specification, the source channel, and the package `md5sum`. Running the same lock file recreates the same environment on any system. Lock files also skip the environment-resolution step and reduce setup time.
 
 Wave generates a Conda lock file as part of every Conda build. A lock file provides a means to reproduce any Wave-built image exactly. Lock files also provide a useful record for debugging, sharing, and archiving pipelines. Wave can also build images directly from an existing Conda lock file.
 

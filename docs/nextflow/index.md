@@ -4,7 +4,7 @@ description: Learn about integrating Wave with Nextflow
 tags: [nextflow, wave, get started]
 ---
 
-Wave's container provisioning service seamlessly integrates with Nextflow pipelines to streamline container management and deployment. When a process runs, Wave automatically handles container building, provisioning, and optimization, eliminating the complexity of manual container management in your workflow execution.
+Wave integrates with Nextflow to build and provision containers during pipeline execution. When a process runs, Wave resolves its container and returns an image URI to Nextflow. You don't pre-build or manage images by hand.
 
 :::note
 Nextflow integration with Wave requires Nextflow 22.10.0 or later.
