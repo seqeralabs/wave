@@ -109,6 +109,10 @@ container registry where the image is stored, while the instrumented layers are 
     '-Djdk.httpclient.HttpClient.log=requests,headers'
     ```
 
+## API documentation
+
+Wave's v1 REST API is generated from a TypeSpec source of truth under `wave-api-v1/spec/`. Run `./gradlew :wave-api-v1:generateOpenApi` to compile the spec into versioned OpenAPI YAML, and `./gradlew :generateApiCode` to regenerate the Java server interfaces and DTOs. Generated Java sources are committed under `wave-api-v1/src/main/java/`. The v1 surface lives under the `/w1/*` prefix; existing `/v1alpha*` and unversioned endpoints remain functional but are marked with `Deprecation: true` and `Sunset` HTTP headers.
+
 ## TypeSpec API Specifications
 
 - You can find the API specifications using (typespec)[https://github.com/microsoft/typespec] in typespec directory. Use following command to generate the API specifications.

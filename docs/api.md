@@ -4,6 +4,41 @@ title: Wave API
 
 This page summarizes the API provided by the Wave container service.
 
+## v1 API (stable)
+
+Wave's v1 REST API is hosted under the `/w1/` URL prefix. All routes return JSON unless otherwise noted. The TypeSpec source of truth lives in [`wave-api-v1/spec/`](../wave-api-v1/spec/) and the OpenAPI YAML is published at `/openapi/openapi.yaml` with an interactive Swagger UI at `/openapi/index.html`.
+
+### Endpoints
+
+| Resource          | Method | Path                              | Notes                                       |
+|-------------------|--------|-----------------------------------|---------------------------------------------|
+| Container request | POST   | `/w1/containers`                  | Submit a new container request              |
+| Container request | GET    | `/w1/containers/{id}`             | Get container request record                |
+| Container status  | GET    | `/w1/containers/{id}/status`      | Get container request status                |
+| Container request | DELETE | `/w1/containers/{id}`             | Revoke the container token                  |
+| Build             | GET    | `/w1/builds/{id}`                 | Get build record                            |
+| Build status      | GET    | `/w1/builds/{id}/status`          | Get build status                            |
+| Build logs        | GET    | `/w1/builds/{id}/logs`            | Build log stream (text/plain)               |
+| Build conda lock  | GET    | `/w1/builds/{id}/condalock`       | Conda lock file (text/plain)                |
+| Mirror            | GET    | `/w1/mirrors/{id}`                | Get mirror record                           |
+| Mirror logs       | GET    | `/w1/mirrors/{id}/logs`           | Mirror log stream                           |
+| Scan submit       | POST   | `/w1/scans`                       | Submit a scan request (v1-new)              |
+| Scan              | GET    | `/w1/scans/{id}`                  | Get scan record                             |
+| Scan logs         | GET    | `/w1/scans/{id}/logs`             | Scan log stream                             |
+| Scan SPDX         | GET    | `/w1/scans/{id}/spdx`             | SPDX SBOM document                          |
+| Inspection        | POST   | `/w1/inspections`                 | Inspect a container image                   |
+| Credentials check | POST   | `/w1/credentials/validate`        | Validate registry credentials               |
+| Service info      | GET    | `/w1/service-info`                | Wave version and build commit id            |
+
+### Deprecation of pre-v1 endpoints
+
+All `/v1alpha1/*`, `/v1alpha2/*`, `/v1alpha3/*`, and unversioned legacy endpoints (`/container-token`, `/service-info`, `/validate-creds`, `/inspect`, `/scans`) remain functional but are deprecated. Responses from these endpoints carry two HTTP headers:
+
+- `Deprecation: true`
+- `Sunset: Sat, 31 May 2027 23:59:59 GMT` *(placeholder — final sunset date to be confirmed before GA)*
+
+Clients should migrate to the `/w1/*` paths.
+
 ## API limits
 
 The Wave service implements API rate limits for API calls. Authenticated users have higher rate limits than anonymous users.

@@ -9,3 +9,6 @@ import "./ValidateRegistryCredsRequest.tsp";
 import "./WaveContainerRecord.tsp";
 import "./ContainerMirrorResponse.tsp";
 import "./ContainerStatusResponse.tsp";
+import "./ServiceInfoResponse.tsp";
+import "./ScanSubmitRequest.tsp";
+import "./ScanSubmitResponse.tsp";

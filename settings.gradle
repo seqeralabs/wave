@@ -10,6 +10,7 @@ rootProject.name="wave"
 // Sub-projects
 include 'wave-api'
 include 'wave-utils'
+include 'wave-api-v1'
 
 // only for development
 // clone https://github.com/seqeralabs/libseqera

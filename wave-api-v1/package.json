@@ -1,0 +1,17 @@
+{
+  "name": "wave-api-v1",
+  "version": "1.0.0",
+  "description": "Wave API v1 TypeSpec definitions",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@typespec/compiler": "0.64.0",
+    "@typespec/http": "0.64.0",
+    "@typespec/openapi3": "0.64.0",
+    "@typespec/rest": "0.64.0",
+    "@typespec/versioning": "0.64.0"
+  },
+  "scripts": {
+    "typespec:compile": "tsp compile spec/main.tsp"
+  }
+}
