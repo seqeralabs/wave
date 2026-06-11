@@ -64,7 +64,7 @@ The Wave CLI supports building a container from a list of [Conda][conda] package
 Conda builds support the following arguments:
 
 - `--conda-base-image`: A base image for installing Conda packages (default: `mambaorg/micromamba:1.5.10-noble`).
-- `--conda-channels`: A comma-separated list of Conda channels (default: `seqera,bioconda,conda-forge,defaults`).
+- `--conda-channels`: A comma-separated list of Conda channels (default: `conda-forge,bioconda`).
 - `--conda-file`: A path or URL to a [Conda lock file][conda-lock].
 - `--conda-package`: A Conda package to install. Supports expressions such as `bioconda::samtools=1.17` or `samtools>=1.0,<1.17`. Accepts a comma-separated list or can be specified multiple times.
 - `--conda-run-command`: A Docker `RUN` command to execute during the build. Can be specified multiple times.
