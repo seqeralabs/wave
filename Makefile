@@ -13,6 +13,9 @@ compile:
 check:
 	./gradlew check
 
+e2eTest:
+	./gradlew e2eTest
+
 image:
 	./gradlew jibDockerBuild
 
