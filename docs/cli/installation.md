@@ -1,26 +1,29 @@
 ---
 title: Installation
+description: Install the Wave CLI from a self-install package or Homebrew.
+date: 2026-05-01
+tags: [wave cli, installation]
 ---
 
-The Wave CLI is distributed as an easy to use self-installing package and via Homebrew.
+The Wave CLI is distributed as an easy to use [self-install](#self-install) package and via [Homebrew](#homebrew).
 
 The following sections describe how to install the Wave CLI on your system.
 
 ## Self-install
 
-To self-install the latest Wave release from GitHub:
+To self-install the latest Wave CLI release from GitHub:
 
 1.  Download the [latest version of the Wave CLI][download] for your platform.
 
 1.  In a new terminal, complete the following steps:
 
-    1. Move the executable from your downloads folder to a location in your `PATH`, such as `~/bin`. For example:
+    1. Move the executable from your downloads folder to a location in your `PATH`, such as `~/bin`:
 
         ```bash
         mv wave-cli-0.8.0-macos-x86_64 ~/bin/wave
         ```
 
-    1. Ensure that the executable permission is set. For example:
+    1. Ensure that the executable permission is set:
 
         ```bash
         chmod u+x ~/bin/wave
@@ -30,19 +33,17 @@ To self-install the latest Wave release from GitHub:
 
     1.  Create a basic `Dockerfile`:
 
-        ```Dockerfile
-        cat << EOF > ./Dockerfile
+        ```Dockerfile title="Dockerfile"
         FROM busybox:latest
-        EOF
         ```
 
-    1.  Use the CLI to build the container:
+    1.  Build the container with the Wave CLI:
 
         ```bash
         wave -f Dockerfile
         ```
 
-        Example output:
+        If the install was successful, you should see output similar to the following:
 
         ```console
         wave.seqera.io/wt/xxxxxxxxxxxx/wave/build:xxxxxxxxxxxxxxxx
@@ -50,7 +51,7 @@ To self-install the latest Wave release from GitHub:
 
 ## Homebrew
 
-To install the latest version with [Homebrew]:
+To install the latest Wave CLI release with [Homebrew]:
 
 1. Install Wave CLI with the following command:
 
@@ -62,19 +63,17 @@ To install the latest version with [Homebrew]:
 
     1.  Create a basic `Dockerfile`:
 
-        ```dockerfile
-        cat << EOF > ./Dockerfile
+        ```dockerfile title="Dockerfile"
         FROM busybox:latest
-        EOF
         ```
 
-    1.  Use the CLI to build the container:
+    1.  Build the container with the Wave CLI:
 
         ```bash
         wave -f Dockerfile
         ```
 
-        Example output:
+        If the install was successful, you should see output similar to the following:
 
         ```console
         wave.seqera.io/wt/xxxxxxxxxxxx/wave/build:xxxxxxxxxxxxxxxx
