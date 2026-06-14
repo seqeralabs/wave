@@ -61,11 +61,11 @@ class ContainerHelper {
         final spec = req.packages
 
         // Default templates based on package type (when no explicit template)
-        if( spec.type == PackagesSpec.Type.CONDA && (!req.buildTemplate || req.buildTemplate==CONDA_MICROMAMBA_V1) ) {
-            return CondaHelper.containerFile(spec, singularity)
-        }
-        if( req.buildTemplate == CONDA_MICROMAMBA_V2 ) {
+        if( spec.type == PackagesSpec.Type.CONDA && (!req.buildTemplate || req.buildTemplate==CONDA_MICROMAMBA_V2) ) {
             return CondaHelper.containerFileV2(spec, req.containerImage, singularity)
+        }
+        if( req.buildTemplate == CONDA_MICROMAMBA_V1 ) {
+            return CondaHelper.containerFile(spec, singularity)
         }
         if( req.buildTemplate == CONDA_PIXI_V1 ) {
             return PixiHelper.containerFile(spec, req.containerImage, singularity)
