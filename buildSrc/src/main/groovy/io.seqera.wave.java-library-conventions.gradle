@@ -77,6 +77,8 @@ publishing {
             credentials(AwsCredentials) {
                 accessKey = project.findProperty('aws_access_key_id') ?: System.getenv('AWS_ACCESS_KEY_ID')
                 secretKey = project.findProperty('aws_secret_access_key') ?: System.getenv('AWS_SECRET_ACCESS_KEY')
+                // required for temporary STS credentials (e.g. OIDC role assumption); null/unset for long-term IAM keys
+                sessionToken = project.findProperty('aws_session_token') ?: System.getenv('AWS_SESSION_TOKEN')
             }
         }
     }
