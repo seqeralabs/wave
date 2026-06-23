@@ -41,7 +41,7 @@ class PixiLockHelperTest extends Specification {
         result.contains('FROM ubuntu:24.04 AS final')
         result.contains('COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default')
         result.contains('ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]')
-        result.contains('pixi add conda-forge::procps-ng')
+        !result.contains('pixi add')
         result.contains('>> CONDA_LOCK_START')
         result.contains('<< CONDA_LOCK_END')
     }
@@ -81,7 +81,7 @@ class PixiLockHelperTest extends Specification {
         def opts = new PixiOpts([
                 pixiImage: 'ghcr.io/prefix-dev/pixi:0.47.0-jammy-cuda-12.8.1',
                 baseImage: 'base/image',
-                basePackages: 'foo::one bar::two'
+                basePackages: null
         ])
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: 'ZW52', pixiOpts: opts)
 
@@ -93,13 +93,30 @@ class PixiLockHelperTest extends Specification {
         result.contains('COPY conda.yml /opt/wave/pixi.lock')
         result.contains('pixi install --frozen')
         result.contains('FROM base/image AS final')
-        result.contains('ghcr.io/prefix-dev/pixi:0.47.0-jammy-cuda-12.8.1')
-        result.contains('foo::one bar::two')
+        !result.contains('pixi add')
+    }
+
+    def 'should throw when base packages are specified for lock build'() {
+        given:
+        def opts = new PixiOpts([
+                pixiImage: 'ghcr.io/prefix-dev/pixi:0.47.0-jammy-cuda-12.8.1',
+                baseImage: 'base/image',
+                basePackages: 'foo::one bar::two'
+        ])
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: 'ZW52', pixiOpts: opts)
+
+        when:
+        PixiLockHelper.containerFile(packages, null, false)
+
+        then:
+        def ex = thrown(BadRequestException)
+        ex.message.contains("basePackages")
+        ex.message.contains("not supported for pixi lock file builds")
     }
 
     def 'should use custom container image as base image'() {
         given:
-        def opts = new PixiOpts([baseImage: 'base/image'])
+        def opts = new PixiOpts([baseImage: 'base/image', basePackages: null])
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: 'ZW52', pixiOpts: opts)
 
         when:

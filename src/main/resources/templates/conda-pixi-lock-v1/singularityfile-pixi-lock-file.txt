@@ -6,7 +6,6 @@ From: {{pixi_image}}
     cd /opt/wave
     {{manifest_generate}}
     pixi install --frozen
-    {{base_packages}}
     pixi shell-hook > /shell-hook.sh
     echo ">> CONDA_LOCK_START"
     cat /opt/wave/pixi.lock

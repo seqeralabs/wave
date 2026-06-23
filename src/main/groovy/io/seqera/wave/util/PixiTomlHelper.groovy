@@ -23,41 +23,39 @@ import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.config.PixiOpts
 import io.seqera.wave.exception.BadRequestException
 
-import static TemplateUtils.pixiLockFileToDockerFile
-import static TemplateUtils.pixiLockFileToSingularityFile
-import static TemplateUtils.pixiLockUrlToDockerFile
-import static TemplateUtils.pixiLockUrlToSingularityFile
+import static TemplateUtils.pixiTomlFileToDockerFile
+import static TemplateUtils.pixiTomlFileToSingularityFile
+import static TemplateUtils.pixiTomlUrlToDockerFile
+import static TemplateUtils.pixiTomlUrlToSingularityFile
 
 /**
- * Helper class for Pixi lock file-based container builds (CONDA_PIXI_LOCK_V1 template).
+ * Helper class for Pixi manifest (pixi.toml) file-based container builds (CONDA_PIXI_TOML_V1 template).
+ * Unlike the lock-file path, this runs {@code pixi install} with online solving, making it
+ * equivalent to providing a conda.yml but using the Pixi toolchain.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-class PixiLockHelper {
+class PixiTomlHelper {
 
     static String containerFile(PackagesSpec spec, String containerImage, boolean singularity) {
         if( spec.type != PackagesSpec.Type.CONDA ) {
-            throw new BadRequestException("Package type '${spec.type}' not supported by 'conda/pixi-lock:v1' build template")
+            throw new BadRequestException("Package type '${spec.type}' not supported by 'conda/pixi-toml:v1' build template")
         }
 
-        if( spec.pixiOpts?.basePackages ) {
-            throw new BadRequestException("Option 'basePackages' is not supported for pixi lock file builds - offending value: ${spec.pixiOpts.basePackages}")
-        }
-
-        final lockFileUrl = CondaHelper.tryGetLockFile(spec.entries)
+        final tomlFileUrl = CondaHelper.tryGetLockFile(spec.entries)
         final opts = spec.pixiOpts ?: new PixiOpts()
         if( containerImage )
             opts.baseImage = containerImage
 
-        if( lockFileUrl ) {
+        if( tomlFileUrl ) {
             return singularity
-                    ? pixiLockUrlToSingularityFile(lockFileUrl, opts)
-                    : pixiLockUrlToDockerFile(lockFileUrl, opts)
+                    ? pixiTomlUrlToSingularityFile(tomlFileUrl, opts)
+                    : pixiTomlUrlToDockerFile(tomlFileUrl, opts)
         }
 
         return singularity
-                ? pixiLockFileToSingularityFile(opts)
-                : pixiLockFileToDockerFile(opts)
+                ? pixiTomlFileToSingularityFile(opts)
+                : pixiTomlFileToDockerFile(opts)
     }
 }

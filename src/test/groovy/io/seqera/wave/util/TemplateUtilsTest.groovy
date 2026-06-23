@@ -459,7 +459,7 @@ class TemplateUtilsTest extends Specification {
 
     def 'should render pixi lock URL docker template'() {
         given:
-        def opts = new PixiOpts([pixiImage: 'pixi:1.0', baseImage: 'ubuntu:22.04', basePackages: 'conda-forge::procps-ng'])
+        def opts = new PixiOpts([pixiImage: 'pixi:1.0', baseImage: 'ubuntu:22.04', basePackages: null])
 
         when:
         def result = TemplateUtils.pixiLockUrlToDockerFile('https://example.com/pixi.lock', opts)
@@ -469,12 +469,12 @@ class TemplateUtilsTest extends Specification {
         result.contains('curl -fsSL https://example.com/pixi.lock -o pixi.lock')
         result.contains('pixi install --frozen')
         result.contains('FROM ubuntu:22.04 AS final')
-        result.contains('pixi add conda-forge::procps-ng')
+        !result.contains('pixi add')
     }
 
     def 'should render pixi lock file docker template'() {
         given:
-        def opts = new PixiOpts([pixiImage: 'pixi:1.0', baseImage: 'ubuntu:22.04', basePackages: 'conda-forge::procps-ng'])
+        def opts = new PixiOpts([pixiImage: 'pixi:1.0', baseImage: 'ubuntu:22.04', basePackages: null])
 
         when:
         def result = TemplateUtils.pixiLockFileToDockerFile(opts)
@@ -488,7 +488,7 @@ class TemplateUtilsTest extends Specification {
 
     def 'should render pixi lock URL singularity template'() {
         given:
-        def opts = new PixiOpts([pixiImage: 'pixi:1.0', baseImage: 'ubuntu:22.04', basePackages: 'conda-forge::procps-ng'])
+        def opts = new PixiOpts([pixiImage: 'pixi:1.0', baseImage: 'ubuntu:22.04', basePackages: null])
 
         when:
         def result = TemplateUtils.pixiLockUrlToSingularityFile('https://example.com/pixi.lock', opts)
@@ -502,7 +502,7 @@ class TemplateUtilsTest extends Specification {
 
     def 'should render pixi lock file singularity template'() {
         given:
-        def opts = new PixiOpts([pixiImage: 'pixi:1.0', baseImage: 'ubuntu:22.04', basePackages: 'conda-forge::procps-ng'])
+        def opts = new PixiOpts([pixiImage: 'pixi:1.0', baseImage: 'ubuntu:22.04', basePackages: null])
 
         when:
         def result = TemplateUtils.pixiLockFileToSingularityFile(opts)

@@ -1,14 +1,13 @@
 FROM {{pixi_image}} AS build
 
-COPY conda.yml /opt/wave/pixi.lock
+COPY conda.yml /opt/wave/pixi.toml
 WORKDIR /opt/wave
-RUN {{manifest_generate}}
-    && pixi install --frozen \
+RUN pixi install \
     && pixi shell-hook > /shell-hook.sh \
     && echo 'exec "$@"' >> /shell-hook.sh \
-    && echo ">> CONDA_LOCK_START" \
+    && echo ">> PIXI_LOCK_START" \
     && cat /opt/wave/pixi.lock \
-    && echo "<< CONDA_LOCK_END"
+    && echo "<< PIXI_LOCK_END"
 
 FROM {{base_image}} AS final
 

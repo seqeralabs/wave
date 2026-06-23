@@ -181,13 +181,49 @@ public class TemplateUtils {
         return addCommands(result, opts.commands, singularity);
     }
 
+    static public String pixiTomlFileToDockerFile(PixiOpts opts) {
+        return pixiTomlFileTemplate("/templates/conda-pixi-toml-v1/dockerfile-pixi-toml-file.txt", opts);
+    }
+
+    static public String pixiTomlUrlToDockerFile(String tomlUrl, PixiOpts opts) {
+        return pixiTomlUrlTemplate("/templates/conda-pixi-toml-v1/dockerfile-pixi-toml-url.txt", tomlUrl, opts);
+    }
+
+    static public String pixiTomlFileToSingularityFile(PixiOpts opts) {
+        return pixiTomlFileTemplate("/templates/conda-pixi-toml-v1/singularityfile-pixi-toml-file.txt", opts);
+    }
+
+    static public String pixiTomlUrlToSingularityFile(String tomlUrl, PixiOpts opts) {
+        return pixiTomlUrlTemplate("/templates/conda-pixi-toml-v1/singularityfile-pixi-toml-url.txt", tomlUrl, opts);
+    }
+
+    static protected String pixiTomlFileTemplate(String template, PixiOpts opts) {
+        final boolean singularity = template.contains("/singularityfile");
+        final Map<String,String> binding = new HashMap<>();
+        binding.put("base_image", opts.baseImage);
+        binding.put("pixi_image", opts.pixiImage);
+
+        final String result = renderTemplate0(template, binding, List.of("wave_context_dir"));
+        return addCommands(result, opts.commands, singularity);
+    }
+
+    static protected String pixiTomlUrlTemplate(String template, String tomlUrl, PixiOpts opts) {
+        final boolean singularity = template.contains("/singularityfile");
+        final Map<String,String> binding = new HashMap<>();
+        binding.put("base_image", opts.baseImage);
+        binding.put("pixi_image", opts.pixiImage);
+        binding.put("toml_url", tomlUrl);
+
+        final String result = renderTemplate0(template, binding);
+        return addCommands(result, opts.commands, singularity);
+    }
+
     static protected String pixiLockUrlTemplate(String template, String lockUrl, PixiOpts opts) {
         final boolean singularity = template.contains("/singularityfile");
         final Map<String,String> binding = new HashMap<>();
         binding.put("base_image", opts.baseImage);
         binding.put("pixi_image", opts.pixiImage);
         binding.put("lock_url", lockUrl);
-        binding.put("base_packages", pixiAddBasePackage0(opts.basePackages, singularity));
         binding.put("manifest_generate", pixiManifestGenerate(opts.manifest, singularity));
 
         final String result = renderTemplate0(template, binding);
@@ -199,7 +235,6 @@ public class TemplateUtils {
         final Map<String,String> binding = new HashMap<>();
         binding.put("base_image", opts.baseImage);
         binding.put("pixi_image", opts.pixiImage);
-        binding.put("base_packages", pixiAddBasePackage0(opts.basePackages, singularity));
         binding.put("manifest_generate", pixiManifestGenerate(opts.manifest, singularity));
 
         final String result = renderTemplate0(template, binding, List.of("wave_context_dir"));
@@ -215,9 +250,9 @@ public class TemplateUtils {
             // Manifest provided: decode from base64 at build time
             final String encoded = Base64.getEncoder().encodeToString(manifest.getBytes());
             if (singularity) {
-                return "echo '" + encoded + "' | base64 -d > pixi.toml";
+                return "printf '%s' '" + encoded + "' | base64 -d > pixi.toml";
             } else {
-                return "echo '" + encoded + "' | base64 -d > pixi.toml \\";
+                return "printf '%s' '" + encoded + "' | base64 -d > pixi.toml \\";
             }
         }
         // No manifest: generate from lock file by extracting channels, platforms, and deps
