@@ -4,6 +4,8 @@ WORKDIR /opt/wave
 RUN curl -fsSL {{lock_url}} -o pixi.lock \
     && {{manifest_generate}}
     && pixi install --frozen \
+    && mkdir -p /root/.pixi/bin \
+    {{base_packages}}
     && pixi shell-hook > /shell-hook.sh \
     && echo 'exec "$@"' >> /shell-hook.sh \
     && echo ">> CONDA_LOCK_START" \
@@ -13,10 +15,12 @@ RUN curl -fsSL {{lock_url}} -o pixi.lock \
 FROM {{base_image}} AS final
 
 COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
+COPY --from=build /root/.pixi /root/.pixi
 COPY --from=build /shell-hook.sh /shell-hook.sh
 
 USER root
 ENV USER=root
+ENV PATH=/root/.pixi/bin:$PATH
 
 ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]
 CMD ["/bin/bash"]

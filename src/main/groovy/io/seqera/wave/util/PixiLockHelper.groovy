@@ -41,10 +41,6 @@ class PixiLockHelper {
             throw new BadRequestException("Package type '${spec.type}' not supported by 'conda/pixi-lock:v1' build template")
         }
 
-        if( spec.pixiOpts?.basePackages ) {
-            throw new BadRequestException("Option 'basePackages' is not supported for pixi lock file builds - offending value: ${spec.pixiOpts.basePackages}")
-        }
-
         final lockFileUrl = CondaHelper.tryGetLockFile(spec.entries)
         final opts = spec.pixiOpts ?: new PixiOpts()
         if( containerImage )

@@ -225,6 +225,7 @@ public class TemplateUtils {
         binding.put("pixi_image", opts.pixiImage);
         binding.put("lock_url", lockUrl);
         binding.put("manifest_generate", pixiManifestGenerate(opts.manifest, singularity));
+        binding.put("base_packages", pixiGlobalInstallBasePackage0(opts.basePackages, singularity));
 
         final String result = renderTemplate0(template, binding);
         return addCommands(result, opts.commands, singularity);
@@ -236,6 +237,7 @@ public class TemplateUtils {
         binding.put("base_image", opts.baseImage);
         binding.put("pixi_image", opts.pixiImage);
         binding.put("manifest_generate", pixiManifestGenerate(opts.manifest, singularity));
+        binding.put("base_packages", pixiGlobalInstallBasePackage0(opts.basePackages, singularity));
 
         final String result = renderTemplate0(template, binding, List.of("wave_context_dir"));
         return addCommands(result, opts.commands, singularity);
@@ -300,6 +302,22 @@ public class TemplateUtils {
     private static String pixiAddBasePackage0(String basePackages, boolean singularity) {
         String result = !StringUtils.isEmpty(basePackages)
                 ? String.format("pixi add %s", basePackages)
+                : null;
+        return result==null || singularity
+                ? result
+                : "&& " + result + " \\";
+    }
+
+    /**
+     * Install base packages in an isolated pixi global prefix so that the project
+     * environment installed via {@code pixi install --frozen} (and its lock file) is
+     * left untouched. This is used by the pixi lock build templates to add runtime
+     * tools such as {@code procps-ng} (providing the {@code ps} command) without
+     * re-solving the locked environment.
+     */
+    private static String pixiGlobalInstallBasePackage0(String basePackages, boolean singularity) {
+        String result = !StringUtils.isEmpty(basePackages)
+                ? String.format("pixi global install %s", basePackages)
                 : null;
         return result==null || singularity
                 ? result

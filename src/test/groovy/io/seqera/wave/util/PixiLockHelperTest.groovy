@@ -40,6 +40,8 @@ class PixiLockHelperTest extends Specification {
         result.contains('pixi shell-hook > /shell-hook.sh')
         result.contains('FROM ubuntu:24.04 AS final')
         result.contains('COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default')
+        result.contains('COPY --from=build /root/.pixi /root/.pixi')
+        result.contains('pixi global install conda-forge::procps-ng')
         result.contains('ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]')
         !result.contains('pixi add')
         result.contains('>> CONDA_LOCK_START')
@@ -96,7 +98,7 @@ class PixiLockHelperTest extends Specification {
         !result.contains('pixi add')
     }
 
-    def 'should throw when base packages are specified for lock build'() {
+    def 'should install base packages via pixi global for lock build'() {
         given:
         def opts = new PixiOpts([
                 pixiImage: 'ghcr.io/prefix-dev/pixi:0.47.0-jammy-cuda-12.8.1',
@@ -106,12 +108,15 @@ class PixiLockHelperTest extends Specification {
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: 'ZW52', pixiOpts: opts)
 
         when:
-        PixiLockHelper.containerFile(packages, null, false)
+        def result = PixiLockHelper.containerFile(packages, null, false)
 
         then:
-        def ex = thrown(BadRequestException)
-        ex.message.contains("basePackages")
-        ex.message.contains("not supported for pixi lock file builds")
+        // base packages are installed in an isolated global prefix, never touching the frozen env
+        result.contains('pixi install --frozen')
+        result.contains('pixi global install foo::one bar::two')
+        result.contains('COPY --from=build /root/.pixi /root/.pixi')
+        result.contains('ENV PATH=/root/.pixi/bin:$PATH')
+        !result.contains('pixi add')
     }
 
     def 'should use custom container image as base image'() {
