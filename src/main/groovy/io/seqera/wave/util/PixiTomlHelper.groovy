@@ -33,7 +33,7 @@ import static TemplateUtils.pixiTomlUrlToSingularityFile
  * Unlike the lock-file path, this runs {@code pixi install} with online solving, making it
  * equivalent to providing a conda.yml but using the Pixi toolchain.
  *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Julianus Pfeuffer <8102638+jpfeuffer@users.noreply.github.com>
  */
 @CompileStatic
 class PixiTomlHelper {

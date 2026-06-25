@@ -33,7 +33,7 @@ import org.apache.commons.lang3.StringUtils;
 /**
  * Helper class to create Dockerfile for Conda package manager
  *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Julianus Pfeuffer <8102638+jpfeuffer@users.noreply.github.com>
  */
 public class TemplateUtils {
 

@@ -31,7 +31,7 @@ import static TemplateUtils.pixiLockUrlToSingularityFile
 /**
  * Helper class for Pixi lock file-based container builds (CONDA_PIXI_LOCK_V1 template).
  *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Julianus Pfeuffer <8102638+jpfeuffer@users.noreply.github.com>
  */
 @CompileStatic
 class PixiLockHelper {
