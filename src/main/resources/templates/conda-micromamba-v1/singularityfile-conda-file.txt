@@ -5,7 +5,8 @@ From: {{base_image}}
 %post
     micromamba install -y -n base -f /scratch/conda.yml
     {{base_packages}}
-    micromamba env export --name base --explicit > environment.lock
+    micromamba install -y -n base conda-forge::conda-lock
+    conda-lock --file /scratch/conda.yml --platform linux-64 --lockfile environment.lock
     echo ">> CONDA_LOCK_START"
     cat environment.lock
     echo "<< CONDA_LOCK_END"
