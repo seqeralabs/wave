@@ -9,7 +9,7 @@ From: {{mamba_image}}
             && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /scratch/conda.yml)
     {{base_packages}}
     micromamba install -y -n base conda-forge::conda-lock
-    conda-lock --file /scratch/conda.yml --platform linux-64 --lockfile environment.lock
+    micromamba run -n base conda-lock --file /scratch/conda.yml --platform linux-64 --lockfile environment.lock
     micromamba clean -a -y
     echo ">> CONDA_LOCK_START"
     cat environment.lock
