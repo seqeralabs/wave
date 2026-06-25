@@ -69,3 +69,70 @@ Wave resolves registry credentials based on whether the request is authenticated
 For AWS ECR, Wave can additionally authenticate using its own cloud identity, removing the need to store ECR credentials in your workspace.
 
 The workspace used for credential lookup depends on the request context. If `tower.workspaceId` is set in the Nextflow configuration, Wave uses that workspace. Otherwise, Seqera Platform defaults to your personal workspace.
+
+## Registry-specific notes
+
+### AWS ECR Private Registry
+
+Wave authenticates to private AWS ECR registries using long-term IAM access keys stored in Seqera Platform. The registry hostname follows the format `<account-id>.dkr.ecr.<region>.amazonaws.com`.
+
+The IAM user needs `ecr:GetAuthorizationToken`, `ecr:BatchGetImage`, and `ecr:GetDownloadUrlForLayer` permissions. The AWS managed policy `AmazonEC2ContainerRegistryReadOnly` covers these. See [AWS ECR credentials](https://docs.seqera.io/platform/latest/credentials/aws_registry_credentials) for step-by-step setup in Seqera Platform.
+
+### AWS ECR Public Registry
+
+Amazon ECR Public Gallery (`public.ecr.aws`) hosts publicly accessible container images. While images are freely accessible without authentication, AWS applies rate limits to unauthenticated pulls. Authenticating with AWS credentials removes these rate limits and is required when running pipelines at scale.
+
+#### Differences from private ECR
+
+| Feature | Private ECR | Public ECR |
+|---------|-------------|------------|
+| Hostname | `<account-id>.dkr.ecr.<region>.amazonaws.com` | `public.ecr.aws` |
+| Authentication endpoint | Region-specific | Always `us-east-1` |
+| Unauthenticated access | Not available | Available, but rate-limited |
+| AWS API | `ecr:GetAuthorizationToken` | `ecr-public:GetAuthorizationToken` |
+
+#### Required IAM permissions
+
+The IAM user needs the following permissions to authenticate to ECR Public:
+
+- `ecr-public:GetAuthorizationToken`
+- `ecr-public:BatchCheckLayerAvailability`
+- `ecr-public:GetRepositoryPolicy`
+- `ecr-public:DescribeRepositories`
+- `ecr-public:DescribeImages`
+- `ecr-public:DescribeImageTags`
+- `sts:GetServiceBearerToken` — required for ECR Public token exchange
+
+Attach the AWS managed policy `AmazonElasticContainerRegistryPublicReadOnly` and the `sts:GetServiceBearerToken` permission explicitly, or create a custom policy that includes all of the above.
+
+:::note
+`sts:GetServiceBearerToken` is not included in `AmazonElasticContainerRegistryPublicReadOnly`. You must grant this permission separately, or ECR Public authentication will fail.
+:::
+
+#### Configure ECR Public credentials in Seqera Platform
+
+1. Go to **Credentials** in your organization workspace, or go to **Your credentials** from the user menu in your personal workspace.
+2. Select **Add Credentials** and complete the form:
+   - **Provider**: Select **Container registry**.
+   - **User name**: Your IAM access key ID.
+   - **Password**: Your IAM secret access key.
+   - **Registry server**: `public.ecr.aws`
+3. Select **Add**.
+
+Wave matches the `public.ecr.aws` hostname to these credentials and uses them to authenticate pulls from ECR Public.
+
+#### Configure ECR Public for self-hosted Wave
+
+For self-hosted Wave deployments, add ECR Public credentials to your Wave configuration:
+
+```yaml
+wave:
+  registries:
+    "public.ecr.aws":
+      username: ${AWS_ACCESS_KEY_ID}
+      password: ${AWS_SECRET_ACCESS_KEY}
+```
+
+:::note
+ECR Public authentication always uses the `us-east-1` endpoint, regardless of the region where Wave is deployed or where your images are hosted. Wave handles this automatically.
+:::
