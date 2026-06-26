@@ -162,7 +162,7 @@ wave:
 
 #### IAM permissions
 
-ECR cache IAM permissions are defined in [AWS credentials to access ECR](../docs/install/kubernetes.md#aws-credentials-to-access-ecr).  Ensure your cache ARN is an allowed `Resource`.
+ECR cache IAM permissions are defined in [Enable Wave builds](install/aws-build.md).  Ensure your cache ARN is an allowed `Resource`.
 
 #### ECR repository setup
 

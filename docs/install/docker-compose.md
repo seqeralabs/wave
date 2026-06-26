@@ -1,43 +1,46 @@
 ---
-title: Docker Compose installation
+title: Install Wave Lite with Docker Compose
+description: Deploy Wave Lite on a single Docker host with external PostgreSQL and Redis.
 ---
 
-Wave enables you to provision container images on demand, removing the need to build and upload them manually to a container registry. Wave can provision both ephemeral and regular registry-persisted container images.
+Install Wave Lite with Docker Compose when you want the Lite configuration without Kubernetes, for example a compliance-constrained site that cannot run EKS. This installs container augmentation, inspection, and private registry authentication. A Docker Compose deployment cannot be extended to the full Wave configuration, which requires Kubernetes on Amazon EKS.
 
-Docker Compose installations support Wave Lite, the self-hosted Wave configuration that includes container augmentation and inspection only and enables the use of the Fusion file system in Nextflow pipelines.
+## What this guide installs
 
-## Prerequisites
+This guide installs the supported Wave Lite configuration:
 
-Before installing Wave, you need the following infrastructure components:
+- Wave Lite (augmentation, inspection, authentication).
+- A single Docker host running Docker Engine and Docker Compose.
+- External, managed PostgreSQL and Redis.
+- A Wave service paired with Seqera Platform.
 
-- **PostgreSQL instance** - Version 12, or higher
-- **Redis instance** - Version 6.2, or higher
+For other choices (embedded databases, or exposing Wave behind HTTPS), see [Adapt this guide](#adapt-this-guide).
 
-:::note
-Use managed services for PostgreSQL and Redis (e.g., Amazon RDS, Amazon ElastiCache, or equivalent) rather than running them in Docker Compose. Managed services provide automated backups, failover, patching, and monitoring that are difficult to replicate with containerized databases. Running PostgreSQL or Redis in Docker Compose is suitable only for local development and testing.
+:::info[**Prerequisites**]
+
+You need the following:
+
+- Current, supported versions of Docker Engine and Docker Compose.
+- A host that meets the Wave service's minimum compute requirements:
+  - Memory: 12 GB RAM (8 GB for Wave replicas, plus headroom for the OS and Docker).
+  - CPU: 4 cores (2 for Wave replicas, plus headroom for the OS and Docker).
+  - Storage: 10 GB, plus disk space for your container images and temporary files.
+  - Network: Connectivity to your PostgreSQL and Redis instances.
+  - On AWS EC2, an `m5a.2xlarge` instance.
+- PostgreSQL 16 or later.
+- Redis 6.2 or later.
+- A Seqera Platform deployment and its endpoint URL.
+- Access to the Wave container image from `cr.seqera.io`, using credentials provided by Seqera.
+
 :::
 
-## System requirements
+## Create the database
 
-The minimum system requirements for self-hosted Wave in Docker Compose are:
-
-- Current, supported versions of **Docker Engine** and **Docker Compose**.
-- Compute instance minimum requirements:
-  - **Memory**: 12 GB RAM available on the host system (8 GB for Wave replicas + headroom for OS and Docker).
-  - **CPU**: 4 CPU cores available on the host system (2 CPU cores for Wave replicas + headroom for OS and Docker).
-  - **Storage**: 10 GB in addition to sufficient disk space for your container images and temporary files.
-  - For example, in AWS EC2, `m5a.xlarge` or greater
-  - **Network**: Connectivity to your PostgreSQL and Redis instances.
-
-## Database configuration
-
-Wave requires a PostgreSQL database to operate.
-
-Create a dedicated `wave` database and user account with the appropriate privileges:
+Create a dedicated `wave` database and a `wave_user` role on your managed PostgreSQL instance:
 
 ```sql
 -- Create a dedicated user for Wave
-CREATE ROLE wave_user LOGIN PASSWORD 'your_secure_password';
+CREATE ROLE wave_user LOGIN PASSWORD '<db-password>';
 
 -- Create the Wave database
 CREATE DATABASE wave;
@@ -60,103 +63,78 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public
 GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO wave_user;
 ```
 
-Wave will automatically handle schema migrations on startup and create the required database objects.
+Wave applies its schema migrations on startup.
 
-## Wave config
+## Set the connection environment
 
-Create a configuration file that defines Wave's behavior and integrations. Save this as `config/wave-config.yml` in your Docker Compose directory.
+Create a `wave.env` file with the values Wave needs to reach its database, Redis, and Seqera Platform:
 
-Database, Redis, and Platform connection settings are provided via the `wave.env` environment file (see [Deploy Wave](#deploy-wave) below).
+```bash
+# Base URL clients use to reach the Wave service.
+WAVE_SERVER_URL=https://wave.example.com
+
+# PostgreSQL connection.
+WAVE_DB_URI=jdbc:postgresql://postgres.example.com:5432/wave
+WAVE_DB_USER=wave_user
+WAVE_DB_PASSWORD=<db-password>
+
+# Redis connection.
+REDIS_URI=rediss://redis.example.com:6379
+
+# Seqera Platform endpoint to pair with.
+TOWER_ENDPOINT_URL=https://platform.example.com/api
+```
+
+:::warning
+Set `WAVE_SERVER_URL` to the address your clients use to reach Wave. If it is left unset, Wave issues container tokens pointing at `http://localhost:9090`, which clients cannot reach.
+:::
+
+## Configure Wave
+
+Create `config.yml` alongside `wave.env`. Wave Lite runs with build, mirror, scan, and blob cache disabled:
 
 ```yaml
 wave:
-  debug: false
-  tokens:
-    cache:
-      duration: "36h"
-  metrics:
-    enabled: true
-
-# Rate limiting configuration
-rate-limit:
-  pull:
-    anonymous: 250/1h
-    authenticated: 2000/1m
-  timeout-errors:
-    max-rate: 100/1m
-
-# Micronaut framework configuration
-micronaut:
-  # Netty HTTP server configuration
-  netty:
-    event-loops:
-      default:
-        num-threads: 64
-  # HTTP client configuration
-  http:
-    services:
-      stream-client:
-        read-timeout: '30s'
-        read-idle-timeout: '5m'
-
-# Management endpoints configuration
-endpoints:
-  env:
+  # Wave Lite: build, mirror, scan, and blob cache disabled.
+  build:
     enabled: false
-  bean:
+  mirror:
     enabled: false
-  caches:
+  scan:
     enabled: false
-  refresh:
+  blobCache:
     enabled: false
-  loggers:
-    enabled: false
-  info:
-    enabled: false
-  # Enable metrics for monitoring
-  metrics:
-    enabled: true
-  # Enable health checks
-  health:
-    enabled: true
-    disk-space:
-      enabled: false
-    jdbc:
-      enabled: false
 ```
 
-Configuration notes:
+This file sets only what Wave Lite needs to start. To configure other options, such as rate limits, token cache duration, and metrics, see [Configure Wave](../configure-wave.md). Before serving production traffic, harden the deployment as described in [Configure for production](production.md).
 
-- Adjust `num-threads` (64) based on your CPU cores. Use between 2x and 4x your CPU core count.
+## Create the Compose file
 
-## Docker Compose
-
-Add the following to your `docker-compose.yml`:
+Define the Wave service in `docker-compose.yml`:
 
 ```yaml
 services:
   wave:
-    # Replace <wave-container-image> with your Wave image registry path
-    image: <wave-container-image>
+    image: cr.seqera.io/<wave-image-path>:<tag>
     ports:
       - "9090:9090"
+    volumes:
+      - ./config.yml:/work/config.yml:ro
     environment:
       - MICRONAUT_ENVIRONMENTS=lite,rate-limit,redis,postgres,prometheus
-    volumes:
-      - ./config/wave-config.yml:/work/config.yml:ro
     env_file:
       - wave.env
     working_dir: /work
     deploy:
       mode: replicated
-      replicas: 2
+      replicas: 1
       resources:
         limits:
-          memory: 1500M
+          memory: 4G
+          cpus: '1.0'
         reservations:
-          memory: 1500M
+          memory: 2G
           cpus: '0.2'
-    # Health check configuration
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9090/health"]
       interval: 30s
@@ -166,45 +144,30 @@ services:
     restart: unless-stopped
 ```
 
-## Deploy Wave
+## Start Wave
 
-1. Download and populate the [wave.env](./_templates/wave.env) file with the settings corresponding to your system.
+Docker Compose runs Wave in one of two modes, depending on whether you need more than one replica:
 
-1. Use Docker Swarm to deploy Wave Lite. See [Create a swarm](https://docs.docker.com/engine/swarm/swarm-tutorial/create-swarm/) for detailed setup instructions.
+- **Single host**: Run `docker compose up -d`. This starts one Wave replica on the local Docker host.
+- **Swarm (two or more replicas)**: Set `replicas: 2` in `docker-compose.yml`, then run `docker stack deploy -c docker-compose.yml wave`.
 
+On first startup, Wave takes 30 to 60 seconds to initialize while it applies database migrations.
 
-1. Deploy the Wave service, running two replicas:
+:::warning
+If Wave Lite runs in the same Swarm as Platform Connect for [Studios](https://docs.seqera.io/platform-enterprise/25.2/enterprise/studios#docker-compose), tearing down the stack also interrupts Connect services.
+:::
 
-    ```bash
-    docker stack deploy -c docker-compose.yml mystack
-    ```
+## Verify your installation
 
-    :::note
-    Wave is available at `http://localhost:9090` once the container is running and healthy. The application may take 30-60 seconds to fully initialize on first startup, as it performs database migrations.
-    :::
+Confirm the service is live and functional. See [Verify your installation](post-install.md) for the `/service-info` check and the `wave-cli` functional test.
 
-1. Check the current status:
+When Wave is running and verified, continue to [Configure for production](production.md).
 
-    ```bash
-    docker service ls
-    ```
+## Adapt this guide
 
-1. Check the logs:
+The supported procedure uses managed PostgreSQL and Redis and assumes you front Wave yourself. The options below are described, not wired into the steps above. Adapt them at your own risk.
 
-    ```bash
-    docker service logs mystack_wave
-    ```
+- **Embedded PostgreSQL and Redis**: Fine for development and testing, not supported for production.
+- **Expose Wave externally over HTTPS**: Front the service with a load balancer and certificate (for example, AWS ALB with ACM and Route 53).
 
-1. Tear down the service when it's no longer needed:
-
-    ```bash
-    docker stack rm mystack
-    ```
-
-    :::warning
-    If Wave Lite is running in the same container as Platform Connect for [Studios](https://docs.seqera.io/platform-enterprise/25.2/enterprise/studios#docker-compose), tearing down the service will also interrupt Connect services.
-    :::
-
-### Advanced configuration
-
-See [Configure Wave](../configure-wave.md) for advanced Wave features, scaling guidance, and integration options.
+For pulling from a private registry during augmentation, see [Registry prerequisites](registry-prerequisites.md).

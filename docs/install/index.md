@@ -1,0 +1,26 @@
+---
+title: Self-hosting Wave
+description: Run your own Wave service. When to self-host, the two configurations, and how to choose an install path.
+---
+
+Self-hosting runs the Wave container-provisioning service inside your own infrastructure instead of using Seqera-hosted Wave. Teams self-host when they cannot grant Seqera-hosted Wave access to a private registry, or when compliance requires the service to run inside their own boundary.
+
+Wave self-hosting is available in two configurations:
+
+- **Wave Lite**: Container augmentation, inspection, and private registry authentication.
+- **Wave**: Everything in Lite, plus on-demand container builds, freeze, mirroring, and security scanning.
+
+Wave builds on Wave Lite. The full configuration is a Wave Lite deployment with build, mirror, and scan added. To run it, install Wave Lite on an Amazon EKS cluster, then enable those features.
+
+For the full capability comparison, see the [feature matrix](../features/index.mdx). For how Wave provisions containers, see [How Wave works](../how-wave-works.md).
+
+## Choose an install path
+
+Every deployment starts with Wave Lite. Choose a deployment:
+
+| Mechanism | Guide |
+| --- | --- |
+| Docker Compose | [Install Wave Lite with Docker Compose](docker-compose.md) |
+| Kubernetes | [Install Wave Lite on Kubernetes](kubernetes-lite.md) |
+
+To run the full Wave configuration, install Wave Lite on Amazon EKS, then [enable Wave builds](aws-build.md) to add on-demand builds, freeze, mirroring, and scanning. Builds require EKS. A Wave Lite Docker Compose deployment cannot be extended to a full Wave deployment.
