@@ -74,7 +74,7 @@ The workspace used for credential lookup depends on the request context. If `tow
 
 ### AWS ECR Private Registry
 
-Wave authenticates to private AWS ECR registries using long-term IAM access keys stored in Seqera Platform. The registry hostname follows the format `<account-id>.dkr.ecr.<region>.amazonaws.com`.
+Wave can authenticate to private AWS ECR registries using IAM credentials stored in Seqera Platform. The registry hostname follows the format `<account-id>.dkr.ecr.<region>.amazonaws.com`.
 
 The IAM user needs `ecr:GetAuthorizationToken`, `ecr:BatchGetImage`, and `ecr:GetDownloadUrlForLayer` permissions. The AWS managed policy `AmazonEC2ContainerRegistryReadOnly` covers these. See [AWS ECR credentials](https://docs.seqera.io/platform/latest/credentials/aws_registry_credentials) for step-by-step setup in Seqera Platform.
 
