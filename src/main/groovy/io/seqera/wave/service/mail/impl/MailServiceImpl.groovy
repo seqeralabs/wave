@@ -74,11 +74,11 @@ class MailServiceImpl implements MailService {
     void sendCompletionEmail(BuildRequest request, BuildResult build) {
         final user = request.identity.user
         final recipient = user ? user.email : config.from
+        final result = build ?: BuildResult.unknown()
         if( !recipient ) {
-            log.debug "Missing email recipient from build id=$build.buildId - user=$user"
+            log.debug "Missing email recipient from build id=$result.buildId - user=$user"
             return
         }
-        final result = build ?: BuildResult.unknown()
         final pref = user?.waveBuildNotification ?: WaveBuildNotification.defaultValue()
         if( pref == WaveBuildNotification.ALWAYS_OFF )
             return
