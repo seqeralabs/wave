@@ -35,6 +35,7 @@ import io.seqera.wave.service.mail.MailService
 import io.seqera.wave.service.mail.MailSpooler
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+import io.seqera.wave.tower.WaveBuildNotification
 import static io.seqera.wave.util.DataTimeUtils.formatDuration
 import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
 
@@ -71,17 +72,20 @@ class MailServiceImpl implements MailService {
 
     @Override
     void sendCompletionEmail(BuildRequest request, BuildResult build) {
-        // send to user email address or fallback to the system `mail.from` address
         final user = request.identity.user
         final recipient = user ? user.email : config.from
-        if( recipient ) {
-            final result = build ?: BuildResult.unknown()
-            final mail = buildCompletionMail(request, result, recipient)
-            spooler.sendMail(mail)
-        }
-        else {
+        if( !recipient ) {
             log.debug "Missing email recipient from build id=$build.buildId - user=$user"
+            return
         }
+        final result = build ?: BuildResult.unknown()
+        final pref = user?.waveBuildNotification ?: WaveBuildNotification.defaultValue()
+        if( pref == WaveBuildNotification.ALWAYS_OFF )
+            return
+        if( pref == WaveBuildNotification.ON_ERROR && result.succeeded() )
+            return
+        final mail = buildCompletionMail(request, result, recipient)
+        spooler.sendMail(mail)
     }
 
     Mail buildCompletionMail(BuildRequest req, BuildResult result, String recipient) {
