@@ -45,4 +45,6 @@ class User implements MoshiSerializable {
     @Size(max = 255)
     String email
 
+    WaveBuildNotification waveBuildNotification
+
 }
