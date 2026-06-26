@@ -88,10 +88,8 @@ class CondaHelper {
         // The CondaOpts ctor always fills mambaImage with the v1 default image (the value
         // can also be bumped client-side e.g. by Nextflow), but the v2 template requires
         // micromamba 2.x. Override any micromamba 1.x image with the v2 default; an explicit
-        // 2.x or custom image is left untouched.
-        // ponytail: matches micromamba major version 1 by tag, not one exact string, so a
-        // bumped v1 tag still resolves correctly. A user deliberately pairing the v2 template
-        // with a v1 image gets overridden (nonsensical anyway).
+        // 2.x or custom image is left untouched. Matching is by tag (not one exact string),
+        // so a bumped v1 tag still resolves correctly.
         if( isMicromambaV1(opts.mambaImage) )
             opts.mambaImage = CondaOpts.DEFAULT_MAMBA_IMAGE_V2
         if( containerImage )
