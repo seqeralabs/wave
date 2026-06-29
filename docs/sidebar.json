@@ -52,7 +52,7 @@
         "install/aws-build",
         "install/post-install",
         "install/configure-wave",
-        "install/configuration"
+        "install/reference"
       ]
     },
     "nextflow/index",

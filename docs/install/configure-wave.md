@@ -1,17 +1,17 @@
 ---
-title: Configure Wave
+title: Configuration
 description: Harden a self-hosted Wave deployment for production and configure optional features.
 ---
 
 Configure a self-hosted Wave deployment for production and add optional features. Harden every deployment with the checklist below before you serve traffic. Configure optional features such as email notifications and build caching as needed.
 
 :::info
-See [Reference](configuration.md) for the full list of configuration options for self-hosted Wave deployments.
+See [Reference](reference.md) for the full list of configuration options for self-hosted Wave deployments.
 :::
 
 ## Harden for production
 
-A freshly installed Wave service boots and returns `200` on `/service-info`, but it is not yet production-ready. Apply this hardening checklist after [verifying your installation](post-install.md) and before serving production traffic. For the underlying options, see [Reference](configuration.md).
+A freshly installed Wave service boots and returns `200` on `/service-info`, but it is not yet production-ready. Apply this hardening checklist after [verifying your installation](post-install.md) and before serving production traffic. For the underlying options, see [Reference](reference.md).
 
 ### Require authentication
 
@@ -47,7 +47,7 @@ rate-limit:
 
 ### Configure cleanup and retention
 
-Builds and augmented images accumulate. Set cleanup and retention so storage stays bounded. See `wave.cleanup.*` in [Reference](configuration.md). Also set a retention or lifecycle policy on your build and cache registries.
+Builds and augmented images accumulate. Set cleanup and retention so storage stays bounded. See `wave.cleanup.*` in [Reference](reference.md). Also set a retention or lifecycle policy on your build and cache registries.
 
 ### Right-size resources
 
@@ -233,7 +233,7 @@ The `wave.build.cache` setting takes a cache repository URL or S3 path:
 
 When you set `wave.build.cache` to an S3 bucket path, Wave uses S3 as the BuildKit cache backend. Wave authenticates with native AWS mechanisms instead of static credentials in configuration files.
 
-For the related configuration options (`wave.build.cache`, `wave.build.cache-bucket-region`, `wave.build.cache-bucket-upload-parallelism`), see [Container build process](configuration.md#container-build-process).
+For the related configuration options (`wave.build.cache`, `wave.build.cache-bucket-region`, `wave.build.cache-bucket-upload-parallelism`), see [Container build process](reference.md#container-build-process).
 
 ### Kubernetes deployments
 

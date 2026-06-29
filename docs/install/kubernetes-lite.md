@@ -137,7 +137,7 @@ wave:
 
 As with the database and Redis credentials above, keep these out of the ConfigMap in production. Store them in a Kubernetes Secret and reference it from the deployment.
 
-Configure credentials for every private registry Wave pulls from. Public images need none. For all registry options, see [Reference](configuration.md#container-registry).
+Configure credentials for every private registry Wave pulls from. Public images need none. For all registry options, see [Reference](reference.md#container-registry).
 
 ## Create the deployment
 
@@ -257,7 +257,7 @@ This minimal Ingress omits controller-specific configuration. For the AWS Load B
 After the ingress provisions, configure your Seqera Platform deployment to use the Wave endpoint by setting the Wave server URL in `tower.yml` ([Platform Wave configuration](https://docs.seqera.io/platform-enterprise/latest/enterprise/configuration/wave)).
 
 :::note
-For production reliability, add Pod Disruption Budgets, a Horizontal Pod Autoscaler, multiple replicas with anti-affinity, and resource quotas for the `wave` namespace. See [Configure Wave](configure-wave.md#harden-for-production).
+For production reliability, add Pod Disruption Budgets, a Horizontal Pod Autoscaler, multiple replicas with anti-affinity, and resource quotas for the `wave` namespace. See [production hardening](configure-wave.md#harden-for-production).
 :::
 
 ## Verify your installation

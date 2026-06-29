@@ -1,5 +1,5 @@
 ---
-title: Verify your installation
+title: Installation verification
 description: Confirm a self-hosted Wave service is live and functional after install.
 ---
 

@@ -130,7 +130,7 @@ wave:
       password: "<password>"
 ```
 
-Configure credentials for every private registry Wave pulls from. Public images need none. For all registry options, see [Reference](configuration.md#container-registry).
+Configure credentials for every private registry Wave pulls from. Public images need none. For all registry options, see [Reference](reference.md#container-registry).
 
 ## Create the Compose file
 

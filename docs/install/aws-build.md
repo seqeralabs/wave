@@ -367,7 +367,7 @@ data:
       scan:
         enabled: true
       blobCache:
-        enabled: false   # Enabling blob cache needs S3. See Configuration.
+        enabled: false   # Enabling blob cache needs S3. See Configure Wave.
       # Database, Redis, and Platform settings (unchanged from the Wave Lite install).
       server:
         url: "https://wave.example.com"
