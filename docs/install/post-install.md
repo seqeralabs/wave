@@ -43,7 +43,7 @@ export WAVE_API_ENDPOINT=https://wave.example.com
 ```
 
 :::note
-If you disabled anonymous access in [Configure for production](production.md), the CLI checks need a Seqera Platform access token. See the [wave-cli documentation](https://github.com/seqeralabs/wave-cli) for the token option.
+If you disabled anonymous access in [Configuration](../configure-wave.md#require-authentication), the CLI checks need a Seqera Platform access token. See the [wave-cli documentation](https://github.com/seqeralabs/wave-cli) for the token option.
 :::
 
 ## Functional checks
@@ -80,10 +80,10 @@ A successful build returns a reference in your configured build repository.
 
 If a check does not pass, match the symptom to one of these common causes:
 
-- **Augmentation or build fails with an authentication error**: Wave cannot authenticate to the target registry. See [Registry prerequisites](registry-prerequisites.md) and [Identity and credentials](identity-and-credentials.md).
+- **Augmentation or build fails with an authentication error**: Wave cannot authenticate to the target registry. See [Registry push and authentication failures](../troubleshoot.md#registry-push-and-authentication-failures).
 - **Build fails partway through a push**: the target repository may not exist or may lack push scope. See [Registry prerequisites](registry-prerequisites.md).
 - **Freeze is rejected even with a build repository set**: the repository sits inside an operator-reserved prefix. See [Freeze and user-supplied build repositories](aws-build.md#freeze-and-user-supplied-build-repositories).
 
 ## Next step
 
-When the checks pass, continue to [Configure for production](production.md).
+When the checks pass, continue to [Configuration](../configure-wave.md#harden-for-production) to harden the deployment for production.

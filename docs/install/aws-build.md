@@ -32,6 +32,8 @@ You need the following:
 
 ## Create the build namespace
 
+The Kubernetes manifests in this guide build up a single file. Save each YAML block into `wave-build.yaml` in the order shown, separated by `---`, then apply the file once at the end. The AWS CLI steps for ECR and IRSA run on their own and are not part of this file.
+
 Build, scan, and mirror pods run in a dedicated namespace:
 
 ```yaml
@@ -52,7 +54,7 @@ aws --region "$AWS_REGION" ecr create-repository --repository-name wave/build
 aws --region "$AWS_REGION" ecr create-repository --repository-name wave/cache
 ```
 
-ECR requires repositories to exist before push. For other registries, see [Registry prerequisites](registry-prerequisites.md).
+ECR requires repositories to exist before push. Other registries differ: Docker Hub, GitHub Container Registry, and Azure Container Registry create image paths on first push, while Google Artifact Registry and Harbor require the parent repository or project to exist first. If you point builds or mirroring at a registry that requires pre-creation and the target path is missing, the push fails partway through the layer upload. For the full per-registry table, see [Registry prerequisites](registry-prerequisites.md).
 
 ## Grant Wave access to AWS APIs with IRSA
 
@@ -180,7 +182,9 @@ metadata:
     eks.amazonaws.com/role-arn: arn:aws:iam::<aws-account-id>:role/<wave-config-name>
 ```
 
-For the choice between IRSA and other identity models, and the registry-credential precedence rules, see [Identity and credentials](identity-and-credentials.md).
+This single IAM role is the identity Wave uses for every AWS API call (ECR, S3, and STS). The build, scan, mirror, and blob-transfer pods inherit it through the `wave-sa` service account. If IRSA is unavailable, attach an EC2 instance profile carrying the same policy to the build node group instead.
+
+Wave resolves registry credentials in a fixed order: Platform workspace credentials a user configures, then server-side static credentials (`wave.registries.<host>.username` and `.password`), then this cloud-native identity for registries like ECR. Operator-owned targets such as `wave.build.repo` use the static config or this identity, because users do not configure workspace credentials for infrastructure they do not own.
 
 ## Configure EFS storage
 
@@ -331,7 +335,7 @@ data:
       scan:
         enabled: true
       blobCache:
-        enabled: false   # Enabling blob cache needs S3. See Configure Wave.
+        enabled: false   # Enabling blob cache needs S3. See Configuration.
       # Database, Redis, and Platform settings (unchanged from the Wave Lite install).
       server:
         url: "https://wave.example.com"
@@ -353,7 +357,7 @@ Wave ships working defaults for the build tool images and timeout. You do not ne
 - `wave.blobCache.s5cmdImage`: `public.cr.seqera.io/wave/s5cmd:v2.3.0`
 - `wave.build.timeout`: `900s` (15 minutes)
 
-To build ARM (Graviton) images, route `linux/arm64` builds to an ARM node group with the `node-selector` shown above. For deeper build and blob cache tuning, see [Configure Wave](../configure-wave.md).
+To build ARM (Graviton) images, route `linux/arm64` builds to an ARM node group with the `node-selector` shown above. For deeper build and blob cache tuning, see [Configuration](../configure-wave.md).
 
 ## Update the Wave deployment
 
@@ -425,12 +429,10 @@ spec:
       restartPolicy: Always
 ```
 
-Apply the changes and confirm the build subsystem starts:
+Apply the assembled manifest and confirm the build subsystem starts:
 
 ```bash
-kubectl apply -f wave-rbac.yaml
-kubectl apply -f wave-configmap.yaml
-kubectl apply -f wave-deployment.yaml
+kubectl apply -f wave-build.yaml
 kubectl logs -f deployment/wave -n wave | grep -i build
 ```
 
@@ -438,7 +440,7 @@ kubectl logs -f deployment/wave -n wave | grep -i build
 
 In freeze mode, a pipeline sets `wave.build.repository` (the Nextflow-side setting) to choose its own push target. Wave's validator, [`ValidationServiceImpl.isCustomRepo()`](https://github.com/seqeralabs/wave/blob/master/src/main/groovy/io/seqera/wave/service/validation/ValidationServiceImpl.groovy#L109), treats the value as custom only if it sits outside the operator's `wave.build.repo`, `wave.build.public-repo`, and `wave.build.cache` prefixes. If it starts with one of those prefixes, Wave rejects the freeze with a `must be specified when using freeze mode` error (with a numbered suffix such as `[1]`), even though the pipeline did supply a value.
 
-To allow user freeze, reserve a registry namespace **outside** your operator prefixes and distribute push credentials through Platform workspaces. See [Registry prerequisites](registry-prerequisites.md) and [Identity and credentials](identity-and-credentials.md).
+To allow user freeze, reserve a registry namespace **outside** your operator prefixes and distribute push credentials through Platform workspaces. See [Registry prerequisites](registry-prerequisites.md).
 
 ## Bottlerocket support
 
@@ -492,4 +494,4 @@ For production build deployments, consider:
 
 ## Verify your installation
 
-Run the build smoke tests in [Verify your installation](post-install.md), then continue to [Configure for production](production.md).
+Run the build smoke tests in [Verify your installation](post-install.md), then continue to [Configuration](../configure-wave.md#harden-for-production) to harden the deployment for production.

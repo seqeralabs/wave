@@ -51,23 +51,14 @@
         },
         "install/aws-build",
         "install/post-install",
-        "install/production",
+        "configure-wave",
         {
           "type": "category",
           "label": "Reference",
           "collapsed": true,
           "items": [
             "install/registry-prerequisites",
-            "install/identity-and-credentials",
-            {
-              "type": "category",
-              "label": "Configuration",
-              "collapsed": true,
-              "items": [
-                "configure-wave",
-                "configuration"
-              ]
-            }
+            "configuration"
           ]
         }
       ]

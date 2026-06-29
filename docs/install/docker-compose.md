@@ -106,7 +106,40 @@ wave:
     enabled: false
 ```
 
-This file sets only what Wave Lite needs to start. To configure other options, such as rate limits, token cache duration, and metrics, see [Configure Wave](../configure-wave.md). Before serving production traffic, harden the deployment as described in [Configure for production](production.md).
+This file sets only what Wave Lite needs to start. To configure other options, such as rate limits, token cache duration, and metrics, see [Configuration](../configure-wave.md). Before serving production traffic, complete the [production hardening](../configure-wave.md#harden-for-production) checklist.
+
+## Authenticate to private registries
+
+Wave Lite pulls images during augmentation. To augment images from a private registry, give Wave credentials for that registry. Wave resolves credentials in this order:
+
+1. **Platform workspace credentials**: credentials a user adds to their Seqera Platform workspace. Wave uses these for targets the user owns, such as the user's own registry namespace.
+2. **Server-side static credentials**: credentials the operator sets for registries Wave owns or shares.
+
+For the common registries, set the credentials as environment variables in `wave.env`:
+
+```bash
+# Docker Hub
+DOCKER_USER=<docker-user>
+DOCKER_PAT=<docker-pat>
+```
+
+```bash
+# Quay.io
+QUAY_USER=<quay-user>
+QUAY_PAT=<quay-pat>
+```
+
+For any other registry, add an entry under `wave.registries.<host>` in `config.yml`:
+
+```yaml
+wave:
+  registries:
+    myregistry.example.com:
+      username: "<username>"
+      password: "<password>"
+```
+
+Configure credentials for every private registry Wave pulls from. Public images need none. For all registry options, see [Configuration reference](../configuration.md#container-registry).
 
 ## Create the Compose file
 
@@ -161,7 +194,7 @@ If Wave Lite runs in the same Swarm as Platform Connect for [Studios](https://do
 
 Confirm the service is live and functional. See [Verify your installation](post-install.md) for the `/service-info` check and the `wave-cli` functional test.
 
-When Wave is running and verified, continue to [Configure for production](production.md).
+When Wave is running and verified, continue to [Configuration](../configure-wave.md#harden-for-production) to harden the deployment for production.
 
 ## Adapt this guide
 
@@ -169,5 +202,3 @@ The supported procedure uses managed PostgreSQL and Redis and assumes you front 
 
 - **Embedded PostgreSQL and Redis**: Fine for development and testing, not supported for production.
 - **Expose Wave externally over HTTPS**: Front the service with a load balancer and certificate (for example, AWS ALB with ACM and Route 53).
-
-For pulling from a private registry during augmentation, see [Registry prerequisites](registry-prerequisites.md).

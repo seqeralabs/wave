@@ -122,7 +122,31 @@ data:
 Set `wave.server.url` to the address clients use to reach Wave. If it is left unset, Wave issues container tokens pointing at `http://localhost:9090`, which clients cannot reach.
 :::
 
-This ConfigMap sets only what Wave Lite needs to start. To configure other options, such as rate limits, token cache duration, and metrics, see [Configure Wave](../configure-wave.md). Before serving production traffic, harden the deployment as described in [Configure for production](production.md).
+This ConfigMap sets only what Wave Lite needs to start. To configure other options, such as rate limits, token cache duration, and metrics, see [Configuration](../configure-wave.md). Before serving production traffic, complete the [production hardening](../configure-wave.md#harden-for-production) checklist.
+
+## Authenticate to private registries
+
+Wave Lite pulls images during augmentation. To augment images from a private registry, give Wave credentials for that registry. Wave resolves credentials in this order:
+
+1. **Platform workspace credentials**: credentials a user adds to their Seqera Platform workspace. Wave uses these for targets the user owns, such as the user's own registry namespace.
+2. **Server-side static credentials**: credentials the operator sets under `wave.registries.<host>` for registries Wave owns or shares.
+
+Add an entry for each private registry under `wave.registries` in the `wave-cfg` config. For example, Docker Hub and a private Quay.io account:
+
+```yaml
+wave:
+  registries:
+    docker.io:
+      username: "<docker-user>"
+      password: "<docker-pat>"
+    quay.io:
+      username: "<quay-user>"
+      password: "<quay-pat>"
+```
+
+As with the database and Redis credentials above, keep these out of the ConfigMap in production. Store them in a Kubernetes Secret and reference it from the deployment.
+
+Configure credentials for every private registry Wave pulls from. Public images need none. For all registry options, see [Configuration reference](../configuration.md#container-registry).
 
 ## Create the deployment
 
@@ -242,14 +266,14 @@ This minimal Ingress omits controller-specific configuration. For the AWS Load B
 After the ingress provisions, configure your Seqera Platform deployment to use the Wave endpoint by setting the Wave server URL in `tower.yml` ([Platform Wave configuration](https://docs.seqera.io/platform-enterprise/latest/enterprise/configuration/wave)).
 
 :::note
-For production reliability, add Pod Disruption Budgets, a Horizontal Pod Autoscaler, multiple replicas with anti-affinity, and resource quotas for the `wave` namespace. See [Configure for production](production.md).
+For production reliability, add Pod Disruption Budgets, a Horizontal Pod Autoscaler, multiple replicas with anti-affinity, and resource quotas for the `wave` namespace. See [Configuration](../configure-wave.md#harden-for-production).
 :::
 
 ## Verify your installation
 
 Confirm the service is live and functional. See [Verify your installation](post-install.md) for the `/service-info` check and the `wave-cli` functional test.
 
-When Wave is running and verified, continue to [Configure for production](production.md).
+When Wave is running and verified, continue to [Configuration](../configure-wave.md#harden-for-production) to harden the deployment for production.
 
 ## Adapt this guide
 
@@ -257,5 +281,3 @@ The supported procedure uses managed PostgreSQL and Redis and an AWS ALB ingress
 
 - **Other ingress controllers**: NGINX, GCE, or Traefik work, but add the provider-specific annotations they require and verify TLS termination.
 - **Other distributions**: Wave Lite has no AWS dependency and should run on any conformant Kubernetes distribution. These may work but are not validated.
-
-For pulling from a private registry during augmentation, see [Registry prerequisites](registry-prerequisites.md).
