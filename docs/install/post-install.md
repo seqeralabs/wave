@@ -3,7 +3,7 @@ title: Verify your installation
 description: Confirm a self-hosted Wave service is live and functional after install.
 ---
 
-After installing Wave with any path, confirm the service is live and that it provisions containers. Run the liveness check first, then the functional checks for your configuration.
+After installing Wave with any method, confirm the service is live and provisions containers. Run the liveness check first, then the functional checks for your configuration.
 
 ## Check the service is live
 
@@ -43,7 +43,7 @@ export WAVE_API_ENDPOINT=https://wave.example.com
 ```
 
 :::note
-If you disabled anonymous access in [Configuration](../configure-wave.md#require-authentication), the CLI checks need a Seqera Platform access token. See the [wave-cli documentation](https://github.com/seqeralabs/wave-cli) for the token option.
+If you disabled anonymous access in [Configure Wave](configure-wave.md#require-authentication), the CLI checks need a Seqera Platform access token. See the [wave-cli documentation](https://github.com/seqeralabs/wave-cli) for the token option.
 :::
 
 ## Functional checks
@@ -81,9 +81,9 @@ A successful build returns a reference in your configured build repository.
 If a check does not pass, match the symptom to one of these common causes:
 
 - **Augmentation or build fails with an authentication error**: Wave cannot authenticate to the target registry. See [Registry push and authentication failures](../troubleshoot.md#registry-push-and-authentication-failures).
-- **Build fails partway through a push**: the target repository may not exist or may lack push scope. See [Registry prerequisites](registry-prerequisites.md).
-- **Freeze is rejected even with a build repository set**: the repository sits inside an operator-reserved prefix. See [Freeze and user-supplied build repositories](aws-build.md#freeze-and-user-supplied-build-repositories).
+- **Build fails partway through a push**: The target repository may not exist or may lack push scope. See [per-registry pre-creation rules](aws-build.md#create-the-ecr-repositories).
+- **Freeze is rejected even with a build repository set**: The repository sits inside an operator-reserved prefix. See [Freeze and user-supplied build repositories](aws-build.md#freeze-and-user-supplied-build-repositories).
 
 ## Next step
 
-When the checks pass, continue to [Configuration](../configure-wave.md#harden-for-production) to harden the deployment for production.
+When the checks pass, continue to [Configure Wave](configure-wave.md#harden-for-production) to harden the deployment for production.

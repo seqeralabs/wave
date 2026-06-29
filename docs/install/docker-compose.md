@@ -1,18 +1,9 @@
 ---
-title: Install Wave Lite with Docker Compose
+title: Docker Compose installation
 description: Deploy Wave Lite on a single Docker host with external PostgreSQL and Redis.
 ---
 
 Install Wave Lite with Docker Compose when you want the Lite configuration without Kubernetes, for example a compliance-constrained site that cannot run EKS. This installs container augmentation, inspection, and private registry authentication. A Docker Compose deployment cannot be extended to the full Wave configuration, which requires Kubernetes on Amazon EKS.
-
-## What this guide installs
-
-This guide installs the supported Wave Lite configuration:
-
-- Wave Lite (augmentation, inspection, authentication).
-- A single Docker host running Docker Engine and Docker Compose.
-- External, managed PostgreSQL and Redis.
-- A Wave service paired with Seqera Platform.
 
 For other choices (embedded databases, or exposing Wave behind HTTPS), see [Adapt this guide](#adapt-this-guide).
 
@@ -106,7 +97,7 @@ wave:
     enabled: false
 ```
 
-This file sets only what Wave Lite needs to start. To configure other options, such as rate limits, token cache duration, and metrics, see [Configuration](../configure-wave.md). Before serving production traffic, complete the [production hardening](../configure-wave.md#harden-for-production) checklist.
+This file sets only what Wave Lite needs to start. To configure other options, such as rate limits, token cache duration, and metrics, see [Configure Wave](configure-wave.md). Before serving production traffic, complete the [production hardening](configure-wave.md#harden-for-production) checklist.
 
 ## Authenticate to private registries
 
@@ -139,7 +130,7 @@ wave:
       password: "<password>"
 ```
 
-Configure credentials for every private registry Wave pulls from. Public images need none. For all registry options, see [Configuration reference](../configuration.md#container-registry).
+Configure credentials for every private registry Wave pulls from. Public images need none. For all registry options, see [Reference](configuration.md#container-registry).
 
 ## Create the Compose file
 
@@ -194,7 +185,7 @@ If Wave Lite runs in the same Swarm as Platform Connect for [Studios](https://do
 
 Confirm the service is live and functional. See [Verify your installation](post-install.md) for the `/service-info` check and the `wave-cli` functional test.
 
-When Wave is running and verified, continue to [Configuration](../configure-wave.md#harden-for-production) to harden the deployment for production.
+When Wave is running and verified, continue to [Configure Wave](configure-wave.md#harden-for-production) to harden the deployment for production.
 
 ## Adapt this guide
 

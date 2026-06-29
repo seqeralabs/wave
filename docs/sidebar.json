@@ -42,7 +42,7 @@
       "items": [
         {
           "type": "category",
-          "label": "Install Wave Lite",
+          "label": "Wave Lite",
           "collapsed": false,
           "items": [
             "install/docker-compose",
@@ -51,16 +51,8 @@
         },
         "install/aws-build",
         "install/post-install",
-        "configure-wave",
-        {
-          "type": "category",
-          "label": "Reference",
-          "collapsed": true,
-          "items": [
-            "install/registry-prerequisites",
-            "configuration"
-          ]
-        }
+        "install/configure-wave",
+        "install/configuration"
       ]
     },
     "nextflow/index",

@@ -28,8 +28,8 @@ sh: can't kill pid 14: No such process
 
 When Wave cannot push a built or mirrored image, or cannot authenticate to a registry, the failure usually matches one of these symptoms:
 
-- **No credentials match the target host.** Wave returns an authentication error at token-request time, before BuildKit or Skopeo launches. This is the fastest failure to diagnose. Confirm you configured credentials for the target registry. See [Registry prerequisites](install/registry-prerequisites.md).
-- **The repository does not exist and the registry requires pre-creation.** The push fails with `403 Forbidden` or `404 Not Found` partway through the layer upload, often after an initial `HEAD` succeeds but the final manifest `PUT` fails. Pre-create the repository. For per-registry rules, see [Registry prerequisites](install/registry-prerequisites.md).
+- **No credentials match the target host.** Wave returns an authentication error at token-request time, before BuildKit or Skopeo launches. This is the fastest failure to diagnose. Confirm you configured credentials for the target registry.
+- **The repository does not exist and the registry requires pre-creation.** The push fails with `403 Forbidden` or `404 Not Found` partway through the layer upload, often after an initial `HEAD` succeeds but the final manifest `PUT` fails. Pre-create the repository. For per-registry rules, see [per-registry pre-creation rules](install/aws-build.md#create-the-ecr-repositories).
 - **Credentials exist but lack push scope.** The push typically returns a `403` on the final manifest `PUT` even though layer uploads appear to work. Check the credential's scope for `push`, `write`, or `deploy` permission.
 - **The repository key is missing from the path (JFrog Artifactory).** The push fails with `404`. Ensure the repository key is the first path segment after the host, for example `artifactory.example.com/docker-local/...`.
 - **The registry exists but Wave's cloud identity targets the wrong region or account.** For ECR, a misaligned `aws.region` or jump-role configuration produces STS `AccessDenied` errors in the BuildKit pod logs.

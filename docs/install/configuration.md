@@ -1,5 +1,5 @@
 ---
-title: Configuration reference
+title: Reference
 tags: [configuration, reference, wave]
 ---
 
@@ -20,7 +20,7 @@ You can configure Wave using either the `config.yml` file or environment variabl
 
 ## General
 
-Configure general Wave application settings, such as application name, port, anonymous access permissions, and platform URLs with the following options:
+Configure general Wave application settings: application name, port, anonymous access permissions, and platform URLs.
 
 `tower.endpoint.url` *(optional)*
 : URL of the Seqera platform API service (default: [`https://api.cloud.seqera.io`](https://api.cloud.seqera.io)).
@@ -28,7 +28,6 @@ Configure general Wave application settings, such as application name, port, ano
 
 `wave.allowAnonymous` *(required)*
 : When `true`, anonymous users can access the Wave server (default: `false`).
-  Modify this option based on your security requirements.
 
 `wave.denyHosts` *(optional)*
 : Hostname patterns to deny. Requests targeting these hosts are rejected.
@@ -53,10 +52,10 @@ The examples below show standard formats for known registries, but you can custo
 
 :::note
 You can also define container registry credentials in the [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml) file.
-These configurations enable Wave authentication for repositories used to push or pull artifacts.
+These configurations let Wave authenticate with repositories used to push or pull artifacts.
 :::
 
-Configure container registry authentication with the following options:
+Configure container registry authentication with the following options.
 
 `wave.registries.<AWS_ECR_REPO_NAME>.password` *(optional)*
 : AWS ECR password for authentication.
@@ -89,13 +88,13 @@ Configure container registry authentication with the following options:
 
 ## AWS cross-account role chaining
 
-When Wave needs to access ECR registries in customer AWS accounts using IAM role credentials provided by the Seqera Platform, you can configure an intermediate "jump role" for cross-account access. When configured, Wave first assumes the jump role using its own credentials, then uses the jump role's temporary credentials to assume the target role received from the Seqera Platform.
+To access ECR registries in customer AWS accounts using IAM role credentials from the Seqera Platform, configure an intermediate "jump role" for cross-account access. Wave first assumes the jump role using its own credentials, then uses the jump role's temporary credentials to assume the target role from the Seqera Platform.
 
-This enables a two-hop role chaining pattern:
+This is a two-hop role chaining pattern:
 
-1. Wave assumes the jump role (using its default credentials)
-2. Wave uses the jump role's temporary credentials to assume the customer's target role
-3. The target role's temporary credentials are used to authenticate with ECR
+1. Wave assumes the jump role (using its default credentials).
+2. Wave uses the jump role's temporary credentials to assume the customer's target role.
+3. The target role's temporary credentials authenticate with ECR.
 
 Configure jump role chaining with the following options:
 
@@ -147,7 +146,7 @@ Configure caching for jump role temporary credentials to avoid redundant STS cal
 
 ## HTTP client
 
-Configure the HTTP client with the following options:
+Configure the HTTP client with the following options.
 
 `wave.httpclient.connectTimeout` *(optional)*
 : Connection timeout for the HTTP client (default: `20s`).
@@ -169,14 +168,14 @@ Configure the HTTP client with the following options:
 
 ## Container build process
 
-Configure how Wave builds container images and manages associated logs for monitoring, troubleshooting, and delivery with the following options:
+Configure how Wave builds container images and manages build logs.
 
 `wave.build.buildkit-image` *(required)*
 : [Buildkit](https://github.com/moby/buildkit) container image used in the Wave build process (default: `public.cr.seqera.io/wave/buildkit:v0.25.2-rootless`).
 
 `wave.build.cache` *(optional)*
 : Cache repository for images built by Wave. Supports both container registry paths and S3 bucket paths.
-  For Example:
+  For example:
 
   <div style={{marginLeft: '2em'}}>
 
@@ -213,7 +212,7 @@ Configure how Wave builds container images and manages associated logs for monit
 : When `true`, includes OCI media types in exported manifests (default: `true`).
 
 `wave.build.public-repo` *(optional)*
-: Public repository for container images built by Wave. Wave uses this repository as the build target when a freeze mode build is requested with Conda or pip packages via the v2 API and no `buildRepository` is provided. Images stored here default to the `imageSuffix` naming strategy. The registry hostname must be unique so that Wave can resolve default credentials correctly (i.e, it cannot be shared with `wave.build.repo` or `wave.build cache-repo`). If not set, a `buildRepository` must be specified in each freeze mode operations with packages.
+: Public repository for container images built by Wave. Wave uses this repository as the build target when a freeze mode build is requested with Conda or pip packages via the v2 API and no `buildRepository` is provided. Images stored here default to the `imageSuffix` naming strategy. The registry hostname must be unique so that Wave can resolve default credentials correctly (it cannot be shared with `wave.build.repo` or `wave.build.cache-repo`). If not set, you must specify a `buildRepository` in each freeze mode operation with packages.
 
 `wave.build.repo` *(required)*
 : Docker container repository for container images built by Wave.
@@ -239,12 +238,12 @@ Configure how Wave builds container images and manages associated logs for monit
   For example, `/efs/wave/build`.
 
 :::tip
-For S3 cache authentication setup (IAM roles, service accounts, and deployment examples), see [S3 cache authentication](./configure-wave.md#s3-cache-authentication).
+For S3 cache authentication setup (IAM roles, service accounts, and deployment examples), see [S3 cache authentication](configure-wave.md#s3-cache-authentication).
 :::
 
 ### Build process logs
 
-Configure how Wave stores and delivers build logs from containers and Kubernetes pods, which can be retrieved later or included in build completion emails, with the following options:
+Configure how Wave stores and delivers build logs from containers and Kubernetes pods. You can retrieve these logs later or include them in build completion emails.
 
 `wave.build.locks.path` *(required)*
 : Path where Wave stores Conda lock files. Can be an S3 URI (e.g., `s3://my-bucket/wave/locks`) or a local filesystem path.
@@ -257,7 +256,7 @@ Configure how Wave stores and delivers build logs from containers and Kubernetes
 
 ### Kubernetes container build process
 
-Configure Kubernetes-specific settings for Wave, where build and scan processes share most configurations except for CPU and memory requirements, with the following options:
+Configure Kubernetes-specific settings for Wave. Build and scan processes share most configurations except for CPU and memory requirements.
 
 `wave.build.k8s.labels` *(optional)*
 : Labels for Wave build Kubernetes pods.
@@ -309,7 +308,7 @@ Configure Kubernetes-specific settings for Wave, where build and scan processes 
 
 ## Container scan process
 
-Configure how Wave's vulnerability scanning process uses a [Trivy Docker image](https://hub.docker.com/r/aquasec/trivy) with customizable tags and severity levels with the following options:
+Configure Wave's vulnerability scanning process, which uses a [Trivy Docker image](https://hub.docker.com/r/aquasec/trivy) with customizable tags and severity levels.
 
 `wave.scan.enabled` *(optional)*
 : When `true`, activates vulnerability scanning (default: `false`).
@@ -330,7 +329,7 @@ Configure how Wave's vulnerability scanning process uses a [Trivy Docker image](
 
 ### Kubernetes Wave scan process
 
-Configure Wave scanning process resource requirements for Kubernetes deployments with the following options:
+Configure Wave scan process resource requirements for Kubernetes deployments.
 
 `wave.scan.k8s.resources.requests.cpu` *(optional)*
 : [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to Wave scan processes.
@@ -342,7 +341,7 @@ Configure Wave scanning process resource requirements for Kubernetes deployments
 
 ## Container mirror process
 
-Configure Kubernetes resource requirements for Wave's container mirroring operations with the following options:
+Configure Kubernetes resource requirements for Wave's container mirroring operations.
 
 `wave.mirror.k8s.resources.requests.cpu` *(optional)*
 : CPU resources requested for mirror Kubernetes pods.
@@ -358,7 +357,7 @@ Configure Kubernetes resource requirements for Wave's container mirroring operat
 
 ## Proxy cache
 
-Configure Wave's in-memory proxy cache for registry responses with the following options:
+Configure Wave's in-memory proxy cache for registry responses.
 
 `wave.proxy-cache.enabled` *(optional)*
 : When `true`, activates the proxy cache (default: `false`).
@@ -371,7 +370,7 @@ Configure Wave's in-memory proxy cache for registry responses with the following
 
 ## Rate limits
 
-Configure how Wave controls rate limits for anonymous and authenticated user access with the following options:
+Configure rate limits for anonymous and authenticated user access.
 
 `rate-limit.build.anonymous` *(required)*
 : Rate limit for build requests from anonymous users (default: `10/1h`).
@@ -394,7 +393,7 @@ Wave uses external database and caching services to store application data and i
 
 ### Redis
 
-Configure Redis with the following options:
+Configure Redis with the following options.
 
 `redis.client.timeout` *(optional)*
 : Timeout duration (in milliseconds) for Redis client operations (default: `5000` (5 seconds)).
@@ -421,7 +420,7 @@ Configure Redis with the following options:
 
 ### PostgreSQL
 
-Configure PostgreSQL with the following options:
+Configure PostgreSQL with the following options.
 
 `wave.db.password` *(required)*
 : Password for the PostgreSQL database user.
@@ -438,7 +437,7 @@ Configure PostgreSQL with the following options:
 
 ## Blob cache
 
-Configure how Wave caches container blobs to improve client performance and optionally delegates transfer tasks to Kubernetes pods for scalability with the following options:
+Configure how Wave caches container blobs to improve client performance. Wave can also delegate transfer tasks to Kubernetes pods for scalability.
 
 `wave.blobCache.baseUrl` *(optional)*
 : URL that overrides the base URL (the part before the blob path) of blobs sent to the client.
@@ -510,7 +509,7 @@ Static credentials (`accessKey` and `secretKey`) are currently required for blob
 
 ## Email configuration
 
-Configure how Wave sends email notifications on behalf of the service with the following options:
+Configure how Wave sends email notifications.
 
 `mail.from` *(required)*
 : Sender email address for Wave notifications.
@@ -518,14 +517,14 @@ Configure how Wave sends email notifications on behalf of the service with the f
 
 ## Metrics
 
-Configure how Wave Metrics service provides data about container builds and pulls per organization and date with the following options:
+Configure the Wave Metrics service, which provides data about container builds and pulls per organization and date.
 
 `wave.metrics.enabled` *(optional)*
 : When `true`, activates Wave metrics (default: `false`).
 
 ## Accounts
 
-Configure user credentials for accessing authenticated Wave APIs and services with the following options:
+Configure user credentials for accessing authenticated Wave APIs and services.
 
 `wave.accounts` *(required)*
 : List of credentials for accessing authenticated Wave APIs such as the metrics API.

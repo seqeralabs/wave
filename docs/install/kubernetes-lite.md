@@ -1,20 +1,11 @@
 ---
-title: Install Wave Lite on Kubernetes
+title: Kubernetes installation
 description: Deploy Wave Lite on any Kubernetes cluster with external PostgreSQL and Redis.
 ---
 
-Install Wave Lite on Kubernetes when you want the Lite configuration on a cluster you already run. This installs container augmentation, inspection, and private registry authentication. Build, mirror, and scan are not part of Wave Lite. The full Wave configuration adds them to a Wave Lite install on Amazon EKS. After installing Wave Lite on an EKS cluster, follow [Enable Wave builds](aws-build.md).
+Install Wave Lite on Kubernetes when you want the Wave Lite configuration on a cluster you already run. This installs container augmentation, inspection, and private registry authentication. Build, mirror, and scan are not part of Wave Lite. The full Wave configuration adds them to a Wave Lite install on Amazon EKS. After installing Wave Lite on an EKS cluster, follow [Enable Wave builds](aws-build.md).
 
-## What this guide installs
-
-This guide installs the supported Wave Lite configuration:
-
-- Wave Lite (augmentation, inspection, authentication).
-- A generic Kubernetes cluster, version 1.31 or later.
-- External, managed PostgreSQL and Redis.
-- A Wave service paired with Seqera Platform, deployed into the `wave` namespace.
-
-For other choices (different ingress controllers, or untested distributions), see [Adapt this guide](#adapt-this-guide).
+For other choices (different ingress controllers or untested distributions), see [Adapt this guide](#adapt-this-guide).
 
 :::info[**Prerequisites**]
 
@@ -122,7 +113,7 @@ data:
 Set `wave.server.url` to the address clients use to reach Wave. If it is left unset, Wave issues container tokens pointing at `http://localhost:9090`, which clients cannot reach.
 :::
 
-This ConfigMap sets only what Wave Lite needs to start. To configure other options, such as rate limits, token cache duration, and metrics, see [Configuration](../configure-wave.md). Before serving production traffic, complete the [production hardening](../configure-wave.md#harden-for-production) checklist.
+This ConfigMap sets only what Wave Lite needs to start. To configure other options, such as rate limits, token cache duration, and metrics, see [Configure Wave](configure-wave.md). Before serving production traffic, complete the [production hardening](configure-wave.md#harden-for-production) checklist.
 
 ## Authenticate to private registries
 
@@ -146,7 +137,7 @@ wave:
 
 As with the database and Redis credentials above, keep these out of the ConfigMap in production. Store them in a Kubernetes Secret and reference it from the deployment.
 
-Configure credentials for every private registry Wave pulls from. Public images need none. For all registry options, see [Configuration reference](../configuration.md#container-registry).
+Configure credentials for every private registry Wave pulls from. Public images need none. For all registry options, see [Reference](configuration.md#container-registry).
 
 ## Create the deployment
 
@@ -266,14 +257,14 @@ This minimal Ingress omits controller-specific configuration. For the AWS Load B
 After the ingress provisions, configure your Seqera Platform deployment to use the Wave endpoint by setting the Wave server URL in `tower.yml` ([Platform Wave configuration](https://docs.seqera.io/platform-enterprise/latest/enterprise/configuration/wave)).
 
 :::note
-For production reliability, add Pod Disruption Budgets, a Horizontal Pod Autoscaler, multiple replicas with anti-affinity, and resource quotas for the `wave` namespace. See [Configuration](../configure-wave.md#harden-for-production).
+For production reliability, add Pod Disruption Budgets, a Horizontal Pod Autoscaler, multiple replicas with anti-affinity, and resource quotas for the `wave` namespace. See [Configure Wave](configure-wave.md#harden-for-production).
 :::
 
 ## Verify your installation
 
 Confirm the service is live and functional. See [Verify your installation](post-install.md) for the `/service-info` check and the `wave-cli` functional test.
 
-When Wave is running and verified, continue to [Configuration](../configure-wave.md#harden-for-production) to harden the deployment for production.
+When Wave is running and verified, continue to [Configure Wave](configure-wave.md#harden-for-production) to harden the deployment for production.
 
 ## Adapt this guide
 

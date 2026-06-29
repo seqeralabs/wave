@@ -20,7 +20,7 @@ Every deployment starts with Wave Lite. Choose the path that matches your infras
 
 ### Docker Compose
 
-Run Wave Lite on a single Docker host without Kubernetes. Choose this path for a compliance-constrained site that cannot run Amazon EKS, or a deployment too small to need a cluster. Docker Compose runs Wave Lite only. You cannot extend it to the full Wave configuration, which requires EKS.
+Run Wave Lite on a single Docker host without Kubernetes. Choose this path for a compliance-constrained site that cannot run Amazon EKS, or a deployment too small to need a cluster. Docker Compose runs Wave Lite only. You cannot extend it to the full Wave configuration. The full configuration requires EKS.
 
 [Install Wave Lite with Docker Compose](docker-compose.md)
 
