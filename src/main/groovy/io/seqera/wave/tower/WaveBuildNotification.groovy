@@ -20,11 +20,22 @@ package io.seqera.wave.tower
 
 import groovy.transform.CompileStatic
 
+/**
+ * User preference controlling when Wave sends a build completion email.
+ *
+ * <ul>
+ *   <li>{@code ALWAYS_ON}  &mdash; notify on every build outcome (success and failure)</li>
+ *   <li>{@code ON_ERROR}   &mdash; notify only when the build fails</li>
+ *   <li>{@code ALWAYS_OFF} &mdash; never notify</li>
+ * </ul>
+ *
+ * The value is provided by Tower in the user-info payload. A {@code null} value
+ * (older Tower clients that don't send the field, or a value not known to Wave)
+ * is treated as {@link #ALWAYS_ON}, preserving the historical behaviour.
+ */
 @CompileStatic
 enum WaveBuildNotification {
     ALWAYS_ON,
     ON_ERROR,
     ALWAYS_OFF
-
-    static WaveBuildNotification defaultValue() { ALWAYS_ON }
 }

@@ -79,9 +79,13 @@ class MailServiceImpl implements MailService {
             log.debug "Missing email recipient from build id=$request.buildId - user=$user"
             return
         }
-        final pref = user?.waveBuildNotification ?: WaveBuildNotification.defaultValue()
+        // honor the user notification preference; a null preference (older Tower
+        // clients, an unknown enum value, or anonymous builds using the system
+        // `mail.from`) defaults to ALWAYS_ON to preserve the historical behaviour
+        final pref = user?.waveBuildNotification ?: WaveBuildNotification.ALWAYS_ON
         if( pref == WaveBuildNotification.ALWAYS_OFF )
             return
+        // ON_ERROR: notify only on failures - skip when the build succeeded
         if( pref == WaveBuildNotification.ON_ERROR && result.succeeded() )
             return
         final mail = buildCompletionMail(request, result, recipient)

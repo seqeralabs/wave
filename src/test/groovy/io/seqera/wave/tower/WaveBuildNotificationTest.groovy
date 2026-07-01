@@ -18,6 +18,7 @@
 
 package io.seqera.wave.tower
 
+import io.seqera.wave.util.JacksonHelper
 import spock.lang.Specification
 
 class WaveBuildNotificationTest extends Specification {
@@ -30,8 +31,11 @@ class WaveBuildNotificationTest extends Specification {
         WaveBuildNotification.valueOf('ALWAYS_OFF') == WaveBuildNotification.ALWAYS_OFF
     }
 
-    def 'defaultValue returns ALWAYS_ON'() {
-        expect:
-        WaveBuildNotification.defaultValue() == WaveBuildNotification.ALWAYS_ON
+    def 'an unknown enum value deserializes to null instead of failing the payload'() {
+        when:
+        def user = JacksonHelper.fromJson('{"id":1,"userName":"alice","email":"a@b.c","waveBuildNotification":"SOME_FUTURE_VALUE"}', User)
+        then:
+        noExceptionThrown()
+        user.waveBuildNotification == null
     }
 }
