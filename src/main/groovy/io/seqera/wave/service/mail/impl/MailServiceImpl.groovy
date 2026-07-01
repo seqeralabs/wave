@@ -33,6 +33,7 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.mail.MailService
 import io.seqera.wave.service.mail.MailSpooler
+import io.seqera.wave.tower.WaveBuildNotification
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.util.DataTimeUtils.formatDuration
@@ -71,17 +72,24 @@ class MailServiceImpl implements MailService {
 
     @Override
     void sendCompletionEmail(BuildRequest request, BuildResult build) {
-        // send to user email address or fallback to the system `mail.from` address
         final user = request.identity.user
         final recipient = user ? user.email : config.from
-        if( recipient ) {
-            final result = build ?: BuildResult.unknown()
-            final mail = buildCompletionMail(request, result, recipient)
-            spooler.sendMail(mail)
+        final result = build ?: BuildResult.unknown()
+        if( !recipient ) {
+            log.debug "Missing email recipient from build id=$request.buildId - user=$user"
+            return
         }
-        else {
-            log.debug "Missing email recipient from build id=$build.buildId - user=$user"
-        }
+        // honor the user notification preference; a null preference (older Tower
+        // clients, an unknown enum value, or anonymous builds using the system
+        // `mail.from`) defaults to ALWAYS_ON to preserve the historical behaviour
+        final pref = user?.waveBuildNotification ?: WaveBuildNotification.ALWAYS_ON
+        if( pref == WaveBuildNotification.ALWAYS_OFF )
+            return
+        // ON_ERROR: notify only on failures - skip when the build succeeded
+        if( pref == WaveBuildNotification.ON_ERROR && result.succeeded() )
+            return
+        final mail = buildCompletionMail(request, result, recipient)
+        spooler.sendMail(mail)
     }
 
     Mail buildCompletionMail(BuildRequest req, BuildResult result, String recipient) {
