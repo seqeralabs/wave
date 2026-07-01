@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023-2024, Seqera Labs
+ *  Copyright (c) 2023-2026, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -96,7 +96,7 @@ class MailServiceImplTest extends Specification {
         given:
         def user = new User(id: 1L, userName: 'testuser', email: 'test@example.com',
                 waveBuildNotification: pref)
-        def identity = new PlatformId(user, null, null, null, null)
+        def identity = new PlatformId(user)
         def request = Stub(BuildRequest) {
             getIdentity()      >> identity
             getIp()            >> '1.2.3.4'

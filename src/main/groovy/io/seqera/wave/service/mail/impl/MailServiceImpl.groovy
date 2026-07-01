@@ -34,10 +34,10 @@ import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.mail.MailService
 import io.seqera.wave.service.mail.MailSpooler
 import io.seqera.wave.tower.WaveBuildNotification
-import static io.seqera.wave.util.DataTimeUtils.formatDuration
-import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+import static io.seqera.wave.util.DataTimeUtils.formatDuration
+import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
 
 /**
  *
@@ -76,7 +76,7 @@ class MailServiceImpl implements MailService {
         final recipient = user ? user.email : config.from
         final result = build ?: BuildResult.unknown()
         if( !recipient ) {
-            log.debug "Missing email recipient from build id=$result.buildId - user=$user"
+            log.debug "Missing email recipient from build id=$request.buildId - user=$user"
             return
         }
         final pref = user?.waveBuildNotification ?: WaveBuildNotification.defaultValue()
