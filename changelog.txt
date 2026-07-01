@@ -1,4 +1,9 @@
 # Wave changelog
+1.35.0 - 1 Jul 2026
+- fix: use micromamba 2 image for conda/micromamba:v2 builds (#1065) [ddd1e8d10]
+- feat: add waveBuildNotification user preference for build email notifications (#1069) [b7822a098]
+- Use lib-util-net for SSRF host validation (#1061) [783ee2735]
+
 1.34.0 - 15 Jun 2026
 - Rename WAVE_LOG_STDOUT_PATTERN env var to WAVE_LOG_PATTERN [ff23adc78]
 - fix(deps): define netty version in gradle.properties and bump to 4.2.15.Final [5cd415188]
