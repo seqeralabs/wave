@@ -1,4 +1,8 @@
 # Wave changelog
+1.35.1-B2 - 3 Jul 2026
+- fix: expose `which` at /usr/bin/which in conda v2 build stage for R post-links [53d8d9615]
+- fix: install `which` in conda micromamba-v2 and pixi build templates [af83d3720]
+
 1.35.0 - 1 Jul 2026
 - fix: use micromamba 2 image for conda/micromamba:v2 builds (#1065) [ddd1e8d10]
 - feat: add waveBuildNotification user preference for build email notifications (#1069) [b7822a098]
