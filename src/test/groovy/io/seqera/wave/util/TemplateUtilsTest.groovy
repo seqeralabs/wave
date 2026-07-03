@@ -358,6 +358,7 @@ class TemplateUtilsTest extends Specification {
                 WORKDIR /opt/wave
 
                 RUN pixi init --import /opt/wave/conda.yml \\
+                    && pixi add conda-forge::which \\
                     && pixi add foo::bar \\
                     && pixi shell-hook > /shell-hook.sh \\
                     && echo 'exec "$@"' >> /shell-hook.sh \\
@@ -393,6 +394,7 @@ class TemplateUtilsTest extends Specification {
                 WORKDIR /opt/wave
 
                 RUN pixi init --import /opt/wave/conda.yml \\
+                    && pixi add conda-forge::which \\
                     && pixi add conda-forge::procps-ng \\
                     && pixi shell-hook > /shell-hook.sh \\
                     && echo 'exec "$@"' >> /shell-hook.sh \\
@@ -431,6 +433,7 @@ class TemplateUtilsTest extends Specification {
                 WORKDIR /opt/wave
 
                 RUN pixi init --import /opt/wave/conda.yml \\
+                    && pixi add conda-forge::which \\
                     && pixi add conda-forge::procps-ng \\
                     && pixi shell-hook > /shell-hook.sh \\
                     && echo 'exec "$@"' >> /shell-hook.sh \\
@@ -483,7 +486,8 @@ class TemplateUtilsTest extends Specification {
         TemplateUtils.condaFileToDockerFileUsingV2(CONDA_OPTS) == '''\
                 FROM mambaorg/micromamba:2.1.1 AS build
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
-                RUN (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
+                RUN micromamba install -y -n base conda-forge::which \\
+                    && (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /tmp/conda.yml)) \\
@@ -508,7 +512,8 @@ class TemplateUtilsTest extends Specification {
         TemplateUtils.condaFileToDockerFileUsingV2(new CondaOpts([:])) == '''\
                 FROM mambaorg/micromamba:1.5.10-noble AS build
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
-                RUN (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
+                RUN micromamba install -y -n base conda-forge::which \\
+                    && (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /tmp/conda.yml)) \\
@@ -542,7 +547,8 @@ class TemplateUtilsTest extends Specification {
         TemplateUtils.condaPackagesToDockerFileUsingV2(PACKAGES, CHANNELS, CONDA_OPTS) == '''\
                 FROM mambaorg/micromamba:2.1.1 AS build
                 RUN \\
-                    (micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1 > /tmp/mamba.log 2>&1 \\
+                    micromamba install -y -n base conda-forge::which \\
+                    && (micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1 > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1)) \\
@@ -576,7 +582,8 @@ class TemplateUtilsTest extends Specification {
         TemplateUtils.condaPackagesToDockerFileUsingV2(PACKAGES, CHANNELS, CONDA_OPTS) == '''\
                 FROM mambaorg/micromamba:2.1.1 AS build
                 RUN \\
-                    (micromamba install -y -n base -c conda-forge numpy pandas > /tmp/mamba.log 2>&1 \\
+                    micromamba install -y -n base conda-forge::which \\
+                    && (micromamba install -y -n base -c conda-forge numpy pandas > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -c conda-forge numpy pandas)) \\
@@ -665,6 +672,7 @@ class TemplateUtilsTest extends Specification {
                 %post
                     mkdir /opt/wave && cd /opt/wave
                     pixi init --import /scratch/conda.yml
+                    pixi add conda-forge::which
                     pixi add conda-forge::procps-ng
                     pixi shell-hook > /shell-hook.sh
                     echo ">> CONDA_LOCK_START"
@@ -685,6 +693,7 @@ class TemplateUtilsTest extends Specification {
                 %post
                     mkdir /opt/wave && cd /opt/wave
                     pixi init --import /scratch/conda.yml
+                    pixi add conda-forge::which
                     pixi add conda-forge::procps-ng
                     pixi shell-hook > /shell-hook.sh
                     echo ">> CONDA_LOCK_START"
@@ -712,6 +721,7 @@ class TemplateUtilsTest extends Specification {
                 %post
                     mkdir /opt/wave && cd /opt/wave
                     pixi init --import /scratch/conda.yml
+                    pixi add conda-forge::which
                     pixi shell-hook > /shell-hook.sh
                     echo ">> CONDA_LOCK_START"
                     cat /opt/wave/pixi.lock
@@ -769,6 +779,7 @@ class TemplateUtilsTest extends Specification {
                 %files
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
+                    micromamba install -y -n base conda-forge::which
                     micromamba install -y -n base -f /scratch/conda.yml > /tmp/mamba.log 2>&1 \\
                         && cat /tmp/mamba.log \\
                         || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
@@ -794,6 +805,7 @@ class TemplateUtilsTest extends Specification {
                 %files
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
+                    micromamba install -y -n base conda-forge::which
                     micromamba install -y -n base -f /scratch/conda.yml > /tmp/mamba.log 2>&1 \\
                         && cat /tmp/mamba.log \\
                         || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
@@ -825,6 +837,7 @@ class TemplateUtilsTest extends Specification {
                 BootStrap: docker
                 From: mambaorg/micromamba:2.1.1
                 %post
+                    micromamba install -y -n base conda-forge::which
                     micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1 > /tmp/mamba.log 2>&1 \\
                         && cat /tmp/mamba.log \\
                         || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
@@ -856,6 +869,7 @@ class TemplateUtilsTest extends Specification {
                 BootStrap: docker
                 From: mambaorg/micromamba:2.1.1
                 %post
+                    micromamba install -y -n base conda-forge::which
                     micromamba install -y -n base -c conda-forge numpy pandas > /tmp/mamba.log 2>&1 \\
                         && cat /tmp/mamba.log \\
                         || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\

@@ -634,6 +634,7 @@ class ContainerHelperTest extends Specification {
                 WORKDIR /opt/wave
 
                 RUN pixi init --import /opt/wave/conda.yml \\
+                    && pixi add conda-forge::which \\
                     && pixi add conda-forge::procps-ng \\
                     && pixi shell-hook > /shell-hook.sh \\
                     && echo 'exec "$@"' >> /shell-hook.sh \\
@@ -686,6 +687,7 @@ class ContainerHelperTest extends Specification {
                 WORKDIR /opt/wave
                  
                 RUN pixi init --import /opt/wave/conda.yml \\
+                    && pixi add conda-forge::which \\
                     && pixi add foo::one bar::two \\
                     && pixi shell-hook > /shell-hook.sh \\
                     && echo 'exec "$@"' >> /shell-hook.sh \\
@@ -731,7 +733,8 @@ class ContainerHelperTest extends Specification {
         result =='''\
                 FROM mambaorg/micromamba:2-amazon2023 AS build
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
-                RUN (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
+                RUN micromamba install -y -n base conda-forge::which \\
+                    && (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /tmp/conda.yml)) \\
@@ -769,7 +772,8 @@ class ContainerHelperTest extends Specification {
         result =='''\
                 FROM mambaorg/micromamba:2-amazon2023 AS build
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
-                RUN (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
+                RUN micromamba install -y -n base conda-forge::which \\
+                    && (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /tmp/conda.yml)) \\
@@ -812,7 +816,8 @@ class ContainerHelperTest extends Specification {
         result =='''\
                 FROM mambaorg/micromamba:2.0.0 AS build
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
-                RUN (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
+                RUN micromamba install -y -n base conda-forge::which \\
+                    && (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /tmp/conda.yml)) \\
@@ -849,7 +854,8 @@ class ContainerHelperTest extends Specification {
         result =='''\
                 FROM mambaorg/micromamba:2-amazon2023 AS build
                 RUN \\
-                    (micromamba install -y -n base -c conda-forge -c bioconda -f https://foo.com/lock.yml > /tmp/mamba.log 2>&1 \\
+                    micromamba install -y -n base conda-forge::which \\
+                    && (micromamba install -y -n base -c conda-forge -c bioconda -f https://foo.com/lock.yml > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -c conda-forge -c bioconda -f https://foo.com/lock.yml)) \\
