@@ -485,8 +485,11 @@ class TemplateUtilsTest extends Specification {
         expect:
         TemplateUtils.condaFileToDockerFileUsingV2(CONDA_OPTS) == '''\
                 FROM mambaorg/micromamba:2.1.1 AS build
+                USER root
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
+                # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
                 RUN micromamba install -y -n base conda-forge::which \\
+                    && ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which \\
                     && (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
@@ -511,8 +514,11 @@ class TemplateUtilsTest extends Specification {
         expect:
         TemplateUtils.condaFileToDockerFileUsingV2(new CondaOpts([:])) == '''\
                 FROM mambaorg/micromamba:1.5.10-noble AS build
+                USER root
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
+                # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
                 RUN micromamba install -y -n base conda-forge::which \\
+                    && ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which \\
                     && (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
@@ -546,8 +552,11 @@ class TemplateUtilsTest extends Specification {
         expect:
         TemplateUtils.condaPackagesToDockerFileUsingV2(PACKAGES, CHANNELS, CONDA_OPTS) == '''\
                 FROM mambaorg/micromamba:2.1.1 AS build
+                USER root
+                # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
                 RUN \\
                     micromamba install -y -n base conda-forge::which \\
+                    && ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which \\
                     && (micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1 > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
@@ -581,8 +590,11 @@ class TemplateUtilsTest extends Specification {
         expect:
         TemplateUtils.condaPackagesToDockerFileUsingV2(PACKAGES, CHANNELS, CONDA_OPTS) == '''\
                 FROM mambaorg/micromamba:2.1.1 AS build
+                USER root
+                # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
                 RUN \\
                     micromamba install -y -n base conda-forge::which \\
+                    && ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which \\
                     && (micromamba install -y -n base -c conda-forge numpy pandas > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
@@ -779,7 +791,9 @@ class TemplateUtilsTest extends Specification {
                 %files
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
+                    # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
                     micromamba install -y -n base conda-forge::which
+                    ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which
                     micromamba install -y -n base -f /scratch/conda.yml > /tmp/mamba.log 2>&1 \\
                         && cat /tmp/mamba.log \\
                         || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
@@ -805,7 +819,9 @@ class TemplateUtilsTest extends Specification {
                 %files
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
+                    # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
                     micromamba install -y -n base conda-forge::which
+                    ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which
                     micromamba install -y -n base -f /scratch/conda.yml > /tmp/mamba.log 2>&1 \\
                         && cat /tmp/mamba.log \\
                         || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
@@ -837,7 +853,9 @@ class TemplateUtilsTest extends Specification {
                 BootStrap: docker
                 From: mambaorg/micromamba:2.1.1
                 %post
+                    # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
                     micromamba install -y -n base conda-forge::which
+                    ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which
                     micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1 > /tmp/mamba.log 2>&1 \\
                         && cat /tmp/mamba.log \\
                         || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
@@ -869,7 +887,9 @@ class TemplateUtilsTest extends Specification {
                 BootStrap: docker
                 From: mambaorg/micromamba:2.1.1
                 %post
+                    # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
                     micromamba install -y -n base conda-forge::which
+                    ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which
                     micromamba install -y -n base -c conda-forge numpy pandas > /tmp/mamba.log 2>&1 \\
                         && cat /tmp/mamba.log \\
                         || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
