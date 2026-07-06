@@ -37,7 +37,7 @@ jobs:
 
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
-      - uses: graalvm/setup-graalvm@v1
+      - uses: graalvm/setup-graalvm@cabbb10818fabc989d6dbd508e4846596d20dd2d # v1.6.0
         if: ${{ matrix.musl }}
         with:
           java-version: '21'
@@ -45,7 +45,7 @@ jobs:
           native-image-job-reports: 'true'
           native-image-musl: 'true'
 
-      - uses: graalvm/setup-graalvm@v1
+      - uses: graalvm/setup-graalvm@cabbb10818fabc989d6dbd508e4846596d20dd2d # v1.6.0
         if: ${{ !matrix.musl }}
         with:
           java-version: '21'
@@ -115,7 +115,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: test-reports-jdk-${{ matrix.java_version }}
+          name: test-reports-${{ matrix.os }}
           path: |
             **/build/reports/tests/test
   release:
