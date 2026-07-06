@@ -71,7 +71,7 @@ class ContainerRequestConfig {
          * The interval determines how frequently a refresh operation is triggered.
          * A shorter interval means more frequent checks, while a longer interval reduces checks frequency.
          */
-        @Value('${wave.tokens.cache.check-interval:30h}')
+        @Value('${wave.tokens.cache.check-interval:30m}')
         Duration checkInterval
 
     }
