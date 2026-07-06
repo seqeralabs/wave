@@ -124,7 +124,7 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
                 check0(it, now)
             }
             catch (InterruptedException e) {
-                Thread.interrupted()
+                Thread.currentThread().interrupt()
             }
             catch (Throwable t) {
                 log.error("Unexpected error in container request watcher while processing key: $it", t)
