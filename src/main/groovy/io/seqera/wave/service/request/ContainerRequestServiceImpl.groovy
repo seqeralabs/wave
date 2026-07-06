@@ -193,9 +193,8 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
         }
         log.info "Container request '${entry.requestId}' expiration is extended by: ${newTtl}; at: ${newExpire}; (was: ${entry.expiration})"
         containerRequestStore.put(entry.requestId, request, newTtl)
-        // update the expiration record
-        requestRecord.expiration = newExpire
-        persistenceService.saveContainerRequestAsync(requestRecord)
+        // save the record with the updated expiration
+        persistenceService.saveContainerRequestAsync(requestRecord.withExpiration(newExpire))
         // schedule a new refresh event
         scheduleRefresh(entry.withExpiration(newExpire))
     }
