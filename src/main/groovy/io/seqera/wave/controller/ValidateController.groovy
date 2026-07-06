@@ -24,9 +24,11 @@ import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Post
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
+import io.seqera.util.net.SsrfValidationException
+import io.seqera.util.net.SsrfValidator
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.configuration.SsrfConfig
-import io.seqera.wave.util.SsrfValidator
+import io.seqera.wave.exception.BadRequestException
 import jakarta.inject.Inject
 import jakarta.validation.Valid
 
@@ -54,7 +56,12 @@ class ValidateController {
 
     private void validateRegistry(String registry) {
         if (ssrfConfig.ssrfProtectionEnabled) {
-            SsrfValidator.validateHost(registry)
+            try {
+                SsrfValidator.validateHost(registry)
+            }
+            catch (SsrfValidationException e) {
+                throw new BadRequestException(e.message)
+            }
         }
     }
 

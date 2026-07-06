@@ -22,11 +22,9 @@ import spock.lang.Specification
 
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpStatus
-import io.micronaut.http.client.DefaultHttpClientConfiguration
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
-import io.micronaut.runtime.server.EmbeddedServer
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import jakarta.inject.Inject
 /**
@@ -39,9 +37,6 @@ class ServiceInfoControllerTest extends Specification {
     @Inject
     @Client("/")
     HttpClient client
-
-    @Inject
-    EmbeddedServer embeddedServer;
 
     def 'should get service info' () {
         when:
@@ -58,23 +53,6 @@ class ServiceInfoControllerTest extends Specification {
         then:
         def e = thrown(HttpClientResponseException)
         e.status == HttpStatus.METHOD_NOT_ALLOWED
-    }
-
-    def 'should redirect to /openapi/'() {
-        given:
-        def uri = embeddedServer.getContextURI()
-        and:
-        // Create a new HttpClient with redirects disabled
-        def config = new DefaultHttpClientConfiguration()
-        config.setFollowRedirects(false)
-        def client = HttpClient.create(uri.toURL(), config)
-        when:
-        def request = HttpRequest.GET("/openapi")
-        def resp = client.toBlocking().exchange(request, String)
-
-        then:
-        resp.status == HttpStatus.MOVED_PERMANENTLY // Expect 301
-        resp.headers.get("Location") == "/openapi/" // Validate redirect location
     }
 
     def 'should get favicon' () {

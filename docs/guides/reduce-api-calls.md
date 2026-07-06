@@ -72,18 +72,18 @@ To configure Wave freeze, add the following configuration to your Nextflow pipel
 
 ```groovy
 fusion.enabled = true // Recommended (optimizes frozen images for cloud storage)
-tower.accessToken = '<TOWER_ACCESS_TOKEN>' // Required
+tower.accessToken = '<tower-access-token>' // Required
 wave.enabled = true // Required
 wave.freeze = true // Required
-wave.build.repository = '<BUILD_REPOSITORY>' // Required
-wave.build.cacheRepository = '<CACHE_REPOSITORY>' // Recommended (accelerates builds by reusing unchanged layers)
+wave.build.repository = '<build-repository>' // Required
+wave.build.cacheRepository = '<cache-repository>' // Recommended (accelerates builds by reusing unchanged layers)
 ```
 
 Replace the following:
 
-- `<TOWER_ACCESS_TOKEN>`: Your [Platform access token](../tutorials/nextflow-wave.mdx#create-your-seqera-access-token)
-- `<BUILD_REPOSITORY>`: The container registry URL where Wave uploads built images
-- `<CACHE_REPOSITORY>`: The container registry URL for caching image layers built by the Wave service
+- `<tower-access-token>`: Your [Platform access token](../tutorials/nextflow-wave.mdx#create-your-seqera-access-token)
+- `<build-repository>`: The container registry URL where Wave uploads built images
+- `<cache-repository>`: The container registry URL for caching image layers built by the Wave service
 
 ## Container image tags
 

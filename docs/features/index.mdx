@@ -1,0 +1,24 @@
+---
+title: Features
+description: An overview of Wave's features and deployment configurations.
+date: 2026-04-22
+tags: [features, overview, deployment]
+---
+
+Wave provides several container capabilities. The hosted Wave service supports them all and is free for anyone using Nextflow, the Wave CLI, or the API.
+
+Self-hosted Wave is available in Wave and Wave Lite configurations. The matrix below shows which features each configuration provides.
+
+| Feature | Wave | Wave&nbsp;Lite | Summary |
+| :-- | :-: | :-: | :-- |
+| [Container augmentation](./augmentation.mdx) | ✓ | ✓ | Inject custom layers such as scripts, config, Fusion, or module binaries into existing container images at pull time. Rebuilds are not required. |
+| [Container inspection](./inspection.mdx) | ✓ | ✓ | Retrieve manifest, config, and layer metadata for any container without pulling the layers. |
+| [Private registry authentication](./authentication.mdx) | ✓ | ✓ | Access private container registries using credentials stored in Seqera Platform. No secrets in pipeline code. |
+| [On-demand container builds](./container-builds.mdx) | ✓ | | Build container images just-in-time from a Dockerfile, Singularity recipe, Conda environment, Conda lock file, or list of PyPI or CRAN packages. |
+| [Container freeze](./container-freezes.mdx) | ✓ | | Build a permanent image and push it to a registry of your choice for a stable URI. |
+| [Container mirroring](./mirroring.mdx) | ✓ | | Copy a container image to a registry of your choice while preserving its original name and digest. |
+| [Security scanning](./security.mdx) | ✓ | | Scan images for known vulnerabilities with Trivy. Generate Software Package Data Exchange (SPDX) Software Bill of Materials (SBOMs). |
+
+:::info
+Seqera Enterprise customers can also license Wave for self-hosted deployment. [Contact us](https://seqera.io/contact-us/) for more information.
+:::

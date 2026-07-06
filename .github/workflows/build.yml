@@ -33,19 +33,39 @@ jobs:
         java_version: [21]
     permissions:
       contents: write
+      id-token: write
 
     steps:
       - name: Environment
         run: env | sort
 
       - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ratchet:actions/checkout@v6.0.2
         with:
           fetch-depth: 1
           submodules: true
 
+      - name: Detect release commit
+        id: detect-release
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          # Only direct pushes whose first line tags `[release]` should publish.
+          # Squash merges append "(#NNN)" and merge commits start with "Merge pull request #NNN" —
+          # both must be excluded so a PR body mentioning [release] does not trigger a release.
+          first_line=$(printf '%s\n' "$COMMIT_MSG" | head -n1)
+          if [[ "$first_line" == *"[release]"* ]] \
+             && [[ ! "$first_line" =~ \(#[0-9]+\)$ ]] \
+             && [[ ! "$first_line" =~ ^Merge\ pull\ request\ #[0-9]+ ]]; then
+            echo "Detected release commit — release steps will run"
+            echo "is_release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Not a release commit — release steps will be skipped"
+            echo "is_release=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Setup Java ${{ matrix.java_version }}
-        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # ratchet:actions/setup-java@v5.2.0
         with:
           java-version: ${{matrix.java_version}}
           distribution: 'temurin'
@@ -79,16 +99,72 @@ jobs:
         run: |
           sudo rm -rf /home/runner/work/wave/wave/build-workspace
 
+      - name: Login to legacy ECR
+        if: "steps.detect-release.outputs.is_release == 'true'"
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # ratchet:docker/login-action@v4.2.0
+        with:
+          registry: 195996028523.dkr.ecr.eu-west-1.amazonaws.com
+          username: ${{ secrets.TOWER_CI_AWS_ACCESS }}
+          password: ${{ secrets.TOWER_CI_AWS_SECRET }}
+        env:
+          AWS_REGION: eu-west-1
+
+      - name: Configure AWS credentials for platform pusher
+        if: "steps.detect-release.outputs.is_release == 'true'"
+        uses: aws-actions/configure-aws-credentials@acca2b1b2070338fb9fd1ca27ecee81d687e58e5 # ratchet:aws-actions/configure-aws-credentials@v6.1.2
+        with:
+          aws-region: eu-west-2
+          role-to-assume: arn:aws:iam::232933512461:role/wave-ecr-pusher
+          role-session-name: GitHubActions-${{ github.run_id }}
+
+      - name: Login to enterprise Amazon ECR
+        if: "steps.detect-release.outputs.is_release == 'true'"
+        uses: aws-actions/amazon-ecr-login@fa648b43de3d4d023bcb3f89ed6940096949c419 # ratchet:aws-actions/amazon-ecr-login@v2.1.5
+
+      - name: Configure AWS credentials for maven publish
+        if: "steps.detect-release.outputs.is_release == 'true'"
+        uses: aws-actions/configure-aws-credentials@acca2b1b2070338fb9fd1ca27ecee81d687e58e5 # ratchet:aws-actions/configure-aws-credentials@v6.1.2
+        with:
+          aws-region: eu-west-1
+          role-to-assume: arn:aws:iam::195996028523:role/MavenPublisherRole
+          role-session-name: GitHubActions-${{ github.run_id }}-maven-publish
+
       - name: Release
-        if: "contains(github.event.head_commit.message, '[release]')"
+        id: release
+        if: "steps.detect-release.outputs.is_release == 'true'"
         run: |
+          set -e
+          set -x
           bash publish.sh wave-api
           bash publish.sh wave-utils
-          bash tag-and-push.sh
+
+          TAG=v$(cat VERSION)
+
+          # Tag repo
+          REMOTE=https://oauth:$GITHUB_TOKEN@github.com/${GITHUB_REPOSITORY}.git
+          git tag $TAG
+          git push $REMOTE $TAG
+
+          # Build container image locally with a generic name
+          ./gradlew -PjibRepo=wave/server:$TAG jibDockerBuild
+
+          # Push nf-tower-enterprise/wave to legacy ECR
+          LEGACY_ECR=195996028523.dkr.ecr.eu-west-1.amazonaws.com
+          docker tag wave/server:$TAG $LEGACY_ECR/nf-tower-enterprise/wave:$TAG
+          docker push $LEGACY_ECR/nf-tower-enterprise/wave:$TAG
+
+          # Push to enterprise ECR (new central registry)
+          ENTERPRISE_ECR=232933512461.dkr.ecr.eu-west-2.amazonaws.com
+          docker tag wave/server:$TAG $ENTERPRISE_ECR/wave/server:$TAG
+          docker push $ENTERPRISE_ECR/wave/server:$TAG
+
+          # Create GitHub release (draft for alpha/beta/RC tags)
+          grep -Ei '.*-(A[0-9]+|B[0-9]+|RC[0-9]+)$' VERSION &>/dev/null && DRAFT='--draft' || DRAFT=''
+          gh release create $TAG --generate-notes $DRAFT
+
+          echo "version=$TAG" >> $GITHUB_OUTPUT
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
-          AWS_ACCESS_KEY_ID: ${{secrets.TOWER_CI_AWS_ACCESS}}
-          AWS_SECRET_ACCESS_KEY: ${{secrets.TOWER_CI_AWS_SECRET}}
           AWS_JAVA_V1_DISABLE_DEPRECATION_ANNOUNCEMENT: true
           AWS_DEFAULT_REGION: 'eu-west-1'
           PUBLISH_REPO_URL: "s3://maven.seqera.io/releases"
@@ -99,16 +175,16 @@ jobs:
 
       - name: Publish tests report
         if: failure()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # ratchet:actions/upload-artifact@v7.0.1
         with:
           name: test-reports-jdk-${{ matrix.java_version }}
           path: |
             **/build/reports/tests/test
 
-      - name : Publish code coverage report
+      - name: Publish code coverage report
         if: success()
-        uses : actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with :
-          name : code-coverage-reports-jdk-${{ matrix.java_version }}
-          path : |
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # ratchet:actions/upload-artifact@v7.0.1
+        with:
+          name: code-coverage-reports-jdk-${{ matrix.java_version }}
+          path: |
             **/build/reports/jacoco/test

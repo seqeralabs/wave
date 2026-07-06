@@ -85,6 +85,13 @@ class CondaHelper {
 
         final lockFileUri = tryGetLockFile(spec.entries)
         final opts = spec.condaOpts ?: CondaOpts.v2()
+        // The CondaOpts ctor always fills mambaImage with the v1 default image (the value
+        // can also be bumped client-side e.g. by Nextflow), but the v2 template requires
+        // micromamba 2.x. Override any micromamba 1.x image with the v2 default; an explicit
+        // 2.x or custom image is left untouched. Matching is by tag (not one exact string),
+        // so a bumped v1 tag still resolves correctly.
+        if( isMicromambaV1(opts.mambaImage) )
+            opts.mambaImage = CondaOpts.DEFAULT_MAMBA_IMAGE_V2
         if( containerImage )
             opts.baseImage = containerImage
 
@@ -100,6 +107,18 @@ class CondaHelper {
                     ? condaFileToSingularityFileV2(opts)
                     : condaFileToDockerFileUsingV2(opts)
         }
+    }
+
+    /**
+     * Tells whether the given image is a micromamba major version 1 image,
+     * e.g. {@code mambaorg/micromamba:1.5.10-noble}. Matches by tag so any v1
+     * tag is recognised, while v2 ({@code 2.x}) and custom images are not.
+     *
+     * @param image The mamba image reference
+     * @return {@code true} when the image tag is a micromamba 1.x release
+     */
+    static boolean isMicromambaV1(String image) {
+        image && image ==~ /.*micromamba:1[.\-].*/
     }
 
     /**
