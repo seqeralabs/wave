@@ -1,0 +1,71 @@
+---
+title: Private registry authentication
+description: Access private container registries through Wave using credentials managed in Seqera Platform.
+date: 2026-04-22
+tags: [authentication, credentials, private-registry, seqera-platform]
+---
+
+Wave provides transparent access to private container registries. Credentials live in Seqera Platform. You do not handle registry passwords, access tokens, or Docker config files directly.
+
+Wave supports Docker Hub, Quay.io, AWS ECR (private and public), Azure Container Registry, Google Artifact Registry, GitHub Container Registry, and any OCI (Open Container Initiative)-compliant self-hosted registry. Credentials are added in [Seqera Platform credentials](https://docs.seqera.io/platform/latest/credentials/overview/). When a Wave client runs, Wave uses the stored credentials on your behalf to pull from the source registry. For freeze and mirror operations, Wave also pushes to the target registry.
+
+:::note
+See [Credentials overview](https://docs.seqera.io/platform/latest/credentials/overview/) for setup details.
+:::
+
+## Use cases
+
+Use cases for private registry authentication include:
+
+- **Centralized credential management**: Credentials live in Seqera Platform as a single source of truth. They integrate with Platform role-based access control.
+- **No per-pipeline configuration**: Pipelines reference images by URI, and Wave resolves the credentials.
+- **Reduced credential leakage risk**: Secrets are not stored in pipeline code or Docker config files.
+- **Cross-registry pipelines**: Access and publish private images across multiple providers in a single run, including Docker Hub, Quay.io, ECR, ACR, GAR, GHCR, and self-hosted registries.
+
+## How it works
+
+The authentication flow runs as follows:
+
+1. A Wave client (Nextflow, the Wave CLI, or the Wave API) submits a container request with the private image URI and your Seqera Platform access token.
+2. Wave authenticates the caller against Seqera Platform and resolves the registry credentials stored in your workspace.
+3. Wave returns an ephemeral container image name, for example `wave.seqera.io/wt/<access-token>/library/alpine:latest`. The 12-character access token is a short-lived random key scoped to this request. It authorizes the follow-up pull without requiring the container runtime to supply source-registry credentials.
+4. The container runtime pulls the ephemeral image. Wave resolves credentials for the source registry and fetches the manifest. For most public registries, Wave returns an HTTP redirect and the runtime pulls blobs directly from the registry's storage. When a source registry serves blob bytes inline, Wave caches and streams the blobs through its blob cache.
+
+```mermaid
+sequenceDiagram
+    participant C as Client<br/>(Nextflow, Wave CLI, or API)
+    participant RT as Container runtime<br/>(Docker / containerd)
+    participant W as Wave
+    participant P as Seqera Platform
+    participant R as Private registry
+    participant Cache as Wave blob cache
+
+    C->>+W: Container request<br/>(image + user identity)
+    W->>+P: Authenticate user, resolve credentials
+    P-->>-W: Identity and registry credentials
+    W-->>-C: Ephemeral image URL
+
+    RT->>+W: Pull ephemeral image
+    W->>+R: Fetch manifest (using resolved credentials)
+    R-->>-W: Manifest
+    W-->>RT: Manifest
+
+    alt Registry redirects to its own storage (typical case)
+        RT->>R: Pull blobs directly
+        R-->>RT: Image blobs
+    else Registry serves blobs inline
+        RT->>Cache: Pull blobs through Wave
+        Cache-->>RT: Image blobs
+    end
+```
+
+### Credential resolution
+
+Wave resolves registry credentials based on whether the request is authenticated:
+
+- **Authenticated requests** use credentials stored in your Seqera Platform workspace. Wave queries the Platform credentials service with your access token, matches credentials by registry hostname, and uses the first matching entry.
+- **Anonymous requests** and requests targeting Wave's own build, cache, or public repositories use credentials configured by the Wave operator.
+
+For AWS ECR, Wave can additionally authenticate using its own cloud identity, removing the need to store ECR credentials in your workspace.
+
+The workspace used for credential lookup depends on the request context. If `tower.workspaceId` is set in the Nextflow configuration, Wave uses that workspace. Otherwise, Seqera Platform defaults to your personal workspace.

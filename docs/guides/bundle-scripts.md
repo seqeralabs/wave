@@ -33,7 +33,7 @@ Wave bundles scripts from [module `bin/` directories](https://nextflow.io/docs/l
 
 You must enable Wave and the module binaries feature to bundle module scripts:
 
-```groovy
+```groovy title="nextflow.config"
 nextflow.enable.moduleBinaries = true
 
 wave {
@@ -73,17 +73,17 @@ To pull and inspect Wave containers:
 1. Pull Wave-generated containers:
 
     ```bash
-    docker pull wave.seqera.io/wt/<HASH>/<IMAGE>
+    docker pull wave.seqera.io/wt/<hash>/<image>
     ```
 
 1. List bundled scripts:
 
     ```bash
-    docker run --rm wave.seqera.io/wt/<HASH>/<IMAGE> ls -la /usr/bin/
+    docker run --rm wave.seqera.io/wt/<hash>/<image> ls -la /usr/bin/
     ```
 
 1. Verify script availability:
 
     ```bash
-    docker run --rm wave.seqera.io/wt/<HASH>/<IMAGE> which <SCRIPT>
+    docker run --rm wave.seqera.io/wt/<hash>/<image> which <script>
     ```

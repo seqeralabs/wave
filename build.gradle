@@ -41,6 +41,7 @@ dependencies {
     implementation 'io.seqera:lib-retry:2.0.0'
     implementation 'io.seqera:lib-random:1.0.0'
     implementation 'io.seqera:lib-util-time:1.0.0'
+    implementation 'io.seqera:lib-util-net:0.1.0'
     implementation 'io.seqera:lib-activator:1.0.0'
     implementation project(':wave-api')
     implementation project(':wave-utils')
@@ -119,7 +120,7 @@ dependencies {
     implementation 'io.micronaut.views:micronaut-views-handlebars'
     // bump version to prevent security issue
     runtimeOnly 'org.apache.commons:commons-lang3:3.18.0'
-    runtimeOnly "io.netty:netty-bom:4.2.5.Final"
+    runtimeOnly platform("io.netty:netty-bom:$nettyVersion")
     runtimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.84'
     runtimeOnly 'org.bouncycastle:bcprov-jdk18on:1.84'
     runtimeOnly 'org.bouncycastle:bcutil-jdk18on:1.84'

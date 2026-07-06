@@ -45,4 +45,11 @@ class User implements MoshiSerializable {
     @Size(max = 255)
     String email
 
+    /**
+     * Build email notification preference forwarded by Tower in the user-info payload.
+     * May be {@code null} for older Tower clients that don't send the field (or a
+     * value not known to Wave), in which case {@link WaveBuildNotification#ALWAYS_ON} applies.
+     */
+    WaveBuildNotification waveBuildNotification
+
 }

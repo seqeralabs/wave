@@ -1,12 +1,12 @@
 ---
 title: Nextflow and Seqera Containers
-description: Provision containers through Seqera Containers and use them in your Nextflow pipelines
+description: Provision containers with Seqera Containers
 tags: [containers, nextflow, seqera containers, wave]
 ---
 
 [Seqera Containers][sc] is a free, publicly available bioinformatics container solution launched by Seqera in collaboration with AWS that allows researchers to generate custom containers on demand for any combination of Conda and PyPI packages at the click of a button.
 
-This guide describes how to provision containers that include Conda packages through [Seqera Containers][sc] and use them directly in your Nextflow pipelines. It includes:
+This tutorial describes how to provision containers that include Conda packages through [Seqera Containers][sc] and use them directly in your Nextflow pipelines. It includes:
 
 - Requesting a Conda package from Seqera Containers.
 - Creating a Nextflow pipeline that uses the container.
@@ -39,7 +39,7 @@ Nextflow can use the container that Seqera Containers built in the previous sect
 1. In a terminal window, create a new directory for the Nextflow pipeline.
 1. Create a `nextflow.config` file with the following contents:
 
-    ```groovy
+    ```groovy title="nextflow.config"
     docker {
       enabled = true
     }
@@ -47,9 +47,9 @@ Nextflow can use the container that Seqera Containers built in the previous sect
 
 1. Create a `main.nf` file with the following contents:
 
-    ```nextflow
+    ```nextflow title="main.nf"
     process SAMTOOLS {
-      container '<CONTAINER_URI>'
+      container '<container-uri>'
       debug true
       """
       samtools --version-only
@@ -60,7 +60,7 @@ Nextflow can use the container that Seqera Containers built in the previous sect
     }
     ```
 
-    Replace `<CONTAINER_URI>` with the container URI that you received from Seqera Containers in the previous section. For example:
+    Replace `<container-uri>` with the container URI that you received from Seqera Containers in the previous section. For example:
 
     - `community.wave.seqera.io/library/samtools:1.20--b5dfbd93de237464` for linux/amd64.
     - `community.wave.seqera.io/library/samtools:1.20--497854c5df637867` for linux/arm64.
@@ -97,5 +97,5 @@ Visit [Seqera Containers][sc] to learn more about Seqera's container solutions.
 [Docker Desktop]: https://www.docker.com/products/docker-desktop/
 
 [wave-build]: /wave_docs/wave_repo/docs/cli/use-cases.md#build-a-container
-[nf-config]: /wave_docs/wave_repo/docs/nextflow/configuration.md
+[nf-config]: /wave_docs/wave_repo/docs/nextflow/configuration.mdx
 [wave-cli]: /wave_docs/wave_repo/docs/cli/index.md

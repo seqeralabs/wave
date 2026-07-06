@@ -52,7 +52,7 @@ class ContainerHelperTest extends Specification {
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['https://foo.com/lock.yml']
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
-        def req = new SubmitContainerTokenRequest(packages: packages, format: 'sif')
+        def req = new SubmitContainerTokenRequest(packages: packages, format: 'sif', buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V1)
 
         when:
         def result = ContainerHelper.containerFileFromRequest(req)
@@ -81,7 +81,7 @@ class ContainerHelperTest extends Specification {
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['https://foo.com/lock.yml']
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
-        def req = new SubmitContainerTokenRequest(packages: packages)
+        def req = new SubmitContainerTokenRequest(packages: packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V1)
 
         when:
         def result = ContainerHelper.containerFileFromRequest(req)
@@ -109,7 +109,7 @@ class ContainerHelperTest extends Specification {
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
-        def req = new SubmitContainerTokenRequest(packages: packages, format: 'sif')
+        def req = new SubmitContainerTokenRequest(packages: packages, format: 'sif', buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V1)
 
         when:
         def result = ContainerHelper.containerFileFromRequest(req)
@@ -139,7 +139,7 @@ class ContainerHelperTest extends Specification {
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
-        def req = new SubmitContainerTokenRequest(packages: packages)
+        def req = new SubmitContainerTokenRequest(packages: packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V1)
 
         when:
         def result = ContainerHelper.containerFileFromRequest(req)
@@ -694,6 +694,7 @@ class ContainerHelperTest extends Specification {
                 WORKDIR /opt/wave
 
                 RUN pixi init --import /opt/wave/conda.yml \\
+                    && pixi add conda-forge::which \\
                     && pixi add conda-forge::procps-ng \\
                     && pixi shell-hook > /shell-hook.sh \\
                     && echo 'exec "$@"' >> /shell-hook.sh \\
@@ -746,6 +747,7 @@ class ContainerHelperTest extends Specification {
                 WORKDIR /opt/wave
                  
                 RUN pixi init --import /opt/wave/conda.yml \\
+                    && pixi add conda-forge::which \\
                     && pixi add foo::one bar::two \\
                     && pixi shell-hook > /shell-hook.sh \\
                     && echo 'exec "$@"' >> /shell-hook.sh \\
@@ -790,8 +792,54 @@ class ContainerHelperTest extends Specification {
         then:
         result =='''\
                 FROM mambaorg/micromamba:2-amazon2023 AS build
+                USER root
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
-                RUN (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
+                # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
+                RUN micromamba install -y -n base conda-forge::which \\
+                    && ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which \\
+                    && (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
+                    && cat /tmp/mamba.log \\
+                    || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
+                        && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /tmp/conda.yml)) \\
+                    && micromamba install -y -n base conda-forge::procps-ng \\
+                    && micromamba clean -a -y \\
+                    && micromamba env export --name base --explicit > environment.lock \\
+                    && echo ">> CONDA_LOCK_START" \\
+                    && cat environment.lock \\
+                    && echo "<< CONDA_LOCK_END"
+
+                FROM ubuntu:24.04 AS prod
+                ARG MAMBA_ROOT_PREFIX="/opt/conda"
+                ENV MAMBA_ROOT_PREFIX=$MAMBA_ROOT_PREFIX
+                COPY --from=build "$MAMBA_ROOT_PREFIX" "$MAMBA_ROOT_PREFIX"
+                USER root
+                ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                '''.stripIndent()
+    }
+
+    def 'should create conda docker file with packages using micromamba v2 by default'() {
+        given:
+        def CHANNELS = ['conda-forge', 'bioconda']
+        def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
+        def packages = new PackagesSpec(
+                type: PackagesSpec.Type.CONDA,
+                entries:  PACKAGES,
+                channels: CHANNELS)
+        and:
+        // no explicit build template: should default to micromamba v2
+        def req = new SubmitContainerTokenRequest(packages:packages)
+        when:
+        def result = ContainerHelper.containerFileFromRequest(req)
+
+        then:
+        result =='''\
+                FROM mambaorg/micromamba:2-amazon2023 AS build
+                USER root
+                COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
+                # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
+                RUN micromamba install -y -n base conda-forge::which \\
+                    && ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which \\
+                    && (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /tmp/conda.yml)) \\
@@ -833,8 +881,12 @@ class ContainerHelperTest extends Specification {
         then:
         result =='''\
                 FROM mambaorg/micromamba:2.0.0 AS build
+                USER root
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
-                RUN (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
+                # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
+                RUN micromamba install -y -n base conda-forge::which \\
+                    && ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which \\
+                    && (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /tmp/conda.yml)) \\
@@ -870,8 +922,12 @@ class ContainerHelperTest extends Specification {
         then:
         result =='''\
                 FROM mambaorg/micromamba:2-amazon2023 AS build
+                USER root
+                # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
                 RUN \\
-                    (micromamba install -y -n base -c conda-forge -c bioconda -f https://foo.com/lock.yml > /tmp/mamba.log 2>&1 \\
+                    micromamba install -y -n base conda-forge::which \\
+                    && ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which \\
+                    && (micromamba install -y -n base -c conda-forge -c bioconda -f https://foo.com/lock.yml > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -c conda-forge -c bioconda -f https://foo.com/lock.yml)) \\
