@@ -49,16 +49,29 @@ jobs:
         id: detect-release
         env:
           COMMIT_MSG: ${{ github.event.head_commit.message }}
+          REF: ${{ github.ref }}
         run: |
           # Only direct pushes whose first line tags `[release]` should publish.
           # Squash merges append "(#NNN)" and merge commits start with "Merge pull request #NNN" —
           # both must be excluded so a PR body mentioning [release] does not trigger a release.
           first_line=$(printf '%s\n' "$COMMIT_MSG" | head -n1)
+          is_release_commit=false
           if [[ "$first_line" == *"[release]"* ]] \
              && [[ ! "$first_line" =~ \(#[0-9]+\)$ ]] \
              && [[ ! "$first_line" =~ ^Merge\ pull\ request\ #[0-9]+ ]]; then
-            echo "Detected release commit — release steps will run"
+            is_release_commit=true
+          fi
+
+          # Releases may only publish from master or a release-* branch. This matches the
+          # wave-ecr-pusher OIDC trust (infrastructure central-container-registry/iam.tf); a
+          # [release] commit on any other branch would fail sts:AssumeRoleWithWebIdentity, so
+          # skip it with a warning instead of attempting an unauthorized ECR push.
+          if [[ "$is_release_commit" == "true" && ( "$REF" == "refs/heads/master" || "$REF" == refs/heads/release-* ) ]]; then
+            echo "Detected release commit on $REF — release steps will run"
             echo "is_release=true" >> "$GITHUB_OUTPUT"
+          elif [[ "$is_release_commit" == "true" ]]; then
+            echo "::warning::[release] commit on non-release branch $REF — skipping release. Only master and release-* branches can publish."
+            echo "is_release=false" >> "$GITHUB_OUTPUT"
           else
             echo "Not a release commit — release steps will be skipped"
             echo "is_release=false" >> "$GITHUB_OUTPUT"
