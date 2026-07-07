@@ -3,6 +3,7 @@ wave:
     uri: "jdbc:postgresql://localhost:5432/changeme"
     user: "changeme"
     password: "changeme"
+    schema: "${WAVE_DB_SCHEMA:wave}"
 datasources:
   default:
     db-type: postgres
@@ -11,4 +12,4 @@ datasources:
     url: "${wave.db.uri}"
     username: "${wave.db.user}"
     password: "${wave.db.password}"
-
+    schema: "${wave.db.schema}"
