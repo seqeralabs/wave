@@ -49,6 +49,7 @@ dependencies {
     implementation 'jakarta.persistence:jakarta.persistence-api:3.0.0'
     implementation 'io.seqera:lib-cache-tiered-redis:1.1.0'
     implementation 'io.seqera:lib-lang:1.1.0'
+    implementation 'io.seqera:lib-httpx:2.6.0'
     implementation 'io.seqera:lib-serde:1.2.0'
     implementation 'io.seqera:lib-serde-moshi:1.1.0'
     implementation 'io.seqera:lib-mail:1.3.1'
@@ -210,6 +211,9 @@ test {
     environment 'QUAY_PAT', project.findProperty('QUAY_PAT') ?: environment['QUAY_PAT']
 
     systemProperty 'logback.configurationFile', 'src/test/resources/logback-test.xml'
+    // enable Basic authentication for HTTPS proxy tunnelling (CONNECT requests),
+    // required by `HttpClientFactoryProxyTest` - see also `HttpClientConfig.enableProxyAuthSchemes`
+    systemProperty 'jdk.http.auth.tunneling.disabledSchemes', ''
 
 }
 
