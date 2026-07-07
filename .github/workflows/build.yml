@@ -51,31 +51,47 @@ jobs:
           COMMIT_MSG: ${{ github.event.head_commit.message }}
           REF: ${{ github.ref }}
         run: |
-          # Only direct pushes whose first line tags `[release]` should publish.
+          # Only direct pushes whose first line tags `[release]` or `[preview]` build an image.
           # Squash merges append "(#NNN)" and merge commits start with "Merge pull request #NNN" —
-          # both must be excluded so a PR body mentioning [release] does not trigger a release.
+          # both must be excluded so a PR body mentioning the tag does not trigger anything.
           first_line=$(printf '%s\n' "$COMMIT_MSG" | head -n1)
-          is_release_commit=false
-          if [[ "$first_line" == *"[release]"* ]] \
-             && [[ ! "$first_line" =~ \(#[0-9]+\)$ ]] \
-             && [[ ! "$first_line" =~ ^Merge\ pull\ request\ #[0-9]+ ]]; then
-            is_release_commit=true
+
+          has_tag() {
+            [[ "$first_line" == *"$1"* ]] \
+              && [[ ! "$first_line" =~ \(#[0-9]+\)$ ]] \
+              && [[ ! "$first_line" =~ ^Merge\ pull\ request\ #[0-9]+ ]]
+          }
+
+          is_release=false
+          is_preview=false
+          has_tag "[release]" && is_release=true
+          has_tag "[preview]" && is_preview=true
+
+          # [release] is the production path: it publishes to the customer-facing enterprise repo,
+          # maven, a git tag and a GitHub release. Those require the wave-ecr-pusher /
+          # MavenPublisherRole OIDC roles, which only trust master and release-* (infrastructure
+          # central-container-registry/iam.tf + management/iam), and we only want quality-bar
+          # builds reaching customer-deployed locations. So [release] only publishes from
+          # master or a release-* branch.
+          is_publish=false
+          if [[ "$is_release" == "true" && ( "$REF" == "refs/heads/master" || "$REF" == refs/heads/release-* ) ]]; then
+            is_publish=true
+          elif [[ "$is_release" == "true" ]]; then
+            echo "::warning::[release] on non-release branch $REF will not publish to the enterprise repo. Use [preview] to push a dev image from a feature branch."
           fi
 
-          # Releases may only publish from master or a release-* branch. This matches the
-          # wave-ecr-pusher OIDC trust (infrastructure central-container-registry/iam.tf); a
-          # [release] commit on any other branch would fail sts:AssumeRoleWithWebIdentity, so
-          # skip it with a warning instead of attempting an unauthorized ECR push.
-          if [[ "$is_release_commit" == "true" && ( "$REF" == "refs/heads/master" || "$REF" == refs/heads/release-* ) ]]; then
-            echo "Detected release commit on $REF — release steps will run"
-            echo "is_release=true" >> "$GITHUB_OUTPUT"
-          elif [[ "$is_release_commit" == "true" ]]; then
-            echo "::warning::[release] commit on non-release branch $REF — skipping release. Only master and release-* branches can publish."
-            echo "is_release=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "Not a release commit — release steps will be skipped"
-            echo "is_release=false" >> "$GITHUB_OUTPUT"
+          # [preview] mirrors [release] but only pushes to the internal (dev) ECR, from any branch,
+          # so features can be built and validated without surfacing in customer-deployed locations.
+          # Build the image once whenever we are going to push it somewhere.
+          do_build=false
+          if [[ "$is_preview" == "true" || "$is_publish" == "true" ]]; then
+            do_build=true
           fi
+
+          echo "release=$is_release preview=$is_preview publish=$is_publish build=$do_build ref=$REF"
+          echo "is_preview=$is_preview" >> "$GITHUB_OUTPUT"
+          echo "is_publish=$is_publish" >> "$GITHUB_OUTPUT"
+          echo "do_build=$do_build" >> "$GITHUB_OUTPUT"
 
       - name: Setup Java ${{ matrix.java_version }}
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # ratchet:actions/setup-java@v5.2.0
@@ -112,8 +128,59 @@ jobs:
         run: |
           sudo rm -rf /home/runner/work/wave/wave/build-workspace
 
+      # Build the image once. A [preview] pushes it to the internal (dev) ECR below; a [release]
+      # on master/release-* promotes it to the enterprise repo + maven.
+      - name: Build wave server image
+        id: build
+        if: "steps.detect-release.outputs.do_build == 'true'"
+        run: |
+          set -euo pipefail
+          TAG=v$(cat VERSION)
+          ./gradlew -PjibRepo=wave/server:$TAG jibDockerBuild
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+        env:
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false'
+
+      # --- Internal (dev) ECR push: [preview] only, any branch ---
+      # Lets features be built from any branch and pulled into dev/testing without reaching a
+      # customer-deployed location. Inlined from seqeralabs/actions/push because that action is
+      # private and wave is public (SEC-1409). Two-step role chain: gha-seqeralabs-action-role ->
+      # gha-generic-internal-pusher. The repository is carried from the OIDC claim into a session
+      # tag by the role trust, so the chained role may only push to internal/<org>/<repo>/*.
+      - name: Configure AWS credentials for internal action role
+        if: "steps.detect-release.outputs.is_preview == 'true'"
+        uses: aws-actions/configure-aws-credentials@acca2b1b2070338fb9fd1ca27ecee81d687e58e5 # ratchet:aws-actions/configure-aws-credentials@v6.1.2
+        with:
+          aws-region: eu-west-2
+          role-to-assume: arn:aws:iam::232933512461:role/gha-seqeralabs-action-role
+          role-session-name: GitHubActions-${{ github.run_id }}
+
+      - name: Configure AWS credentials for internal pusher
+        if: "steps.detect-release.outputs.is_preview == 'true'"
+        uses: aws-actions/configure-aws-credentials@acca2b1b2070338fb9fd1ca27ecee81d687e58e5 # ratchet:aws-actions/configure-aws-credentials@v6.1.2
+        with:
+          aws-region: eu-west-2
+          role-to-assume: arn:aws:iam::232933512461:role/gha-generic-internal-pusher
+          role-session-name: ${{ github.event.repository.name }}
+          role-chaining: true
+
+      - name: Login to internal Amazon ECR
+        id: login-ecr-internal
+        if: "steps.detect-release.outputs.is_preview == 'true'"
+        uses: aws-actions/amazon-ecr-login@fa648b43de3d4d023bcb3f89ed6940096949c419 # ratchet:aws-actions/amazon-ecr-login@v2.1.5
+
+      - name: Push image to internal ECR
+        if: "steps.detect-release.outputs.is_preview == 'true'"
+        run: |
+          set -euo pipefail
+          TAG=${{ steps.build.outputs.tag }}
+          REMOTE=${{ steps.login-ecr-internal.outputs.registry }}/internal/${{ github.repository }}/server:$TAG
+          docker tag wave/server:$TAG "$REMOTE"
+          docker push "$REMOTE"
+
+      # --- Enterprise repo + maven publish + git tag + GitHub release: master / release-* only ---
       - name: Login to legacy ECR
-        if: "steps.detect-release.outputs.is_release == 'true'"
+        if: "steps.detect-release.outputs.is_publish == 'true'"
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # ratchet:docker/login-action@v4.2.0
         with:
           registry: 195996028523.dkr.ecr.eu-west-1.amazonaws.com
@@ -123,7 +190,7 @@ jobs:
           AWS_REGION: eu-west-1
 
       - name: Configure AWS credentials for platform pusher
-        if: "steps.detect-release.outputs.is_release == 'true'"
+        if: "steps.detect-release.outputs.is_publish == 'true'"
         uses: aws-actions/configure-aws-credentials@acca2b1b2070338fb9fd1ca27ecee81d687e58e5 # ratchet:aws-actions/configure-aws-credentials@v6.1.2
         with:
           aws-region: eu-west-2
@@ -131,35 +198,32 @@ jobs:
           role-session-name: GitHubActions-${{ github.run_id }}
 
       - name: Login to enterprise Amazon ECR
-        if: "steps.detect-release.outputs.is_release == 'true'"
+        if: "steps.detect-release.outputs.is_publish == 'true'"
         uses: aws-actions/amazon-ecr-login@fa648b43de3d4d023bcb3f89ed6940096949c419 # ratchet:aws-actions/amazon-ecr-login@v2.1.5
 
       - name: Configure AWS credentials for maven publish
-        if: "steps.detect-release.outputs.is_release == 'true'"
+        if: "steps.detect-release.outputs.is_publish == 'true'"
         uses: aws-actions/configure-aws-credentials@acca2b1b2070338fb9fd1ca27ecee81d687e58e5 # ratchet:aws-actions/configure-aws-credentials@v6.1.2
         with:
           aws-region: eu-west-1
           role-to-assume: arn:aws:iam::195996028523:role/MavenPublisherRole
           role-session-name: GitHubActions-${{ github.run_id }}-maven-publish
 
-      - name: Release
+      - name: Promote release to enterprise repo and maven
         id: release
-        if: "steps.detect-release.outputs.is_release == 'true'"
+        if: "steps.detect-release.outputs.is_publish == 'true'"
         run: |
           set -e
           set -x
           bash publish.sh wave-api
           bash publish.sh wave-utils
 
-          TAG=v$(cat VERSION)
+          TAG=${{ steps.build.outputs.tag }}
 
           # Tag repo
           REMOTE=https://oauth:$GITHUB_TOKEN@github.com/${GITHUB_REPOSITORY}.git
           git tag $TAG
           git push $REMOTE $TAG
-
-          # Build container image locally with a generic name
-          ./gradlew -PjibRepo=wave/server:$TAG jibDockerBuild
 
           # Push nf-tower-enterprise/wave to legacy ECR
           LEGACY_ECR=195996028523.dkr.ecr.eu-west-1.amazonaws.com
