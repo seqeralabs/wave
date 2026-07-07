@@ -136,7 +136,7 @@ class ViewController {
         binding.mirror_target_image = result.targetImage
         binding.mirror_platform = result.platform ?: '(all)'
         binding.mirror_digest = result.digest ?: '-'
-        binding.mirror_user = result.userName ?: '-'
+        binding.mirror_user_id = result.userId != null ? result.userId.toString() : '-'
         binding.put('server_url', serverUrl)
         ChildRefs.populateScanBinding(binding, result.scanId, null, result.succeeded(), serverUrl)
         return binding
@@ -242,7 +242,7 @@ class ViewController {
         binding.build_failed = result.done() && !result.succeeded() 
         binding.build_in_progress = !result.done()
         binding.build_exit_status = result.exitStatus != null ? result.exitStatus : '-'
-        binding.build_user = (result.userName ?: '-')
+        binding.build_user_id = result.userId != null ? result.userId.toString() : '-'
         binding.build_time = formatTimestamp(result.startTime, result.offsetId) ?: '-'
         binding.build_duration = formatDuration(result.duration) ?: '-'
         binding.build_image = result.targetImage
@@ -299,8 +299,6 @@ class ViewController {
 
         // user & tower data
         binding.tower_user_id = data.user?.id
-        binding.tower_user_email = data.user?.email
-        binding.tower_user_name = data.user?.userName
         binding.tower_workspace_id = data.workspaceId ?: '-'
         binding.tower_endpoint = data.towerEndpoint
 

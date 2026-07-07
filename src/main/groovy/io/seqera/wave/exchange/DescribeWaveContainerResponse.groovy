@@ -36,8 +36,19 @@ import io.seqera.wave.tower.User
 class DescribeWaveContainerResponse {
 
     @Canonical
+    static class UserInfo {
+        final Long id
+
+        UserInfo() {}
+
+        UserInfo(User user) {
+            this.id = user?.id
+        }
+    }
+
+    @Canonical
     static class RequestInfo {
-        final User user
+        final UserInfo user
         final Long workspaceId
         final String containerImage
         final ContainerConfig containerConfig
@@ -51,7 +62,7 @@ class DescribeWaveContainerResponse {
         RequestInfo() {}
 
         RequestInfo(WaveContainerRecord data) {
-            this.user = data.user
+            this.user = data.user ? new UserInfo(data.user) : null
             this.workspaceId = data.workspaceId
             this.containerImage = data.containerImage
             this.containerConfig = data.containerConfig

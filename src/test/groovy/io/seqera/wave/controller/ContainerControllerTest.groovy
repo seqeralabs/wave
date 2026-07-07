@@ -59,7 +59,6 @@ import io.seqera.wave.service.mirror.ContainerMirrorService
 import io.seqera.service.pairing.PairingService
 import io.seqera.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
-import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.request.ContainerRequestService
 import io.seqera.wave.service.request.TokenData
 import io.seqera.wave.service.validation.ValidationService
@@ -719,15 +718,16 @@ class ContainerControllerTest extends Specification {
 
         when:
         def req2 = HttpRequest.GET("/v1alpha2/container/${requestId}")
-        def resp2 = client.toBlocking().exchange(req2, WaveContainerRecord)
+        def resp2 = client.toBlocking().exchange(req2, DescribeWaveContainerResponse)
         then:
         resp2.status() == HttpStatus.OK
         and:
         def result = resp2.body()
         and:
-        result.containerImage == 'hello-world'
-        result.sourceImage == 'docker.io/library/hello-world:latest'
-        result.waveImage == resp1.body().targetImage
+        result.token == requestId
+        result.request.containerImage == 'hello-world'
+        result.source.image == 'docker.io/library/hello-world:latest'
+        result.wave.image == resp1.body().targetImage
     }
 
     def 'should return the container status' () {

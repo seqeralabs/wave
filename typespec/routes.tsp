@@ -24,7 +24,7 @@ namespace wave {
     @route("/{requestId}")
     @doc("This endpoint allows you to get the details of a container request made to Wave.")
     @get op getContainerDetails(@path requestId: string): {
-      @body response: WaveContainerRecord;
+      @body response: DescribeWaveContainerResponse;
       @statusCode statusCode: 200;
     }|{
       @statusCode statusCode: 404;
