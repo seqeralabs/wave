@@ -30,7 +30,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java_version: [21]
+        java_version: [25]
     permissions:
       contents: write
       id-token: write
