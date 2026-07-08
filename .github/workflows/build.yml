@@ -174,9 +174,13 @@ jobs:
         run: |
           set -euo pipefail
           TAG=${{ steps.build.outputs.tag }}
-          REMOTE=${{ steps.login-ecr-internal.outputs.registry }}/internal/${{ github.repository }}/server:$TAG
+          # Tag preview images by commit so previews from different branches/PRs do not
+          # collide on the same VERSION tag and each build is individually pullable.
+          PREVIEW_TAG=${TAG}-${GITHUB_SHA::7}
+          REMOTE=${{ steps.login-ecr-internal.outputs.registry }}/internal/${{ github.repository }}/server:$PREVIEW_TAG
           docker tag wave/server:$TAG "$REMOTE"
           docker push "$REMOTE"
+          echo "Pushed preview image: $REMOTE"
 
       # --- Enterprise repo + maven publish + git tag + GitHub release: master / release-* only ---
       - name: Login to legacy ECR
