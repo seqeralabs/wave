@@ -23,13 +23,13 @@ import java.time.Duration
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.seqera.data.stream.MessageConsumer
-import io.seqera.data.stream.MessageStream
+import io.seqera.data.workqueue.MessageConsumer
+import io.seqera.data.workqueue.WorkQueue
 import io.seqera.serde.encode.StringEncodingStrategy
 import io.seqera.wave.configuration.JobManagerConfig
 import io.seqera.wave.configuration.WaveLite
 import io.seqera.serde.moshi.MoshiEncodeStrategy
-import io.seqera.wave.service.data.stream.BaseMessageStream
+import io.seqera.wave.service.data.workqueue.BaseWorkQueue
 import jakarta.annotation.PreDestroy
 import jakarta.inject.Singleton
 /**
@@ -42,7 +42,7 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-class JobPendingQueue extends BaseMessageStream<JobSpec> {
+class JobPendingQueue extends BaseWorkQueue<JobSpec> {
 
     private final static String STREAM_NAME = 'jobs-pending/v2'
 
@@ -50,7 +50,7 @@ class JobPendingQueue extends BaseMessageStream<JobSpec> {
 
     private JobManagerConfig config
 
-    JobPendingQueue(MessageStream<String> target, JobManagerConfig config) {
+    JobPendingQueue(WorkQueue<String> target, JobManagerConfig config) {
         super(target)
         this.encoder = new MoshiEncodeStrategy<JobSpec>() {}
         this.config = config
