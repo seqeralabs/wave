@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:16
+    image: postgres:16.14
     environment:
       POSTGRES_DB: wave
       POSTGRES_USER: wave
