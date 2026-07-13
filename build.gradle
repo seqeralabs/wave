@@ -5,6 +5,7 @@ plugins {
     id 'io.seqera.wave.java-library-conventions'
     id 'io.seqera.wave.groovy-application-conventions'
     id "io.micronaut.minimal.application" version "4.1.1"
+    id "io.micronaut.openapi" version "4.5.4"
     id "com.google.cloud.tools.jib" version "3.4.5"
     id 'jacoco'
 }
@@ -44,6 +45,7 @@ dependencies {
     implementation 'io.seqera:lib-util-net:0.1.0'
     implementation 'io.seqera:lib-activator:1.0.0'
     implementation project(':wave-api')
+    implementation project(':wave-api-v1')
     implementation project(':wave-utils')
     implementation 'io.seqera:lib-pairing:1.0.0'
     implementation 'io.seqera:lib-data-store-state-redis:1.0.0'
@@ -131,12 +133,43 @@ application {
     mainClass.set("io.seqera.wave.Application")
 }
 
+// Ensure OpenAPI generation happens before server code generation
+evaluationDependsOn(':wave-api-v1')
+afterEvaluate {
+    tasks.findByName('generateV1OpenApiModels')?.dependsOn project(':wave-api-v1').tasks.named('generateOpenApi')
+    tasks.findByName('generateV1OpenApiApis')?.dependsOn project(':wave-api-v1').tasks.named('generateOpenApi')
+    // processResources reads build/generated/openapi; declare ordering to avoid implicit-dependency warning
+    def genApis   = tasks.findByName('generateV1OpenApiApis')
+    def genModels = tasks.findByName('generateV1OpenApiModels')
+    if (genApis)   processResources.mustRunAfter(genApis)
+    if (genModels) processResources.mustRunAfter(genModels)
+}
+
 micronaut {
     runtime("netty")
     testRuntime("spock2")
     processing {
         incremental(true)
         annotations("io.seqera.*")
+    }
+    openapi {
+        server('v1', project(':wave-api-v1').file('build/openapi/openapi-latest.yaml')) {
+            apiPackageName = 'io.seqera.wave.api.v1.spec'
+            modelPackageName = 'io.seqera.wave.api.v1.model'
+            useReactive = false
+            useAuth = false
+            apiNameSuffix = 'ApiSpec'
+            additionalProperties = [
+                "dateLibrary"                    : "java8",
+                "generateConstructorWithAllArgs" : "false",
+                "interfaceOnly"                  : "true",
+                "openApiNullable"                : "false",
+                "operationIdCaseFormat"          : "camelCase",
+                "removeOperationIdPrefix"        : "true",
+                "requiredPropertiesInConstructor": "false",
+                "useTags"                        : "true"
+            ]
+        }
     }
 }
 
@@ -216,57 +249,29 @@ compileGroovy.dependsOn buildInfo
 // ----------------------------------------------------------------------------
 // OpenAPI / Swagger UI bundling
 //
-// Compiles the TypeSpec sources in `typespec/` to `openapi.yaml` and generates
-// a Swagger UI page from `src/main/resources/swagger-ui-template.html`.
-// Both artifacts are copied into `build/resources/main/public/openapi/` so they
-// are bundled into the main Wave application container and served at /openapi/.
-//
-// This replaces the previous separate `wave/openapi` nginx container.
+// The TypeSpec source of truth lives in `wave-api-v1`. This block consumes
+// the generated `openapi-latest.yaml`, substitutes the project version,
+// and stages it (plus the Swagger UI HTML) into the served public/openapi
+// directory inside the main application.
 // ----------------------------------------------------------------------------
-def typespecDir = file('typespec')
-def typespecOutput = file("${typespecDir}/tsp-output/@typespec/openapi3/openapi.yaml")
+def openapiYaml = project(':wave-api-v1').file('build/openapi/openapi-latest.yaml')
 def openapiBuildDir = file("${buildDir}/generated/openapi")
-
-tasks.register('installTypeSpec', Exec) {
-    group = 'documentation'
-    description = 'Install TypeSpec compiler and dependencies via npm'
-    workingDir typespecDir
-    commandLine 'npm', 'install'
-
-    inputs.file("${typespecDir}/package.json")
-    outputs.dir("${typespecDir}/node_modules")
-}
-
-tasks.register('generateOpenApi', Exec) {
-    group = 'documentation'
-    description = 'Compile TypeSpec sources into openapi.yaml'
-    dependsOn 'installTypeSpec'
-    workingDir typespecDir
-    commandLine 'npx', 'tsp', 'compile', '.'
-
-    inputs.files(fileTree(typespecDir) {
-        include 'main.tsp', 'routes.tsp', 'tspconfig.yaml', 'models/**/*.tsp'
-    })
-    outputs.file(typespecOutput)
-}
 
 tasks.register('generateSwaggerUI') {
     group = 'documentation'
-    description = 'Stage openapi.yaml and a Swagger UI page under public/openapi'
-    dependsOn 'generateOpenApi'
+    description = 'Stage openapi-latest.yaml and a Swagger UI page under public/openapi'
+    dependsOn ':wave-api-v1:generateOpenApi'
 
-    inputs.file(typespecOutput)
+    inputs.file(openapiYaml)
     inputs.file('src/main/resources/swagger-ui-template.html')
     outputs.dir(openapiBuildDir)
 
     doLast {
         openapiBuildDir.mkdirs()
 
-        // Copy spec and substitute the placeholder version (typespec emits `version: 0.0.0`)
-        def specText = typespecOutput.text.replace('version: 0.0.0', "version: ${version}")
+        def specText = openapiYaml.text.replace('version: 0.0.0', "version: ${version}")
         new File(openapiBuildDir, 'openapi.yaml').text = specText
 
-        // Render the Swagger UI page with the project version
         def template = file('src/main/resources/swagger-ui-template.html').text
         new File(openapiBuildDir, 'index.html').text = template.replace('${PROJECT_VERSION}', version.toString())
     }
@@ -298,4 +303,61 @@ jacocoTestReport {
             fileTree(dir: dir, excludes: ['**/*$*_closure*'])
         }))
     }
+}
+
+// ----------------------------------------------------------------------------
+// API Code Generation — copy the OpenAPI-plugin output into wave-api-v1 sources
+//
+// The Micronaut OpenAPI plugin writes generated server interfaces and models
+// to build/generated/openapi/.  We copy them into wave-api-v1/src/main/java
+// so the generated files are committed (downstream clients can consume the
+// module without running TypeSpec) and so IDEs see them as ordinary sources.
+// ----------------------------------------------------------------------------
+
+def v1SpecSrc   = file("${buildDir}/generated/openapi/generateV1OpenApiApis/src/main/java/io/seqera/wave/api/v1/spec")
+def v1ModelSrc  = file("${buildDir}/generated/openapi/generateV1OpenApiModels/src/main/java/io/seqera/wave/api/v1/model")
+def v1SpecDst   = project(':wave-api-v1').file('src/main/java/io/seqera/wave/api/v1/spec')
+def v1ModelDst  = project(':wave-api-v1').file('src/main/java/io/seqera/wave/api/v1/model')
+
+tasks.register('cleanApiCode') {
+    group = 'code generation'
+    description = 'Remove previously-copied v1 API spec and model classes'
+    doLast {
+        delete fileTree(v1SpecDst)  { include '**/*.java' }
+        delete fileTree(v1ModelDst) { include '**/*.java' }
+        delete file("${buildDir}/generated/openapi/generateV1OpenApiApis")
+        delete file("${buildDir}/generated/openapi/generateV1OpenApiModels")
+    }
+}
+
+tasks.register('generateApiCode') {
+    group = 'code generation'
+    description = 'Copy generated v1 API interfaces and model classes into wave-api-v1 sources'
+    dependsOn 'cleanApiCode', 'generateV1OpenApiApis', 'generateV1OpenApiModels'
+    mustRunAfter 'cleanApiCode'
+
+    doLast {
+        copy {
+            from v1SpecSrc
+            into v1SpecDst
+            include '**/*.java'
+        }
+        copy {
+            from v1ModelSrc
+            into v1ModelDst
+            include '**/*.java'
+        }
+    }
+}
+
+afterEvaluate {
+    tasks.findByName('generateV1OpenApiApis')  ?.mustRunAfter 'cleanApiCode'
+    tasks.findByName('generateV1OpenApiModels')?.mustRunAfter 'cleanApiCode'
+
+    // The Micronaut OpenAPI plugin registers the generated source dirs on the main
+    // project's sourceSet.  We copy those files into wave-api-v1 instead, so we
+    // remove them from the main sourceSet to avoid duplicate compilation.
+    def genApisOut   = file("${buildDir}/generated/openapi/generateV1OpenApiApis/src/main/java")
+    def genModelsOut = file("${buildDir}/generated/openapi/generateV1OpenApiModels/src/main/java")
+    sourceSets.main.java.srcDirs = sourceSets.main.java.srcDirs.findAll { it != genApisOut && it != genModelsOut }
 }

@@ -36,6 +36,8 @@ interface ContainerScanService {
 
     void scan(ScanRequest request)
 
+    WaveScanRecord submitScan(ScanRequest request)
+
     void scanOnBuild(BuildEntry build)
 
     void scanOnMirror(MirrorEntry entry)
