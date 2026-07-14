@@ -133,12 +133,15 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
         // getEntriesUntil atomically pops the due entries (score <= now), so across replicas each
         // entry is processed by exactly one watcher; the cap bounds the work done per tick.
         final keys = containerRequestRange.getEntriesUntil(now, config.watcherCount)
+        if( keys )
+            log.debug "Container request watcher processing ${keys.size()} entries"
         for( Entry it : keys ) {
             try {
                 check0(it, now)
             }
             catch (InterruptedException e) {
                 // Preserve the interrupt flag so a shutdown request is not swallowed by this loop.
+                log.warn "Container request watcher interrupted while processing key: $it"
                 Thread.currentThread().interrupt()
             }
             catch (Throwable t) {
@@ -225,7 +228,8 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
     protected boolean isWorkflowActive(Workflow workflow) {
         // Active == not yet finished. A null workflow (unknown / not returned) counts as inactive
         // so we err on the side of letting the token expire rather than extending forever.
-        return [Workflow.WorkflowStatus.SUBMITTED, Workflow.WorkflowStatus.RUNNING].contains(workflow?.status)
+        final status = workflow?.status
+        return status==Workflow.WorkflowStatus.SUBMITTED || status==Workflow.WorkflowStatus.RUNNING
     }
 
 }
