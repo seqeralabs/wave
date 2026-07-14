@@ -278,7 +278,7 @@ class WaveContainerRecord {
      * @return A copy of this record exposing only the user id, so that the user name
      *         and email are not leaked when the record is returned in an API response.
      */
-    WaveContainerRecord withoutUserDetails() {
+    WaveContainerRecord withUserIdOnly() {
         return user!=null ? new WaveContainerRecord(this, User.ofId(user.id)) : this
     }
 
