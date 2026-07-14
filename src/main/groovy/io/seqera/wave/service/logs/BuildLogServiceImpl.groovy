@@ -194,6 +194,7 @@ class BuildLogServiceImpl implements BuildLogService {
             }
             return logs.substring(start + CONDA_LOCK_START.length(), end)
                     .replaceAll(/#\d+ \d+\.\d+\s*/, '')
+                    .stripLeading()
     }
 
     String fetchValidCondaLock(String buildId) {
