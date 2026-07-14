@@ -111,7 +111,7 @@ class JwtMonitor implements Runnable {
             return
         }
         // check if the JWT record is expired
-        final deadline = entry.createdAt + requestConfig.cache.duration
+        final deadline = entry.createdAt + requestConfig.cacheDuration
         if( now > deadline ) {
             log.debug "JWT record expired - entry=$entry; deadline=$deadline; "
             return

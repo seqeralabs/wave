@@ -24,87 +24,56 @@ import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.micronaut.context.annotation.Value
 import io.seqera.util.time.DurationUtils
-import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
  * Configuration to be used by {@link io.seqera.wave.service.request.ContainerRequestService}
  *
  * @author: Paolo Di Tommaso <paolo.ditommaso@gmail.com>
- *
  */
 @CompileStatic
 @ToString(includePackage = false, includeNames = true)
 @Singleton
 class ContainerRequestConfig {
 
-    @Inject
-    Cache cache
-
-    @Inject
-    Watcher watcher
+    /**
+     * The default duration of a container request time-to-live, i.e. how long
+     * a container token is valid and therefore an ephemeral container can be accessed.
+     */
+    @Value('${wave.tokens.cache.duration:36h}')
+    Duration cacheDuration
 
     /**
-     * Model container token caching configuration settings
+     * The maximum duration a container request time-to-live can be extended to.
      */
-    @ToString(includePackage = false, includeNames = true)
-    @Singleton
-    static class Cache {
-
-        /**
-         * The default duration of a container request time-to-live.
-         * This determines how long a container token is valid, and
-         * therefore an ephemeral container can be accessed.
-         */
-        @Value('${wave.tokens.cache.duration:36h}')
-        Duration duration
-
-        /**
-         * The maximum duration of a container request time-to-live.
-         * This determines how long a container token is valid, and
-         * therefore an ephemeral container can be accessed.
-         */
-        @Value('${wave.tokens.cache.max-duration:2d}')
-        Duration maxDuration
-
-        /**
-         * This method returns the period of time between two consecutive check events.
-         * The interval determines how frequently a refresh operation is triggered.
-         * A shorter interval means more frequent checks, while a longer interval reduces checks frequency.
-         */
-        @Value('${wave.tokens.cache.check-interval:30m}')
-        Duration checkInterval
-
-    }
+    @Value('${wave.tokens.cache.max-duration:2d}')
+    Duration cacheMaxDuration
 
     /**
-     * Model container request watcher configuration settings
+     * The period of time between two consecutive refresh check events.
      */
-    @ToString(includePackage = false, includeNames = true)
-    @Singleton
-    static class Watcher {
+    @Value('${wave.tokens.cache.check-interval:30m}')
+    Duration cacheCheckInterval
 
-        /**
-         * Determine the delay after which the container request watcher service is run
-         */
-        @Value('${wave.tokens.watcher.interval:10s}')
-        Duration interval
+    /**
+     * The delay between two consecutive watcher runs.
+     */
+    @Value('${wave.tokens.watcher.interval:10s}')
+    Duration watcherInterval
 
-        /**
-         * Determine the delay after which the watcher service is launched after the bootstrap
-         */
-        @Value('${wave.tokens.watcher.delay:5s}')
-        Duration delay
+    /**
+     * The delay after which the watcher service is launched on bootstrap.
+     */
+    @Value('${wave.tokens.watcher.delay:5s}')
+    Duration watcherDelay
 
-        /**
-         * Determine the number of container requests that are processed in watcher cycle
-         */
-        @Value('${wave.tokens.watcher.count:250}')
-        int count
+    /**
+     * The number of container requests processed in a watcher cycle.
+     */
+    @Value('${wave.tokens.watcher.count:250}')
+    int watcherCount
 
-        Duration getDelayRandomized() {
-            DurationUtils.randomDuration(getDelay(), 0.4f)
-        }
-
+    Duration getWatcherDelayRandomized() {
+        DurationUtils.randomDuration(watcherDelay, 0.4f)
     }
 
 }

@@ -55,9 +55,9 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
 
     @Override
     TokenData computeToken(ContainerRequest request) {
-        final expiration = Instant.now().plus(config.cache.duration)
-        // put in the container store
-        containerRequestStore.put(request.requestId, request, config.cache.duration)
+        final expiration = Instant.now().plus(config.cacheDuration)
+        // put in the container store (uses the default cache duration)
+        containerRequestStore.put(request.requestId, request)
         // when the workflowId is available schedule a refresh event
         if( request.type==ContainerRequest.Type.Container && request.identity.workflowId ) {
             final entry = new ContainerRequestRange.Entry(request.requestId, request.identity.workflowId, expiration)
@@ -101,24 +101,24 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
     private TowerClient towerClient
 
     protected void scheduleRefresh(Entry entry) {
-        final future = Instant.now() + config.cache.checkInterval
+        final future = Instant.now() + config.cacheCheckInterval
         log.trace "Scheduling container request $entry - event ts=$future"
         containerRequestRange.add(entry, future)
     }
 
     @PostConstruct
     private void init() {
-        log.info "Creating Container request watcher - ${config}"
+        log.info "Creating Container request watcher - check-interval=${config.cacheCheckInterval}; max-duration=${config.cacheMaxDuration}; watcher-interval=${config.watcherInterval}"
         // use randomize initial delay to prevent multiple replicas running at the same time
         scheduler.scheduleAtFixedRate(
-                config.watcher.delayRandomized,
-                config.watcher.interval,
+                config.watcherDelayRandomized,
+                config.watcherInterval,
                 this.&watch )
     }
 
     protected void watch() {
         final now = Instant.now()
-        final keys = containerRequestRange.getEntriesUntil(now, config.watcher.count)
+        final keys = containerRequestRange.getEntriesUntil(now, config.watcherCount)
         for( Entry it : keys ) {
             try {
                 check0(it, now)
@@ -150,7 +150,7 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
         }
 
         // 2. check if the request is near to expiration
-        final deadline = entry.expiration - config.cache.checkInterval
+        final deadline = entry.expiration - config.cacheCheckInterval
         if(  now < deadline  ) {
             log.debug "Container request '${entry.requestId}' does not require refresh - deadline=${deadline}; expiration=${entry.expiration}"
             scheduleRefresh(entry)
@@ -172,8 +172,8 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
         }
 
         // 5. check the expiration is not beyond the max allowed
-        final newExpire = entry.expiration + config.cache.checkInterval.multipliedBy(2)
-        if(Duration.between(request.creationTime, newExpire) > config.cache.maxDuration) {
+        final newExpire = entry.expiration + config.cacheCheckInterval.multipliedBy(2)
+        if(Duration.between(request.creationTime, newExpire) > config.cacheMaxDuration) {
             log.info "Container request '${entry.requestId}' reached max allowed duration - expiration=${entry.expiration}; new expiration=${newExpire}; workflow=${workflow.id}"
             return
         }
@@ -209,9 +209,7 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
     }
 
     protected boolean isWorkflowActive(Workflow workflow) {
-        return workflow
-                ? workflow.status==Workflow.WorkflowStatus.SUBMITTED || workflow.status==Workflow.WorkflowStatus.RUNNING
-                : false
+        return [Workflow.WorkflowStatus.SUBMITTED, Workflow.WorkflowStatus.RUNNING].contains(workflow?.status)
     }
 
 }

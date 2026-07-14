@@ -42,7 +42,7 @@ class ContainerRequestStoreImpl extends AbstractStateStore<ContainerRequest> imp
     ContainerRequestStoreImpl(StateProvider<String, String> delegate, ContainerRequestConfig config) {
         super(delegate, new MoshiEncodeStrategy<ContainerRequest>(){})
         this.config = config
-        log.info "Creating Tokens cache store ― duration=${config.cache.duration}"
+        log.info "Creating Tokens cache store ― duration=${config.cacheDuration}"
     }
 
     @Override
@@ -52,7 +52,7 @@ class ContainerRequestStoreImpl extends AbstractStateStore<ContainerRequest> imp
 
     @Override
     protected Duration getDuration() {
-        return config.cache.duration
+        return config.cacheDuration
     }
 
     @Override
