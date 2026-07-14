@@ -43,16 +43,26 @@ class ContainerRequestConfig {
     Duration cacheDuration
 
     /**
-     * The maximum duration a container request time-to-live can be extended to.
+     * The maximum duration a container request time-to-live can be extended to, measured from the
+     * container request creation time. Hard ceiling on how long an ephemeral token can ever live.
      */
     @Value('${wave.tokens.cache.max-duration:2d}')
     Duration cacheMaxDuration
 
     /**
-     * The period of time between two consecutive refresh check events.
+     * The short time-to-live granted to a workflow-bound token on each renewal. The token lapses
+     * this long after the last successful renewal, which bounds how long it stays valid after the
+     * workflow completes.
      */
-    @Value('${wave.tokens.cache.check-interval:30m}')
-    Duration cacheCheckInterval
+    @Value('${wave.tokens.cache.access-ttl:15m}')
+    Duration accessTtl
+
+    /**
+     * How often a workflow-bound token is re-checked and renewed while its workflow is active.
+     * Must be shorter than {@link #accessTtl} so several renewals fit inside a token's lifetime.
+     */
+    @Value('${wave.tokens.cache.refresh-interval:270s}')
+    Duration refreshInterval
 
     /**
      * The delay between two consecutive watcher runs.

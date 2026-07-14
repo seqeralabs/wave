@@ -241,6 +241,9 @@ class WaveContainerRecord {
         this.waveDigest = waveDigest
     }
 
+    // Full field-by-field copy constructor: the fields are immutable (final), so the only way to
+    // produce a record with a different expiration is to rebuild it. Copies every field verbatim
+    // except expiration — keep this in sync when adding fields.
     private WaveContainerRecord(WaveContainerRecord that, Instant expiration) {
         this.id = that.id
         this.user = that.user
@@ -273,6 +276,9 @@ class WaveContainerRecord {
     }
 
     /**
+     * Return a copy of this record with the given expiration timestamp. Used by the watcher to
+     * persist an extended expiration without mutating the shared immutable record.
+     *
      * @return A copy of this record with the given expiration timestamp
      */
     WaveContainerRecord withExpiration(Instant expiration) {

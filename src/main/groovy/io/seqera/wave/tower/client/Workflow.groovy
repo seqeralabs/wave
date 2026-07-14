@@ -35,6 +35,8 @@ import io.seqera.serde.moshi.MoshiSerializable
 @ToString(includePackage = false, includeNames = true)
 class Workflow implements MoshiSerializable {
 
+    // Mirrors Platform's workflow status; only SUBMITTED/RUNNING are treated as "active" by the
+    // watcher (see isWorkflowActive). UNKNOWN is the safe fallback for an unrecognized value.
     enum WorkflowStatus {
         SUBMITTED,
         RUNNING,
@@ -44,6 +46,8 @@ class Workflow implements MoshiSerializable {
         UNKNOWN
     }
 
+    // Fields mirror the subset of the Tower /workflow response we deserialize; only id and status
+    // drive logic today, the rest are kept so the model round-trips the response faithfully.
     String id
     OffsetDateTime submit
     OffsetDateTime start

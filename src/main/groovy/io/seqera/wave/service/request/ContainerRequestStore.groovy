@@ -30,6 +30,10 @@ interface ContainerRequestStore {
 
     void put(String key, ContainerRequest request)
 
+    /**
+     * Store a request with an explicit TTL. Needed by the watcher to re-put a request with the
+     * extended (shorter, remaining) time-to-live, overriding the store's default duration.
+     */
     void put(String key, ContainerRequest request, Duration ttl)
 
     ContainerRequest get(String key)

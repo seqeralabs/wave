@@ -55,15 +55,23 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
 
     @Override
     TokenData computeToken(ContainerRequest request) {
-        final expiration = Instant.now().plus(config.cacheDuration)
-        // put in the container store (uses the default cache duration)
-        containerRequestStore.put(request.requestId, request)
-        // when the workflowId is available schedule a refresh event
+        // Only plain container requests bound to a Platform workflow are lifecycle-tracked: builds/
+        // mirrors are one-off, and without a workflowId there is nothing to poll Tower about.
         if( request.type==ContainerRequest.Type.Container && request.identity.workflowId ) {
-            final entry = new ContainerRequestRange.Entry(request.requestId, request.identity.workflowId, expiration)
-            scheduleRefresh(entry)
+            // Workflow-bound token: grant only a short access TTL in the store; the watcher renews it
+            // while the run is active, so it lapses shortly after the run completes. The store TTL is
+            // what governs access — but we advertise the hard lifetime ceiling (request time +
+            // maxDuration) to the client, since the real grant rolls forward and would otherwise
+            // surface as a tiny, ever-changing expiration.
+            containerRequestStore.put(request.requestId, request, config.accessTtl)
+            final ttlExpiration = Instant.now().plus(config.accessTtl)
+            scheduleRefresh(new ContainerRequestRange.Entry(request.requestId, request.identity.workflowId, ttlExpiration))
+            final maxExpiration = request.creationTime.plus(config.cacheMaxDuration)
+            return new TokenData(request.requestId, maxExpiration)
         }
-        // return the token data
+        // Everything else keeps the fixed default cache duration
+        final expiration = Instant.now().plus(config.cacheDuration)
+        containerRequestStore.put(request.requestId, request)
         return new TokenData(request.requestId, expiration)
     }
 
@@ -101,15 +109,19 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
     private TowerClient towerClient
 
     protected void scheduleRefresh(Entry entry) {
-        final future = Instant.now() + config.cacheCheckInterval
+        // Re-check this request one refreshInterval from now. refreshInterval is deliberately shorter
+        // than accessTtl so several checks fit inside a token's lifetime — a transient Tower failure
+        // can be retried before the token would lapse.
+        final future = Instant.now() + config.refreshInterval
         log.trace "Scheduling container request $entry - event ts=$future"
         containerRequestRange.add(entry, future)
     }
 
     @PostConstruct
     private void init() {
-        log.info "Creating Container request watcher - check-interval=${config.cacheCheckInterval}; max-duration=${config.cacheMaxDuration}; watcher-interval=${config.watcherInterval}"
-        // use randomize initial delay to prevent multiple replicas running at the same time
+        log.info "Creating Container request watcher - access-ttl=${config.accessTtl}; refresh-interval=${config.refreshInterval}; max-duration=${config.cacheMaxDuration}; watcher-interval=${config.watcherInterval}"
+        // Randomize the initial delay so that, with multiple replicas, the watchers do not all
+        // fire on the same tick and hammer Tower / the range store simultaneously.
         scheduler.scheduleAtFixedRate(
                 config.watcherDelayRandomized,
                 config.watcherInterval,
@@ -118,24 +130,33 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
 
     protected void watch() {
         final now = Instant.now()
+        // getEntriesUntil atomically pops the due entries (score <= now), so across replicas each
+        // entry is processed by exactly one watcher; the cap bounds the work done per tick.
         final keys = containerRequestRange.getEntriesUntil(now, config.watcherCount)
         for( Entry it : keys ) {
             try {
                 check0(it, now)
             }
             catch (InterruptedException e) {
+                // Preserve the interrupt flag so a shutdown request is not swallowed by this loop.
                 Thread.currentThread().interrupt()
             }
             catch (Throwable t) {
                 log.error("Unexpected error in container request watcher while processing key: $it", t)
-                // reschedule the entry to avoid permanent loss on transient failures
+                // The entry was already popped by getEntriesUntil; re-add it so a transient failure
+                // (e.g. a Tower blip) does not silently drop the request and let its token lapse.
                 scheduleRefresh(it)
             }
         }
     }
 
     protected void check0(final Entry entry, final Instant now) {
-        // 1. some sanity checks
+        // NOTE: this method either RENEWS the token (re-put + re-arm the next check) or STOPS
+        // tracking it (return without re-arming) so the token lapses within one accessTtl. There is
+        // no "not yet due" fast-path: every scheduled check that finds the workflow active renews.
+
+        // 1. sanity checks — entries always carry a requestId/workflowId at creation, so a missing
+        //    one means corrupt/stale serialized data in the range store; log and drop it.
         if( !entry.requestId ) {
             log.error "Missing refresh entry request id - offending entry=$entry"
             return
@@ -144,62 +165,55 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
             log.error "Missing refresh entry workflow id - offending entry=$entry"
             return
         }
-        if( !entry.expiration ) {
-            log.error "Missing refresh entry expiration - offending entry=$entry"
-            return
-        }
 
-        // 2. check if the request is near to expiration
-        final deadline = entry.expiration - config.cacheCheckInterval
-        if(  now < deadline  ) {
-            log.debug "Container request '${entry.requestId}' does not require refresh - deadline=${deadline}; expiration=${entry.expiration}"
-            scheduleRefresh(entry)
-            return
-        }
-
-        // 3. check the request is still available
+        // 2. The request may have been evicted from the store (token already lapsed); nothing left
+        //    to renew — stop tracking.
         final request = getRequest(entry.requestId)
         if( !request ) {
-            log.error "Unable to find any container request for id '${entry.requestId}'"
+            log.debug "Unable to find any container request for id '${entry.requestId}' - stop tracking"
             return
         }
 
-        // 4. check the workflow is still running
+        // 3. Renew only while the workflow is still active. describeWorkflow fetches a FRESH status
+        //    (no cache) so completion is observed promptly and the token lapses within one accessTtl.
+        //    isWorkflowActive treats an unknown/failed lookup as inactive (fail-closed).
         final workflow = describeWorkflow(request)
         if( !isWorkflowActive(workflow) ) {
-            log.debug "Container request '${entry.requestId}' does not require refresh - workflow ${workflow?.id} is not running"
+            log.debug "Container request '${entry.requestId}' - workflow ${workflow?.id} not active; stop tracking"
             return
         }
 
-        // 5. check the expiration is not beyond the max allowed
-        final newExpire = entry.expiration + config.cacheCheckInterval.multipliedBy(2)
-        if(Duration.between(request.creationTime, newExpire) > config.cacheMaxDuration) {
-            log.info "Container request '${entry.requestId}' reached max allowed duration - expiration=${entry.expiration}; new expiration=${newExpire}; workflow=${workflow.id}"
+        // 4. Hard lifetime cap: never keep a token alive past requestCreationTime + maxDuration,
+        //    even for a still-running workflow. Once reached, stop and let it lapse.
+        final maxExpire = request.creationTime.plus(config.cacheMaxDuration)
+        if( !now.isBefore(maxExpire) ) {
+            log.info "Container request '${entry.requestId}' reached max allowed lifetime (${config.cacheMaxDuration}) - workflow=${workflow.id}; stop tracking"
             return
         }
 
-        // 6. load the container persisted record
-        final requestRecord = loadContainerRecord(entry.requestId)
-        if( !requestRecord ) {
-            log.error "Unable to find any container record for request '${entry.requestId}'"
-            return
-        }
-
-        // 7. store the request with update expiration
+        // 5. Renew: grant another accessTtl, but never beyond the max cap.
+        final newExpire = [now.plus(config.accessTtl), maxExpire].min()
         final newTtl = Duration.between(now, newExpire)
         if( newTtl.isNegative() || newTtl.isZero() ) {
-            log.warn "Container request '${entry.requestId}' computed TTL is not positive: ${newTtl}; skipping extension"
+            // Defensive: a non-positive TTL must never reach the store, which could treat it as
+            // "no expiry" and leave the token alive indefinitely.
+            log.warn "Container request '${entry.requestId}' computed TTL is not positive: ${newTtl}; stop tracking"
             return
         }
-        log.info "Container request '${entry.requestId}' expiration is extended by: ${newTtl}; at: ${newExpire}; (was: ${entry.expiration})"
+        log.debug "Container request '${entry.requestId}' renewed for ${newTtl}; expires at ${newExpire}; workflow=${workflow.id}"
         containerRequestStore.put(entry.requestId, request, newTtl)
-        // save the record with the updated expiration
-        persistenceService.saveContainerRequestAsync(requestRecord.withExpiration(newExpire))
-        // schedule a new refresh event
+        // mirror the new expiration onto the persisted record for display (immutable copy)
+        final requestRecord = loadContainerRecord(entry.requestId)
+        if( requestRecord )
+            persistenceService.saveContainerRequestAsync(requestRecord.withExpiration(newExpire))
+        // re-arm the next check
         scheduleRefresh(entry.withExpiration(newExpire))
     }
 
     protected Workflow describeWorkflow(ContainerRequest request) {
+        // Reuse the request's own Platform identity/credentials to ask Tower about the workflow.
+        // Fetched fresh (uncached) so the workflow status is never stale — that keeps the
+        // post-completion window bounded by accessTtl rather than the cache TTL.
         final resp = towerClient.describeWorkflow(
                 request.identity.towerEndpoint,
                 JwtAuth.of(request.identity),
@@ -209,6 +223,8 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
     }
 
     protected boolean isWorkflowActive(Workflow workflow) {
+        // Active == not yet finished. A null workflow (unknown / not returned) counts as inactive
+        // so we err on the side of letting the token expire rather than extending forever.
         return [Workflow.WorkflowStatus.SUBMITTED, Workflow.WorkflowStatus.RUNNING].contains(workflow?.status)
     }
 

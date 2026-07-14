@@ -277,7 +277,11 @@ class ViewController {
     @View("container-view")
     @Get('/containers/{token}')
     HttpResponse<?> viewContainer(String token) {
+        // Go through ContainerRequestService (not PersistenceService directly) so the view sees the
+        // same record — including any watcher-extended expiration — as the rest of the request flow.
         final data = containerService.loadContainerRecord(token)
+        // Throw NotFoundException (rendered as a proper 404 page) for consistency with the other
+        // view endpoints, instead of returning a bare notFound body into the template.
         if( !data )
             throw new NotFoundException("Unknown container token: $token")
         // return the response

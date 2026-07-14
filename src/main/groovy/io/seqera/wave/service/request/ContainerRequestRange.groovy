@@ -59,9 +59,12 @@ class ContainerRequestRange extends AbstractRangeStore {
 
     @Override
     protected String getKey() {
+        // Versioned key ('/v1') so a future change to the Entry serialization format can bump the
+        // suffix and start a fresh store rather than choking on incompatible legacy payloads.
         return 'container-requests-range/v1'
     }
 
+    // Convenience overload: schedule an entry `future` from now.
     void add(Entry entry, Duration future) {
         assert future
         add(entry, Instant.now().plus(future))
@@ -70,10 +73,14 @@ class ContainerRequestRange extends AbstractRangeStore {
     void add(Entry entry, Instant expire) {
         assert entry
         assert expire
+        // Score entries by epoch-second so getRange can select everything due up to a given instant.
         super.add(encoder.encode(entry), expire.epochSecond)
     }
 
     List<Entry> getEntriesUntil(Instant instant, int max) {
+        // Return (and, per AbstractRangeStore, atomically remove) at most `max` entries whose
+        // scheduled time is at/earlier than `instant`. Atomic pop is what makes it safe for
+        // concurrent watcher replicas to share this store without double-processing.
         final result = getRange(0, instant.epochSecond, max)
         return result ? result.collect((json)-> encoder.decode(json)) : List.<Entry>of()
     }

@@ -20,10 +20,16 @@ package io.seqera.wave.service.request
 
 import spock.lang.Specification
 
+import java.time.Duration
+import java.time.Instant
+
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.ContainerRequestConfig
+import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
+import io.seqera.wave.tower.client.Workflow
 import jakarta.inject.Inject
 /**
  *
@@ -52,6 +58,145 @@ class ContainerRequestServiceImplTest extends Specification {
         then:
         request == data
         requestStore.get(TOKEN) == null
+    }
+
+    // ---- check0 (watcher renewal) ----
+
+    private static ContainerRequestConfig watcherConfig() {
+        new ContainerRequestConfig(
+                accessTtl: Duration.ofMinutes(15),
+                cacheMaxDuration: Duration.ofDays(2),
+                refreshInterval: Duration.ofSeconds(270) )
+    }
+
+    private static ContainerRequest containerRequest(String requestId, Instant creationTime) {
+        final user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
+        ContainerRequest.of(
+                requestId: requestId,
+                type: ContainerRequest.Type.Container,
+                identity: new PlatformId(user, 100),
+                containerImage: 'hello-world',
+                creationTime: creationTime )
+    }
+
+    def 'check0 should renew the token while the workflow is active and within max lifetime'() {
+        given:
+        def store = Mock(ContainerRequestStore)
+        def range = Mock(ContainerRequestRange)
+        def persistence = Mock(PersistenceService)
+        def record = Mock(WaveContainerRecord)
+        def service = Spy(new ContainerRequestServiceImpl(
+                containerRequestStore: store, containerRequestRange: range,
+                persistenceService: persistence, config: watcherConfig()))
+        and:
+        def request = containerRequest('req-1', Instant.now())
+        def entry = new ContainerRequestRange.Entry('req-1', 'wf-1', Instant.now().plus(Duration.ofMinutes(15)))
+
+        when:
+        service.check0(entry, Instant.now())
+
+        then:
+        1 * store.get('req-1') >> request
+        1 * service.describeWorkflow(request) >> new Workflow(id: 'wf-1', status: Workflow.WorkflowStatus.RUNNING)
+        1 * persistence.loadContainerRequest('req-1') >> record
+        1 * record.withExpiration(_ as Instant) >> record
+        and: 'the live token is re-granted and the next check is re-armed'
+        1 * store.put('req-1', request, _ as Duration)
+        1 * persistence.saveContainerRequestAsync(record)
+        1 * range.add(_ as ContainerRequestRange.Entry, _ as Instant)
+    }
+
+    def 'check0 should stop tracking when the workflow is no longer active'() {
+        given:
+        def store = Mock(ContainerRequestStore)
+        def range = Mock(ContainerRequestRange)
+        def persistence = Mock(PersistenceService)
+        def service = Spy(new ContainerRequestServiceImpl(
+                containerRequestStore: store, containerRequestRange: range,
+                persistenceService: persistence, config: watcherConfig()))
+        and:
+        def request = containerRequest('req-1', Instant.now())
+        def entry = new ContainerRequestRange.Entry('req-1', 'wf-1', Instant.now().plus(Duration.ofMinutes(15)))
+
+        when:
+        service.check0(entry, Instant.now())
+
+        then:
+        1 * store.get('req-1') >> request
+        1 * service.describeWorkflow(request) >> new Workflow(id: 'wf-1', status: STATUS)
+        and: 'no renewal and no re-arm - the token is left to lapse'
+        0 * store.put('req-1', _, _)
+        0 * range.add(_, _)
+
+        where:
+        STATUS << [Workflow.WorkflowStatus.SUCCEEDED, Workflow.WorkflowStatus.FAILED, Workflow.WorkflowStatus.CANCELLED]
+    }
+
+    def 'check0 should stop tracking (fail-closed) when the workflow lookup returns nothing'() {
+        given:
+        def store = Mock(ContainerRequestStore)
+        def range = Mock(ContainerRequestRange)
+        def persistence = Mock(PersistenceService)
+        def service = Spy(new ContainerRequestServiceImpl(
+                containerRequestStore: store, containerRequestRange: range,
+                persistenceService: persistence, config: watcherConfig()))
+        and:
+        def request = containerRequest('req-1', Instant.now())
+        def entry = new ContainerRequestRange.Entry('req-1', 'wf-1', Instant.now().plus(Duration.ofMinutes(15)))
+
+        when:
+        service.check0(entry, Instant.now())
+
+        then:
+        1 * store.get('req-1') >> request
+        1 * service.describeWorkflow(request) >> null
+        0 * store.put('req-1', _, _)
+        0 * range.add(_, _)
+    }
+
+    def 'check0 should stop tracking when the request is no longer in the store'() {
+        given:
+        def store = Mock(ContainerRequestStore)
+        def range = Mock(ContainerRequestRange)
+        def persistence = Mock(PersistenceService)
+        def service = Spy(new ContainerRequestServiceImpl(
+                containerRequestStore: store, containerRequestRange: range,
+                persistenceService: persistence, config: watcherConfig()))
+        and:
+        def entry = new ContainerRequestRange.Entry('req-1', 'wf-1', Instant.now().plus(Duration.ofMinutes(15)))
+
+        when:
+        service.check0(entry, Instant.now())
+
+        then:
+        1 * store.get('req-1') >> null
+        and: 'no Tower lookup, no renewal, no re-arm'
+        0 * service.describeWorkflow(_)
+        0 * store.put(_, _, _)
+        0 * range.add(_, _)
+    }
+
+    def 'check0 should stop tracking when the max lifetime cap is reached'() {
+        given:
+        def store = Mock(ContainerRequestStore)
+        def range = Mock(ContainerRequestRange)
+        def persistence = Mock(PersistenceService)
+        def service = Spy(new ContainerRequestServiceImpl(
+                containerRequestStore: store, containerRequestRange: range,
+                persistenceService: persistence, config: watcherConfig()))
+        and: 'a request created longer ago than the 2d max lifetime'
+        def request = containerRequest('req-1', Instant.now().minus(Duration.ofDays(3)))
+        def entry = new ContainerRequestRange.Entry('req-1', 'wf-1', Instant.now().plus(Duration.ofMinutes(15)))
+
+        when:
+        service.check0(entry, Instant.now())
+
+        then:
+        1 * store.get('req-1') >> request
+        1 * service.describeWorkflow(request) >> new Workflow(id: 'wf-1', status: Workflow.WorkflowStatus.RUNNING)
+        and: 'even though the workflow is still running, the token is not renewed'
+        0 * store.put('req-1', _, _)
+        0 * range.add(_, _)
     }
 
 }

@@ -56,9 +56,6 @@ class TowerClient {
     @Value('${wave.pairing.cache.long.duration:24h}')
     private Duration cacheLongDuration
 
-    @Value('${wave.pairing.cache.workflow.duration:10m}')
-    private Duration cacheWorkflowDuration
-
     protected <T> CompletableFuture<T> getAsync(URI uri, String endpoint, @Nullable JwtAuth authorization, Class<T> type) {
         assert uri, "Missing uri argument"
         assert endpoint, "Missing endpoint argument"
@@ -153,10 +150,9 @@ class TowerClient {
 
     DescribeWorkflowResponse describeWorkflow(String endpoint, JwtAuth authorization, Long workspaceId, String workflowId) {
         final uri = workflowDescribeEndpoint(endpoint,workspaceId,workflowId)
-        final k = RegHelper.sipHash(uri, authorization.key, workspaceId, workflowId)
-        // NOTE: it assumes the workflow  definition cannot change for the specified 'workflowId'
-        // and therefore the *long* expiration cached is used
-        return get0(uri, endpoint, authorization, DescribeWorkflowResponse.class, k, cacheWorkflowDuration) as DescribeWorkflowResponse
+        // NOTE: fetched fresh (uncached) on purpose — the workflow *status* changes over the run and
+        // the container-token watcher relies on an up-to-date status to bound post-completion access.
+        return getAsync(uri, endpoint, authorization, DescribeWorkflowResponse).get() as DescribeWorkflowResponse
     }
 
     protected static URI workflowDescribeEndpoint(String endpoint, Long workspaceId, String workflowId) {
