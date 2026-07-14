@@ -242,6 +242,47 @@ class WaveContainerRecord {
     }
 
     /**
+     * Copy constructor replacing the {@link User} identity, keeping all other fields unchanged.
+     */
+    WaveContainerRecord(WaveContainerRecord that, User user) {
+        this.id = that.id
+        this.user = user
+        this.workspaceId = that.workspaceId
+        this.containerImage = that.containerImage
+        this.containerConfig = that.containerConfig
+        this.platform = that.platform
+        this.towerEndpoint = that.towerEndpoint
+        this.buildRepository = that.buildRepository
+        this.cacheRepository = that.cacheRepository
+        this.fingerprint = that.fingerprint
+        this.timestamp = that.timestamp
+        this.zoneId = that.zoneId
+        this.ipAddress = that.ipAddress
+        this.condaFile = that.condaFile
+        this.containerFile = that.containerFile
+        this.sourceImage = that.sourceImage
+        this.sourceDigest = that.sourceDigest
+        this.waveImage = that.waveImage
+        this.waveDigest = that.waveDigest
+        this.expiration = that.expiration
+        this.buildId = that.buildId
+        this.buildNew = that.buildNew
+        this.freeze = that.freeze
+        this.fusionVersion = that.fusionVersion
+        this.mirror = that.mirror
+        this.scanId = that.scanId
+        this.scanChildIds = that.scanChildIds
+    }
+
+    /**
+     * @return A copy of this record exposing only the user id, so that the user name
+     *         and email are not leaked when the record is returned in an API response.
+     */
+    WaveContainerRecord withoutUserDetails() {
+        return user!=null ? new WaveContainerRecord(this, User.ofId(user.id)) : this
+    }
+
+    /**
      * Required by jackson ser/de-ser
      */
     protected WaveContainerRecord() { }
