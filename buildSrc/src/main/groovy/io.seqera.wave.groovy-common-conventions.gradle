@@ -17,8 +17,8 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
     }
-    sourceCompatibility = 25
-    targetCompatibility = 25
+    sourceCompatibility = 17
+    targetCompatibility = 17
 }
 
 group = 'io.seqera'
