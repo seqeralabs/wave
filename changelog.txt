@@ -1,4 +1,7 @@
 # Wave changelog
+1.35.1 - 13 Jul 2026
+- fix: make `which` available for R (bioconda) post-links in conda v2 builds (#1070) [417e43a72]
+
 1.35.0 - 1 Jul 2026
 - fix: use micromamba 2 image for conda/micromamba:v2 builds (#1065) [ddd1e8d10]
 - feat: add waveBuildNotification user preference for build email notifications (#1069) [b7822a098]
