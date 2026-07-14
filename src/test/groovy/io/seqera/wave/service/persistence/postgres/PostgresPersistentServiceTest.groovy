@@ -55,7 +55,7 @@ import org.apache.commons.lang3.RandomStringUtils
  */
 @MicronautTest(environments = 'postgres', startApplication = true, transactional = false)
 @Property(name = "datasources.default.driver-class-name", value = "org.testcontainers.jdbc.ContainerDatabaseDriver")
-@Property(name = "datasources.default.url", value = "jdbc:tc:postgresql:///db")
+@Property(name = "datasources.default.url", value = "jdbc:tc:postgresql:16.14:///db")
 class PostgresPersistentServiceTest extends Specification {
 
     @Inject
