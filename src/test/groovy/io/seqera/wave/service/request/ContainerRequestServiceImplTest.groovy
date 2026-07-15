@@ -60,10 +60,35 @@ class ContainerRequestServiceImplTest extends Specification {
         requestStore.get(TOKEN) == null
     }
 
+    def 'computeToken should skip lifecycle tracking when the watcher is disabled'() {
+        given:
+        def store = Mock(ContainerRequestStore)
+        def range = Mock(ContainerRequestRange)
+        def service = new ContainerRequestServiceImpl(
+                containerRequestStore: store, containerRequestRange: range,
+                config: new ContainerRequestConfig(watcherEnabled: false, cacheDuration: Duration.ofHours(36)))
+        and:
+        def user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
+        def request = ContainerRequest.of(
+                requestId: 'req-1',
+                type: ContainerRequest.Type.Container,
+                identity: new PlatformId(user, 100L, null, null, 'wf-1'),
+                containerImage: 'hello-world' )
+
+        when:
+        def token = service.computeToken(request)
+
+        then: 'the fixed cache duration is used and no refresh is scheduled'
+        1 * store.put('req-1', request)
+        0 * range.add(_, _)
+        token.expiration
+    }
+
     // ---- check0 (watcher renewal) ----
 
     private static ContainerRequestConfig watcherConfig() {
         new ContainerRequestConfig(
+                watcherEnabled: true,
                 accessTtl: Duration.ofMinutes(15),
                 cacheMaxDuration: Duration.ofDays(2),
                 refreshInterval: Duration.ofSeconds(270) )

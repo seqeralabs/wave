@@ -57,7 +57,7 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
     TokenData computeToken(ContainerRequest request) {
         // Only plain container requests bound to a Platform workflow are lifecycle-tracked: builds/
         // mirrors are one-off, and without a workflowId there is nothing to poll Tower about.
-        if( request.type==ContainerRequest.Type.Container && request.identity.workflowId ) {
+        if( config.watcherEnabled && request.type==ContainerRequest.Type.Container && request.identity.workflowId ) {
             // Workflow-bound token: grant only a short access TTL in the store; the watcher renews it
             // while the run is active, so it lapses shortly after the run completes. The store TTL is
             // what governs access — but we advertise the hard lifetime ceiling (request time +
@@ -119,6 +119,10 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
 
     @PostConstruct
     private void init() {
+        if( !config.watcherEnabled ) {
+            log.info "Container request watcher is disabled - workflow-bound token lifecycle tracking off"
+            return
+        }
         log.info "Creating Container request watcher - access-ttl=${config.accessTtl}; refresh-interval=${config.refreshInterval}; max-duration=${config.cacheMaxDuration}; watcher-interval=${config.watcherInterval}"
         // Randomize the initial delay so that, with multiple replicas, the watchers do not all
         // fire on the same tick and hammer Tower / the range store simultaneously.

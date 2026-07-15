@@ -65,6 +65,14 @@ class ContainerRequestConfig {
     Duration refreshInterval
 
     /**
+     * Whether ephemeral container tokens are bound to the Platform workflow lifecycle. When disabled,
+     * all container requests keep the fixed {@link #cacheDuration} and no workflow-status watcher runs
+     * — useful for high-traffic / self-hosted deployments that want to avoid the extra Platform load.
+     */
+    @Value('${wave.tokens.watcher.enabled:true}')
+    boolean watcherEnabled
+
+    /**
      * The delay between two consecutive watcher runs.
      */
     @Value('${wave.tokens.watcher.interval:10s}')
