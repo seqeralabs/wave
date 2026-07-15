@@ -16,8 +16,8 @@ curl -s https://wave.example.com/service-info
 ```json
 {
   "serviceInfo": {
-    "version": "1.34.0",
-    "commitId": "a1b2c3d"
+    "version": "<wave-version>",
+    "commitId": "<commit-id>"
   }
 }
 ```
@@ -36,14 +36,14 @@ brew install seqeralabs/tap/wave-cli
 # https://github.com/seqeralabs/wave-cli/releases
 ```
 
-Point the CLI at your service with the `--wave-endpoint` flag or the `WAVE_API_ENDPOINT` environment variable:
+Point the CLI at your service with the `--wave-endpoint` flag or the `WAVE_ENDPOINT` environment variable:
 
 ```bash
-export WAVE_API_ENDPOINT=https://wave.example.com
+export WAVE_ENDPOINT=https://wave.example.com
 ```
 
 :::note
-If you disabled anonymous access in [Configure Wave](configure-wave.md#require-authentication), the CLI checks need a Seqera Platform access token. See the [wave-cli documentation](https://github.com/seqeralabs/wave-cli) for the token option.
+If you disabled anonymous access in [Configure Wave](configure-wave.md#require-authentication), the CLI checks need a Seqera Platform access token. Pass it with the `--tower-token` flag or the `TOWER_ACCESS_TOKEN` environment variable.
 :::
 
 ## Functional checks
@@ -71,10 +71,14 @@ wave --conda-package bcftools
 Build from a Dockerfile and freeze it to a persistent repository:
 
 ```bash
-wave --containerfile Dockerfile --freeze --build-repo <build-repo>
+wave --containerfile Dockerfile --freeze --build-repo <build-repo> --tower-token <platform-token>
 ```
 
 A successful build returns a reference in your configured build repository.
+
+:::note
+Freeze builds push to the repository you name, so they always need a Platform access token, and the associated Platform workspace must hold registry credentials with push access to `<build-repo>`. See [Freeze and user-supplied build repositories](aws-build.md#freeze-and-user-supplied-build-repositories).
+:::
 
 ## If a check fails
 

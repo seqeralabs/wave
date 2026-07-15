@@ -45,6 +45,12 @@ rate-limit:
     max-rate: 100/1m
 ```
 
+:::warning
+Rate limiting is active only when the `rate-limit` entry is present in the `MICRONAUT_ENVIRONMENTS` variable of your deployment. The install guides include it. Without it, `rate-limit.*` settings are silently ignored.
+:::
+
+For the full list of limits, see [Rate limits](reference.md#rate-limits) in the Reference.
+
 ### Configure cleanup and retention
 
 Builds and augmented images accumulate. Set cleanup and retention so storage stays bounded. See `wave.cleanup.*` in [Reference](reference.md). Also set a retention or lifecycle policy on your build and cache registries.
@@ -57,7 +63,7 @@ Size the build node pool and cap concurrency with `wave.job-manager.max-running-
 
 ### Review security headers
 
-Wave sends HTTP security headers (HSTS, frame options, content-type options, referrer policy, permissions policy, and a content security policy) by default. Review them against your environment and adjust the content security policy if you front Wave with additional origins.
+Wave sends HTTP security headers (HSTS, frame options, content-type options, referrer policy, permissions policy, and a content security policy) by default. Review them against your environment and adjust the content security policy if you front Wave with additional origins. See [Security headers](reference.md#security-headers) in the Reference.
 
 ## Email notifications
 

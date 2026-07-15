@@ -7,6 +7,15 @@ Install Wave Lite on Kubernetes when you want the Wave Lite configuration on a c
 
 For other choices (different ingress controllers or untested distributions), see [Adapt this guide](#adapt-this-guide).
 
+:::info[Install with the Helm chart]
+Seqera publishes an official [Wave Helm chart](https://artifacthub.io/packages/helm/seqera/wave) that deploys the same Wave Lite configuration this guide builds with raw manifests. Follow the chart's documentation to install it, and keep the following in mind:
+
+- Create the database first, as described in [Create the database](#create-the-database), and verify the deployment with the same [post-install checks](post-install.md).
+- Add `rate-limit` to the chart's `micronautEnvironments` value to activate the rate limits described in [Set rate limits](configure-wave.md#set-rate-limits).
+- Confirm the `WAVE_SERVER_URL` environment variable on the running pod resolves to the hostname clients use to reach Wave. Override it with the chart's `extraEnvVars` value if it does not.
+- The chart deploys Wave Lite only. To run the full Wave configuration, deploy on Amazon EKS and follow [Enable Wave builds](aws-build.md) on top of the chart release.
+:::
+
 :::info[**Prerequisites**]
 
 You need the following:
@@ -68,6 +77,18 @@ metadata:
     app: wave-app
 ```
 
+## Create the registry credentials secret
+
+The Wave image is hosted on `cr.seqera.io`, which requires authentication. Create a pull secret in the `wave` namespace with the credentials provided by Seqera. The deployment below references it as `seqera-reg-creds`:
+
+```bash
+kubectl create secret docker-registry seqera-reg-creds \
+  --namespace wave \
+  --docker-server=cr.seqera.io \
+  --docker-username=<username> \
+  --docker-password=<password>
+```
+
 ## Configure Wave
 
 Create a ConfigMap with Wave's configuration. Update the database, Redis, and Platform values to match your environment.
@@ -103,6 +124,7 @@ data:
         user: "wave_user"
         password: "<db-password>"
     redis:
+      # Use rediss:// for TLS (typical for managed Redis), or redis:// for a plain connection.
       uri: "rediss://redis.example.com:6379"
     tower:
       endpoint:
@@ -113,14 +135,14 @@ data:
 Set `wave.server.url` to the address clients use to reach Wave. If it is left unset, Wave issues container tokens pointing at `http://localhost:9090`, which clients cannot reach.
 :::
 
-This ConfigMap sets only what Wave Lite needs to start. To configure other options, such as rate limits, token cache duration, and metrics, see [Configure Wave](configure-wave.md). Before serving production traffic, complete the [production hardening](configure-wave.md#harden-for-production) checklist.
+This ConfigMap sets only what Wave Lite needs to start. The `lite` entry in `MICRONAUT_ENVIRONMENTS` (set in the deployment below) already applies these same defaults; the ConfigMap restates them explicitly and gives you a place to add further configuration. To configure other options, such as rate limits, token cache duration, and metrics, see [Configure Wave](configure-wave.md). Before serving production traffic, complete the [production hardening](configure-wave.md#harden-for-production) checklist.
 
 ## Authenticate to private registries
 
-Wave Lite pulls images during augmentation. To augment images from a private registry, give Wave credentials for that registry. Wave resolves credentials in this order:
+Wave Lite pulls images during augmentation. To augment images from a private registry, give Wave credentials for that registry. Wave uses one of two credential sources per request:
 
-1. **Platform workspace credentials**: credentials a user adds to their Seqera Platform workspace. Wave uses these for targets the user owns, such as the user's own registry namespace.
-2. **Server-side static credentials**: credentials the operator sets under `wave.registries.<host>` for registries Wave owns or shares.
+1. **Platform workspace credentials**: credentials a user adds to their Seqera Platform workspace. Wave uses these for requests that carry a Platform identity.
+2. **Server-side static credentials**: credentials the operator sets under `wave.registries.<host>`. Wave uses these for anonymous requests and for registries the operator owns.
 
 Add an entry for each private registry under `wave.registries` in the `wave-cfg` config. For example, Docker Hub and a private Quay.io account:
 
@@ -161,14 +183,18 @@ spec:
       labels:
         app: wave-app
     spec:
+      imagePullSecrets:
+        - name: seqera-reg-creds
       containers:
-        - image: cr.seqera.io/<wave-image-path>:<tag>
+        - image: cr.seqera.io/<wave-image-path>:<tag>   # Use the image path and tag provided by Seqera.
           name: wave-app
           ports:
             - containerPort: 9090
           env:
             - name: MICRONAUT_ENVIRONMENTS
-              value: "lite,postgres,redis"   # The `k8s` env is only needed for the in-cluster build client (see aws-build).
+              # rate-limit activates the rate-limit.* settings. Add prometheus to expose metrics.
+              # The k8s env is only needed for the in-cluster build client (see aws-build).
+              value: "lite,postgres,redis,rate-limit"
           resources:
             requests:
               memory: "2Gi"
@@ -251,7 +277,7 @@ spec:
 ```
 
 :::note
-This minimal Ingress omits controller-specific configuration. For the AWS Load Balancer Controller, add `ingressClassName: alb` and the `alb.ingress.kubernetes.io/*` annotations (scheme, target type, and ACM certificate ARN) your setup requires.
+This minimal Ingress omits controller-specific configuration. For the AWS Load Balancer Controller, add `ingressClassName: alb` and the `alb.ingress.kubernetes.io/*` annotations (scheme, target type, and ACM certificate ARN) your setup requires. With `alb.ingress.kubernetes.io/target-type: ip`, the `ClusterIP` service above works as-is; with the default `instance` target type, change the service to `NodePort`.
 :::
 
 After the ingress provisions, configure your Seqera Platform deployment to use the Wave endpoint by setting the Wave server URL in `tower.yml` ([Platform Wave configuration](https://docs.seqera.io/platform-enterprise/latest/enterprise/configuration/wave)).

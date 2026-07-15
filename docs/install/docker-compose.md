@@ -69,7 +69,8 @@ WAVE_DB_URI=jdbc:postgresql://postgres.example.com:5432/wave
 WAVE_DB_USER=wave_user
 WAVE_DB_PASSWORD=<db-password>
 
-# Redis connection.
+# Redis connection. Use rediss:// for TLS (typical for managed Redis),
+# or redis:// for a plain connection.
 REDIS_URI=rediss://redis.example.com:6379
 
 # Seqera Platform endpoint to pair with.
@@ -97,14 +98,14 @@ wave:
     enabled: false
 ```
 
-This file sets only what Wave Lite needs to start. To configure other options, such as rate limits, token cache duration, and metrics, see [Configure Wave](configure-wave.md). Before serving production traffic, complete the [production hardening](configure-wave.md#harden-for-production) checklist.
+This file sets only what Wave Lite needs to start. The `lite` entry in `MICRONAUT_ENVIRONMENTS` (set in the Compose file below) already applies these same defaults; the file restates them explicitly and gives you a place to add further configuration. To configure other options, such as rate limits, token cache duration, and metrics, see [Configure Wave](configure-wave.md). Before serving production traffic, complete the [production hardening](configure-wave.md#harden-for-production) checklist.
 
 ## Authenticate to private registries
 
-Wave Lite pulls images during augmentation. To augment images from a private registry, give Wave credentials for that registry. Wave resolves credentials in this order:
+Wave Lite pulls images during augmentation. To augment images from a private registry, give Wave credentials for that registry. Wave uses one of two credential sources per request:
 
-1. **Platform workspace credentials**: credentials a user adds to their Seqera Platform workspace. Wave uses these for targets the user owns, such as the user's own registry namespace.
-2. **Server-side static credentials**: credentials the operator sets for registries Wave owns or shares.
+1. **Platform workspace credentials**: credentials a user adds to their Seqera Platform workspace. Wave uses these for requests that carry a Platform identity.
+2. **Server-side static credentials**: credentials the operator sets. Wave uses these for anonymous requests and for registries the operator owns.
 
 For the common registries, set the credentials as environment variables in `wave.env`:
 
@@ -132,9 +133,17 @@ wave:
 
 Configure credentials for every private registry Wave pulls from. Public images need none. For all registry options, see [Reference](reference.md#container-registry).
 
+## Log in to the Seqera container registry
+
+The Wave image is hosted on `cr.seqera.io`, which requires authentication. Log in with the credentials provided by Seqera before starting the service:
+
+```bash
+docker login cr.seqera.io -u <username>
+```
+
 ## Create the Compose file
 
-Define the Wave service in `docker-compose.yml`:
+Define the Wave service in `docker-compose.yml`. Replace `<wave-image-path>` and `<tag>` with the image path and tag provided by Seqera:
 
 ```yaml
 services:

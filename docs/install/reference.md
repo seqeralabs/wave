@@ -27,7 +27,8 @@ Configure general Wave application settings: application name, port, anonymous a
   Can be set using the `${TOWER_ENDPOINT_URL}` environment variable.
 
 `wave.allowAnonymous` *(required)*
-: When `true`, anonymous users can access the Wave server (default: `false`).
+: When `true`, anonymous users can access the Wave server (default: `true`).
+  Set to `false` in production so that every request must carry a Platform-issued token.
 
 `wave.denyHosts` *(optional)*
 : Hostname patterns to deny. Requests targeting these hosts are rejected.
@@ -372,6 +373,10 @@ Configure Wave's in-memory proxy cache for registry responses.
 
 Configure rate limits for anonymous and authenticated user access.
 
+:::note
+These options take effect only when the `rate-limit` entry is included in the `MICRONAUT_ENVIRONMENTS` variable of your deployment.
+:::
+
 `rate-limit.build.anonymous` *(required)*
 : Rate limit for build requests from anonymous users (default: `10/1h`).
 
@@ -385,7 +390,35 @@ Configure rate limits for anonymous and authenticated user access.
 : Rate limit for pull requests from authenticated users (default: `100/1m`).
 
 `rate-limit.timeout-errors.max-rate` *(optional)*
-: Maximum rate of timeout errors before Wave begins rejecting requests (default: `10/1m`).
+: Maximum rate of timeout errors before Wave begins rejecting requests (default: `20/2m`).
+
+## Security headers
+
+Wave sends HTTP security headers on all responses by default. Configure them with the following options:
+
+`wave.security.http-headers.enabled` *(optional)*
+: When `true`, Wave adds security headers to HTTP responses (default: `true`).
+
+`wave.security.http-headers.hsts.max-age` *(optional)*
+: `Strict-Transport-Security` max age in seconds (default: `31536000`).
+
+`wave.security.http-headers.hsts.include-sub-domains` *(optional)*
+: When `true`, applies HSTS to subdomains (default: `true`).
+
+`wave.security.http-headers.frame-options` *(optional)*
+: `X-Frame-Options` header value (default: `DENY`).
+
+`wave.security.http-headers.content-type-options` *(optional)*
+: `X-Content-Type-Options` header value (default: `nosniff`).
+
+`wave.security.http-headers.referrer-policy` *(optional)*
+: `Referrer-Policy` header value (default: `strict-origin-when-cross-origin`).
+
+`wave.security.http-headers.permissions-policy` *(optional)*
+: `Permissions-Policy` header value (default: `camera=(), microphone=(), geolocation=()`).
+
+`wave.security.http-headers.content-security-policy` *(optional)*
+: `Content-Security-Policy` header value. Adjust this if you front Wave with additional origins (default: `default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; frame-ancestors 'none'`).
 
 ## Database and cache
 

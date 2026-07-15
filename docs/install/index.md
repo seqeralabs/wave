@@ -28,4 +28,6 @@ Run Wave Lite on a single Docker host without Kubernetes. Choose this path for a
 
 Run Wave Lite on a Kubernetes cluster you already operate. This is also the path to the full Wave configuration. Install Wave Lite on Amazon EKS, then [enable Wave builds](aws-build.md) to add on-demand builds, freeze, mirroring, and scanning. Wave Lite has no AWS dependency and runs on any conformant Kubernetes distribution. Only the full configuration requires EKS.
 
+You can deploy with raw manifests, or with the official [Seqera Wave Helm chart](https://artifacthub.io/packages/helm/seqera/wave) alongside the deployment notes in the Kubernetes guide.
+
 [Install Wave Lite on Kubernetes](kubernetes-lite.md)
