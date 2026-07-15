@@ -1,4 +1,9 @@
 # Wave changelog
+1.36.0 - 15 Jul 2026
+- Progressive container expiration extension (#782) [a4517091a]
+- Reduce response contents to remove unneeded fields (#1073) [0718f702a]
+- chore: pin postgres containers + bump test containers (#1080) [4e5cfe271]
+
 1.35.1 - 13 Jul 2026
 - fix: make `which` available for R (bioconda) post-links in conda v2 builds (#1070) [417e43a72]
 
