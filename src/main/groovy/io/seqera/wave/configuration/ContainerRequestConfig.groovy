@@ -54,14 +54,14 @@ class ContainerRequestConfig {
      * this long after the last successful renewal, which bounds how long it stays valid after the
      * workflow completes.
      */
-    @Value('${wave.tokens.cache.access-ttl:15m}')
+    @Value('${wave.tokens.cache.access-ttl:20m}')
     Duration accessTtl
 
     /**
      * How often a workflow-bound token is re-checked and renewed while its workflow is active.
      * Must be shorter than {@link #accessTtl} so several renewals fit inside a token's lifetime.
      */
-    @Value('${wave.tokens.cache.refresh-interval:270s}')
+    @Value('${wave.tokens.cache.refresh-interval:180s}')
     Duration refreshInterval
 
     /**
