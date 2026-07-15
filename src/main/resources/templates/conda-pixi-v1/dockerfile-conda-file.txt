@@ -4,7 +4,7 @@ COPY conda.yml /opt/wave/conda.yml
 WORKDIR /opt/wave
 
 RUN pixi init --import /opt/wave/conda.yml \
-    && pixi add conda-forge::which \
+    && pixi add conda-forge::which conda-forge::jq \
     {{base_packages}}
     && pixi shell-hook > /shell-hook.sh \
     && echo 'exec "$@"' >> /shell-hook.sh \

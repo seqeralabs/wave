@@ -1,8 +1,8 @@
 BootStrap: docker
 From: {{mamba_image}}
 %post
-    # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
-    micromamba install -y -n base conda-forge::which
+    # expose `which`+`jq` for R (bioconda) post-link scripts (installBiocDataPackage.sh); the amazon2023 base image lacks them
+    micromamba install -y -n base conda-forge::which conda-forge::jq
     ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which
     micromamba install -y -n base {{channel_opts}} {{target}} > /tmp/mamba.log 2>&1 \
         && cat /tmp/mamba.log \

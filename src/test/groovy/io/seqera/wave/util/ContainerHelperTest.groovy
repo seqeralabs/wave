@@ -634,7 +634,7 @@ class ContainerHelperTest extends Specification {
                 WORKDIR /opt/wave
 
                 RUN pixi init --import /opt/wave/conda.yml \\
-                    && pixi add conda-forge::which \\
+                    && pixi add conda-forge::which conda-forge::jq \\
                     && pixi add conda-forge::procps-ng \\
                     && pixi shell-hook > /shell-hook.sh \\
                     && echo 'exec "$@"' >> /shell-hook.sh \\
@@ -687,7 +687,7 @@ class ContainerHelperTest extends Specification {
                 WORKDIR /opt/wave
                  
                 RUN pixi init --import /opt/wave/conda.yml \\
-                    && pixi add conda-forge::which \\
+                    && pixi add conda-forge::which conda-forge::jq \\
                     && pixi add foo::one bar::two \\
                     && pixi shell-hook > /shell-hook.sh \\
                     && echo 'exec "$@"' >> /shell-hook.sh \\
@@ -734,8 +734,8 @@ class ContainerHelperTest extends Specification {
                 FROM mambaorg/micromamba:2-amazon2023 AS build
                 USER root
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
-                # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
-                RUN micromamba install -y -n base conda-forge::which \\
+                # expose `which`+`jq` for R (bioconda) post-link scripts (installBiocDataPackage.sh); the amazon2023 base image lacks them
+                RUN micromamba install -y -n base conda-forge::which conda-forge::jq \\
                     && ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which \\
                     && (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
@@ -776,8 +776,8 @@ class ContainerHelperTest extends Specification {
                 FROM mambaorg/micromamba:2-amazon2023 AS build
                 USER root
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
-                # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
-                RUN micromamba install -y -n base conda-forge::which \\
+                # expose `which`+`jq` for R (bioconda) post-link scripts (installBiocDataPackage.sh); the amazon2023 base image lacks them
+                RUN micromamba install -y -n base conda-forge::which conda-forge::jq \\
                     && ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which \\
                     && (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
@@ -823,8 +823,8 @@ class ContainerHelperTest extends Specification {
                 FROM mambaorg/micromamba:2.0.0 AS build
                 USER root
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
-                # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
-                RUN micromamba install -y -n base conda-forge::which \\
+                # expose `which`+`jq` for R (bioconda) post-link scripts (installBiocDataPackage.sh); the amazon2023 base image lacks them
+                RUN micromamba install -y -n base conda-forge::which conda-forge::jq \\
                     && ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which \\
                     && (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
@@ -863,9 +863,9 @@ class ContainerHelperTest extends Specification {
         result =='''\
                 FROM mambaorg/micromamba:2-amazon2023 AS build
                 USER root
-                # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
+                # expose `which`+`jq` for R (bioconda) post-link scripts (installBiocDataPackage.sh); the amazon2023 base image lacks them
                 RUN \\
-                    micromamba install -y -n base conda-forge::which \\
+                    micromamba install -y -n base conda-forge::which conda-forge::jq \\
                     && ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which \\
                     && (micromamba install -y -n base -c conda-forge -c bioconda -f https://foo.com/lock.yml > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\

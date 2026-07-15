@@ -5,7 +5,7 @@ From: {{pixi_image}}
 %post
     mkdir /opt/wave && cd /opt/wave
     pixi init --import /scratch/conda.yml
-    pixi add conda-forge::which
+    pixi add conda-forge::which conda-forge::jq
     {{base_packages}}
     pixi shell-hook > /shell-hook.sh
     echo ">> CONDA_LOCK_START"
