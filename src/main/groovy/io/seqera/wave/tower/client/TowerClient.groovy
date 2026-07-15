@@ -150,9 +150,12 @@ class TowerClient {
 
     DescribeWorkflowResponse describeWorkflow(String endpoint, JwtAuth authorization, Long workspaceId, String workflowId) {
         final uri = workflowDescribeEndpoint(endpoint,workspaceId,workflowId)
-        // NOTE: fetched fresh (uncached) on purpose — the workflow *status* changes over the run and
-        // the container-token watcher relies on an up-to-date status to bound post-completion access.
-        return getAsync(uri, endpoint, authorization, DescribeWorkflowResponse).get() as DescribeWorkflowResponse
+        final k = RegHelper.sipHash(uri, authorization.key, workspaceId, workflowId)
+        // NOTE: cached for a *short* duration keyed by workflowId so the many container tokens of a
+        // single run coalesce onto one Platform lookup per window instead of one lookup per token.
+        // Completion is thus observed up to cacheShortDuration late — harmless, since the token
+        // access-ttl (minutes) is what bounds post-completion access, not this cache.
+        return get0(uri, endpoint, authorization, DescribeWorkflowResponse, k, cacheShortDuration) as DescribeWorkflowResponse
     }
 
     protected static URI workflowDescribeEndpoint(String endpoint, Long workspaceId, String workflowId) {

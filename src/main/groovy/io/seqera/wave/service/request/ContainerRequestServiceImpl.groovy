@@ -207,9 +207,10 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
             return
         }
 
-        // 3. Renew only while the workflow is still active. describeWorkflow fetches a FRESH status
-        //    (no cache) so completion is observed promptly and the token lapses within one accessTtl.
-        //    isWorkflowActive treats an unknown/failed lookup as inactive (fail-closed).
+        // 3. Renew only while the workflow is still active. describeWorkflow is short-cached by
+        //    workflowId so the many tokens of one run share a single Platform lookup; completion is
+        //    still observed well within accessTtl. isWorkflowActive treats an unknown/failed lookup
+        //    as inactive (fail-closed).
         final workflow = describeWorkflow(request)
         if( !isWorkflowActive(workflow) ) {
             // Distinguish a confirmed completion from a status we could not confirm (null/UNKNOWN):
@@ -252,8 +253,8 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
 
     protected Workflow describeWorkflow(ContainerRequest request) {
         // Reuse the request's own Platform identity/credentials to ask Tower about the workflow.
-        // Fetched fresh (uncached) so the workflow status is never stale — that keeps the
-        // post-completion window bounded by accessTtl rather than the cache TTL.
+        // The client short-caches the response by workflowId so all tokens of one run coalesce onto
+        // a single lookup; the small staleness is bounded well below accessTtl.
         final resp = towerClient.describeWorkflow(
                 request.identity.towerEndpoint,
                 JwtAuth.of(request.identity),
