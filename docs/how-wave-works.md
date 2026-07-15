@@ -119,11 +119,11 @@ Wave stores ephemeral images in the Cloudflare CDN for 90 days, after which it d
 
 The lifetime of an ephemeral image that includes an access token in its URI depends on how the request was made:
 
-- **Workflow-bound requests.** When a request originates from a Seqera Platform workflow run (Nextflow supplies the run's `workflowId`), Wave ties the token lifetime to the run instead of a fixed window. The token is granted a short time-to-live that Wave renews while the run is active, and lets it lapse shortly after the run completes (succeeds or fails). Two guarantees hold: the container becomes inaccessible no more than ~20 minutes (the `access-ttl`) after the run completes, and it is never accessible more than 48 hours (the `max-duration`) after the initial request, regardless of run state. The URI advertises the 48-hour hard ceiling as its expiration.
+- **Workflow-bound requests.** When a request originates from a Seqera Platform workflow run (Nextflow supplies the run's `workflowId`), Wave ties the token lifetime to the run instead of a fixed window. Wave grants the token a short time-to-live, renews it while the run is active, and lets it lapse shortly after the run completes (succeeds or fails). Two limits apply: the container becomes inaccessible no more than ~20 minutes (the `access-ttl`) after the run completes, and it is never accessible more than 48 hours (the `max-duration`) after the initial request, regardless of run state. The URI advertises the 48-hour hard ceiling as its expiration.
+- **Other requests.** Builds, mirrors, and requests not bound to a workflow keep a fixed lifetime of 36 hours (the `cache.duration`) from submission.
 
-- **Other requests.** Builds, mirrors, and requests not bound to a workflow keep a fixed lifetime of 36 hours (the `cache.duration`) from the time the request is submitted.
 
-System admins can revoke images before these limits. This behavior is controlled by the [`wave.tokens.*`](./configuration.md#general) settings and can be disabled with `wave.tokens.watcher.enabled: false`, in which case all requests use the fixed 36-hour lifetime.
+System administrators can revoke images before these limits. The [`wave.tokens.*`](./configuration.md#general) settings control this behavior. To disable it, set `wave.tokens.watcher.enabled: false`. All requests then use the fixed 36-hour lifetime.
 
 ### Context directory size limits
 
