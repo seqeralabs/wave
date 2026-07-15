@@ -23,6 +23,7 @@ import spock.lang.Specification
 import java.time.Duration
 import java.time.Instant
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.ContainerRequestConfig
 import io.seqera.wave.service.persistence.PersistenceService
@@ -177,6 +178,37 @@ class ContainerRequestServiceImplTest extends Specification {
         1 * service.describeWorkflow(request) >> null
         0 * store.put('req-1', _, _)
         0 * range.add(_, _)
+    }
+
+    def 'check0 should record the refresh outcome as a prometheus counter'() {
+        given:
+        def registry = new SimpleMeterRegistry()
+        def store = Mock(ContainerRequestStore)
+        def range = Mock(ContainerRequestRange)
+        def persistence = Mock(PersistenceService)
+        def service = Spy(new ContainerRequestServiceImpl(
+                containerRequestStore: store, containerRequestRange: range,
+                persistenceService: persistence, config: watcherConfig(), meterRegistry: registry))
+        and:
+        def request = containerRequest('req-1', Instant.now())
+        def entry = new ContainerRequestRange.Entry('req-1', 'wf-1', Instant.now().plus(Duration.ofMinutes(15)))
+
+        when: 'the status cannot be confirmed - a fail-closed revocation'
+        service.check0(entry, Instant.now())
+        then:
+        1 * store.get('req-1') >> request
+        1 * service.describeWorkflow(request) >> null
+        and:
+        registry.counter('wave.tokens.refresh', 'result', 'unresolved').count() == 1d
+
+        when: 'the workflow is still active - the token is renewed'
+        service.check0(entry, Instant.now())
+        then:
+        1 * store.get('req-1') >> request
+        1 * service.describeWorkflow(request) >> new Workflow(id: 'wf-1', status: Workflow.WorkflowStatus.RUNNING)
+        1 * persistence.loadContainerRequest('req-1') >> Mock(WaveContainerRecord) { withExpiration(_) >> it }
+        and:
+        registry.counter('wave.tokens.refresh', 'result', 'renewed').count() == 1d
     }
 
     def 'check0 should stop tracking when the request is no longer in the store'() {

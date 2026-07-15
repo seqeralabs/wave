@@ -23,6 +23,8 @@ import java.time.Instant
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micrometer.core.instrument.MeterRegistry
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.scheduling.TaskScheduler
 import io.seqera.wave.configuration.ContainerRequestConfig
 import io.seqera.wave.service.persistence.PersistenceService
@@ -108,6 +110,28 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
     @Inject
     private TowerClient towerClient
 
+    @Inject
+    @Nullable
+    private MeterRegistry meterRegistry
+
+    /**
+     * Prometheus counter for the token-refresh path. The {@code result} tag records each check
+     * outcome so operators can watch the fail-closed revocations Gavin flagged:
+     * <ul>
+     *   <li>{@code renewed}    - workflow active, token renewed
+     *   <li>{@code completed}  - workflow reached a confirmed terminal status, token left to lapse
+     *   <li>{@code unresolved} - status could not be confirmed (unknown/null); token revoked fail-closed
+     *   <li>{@code error}      - Platform lookup threw (unreachable); check retried with slack
+     *   <li>{@code expired}    - hard 48h lifetime cap reached
+     *   <li>{@code gone}       - request already evicted from the store
+     * </ul>
+     * Describe-call volume is derivable as the sum of all results except {@code gone} (which stops
+     * before the lookup). Registry may be absent in unit tests, hence the null-safe navigation.
+     */
+    private void meterRefresh(String result) {
+        meterRegistry?.counter('wave.tokens.refresh', 'result', result)?.increment()
+    }
+
     protected void scheduleRefresh(Entry entry) {
         // Re-check this request one refreshInterval from now. refreshInterval is deliberately shorter
         // than accessTtl so several checks fit inside a token's lifetime — a transient Tower failure
@@ -150,6 +174,7 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
             }
             catch (Throwable t) {
                 log.error("Unexpected error in container request watcher while processing key: $it", t)
+                meterRefresh('error')
                 // The entry was already popped by getEntriesUntil; re-add it so a transient failure
                 // (e.g. a Tower blip) does not silently drop the request and let its token lapse.
                 scheduleRefresh(it)
@@ -177,6 +202,7 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
         //    to renew — stop tracking.
         final request = getRequest(entry.requestId)
         if( !request ) {
+            meterRefresh('gone')
             log.debug "Unable to find any container request for id '${entry.requestId}' - stop tracking"
             return
         }
@@ -186,7 +212,11 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
         //    isWorkflowActive treats an unknown/failed lookup as inactive (fail-closed).
         final workflow = describeWorkflow(request)
         if( !isWorkflowActive(workflow) ) {
-            log.debug "Container request '${entry.requestId}' - workflow ${workflow?.id} not active; stop tracking"
+            // Distinguish a confirmed completion from a status we could not confirm (null/UNKNOWN):
+            // the latter is a fail-closed revocation — the signal to watch for connectivity issues.
+            final resolved = workflow!=null && workflow.status!=Workflow.WorkflowStatus.UNKNOWN
+            meterRefresh(resolved ? 'completed' : 'unresolved')
+            log.debug "Container request '${entry.requestId}' - workflow ${workflow?.id} ${resolved ? 'completed' : 'status unresolved'}; stop tracking"
             return
         }
 
@@ -194,6 +224,7 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
         //    even for a still-running workflow. Once reached, stop and let it lapse.
         final maxExpire = request.creationTime.plus(config.cacheMaxDuration)
         if( !now.isBefore(maxExpire) ) {
+            meterRefresh('expired')
             log.info "Container request '${entry.requestId}' reached max allowed lifetime (${config.cacheMaxDuration}) - workflow=${workflow.id}; stop tracking"
             return
         }
@@ -204,9 +235,11 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
         if( newTtl.isNegative() || newTtl.isZero() ) {
             // Defensive: a non-positive TTL must never reach the store, which could treat it as
             // "no expiry" and leave the token alive indefinitely.
+            meterRefresh('expired')
             log.warn "Container request '${entry.requestId}' computed TTL is not positive: ${newTtl}; stop tracking"
             return
         }
+        meterRefresh('renewed')
         log.debug "Container request '${entry.requestId}' renewed for ${newTtl}; expires at ${newExpire}; workflow=${workflow.id}"
         containerRequestStore.put(entry.requestId, request, newTtl)
         // mirror the new expiration onto the persisted record for display (immutable copy)
