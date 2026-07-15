@@ -244,10 +244,9 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
         meterRefresh('renewed')
         log.debug "Container request '${entry.requestId}' renewed for ${newTtl}; expires at ${newExpire}; workflow=${workflow.id}"
         containerRequestStore.put(entry.requestId, request, newTtl)
-        // mirror the new expiration onto the persisted record for display (immutable copy)
-        final requestRecord = loadContainerRecord(entry.requestId)
-        if( requestRecord )
-            persistenceService.saveContainerRequestAsync(requestRecord.withExpiration(newExpire))
+        // mirror the new expiration onto the persisted record for display (in-place JSON update, not
+        // a re-insert — the record already exists from request creation)
+        persistenceService.updateContainerExpirationAsync(entry.requestId, newExpire)
         // re-arm the next check
         scheduleRefresh(entry.withExpiration(newExpire))
     }

@@ -246,6 +246,18 @@ class PostgresPersistentServiceTest extends Specification {
         and:
         updated.waveDigest == '222'
         updated.waveImage == request.waveImage
+
+        // should roll the expiration forward in place (watcher renewal)
+        when:
+        def newExp = Instant.now().plusSeconds(7200)
+        persistentService.updateContainerExpirationAsync(TOKEN, newExp) .join()
+        then:
+        def rolled = persistentService.loadContainerRequest(TOKEN)
+        and:
+        rolled.expiration == newExp
+        and: 'other fields are left untouched'
+        rolled.waveDigest == '222'
+        rolled.waveImage == request.waveImage
     }
 
 

@@ -110,7 +110,6 @@ class ContainerRequestServiceImplTest extends Specification {
         def store = Mock(ContainerRequestStore)
         def range = Mock(ContainerRequestRange)
         def persistence = Mock(PersistenceService)
-        def record = Mock(WaveContainerRecord)
         def service = Spy(new ContainerRequestServiceImpl(
                 containerRequestStore: store, containerRequestRange: range,
                 persistenceService: persistence, config: watcherConfig()))
@@ -124,11 +123,9 @@ class ContainerRequestServiceImplTest extends Specification {
         then:
         1 * store.get('req-1') >> request
         1 * service.describeWorkflow(request) >> new Workflow(id: 'wf-1', status: Workflow.WorkflowStatus.RUNNING)
-        1 * persistence.loadContainerRequest('req-1') >> record
-        1 * record.withExpiration(_ as Instant) >> record
-        and: 'the live token is re-granted and the next check is re-armed'
+        and: 'the live token is re-granted, the persisted expiration is updated in place, and the next check is re-armed'
         1 * store.put('req-1', request, _ as Duration)
-        1 * persistence.saveContainerRequestAsync(record)
+        1 * persistence.updateContainerExpirationAsync('req-1', _ as Instant)
         1 * range.add(_ as ContainerRequestRange.Entry, _ as Instant)
     }
 
@@ -206,7 +203,7 @@ class ContainerRequestServiceImplTest extends Specification {
         then:
         1 * store.get('req-1') >> request
         1 * service.describeWorkflow(request) >> new Workflow(id: 'wf-1', status: Workflow.WorkflowStatus.RUNNING)
-        1 * persistence.loadContainerRequest('req-1') >> Mock(WaveContainerRecord) { withExpiration(_) >> it }
+        1 * persistence.updateContainerExpirationAsync('req-1', _ as Instant)
         and:
         registry.counter('wave.tokens.refresh', 'result', 'renewed').count() == 1d
     }
