@@ -750,7 +750,7 @@ class ContainerController {
         final data = containerService.loadContainerRecord(requestId)
         if( !data )
             return HttpResponse.notFound()
-        return HttpResponse.ok(data)
+        return HttpResponse.ok(data.withUserIdOnly())
     }
 
     @Get('/v1alpha2/container/{requestId}/status')
