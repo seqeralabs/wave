@@ -1,5 +1,5 @@
 ---
-title: Docker Compose installation
+title: Install Wave Lite with Docker Compose
 description: Deploy Wave Lite on a single Docker host with external PostgreSQL and Redis.
 ---
 
@@ -78,7 +78,7 @@ TOWER_ENDPOINT_URL=https://platform.example.com/api
 ```
 
 :::warning
-Set `WAVE_SERVER_URL` to the address your clients use to reach Wave. If it is left unset, Wave issues container tokens pointing at `http://localhost:9090`, which clients cannot reach.
+Set `WAVE_SERVER_URL` to the address your clients use to reach Wave. If you leave it unset, Wave issues container tokens pointing at `http://localhost:9090`, which clients cannot reach.
 :::
 
 ## Configure Wave
@@ -98,14 +98,14 @@ wave:
     enabled: false
 ```
 
-This file sets only what Wave Lite needs to start. The `lite` entry in `MICRONAUT_ENVIRONMENTS` (set in the Compose file below) already applies these same defaults; the file restates them explicitly and gives you a place to add further configuration. To configure other options, such as rate limits, token cache duration, and metrics, see [Configure Wave](configure-wave.md). Before serving production traffic, complete the [production hardening](configure-wave.md#harden-for-production) checklist.
+This file sets only what Wave Lite needs to start. The `lite` entry in `MICRONAUT_ENVIRONMENTS`, set in the Compose file in a later step, already applies these same defaults. The file restates them explicitly and gives you a place to add further configuration. To configure other options, such as rate limits, token cache duration, and metrics, see [Configure Wave](configure-wave.md). Before serving production traffic, complete the [production hardening](configure-wave.md#harden-for-production) checklist.
 
 ## Authenticate to private registries
 
 Wave Lite pulls images during augmentation. To augment images from a private registry, give Wave credentials for that registry. Wave uses one of two credential sources per request:
 
-1. **Platform workspace credentials**: credentials a user adds to their Seqera Platform workspace. Wave uses these for requests that carry a Platform identity.
-2. **Server-side static credentials**: credentials the operator sets. Wave uses these for anonymous requests and for registries the operator owns.
+- **Platform workspace credentials**: credentials a user adds to their Seqera Platform workspace. Wave uses these for requests that carry a Platform identity.
+- **Server-side static credentials**: credentials the operator sets. Wave uses these for anonymous requests and for registries the operator owns.
 
 For the common registries, set the credentials as environment variables in `wave.env`:
 
@@ -131,7 +131,7 @@ wave:
       password: "<password>"
 ```
 
-Configure credentials for every private registry Wave pulls from. Public images need none. For all registry options, see [Reference](reference.md#container-registry).
+Configure credentials for every private registry Wave pulls from. Public images need none. For all registry options, see [Container registry](reference.md#container-registry).
 
 ## Log in to the Seqera container registry
 
@@ -187,18 +187,18 @@ Docker Compose runs Wave in one of two modes, depending on whether you need more
 On first startup, Wave takes 30 to 60 seconds to initialize while it applies database migrations.
 
 :::warning
-If Wave Lite runs in the same Swarm as Platform Connect for [Studios](https://docs.seqera.io/platform-enterprise/25.2/enterprise/studios#docker-compose), tearing down the stack also interrupts Connect services.
+If Wave Lite runs in the same Swarm as Platform Connect for [Studios](https://docs.seqera.io/platform-enterprise/25.2/enterprise/studios#docker-compose), removing the stack also interrupts Connect services.
 :::
 
 ## Verify your installation
 
-Confirm the service is live and functional. See [Verify your installation](post-install.md) for the `/service-info` check and the `wave-cli` functional test.
+Confirm the service is live and functional. See [Verify your installation](post-install.md) for the `/service-info` check and the Wave CLI functional checks.
 
 When Wave is running and verified, continue to [Configure Wave](configure-wave.md#harden-for-production) to harden the deployment for production.
 
 ## Adapt this guide
 
-The supported procedure uses managed PostgreSQL and Redis and assumes you front Wave yourself. The options below are described, not wired into the steps above. Adapt them at your own risk.
+The supported procedure uses managed PostgreSQL and Redis and assumes you front Wave yourself. The following options are described but not part of the procedure. Adapt them at your own risk.
 
-- **Embedded PostgreSQL and Redis**: Fine for development and testing, not supported for production.
+- **Embedded PostgreSQL and Redis**: Suitable for development and testing. Not supported for production.
 - **Expose Wave externally over HTTPS**: Front the service with a load balancer and certificate (for example, AWS ALB with ACM and Route 53).

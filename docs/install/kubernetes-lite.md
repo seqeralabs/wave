@@ -1,14 +1,14 @@
 ---
-title: Kubernetes installation
+title: Install Wave Lite on Kubernetes
 description: Deploy Wave Lite on any Kubernetes cluster with external PostgreSQL and Redis.
 ---
 
-Install Wave Lite on Kubernetes when you want the Wave Lite configuration on a cluster you already run. This installs container augmentation, inspection, and private registry authentication. Build, mirror, and scan are not part of Wave Lite. The full Wave configuration adds them to a Wave Lite install on Amazon EKS. After installing Wave Lite on an EKS cluster, follow [Enable Wave builds](aws-build.md).
+Install Wave Lite on a Kubernetes cluster you already operate. This installs container augmentation, inspection, and private registry authentication. Build, mirror, and scan are not part of Wave Lite. The full Wave configuration adds them to a Wave Lite install on Amazon EKS. After you install Wave Lite on an EKS cluster, follow [Enable Wave builds](aws-build.md).
 
 For other choices (different ingress controllers or untested distributions), see [Adapt this guide](#adapt-this-guide).
 
 :::info[Install with the Helm chart]
-Seqera publishes an official [Wave Helm chart](https://artifacthub.io/packages/helm/seqera/wave) that deploys the same Wave Lite configuration this guide builds with raw manifests. Follow the chart's documentation to install it, and keep the following in mind:
+Seqera publishes an official [Wave Helm chart](https://artifacthub.io/packages/helm/seqera/wave) that deploys the same Wave Lite configuration this guide builds with raw manifests. Follow the chart's documentation to install it, and note the following:
 
 - Create the database first, as described in [Create the database](#create-the-database), and verify the deployment with the same [post-install checks](post-install.md).
 - Add `rate-limit` to the chart's `micronautEnvironments` value to activate the rate limits described in [Set rate limits](configure-wave.md#set-rate-limits).
@@ -25,7 +25,7 @@ You need the following:
   - Memory: 12 GB RAM (8 GB for Wave pods, plus headroom for the cluster).
   - CPU: 4 cores (2 for Wave pods, plus headroom for the cluster).
   - Storage: 10 GB, plus disk space for your container images and temporary files.
-  - Network: connectivity to your PostgreSQL and Redis instances.
+  - Network: Connectivity to your PostgreSQL and Redis instances.
 - PostgreSQL 16 or later, reachable from the cluster.
 - Redis 6.2 or later, reachable from the cluster.
 - A Seqera Platform deployment and its endpoint URL.
@@ -79,7 +79,7 @@ metadata:
 
 ## Create the registry credentials secret
 
-The Wave image is hosted on `cr.seqera.io`, which requires authentication. Create a pull secret in the `wave` namespace with the credentials provided by Seqera. The deployment below references it as `seqera-reg-creds`:
+The Wave image is hosted on `cr.seqera.io`, which requires authentication. Create a pull secret in the `wave` namespace with the credentials provided by Seqera. The deployment in a later step references it as `seqera-reg-creds`:
 
 ```bash
 kubectl create secret docker-registry seqera-reg-creds \
@@ -132,17 +132,17 @@ data:
 ```
 
 :::warning
-Set `wave.server.url` to the address clients use to reach Wave. If it is left unset, Wave issues container tokens pointing at `http://localhost:9090`, which clients cannot reach.
+Set `wave.server.url` to the address clients use to reach Wave. If you leave it unset, Wave issues container tokens pointing at `http://localhost:9090`, which clients cannot reach.
 :::
 
-This ConfigMap sets only what Wave Lite needs to start. The `lite` entry in `MICRONAUT_ENVIRONMENTS` (set in the deployment below) already applies these same defaults; the ConfigMap restates them explicitly and gives you a place to add further configuration. To configure other options, such as rate limits, token cache duration, and metrics, see [Configure Wave](configure-wave.md). Before serving production traffic, complete the [production hardening](configure-wave.md#harden-for-production) checklist.
+This ConfigMap sets only what Wave Lite needs to start. The `lite` entry in `MICRONAUT_ENVIRONMENTS`, set in the deployment in a later step, already applies these same defaults. The ConfigMap restates them explicitly and gives you a place to add further configuration. To configure other options, such as rate limits, token cache duration, and metrics, see [Configure Wave](configure-wave.md). Before serving production traffic, complete the [production hardening](configure-wave.md#harden-for-production) checklist.
 
 ## Authenticate to private registries
 
 Wave Lite pulls images during augmentation. To augment images from a private registry, give Wave credentials for that registry. Wave uses one of two credential sources per request:
 
-1. **Platform workspace credentials**: credentials a user adds to their Seqera Platform workspace. Wave uses these for requests that carry a Platform identity.
-2. **Server-side static credentials**: credentials the operator sets under `wave.registries.<host>`. Wave uses these for anonymous requests and for registries the operator owns.
+- **Platform workspace credentials**: credentials a user adds to their Seqera Platform workspace. Wave uses these for requests that carry a Platform identity.
+- **Server-side static credentials**: credentials the operator sets under `wave.registries.<host>`. Wave uses these for anonymous requests and for registries the operator owns.
 
 Add an entry for each private registry under `wave.registries` in the `wave-cfg` config. For example, Docker Hub and a private Quay.io account:
 
@@ -157,9 +157,9 @@ wave:
       password: "<quay-pat>"
 ```
 
-As with the database and Redis credentials above, keep these out of the ConfigMap in production. Store them in a Kubernetes Secret and reference it from the deployment.
+As with the database and Redis credentials, keep these out of the ConfigMap in production. Store them in a Kubernetes Secret and reference it from the deployment.
 
-Configure credentials for every private registry Wave pulls from. Public images need none. For all registry options, see [Reference](reference.md#container-registry).
+Configure credentials for every private registry Wave pulls from. Public images need none. For all registry options, see [Container registry](reference.md#container-registry).
 
 ## Create the deployment
 
@@ -277,7 +277,7 @@ spec:
 ```
 
 :::note
-This minimal Ingress omits controller-specific configuration. For the AWS Load Balancer Controller, add `ingressClassName: alb` and the `alb.ingress.kubernetes.io/*` annotations (scheme, target type, and ACM certificate ARN) your setup requires. With `alb.ingress.kubernetes.io/target-type: ip`, the `ClusterIP` service above works as-is; with the default `instance` target type, change the service to `NodePort`.
+This minimal Ingress omits controller-specific configuration. For the AWS Load Balancer Controller, add `ingressClassName: alb` and the `alb.ingress.kubernetes.io/*` annotations (scheme, target type, and ACM certificate ARN) your setup requires. With `alb.ingress.kubernetes.io/target-type: ip`, the `ClusterIP` service defined earlier works as-is. With the default `instance` target type, change the service to `NodePort`.
 :::
 
 After the ingress provisions, configure your Seqera Platform deployment to use the Wave endpoint by setting the Wave server URL in `tower.yml` ([Platform Wave configuration](https://docs.seqera.io/platform-enterprise/latest/enterprise/configuration/wave)).
@@ -288,13 +288,13 @@ For production reliability, add Pod Disruption Budgets, a Horizontal Pod Autosca
 
 ## Verify your installation
 
-Confirm the service is live and functional. See [Verify your installation](post-install.md) for the `/service-info` check and the `wave-cli` functional test.
+Confirm the service is live and functional. See [Verify your installation](post-install.md) for the `/service-info` check and the Wave CLI functional checks.
 
 When Wave is running and verified, continue to [Configure Wave](configure-wave.md#harden-for-production) to harden the deployment for production.
 
 ## Adapt this guide
 
-The supported procedure uses managed PostgreSQL and Redis and an AWS ALB ingress. The options below are described, not wired into the steps above. Adapt them at your own risk.
+The supported procedure uses managed PostgreSQL and Redis and an AWS ALB ingress. The following options are described but not part of the procedure. Adapt them at your own risk.
 
 - **Other ingress controllers**: NGINX, GCE, or Traefik work, but add the provider-specific annotations they require and verify TLS termination.
-- **Other distributions**: Wave Lite has no AWS dependency and should run on any conformant Kubernetes distribution. These may work but are not validated.
+- **Other distributions**: Wave Lite has no AWS dependency and runs on any conformant Kubernetes distribution, but other distributions are not validated.

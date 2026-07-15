@@ -1,6 +1,6 @@
 ---
-title: Installation verification
-description: Confirm a self-hosted Wave service is live and functional after install.
+title: Verify your installation
+description: Confirm a self-hosted Wave service is live and functional after installation.
 ---
 
 After installing Wave with any method, confirm the service is live and provisions containers. Run the liveness check first, then the functional checks for your configuration.
@@ -50,7 +50,7 @@ If you disabled anonymous access in [Configure Wave](configure-wave.md#require-a
 
 ### Wave Lite
 
-Augment an existing image. Wave should return an augmented image reference served by your deployment:
+Augment an existing image:
 
 ```bash
 wave -i ubuntu:22.04
@@ -60,7 +60,7 @@ A successful augmentation prints a Wave image reference pointing at your service
 
 ### Wave
 
-In addition to the augmentation check above, verify the build features you enabled.
+In addition to the augmentation check, verify the build features you enabled.
 
 Build a container from a Conda package:
 
@@ -77,7 +77,7 @@ wave --containerfile Dockerfile --freeze --build-repo <build-repo> --tower-token
 A successful build returns a reference in your configured build repository.
 
 :::note
-Freeze builds push to the repository you name, so they always need a Platform access token, and the associated Platform workspace must hold registry credentials with push access to `<build-repo>`. See [Freeze and user-supplied build repositories](aws-build.md#freeze-and-user-supplied-build-repositories).
+Freeze builds push to the repository you name. They always need a Platform access token, and the associated Platform workspace must hold registry credentials with push access to `<build-repo>`. See [Freeze and user-supplied build repositories](aws-build.md#freeze-and-user-supplied-build-repositories).
 :::
 
 ## If a check fails

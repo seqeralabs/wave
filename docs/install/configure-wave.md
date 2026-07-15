@@ -1,17 +1,17 @@
 ---
-title: Configuration
+title: Configure Wave
 description: Harden a self-hosted Wave deployment for production and configure optional features.
 ---
 
-Configure a self-hosted Wave deployment for production and add optional features. Harden every deployment with the checklist below before you serve traffic. Configure optional features such as email notifications and build caching as needed.
+Configure a self-hosted Wave deployment for production and add optional features. Harden every deployment with the hardening checklist before you serve traffic. Configure optional features such as email notifications and build caching as needed.
 
 :::info
-See [Reference](reference.md) for the full list of configuration options for self-hosted Wave deployments.
+See the [Configuration reference](reference.md) for the full list of configuration options for self-hosted Wave deployments.
 :::
 
 ## Harden for production
 
-A freshly installed Wave service boots and returns `200` on `/service-info`, but it is not yet production-ready. Apply this hardening checklist after [verifying your installation](post-install.md) and before serving production traffic. For the underlying options, see [Reference](reference.md).
+A freshly installed Wave service boots and returns `200` on `/service-info`, but it is not yet production-ready. Apply this hardening checklist after [verifying your installation](post-install.md) and before serving production traffic. For the underlying options, see the [Configuration reference](reference.md).
 
 ### Require authentication
 
@@ -49,11 +49,11 @@ rate-limit:
 Rate limiting is active only when the `rate-limit` entry is present in the `MICRONAUT_ENVIRONMENTS` variable of your deployment. The install guides include it. Without it, `rate-limit.*` settings are silently ignored.
 :::
 
-For the full list of limits, see [Rate limits](reference.md#rate-limits) in the Reference.
+For the full list of limits, see [Rate limits](reference.md#rate-limits) in the Configuration reference.
 
 ### Configure cleanup and retention
 
-Builds and augmented images accumulate. Set cleanup and retention so storage stays bounded. See `wave.cleanup.*` in [Reference](reference.md). Also set a retention or lifecycle policy on your build and cache registries.
+Builds and augmented images accumulate. Set cleanup and retention so storage stays bounded. See `wave.cleanup.*` in the [Configuration reference](reference.md). Also set a retention or lifecycle policy on your build and cache registries.
 
 ### Right-size resources
 
@@ -63,7 +63,7 @@ Size the build node pool and cap concurrency with `wave.job-manager.max-running-
 
 ### Review security headers
 
-Wave sends HTTP security headers (HSTS, frame options, content-type options, referrer policy, permissions policy, and a content security policy) by default. Review them against your environment and adjust the content security policy if you front Wave with additional origins. See [Security headers](reference.md#security-headers) in the Reference.
+Wave sends HTTP security headers (HSTS, frame options, content-type options, referrer policy, permissions policy, and a content security policy) by default. Review them against your environment and adjust the content security policy if you front Wave with additional origins. See [Security headers](reference.md#security-headers) in the Configuration reference.
 
 ## Email notifications
 
@@ -96,7 +96,7 @@ mail:
       protocols: "TLSv1.2"
 ```
 
-| Setting             | Description                          | Example Values                              |
+| Setting             | Description                          | Example values                              |
 | ------------------- | ------------------------------------ | ------------------------------------------- |
 | `from`              | Email address that appears as sender | `wave@company.com`                          |
 | `host`              | SMTP server hostname                 | `smtp.gmail.com`, `smtp.office365.com`      |
@@ -110,7 +110,7 @@ mail:
 
 ### SES
 
-In AWS environments, Wave integrates directly with Amazon Simple Email Service (SES) using Identity and Access Management (IAM) authentication instead of SMTP credentials. Wave uses the AWS SDK to send emails through the SES API. No SMTP configuration is needed.
+In AWS environments, Wave integrates directly with SES using Identity and Access Management (IAM) authentication instead of SMTP credentials. Wave uses the AWS SDK to send emails through the SES API.
 
 :::info[**Prerequisites**]
 
@@ -156,7 +156,7 @@ Wave uses SES in the AWS region where it runs. Verify your sending domain in the
 
 ## Security scanning
 
-Wave performs security scanning on container builds. This feature requires the build service and additional scanning infrastructure.
+Wave scans container builds for vulnerabilities. This feature requires the build service and additional scanning infrastructure.
 
 :::info[**Prerequisites**]
 
@@ -168,7 +168,9 @@ You need the following:
 
 :::
 
-```
+Enable scanning in your Wave configuration:
+
+```yaml
 wave:
   build:
     enabled: true
@@ -229,11 +231,7 @@ To create and configure the ECR cache repository:
     }
     ```
 
-The `wave.build.cache` setting takes a cache repository URL or S3 path:
-
-| Setting                    | Description                       | Example                                                   |
-| -------------------------- | --------------------------------- | --------------------------------------------------------- |
-| `wave.build.cache`         | Cache repository URL or S3 path   | `123456789012.dkr.ecr.us-east-1.amazonaws.com/wave-cache` |
+The `wave.build.cache` setting takes a cache repository URL or an S3 path. For details, see [Container build process](reference.md#container-build-process).
 
 ## S3 cache authentication
 
@@ -296,7 +294,7 @@ spec:
 
 For Docker-based builds, use an EC2 instance profile for automatic credential management.
 
-Attach an IAM role with the S3 permissions shown earlier to the EC2 instance running Docker. BuildKit uses the instance metadata service to obtain temporary credentials. The AWS SDK in BuildKit discovers and uses the instance profile credentials, so no further configuration is required.
+Attach an IAM role with the S3 permissions shown earlier to the EC2 instance running Docker. BuildKit uses the instance metadata service to obtain temporary credentials. The AWS SDK in BuildKit discovers and uses the instance profile credentials. No further configuration is required.
 
 :::note
 For development and testing only, you can provide AWS credentials through environment variables:
@@ -324,10 +322,15 @@ wave:
 
 Wave uses client IP addresses for rate limiting. By default, Wave reads the socket address, which clients cannot spoof.
 
-For AWS ALB deployments, enable the `alb` profile:
+For AWS ALB deployments, add `alb` to your Micronaut environments:
 
-```bash
-export MICRONAUT_ENVIRONMENTS=alb
+```yaml
+# Add 'alb' to your existing environments
+MICRONAUT_ENVIRONMENTS: "lite,postgres,redis,rate-limit,alb"
 ```
 
 The `alb` profile trusts the `X-Forwarded-For` header from the ALB to resolve the client IP.
+
+:::warning
+Enable the `alb` profile only when Wave runs behind a trusted ALB. If Wave is exposed directly to the internet, trusting `X-Forwarded-For` lets clients spoof their IP address and bypass rate limiting.
+:::

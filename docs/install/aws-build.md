@@ -1,5 +1,5 @@
 ---
-title: Enabling Wave builds
+title: Enable Wave builds
 description: Add on-demand container builds, mirroring, and scanning to a Wave Lite deployment on Amazon EKS.
 ---
 
@@ -8,7 +8,7 @@ The full Wave configuration is a Wave Lite deployment on Amazon EKS with on-dema
 Build, mirror, and scan are independent toggles. Enable any subset, for example mirror without build. Scan and freeze depend on the build pipeline. With `build.enabled: false`, both are unavailable.
 
 :::tip
-The Kubernetes manifests in this guide build up a single file. Save each YAML block into `wave-build.yaml` in the order shown, separated by `---`, then apply the file once at the end. The AWS CLI steps for ECR and IRSA run on their own and are not part of this file.
+The Kubernetes manifests in this guide assemble into a single file. Save each YAML block into `wave-build.yaml` in the order shown, separated by `---`, then apply the file once at the end. The AWS CLI steps for ECR and IRSA run on their own and are not part of this file.
 :::
 
 ## Infrastructure requirements
@@ -56,13 +56,13 @@ aws --region "$AWS_REGION" ecr create-repository --repository-name wave/build
 aws --region "$AWS_REGION" ecr create-repository --repository-name wave/cache
 ```
 
-ECR requires repositories to exist before push. Registries differ in whether they need the target path to exist beforehand. Wave relies on the underlying push tool: BuildKit for builds, Skopeo for mirrors. If you point builds or mirroring at a registry that requires pre-creation and the target path is missing, the push fails partway through the layer upload. Check the target registry below before you push to it.
+ECR requires repositories to exist before push. Registries differ in whether they need the target path to exist beforehand. Wave relies on the underlying push tool: BuildKit for builds, Skopeo for mirrors. If you point builds or mirroring at a registry that requires pre-creation and the target path is missing, the push fails partway through the layer upload. Check your target registry's rules before you push.
 
 For credential syntax, see [Configure Wave](configure-wave.md). For common push and authentication failures, see [Registry push and authentication failures](../troubleshoot.md#registry-push-and-authentication-failures).
 
 ### AWS ECR
 
-ECR **requires pre-creation**. Each repository must exist before push. Create it with `aws ecr create-repository` (as above) or your IaC tooling. AWS offers registry-level auto-create policies, but they are not enabled by default.
+ECR **requires pre-creation**. Each repository must exist before push. Create it with `aws ecr create-repository` (as shown earlier) or your IaC tooling. AWS offers registry-level auto-create policies, but they are not enabled by default.
 
 ### Docker Hub
 
@@ -78,7 +78,7 @@ Google Artifact Registry **requires partial pre-creation**. The repository, whic
 
 ### Google Container Registry (legacy GCR)
 
-Legacy GCR **needs no pre-creation**. Repositories auto-create on push. GCR is being phased out. Target Artifact Registry for new deployments.
+Legacy GCR **needs no pre-creation**. Repositories auto-create on push. Google is phasing out GCR. Target Artifact Registry for new deployments.
 
 ### Azure Container Registry (ACR)
 
@@ -90,9 +90,9 @@ Harbor **requires partial pre-creation**. Projects must be pre-created through t
 
 ## Grant Wave access to AWS APIs with IRSA
 
-IRSA gives the Wave pod its AWS identity. Wave uses it directly for S3 (build logs and Conda lock files), and to sign the STS calls it makes when an IAM role ARN is configured as an ECR registry credential. ECR pushes and pulls themselves are authenticated with the `wave.registries` credentials you configure in [Enable build features](#enable-build-features), which can be either:
+IRSA gives the Wave pod its AWS identity. Wave uses it directly for S3 (build logs and Conda lock files), and to sign the STS calls it makes when an IAM role ARN is configured as an ECR registry credential. Wave authenticates ECR pushes and pulls with the `wave.registries` credentials you configure in [Enable build features](#enable-build-features), which can be either:
 
-- An IAM access key pair. Attach the ECR statements of the policy below to that IAM user.
+- An IAM access key pair. Attach the ECR statements of the policy in this section to that IAM user.
 - The ARN of an IAM role whose trust policy allows the Wave role to call `sts:AssumeRole`. Attach the ECR statements to that role.
 
 IRSA requires an IAM OIDC provider for the cluster. To check whether one exists or create it, see [Creating an IAM OIDC provider](https://docs.aws.amazon.com/eks/latest/userguide/enable-iam-roles-for-service-accounts.html).
@@ -115,7 +115,7 @@ aws --region "$AWS_REGION" eks describe-cluster \
   --output text
 ```
 
-Create an IAM policy and role, then attach them. The two documents referenced below (`seqera-wave-policy.json` and `seqera-wave-role.json`) are templates you author for your account, shown after the commands:
+Create an IAM policy and role, then attach them. The two documents (`seqera-wave-policy.json` and `seqera-wave-role.json`) are templates you author for your account, shown after the commands:
 
 ```bash
 aws --region "$AWS_REGION" iam create-policy \
@@ -131,7 +131,7 @@ aws --region "$AWS_REGION" iam attach-role-policy \
   --policy-arn "arn:aws:iam::$AWS_ACCOUNT:policy/$WAVE_CONFIG_NAME"
 ```
 
-`seqera-wave-policy.json` grants access to ECR (for built and cached images) and S3 (for build logs and Conda lock files). Scope each resource to your repository and bucket ARNs. Replace `<aws-region>` and `<aws-account-id>` with the `$AWS_REGION` and `$AWS_ACCOUNT` values you exported above:
+`seqera-wave-policy.json` grants access to ECR (for built and cached images) and S3 (for build logs and Conda lock files). Scope each resource to your repository and bucket ARNs. Replace `<aws-region>` and `<aws-account-id>` with the `$AWS_REGION` and `$AWS_ACCOUNT` values you exported earlier:
 
 ```json
 {
@@ -207,7 +207,7 @@ aws --region "$AWS_REGION" iam attach-role-policy \
 }
 ```
 
-Create the Wave service account, annotated with the role ARN so the Wave pod assumes the role. Replace `<wave-config-name>` with the `$WAVE_CONFIG_NAME` value you exported above:
+Create the Wave service account, annotated with the role ARN so the Wave pod assumes the role. Replace `<wave-config-name>` with the `$WAVE_CONFIG_NAME` value you exported earlier:
 
 ```yaml
 apiVersion: v1
@@ -221,7 +221,7 @@ metadata:
 
 This single IAM role is the identity Wave uses for its AWS API calls (S3, and STS when assuming a role for ECR token exchange). The build, scan, mirror, and blob-transfer pods inherit it through the `wave-sa` service account. If IRSA is unavailable, attach an EC2 instance profile carrying the same policy to the build node group instead.
 
-Wave routes each request to one credential source. Requests carrying a Platform identity use the workspace credentials the user configures — except for operator-owned targets (the registry hosts of `wave.build.repo`, `wave.build.cache`, and `wave.build.public-repo`), which always use the server-side static credentials (`wave.registries.<host>.username` and `.password`). Anonymous requests always use the server-side credentials. This cloud identity is not used for registry authentication by itself: for ECR, Wave exchanges the configured `wave.registries` credentials (an access key pair, or a role ARN it assumes via STS) for an ECR auth token.
+Wave routes each request to one credential source. Requests that carry a Platform identity use the workspace credentials the user configures. The exception is operator-owned targets (the registry hosts of `wave.build.repo`, `wave.build.cache`, and `wave.build.public-repo`), which always use the server-side static credentials (`wave.registries.<host>.username` and `.password`). Anonymous requests always use the server-side credentials. The cloud identity alone does not authenticate to registries. For ECR, Wave exchanges the configured `wave.registries` credentials (an access key pair, or a role ARN it assumes via STS) for an ECR auth token.
 
 ## Configure EFS storage
 
@@ -288,15 +288,14 @@ spec:
 
 Configuration notes:
 
-- Replace `<efs-id>` with your EFS filesystem ID.
-- EFS must be in the same VPC as your EKS cluster.
-- Ensure the EFS security group allows inbound and outbound NFS traffic (port `2049`) from the EKS worker nodes.
+- Replace `<efs-id>` with your EFS file system ID.
+- The EFS security group must allow inbound and outbound NFS traffic (port `2049`) from the EKS worker nodes.
 
 ## Create the build RBAC
 
-Wave's build service creates and manages build pods. This section creates two things:
+Wave's build service creates and manages build pods. The following manifest creates two resources:
 
-- `wave-build-sa`: the service account the build, scan, and mirror pods run as. It is referenced by `wave.build.k8s.service-account` in the configuration below and needs no Kubernetes API permissions of its own.
+- `wave-build-sa`: the service account the build, scan, and mirror pods run as. It is referenced by `wave.build.k8s.service-account` in [Enable build features](#enable-build-features) and needs no Kubernetes API permissions of its own.
 - A ClusterRole and binding that grant `wave-sa` (the Wave service, in the `wave` namespace) permission to create and monitor build jobs:
 
 ```yaml
@@ -336,12 +335,12 @@ subjects:
 ```
 
 :::note
-The ClusterRole grants these permissions cluster-wide. For least privilege, replace it with a namespaced `Role` and `RoleBinding` in the `wave-build` namespace, since Wave only manages jobs there.
+The ClusterRole grants these permissions cluster-wide. For least privilege, replace it with a namespaced `Role` and `RoleBinding` in the `wave-build` namespace, because Wave only manages jobs there.
 :::
 
 ## Enable build features
 
-Update the `wave-cfg` ConfigMap from your Wave Lite install to enable build, mirror, and scan and to configure the build subsystem. Keep the existing database, Redis, and Platform settings. Set the build repositories to the ECR repositories you created, point the workspace at the EFS mount, and add a `wave.registries` entry for the ECR host so Wave can authenticate pushes to the build and cache repositories — without it, builds fail with a `Missing credentials for container repository` error:
+Update the `wave-cfg` ConfigMap from your Wave Lite install to enable build, mirror, and scan and to configure the build subsystem. Keep the existing database, Redis, and Platform settings. Set the build repositories to the ECR repositories you created, point the workspace at the EFS mount, and add a `wave.registries` entry for the ECR host so Wave can authenticate pushes to the build and cache repositories. Without this entry, builds fail with a `Missing credentials for container repository` error:
 
 ```yaml
 kind: ConfigMap
@@ -402,14 +401,14 @@ data:
         url: "https://platform.example.com/api"
 ```
 
-Wave ships working defaults for the build tool images and timeout. You do not need to set them. The current defaults are:
+Wave ships working defaults for the build tool images and timeout. You do not need to set them. The defaults are:
 
 - `wave.build.buildkit-image`: `public.cr.seqera.io/wave/buildkit:v0.25.2-rootless`
 - `wave.build.singularity-image`: `public.cr.seqera.io/wave/singularity:v4.2.1-r4`
 - `wave.blobCache.s5cmdImage`: `public.cr.seqera.io/wave/s5cmd:v2.3.0`
 - `wave.build.timeout`: `900s` (15 minutes)
 
-To build ARM (Graviton) images, route `linux/arm64` builds to an ARM node group with the `node-selector` shown above. For deeper build and blob cache tuning, see the [Reference](reference.md#container-build-process); for cache setup how-tos (ECR cache repository, S3 cache authentication), see [Configure Wave](configure-wave.md).
+To build ARM (Graviton) images, route `linux/arm64` builds to an ARM node group with the `node-selector` shown earlier. For deeper build and blob cache tuning, see [Container build process](reference.md#container-build-process). For cache setup (ECR cache repository, S3 cache authentication), see [Configure Wave](configure-wave.md).
 
 ## Update the Wave deployment
 
@@ -493,11 +492,11 @@ kubectl logs -f deployment/wave -n wave | grep -i build
 
 In freeze mode, a pipeline sets `wave.build.repository` (the Nextflow-side setting) to choose its own push target. Wave treats the value as custom only if it sits outside the operator's `wave.build.repo`, `wave.build.public-repo`, and `wave.build.cache` prefixes. If it starts with one of those prefixes, Wave rejects the freeze with a `must be specified when using freeze mode` error (with a numbered suffix such as `[1]`), even though the pipeline did supply a value.
 
-To allow user freeze, reserve a registry namespace **outside** your operator prefixes and distribute push credentials through Platform workspaces. See [Create the ECR repositories](#create-the-ecr-repositories) for per-registry pre-creation rules.
+To let users freeze to their own repositories, reserve a registry namespace outside your operator prefixes and distribute push credentials through Platform workspaces. See [Create the ECR repositories](#create-the-ecr-repositories) for per-registry pre-creation rules.
 
 ## Bottlerocket support
 
-BuildKit requires user namespaces, but Bottlerocket sets `user.max_user_namespaces=0` by default. Enable user namespaces on your build nodes by setting `user.max_user_namespaces=N` to a sufficiently high value (for example, `62000`). Values that are too low limit concurrent build capacity and can cause build failures.
+BuildKit requires user namespaces, but Bottlerocket sets `user.max_user_namespaces=0` by default. Enable user namespaces on your build nodes by setting `user.max_user_namespaces` to a sufficiently high value (for example, `62000`). Values that are too low limit concurrent build capacity and can cause build failures.
 
 Set this at boot through your node group's startup script or user data (preferred, with no privileged containers required). If you cannot control node configuration directly, apply it with a DaemonSet that runs a privileged container on build nodes only:
 
@@ -547,4 +546,4 @@ For production build deployments, consider:
 
 ## Verify your installation
 
-Run the build smoke tests in [Verify your installation](post-install.md), then continue to [Configure Wave](configure-wave.md#harden-for-production) to harden the deployment for production.
+Run the build functional checks in [Verify your installation](post-install.md), then continue to [Configure Wave](configure-wave.md#harden-for-production) to harden the deployment for production.
