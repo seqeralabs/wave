@@ -7,15 +7,6 @@ Install Wave Lite on a Kubernetes cluster you already operate. This installs con
 
 For other choices (different ingress controllers or untested distributions), see [Adapt this guide](#adapt-this-guide).
 
-:::info[Install with the Helm chart]
-Seqera publishes an official [Wave Helm chart](https://artifacthub.io/packages/helm/seqera/wave) that deploys the same Wave Lite configuration this guide builds with raw manifests. Follow the chart's documentation to install it, and note the following:
-
-- Create the database first, as described in [Create the database](#create-the-database), and verify the deployment with the same [post-install checks](post-install.md).
-- Add `rate-limit` to the chart's `micronautEnvironments` value to activate the rate limits described in [Set rate limits](configure-wave.md#set-rate-limits).
-- Confirm the `WAVE_SERVER_URL` environment variable on the running pod resolves to the hostname clients use to reach Wave. Override it with the chart's `extraEnvVars` value if it does not.
-- The chart deploys Wave Lite only. To run the full Wave configuration, deploy on Amazon EKS and follow [Enable Wave builds](aws-build.md) on top of the chart release.
-:::
-
 :::info[**Prerequisites**]
 
 You need the following:
@@ -30,7 +21,15 @@ You need the following:
 - Redis 6.2 or later, reachable from the cluster.
 - A Seqera Platform deployment and its endpoint URL.
 - Access to the Wave container image from `cr.seqera.io`, using credentials provided by Seqera.
+:::
 
+:::tip[Install with the Helm chart]
+Seqera publishes an official [Wave Helm chart](https://artifacthub.io/packages/helm/seqera/wave) that deploys Wave Lite with raw manifests. Follow the chart's documentation to install it, and note the following:
+
+- Create the database first, as described in [Create the database](#create-the-database), and verify the deployment with the same [post-install checks](post-install.md).
+- Add `rate-limit` to the chart's `micronautEnvironments` value to activate the rate limits described in [Set rate limits](configure-wave.md#set-rate-limits).
+- Confirm the `WAVE_SERVER_URL` environment variable on the running pod resolves to the hostname clients use to reach Wave. Override it with the chart's `extraEnvVars` value if it does not.
+- The chart deploys Wave Lite only. To run the full Wave configuration, deploy on Amazon EKS and follow [Enable Wave builds](aws-build.md) on top of the chart release.
 :::
 
 ## Create the database
@@ -135,7 +134,7 @@ data:
 Set `wave.server.url` to the address clients use to reach Wave. If you leave it unset, Wave issues container tokens pointing at `http://localhost:9090`, which clients cannot reach.
 :::
 
-This ConfigMap sets only what Wave Lite needs to start. The `lite` entry in `MICRONAUT_ENVIRONMENTS`, set in the deployment in a later step, already applies these same defaults. The ConfigMap restates them explicitly and gives you a place to add further configuration. To configure other options, such as rate limits, token cache duration, and metrics, see [Configure Wave](configure-wave.md). Before serving production traffic, complete the [production hardening](configure-wave.md#harden-for-production) checklist.
+This ConfigMap sets only what Wave Lite needs to start. The `lite` entry in `MICRONAUT_ENVIRONMENTS`, set in the deployment in a later step, already applies these same defaults. The ConfigMap restates them explicitly and gives you a place to add further configuration. To configure other options, such as rate limits, token cache duration, and metrics, see [Configure Wave](configure-wave.md). Before serving production traffic, complete the [production checklist](configure-wave.md#production-checklist).
 
 ## Authenticate to private registries
 
@@ -283,14 +282,14 @@ This minimal Ingress omits controller-specific configuration. For the AWS Load B
 After the ingress provisions, configure your Seqera Platform deployment to use the Wave endpoint by setting the Wave server URL in `tower.yml` ([Platform Wave configuration](https://docs.seqera.io/platform-enterprise/latest/enterprise/configuration/wave)).
 
 :::note
-For production reliability, add Pod Disruption Budgets, a Horizontal Pod Autoscaler, multiple replicas with anti-affinity, and resource quotas for the `wave` namespace. See [production hardening](configure-wave.md#harden-for-production).
+For production reliability, add Pod Disruption Budgets, a Horizontal Pod Autoscaler, multiple replicas with anti-affinity, and resource quotas for the `wave` namespace. See the [production checklist](configure-wave.md#production-checklist).
 :::
 
 ## Verify your installation
 
 Confirm the service is live and functional. See [Verify your installation](post-install.md) for the `/service-info` check and the Wave CLI functional checks.
 
-When Wave is running and verified, continue to [Configure Wave](configure-wave.md#harden-for-production) to harden the deployment for production.
+When Wave is running and verified, continue to the [production checklist](configure-wave.md#production-checklist) to prepare the deployment for production.
 
 ## Adapt this guide
 

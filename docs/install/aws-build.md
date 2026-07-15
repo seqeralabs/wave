@@ -546,4 +546,4 @@ For production build deployments, consider:
 
 ## Verify your installation
 
-Run the build functional checks in [Verify your installation](post-install.md), then continue to [Configure Wave](configure-wave.md#harden-for-production) to harden the deployment for production.
+Run the build functional checks in [Verify your installation](post-install.md), then continue to the [production checklist](configure-wave.md#production-checklist) to prepare the deployment for production.

@@ -1,17 +1,17 @@
 ---
 title: Configure Wave
-description: Harden a self-hosted Wave deployment for production and configure optional features.
+description: Prepare a self-hosted Wave deployment for production and configure optional features.
 ---
 
-Configure a self-hosted Wave deployment for production and add optional features. Harden every deployment with the hardening checklist before you serve traffic. Configure optional features such as email notifications and build caching as needed.
+Configure a self-hosted Wave deployment for production and add optional features. Complete the production checklist before you serve traffic. Configure optional features such as email notifications and build caching as needed.
 
 :::info
 See the [Configuration reference](reference.md) for the full list of configuration options for self-hosted Wave deployments.
 :::
 
-## Harden for production
+## Production checklist
 
-A freshly installed Wave service boots and returns `200` on `/service-info`, but it is not yet production-ready. Apply this hardening checklist after [verifying your installation](post-install.md) and before serving production traffic. For the underlying options, see the [Configuration reference](reference.md).
+A freshly installed Wave service boots and returns `200` on `/service-info`, but it is not yet production-ready. Complete this checklist after [verifying your installation](post-install.md) and before serving production traffic. For the underlying options, see the [Configuration reference](reference.md).
 
 ### Require authentication
 

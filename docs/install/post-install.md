@@ -90,4 +90,4 @@ If a check does not pass, match the symptom to one of these common causes:
 
 ## Next step
 
-When the checks pass, continue to [Configure Wave](configure-wave.md#harden-for-production) to harden the deployment for production.
+When the checks pass, continue to the [production checklist](configure-wave.md#production-checklist) to prepare the deployment for production.

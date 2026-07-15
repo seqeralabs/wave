@@ -98,7 +98,7 @@ wave:
     enabled: false
 ```
 
-This file sets only what Wave Lite needs to start. The `lite` entry in `MICRONAUT_ENVIRONMENTS`, set in the Compose file in a later step, already applies these same defaults. The file restates them explicitly and gives you a place to add further configuration. To configure other options, such as rate limits, token cache duration, and metrics, see [Configure Wave](configure-wave.md). Before serving production traffic, complete the [production hardening](configure-wave.md#harden-for-production) checklist.
+This file sets only what Wave Lite needs to start. The `lite` entry in `MICRONAUT_ENVIRONMENTS`, set in the Compose file in a later step, already applies these same defaults. The file restates them explicitly and gives you a place to add further configuration. To configure other options, such as rate limits, token cache duration, and metrics, see [Configure Wave](configure-wave.md). Before serving production traffic, complete the [production checklist](configure-wave.md#production-checklist).
 
 ## Authenticate to private registries
 
@@ -194,7 +194,7 @@ If Wave Lite runs in the same Swarm as Platform Connect for [Studios](https://do
 
 Confirm the service is live and functional. See [Verify your installation](post-install.md) for the `/service-info` check and the Wave CLI functional checks.
 
-When Wave is running and verified, continue to [Configure Wave](configure-wave.md#harden-for-production) to harden the deployment for production.
+When Wave is running and verified, continue to the [production checklist](configure-wave.md#production-checklist) to prepare the deployment for production.
 
 ## Adapt this guide
 
