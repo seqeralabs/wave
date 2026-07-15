@@ -79,7 +79,7 @@ The full request and response structure is documented under the `POST /v1alpha2/
 
 ## How long does an augmented container remain accessible?
 
-An augmented container remains accessible for 36 hours from the time of the initial request.
+It depends on the request. When the request comes from a Seqera Platform workflow run, Wave ties the container lifetime to the run: it stays accessible while the run is active and for a short grace period (~20 minutes) after the run completes, up to a hard limit of 48 hours from the initial request. All other requests remain accessible for a fixed 36 hours from the time of the initial request. See [Ephemeral token access](./how-wave-works.md#ephemeral-token-access) for details.
 
 ## Is an augmented container published through a Seqera-managed registry?
 

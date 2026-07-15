@@ -39,7 +39,7 @@ Wave returns one of two URI formats. Both embed a content-based build identifier
 
 ### Ephemeral URIs
 
-Augmentation and default on-demand build requests return ephemeral URIs. They suit single-use pipeline tasks and expire 36 hours after the request is submitted. Ephemeral image names take this form:
+Augmentation and default on-demand build requests return ephemeral URIs. They suit single-use pipeline tasks. Ephemeral image names take this form:
 
 ```console
 wave.seqera.io/wt/<access-token>/<image-path>:<tag>
@@ -49,10 +49,10 @@ The `<image-path>:<tag>` segment depends on the request. Builds use `wave/build:
 
 In this example:
 
-- `<access-token>` is a 12-character random key, valid for the request lifetime of around 36 hours. Wave uses it to authorize the pull and to look up the registry credentials stored in Seqera Platform.
+- `<access-token>` is a 12-character random key, valid for the request lifetime (see [Ephemeral token access](#ephemeral-token-access)). Wave uses it to authorize the pull and to look up the registry credentials stored in Seqera Platform.
 - `<checksum>` is a 16-character build identifier derived from the request inputs. Inputs include the container file, the Conda environment file, the target platform, the target repository, the build context, and the container config.
 
-The 36-hour expiry applies to the access token in the URI, not the image. On the hosted Wave service, Wave-built images stay in the private build registry for around seven days, governed by the registry's lifecycle policy. After the token expires, the image may still exist, but the ephemeral URI no longer authorizes a pull. To keep a stable, long-lived URI, use [container freeze](./features/container-freezes.mdx) and push the image to a registry you control.
+The expiry applies to the access token in the URI, not the image. On the hosted Wave service, Wave-built images stay in the private build registry for around seven days, governed by the registry's lifecycle policy. After the token expires, the image may still exist, but the ephemeral URI no longer authorizes a pull. To keep a stable, long-lived URI, use [container freeze](./features/container-freezes.mdx) and push the image to a registry you control.
 
 ### Stable URIs
 
@@ -117,7 +117,13 @@ Wave stores ephemeral images in the Cloudflare CDN for 90 days, after which it d
 
 ### Ephemeral token access
 
-Ephemeral images that include an access token in their URI are available for 36 hours after creation. System admins can revoke images before this limit.
+The lifetime of an ephemeral image that includes an access token in its URI depends on how the request was made:
+
+- **Workflow-bound requests.** When a request originates from a Seqera Platform workflow run (Nextflow supplies the run's `workflowId`), Wave ties the token lifetime to the run instead of a fixed window. The token is granted a short time-to-live that Wave renews while the run is active, and lets it lapse shortly after the run completes (succeeds or fails). Two guarantees hold: the container becomes inaccessible no more than ~20 minutes (the `access-ttl`) after the run completes, and it is never accessible more than 48 hours (the `max-duration`) after the initial request, regardless of run state. The URI advertises the 48-hour hard ceiling as its expiration.
+
+- **Other requests.** Builds, mirrors, and requests not bound to a workflow keep a fixed lifetime of 36 hours (the `cache.duration`) from the time the request is submitted.
+
+System admins can revoke images before these limits. This behavior is controlled by the [`wave.tokens.*`](./configuration.md#general) settings and can be disabled with `wave.tokens.watcher.enabled: false`, in which case all requests use the fixed 36-hour lifetime.
 
 ### Context directory size limits
 
