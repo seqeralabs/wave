@@ -206,6 +206,7 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
             log.debug "Unable to find any container request for id '${entry.requestId}' - stop tracking"
             return
         }
+        log.trace "Checking container request '${entry.requestId}' - workflow=${entry.workflowId}; current expiration=${entry.expiration}; now=${now}"
 
         // 3. Renew only while the workflow is still active. describeWorkflow is short-cached by
         //    workflowId so the many tokens of one run share a single Platform lookup; completion is
@@ -260,7 +261,9 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
                 JwtAuth.of(request.identity),
                 request.identity.workspaceId,
                 request.identity.workflowId)
-        return resp?.workflow
+        final workflow = resp?.workflow
+        log.debug "Fetched workflow status for container request '${request.requestId}' - workflow=${request.identity.workflowId}; endpoint=${request.identity.towerEndpoint}; status=${workflow?.status}"
+        return workflow
     }
 
     protected boolean isWorkflowActive(Workflow workflow) {
