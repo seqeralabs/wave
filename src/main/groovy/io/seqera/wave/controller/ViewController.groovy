@@ -51,9 +51,9 @@ import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.mirror.ContainerMirrorService
 import io.seqera.wave.service.mirror.MirrorResult
-import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.request.ContainerRequestService
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.core.ChildRefs
@@ -83,7 +83,7 @@ class ViewController {
     private String serverUrl
 
     @Inject
-    private PersistenceService persistenceService
+    private ContainerRequestService containerService
 
     @Inject
     @Nullable
@@ -276,12 +276,16 @@ class ViewController {
 
     @View("container-view")
     @Get('/containers/{token}')
-    HttpResponse viewContainer(String token) {
-        final data = persistenceService.loadContainerRequest(token)
+    HttpResponse<?> viewContainer(String token) {
+        // Go through ContainerRequestService (not PersistenceService directly) so the view sees the
+        // same record — including any watcher-extended expiration — as the rest of the request flow.
+        final data = containerService.loadContainerRecord(token)
+        // Throw NotFoundException (rendered as a proper 404 page) for consistency with the other
+        // view endpoints, instead of returning a bare notFound body into the template.
+        if( !data )
+            throw new NotFoundException("Unknown container token: $token")
         // return the response
         final binding = new HashMap(20)
-        if( !data )
-            return HttpResponse.notFound(["error_message": "Unknown container request id '$token'"])
         binding.request_token = token
         binding.request_container_image = data.containerImage ?: '-'
         binding.request_contaiener_platform = data.platform ?: '-'
