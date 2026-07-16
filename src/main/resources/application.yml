@@ -56,6 +56,10 @@ micronaut:
 ---
 wave:
   allowAnonymous: true
+  container:
+    pull:
+      # when false, disable the container pull/augmentation path; requests must use "freeze" mode
+      enabled: true
   server:
       url: "${WAVE_SERVER_URL:`http://localhost:9090`}"
   security:
