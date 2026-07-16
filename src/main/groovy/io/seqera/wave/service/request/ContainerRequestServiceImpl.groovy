@@ -134,7 +134,6 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
         meterRegistry?.counter('wave.tokens.refresh', 'result', result)?.increment()
     }
 
-    // Cause chains are never deep; cap the walk so a cyclic chain (e.g. A->B->A) cannot spin forever.
     private static final int MAX_CAUSE_DEPTH = 50
 
     /**
@@ -148,16 +147,16 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
         for( int i = 0; e != null && i < MAX_CAUSE_DEPTH; e = e.cause, i++ ) {
             if( e instanceof TimeoutException || e instanceof HttpResponseException )
                 return true
-            if( e == e.cause )
-                break
         }
         return false
     }
 
     protected static String rootCauseMessage(Throwable t) {
+        if( t == null )
+            return null
         Throwable e = t
         int i = 0
-        while( e.cause != null && e.cause != e && ++i < MAX_CAUSE_DEPTH )
+        while( e.cause != null && e.cause != e && i++ < MAX_CAUSE_DEPTH )
             e = e.cause
         return e.message ?: e.class.simpleName
     }
