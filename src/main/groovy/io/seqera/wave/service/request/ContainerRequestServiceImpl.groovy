@@ -156,7 +156,9 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
 
     protected static String rootCauseMessage(Throwable t) {
         Throwable e = t
-        for( int i = 0; e.cause != null && e.cause != e && i < MAX_CAUSE_DEPTH; e = e.cause, i++ ) { }
+        int i = 0
+        while( e.cause != null && e.cause != e && ++i < MAX_CAUSE_DEPTH )
+            e = e.cause
         return e.message ?: e.class.simpleName
     }
 
