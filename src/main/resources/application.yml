@@ -56,6 +56,9 @@ micronaut:
 ---
 wave:
   allowAnonymous: true
+  # when 'false' Wave does not inject/broker registry credentials on the proxy pull path;
+  # images are pulled directly from the target registry with the caller's own credentials (default: true)
+  inject-credentials: true
   server:
       url: "${WAVE_SERVER_URL:`http://localhost:9090`}"
   security:
