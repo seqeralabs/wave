@@ -22,10 +22,13 @@ import spock.lang.Specification
 
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.TimeoutException
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.ContainerRequestConfig
+import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.tower.PlatformId
@@ -251,6 +254,25 @@ class ContainerRequestServiceImplTest extends Specification {
         and: 'even though the workflow is still running, the token is not renewed'
         0 * store.put('req-1', _, _)
         0 * range.add(_, _)
+    }
+
+    def 'isConnectivityError should detect Tower connectivity failures in the cause chain'() {
+        expect:
+        ContainerRequestServiceImpl.isConnectivityError(ERR) == EXPECTED
+        where:
+        ERR                                                                                  | EXPECTED
+        new TimeoutException('nope')                                                         | true
+        new HttpResponseException(408, 'Timeout')                                            | true
+        new RuntimeException('wrap', new TimeoutException('nope'))                            | true
+        new ExecutionException(new HttpResponseException(408, 'Timeout'))                     | true
+        new RuntimeException('boom')                                                         | false
+        new NullPointerException()                                                           | false
+    }
+
+    def 'rootCauseMessage should return the deepest cause message'() {
+        expect:
+        ContainerRequestServiceImpl.rootCauseMessage(new RuntimeException('outer', new TimeoutException('inner'))) == 'inner'
+        ContainerRequestServiceImpl.rootCauseMessage(new RuntimeException('solo')) == 'solo'
     }
 
 }

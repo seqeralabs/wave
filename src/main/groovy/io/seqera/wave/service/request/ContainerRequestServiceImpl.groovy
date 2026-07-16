@@ -20,6 +20,7 @@ package io.seqera.wave.service.request
 
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.TimeoutException
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -27,6 +28,7 @@ import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.scheduling.TaskScheduler
 import io.seqera.wave.configuration.ContainerRequestConfig
+import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.request.ContainerRequestRange.Entry
@@ -132,6 +134,33 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
         meterRegistry?.counter('wave.tokens.refresh', 'result', result)?.increment()
     }
 
+    private static final int MAX_CAUSE_DEPTH = 50
+
+    /**
+     * Whether the given error is an expected Platform connectivity failure (a timeout or an HTTP
+     * error reaching Tower) as opposed to an unexpected bug. Such failures are transient and retried,
+     * so they should not be logged at ERROR with a full stack trace. The cause chain is walked up to
+     * {@link #MAX_CAUSE_DEPTH} to guard against cyclic cause references.
+     */
+    protected static boolean isConnectivityError(Throwable t) {
+        Throwable e = t
+        for( int i = 0; e != null && i < MAX_CAUSE_DEPTH; e = e.cause, i++ ) {
+            if( e instanceof TimeoutException || e instanceof HttpResponseException )
+                return true
+        }
+        return false
+    }
+
+    protected static String rootCauseMessage(Throwable t) {
+        if( t == null )
+            return null
+        Throwable e = t
+        int i = 0
+        while( e.cause != null && e.cause != e && i++ < MAX_CAUSE_DEPTH )
+            e = e.cause
+        return e.message ?: e.class.simpleName
+    }
+
     protected void scheduleRefresh(Entry entry) {
         // Re-check this request one refreshInterval from now. refreshInterval is deliberately shorter
         // than accessTtl so several checks fit inside a token's lifetime — a transient Tower failure
@@ -173,11 +202,20 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
                 Thread.currentThread().interrupt()
             }
             catch (Throwable t) {
-                log.error("Unexpected error in container request watcher while processing key: $it", t)
                 meterRefresh('error')
                 // The entry was already popped by getEntriesUntil; re-add it so a transient failure
                 // (e.g. a Tower blip) does not silently drop the request and let its token lapse.
                 scheduleRefresh(it)
+                if( isConnectivityError(t) ) {
+                    // Expected when the workflow's Platform endpoint is briefly unreachable — e.g. a
+                    // paired self-hosted instance whose pairing WebSocket times out. The token is not
+                    // renewed, so it lapses fail-closed; log a concise warning rather than a full
+                    // stack trace to avoid flooding the logs while the entry is retried.
+                    log.warn "Container request watcher could not confirm workflow status - request=${it.requestId}; workflow=${it.workflowId}; cause=${rootCauseMessage(t)}; will retry"
+                }
+                else {
+                    log.error("Unexpected error in container request watcher while processing key: $it", t)
+                }
             }
         }
     }
