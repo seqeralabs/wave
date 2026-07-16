@@ -134,24 +134,29 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
         meterRegistry?.counter('wave.tokens.refresh', 'result', result)?.increment()
     }
 
+    // Cause chains are never deep; cap the walk so a cyclic chain (e.g. A->B->A) cannot spin forever.
+    private static final int MAX_CAUSE_DEPTH = 50
+
     /**
      * Whether the given error is an expected Platform connectivity failure (a timeout or an HTTP
      * error reaching Tower) as opposed to an unexpected bug. Such failures are transient and retried,
-     * so they should not be logged at ERROR with a full stack trace. The cause chain is walked with a
-     * bound to guard against self-referential loops.
+     * so they should not be logged at ERROR with a full stack trace. The cause chain is walked up to
+     * {@link #MAX_CAUSE_DEPTH} to guard against cyclic cause references.
      */
     protected static boolean isConnectivityError(Throwable t) {
-        for( Throwable e = t; e != null && e != e.cause; e = e.cause ) {
+        Throwable e = t
+        for( int i = 0; e != null && i < MAX_CAUSE_DEPTH; e = e.cause, i++ ) {
             if( e instanceof TimeoutException || e instanceof HttpResponseException )
                 return true
+            if( e == e.cause )
+                break
         }
         return false
     }
 
     protected static String rootCauseMessage(Throwable t) {
         Throwable e = t
-        while( e.cause != null && e.cause != e )
-            e = e.cause
+        for( int i = 0; e.cause != null && e.cause != e && i < MAX_CAUSE_DEPTH; e = e.cause, i++ ) { }
         return e.message ?: e.class.simpleName
     }
 
