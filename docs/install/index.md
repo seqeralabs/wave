@@ -14,7 +14,7 @@ Wave builds on Wave Lite. The full configuration is a Wave Lite deployment with 
 
 For the full capability comparison, see the [feature matrix](../features/index.mdx). For how Wave provisions containers, see [How Wave works](../how-wave-works.md).
 
-## Choose an install path
+## Install path
 
 Every deployment starts with Wave Lite. Choose the path that matches your infrastructure and whether you need the full Wave configuration.
 
