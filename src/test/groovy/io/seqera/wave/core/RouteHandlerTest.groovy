@@ -133,4 +133,22 @@ class RouteHandlerTest extends Specification {
 
     }
 
+    @Unroll
+    def 'should reject proxy pull for durable freeze/mirror requests' () {
+        given:
+        def tokenService = Mock(ContainerRequestService)
+
+        when:
+        new RouteHandler(tokenService).parse(REQ_PATH)
+        then:
+        1 * tokenService.getRequest(TOKEN) >> REQUEST
+        and:
+        thrown(NotFoundException)
+
+        where:
+        REQ_PATH                                      | TOKEN | REQUEST
+        '/v2/wt/a1/library/ubuntu/manifests/latest'   | 'a1'  | ContainerRequest.of(containerImage: 'ubuntu:latest', freeze: true)
+        '/v2/wt/b2/library/ubuntu/blobs/latest'       | 'b2'  | ContainerRequest.of(containerImage: 'ubuntu:latest', type: ContainerRequest.Type.Mirror)
+    }
+
 }

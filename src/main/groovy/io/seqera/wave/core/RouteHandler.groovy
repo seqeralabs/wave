@@ -62,6 +62,12 @@ class RouteHandler {
             if( !request ) {
                 throw new NotFoundException("Unknown Wave container for token '$token'")
             }
+            // freeze and mirror requests publish the image to the target registry and are
+            // meant to be pulled directly from there - they must not be served via the Wave
+            // proxy token path (see also ContainerRequest.durable)
+            if( request.durable() ) {
+                throw new NotFoundException("Wave container for token '$token' is not available via the proxy")
+            }
             // the image name (without tag) must match
             final coords = request.coordinates()
             if( image != coords.image )
