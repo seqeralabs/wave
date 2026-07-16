@@ -56,6 +56,9 @@ micronaut:
 ---
 wave:
   allowAnonymous: true
+  views:
+    # when 'false' the HTML view pages under /view/** are disabled globally (default: true)
+    enabled: true
   server:
       url: "${WAVE_SERVER_URL:`http://localhost:9090`}"
   security:

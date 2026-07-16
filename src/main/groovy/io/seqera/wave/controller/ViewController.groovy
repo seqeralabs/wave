@@ -23,6 +23,7 @@ import java.util.regex.Pattern
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpRequest
@@ -74,6 +75,7 @@ import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
  */
 @Slf4j
 @CompileStatic
+@Requires(property = 'wave.views.enabled', value = 'true', defaultValue = 'true')
 @Controller("/view")
 @ExecuteOn(TaskExecutors.BLOCKING)
 class ViewController {
