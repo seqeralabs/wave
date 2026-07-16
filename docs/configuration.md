@@ -37,6 +37,10 @@ Configure general Wave application settings, such as application name, port, ano
 `wave.denyPaths` *(optional)*
 : API path patterns to filter out. Requests for matching artifacts, such as non-existent manifests, are rejected.
 
+`wave.inject-credentials` *(optional)*
+: When `true`, Wave injects the resolved workspace registry credentials when proxying image pulls (default: `true`).
+  When `false`, Wave does not broker registry credentials on the proxy pull path, so images are pulled directly from the target registry using the caller's own credentials (for example an EC2 instance profile or IAM role). Build, inspect, and augmentation flows are unaffected.
+
 `wave.server.url` *(required)*
 : URL of the Wave server.
   Can be set using the `${WAVE_SERVER_URL}` environment variable.
