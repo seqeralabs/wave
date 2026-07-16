@@ -68,9 +68,10 @@ Build a container from a Conda package:
 wave --conda-package bcftools
 ```
 
-Build from a Dockerfile and freeze it to a persistent repository:
+Build from a Dockerfile and freeze it to a persistent repository. Any small Dockerfile works for this check:
 
 ```bash
+echo "FROM ubuntu:22.04" > Dockerfile
 wave --containerfile Dockerfile --freeze --build-repo <build-repo> --tower-token <platform-token>
 ```
 

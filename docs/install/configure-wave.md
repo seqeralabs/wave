@@ -75,7 +75,7 @@ Add `mail` to your Micronaut environments:
 
 ```yaml
 # Add 'mail' to your existing environments
-MICRONAUT_ENVIRONMENTS: "postgres,redis,lite,mail"
+MICRONAUT_ENVIRONMENTS: "lite,postgres,redis,rate-limit,mail"
 ```
 
 Configure the SMTP settings in your Wave configuration:
@@ -127,7 +127,7 @@ Add `aws-ses` to your Micronaut environments along with `mail`:
 
 ```yaml
 # Add both 'mail' and 'aws-ses' to your existing environments
-MICRONAUT_ENVIRONMENTS: "postgres,redis,lite,mail,aws-ses"
+MICRONAUT_ENVIRONMENTS: "lite,postgres,redis,rate-limit,mail,aws-ses"
 ```
 
 Set the sender address in your Wave configuration:
@@ -163,12 +163,12 @@ Wave scans container builds for vulnerabilities. This feature requires the build
 You need the following:
 
 - The Wave build service enabled (`wave.build.enabled: true`).
-- A configured, reachable scanning backend.
-- Compute resources for scanning workloads.
+- Compute resources for scan jobs, which run on the build infrastructure.
+- An S3 bucket path for scan reports.
 
 :::
 
-Enable scanning in your Wave configuration:
+Enable scanning in your Wave configuration and set the report location:
 
 ```yaml
 wave:
@@ -176,7 +176,11 @@ wave:
     enabled: true
   scan:
     enabled: true
+    reports:
+      path: "s3://<s3-bucket>/wave/scan-reports"
 ```
+
+Wave runs scans with its bundled Trivy-based scanner image. Override the image with `wave.scan.image.name` if you mirror it to your own registry. For all scan options, see [Container scan process](reference.md#container-scan-process).
 
 ## ECR cache repository
 
@@ -198,7 +202,7 @@ Configure the ECR cache repository in your Wave configuration:
 wave:
   build:
     enabled: true
-    cache: "123456789012.dkr.ecr.us-east-1.amazonaws.com/wave-cache"
+    cache: "<aws-account-id>.dkr.ecr.<aws-region>.amazonaws.com/wave-cache"
 ```
 
 [Enable Wave builds](aws-build.md) defines the ECR cache IAM permissions. Add your cache ARN as an allowed `Resource`.
@@ -281,14 +285,7 @@ The IAM role must have permissions to access the S3 cache bucket:
 }
 ```
 
-Update your Wave deployment to use the annotated ServiceAccount:
-
-```yaml
-spec:
-  template:
-    spec:
-      serviceAccountName: wave-build-sa
-```
+No change to the Wave deployment is needed. Build pods already run as `wave-build-sa` through the `wave.build.k8s.service-account` setting described in [Enable Wave builds](aws-build.md#enable-build-features). Keep the Wave deployment on its `wave-sa` service account, which holds the IRSA identity for build logs and lock files.
 
 ### Docker deployments
 

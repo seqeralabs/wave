@@ -219,7 +219,7 @@ metadata:
     eks.amazonaws.com/role-arn: arn:aws:iam::<aws-account-id>:role/<wave-config-name>
 ```
 
-This single IAM role is the identity Wave uses for its AWS API calls (S3, and STS when assuming a role for ECR token exchange). The build, scan, mirror, and blob-transfer pods inherit it through the `wave-sa` service account. If IRSA is unavailable, attach an EC2 instance profile carrying the same policy to the build node group instead.
+This single IAM role is the identity the Wave service pod uses for its AWS API calls (S3, and STS when assuming a role for ECR token exchange) through the `wave-sa` service account. Build, scan, and mirror pods run as `wave-build-sa` and do not inherit this identity. They authenticate to registries with configuration files that Wave writes to the shared build workspace. If IRSA is unavailable, attach an EC2 instance profile carrying the same policy to the node group that runs the Wave service pod instead.
 
 Wave routes each request to one credential source. Requests that carry a Platform identity use the workspace credentials the user configures. The exception is operator-owned targets (the registry hosts of `wave.build.repo`, `wave.build.cache`, and `wave.build.public-repo`), which always use the server-side static credentials (`wave.registries.<host>.username` and `.password`). Anonymous requests always use the server-side credentials. The cloud identity alone does not authenticate to registries. For ECR, Wave exchanges the configured `wave.registries` credentials (an access key pair, or a role ARN it assumes via STS) for an ECR auth token.
 
@@ -496,7 +496,7 @@ To let users freeze to their own repositories, reserve a registry namespace outs
 
 ## Bottlerocket support
 
-BuildKit requires user namespaces, but Bottlerocket sets `user.max_user_namespaces=0` by default. Enable user namespaces on your build nodes by setting `user.max_user_namespaces` to a sufficiently high value (for example, `62000`). Values that are too low limit concurrent build capacity and can cause build failures.
+BuildKit requires user namespaces, but Bottlerocket sets `user.max_user_namespaces=0` by default. Enable user namespaces on your build nodes by setting `user.max_user_namespaces` to a sufficiently high value (for example, `63359`, as in the DaemonSet that follows). Values that are too low limit concurrent build capacity and can cause build failures.
 
 Set this at boot through your node group's startup script or user data (preferred, with no privileged containers required). If you cannot control node configuration directly, apply it with a DaemonSet that runs a privileged container on build nodes only:
 

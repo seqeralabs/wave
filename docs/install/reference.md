@@ -194,10 +194,6 @@ Configure how Wave builds container images and manages build logs.
   For example, `8`.
   This setting is only used when `wave.build.cache` is configured with an S3 bucket path.
 
-`wave.cleanup.strategy` *(optional)*
-: Cleanup strategy after the build process.
-  For example, set to `OnSuccess` for cleanup only if a build is successful.
-
 `wave.build.compression` *(optional)*
 : Compression type applied to cache layers (default: `gzip`).
   Options include: `uncompressed`, `estargz`, and `zstd`.
@@ -209,9 +205,9 @@ Configure how Wave builds container images and manages build logs.
 : When `true`, includes OCI media types in exported manifests (default: `true`).
 
 `wave.build.public-repo` *(optional)*
-: Public repository for container images built by Wave. Wave uses this repository as the build target when a freeze mode build is requested with Conda or pip packages via the v2 API and no `buildRepository` is provided. Images stored here default to the `imageSuffix` naming strategy. The registry hostname must be unique so that Wave can resolve default credentials correctly (it cannot be shared with `wave.build.repo` or `wave.build.cache-repo`). If not set, you must specify a `buildRepository` in each freeze mode operation with packages.
+: Public repository for container images built by Wave. Wave uses this repository as the build target when a freeze mode build is requested with Conda or pip packages via the v2 API and no `buildRepository` is provided. Images stored here default to the `imageSuffix` naming strategy. The registry hostname must be unique so that Wave can resolve default credentials correctly (it cannot be shared with `wave.build.repo` or `wave.build.cache`). If not set, you must specify a `buildRepository` in each freeze mode operation with packages.
 
-`wave.build.repo` *(required)*
+`wave.build.repo` *(required when builds are enabled)*
 : Docker container repository for container images built by Wave.
 
 `wave.build.singularity-image` *(optional)*
@@ -231,7 +227,7 @@ Configure how Wave builds container images and manages build logs.
 : Maximum duration for the build process when you are authenticated and freeze mode is enabled (default: `10m`).
   If set to less than `wave.build.timeout`, the longer `wave.build.timeout` value is used.
 
-`wave.build.workspace` *(required)*
+`wave.build.workspace` *(required when builds are enabled)*
 : Path to the directory used by Wave to store artifacts such as Containerfiles, Trivy cache for scan, Buildkit context, and authentication configuration files.
   For example, `/efs/wave/build`.
 
@@ -239,17 +235,41 @@ Configure how Wave builds container images and manages build logs.
 For S3 cache authentication setup (IAM roles, service accounts, and deployment examples), see [S3 cache authentication](configure-wave.md#s3-cache-authentication).
 :::
 
+### Cleanup
+
+Wave deletes build job resources and work directories after builds complete. Configure the cleanup behavior with the following options.
+
+`wave.cleanup.strategy` *(optional)*
+: Cleanup strategy for build resources.
+  Options include: `always`, `never`, and `onsuccess` (clean up only when the build succeeds).
+  When unset, Wave cleans up unless `wave.debug` is `true`.
+
+`wave.cleanup.succeeded` *(optional)*
+: How long the job resources and work directory of a successful build are retained before deletion (default: `30m`).
+
+`wave.cleanup.failed` *(optional)*
+: How long the job resources and work directory of a failed build are retained before deletion (default: `1d`).
+
+`wave.cleanup.range` *(optional)*
+: Maximum number of expired entries processed in each cleanup run (default: `200`).
+
+`wave.cleanup.startup-delay` *(optional)*
+: Delay before the cleanup service starts after boot. The actual delay is randomized around this value (default: `10s`).
+
+`wave.cleanup.run-interval` *(optional)*
+: Interval between cleanup runs (default: `30s`).
+
 ### Build process logs
 
 Configure how Wave stores and delivers build logs from containers and Kubernetes pods. You can retrieve these logs later or include them in build completion emails.
 
-`wave.build.locks.path` *(required)*
+`wave.build.locks.path` *(required when builds are enabled)*
 : Path where Wave stores Conda lock files. Can be an S3 URI (for example, `s3://my-bucket/wave/locks`) or a local filesystem path.
 
 `wave.build.logs.maxLength` *(optional)*
 : Maximum number of bytes read from a log file. If a log file exceeds this limit, it is truncated (default: `100000` (100 KB)).
 
-`wave.build.logs.path` *(required)*
+`wave.build.logs.path` *(required when builds are enabled)*
 : Path where Wave stores build logs. Can be an S3 URI (for example, `s3://my-bucket/wave/logs`) or a local filesystem path. When using an S3 URI, Wave automatically extracts the key prefix for log file organization.
 
 ### Kubernetes container build process
@@ -259,7 +279,7 @@ Configure Kubernetes-specific settings for Wave. Build and scan processes share 
 `wave.build.k8s.labels` *(optional)*
 : Labels for Wave build Kubernetes pods.
 
-`wave.build.k8s.namespace` *(required)*
+`wave.build.k8s.namespace` *(required for Kubernetes builds)*
 : Kubernetes namespace where Wave runs build pods.
 
 `wave.build.k8s.dns.policy` *(optional)*
@@ -279,7 +299,7 @@ Configure Kubernetes-specific settings for Wave. Build and scan processes share 
   <div style={{marginLeft: '2em'}}>
 
   ```yaml
-  wave.build.k8s.nodeSelector:
+  wave.build.k8s.node-selector:
     linux/amd64: 'seqera.io/wave-build-amd64=true'
     linux/arm64: 'seqera.io/wave-build-arm64=true'
     noarch: 'seqera.io/wave-build=true'
@@ -314,7 +334,7 @@ Configure Wave's vulnerability scanning process, which uses a [Trivy Docker imag
 `wave.scan.image.name`  *(optional)*
 : Container image used for security scanning (default: `public.cr.seqera.io/wave/scanner:v1-0.65.0-oras-1.3.0`).
 
-`wave.scan.reports.path` *(required)*
+`wave.scan.reports.path` *(required when scanning is enabled)*
 : S3 bucket path where Wave stores SBOM reports.
   For example, `s3://wave-store/scan-reports`.
 
@@ -510,20 +530,20 @@ Configure how Wave caches container blobs to improve client performance. Wave ca
 `wave.blobCache.status.duration` *(optional)*
 : Duration for which blob transfer status records are retained in cache (default: `1h`).
 
-`wave.blobCache.storage.accessKey` *(required)*
+`wave.blobCache.storage.accessKey` *(required when blob cache is enabled)*
 : Access key credential for the caching service.
 
-`wave.blobCache.storage.bucket` *(required)*
+`wave.blobCache.storage.bucket` *(required when blob cache is enabled)*
 : Name of the Cloudflare or S3 bucket.
   For example, `s3://wave-blob-cache`.
 
 `wave.blobCache.storage.endpoint` *(optional)*
 : Storage endpoint URL for blob binary downloads and uploads.
 
-`wave.blobCache.storage.region` *(required)*
+`wave.blobCache.storage.region` *(required when blob cache is enabled)*
 : AWS region of the bucket.
 
-`wave.blobCache.storage.secretKey` *(required)*
+`wave.blobCache.storage.secretKey` *(required when blob cache is enabled)*
 : Secret key credential for the caching service.
 
 <div style={{marginLeft: '2em'}}>
@@ -541,7 +561,7 @@ Static credentials (`accessKey` and `secretKey`) are currently required for blob
 
 Configure how Wave sends email notifications.
 
-`mail.from` *(required)*
+`mail.from` *(required when mail is enabled)*
 : Sender email address for Wave notifications.
   Can be set using the `${MAIL_FROM}` environment variable.
 
@@ -557,8 +577,8 @@ Configure the Wave Metrics service, which provides data about container builds a
 Configure user credentials for accessing authenticated Wave APIs and services.
 
 `wave.accounts` *(required)*
-: List of credentials for accessing authenticated Wave APIs such as the metrics API.
-  Format of the credential list: `- <USERNAME>:<PASSWORD_CHECKSUM>`
+: Credentials for accessing authenticated Wave APIs such as the metrics API.
+  A map of usernames to SHA-256 hex checksums of the corresponding passwords:
 
 ## License server
 

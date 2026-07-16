@@ -13,8 +13,8 @@ You need the following:
 
 - Current, supported versions of Docker Engine and Docker Compose.
 - A host that meets the Wave service's minimum compute requirements:
-  - Memory: 12 GB RAM (8 GB for Wave replicas, plus headroom for the OS and Docker).
-  - CPU: 4 cores (2 for Wave replicas, plus headroom for the OS and Docker).
+  - Memory: 12 GB RAM (4 GB for each of two Wave replicas, plus headroom for the OS and Docker).
+  - CPU: 4 cores (1 core for each of two Wave replicas, plus headroom for the OS and Docker).
   - Storage: 10 GB, plus disk space for your container images and temporary files.
   - Network: Connectivity to your PostgreSQL and Redis instances.
   - On AWS EC2, an `m5a.2xlarge` instance.
@@ -154,7 +154,8 @@ services:
     volumes:
       - ./config.yml:/work/config.yml:ro
     environment:
-      - MICRONAUT_ENVIRONMENTS=lite,rate-limit,redis,postgres,prometheus
+      # prometheus exposes metrics for scraping. Remove it if you do not collect metrics.
+      - MICRONAUT_ENVIRONMENTS=lite,postgres,redis,rate-limit,prometheus
     env_file:
       - wave.env
     working_dir: /work
@@ -182,7 +183,7 @@ services:
 Docker Compose runs Wave in one of two modes, depending on whether you need more than one replica:
 
 - **Single host**: Run `docker compose up -d`. This starts one Wave replica on the local Docker host.
-- **Swarm (two or more replicas)**: Set `replicas: 2` in `docker-compose.yml`, then run `docker stack deploy -c docker-compose.yml wave`.
+- **Swarm (two or more replicas)**: Initialize Swarm with `docker swarm init` if the host is not already a Swarm manager. Set `replicas: 2` in `docker-compose.yml`, then run `docker stack deploy -c docker-compose.yml wave`. Swarm ignores the `restart` key and applies its default restart policy. Set `deploy.restart_policy` to change it.
 
 On first startup, Wave takes 30 to 60 seconds to initialize while it applies database migrations.
 

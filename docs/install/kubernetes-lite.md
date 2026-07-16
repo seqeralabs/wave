@@ -13,8 +13,8 @@ You need the following:
 
 - A Kubernetes cluster, version 1.31 or later, with permission to create namespaces, deployments, and services.
 - Cluster capacity for the Wave service's minimum compute requirements:
-  - Memory: 12 GB RAM (8 GB for Wave pods, plus headroom for the cluster).
-  - CPU: 4 cores (2 for Wave pods, plus headroom for the cluster).
+  - Memory: 12 GB RAM (4 GB for each of two Wave pods, plus headroom for the cluster).
+  - CPU: 4 cores (1 core for each of two Wave pods, plus headroom for the cluster).
   - Storage: 10 GB, plus disk space for your container images and temporary files.
   - Network: Connectivity to your PostgreSQL and Redis instances.
 - PostgreSQL 16 or later, reachable from the cluster.
@@ -24,7 +24,7 @@ You need the following:
 :::
 
 :::tip[Install with the Helm chart]
-Seqera publishes an official [Wave Helm chart](https://artifacthub.io/packages/helm/seqera/wave) that deploys Wave Lite with raw manifests. Follow the chart's documentation to install it, and note the following:
+Seqera publishes an official [Wave Helm chart](https://artifacthub.io/packages/helm/seqera/wave) that deploys Wave Lite as an alternative to the raw manifests in this guide. Follow the chart's documentation to install it, and note the following:
 
 - Create the database first, as described in [Create the database](#create-the-database), and verify the deployment with the same [post-install checks](post-install.md).
 - Add `rate-limit` to the chart's `micronautEnvironments` value to activate the rate limits described in [Set rate limits](configure-wave.md#set-rate-limits).
