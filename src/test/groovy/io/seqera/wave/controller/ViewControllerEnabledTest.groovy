@@ -22,51 +22,25 @@ import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Property
-import io.micronaut.http.HttpRequest
-import io.micronaut.http.HttpStatus
-import io.micronaut.http.client.HttpClient
-import io.micronaut.http.client.annotation.Client
-import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import jakarta.inject.Inject
 
 /**
- * Verify that the /view/** pages are disabled when 'wave.views.enabled' is false.
+ * Verify that the /view/** pages are served when 'wave.views.enabled' is true.
  *
  * @author Gavin Elder
  */
 @Property(name = 'wave.server.url', value = 'http://foo.com')
-@Property(name = 'wave.views.enabled', value = 'false')
+@Property(name = 'wave.views.enabled', value = 'true')
 @MicronautTest
-class ViewControllerDisabledTest extends Specification {
-
-    @Inject
-    @Client("/")
-    HttpClient client
+class ViewControllerEnabledTest extends Specification {
 
     @Inject
     ApplicationContext applicationContext
 
-    def 'should not load the view controller when views are disabled'() {
+    def 'should load the view controller when views are enabled'() {
         expect:
-        !applicationContext.containsBean(ViewController)
-    }
-
-    def 'should return not found for view pages when views are disabled'() {
-        when:
-        client.toBlocking().exchange(HttpRequest.GET(uri))
-
-        then:
-        def e = thrown(HttpClientResponseException)
-        e.status == HttpStatus.NOT_FOUND
-
-        where:
-        uri << [
-                '/view/builds/bd-12345',
-                '/view/mirrors/mr-12345',
-                '/view/scans/sc-12345',
-                '/view/containers/1234567890ab',
-        ]
+        applicationContext.containsBean(ViewController)
     }
 
 }
