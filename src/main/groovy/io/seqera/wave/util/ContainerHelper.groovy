@@ -116,7 +116,9 @@ class ContainerHelper {
     }
 
     static SubmitContainerTokenResponse makeResponseV1(ContainerRequest data, TokenData token, String waveImage) {
-        final target = waveImage
+        // freeze/mirror images are published to the target registry and must be pulled
+        // directly from there - the Wave proxy token path does not serve them (see RouteHandler)
+        final target = data.durable() ? data.containerImage : waveImage
         final build = data.buildNew ? data.buildId : null
         return new SubmitContainerTokenResponse(data.requestId, token.value, target, token.expiration, data.containerImage, build, null, null, null, null, null)
     }
