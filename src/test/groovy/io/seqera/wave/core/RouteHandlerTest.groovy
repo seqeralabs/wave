@@ -143,12 +143,14 @@ class RouteHandlerTest extends Specification {
         then:
         1 * tokenService.getRequest(TOKEN) >> REQUEST
         and:
-        thrown(NotFoundException)
+        def e = thrown(NotFoundException)
+        // the error must point the caller to the direct image reference
+        e.message.contains(IMAGE)
 
         where:
-        REQ_PATH                                      | TOKEN | REQUEST
-        '/v2/wt/a1/library/ubuntu/manifests/latest'   | 'a1'  | ContainerRequest.of(containerImage: 'ubuntu:latest', freeze: true)
-        '/v2/wt/b2/library/ubuntu/blobs/latest'       | 'b2'  | ContainerRequest.of(containerImage: 'ubuntu:latest', type: ContainerRequest.Type.Mirror)
+        REQ_PATH                                      | TOKEN | IMAGE                       | REQUEST
+        '/v2/wt/a1/library/ubuntu/manifests/latest'   | 'a1'  | 'quay.io/org/ubuntu:1.0'    | ContainerRequest.of(containerImage: 'quay.io/org/ubuntu:1.0', freeze: true)
+        '/v2/wt/b2/library/ubuntu/blobs/latest'       | 'b2'  | 'quay.io/org/ubuntu:1.0'    | ContainerRequest.of(containerImage: 'quay.io/org/ubuntu:1.0', type: ContainerRequest.Type.Mirror)
     }
 
 }

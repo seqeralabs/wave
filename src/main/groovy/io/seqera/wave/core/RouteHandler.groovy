@@ -66,7 +66,7 @@ class RouteHandler {
             // meant to be pulled directly from there - they must not be served via the Wave
             // proxy token path (see also ContainerRequest.durable)
             if( request.durable() ) {
-                throw new NotFoundException("Wave container for token '$token' is not available via the proxy")
+                throw new NotFoundException("Container '$token' is a freeze/mirror image and must be pulled directly from '${request.containerImage}'")
             }
             // the image name (without tag) must match
             final coords = request.coordinates()
