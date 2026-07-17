@@ -51,9 +51,9 @@ import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.mirror.ContainerMirrorService
 import io.seqera.wave.service.mirror.MirrorResult
-import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.request.ContainerRequestService
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.core.ChildRefs
@@ -83,7 +83,7 @@ class ViewController {
     private String serverUrl
 
     @Inject
-    private PersistenceService persistenceService
+    private ContainerRequestService containerService
 
     @Inject
     @Nullable
@@ -136,7 +136,7 @@ class ViewController {
         binding.mirror_target_image = result.targetImage
         binding.mirror_platform = result.platform ?: '(all)'
         binding.mirror_digest = result.digest ?: '-'
-        binding.mirror_user = result.userName ?: '-'
+        binding.mirror_user_id = result.userId != null ? result.userId.toString() : '-'
         binding.put('server_url', serverUrl)
         ChildRefs.populateScanBinding(binding, result.scanId, null, result.succeeded(), serverUrl)
         return binding
@@ -242,7 +242,7 @@ class ViewController {
         binding.build_failed = result.done() && !result.succeeded() 
         binding.build_in_progress = !result.done()
         binding.build_exit_status = result.exitStatus != null ? result.exitStatus : '-'
-        binding.build_user = (result.userName ?: '-')
+        binding.build_user_id = result.userId != null ? result.userId.toString() : '-'
         binding.build_time = formatTimestamp(result.startTime, result.offsetId) ?: '-'
         binding.build_duration = formatDuration(result.duration) ?: '-'
         binding.build_image = result.targetImage
@@ -276,12 +276,16 @@ class ViewController {
 
     @View("container-view")
     @Get('/containers/{token}')
-    HttpResponse viewContainer(String token) {
-        final data = persistenceService.loadContainerRequest(token)
+    HttpResponse<?> viewContainer(String token) {
+        // Go through ContainerRequestService (not PersistenceService directly) so the view sees the
+        // same record — including any watcher-extended expiration — as the rest of the request flow.
+        final data = containerService.loadContainerRecord(token)
+        // Throw NotFoundException (rendered as a proper 404 page) for consistency with the other
+        // view endpoints, instead of returning a bare notFound body into the template.
+        if( !data )
+            throw new NotFoundException("Unknown container token: $token")
         // return the response
         final binding = new HashMap(20)
-        if( !data )
-            return HttpResponse.notFound(["error_message": "Unknown container request id '$token'"])
         binding.request_token = token
         binding.request_container_image = data.containerImage ?: '-'
         binding.request_contaiener_platform = data.platform ?: '-'
@@ -299,8 +303,6 @@ class ViewController {
 
         // user & tower data
         binding.tower_user_id = data.user?.id
-        binding.tower_user_email = data.user?.email
-        binding.tower_user_name = data.user?.userName
         binding.tower_workspace_id = data.workspaceId ?: '-'
         binding.tower_endpoint = data.towerEndpoint
 

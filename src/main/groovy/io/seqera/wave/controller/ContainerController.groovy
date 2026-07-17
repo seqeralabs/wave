@@ -127,6 +127,16 @@ class ContainerController {
     @Value('${wave.allowAnonymous}')
     private Boolean allowAnonymous
 
+    /**
+     * When {@code false} the container pull path (on-the-fly augmentation and pass-through proxying
+     * of an existing image) is disabled, and requests must use "freeze" mode to provision a container
+     * via an actual image build. Useful for locked-down deployments where Wave must not act as an
+     * augmenting/pass-through pull proxy.
+     */
+    @Inject
+    @Value('${wave.container.pull.enabled:true}')
+    private Boolean allowPull
+
     @Inject
     @Value('${wave.server.url}')
     private String serverUrl
@@ -559,6 +569,12 @@ class ContainerController {
             type = ContainerRequest.Type.Mirror
         }
         else if( req.containerImage ) {
+            // the container pull path (augmentation / pass-through) may be disabled in locked-down
+            // deployments; such requests must instead use "freeze" mode to build the container.
+            // note: a freeze request never reaches this branch because it has already been rewritten
+            // into a container build request by freezeService.freezeBuildRequest(..) above
+            if( allowPull == Boolean.FALSE )
+                throw new BadRequestException("Container pull is not allowed in this Wave deployment - use 'freeze' mode to provision this container")
             // normalize container image
             final coords = ContainerCoordinates.parse(req.containerImage)
             targetImage = coords.getTargetContainer()
@@ -750,7 +766,7 @@ class ContainerController {
         final data = containerService.loadContainerRecord(requestId)
         if( !data )
             return HttpResponse.notFound()
-        return HttpResponse.ok(data)
+        return HttpResponse.ok(data.withUserIdOnly())
     }
 
     @Get('/v1alpha2/container/{requestId}/status')
