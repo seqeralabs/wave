@@ -30,6 +30,10 @@ Configure general Wave application settings, such as application name, port, ano
 : When `true`, anonymous users can access the Wave server (default: `false`).
   Modify this option based on your security requirements.
 
+`wave.container.pull.enabled` *(optional)*
+: When `true`, Wave can provision a container by pulling an existing image directly, applying any container configuration on the fly (the augmentation path) (default: `true`).
+  Set to `false` to disable the pull path in locked-down deployments where Wave must not act as an augmenting or pass-through proxy; such requests are rejected and must instead use `freeze` mode to provision the container via an actual image build.
+
 `wave.denyHosts` *(optional)*
 : Hostname patterns to deny. Requests targeting these hosts are rejected.
   Example patterns: `ngrok.app`, `ngrok-free.app`, `//localhost`.

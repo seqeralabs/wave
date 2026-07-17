@@ -60,6 +60,7 @@ import io.seqera.service.pairing.PairingService
 import io.seqera.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerRecord
+import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.request.ContainerRequestService
 import io.seqera.wave.service.request.TokenData
 import io.seqera.wave.service.validation.ValidationService
@@ -145,6 +146,30 @@ class ContainerControllerTest extends Specification {
         then:
         thrown(BadRequestException)
 
+    }
+
+    def 'should reject pull request when container pull is disabled' () {
+        given:
+        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry, allowPull: false)
+
+        when: 'a plain container image (pull/augment) request is rejected'
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', containerPlatform: 'linux/amd64')
+        controller.makeRequestData(req, PlatformId.NULL, "")
+        then:
+        def e = thrown(BadRequestException)
+        e.message == "Container pull is not allowed in this Wave deployment - use 'freeze' mode to provision this container"
+    }
+
+    def 'should allow pull request when container pull is enabled' () {
+        given:
+        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry, allowPull: true)
+
+        when:
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', containerPlatform: 'linux/amd64')
+        def data = controller.makeRequestData(req, PlatformId.NULL, "")
+        then:
+        data.containerImage == 'docker.io/library/ubuntu:latest'
+        data.type == ContainerRequest.Type.Container
     }
 
     def 'should create request data with freeze mode' () {
