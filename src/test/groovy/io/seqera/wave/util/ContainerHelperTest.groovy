@@ -253,10 +253,34 @@ class ContainerHelperTest extends Specification {
         result.cached == null
         result.freeze == null
 
-        where: 
+        where:
         NEW_BUILD   | EXPECTED_BUILD_ID
         false       | null
         true        | '123'
+    }
+
+    @Unroll
+    def 'should create response v1 for durable request returning the direct image' () {
+        given:
+        def data = ContainerRequest.of(
+                containerImage: 'quay.io/org/container:1.0',
+                freeze: IS_FREEZE,
+                type: TYPE )
+        def token = new TokenData('123abc', Instant.now().plusSeconds(100))
+        def target = 'wave.com/wt/123abc/org/container:1.0'
+
+        when:
+        def result = ContainerHelper.makeResponseV1(data, token, target)
+        then:
+        // freeze/mirror images must resolve to the direct target-registry image,
+        // not the Wave proxy token url (which no longer serves durable images)
+        result.targetImage == 'quay.io/org/container:1.0'
+        result.containerImage == 'quay.io/org/container:1.0'
+
+        where:
+        TYPE                          | IS_FREEZE
+        null                          | true
+        ContainerRequest.Type.Mirror  | false
     }
 
     @Unroll
