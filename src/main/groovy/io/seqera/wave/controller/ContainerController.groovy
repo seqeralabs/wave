@@ -124,7 +124,7 @@ class ContainerController {
     private JwtAuthStore jwtAuthStore
 
     @Inject
-    @Value('${wave.allowAnonymous}')
+    @Value('${wave.allow-anonymous}')
     private Boolean allowAnonymous
 
     /**
