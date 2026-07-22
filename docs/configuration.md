@@ -26,10 +26,6 @@ Configure general Wave application settings, such as application name, port, ano
 : URL of the Seqera platform API service (default: [`https://api.cloud.seqera.io`](https://api.cloud.seqera.io)).
   Can be set using the `${TOWER_ENDPOINT_URL}` environment variable.
 
-`wave.allowAnonymous` *(required)*
-: When `true`, anonymous users can access the Wave server (default: `false`).
-  Modify this option based on your security requirements.
-
 `wave.denyHosts` *(optional)*
 : Hostname patterns to deny. Requests targeting these hosts are rejected.
   Example patterns: `ngrok.app`, `ngrok-free.app`, `//localhost`.
@@ -67,7 +63,11 @@ Configure general Wave application settings, such as application name, port, ano
 
 ## Capabilities
 
-The `wave.capabilities.*` flags are installation-level toggles for optional Wave capabilities. All default to `true` (permissive). Set a flag to `false` to lock down that capability, or enable the `strict` environment (`MICRONAUT_ENVIRONMENTS=strict`) to disable all of them at once — intended for regulated deployments where Wave must not serve images directly, broker credentials, or expose its HTML pages.
+The `wave.capabilities.*` flags are installation-level toggles for optional Wave capabilities. All default to `true` (permissive). Set a flag to `false` to lock down that capability, or enable the `strict` environment (`MICRONAUT_ENVIRONMENTS=strict`) to disable all of them at once — intended for regulated deployments where Wave must not serve images directly, broker credentials, expose its HTML pages, or accept anonymous requests.
+
+`wave.capabilities.anonymous-access` *(optional)*
+: When `true`, anonymous (unauthenticated) users can access the Wave server (default: `true`).
+  Set to `false` to require authenticated access. Modify this option based on your security requirements.
 
 `wave.capabilities.ephemeral-token` *(optional)*
 : When `true`, Wave can provision a container by pulling an existing image directly, applying any container configuration on the fly (the augmentation path) (default: `true`).

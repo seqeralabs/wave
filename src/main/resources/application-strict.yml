@@ -10,6 +10,8 @@
 #
 wave:
   capabilities:
+    # disallow anonymous (unauthenticated) access to the Wave server
+    anonymous-access: false
     # disable the ephemeral container pull/augmentation path; requests must use "freeze" mode
     ephemeral-token: false
     # do not broker registry credentials on the proxy pull path; use the caller's own credentials
