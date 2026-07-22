@@ -1,0 +1,18 @@
+---
+# Configuration for locked-down / regulated Wave deployments.
+#
+# Enable this profile by setting MICRONAUT_ENVIRONMENTS=strict
+#
+# It disables all optional Wave capabilities so that the service cannot serve
+# images directly, broker registry credentials, or expose the HTML view pages.
+# In this mode containers must be provisioned via "freeze" mode (actual image
+# builds) and pulls are expected to use the caller's own registry credentials.
+#
+wave:
+  capabilities:
+    # disable the ephemeral container pull/augmentation path; requests must use "freeze" mode
+    ephemeral-token: false
+    # do not broker registry credentials on the proxy pull path; use the caller's own credentials
+    credentials-federation: false
+    # disable the HTML view pages under /view/** (return 404)
+    web-views: false

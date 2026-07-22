@@ -30,10 +30,6 @@ Configure general Wave application settings, such as application name, port, ano
 : When `true`, anonymous users can access the Wave server (default: `false`).
   Modify this option based on your security requirements.
 
-`wave.container.pull.enabled` *(optional)*
-: When `true`, Wave can provision a container by pulling an existing image directly, applying any container configuration on the fly (the augmentation path) (default: `true`).
-  Set to `false` to disable the pull path in locked-down deployments where Wave must not act as an augmenting or pass-through proxy; such requests are rejected and must instead use `freeze` mode to provision the container via an actual image build.
-
 `wave.denyHosts` *(optional)*
 : Hostname patterns to deny. Requests targeting these hosts are rejected.
   Example patterns: `ngrok.app`, `ngrok-free.app`, `//localhost`.
@@ -68,6 +64,22 @@ Configure general Wave application settings, such as application name, port, ano
 
 `wave.tokens.watcher.count` *(optional)*
 : Maximum number of container requests processed in a single watcher cycle (default: `250`).
+
+## Capabilities
+
+The `wave.capabilities.*` flags are installation-level toggles for optional Wave capabilities. All default to `true` (permissive). Set a flag to `false` to lock down that capability, or enable the `strict` environment (`MICRONAUT_ENVIRONMENTS=strict`) to disable all of them at once — intended for regulated deployments where Wave must not serve images directly, broker credentials, or expose its HTML pages.
+
+`wave.capabilities.ephemeral-token` *(optional)*
+: When `true`, Wave can provision a container by pulling an existing image directly, applying any container configuration on the fly (the augmentation path) (default: `true`).
+  Set to `false` to disable this path in locked-down deployments where Wave must not act as an augmenting or pass-through proxy; such requests are rejected and must instead use `freeze` mode to provision the container via an actual image build.
+
+`wave.capabilities.credentials-federation` *(optional)*
+: When `true`, Wave brokers the resolved workspace registry credentials when proxying image pulls (default: `true`).
+  When `false`, Wave does not broker registry credentials on the proxy pull path, so images are pulled directly from the target registry using the caller's own credentials (for example an EC2 instance profile or IAM role). Build, inspect, and augmentation flows are unaffected.
+
+`wave.capabilities.web-views` *(optional)*
+: When `true`, the HTML view pages served under `/view/**` (build, mirror, scan, container, and inspect pages) are enabled (default: `true`).
+  Set to `false` to disable these pages globally, in which case all `/view/**` routes return `404`.
 
 ## Container registry
 
