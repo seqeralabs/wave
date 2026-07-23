@@ -124,18 +124,18 @@ class ContainerController {
     private JwtAuthStore jwtAuthStore
 
     @Inject
-    @Value('${wave.allowAnonymous}')
+    @Value('${wave.capabilities.anonymous-access}')
     private Boolean allowAnonymous
 
     /**
-     * When {@code false} the container pull path (on-the-fly augmentation and pass-through proxying
-     * of an existing image) is disabled, and requests must use "freeze" mode to provision a container
-     * via an actual image build. Useful for locked-down deployments where Wave must not act as an
-     * augmenting/pass-through pull proxy.
+     * When {@code false} the ephemeral-token capability is disabled, i.e. the container pull path
+     * (on-the-fly augmentation and pass-through proxying of an existing image) is turned off, and
+     * requests must use "freeze" mode to provision a container via an actual image build. Useful for
+     * locked-down deployments where Wave must not act as an augmenting/pass-through pull proxy.
      */
     @Inject
-    @Value('${wave.container.pull.enabled:true}')
-    private Boolean allowPull
+    @Value('${wave.capabilities.ephemeral-token:true}')
+    private Boolean ephemeralToken
 
     @Inject
     @Value('${wave.server.url}')
@@ -573,8 +573,8 @@ class ContainerController {
             // deployments; such requests must instead use "freeze" mode to build the container.
             // note: a freeze request never reaches this branch because it has already been rewritten
             // into a container build request by freezeService.freezeBuildRequest(..) above
-            if( allowPull == Boolean.FALSE )
-                throw new BadRequestException("Container pull is not allowed in this Wave deployment - use 'freeze' mode to provision this container")
+            if( ephemeralToken == Boolean.FALSE )
+                throw new BadRequestException("Ephemeral container provisioning is not enabled in this Wave deployment - use 'freeze' mode to provision this container")
             // normalize container image
             final coords = ContainerCoordinates.parse(req.containerImage)
             targetImage = coords.getTargetContainer()

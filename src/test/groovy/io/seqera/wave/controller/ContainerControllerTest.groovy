@@ -150,19 +150,19 @@ class ContainerControllerTest extends Specification {
 
     def 'should reject pull request when container pull is disabled' () {
         given:
-        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry, allowPull: false)
+        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry, ephemeralToken: false)
 
         when: 'a plain container image (pull/augment) request is rejected'
         def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', containerPlatform: 'linux/amd64')
         controller.makeRequestData(req, PlatformId.NULL, "")
         then:
         def e = thrown(BadRequestException)
-        e.message == "Container pull is not allowed in this Wave deployment - use 'freeze' mode to provision this container"
+        e.message == "Ephemeral container provisioning is not enabled in this Wave deployment - use 'freeze' mode to provision this container"
     }
 
     def 'should allow pull request when container pull is enabled' () {
         given:
-        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry, allowPull: true)
+        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry, ephemeralToken: true)
 
         when:
         def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', containerPlatform: 'linux/amd64')

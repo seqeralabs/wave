@@ -28,6 +28,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.context.annotation.Context
+import io.micronaut.context.annotation.Value
 import io.micronaut.core.io.buffer.ByteBuffer
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.reactor.http.client.ReactorStreamingHttpClient
@@ -83,6 +84,16 @@ class RegistryProxyService {
     private RegistryCredentialsProvider credentialsProvider
 
     /**
+     * When {@code true} (default) Wave brokers the resolved registry credentials on the proxy pull
+     * path (credentials federation). When {@code false} no credentials are injected, so images are
+     * expected to be pulled directly from the target registry using the caller's own credentials
+     * (for example an EC2 instance profile or IAM role). Build, inspect and augmentation flows are
+     * unaffected.
+     */
+    @Value('${wave.capabilities.credentials-federation:true}')
+    private boolean credentialsFederation
+
+    /**
      * Service to query credentials stored into tower
      */
     @Inject
@@ -130,6 +141,10 @@ class RegistryProxyService {
     }
 
     protected RegistryCredentials getCredentials(RoutePath route) {
+        if( !credentialsFederation ) {
+            log.debug "Credentials federation disabled - skipping credentials for route path=${route.targetContainer}"
+            return null
+        }
         final result = credentialsProvider.getCredentials(route, route.identity)
         log.debug "Credentials for route path=${route.targetContainer}; identity=${route.identity} => ${result}"
         return result
