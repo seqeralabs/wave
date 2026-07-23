@@ -26,11 +26,11 @@ Configure general Wave application settings, such as application name, port, ano
 : URL of the Seqera platform API service (default: [`https://api.cloud.seqera.io`](https://api.cloud.seqera.io)).
   Can be set using the `${TOWER_ENDPOINT_URL}` environment variable.
 
-`wave.denyHosts` *(optional)*
+`wave.deny-hosts` *(optional)*
 : Hostname patterns to deny. Requests targeting these hosts are rejected.
   Example patterns: `ngrok.app`, `ngrok-free.app`, `//localhost`.
 
-`wave.denyPaths` *(optional)*
+`wave.deny-paths` *(optional)*
 : API path patterns to filter out. Requests for matching artifacts, such as non-existent manifests, are rejected.
 
 `wave.server.url` *(required)*
@@ -160,7 +160,7 @@ Configure retry behavior for AWS STS AssumeRole calls:
 `wave.aws.sts.retry.delay` *(optional)*
 : Initial delay between retry attempts (default: `1s`).
 
-`wave.aws.sts.retry.maxDelay` *(optional)*
+`wave.aws.sts.retry.max-delay` *(optional)*
 : Maximum delay between retry attempts (default: `10s`).
 
 `wave.aws.sts.retry.attempts` *(optional)*
@@ -186,7 +186,7 @@ Configure caching for jump role temporary credentials to avoid redundant STS cal
 
 Configure the HTTP client with the following options:
 
-`wave.httpclient.connectTimeout` *(optional)*
+`wave.httpclient.connect-timeout` *(optional)*
 : Connection timeout for the HTTP client (default: `20s`).
 
 `wave.httpclient.retry.attempts` *(optional)*
@@ -198,7 +198,7 @@ Configure the HTTP client with the following options:
 `wave.httpclient.retry.jitter` *(optional)*
 : Jitter factor for HTTP client retries (default: `0.25`).
 
-`wave.httpclient.retry.maxDelay` *(optional)*
+`wave.httpclient.retry.max-delay` *(optional)*
 : Maximum delay between HTTP client retries.
 
 `wave.httpclient.retry.multiplier` *(optional)*
@@ -286,7 +286,7 @@ Configure how Wave stores and delivers build logs from containers and Kubernetes
 `wave.build.locks.path` *(required)*
 : Path where Wave stores Conda lock files. Can be an S3 URI (e.g., `s3://my-bucket/wave/locks`) or a local filesystem path.
 
-`wave.build.logs.maxLength` *(optional)*
+`wave.build.logs.max-length` *(optional)*
 : Maximum number of bytes read from a log file. If a log file exceeds this limit, it is truncated (default: `100000` (100 KB)).
 
 `wave.build.logs.path` *(required)*
@@ -338,10 +338,10 @@ Configure Kubernetes-specific settings for Wave, where build and scan processes 
 `wave.build.k8s.service-account` *(optional)*
 : Kubernetes service account name for Wave build pods.
 
-`wave.build.k8s.storage.claimName` *(optional)*
+`wave.build.k8s.storage.claim-name` *(optional)*
 : Volume claim name for Wave build Kubernetes pods.
 
-`wave.build.k8s.storage.mountPath` *(optional)*
+`wave.build.k8s.storage.mount-path` *(optional)*
 : Volume mount path for Wave build Kubernetes pods.
 
 ## Container scan process
@@ -477,72 +477,72 @@ Configure PostgreSQL with the following options:
 
 Configure how Wave caches container blobs to improve client performance and optionally delegates transfer tasks to Kubernetes pods for scalability with the following options:
 
-`wave.blobCache.baseUrl` *(optional)*
+`wave.blob-cache.base-url` *(optional)*
 : URL that overrides the base URL (the part before the blob path) of blobs sent to the client.
 
-`wave.blobCache.cloudflare.lifetime` *(optional)*
+`wave.blob-cache.cloudflare.lifetime` *(optional)*
 : Validity duration of the Cloudflare WAF token.
 
-`wave.blobCache.cloudflare.secret-key` *(optional)*
+`wave.blob-cache.cloudflare.secret-key` *(optional)*
 : [Cloudflare secret](https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/) used to create the WAF token.
 
-`wave.blobCache.url-signature-duration` *(optional)*
+`wave.blob-cache.url-signature-duration` *(optional)*
 : Validity duration of the AWS S3 URL signature (default: `30m`).
 
-`wave.blobCache.enabled` *(optional)*
+`wave.blob-cache.enabled` *(optional)*
 : When `true`, activates the blob cache (default: `false`).
 
-`wave.blobCache.k8s.resources.requests.cpu` *(optional)*
+`wave.blob-cache.k8s.resources.requests.cpu` *(optional)*
 : [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) requested for the Kubernetes pod used for blob binary transfers.
 
-`wave.blobCache.k8s.resources.requests.memory` *(optional)*
+`wave.blob-cache.k8s.resources.requests.memory` *(optional)*
 : [Memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) requested for the Kubernetes pod used for blob binary transfers.
 
-`wave.blobCache.k8s.resources.limits.cpu` *(optional)*
+`wave.blob-cache.k8s.resources.limits.cpu` *(optional)*
 : CPU resource [limit](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) for the Kubernetes pod used for blob binary transfers.
 
-`wave.blobCache.k8s.resources.limits.memory` *(optional)*
+`wave.blob-cache.k8s.resources.limits.memory` *(optional)*
 : Memory resource [limit](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) for the Kubernetes pod used for blob binary transfers.
 
-`wave.blobCache.s5cmdImage` *(optional)*
+`wave.blob-cache.s5cmd-image` *(optional)*
 : Container image that supplies the [s5cmd tool](https://github.com/peak/s5cmd) for uploading blob binaries to the S3 bucket (default: `public.cr.seqera.io/wave/s5cmd:v2.2.2`).
 
-`wave.blobCache.signing-strategy` *(optional)*
+`wave.blob-cache.signing-strategy` *(optional)*
 : URL signing strategy for different services.
   Currently supports AWS S3 and Cloudflare service.
   Options include: `aws-presigned-url` and `cloudflare-waf-token`.
 
-`wave.blobCache.status.delay` *(optional)*
+`wave.blob-cache.status.delay` *(optional)*
 : Delay between status checks for blob binary transfers from the repository to the cache (default: `2s`).
 
-`wave.blobCache.status.duration` *(optional)*
+`wave.blob-cache.status.duration` *(optional)*
 : Duration for which blob transfer status records are retained in cache (default: `1h`).
 
-`wave.blobCache.storage.accessKey` *(required)*
+`wave.blob-cache.storage.access-key` *(required)*
 : Access key credential for the caching service.
 
-`wave.blobCache.storage.bucket` *(required)*
+`wave.blob-cache.storage.bucket` *(required)*
 : Name of the Cloudflare or S3 bucket.
   For example, `s3://wave-blob-cache`.
 
-`wave.blobCache.storage.endpoint` *(optional)*
+`wave.blob-cache.storage.endpoint` *(optional)*
 : Storage endpoint URL for blob binary downloads and uploads.
 
-`wave.blobCache.storage.region` *(required)*
+`wave.blob-cache.storage.region` *(required)*
 : AWS region of the bucket.
 
-`wave.blobCache.storage.secretKey` *(required)*
+`wave.blob-cache.storage.secret-key` *(required)*
 : Secret key credential for the caching service.
 
 <div style={{marginLeft: '2em'}}>
 
 :::note
-Static credentials (`accessKey` and `secretKey`) are currently required for blob cache storage access. IAM-based authentication (such as EKS Pod Identity or IRSA) is not yet supported for the blob cache feature. This differs from the S3 build cache, which does support IAM-based authentication.
+Static credentials (`access-key` and `secret-key`) are currently required for blob cache storage access. IAM-based authentication (such as EKS Pod Identity or IRSA) is not yet supported for the blob cache feature. This differs from the S3 build cache, which does support IAM-based authentication.
 :::
 
 </div>
 
-`wave.blobCache.timeout` *(optional)*
+`wave.blob-cache.timeout` *(optional)*
 : Timeout for blob binary transfers. Transfers exceeding this duration fail (default: `10m`).
 
 ## Email configuration

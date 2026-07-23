@@ -153,7 +153,7 @@ class BuildConfig {
     /**
      * Max length allowed for build logs download
      */
-    @Value('${wave.build.logs.maxLength:100000}')
+    @Value('${wave.build.logs.max-length:100000}')
     long maxLength
 
     @Value('${wave.build.skip-cache:false}')

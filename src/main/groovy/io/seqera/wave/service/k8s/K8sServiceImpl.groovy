@@ -88,11 +88,11 @@ class K8sServiceImpl implements K8sService {
     @Value('${wave.build.k8s.debug:false}')
     private boolean debug
 
-    @Value('${wave.build.k8s.storage.claimName}')
+    @Value('${wave.build.k8s.storage.claim-name}')
     @Nullable
     private String storageClaimName
 
-    @Value('${wave.build.k8s.storage.mountPath}')
+    @Value('${wave.build.k8s.storage.mount-path}')
     @Nullable
     private String storageMountPath
 
