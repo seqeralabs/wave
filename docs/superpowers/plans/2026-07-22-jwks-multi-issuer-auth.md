@@ -23,6 +23,81 @@
 
 ---
 
+## Backward compatibility: existing token propagation & validation model
+
+**Requirement:** JWKS validation must not alter Wave's existing custom token handling — the
+delegated-credential model centred on `TowerConnector` (`JwtAuth`, `JwtAuthStore`, `JwtMonitor`,
+the 401→refresh cycle) — for any traffic that flows through it today. Older Platform instances and
+every non-asymmetric token must behave exactly as before.
+
+### What that model does today
+
+Two distinct concerns share the same `towerAccessToken`:
+
+1. **Authentication** (identity resolution) — `UserServiceImpl.getUserByAccessToken` forwards the
+   token to `/user-info` and trusts the answer. This is the *validation model* JWKS replaces, and
+   only for asymmetric JWTs.
+2. **Delegated propagation** — after authentication, Wave calls Platform APIs *on behalf of the
+   user* for the whole pipeline lifetime (credentials, workflow describe). `TowerConnector`
+   attaches `Authorization: Bearer <bearer>` (`sendAsync1`, `TowerConnector.groovy:216`) and, on a
+   401, POSTs `grant_type=refresh_token` to `/oauth/access_token`, parses the `JWT`/`JWT_REFRESH_TOKEN`
+   cookies, and updates `JwtAuthStore` (30-day TTL, kept warm by `JwtMonitor`). This is *credential
+   lifecycle*, not authentication.
+
+JWKS touches only concern (1). The spec already scopes concern (2) as "not touched"; this section
+states *why* that holds and *where* the two could still collide.
+
+### Why the propagation model is unaffected (by construction)
+
+- **JWKS fetch bypasses the auth/refresh path.** `PairingJwksClient` calls the low-level abstract
+  `TowerConnector.sendAsync(endpoint, ProxyHttpRequest)` (raw proxy send), **not** `sendAsync1`. It
+  never reads `JwtAuthStore`, never attaches a Bearer, never triggers a refresh — the JWKS document
+  is public. Adding JWKS retrieval therefore cannot perturb the token store or the refresh cache.
+- **Refreshed tokens are HS256 and are never JWKS-validated.** The token minted by
+  `/oauth/access_token` (the `JWT` cookie) is a Platform HS256 session token. Even when the *inbound*
+  token is RS256, every *refreshed* token that subsequently flows through `sendAsync1` is HS256. This
+  is fine: JWKS validation runs exactly once, on the inbound `auth.bearer` at identity-resolution
+  time — never on tokens in flight through `TowerConnector`. The refresh cycle keeps producing HS256
+  tokens and keeps working untouched.
+- **Keying and storage are unchanged.** `JwtAuth.key = md5(endpoint:token)` and `JwtAuthStore` are
+  not modified; JWKS reads `auth.bearer` before the existing `userInfo` call and adds no store entries.
+- **Dual-path routing preserves every legacy token.** HS256 session JWTs and opaque PATs —
+  everything Wave receives today — route to the unchanged `/user-info` path because
+  `JwtInspector.isAsymmetricJwt` returns false. With `wave.auth.jwks.enabled=false` (default) even
+  RS256 tokens take the legacy path. No currently-deployed token/endpoint combination changes behavior.
+
+### Residual risks — things to verify, not assume
+
+1. **`micronaut-security-jwt` on the classpath changes Wave's *own* request validation.** Wave does
+   not use Micronaut Security for the tower token (it lives in the request body, handled manually).
+   Adding the dependency activates Micronaut's JWT token readers/validators in the security filter,
+   which could start acting on the `Authorization` header of Wave's own endpoints or shift
+   basic-auth/anonymous behavior. This is the one real backward-compat hazard and it lives *outside*
+   `TowerConnector`. Task 5's regression step must confirm the admin basic-auth and anonymous routes
+   are unchanged; disable the unused bearer reader via config
+   (`micronaut.security.token.jwt.bearer.enabled: false`) if anything regresses — never via code.
+2. **Phase 2 removes the implicit "is this token usable for delegation?" check.** In phase 1 the
+   `/user-info` call still runs after JWKS success, so delegation-capability stays implicitly proven.
+   When phase 2 drops `/user-info` for verified JWTs, a token can pass JWKS validation yet be unusable
+   for on-behalf-of API calls (e.g. an RS256 launch token with narrower scope than a session JWT).
+   The propagation code is unchanged, but the *guarantee* that a JWKS-verified identity carries
+   working delegated credentials is weakened. Phase 2 must re-establish that guarantee before
+   dropping the call — it is not a free simplification.
+3. **RS256 inbound token + existing refresh semantics.** An RS256 access token obtained via
+   token-exchange (prerequisite P3) is typically short-lived. If it expires mid-pipeline,
+   `sendAsync1`'s 401→refresh path handles it exactly as today (yielding an HS256 cookie token). No
+   code change needed, but its *lifetime* characteristics differ from today's session JWTs — exercise
+   this in the staging integration step.
+
+### Net assessment
+
+The requirement is satisfied by design: JWKS is purely **additive and read-only** with respect to
+the propagation/refresh machinery in `TowerConnector`. The only genuine backward-compat surface is
+the `micronaut-security-jwt` dependency's effect on Wave's own security filter (risk 1) — already
+noted in Task 5, reiterated here as the item that must be actively verified rather than assumed.
+
+---
+
 ### Task 1: lib-auth-jwks module scaffold + JwtInspector
 
 **Files:**
