@@ -30,7 +30,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java_version: [21]
+        java_version: [25]
     permissions:
       contents: write
       id-token: write
@@ -97,7 +97,7 @@ jobs:
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # ratchet:actions/setup-java@v5.2.0
         with:
           java-version: ${{matrix.java_version}}
-          distribution: 'temurin'
+          distribution: 'corretto'
           architecture: x64
           cache: gradle
 

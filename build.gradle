@@ -25,6 +25,21 @@ repositories {
     maven { url = 'https://s3-eu-west-1.amazonaws.com/maven.seqera.io/snapshots' }
 }
 
+// Profile B: the Wave backend runs inside a Micronaut app on the Java 25 service
+// runtime (Micronaut 5 requires it), so it targets Java 25 rather than the Java 17
+// default applied by io.seqera.wave.java-library-conventions. --release is dropped
+// since it cannot coexist with -source/-target on the same javac task.
+// See seqeralabs/adr#51.
+tasks.withType(JavaCompile).configureEach {
+    options.release = null
+    sourceCompatibility = '25'
+    targetCompatibility = '25'
+}
+tasks.withType(GroovyCompile).configureEach {
+    sourceCompatibility = '25'
+    targetCompatibility = '25'
+}
+
 dependencies {
     annotationProcessor 'io.micronaut.validation:micronaut-validation-processor'
     annotationProcessor 'io.micronaut:micronaut-http-validation'
@@ -147,7 +162,7 @@ micronaut {
 //
 jib {
     from {
-        image = 'cr.seqera.io/public/nf-jdk:corretto-25-al2023-jemalloc'
+        image = 'cr.seqera.io/public/nf-jdk:corretto-25.0.3-al2023-jemalloc@sha256:fd64a2faf08bc89223bda4763352deaaf205e06c10f40706542e9d6b3d04fd85'
         platforms {
             platform { architecture = 'amd64'; os = 'linux' }
             platform { architecture = 'arm64'; os = 'linux' }
@@ -280,7 +295,7 @@ processResources {
 }
 
 jacoco {
-    toolVersion '0.8.12'
+    toolVersion '0.8.14'
 }
 /**
  * Code coverage with JaCoCo.
