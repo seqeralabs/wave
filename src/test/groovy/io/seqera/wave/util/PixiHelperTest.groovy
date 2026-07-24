@@ -44,7 +44,7 @@ class PixiHelperTest extends Specification {
         result.contains('FROM public.cr.seqera.io/wave/pixi:0.61.0-noble AS build')
         result.contains('COPY conda.yml /opt/wave/conda.yml')
         result.contains('pixi init --import /opt/wave/conda.yml')
-        result.contains('pixi add conda-forge::procps-ng')
+        result.contains('pixi add conda-forge::which conda-forge::procps-ng')
         result.contains('pixi shell-hook > /shell-hook.sh')
         result.contains('FROM ubuntu:24.04 AS final')
         result.contains('COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default')
@@ -104,7 +104,7 @@ class PixiHelperTest extends Specification {
 
         then:
         result.contains('FROM ghcr.io/prefix-dev/pixi:0.47.0-jammy-cuda-12.8.1 AS build')
-        result.contains('pixi add foo::one bar::two')
+        result.contains('pixi add conda-forge::which foo::one bar::two')
         result.contains('FROM base/image AS final')
     }
 
