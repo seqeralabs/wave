@@ -123,7 +123,8 @@ class ContainerHelperTest extends Specification {
                 %post
                     micromamba install -y -n base -f /scratch/conda.yml
                     micromamba install -y -n base foo::one bar::two
-                    micromamba env export --name base --explicit > environment.lock
+                    micromamba install -y -n base conda-forge::conda-lock
+                    micromamba run -n base conda-lock --file /scratch/conda.yml --platform linux-64 --lockfile environment.lock
                     echo ">> CONDA_LOCK_START"
                     cat environment.lock
                     echo "<< CONDA_LOCK_END"
@@ -150,7 +151,8 @@ class ContainerHelperTest extends Specification {
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
                 RUN micromamba install -y -n base -f /tmp/conda.yml \\
                     && micromamba install -y -n base foo::one bar::two \\
-                    && micromamba env export --name base --explicit > environment.lock \\
+                    && micromamba install -y -n base conda-forge::conda-lock \\
+                    && micromamba run -n base conda-lock --file /tmp/conda.yml --platform linux-64 --lockfile environment.lock \\
                     && echo ">> CONDA_LOCK_START" \\
                     && cat environment.lock \\
                     && echo "<< CONDA_LOCK_END" \\
@@ -766,8 +768,9 @@ class ContainerHelperTest extends Specification {
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /tmp/conda.yml)) \\
                     && micromamba install -y -n base conda-forge::procps-ng \\
+                    && micromamba install -y -n base conda-forge::conda-lock \\
+                    && micromamba run -n base conda-lock --file /tmp/conda.yml --platform linux-64 --lockfile environment.lock \\
                     && micromamba clean -a -y \\
-                    && micromamba env export --name base --explicit > environment.lock \\
                     && echo ">> CONDA_LOCK_START" \\
                     && cat environment.lock \\
                     && echo "<< CONDA_LOCK_END"
@@ -808,8 +811,9 @@ class ContainerHelperTest extends Specification {
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /tmp/conda.yml)) \\
                     && micromamba install -y -n base conda-forge::procps-ng \\
+                    && micromamba install -y -n base conda-forge::conda-lock \\
+                    && micromamba run -n base conda-lock --file /tmp/conda.yml --platform linux-64 --lockfile environment.lock \\
                     && micromamba clean -a -y \\
-                    && micromamba env export --name base --explicit > environment.lock \\
                     && echo ">> CONDA_LOCK_START" \\
                     && cat environment.lock \\
                     && echo "<< CONDA_LOCK_END"
@@ -855,8 +859,9 @@ class ContainerHelperTest extends Specification {
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /tmp/conda.yml)) \\
                     && micromamba install -y -n base foo::one bar::two \\
+                    && micromamba install -y -n base conda-forge::conda-lock \\
+                    && micromamba run -n base conda-lock --file /tmp/conda.yml --platform linux-64 --lockfile environment.lock \\
                     && micromamba clean -a -y \\
-                    && micromamba env export --name base --explicit > environment.lock \\
                     && echo ">> CONDA_LOCK_START" \\
                     && cat environment.lock \\
                     && echo "<< CONDA_LOCK_END"
