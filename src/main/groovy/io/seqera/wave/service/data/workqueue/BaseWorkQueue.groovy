@@ -16,50 +16,50 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.data.stream
+package io.seqera.wave.service.data.workqueue
 
-import io.seqera.data.stream.AbstractMessageStream
-import io.seqera.data.stream.MessageStream
+import io.seqera.data.workqueue.AbstractWorkQueue
+import io.seqera.data.workqueue.WorkQueue
 import io.seqera.lang.type.TypeHelper
 import io.seqera.serde.encode.StringEncodingStrategy
 import io.seqera.serde.moshi.MoshiEncodeStrategy
 
 /**
- * Base abstract class for implementing message streams in the Wave application.
- * 
- * <p>This class extends {@link AbstractMessageStream} and provides a foundation for
- * creating type-safe message streams with automatic JSON serialization/deserialization
+ * Base abstract class for implementing work queues in the Wave application.
+ *
+ * <p>This class extends {@link AbstractWorkQueue} and provides a foundation for
+ * creating type-safe work queues with automatic JSON serialization/deserialization
  * using the Moshi library. It handles the encoding strategy configuration and
- * provides a consistent interface for message stream implementations.</p>
- * 
- * <p>Message streams are used for real-time message processing and event handling,
- * allowing for continuous data flow and stream-based operations. Concrete implementations
- * should extend this class to define specific streaming behavior and message processing logic.</p>
- * 
- * @param <M> the type of messages that this stream will handle
+ * provides a consistent interface for work queue implementations.</p>
+ *
+ * <p>Work queues are used for reliable message processing with competing consumers,
+ * acknowledgment and lease/visibility-timeout semantics. Concrete implementations
+ * should extend this class to define specific queue behavior and message processing logic.</p>
+ *
+ * @param <M> the type of messages that this queue will handle
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-abstract class BaseMessageStream<M> extends AbstractMessageStream<M> {
+abstract class BaseWorkQueue<M> extends AbstractWorkQueue<M> {
 
     /**
-     * Constructs a new BaseMessageStream with the specified target stream.
-     * 
-     * @param target the underlying string-based message stream that handles
-     *               the actual message transport and streaming operations
+     * Constructs a new BaseWorkQueue with the specified target queue.
+     *
+     * @param target the underlying string-based work queue that handles
+     *               the actual message transport and queueing operations
      */
-    BaseMessageStream(MessageStream<String> target) {
+    BaseWorkQueue(WorkQueue<String> target) {
         super(target)
     }
 
     /**
      * Creates an instance of the required {@link StringEncodingStrategy} to serialize
      * and deserialize message events to/from JSON format.
-     * 
+     *
      * <p>This method uses reflection to determine the generic type parameter {@code M}
      * and creates a Moshi-based encoding strategy that can handle the automatic
      * conversion between the strongly-typed message objects and their JSON string
-     * representations for streaming operations.</p>
-     * 
+     * representations for queueing operations.</p>
+     *
      * @return a new instance of {@link StringEncodingStrategy} configured for type {@code M}
      */
     @Override
