@@ -26,8 +26,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
-import io.micronaut.runtime.event.ApplicationStartupEvent
-import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.mirror.MirrorResult
@@ -58,9 +56,6 @@ import jakarta.inject.Named
 class PostgresPersistentService implements PersistenceService {
 
     @Inject
-    private PostgresSchemaService dbInitService
-
-    @Inject
     private BuildRepository buildRepository
 
     @Inject
@@ -75,11 +70,6 @@ class PostgresPersistentService implements PersistenceService {
     @Inject
     @Named(TaskExecutors.BLOCKING)
     private ExecutorService ioExecutor
-
-    @EventListener
-    void onApplicationStartup(ApplicationStartupEvent event) {
-        dbInitService.create()
-    }
 
     // ===== --- build records ---- =====
     private Runnable safeRun(Runnable action, GString msg) {

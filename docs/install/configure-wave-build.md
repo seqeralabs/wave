@@ -173,8 +173,9 @@ data:
       # Existing database, redis, and platform configuration...
       db:
         uri: "jdbc:postgresql://your-postgres-host:5432/wave"
-        user: "wave_user"
+        user: "wave"
         password: "your_secure_password_here"
+        schema: "wave"
 
       redis:
         uri: "redis://your-redis-host:6379"

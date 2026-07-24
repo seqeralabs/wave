@@ -42,31 +42,22 @@ This guide assumes:
 
 Wave requires a PostgreSQL database to operate.
 
-Create a dedicated `wave` database and user account with the appropriate privileges:
+Create a dedicated `wave` database and application role with the appropriate privileges:
 
 ```sql
--- Create a dedicated user for Wave
-CREATE ROLE wave_user LOGIN PASSWORD 'your_secure_password';
+-- Create a dedicated role for Wave.
+CREATE ROLE wave LOGIN PASSWORD 'your_secure_password';
 
--- Create the Wave database
-CREATE DATABASE wave;
+-- Create the Wave database owned by that role.
+-- On managed PostgreSQL, grant role membership to the admin user first if required.
+GRANT wave TO CURRENT_USER;
+CREATE DATABASE wave OWNER wave;
 
--- Connect to the wave database
+-- Connect to the wave database.
 \c wave;
 
--- Grant basic schema access
-GRANT USAGE, CREATE ON SCHEMA public TO wave_user;
-
--- Grant privileges on existing tables and sequences
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO wave_user;
-GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO wave_user;
-
--- Grant privileges on future tables and sequences
-ALTER DEFAULT PRIVILEGES IN SCHEMA public
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO wave_user;
-
-ALTER DEFAULT PRIVILEGES IN SCHEMA public
-GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO wave_user;
+-- Let Wave create and own its dedicated schema on first startup.
+GRANT CONNECT, CREATE ON DATABASE wave TO wave;
 ```
 
 ## Create namespace
@@ -128,8 +119,9 @@ data:
       # Database connection settings
       db:
         uri: "jdbc:postgresql://your-postgres-host:5432/wave"
-        user: "wave_user"
+        user: "wave"
         password: "your_secure_password"
+        schema: "wave"
 
     # Redis configuration for caching and session management
     redis:
