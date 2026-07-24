@@ -1,4 +1,21 @@
 # Wave changelog
+1.37.0 - 23 Jul 2026
+- feature: consolidate capability toggles under wave.capabilities.* (#1098) [ca2d0ede2]
+- fix: gate wave release on master and release-* branches DEVOPS-1531 (#1072) [794dcc0eb]
+- fix(deps): upgrade Micronaut to 4.10.17 to patch jackson-databind (COMP-1957) (#1091) [ceb77640f]
+- Bugfix: do not serve freeze/mirror images via the Wave proxy token path (#1087) [979fbd02e]
+- feature: disable the ability for wave to "pull" images directly (#1089) [e8b52817e]
+- Quieten expected Platform-connectivity errors in the token watcher (#1085) [a4c6176df]
+- docs: document workflow-bound ephemeral token lifecycle (#1084) [1bfc55c30]
+
+1.36.0 - 15 Jul 2026
+- Progressive container expiration extension (#782) [a4517091a]
+- Reduce response contents to remove unneeded fields (#1073) [0718f702a]
+- chore: pin postgres containers + bump test containers (#1080) [4e5cfe271]
+
+1.35.1 - 13 Jul 2026
+- fix: make `which` available for R (bioconda) post-links in conda v2 builds (#1070) [417e43a72]
+
 1.35.0 - 1 Jul 2026
 - fix: use micromamba 2 image for conda/micromamba:v2 builds (#1065) [ddd1e8d10]
 - feat: add waveBuildNotification user preference for build email notifications (#1069) [b7822a098]

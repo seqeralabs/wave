@@ -116,8 +116,9 @@ dependencies {
     implementation 'software.amazon.awssdk:sts'
     runtimeOnly 'io.netty:netty-tcnative-boringssl-static:2.0.0.Final'
     runtimeOnly 'javax.xml.bind:jaxb-api:2.3.1'
+    testImplementation platform('org.testcontainers:testcontainers-bom:2.0.5')
     testImplementation 'org.testcontainers:testcontainers'
-    testImplementation 'org.testcontainers:postgresql'
+    testImplementation 'org.testcontainers:testcontainers-postgresql'
     testRuntimeOnly 'com.h2database:h2'
     testImplementation testFixtures('io.seqera:lib-fixtures-redis:1.1.0')
     

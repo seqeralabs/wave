@@ -49,14 +49,14 @@ class PairingConfigImpl implements PairingConfig {
     @Value('${wave.pairing.channel.timeout:5s}')
     private Duration channelTimeout
 
-    @Value('${wave.pairing.channel.awaitTimeout:100ms}')
+    @Value('${wave.pairing.channel.await-timeout:100ms}')
     private Duration channelAwaitTimeout
 
-    @Value('${wave.closeSessionOnInvalidLicenseToken:false}')
+    @Value('${wave.close-session-on-invalid-license-token:false}')
     private boolean closeSessionOnInvalidLicenseToken
 
     @Nullable
-    @Value('${wave.denyHosts}')
+    @Value('${wave.deny-hosts}')
     private List<String> denyHosts
 
     @PostConstruct

@@ -43,10 +43,10 @@ import jakarta.inject.Singleton
 @CompileStatic
 class CloudflareBlobSigningService implements BlobSigningService {
 
-    @Value('${wave.blobCache.cloudflare.secret-key}')
+    @Value('${wave.blob-cache.cloudflare.secret-key}')
     private String secretKey
 
-    @Value('${wave.blobCache.cloudflare.lifetime}')
+    @Value('${wave.blob-cache.cloudflare.lifetime}')
     private Duration lifetime
 
     @PostConstruct

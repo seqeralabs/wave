@@ -18,11 +18,34 @@
 
 package io.seqera.wave.tower.client
 
+import java.time.Duration
+import java.util.concurrent.CompletableFuture
 
+import io.seqera.wave.tower.auth.JwtAuth
+import io.seqera.wave.tower.client.cache.ClientCache
+import io.seqera.wave.tower.client.connector.TowerConnector
 import spock.lang.Specification
 import spock.lang.Unroll
 
 class TowerClientTest extends Specification{
+
+    def 'describeWorkflow should coalesce repeated lookups within the cache window'() {
+        given:
+        def connector = Mock(TowerConnector)
+        def client = new TowerClient(connector: connector, cache: new ClientCache(null), cacheShortDuration: Duration.ofSeconds(60))
+        def auth = JwtAuth.of('http://foo.com', 'tok')
+        def resp = new DescribeWorkflowResponse(workflow: new Workflow(id: 'wf-1', status: Workflow.WorkflowStatus.RUNNING))
+
+        when: 'two container tokens of the same run check the status'
+        def r1 = client.describeWorkflow('http://foo.com', auth, 100L, 'wf-1')
+        def r2 = client.describeWorkflow('http://foo.com', auth, 100L, 'wf-1')
+
+        then: 'the underlying Platform call is made only once - the second reuses the cache'
+        1 * connector.sendAsync('http://foo.com', _, auth, DescribeWorkflowResponse) >> CompletableFuture.completedFuture(resp)
+        and:
+        r1.workflow.id == 'wf-1'
+        r2.workflow.id == 'wf-1'
+    }
 
     def 'compose user info endpoint'() {
         expect:
@@ -149,5 +172,16 @@ class TowerClientTest extends Specification{
         ENDPOINT                | WORKSPACE         | WORKFLOW  | EXPECTED
         'http://foo.com'        | null              | 'abc'     | 'http://foo.com/workflow/abc/launch'
         'http://foo.com'        | 12345             | 'abc'     | 'http://foo.com/workflow/abc/launch?workspaceId=12345'
+    }
+
+    @Unroll
+    def 'should get workflow describe endpoint' () {
+        expect:
+        TowerClient.workflowDescribeEndpoint(ENDPOINT, WORKSPACE, WORKFLOW) == new URI(EXPECTED)
+
+        where:
+        ENDPOINT                | WORKSPACE         | WORKFLOW  | EXPECTED
+        'http://foo.com'        | null              | 'abc'     | 'http://foo.com/workflow/abc'
+        'http://foo.com'        | 12345             | 'abc'     | 'http://foo.com/workflow/abc?workspaceId=12345'
     }
 }
