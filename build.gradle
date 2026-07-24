@@ -210,6 +210,9 @@ test {
     environment 'QUAY_PAT', project.findProperty('QUAY_PAT') ?: environment['QUAY_PAT']
 
     systemProperty 'logback.configurationFile', 'src/test/resources/logback-test.xml'
+    // enable Basic authentication for HTTPS proxy tunnelling (CONNECT requests),
+    // required by `HttpClientFactoryProxyTest` - see also `HttpClientConfig.enableProxyAuthSchemes`
+    systemProperty 'jdk.http.auth.tunneling.disabledSchemes', ''
 
 }
 
