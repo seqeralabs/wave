@@ -52,4 +52,17 @@ class User implements MoshiSerializable {
      */
     WaveBuildNotification waveBuildNotification
 
+    /**
+     * Create a {@link User} instance carrying only the user id, so that the user name
+     * and email are not exposed when the identity is included in API responses.
+     *
+     * @param id The Tower user id, or {@code null}
+     * @return A {@link User} holding the given id and no other details
+     */
+    static User ofId(Long id) {
+        final result = new User()
+        result.id = id
+        return result
+    }
+
 }

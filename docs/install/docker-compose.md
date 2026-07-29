@@ -74,6 +74,10 @@ wave:
   tokens:
     cache:
       duration: "36h"
+    # Bind workflow-bound token lifetime to the Platform run lifecycle.
+    # Set enabled to false to keep the fixed cache.duration for all requests.
+    watcher:
+      enabled: true
   metrics:
     enabled: true
 

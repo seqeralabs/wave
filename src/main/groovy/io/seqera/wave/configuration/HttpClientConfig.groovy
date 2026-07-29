@@ -37,13 +37,13 @@ import jakarta.inject.Singleton
 @Slf4j
 class HttpClientConfig implements Retryable.Config {
 
-    @Value('${wave.httpclient.connectTimeout:20s}')
+    @Value('${wave.httpclient.connect-timeout:20s}')
     Duration connectTimeout
 
     @Value('${wave.httpclient.retry.delay:1s}')
     Duration retryDelay
 
-    @Value('${wave.httpclient.retry.maxDelay}')
+    @Value('${wave.httpclient.retry.max-delay}')
     @Nullable
     Duration retryMaxDelay
 
@@ -56,7 +56,7 @@ class HttpClientConfig implements Retryable.Config {
     @Value('${wave.httpclient.retry.jitter:0.25}')
     double retryJitter
 
-    @Value('${wave.httpclient.streamThreshold:65536}')
+    @Value('${wave.httpclient.stream-threshold:65536}')
     private int streamThreshold
 
     @PostConstruct
