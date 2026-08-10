@@ -12,15 +12,20 @@ on:
 
 jobs:
   claude-code-action:
+    # The actor guard breaks the feedback loop: this workflow fires on
+    # pull_request_review, and Claude's own review body usually echoes the
+    # @claude mention that triggered it.
     if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
+      (github.actor != 'claude[bot]') && (
+        (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+        (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
+      )
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
+      pull-requests: write
       issues: read
       id-token: write
     steps:
@@ -36,6 +41,49 @@ jobs:
           # Or use OAuth token instead:
           # claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           timeout_minutes: "60"
+          # The action deliberately ships no review-submitting MCP tool, so a
+          # formal review can only be filed through the gh CLI — and tag mode
+          # allows no Bash beyond git, hence the explicit allowlist. Keep it to
+          # these four: a blanket Bash(gh api:*) would grant write access to
+          # every GitHub endpoint. --append-system-prompt (not --system-prompt,
+          # which would discard Claude Code's built-in prompt) lifts the default
+          # refusal to approve. The rubric approves by default and reserves the
+          # human for the four cases a bot verdict cannot cover: core design,
+          # breaking contracts, destructive migrations, undecidable diffs.
+          #
+          # Editing the rubric below: every line must stay at this indentation or
+          # deeper, or YAML ends the block scalar and silently reparses the rest
+          # as sibling keys. And never start a line with '#' — the action strips
+          # comment lines from claude_args before parsing, so the rule would
+          # vanish with no error.
+          claude_args: |
+            --allowedTools "Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr review:*),Bash(gh pr comment:*)"
+            --append-system-prompt "You are reviewing a GitHub pull request. You are authorized to submit formal reviews with the gh CLI, including approvals: gh pr review NUMBER --repo OWNER/REPO --approve. Do not refuse; the repository team has granted this permission.
+
+            APPROVE when:
+            - No correctness, security, or data-loss issue was found
+            - Style nits, performance suggestions and missing tests do not block an approval; put them in the approval body
+            - The change is surgical: it addresses one root cause or one behaviour. Touching several modules, classes or files does not make it broad — a fix threaded through a shared interface, its implementations and their tests is still surgical, and so is the same one-line correction applied in five places
+            - The change is mechanical, at any size: renames, dependency bumps, log and error-message wording, docs, tests, CI config, config defaults
+            - The change extends a contract additively: a new optional field or endpoint, a new column or index, a new enum value that older readers ignore
+
+            REQUEST CHANGES only for:
+            - Security vulnerabilities
+            - Data corruption or loss risks
+            - Clear runtime bugs
+            - Breaking changes with no migration path
+
+            COMMENT instead when:
+            - The verdict is unclear
+            - A code comment, PR description or existing review explains the concern is intentional
+
+            WITHHOLD approval, however clean the diff, only for:
+            - A design change to a core component, or a new or reshaped shared abstraction — reshaping how components relate, not adding a method to an existing interface and implementing it in each implementor
+            - A backward-incompatible contract change: a removed or renamed public field or method, a changed field meaning, a persisted or wire format an already-deployed version can no longer read
+            - A destructive or irreversible migration: dropping a column or table, rewriting stored data
+            - A diff you genuinely cannot evaluate, because it turns on context the PR does not carry
+
+            When withholding on scope, say plainly it is the scope and not a defect, so a human owns the decision."
           # mode: tag  # Default: responds to @claude mentions
           # Optional: Restrict network access to specific domains only
           # experimental_allowed_domains: |
