@@ -55,6 +55,10 @@ class JacksonHelper {
                 .configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
                 .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, failOnUnknownProperties)
+                // tolerate enum values not (yet) known to Wave: map them to `null` instead of
+                // failing the whole payload — e.g. a `waveBuildNotification` value added on the
+                // Tower side would otherwise break user-info deserialization for all builds
+                .configure(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL, true)
                 .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
                 .registerModule(new JavaTimeModule())
                 .registerModule(module)

@@ -16,28 +16,23 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.request
+package io.seqera.wave.tower.client
 
-import java.time.Duration
+import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
+import groovy.transform.ToString
+import io.seqera.serde.moshi.MoshiSerializable
 
 /**
- * Define the container request token persistence operations
- * 
- * @author : jorge <jorge.aguilera@seqera.io>
+ * Model a Platform workflow response
  *
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface ContainerRequestStore {
+@EqualsAndHashCode
+@CompileStatic
+@ToString(includePackage = false, includeNames = true)
+class DescribeWorkflowResponse implements MoshiSerializable {
 
-    void put(String key, ContainerRequest request)
-
-    /**
-     * Store a request with an explicit TTL. Needed by the watcher to re-put a request with the
-     * extended (shorter, remaining) time-to-live, overriding the store's default duration.
-     */
-    void put(String key, ContainerRequest request, Duration ttl)
-
-    ContainerRequest get(String key)
-
-    void remove(String key)
+    Workflow workflow
 
 }

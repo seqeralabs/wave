@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023-2024, Seqera Labs
+ *  Copyright (c) 2023-2026, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,28 +16,26 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.request
+package io.seqera.wave.tower
 
-import java.time.Duration
+import groovy.transform.CompileStatic
 
 /**
- * Define the container request token persistence operations
- * 
- * @author : jorge <jorge.aguilera@seqera.io>
+ * User preference controlling when Wave sends a build completion email.
  *
+ * <ul>
+ *   <li>{@code ALWAYS_ON}  &mdash; notify on every build outcome (success and failure)</li>
+ *   <li>{@code ON_ERROR}   &mdash; notify only when the build fails</li>
+ *   <li>{@code ALWAYS_OFF} &mdash; never notify</li>
+ * </ul>
+ *
+ * The value is provided by Tower in the user-info payload. A {@code null} value
+ * (older Tower clients that don't send the field, or a value not known to Wave)
+ * is treated as {@link #ALWAYS_ON}, preserving the historical behaviour.
  */
-interface ContainerRequestStore {
-
-    void put(String key, ContainerRequest request)
-
-    /**
-     * Store a request with an explicit TTL. Needed by the watcher to re-put a request with the
-     * extended (shorter, remaining) time-to-live, overriding the store's default duration.
-     */
-    void put(String key, ContainerRequest request, Duration ttl)
-
-    ContainerRequest get(String key)
-
-    void remove(String key)
-
+@CompileStatic
+enum WaveBuildNotification {
+    ALWAYS_ON,
+    ON_ERROR,
+    ALWAYS_OFF
 }

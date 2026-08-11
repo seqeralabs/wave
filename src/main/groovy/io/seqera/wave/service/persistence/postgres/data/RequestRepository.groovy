@@ -38,4 +38,13 @@ interface RequestRepository extends CrudRepository<RequestRow, String> {
             id = :id
     ''')
     void updateContainerDigests(String id, String source, String target)
+
+    @Query('''
+        UPDATE wave_request
+        SET
+            data = data || jsonb_build_object('expiration', to_jsonb(:expiration))
+        WHERE
+            id = :id
+    ''')
+    void updateContainerExpiration(String id, String expiration)
 }

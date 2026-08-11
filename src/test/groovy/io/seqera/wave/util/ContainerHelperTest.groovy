@@ -253,10 +253,34 @@ class ContainerHelperTest extends Specification {
         result.cached == null
         result.freeze == null
 
-        where: 
+        where:
         NEW_BUILD   | EXPECTED_BUILD_ID
         false       | null
         true        | '123'
+    }
+
+    @Unroll
+    def 'should create response v1 for durable request returning the direct image' () {
+        given:
+        def data = ContainerRequest.of(
+                containerImage: 'quay.io/org/container:1.0',
+                freeze: IS_FREEZE,
+                type: TYPE )
+        def token = new TokenData('123abc', Instant.now().plusSeconds(100))
+        def target = 'wave.com/wt/123abc/org/container:1.0'
+
+        when:
+        def result = ContainerHelper.makeResponseV1(data, token, target)
+        then:
+        // freeze/mirror images must resolve to the direct target-registry image,
+        // not the Wave proxy token url (which no longer serves durable images)
+        result.targetImage == 'quay.io/org/container:1.0'
+        result.containerImage == 'quay.io/org/container:1.0'
+
+        where:
+        TYPE                          | IS_FREEZE
+        null                          | true
+        ContainerRequest.Type.Mirror  | false
     }
 
     @Unroll
@@ -634,6 +658,7 @@ class ContainerHelperTest extends Specification {
                 WORKDIR /opt/wave
 
                 RUN pixi init --import /opt/wave/conda.yml \\
+                    && pixi add conda-forge::which \\
                     && pixi add conda-forge::procps-ng \\
                     && pixi shell-hook > /shell-hook.sh \\
                     && echo 'exec "$@"' >> /shell-hook.sh \\
@@ -686,6 +711,7 @@ class ContainerHelperTest extends Specification {
                 WORKDIR /opt/wave
                  
                 RUN pixi init --import /opt/wave/conda.yml \\
+                    && pixi add conda-forge::which \\
                     && pixi add foo::one bar::two \\
                     && pixi shell-hook > /shell-hook.sh \\
                     && echo 'exec "$@"' >> /shell-hook.sh \\
@@ -730,8 +756,12 @@ class ContainerHelperTest extends Specification {
         then:
         result =='''\
                 FROM mambaorg/micromamba:2-amazon2023 AS build
+                USER root
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
-                RUN (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
+                # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
+                RUN micromamba install -y -n base conda-forge::which \\
+                    && ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which \\
+                    && (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /tmp/conda.yml)) \\
@@ -768,8 +798,12 @@ class ContainerHelperTest extends Specification {
         then:
         result =='''\
                 FROM mambaorg/micromamba:2-amazon2023 AS build
+                USER root
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
-                RUN (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
+                # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
+                RUN micromamba install -y -n base conda-forge::which \\
+                    && ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which \\
+                    && (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /tmp/conda.yml)) \\
@@ -811,8 +845,12 @@ class ContainerHelperTest extends Specification {
         then:
         result =='''\
                 FROM mambaorg/micromamba:2.0.0 AS build
+                USER root
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
-                RUN (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
+                # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
+                RUN micromamba install -y -n base conda-forge::which \\
+                    && ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which \\
+                    && (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /tmp/conda.yml)) \\
@@ -848,8 +886,12 @@ class ContainerHelperTest extends Specification {
         then:
         result =='''\
                 FROM mambaorg/micromamba:2-amazon2023 AS build
+                USER root
+                # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
                 RUN \\
-                    (micromamba install -y -n base -c conda-forge -c bioconda -f https://foo.com/lock.yml > /tmp/mamba.log 2>&1 \\
+                    micromamba install -y -n base conda-forge::which \\
+                    && ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which \\
+                    && (micromamba install -y -n base -c conda-forge -c bioconda -f https://foo.com/lock.yml > /tmp/mamba.log 2>&1 \\
                     && cat /tmp/mamba.log \\
                     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
                         && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -c conda-forge -c bioconda -f https://foo.com/lock.yml)) \\

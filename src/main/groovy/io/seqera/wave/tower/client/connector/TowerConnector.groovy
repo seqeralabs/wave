@@ -67,16 +67,16 @@ abstract class TowerConnector {
     @Inject
     private JwtAuthStore jwtAuthStore
 
-    @Value('${wave.pairing.channel.maxAttempts:6}')
+    @Value('${wave.pairing.channel.max-attempts:6}')
     private int maxAttempts
 
-    @Value('${wave.pairing.channel.retryBackOffBase:3}')
+    @Value('${wave.pairing.channel.retry-back-off-base:3}')
     private int retryBackOffBase
 
-    @Value('${wave.pairing.channel.retryBackOffDelay:325}')
+    @Value('${wave.pairing.channel.retry-back-off-delay:325}')
     private int retryBackOffDelay
 
-    @Value('${wave.pairing.channel.retryMaxDelay:40s}')
+    @Value('${wave.pairing.channel.retry-max-delay:40s}')
     private Duration retryMaxDelay
 
     @Inject

@@ -222,6 +222,62 @@ class CondaHelperTest extends Specification {
         result.contains('micromamba install -y -n base foo::one bar::two')
     }
 
+    def 'should default to v2 mamba image when condaOpts has no mambaImage'() {
+        given:
+        def CHANNELS = ['conda-forge']
+        def PACKAGES = ['bwa=0.7.15']
+        // condaOpts provided but without an explicit mambaImage (the common request shape)
+        def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
+
+        when:
+        def result = CondaHelper.containerFileV2(packages, null, false)
+
+        then:
+        result.contains('FROM mambaorg/micromamba:2-amazon2023 AS build')
+        result.contains('micromamba install -y -n base foo::one bar::two')
+    }
+
+    def 'should override a v1 mamba image with the v2 default in v2'() {
+        given:
+        def CHANNELS = ['conda-forge']
+        def PACKAGES = ['bwa=0.7.15']
+        // client (e.g. Nextflow) sends a bumped v1 default image; v2 build must still use micromamba 2
+        def CONDA_OPTS = new CondaOpts([mambaImage: MAMBA_IMAGE])
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
+
+        when:
+        def result = CondaHelper.containerFileV2(packages, null, false)
+
+        then:
+        result.contains("FROM ${EXPECTED} AS build")
+
+        where:
+        MAMBA_IMAGE                          | EXPECTED
+        'mambaorg/micromamba:1.5.10-noble'   | 'mambaorg/micromamba:2-amazon2023'  // current v1 default
+        'mambaorg/micromamba:1.5.11-noble'   | 'mambaorg/micromamba:2-amazon2023'  // hypothetical bumped v1 tag
+        'mambaorg/micromamba:1-noble'        | 'mambaorg/micromamba:2-amazon2023'
+        'mambaorg/micromamba:2.0.0'          | 'mambaorg/micromamba:2.0.0'         // explicit v2 image kept
+        'quay.io/custom/base:latest'         | 'quay.io/custom/base:latest'        // custom image kept
+    }
+
+    @spock.lang.Unroll
+    def 'should detect micromamba v1 image: #image -> #expected'() {
+        expect:
+        CondaHelper.isMicromambaV1(image) == expected
+        where:
+        image                                | expected
+        'mambaorg/micromamba:1.5.10-noble'   | true
+        'mambaorg/micromamba:1.5.11-noble'   | true
+        'mambaorg/micromamba:1-noble'        | true
+        'my.registry/mambaorg/micromamba:1.5.10-noble' | true
+        'mambaorg/micromamba:2-amazon2023'   | false
+        'mambaorg/micromamba:2.0.0'          | false
+        'quay.io/custom/base:latest'         | false
+        null                                 | false
+        ''                                   | false
+    }
+
     def 'should throw exception for non-CONDA package type in v2'() {
         given:
         def packages = new PackagesSpec(type: PackagesSpec.Type.CRAN, entries: ['dplyr'])

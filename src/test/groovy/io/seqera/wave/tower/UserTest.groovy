@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023-2024, Seqera Labs
+ *  Copyright (c) 2023-2026, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,36 +16,24 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.configuration
+package io.seqera.wave.tower
 
-import java.time.Duration
-import io.micronaut.core.annotation.Nullable
+import spock.lang.Specification
 
-import io.micronaut.context.annotation.ConfigurationProperties
-import io.micronaut.core.bind.annotation.Bindable
-/**
- * Configuration to be used by a TokenService
- *
- * @author : jorge <jorge.aguilera@seqera.io>
- *
- */
-@ConfigurationProperties('wave.tokens')
-interface TokenConfig {
+class UserTest extends Specification {
 
-    Cache getCache()
-
-    @ConfigurationProperties('cache')
-    interface Cache {
-
-        @Bindable(defaultValue = "36h")
-        @Nullable
-        Duration getDuration()
-
-        @Deprecated
-        @Bindable(defaultValue = "10000")
-        @Nullable
-        int getMaxSize()
-
+    def 'waveBuildNotification is null when not set'() {
+        given:
+        def user = new User(id: 1L, userName: 'alice', email: 'alice@example.com')
+        expect:
+        user.waveBuildNotification == null
     }
 
+    def 'waveBuildNotification stores enum value'() {
+        given:
+        def user = new User(id: 1L, userName: 'alice', email: 'alice@example.com',
+                waveBuildNotification: WaveBuildNotification.ON_ERROR)
+        expect:
+        user.waveBuildNotification == WaveBuildNotification.ON_ERROR
+    }
 }

@@ -41,7 +41,7 @@ class StsClientConfig implements Retryable.Config {
     @Value('${wave.aws.sts.retry.delay:1s}')
     Duration retryDelay
 
-    @Value('${wave.aws.sts.retry.maxDelay:10s}')
+    @Value('${wave.aws.sts.retry.max-delay:10s}')
     @Nullable
     Duration retryMaxDelay
 

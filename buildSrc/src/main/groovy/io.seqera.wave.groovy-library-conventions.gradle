@@ -21,4 +21,18 @@ micronaut {
     }
 }
 
+// Profile B: this library runs inside a Micronaut app on the Java 25 service runtime
+// (Micronaut 5 requires it), so it targets Java 25 rather than the Java 17 default.
+// --release is dropped since it cannot coexist with -source/-target on the same javac
+// task. See seqeralabs/adr#51.
+tasks.withType(JavaCompile).configureEach {
+    options.release = null
+    sourceCompatibility = '25'
+    targetCompatibility = '25'
+}
+tasks.withType(GroovyCompile).configureEach {
+    sourceCompatibility = '25'
+    targetCompatibility = '25'
+}
+
 group = 'io.seqera'
