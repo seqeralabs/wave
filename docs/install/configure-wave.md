@@ -3,7 +3,7 @@ title: Configure Wave
 description: Prepare a self-hosted Wave deployment for production and configure optional features.
 ---
 
-Configure a self-hosted Wave deployment for production and add optional features. Complete the production checklist before you serve traffic. Configure optional features such as email notifications and build caching as needed.
+Prepare a self-hosted Wave deployment for production and add optional features such as email notifications and build caching. Complete the production checklist before you serve traffic.
 
 :::info
 See the [Configuration reference](reference.md) for the full list of configuration options for self-hosted Wave deployments.
@@ -29,7 +29,7 @@ For a regulated deployment that must also stop Wave from serving images directly
 
 ### Terminate TLS
 
-Wave does not terminate TLS itself. Front it with an ingress or load balancer that holds the certificate. For example, an Application Load Balancer (ALB) with an AWS Certificate Manager (ACM) certificate matching the Wave hostname, and a Route 53 alias record pointing at the load balancer. Confirm `wave.server.url` uses the `https://` hostname clients reach.
+Wave does not terminate TLS itself. Front it with an ingress or load balancer that holds the certificate. For example, use an Application Load Balancer (ALB) with an AWS Certificate Manager (ACM) certificate that matches the Wave hostname, and a Route 53 alias record that points at the load balancer. Confirm `wave.server.url` uses the `https://` hostname clients reach.
 
 :::note
 Private CA and self-signed certificate handling is not yet documented. If your registries or Platform use a private CA, contact Seqera support.
@@ -62,7 +62,7 @@ Builds and augmented images accumulate. Set cleanup and retention so storage sta
 
 Reserve about 2 GB memory and 0.2 CPU per Wave instance, with limits of 4 GB and 1 CPU, matching the sizing in the install paths. Run multiple replicas behind the load balancer for availability.
 
-Set `WAVE_JVM_OPTS` to match the container limit. The image defaults to an 850 MB heap whatever the limit says, so a 4 GB container leaves most of its memory unused until you override it. Setting the variable replaces the whole default option set rather than adding to it, so copy the defaults from `src/main/jib/launch.sh` and adjust `-Xmx`.
+Set `WAVE_JVM_OPTS` to match the container limit. The image defaults to an 850 MB heap regardless of the container limit. A 4 GB container leaves most of its memory unused until you override it. Setting the variable replaces the whole default option set rather than adding to it. Copy the defaults from `src/main/jib/launch.sh` and adjust `-Xmx`.
 
 Size the build node pool and cap concurrency with `wave.job-manager.max-running-jobs` and a build-namespace `ResourceQuota`.
 
@@ -72,7 +72,7 @@ Build pods run user-supplied Dockerfiles. On a build-enabled deployment, apply a
 
 ### Review security headers
 
-Wave sends HTTP security headers (HSTS, frame options, content-type options, referrer policy, permissions policy, and a content security policy) by default. Review them against your environment and adjust the content security policy if you front Wave with additional origins. See [Security headers](reference.md#security-headers) in the Configuration reference.
+Wave sends HTTP security headers by default: HTTP Strict Transport Security (HSTS), frame options, content-type options, referrer policy, permissions policy, and a content security policy. Review them against your environment and adjust the content security policy if you front Wave with additional origins. See [Security headers](reference.md#security-headers) in the Configuration reference.
 
 ## Email notifications
 
@@ -169,7 +169,7 @@ Wave runs scans with its bundled Trivy-based scanner image. Override the image w
 
 ## Build layer cache
 
-`wave.build.cache` takes either a container repository or an S3 path. [Enable Wave builds](aws-build.md) sets it to the ECR repository created there, which is the default choice on AWS; add a [lifecycle policy](https://docs.aws.amazon.com/AmazonECR/latest/userguide/LifecyclePolicies.html) expiring untagged images to keep its storage bounded.
+`wave.build.cache` takes either a container repository or an S3 path. [Enable Wave builds](aws-build.md) sets it to the ECR repository created there, which is the default choice on AWS. Add a [lifecycle policy](https://docs.aws.amazon.com/AmazonECR/latest/userguide/LifecyclePolicies.html) that expires untagged images to keep its storage bounded.
 
 To use S3 as the BuildKit cache backend instead, point `wave.build.cache` at a bucket path:
 
@@ -181,7 +181,7 @@ wave:
     cache-bucket-upload-parallelism: 8   # Optional, controls parallel S3 uploads
 ```
 
-S3 cache needs no static credentials. Build pods pick up the AWS identity of their node or service account, so extend the IRSA policy from [Enable Wave builds](aws-build.md#grant-wave-access-to-aws-apis-with-irsa) with `s3:PutObject`, `s3:GetObject`, `s3:DeleteObject`, `s3:ListBucket`, `s3:AbortMultipartUpload`, `s3:ListMultipartUploadParts`, and `s3:ListBucketMultipartUploads` on the cache path. For the full set of build cache settings, see [Container build process](reference.md#container-build-process).
+S3 cache needs no static credentials. Build pods pick up the AWS identity of their node or service account. Extend the IRSA policy from [Enable Wave builds](aws-build.md#grant-wave-access-to-aws-apis-with-irsa) with `s3:PutObject`, `s3:GetObject`, `s3:DeleteObject`, `s3:ListBucket`, `s3:AbortMultipartUpload`, `s3:ListMultipartUploadParts`, and `s3:ListBucketMultipartUploads` on the cache path. For the full set of build cache settings, see [Container build process](reference.md#container-build-process).
 
 ## Client IP address resolution
 

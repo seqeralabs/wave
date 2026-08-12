@@ -10,12 +10,13 @@ Install Wave Lite on a Kubernetes cluster you already operate. This installs con
 You need the following:
 
 - A Kubernetes cluster, version 1.31 or later, with permission to create namespaces, deployments, and services.
-- Cluster capacity for each Wave pod: the deployment below requests 2 GB RAM and 0.2 CPU per pod and limits it to 4 GB and 1 CPU. Scale that by your replica count.
+- Cluster capacity for each Wave pod. The deployment in this guide requests 2 GB RAM and 0.2 CPU per pod and limits it to 4 GB and 1 CPU. Scale that by your replica count.
 - 10 GB storage, plus disk space for container images and temporary files.
 - PostgreSQL 16 or later, reachable from the cluster.
 - Redis 6.2 or later, reachable from the cluster.
 - A Seqera Platform deployment and its endpoint URL.
 - Access to the Wave container image from `cr.seqera.io`, using credentials provided by Seqera.
+
 :::
 
 :::tip
@@ -89,7 +90,7 @@ kubectl create secret docker-registry seqera-reg-creds \
 
 ## Configure Wave
 
-Create a ConfigMap with Wave's configuration. Wave loads a single YAML document, so this is the whole of `config.yml` — add settings inside this block rather than appending a second `wave:` section. Update the database, Redis, Platform, and registry values to match your environment.
+Create a ConfigMap that holds the Wave configuration. The ConfigMap is the entire `config.yml` because Wave loads a single YAML document. Add settings inside this block rather than appending a second `wave:` section. Update the database, Redis, Platform, and registry values to match your environment.
 
 :::warning
 This ConfigMap contains sensitive values. Use a Kubernetes Secret for credentials and reference it from the deployment rather than embedding secrets in the ConfigMap. See the [Kubernetes Secrets documentation](https://kubernetes.io/docs/concepts/configuration/secret/).
@@ -155,15 +156,15 @@ The `lite` entry in `MICRONAUT_ENVIRONMENTS`, set in the deployment in a later s
 
 ## Registry credentials
 
-Wave Lite pulls images during augmentation, and uses one of two credential sources per request:
+Wave Lite pulls images during augmentation and uses one of two credential sources per request:
 
 - **Platform workspace credentials**: credentials a user adds to their Seqera Platform workspace. Wave uses these for requests that carry a Platform identity.
-- **Server-side static credentials**: the `wave.registries.<host>` entries in the ConfigMap above. Wave uses these for anonymous requests and for registries the operator owns.
+- **Server-side static credentials**: the `wave.registries.<host>` entries in the `wave-cfg` ConfigMap. Wave uses these for anonymous requests and for registries the operator owns.
 
 For all registry options, see [Container registry](reference.md#container-registry).
 
 :::warning
-Anonymous access is enabled by default, so any client that can reach Wave can use the operator credentials to pull through it. Disable it with `wave.capabilities.anonymous-access: false` before you expose the service — see [Require authentication](configure-wave.md#require-authentication).
+Anonymous access is enabled by default. Any client that can reach Wave can use the operator credentials to pull through it. Disable it with `wave.capabilities.anonymous-access: false` before you expose the service. See [Require authentication](configure-wave.md#require-authentication).
 :::
 
 ## Create the deployment
@@ -259,7 +260,7 @@ spec:
 
 Wave must be reachable from Seqera Platform and from your Nextflow compute environments. Front the service with an ingress and terminate TLS at the ingress or load balancer. Wave does not terminate TLS itself.
 
-This example uses the AWS Load Balancer Controller. `target-type: ip` is what lets it route to the `ClusterIP` service defined above — with the default `instance` target type, change that service to `NodePort`. Replace the certificate ARN with your own:
+This example uses the AWS Load Balancer Controller. `target-type: ip` lets it route to the `ClusterIP` service defined earlier. With the default `instance` target type, change that service to `NodePort`. Replace the certificate ARN with your own:
 
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -299,10 +300,10 @@ kubectl apply -f wave.yaml
 kubectl rollout status deployment/wave -n wave
 ```
 
-Then configure your Seqera Platform deployment to use the Wave endpoint by setting the Wave server URL in `tower.yml` ([Platform Wave configuration](https://docs.seqera.io/platform-enterprise/latest/enterprise/configuration/wave)).
+Then configure your Seqera Platform deployment to use the Wave endpoint by setting the Wave server URL in `tower.yml`. See [Platform Wave configuration](https://docs.seqera.io/platform-enterprise/latest/enterprise/configuration/wave).
 
 ## Verify your installation
 
 Confirm the service is live and functional. See [Verify your installation](post-install.md) for the `/service-info` check and the Wave CLI functional checks.
 
-When Wave is running and verified, continue to the [production checklist](configure-wave.md#production-checklist) to prepare the deployment for production. Wave Lite has no AWS dependency and runs on any conformant Kubernetes distribution, though only EKS is validated — and only EKS can be extended to the full Wave configuration.
+When Wave is running and verified, continue to the [production checklist](configure-wave.md#production-checklist) to prepare the deployment for production. Wave Lite has no AWS dependency and runs on any conformant Kubernetes distribution, though only EKS is validated. Only an EKS deployment can be extended to the full Wave configuration.

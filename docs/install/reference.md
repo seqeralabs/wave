@@ -85,7 +85,7 @@ The `wave.capabilities.*` flags are installation-level toggles for optional Wave
 `wave.capabilities.anonymous-access` *(optional)*
 : When `true`, anonymous (unauthenticated) users can access the Wave server (default: `true`).
   Set to `false` to require authenticated access, so that every request must carry a Platform-issued token.
-  Legacy alias: `wave.allowAnonymous`. Prefer the canonical key; the alias is still honored.
+  Legacy alias: `wave.allowAnonymous`. Wave still honors the alias, but prefer the canonical key.
 
 `wave.capabilities.ephemeral-token` *(optional)*
 : When `true`, Wave can provision a container by pulling an existing image directly, applying any container configuration on the fly (the augmentation path) (default: `true`).
@@ -106,7 +106,7 @@ You must specify all repositories used in your Wave installation.
 
 The following examples show standard formats for known registries, but you can customize the registry name (for example, change `azurecr.io` to `seqeralabs.azurecr.io`).
 
-The environment variables noted below are not read directly by Wave: they take effect only where your `config.yml` interpolates them, as in `username: "${DOCKER_USER:}"`. Setting `DOCKER_USER` without such an entry has no effect.
+Wave does not read the environment variables in this section directly. They take effect only where your `config.yml` interpolates them, as in `username: "${DOCKER_USER:}"`. Setting `DOCKER_USER` without such an entry has no effect.
 
 Configure container registry authentication with the following options.
 
@@ -141,7 +141,7 @@ Configure container registry authentication with the following options.
 
 ## Registry pre-creation
 
-Wave pushes with BuildKit for builds and Skopeo for mirrors, so whether a target repository must exist beforehand is the registry's rule, not Wave's. If the registry requires pre-creation and the path is missing, the push fails partway through the layer upload. See [Registry push and authentication failures](../troubleshoot.md#registry-push-and-authentication-failures) to diagnose one.
+Wave pushes with BuildKit for builds and Skopeo for mirrors. The registry, not Wave, determines whether a target repository must exist before the first push. If the registry requires pre-creation and the path is missing, the push fails partway through the layer upload. See [Registry push and authentication failures](../troubleshoot.md#registry-push-and-authentication-failures) to diagnose one.
 
 | Registry | Pre-creation | Notes |
 | --- | --- | --- |
@@ -149,7 +149,7 @@ Wave pushes with BuildKit for builds and Skopeo for mirrors, so whether a target
 | Docker Hub | Not required | Repositories auto-create in your user or organization namespace. Repository-count and pull rate limits apply. |
 | GitHub Container Registry | Not required | Auto-creates under the user or organization namespace; visibility inherits from the organization's package settings. |
 | Google Artifact Registry | Partial | Create the repository with `gcloud artifacts repositories create`; image paths inside it auto-create. |
-| Google Container Registry | Not required | Auto-creates on push. Being phased out — target Artifact Registry for new deployments. |
+| Google Container Registry | Not required | Auto-creates on push. Being phased out. Target Artifact Registry for new deployments. |
 | Azure Container Registry | Partial | The ACR instance must exist; image paths inside it auto-create. Wave needs the `AcrPush` role. |
 | Harbor | Partial | Create the project through the UI or API; images inside it auto-create if project policy permits. |
 
@@ -396,7 +396,7 @@ Configure Kubernetes-specific settings for Wave. Build and scan processes share 
 
 ## Container scan process
 
-Configure Wave's vulnerability scanning process, which uses a [Trivy Docker image](https://hub.docker.com/r/aquasec/trivy) with customizable tags and severity levels.
+Configure the Wave vulnerability scanning process, which uses a [Trivy Docker image](https://hub.docker.com/r/aquasec/trivy) with customizable tags and severity levels.
 
 `wave.scan.image.name`  *(optional)*
 : Container image used for security scanning (default: `public.cr.seqera.io/wave/scanner:v1-0.65.0-oras-1.3.0`).
@@ -426,7 +426,7 @@ Configure Wave scan process resource requirements for Kubernetes deployments.
 
 ## Container mirror process
 
-Configure Kubernetes resource requirements for Wave's container mirroring operations.
+Configure Kubernetes resource requirements for Wave container mirroring operations.
 
 `wave.mirror.k8s.resources.requests.cpu` *(optional)*
 : CPU resources requested for mirror Kubernetes pods.
@@ -442,7 +442,7 @@ Configure Kubernetes resource requirements for Wave's container mirroring operat
 
 ## Proxy cache
 
-Configure Wave's in-memory proxy cache for registry responses.
+Configure the Wave in-memory proxy cache for registry responses.
 
 `wave.proxy-cache.enabled` *(optional)*
 : When `true`, activates the proxy cache (default: `false`).
@@ -478,7 +478,7 @@ These options take effect only when the `rate-limit` entry is included in the `M
 
 ## Security headers
 
-Wave sends HTTP security headers on all responses by default. Configure them with the following options:
+Wave sends HTTP security headers on all responses by default. Configure them with the following options.
 
 `wave.security.http-headers.enabled` *(optional)*
 : When `true`, Wave adds security headers to HTTP responses (default: `true`).
@@ -628,7 +628,7 @@ Static credentials (`access-key` and `secret-key`) are currently required for bl
 
 Configure how Wave sends email notifications.
 
-Email delivery requires `mail` in `MICRONAUT_ENVIRONMENTS`. Add `aws-ses` as well to send through Amazon SES with IAM authentication, in which case only `mail.from` applies and the `mail.smtp.*` settings are ignored.
+Email delivery requires `mail` in `MICRONAUT_ENVIRONMENTS`. Add `aws-ses` as well to send through Amazon SES with IAM authentication. In that case, only `mail.from` applies and the `mail.smtp.*` settings are ignored.
 
 `mail.from` *(required when mail is enabled)*
 : Sender email address for Wave notifications.

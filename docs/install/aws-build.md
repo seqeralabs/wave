@@ -7,6 +7,16 @@ The full Wave configuration is a Wave Lite deployment on Amazon EKS with on-dema
 
 Build, mirror, and scan are independent toggles. Enable any subset, for example mirror without build. Scan and freeze depend on the build pipeline. With `build.enabled: false`, both are unavailable.
 
+:::info[**Prerequisites**]
+
+You need the following:
+
+- A Wave Lite deployment running on an Amazon EKS cluster (see [Install Wave Lite on Kubernetes](kubernetes-lite.md)).
+- Permission to create EFS, ECR, S3, IAM, and node-group resources in the cluster's AWS account.
+- The AWS CLI and `kubectl`, authenticated against the account.
+
+:::
+
 :::tip
 The Kubernetes manifests in this guide assemble into a single file. Save each YAML block into `wave-build.yaml` in the order shown, separated by `---`, then apply the file once at the end. The AWS CLI steps (ECR, S3, and IRSA) run on their own and are not part of this file.
 :::
@@ -22,18 +32,8 @@ In addition to the EKS cluster, managed database, and Redis that your Wave Lite 
 | Amazon Elastic File System (EFS) and its CSI driver | ReadWriteMany build workspace shared across build pods. |
 | Amazon Elastic Container Registry (ECR) repositories | One for built images, one for the BuildKit layer cache. |
 | Amazon S3 bucket | Build logs, build lock files, and scan reports. |
-| IAM OpenID Connect (OIDC) provider and IAM Roles for Service Accounts (IRSA) role | Wave's AWS identity, used for S3 access and STS role assumption from the cluster. |
+| IAM OpenID Connect (OIDC) provider and IAM Roles for Service Accounts (IRSA) role | The AWS identity for the Wave service, used for S3 access and STS role assumption from the cluster. |
 | Dedicated build node group | Isolates build workloads. Label its nodes `service=wave-build` (and `service=wave-build-arm64` for ARM) to match the node selector. |
-
-:::info[**Prerequisites**]
-
-You need the following:
-
-- A Wave Lite deployment running on an Amazon EKS cluster (see [Install Wave Lite on Kubernetes](kubernetes-lite.md)).
-- Permission to create EFS, ECR, S3, IAM, and node-group resources in the cluster's AWS account.
-- The AWS CLI and `kubectl`, authenticated against the account.
-
-:::
 
 ## Set the shell variables
 
@@ -69,7 +69,7 @@ aws --region "$AWS_REGION" ecr create-repository --repository-name wave/build
 aws --region "$AWS_REGION" ecr create-repository --repository-name wave/cache
 ```
 
-ECR does not auto-create repositories, so both must exist before Wave's first push. If you point builds or mirroring at a registry other than ECR, check its rules first: see [Registry pre-creation](reference.md#registry-pre-creation) for the per-registry matrix, and [Registry push and authentication failures](../troubleshoot.md#registry-push-and-authentication-failures) when a push fails partway through.
+ECR does not auto-create repositories. Both must exist before Wave first pushes to them. If you point builds or mirroring at a registry other than ECR, check its rules first. See [Registry pre-creation](reference.md#registry-pre-creation) for the per-registry matrix, and [Registry push and authentication failures](../troubleshoot.md#registry-push-and-authentication-failures) when a push fails partway through.
 
 ## Create the S3 bucket
 
@@ -88,9 +88,9 @@ IRSA gives the Wave pod its AWS identity. Wave uses it directly for S3 (build lo
 - An IAM access key pair. Attach the ECR statements of the policy in this section to that IAM user.
 - The ARN of an IAM role whose trust policy allows the Wave role to call `sts:AssumeRole`. Attach the ECR statements to that role.
 
-IRSA requires an IAM OIDC provider for the cluster, and the mechanics of associating a role with a service account are AWS's, not Wave's: see [Assign IAM roles to Kubernetes service accounts](https://docs.aws.amazon.com/eks/latest/userguide/associate-service-account-role.html). What follows is the Wave-specific part — which permissions to grant, and which service account to bind them to.
+IRSA requires an IAM OIDC provider for the cluster. For the mechanics of associating a role with a service account, see [Assign IAM roles to Kubernetes service accounts](https://docs.aws.amazon.com/eks/latest/userguide/associate-service-account-role.html) in the AWS documentation. This section covers the Wave-specific part: which permissions to grant, and which service account to bind them to.
 
-Author the two policy documents shown below, then create and attach the role. The `describe-cluster` call prints the OIDC issuer URL that `seqera-wave-role.json` needs:
+Author the two policy documents that follow, then create and attach the role. The `describe-cluster` call prints the OIDC issuer URL that `seqera-wave-role.json` needs:
 
 ```bash
 aws --region "$AWS_REGION" eks describe-cluster \
@@ -199,7 +199,7 @@ metadata:
     eks.amazonaws.com/role-arn: arn:aws:iam::<aws-account-id>:role/<wave-config-name>
 ```
 
-Only the Wave service pod uses this role, through the `wave-sa` service account. Build, scan, and mirror pods run as `wave-build-sa`, which needs no AWS identity — Wave writes registry credentials into the shared build workspace for them. If IRSA is unavailable, attach an EC2 instance profile carrying the same policy to the node group that runs the Wave service pod.
+Only the Wave service pod uses this role, through the `wave-sa` service account. Build, scan, and mirror pods run as `wave-build-sa`, which needs no AWS identity. Wave writes registry credentials into the shared build workspace for them. If IRSA is unavailable, attach an EC2 instance profile carrying the same policy to the node group that runs the Wave service pod.
 
 Two rules matter here, on top of the [credential sources](kubernetes-lite.md#registry-credentials) Wave Lite already uses:
 
@@ -228,7 +228,7 @@ parameters:
 
 ### Persistent volumes and claims
 
-The Wave service pod and the build pods each mount the workspace, and they run in different namespaces. Persistent volume claims are namespaced, so the claim must exist in **both** `wave` and `wave-build` — a claim only in `wave` leaves every build, scan, and mirror pod stuck in `Pending`. Create one volume and one claim per namespace, all pointing at the same EFS file system:
+The Wave service pod and the build pods each mount the workspace, and they run in different namespaces. Because persistent volume claims are namespaced, the claim must exist in both `wave` and `wave-build`. A claim only in `wave` leaves every build, scan, and mirror pod stuck in `Pending`. Create one volume and one claim per namespace, all pointing at the same EFS file system:
 
 ```yaml
 apiVersion: v1
@@ -309,9 +309,9 @@ Configuration notes:
 
 ## Create the build RBAC
 
-Wave's build service creates and manages build pods. The following manifest creates two resources:
+The Wave build service creates and manages build pods. The following manifest creates two resources:
 
-- `wave-build-sa`: the service account the build, scan, and mirror pods run as. It is referenced by `wave.build.k8s.service-account` in [Enable build features](#enable-build-features) and needs no Kubernetes API permissions of its own.
+- `wave-build-sa`: the service account the build, scan, and mirror pods run as. The `wave.build.k8s.service-account` setting in [Enable build features](#enable-build-features) references it. It needs no Kubernetes API permissions of its own.
 - A ClusterRole and binding that grant `wave-sa` (the Wave service, in the `wave` namespace) permission to create and monitor build jobs:
 
 ```yaml
@@ -356,7 +356,7 @@ The ClusterRole grants these permissions cluster-wide. For least privilege, repl
 
 ## Enable build features
 
-Update the `wave-cfg` ConfigMap from your Wave Lite install to enable build, mirror, and scan and to configure the build subsystem. Keep the existing database, Redis, and Platform settings. Set the build repositories to the ECR repositories you created, point the workspace at the EFS mount, and add a `wave.registries` entry for the ECR host so Wave can authenticate pushes to the build and cache repositories. Without this entry, builds fail with a `Missing credentials for container repository` error:
+Update the `wave-cfg` ConfigMap from your Wave Lite install to enable build, mirror, and scan and to configure the build subsystem. Keep the existing database, Redis, and Platform settings. Set the build repositories to the ECR repositories you created and point the workspace at the EFS mount. Add a `wave.registries` entry for the ECR host so Wave can authenticate pushes to the build and cache repositories. Without this entry, builds fail with a `Missing credentials for container repository` error:
 
 ```yaml
 kind: ConfigMap
@@ -428,7 +428,7 @@ data:
           enabled: false
 ```
 
-Wave ships working defaults for the build tool images and the build timeout, so the ConfigMap does not set them. To override one, or to tune the build subsystem further, see [Container build process](reference.md#container-build-process).
+Because Wave ships working defaults for the build tool images and the build timeout, the ConfigMap does not set them. To override one, or to tune the build subsystem further, see [Container build process](reference.md#container-build-process).
 
 To build ARM (Graviton) images, route `linux/arm64` builds to an ARM node group with the `node-selector` shown earlier. For cache setup (ECR cache repository, S3 cache authentication), see [Configure Wave](configure-wave.md).
 
@@ -438,7 +438,7 @@ If your build nodes run Bottlerocket, BuildKit needs user namespaces enabled bef
 
 ## Update the Wave deployment
 
-Update your Wave Lite deployment so it uses the IRSA service account, pulls the Wave image with the `seqera-reg-creds` secret created during the Wave Lite install, mounts the EFS workspace, and runs with the build Micronaut environments:
+Update your Wave Lite deployment to use the IRSA service account, mount the EFS workspace, and run with the build Micronaut environments. The image pull still uses the `seqera-reg-creds` secret created during the Wave Lite install:
 
 ```yaml
 apiVersion: apps/v1

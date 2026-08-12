@@ -41,9 +41,9 @@ When Wave cannot push a built or mirrored image, or cannot authenticate to a reg
 
 ## Builds fail on Bottlerocket nodes
 
-BuildKit requires user namespaces, and Bottlerocket sets `user.max_user_namespaces=0` by default, so every build fails on an otherwise correct [Wave build deployment](install/aws-build.md). Raise the limit on your build nodes — `63359` is a reasonable value. Values that are too low cap concurrent build capacity and cause intermittent failures.
+BuildKit requires user namespaces, and Bottlerocket sets `user.max_user_namespaces=0` by default. Every build fails on an otherwise correct [Wave build deployment](install/aws-build.md). To resolve, raise the limit on your build nodes. A value of `63359` is reasonable. Values that are too low cap concurrent build capacity and cause intermittent failures.
 
-Set it at boot through the node group's startup script or user data. That is the preferred route: it needs no privileged containers. If you cannot change node configuration directly, apply it with a DaemonSet scoped to the build nodes:
+Set it at boot through the node group's startup script or user data. That route is preferred because it needs no privileged containers. If you cannot change node configuration directly, apply it with a DaemonSet scoped to the build nodes:
 
 ```yaml
 apiVersion: apps/v1

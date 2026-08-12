@@ -3,14 +3,14 @@ title: Install Wave Lite with Docker Compose
 description: Deploy Wave Lite on a single Docker host with external PostgreSQL and Redis.
 ---
 
-Install Wave Lite with Docker Compose when you want the Lite configuration without Kubernetes, for example a compliance-constrained site that cannot run EKS. This installs container augmentation, inspection, and private registry authentication. A Docker Compose deployment cannot be extended to the full Wave configuration, which requires Kubernetes on Amazon EKS.
+Install Wave Lite with Docker Compose when you want the Lite configuration without Kubernetes, for example a compliance-constrained site that cannot run Amazon EKS. This installs container augmentation, inspection, and private registry authentication. A Docker Compose deployment cannot be extended to the full Wave configuration, which requires Kubernetes on Amazon EKS.
 
 :::info[**Prerequisites**]
 
 You need the following:
 
 - Current, supported versions of Docker Engine and Docker Compose.
-- A host with capacity for each Wave replica you run. One replica reserves 2 GB RAM and 0.2 CPU and is limited to 4 GB and 1 CPU, so budget 6 GB and 2 cores per replica including headroom for the OS and Docker. On AWS EC2, an `m5a.xlarge` runs one replica comfortably.
+- A host with capacity for each Wave replica you run. One replica reserves 2 GB RAM and 0.2 CPU and is limited to 4 GB and 1 CPU. Budget 6 GB and 2 cores per replica, including headroom for the OS and Docker. On AWS EC2, an `m5a.xlarge` runs one replica comfortably.
 - 10 GB storage, plus disk space for container images and temporary files.
 - PostgreSQL 16 or later, reachable from the host.
 - Redis 6.2 or later, reachable from the host.
@@ -112,7 +112,7 @@ Wave Lite pulls images during augmentation. To augment images from a private reg
 - **Platform workspace credentials**: credentials a user adds to their Seqera Platform workspace. Wave uses these for requests that carry a Platform identity.
 - **Server-side static credentials**: credentials the operator sets under `wave.registries.<host>`. Wave uses these for anonymous requests and for registries the operator owns.
 
-Add an entry per registry to `config.yml`. Wave reads static credentials only from `wave.registries`, so keep the values out of `wave.env` unless you interpolate them here:
+Add an entry per registry to `config.yml`. Wave reads static credentials only from `wave.registries`. Keep the values out of `wave.env` unless you interpolate them here:
 
 ```yaml
 wave:
@@ -128,10 +128,10 @@ wave:
       password: "<password>"
 ```
 
-The `${VAR:}` form reads the value from the environment, so with the block above you can put `DOCKER_USER` and `DOCKER_PAT` in `wave.env` and keep the secrets out of `config.yml`. Configure credentials for every private registry Wave pulls from. Public images need none. For all registry options, see [Container registry](reference.md#container-registry).
+The `${VAR:}` form reads the value from the environment. With this block, you can put `DOCKER_USER` and `DOCKER_PAT` in `wave.env` and keep the secrets out of `config.yml`. Configure credentials for every private registry Wave pulls from. Public images need none. For all registry options, see [Container registry](reference.md#container-registry).
 
 :::warning
-Anonymous access is enabled by default, so any client that can reach Wave can use these operator credentials to pull through it. Disable it with `wave.capabilities.anonymous-access: false` before you expose the service — see [Require authentication](configure-wave.md#require-authentication).
+Anonymous access is enabled by default. Any client that can reach Wave can use these operator credentials to pull through it. Disable it with `wave.capabilities.anonymous-access: false` before you expose the service. See [Require authentication](configure-wave.md#require-authentication).
 :::
 
 ## Log in to the Seqera container registry
@@ -189,7 +189,7 @@ docker compose up -d
 
 On first startup, Wave takes 30 to 60 seconds to initialize while it applies database migrations.
 
-For two or more replicas, raise `replicas` and deploy the same file as a Swarm stack instead — see [Deploy a stack to a swarm](https://docs.docker.com/engine/swarm/stack-deploy/).
+For two or more replicas, raise `replicas` and deploy the same file as a Swarm stack instead. See [Deploy a stack to a swarm](https://docs.docker.com/engine/swarm/stack-deploy/).
 
 :::warning
 If Wave Lite runs in the same Swarm as Platform Connect for [Studios](https://docs.seqera.io/platform-enterprise/25.2/enterprise/studios#docker-compose), removing the stack also interrupts Connect services.
@@ -199,4 +199,4 @@ If Wave Lite runs in the same Swarm as Platform Connect for [Studios](https://do
 
 Confirm the service is live and functional. See [Verify your installation](post-install.md) for the `/service-info` check and the Wave CLI functional checks.
 
-When Wave is running and verified, continue to the [production checklist](configure-wave.md#production-checklist) to prepare the deployment for production. That is also where TLS termination is covered: this procedure assumes managed PostgreSQL and Redis, and that you front Wave with your own load balancer.
+When Wave is running and verified, continue to the [production checklist](configure-wave.md#production-checklist) to prepare the deployment for production, including TLS termination. This procedure assumes managed PostgreSQL and Redis, and that you front Wave with your own load balancer.

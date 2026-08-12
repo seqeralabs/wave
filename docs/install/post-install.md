@@ -89,7 +89,7 @@ If you enabled scanning, request a build that must pass a scan before it is retu
 wave --conda-package bcftools --scan-mode required
 ```
 
-A scan failure returns the vulnerabilities found rather than an image reference. Use `--scan-level` to set which severities are tolerated.
+A scan failure returns the vulnerabilities found rather than an image reference. Use `--scan-level` to set which severities to tolerate.
 
 :::note
 Freeze builds push to the repository you name. They always need a Platform access token, and the associated Platform workspace must hold registry credentials with push access to `<build-repo>`. See [Freeze and user-supplied build repositories](aws-build.md#freeze-and-user-supplied-build-repositories).
@@ -100,9 +100,7 @@ Freeze builds push to the repository you name. They always need a Platform acces
 If a check does not pass, match the symptom to one of these common causes:
 
 - **Augmentation or build fails with an authentication error**: Wave cannot authenticate to the target registry. See [Registry push and authentication failures](../troubleshoot.md#registry-push-and-authentication-failures).
-- **Build fails partway through a push**: The target repository may not exist or may lack push scope. See [per-registry pre-creation rules](aws-build.md#create-the-ecr-repositories).
+- **Build fails partway through a push**: The target repository may not exist or may lack push scope. See [Registry pre-creation](reference.md#registry-pre-creation).
 - **Freeze is rejected even with a build repository set**: The repository sits inside an operator-reserved prefix. See [Freeze and user-supplied build repositories](aws-build.md#freeze-and-user-supplied-build-repositories).
-
-## Next step
 
 When the checks pass, continue to the [production checklist](configure-wave.md#production-checklist) to prepare the deployment for production.

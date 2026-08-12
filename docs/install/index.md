@@ -3,7 +3,7 @@ title: Self-hosted Wave
 description: When to self-host Wave, the two self-hosted configurations, and how to choose an install path.
 ---
 
-Self-hosting runs the Wave container-provisioning service inside your own infrastructure instead of using Seqera-hosted Wave. Teams self-host when they cannot grant Seqera-hosted Wave access to a private registry, or when compliance requires the service to run inside their own boundary.
+Self-hosting runs the Wave container provisioning service inside your own infrastructure instead of using Seqera-hosted Wave. Teams self-host when they cannot grant Seqera-hosted Wave access to a private registry, or when compliance requires the service to run inside their own boundary.
 
 You can self-host Wave in two configurations:
 
@@ -26,6 +26,6 @@ Run Wave Lite on a single Docker host without Kubernetes. Choose this path for a
 
 ### Kubernetes
 
-Run Wave Lite on a Kubernetes cluster you already operate — it has no AWS dependency and runs on any conformant distribution. This is also the path to the full Wave configuration: install Wave Lite on Amazon EKS, then [enable Wave builds](aws-build.md) to add on-demand builds, freeze, mirroring, and scanning.
+Run Wave Lite on a Kubernetes cluster you already operate. Wave Lite has no AWS dependency and runs on any conformant distribution. This is also the path to the full Wave configuration. Install Wave Lite on Amazon EKS, then [enable Wave builds](aws-build.md) to add on-demand builds, freeze, mirroring, and scanning.
 
 [Install Wave Lite on Kubernetes](kubernetes-lite.md)
