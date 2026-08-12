@@ -8,7 +8,7 @@ The full Wave configuration is a Wave Lite deployment on Amazon EKS with on-dema
 Build, mirror, and scan are independent toggles. Enable any subset, for example mirror without build. Scan and freeze depend on the build pipeline. With `build.enabled: false`, both are unavailable.
 
 :::tip
-The Kubernetes manifests in this guide assemble into a single file. Save each YAML block into `wave-build.yaml` in the order shown, separated by `---`, then apply the file once at the end. The AWS CLI steps for ECR and IRSA run on their own and are not part of this file.
+The Kubernetes manifests in this guide assemble into a single file. Save each YAML block into `wave-build.yaml` in the order shown, separated by `---`, then apply the file once at the end. The AWS CLI steps (ECR, S3, and IRSA) run on their own and are not part of this file.
 :::
 
 ## Infrastructure requirements
@@ -21,6 +21,7 @@ In addition to the EKS cluster, managed database, and Redis that your Wave Lite 
 | --- | --- |
 | Amazon Elastic File System (EFS) and its CSI driver | ReadWriteMany build workspace shared across build pods. |
 | Amazon Elastic Container Registry (ECR) repositories | One for built images, one for the BuildKit layer cache. |
+| Amazon S3 bucket | Build logs, build lock files, and scan reports. |
 | IAM OpenID Connect (OIDC) provider and IAM Roles for Service Accounts (IRSA) role | Wave's AWS identity, used for S3 access and STS role assumption from the cluster. |
 | Dedicated build node group | Isolates build workloads. Label its nodes `service=wave-build` (and `service=wave-build-arm64` for ARM) to match the node selector. |
 
@@ -29,10 +30,22 @@ In addition to the EKS cluster, managed database, and Redis that your Wave Lite 
 You need the following:
 
 - A Wave Lite deployment running on an Amazon EKS cluster (see [Install Wave Lite on Kubernetes](kubernetes-lite.md)).
-- Permission to create EFS, ECR, IAM, and node-group resources in the cluster's AWS account.
+- Permission to create EFS, ECR, S3, IAM, and node-group resources in the cluster's AWS account.
 - The AWS CLI and `kubectl`, authenticated against the account.
 
 :::
+
+## Set the shell variables
+
+The AWS CLI commands in this guide use the following variables. Set them for your environment before you run anything else:
+
+```bash
+export AWS_REGION=us-east-1
+export AWS_ACCOUNT=<aws-account-id>
+export AWS_EKS_CLUSTER_NAME=<eks-cluster-name>
+export WAVE_S3_BUCKET=<s3-bucket>
+export WAVE_CONFIG_NAME=wave            # reused as the IAM policy and role name
+```
 
 ## Create the build namespace
 
@@ -56,37 +69,17 @@ aws --region "$AWS_REGION" ecr create-repository --repository-name wave/build
 aws --region "$AWS_REGION" ecr create-repository --repository-name wave/cache
 ```
 
-ECR requires repositories to exist before push. Registries differ in whether they need the target path to exist beforehand. Wave relies on the underlying push tool: BuildKit for builds, Skopeo for mirrors. If you point builds or mirroring at a registry that requires pre-creation and the target path is missing, the push fails partway through the layer upload. Check your target registry's rules before you push.
+ECR does not auto-create repositories, so both must exist before Wave's first push. If you point builds or mirroring at a registry other than ECR, check its rules first: see [Registry pre-creation](reference.md#registry-pre-creation) for the per-registry matrix, and [Registry push and authentication failures](../troubleshoot.md#registry-push-and-authentication-failures) when a push fails partway through.
 
-For credential syntax, see [Configure Wave](configure-wave.md). For common push and authentication failures, see [Registry push and authentication failures](../troubleshoot.md#registry-push-and-authentication-failures).
+## Create the S3 bucket
 
-### AWS ECR
+Wave writes build logs, build lock files, and scan reports to S3:
 
-ECR **requires pre-creation**. Each repository must exist before push. Create it with `aws ecr create-repository` (as shown earlier) or your IaC tooling. AWS offers registry-level auto-create policies, but they are not enabled by default.
+```bash
+aws --region "$AWS_REGION" s3 mb "s3://$WAVE_S3_BUCKET"
+```
 
-### Docker Hub
-
-Docker Hub **needs no pre-creation**. Repositories auto-create in your user or organization namespace on first push. Repository-count and pull rate limits apply on paid tiers.
-
-### GitHub Container Registry (GHCR)
-
-GHCR **needs no pre-creation**. Repositories auto-create under your user or organization namespace. Default visibility inherits from the organization's package settings unless you override it.
-
-### Google Artifact Registry
-
-Google Artifact Registry **requires partial pre-creation**. The repository, which is the GCP namespace container, must be pre-created with `gcloud artifacts repositories create`. Image paths within it auto-create on push.
-
-### Google Container Registry (legacy GCR)
-
-Legacy GCR **needs no pre-creation**. Repositories auto-create on push. Google is phasing out GCR. Target Artifact Registry for new deployments.
-
-### Azure Container Registry (ACR)
-
-ACR **needs no pre-creation** for image paths. Image paths auto-create within an existing ACR instance. The instance must exist first. Wave must also hold the `AcrPush` role on it.
-
-### Harbor
-
-Harbor **requires partial pre-creation**. Projects must be pre-created through the UI or API. Images within a project auto-create if project policies permit.
+For naming rules and bucket options, see [Creating a bucket](https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html).
 
 ## Grant Wave access to AWS APIs with IRSA
 
@@ -95,29 +88,16 @@ IRSA gives the Wave pod its AWS identity. Wave uses it directly for S3 (build lo
 - An IAM access key pair. Attach the ECR statements of the policy in this section to that IAM user.
 - The ARN of an IAM role whose trust policy allows the Wave role to call `sts:AssumeRole`. Attach the ECR statements to that role.
 
-IRSA requires an IAM OIDC provider for the cluster. To check whether one exists or create it, see [Creating an IAM OIDC provider](https://docs.aws.amazon.com/eks/latest/userguide/enable-iam-roles-for-service-accounts.html).
+IRSA requires an IAM OIDC provider for the cluster, and the mechanics of associating a role with a service account are AWS's, not Wave's: see [Assign IAM roles to Kubernetes service accounts](https://docs.aws.amazon.com/eks/latest/userguide/associate-service-account-role.html). What follows is the Wave-specific part — which permissions to grant, and which service account to bind them to.
 
-The commands in this section use the following variables. Set them for your environment first:
-
-```bash
-export AWS_REGION=us-east-1
-export AWS_ACCOUNT=<aws-account-id>
-export AWS_EKS_CLUSTER_NAME=<eks-cluster-name>
-export WAVE_CONFIG_NAME=wave            # reused as the IAM policy and role name
-```
-
-Find the cluster's OIDC issuer URL:
+Author the two policy documents shown below, then create and attach the role. The `describe-cluster` call prints the OIDC issuer URL that `seqera-wave-role.json` needs:
 
 ```bash
 aws --region "$AWS_REGION" eks describe-cluster \
   --name "$AWS_EKS_CLUSTER_NAME" \
   --query "cluster.identity.oidc.issuer" \
   --output text
-```
 
-Create an IAM policy and role, then attach them. The two documents (`seqera-wave-policy.json` and `seqera-wave-role.json`) are templates you author for your account, shown after the commands:
-
-```bash
 aws --region "$AWS_REGION" iam create-policy \
   --policy-name "$WAVE_CONFIG_NAME" \
   --policy-document file://seqera-wave-policy.json
@@ -131,7 +111,7 @@ aws --region "$AWS_REGION" iam attach-role-policy \
   --policy-arn "arn:aws:iam::$AWS_ACCOUNT:policy/$WAVE_CONFIG_NAME"
 ```
 
-`seqera-wave-policy.json` grants access to ECR (for built and cached images) and S3 (for build logs and Conda lock files). Scope each resource to your repository and bucket ARNs. Replace `<aws-region>` and `<aws-account-id>` with the `$AWS_REGION` and `$AWS_ACCOUNT` values you exported earlier:
+`seqera-wave-policy.json` grants access to ECR (for built and cached images) and S3 (for build logs, lock files, and scan reports). Replace `<aws-region>`, `<aws-account-id>`, and `<s3-bucket>` with the values you exported earlier:
 
 ```json
 {
@@ -172,7 +152,7 @@ aws --region "$AWS_REGION" iam attach-role-policy \
       "Resource": ["arn:aws:ecr:<aws-region>:<aws-account-id>:repository/wave/*"]
     },
     {
-      "Sid": "BuildLogsAndLocks",
+      "Sid": "BuildLogsLocksAndScanReports",
       "Effect": "Allow",
       "Action": ["s3:GetObject", "s3:PutObject", "s3:ListBucket"],
       "Resource": [
@@ -219,9 +199,12 @@ metadata:
     eks.amazonaws.com/role-arn: arn:aws:iam::<aws-account-id>:role/<wave-config-name>
 ```
 
-This single IAM role is the identity the Wave service pod uses for its AWS API calls (S3, and STS when assuming a role for ECR token exchange) through the `wave-sa` service account. Build, scan, and mirror pods run as `wave-build-sa` and do not inherit this identity. They authenticate to registries with configuration files that Wave writes to the shared build workspace. If IRSA is unavailable, attach an EC2 instance profile carrying the same policy to the node group that runs the Wave service pod instead.
+Only the Wave service pod uses this role, through the `wave-sa` service account. Build, scan, and mirror pods run as `wave-build-sa`, which needs no AWS identity — Wave writes registry credentials into the shared build workspace for them. If IRSA is unavailable, attach an EC2 instance profile carrying the same policy to the node group that runs the Wave service pod.
 
-Wave routes each request to one credential source. Requests that carry a Platform identity use the workspace credentials the user configures. The exception is operator-owned targets (the registry hosts of `wave.build.repo`, `wave.build.cache`, and `wave.build.public-repo`), which always use the server-side static credentials (`wave.registries.<host>.username` and `.password`). Anonymous requests always use the server-side credentials. The cloud identity alone does not authenticate to registries. For ECR, Wave exchanges the configured `wave.registries` credentials (an access key pair, or a role ARN it assumes via STS) for an ECR auth token.
+Two rules matter here, on top of the [credential sources](kubernetes-lite.md#registry-credentials) Wave Lite already uses:
+
+- Operator-owned targets — the registry hosts of `wave.build.repo`, `wave.build.cache`, and `wave.build.public-repo` — always use the server-side `wave.registries.<host>` credentials, never a user's workspace credentials.
+- The cloud identity does not authenticate to registries by itself. For ECR, Wave exchanges the configured `wave.registries` credentials (an access key pair, or a role ARN it assumes via STS) for an ECR auth token.
 
 ## Configure EFS storage
 
@@ -243,9 +226,9 @@ parameters:
   directoryPerms: "0755"
 ```
 
-### Persistent volume
+### Persistent volumes and claims
 
-Create a persistent volume bound to your EFS file system:
+The Wave service pod and the build pods each mount the workspace, and they run in different namespaces. Persistent volume claims are namespaced, so the claim must exist in **both** `wave` and `wave-build` — a claim only in `wave` leaves every build, scan, and mirror pod stuck in `Pending`. Create one volume and one claim per namespace, all pointing at the same EFS file system:
 
 ```yaml
 apiVersion: v1
@@ -260,16 +243,13 @@ spec:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
   storageClassName: efs-wave-sc
+  claimRef:
+    namespace: wave
+    name: wave-build-pvc
   csi:
     driver: efs.csi.aws.com
     volumeHandle: "<efs-id>"
-```
-
-### Persistent volume claim
-
-Claim the volume for the build workspace:
-
-```yaml
+---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -284,11 +264,47 @@ spec:
     requests:
       storage: 500Gi
   storageClassName: efs-wave-sc
+  volumeName: wave-build-pv
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: wave-build-pv-jobs
+spec:
+  capacity:
+    storage: 500Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: efs-wave-sc
+  claimRef:
+    namespace: wave-build
+    name: wave-build-pvc
+  csi:
+    driver: efs.csi.aws.com
+    volumeHandle: "<efs-id>"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  namespace: wave-build
+  name: wave-build-pvc
+  labels:
+    app: wave-app
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 500Gi
+  storageClassName: efs-wave-sc
+  volumeName: wave-build-pv-jobs
 ```
 
 Configuration notes:
 
-- Replace `<efs-id>` with your EFS file system ID.
+- Replace `<efs-id>` with your EFS file system ID in both volumes. Both claims keep the name `wave-build-pvc`, because `wave.build.k8s.storage.claim-name` is a single value used in both namespaces.
 - The EFS security group must allow inbound and outbound NFS traffic (port `2049`) from the EKS worker nodes.
 
 ## Create the build RBAC
@@ -362,12 +378,15 @@ data:
           namespace: "wave-build"
           service-account: "wave-build-sa"
           storage:
-            claimName: "wave-build-pvc"
-            mountPath: "/efs/wave/build"
+            claim-name: "wave-build-pvc"
+            mount-path: "/efs/wave/build"
           node-selector:
             # Keys are container platforms. Values are 'label=value' applied to your build node groups.
+            # 'noarch' is required: mirror and blob cache pods are architecture-independent and
+            # get no node selector at all without it.
             'linux/amd64': 'service=wave-build'
             'linux/arm64': 'service=wave-build-arm64'
+            'noarch': 'service=wave-build'
         logs:
           path: "s3://<s3-bucket>/wave/build-logs"
         locks:
@@ -377,11 +396,12 @@ data:
         enabled: true
       scan:
         enabled: true
+        # Required whenever scan is enabled: Wave fails to start without it.
+        reports:
+          path: "s3://<s3-bucket>/wave/scan-reports"
       blobCache:
         enabled: false   # Enabling blob cache needs S3. See Configure Wave.
-      # ECR registry credentials. Wave exchanges these for ECR auth tokens.
-      # Use an IAM access key pair, or an IAM role ARN as username (with an
-      # optional external ID as password) that Wave assumes via STS using
+      # ECR registry credentials. Wave exchanges these for ECR auth tokens using
       # its IRSA identity. See "Grant Wave access to AWS APIs with IRSA".
       registries:
         <aws-account-id>.dkr.ecr.<aws-region>.amazonaws.com:
@@ -399,16 +419,22 @@ data:
     tower:
       endpoint:
         url: "https://platform.example.com/api"
+    endpoints:
+      health:
+        enabled: true
+        disk-space:
+          enabled: false
+        jdbc:
+          enabled: false
 ```
 
-Wave ships working defaults for the build tool images and timeout. You do not need to set them. The defaults are:
+Wave ships working defaults for the build tool images and the build timeout, so the ConfigMap does not set them. To override one, or to tune the build subsystem further, see [Container build process](reference.md#container-build-process).
 
-- `wave.build.buildkit-image`: `public.cr.seqera.io/wave/buildkit:v0.25.2-rootless`
-- `wave.build.singularity-image`: `public.cr.seqera.io/wave/singularity:v4.2.1-r4`
-- `wave.blobCache.s5cmdImage`: `public.cr.seqera.io/wave/s5cmd:v2.3.0`
-- `wave.build.timeout`: `900s` (15 minutes)
+To build ARM (Graviton) images, route `linux/arm64` builds to an ARM node group with the `node-selector` shown earlier. For cache setup (ECR cache repository, S3 cache authentication), see [Configure Wave](configure-wave.md).
 
-To build ARM (Graviton) images, route `linux/arm64` builds to an ARM node group with the `node-selector` shown earlier. For deeper build and blob cache tuning, see [Container build process](reference.md#container-build-process). For cache setup (ECR cache repository, S3 cache authentication), see [Configure Wave](configure-wave.md).
+:::note
+If your build nodes run Bottlerocket, BuildKit needs user namespaces enabled before any build succeeds. See [Builds fail on Bottlerocket nodes](../troubleshoot.md#builds-fail-on-bottlerocket-nodes).
+:::
 
 ## Update the Wave deployment
 
@@ -445,6 +471,17 @@ spec:
             - name: MICRONAUT_ENVIRONMENTS
               # lite is dropped from the Lite set; k8s enables the in-cluster build client.
               value: "postgres,redis,k8s,rate-limit"
+            # The image defaults to an 850 MB heap regardless of the container limit.
+            # Setting this variable replaces the whole default option set, so keep the
+            # flags below alongside your own.
+            - name: WAVE_JVM_OPTS
+              value: >-
+                -XX:+UseG1GC
+                -Xms1g
+                -Xmx3g
+                -XX:MaxDirectMemorySize=100m
+                -Dio.netty.maxDirectMemory=0
+                -Dio.netty.allocator.type=pooled
           resources:
             requests:
               memory: "4Gi"
@@ -492,58 +529,8 @@ kubectl logs -f deployment/wave -n wave | grep -i build
 
 In freeze mode, a pipeline sets `wave.build.repository` (the Nextflow-side setting) to choose its own push target. Wave treats the value as custom only if it sits outside the operator's `wave.build.repo`, `wave.build.public-repo`, and `wave.build.cache` prefixes. If it starts with one of those prefixes, Wave rejects the freeze with a `must be specified when using freeze mode` error (with a numbered suffix such as `[1]`), even though the pipeline did supply a value.
 
-To let users freeze to their own repositories, reserve a registry namespace outside your operator prefixes and distribute push credentials through Platform workspaces. See [Create the ECR repositories](#create-the-ecr-repositories) for per-registry pre-creation rules.
-
-## Bottlerocket support
-
-BuildKit requires user namespaces, but Bottlerocket sets `user.max_user_namespaces=0` by default. Enable user namespaces on your build nodes by setting `user.max_user_namespaces` to a sufficiently high value (for example, `63359`, as in the DaemonSet that follows). Values that are too low limit concurrent build capacity and can cause build failures.
-
-Set this at boot through your node group's startup script or user data (preferred, with no privileged containers required). If you cannot control node configuration directly, apply it with a DaemonSet that runs a privileged container on build nodes only:
-
-```yaml
-apiVersion: apps/v1
-kind: DaemonSet
-metadata:
-  labels:
-    app: sysctl-userns
-  name: sysctl-userns
-spec:
-  selector:
-    matchLabels:
-      app: sysctl-userns
-  template:
-    metadata:
-      labels:
-        app: sysctl-userns
-    spec:
-      containers:
-        - name: sysctl-userns
-          image: busybox
-          command: ["sh", "-euxc", "sysctl -w user.max_user_namespaces=63359 && sleep infinity"]
-          securityContext:
-            privileged: true
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: service
-                    operator: In
-                    values: ["wave-build", "wave-build-arm64"]
-```
-
-For more on Bottlerocket, see the [Bottlerocket FAQs](https://bottlerocket.dev/en/faq/).
-
-## Production enhancements
-
-For production build deployments, consider:
-
-- **Dedicated build node pools** to isolate build workloads.
-- **A ResourceQuota** on the build namespace, paired with `wave.job-manager.max-running-jobs`, to cap concurrent build resource usage.
-- **NetworkPolicies** restricting build-pod egress to registries and S3 only. Build pods run user-submitted Dockerfiles.
-- **EFS access points** to isolate build workspaces.
-- **Monitoring** of build success/failure rates, duration, EFS usage, and queue length.
+To let users freeze to their own repositories, reserve a registry namespace outside your operator prefixes and distribute push credentials through Platform workspaces. See [Registry pre-creation](reference.md#registry-pre-creation) for whether the target registry needs the repository to exist first.
 
 ## Verify your installation
 
-Run the build functional checks in [Verify your installation](post-install.md), then continue to the [production checklist](configure-wave.md#production-checklist) to prepare the deployment for production.
+Run the build, mirror, and scan functional checks in [Verify your installation](post-install.md), then continue to the [production checklist](configure-wave.md#production-checklist) to prepare the deployment for production.

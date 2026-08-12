@@ -43,7 +43,7 @@ export WAVE_ENDPOINT=https://wave.example.com
 ```
 
 :::note
-If you disabled anonymous access in [Configure Wave](configure-wave.md#require-authentication), the CLI checks need a Seqera Platform access token. Pass it with the `--tower-token` flag or the `TOWER_ACCESS_TOKEN` environment variable.
+If you disabled anonymous access in [Configure Wave](configure-wave.md#require-authentication), every CLI check needs a Seqera Platform access token. Pass it with the `--tower-token` flag or the `TOWER_ACCESS_TOKEN` environment variable.
 :::
 
 ## Functional checks
@@ -76,6 +76,20 @@ wave --containerfile Dockerfile --freeze --build-repo <build-repo> --tower-token
 ```
 
 A successful build returns a reference in your configured build repository.
+
+If you enabled mirroring, copy an image into your build repository. `--mirror` requires a build repository and cannot be combined with `--containerfile`, `--conda-package`, or `--freeze`:
+
+```bash
+wave -i ubuntu:22.04 --mirror --build-repo <build-repo>
+```
+
+If you enabled scanning, request a build that must pass a scan before it is returned:
+
+```bash
+wave --conda-package bcftools --scan-mode required
+```
+
+A scan failure returns the vulnerabilities found rather than an image reference. Use `--scan-level` to set which severities are tolerated.
 
 :::note
 Freeze builds push to the repository you name. They always need a Platform access token, and the associated Platform workspace must hold registry credentials with push access to `<build-repo>`. See [Freeze and user-supplied build repositories](aws-build.md#freeze-and-user-supplied-build-repositories).

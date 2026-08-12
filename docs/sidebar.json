@@ -49,8 +49,8 @@
             "install/kubernetes-lite"
           ]
         },
-        "install/aws-build",
         "install/post-install",
+        "install/aws-build",
         "install/configure-wave",
         "install/reference"
       ]
@@ -68,6 +68,7 @@
       ]
     },
     "faq",
+    "troubleshoot",
     {
       "type": "link",
       "label": "Changelog",
