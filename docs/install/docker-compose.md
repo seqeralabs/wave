@@ -5,21 +5,15 @@ description: Deploy Wave Lite on a single Docker host with external PostgreSQL a
 
 Install Wave Lite with Docker Compose when you want the Lite configuration without Kubernetes, for example a compliance-constrained site that cannot run EKS. This installs container augmentation, inspection, and private registry authentication. A Docker Compose deployment cannot be extended to the full Wave configuration, which requires Kubernetes on Amazon EKS.
 
-For other choices (embedded databases, or exposing Wave behind HTTPS), see [Adapt this guide](#adapt-this-guide).
-
 :::info[**Prerequisites**]
 
 You need the following:
 
 - Current, supported versions of Docker Engine and Docker Compose.
-- A host that meets the Wave service's minimum compute requirements:
-  - Memory: 12 GB RAM (4 GB for each of two Wave replicas, plus headroom for the OS and Docker).
-  - CPU: 4 cores (1 core for each of two Wave replicas, plus headroom for the OS and Docker).
-  - Storage: 10 GB, plus disk space for your container images and temporary files.
-  - Network: Connectivity to your PostgreSQL and Redis instances.
-  - On AWS EC2, an `m5a.2xlarge` instance.
-- PostgreSQL 16 or later.
-- Redis 6.2 or later.
+- A host with capacity for each Wave replica you run. One replica reserves 2 GB RAM and 0.2 CPU and is limited to 4 GB and 1 CPU, so budget 6 GB and 2 cores per replica including headroom for the OS and Docker. On AWS EC2, an `m5a.xlarge` runs one replica comfortably.
+- 10 GB storage, plus disk space for container images and temporary files.
+- PostgreSQL 16 or later, reachable from the host.
+- Redis 6.2 or later, reachable from the host.
 - A Seqera Platform deployment and its endpoint URL.
 - Access to the Wave container image from `cr.seqera.io`, using credentials provided by Seqera.
 
@@ -83,7 +77,7 @@ Set `WAVE_SERVER_URL` to the address your clients use to reach Wave. If you leav
 
 ## Configure Wave
 
-Create `config.yml` alongside `wave.env`. Wave Lite runs with build, mirror, scan, and blob cache disabled:
+Wave requires a `config.yml` in its working directory and fails to start without one. Create it alongside `wave.env`:
 
 ```yaml
 wave:
@@ -96,42 +90,49 @@ wave:
     enabled: false
   blobCache:
     enabled: false
+
+# Keep the JDBC and disk-space indicators out of /health. Micronaut enables
+# them by default, so a brief database blip turns the healthcheck below red
+# and, under Swarm, gets the task replaced.
+endpoints:
+  health:
+    enabled: true
+    disk-space:
+      enabled: false
+    jdbc:
+      enabled: false
 ```
 
-This file sets only what Wave Lite needs to start. The `lite` entry in `MICRONAUT_ENVIRONMENTS`, set in the Compose file in a later step, already applies these same defaults. The file restates them explicitly and gives you a place to add further configuration. To configure other options, such as rate limits, token cache duration, and metrics, see [Configure Wave](configure-wave.md). Before serving production traffic, complete the [production checklist](configure-wave.md#production-checklist).
+The `lite` entry in `MICRONAUT_ENVIRONMENTS`, set in the Compose file in a later step, already applies the four feature toggles. The file restates them explicitly and gives you a place to add further configuration. For every available setting, see the [Configuration reference](reference.md). Before serving production traffic, complete the [production checklist](configure-wave.md#production-checklist).
 
 ## Authenticate to private registries
 
 Wave Lite pulls images during augmentation. To augment images from a private registry, give Wave credentials for that registry. Wave uses one of two credential sources per request:
 
 - **Platform workspace credentials**: credentials a user adds to their Seqera Platform workspace. Wave uses these for requests that carry a Platform identity.
-- **Server-side static credentials**: credentials the operator sets. Wave uses these for anonymous requests and for registries the operator owns.
+- **Server-side static credentials**: credentials the operator sets under `wave.registries.<host>`. Wave uses these for anonymous requests and for registries the operator owns.
 
-For the common registries, set the credentials as environment variables in `wave.env`:
-
-```bash
-# Docker Hub
-DOCKER_USER=<docker-user>
-DOCKER_PAT=<docker-pat>
-```
-
-```bash
-# Quay.io
-QUAY_USER=<quay-user>
-QUAY_PAT=<quay-pat>
-```
-
-For any other registry, add an entry under `wave.registries.<host>` in `config.yml`:
+Add an entry per registry to `config.yml`. Wave reads static credentials only from `wave.registries`, so keep the values out of `wave.env` unless you interpolate them here:
 
 ```yaml
 wave:
   registries:
+    docker.io:
+      username: "${DOCKER_USER:}"
+      password: "${DOCKER_PAT:}"
+    quay.io:
+      username: "${QUAY_USER:}"
+      password: "${QUAY_PAT:}"
     myregistry.example.com:
       username: "<username>"
       password: "<password>"
 ```
 
-Configure credentials for every private registry Wave pulls from. Public images need none. For all registry options, see [Container registry](reference.md#container-registry).
+The `${VAR:}` form reads the value from the environment, so with the block above you can put `DOCKER_USER` and `DOCKER_PAT` in `wave.env` and keep the secrets out of `config.yml`. Configure credentials for every private registry Wave pulls from. Public images need none. For all registry options, see [Container registry](reference.md#container-registry).
+
+:::warning
+Anonymous access is enabled by default, so any client that can reach Wave can use these operator credentials to pull through it. Disable it with `wave.capabilities.anonymous-access: false` before you expose the service — see [Require authentication](configure-wave.md#require-authentication).
+:::
 
 ## Log in to the Seqera container registry
 
@@ -180,12 +181,15 @@ services:
 
 ## Start Wave
 
-Docker Compose runs Wave in one of two modes, depending on whether you need more than one replica:
+Start the service:
 
-- **Single host**: Run `docker compose up -d`. This starts one Wave replica on the local Docker host.
-- **Swarm (two or more replicas)**: Initialize Swarm with `docker swarm init` if the host is not already a Swarm manager. Set `replicas: 2` in `docker-compose.yml`, then run `docker stack deploy -c docker-compose.yml wave`. Swarm ignores the `restart` key and applies its default restart policy. Set `deploy.restart_policy` to change it.
+```bash
+docker compose up -d
+```
 
 On first startup, Wave takes 30 to 60 seconds to initialize while it applies database migrations.
+
+For two or more replicas, raise `replicas` and deploy the same file as a Swarm stack instead — see [Deploy a stack to a swarm](https://docs.docker.com/engine/swarm/stack-deploy/).
 
 :::warning
 If Wave Lite runs in the same Swarm as Platform Connect for [Studios](https://docs.seqera.io/platform-enterprise/25.2/enterprise/studios#docker-compose), removing the stack also interrupts Connect services.
@@ -195,11 +199,4 @@ If Wave Lite runs in the same Swarm as Platform Connect for [Studios](https://do
 
 Confirm the service is live and functional. See [Verify your installation](post-install.md) for the `/service-info` check and the Wave CLI functional checks.
 
-When Wave is running and verified, continue to the [production checklist](configure-wave.md#production-checklist) to prepare the deployment for production.
-
-## Adapt this guide
-
-The supported procedure uses managed PostgreSQL and Redis and assumes you front Wave yourself. The following options are described but not part of the procedure. Adapt them at your own risk.
-
-- **Embedded PostgreSQL and Redis**: Suitable for development and testing. Not supported for production.
-- **Expose Wave externally over HTTPS**: Front the service with a load balancer and certificate (for example, AWS ALB with ACM and Route 53).
+When Wave is running and verified, continue to the [production checklist](configure-wave.md#production-checklist) to prepare the deployment for production. That is also where TLS termination is covered: this procedure assumes managed PostgreSQL and Redis, and that you front Wave with your own load balancer.

@@ -5,22 +5,21 @@ description: Deploy Wave Lite on any Kubernetes cluster with external PostgreSQL
 
 Install Wave Lite on a Kubernetes cluster you already operate. This installs container augmentation, inspection, and private registry authentication. Build, mirror, and scan are not part of Wave Lite. The full Wave configuration adds them to a Wave Lite install on Amazon EKS. After you install Wave Lite on an EKS cluster, follow [Enable Wave builds](aws-build.md).
 
-For other choices (different ingress controllers or untested distributions), see [Adapt this guide](#adapt-this-guide).
-
 :::info[**Prerequisites**]
 
 You need the following:
 
 - A Kubernetes cluster, version 1.31 or later, with permission to create namespaces, deployments, and services.
-- Cluster capacity for the Wave service's minimum compute requirements:
-  - Memory: 12 GB RAM (4 GB for each of two Wave pods, plus headroom for the cluster).
-  - CPU: 4 cores (1 core for each of two Wave pods, plus headroom for the cluster).
-  - Storage: 10 GB, plus disk space for your container images and temporary files.
-  - Network: Connectivity to your PostgreSQL and Redis instances.
+- Cluster capacity for each Wave pod: the deployment below requests 2 GB RAM and 0.2 CPU per pod and limits it to 4 GB and 1 CPU. Scale that by your replica count.
+- 10 GB storage, plus disk space for container images and temporary files.
 - PostgreSQL 16 or later, reachable from the cluster.
 - Redis 6.2 or later, reachable from the cluster.
 - A Seqera Platform deployment and its endpoint URL.
 - Access to the Wave container image from `cr.seqera.io`, using credentials provided by Seqera.
+:::
+
+:::tip
+The manifests in this guide assemble into a single file. Save each YAML block into `wave.yaml` in the order shown, separated by `---`, then apply the file once at the end.
 :::
 
 :::tip[Install with the Helm chart]
@@ -90,7 +89,7 @@ kubectl create secret docker-registry seqera-reg-creds \
 
 ## Configure Wave
 
-Create a ConfigMap with Wave's configuration. Update the database, Redis, and Platform values to match your environment.
+Create a ConfigMap with Wave's configuration. Wave loads a single YAML document, so this is the whole of `config.yml` — add settings inside this block rather than appending a second `wave:` section. Update the database, Redis, Platform, and registry values to match your environment.
 
 :::warning
 This ConfigMap contains sensitive values. Use a Kubernetes Secret for credentials and reference it from the deployment rather than embedding secrets in the ConfigMap. See the [Kubernetes Secrets documentation](https://kubernetes.io/docs/concepts/configuration/secret/).
@@ -122,43 +121,50 @@ data:
         uri: "jdbc:postgresql://postgres.example.com:5432/wave"
         user: "wave_user"
         password: "<db-password>"
+      # One entry per private registry Wave pulls from. Public images need none.
+      registries:
+        docker.io:
+          username: "<docker-user>"
+          password: "<docker-pat>"
+        quay.io:
+          username: "<quay-user>"
+          password: "<quay-pat>"
     redis:
       # Use rediss:// for TLS (typical for managed Redis), or redis:// for a plain connection.
       uri: "rediss://redis.example.com:6379"
     tower:
       endpoint:
         url: "https://platform.example.com/api"
+    # Keep the JDBC and disk-space indicators out of /health. Micronaut enables them
+    # by default, and the liveness probe below would restart every pod on a brief
+    # database blip.
+    endpoints:
+      health:
+        enabled: true
+        disk-space:
+          enabled: false
+        jdbc:
+          enabled: false
 ```
 
 :::warning
 Set `wave.server.url` to the address clients use to reach Wave. If you leave it unset, Wave issues container tokens pointing at `http://localhost:9090`, which clients cannot reach.
 :::
 
-This ConfigMap sets only what Wave Lite needs to start. The `lite` entry in `MICRONAUT_ENVIRONMENTS`, set in the deployment in a later step, already applies these same defaults. The ConfigMap restates them explicitly and gives you a place to add further configuration. To configure other options, such as rate limits, token cache duration, and metrics, see [Configure Wave](configure-wave.md). Before serving production traffic, complete the [production checklist](configure-wave.md#production-checklist).
+The `lite` entry in `MICRONAUT_ENVIRONMENTS`, set in the deployment in a later step, already applies the four feature toggles. The ConfigMap restates them explicitly and gives you a place to add further configuration. For every available setting, see the [Configuration reference](reference.md). Before serving production traffic, complete the [production checklist](configure-wave.md#production-checklist).
 
-## Authenticate to private registries
+## Registry credentials
 
-Wave Lite pulls images during augmentation. To augment images from a private registry, give Wave credentials for that registry. Wave uses one of two credential sources per request:
+Wave Lite pulls images during augmentation, and uses one of two credential sources per request:
 
 - **Platform workspace credentials**: credentials a user adds to their Seqera Platform workspace. Wave uses these for requests that carry a Platform identity.
-- **Server-side static credentials**: credentials the operator sets under `wave.registries.<host>`. Wave uses these for anonymous requests and for registries the operator owns.
+- **Server-side static credentials**: the `wave.registries.<host>` entries in the ConfigMap above. Wave uses these for anonymous requests and for registries the operator owns.
 
-Add an entry for each private registry under `wave.registries` in the `wave-cfg` config. For example, Docker Hub and a private Quay.io account:
+For all registry options, see [Container registry](reference.md#container-registry).
 
-```yaml
-wave:
-  registries:
-    docker.io:
-      username: "<docker-user>"
-      password: "<docker-pat>"
-    quay.io:
-      username: "<quay-user>"
-      password: "<quay-pat>"
-```
-
-As with the database and Redis credentials, keep these out of the ConfigMap in production. Store them in a Kubernetes Secret and reference it from the deployment.
-
-Configure credentials for every private registry Wave pulls from. Public images need none. For all registry options, see [Container registry](reference.md#container-registry).
+:::warning
+Anonymous access is enabled by default, so any client that can reach Wave can use the operator credentials to pull through it. Disable it with `wave.capabilities.anonymous-access: false` before you expose the service — see [Require authentication](configure-wave.md#require-authentication).
+:::
 
 ## Create the deployment
 
@@ -253,7 +259,7 @@ spec:
 
 Wave must be reachable from Seqera Platform and from your Nextflow compute environments. Front the service with an ingress and terminate TLS at the ingress or load balancer. Wave does not terminate TLS itself.
 
-This example uses an AWS ALB. For NGINX or GCE ingress, see [Adapt this guide](#adapt-this-guide).
+This example uses the AWS Load Balancer Controller. `target-type: ip` is what lets it route to the `ClusterIP` service defined above — with the default `instance` target type, change that service to `NodePort`. Replace the certificate ARN with your own:
 
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -261,7 +267,14 @@ kind: Ingress
 metadata:
   name: wave-ingress
   namespace: wave
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:<aws-region>:<aws-account-id>:certificate/<certificate-id>"
+    alb.ingress.kubernetes.io/healthcheck-path: /health
 spec:
+  ingressClassName: alb
   rules:
     - host: wave.example.com
       http:
@@ -275,25 +288,21 @@ spec:
                   number: 9090
 ```
 
-:::note
-This minimal Ingress omits controller-specific configuration. For the AWS Load Balancer Controller, add `ingressClassName: alb` and the `alb.ingress.kubernetes.io/*` annotations (scheme, target type, and ACM certificate ARN) your setup requires. With `alb.ingress.kubernetes.io/target-type: ip`, the `ClusterIP` service defined earlier works as-is. With the default `instance` target type, change the service to `NodePort`.
-:::
+For the certificate and the DNS record that points `wave.example.com` at the load balancer, see [Terminate TLS](configure-wave.md#terminate-tls). For NGINX, GCE, or Traefik, swap `ingressClassName` and the annotations for that controller's equivalents.
 
-After the ingress provisions, configure your Seqera Platform deployment to use the Wave endpoint by setting the Wave server URL in `tower.yml` ([Platform Wave configuration](https://docs.seqera.io/platform-enterprise/latest/enterprise/configuration/wave)).
+## Apply the manifests
 
-:::note
-For production reliability, add Pod Disruption Budgets, a Horizontal Pod Autoscaler, multiple replicas with anti-affinity, and resource quotas for the `wave` namespace. See the [production checklist](configure-wave.md#production-checklist).
-:::
+Apply the assembled file and wait for the rollout:
+
+```bash
+kubectl apply -f wave.yaml
+kubectl rollout status deployment/wave -n wave
+```
+
+Then configure your Seqera Platform deployment to use the Wave endpoint by setting the Wave server URL in `tower.yml` ([Platform Wave configuration](https://docs.seqera.io/platform-enterprise/latest/enterprise/configuration/wave)).
 
 ## Verify your installation
 
 Confirm the service is live and functional. See [Verify your installation](post-install.md) for the `/service-info` check and the Wave CLI functional checks.
 
-When Wave is running and verified, continue to the [production checklist](configure-wave.md#production-checklist) to prepare the deployment for production.
-
-## Adapt this guide
-
-The supported procedure uses managed PostgreSQL and Redis and an AWS ALB ingress. The following options are described but not part of the procedure. Adapt them at your own risk.
-
-- **Other ingress controllers**: NGINX, GCE, or Traefik work, but add the provider-specific annotations they require and verify TLS termination.
-- **Other distributions**: Wave Lite has no AWS dependency and runs on any conformant Kubernetes distribution, but other distributions are not validated.
+When Wave is running and verified, continue to the [production checklist](configure-wave.md#production-checklist) to prepare the deployment for production. Wave Lite has no AWS dependency and runs on any conformant Kubernetes distribution, though only EKS is validated — and only EKS can be extended to the full Wave configuration.

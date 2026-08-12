@@ -15,14 +15,17 @@ A freshly installed Wave service boots and returns `200` on `/service-info`, but
 
 ### Require authentication
 
-By default Wave allows anonymous pulls (`wave.allowAnonymous: true`). In production, require authentication so only paired Platform clients can request containers:
+By default Wave allows anonymous pulls. In production, require authentication so only paired Platform clients can request containers:
 
 ```yaml
 wave:
-  allowAnonymous: false
+  capabilities:
+    anonymous-access: false
 ```
 
 With anonymous access disabled, every request must carry a valid Platform-issued token.
+
+For a regulated deployment that must also stop Wave from serving images directly, brokering registry credentials, or exposing its HTML pages, add `strict` to `MICRONAUT_ENVIRONMENTS` instead. That disables all four capability toggles at once. See [Capabilities](reference.md#capabilities).
 
 ### Terminate TLS
 
@@ -59,7 +62,13 @@ Builds and augmented images accumulate. Set cleanup and retention so storage sta
 
 Reserve about 2 GB memory and 0.2 CPU per Wave instance, with limits of 4 GB and 1 CPU, matching the sizing in the install paths. Run multiple replicas behind the load balancer for availability.
 
+Set `WAVE_JVM_OPTS` to match the container limit. The image defaults to an 850 MB heap whatever the limit says, so a 4 GB container leaves most of its memory unused until you override it. Setting the variable replaces the whole default option set rather than adding to it, so copy the defaults from `src/main/jib/launch.sh` and adjust `-Xmx`.
+
 Size the build node pool and cap concurrency with `wave.job-manager.max-running-jobs` and a build-namespace `ResourceQuota`.
+
+### Restrict build-pod egress
+
+Build pods run user-supplied Dockerfiles. On a build-enabled deployment, apply a `NetworkPolicy` to the build namespace that limits egress to your registries and S3.
 
 ### Review security headers
 
@@ -71,14 +80,7 @@ Wave sends email notifications for build-related events. Configure delivery thro
 
 ### SMTP
 
-Add `mail` to your Micronaut environments:
-
-```yaml
-# Add 'mail' to your existing environments
-MICRONAUT_ENVIRONMENTS: "lite,postgres,redis,rate-limit,mail"
-```
-
-Configure the SMTP settings in your Wave configuration:
+Append `mail` to the `MICRONAUT_ENVIRONMENTS` value your install path already sets, then configure the SMTP settings in your Wave configuration:
 
 ```yaml
 mail:
@@ -96,17 +98,7 @@ mail:
       protocols: "TLSv1.2"
 ```
 
-| Setting             | Description                          | Example values                              |
-| ------------------- | ------------------------------------ | ------------------------------------------- |
-| `from`              | Email address that appears as sender | `wave@company.com`                          |
-| `host`              | SMTP server hostname                 | `smtp.gmail.com`, `smtp.office365.com`      |
-| `port`              | SMTP server port                     | `587` (STARTTLS), `465` (SSL), `25` (plain) |
-| `user`              | SMTP authentication username         | Usually your email address                  |
-| `password`          | SMTP authentication password         | App password or account password            |
-| `auth`              | Enable SMTP authentication           | `true` (recommended)                        |
-| `starttls.enable`   | Enable STARTTLS encryption           | `true` (recommended)                        |
-| `starttls.required` | Require STARTTLS encryption          | `true` (recommended)                        |
-| `ssl.protocols`     | Supported SSL/TLS protocols          | `TLSv1.2`, `TLSv1.3`                        |
+For every `mail.*` setting, see [Email configuration](reference.md#email-configuration).
 
 ### SES
 
@@ -123,14 +115,7 @@ You need the following:
 
 :::
 
-Add `aws-ses` to your Micronaut environments along with `mail`:
-
-```yaml
-# Add both 'mail' and 'aws-ses' to your existing environments
-MICRONAUT_ENVIRONMENTS: "lite,postgres,redis,rate-limit,mail,aws-ses"
-```
-
-Set the sender address in your Wave configuration:
+Append both `mail` and `aws-ses` to the `MICRONAUT_ENVIRONMENTS` value your install path already sets, then set the sender address in your Wave configuration:
 
 ```yaml
 mail:
@@ -182,151 +167,27 @@ wave:
 
 Wave runs scans with its bundled Trivy-based scanner image. Override the image with `wave.scan.image.name` if you mirror it to your own registry. For all scan options, see [Container scan process](reference.md#container-scan-process).
 
-## ECR cache repository
+## Build layer cache
 
-Use Amazon Elastic Container Registry (ECR) as a cache repository to store and reuse build layers. Reusing cached layers speeds up builds and reduces bandwidth. ECR cache requires the Wave build service and works only in AWS deployments with ECR access.
+`wave.build.cache` takes either a container repository or an S3 path. [Enable Wave builds](aws-build.md) sets it to the ECR repository created there, which is the default choice on AWS; add a [lifecycle policy](https://docs.aws.amazon.com/AmazonECR/latest/userguide/LifecyclePolicies.html) expiring untagged images to keep its storage bounded.
 
-:::info[**Prerequisites**]
-
-You need the following:
-
-- An ECR repository in the same AWS region as Wave.
-- IAM permissions for Wave to push to and pull from ECR.
-- An ECR repository reachable from the Wave build infrastructure.
-
-:::
-
-Configure the ECR cache repository in your Wave configuration:
-
-```yaml
-wave:
-  build:
-    enabled: true
-    cache: "<aws-account-id>.dkr.ecr.<aws-region>.amazonaws.com/wave-cache"
-```
-
-[Enable Wave builds](aws-build.md) defines the ECR cache IAM permissions. Add your cache ARN as an allowed `Resource`.
-
-To create and configure the ECR cache repository:
-
-1. Create the ECR repository:
-
-    ```bash
-    aws ecr create-repository --repository-name wave-cache --region us-east-1
-    ```
-
-2. Configure a lifecycle policy to manage cache storage costs:
-    ```json
-    {
-        "rules": [
-            {
-                "rulePriority": 1,
-                "selection": {
-                    "tagStatus": "untagged",
-                    "countType": "sinceImagePushed",
-                    "countUnit": "days",
-                    "countNumber": 7
-                },
-                "action": {
-                    "type": "expire"
-                }
-            }
-        ]
-    }
-    ```
-
-The `wave.build.cache` setting takes a cache repository URL or an S3 path. For details, see [Container build process](reference.md#container-build-process).
-
-## S3 cache authentication
-
-When you set `wave.build.cache` to an S3 bucket path, Wave uses S3 as the BuildKit cache backend. Wave authenticates with native AWS mechanisms instead of static credentials in configuration files.
-
-For the related configuration options (`wave.build.cache`, `wave.build.cache-bucket-region`, `wave.build.cache-bucket-upload-parallelism`), see [Container build process](reference.md#container-build-process).
-
-### Kubernetes deployments
-
-S3 cache uses IAM Roles for Service Accounts (IRSA) for credential-free authentication.
-
-Configure your Kubernetes ServiceAccount with an IAM role annotation:
-
-```yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: wave-build-sa
-  namespace: wave-build
-  annotations:
-    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/WaveBuildRole
-```
-
-The IAM role must have permissions to access the S3 cache bucket:
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "s3:PutObject",
-        "s3:GetObject",
-        "s3:DeleteObject",
-        "s3:ListBucket",
-        "s3:AbortMultipartUpload",
-        "s3:ListMultipartUploadParts",
-        "s3:ListBucketMultipartUploads"
-      ],
-      "Resource": [
-        "arn:aws:s3:::my-bucket/wave/cache",
-        "arn:aws:s3:::my-bucket/wave/cache/*"
-      ]
-    }
-  ]
-}
-```
-
-No change to the Wave deployment is needed. Build pods already run as `wave-build-sa` through the `wave.build.k8s.service-account` setting described in [Enable Wave builds](aws-build.md#enable-build-features). Keep the Wave deployment on its `wave-sa` service account, which holds the IRSA identity for build logs and lock files.
-
-### Docker deployments
-
-For Docker-based builds, use an EC2 instance profile for automatic credential management.
-
-Attach an IAM role with the S3 permissions shown earlier to the EC2 instance running Docker. BuildKit uses the instance metadata service to obtain temporary credentials. The AWS SDK in BuildKit discovers and uses the instance profile credentials. No further configuration is required.
-
-:::note
-For development and testing only, you can provide AWS credentials through environment variables:
-
-```bash
-export AWS_ACCESS_KEY_ID=your_access_key
-export AWS_SECRET_ACCESS_KEY=your_secret_key
-export AWS_REGION=us-east-1
-```
-
-**Warning:** Do not use this approach in production. It requires managing static credentials. Use an EC2 instance profile for production Docker deployments.
-:::
-
-### Configuration example
+To use S3 as the BuildKit cache backend instead, point `wave.build.cache` at a bucket path:
 
 ```yaml
 wave:
   build:
     cache: "s3://wave-cache-bucket/buildkit"
-    cache-bucket-region: "us-east-1"  # Optional if AWS_REGION is set
-    cache-bucket-upload-parallelism: 8  # Optional, controls parallel S3 uploads
+    cache-bucket-region: "us-east-1"     # Optional if AWS_REGION is set
+    cache-bucket-upload-parallelism: 8   # Optional, controls parallel S3 uploads
 ```
+
+S3 cache needs no static credentials. Build pods pick up the AWS identity of their node or service account, so extend the IRSA policy from [Enable Wave builds](aws-build.md#grant-wave-access-to-aws-apis-with-irsa) with `s3:PutObject`, `s3:GetObject`, `s3:DeleteObject`, `s3:ListBucket`, `s3:AbortMultipartUpload`, `s3:ListMultipartUploadParts`, and `s3:ListBucketMultipartUploads` on the cache path. For the full set of build cache settings, see [Container build process](reference.md#container-build-process).
 
 ## Client IP address resolution
 
 Wave uses client IP addresses for rate limiting. By default, Wave reads the socket address, which clients cannot spoof.
 
-For AWS ALB deployments, add `alb` to your Micronaut environments:
-
-```yaml
-# Add 'alb' to your existing environments
-MICRONAUT_ENVIRONMENTS: "lite,postgres,redis,rate-limit,alb"
-```
-
-The `alb` profile trusts the `X-Forwarded-For` header from the ALB to resolve the client IP.
+For AWS ALB deployments, append `alb` to the `MICRONAUT_ENVIRONMENTS` value your install path already sets. The `alb` profile trusts the `X-Forwarded-For` header from the ALB to resolve the client IP.
 
 :::warning
 Enable the `alb` profile only when Wave runs behind a trusted ALB. If Wave is exposed directly to the internet, trusting `X-Forwarded-For` lets clients spoof their IP address and bypass rate limiting.
