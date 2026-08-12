@@ -32,7 +32,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout PR head
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           # Agent mode performs no branch setup of its own (unlike tag mode), and
           # a comment event points at the default branch — without an explicit ref
