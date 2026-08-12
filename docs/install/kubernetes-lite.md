@@ -16,11 +16,6 @@ You need the following:
 - Redis 6.2 or later, reachable from the cluster.
 - A Seqera Platform deployment and its endpoint URL.
 - Access to the Wave container image from `cr.seqera.io`, using credentials provided by Seqera.
-
-:::
-
-:::tip
-The manifests in this guide assemble into a single file. Save each YAML block into `wave.yaml` in the order shown, separated by `---`, then apply the file once at the end.
 :::
 
 :::tip[Install with the Helm chart]
