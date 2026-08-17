@@ -48,6 +48,47 @@ class HttpClientFactory {
 
     private static HttpClient client2
 
+    private static volatile HttpProxyConfig proxyConfig
+
+
+    /**
+     * Set the egress proxy configuration to be used by the clients created by this factory.
+     * The proxy is resolved at bootstrap by {@link io.seqera.wave.configuration.HttpClientConfig}.
+     * Cached client instances are discarded so that the new settings are applied to clients
+     * obtained after this call
+     *
+     * @param config The {@link HttpProxyConfig} to be applied, or {@code null} to use no proxy
+     */
+    static void setProxyConfig(HttpProxyConfig config) {
+        if( config == null && proxyConfig == null )
+            return
+        l1.lock()
+        try {
+            proxyConfig = config
+            client1 = null
+        }
+        finally {
+            l1.unlock()
+        }
+        l2.lock()
+        try {
+            client2 = null
+        }
+        finally {
+            l2.unlock()
+        }
+    }
+
+    static private HttpClient.Builder applyProxyConfig(HttpClient.Builder builder) {
+        final proxy = proxyConfig
+        if( proxy ) {
+            builder.proxy(proxy.proxySelector())
+            final auth = proxy.authenticator()
+            if( auth )
+                builder.authenticator(auth)
+        }
+        return builder
+    }
 
     static HttpClient followRedirectsHttpClient() {
         if( client1!=null )
@@ -56,7 +97,7 @@ class HttpClientFactory {
         try {
             if( client1!=null )
                 return client1
-            return client1=followRedirectsHttpClient0()
+            return client1=newHttpClient0(HttpClient.Redirect.NORMAL)
         } finally {
             l1.unlock()
         }
@@ -69,7 +110,7 @@ class HttpClientFactory {
         try {
             if( client2!=null )
                 return client2
-            return client2=neverRedirectsHttpClient0()
+            return client2=newHttpClient0(HttpClient.Redirect.NEVER)
         } finally {
             l2.unlock()
         }
@@ -79,25 +120,14 @@ class HttpClientFactory {
         return followRedirectsHttpClient()
     }
 
-    static private HttpClient followRedirectsHttpClient0() {
-        final result = HttpClient.newBuilder()
+    static private HttpClient newHttpClient0(HttpClient.Redirect redirect) {
+        final builder = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
-                .followRedirects(HttpClient.Redirect.NORMAL)
+                .followRedirects(redirect)
                 .connectTimeout(timeout)
                 .executor(threadPool)
-                .build()
-        log.debug "Creating new followRedirectsHttpClient: $result"
-        return result
-    }
-
-    static private HttpClient neverRedirectsHttpClient0() {
-        final result = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .followRedirects(HttpClient.Redirect.NEVER)
-                .connectTimeout(timeout)
-                .executor(threadPool)
-                .build()
-        log.debug "Creating new neverRedirectsHttpClient: $result"
+        final result = applyProxyConfig(builder).build()
+        log.debug "Creating new httpClient with $redirect redirects policy: $result"
         return result
     }
 
