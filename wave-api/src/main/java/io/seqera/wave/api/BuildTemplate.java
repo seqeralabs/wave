@@ -30,6 +30,16 @@ public final class BuildTemplate {
     public static final String CONDA_PIXI_V1 = "conda/pixi:v1";
 
     /**
+     * Build template for Pixi lock file-based multi-stage builds
+     */
+    public static final String CONDA_PIXI_LOCK_V1 = "conda/pixi-lock:v1";
+
+    /**
+     * Build template for Pixi manifest (pixi.toml) file-based multi-stage builds (online solving)
+     */
+    public static final String CONDA_PIXI_TOML_V1 = "conda/pixi-toml:v1";
+
+    /**
      * Build template for Micromamba v1-based multi-stage builds
      */
     public static final String CONDA_MICROMAMBA_V1 = "conda/micromamba:v1";

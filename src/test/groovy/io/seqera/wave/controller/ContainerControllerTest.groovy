@@ -33,6 +33,7 @@ import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.api.BuildTemplate
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.ContainerStatusResponse
@@ -610,6 +611,118 @@ class ContainerControllerTest extends Specification {
             buildId == 'build123'
             containerToken == null
             cached == true
+            succeeded == true
+        }
+    }
+
+    def 'should prepare pixi lock build request from inline packages environment'() {
+        given:
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def builder = Mock(ContainerBuildService)
+        def proxyRegistry = Mock(RegistryProxyService)
+        def addressResolver = Mock(HttpClientAddressResolver)
+        def tokenService = Mock(ContainerRequestService)
+        def persistence = Mock(PersistenceService)
+        def controller = new ContainerController(
+                freezeService: new FreezeServiceImpl(inspectService: dockerAuth),
+                buildService: builder,
+                inspectService: dockerAuth,
+                registryProxyService: proxyRegistry,
+                buildConfig: buildConfig,
+                inclusionService: Mock(ContainerInclusionService),
+                addressResolver: addressResolver,
+                containerService: tokenService,
+                persistenceService: persistence,
+                validationService: validationService,
+                serverUrl: 'http://wave.com')
+        def lockContent = '''\
+                version: 6
+                environments:
+                  default:
+                    channels:
+                    - url: https://conda.anaconda.org/conda-forge/
+                '''.stripIndent()
+        def req = new SubmitContainerTokenRequest(
+                packages: new PackagesSpec(
+                        type: PackagesSpec.Type.CONDA,
+                        environment: encode(lockContent)
+                ),
+                buildTemplate: BuildTemplate.CONDA_PIXI_LOCK_V1
+        )
+        def user = new User(email: 'pixi-inline@bar.com', userName: 'pixi-inline')
+        def id = PlatformId.of(user, req)
+
+        when:
+        def response = controller.handleRequest(null, req, id, true)
+
+        then:
+        1 * builder.buildImage(_ as BuildRequest) >> { BuildRequest build ->
+            assert build.buildTemplate == BuildTemplate.CONDA_PIXI_LOCK_V1
+            assert build.condaFile == lockContent
+            assert build.containerFile.contains('COPY conda.yml /opt/wave/pixi.lock')
+            assert build.containerFile.contains('pixi install --frozen')
+            new BuildTrack('build-inline-pixi', build.targetImage, false, true)
+        }
+        1 * tokenService.computeToken(_) >> new TokenData('wavetoken-inline', Instant.now().plus(1, ChronoUnit.HOURS))
+        and:
+        response.status.code == 200
+        verifyAll(response.body.get() as SubmitContainerTokenResponse) {
+            buildId == 'build-inline-pixi'
+            containerToken == 'wavetoken-inline'
+            cached == false
+            succeeded == true
+        }
+    }
+
+    def 'should prepare pixi lock build request from packages URL'() {
+        given:
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def builder = Mock(ContainerBuildService)
+        def proxyRegistry = Mock(RegistryProxyService)
+        def addressResolver = Mock(HttpClientAddressResolver)
+        def tokenService = Mock(ContainerRequestService)
+        def persistence = Mock(PersistenceService)
+        def controller = new ContainerController(
+                freezeService: new FreezeServiceImpl(inspectService: dockerAuth),
+                buildService: builder,
+                inspectService: dockerAuth,
+                registryProxyService: proxyRegistry,
+                buildConfig: buildConfig,
+                inclusionService: Mock(ContainerInclusionService),
+                addressResolver: addressResolver,
+                containerService: tokenService,
+                persistenceService: persistence,
+                validationService: validationService,
+                serverUrl: 'http://wave.com')
+        def lockUrl = 'https://example.com/pixi.lock'
+        def req = new SubmitContainerTokenRequest(
+                packages: new PackagesSpec(
+                        type: PackagesSpec.Type.CONDA,
+                        entries: [lockUrl]
+                ),
+                buildTemplate: BuildTemplate.CONDA_PIXI_LOCK_V1
+        )
+        def user = new User(email: 'pixi-url@bar.com', userName: 'pixi-url')
+        def id = PlatformId.of(user, req)
+
+        when:
+        def response = controller.handleRequest(null, req, id, true)
+
+        then:
+        1 * builder.buildImage(_ as BuildRequest) >> { BuildRequest build ->
+            assert build.buildTemplate == BuildTemplate.CONDA_PIXI_LOCK_V1
+            assert build.condaFile == null
+            assert build.containerFile.contains("curl -fsSL ${lockUrl} -o pixi.lock")
+            assert build.containerFile.contains('pixi install --frozen')
+            new BuildTrack('build-url-pixi', build.targetImage, false, true)
+        }
+        1 * tokenService.computeToken(_) >> new TokenData('wavetoken-url', Instant.now().plus(1, ChronoUnit.HOURS))
+        and:
+        response.status.code == 200
+        verifyAll(response.body.get() as SubmitContainerTokenResponse) {
+            buildId == 'build-url-pixi'
+            containerToken == 'wavetoken-url'
+            cached == false
             succeeded == true
         }
     }

@@ -36,6 +36,8 @@ import org.yaml.snakeyaml.Yaml
 import static io.seqera.wave.api.BuildTemplate.CONDA_MICROMAMBA_V1
 import static io.seqera.wave.api.BuildTemplate.CONDA_MICROMAMBA_V2
 import static io.seqera.wave.api.BuildTemplate.CONDA_PIXI_V1
+import static io.seqera.wave.api.BuildTemplate.CONDA_PIXI_LOCK_V1
+import static io.seqera.wave.api.BuildTemplate.CONDA_PIXI_TOML_V1
 import static io.seqera.wave.api.BuildTemplate.CRAN_INSTALLR_V1
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static DockerHelper.condaEnvironmentToCondaYaml
@@ -70,6 +72,12 @@ class ContainerHelper {
         if( req.buildTemplate == CONDA_PIXI_V1 ) {
             return PixiHelper.containerFile(spec, req.containerImage, singularity)
         }
+        if( req.buildTemplate == CONDA_PIXI_LOCK_V1 ) {
+            return PixiLockHelper.containerFile(spec, req.containerImage, singularity)
+        }
+        if( req.buildTemplate == CONDA_PIXI_TOML_V1 ) {
+            return PixiTomlHelper.containerFile(spec, req.containerImage, singularity)
+        }
         if( spec.type == PackagesSpec.Type.CRAN && (!req.buildTemplate || req.buildTemplate == CRAN_INSTALLR_V1) ) {
             return CranHelper.containerFile(spec, singularity)
         }
@@ -83,6 +91,13 @@ class ContainerHelper {
 
         if( req.packages.type != PackagesSpec.Type.CONDA )
             return null
+
+        if( req.buildTemplate == CONDA_PIXI_LOCK_V1 || req.buildTemplate == CONDA_PIXI_TOML_V1 ) {
+            if( req.packages.environment ) {
+                return decodeBase64OrFail(req.packages.environment, 'packages.environment')
+            }
+            return null
+        }
 
         if( req.packages.environment ) {
             // parse the attribute as a conda file path *and* append the base packages if any
