@@ -464,6 +464,10 @@ Configure PostgreSQL with the following options:
 : Password for the PostgreSQL database user.
   Can be set using the `${WAVE_DB_PASSWORD}` environment variable.
 
+`wave.db.schema` *(optional)*
+: PostgreSQL schema used for Wave tables (default: `wave`).
+  Can be set using the `${WAVE_DB_SCHEMA}` environment variable.
+
 `wave.db.uri` *(required)*
 : JDBC connection string for the PostgreSQL database.
   For example, `jdbc:postgresql://localhost:5432/wave`.
@@ -472,6 +476,8 @@ Configure PostgreSQL with the following options:
 `wave.db.user` *(required)*
 : Username for authenticating with the PostgreSQL database.
   Can be set using the `${WAVE_DB_USER}` environment variable.
+
+For isolated deployments that share a PostgreSQL database, provision one role and schema per Wave instance, then set `WAVE_DB_USER` and `WAVE_DB_SCHEMA` to that pair (for example, `wave_pr_123`). Wave sets the datasource schema from `wave.db.schema`, so role and schema can differ if the role owns or can create the configured schema.
 
 ## Blob cache
 

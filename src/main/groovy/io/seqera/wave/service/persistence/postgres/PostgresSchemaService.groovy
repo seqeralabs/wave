@@ -19,10 +19,14 @@
 package io.seqera.wave.service.persistence.postgres
 
 import java.sql.SQLException
+import java.util.regex.Pattern
 
 import groovy.transform.CompileStatic
+import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Requires
+import io.micronaut.context.annotation.Value
 import io.micronaut.data.jdbc.runtime.JdbcOperations
+import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
@@ -32,12 +36,18 @@ import jakarta.inject.Singleton
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Requires(env='postgres')
+@Context
 @Singleton
 @CompileStatic
 class PostgresSchemaService {
 
+    final static private Pattern SAFE_IDENT = Pattern.compile('[a-z_][a-z0-9_]*')
+
     @Inject
     private JdbcOperations jdbcOperations
+
+    @Value('${wave.db.schema:wave}')
+    private String schemaName
 
     final static private String ddl = '''
             -- BUILD entity 
@@ -94,10 +104,18 @@ class PostgresSchemaService {
 
             '''.stripIndent()
 
+    @PostConstruct
+    void init() {
+        create()
+    }
 
     void create() {
+        assertSafeIdentifier(schemaName)
+        assertNoLegacyTablesInPublic()
         jdbcOperations.execute((conn)-> {
             try(final stmt = conn.createStatement()) {
+                stmt.execute("CREATE SCHEMA IF NOT EXISTS ${schemaName} AUTHORIZATION CURRENT_USER")
+                stmt.execute("SET search_path = ${schemaName}")
                 stmt.execute(ddl)
             }
             catch (SQLException e) {
@@ -122,5 +140,24 @@ class PostgresSchemaService {
                 throw new RuntimeException("Failed to truncate PostgreSQL tables", e)
             }
         })
+    }
+
+    private void assertNoLegacyTablesInPublic() {
+        final count = jdbcOperations.prepareStatement(
+                "SELECT count(*) FROM pg_tables WHERE schemaname = 'public' AND tablename LIKE 'wave\\_%' ESCAPE '\\'"
+        ) { stmt ->
+            final resultSet = stmt.executeQuery()
+            return resultSet.next() ? resultSet.getInt(1) : 0
+        }
+        if( count>0 ) {
+            throw new IllegalStateException(
+                    "${count} legacy wave_* table(s) in 'public' require migration to '${schemaName}' before starting this build. Contact support.")
+        }
+    }
+
+    static private void assertSafeIdentifier(String name) {
+        if( !name || !SAFE_IDENT.matcher(name).matches() ) {
+            throw new IllegalStateException("Invalid wave.db.schema: must match ${SAFE_IDENT.pattern()} (got: ${name})")
+        }
     }
 }
