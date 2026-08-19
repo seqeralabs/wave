@@ -587,14 +587,17 @@ Configure polling and scheduling intervals for Wave's asynchronous job processin
 `wave.job-manager.scheduler-interval` *(optional)*
 : Interval for the job scheduler to process queued jobs (default: `1s`).
 
-## Message stream
+## Work queue
 
-Configure how Wave consumes messages from the Redis stream used for internal event processing.
+Configure how Wave consumes messages from the Redis backed work queue used for internal job processing.
 
-`wave.message-stream.claim-timeout` *(optional)*
-: Timeout for claiming messages from the Redis stream (default: `5s`).
+`wave.work-queue.consumer-group-name` *(optional)*
+: Name of the Redis consumer group used to read the work queues (default: `wave-message-stream`).
 
-`wave.message-stream.consume-warn-timeout` *(optional)*
+`wave.work-queue.visibility-timeout` *(optional)*
+: How long a claimed message stays invisible to other consumers before it is redelivered (default: `5s`).
+
+`wave.work-queue.consumer-warn-timeout` *(optional)*
 : Threshold duration after which a slow message consumer triggers a warning (default: `4s`).
 
 ## Thread monitor
