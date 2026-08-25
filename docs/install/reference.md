@@ -1,10 +1,11 @@
 ---
 title: Configuration reference
+description: Configuration options for self-hosted Wave deployments.
 tags: [configuration, reference, wave]
 ---
 
-This page documents configuration options for self-hosted Wave deployments.
-If you are using Wave as a service, these configuration options do not apply to your setup.
+The following options configure self-hosted Wave deployments.
+If you use Wave as a hosted service, these options do not apply.
 
 Configure Wave by setting YAML values in the [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml) configuration file:
 
@@ -14,16 +15,16 @@ wave:
         from: "wave-app@seqera.io"
 ```
 
-Configuration paths in this reference use dot notation to represent nested YAML keys. In the example above, the `from` value nested under the `mail` section is referenced as `wave.mail.from`.
+Configuration paths in this reference use dot notation to represent nested YAML keys. In this example, the `from` value nested under the `mail` section is referenced as `wave.mail.from`.
 
 You can configure Wave using either the `config.yml` file or environment variables. Environment variables are provided where available, though not all configuration options support them.
 
 ## General
 
-Configure general Wave application settings, such as application name, port, anonymous access permissions, and platform URLs with the following options:
+Configure general Wave application settings.
 
 `tower.endpoint.url` *(optional)*
-: URL of the Seqera platform API service (default: [`https://api.cloud.seqera.io`](https://api.cloud.seqera.io)).
+: URL of the Seqera Platform API service (default: [`https://api.cloud.seqera.io`](https://api.cloud.seqera.io)).
   Can be set using the `${TOWER_ENDPOINT_URL}` environment variable.
 
 `wave.deny-hosts` *(optional)*
@@ -61,13 +62,30 @@ Configure general Wave application settings, such as application name, port, ano
 `wave.tokens.watcher.count` *(optional)*
 : Maximum number of container requests processed in a single watcher cycle (default: `250`).
 
+## Feature toggles
+
+Each Wave feature is an independent toggle. Wave Lite runs with all four off, which is what the `lite` Micronaut environment applies.
+
+`wave.build.enabled` *(optional)*
+: When `true`, Wave provisions containers with on-demand builds (default: `true`). Freeze and scanning both depend on the build pipeline and are unavailable when this is `false`.
+
+`wave.mirror.enabled` *(optional)*
+: When `true`, Wave can mirror images into a target repository (default: `true`).
+
+`wave.scan.enabled` *(optional)*
+: When `true`, activates vulnerability scanning (default: `false`). Requires `wave.build.enabled` and `wave.scan.reports.path`.
+
+`wave.blob-cache.enabled` *(optional)*
+: When `true`, Wave caches container layers in object storage (default: `false`). Requires the blob cache storage settings.
+
 ## Capabilities
 
 The `wave.capabilities.*` flags are installation-level toggles for optional Wave capabilities. All default to `true` (permissive). Set a flag to `false` to lock down that capability, or enable the `strict` environment (`MICRONAUT_ENVIRONMENTS=strict`) to disable all of them at once — intended for regulated deployments where Wave must not serve images directly, broker credentials, expose its HTML pages, or accept anonymous requests.
 
 `wave.capabilities.anonymous-access` *(optional)*
 : When `true`, anonymous (unauthenticated) users can access the Wave server (default: `true`).
-  Set to `false` to require authenticated access. Modify this option based on your security requirements.
+  Set to `false` to require authenticated access, so that every request must carry a Platform-issued token.
+  Legacy alias: `wave.allowAnonymous`. Wave still honors the alias, but prefer the canonical key.
 
 `wave.capabilities.ephemeral-token` *(optional)*
 : When `true`, Wave can provision a container by pulling an existing image directly, applying any container configuration on the fly (the augmentation path) (default: `true`).
@@ -86,14 +104,11 @@ The `wave.capabilities.*` flags are installation-level toggles for optional Wave
 Wave uses the generic format `wave.registries.<REGISTRY_NAME>.username` and `wave.registries.<REGISTRY_NAME>.password` for registry authentication.
 You must specify all repositories used in your Wave installation.
 
-The examples below show standard formats for known registries, but you can customize the registry name (for example, change `azurecr.io` to `seqeralabs.azurecr.io`).
+The following examples show standard formats for known registries, but you can customize the registry name (for example, change `azurecr.io` to `seqeralabs.azurecr.io`).
 
-:::note
-You can also define container registry credentials in the [`config.yml`](https://github.com/seqeralabs/wave/blob/master/config.yml) file.
-These configurations enable Wave authentication for repositories used to push or pull artifacts.
-:::
+Wave does not read the environment variables in this section directly. They take effect only where your `config.yml` interpolates them, as in `username: "${DOCKER_USER:}"`. Setting `DOCKER_USER` without such an entry has no effect.
 
-Configure container registry authentication with the following options:
+Configure container registry authentication with the following options.
 
 `wave.registries.<AWS_ECR_REPO_NAME>.password` *(optional)*
 : AWS ECR password for authentication.
@@ -124,15 +139,29 @@ Configure container registry authentication with the following options:
 : Quay.io username for authentication.
   Can be set using the `${QUAY_USER}` environment variable.
 
+## Registry pre-creation
+
+Wave pushes with BuildKit for builds and Skopeo for mirrors. The registry, not Wave, determines whether a target repository must exist before the first push. If the registry requires pre-creation and the path is missing, the push fails partway through the layer upload. See [Registry push and authentication failures](../troubleshoot.md#registry-push-and-authentication-failures) to diagnose one.
+
+| Registry | Pre-creation | Notes |
+| --- | --- | --- |
+| Amazon ECR | Required | Every repository must exist before push. Registry-level auto-create policies exist but are off by default. |
+| Docker Hub | Not required | Repositories auto-create in your user or organization namespace. Repository-count and pull rate limits apply. |
+| GitHub Container Registry | Not required | Auto-creates under the user or organization namespace; visibility inherits from the organization's package settings. |
+| Google Artifact Registry | Partial | Create the repository with `gcloud artifacts repositories create`; image paths inside it auto-create. |
+| Google Container Registry | Not required | Auto-creates on push. Being phased out. Target Artifact Registry for new deployments. |
+| Azure Container Registry | Partial | The ACR instance must exist; image paths inside it auto-create. Wave needs the `AcrPush` role. |
+| Harbor | Partial | Create the project through the UI or API; images inside it auto-create if project policy permits. |
+
 ## AWS cross-account role chaining
 
-When Wave needs to access ECR registries in customer AWS accounts using IAM role credentials provided by the Seqera Platform, you can configure an intermediate "jump role" for cross-account access. When configured, Wave first assumes the jump role using its own credentials, then uses the jump role's temporary credentials to assume the target role received from the Seqera Platform.
+To access ECR registries in customer AWS accounts using IAM role credentials from the Seqera Platform, configure an intermediate "jump role" for cross-account access. Wave first assumes the jump role using its own credentials, then uses the jump role's temporary credentials to assume the target role from the Seqera Platform.
 
-This enables a two-hop role chaining pattern:
+This is a two-hop role chaining pattern:
 
-1. Wave assumes the jump role (using its default credentials)
-2. Wave uses the jump role's temporary credentials to assume the customer's target role
-3. The target role's temporary credentials are used to authenticate with ECR
+1. Wave assumes the jump role (using its default credentials).
+2. Wave uses the jump role's temporary credentials to assume the customer's target role.
+3. The target role's temporary credentials authenticate with ECR.
 
 Configure jump role chaining with the following options:
 
@@ -148,7 +177,7 @@ Configure jump role chaining with the following options:
 <div style={{marginLeft: '2em'}}>
 
 :::note
-When the jump role is not configured, Wave assumes target roles directly using its default credentials (the previous behavior). The jump role is only used for role-based ECR authentication, not for static AWS credential flows.
+When the jump role is not configured, Wave assumes target roles directly using its default credentials. The jump role is only used for role-based ECR authentication, not for static AWS credential flows.
 :::
 
 </div>
@@ -184,7 +213,7 @@ Configure caching for jump role temporary credentials to avoid redundant STS cal
 
 ## HTTP client
 
-Configure the HTTP client with the following options:
+Configure the HTTP client with the following options.
 
 `wave.httpclient.connect-timeout` *(optional)*
 : Connection timeout for the HTTP client (default: `20s`).
@@ -193,7 +222,7 @@ Configure the HTTP client with the following options:
 : Number of HTTP client retry attempts (default: `5`).
 
 `wave.httpclient.retry.delay` *(optional)*
-: Delay between HTTP client retries (default: `1s`).
+: Delay between HTTP client retries (default: `500ms`).
 
 `wave.httpclient.retry.jitter` *(optional)*
 : Jitter factor for HTTP client retries (default: `0.25`).
@@ -206,14 +235,14 @@ Configure the HTTP client with the following options:
 
 ## Container build process
 
-Configure how Wave builds container images and manages associated logs for monitoring, troubleshooting, and delivery with the following options:
+Configure how Wave builds container images and manages build logs.
 
-`wave.build.buildkit-image` *(required)*
+`wave.build.buildkit-image` *(optional)*
 : [Buildkit](https://github.com/moby/buildkit) container image used in the Wave build process (default: `public.cr.seqera.io/wave/buildkit:v0.25.2-rootless`).
 
 `wave.build.cache` *(optional)*
 : Cache repository for images built by Wave. Supports both container registry paths and S3 bucket paths.
-  For Example:
+  For example:
 
   <div style={{marginLeft: '2em'}}>
 
@@ -235,13 +264,9 @@ Configure how Wave builds container images and manages associated logs for monit
   For example, `8`.
   This setting is only used when `wave.build.cache` is configured with an S3 bucket path.
 
-`wave.cleanup.strategy` *(optional)*
-: Cleanup strategy after the build process.
-  For example, set to `OnSuccess` for cleanup only if a build is successful.
-
 `wave.build.compression` *(optional)*
 : Compression type applied to cache layers (default: `gzip`).
-  Options include: `uncompressed`,`estargz`, and `zstd`.
+  Options include: `uncompressed`, `estargz`, and `zstd`.
 
 `wave.build.force-compression` *(optional)*
 : When `true`, forces compression for each cache layer produced by the build process (default: `false`).
@@ -250,9 +275,9 @@ Configure how Wave builds container images and manages associated logs for monit
 : When `true`, includes OCI media types in exported manifests (default: `true`).
 
 `wave.build.public-repo` *(optional)*
-: Public repository for container images built by Wave. Wave uses this repository as the build target when a freeze mode build is requested with Conda or pip packages via the v2 API and no `buildRepository` is provided. Images stored here default to the `imageSuffix` naming strategy. The registry hostname must be unique so that Wave can resolve default credentials correctly (i.e, it cannot be shared with `wave.build.repo` or `wave.build cache-repo`). If not set, a `buildRepository` must be specified in each freeze mode operations with packages.
+: Public repository for container images built by Wave. Wave uses this repository as the build target when a freeze mode build is requested with Conda or pip packages via the v2 API and no `buildRepository` is provided. Images stored here default to the `imageSuffix` naming strategy. The registry hostname must be unique so that Wave can resolve default credentials correctly (it cannot be shared with `wave.build.repo` or `wave.build.cache`). If not set, you must specify a `buildRepository` in each freeze mode operation with packages.
 
-`wave.build.repo` *(required)*
+`wave.build.repo` *(required when builds are enabled)*
 : Docker container repository for container images built by Wave.
 
 `wave.build.singularity-image` *(optional)*
@@ -262,44 +287,69 @@ Configure how Wave builds container images and manages associated logs for monit
 : Delay between build status checks (default: `5s`).
 
 `wave.build.status.duration` *(optional)*
-: Duration for build status checks (default: `1d`).
+: Duration for build status checks (default: `90m`).
 
 `wave.build.timeout` *(optional)*
-: Maximum duration for the build process (default: `5m`).
+: Maximum duration for the build process (default: `900s`).
+  Keep `micronaut.server.idle-timeout` (default: `910s`) equal to or longer than this value.
 
 `wave.build.trusted-timeout` *(optional)*
 : Maximum duration for the build process when you are authenticated and freeze mode is enabled (default: `10m`).
   If set to less than `wave.build.timeout`, the longer `wave.build.timeout` value is used.
 
-`wave.build.workspace` *(required)*
+`wave.build.workspace` *(required when builds are enabled)*
 : Path to the directory used by Wave to store artifacts such as Containerfiles, Trivy cache for scan, Buildkit context, and authentication configuration files.
   For example, `/efs/wave/build`.
 
 :::tip
-For S3 cache authentication setup (IAM roles, service accounts, and deployment examples), see [S3 cache authentication](./configure-wave.md#s3-cache-authentication).
+For S3 cache authentication setup, see [Build layer cache](configure-wave.md#build-layer-cache).
 :::
+
+### Cleanup
+
+Wave deletes build job resources and work directories after builds complete. Configure the cleanup behavior with the following options.
+
+`wave.cleanup.strategy` *(optional)*
+: Cleanup strategy for build resources.
+  Options include: `always`, `never`, and `onsuccess` (clean up only when the build succeeds).
+  When unset, Wave cleans up unless `wave.debug` is `true`.
+
+`wave.cleanup.succeeded` *(optional)*
+: How long the job resources and work directory of a successful build are retained before deletion (default: `30m`).
+
+`wave.cleanup.failed` *(optional)*
+: How long the job resources and work directory of a failed build are retained before deletion (default: `1d`).
+
+`wave.cleanup.range` *(optional)*
+: Maximum number of expired entries processed in each cleanup run (default: `200`).
+
+`wave.cleanup.startup-delay` *(optional)*
+: Delay before the cleanup service starts after boot. The actual delay is randomized around this value (default: `10s`).
+
+`wave.cleanup.run-interval` *(optional)*
+: Interval between cleanup runs (default: `30s`).
 
 ### Build process logs
 
-Configure how Wave stores and delivers build logs from containers and Kubernetes pods, which can be retrieved later or included in build completion emails, with the following options:
+Configure how Wave stores and delivers build logs from containers and Kubernetes pods. You can retrieve these logs later or include them in build completion emails.
 
-`wave.build.locks.path` *(required)*
-: Path where Wave stores Conda lock files. Can be an S3 URI (e.g., `s3://my-bucket/wave/locks`) or a local filesystem path.
+`wave.build.locks.path` *(required when builds are enabled)*
+: Path where Wave stores Conda lock files. Can be an S3 URI (for example, `s3://my-bucket/wave/locks`) or a local filesystem path.
 
 `wave.build.logs.max-length` *(optional)*
 : Maximum number of bytes read from a log file. If a log file exceeds this limit, it is truncated (default: `100000` (100 KB)).
 
-`wave.build.logs.path` *(required)*
-: Path where Wave stores build logs. Can be an S3 URI (e.g., `s3://my-bucket/wave/logs`) or a local filesystem path. When using an S3 URI, Wave automatically extracts the key prefix for log file organization.
+`wave.build.logs.path` *(required when builds are enabled)*
+: Path where Wave stores build logs. Can be an S3 URI (for example, `s3://my-bucket/wave/logs`) or a local filesystem path. When using an S3 URI, Wave automatically extracts the key prefix for log file organization.
 
 ### Kubernetes container build process
 
-Configure Kubernetes-specific settings for Wave, where build and scan processes share most configurations except for CPU and memory requirements, with the following options:
+Configure Kubernetes-specific settings for Wave. Build and scan processes share most configurations except for CPU and memory requirements.
 
 `wave.build.k8s.labels` *(optional)*
 : Labels for Wave build Kubernetes pods.
 
-`wave.build.k8s.namespace` *(required)*
+`wave.build.k8s.namespace` *(required for Kubernetes builds)*
 : Kubernetes namespace where Wave runs build pods.
 
 `wave.build.k8s.dns.policy` *(optional)*
@@ -319,7 +369,7 @@ Configure Kubernetes-specific settings for Wave, where build and scan processes 
   <div style={{marginLeft: '2em'}}>
 
   ```yaml
-  wave.build.k8s.nodeSelector:
+  wave.build.k8s.node-selector:
     linux/amd64: 'seqera.io/wave-build-amd64=true'
     linux/arm64: 'seqera.io/wave-build-arm64=true'
     noarch: 'seqera.io/wave-build=true'
@@ -346,28 +396,25 @@ Configure Kubernetes-specific settings for Wave, where build and scan processes 
 
 ## Container scan process
 
-Configure how Wave's vulnerability scanning process uses a [Trivy Docker image](https://hub.docker.com/r/aquasec/trivy) with customizable tags and severity levels with the following options:
-
-`wave.scan.enabled` *(optional)*
-: When `true`, activates vulnerability scanning (default: `false`).
+Configure the Wave vulnerability scanning process, which uses a [Trivy Docker image](https://hub.docker.com/r/aquasec/trivy) with customizable tags and severity levels.
 
 `wave.scan.image.name`  *(optional)*
 : Container image used for security scanning (default: `public.cr.seqera.io/wave/scanner:v1-0.65.0-oras-1.3.0`).
 
-`wave.scan.reports.path` *(required)*
+`wave.scan.reports.path` *(required when scanning is enabled)*
 : S3 bucket path where Wave stores SBOM reports.
   For example, `s3://wave-store/scan-reports`.
 
 `wave.scan.severity` *(optional)*
 : [Severity levels](https://aquasecurity.github.io/trivy/v0.22.0/vulnerability/examples/filter/) to report in vulnerability scanning.
-: Options include: `MEDIUM`,`HIGH`, and `CRITICAL`.
+: Options include: `MEDIUM`, `HIGH`, and `CRITICAL`.
 
 `wave.scan.status.duration` *(optional)*
 : Duration for which scan status records are retained (default: `5d`).
 
 ### Kubernetes Wave scan process
 
-Configure Wave scanning process resource requirements for Kubernetes deployments with the following options:
+Configure Wave scan process resource requirements for Kubernetes deployments.
 
 `wave.scan.k8s.resources.requests.cpu` *(optional)*
 : [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to Wave scan processes.
@@ -379,7 +426,7 @@ Configure Wave scanning process resource requirements for Kubernetes deployments
 
 ## Container mirror process
 
-Configure Kubernetes resource requirements for Wave's container mirroring operations with the following options:
+Configure Kubernetes resource requirements for Wave container mirroring operations.
 
 `wave.mirror.k8s.resources.requests.cpu` *(optional)*
 : CPU resources requested for mirror Kubernetes pods.
@@ -395,7 +442,7 @@ Configure Kubernetes resource requirements for Wave's container mirroring operat
 
 ## Proxy cache
 
-Configure Wave's in-memory proxy cache for registry responses with the following options:
+Configure the Wave in-memory proxy cache for registry responses.
 
 `wave.proxy-cache.enabled` *(optional)*
 : When `true`, activates the proxy cache (default: `false`).
@@ -408,22 +455,54 @@ Configure Wave's in-memory proxy cache for registry responses with the following
 
 ## Rate limits
 
-Configure how Wave controls rate limits for anonymous and authenticated user access with the following options:
+Configure rate limits for anonymous and authenticated user access.
 
-`rate-limit.build.anonymous` *(required)*
+:::note
+These options take effect only when the `rate-limit` entry is included in the `MICRONAUT_ENVIRONMENTS` variable of your deployment.
+:::
+
+`rate-limit.build.anonymous` *(optional)*
 : Rate limit for build requests from anonymous users (default: `10/1h`).
 
-`rate-limit.build.authenticated` *(required)*
+`rate-limit.build.authenticated` *(optional)*
 : Rate limit for build requests from authenticated users (default: `10/1m`).
 
-`rate-limit.pull.anonymous` *(required)*
+`rate-limit.pull.anonymous` *(optional)*
 : Rate limit for pull requests from anonymous users (default: `100/1h`).
 
-`rate-limit.pull.authenticated` *(required)*
+`rate-limit.pull.authenticated` *(optional)*
 : Rate limit for pull requests from authenticated users (default: `100/1m`).
 
 `rate-limit.timeout-errors.max-rate` *(optional)*
-: Maximum rate of timeout errors before Wave begins rejecting requests (default: `10/1m`).
+: Maximum rate of timeout errors before Wave begins rejecting requests (default: `20/2m`).
+
+## Security headers
+
+Wave sends HTTP security headers on all responses by default. Configure them with the following options.
+
+`wave.security.http-headers.enabled` *(optional)*
+: When `true`, Wave adds security headers to HTTP responses (default: `true`).
+
+`wave.security.http-headers.hsts.max-age` *(optional)*
+: `Strict-Transport-Security` max age in seconds (default: `31536000`).
+
+`wave.security.http-headers.hsts.include-sub-domains` *(optional)*
+: When `true`, applies HSTS to subdomains (default: `true`).
+
+`wave.security.http-headers.frame-options` *(optional)*
+: `X-Frame-Options` header value (default: `DENY`).
+
+`wave.security.http-headers.content-type-options` *(optional)*
+: `X-Content-Type-Options` header value (default: `nosniff`).
+
+`wave.security.http-headers.referrer-policy` *(optional)*
+: `Referrer-Policy` header value (default: `strict-origin-when-cross-origin`).
+
+`wave.security.http-headers.permissions-policy` *(optional)*
+: `Permissions-Policy` header value (default: `camera=(), microphone=(), geolocation=()`).
+
+`wave.security.http-headers.content-security-policy` *(optional)*
+: `Content-Security-Policy` header value. Adjust this if you front Wave with additional origins (default: `default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; frame-ancestors 'none'`).
 
 ## Database and cache
 
@@ -431,7 +510,7 @@ Wave uses external database and caching services to store application data and i
 
 ### Redis
 
-Configure Redis with the following options:
+Configure Redis with the following options.
 
 `redis.client.timeout` *(optional)*
 : Timeout duration (in milliseconds) for Redis client operations (default: `5000` (5 seconds)).
@@ -458,7 +537,7 @@ Configure Redis with the following options:
 
 ### PostgreSQL
 
-Configure PostgreSQL with the following options:
+Configure PostgreSQL with the following options.
 
 `wave.db.password` *(required)*
 : Password for the PostgreSQL database user.
@@ -475,7 +554,7 @@ Configure PostgreSQL with the following options:
 
 ## Blob cache
 
-Configure how Wave caches container blobs to improve client performance and optionally delegates transfer tasks to Kubernetes pods for scalability with the following options:
+Configure how Wave caches container blobs to improve client performance. Wave can also delegate transfer tasks to Kubernetes pods for scalability.
 
 `wave.blob-cache.base-url` *(optional)*
 : URL that overrides the base URL (the part before the blob path) of blobs sent to the client.
@@ -505,7 +584,7 @@ Configure how Wave caches container blobs to improve client performance and opti
 : Memory resource [limit](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) for the Kubernetes pod used for blob binary transfers.
 
 `wave.blob-cache.s5cmd-image` *(optional)*
-: Container image that supplies the [s5cmd tool](https://github.com/peak/s5cmd) for uploading blob binaries to the S3 bucket (default: `public.cr.seqera.io/wave/s5cmd:v2.2.2`).
+: Container image that supplies the [s5cmd tool](https://github.com/peak/s5cmd) for uploading blob binaries to the S3 bucket (default: `public.cr.seqera.io/wave/s5cmd:v2.3.0`).
 
 `wave.blob-cache.signing-strategy` *(optional)*
 : URL signing strategy for different services.
@@ -518,20 +597,20 @@ Configure how Wave caches container blobs to improve client performance and opti
 `wave.blob-cache.status.duration` *(optional)*
 : Duration for which blob transfer status records are retained in cache (default: `1h`).
 
-`wave.blob-cache.storage.access-key` *(required)*
+`wave.blob-cache.storage.access-key` *(required when blob cache is enabled)*
 : Access key credential for the caching service.
 
-`wave.blob-cache.storage.bucket` *(required)*
+`wave.blob-cache.storage.bucket` *(required when blob cache is enabled)*
 : Name of the Cloudflare or S3 bucket.
   For example, `s3://wave-blob-cache`.
 
 `wave.blob-cache.storage.endpoint` *(optional)*
 : Storage endpoint URL for blob binary downloads and uploads.
 
-`wave.blob-cache.storage.region` *(required)*
+`wave.blob-cache.storage.region` *(required when blob cache is enabled)*
 : AWS region of the bucket.
 
-`wave.blob-cache.storage.secret-key` *(required)*
+`wave.blob-cache.storage.secret-key` *(required when blob cache is enabled)*
 : Secret key credential for the caching service.
 
 <div style={{marginLeft: '2em'}}>
@@ -547,26 +626,63 @@ Static credentials (`access-key` and `secret-key`) are currently required for bl
 
 ## Email configuration
 
-Configure how Wave sends email notifications on behalf of the service with the following options:
+Configure how Wave sends email notifications.
 
-`mail.from` *(required)*
+Email delivery requires `mail` in `MICRONAUT_ENVIRONMENTS`. Add `aws-ses` as well to send through Amazon SES with IAM authentication. In that case, only `mail.from` applies and the `mail.smtp.*` settings are ignored.
+
+`mail.from` *(required when mail is enabled)*
 : Sender email address for Wave notifications.
   Can be set using the `${MAIL_FROM}` environment variable.
 
+`mail.smtp.host` *(required when SMTP is used)*
+: SMTP server hostname.
+
+`mail.smtp.port` *(required when SMTP is used)*
+: SMTP server port, typically `587` for STARTTLS or `465` for implicit TLS.
+
+`mail.smtp.user` *(optional)*
+: Username for SMTP authentication.
+
+`mail.smtp.password` *(optional)*
+: Password for SMTP authentication.
+
+`mail.smtp.auth` *(optional)*
+: When `true`, authenticate to the SMTP server.
+
+`mail.smtp.starttls.enable` *(optional)*
+: When `true`, upgrade the connection with STARTTLS.
+
+`mail.smtp.starttls.required` *(optional)*
+: When `true`, fail rather than fall back to an unencrypted connection.
+
+`mail.smtp.ssl.protocols` *(optional)*
+: Space-separated list of permitted TLS protocols, for example `TLSv1.2 TLSv1.3`.
+
 ## Metrics
 
-Configure how Wave Metrics service provides data about container builds and pulls per organization and date with the following options:
+Configure the Wave Metrics service, which provides data about container builds and pulls per organization and date.
 
 `wave.metrics.enabled` *(optional)*
 : When `true`, activates Wave metrics (default: `false`).
 
 ## Accounts
 
-Configure user credentials for accessing authenticated Wave APIs and services with the following options:
+Configure user credentials for accessing authenticated Wave APIs and services.
 
-`wave.accounts` *(required)*
-: List of credentials for accessing authenticated Wave APIs such as the metrics API.
-  Format of the credential list: `- <USERNAME>:<PASSWORD_CHECKSUM>`
+`wave.accounts` *(optional)*
+: Credentials for accessing authenticated Wave APIs such as the metrics API.
+  A map of usernames to SHA-256 hex checksums of the corresponding passwords:
+
+  <div style={{marginLeft: '2em'}}>
+
+  ```yaml
+  wave:
+    accounts:
+      # SHA-256 checksum of the password 'bar'
+      foo: "fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9"
+  ```
+
+  </div>
 
 ## License server
 
@@ -580,6 +696,10 @@ Configure the connection to the Seqera license management server:
 ## Job manager
 
 Configure polling and scheduling intervals for Wave's asynchronous job processing.
+
+`wave.job-manager.max-running-jobs` *(optional)*
+: Maximum number of build, scan, and mirror jobs Wave runs concurrently (default: `20`).
+  Pair this with a `ResourceQuota` on the build namespace to bound build resource usage.
 
 `wave.job-manager.poll-interval` *(optional)*
 : Polling interval for checking job status (default: `1s`).
