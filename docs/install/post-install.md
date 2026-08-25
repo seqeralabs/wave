@@ -104,3 +104,4 @@ If a check does not pass, match the symptom to one of these common causes:
 - **Freeze is rejected even with a build repository set**: The repository sits inside an operator-reserved prefix. See [Freeze and user-supplied build repositories](aws-build.md#freeze-and-user-supplied-build-repositories).
 
 When the checks pass, continue to the [production checklist](configure-wave.md#production-checklist) to prepare the deployment for production.
+
