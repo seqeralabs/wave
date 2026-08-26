@@ -505,6 +505,7 @@ class TemplateUtilsTest extends Specification {
                 RUN mkdir -p "$MAMBA_ROOT_PREFIX/etc/conda/activate.d" \\
                     && printf '%s\\n' \\
                         '#!/bin/bash' \\
+                        'unset __wave_nounset' \\
                         'case $- in *u*) __wave_nounset=1 ;; esac' \\
                         'export CONDA_PREFIX="${CONDA_PREFIX:-$MAMBA_ROOT_PREFIX}"' \\
                         'set +u' \\
@@ -550,6 +551,7 @@ class TemplateUtilsTest extends Specification {
                 RUN mkdir -p "$MAMBA_ROOT_PREFIX/etc/conda/activate.d" \\
                     && printf '%s\\n' \\
                         '#!/bin/bash' \\
+                        'unset __wave_nounset' \\
                         'case $- in *u*) __wave_nounset=1 ;; esac' \\
                         'export CONDA_PREFIX="${CONDA_PREFIX:-$MAMBA_ROOT_PREFIX}"' \\
                         'set +u' \\
@@ -604,6 +606,7 @@ class TemplateUtilsTest extends Specification {
                 RUN mkdir -p "$MAMBA_ROOT_PREFIX/etc/conda/activate.d" \\
                     && printf '%s\\n' \\
                         '#!/bin/bash' \\
+                        'unset __wave_nounset' \\
                         'case $- in *u*) __wave_nounset=1 ;; esac' \\
                         'export CONDA_PREFIX="${CONDA_PREFIX:-$MAMBA_ROOT_PREFIX}"' \\
                         'set +u' \\
@@ -657,6 +660,7 @@ class TemplateUtilsTest extends Specification {
                 RUN mkdir -p "$MAMBA_ROOT_PREFIX/etc/conda/activate.d" \\
                     && printf '%s\\n' \\
                         '#!/bin/bash' \\
+                        'unset __wave_nounset' \\
                         'case $- in *u*) __wave_nounset=1 ;; esac' \\
                         'export CONDA_PREFIX="${CONDA_PREFIX:-$MAMBA_ROOT_PREFIX}"' \\
                         'set +u' \\
@@ -729,6 +733,8 @@ class TemplateUtilsTest extends Specification {
         when:
         def dockerResult = TemplateUtils.condaFileToDockerFileUsingV2(CONDA_OPTS)
         def pkgResult = TemplateUtils.condaPackagesToDockerFileUsingV2('bwa=0.7.15', ['conda-forge'], CONDA_OPTS)
+        def singularityResult = TemplateUtils.condaFileToSingularityFileV2(CONDA_OPTS)
+        def singularityPkgResult = TemplateUtils.condaPackagesToSingularityFileV2('bwa=0.7.15', ['conda-forge'], CONDA_OPTS)
 
         then:
         // the combined activate.d script is generated in the build stage, inside $MAMBA_ROOT_PREFIX
@@ -736,11 +742,89 @@ class TemplateUtilsTest extends Specification {
         dockerResult.contains('> "$MAMBA_ROOT_PREFIX/etc/conda/activate.d/.wave-combined-activate.sh"')
         dockerResult.contains('ENV BASH_ENV="$MAMBA_ROOT_PREFIX/etc/conda/activate.d/.wave-combined-activate.sh"')
         pkgResult.contains('ENV BASH_ENV="$MAMBA_ROOT_PREFIX/etc/conda/activate.d/.wave-combined-activate.sh"')
+        // Singularity has no separate copy-from-build stage, so BASH_ENV is set directly in %environment,
+        // which Apptainer sources on every `exec`/`run` regardless of the container's own shell state
+        singularityResult.contains('%environment')
+        singularityResult.contains('export BASH_ENV="$MAMBA_ROOT_PREFIX/etc/conda/activate.d/.wave-combined-activate.sh"')
+        singularityPkgResult.contains('export BASH_ENV="$MAMBA_ROOT_PREFIX/etc/conda/activate.d/.wave-combined-activate.sh"')
         // nounset must be disabled while sourcing activate.d scripts (they reference unset vars like
         // $CONDA_PREFIX by design) and restored afterwards, otherwise `bash -ue` tasks abort on startup
         dockerResult.contains("case \$- in *u*) __wave_nounset=1 ;; esac")
         dockerResult.contains('set +u')
         dockerResult.contains('[ -n "${__wave_nounset:-}" ] && set -u')
+    }
+
+    def 'should generate an activate.d combiner script that survives real bash execution'() {
+        // exercises the exact shell fragment the v2 templates embed (mkdir/printf/cat), rather than
+        // just asserting on the rendered template text, to catch quoting or shell-state regressions
+        given:
+        def tmp = File.createTempDir()
+        def activateDir = new File(tmp, 'etc/conda/activate.d')
+        activateDir.mkdirs()
+        // mirrors cmdstan's own activate.d script: a plain export, safe under nounset
+        new File(activateDir, 'cmdstan_activate.sh').text = 'export CMDSTAN_OLD=$CMDSTAN\nexport CMDSTAN=/opt/conda/bin/cmdstan\n'
+        // mirrors a compiler package's activate.d script: references a var only `conda activate` would set
+        new File(activateDir, 'compilers_activate.sh').text = 'export CXX="${CONDA_PREFIX}/bin/g++"\n'
+
+        def CONDA_OPTS = new CondaOpts([mambaImage: 'mambaorg/micromamba:2.1.1', baseImage: 'ubuntu:24.04'])
+        def dockerfile = TemplateUtils.condaFileToDockerFileUsingV2(CONDA_OPTS)
+        // a plain (non-GString) pattern, since slashy-string regex literals still interpolate '$...'
+        def pattern = java.util.regex.Pattern.compile(
+                'RUN (mkdir -p "\\$MAMBA_ROOT_PREFIX/etc/conda/activate\\.d".*?\\.wave-combined-activate\\.sh")\n',
+                java.util.regex.Pattern.DOTALL)
+        def matcher = pattern.matcher(dockerfile)
+        matcher.find()
+        def genScript = matcher.group(1)
+
+        when: 'the generation step runs for real against the fixture activate.d directory'
+        def genProcess = new ProcessBuilder(['bash', '-ec', genScript])
+                .directory(tmp)
+                .redirectErrorStream(true)
+        genProcess.environment().put('MAMBA_ROOT_PREFIX', tmp.absolutePath)
+        def genProc = genProcess.start()
+        def genOutput = genProc.inputStream.text
+        genProc.waitFor()
+
+        then:
+        genProc.exitValue() == 0
+        def combined = new File(activateDir, '.wave-combined-activate.sh')
+        combined.exists()
+
+        when: 'a bash -ue task (nounset active, matching Nextflow task invocation) sources it via BASH_ENV'
+        def task = new File(tmp, 'task.sh')
+        task.text = 'echo "CMDSTAN=${CMDSTAN:-}"\necho "CXX=${CXX:-}"\n'
+        def taskProcess = new ProcessBuilder(['bash', '-ue', task.absolutePath])
+                .directory(tmp)
+                .redirectErrorStream(true)
+        taskProcess.environment().put('MAMBA_ROOT_PREFIX', tmp.absolutePath)
+        taskProcess.environment().put('BASH_ENV', combined.absolutePath)
+        def taskProc = taskProcess.start()
+        def taskOutput = taskProc.inputStream.text
+        taskProc.waitFor()
+
+        then:
+        taskProc.exitValue() == 0
+        taskOutput.contains('CMDSTAN=/opt/conda/bin/cmdstan')
+        taskOutput.contains("CXX=${tmp.absolutePath}/bin/g++")
+
+        when: 'a plain, non-nounset bash task also sources it, to confirm set -u is not force-enabled'
+        def plainTask = new File(tmp, 'plain.sh')
+        plainTask.text = 'echo "still running: $0"\n'
+        def plainProcess = new ProcessBuilder(['bash', plainTask.absolutePath])
+                .directory(tmp)
+                .redirectErrorStream(true)
+        plainProcess.environment().put('MAMBA_ROOT_PREFIX', tmp.absolutePath)
+        plainProcess.environment().put('BASH_ENV', combined.absolutePath)
+        def plainProc = plainProcess.start()
+        def plainOutput = plainProc.inputStream.text
+        plainProc.waitFor()
+
+        then:
+        plainProc.exitValue() == 0
+        plainOutput.contains('still running')
+
+        cleanup:
+        tmp.deleteDir()
     }
 
     /* *********************************************************************************
@@ -899,6 +983,7 @@ class TemplateUtilsTest extends Specification {
                     mkdir -p "$MAMBA_ROOT_PREFIX/etc/conda/activate.d"
                     printf '%s\\n' \\
                         '#!/bin/bash' \\
+                        'unset __wave_nounset' \\
                         'case $- in *u*) __wave_nounset=1 ;; esac' \\
                         'export CONDA_PREFIX="${CONDA_PREFIX:-$MAMBA_ROOT_PREFIX}"' \\
                         'set +u' \\
@@ -943,6 +1028,7 @@ class TemplateUtilsTest extends Specification {
                     mkdir -p "$MAMBA_ROOT_PREFIX/etc/conda/activate.d"
                     printf '%s\\n' \\
                         '#!/bin/bash' \\
+                        'unset __wave_nounset' \\
                         'case $- in *u*) __wave_nounset=1 ;; esac' \\
                         'export CONDA_PREFIX="${CONDA_PREFIX:-$MAMBA_ROOT_PREFIX}"' \\
                         'set +u' \\
@@ -993,6 +1079,7 @@ class TemplateUtilsTest extends Specification {
                     mkdir -p "$MAMBA_ROOT_PREFIX/etc/conda/activate.d"
                     printf '%s\\n' \\
                         '#!/bin/bash' \\
+                        'unset __wave_nounset' \\
                         'case $- in *u*) __wave_nounset=1 ;; esac' \\
                         'export CONDA_PREFIX="${CONDA_PREFIX:-$MAMBA_ROOT_PREFIX}"' \\
                         'set +u' \\
@@ -1042,6 +1129,7 @@ class TemplateUtilsTest extends Specification {
                     mkdir -p "$MAMBA_ROOT_PREFIX/etc/conda/activate.d"
                     printf '%s\\n' \\
                         '#!/bin/bash' \\
+                        'unset __wave_nounset' \\
                         'case $- in *u*) __wave_nounset=1 ;; esac' \\
                         'export CONDA_PREFIX="${CONDA_PREFIX:-$MAMBA_ROOT_PREFIX}"' \\
                         'set +u' \\

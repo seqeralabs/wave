@@ -776,6 +776,7 @@ class ContainerHelperTest extends Specification {
                 RUN mkdir -p "$MAMBA_ROOT_PREFIX/etc/conda/activate.d" \\
                     && printf '%s\\n' \\
                         '#!/bin/bash' \\
+                        'unset __wave_nounset' \\
                         'case $- in *u*) __wave_nounset=1 ;; esac' \\
                         'export CONDA_PREFIX="${CONDA_PREFIX:-$MAMBA_ROOT_PREFIX}"' \\
                         'set +u' \\
@@ -834,6 +835,7 @@ class ContainerHelperTest extends Specification {
                 RUN mkdir -p "$MAMBA_ROOT_PREFIX/etc/conda/activate.d" \\
                     && printf '%s\\n' \\
                         '#!/bin/bash' \\
+                        'unset __wave_nounset' \\
                         'case $- in *u*) __wave_nounset=1 ;; esac' \\
                         'export CONDA_PREFIX="${CONDA_PREFIX:-$MAMBA_ROOT_PREFIX}"' \\
                         'set +u' \\
@@ -897,6 +899,7 @@ class ContainerHelperTest extends Specification {
                 RUN mkdir -p "$MAMBA_ROOT_PREFIX/etc/conda/activate.d" \\
                     && printf '%s\\n' \\
                         '#!/bin/bash' \\
+                        'unset __wave_nounset' \\
                         'case $- in *u*) __wave_nounset=1 ;; esac' \\
                         'export CONDA_PREFIX="${CONDA_PREFIX:-$MAMBA_ROOT_PREFIX}"' \\
                         'set +u' \\
@@ -954,6 +957,7 @@ class ContainerHelperTest extends Specification {
                 RUN mkdir -p "$MAMBA_ROOT_PREFIX/etc/conda/activate.d" \\
                     && printf '%s\\n' \\
                         '#!/bin/bash' \\
+                        'unset __wave_nounset' \\
                         'case $- in *u*) __wave_nounset=1 ;; esac' \\
                         'export CONDA_PREFIX="${CONDA_PREFIX:-$MAMBA_ROOT_PREFIX}"' \\
                         'set +u' \\
