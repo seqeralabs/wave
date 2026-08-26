@@ -505,7 +505,6 @@ class TemplateUtilsTest extends Specification {
                 RUN mkdir -p "$MAMBA_ROOT_PREFIX/etc/conda/activate.d" \\
                     && printf '%s\\n' \\
                         '#!/bin/bash' \\
-                        'unset __wave_nounset' \\
                         'case $- in *u*) __wave_nounset=1 ;; esac' \\
                         'export CONDA_PREFIX="${CONDA_PREFIX:-$MAMBA_ROOT_PREFIX}"' \\
                         'set +u' \\
@@ -551,7 +550,6 @@ class TemplateUtilsTest extends Specification {
                 RUN mkdir -p "$MAMBA_ROOT_PREFIX/etc/conda/activate.d" \\
                     && printf '%s\\n' \\
                         '#!/bin/bash' \\
-                        'unset __wave_nounset' \\
                         'case $- in *u*) __wave_nounset=1 ;; esac' \\
                         'export CONDA_PREFIX="${CONDA_PREFIX:-$MAMBA_ROOT_PREFIX}"' \\
                         'set +u' \\
@@ -606,7 +604,6 @@ class TemplateUtilsTest extends Specification {
                 RUN mkdir -p "$MAMBA_ROOT_PREFIX/etc/conda/activate.d" \\
                     && printf '%s\\n' \\
                         '#!/bin/bash' \\
-                        'unset __wave_nounset' \\
                         'case $- in *u*) __wave_nounset=1 ;; esac' \\
                         'export CONDA_PREFIX="${CONDA_PREFIX:-$MAMBA_ROOT_PREFIX}"' \\
                         'set +u' \\
@@ -660,7 +657,6 @@ class TemplateUtilsTest extends Specification {
                 RUN mkdir -p "$MAMBA_ROOT_PREFIX/etc/conda/activate.d" \\
                     && printf '%s\\n' \\
                         '#!/bin/bash' \\
-                        'unset __wave_nounset' \\
                         'case $- in *u*) __wave_nounset=1 ;; esac' \\
                         'export CONDA_PREFIX="${CONDA_PREFIX:-$MAMBA_ROOT_PREFIX}"' \\
                         'set +u' \\
@@ -755,8 +751,10 @@ class TemplateUtilsTest extends Specification {
     }
 
     def 'should generate an activate.d combiner script that survives real bash execution'() {
-        // exercises the exact shell fragment the v2 templates embed (mkdir/printf/cat), rather than
-        // just asserting on the rendered template text, to catch quoting or shell-state regressions
+        // exercises the exact shell fragment embedded in the Dockerfile v2 template (mkdir/printf/cat),
+        // rather than just asserting on the rendered template text, to catch quoting or shell-state
+        // regressions; the printf-generated script content is identical across all four v2 templates,
+        // only the surrounding RUN-chaining vs plain-statement wrapping differs
         given:
         def tmp = File.createTempDir()
         def activateDir = new File(tmp, 'etc/conda/activate.d')
@@ -773,7 +771,7 @@ class TemplateUtilsTest extends Specification {
                 'RUN (mkdir -p "\\$MAMBA_ROOT_PREFIX/etc/conda/activate\\.d".*?\\.wave-combined-activate\\.sh")\n',
                 java.util.regex.Pattern.DOTALL)
         def matcher = pattern.matcher(dockerfile)
-        matcher.find()
+        assert matcher.find() : "combiner script fragment not found in rendered Dockerfile"
         def genScript = matcher.group(1)
 
         when: 'the generation step runs for real against the fixture activate.d directory'
@@ -983,7 +981,6 @@ class TemplateUtilsTest extends Specification {
                     mkdir -p "$MAMBA_ROOT_PREFIX/etc/conda/activate.d"
                     printf '%s\\n' \\
                         '#!/bin/bash' \\
-                        'unset __wave_nounset' \\
                         'case $- in *u*) __wave_nounset=1 ;; esac' \\
                         'export CONDA_PREFIX="${CONDA_PREFIX:-$MAMBA_ROOT_PREFIX}"' \\
                         'set +u' \\
@@ -1028,7 +1025,6 @@ class TemplateUtilsTest extends Specification {
                     mkdir -p "$MAMBA_ROOT_PREFIX/etc/conda/activate.d"
                     printf '%s\\n' \\
                         '#!/bin/bash' \\
-                        'unset __wave_nounset' \\
                         'case $- in *u*) __wave_nounset=1 ;; esac' \\
                         'export CONDA_PREFIX="${CONDA_PREFIX:-$MAMBA_ROOT_PREFIX}"' \\
                         'set +u' \\
@@ -1079,7 +1075,6 @@ class TemplateUtilsTest extends Specification {
                     mkdir -p "$MAMBA_ROOT_PREFIX/etc/conda/activate.d"
                     printf '%s\\n' \\
                         '#!/bin/bash' \\
-                        'unset __wave_nounset' \\
                         'case $- in *u*) __wave_nounset=1 ;; esac' \\
                         'export CONDA_PREFIX="${CONDA_PREFIX:-$MAMBA_ROOT_PREFIX}"' \\
                         'set +u' \\
@@ -1129,7 +1124,6 @@ class TemplateUtilsTest extends Specification {
                     mkdir -p "$MAMBA_ROOT_PREFIX/etc/conda/activate.d"
                     printf '%s\\n' \\
                         '#!/bin/bash' \\
-                        'unset __wave_nounset' \\
                         'case $- in *u*) __wave_nounset=1 ;; esac' \\
                         'export CONDA_PREFIX="${CONDA_PREFIX:-$MAMBA_ROOT_PREFIX}"' \\
                         'set +u' \\
