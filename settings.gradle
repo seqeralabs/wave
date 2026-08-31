@@ -15,3 +15,7 @@ include 'wave-utils'
 // clone https://github.com/seqeralabs/libseqera
 // in a sibling directory and include the build below
 //includeBuild('../libseqera')
+
+// TEMPORARY: pre-release validation of lib-data-workqueue / lib-data-workqueue-redis
+// via composite build. Remove once those modules are published.
+includeBuild('/Users/pditommaso/Projects/libseqera')

@@ -16,55 +16,45 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.data.stream
+package io.seqera.wave.service.data.workqueue
 
 import java.time.Duration
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
-import io.seqera.data.stream.impl.RedisStreamConfig
+import io.seqera.data.workqueue.redis.RedisWorkQueueConfig
 import jakarta.inject.Singleton
 
 /**
- * Configuration bean for Redis Stream messaging in Wave application.
- * 
- * <p>This configuration provides centralized settings for Redis Stream-based
- * messaging components, including consumer group management and timeout
+ * Configuration bean for Redis-backed work queues in the Wave application.
+ *
+ * <p>This configuration provides centralized settings for Redis work-queue
+ * components, including consumer group management and timeout
  * configurations. The configuration values are injected from application
  * properties with sensible defaults.
- * 
+ *
  * <p>Configuration properties:
  * <ul>
  *   <li>{@code wave.message-stream.consumer-group-name} - Name for the Redis consumer group (default: "wave-message-stream")</li>
- *   <li>{@code wave.message-stream.claim-timeout} - Timeout for claiming pending messages (default: 5s)</li>
+ *   <li>{@code wave.message-stream.claim-timeout} - Visibility timeout for delivered messages (default: 5s)</li>
  *   <li>{@code wave.message-stream.consume-warn-timeout} - Timeout threshold for consumer warnings (default: 4s)</li>
  * </ul>
- * 
- * <p>Example application configuration:
- * <pre>
- * # application.yml
- * wave:
- *   message-stream:
- *     consumer-group-name: "wave-prod-stream"
- *     claim-timeout: "10s"
- *     consume-warn-timeout: "8s"
- * </pre>
- * 
- * <p>This bean implements {@link RedisStreamConfig} to provide configuration
- * values to Redis Stream components throughout the application.
- * 
+ *
+ * <p>This bean implements {@link RedisWorkQueueConfig} to provide configuration
+ * values to Redis work-queue components throughout the application.
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
- * @see io.seqera.data.stream.impl.RedisStreamConfig
+ * @see io.seqera.data.workqueue.redis.RedisWorkQueueConfig
  */
 @CompileStatic
 @Singleton
-class RedisStreamConfigBean implements RedisStreamConfig {
+class RedisWorkQueueConfigBean implements RedisWorkQueueConfig {
 
     @Value('${wave.message-stream.consumer-group-name:wave-message-stream}')
     String defaultConsumerGroupName
 
     @Value('${wave.message-stream.claim-timeout:5s}')
-    Duration claimTimeout
+    Duration visibilityTimeout
 
     @Value('${wave.message-stream.consume-warn-timeout:4s}')
     Duration consumerWarnTimeout
