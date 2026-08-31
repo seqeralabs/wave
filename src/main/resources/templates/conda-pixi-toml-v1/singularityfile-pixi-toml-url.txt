@@ -1,0 +1,13 @@
+BootStrap: docker
+From: {{pixi_image}}
+%post
+    mkdir -p /opt/wave
+    curl -fsSL {{toml_url}} -o /opt/wave/pixi.toml
+    cd /opt/wave
+    pixi install
+    pixi shell-hook > /shell-hook.sh
+    echo ">> PIXI_LOCK_START"
+    cat /opt/wave/pixi.lock
+    echo "<< PIXI_LOCK_END"
+%environment
+    . /shell-hook.sh
