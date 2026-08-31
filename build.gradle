@@ -127,9 +127,9 @@ dependencies {
     // logging
     implementation 'ch.qos.logback:logback-classic:1.5.20'
     implementation 'ch.qos.logback:logback-core:1.5.20'
-    // monitoring
-    implementation 'io.micronaut.micrometer:micronaut-micrometer-core'
-    implementation 'io.micronaut.micrometer:micronaut-micrometer-registry-prometheus'
+    // monitoring - version pinned ahead of the Micronaut platform BOM to pull in Micrometer 1.15.12 (CVE-2026-40983)
+    implementation 'io.micronaut.micrometer:micronaut-micrometer-core:5.13.3'
+    implementation 'io.micronaut.micrometer:micronaut-micrometer-registry-prometheus:5.13.3'
     // Also required to enable endpoint
     implementation 'io.micronaut:micronaut-management'
     //views
