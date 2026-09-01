@@ -9,7 +9,7 @@
       },
       "collapsed": true,
       "items": [
-        "how-it-works",
+        "how-wave-works",
         {
           "type": "category",
           "label": "Features",
@@ -33,20 +33,26 @@
     },
     {
       "type": "category",
-      "label": "Installation",
-      "collapsed": true,
+      "label": "Self-hosted Wave",
+      "link": {
+        "type": "doc",
+        "id": "install/index"
+      },
+      "collapsed": false,
       "items": [
-        "install/docker-compose",
-        "install/kubernetes"
-      ]
-    },
-    {
-      "type": "category",
-      "label": "Configuration",
-      "collapsed": true,
-      "items": [
-        "configure-wave",
-        "install/configure-wave-build"
+        {
+          "type": "category",
+          "label": "Wave Lite",
+          "collapsed": false,
+          "items": [
+            "install/docker-compose",
+            "install/kubernetes-lite"
+          ]
+        },
+        "install/post-install",
+        "install/aws-build",
+        "install/configure-wave",
+        "install/reference"
       ]
     },
     "nextflow/index",
@@ -62,6 +68,7 @@
       ]
     },
     "faq",
+    "troubleshoot",
     {
       "type": "link",
       "label": "Changelog",
