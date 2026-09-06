@@ -233,6 +233,41 @@ Configure the HTTP client with the following options.
 `wave.httpclient.retry.multiplier` *(optional)*
 : Multiplier for HTTP client retries (default: `1.75`).
 
+### Egress proxy
+
+When Wave is deployed behind a corporate egress proxy, configure the proxy used for Wave's outbound requests — container registry requests (authentication, manifests, blobs served by the Wave process) and Seqera Platform API requests — with the following options, or with the standard proxy environment variables.
+
+The `wave.httpclient.proxy.*` settings apply only to the connections made by the Wave service process's own HTTP clients. The proxy **environment variables** (`HTTPS_PROXY`/`HTTP_PROXY`/`FTP_PROXY`/`NO_PROXY`, and their lower-case and `ALL_PROXY` variants) are instead applied JVM-wide — Wave installs them as the JVM proxy system properties (`<proto>.proxyHost`/`<proto>.proxyPort`, `http.nonProxyHosts`) and a default proxy authenticator — so they are additionally honoured by any component in the process that reads the JVM proxy settings. Note that some paths keep their own proxy configuration regardless: the Micronaut declarative HTTP clients (`micronaut.http.client.*`/`micronaut.http.services.*`), the AWS SDK clients such as ECR and S3, and the build, scan, and blob-cache jobs that run as separate containers.
+
+`wave.httpclient.proxy.uri` *(optional)*
+: URI of the egress proxy in the form `[http://][username:password@]host[:port]`, for example `http://proxy.example.com:3128`.
+  The proxy is applied to both HTTP and HTTPS destinations.
+  Credentials can be embedded in the URI or provided separately with the options below.
+  When this option is not set, Wave falls back to the `HTTPS_PROXY`/`HTTP_PROXY` (and `NO_PROXY`) environment variables, if defined, which allow per-protocol proxies.
+
+`wave.httpclient.proxy.username` *(optional)*
+: Username to authenticate against the proxy. Takes precedence over credentials embedded in the proxy URI.
+
+`wave.httpclient.proxy.password` *(optional)*
+: Password to authenticate against the proxy.
+
+`wave.httpclient.proxy.no-proxy` *(optional)*
+: Comma-separated list of hosts that must be accessed directly, bypassing the proxy.
+  Entries can be host names (`example.com`, matching the host itself and its sub-domains), domain suffixes (`.example.com` or `*.example.com`, matching sub-domains only), or `*` to bypass the proxy for all hosts.
+  Loopback addresses such as `localhost` and `127.0.0.1` always bypass the proxy.
+
+When no proxy is configured — neither via the settings above nor via environment variables — the behavior is unchanged and outbound connections are made directly.
+
+:::note
+By default, the JVM disables the `Basic` scheme for proxy authentication on HTTPS tunneling (`CONNECT`) requests via the `jdk.http.auth.tunneling.disabledSchemes` system property.
+When a proxy with credentials is configured, Wave automatically defaults `jdk.http.auth.tunneling.disabledSchemes` to an empty value at startup, unless it is already set.
+Alternatively — for example, to guarantee that the property is set before any outbound connection is made — set it explicitly on the JVM. For containerized deployments this can be done with the `JAVA_TOOL_OPTIONS` environment variable:
+
+```bash
+JAVA_TOOL_OPTIONS="-Djdk.http.auth.tunneling.disabledSchemes="
+```
+:::
+
 ## Container build process
 
 Configure how Wave builds container images and manages build logs.
