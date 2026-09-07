@@ -18,6 +18,7 @@
 
 package io.seqera.wave.configuration
 
+import java.net.Authenticator
 import java.time.Duration
 import javax.annotation.PostConstruct
 
