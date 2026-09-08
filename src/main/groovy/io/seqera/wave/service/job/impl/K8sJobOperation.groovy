@@ -74,7 +74,7 @@ class K8sJobOperation implements JobOperation {
         catch( IllegalArgumentException e ) {
             // the Kubernetes client models reject any attribute added by a Kubernetes version
             // newer than the bundled client knows about, eg. pod level `status.allocatedResources`
-            // introduced by Kubernetes 1.34. Without this guard the exception would escape and the
+            // introduced by Kubernetes 1.35. Without this guard the exception would escape and the
             // job would be reported as failed even when it completed successfully. Determine the
             // state from the Job level status instead (tho logs will be lost). See COMP-2368.
             // Note: only the model validation error is caught here - RBAC denials and API timeouts
