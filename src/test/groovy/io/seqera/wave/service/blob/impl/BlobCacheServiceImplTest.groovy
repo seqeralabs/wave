@@ -19,11 +19,17 @@ package io.seqera.wave.service.blob.impl
 
 import spock.lang.Specification
 
+import java.time.Duration
+import java.time.Instant
+
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.blob.BlobEntry
+import io.seqera.wave.service.blob.BlobStateStore
+import io.seqera.wave.service.job.JobSpec
+import io.seqera.wave.service.job.JobState
 import io.seqera.wave.test.AwsS3TestContainer
 
 /**
@@ -77,10 +83,97 @@ class BlobCacheServiceImplTest extends Specification implements AwsS3TestContain
         proxyService.curl(route, [foo:'one']) >> ['curl', '-X', 'GET', 'http://foo']
         and:
         result == [
-                'sh',
+                'bash',
                 '-c',
-                "curl -X GET 'http://foo' | s5cmd --json pipe --content-type something 's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc'"
+                "set -o pipefail; curl -X GET 'http://foo' | s5cmd --json pipe --content-type something 's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc'"
         ]
+    }
+
+    private static BlobEntry blobEntry(String objectUri, Long contentLength) {
+        final response = contentLength!=null
+                ? ['Content-Length': [String.valueOf(contentLength)]]
+                : [:] as Map<String,List<String>>
+        return BlobEntry.create('http://foo', objectUri, [:], response)
+    }
+
+    def 'should validate the transferred blob size' () {
+        given:
+        def OBJECT = 's3://store/blobs/foo'
+        def service = Spy(BlobCacheServiceImpl)
+        def entry = blobEntry(OBJECT, LENGTH)
+
+        when:
+        def result = service.checkTransferredSize(entry)
+        then:
+        1 * service.blobSize(OBJECT) >> UPLOADED
+        and:
+        (result != null) == ERROR
+
+        where:
+        LENGTH  | UPLOADED  | ERROR
+        100L    | 100L      | false
+        100L    | 0L        | true
+        100L    | 50L       | true
+        100L    | null      | true
+        null    | 100L      | false
+        null    | 0L        | true
+        null    | null      | true
+    }
+
+    def 'should error the blob entry when the uploaded object is empty' () {
+        given:
+        def OBJECT = 's3://store/blobs/foo'
+        def blobStore = Mock(BlobStateStore)
+        def service = Spy(new BlobCacheServiceImpl(blobStore: blobStore))
+        def entry = blobEntry(OBJECT, 100L)
+        def job = JobSpec.transfer('1', 'operation-1', Instant.now(), Duration.ofMinutes(1))
+
+        when:
+        service.onJobCompletion(job, entry, JobState.succeeded('some logs'))
+        then:
+        1 * service.blobSize(OBJECT) >> 0L
+        and:
+        // the invalid object is removed so it is not served as a valid cache entry
+        1 * service.deleteBlob(OBJECT) >> null
+        and:
+        1 * blobStore.storeBlob(OBJECT, { BlobEntry it -> it.state==BlobEntry.State.ERRORED && !it.succeeded() })
+    }
+
+    def 'should complete the blob entry when the uploaded object matches the content length' () {
+        given:
+        def OBJECT = 's3://store/blobs/foo'
+        def blobStore = Mock(BlobStateStore)
+        def service = Spy(new BlobCacheServiceImpl(blobStore: blobStore))
+        def entry = blobEntry(OBJECT, 100L)
+        def job = JobSpec.transfer('1', 'operation-1', Instant.now(), Duration.ofMinutes(1))
+
+        when:
+        service.onJobCompletion(job, entry, JobState.succeeded('some logs'))
+        then:
+        1 * service.blobSize(OBJECT) >> 100L
+        and:
+        0 * service.deleteBlob(_) >> null
+        and:
+        1 * blobStore.storeBlob(OBJECT, { BlobEntry it -> it.state==BlobEntry.State.COMPLETED && it.succeeded() })
+    }
+
+    def 'should not validate the object when the transfer job failed' () {
+        given:
+        def OBJECT = 's3://store/blobs/foo'
+        def blobStore = Mock(BlobStateStore)
+        def service = Spy(new BlobCacheServiceImpl(blobStore: blobStore))
+        def entry = blobEntry(OBJECT, 100L)
+        def job = JobSpec.transfer('1', 'operation-1', Instant.now(), Duration.ofMinutes(1))
+
+        when:
+        service.onJobCompletion(job, entry, JobState.failed(1, 'curl failed'))
+        then:
+        0 * service.blobSize(_) >> null
+        and:
+        // a failed pipeline can still have uploaded a partial object, remove it
+        1 * service.deleteBlob(OBJECT) >> null
+        and:
+        1 * blobStore.storeBlob(OBJECT, { BlobEntry it -> it.state==BlobEntry.State.ERRORED && it.logs=='curl failed' })
     }
 
 }

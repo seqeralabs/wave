@@ -132,7 +132,7 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
         def store = Mock(BlobStateStore)
         def blob = BlobEntry.create('http://some/blob','s3://some/blob', [:], [:])
         def config = new BlobCacheConfig(statusDelay: Duration.ofSeconds(2))
-        def service = new BlobCacheServiceImpl(blobStore: store, blobConfig: config)
+        def service = Spy(new BlobCacheServiceImpl(blobStore: store, blobConfig: config))
         def job =  JobSpec.transfer('job-id', 'foo', Instant.now(), Duration.ofMinutes(1))
         def failed = new JobState(JobState.Status.FAILED, 1, 'Oops')
         def ok = new JobState(JobState.Status.SUCCEEDED, 0, 'done')
@@ -140,11 +140,17 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
         when:
         service.onJobCompletion(job, blob, failed)
         then:
+        // a failed pipeline can still have uploaded a partial object, remove it
+        1 * service.deleteBlob('s3://some/blob') >> null
+        and:
         1 * store.storeBlob(blob.getKey(), _ as BlobEntry) >> { id, BlobEntry info -> info.state==BlobEntry.State.ERRORED }
 
         when:
         service.onJobCompletion(job, blob, ok)
         then:
+        // the transferred object is validated before the entry is marked as completed
+        1 * service.blobSize('s3://some/blob') >> 100L
+        and:
         1 * store.storeBlob(blob.getKey(), _ as BlobEntry) >> { id, BlobEntry info -> info.state==BlobEntry.State.COMPLETED }
 
     }

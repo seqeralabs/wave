@@ -123,7 +123,7 @@ The lifetime of an ephemeral image that includes an access token in its URI depe
 - **Other requests.** Builds, mirrors, and requests not bound to a workflow keep a fixed lifetime of 36 hours (the `cache.duration`) from submission.
 
 
-System administrators can revoke images before these limits. The [`wave.tokens.*`](./configuration.md#general) settings control this behavior. To disable it, set `wave.tokens.watcher.enabled: false`. All requests then use the fixed 36-hour lifetime.
+System administrators can revoke images before these limits. The [`wave.tokens.*`](./install/reference.md#general) settings control this behavior. To disable it, set `wave.tokens.watcher.enabled: false`. All requests then use the fixed 36-hour lifetime.
 
 ### Context directory size limits
 
