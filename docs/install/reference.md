@@ -711,14 +711,16 @@ Configure polling and scheduling intervals for Wave's asynchronous job processin
 
 Configure how Wave consumes messages from the Redis backed work queue used for internal job processing.
 
+Each setting falls back to the legacy `wave.message-stream.*` property it replaces, so a deployment configured for the previous message-stream implementation keeps its values after upgrading with no configuration change.
+
 `wave.work-queue.consumer-group-name` *(optional)*
-: Name of the Redis consumer group used to read the work queues (default: `wave-message-stream`).
+: Name of the Redis consumer group used to read the work queues. Falls back to `wave.message-stream.consumer-group-name` (default: `wave-message-stream`).
 
 `wave.work-queue.visibility-timeout` *(optional)*
-: How long a claimed message stays invisible to other consumers before it is redelivered (default: `5s`).
+: How long a claimed message stays invisible to other consumers before it is redelivered. Falls back to `wave.message-stream.claim-timeout` (default: `45s`).
 
 `wave.work-queue.consumer-warn-timeout` *(optional)*
-: Threshold duration after which a slow message consumer triggers a warning (default: `4s`).
+: Threshold duration after which a slow message consumer triggers a warning. Falls back to `wave.message-stream.consume-warn-timeout` (default: `45s`).
 
 ## Thread monitor
 

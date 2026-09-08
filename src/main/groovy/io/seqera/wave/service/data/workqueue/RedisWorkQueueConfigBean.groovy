@@ -33,12 +33,20 @@ import jakarta.inject.Singleton
  * configuration values are injected from application properties with sensible
  * defaults.
  *
- * <p>Configuration properties:
+ * <p>Configuration properties (each falls back to the legacy {@code wave.message-stream.*}
+ * property it replaces, then to the default shown):
  * <ul>
- *   <li>{@code wave.work-queue.consumer-group-name} - Name for the Redis consumer group (default: "wave-message-stream")</li>
- *   <li>{@code wave.work-queue.visibility-timeout} - How long a claimed message stays invisible to other consumers before being redelivered (default: 5s)</li>
- *   <li>{@code wave.work-queue.consumer-warn-timeout} - Timeout threshold for consumer warnings (default: 4s)</li>
+ *   <li>{@code wave.work-queue.consumer-group-name} - Name for the Redis consumer group
+ *       (falls back to {@code wave.message-stream.consumer-group-name}; default: "wave-message-stream")</li>
+ *   <li>{@code wave.work-queue.visibility-timeout} - How long a claimed message stays invisible to other
+ *       consumers before being redelivered (falls back to {@code wave.message-stream.claim-timeout}; default: 45s)</li>
+ *   <li>{@code wave.work-queue.consumer-warn-timeout} - Timeout threshold for consumer warnings
+ *       (falls back to {@code wave.message-stream.consume-warn-timeout}; default: 45s)</li>
  * </ul>
+ *
+ * <p>The fallback to the legacy {@code message-stream} keys means a deployment configured for the
+ * message-stream implementation keeps its values after the work-queue upgrade with no config change;
+ * the final defaults (45s) match the current production deployment.
  *
  * <p>Note the consumer group name default is intentionally {@code wave-message-stream}:
  * the work queue reuses the Redis streams and consumer group created by the message
@@ -65,13 +73,17 @@ import jakarta.inject.Singleton
 @Singleton
 class RedisWorkQueueConfigBean implements RedisWorkQueueConfig {
 
-    @Value('${wave.work-queue.consumer-group-name:wave-message-stream}')
+    // Each setting falls back to the legacy `wave.message-stream.*` property it replaces, so
+    // a deployment configured for the message-stream implementation keeps its values after the
+    // work-queue upgrade without any config change. The final defaults match the current
+    // production deployment (see platform-deployment).
+    @Value('${wave.work-queue.consumer-group-name:${wave.message-stream.consumer-group-name:wave-message-stream}}')
     String defaultConsumerGroupName
 
-    @Value('${wave.work-queue.visibility-timeout:5s}')
+    @Value('${wave.work-queue.visibility-timeout:${wave.message-stream.claim-timeout:45s}}')
     Duration visibilityTimeout
 
-    @Value('${wave.work-queue.consumer-warn-timeout:4s}')
+    @Value('${wave.work-queue.consumer-warn-timeout:${wave.message-stream.consume-warn-timeout:45s}}')
     Duration consumerWarnTimeout
 
 }
