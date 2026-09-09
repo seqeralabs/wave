@@ -23,13 +23,11 @@ import java.time.Duration
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.seqera.data.stream.MessageConsumer
-import io.seqera.data.stream.MessageStream
-import io.seqera.serde.encode.StringEncodingStrategy
+import io.seqera.data.workqueue.MessageConsumer
+import io.seqera.data.workqueue.WorkQueue
 import io.seqera.wave.configuration.JobManagerConfig
 import io.seqera.wave.configuration.WaveLite
-import io.seqera.serde.moshi.MoshiEncodeStrategy
-import io.seqera.wave.service.data.stream.BaseMessageStream
+import io.seqera.wave.service.data.workqueue.BaseWorkQueue
 import jakarta.annotation.PreDestroy
 import jakarta.inject.Singleton
 /**
@@ -42,17 +40,14 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-class JobPendingQueue extends BaseMessageStream<JobSpec> {
+class JobPendingQueue extends BaseWorkQueue<JobSpec> {
 
-    private final static String STREAM_NAME = 'jobs-pending/v2'
-
-    private StringEncodingStrategy<JobSpec> encoder
+    private final static String QUEUE_ID = 'jobs-pending/v2'
 
     private JobManagerConfig config
 
-    JobPendingQueue(MessageStream<String> target, JobManagerConfig config) {
+    JobPendingQueue(WorkQueue<String> target, JobManagerConfig config) {
         super(target)
-        this.encoder = new MoshiEncodeStrategy<JobSpec>() {}
         this.config = config
         log.info "Created jobs pending queue - config=${config}"
     }
@@ -68,15 +63,15 @@ class JobPendingQueue extends BaseMessageStream<JobSpec> {
     }
 
     final void submit(JobSpec jobSpec) {
-        super.offer(STREAM_NAME, jobSpec)
+        super.offer(QUEUE_ID, jobSpec)
     }
 
     final void addConsumer(MessageConsumer<JobSpec> consumer) {
-        super.addConsumer(STREAM_NAME, consumer)
+        super.addConsumer(QUEUE_ID, consumer)
     }
 
     final int length() {
-        return super.length(STREAM_NAME)
+        return super.length(QUEUE_ID)
     }
 
     @PreDestroy
