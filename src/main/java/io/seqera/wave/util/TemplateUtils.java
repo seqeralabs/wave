@@ -158,7 +158,7 @@ public class TemplateUtils {
         final Map<String,String> binding = new HashMap<>();
         binding.put("base_image", opts.baseImage);
         binding.put("pixi_image", opts.pixiImage);
-        binding.put("base_packages", pixiAddBasePackage0(opts.basePackages,singularity));
+        binding.put("base_packages", pixiAddBasePackage0(opts.basePackages));
 
         final String result = renderTemplate0(template, binding, List.of("wave_context_dir"));
         return addCommands(result, opts.commands, singularity);
@@ -192,13 +192,12 @@ public class TemplateUtils {
                 : "&& " + result + " \\";
     }
 
-    private static String pixiAddBasePackage0(String basePackages, boolean singularity) {
-        String result = !StringUtils.isEmpty(basePackages)
-                ? String.format("pixi add %s", basePackages)
+    private static String pixiAddBasePackage0(String basePackages) {
+        // rendered inline after `pixi add conda-forge::which` so that a single
+        // `pixi add` command solves the whole environment
+        return !StringUtils.isEmpty(basePackages)
+                ? " " + basePackages
                 : null;
-        return result==null || singularity
-                ? result
-                : "&& " + result + " \\";
     }
 
     static private String addCommands(String result, List<String> commands, boolean singularity) {
