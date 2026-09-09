@@ -22,7 +22,6 @@ package io.seqera.wave.service.job.impl
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.openapi.models.V1ContainerState
 import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1ContainerStatus
@@ -97,77 +96,6 @@ class K8SJobOperationTest extends Specification {
         def result = strategy.status(job)
         then:
         result.status == JobState.Status.UNKNOWN
-    }
-
-    def 'status should fall back to job status when the carrier pod cannot be parsed'() {
-        given:
-        def job = Mock(JobSpec)
-        and:
-        k8sService.getJobStatus(job.operationName) >> K8sService.JobStatus.Succeeded
-        k8sService.getLatestPodForJob(job.operationName) >> {
-            throw new IllegalArgumentException("The field `allocatedResources` in the JSON string is not defined in the `V1PodStatus` properties.")
-        }
-
-        when:
-        def result = strategy.status(job)
-        then:
-        result.status == JobState.Status.SUCCEEDED
-        result.exitCode == 0
-        result.succeeded()
-    }
-
-    def 'status should report failure when the carrier pod cannot be parsed and the job failed'() {
-        given:
-        def job = Mock(JobSpec)
-        and:
-        k8sService.getJobStatus(job.operationName) >> K8sService.JobStatus.Failed
-        k8sService.getLatestPodForJob(job.operationName) >> {
-            throw new IllegalArgumentException("The field `allocatedResources` in the JSON string is not defined in the `V1PodStatus` properties.")
-        }
-
-        when:
-        def result = strategy.status(job)
-        then:
-        result.status == JobState.Status.FAILED
-        result.exitCode == 255
-        !result.succeeded()
-    }
-
-    def 'status should report success when the pod status carries a field unknown to the client'() {
-        given:
-        def job = Mock(JobSpec)
-        and:
-        k8sService.getJobStatus(job.operationName) >> K8sService.JobStatus.Succeeded
-        // deserialize through the real k8s client model, so the guard is exercised with the
-        // actual exception raised by a Kubernetes version newer than the bundled client
-        k8sService.getLatestPodForJob(job.operationName) >> {
-            V1PodStatus.fromJson('{"phase":"Succeeded","someFutureK8sField":"x"}')
-        }
-
-        when:
-        def result = strategy.status(job)
-        then:
-        result.status == JobState.Status.SUCCEEDED
-        result.succeeded()
-    }
-
-    def 'status should not swallow api errors from the pod lookup'() {
-        given:
-        def job = Mock(JobSpec)
-        and:
-        k8sService.getJobStatus(job.operationName) >> K8sService.JobStatus.Succeeded
-        k8sService.getLatestPodForJob(job.operationName) >> {
-            throw new ApiException(403, 'pods is forbidden: cannot list resource "pods"')
-        }
-
-        when:
-        strategy.status(job)
-        then:
-        // RBAC denials and API timeouts surface as ApiException and must not be
-        // mistaken for a version skew, ie. they must not reach the fallback path.
-        // Spock proxies the interface, which wraps the checked exception, hence the cause check
-        def e = thrown(Throwable)
-        (e instanceof ApiException ? e : e.cause) instanceof ApiException
     }
 
     @Unroll

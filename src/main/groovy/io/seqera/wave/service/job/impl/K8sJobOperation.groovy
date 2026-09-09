@@ -21,10 +21,7 @@ package io.seqera.wave.service.job.impl
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.kubernetes.client.openapi.models.V1Pod
-import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.annotation.Requires
-import io.micronaut.core.annotation.Nullable
 import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.service.job.JobOperation
 import io.seqera.wave.service.job.JobSpec
@@ -43,10 +40,6 @@ class K8sJobOperation implements JobOperation {
 
     @Inject
     private K8sService k8sService
-
-    @Inject
-    @Nullable
-    private MeterRegistry meterRegistry
 
     @Override
     void cleanup(JobSpec job) {
@@ -67,28 +60,18 @@ class K8sJobOperation implements JobOperation {
         }
 
         // Find the latest created pod among the pods associated with the job
-        V1Pod pod
-        try {
-            pod = k8sService.getLatestPodForJob(job.operationName)
-        }
-        catch( IllegalArgumentException e ) {
-            // the Kubernetes client models reject any attribute added by a Kubernetes version
-            // newer than the bundled client knows about, eg. pod level `status.allocatedResources`
-            // introduced by Kubernetes 1.35. Without this guard the exception would escape and the
-            // job would be reported as failed even when it completed successfully. Determine the
-            // state from the Job level status instead (tho logs will be lost). See COMP-2368.
-            // Note: only the model validation error is caught here - RBAC denials and API timeouts
-            // are raised as `ApiException` and must keep propagating
-            log.warn "K8s unable to parse carrier pod for job ${job.operationName} with status=${status} - likely a Kubernetes client version skew; cause: ${e.message}"
-            meterRegistry?.counter('wave.k8s.pod.parse.errors')?.increment()
-            return jobLevelState(status, "(logs not available - unable to parse the carrier pod status)")
-        }
+        final pod = k8sService.getLatestPodForJob(job.operationName)
         if( !pod ) {
             // in some circumstances the pod carrier pod cannot be retried, most likely
             // due to a node disruption. in this case determine the state to be returned
             // by using the JobStatus information (tho logs will be lost)
             log.warn "K8s missing carrier pod for job ${job.operationName} with status=${status}"
-            return jobLevelState(status, "(logs not available)")
+            final msg = "(logs not available)"
+            return switch (status) {
+                case K8sService.JobStatus.Succeeded -> JobState.succeeded(msg)
+                case K8sService.JobStatus.Failed -> JobState.failed(255, msg)
+                default -> JobState.unknown(msg)
+            }
         }
 
         // determine exit code and logs
@@ -101,23 +84,6 @@ class K8sJobOperation implements JobOperation {
                 ?.exitCode
         final stdout = k8sService.logsPod(pod)
         return new JobState(mapToStatus(status), exitCode, stdout)
-    }
-
-    /**
-     * Determine the job state using the Kubernetes *Job* level status alone, ie. when the carrier
-     * pod is not available. The container exit code and the job logs cannot be determined in this
-     * case, therefore a conventional exit code is used for a failed job.
-     *
-     * @param status The Kubernetes job status
-     * @param msg The message to be used in place of the job logs
-     * @return The corresponding {@link JobState}
-     */
-    protected static JobState jobLevelState(K8sService.JobStatus status, String msg) {
-        return switch (status) {
-            case K8sService.JobStatus.Succeeded -> JobState.succeeded(msg)
-            case K8sService.JobStatus.Failed -> JobState.failed(255, msg)
-            default -> JobState.unknown(msg)
-        }
     }
 
     /**
