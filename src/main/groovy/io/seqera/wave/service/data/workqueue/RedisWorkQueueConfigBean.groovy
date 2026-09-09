@@ -77,13 +77,13 @@ class RedisWorkQueueConfigBean implements RedisWorkQueueConfig {
     // a deployment configured for the message-stream implementation keeps its values after the
     // work-queue upgrade without any config change. The final defaults match the current
     // production deployment (see platform-deployment).
-    @Value('${wave.work-queue.consumer-group-name:${wave.message-stream.consumer-group-name:wave-message-stream}}')
+    @Value('${wave.work-queue.consumer-group-name:wave.message-stream.consumer-group-name:wave-message-stream}')
     String defaultConsumerGroupName
 
-    @Value('${wave.work-queue.visibility-timeout:${wave.message-stream.claim-timeout:45s}}')
+    @Value('${wave.work-queue.visibility-timeout:wave.message-stream.claim-timeout:45s}')
     Duration visibilityTimeout
 
-    @Value('${wave.work-queue.consumer-warn-timeout:${wave.message-stream.consume-warn-timeout:45s}}')
+    @Value('${wave.work-queue.consumer-warn-timeout:wave.message-stream.consume-warn-timeout:45s}')
     Duration consumerWarnTimeout
 
 }
