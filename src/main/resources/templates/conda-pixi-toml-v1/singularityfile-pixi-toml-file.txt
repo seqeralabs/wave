@@ -1,0 +1,13 @@
+BootStrap: docker
+From: {{pixi_image}}
+%files
+    {{wave_context_dir}}/conda.yml /opt/wave/pixi.toml
+%post
+    cd /opt/wave
+    pixi install
+    pixi shell-hook > /shell-hook.sh
+    echo ">> PIXI_LOCK_START"
+    cat /opt/wave/pixi.lock
+    echo "<< PIXI_LOCK_END"
+%environment
+    . /shell-hook.sh
