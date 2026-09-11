@@ -48,6 +48,7 @@ class PixiHelperTest extends Specification {
         result.contains('pixi shell-hook > /shell-hook.sh')
         result.contains('FROM ubuntu:24.04 AS final')
         result.contains('COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default')
+        result.contains('ENV PATH="/opt/wave/.pixi/envs/default/bin:${PATH}"')
         result.contains('ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]')
     }
 
