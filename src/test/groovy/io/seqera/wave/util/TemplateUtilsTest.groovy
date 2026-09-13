@@ -376,8 +376,7 @@ class TemplateUtilsTest extends Specification {
                 USER root
                 ENV USER=root
 
-                # add the environment binaries to the PATH so they are available also when the
-                # entrypoint is bypassed e.g. 'singularity exec' on an OCI-converted image
+                # add the env binaries to PATH for when the entrypoint is bypassed (e.g. 'singularity exec' on an OCI-converted image)
                 ENV PATH="/opt/wave/.pixi/envs/default/bin:${PATH}"
 
                 # set the entrypoint to the shell-hook script (activate the environment and run the command)
@@ -416,8 +415,7 @@ class TemplateUtilsTest extends Specification {
                 USER root
                 ENV USER=root
 
-                # add the environment binaries to the PATH so they are available also when the
-                # entrypoint is bypassed e.g. 'singularity exec' on an OCI-converted image
+                # add the env binaries to PATH for when the entrypoint is bypassed (e.g. 'singularity exec' on an OCI-converted image)
                 ENV PATH="/opt/wave/.pixi/envs/default/bin:${PATH}"
 
                 # set the entrypoint to the shell-hook script (activate the environment and run the command)
@@ -459,8 +457,7 @@ class TemplateUtilsTest extends Specification {
                 USER root
                 ENV USER=root
 
-                # add the environment binaries to the PATH so they are available also when the
-                # entrypoint is bypassed e.g. 'singularity exec' on an OCI-converted image
+                # add the env binaries to PATH for when the entrypoint is bypassed (e.g. 'singularity exec' on an OCI-converted image)
                 ENV PATH="/opt/wave/.pixi/envs/default/bin:${PATH}"
 
                 # set the entrypoint to the shell-hook script (activate the environment and run the command)
