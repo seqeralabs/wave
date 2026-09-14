@@ -376,6 +376,9 @@ class TemplateUtilsTest extends Specification {
                 USER root
                 ENV USER=root
 
+                # add the env binaries to PATH for when the entrypoint is bypassed (e.g. 'singularity exec' on an OCI-converted image)
+                ENV PATH="/opt/wave/.pixi/envs/default/bin:${PATH}"
+
                 # set the entrypoint to the shell-hook script (activate the environment and run the command)
                 # no more pixi needed in the final container
                 ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]
@@ -411,6 +414,9 @@ class TemplateUtilsTest extends Specification {
                 # set user and environment variables for Python compatibility
                 USER root
                 ENV USER=root
+
+                # add the env binaries to PATH for when the entrypoint is bypassed (e.g. 'singularity exec' on an OCI-converted image)
+                ENV PATH="/opt/wave/.pixi/envs/default/bin:${PATH}"
 
                 # set the entrypoint to the shell-hook script (activate the environment and run the command)
                 # no more pixi needed in the final container
@@ -450,6 +456,9 @@ class TemplateUtilsTest extends Specification {
                 # set user and environment variables for Python compatibility
                 USER root
                 ENV USER=root
+
+                # add the env binaries to PATH for when the entrypoint is bypassed (e.g. 'singularity exec' on an OCI-converted image)
+                ENV PATH="/opt/wave/.pixi/envs/default/bin:${PATH}"
 
                 # set the entrypoint to the shell-hook script (activate the environment and run the command)
                 # no more pixi needed in the final container
