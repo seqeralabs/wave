@@ -1,4 +1,15 @@
 # Wave changelog
+1.38.0 - 14 Sep 2026
+- Support an authenticating egress proxy via shared lib-util-net ProxyConfig (#1125) [a992c7003]
+- Fix PATH in Pixi Docker template for OCI-to-SIF converted images (#1131) [3a521bf4e]
+- fix: report K8s builds as succeeded on Kubernetes 1.36+ (COMP-2368) (#1128) [2fe030260]
+- fix: surface transfer errors when caching blobs (COMP-2142) (#1100) [bfaea6c0d]
+- fix(deps): upgrade io.netty:netty-bom to 4.2.17.Final (COMP-2376) (#1135) [6fc9e5029]
+- fix(deps): upgrade org.postgresql:postgresql to 42.7.12 (COMP-2149) (#1112) [b8ae1a76c]
+- build(java): align toolchain and runtime to Java 25 (bytecode 17) (#1077) [252916094]
+- ci(claude): let the review agent submit approving PR reviews (#1105) [fdde438d6]
+- docs: Refresh self install (#1106) [9fcd286c2]
+
 1.37.0 - 23 Jul 2026
 - feature: consolidate capability toggles under wave.capabilities.* (#1098) [ca2d0ede2]
 - fix: gate wave release on master and release-* branches DEVOPS-1531 (#1072) [794dcc0eb]
