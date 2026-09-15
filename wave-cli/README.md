@@ -168,6 +168,16 @@ container=$(wave --conda-package fastp --platform linux/arm64)
 docker run --platform linux/arm64 $container sh -c 'fastp --version'
 ```
 
+#### Build a multi-architecture Conda package container (amd64 and arm64)
+
+Pass both platforms separated by a comma to build a single multi-architecture image
+backed by an index manifest. Note: multi-platform builds are not supported for Singularity.
+
+```bash
+container=$(wave --conda-package fastp --platform linux/amd64,linux/arm64)
+docker run $container sh -c 'fastp --version'
+```
+
 #### Build a Singularity container using a Conda package and pushing to a OCI registry
 
 ```bash
