@@ -1,5 +1,6 @@
 # Wave changelog
-1.38.0 - 14 Sep 2026
+1.38.0 - 15 Sep 2026
+- Upgrade jib plugin to 3.5.4 for Java 25 class file support (#1136) [ad179698b]
 - Support an authenticating egress proxy via shared lib-util-net ProxyConfig (#1125) [a992c7003]
 - Fix PATH in Pixi Docker template for OCI-to-SIF converted images (#1131) [3a521bf4e]
 - fix: report K8s builds as succeeded on Kubernetes 1.36+ (COMP-2368) (#1128) [2fe030260]
