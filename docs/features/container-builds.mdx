@@ -16,7 +16,7 @@ Use cases for building custom images on demand include:
 - **Simplicity**: Declare tools in a Conda environment file. Wave generates the image. Pipelines remain free of boilerplate.
 - **Portability**: Build instructions reside inside the pipeline. A Conda-first pipeline adapts to any container technology without rewrites.
 - **Reproducibility**: Wave stores build logs for every build. Conda builds also produce precise lock files. Environments remain consistent, shareable, and reproducible.
-- **Multi-architecture workloads**: Build the same Dockerfile or Conda specification for `linux/amd64` or `linux/arm64`. Pipelines target the hardware that matches their cost and performance goals, including ARM cloud instances such as AWS Graviton, Azure Cobalt, and Google Cloud Axion.
+- **Multi-architecture workloads**: Build the same Dockerfile or Conda specification for `linux/amd64`, `linux/arm64`, or both at once. Pipelines target the hardware that matches their cost and performance goals, including ARM cloud instances such as AWS Graviton, Azure Cobalt, and Google Cloud Axion.
 
 ## How it works
 
@@ -71,11 +71,32 @@ Wave builds containers from Dockerfiles and Singularity build files. You define 
 
 The Wave CLI accepts an optional build context directory. Dockerfiles can then use `ADD` and `COPY` instructions to include local files. Nextflow supplies the build context automatically from the pipeline. See [Module binaries](https://www.nextflow.io/docs/latest/module.html#module-binaries).
 
-Set the `containerPlatform` field on the build request to `linux/amd64` or `linux/arm64` to target a specific architecture (the Wave CLI exposes this as `--platform`). The same Dockerfile or Conda specification builds for either target. Wave returns an image URI that resolves to the matching binary.
+Set the `containerPlatform` field on the build request to `linux/amd64` or `linux/arm64` to target a specific architecture (the Wave CLI exposes this as `--platform`). The same Dockerfile or Conda specification builds for either target. Wave returns an image URI that resolves to the matching binary. To build for both architectures in a single request, see [Multi-platform builds](#multi-platform-builds).
 
 :::note
 `linux/arm64` is not the same as Apple Silicon. Apple Silicon uses a system-on-chip design for macOS. `linux/arm64` is the Linux ARM specification used on server and cloud distributions. Wave does not build images for `macos/arm64`.
 :::
+
+### Multi-platform builds
+
+Wave can build a single image that runs on both `linux/amd64` and `linux/arm64`. Set the `containerPlatform` field to the comma-separated value `linux/amd64,linux/arm64` (Wave CLI: `--platform linux/amd64,linux/arm64`). Wave runs one build per platform and assembles the results into an [OCI image index](https://github.com/opencontainers/image-spec/blob/main/image-index.md). The returned image URI resolves to the matching binary for whichever architecture pulls it, so the same URI works across mixed-architecture compute environments.
+
+For example, build a multi-platform image from a Conda package with the Wave CLI:
+
+```bash
+wave --conda-package bwa --platform linux/amd64,linux/arm64
+```
+
+When security scanning is enabled, Wave scans each platform variant individually.
+
+The following constraints apply:
+
+- `linux/amd64,linux/arm64` is the only supported platform combination.
+- The request must include build instructions: either a `containerFile` or a `packages` specification (Conda, PyPI, or CRAN). Multi-platform requests that only augment an existing image are rejected.
+- The Singularity image format is not supported.
+- The Wave deployment must support on-demand builds. Deployments without a build service, such as Wave Lite, reject multi-platform requests.
+
+Multi-platform builds were added in Wave 1.33.0.
 
 ### Build from Conda packages
 
