@@ -5,7 +5,7 @@ plugins {
     id 'io.seqera.wave.java-library-conventions'
     id 'io.seqera.wave.groovy-application-conventions'
     id "io.micronaut.minimal.application" version "4.1.1"
-    id "com.google.cloud.tools.jib" version "3.4.5"
+    id "com.google.cloud.tools.jib" version "3.5.4"
     id 'jacoco'
 }
 
@@ -56,7 +56,7 @@ dependencies {
     implementation 'io.seqera:lib-retry:2.0.0'
     implementation 'io.seqera:lib-random:1.0.0'
     implementation 'io.seqera:lib-util-time:1.0.0'
-    implementation 'io.seqera:lib-util-net:0.1.0'
+    implementation 'io.seqera:lib-util-net:0.2.0'
     implementation 'io.seqera:lib-activator:1.0.0'
     implementation project(':wave-api')
     implementation project(':wave-utils')
@@ -87,8 +87,8 @@ dependencies {
     implementation 'io.micronaut.reactor:micronaut-reactor-http-client'
     implementation 'org.apache.commons:commons-compress:1.27.1'
     implementation 'org.apache.commons:commons-lang3:3.18.0'
-    implementation 'io.kubernetes:client-java:24.0.0'
-    implementation 'io.kubernetes:client-java-api-fluent:24.0.0'
+    implementation 'io.kubernetes:client-java:27.0.0'
+    implementation 'io.kubernetes:client-java-api-fluent:27.0.0'
     implementation 'com.google.code.gson:gson:2.10.1'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
