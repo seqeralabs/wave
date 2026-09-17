@@ -98,7 +98,7 @@ class ClientCacheTest extends Specification implements RedisTestContainer {
         cache2.get(k) == resp
     }
 
-    def 'should cache describe workflow response' () {
+    def 'should cache describe workflow launch response' () {
         given:
         def TTL = Duration.ofSeconds(1)
         def store = applicationContext.getBean(RedisL2TieredCache)
@@ -130,5 +130,4 @@ class ClientCacheTest extends Specification implements RedisTestContainer {
         def resp = entry.value as GetUserInfoResponse
         resp.user == new User(id:37, email: "foo@bar.com", userName: "foo")
     }
-
 }

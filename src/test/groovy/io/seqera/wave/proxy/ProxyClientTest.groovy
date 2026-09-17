@@ -289,12 +289,17 @@ class ProxyClientTest extends Specification {
         then:
         cli[0] == 'curl'
         cli[1] == '-s'
-        cli[2] == '-X'
-        cli[3] == 'GET'
-        cli[4] == '-H'
-        cli[5] == 'content-type: application/octet-stream'
-        cli[6] == '-H'
-        cli[7] =~ /Authorization: Bearer.*/
-        cli[8] == 'https://registry-1.docker.io/v2/library/hello-world/manifests/sha256:aa0cc8055b82dc2509bed2e19b275c8f463506616377219d9642221ab53cf9fe'
+        cli[2] == '-f'
+        cli[3] == '--retry'
+        cli[4] == String.valueOf(httpConfig.retryAttempts)
+        cli[5] == '--connect-timeout'
+        cli[6] == String.valueOf(httpConfig.connectTimeout.toSeconds())
+        cli[7] == '-X'
+        cli[8] == 'GET'
+        cli[9] == '-H'
+        cli[10] == 'content-type: application/octet-stream'
+        cli[11] == '-H'
+        cli[12] =~ /Authorization: Bearer.*/
+        cli[13] == 'https://registry-1.docker.io/v2/library/hello-world/manifests/sha256:aa0cc8055b82dc2509bed2e19b275c8f463506616377219d9642221ab53cf9fe'
     }
 }

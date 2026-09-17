@@ -31,7 +31,7 @@ import jakarta.inject.Inject
  */
 @MicronautTest(environments = 'postgres', startApplication = false)
 @Property(name = "datasources.default.driver-class-name", value = "org.testcontainers.jdbc.ContainerDatabaseDriver")
-@Property(name = "datasources.default.url", value = "jdbc:tc:postgresql:///db")
+@Property(name = "datasources.default.url", value = "jdbc:tc:postgresql:16.14:///db")
 class PostgresSchemaServiceTest extends Specification {
 
     @Inject

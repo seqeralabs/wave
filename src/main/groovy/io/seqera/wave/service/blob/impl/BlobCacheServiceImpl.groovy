@@ -42,6 +42,7 @@ import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest
 import software.amazon.awssdk.services.s3.model.S3Exception
 /**
@@ -113,6 +114,16 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobEntry> {
     }
 
     protected boolean blobExists(String blobLocation) {
+        return blobSize(blobLocation) != null
+    }
+
+    /**
+     * Retrieve the size of the object stored in the object storage cache
+     *
+     * @param blobLocation The object storage path e.g. {@code s3://bucket-name/some/path}
+     * @return The size in bytes of the stored object or {@code null} if the object does not exist
+     */
+    protected Long blobSize(String blobLocation) {
         try {
             final object = BucketTokenizer.from(blobLocation)
             final request = HeadObjectRequest
@@ -121,14 +132,42 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobEntry> {
                     .key(object.key)
                     .build() as HeadObjectRequest
             // Execute the request
-            s3Client.headObject(request)
-            return true
+            return s3Client.headObject(request).contentLength()
         }
         catch (S3Exception e) {
             if (e.statusCode() != 404) {
                 log.error "Unexpected response=${e.statusCode()} checking existence for object=${blobLocation} - cause: ${e.message}"
             }
-            return false
+            return null
+        }
+        catch (Exception e) {
+            log.error "Unexpected error checking existence for object=${blobLocation} - cause: ${e.message}", e
+            return null
+        }
+    }
+
+    /**
+     * Delete the object stored in the object storage cache. This is used to remove an invalid
+     * object left behind by a failed transfer, so that it is not reported as a valid cache entry
+     * by {@link #blobExists(java.lang.String)} on a subsequent request.
+     *
+     * @param blobLocation The object storage path e.g. {@code s3://bucket-name/some/path}
+     */
+    protected void deleteBlob(String blobLocation) {
+        try {
+            final object = BucketTokenizer.from(blobLocation)
+            final request = DeleteObjectRequest
+                    .builder()
+                    .bucket(object.bucket)
+                    .key(object.key)
+                    .build() as DeleteObjectRequest
+            s3Client.deleteObject(request)
+            log.debug "Deleted invalid blob cache object=${blobLocation}"
+        }
+        catch (Exception e) {
+            // the entry is marked as errored regardless, therefore a failure to clean up the
+            // object must not propagate out of the job completion handling
+            log.error "Unable to delete invalid blob cache object=${blobLocation} - cause: ${e.message}", e
         }
     }
 
@@ -172,10 +211,16 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobEntry> {
         final curl = proxyService.curl(route, info.headers)
         final s5cmd = s5cmd(route, info)
 
+        // 'set -o pipefail' makes the pipeline fail when the curl command fails; without it
+        // the exit status is the one of the last command i.e. s5cmd, which happily exits zero
+        // after uploading an empty stream when curl failed to download the blob.
+        // Note 'bash' is required instead of 'sh': in the s5cmd image /bin/sh is 'dash', which
+        // does not implement 'pipefail' and aborts the whole script with "Illegal option -o
+        // pipefail" before the pipeline is even executed
         final command = List.of(
-                'sh',
+                'bash',
                 '-c',
-                Escape.cli(curl) + ' | ' + Escape.cli(s5cmd) )
+                'set -o pipefail; ' + Escape.cli(curl) + ' | ' + Escape.cli(s5cmd) )
 
         log.trace "== Blob cache transfer command: ${command.join(' ')}"
         return command
@@ -274,12 +319,50 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobEntry> {
         blobStore.getBlob(job.entryKey)
     }
 
+    /**
+     * Verify the object uploaded in the object storage cache matches the expected size, to prevent
+     * an empty or truncated transfer from being cached and served as if it were valid. Note the
+     * transfer job and the Wave proxy issue two separate requests to the upstream registry, therefore
+     * a job can report success even when no byte was actually downloaded.
+     *
+     * @param entry The {@link BlobEntry} associated with the completed transfer
+     * @return An error message describing the mismatch or {@code null} when the transfer is valid
+     */
+    protected String checkTransferredSize(BlobEntry entry) {
+        final uploaded = blobSize(entry.objectUri)
+        if( uploaded == null )
+            return "Blob cache object '${entry.objectUri}' was not uploaded to the object storage".toString()
+        // the upstream content length is not always provided, in that case only an
+        // empty object can be detected as invalid
+        final expected = entry.contentLength
+        if( expected == null ) {
+            return uploaded == 0
+                    ? "Blob cache object '${entry.objectUri}' is empty".toString()
+                    : null
+        }
+        if( uploaded != expected )
+            return "Blob cache object '${entry.objectUri}' size does not match the expected content length - uploaded: ${uploaded}; expected: ${expected}".toString()
+        return null
+    }
+
     @Override
     void onJobCompletion(JobSpec job, BlobEntry entry, JobState state) {
+        // the transfer job exit status only tells the command pipeline exited zero, it does not
+        // guarantee the blob bytes made it to the object storage - validate before completing
+        final error = state.succeeded()
+                ? checkTransferredSize(entry)
+                : state.stdout
+        if( error ) {
+            log.warn "== Blob cache transfer invalid for object '${entry.objectUri}'; operation=${job.operationName} - cause: ${error}"
+            // remove whatever the failed transfer left behind: a failing pipeline can still have
+            // uploaded an empty or truncated object, and blobExists() would then report it as a
+            // valid cache entry on the next request, making the bad transfer sticky
+            deleteBlob(entry.objectUri)
+        }
         // update the entry status
-        final result = state.succeeded()
+        final result = !error
                 ? entry.completed(state.exitCode, state.stdout)
-                : entry.errored(state.stdout)
+                : entry.errored(error)
         blobStore.storeBlob(entry.getKey(), result)
         log.debug "== Blob cache completed for object '${entry.objectUri}'; operation=${job.operationName}; status=${result.exitStatus}; duration=${result.duration()}"
     }

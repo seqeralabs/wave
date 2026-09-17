@@ -1,7 +1,7 @@
 #
 # Use this environment to configure use a local Kubernetes cluster to build wave containers
 #
-# - add "dev-k8s" to the list of environments defined in the 'micronautEnvs' property in the "gradle.property" file
+# - add "local-k8s" to the list of environments defined in the 'micronautEnvs' property in the "gradle.property" file
 # - create the directory "${HOME}/.wave/build-workspace"
 # - change the Kubernetes context in the config below with the one matching your installation
 # - create a namespace in your local Kubernetes cluster named "wave-local"

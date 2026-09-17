@@ -99,7 +99,7 @@ class RegistryProxyController {
     @Nullable
     private BlobCacheService blobCacheService
 
-    @Value('${wave.cache.digestStore.maxWeightMb:350}')
+    @Value('${wave.cache.digest-store.max-weight-mb:350}')
     private int cacheMaxWeightMb
 
     @Error

@@ -5,7 +5,7 @@ plugins {
     id 'io.seqera.wave.java-library-conventions'
     id 'io.seqera.wave.groovy-application-conventions'
     id "io.micronaut.minimal.application" version "4.1.1"
-    id "com.google.cloud.tools.jib" version "3.4.5"
+    id "com.google.cloud.tools.jib" version "3.5.4"
     id 'jacoco'
 }
 
@@ -25,6 +25,21 @@ repositories {
     maven { url = 'https://s3-eu-west-1.amazonaws.com/maven.seqera.io/snapshots' }
 }
 
+// Profile B: the Wave backend runs inside a Micronaut app on the Java 25 service
+// runtime (Micronaut 5 requires it), so it targets Java 25 rather than the Java 17
+// default applied by io.seqera.wave.java-library-conventions. --release is dropped
+// since it cannot coexist with -source/-target on the same javac task.
+// See seqeralabs/adr#51.
+tasks.withType(JavaCompile).configureEach {
+    options.release = null
+    sourceCompatibility = '25'
+    targetCompatibility = '25'
+}
+tasks.withType(GroovyCompile).configureEach {
+    sourceCompatibility = '25'
+    targetCompatibility = '25'
+}
+
 dependencies {
     annotationProcessor 'io.micronaut.validation:micronaut-validation-processor'
     annotationProcessor 'io.micronaut:micronaut-http-validation'
@@ -41,7 +56,7 @@ dependencies {
     implementation 'io.seqera:lib-retry:2.0.0'
     implementation 'io.seqera:lib-random:1.0.0'
     implementation 'io.seqera:lib-util-time:1.0.0'
-    implementation 'io.seqera:lib-util-net:0.1.0'
+    implementation 'io.seqera:lib-util-net:0.2.0'
     implementation 'io.seqera:lib-activator:1.0.0'
     implementation project(':wave-api')
     implementation project(':wave-utils')
@@ -71,8 +86,8 @@ dependencies {
     implementation 'io.micronaut.reactor:micronaut-reactor-http-client'
     implementation 'org.apache.commons:commons-compress:1.27.1'
     implementation 'org.apache.commons:commons-lang3:3.18.0'
-    implementation 'io.kubernetes:client-java:24.0.0'
-    implementation 'io.kubernetes:client-java-api-fluent:24.0.0'
+    implementation 'io.kubernetes:client-java:27.0.0'
+    implementation 'io.kubernetes:client-java-api-fluent:27.0.0'
     implementation 'com.google.code.gson:gson:2.10.1'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
@@ -95,14 +110,15 @@ dependencies {
     // add postgresql dependencies
     implementation 'io.micronaut.data:micronaut-data-jdbc'
     implementation 'io.micronaut.sql:micronaut-jdbc-hikari'  // HikariCP for connection pooling
-    implementation 'org.postgresql:postgresql:42.7.11'       // PostgreSQL Driver
+    implementation 'org.postgresql:postgresql:42.7.12'       // PostgreSQL Driver
     //object storage dependency
     implementation 'io.micronaut.objectstorage:micronaut-object-storage-aws'
     implementation 'software.amazon.awssdk:sts'
     runtimeOnly 'io.netty:netty-tcnative-boringssl-static:2.0.0.Final'
     runtimeOnly 'javax.xml.bind:jaxb-api:2.3.1'
+    testImplementation platform('org.testcontainers:testcontainers-bom:2.0.5')
     testImplementation 'org.testcontainers:testcontainers'
-    testImplementation 'org.testcontainers:postgresql'
+    testImplementation 'org.testcontainers:testcontainers-postgresql'
     testRuntimeOnly 'com.h2database:h2'
     testImplementation testFixtures('io.seqera:lib-fixtures-redis:1.1.0')
     
@@ -146,7 +162,7 @@ micronaut {
 //
 jib {
     from {
-        image = 'cr.seqera.io/public/nf-jdk:corretto-25-al2023-jemalloc'
+        image = 'cr.seqera.io/public/nf-jdk:corretto-25.0.3-al2023-jemalloc@sha256:fd64a2faf08bc89223bda4763352deaaf205e06c10f40706542e9d6b3d04fd85'
         platforms {
             platform { architecture = 'amd64'; os = 'linux' }
             platform { architecture = 'arm64'; os = 'linux' }
@@ -279,7 +295,7 @@ processResources {
 }
 
 jacoco {
-    toolVersion '0.8.12'
+    toolVersion '0.8.14'
 }
 /**
  * Code coverage with JaCoCo.
