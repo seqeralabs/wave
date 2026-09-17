@@ -93,17 +93,12 @@ Amazon ECR Public Gallery (`public.ecr.aws`) hosts publicly accessible container
 
 #### Required IAM permissions
 
-The IAM user needs the following permissions to authenticate to ECR Public:
+The IAM principal used by Wave needs the following permissions to obtain an ECR Public authorization token:
 
 - `ecr-public:GetAuthorizationToken`
-- `ecr-public:BatchCheckLayerAvailability`
-- `ecr-public:GetRepositoryPolicy`
-- `ecr-public:DescribeRepositories`
-- `ecr-public:DescribeImages`
-- `ecr-public:DescribeImageTags`
 - `sts:GetServiceBearerToken` — required for ECR Public token exchange
 
-Attach the AWS managed policy `AmazonElasticContainerRegistryPublicReadOnly` and the `sts:GetServiceBearerToken` permission explicitly, or create a custom policy that includes all of the above.
+For convenience, you can attach the AWS managed policy `AmazonElasticContainerRegistryPublicReadOnly` and grant `sts:GetServiceBearerToken` explicitly, or create a custom policy that includes only the permissions above.
 
 :::note
 `sts:GetServiceBearerToken` is not included in `AmazonElasticContainerRegistryPublicReadOnly`. You must grant this permission separately, or ECR Public authentication will fail.
