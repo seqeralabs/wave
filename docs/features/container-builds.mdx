@@ -87,16 +87,32 @@ For example, build a multi-platform image from a Conda package with the Wave CLI
 wave --conda-package bwa --platform linux/amd64,linux/arm64
 ```
 
-When security scanning is enabled, Wave scans each platform variant individually.
+When security scanning is enabled, Wave scans each platform variant individually. Singularity (SIF) images are not scanned.
 
 The following constraints apply:
 
 - `linux/amd64,linux/arm64` is the only supported platform combination.
 - The request must include build instructions: either a `containerFile` or a `packages` specification (Conda, PyPI, or CRAN). Multi-platform requests that only augment an existing image are rejected.
-- The Singularity image format is not supported.
+- Multi-platform builds are not compatible with [container mirroring](./mirroring.mdx) (`--mirror`).
+- The Singularity image format additionally requires [freeze mode](./container-freezes.mdx) and a custom build repository, as with any Singularity build.
 - The Wave deployment must support on-demand builds. Deployments without a build service, such as Wave Lite, reject multi-platform requests.
 
-Multi-platform builds were added in Wave 1.33.0.
+Multi-platform builds were added in Wave 1.33.0. Multi-platform Singularity builds were added in Wave 1.39.0.
+
+#### Multi-platform Singularity images
+
+Wave builds multi-platform Singularity images the same way: one SIF per architecture, referenced by a single OCI image index published under the returned `oras://` URI.
+
+```bash
+wave --conda-package bwa --singularity --freeze --build-repo docker.io/user/repo --platform linux/amd64,linux/arm64
+```
+
+:::warning
+Client support for multi-architecture `oras://` URIs is not universal:
+
+- **Apptainer** resolves the architecture from the image index. Use `apptainer pull oras://<uri>` to get the image for the host architecture, or `apptainer pull --arch arm64 oras://<uri>` to select one explicitly.
+- **SingularityCE** does not yet support platform selection for `oras://` sources. Pulling a multi-architecture Wave URI with SingularityCE fails — it does not fall back to a single architecture. Use a single-architecture build (`--platform linux/amd64` or `--platform linux/arm64`) with SingularityCE.
+:::
 
 ### Build from Conda packages
 

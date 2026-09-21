@@ -93,6 +93,45 @@ class MultiPlatformBuildServiceTest extends Specification {
         arm64Req.scanId == null
     }
 
+    def 'should create platform-specific build requests for singularity format'() {
+        given:
+        def service = new MultiPlatformBuildService()
+        def template = BuildRequest.of(
+                containerId: 'abc123',
+                containerFile: 'Bootstrap: docker\nFrom: ubuntu:latest',
+                workspace: Path.of('/tmp'),
+                targetImage: 'oras://docker.io/foo/wave:abc123',
+                identity: TEST_IDENTITY,
+                platform: ContainerPlatform.MULTI_PLATFORM,
+                ip: '10.0.0.1',
+                configJson: '{}',
+                offsetId: '+0',
+                format: BuildFormat.SINGULARITY,
+                maxDuration: Duration.ofMinutes(5)
+        )
+
+        when:
+        def amd64Req = service.createPlatformRequest(template, MultiPlatformBuildService.PLATFORM_AMD64, '-linux-amd64')
+        def arm64Req = service.createPlatformRequest(template, MultiPlatformBuildService.PLATFORM_ARM64, '-linux-arm64')
+
+        then: 'both sub-builds keep the singularity format'
+        amd64Req.format == BuildFormat.SINGULARITY
+        arm64Req.format == BuildFormat.SINGULARITY
+
+        and: 'the per-platform target images use the oras:// scheme'
+        amd64Req.targetImage.startsWith('oras://docker.io/foo/wave:')
+        arm64Req.targetImage.startsWith('oras://docker.io/foo/wave:')
+        amd64Req.targetImage != arm64Req.targetImage
+
+        and: 'each sub-build targets its own platform'
+        amd64Req.platform == ContainerPlatform.of('linux/amd64')
+        arm64Req.platform == ContainerPlatform.of('linux/arm64')
+
+        and: 'SIF images are not scanned'
+        amd64Req.scanId == null
+        arm64Req.scanId == null
+    }
+
     def 'should return in-progress build track and launch multi-build job'() {
         given:
         def buildService = Mock(ContainerBuildService)

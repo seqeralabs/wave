@@ -287,8 +287,6 @@ class ContainerController {
                 throw new BadRequestException("Only linux/amd64,linux/arm64 multi-platform combination is currently supported")
             if( !req.containerFile && !req.packages )
                 throw new BadRequestException("Multi-platform builds require either 'containerFile' or 'packages' attribute")
-            if( req.formatSingularity() )
-                throw new BadRequestException("Multi-platform builds are not supported for Singularity format")
             if( !multiPlatformBuildService )
                 throw new UnsupportedBuildServiceException()
         }
