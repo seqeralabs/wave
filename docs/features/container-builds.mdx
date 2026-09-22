@@ -110,7 +110,8 @@ wave --conda-package bwa --singularity --freeze --build-repo docker.io/user/repo
 :::warning
 Client support for multi-architecture `oras://` URIs is not universal:
 
-- **Apptainer** resolves the architecture from the image index. Use `apptainer pull oras://<uri>` to get the image for the host architecture, or `apptainer pull --arch arm64 oras://<uri>` to select one explicitly.
+- **Apptainer 1.5.0 or later** resolves the architecture from the image index. `apptainer pull oras://<uri>` fetches the image for the host architecture. Apptainer rejects a SIF whose architecture the host cannot run, so `--arch` only succeeds for the host architecture unless binfmt emulation is configured.
+- **Apptainer 1.4.x and earlier** ignore the image index for `oras://` sources and always fetch the `linux/amd64` image. On an `arm64` host the pull fails.
 - **SingularityCE** does not yet support platform selection for `oras://` sources. Pulling a multi-architecture Wave URI with SingularityCE fails — it does not fall back to a single architecture. Use a single-architecture build (`--platform linux/amd64` or `--platform linux/arm64`) with SingularityCE.
 :::
 

@@ -237,7 +237,7 @@ Singularity container builds support the following arguments:
 The following limitations apply:
 
 - Singularity containers are not scanned for security vulnerabilities.
-- Multi-architecture builds (`--platform linux/amd64,linux/arm64`) require a client that resolves the architecture from an OCI image index over `oras://`. Apptainer does this; SingularityCE does not yet support platform selection for `oras://` sources and fails to pull a multi-architecture URI rather than falling back to a single architecture.
+- Multi-architecture builds (`--platform linux/amd64,linux/arm64`) require a client that resolves the architecture from an OCI image index over `oras://`. Apptainer 1.5.0 or later does this (earlier versions always fetch the `linux/amd64` image); SingularityCE does not yet support platform selection for `oras://` sources and fails to pull a multi-architecture URI rather than falling back to a single architecture.
 
 **Example usage**
 
@@ -278,10 +278,10 @@ wave --conda-package bwa=0.7.15 \
   --build-repo docker.io/user/repo
 ```
 
-Pull it with Apptainer, optionally selecting the architecture:
+Pull it with Apptainer 1.5.0 or later. Apptainer fetches the image that matches the host architecture:
 
 ```bash
-apptainer pull --arch arm64 oras://docker.io/user/repo:bwa-0.7.15--<hash>
+apptainer pull oras://docker.io/user/repo:bwa-0.7.15--<hash>
 ```
 
 </details>
