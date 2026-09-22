@@ -46,11 +46,13 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.exchange.DescribeWaveContainerResponse
+import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildTrack
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.FreezeService
 import io.seqera.wave.service.builder.FreezeServiceImpl
+import io.seqera.wave.service.builder.MultiPlatformBuildService
 import io.seqera.wave.service.inclusion.ContainerInclusionService
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.service.job.JobService
@@ -612,6 +614,58 @@ class ContainerControllerTest extends Specification {
             cached == true
             succeeded == true
         }
+    }
+
+    def 'should create multi-platform singularity response' () {
+        given:
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def freeze = new FreezeServiceImpl( inspectService: dockerAuth)
+        def builder = Mock(ContainerBuildService)
+        def multiBuilder = Mock(MultiPlatformBuildService)
+        def proxyRegistry = Mock(RegistryProxyService)
+        def addressResolver = Mock(HttpClientAddressResolver)
+        def tokenService = Mock(ContainerRequestService)
+        def persistence = Mock(PersistenceService)
+        def controller = new ContainerController(freezeService:  freeze, buildService: builder, multiPlatformBuildService: multiBuilder,
+                inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService),
+                addressResolver: addressResolver, containerService: tokenService, persistenceService: persistence, validationService: validationService, serverUrl: 'http://wave.com')
+
+        when:
+        def packagesSpec = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['bwa=0.7.15'], channels: ['conda-forge','bioconda'])
+        def req = new SubmitContainerTokenRequest(format: 'sif', packages: packagesSpec, freeze: true, containerPlatform: 'linux/amd64,linux/arm64', buildRepository: 'docker.io/foo', towerAccessToken: '123')
+        def user = new User(email: 'foo@bar.com', userName: 'foo')
+        def id = PlatformId.of(user, req)
+        def response = controller.handleRequest(null, req, id, true)
+
+        then: 'the request is delegated to the multi-platform build service'
+        1 * multiBuilder.buildMultiPlatformImage({ BuildRequest it -> it.format == BuildFormat.SINGULARITY && it.platform == ContainerPlatform.MULTI_PLATFORM }, _, _, _) >> { args -> new BuildTrack('build123', args[2] as String, false, null) }
+        and:
+        1 * tokenService.computeToken(_) >> new TokenData('wavetoken123', Instant.now().plus(1, ChronoUnit.HOURS))
+        and:
+        0 * builder.buildImage(_) >> null
+
+        and:
+        response.status.code == 200
+        verifyAll(response.body.get() as SubmitContainerTokenResponse) {
+            targetImage.startsWith('oras://docker.io/library/foo:')
+            buildId == 'build123'
+            containerToken == null
+        }
+    }
+
+    def 'should reject multi-platform singularity request when freeze is not enabled' () {
+        given:
+        def controller = new ContainerController(freezeService: Mock(FreezeService), buildService: Mock(ContainerBuildService),
+                multiPlatformBuildService: Mock(MultiPlatformBuildService), inclusionService: Mock(ContainerInclusionService), addressResolver: Mock(HttpClientAddressResolver),
+                validationService: validationService, buildConfig: buildConfig)
+
+        when:
+        def req = new SubmitContainerTokenRequest(format: 'sif', containerFile: encode('FROM foo'), containerPlatform: 'linux/amd64,linux/arm64', buildRepository: 'docker.io/foo')
+        controller.handleRequest(null, req, new PlatformId(new User(id: 100)), true)
+
+        then:
+        def e = thrown(BadRequestException)
+        e.message == "Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting"
     }
 
     def 'should throw BadRequestException when more than one artifact (container image, container file or packages) is provided in the request' () {

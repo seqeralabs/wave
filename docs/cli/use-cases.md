@@ -227,6 +227,7 @@ Singularity container builds support the following arguments:
 
 - `--build-repo`: A target repository for the built container.
 - `--freeze`: Enables container freeze mode.
+- `--platform`: A target platform. Accepts `linux/amd64`, `linux/arm64`, or `linux/amd64,linux/arm64` for a multi-architecture build.
 - `--singularity`, `-s`: Enables Singularity container builds.
 - `--tower-token`: A Seqera access token for accessing private registry credentials stored in Platform (env: `TOWER_ACCESS_TOKEN`).
 - `--tower-workspace-id`: A Seqera workspace ID where credentials are stored (e.g., `1234567890`). Requires `--tower-token` or `TOWER_ACCESS_TOKEN` to be set.
@@ -235,7 +236,8 @@ Singularity container builds support the following arguments:
 
 The following limitations apply:
 
-- The `linux/arm64` platform is not currently supported.
+- Singularity containers are not scanned for security vulnerabilities.
+- Multi-architecture builds (`--platform linux/amd64,linux/arm64`) require a client that resolves the architecture from an OCI image index over `oras://`. Apptainer 1.5.0 or later does this (earlier versions always fetch the `linux/amd64` image); SingularityCE does not yet support platform selection for `oras://` sources and fails to pull a multi-architecture URI rather than falling back to a single architecture.
 
 **Example usage**
 
@@ -264,6 +266,22 @@ wave --conda-package bamtools=2.5.2 \
   --freeze \
   --singularity \
   --build-repo docker.io/user/repo
+```
+
+Build a multi-architecture Singularity container from Conda packages. Wave builds one SIF per architecture and returns a single `oras://` URI backed by an OCI image index:
+
+```bash
+wave --conda-package bwa=0.7.15 \
+  --platform linux/amd64,linux/arm64 \
+  --freeze \
+  --singularity \
+  --build-repo docker.io/user/repo
+```
+
+Pull it with Apptainer 1.5.0 or later. Apptainer fetches the image that matches the host architecture:
+
+```bash
+apptainer pull oras://docker.io/user/repo:bwa-0.7.15--<hash>
 ```
 
 </details>
