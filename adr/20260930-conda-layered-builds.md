@@ -30,11 +30,11 @@ For the reference environment (`bioconda::gatk4=4.6.2.0` and `bioconda::gcnvkern
 ### How it works
 
 1. User submits a container request with `buildTemplate: "conda/micromamba:v3"`
-2. Wave renders the v3 Dockerfile, naming the tool image configured with `wave.build.condasplit-image`
+2. Wave renders the v3 Dockerfile, naming the tool image configured with `wave.build.condasplit-image`, both as its BuildKit frontend (`# syntax=`, first line) and as the image mounted into the install step
 3. Two-stage build executes:
    - **Stage 1 (build)**: Runs the `conda/micromamba:v2` install commands and prints the conda lock. A lock-file URL is first added to the stage with `ADD` and installed from the local copy, because micromamba can't read an explicit lock file from a URL. In the same `RUN`, it runs `condasplit` from the mounted tool image, which moves every file of `/opt/conda` (except `pkgs/`) into `/layers/00` … `/layers/31`, each rooted at `/`, and prints the layer plan
    - **Stage 2 (prod)**: Starts from `{{base_image}}` and adds each slot directory as its own layer with `COPY --link`
-4. Unused slots are empty directories and produce the standard 32-byte empty layer
+4. The frontend builds stage 1 first, then builds the image without the `COPY` lines of the empty slots, so the image has one layer per used slot
 
 ## Decision Drivers
 
@@ -55,7 +55,7 @@ For the reference environment (`bioconda::gatk4=4.6.2.0` and `bioconda::gcnvkern
 |-------|--------------|---------|
 | `conda/micromamba:v1` | 1 (single-stage) | No |
 | `conda/micromamba:v2` | 1 | Yes (`CONDA` packages) |
-| `conda/micromamba:v3` | 32 slots | No |
+| `conda/micromamba:v3` | Up to 32, one per used slot | No |
 | `conda/pixi:v1` | 1 | No |
 
 **Rationale:**
@@ -76,14 +76,14 @@ COPY --link --from=build /layers/31/ /
 
 **Rationale:**
 - Wave generates the Dockerfile before the environment is solved, so the number of layers is not known in advance
-- Keeps the whole build in a single Dockerfile, with no extra solve job and no custom BuildKit frontend
-- An empty slot costs 32 bytes (`sha256:4f4fb700ef54…`, already present in most base images) and one registry round trip for a blob that is already cached
+- Keeps the whole build in a single Dockerfile, with no extra solve job
+- The empty slots are dropped at build time by the frontend, see decision 10
 - 32 slots allow about 16 GB of environment before compression. With a one-layer base image such as `ubuntu:24.04` the image stays around 35 layers, well under the ~125-layer overlay limit
 - When an environment needs more than 32 layers, the two smallest layers are merged repeatedly until 32 remain, and the plan shows `WARN slots exceeded: merged <n> layers`
 
 ### 3. Go Static Tool in a `FROM scratch` Image
 
-**Decision:** The layering logic is a Go program in the new `condasplit/` folder, built with the standard library only as a static binary (`CGO_ENABLED=0`). It ships as a multi-arch (amd64, arm64) `FROM scratch` image containing only `/condasplit`, and is mounted read-only into the install step:
+**Decision:** The layering logic is a Go program in the new `condasplit/` folder, built with the standard library only as a static binary (`CGO_ENABLED=0`). It ships as a multi-arch (amd64, arm64) `FROM scratch` image containing `/condasplit` and the frontend of decision 10, and is mounted read-only into the install step:
 
 ```dockerfile
 RUN --mount=type=bind,from={{layers_image}},source=/,target=/opt/wave-tools \
@@ -123,7 +123,7 @@ RUN --mount=type=bind,from={{layers_image}},source=/,target=/opt/wave-tools \
 - Hardlinks, owners, modes and timestamps survive automatically, because a moved file is the same file
 - Completeness is verifiable: after the move, `/opt/conda` must contain only directories and the excluded `pkgs/`, otherwise the tool fails listing up to 20 offending paths
 - Files inherited from lower image layers (custom `mambaImage`) are copied up by overlayfs on `rename()`, which keeps their metadata but splits hardlinks between them
-- Each layer is rooted at `/`, so every empty slot is the identical empty layer. Used layers carry `/opt` and `/opt/conda`, both 0755 root:root as in the v2 image, and only the prefix's timestamps are kept
+- Each layer is rooted at `/`, so every slot left empty is the same empty directory, which the frontend drops. Used layers carry `/opt` and `/opt/conda`, both 0755 root:root as in the v2 image, and only the prefix's timestamps are kept
 
 ### 5. Grouping Rules
 
@@ -181,6 +181,26 @@ RUN --mount=type=bind,from={{layers_image}},source=/,target=/opt/wave-tools \
 - Conda lock extraction from the build log works exactly as for `conda/micromamba:v2`
 - No persistence or UI change is needed
 
+### 10. BuildKit Frontend Dropping the Empty Slots
+
+**Decision:** The v3 Dockerfile starts with `# syntax={{layers_image}}`, which makes the tool image its BuildKit frontend. The frontend (`condasplit/frontend/`, entrypoint `/condasplit-frontend`) builds the `build` stage, lists `/layers/NN`, removes the `COPY` lines of the empty slots and builds the whole Dockerfile. Both builds are delegated to the built-in Dockerfile frontend.
+
+**Rationale:**
+- BuildKit adds a layer for every `COPY`, even an empty one: without the frontend a small environment such as `bioconda::samtools` has 30 empty layers
+- The `buildctl` invocation doesn't change, since the built-in frontend forwards a build to the image named by the directive. Verified with Wave's arguments and the settings of the Kubernetes build pods (rootless, not privileged, `--oci-worker-no-process-sandbox`)
+- The install stage runs once: the second build finds it in the cache of the first
+- The Dockerfile syntax and the image content are those of the built-in frontend: the frontend only edits the Dockerfile text
+- Shipping it in the tool image keeps one image to publish, configure, credential and mirror
+
+**Alternatives rejected:**
+
+| Option | Reason |
+|--------|--------|
+| Keep the empty layers | Harmless in size, but every image carries up to 31 empty layers |
+| Frontend generating the LLB itself | Could create any number of layers, but reimplements the Dockerfile frontend |
+| Remove the empty layers after the push | Replaces the image pushed by BuildKit with a new digest and needs registry writes from Wave, before the multi-platform index is assembled |
+| Solve first, then write an exact Dockerfile | Needs a solve job before the build |
+
 ## API Changes
 
 ### New Template Value
@@ -211,10 +231,10 @@ Each tool release gets a new immutable tag (`v1`, `v2`, …) and the config valu
 | Aspect | `conda/micromamba:v2` | `conda/micromamba:v3` |
 |--------|-----------------------|-----------------------|
 | Build stages | 2 | 2 |
-| Conda environment layers | 1 | 32 slots, at most 500 MB each before compression |
+| Conda environment layers | 1 | One per used slot, up to 32, at most 500 MB each before compression |
 | Package cache (`/opt/conda/pkgs`) | Included | Dropped |
 | Layer plan in build log | No | Yes |
-| Build-time tool image | None | `condasplit` (mounted, not shipped) |
+| Build-time tool image | None | `condasplit`, frontend and mounted tool (not shipped) |
 | Singularity support | Yes (single-stage) | No (HTTP 400) |
 | Default template | Yes | No |
 
@@ -239,7 +259,7 @@ Reference environment built with BuildKit v0.25.2, gzip compression and OCI medi
 | Helpers | `TemplateUtils.java`, `CondaHelper.groovy`, `ContainerHelper.groovy` |
 | Controller | `ContainerController.groovy` |
 | Services | `ContainerInspectServiceImpl.groovy` |
-| Tool | `condasplit/` (Go sources and tests, `Dockerfile`, `Makefile`, `README.md`) |
+| Tool | `condasplit/` (Go sources and tests, `frontend/` module, `Dockerfile`, `Makefile`, `README.md`) |
 | CI | `.github/workflows/build-condasplit.yml` |
 | Tests | `*Test.groovy` for all modified components, golden files for the existing templates |
 | Docs | `api.md`, `features/container-builds.mdx`, `cli/use-cases.md`, `install/reference.md` |
@@ -257,7 +277,7 @@ Reference environment built with BuildKit v0.25.2, gzip compression and OCI medi
 ### Negative
 - First Go code in the repository: CI needs a Go toolchain for the tool's tests
 - A new tool image to publish, version and, for Enterprise installs, mirror
-- Up to 31 empty layers and their registry round trips in small environments
+- The frontend depends on `github.com/moby/buildkit`, which must be upgraded together with the production BuildKit
 - A single file larger than 500 MB still produces a blob over 512 MB
 - The install step is still exported to the build cache as one large blob, as with `conda/micromamba:v2`
 - No sharing of identical package layers across images, and layer digests are not byte-reproducible

@@ -173,7 +173,7 @@ The `conda/micromamba:v3` template installs the environment as `conda/micromamba
 - Each package of 50 MB or more gets its own layer, and a package larger than 500 MB is split across several layers.
 - Smaller packages are grouped together into shared layers.
 - Every layer holds at most 500 MB of files before compression, so compressed layers stay under 512 MB. A single file larger than 500 MB gets a layer to itself, and the build log shows a warning.
-- The image has 32 layer slots. If an environment needs more layers, the smallest layers are merged, a merged layer can exceed 500 MB, and the build log shows a warning.
+- The image has up to 32 Conda layers, only as many as the environment needs. If an environment needs more layers, the smallest layers are merged, a merged layer can exceed 500 MB, and the build log shows a warning.
 
 The tools, versions, and files in the image are the same as with `conda/micromamba:v2`, except that the unused package cache (`/opt/conda/pkgs`) is dropped. The build log lists which packages went into which layer and how large each layer is, unless the build reuses the environment install step from the build cache.
 

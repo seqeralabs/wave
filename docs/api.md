@@ -642,7 +642,7 @@ The environment is split by Conda package:
 - Every layer holds at most 500 MB of files before compression, so compressed layers stay under 512 MB. The only exceptions are a single file larger than 500 MB and layers merged when the environment needs more than 32 layers, as described below.
 - A single file larger than 500 MB can't be split. It gets a layer to itself, the build log shows a `WARN oversized file` line, and the build continues.
 
-The image always declares 32 Conda layer slots. Slots the environment doesn't need are empty layers of a few bytes. If an environment needs more than 32 layers, the smallest layers are merged and the build log shows a `WARN slots exceeded` line. A merged layer can exceed 500 MB, in which case the build log also shows a `WARN merged layer` line.
+The image has one layer for each Conda layer the environment needs, up to 32. If an environment needs more than 32 layers, the smallest layers are merged and the build log shows a `WARN slots exceeded` line. A merged layer can exceed 500 MB, in which case the build log also shows a `WARN merged layer` line.
 
 The build log shows the layer plan between the `>> CONDA_LAYERS_START` and `<< CONDA_LAYERS_END` markers, with one row per layer listing its size, file count, and packages. The layer plan is printed by the install step, so it's missing from the log when the build reuses that step from the build cache. The Conda lock file is printed before the layer plan and is extracted as for `conda/micromamba:v2`.
 

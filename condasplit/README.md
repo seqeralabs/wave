@@ -9,9 +9,17 @@ installed prefix (e.g. `/opt/conda`) into a fixed number of slot directories,
 stage of the template then adds each slot directory as a separate layer with
 `COPY --link --from=build /layers/NN/ /`.
 
-The tool image is `FROM scratch` and contains only the `/condasplit` binary. The build
-mounts it read-only for that one step (`RUN --mount=type=bind,from=<image>,...`), so the
-tool never ends up in the built image or in the build cache.
+The tool image is `FROM scratch`. The build mounts it read-only for that one step
+(`RUN --mount=type=bind,from=<image>,...`), so the tool never ends up in the built image
+or in the build cache.
+
+The same image is the BuildKit frontend of the template, named by its first line
+`# syntax=<image>`, and its entrypoint is `/condasplit-frontend` (see `frontend/`).
+BuildKit adds a layer for every `COPY`, even an empty one, so the frontend builds the
+`build` stage, lists the slot directories, removes the `COPY` lines of the empty ones and
+builds the whole Dockerfile. It delegates both builds to BuildKit's built-in Dockerfile
+frontend, and the install stage runs once because the second build finds it in the cache
+of the first. The image then has one layer per used slot.
 
 ## How files are grouped
 
@@ -85,11 +93,14 @@ The `conda/micromamba:v3` template runs:
 
 ## Development
 
-The tool uses only the Go standard library. Run the unit tests:
+The tool uses only the Go standard library. The frontend is a separate Go module,
+`frontend/`, so that its `github.com/moby/buildkit` dependency never reaches the tool;
+keep that dependency at the version of the BuildKit used by Wave. Run the unit tests:
 
 ```bash
 cd condasplit
 go test ./...
+(cd frontend && go test ./...)
 ```
 
 Tests checking file owners need root and are skipped otherwise. To run all of them,

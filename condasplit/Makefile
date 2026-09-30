@@ -12,7 +12,7 @@ build:
 
 # run the unit tests as root, so that the owner tests are not skipped
 test:
-	docker run --rm -v ${CURDIR}:/src -w /src golang:1.27 go test ./...
+	docker run --rm -v ${CURDIR}:/src -w /src golang:1.27 sh -c 'go test ./... && cd frontend && go test ./...'
 
 # single-arch image loaded into the local docker as condasplit:dev, it is never pushed
 load:

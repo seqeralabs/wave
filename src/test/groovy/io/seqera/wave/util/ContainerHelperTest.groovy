@@ -938,7 +938,7 @@ class ContainerHelperTest extends Specification {
         then:
         result == CondaHelper.containerFileV3(new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: PACKAGES, channels: CHANNELS), null, LAYERS_IMAGE)
         and:
-        result.startsWith('FROM mambaorg/micromamba:2-amazon2023 AS build\n')
+        result.startsWith('# syntax=public.cr.stage-seqera.io/wave/condasplit:v1\nFROM mambaorg/micromamba:2-amazon2023 AS build\n')
         result.contains('RUN --mount=type=bind,from=public.cr.stage-seqera.io/wave/condasplit:v1,source=/,target=/opt/wave-tools \\\n')
         result.contains('micromamba install -y -n base -f /tmp/conda.yml')
         result.contains('FROM ubuntu:24.04 AS prod\n')
@@ -963,7 +963,7 @@ class ContainerHelperTest extends Specification {
         def result = ContainerHelper.containerFileFromRequest(req, 'my.registry.io/wave/condasplit:v2')
 
         then:
-        result.startsWith('FROM mambaorg/micromamba:2.0.0 AS build\n')
+        result.startsWith('# syntax=my.registry.io/wave/condasplit:v2\nFROM mambaorg/micromamba:2.0.0 AS build\n')
         result.contains('RUN --mount=type=bind,from=my.registry.io/wave/condasplit:v2,source=/,target=/opt/wave-tools \\\n')
         result.contains('ADD https://foo.com/lock.yml /tmp/conda-lock/lock.yml\n')
         result.contains('micromamba install -y -n base -c conda-forge -c bioconda -f /tmp/conda-lock/lock.yml > /tmp/mamba.log 2>&1')

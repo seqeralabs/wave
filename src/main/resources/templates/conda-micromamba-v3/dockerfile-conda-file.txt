@@ -1,3 +1,4 @@
+# syntax={{layers_image}}
 FROM {{mamba_image}} AS build
 USER root
 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml

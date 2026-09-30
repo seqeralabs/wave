@@ -19,9 +19,9 @@
 
 ## Summary
 
-Add a new, opt-in conda build template, `conda/micromamba:v3`. It installs the environment exactly like `conda/micromamba:v2`. Then, in the same build step, a small static Go tool (`condasplit`) moves the installed files from `/opt/conda` into up to 32 layer directories, grouped by conda package, with each layer at most 500 MB before compression. The final stage adds each directory as its own image layer.
+Add a new, opt-in conda build template, `conda/micromamba:v3`. It installs the environment exactly like `conda/micromamba:v2`. Then, in the same build step, a small static Go tool (`condasplit`) moves the installed files from `/opt/conda` into up to 32 layer directories, grouped by conda package, with each layer at most 500 MB before compression. The final stage adds each used directory as its own image layer: a small BuildKit frontend, shipped in the same image as the tool, drops the slots the environment left empty.
 
-The tool ships as a `FROM scratch` image under the same path as the other Wave tool images: `public.cr.stage-seqera.io/wave/condasplit` for the initial iteration and tests, and `public.cr.seqera.io/wave/condasplit` for production. It is mounted into the build step and never copied into the image. The container's file content is the same as v2, except the unused package cache (`/opt/conda/pkgs`) is dropped.
+The tool and the frontend ship as one `FROM scratch` image under the same path as the other Wave tool images: `public.cr.stage-seqera.io/wave/condasplit` for the initial iteration and tests, and `public.cr.seqera.io/wave/condasplit` for production. The Dockerfile selects it as its frontend with a `# syntax=` directive and mounts it into the build step. It is never copied into the image. The container's file content is the same as v2, except the unused package cache (`/opt/conda/pkgs`) is dropped.
 
 Existing templates (`conda/micromamba:v1`, `conda/micromamba:v2`, `conda/pixi:v1`, `cran/installr:v1`) and the default template are not modified, so existing container ids, cached images and community registry tags stay as they are.
 
@@ -71,7 +71,7 @@ A Nextflow user whose images are too large for their registry's blob limit sets 
 
 **Acceptance Scenarios**:
 
-1. **Given** a request with `buildTemplate: "conda/micromamba:v3"` and a conda environment, **When** the build completes, **Then** the image manifest contains the base image layers, 32 conda slot layers, and any layers from custom `commands`.
+1. **Given** a request with `buildTemplate: "conda/micromamba:v3"` and a conda environment, **When** the build completes, **Then** the image manifest contains the base image layers, one layer for each conda slot the environment uses, and any layers from custom `commands`.
 2. **Given** the reference environment ([Appendix A](#appendix-a-proof-of-concept-results)), **When** built with v3, **Then** no conda layer is larger than 512 MB compressed, and packages of at least 50 MB (such as `gatk4`, `openjdk`, `pytorch`) each occupy their own layer.
 3. **Given** a v3 request with a remote conda lock file URL in `packages.entries`, **When** the build runs, **Then** the environment is installed from the lock file and layered the same way.
 4. **Given** a v3 multi-platform request (`linux/amd64,linux/arm64`), **When** the build runs, **Then** each platform image is layered independently, using the matching tool binary, and the index is assembled as today.
@@ -147,7 +147,7 @@ Environments that cannot fit the normal rules still build, with clear warnings.
 
 ### Edge Cases
 
-- **Empty or tiny environment.** Only a few slots are used. Unused slots produce the standard 32-byte empty layer (`sha256:4f4fb700ef54…`), which most base images already contain.
+- **Empty or tiny environment.** Only a few slots are used. The frontend drops the `COPY` lines of the others, so the image has no empty layers.
 - **Files not claimed by any package.** Examples are `conda-meta/history`, `.messages.txt` and files created by post-link scripts. They go into a trailing leftovers layer, which is also capped at 500 MB.
 - **Path claimed by two packages (clobbering).** The file is placed once, with the owner taken from the first `conda-meta` file in sorted order. The on-disk content is always the final installed version, so layer order never matters.
 - **Symlinks, directory symlinks and empty directories.** They are preserved as-is. An originally empty directory is recreated in the leftovers layer.
@@ -164,15 +164,15 @@ Environments that cannot fit the normal rules still build, with clear warnings.
 
 ### Overview
 
-A v3 build is one BuildKit build of a two-stage Dockerfile. Only stage 2 is shipped.
+A v3 build is one BuildKit build of a two-stage Dockerfile, run by the frontend named on its first line. Only stage 2 is shipped.
 
 ```
-                         <registry>/wave/condasplit:vN   (FROM scratch, one static binary)
+                         <registry>/wave/condasplit:vN   (FROM scratch, tool + frontend)
                                             │ RUN --mount (read-only, never written to disk)
                                             ▼
-            ┌────────────────────────────────────────────────┐   COPY --link ×32    ┌───────────────────────┐
+            ┌────────────────────────────────────────────────┐   COPY --link ×N     ┌───────────────────────┐
 conda.yml ─▶│ build   {{mamba_image}}                        │ ───────────────────▶ │ prod  {{base_image}}  │ ─▶ registry
-            │  1. micromamba install → /opt/conda  (as v2)   │   /layers/NN/ → /    │ base + 32 slot layers │
+            │  1. micromamba install → /opt/conda  (as v2)   │   /layers/NN/ → /    │ base + N slot layers  │
             │  2. print conda lock                  (as v2)  │                      └───────────────────────┘
             │  3. condasplit: move /opt/conda → /layers/NN   │
             └───────────────┬────────────────────────────────┘
@@ -180,7 +180,7 @@ conda.yml ─▶│ build   {{mamba_image}}                        │ ───
 ```
 
 1. **build**: runs v2's install commands and prints the conda lock between the existing markers. A lock-file URL is first added with `ADD` and installed from the local copy (see the lock-file URL variant below). In the same `RUN`, it then runs `condasplit` from the mounted tool image. The tool moves every file of `/opt/conda` (except `pkgs/`) into `/layers/00` … `/layers/31`, each rooted at `/`, and prints the layer plan.
-2. **prod**: starts from `{{base_image}}` and copies each layer directory with `COPY --link`. Unused slots are empty directories and yield the standard empty layer.
+2. **prod**: starts from `{{base_image}}` and copies each used layer directory with `COPY --link`. The frontend drops the `COPY` lines of the empty slots, see below.
 
 **Why move instead of copy?** The install and the tool run in the same `RUN`, so every installed file is in the same writable layer and `rename()` only updates directory entries. This has four effects:
 - Build disk usage and build cache size stay at v2's level.
@@ -188,17 +188,20 @@ conda.yml ─▶│ build   {{mamba_image}}                        │ ───
 - The step takes seconds.
 - The tool can check it placed everything: after the move, `/opt/conda` must contain only directories and the excluded `pkgs/`.
 
-### Why a fixed number of slots
+### Fixed slots and the frontend
 
-Wave generates the Dockerfile before the environment is solved, so the number of layers is not known in advance. The template therefore declares a fixed set of 32 `COPY` slots, and the tool decides what each slot contains. This keeps the whole build in a single Dockerfile, with no extra solve job and no custom BuildKit frontend. The POC confirmed that an empty slot costs 32 bytes and a registry round trip for a blob that is already cached.
+Wave generates the Dockerfile before the environment is solved, so the number of layers is not known in advance. The template therefore declares a fixed set of 32 `COPY` slots, and the tool decides what each slot contains.
+
+BuildKit adds a layer for every `COPY`, even an empty one, so the template names the tool image as its frontend with `# syntax={{layers_image}}` on the first line. The frontend (`condasplit/frontend/`) builds the `build` stage, lists `/layers/NN`, removes the `COPY` lines of the empty slots and builds the whole Dockerfile. It delegates both builds to BuildKit's built-in Dockerfile frontend, so the Dockerfile syntax is unchanged, and the install stage runs once because the second build finds it in the cache of the first. The `buildctl` invocation doesn't change either: the built-in frontend forwards a build to the image named by the directive.
 
 32 slots allow up to about 16 GB of environment before compression at 500 MB per slot. With a typical base image (ubuntu:24.04 has one layer) the image stays around 35 layers, well under the ~125-layer overlay limit.
 
 ### Template: `conda-micromamba-v3/dockerfile-conda-file.txt`
 
-This is v2's stage 1 plus the tool call, and a different final stage. The slot lines are written out literally in the template file, so the file shows exactly what gets built.
+This is v2's stage 1 plus the tool call, the frontend directive, and a different final stage. The slot lines are written out literally in the template file, so the file shows every possible layer; the frontend drops the empty ones at build time.
 
 ```dockerfile
+# syntax={{layers_image}}
 FROM {{mamba_image}} AS build
 USER root
 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
@@ -302,24 +305,33 @@ This is a new top-level folder, `condasplit/`, following the pattern of the exis
 |---|---|
 | `condasplit/go.mod`, `*.go` | The tool (standard library only) |
 | `condasplit/*_test.go` | Unit tests (`go test ./...`) |
-| `condasplit/Dockerfile` | Multi-stage build: `FROM --platform=$BUILDPLATFORM golang:1.27` (pinned) cross-compiles for `$TARGETARCH` and runs `go test`. `FROM scratch` then contains only `/condasplit`. |
+| `condasplit/frontend/` | The BuildKit frontend, a separate Go module so that its `github.com/moby/buildkit` dependency (pinned to the production BuildKit version) never reaches the tool |
+| `condasplit/Dockerfile` | Multi-stage build: `FROM --platform=$BUILDPLATFORM golang:1.27` (pinned) cross-compiles both modules for `$TARGETARCH` and runs their tests. `FROM scratch` then contains `/condasplit` and `/condasplit-frontend`, the entrypoint. |
 | `condasplit/Makefile` | `docker buildx build --push --platform linux/amd64,linux/arm64 --tag ${registry}/condasplit:${version} .`, with `registry ?= public.cr.stage-seqera.io/wave` (production: `make all registry=public.cr.seqera.io/wave`) |
 | `condasplit/README.md` | What the tool does and how to release it |
-| `.github/workflows/build-condasplit.yml` | Manual (`workflow_dispatch`) production publish job running `make all version=… registry=public.cr.seqera.io/wave`, modeled on `build-plugin-scanner.yml`, plus a `go test` job on pull requests touching `condasplit/**` |
+| `.github/workflows/build-condasplit.yml` | Manual (`workflow_dispatch`) production publish job running `make all version=… registry=public.cr.seqera.io/wave`, modeled on `build-plugin-scanner.yml`, plus a `go test` job for both modules on pull requests touching `condasplit/**` |
 
 ```dockerfile
 FROM --platform=$BUILDPLATFORM golang:1.27 AS build
 ARG TARGETARCH
 WORKDIR /src
+# the frontend dependencies are downloaded first, so that they are cached
+COPY frontend/go.mod frontend/go.sum frontend/
+RUN cd frontend && go mod download
 COPY . .
 RUN go test ./... \
- && CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" -o /condasplit .
+ && CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" -o /condasplit . \
+ && cd frontend && go test ./... \
+ && CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" -o /condasplit-frontend .
 
 FROM scratch
 COPY --from=build /condasplit /condasplit
+COPY --from=build /condasplit-frontend /condasplit-frontend
+# the image is also the BuildKit frontend of the conda/micromamba:v3 template, see frontend/
+ENTRYPOINT ["/condasplit-frontend"]
 ```
 
-**How the binary reaches the build.** The v3 Dockerfile names the image in `RUN --mount=type=bind,from={{layers_image}},…`. BuildKit resolves the variant for the build's platform, pulls its single layer (a few MB), caches it on the builder, and mounts it read-only for the one `RUN`. It is pulled the same way `{{mamba_image}}` is, with the configured registry credentials.
+**How the binary reaches the build.** The v3 Dockerfile names the image in `RUN --mount=type=bind,from={{layers_image}},…`. BuildKit resolves the variant for the build's platform, pulls its single layer (a few MB), caches it on the builder, and mounts it read-only for the one `RUN`. It is pulled the same way `{{mamba_image}}` is, with the configured registry credentials. For the `# syntax=` directive BuildKit pulls the same image once more and runs its entrypoint, `/condasplit-frontend`, as the frontend of the build.
 
 Wave schedules each platform's build on nodes of that architecture (node selector per platform), so the tool always runs natively. The binary is never written into any stage's filesystem, so it is absent from both the final image and the build cache.
 
@@ -381,7 +393,7 @@ The generated Dockerfile (about 3 KB) is not affected by `wave.build.max-contain
 - **NFR-001**: The tool SHOULD complete in under 30 s for a 5 GB / 180,000-file prefix on a build node. Moving files only renames them, so the expected time is a few seconds.
 - **NFR-002**: End-to-end build time of v3 SHOULD NOT exceed v2 for the same environment.
 - **NFR-003**: Build disk usage and exported build cache size of v3 SHOULD NOT exceed v2 for the same environment.
-- **NFR-004**: The tool MUST be a static binary with no runtime dependencies, built from the Go standard library only. The image MUST be `FROM scratch`, multi-arch (amd64, arm64), and built from a pinned Go toolchain image.
+- **NFR-004**: The tool MUST be a static binary with no runtime dependencies, built from the Go standard library only. The frontend is a separate Go module, so its BuildKit dependency never reaches the tool. The image MUST be `FROM scratch`, multi-arch (amd64, arm64), and built from a pinned Go toolchain image.
 
 ---
 
@@ -391,15 +403,15 @@ The generated Dockerfile (about 3 KB) is not affected by `wave.build.max-contain
 - **SC-002**: For the reference environment, the v3 listing of `/opt/conda` equals the v2 listing minus `pkgs/`: 0 differing paths and the same hardlink grouping, meaning the same sets of paths share an inode. Link counts drop by the number of links that were in `pkgs/`. Directory link counts are not compared, because overlayfs reports `nlink=1` for a directory whose entries come from more than one layer.
 - **SC-003**: Golden-file tests show unchanged output for all existing templates.
 - **SC-004**: v3 total image size is at most v2's for the same environment. The POC measured 1859 MB against 2013 MB.
-- **SC-005**: In a small environment (such as `bioconda::samtools`), every unused slot is the 32-byte empty layer `sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1`.
-- **SC-006**: The tool image is under 10 MB per architecture.
+- **SC-005**: In a small environment (such as `bioconda::samtools`), the image has no empty conda layers: only the base image layers and one layer per used slot.
+- **SC-006**: The tool image, tool and frontend together, is under 10 MB compressed per architecture.
 
 ---
 
 ## Testing Strategy
 
 **Unit tests (Wave, Spock)**
-- `TemplateUtilsTest`: render both v3 templates. Assert the bindings (`mamba_image`, `base_image`, `layers_image`, `base_packages`, `channel_opts`/`target`), the `RUN --mount` line, exactly 32 `COPY --link` slot lines, and `commands` appended at the end.
+- `TemplateUtilsTest`: render both v3 templates. Assert the bindings (`mamba_image`, `base_image`, `layers_image`, `base_packages`, `channel_opts`/`target`), the `# syntax=` first line, the `RUN --mount` line, exactly 32 `COPY --link` slot lines, and `commands` appended at the end.
 - `CondaHelperTest`: cover `containerFileV3` for a conda file, a lock URL, a `containerImage` override, a v1 `mambaImage` override, and a non-CONDA type (which fails).
 - `ContainerHelperTest`: v3 routes to `containerFileV3`. v3 with Singularity returns 400. Golden-file output for no template, v1, v2, pixi and cran is unchanged.
 - `BuildConfigTest`: default value and override of `condasplit-image`.
@@ -418,7 +430,7 @@ The generated Dockerfile (about 3 KB) is not affected by `wave.build.max-contain
 
 **Integration (manual or CI job, BuildKit `v0.25.2-rootless` as in production)**
 - Build the reference lock with v2 and v3, then check SC-001, SC-002 and SC-004 with `crane manifest` and a `find -printf` listing diff. For hardlinks, group paths by inode (`%i`) in each image, drop `pkgs/` paths, and compare the groups. Leave raw link counts (`%n`) out of the listing diff, since they differ by design: file link counts drop by the `pkgs/` links, and overlayfs reports `nlink=1` for directories merged across layers. Run `gatk --version` and `python -c "import gcnvkernel"`. Confirm `condasplit` is absent from the image.
-- Build a small environment, then check SC-005.
+- Build a small environment, then check SC-005 and that the install step ran once.
 - Build an arm64 image on an arm64 node.
 - Compare the build cache size and peak build disk usage of v2 and v3 (NFR-003).
 - Validate in staging with Nextflow `wave.build.template = 'conda/micromamba:v3'`.
@@ -448,6 +460,7 @@ The generated Dockerfile (about 3 KB) is not affected by `wave.build.max-contain
 | R6 | Pull speed | Not measured against a remote registry. The POC's local pulls were equal (25–28 s). | Measure in staging: pull the reference image with v2 and v3 from the production registry. |
 | R7 | Compressed size estimate | The cap is applied before compression. Tar headers and padding add up to about 1 KB per file. With 12 MB of headroom and gzip compressing padding to nearly nothing, the POC maximum was 399 MB. | Accept. If a guarantee is needed, add a post-push manifest check that logs a warning when a layer exceeds 512 MB. This is a follow-up, not part of this spec. |
 | R8 | Go in the repository | This is the first Go code in the `wave` repo. CI needs a Go toolchain for the tool's tests. | The Go code is isolated in `condasplit/`. The toolchain comes from the pinned `golang` image, both in the Dockerfile and in the workflow's test job. That job runs `go vet` and `go test` as root in a `golang:1.27` container, so the owner tests run too. |
+| R9 | BuildKit dependency | The frontend depends on `github.com/moby/buildkit` and its gateway API. | Pin it to the production BuildKit version and upgrade both together. The built-in Dockerfile frontend of the daemon does the actual build. |
 
 ---
 
@@ -461,8 +474,9 @@ The generated Dockerfile (about 3 KB) is not affected by `wave.build.max-contain
   - *Go binary bundled in the Wave jar and written into the build context*: no image to publish, but it adds about 10 MB to the jar, needs per-platform selection in Wave, and needs the version printed into the Dockerfile so container ids change.
   - The chosen tiny image follows the existing `public.cr.seqera.io/wave/` tool-image path.
 - **Separate layering stage that copies instead of moves.** This is the POC layout. Rejected: it doubles the environment on disk and in the build cache.
-- **Solve first, then generate an exact Dockerfile.** Run the solver (or use the lock) before generating the Dockerfile, so the layer count is exact and there are no empty slots. Rejected for now: it adds a solve job to the pipeline, and empty slots proved to cost nothing. Revisit if environments often need more than 32 layers.
-- **Custom BuildKit (LLB) frontend.** Layers could be created dynamically, with no fixed slots. Rejected: it would be a new component to build and maintain, and would change the `buildctl` invocation.
+- **Solve first, then generate an exact Dockerfile.** Run the solver (or use the lock) before generating the Dockerfile, so the layer count is exact and there are no empty slots. Rejected: it adds a solve job to the pipeline, and the frontend removes the empty slots without one. Revisit if environments often need more than 32 layers.
+- **Custom BuildKit frontend generating the LLB.** A frontend creating the layers itself could produce any number of them, with no fixed slots. Rejected: it would reimplement the Dockerfile frontend. The chosen frontend only edits the Dockerfile and delegates the build to the built-in one.
+- **Removing the empty layers after the push.** Wave could rewrite the pushed manifest and image config without them. Rejected: it replaces the image BuildKit pushed with a new digest, needs registry writes from Wave, and must run before the multi-platform index is assembled.
 - **Wave-managed per-package layer store (Nixery-style).** Rejected: it brings the most storage savings across images, but it is a new subsystem and isn't needed to meet the size limit.
 
 ---

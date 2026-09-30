@@ -1,3 +1,4 @@
+# syntax={{layers_image}}
 FROM {{mamba_image}} AS build
 USER root
 {{lock_file_add}}

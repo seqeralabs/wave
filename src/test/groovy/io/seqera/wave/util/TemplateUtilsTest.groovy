@@ -976,6 +976,7 @@ class TemplateUtilsTest extends Specification {
 
         expect:
         TemplateUtils.condaFileToDockerFileUsingV3(CONDA_OPTS, LAYERS_IMAGE) == '''\
+                # syntax=public.cr.stage-seqera.io/wave/condasplit:v1
                 FROM mambaorg/micromamba:2.1.1 AS build
                 USER root
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
@@ -1049,6 +1050,7 @@ class TemplateUtilsTest extends Specification {
 
         expect:
         TemplateUtils.condaPackagesToDockerFileUsingV3(PACKAGES, CHANNELS, CONDA_OPTS, 'my.registry.io/wave/condasplit:v2') == '''\
+                # syntax=my.registry.io/wave/condasplit:v2
                 FROM mambaorg/micromamba:2.1.1 AS build
                 USER root
                 # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
@@ -1123,6 +1125,7 @@ class TemplateUtilsTest extends Specification {
         then:
         // the lock file is added to the build stage and installed from the local path
         result.startsWith('''\
+                # syntax=public.cr.stage-seqera.io/wave/condasplit:v1
                 FROM mambaorg/micromamba:2.1.1 AS build
                 USER root
                 # micromamba can't read an explicit lock file from a URL, add it to the build stage
@@ -1145,7 +1148,7 @@ class TemplateUtilsTest extends Specification {
         def lines = TemplateUtils.condaPackagesToDockerFileUsingV3(LOCK_URL, ['conda-forge', 'bioconda'], CONDA_OPTS, LAYERS_IMAGE).readLines()
 
         then:
-        lines[3] == "ADD ${LOCK_URL} ${LOCK}".toString()
+        lines[4] == "ADD ${LOCK_URL} ${LOCK}".toString()
         lines.count { it.contains("micromamba install -y -n base -c conda-forge -c bioconda -f ${LOCK}") } == 2
 
         where:
@@ -1189,6 +1192,9 @@ class TemplateUtilsTest extends Specification {
 
         then:
         !result.contains('{{')
+        and:
+        // the tool image is also the frontend building the image without the empty slots
+        lines[0] == '# syntax=public.cr.stage-seqera.io/wave/condasplit:v1'
         and:
         // the tool is mounted in the install step
         lines.count { it.startsWith('RUN --mount=') } == 1
