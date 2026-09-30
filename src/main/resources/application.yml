@@ -85,6 +85,8 @@ wave:
     buildkit-image: "public.cr.seqera.io/wave/buildkit:v0.25.2-rootless"
     singularity-image: "public.cr.seqera.io/wave/singularity:v4.2.1-r4"
     singularity-image-init: "public.cr.seqera.io/wave/busybox:latest"
+    # image providing the `conda-layers` tool used by the `conda/micromamba:v3` build template
+    conda-layers-image: "public.cr.stage-seqera.io/wave/conda-layers:v1"
     # note changing this should be matching the micronaut.server.idle-timeout (see above)
     timeout: 900s
     status:

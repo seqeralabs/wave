@@ -145,6 +145,37 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
             final repo = RegHelper.parseFromStatement(line.trim())
             if( repo )
                 result.add(repo)
+            else
+                result.addAll(findMountRepositories(line.trim()))
+        }
+        return result
+    }
+
+    /**
+     * Find the container images referenced by the {@code from=} option of a {@code RUN --mount} flag,
+     * e.g. {@code RUN --mount=type=bind,from=public.cr.seqera.io/wave/conda-layers:v1,target=/opt/wave-tools ...}
+     *
+     * @param line A container file line
+     * @return The list of mounted container images, build stage names are ignored
+     */
+    static protected List<String> findMountRepositories(String line) {
+        final result = new ArrayList<String>()
+        if( !line || !line.startsWith('RUN ') )
+            return result
+        for( String token : line.tokenize(' ').drop(1) ) {
+            // flags come before the command
+            if( !token.startsWith('--') )
+                break
+            if( !token.startsWith('--mount=') )
+                continue
+            for( String opt : token.substring(8).tokenize(',') ) {
+                if( !opt.startsWith('from=') )
+                    continue
+                final image = opt.substring(5)
+                // a build stage name has no registry, tag or digest separator
+                if( image.contains('/') || image.contains(':') || image.contains('@') )
+                    result.add(image)
+            }
         }
         return result
     }

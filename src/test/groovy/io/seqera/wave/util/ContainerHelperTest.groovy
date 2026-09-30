@@ -46,6 +46,8 @@ import io.seqera.wave.service.request.ContainerRequest.Type
  */
 class ContainerHelperTest extends Specification {
 
+    static final String LAYERS_IMAGE = 'public.cr.stage-seqera.io/wave/conda-layers:v1'
+
     def 'should create conda singularity file with conda lock file'() {
         given:
         def CHANNELS = ['conda-forge', 'defaults']
@@ -55,7 +57,7 @@ class ContainerHelperTest extends Specification {
         def req = new SubmitContainerTokenRequest(packages: packages, format: 'sif', buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V1)
 
         when:
-        def result = ContainerHelper.containerFileFromRequest(req)
+        def result = ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
 
         then:
         result =='''\
@@ -84,7 +86,7 @@ class ContainerHelperTest extends Specification {
         def req = new SubmitContainerTokenRequest(packages: packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V1)
 
         when:
-        def result = ContainerHelper.containerFileFromRequest(req)
+        def result = ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
 
         then:
         result =='''\
@@ -112,7 +114,7 @@ class ContainerHelperTest extends Specification {
         def req = new SubmitContainerTokenRequest(packages: packages, format: 'sif', buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V1)
 
         when:
-        def result = ContainerHelper.containerFileFromRequest(req)
+        def result = ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
 
         then:
         result =='''\
@@ -142,7 +144,7 @@ class ContainerHelperTest extends Specification {
         def req = new SubmitContainerTokenRequest(packages: packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V1)
 
         when:
-        def result = ContainerHelper.containerFileFromRequest(req)
+        def result = ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
 
         then:
         result =='''\
@@ -648,7 +650,7 @@ class ContainerHelperTest extends Specification {
         and:
         def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.CONDA_PIXI_V1)
         when:
-        def result = ContainerHelper.containerFileFromRequest(req)
+        def result = ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
 
         then:
         result =='''\
@@ -704,7 +706,7 @@ class ContainerHelperTest extends Specification {
         and:
         def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.CONDA_PIXI_V1)
         when:
-        def result = ContainerHelper.containerFileFromRequest(req)
+        def result = ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
 
         then:
         result =='''\
@@ -757,7 +759,7 @@ class ContainerHelperTest extends Specification {
         and:
         def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V2)
         when:
-        def result = ContainerHelper.containerFileFromRequest(req)
+        def result = ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
 
         then:
         result =='''\
@@ -799,7 +801,7 @@ class ContainerHelperTest extends Specification {
         // no explicit build template: should default to micromamba v2
         def req = new SubmitContainerTokenRequest(packages:packages)
         when:
-        def result = ContainerHelper.containerFileFromRequest(req)
+        def result = ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
 
         then:
         result =='''\
@@ -846,7 +848,7 @@ class ContainerHelperTest extends Specification {
         and:
         def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V2)
         when:
-        def result = ContainerHelper.containerFileFromRequest(req)
+        def result = ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
 
         then:
         result =='''\
@@ -887,7 +889,7 @@ class ContainerHelperTest extends Specification {
         and:
         def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V2)
         when:
-        def result = ContainerHelper.containerFileFromRequest(req)
+        def result = ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
 
         then:
         result =='''\
@@ -917,6 +919,85 @@ class ContainerHelperTest extends Specification {
                 '''.stripIndent()
     }
 
+    // === build with micromamba v3 tests
+
+    def 'should create conda docker file with packages and micromamba v3'() {
+        given:
+        def CHANNELS = ['conda-forge', 'bioconda']
+        def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
+        def packages = new PackagesSpec(
+                type: PackagesSpec.Type.CONDA,
+                entries:  PACKAGES,
+                channels: CHANNELS)
+        and:
+        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V3)
+
+        when:
+        def result = ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
+
+        then:
+        result == CondaHelper.containerFileV3(new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: PACKAGES, channels: CHANNELS), null, LAYERS_IMAGE)
+        and:
+        result.startsWith('FROM mambaorg/micromamba:2-amazon2023 AS build\n')
+        result.contains('RUN --mount=type=bind,from=public.cr.stage-seqera.io/wave/conda-layers:v1,source=/,target=/opt/wave-tools \\\n')
+        result.contains('micromamba install -y -n base -f /tmp/conda.yml')
+        result.contains('FROM ubuntu:24.04 AS prod\n')
+        result.readLines().findAll { it.startsWith('COPY --link --from=build /layers/') }.size() == 32
+        !result.contains('COPY --from=build "$MAMBA_ROOT_PREFIX" "$MAMBA_ROOT_PREFIX"')
+    }
+
+    def 'should create conda docker file with lock file, container image and micromamba v3'() {
+        given:
+        def CHANNELS = ['conda-forge', 'bioconda']
+        def PACKAGES = ['https://foo.com/lock.yml']
+        def CONDA_OPTS = new CondaOpts([mambaImage: 'mambaorg/micromamba:2.0.0', basePackages: 'foo::one bar::two', commands: ['RUN apt-get update']])
+        def packages = new PackagesSpec(
+                type: PackagesSpec.Type.CONDA,
+                entries:  PACKAGES,
+                channels: CHANNELS,
+                condaOpts: CONDA_OPTS)
+        and:
+        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V3, containerImage: 'debian:12')
+
+        when:
+        def result = ContainerHelper.containerFileFromRequest(req, 'my.registry.io/wave/conda-layers:v2')
+
+        then:
+        result.startsWith('FROM mambaorg/micromamba:2.0.0 AS build\n')
+        result.contains('RUN --mount=type=bind,from=my.registry.io/wave/conda-layers:v2,source=/,target=/opt/wave-tools \\\n')
+        result.contains('ADD https://foo.com/lock.yml /tmp/conda-lock/lock.yml\n')
+        result.contains('micromamba install -y -n base -c conda-forge -c bioconda -f /tmp/conda-lock/lock.yml > /tmp/mamba.log 2>&1')
+        result.contains('    && micromamba install -y -n base foo::one bar::two \\\n')
+        result.contains('FROM debian:12 AS prod\n')
+        result.endsWith('COPY --link --from=build /layers/31/ /\nUSER root\nENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"\nRUN apt-get update\n')
+    }
+
+    def 'should reject singularity format with micromamba v3'() {
+        given:
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['bwa=0.7.15'], channels: ['bioconda'])
+        def req = new SubmitContainerTokenRequest(packages: packages, format: 'sif', buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V3)
+
+        when:
+        ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
+
+        then:
+        def e = thrown(BadRequestException)
+        e.message == "Build template 'conda/micromamba:v3' does not support Singularity format"
+    }
+
+    def 'should reject non-conda package type with micromamba v3'() {
+        given:
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CRAN, entries: ['dplyr'])
+        def req = new SubmitContainerTokenRequest(packages: packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V3)
+
+        when:
+        ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
+
+        then:
+        def e = thrown(BadRequestException)
+        e.message == "Package type 'CRAN' not supported by 'conda/micromamba:v3' build template"
+    }
+
     def 'should create cran docker file with packages'() {
         given:
         def REPOSITORIES = ['cran', 'bioconductor']
@@ -926,7 +1007,7 @@ class ContainerHelperTest extends Specification {
         def req = new SubmitContainerTokenRequest(packages: packages)
 
         when:
-        def result = ContainerHelper.containerFileFromRequest(req)
+        def result = ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
 
         then:
         result.contains('FROM rocker/r-ver:4.4.1')
@@ -944,7 +1025,7 @@ class ContainerHelperTest extends Specification {
         def req = new SubmitContainerTokenRequest(packages: packages, format: 'sif')
 
         when:
-        def result = ContainerHelper.containerFileFromRequest(req)
+        def result = ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
 
         then:
         result.contains('BootStrap: docker')
@@ -961,7 +1042,7 @@ class ContainerHelperTest extends Specification {
         def req = new SubmitContainerTokenRequest(packages: packages)
 
         when:
-        def result = ContainerHelper.containerFileFromRequest(req)
+        def result = ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
 
         then:
         result.contains('FROM rocker/r-ver:4.4.1')
@@ -978,7 +1059,7 @@ class ContainerHelperTest extends Specification {
         def req = new SubmitContainerTokenRequest(packages: packages, format: 'sif')
 
         when:
-        def result = ContainerHelper.containerFileFromRequest(req)
+        def result = ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
 
         then:
         result.contains('BootStrap: docker')
@@ -996,7 +1077,7 @@ class ContainerHelperTest extends Specification {
         def req = new SubmitContainerTokenRequest(packages: packages, buildTemplate: 'invalid-template')
 
         when:
-        ContainerHelper.containerFileFromRequest(req)
+        ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
 
         then:
         def e = thrown(BadRequestException)
@@ -1027,6 +1108,67 @@ class ContainerHelperTest extends Specification {
 
         then:
         id1 == id2
+    }
+
+    // === golden output for existing build templates
+    // the container file is part of the container id, therefore any change to the rendered
+    // output of an existing template would change the id of every image built with it
+
+    static final private List<String> GOLDEN_ENTRIES = ['bwa=0.7.15', 'salmon=1.1.1']
+    static final private List<String> GOLDEN_LOCK = ['https://foo.com/lock.yml']
+
+    static private PackagesSpec goldenConda(List<String> entries, Map opts=null) {
+        new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: entries, channels: ['conda-forge', 'bioconda'], condaOpts: opts!=null ? new CondaOpts(opts) : null)
+    }
+
+    static private PackagesSpec goldenPixi(Map opts=null) {
+        new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: GOLDEN_ENTRIES, channels: ['conda-forge', 'bioconda'], pixiOpts: opts!=null ? new PixiOpts(opts) : null)
+    }
+
+    static private PackagesSpec goldenCran(List<String> entries, Map opts=null) {
+        new PackagesSpec(type: PackagesSpec.Type.CRAN, entries: entries, channels: ['cran', 'bioconductor'], cranOpts: opts!=null ? new CranOpts(opts) : null)
+    }
+
+    @Unroll
+    def 'should render unchanged container file for #NAME'() {
+        given:
+        def req = new SubmitContainerTokenRequest(packages: PACKAGES, buildTemplate: TEMPLATE, format: FORMAT, containerImage: CONTAINER_IMAGE)
+
+        and:
+        // golden files captured from the release preceding 'conda/micromamba:v3'
+        def expected = this.class.getResource("/golden/${NAME}.txt").getText('UTF-8')
+
+        when:
+        def result = ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
+
+        then:
+        result == expected
+
+        where:
+        NAME                                | TEMPLATE                           | FORMAT | CONTAINER_IMAGE | PACKAGES
+        'conda-default-docker-file'         | null                               | null   | null            | goldenConda(GOLDEN_ENTRIES)
+        'conda-default-docker-lock'         | null                               | null   | null            | goldenConda(GOLDEN_LOCK)
+        'conda-default-singularity-file'    | null                               | 'sif'  | null            | goldenConda(GOLDEN_ENTRIES)
+        'conda-default-singularity-lock'    | null                               | 'sif'  | null            | goldenConda(GOLDEN_LOCK)
+        'conda-v2-docker-file'              | BuildTemplate.CONDA_MICROMAMBA_V2  | null   | null            | goldenConda(GOLDEN_ENTRIES, [mambaImage: 'mambaorg/micromamba:2.0.0', baseImage: 'debian:12', basePackages: 'foo::one bar::two', commands: ['RUN apt-get update', 'RUN apt-get install -y vim']])
+        'conda-v2-docker-lock'              | BuildTemplate.CONDA_MICROMAMBA_V2  | null   | null            | goldenConda(GOLDEN_LOCK, [mambaImage: 'mambaorg/micromamba:2.0.0', baseImage: 'debian:12', basePackages: 'foo::one bar::two', commands: ['RUN apt-get update', 'RUN apt-get install -y vim']])
+        'conda-v2-docker-container-image'   | BuildTemplate.CONDA_MICROMAMBA_V2  | null   | 'ubuntu:22.04'  | goldenConda(GOLDEN_ENTRIES, [mambaImage: 'mambaorg/micromamba:1.5.10-noble', basePackages: null])
+        'conda-v2-singularity-file'         | BuildTemplate.CONDA_MICROMAMBA_V2  | 'sif'  | null            | goldenConda(GOLDEN_ENTRIES, [mambaImage: 'mambaorg/micromamba:2.0.0', basePackages: 'foo::one bar::two', commands: ['apt-get update', 'apt-get install -y vim']])
+        'conda-v2-singularity-lock'         | BuildTemplate.CONDA_MICROMAMBA_V2  | 'sif'  | null            | goldenConda(GOLDEN_LOCK, [mambaImage: 'mambaorg/micromamba:2.0.0', basePackages: 'foo::one bar::two', commands: ['apt-get update', 'apt-get install -y vim']])
+        'conda-v1-docker-file'              | BuildTemplate.CONDA_MICROMAMBA_V1  | null   | null            | goldenConda(GOLDEN_ENTRIES, [mambaImage: 'my-base:123', basePackages: 'foo::one bar::two', commands: ['USER my-user', 'RUN apt-get install -y nano']])
+        'conda-v1-docker-lock'              | BuildTemplate.CONDA_MICROMAMBA_V1  | null   | null            | goldenConda(GOLDEN_LOCK)
+        'conda-v1-singularity-file'         | BuildTemplate.CONDA_MICROMAMBA_V1  | 'sif'  | null            | goldenConda(GOLDEN_ENTRIES, [commands: ['apt-get install -y nano']])
+        'conda-v1-singularity-lock'         | BuildTemplate.CONDA_MICROMAMBA_V1  | 'sif'  | null            | goldenConda(GOLDEN_LOCK)
+        'pixi-v1-docker-file'               | BuildTemplate.CONDA_PIXI_V1        | null   | null            | goldenPixi()
+        'pixi-v1-docker-file-opts'          | BuildTemplate.CONDA_PIXI_V1        | null   | 'debian:12'     | goldenPixi([pixiImage: 'ghcr.io/prefix-dev/pixi:0.47.0', basePackages: 'foo::one bar::two', commands: ['RUN apt-get update']])
+        'pixi-v1-singularity-file'          | BuildTemplate.CONDA_PIXI_V1        | 'sif'  | null            | goldenPixi()
+        'pixi-v1-singularity-file-opts'     | BuildTemplate.CONDA_PIXI_V1        | 'sif'  | null            | goldenPixi([pixiImage: 'ghcr.io/prefix-dev/pixi:0.47.0', basePackages: null, commands: ['apt-get update']])
+        'cran-default-docker-packages'      | null                               | null   | null            | goldenCran(['dplyr', 'bioc::GenomicRanges'])
+        'cran-default-docker-file'          | null                               | null   | null            | goldenCran(null)
+        'cran-default-singularity-packages' | null                               | 'sif'  | null            | goldenCran(['dplyr', 'bioc::GenomicRanges'])
+        'cran-default-singularity-file'     | null                               | 'sif'  | null            | goldenCran(null)
+        'cran-v1-docker-packages'           | BuildTemplate.CRAN_INSTALLR_V1     | null   | null            | goldenCran(['dplyr'], [rImage: 'rocker/r-ver:4.3.0', basePackages: 'build-essential', commands: ['RUN apt-get update']])
+        'cran-v1-singularity-file'          | BuildTemplate.CRAN_INSTALLR_V1     | 'sif'  | null            | goldenCran(null, [rImage: 'rocker/r-ver:4.3.0', basePackages: 'build-essential', commands: ['apt-get update']])
     }
 
 }

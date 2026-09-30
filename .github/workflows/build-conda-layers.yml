@@ -1,0 +1,59 @@
+name: Build and publish conda-layers container image
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Image version (e.g., v1)'
+        required: true
+        default: 'v1'
+  pull_request:
+    paths:
+      - 'conda-layers/**'
+      - '.github/workflows/build-conda-layers.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    # the owner tests need root, they are skipped otherwise
+    container:
+      image: golang:1.27
+      options: --user root
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Run tests
+        working-directory: conda-layers
+        run: |
+          go vet ./...
+          go test ./...
+
+  build-and-push:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Docker Login
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: public.cr.seqera.io
+          username: ${{ vars.SEQERA_PUBLIC_CR_USERNAME  }}
+          password: ${{ secrets.SEQERA_PUBLIC_CR_PASSWORD }}
+
+      - name: Build and Push Image to public.cr.seqera.io
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+        run: |
+          cd conda-layers
+          make all version="$VERSION" registry=public.cr.seqera.io/wave

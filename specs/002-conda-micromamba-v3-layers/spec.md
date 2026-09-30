@@ -99,13 +99,13 @@ A user switching from v2 to v3 gets the same tools, versions and files.
 
 **Why this priority**: Layering must be invisible to the workload.
 
-**Independent Test**: Build the same lock file with v2 and v3, list `/opt/conda` in both images (path, type, size, mode, owner, symlink target, link count), and diff the listings.
+**Independent Test**: Build the same lock file with v2 and v3, list `/opt/conda` in both images (path, type, size, mode, owner, symlink target), and diff the listings. Compare hardlinks by grouping paths per inode in each image, not by raw link count.
 
 **Acceptance Scenarios**:
 
 1. **Given** the same environment built with v2 and v3, **When** the listings are compared, **Then** they are identical except that `/opt/conda/pkgs/**` is absent in v3.
 2. **Given** a v3 image, **When** the environment's tools run (for the reference image: `gatk --version`, `python -c "import gcnvkernel"`), **Then** they behave exactly as in v2.
-3. **Given** files that conda hardlinks together, **When** they are layered, **Then** they stay hardlinked, with the same link count as in v2.
+3. **Given** files that conda hardlinks together, **When** they are layered, **Then** they stay hardlinked: the sets of paths outside `pkgs/` that share an inode are the same as in v2. Link counts are lower than in v2 by the number of links that were in `pkgs/`, because those links stay in the build stage.
 4. **Given** a v3 image, **When** its filesystem is searched for `conda-layers`, **Then** the tool is not present.
 
 ---
@@ -283,7 +283,7 @@ slots=19/32 files=88215 size=4481.1MB packages=322 clobbers=7 unowned=0.0MB max-
 ...
 15  500.0MB   9172  libstdcxx-devel_linux-64 binutils_impl_linux-64 r-base icu scikit-learn gxx_impl_linux-64 +8
 18    0.0MB      3  (unowned)
-WARN oversized file 612.4MB lib/libexample.so   # illustrative; the reference environment has none
+WARN oversized file lib/libexample.so 612.4MB   # illustrative; the reference environment has none
 << CONDA_LAYERS_END
 ```
 
@@ -320,7 +320,7 @@ FROM scratch
 COPY --from=build /conda-layers /conda-layers
 ```
 
-**How the binary reaches the build.** The v3 Dockerfile names the image in `RUN --mount=type=bind,from={{layers_image}},…`. BuildKit resolves the variant for the build's platform, pulls its single layer (a few MB), caches it on the builder, and mounts it read-only for the one `RUN`. It is pulled the same way `{{mamba_image}}` is.
+**How the binary reaches the build.** The v3 Dockerfile names the image in `RUN --mount=type=bind,from={{layers_image}},…`. BuildKit resolves the variant for the build's platform, pulls its single layer (a few MB), caches it on the builder, and mounts it read-only for the one `RUN`. It is pulled the same way `{{mamba_image}}` is, with the configured registry credentials.
 
 Wave schedules each platform's build on nodes of that architecture (node selector per platform), so the tool always runs natively. The binary is never written into any stage's filesystem, so it is absent from both the final image and the build cache.
 
@@ -337,6 +337,7 @@ Wave schedules each platform's build on nodes of that architecture (node selecto
 | `CondaHelper` | Add `containerFileV3(PackagesSpec spec, String containerImage, String layersImage)`. It applies the same CONDA-type check, lock-file detection, v1-image override and `containerImage → baseImage` handling as `containerFileV2`, but has no Singularity branch. |
 | `ContainerHelper.containerFileFromRequest` | Add a `String condaLayersImage` parameter. Route `CONDA_MICROMAMBA_V3` to `CondaHelper.containerFileV3`. When the format is Singularity, throw `BadRequestException("Build template 'conda/micromamba:v3' does not support Singularity format")`. The branches for other templates are unchanged. |
 | `ContainerController` | Pass `buildConfig.condaLayersImage` to `containerFileFromRequest`. |
+| `ContainerInspectServiceImpl` | `findRepositories` also collects images referenced by `RUN --mount=...,from=<image>` (build stage names are ignored), so the tool image gets registry credentials like `FROM` images. |
 | Templates | Add `src/main/resources/templates/conda-micromamba-v3/dockerfile-conda-file.txt` and `dockerfile-conda-packages.txt`. There are no Singularity files. |
 
 These components need no changes: `BuildStrategy` (buildctl args, cache options, compression), `BuildLogServiceImpl` (lock markers are unchanged), persistence (`buildTemplate` is already stored and shown on the build page), `MultiPlatformBuildService`, scanning, mirroring and freeze.
@@ -388,7 +389,7 @@ The generated Dockerfile (about 3 KB) is not affected by `wave.build.max-contain
 ## Success Criteria *(mandatory)*
 
 - **SC-001**: For the reference environment ([Appendix A](#appendix-a-proof-of-concept-results)), the largest compressed conda layer is under 512 MB. The POC's largest was 399 MB.
-- **SC-002**: For the reference environment, the v3 listing of `/opt/conda` equals the v2 listing minus `pkgs/`: 0 differing paths and the same hardlink counts.
+- **SC-002**: For the reference environment, the v3 listing of `/opt/conda` equals the v2 listing minus `pkgs/`: 0 differing paths and the same hardlink grouping, meaning the same sets of paths share an inode. Link counts drop by the number of links that were in `pkgs/`.
 - **SC-003**: Golden-file tests show unchanged output for all existing templates.
 - **SC-004**: v3 total image size is at most v2's for the same environment. The POC measured 1859 MB against 2013 MB.
 - **SC-005**: In a small environment (such as `bioconda::samtools`), every unused slot is the 32-byte empty layer `sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1`.
@@ -418,7 +419,7 @@ The generated Dockerfile (about 3 KB) is not affected by `wave.build.max-contain
 - Error exits for a missing `conda-meta/`, a malformed JSON file and a relative `--src`.
 
 **Integration (manual or CI job, BuildKit `v0.25.2-rootless` as in production)**
-- Build the reference lock with v2 and v3, then check SC-001, SC-002 and SC-004 with `crane manifest` and a `find -printf` listing diff. Run `gatk --version` and `python -c "import gcnvkernel"`. Confirm `conda-layers` is absent from the image.
+- Build the reference lock with v2 and v3, then check SC-001, SC-002 and SC-004 with `crane manifest` and a `find -printf` listing diff. For hardlinks, group paths by inode (`%i`) in each image, drop `pkgs/` paths, and compare the groups; raw link counts (`%n`) differ by design. Run `gatk --version` and `python -c "import gcnvkernel"`. Confirm `conda-layers` is absent from the image.
 - Build a small environment, then check SC-005.
 - Build an arm64 image on an arm64 node.
 - Compare the build cache size and peak build disk usage of v2 and v3 (NFR-003).

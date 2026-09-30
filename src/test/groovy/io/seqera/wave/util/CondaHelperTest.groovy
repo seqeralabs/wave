@@ -289,4 +289,123 @@ class CondaHelperTest extends Specification {
         def ex = thrown(BadRequestException)
         ex.message.contains("not supported by 'conda/micromamba:v2' build template")
     }
+
+    // === containerFileV3 (micromamba v3) tests ===
+
+    static final private String LAYERS_IMAGE = 'public.cr.stage-seqera.io/wave/conda-layers:v1'
+
+    def 'should create v3 docker file with packages'() {
+        given:
+        def CHANNELS = ['conda-forge', 'bioconda']
+        def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: PACKAGES, channels: CHANNELS)
+
+        when:
+        def result = CondaHelper.containerFileV3(packages, null, LAYERS_IMAGE)
+
+        then:
+        result.contains('FROM mambaorg/micromamba:2-amazon2023 AS build')
+        result.contains('COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml')
+        result.contains('RUN --mount=type=bind,from=public.cr.stage-seqera.io/wave/conda-layers:v1,source=/,target=/opt/wave-tools')
+        result.contains('micromamba install -y -n base -f /tmp/conda.yml')
+        result.contains('micromamba install -y -n base conda-forge::procps-ng')
+        result.contains('/opt/wave-tools/conda-layers --src /opt/conda --out /layers')
+        result.contains('FROM ubuntu:24.04 AS prod')
+        result.contains('COPY --link --from=build /layers/00/ /')
+        result.contains('COPY --link --from=build /layers/31/ /')
+        and:
+        result == TemplateUtils.condaFileToDockerFileUsingV3(CondaOpts.v2(), LAYERS_IMAGE)
+    }
+
+    def 'should create v3 docker file with lock file'() {
+        given:
+        def CHANNELS = ['conda-forge', 'bioconda']
+        def PACKAGES = ['https://foo.com/lock.yml']
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: PACKAGES, channels: CHANNELS)
+
+        when:
+        def result = CondaHelper.containerFileV3(packages, null, LAYERS_IMAGE)
+
+        then:
+        result.contains('FROM mambaorg/micromamba:2-amazon2023 AS build')
+        !result.contains('conda.yml')
+        result.contains('ADD https://foo.com/lock.yml /tmp/conda-lock/lock.yml\n')
+        result.contains('micromamba install -y -n base -c conda-forge -c bioconda -f /tmp/conda-lock/lock.yml')
+        result.contains('RUN --mount=type=bind,from=public.cr.stage-seqera.io/wave/conda-layers:v1,source=/,target=/opt/wave-tools')
+        result.contains('FROM ubuntu:24.04 AS prod')
+        and:
+        result == TemplateUtils.condaPackagesToDockerFileUsingV3('https://foo.com/lock.yml', CHANNELS, CondaOpts.v2(), LAYERS_IMAGE)
+    }
+
+    def 'should use custom base image in v3'() {
+        given:
+        def CHANNELS = ['conda-forge']
+        def PACKAGES = ['bwa=0.7.15']
+        def CONDA_OPTS = new CondaOpts([baseImage: 'debian:12'])
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
+
+        expect:
+        CondaHelper.containerFileV3(packages, CONTAINER_IMAGE, LAYERS_IMAGE).contains("FROM ${EXPECTED} AS prod")
+
+        where:
+        CONTAINER_IMAGE     | EXPECTED
+        null                | 'debian:12'       // base image from condaOpts
+        'ubuntu:22.04'      | 'ubuntu:22.04'    // container image takes precedence
+    }
+
+    def 'should use custom condaOpts and layers image in v3'() {
+        given:
+        def CHANNELS = ['conda-forge']
+        def PACKAGES = ['bwa=0.7.15']
+        def CONDA_OPTS = new CondaOpts([
+                mambaImage: 'mambaorg/micromamba:2.0.0',
+                baseImage: 'debian:12',
+                basePackages: 'foo::one bar::two',
+                commands: ['RUN apt-get update']
+        ])
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
+
+        when:
+        def result = CondaHelper.containerFileV3(packages, null, 'my.registry.io/wave/conda-layers:v2@sha256:1234')
+
+        then:
+        result.contains('FROM mambaorg/micromamba:2.0.0 AS build')
+        result.contains('RUN --mount=type=bind,from=my.registry.io/wave/conda-layers:v2@sha256:1234,source=/,target=/opt/wave-tools')
+        result.contains('micromamba install -y -n base foo::one bar::two')
+        result.contains('FROM debian:12 AS prod')
+        result.endsWith('ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"\nRUN apt-get update\n')
+    }
+
+    def 'should override a v1 mamba image with the v2 default in v3'() {
+        given:
+        def CHANNELS = ['conda-forge']
+        def PACKAGES = ['bwa=0.7.15']
+        def CONDA_OPTS = new CondaOpts([mambaImage: MAMBA_IMAGE])
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
+
+        when:
+        def result = CondaHelper.containerFileV3(packages, null, LAYERS_IMAGE)
+
+        then:
+        result.contains("FROM ${EXPECTED} AS build")
+
+        where:
+        MAMBA_IMAGE                          | EXPECTED
+        'mambaorg/micromamba:1.5.10-noble'   | 'mambaorg/micromamba:2-amazon2023'  // current v1 default
+        'mambaorg/micromamba:1-noble'        | 'mambaorg/micromamba:2-amazon2023'
+        'mambaorg/micromamba:2.0.0'          | 'mambaorg/micromamba:2.0.0'         // explicit v2 image kept
+        'quay.io/custom/base:latest'         | 'quay.io/custom/base:latest'        // custom image kept
+    }
+
+    def 'should throw exception for non-CONDA package type in v3'() {
+        given:
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CRAN, entries: ['dplyr'])
+
+        when:
+        CondaHelper.containerFileV3(packages, null, LAYERS_IMAGE)
+
+        then:
+        def ex = thrown(BadRequestException)
+        ex.message == "Package type 'CRAN' not supported by 'conda/micromamba:v3' build template"
+    }
 }

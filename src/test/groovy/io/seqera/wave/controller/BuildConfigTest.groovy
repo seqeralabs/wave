@@ -23,6 +23,7 @@ import spock.lang.Unroll
 
 import java.time.Duration
 
+import io.micronaut.context.ApplicationContext
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.configuration.BuildConfig
 
@@ -45,6 +46,28 @@ class BuildConfigTest extends Specification {
         config = new BuildConfig(singularityImage: 'foo')
         then:
         config.singularityImage == 'foo'
+    }
+
+    def 'should return default conda layers image' () {
+        given:
+        def ctx = ApplicationContext.run()
+
+        expect:
+        ctx.getBean(BuildConfig).condaLayersImage == 'public.cr.stage-seqera.io/wave/conda-layers:v1'
+
+        cleanup:
+        ctx.close()
+    }
+
+    def 'should return custom conda layers image' () {
+        given:
+        def ctx = ApplicationContext.run(['wave.build.conda-layers-image': 'my.registry.io/wave/conda-layers:v2'])
+
+        expect:
+        ctx.getBean(BuildConfig).condaLayersImage == 'my.registry.io/wave/conda-layers:v2'
+
+        cleanup:
+        ctx.close()
     }
 
     @Unroll

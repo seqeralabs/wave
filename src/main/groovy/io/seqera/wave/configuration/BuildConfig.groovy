@@ -49,6 +49,13 @@ class BuildConfig {
     @Value('${wave.build.singularity-image-init:`public.cr.seqera.io/wave/busybox:latest`}')
     String singularityImageInit
 
+    /**
+     * The image providing the {@code conda-layers} tool used by the {@code conda/micromamba:v3}
+     * build template to split the Conda environment into multiple image layers
+     */
+    @Value('${wave.build.conda-layers-image:`public.cr.stage-seqera.io/wave/conda-layers:v1`}')
+    String condaLayersImage
+
     @Value('${wave.build.repo}')
      String defaultBuildRepository
 
@@ -164,6 +171,7 @@ class BuildConfig {
         log.info("Builder config: " +
                 "buildkit-image=${buildkitImage}; " +
                 "singularity-image=${singularityImage}; " +
+                "conda-layers-image=${condaLayersImage}; " +
                 "default-build-repository=${defaultBuildRepository}; " +
                 "default-cache-repository=${defaultCacheRepository}; " +
                 "cache-bucket-region=${cacheBucketRegion}; " +

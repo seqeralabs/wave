@@ -1,0 +1,15 @@
+BootStrap: docker
+From: public.cr.seqera.io/wave/pixi:0.61.0-noble
+%files
+    {{wave_context_dir}}/conda.yml /scratch/conda.yml
+%post
+    mkdir /opt/wave && cd /opt/wave
+    pixi init --import /scratch/conda.yml
+    pixi add conda-forge::which
+    pixi add conda-forge::procps-ng
+    pixi shell-hook > /shell-hook.sh
+    echo ">> CONDA_LOCK_START"
+    cat /opt/wave/pixi.lock
+    echo "<< CONDA_LOCK_END"
+%environment
+    . /shell-hook.sh

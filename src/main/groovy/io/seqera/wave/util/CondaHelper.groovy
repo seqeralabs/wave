@@ -25,16 +25,19 @@ import io.seqera.wave.exception.BadRequestException
 
 import static TemplateUtils.condaFileToDockerFile
 import static TemplateUtils.condaFileToDockerFileUsingV2
+import static TemplateUtils.condaFileToDockerFileUsingV3
 import static TemplateUtils.condaFileToSingularityFile
 import static TemplateUtils.condaFileToSingularityFileV2
 import static TemplateUtils.condaPackagesToDockerFile
 import static TemplateUtils.condaPackagesToDockerFileUsingV2
+import static TemplateUtils.condaPackagesToDockerFileUsingV3
 import static TemplateUtils.condaPackagesToSingularityFile
 import static TemplateUtils.condaPackagesToSingularityFileV2
 
 /**
  * Helper class for Conda/Micromamba container builds.
- * Supports both legacy v1 template and the newer v2 (MICROMAMBA_V2) template.
+ * Supports the legacy v1 template, the v2 (MICROMAMBA_V2) template and the layered
+ * v3 (MICROMAMBA_V3) template.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -106,6 +109,40 @@ class CondaHelper {
             return singularity
                     ? condaFileToSingularityFileV2(opts)
                     : condaFileToDockerFileUsingV2(opts)
+        }
+    }
+
+    /**
+     * Generate a Dockerfile using the Micromamba v3 template. The Conda environment is installed
+     * as with the v2 template and then split into multiple image layers by the {@code conda-layers} tool.
+     * Only supports CONDA package type and Docker format. Supports both lock files and environment files.
+     *
+     * @param spec The packages specification (must be CONDA type)
+     * @param containerImage Optional base container image override
+     * @param layersImage The image providing the {@code conda-layers} tool
+     * @return The generated Dockerfile content
+     * @throws BadRequestException if package type is not CONDA
+     */
+    static String containerFileV3(PackagesSpec spec, String containerImage, String layersImage) {
+        if( spec.type != PackagesSpec.Type.CONDA ) {
+            throw new BadRequestException("Package type '${spec.type}' not supported by 'conda/micromamba:v3' build template")
+        }
+
+        final lockFileUri = tryGetLockFile(spec.entries)
+        final opts = spec.condaOpts ?: CondaOpts.v2()
+        // same as v2, the template requires micromamba 2.x - see containerFileV2
+        if( isMicromambaV1(opts.mambaImage) )
+            opts.mambaImage = CondaOpts.DEFAULT_MAMBA_IMAGE_V2
+        if( containerImage )
+            opts.baseImage = containerImage
+
+        if( lockFileUri ) {
+            // use the lock file uri as special package name
+            return condaPackagesToDockerFileUsingV3(lockFileUri, spec.channels, opts, layersImage)
+        }
+        else {
+            // No lock file: use templates that install from local conda.yml
+            return condaFileToDockerFileUsingV3(opts, layersImage)
         }
     }
 
