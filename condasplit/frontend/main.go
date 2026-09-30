@@ -40,9 +40,6 @@ import (
 	"github.com/moby/buildkit/util/appcontext"
 )
 
-// installStage is the build stage of the template that runs condasplit
-const installStage = "build"
-
 var (
 	// the directive selecting this frontend, it must be the first line
 	syntaxLine = regexp.MustCompile(`\A#\s*syntax=.*\n`)
@@ -68,27 +65,19 @@ func build(ctx context.Context, c client.Client) (*client.Result, error) {
 	}
 	// without the directive the built-in frontend does not forward the build back here
 	dockerfile := syntaxLine.ReplaceAll(src.Data, nil)
-	res, err := forward(ctx, c, src.Filename, dockerfile, installStage)
+	// the build stage of the template runs condasplit
+	res, err := forward(ctx, c, src.Filename, dockerfile, "build")
 	if err != nil {
 		return nil, err
 	}
-	// one result for each platform of the build
-	refs := res.Refs
-	if res.Ref != nil {
-		refs = map[string]client.Reference{"": res.Ref}
+	// Wave builds one platform at a time
+	ref, err := res.SingleRef()
+	if err != nil {
+		return nil, err
 	}
-	if len(refs) == 0 {
-		return nil, fmt.Errorf("the %s stage has no result", installStage)
-	}
-	// a slot is dropped only when it is empty for every platform
 	dockerfile = dropEmptySlots(dockerfile, func(slot string) bool {
-		for _, ref := range refs {
-			entries, err := ref.ReadDir(ctx, client.ReadDirRequest{Path: "/layers/" + slot})
-			if err != nil || len(entries) > 0 {
-				return false
-			}
-		}
-		return true
+		entries, err := ref.ReadDir(ctx, client.ReadDirRequest{Path: "/layers/" + slot})
+		return err == nil && len(entries) == 0
 	})
 	return forward(ctx, c, src.Filename, dockerfile, "")
 }
@@ -111,9 +100,6 @@ func forward(ctx context.Context, c client.Client, filename string, dockerfile [
 		return nil, err
 	}
 	opts := maps.Clone(c.BuildOpts().Opts)
-	if opts == nil {
-		opts = map[string]string{}
-	}
 	// set by the built-in frontend when it forwarded the build to this one
 	delete(opts, "cmdline")
 	delete(opts, "source")
