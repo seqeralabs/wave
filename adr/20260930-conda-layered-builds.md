@@ -122,7 +122,7 @@ RUN --mount=type=bind,from={{layers_image}},source=/,target=/opt/wave-tools \
 - Build disk usage and build cache size stay at the `conda/micromamba:v2` level. The copy-based proof of concept doubled the environment on disk and took 21–28 s
 - Hardlinks, owners, modes and timestamps survive automatically, because a moved file is the same file
 - Completeness is verifiable: after the move, `/opt/conda` must contain only directories and the excluded `pkgs/`, otherwise the tool fails listing up to 20 offending paths
-- Files inherited from lower image layers (custom `mambaImage`) fall back to copy with metadata, then delete, when `rename()` fails with `EXDEV`
+- Files inherited from lower image layers (custom `mambaImage`) are copied up by overlayfs on `rename()`, which keeps their metadata but splits hardlinks between them
 - Each layer is rooted at `/`, so every empty slot is the identical empty layer. Used layers carry `/opt` and `/opt/conda`, both 0755 root:root as in the v2 image, and only the prefix's timestamps are kept
 
 ### 5. Grouping Rules

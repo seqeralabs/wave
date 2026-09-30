@@ -19,7 +19,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -43,7 +42,6 @@ type node struct {
 	gid   uint32
 	dev   uint64
 	ino   uint64
-	atime time.Time
 	mtime time.Time
 }
 
@@ -66,7 +64,6 @@ func newNode(rel string, fi fs.FileInfo) (*node, error) {
 		gid:   st.Gid,
 		dev:   uint64(st.Dev),
 		ino:   st.Ino,
-		atime: statAtime(st),
 		mtime: fi.ModTime(),
 	}, nil
 }
@@ -97,14 +94,8 @@ func walk(src string, excludes map[string]bool, fn func(rel string, d fs.DirEntr
 // when it has no children other than excluded ones: it is then recreated in a layer
 func scan(src string, excludes map[string]bool) (*inventory, error) {
 	fi, err := os.Lstat(src)
-	if errors.Is(err, fs.ErrNotExist) {
-		return nil, fmt.Errorf("--src directory does not exist: %s", src)
-	}
 	if err != nil {
 		return nil, err
-	}
-	if !fi.IsDir() {
-		return nil, fmt.Errorf("--src is not a directory: %s", src)
 	}
 	inv := &inventory{dirs: map[string]*node{}}
 	if inv.root, err = newNode(".", fi); err != nil {
@@ -143,25 +134,18 @@ func scan(src string, excludes map[string]bool) (*inventory, error) {
 // verify checks that only directories and excluded paths are left in the prefix
 func verify(src string, excludes map[string]bool) error {
 	var left []string
-	count := 0
 	err := walk(src, excludes, func(rel string, d fs.DirEntry) error {
 		if !d.IsDir() {
-			count++
-			if len(left) < maxReported {
-				left = append(left, rel)
-			}
+			left = append(left, rel)
 		}
 		return nil
 	})
-	if err != nil {
+	if err != nil || len(left) == 0 {
 		return err
 	}
-	if count == 0 {
-		return nil
+	count := len(left)
+	if count > maxReported {
+		left = append(left[:maxReported], fmt.Sprintf("(+%d more)", count-maxReported))
 	}
-	msg := fmt.Sprintf("verify failed, %d paths left in %s: %s", count, src, strings.Join(left, " "))
-	if count > len(left) {
-		msg += fmt.Sprintf(" (+%d more)", count-len(left))
-	}
-	return errors.New(msg)
+	return fmt.Errorf("verify failed, %d paths left in %s: %s", count, src, strings.Join(left, " "))
 }

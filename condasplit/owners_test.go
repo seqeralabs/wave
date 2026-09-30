@@ -69,7 +69,7 @@ func TestOwnership(t *testing.T) {
 	// every package above own-layer-size gets its layer, unowned paths go last
 	cfg := p.config(8)
 	cfg.ownLayer = 0
-	out := p.layerize(cfg, nil)
+	out := p.layerize(cfg)
 	if !strings.Contains(out, " packages=3 clobbers=1 ") {
 		t.Errorf("unexpected plan header:\n%s", out)
 	}
@@ -92,7 +92,7 @@ func TestUnownedIsCapped(t *testing.T) {
 	p.file("share/y", 300*MB)
 	p.file("share/z", 100*MB)
 
-	rows := planRows(t, p.layerize(p.config(32), nil))
+	rows := planRows(t, p.layerize(p.config(32)))
 	expected := []string{
 		"slots=3/32 files=5 size=800.0MB packages=1 clobbers=0 unowned=700.0MB max-layer=500MB own-layer=50MB",
 		"00  100.0MB      2  a",

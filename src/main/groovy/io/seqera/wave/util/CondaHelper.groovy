@@ -82,22 +82,8 @@ class CondaHelper {
      * @throws BadRequestException if package type is not CONDA
      */
     static String containerFileV2(PackagesSpec spec, String containerImage, boolean singularity) {
-        if( spec.type != PackagesSpec.Type.CONDA ) {
-            throw new BadRequestException("Package type '${spec.type}' not supported by 'conda/micromamba:v2' build template")
-        }
-
+        final opts = micromambaV2Opts(spec, containerImage, 'conda/micromamba:v2')
         final lockFileUri = tryGetLockFile(spec.entries)
-        final opts = spec.condaOpts ?: CondaOpts.v2()
-        // The CondaOpts ctor always fills mambaImage with the v1 default image (the value
-        // can also be bumped client-side e.g. by Nextflow), but the v2 template requires
-        // micromamba 2.x. Override any micromamba 1.x image with the v2 default; an explicit
-        // 2.x or custom image is left untouched. Matching is by tag (not one exact string),
-        // so a bumped v1 tag still resolves correctly.
-        if( isMicromambaV1(opts.mambaImage) )
-            opts.mambaImage = CondaOpts.DEFAULT_MAMBA_IMAGE_V2
-        if( containerImage )
-            opts.baseImage = containerImage
-
         if( lockFileUri ) {
             // use the lock file uri as special package name
             return singularity
@@ -124,26 +110,32 @@ class CondaHelper {
      * @throws BadRequestException if package type is not CONDA
      */
     static String containerFileV3(PackagesSpec spec, String containerImage, String layersImage) {
-        if( spec.type != PackagesSpec.Type.CONDA ) {
-            throw new BadRequestException("Package type '${spec.type}' not supported by 'conda/micromamba:v3' build template")
-        }
-
+        final opts = micromambaV2Opts(spec, containerImage, 'conda/micromamba:v3')
         final lockFileUri = tryGetLockFile(spec.entries)
+        return lockFileUri
+                ? condaPackagesToDockerFileUsingV3(lockFileUri, spec.channels, opts, layersImage)
+                : condaFileToDockerFileUsingV3(opts, layersImage)
+    }
+
+    /**
+     * The Conda options of the templates based on micromamba 2.x, i.e. v2 and v3
+     *
+     * @throws BadRequestException if package type is not CONDA
+     */
+    static private CondaOpts micromambaV2Opts(PackagesSpec spec, String containerImage, String template) {
+        if( spec.type != PackagesSpec.Type.CONDA )
+            throw new BadRequestException("Package type '${spec.type}' not supported by '${template}' build template")
         final opts = spec.condaOpts ?: CondaOpts.v2()
-        // same as v2, the template requires micromamba 2.x - see containerFileV2
+        // The CondaOpts ctor always fills mambaImage with the v1 default image (the value
+        // can also be bumped client-side e.g. by Nextflow), but these templates require
+        // micromamba 2.x. Override any micromamba 1.x image with the v2 default; an explicit
+        // 2.x or custom image is left untouched. Matching is by tag (not one exact string),
+        // so a bumped v1 tag still resolves correctly.
         if( isMicromambaV1(opts.mambaImage) )
             opts.mambaImage = CondaOpts.DEFAULT_MAMBA_IMAGE_V2
         if( containerImage )
             opts.baseImage = containerImage
-
-        if( lockFileUri ) {
-            // use the lock file uri as special package name
-            return condaPackagesToDockerFileUsingV3(lockFileUri, spec.channels, opts, layersImage)
-        }
-        else {
-            // No lock file: use templates that install from local conda.yml
-            return condaFileToDockerFileUsingV3(opts, layersImage)
-        }
+        return opts
     }
 
     /**

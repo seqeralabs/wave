@@ -31,8 +31,8 @@ tool never ends up in the built image or in the build cache.
 7. Files are moved with `rename()`, so hardlinks, owners, modes and timestamps are kept.
    Created directories get the owner, mode and times of the source directory, except
    the prefix itself and its parents: they are 0755 root:root, as the `COPY` of v2
-   creates them. If `rename()` fails with `EXDEV` the file is copied with its metadata
-   and then removed.
+   creates them. Files of a lower image layer are copied up by overlayfs, which keeps
+   their metadata but splits hardlinks between them.
 8. The prefix is checked again: anything other than directories and excluded paths
    left behind fails the run.
 

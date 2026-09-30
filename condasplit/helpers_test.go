@@ -137,13 +137,10 @@ func (p *prefix) config(slots int, excludes ...string) config {
 }
 
 // layerize runs the tool and returns the layer plan
-func (p *prefix) layerize(cfg config, rename renameFunc) string {
+func (p *prefix) layerize(cfg config) string {
 	p.t.Helper()
-	if rename == nil {
-		rename = os.Rename
-	}
 	var out bytes.Buffer
-	if err := layerize(cfg, rename, &out); err != nil {
+	if err := layerize(cfg, &out); err != nil {
 		p.t.Fatal(err)
 	}
 	return out.String()

@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.inspect
 
+import java.util.regex.Pattern
+
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.PackageScope
@@ -159,26 +161,17 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
      * @return The list of mounted container images, build stage names are ignored
      */
     static protected List<String> findMountRepositories(String line) {
-        final result = new ArrayList<String>()
-        if( !line || !line.startsWith('RUN ') )
-            return result
-        for( String token : line.tokenize(' ').drop(1) ) {
-            // flags come before the command
-            if( !token.startsWith('--') )
-                break
-            if( !token.startsWith('--mount=') )
-                continue
-            for( String opt : token.substring(8).tokenize(',') ) {
-                if( !opt.startsWith('from=') )
-                    continue
-                final image = opt.substring(5)
-                // a build stage name has no registry, tag or digest separator
-                if( image.contains('/') || image.contains(':') || image.contains('@') )
-                    result.add(image)
-            }
-        }
-        return result
+        final flags = RUN_FLAGS.matcher(line ?: '')
+        return flags.find()
+                ? MOUNT_FROM.matcher(flags.group(1)).results().map(it -> it.group(1)).toList()
+                : List.<String>of()
     }
+
+    // the flags between `RUN` and the command
+    static private final Pattern RUN_FLAGS = ~/^RUN((?:\s+--\S+)*)/
+
+    // the `from=` image of a `--mount` flag, a build stage name has no registry, tag or digest separator
+    static private final Pattern MOUNT_FROM = ~/--mount=\S*?\bfrom=([^,\s]*[\/:@][^,\s]*)/
 
     static protected List<InspectItem> inspectItems(String containerFile) {
         final result = new ArrayList<InspectItem>(10)

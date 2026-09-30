@@ -56,18 +56,6 @@ type config struct {
 	excludes map[string]bool
 }
 
-// renameFunc moves a path, it is os.Rename except in the tests
-type renameFunc func(oldpath, newpath string) error
-
-type stringList []string
-
-func (s *stringList) String() string { return strings.Join(*s, ",") }
-
-func (s *stringList) Set(v string) error {
-	*s = append(*s, v)
-	return nil
-}
-
 func main() {
 	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
 }
@@ -79,7 +67,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return 0
 	}
 	if err == nil {
-		err = layerize(cfg, os.Rename, stdout)
+		err = layerize(cfg, stdout)
 	}
 	if err != nil {
 		// the error must fit on one line of the build log
@@ -90,8 +78,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 }
 
 func parseArgs(args []string) (config, error) {
-	var cfg config
-	var excludes stringList
+	cfg := config{excludes: map[string]bool{}}
 	fs := flag.NewFlagSet("condasplit", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	fs.StringVar(&cfg.src, "src", "", "")
@@ -99,57 +86,28 @@ func parseArgs(args []string) (config, error) {
 	fs.IntVar(&cfg.slots, "slots", 0, "")
 	fs.Int64Var(&cfg.maxLayer, "max-layer-size", defaultMaxLayerSize, "")
 	fs.Int64Var(&cfg.ownLayer, "own-layer-size", defaultOwnLayerSize, "")
-	fs.Var(&excludes, "exclude", "")
+	fs.Func("exclude", "", func(rel string) error {
+		cfg.excludes[filepath.Clean(rel)] = true
+		return nil
+	})
 	if err := fs.Parse(args); err != nil {
 		return cfg, err
 	}
-	if fs.NArg() > 0 {
-		return cfg, fmt.Errorf("unexpected argument: %s", fs.Arg(0))
-	}
-	if cfg.src == "" {
-		return cfg, errors.New("missing required option --src")
-	}
-	if !filepath.IsAbs(cfg.src) {
+	switch {
+	case !filepath.IsAbs(cfg.src):
 		return cfg, fmt.Errorf("--src must be an absolute path: %s", cfg.src)
-	}
-	cfg.src = filepath.Clean(cfg.src)
-	if cfg.src == "/" {
-		return cfg, errors.New("--src must not be the root directory")
-	}
-	if cfg.out == "" {
+	case cfg.out == "":
 		return cfg, errors.New("missing required option --out")
-	}
-	out, err := filepath.Abs(cfg.out)
-	if err != nil {
-		return cfg, err
-	}
-	if out == cfg.src || strings.HasPrefix(out, cfg.src+"/") {
-		return cfg, fmt.Errorf("--out must not be inside --src: %s", cfg.out)
-	}
-	cfg.out = out
-	if cfg.slots < 1 {
+	case cfg.slots < 1:
 		return cfg, errors.New("missing or invalid option --slots, it must be at least 1")
 	}
-	if cfg.maxLayer < 1 {
-		return cfg, fmt.Errorf("invalid --max-layer-size: %d", cfg.maxLayer)
-	}
-	if cfg.ownLayer < 0 {
-		return cfg, fmt.Errorf("invalid --own-layer-size: %d", cfg.ownLayer)
-	}
-	cfg.excludes = map[string]bool{}
-	for _, e := range excludes {
-		rel := filepath.Clean(e)
-		if filepath.IsAbs(rel) || rel == "." || rel == ".." || strings.HasPrefix(rel, "../") {
-			return cfg, fmt.Errorf("--exclude must be a path relative to --src: %s", e)
-		}
-		cfg.excludes[rel] = true
-	}
+	cfg.src = filepath.Clean(cfg.src)
 	return cfg, nil
 }
 
 // layerize runs the whole process: nothing is moved until the plan is complete,
 // so any inventory or conda-meta error leaves the prefix untouched
-func layerize(cfg config, rename renameFunc, stdout io.Writer) error {
+func layerize(cfg config, stdout io.Writer) error {
 	inv, err := scan(cfg.src, cfg.excludes)
 	if err != nil {
 		return err
@@ -159,7 +117,7 @@ func layerize(cfg config, rename renameFunc, stdout io.Writer) error {
 		return err
 	}
 	p := makePlan(inv, own, cfg)
-	m := &mover{src: cfg.src, out: cfg.out, inv: inv, rename: rename}
+	m := &mover{src: cfg.src, out: cfg.out, inv: inv}
 	if err := m.move(p, cfg.slots); err != nil {
 		return err
 	}

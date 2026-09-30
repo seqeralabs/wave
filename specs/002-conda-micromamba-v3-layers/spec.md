@@ -152,7 +152,7 @@ Environments that cannot fit the normal rules still build, with clear warnings.
 - **Path claimed by two packages (clobbering).** The file is placed once, with the owner taken from the first `conda-meta` file in sorted order. The on-disk content is always the final installed version, so layer order never matters.
 - **Symlinks, directory symlinks and empty directories.** They are preserved as-is. An originally empty directory is recreated in the leftovers layer.
 - **Hardlinked files across packages.** All paths that share one inode are placed in the same layer, the one belonging to the owner of the first owned path.
-- **Files from lower image layers.** A custom `mambaImage` may already contain files under `/opt/conda` in its own layers. The default images contain only an empty base environment. Moving such a file makes overlayfs copy it up first, which works but can break hardlinks between such pre-existing files. If `rename()` fails with `EXDEV`, the tool falls back to copying (keeping metadata) and then deleting the original.
+- **Files from lower image layers.** A custom `mambaImage` may already contain files under `/opt/conda` in its own layers. The default images contain only an empty base environment. Moving such a file makes overlayfs copy it up first. This keeps its metadata but breaks hardlinks between such pre-existing files, because each link is copied up on its own. `rename()` never fails with `EXDEV` there: source and destination are in the same root filesystem, and only directories could need it, which the tool creates instead of moving.
 - **Custom `condaOpts.commands`.** They are appended after the slot `COPY` lines, as in v2, and produce their own layers.
 - **Custom `baseImage` / `containerImage`.** They are supported as in v2. The layer carries `/opt` and `/opt/conda`, both 0755 root:root as in the v2 image. Only the prefix's timestamps are kept from the build stage.
 - **Custom `mambaImage` with a root prefix other than `/opt/conda`.** This is not supported. v2 already hard-codes `/opt/conda` in its final stage, and v3 keeps the same assumption.
@@ -269,7 +269,6 @@ condasplit --src DIR --out DIR --slots N
    - Create `--out/NN/<src>/` with mode 0755 and the times of `--src`, owned by root:root when running as root. This matches the v2 image, where `/opt/conda` is 0755 root:root whatever the prefix mode in the mamba image (0777). Parents of `<src>` get mode 0755 root:root.
    - `rename()` each path of each atom to `--out/NN/<src>/<relpath>`, creating missing parent directories with the metadata of the source directory.
    - Recreate originally empty directories in the leftovers layer.
-   - If `rename()` fails with `EXDEV`, copy the file keeping its metadata, then remove the original.
    - Finally, set directory mtimes from the inventory.
    - Leave unused slot directories empty.
 8. **Verify.** Walk `--src` again. Anything other than directories and excluded paths is an error, and the tool fails listing up to 20 of the offending paths.
@@ -414,7 +413,6 @@ The generated Dockerfile (about 3 KB) is not affected by `wave.build.max-contain
 - Slot overflow merging with a warning.
 - `--exclude pkgs` leaving the path in place.
 - Metadata preservation (mode, uid/gid, file and directory mtimes) and prefix/parent metadata.
-- The `EXDEV` fallback, simulated with a fake rename function.
 - The verify step failing when a path is left behind.
 - Error exits for a missing `conda-meta/`, a malformed JSON file and a relative `--src`.
 

@@ -44,12 +44,9 @@ type condaRecord struct {
 // later claim is counted as a clobber
 func readOwners(src string, inv *inventory) (*ownership, error) {
 	dir := filepath.Join(src, "conda-meta")
-	if fi, err := os.Stat(dir); err != nil || !fi.IsDir() {
-		return nil, fmt.Errorf("missing conda-meta directory in %s", src)
-	}
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("missing conda-meta directory in %s: %w", src, err)
 	}
 	known := make(map[string]bool, len(inv.nodes))
 	for _, n := range inv.nodes {

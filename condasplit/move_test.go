@@ -19,13 +19,10 @@
 package main
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"syscall"
 	"testing"
@@ -63,7 +60,7 @@ func TestHardlinks(t *testing.T) {
 
 	cfg := p.config(32, "pkgs")
 	cfg.ownLayer = 0
-	out := p.layerize(cfg, nil)
+	out := p.layerize(cfg)
 
 	sa := p.slotOf("lib/libx.so")
 	if p.slotOf("bin/x") != sa || !os.SameFile(lstat(t, p.layered(sa, "bin/x")), lstat(t, p.layered(sa, "lib/libx.so"))) {
@@ -114,7 +111,7 @@ func TestSymlinksAndEmptyDirs(t *testing.T) {
 	mtime := time.Date(2024, 5, 6, 7, 8, 9, 0, time.UTC)
 	chtimes(t, p.path("var/empty"), mtime)
 
-	out := p.layerize(p.config(32), nil)
+	out := p.layerize(p.config(32))
 	// the symlink to a directory is not descended
 	if !strings.Contains(out, " files=7 ") {
 		t.Errorf("unexpected plan:\n%s", out)
@@ -152,7 +149,7 @@ func TestExclude(t *testing.T) {
 	// a directory with only excluded children is recreated as an empty directory
 	p.file("share/cache/tmp", 10)
 
-	out := p.layerize(p.config(4, "pkgs", "share/cache/tmp"), nil)
+	out := p.layerize(p.config(4, "pkgs", "share/cache/tmp"))
 	if !strings.Contains(out, " files=3 ") {
 		t.Errorf("unexpected plan:\n%s", out)
 	}
@@ -197,8 +194,13 @@ func TestMetadata(t *testing.T) {
 	uid, gid := owner(t, p.path("bin/exe"))
 
 	cfg := p.config(8)
+	// on Linux mkdir inherits the setgid bit, as below / in a rootless BuildKit step
+	if err := os.MkdirAll(p.out, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	chmod(t, p.out, 0o755|fs.ModeSetgid)
 	cfg.ownLayer = 0
-	p.layerize(cfg, nil)
+	p.layerize(cfg)
 
 	sa, sb := p.slotOf("bin/exe"), p.slotOf("lib/b.so")
 	if sa == sb {
@@ -242,7 +244,7 @@ func TestMetadata(t *testing.T) {
 	}
 	// unused slots are left empty
 	for i := 2; i < 8; i++ {
-		if entries, err := os.ReadDir(filepath.Join(p.out, slotName(i, 8))); err != nil || len(entries) != 0 {
+		if entries, err := os.ReadDir(filepath.Join(p.out, slotName(i))); err != nil || len(entries) != 0 {
 			t.Errorf("slot %d is not an empty directory: %v %v", i, entries, err)
 		}
 	}
@@ -250,154 +252,54 @@ func TestMetadata(t *testing.T) {
 
 func TestOwnersAsRoot(t *testing.T) {
 	requireRoot(t)
-	for _, name := range []string{"rename", "exdev"} {
-		t.Run(name, func(t *testing.T) {
-			p := newPrefix(t)
-			p.meta("a-1.0-0", "a", "bin/exe", "bin/link", "lib/data")
-			p.file("bin/exe", 10)
-			p.symlink("bin/link", "exe")
-			p.file("lib/data", 10)
-			owners := map[string][2]int{"bin/exe": {1001, 1002}, "bin/link": {1003, 1004}, "lib/data": {1005, 1006}, "bin": {2001, 2002}, "lib": {2003, 2004}}
-			for rel, o := range owners {
-				if err := os.Lchown(p.path(rel), o[0], o[1]); err != nil {
-					t.Fatal(err)
-				}
-			}
-			// chown clears setuid, so set it afterwards
-			chmod(t, p.path("bin/exe"), 0o755|fs.ModeSetuid|fs.ModeSetgid)
-			// the owner and mode of the prefix and of its real parents never affect the layers
-			for dir, o := range map[string][2]int{p.src: {3001, 3002}, filepath.Dir(p.src): {4001, 4002}} {
-				if err := os.Lchown(dir, o[0], o[1]); err != nil {
-					t.Fatal(err)
-				}
-			}
-			chmod(t, p.src, 0o777)
-			chmod(t, filepath.Dir(p.src), 0o700)
-
-			rename := os.Rename
-			if name == "exdev" {
-				rename = exdev(func(string) bool { return true })
-			}
-			p.layerize(p.config(4), rename)
-			slot := p.slotOf("bin/exe")
-			for rel, o := range owners {
-				if u, g := owner(t, p.layered(slot, rel)); int(u) != o[0] || int(g) != o[1] {
-					t.Errorf("%s: expected owner %d:%d, got %d:%d", rel, o[0], o[1], u, g)
-				}
-			}
-			if mode := lstat(t, p.layered(slot, "bin/exe")).Mode(); mode&modeBits != 0o755|fs.ModeSetuid|fs.ModeSetgid {
-				t.Errorf("setuid and setgid not preserved: %v", mode)
-			}
-			for _, dir := range []string{p.src, filepath.Dir(p.src)} {
-				d := filepath.Join(p.out, slot, dir)
-				if u, g := owner(t, d); u != 0 || g != 0 || lstat(t, d).Mode()&modeBits != 0o755 {
-					t.Errorf("%s is not 0755 root:root", dir)
-				}
-			}
-		})
-	}
-}
-
-// exdev returns a rename function failing with EXDEV for the matching paths
-func exdev(match func(path string) bool) renameFunc {
-	return func(oldpath, newpath string) error {
-		if match(oldpath) {
-			return &os.LinkError{Op: "rename", Old: oldpath, New: newpath, Err: syscall.EXDEV}
+	p := newPrefix(t)
+	p.meta("a-1.0-0", "a", "bin/exe", "bin/link", "lib/data")
+	p.file("bin/exe", 10)
+	p.symlink("bin/link", "exe")
+	p.file("lib/data", 10)
+	owners := map[string][2]int{"bin/exe": {1001, 1002}, "bin/link": {1003, 1004}, "lib/data": {1005, 1006}, "bin": {2001, 2002}, "lib": {2003, 2004}}
+	for rel, o := range owners {
+		if err := os.Lchown(p.path(rel), o[0], o[1]); err != nil {
+			t.Fatal(err)
 		}
-		return os.Rename(oldpath, newpath)
 	}
-}
-
-func TestExdevFallback(t *testing.T) {
-	tests := map[string]func(string) bool{
-		"all":         func(string) bool { return true },
-		"first link":  func(path string) bool { return strings.HasSuffix(path, "liba.so") },
-		"second link": func(path string) bool { return strings.HasSuffix(path, "liba.so.1") },
+	// chown clears setuid, so set it afterwards
+	chmod(t, p.path("bin/exe"), 0o755|fs.ModeSetuid|fs.ModeSetgid)
+	// the owner and mode of the prefix and of its real parents never affect the layers
+	for dir, o := range map[string][2]int{p.src: {3001, 3002}, filepath.Dir(p.src): {4001, 4002}} {
+		if err := os.Lchown(dir, o[0], o[1]); err != nil {
+			t.Fatal(err)
+		}
 	}
-	for name, match := range tests {
-		t.Run(name, func(t *testing.T) {
-			p := newPrefix(t)
-			p.meta("a-1.0-0", "a", "bin/tool", "bin/link", "lib/liba.so", "lib/liba.so.1")
-			p.file("bin/tool", 100)
-			chmod(t, p.path("bin/tool"), 0o755|fs.ModeSetuid)
-			p.file("lib/liba.so", 200)
-			chmod(t, p.path("lib/liba.so"), 0o640)
-			p.hardlink("lib/liba.so", "lib/liba.so.1")
-			p.symlink("bin/link", "tool")
-			p.dir("var/empty")
-			mtime := time.Date(2021, 2, 3, 4, 5, 6, 0, time.UTC)
-			for _, rel := range []string{"bin/tool", "lib/liba.so"} {
-				chtimes(t, p.path(rel), mtime)
-			}
-			if err := lutimes(p.path("bin/link"), mtime, mtime); err != nil {
-				t.Fatal(err)
-			}
-			content := map[string][]byte{}
-			for _, rel := range []string{"bin/tool", "lib/liba.so"} {
-				data, err := os.ReadFile(p.path(rel))
-				if err != nil {
-					t.Fatal(err)
-				}
-				content[rel] = data
-			}
+	chmod(t, p.src, 0o777)
+	chmod(t, filepath.Dir(p.src), 0o700)
 
-			p.layerize(p.config(4), exdev(match))
-			slot := p.slotOf("bin/tool")
-			for rel, data := range content {
-				got, err := os.ReadFile(p.layered(slot, rel))
-				if err != nil || !bytes.Equal(got, data) {
-					t.Errorf("%s: content not preserved", rel)
-				}
-				if fi := lstat(t, p.layered(slot, rel)); !fi.ModTime().Equal(mtime) {
-					t.Errorf("%s: mtime not preserved: %v", rel, fi.ModTime())
-				}
-			}
-			if mode := lstat(t, p.layered(slot, "bin/tool")).Mode(); mode&modeBits != 0o755|fs.ModeSetuid {
-				t.Errorf("mode not preserved: %v", mode)
-			}
-			if mode := lstat(t, p.layered(slot, "lib/liba.so")).Mode(); mode&modeBits != 0o640 {
-				t.Errorf("mode not preserved: %v", mode)
-			}
-			a, b := p.layered(slot, "lib/liba.so"), p.layered(slot, "lib/liba.so.1")
-			if !os.SameFile(lstat(t, a), lstat(t, b)) || nlink(t, a) != 2 {
-				t.Errorf("hardlink not preserved")
-			}
-			link := p.layered(slot, "bin/link")
-			if readlink(t, link) != "tool" {
-				t.Errorf("symlink target not preserved")
-			}
-			if runtime.GOOS == "linux" && !lstat(t, link).ModTime().Equal(mtime) {
-				t.Errorf("symlink mtime not preserved: %v", lstat(t, link).ModTime())
-			}
-			if !lstat(t, p.layered(p.slotOf("var/empty"), "var/empty")).IsDir() {
-				t.Errorf("empty directory not recreated")
-			}
-			// the originals are removed, which the verify step already checked
-			if _, err := os.Lstat(p.path("lib/liba.so.1")); !errors.Is(err, fs.ErrNotExist) {
-				t.Errorf("original not removed: %v", err)
-			}
-		})
+	p.layerize(p.config(4))
+	slot := p.slotOf("bin/exe")
+	for rel, o := range owners {
+		if u, g := owner(t, p.layered(slot, rel)); int(u) != o[0] || int(g) != o[1] {
+			t.Errorf("%s: expected owner %d:%d, got %d:%d", rel, o[0], o[1], u, g)
+		}
+	}
+	if mode := lstat(t, p.layered(slot, "bin/exe")).Mode(); mode&modeBits != 0o755|fs.ModeSetuid|fs.ModeSetgid {
+		t.Errorf("setuid and setgid not preserved: %v", mode)
+	}
+	for _, dir := range []string{p.src, filepath.Dir(p.src)} {
+		d := filepath.Join(p.out, slot, dir)
+		if u, g := owner(t, d); u != 0 || g != 0 || lstat(t, d).Mode()&modeBits != 0o755 {
+			t.Errorf("%s is not 0755 root:root", dir)
+		}
 	}
 }
 
 func TestVerifyFails(t *testing.T) {
 	p := newPrefix(t)
-	p.pkg("a", 1000)
+	p.dir("pkgs/cache")
+	p.file("pkgs/cache/a.tar", 10)
 	p.file("bin/stuck", 10)
-	// a rename that silently leaves one path behind
-	rename := func(oldpath, newpath string) error {
-		if strings.HasSuffix(oldpath, "bin/stuck") {
-			return nil
-		}
-		return os.Rename(oldpath, newpath)
-	}
-	var out bytes.Buffer
-	err := layerize(p.config(4), rename, &out)
-	if err == nil || !strings.Contains(err.Error(), "verify failed") || !strings.HasSuffix(err.Error(), ": bin/stuck") {
+	err := verify(p.src, map[string]bool{"pkgs": true})
+	if err == nil || !strings.Contains(err.Error(), "verify failed, 1 paths left") || !strings.HasSuffix(err.Error(), ": bin/stuck") {
 		t.Fatalf("expected verify error, got %v", err)
-	}
-	if out.Len() != 0 {
-		t.Errorf("no plan expected on failure")
 	}
 }
 
@@ -407,8 +309,7 @@ func TestVerifyListsAtMost20Paths(t *testing.T) {
 	for i := 0; i < 25; i++ {
 		p.file(fmt.Sprintf("bin/f%02d", i), 1)
 	}
-	noop := func(string, string) error { return nil }
-	err := layerize(p.config(4), noop, &bytes.Buffer{})
+	err := verify(p.src, nil)
 	if err == nil {
 		t.Fatal("expected verify error")
 	}

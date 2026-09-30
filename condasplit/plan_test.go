@@ -38,7 +38,7 @@ func TestSplitLargePackage(t *testing.T) {
 	p.pkg("small", 1*MB)
 
 	cfg := p.config(32)
-	rows := planRows(t, p.layerize(cfg, nil))
+	rows := planRows(t, p.layerize(cfg))
 	expected := []string{
 		"00  400.0MB      3  big#0",
 		"01  400.0MB      2  big#1",
@@ -106,7 +106,7 @@ func packing(t *testing.T, reverse bool) *prefix {
 func TestPacking(t *testing.T) {
 	p := packing(t, false)
 	cfg := p.config(32)
-	out := p.layerize(cfg, nil)
+	out := p.layerize(cfg)
 	expected := []string{
 		"slots=5/32 files=32 size=819.0MB packages=16 clobbers=0 unowned=0.0MB max-layer=500MB own-layer=50MB",
 		"00  120.0MB      2  A",
@@ -125,7 +125,7 @@ func TestPacking(t *testing.T) {
 
 	// the same content gives the same plan
 	again := packing(t, true)
-	if other := again.layerize(again.config(32), nil); other != out {
+	if other := again.layerize(again.config(32)); other != out {
 		t.Errorf("plan is not deterministic:\n%s\n---\n%s", out, other)
 	}
 }
@@ -159,8 +159,8 @@ func TestPackingRespectsCap(t *testing.T) {
 			t.Errorf("layer %d shares a package above own-layer-size: %v", i, l.labels)
 		}
 	}
-	if plan.merges != 0 || plan.files != 80 {
-		t.Errorf("unexpected plan: %d merges, %d files", plan.merges, plan.files)
+	if len(plan.warnings) != 0 || plan.files != 80 {
+		t.Errorf("unexpected plan: %v warnings, %d files", plan.warnings, plan.files)
 	}
 }
 
@@ -190,7 +190,7 @@ func TestSlotOverflow(t *testing.T) {
 			for i, size := range []int64{450, 400, 300, 200, 150} {
 				p.pkg(fmt.Sprintf("P%d", i+1), size*MB)
 			}
-			rows := planRows(t, p.layerize(p.config(tt.slots), nil))
+			rows := planRows(t, p.layerize(p.config(tt.slots)))
 			if strings.Join(rows[1:], "\n") != strings.Join(tt.expected, "\n") {
 				t.Fatalf("unexpected plan:\n%s", strings.Join(rows, "\n"))
 			}
@@ -212,7 +212,7 @@ func TestSlotOverflowMergesSmallest(t *testing.T) {
 	}
 	p.file("share/x", 300*MB)
 
-	rows := planRows(t, p.layerize(p.config(4), nil))
+	rows := planRows(t, p.layerize(p.config(4)))
 	expected := []string{
 		"00  450.0MB      2  P1",
 		"01  115.0MB      4  P2 P3",
@@ -226,12 +226,9 @@ func TestSlotOverflowMergesSmallest(t *testing.T) {
 }
 
 func TestSlotNames(t *testing.T) {
-	for _, tt := range []struct {
-		i, slots int
-		name     string
-	}{{0, 1, "00"}, {7, 32, "07"}, {31, 32, "31"}, {5, 101, "005"}} {
-		if got := slotName(tt.i, tt.slots); got != tt.name {
-			t.Errorf("slotName(%d, %d): expected %s, got %s", tt.i, tt.slots, tt.name, got)
+	for i, name := range map[int]string{0: "00", 7: "07", 31: "31"} {
+		if got := slotName(i); got != name {
+			t.Errorf("slotName(%d): expected %s, got %s", i, name, got)
 		}
 	}
 }
