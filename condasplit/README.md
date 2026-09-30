@@ -124,24 +124,19 @@ docker run --rm -v <prefix>:/opt/conda -v <out>:/layers --entrypoint /condasplit
 The image is multi-arch (`linux/amd64`, `linux/arm64`). The Dockerfile runs the unit tests
 and cross-compiles a static binary (`CGO_ENABLED=0`) from the pinned `golang` image.
 
-Each release gets a new immutable tag (`v1`, `v2`, ...). Wave pins the exact tag with the
-`wave.build.condasplit-image` setting, so a new tool version changes the v3 container
-file and therefore the container id. Never overwrite an existing tag.
+Each release gets a new immutable tag (`v1`, `v2`, ...), set in the `VERSION` file. Wave
+pins the exact tag with the `wave.build.condasplit-image` setting, so a new tool version
+changes the v3 container file and therefore the container id. Never overwrite an existing tag.
 
 **Stage** (default registry, used for the initial iteration and tests):
 
 ```bash
 cd condasplit
-make all version=v1
-# pushes public.cr.stage-seqera.io/wave/condasplit:v1
+make all
+# pushes public.cr.stage-seqera.io/wave/condasplit:<VERSION>
 ```
 
-**Production**: run the *Build and publish condasplit container image* GitHub workflow
-(`.github/workflows/build-condasplit.yml`) with the `version` input. It runs:
-
-```bash
-make all version=v1 registry=public.cr.seqera.io/wave
-# pushes public.cr.seqera.io/wave/condasplit:v1
-```
-
-Then point the default of `wave.build.condasplit-image` to the new tag.
+**Production**: bump `VERSION`. The `build-condasplit.yml` GitHub workflow publishes
+`public.cr.seqera.io/wave/condasplit:<VERSION>` on the next Wave release commit (`[release]`
+on `master`), and skips the build when that tag already exists. Then point the default of
+`wave.build.condasplit-image` to the new tag.

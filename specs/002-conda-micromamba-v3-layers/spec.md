@@ -193,7 +193,7 @@ The prefix directory and its parents are `0755 root:root` in every layer, as v2'
 | `TemplateUtils` | `condaToDockerFileUsingV3(lockFile, channels, opts, layersImage)` renders the template, with a `null` lock file for the conda-file input |
 | `ContainerInspectServiceImpl` | Collects `RUN --mount ... from=<image>` images for the build credentials, ignoring stage names |
 | `condasplit/` | Tool and tests, `frontend/` module, `Dockerfile` (`FROM scratch`, both binaries, frontend entrypoint), `Makefile`, `README.md` |
-| `.github/workflows/build-condasplit.yml` | Go tests on pull requests; production publish on manual dispatch |
+| `.github/workflows/build-condasplit.yml` | Go tests on pull requests; on a Wave `[release]` commit, publishes the `condasplit/VERSION` tag unless it already exists |
 
 Unchanged: `BuildStrategy` (`buildctl` arguments, cache, compression), `BuildLogServiceImpl`, persistence, `MultiPlatformBuildService` (one build per platform), scanning, mirroring and freeze. v3 produces its own Dockerfile, so it gets its own container ids and never collides with images from other templates.
 
@@ -226,7 +226,7 @@ Tests:
 
 1. `public.cr.stage-seqera.io/wave/condasplit:v1` is published and is Wave's default during the initial iteration.
 2. Validate on the stage cluster: Nextflow with `wave.build.template = 'conda/micromamba:v3'`, the reference environment, and pull speed against v2.
-3. Publish `public.cr.seqera.io/wave/condasplit:v1` with the `build-condasplit` workflow, then switch the default of `wave.build.condasplit-image` and the docs to it.
+3. Publish `public.cr.seqera.io/wave/condasplit:v1`: the `build-condasplit` workflow does it on the next Wave `[release]` commit. Then switch the default of `wave.build.condasplit-image` and the docs to it.
 4. Release as opt-in. Enterprise installs mirror the image and set `wave.build.condasplit-image`.
 
 ## Risks and open items

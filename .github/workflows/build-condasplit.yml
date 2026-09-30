@@ -1,12 +1,11 @@
 name: Build and publish condasplit container image
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Image version (e.g., v1)'
-        required: true
-        default: 'v1'
+  # the image is published by the Wave release commits, see the build-and-push job
+  push:
+    branches:
+      - master
+      - 'release-*'
   pull_request:
     paths:
       - 'condasplit/**'
@@ -35,26 +34,37 @@ jobs:
           cd frontend && go vet ./... && go test ./...
 
   build-and-push:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
+      - name: Detect release commit
+        id: release
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          # as in Wave CI: the first line tags `[release]`, squash and merge commits excluded
+          first_line=$(printf '%s\n' "$COMMIT_MSG" | head -n1)
+          if [[ "$first_line" == *"[release]"* && ! "$first_line" =~ \(#[0-9]+\)$ && ! "$first_line" =~ ^Merge\ pull\ request\ #[0-9]+ ]]; then
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout code
+        if: steps.release.outputs.release == 'true'
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
-
       - name: Docker Login
+        if: steps.release.outputs.release == 'true'
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: public.cr.seqera.io
           username: ${{ vars.SEQERA_PUBLIC_CR_USERNAME  }}
           password: ${{ secrets.SEQERA_PUBLIC_CR_PASSWORD }}
 
+      - name: Set up Docker Buildx
+        if: steps.release.outputs.release == 'true'
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      # skipped when the condasplit/VERSION tag is already published
       - name: Build and Push Image to public.cr.seqera.io
-        env:
-          VERSION: ${{ github.event.inputs.version }}
-        run: |
-          cd condasplit
-          make all version="$VERSION" registry=public.cr.seqera.io/wave
+        if: steps.release.outputs.release == 'true'
+        run: make -C condasplit release registry=public.cr.seqera.io/wave
