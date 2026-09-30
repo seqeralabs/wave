@@ -22,11 +22,13 @@ export AWS_REGION=${AWS_REGION:-'eu-west-1'}
 # AWS SSO: Wave needs static keys for the ECR build registry, and an SSO session only has
 # temporary ones. So push through the ECR dual-stack endpoint instead, which Wave treats as
 # a plain registry, with the ECR login token of the session. Run `aws sso login` first and
-# `AWS_PROFILE=<profile> ./run.sh`; the token lasts 12 hours, then run this script again.
+# `AWS_PROFILE=<profile> ./run.sh`; run it again when the SSO session credentials expire.
 if [ -n "$AWS_PROFILE" ] && [ -z "$AWS_ACCESS_KEY_ID" ]; then
   ECR_HOST=195996028523.dkr-ecr.eu-west-1.on.aws
   ECR_LOGIN_TOKEN=$(aws ecr get-login-password --region eu-west-1) || exit 1
   export ECR_LOGIN_TOKEN
+  # the session credentials for the AWS SDK clients, e.g. the SES mailer
+  eval "$(aws configure export-credentials --format env)" || exit 1
   export WAVE_BUILD_REPO=$ECR_HOST/wave/build/dev
   export WAVE_BUILD_CACHE=$ECR_HOST/wave/build/cache
   # config.yml plus the dual-stack registry, the token stays in the environment
