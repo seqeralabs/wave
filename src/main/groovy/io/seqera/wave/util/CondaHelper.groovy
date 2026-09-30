@@ -114,12 +114,12 @@ class CondaHelper {
 
     /**
      * Generate a Dockerfile using the Micromamba v3 template. The Conda environment is installed
-     * as with the v2 template and then split into multiple image layers by the {@code conda-layers} tool.
+     * as with the v2 template and then split into multiple image layers by the {@code condasplit} tool.
      * Only supports CONDA package type and Docker format. Supports both lock files and environment files.
      *
      * @param spec The packages specification (must be CONDA type)
      * @param containerImage Optional base container image override
-     * @param layersImage The image providing the {@code conda-layers} tool
+     * @param layersImage The image providing the {@code condasplit} tool
      * @return The generated Dockerfile content
      * @throws BadRequestException if package type is not CONDA
      */

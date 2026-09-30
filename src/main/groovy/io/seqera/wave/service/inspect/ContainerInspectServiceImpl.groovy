@@ -153,7 +153,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
 
     /**
      * Find the container images referenced by the {@code from=} option of a {@code RUN --mount} flag,
-     * e.g. {@code RUN --mount=type=bind,from=public.cr.seqera.io/wave/conda-layers:v1,target=/opt/wave-tools ...}
+     * e.g. {@code RUN --mount=type=bind,from=public.cr.seqera.io/wave/condasplit:v1,target=/opt/wave-tools ...}
      *
      * @param line A container file line
      * @return The list of mounted container images, build stage names are ignored

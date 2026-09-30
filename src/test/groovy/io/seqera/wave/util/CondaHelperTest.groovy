@@ -292,7 +292,7 @@ class CondaHelperTest extends Specification {
 
     // === containerFileV3 (micromamba v3) tests ===
 
-    static final private String LAYERS_IMAGE = 'public.cr.stage-seqera.io/wave/conda-layers:v1'
+    static final private String LAYERS_IMAGE = 'public.cr.stage-seqera.io/wave/condasplit:v1'
 
     def 'should create v3 docker file with packages'() {
         given:
@@ -306,10 +306,10 @@ class CondaHelperTest extends Specification {
         then:
         result.contains('FROM mambaorg/micromamba:2-amazon2023 AS build')
         result.contains('COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml')
-        result.contains('RUN --mount=type=bind,from=public.cr.stage-seqera.io/wave/conda-layers:v1,source=/,target=/opt/wave-tools')
+        result.contains('RUN --mount=type=bind,from=public.cr.stage-seqera.io/wave/condasplit:v1,source=/,target=/opt/wave-tools')
         result.contains('micromamba install -y -n base -f /tmp/conda.yml')
         result.contains('micromamba install -y -n base conda-forge::procps-ng')
-        result.contains('/opt/wave-tools/conda-layers --src /opt/conda --out /layers')
+        result.contains('/opt/wave-tools/condasplit --src /opt/conda --out /layers')
         result.contains('FROM ubuntu:24.04 AS prod')
         result.contains('COPY --link --from=build /layers/00/ /')
         result.contains('COPY --link --from=build /layers/31/ /')
@@ -331,7 +331,7 @@ class CondaHelperTest extends Specification {
         !result.contains('conda.yml')
         result.contains('ADD https://foo.com/lock.yml /tmp/conda-lock/lock.yml\n')
         result.contains('micromamba install -y -n base -c conda-forge -c bioconda -f /tmp/conda-lock/lock.yml')
-        result.contains('RUN --mount=type=bind,from=public.cr.stage-seqera.io/wave/conda-layers:v1,source=/,target=/opt/wave-tools')
+        result.contains('RUN --mount=type=bind,from=public.cr.stage-seqera.io/wave/condasplit:v1,source=/,target=/opt/wave-tools')
         result.contains('FROM ubuntu:24.04 AS prod')
         and:
         result == TemplateUtils.condaPackagesToDockerFileUsingV3('https://foo.com/lock.yml', CHANNELS, CondaOpts.v2(), LAYERS_IMAGE)
@@ -366,11 +366,11 @@ class CondaHelperTest extends Specification {
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
 
         when:
-        def result = CondaHelper.containerFileV3(packages, null, 'my.registry.io/wave/conda-layers:v2@sha256:1234')
+        def result = CondaHelper.containerFileV3(packages, null, 'my.registry.io/wave/condasplit:v2@sha256:1234')
 
         then:
         result.contains('FROM mambaorg/micromamba:2.0.0 AS build')
-        result.contains('RUN --mount=type=bind,from=my.registry.io/wave/conda-layers:v2@sha256:1234,source=/,target=/opt/wave-tools')
+        result.contains('RUN --mount=type=bind,from=my.registry.io/wave/condasplit:v2@sha256:1234,source=/,target=/opt/wave-tools')
         result.contains('micromamba install -y -n base foo::one bar::two')
         result.contains('FROM debian:12 AS prod')
         result.endsWith('ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"\nRUN apt-get update\n')

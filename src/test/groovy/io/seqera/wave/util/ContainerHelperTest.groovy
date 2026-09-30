@@ -46,7 +46,7 @@ import io.seqera.wave.service.request.ContainerRequest.Type
  */
 class ContainerHelperTest extends Specification {
 
-    static final String LAYERS_IMAGE = 'public.cr.stage-seqera.io/wave/conda-layers:v1'
+    static final String LAYERS_IMAGE = 'public.cr.stage-seqera.io/wave/condasplit:v1'
 
     def 'should create conda singularity file with conda lock file'() {
         given:
@@ -939,7 +939,7 @@ class ContainerHelperTest extends Specification {
         result == CondaHelper.containerFileV3(new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: PACKAGES, channels: CHANNELS), null, LAYERS_IMAGE)
         and:
         result.startsWith('FROM mambaorg/micromamba:2-amazon2023 AS build\n')
-        result.contains('RUN --mount=type=bind,from=public.cr.stage-seqera.io/wave/conda-layers:v1,source=/,target=/opt/wave-tools \\\n')
+        result.contains('RUN --mount=type=bind,from=public.cr.stage-seqera.io/wave/condasplit:v1,source=/,target=/opt/wave-tools \\\n')
         result.contains('micromamba install -y -n base -f /tmp/conda.yml')
         result.contains('FROM ubuntu:24.04 AS prod\n')
         result.readLines().findAll { it.startsWith('COPY --link --from=build /layers/') }.size() == 32
@@ -960,11 +960,11 @@ class ContainerHelperTest extends Specification {
         def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V3, containerImage: 'debian:12')
 
         when:
-        def result = ContainerHelper.containerFileFromRequest(req, 'my.registry.io/wave/conda-layers:v2')
+        def result = ContainerHelper.containerFileFromRequest(req, 'my.registry.io/wave/condasplit:v2')
 
         then:
         result.startsWith('FROM mambaorg/micromamba:2.0.0 AS build\n')
-        result.contains('RUN --mount=type=bind,from=my.registry.io/wave/conda-layers:v2,source=/,target=/opt/wave-tools \\\n')
+        result.contains('RUN --mount=type=bind,from=my.registry.io/wave/condasplit:v2,source=/,target=/opt/wave-tools \\\n')
         result.contains('ADD https://foo.com/lock.yml /tmp/conda-lock/lock.yml\n')
         result.contains('micromamba install -y -n base -c conda-forge -c bioconda -f /tmp/conda-lock/lock.yml > /tmp/mamba.log 2>&1')
         result.contains('    && micromamba install -y -n base foo::one bar::two \\\n')

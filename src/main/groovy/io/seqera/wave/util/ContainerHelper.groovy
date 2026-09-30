@@ -55,10 +55,10 @@ class ContainerHelper {
      * Dispatches to the appropriate helper based on build template and package type.
      *
      * @param req The container token request
-     * @param condaLayersImage The image providing the {@code conda-layers} tool used by the {@code conda/micromamba:v3} template
+     * @param condasplitImage The image providing the {@code condasplit} tool used by the {@code conda/micromamba:v3} template
      * @return The generated container file content
      */
-    static String containerFileFromRequest(SubmitContainerTokenRequest req, String condaLayersImage) {
+    static String containerFileFromRequest(SubmitContainerTokenRequest req, String condasplitImage) {
         final singularity = req.formatSingularity()
         final spec = req.packages
 
@@ -69,7 +69,7 @@ class ContainerHelper {
         if( req.buildTemplate == CONDA_MICROMAMBA_V3 ) {
             if( singularity )
                 throw new BadRequestException("Build template '${CONDA_MICROMAMBA_V3}' does not support Singularity format")
-            return CondaHelper.containerFileV3(spec, req.containerImage, condaLayersImage)
+            return CondaHelper.containerFileV3(spec, req.containerImage, condasplitImage)
         }
         if( req.buildTemplate == CONDA_MICROMAMBA_V1 ) {
             return CondaHelper.containerFile(spec, singularity)

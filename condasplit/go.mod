@@ -1,3 +1,3 @@
-module github.com/seqeralabs/wave/conda-layers
+module github.com/seqeralabs/wave/condasplit
 
 go 1.25

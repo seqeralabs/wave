@@ -1,4 +1,4 @@
-name: Build and publish conda-layers container image
+name: Build and publish condasplit container image
 
 on:
   workflow_dispatch:
@@ -9,8 +9,8 @@ on:
         default: 'v1'
   pull_request:
     paths:
-      - 'conda-layers/**'
-      - '.github/workflows/build-conda-layers.yml'
+      - 'condasplit/**'
+      - '.github/workflows/build-condasplit.yml'
 
 permissions:
   contents: read
@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Run tests
-        working-directory: conda-layers
+        working-directory: condasplit
         run: |
           go vet ./...
           go test ./...
@@ -55,5 +55,5 @@ jobs:
         env:
           VERSION: ${{ github.event.inputs.version }}
         run: |
-          cd conda-layers
+          cd condasplit
           make all version="$VERSION" registry=public.cr.seqera.io/wave

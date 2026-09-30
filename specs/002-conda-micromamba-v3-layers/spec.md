@@ -8,7 +8,7 @@
 **Deployment Scope**: Wave service (Seqera Cloud and Enterprise). Docker (OCI) image format only.
 
 **Affected Repositories**:
-- `wave` (this repository): service, `wave-api` module, new `conda-layers/` Go tool and image, docs
+- `wave` (this repository): service, `wave-api` module, new `condasplit/` Go tool and image, docs
 - `nextflow`, `wave-cli`: documentation / help text only. Both already pass `buildTemplate` through as free text, so no code change is needed to use the new template.
 
 **References**:
@@ -19,9 +19,9 @@
 
 ## Summary
 
-Add a new, opt-in conda build template, `conda/micromamba:v3`. It installs the environment exactly like `conda/micromamba:v2`. Then, in the same build step, a small static Go tool (`conda-layers`) moves the installed files from `/opt/conda` into up to 32 layer directories, grouped by conda package, with each layer at most 500 MB before compression. The final stage adds each directory as its own image layer.
+Add a new, opt-in conda build template, `conda/micromamba:v3`. It installs the environment exactly like `conda/micromamba:v2`. Then, in the same build step, a small static Go tool (`condasplit`) moves the installed files from `/opt/conda` into up to 32 layer directories, grouped by conda package, with each layer at most 500 MB before compression. The final stage adds each directory as its own image layer.
 
-The tool ships as a `FROM scratch` image under the same path as the other Wave tool images: `public.cr.stage-seqera.io/wave/conda-layers` for the initial iteration and tests, and `public.cr.seqera.io/wave/conda-layers` for production. It is mounted into the build step and never copied into the image. The container's file content is the same as v2, except the unused package cache (`/opt/conda/pkgs`) is dropped.
+The tool ships as a `FROM scratch` image under the same path as the other Wave tool images: `public.cr.stage-seqera.io/wave/condasplit` for the initial iteration and tests, and `public.cr.seqera.io/wave/condasplit` for production. It is mounted into the build step and never copied into the image. The container's file content is the same as v2, except the unused package cache (`/opt/conda/pkgs`) is dropped.
 
 Existing templates (`conda/micromamba:v1`, `conda/micromamba:v2`, `conda/pixi:v1`, `cran/installr:v1`) and the default template are not modified, so existing container ids, cached images and community registry tags stay as they are.
 
@@ -106,7 +106,7 @@ A user switching from v2 to v3 gets the same tools, versions and files.
 1. **Given** the same environment built with v2 and v3, **When** the listings are compared, **Then** they are identical except that `/opt/conda/pkgs/**` is absent in v3.
 2. **Given** a v3 image, **When** the environment's tools run (for the reference image: `gatk --version`, `python -c "import gcnvkernel"`), **Then** they behave exactly as in v2.
 3. **Given** files that conda hardlinks together, **When** they are layered, **Then** they stay hardlinked: the sets of paths outside `pkgs/` that share an inode are the same as in v2. Link counts are lower than in v2 by the number of links that were in `pkgs/`, because those links stay in the build stage.
-4. **Given** a v3 image, **When** its filesystem is searched for `conda-layers`, **Then** the tool is not present.
+4. **Given** a v3 image, **When** its filesystem is searched for `condasplit`, **Then** the tool is not present.
 
 ---
 
@@ -154,7 +154,7 @@ Environments that cannot fit the normal rules still build, with clear warnings.
 - **Hardlinked files across packages.** All paths that share one inode are placed in the same layer, the one belonging to the owner of the first owned path.
 - **Files from lower image layers.** A custom `mambaImage` may already contain files under `/opt/conda` in its own layers. The default images contain only an empty base environment. Moving such a file makes overlayfs copy it up first, which works but can break hardlinks between such pre-existing files. If `rename()` fails with `EXDEV`, the tool falls back to copying (keeping metadata) and then deleting the original.
 - **Custom `condaOpts.commands`.** They are appended after the slot `COPY` lines, as in v2, and produce their own layers.
-- **Custom `baseImage` / `containerImage`.** They are supported as in v2. The layer carries `/opt` (0755 root:root) and `/opt/conda` with the prefix's original metadata.
+- **Custom `baseImage` / `containerImage`.** They are supported as in v2. The layer carries `/opt` and `/opt/conda`, both 0755 root:root as in the v2 image. Only the prefix's timestamps are kept from the build stage.
 - **Custom `mambaImage` with a root prefix other than `/opt/conda`.** This is not supported. v2 already hard-codes `/opt/conda` in its final stage, and v3 keeps the same assumption.
 - **CUDA retry path.** The `__cuda` retry with `CONDA_OVERRIDE_CUDA` is kept unchanged from v2. The tool runs only after a successful install.
 
@@ -167,19 +167,19 @@ Environments that cannot fit the normal rules still build, with clear warnings.
 A v3 build is one BuildKit build of a two-stage Dockerfile. Only stage 2 is shipped.
 
 ```
-                         <registry>/wave/conda-layers:vN   (FROM scratch, one static binary)
+                         <registry>/wave/condasplit:vN   (FROM scratch, one static binary)
                                             │ RUN --mount (read-only, never written to disk)
                                             ▼
             ┌────────────────────────────────────────────────┐   COPY --link ×32    ┌───────────────────────┐
 conda.yml ─▶│ build   {{mamba_image}}                        │ ───────────────────▶ │ prod  {{base_image}}  │ ─▶ registry
             │  1. micromamba install → /opt/conda  (as v2)   │   /layers/NN/ → /    │ base + 32 slot layers │
             │  2. print conda lock                  (as v2)  │                      └───────────────────────┘
-            │  3. conda-layers: move /opt/conda → /layers/NN │
+            │  3. condasplit: move /opt/conda → /layers/NN   │
             └───────────────┬────────────────────────────────┘
                             │ build log: conda lock, layer plan
 ```
 
-1. **build**: runs v2's install commands unchanged and prints the conda lock between the existing markers. In the same `RUN`, it then runs `conda-layers` from the mounted tool image. The tool moves every file of `/opt/conda` (except `pkgs/`) into `/layers/00` … `/layers/31`, each rooted at `/`, and prints the layer plan.
+1. **build**: runs v2's install commands and prints the conda lock between the existing markers. A lock-file URL is first added with `ADD` and installed from the local copy (see the lock-file URL variant below). In the same `RUN`, it then runs `condasplit` from the mounted tool image. The tool moves every file of `/opt/conda` (except `pkgs/`) into `/layers/00` … `/layers/31`, each rooted at `/`, and prints the layer plan.
 2. **prod**: starts from `{{base_image}}` and copies each layer directory with `COPY --link`. Unused slots are empty directories and yield the standard empty layer.
 
 **Why move instead of copy?** The install and the tool run in the same `RUN`, so every installed file is in the same writable layer and `rename()` only updates directory entries. This has four effects:
@@ -203,7 +203,7 @@ FROM {{mamba_image}} AS build
 USER root
 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
 # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
-# the conda-layers tool is mounted read-only for this step only and never ends up in the image
+# the condasplit tool is mounted read-only for this step only and never ends up in the image
 RUN --mount=type=bind,from={{layers_image}},source=/,target=/opt/wave-tools \
     micromamba install -y -n base conda-forge::which \
     && ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which \
@@ -217,7 +217,7 @@ RUN --mount=type=bind,from={{layers_image}},source=/,target=/opt/wave-tools \
     && echo ">> CONDA_LOCK_START" \
     && cat environment.lock \
     && echo "<< CONDA_LOCK_END" \
-    && /opt/wave-tools/conda-layers --src /opt/conda --out /layers \
+    && /opt/wave-tools/condasplit --src /opt/conda --out /layers \
         --slots 32 --max-layer-size 500000000 --own-layer-size 50000000 --exclude pkgs
 
 FROM {{base_image}} AS prod
@@ -231,20 +231,20 @@ USER root
 ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
 ```
 
-`conda-micromamba-v3/dockerfile-conda-packages.txt` (the lock-file URL variant) differs only in the install command, where it mirrors v2's `dockerfile-conda-packages.txt` (`{{channel_opts}} {{target}}`). The tool call and the final stage are identical in both files.
+`conda-micromamba-v3/dockerfile-conda-packages.txt` (the lock-file URL variant) mirrors v2's `dockerfile-conda-packages.txt` (`{{channel_opts}} {{target}}`) with one difference. micromamba downloads `-f <url>` only for a YAML environment file, and treats an explicit-format lock URL as a local path. Wave's `/v1alpha1/builds/<id>/condalock` endpoint serves the explicit format. So when the entry is an `http(s)` URL, the build stage first adds the file with `ADD <url> /tmp/conda-lock/<name>`, and both install commands (the normal one and the CUDA retry) use `-f /tmp/conda-lock/<name>`. `<name>` is the last segment of the URL path without query or fragment, because micromamba picks the file format from the extension. It falls back to `conda.lock` when the segment is empty or has unusual characters. The lock stays in the build stage and never reaches the final image. v2 has the same limitation with explicit lock URLs but is left unchanged, so its container ids stay the same. The tool call and the final stage are identical in both files.
 
 The tool's parameters are literal in the template. Changing any of them changes the container file, and therefore the container id, which is the intended behaviour. Tuning them later means a new template version.
 
 Units throughout are decimal: 1 MB = 1,000,000 bytes.
 
-### Tool: `conda-layers`
+### Tool: `condasplit`
 
 A small Go program built as a static binary (`CGO_ENABLED=0`) using only the Go standard library. It has no runtime dependencies, so it runs inside any `{{mamba_image}}`, whatever its Linux distribution. The grouping rules are the ones validated by the POC splitter ([Appendix A](#appendix-a-proof-of-concept-results)).
 
 **CLI**
 
 ```
-conda-layers --src DIR --out DIR --slots N
+condasplit --src DIR --out DIR --slots N
              [--max-layer-size BYTES] [--own-layer-size BYTES] [--exclude RELPATH ...]
 ```
 
@@ -266,7 +266,7 @@ conda-layers --src DIR --out DIR --slots N
 5. **Packing.** Units at least `--own-layer-size` each become a layer. The remaining units are packed first-fit-decreasing, by size and then name, into shared layers of at most the cap. `rest` is chunked into trailing layers of at most the cap.
 6. **Slot fitting.** While there are more layers than `--slots`, merge the two smallest layers and record a `slots exceeded` warning. The result may exceed the cap, in which case a warning is also recorded.
 7. **Move.** For each layer *i*:
-   - Create `--out/NN/<src>/` with the mode and owner of `--src`. Parents of `<src>` get mode 0755 root:root.
+   - Create `--out/NN/<src>/` with mode 0755 and the times of `--src`, owned by root:root when running as root. This matches the v2 image, where `/opt/conda` is 0755 root:root whatever the prefix mode in the mamba image (0777). Parents of `<src>` get mode 0755 root:root.
    - `rename()` each path of each atom to `--out/NN/<src>/<relpath>`, creating missing parent directories with the metadata of the source directory.
    - Recreate originally empty directories in the leftovers layer.
    - If `rename()` fails with `EXDEV`, copy the file keeping its metadata, then remove the original.
@@ -277,11 +277,11 @@ conda-layers --src DIR --out DIR --slots N
 
 ```
 >> CONDA_LAYERS_START
-slots=19/32 files=88215 size=4481.1MB packages=322 clobbers=7 unowned=0.0MB max-layer=500MB own-layer=50MB
+slots=19/32 files=88231 size=4505.0MB packages=323 clobbers=28 unowned=0.0MB max-layer=500MB own-layer=50MB
 00  454.5MB     29  mkl#0
 01  425.8MB      4  gatk4
 ...
-15  500.0MB   9172  libstdcxx-devel_linux-64 binutils_impl_linux-64 r-base icu scikit-learn gxx_impl_linux-64 +8
+15  500.0MB   8160  libstdcxx-devel_linux-64 binutils_impl_linux-64 r-base icu scikit-learn gxx_impl_linux-64 +9
 18    0.0MB      3  (unowned)
 WARN oversized file lib/libexample.so 612.4MB   # illustrative; the reference environment has none
 << CONDA_LAYERS_END
@@ -293,20 +293,20 @@ WARN oversized file lib/libexample.so 612.4MB   # illustrative; the reference en
 - **Complete.** Every inventoried path ends up in exactly one layer, enforced by the verify step.
 - **Exit codes.** `0` on success, including when warnings were printed. Non-zero on a missing or relative `--src`, a missing `conda-meta/`, a JSON parse error, an I/O error, or a failed verify step, with a one-line error message on stderr. A non-zero exit fails the build like any other `RUN` failure.
 
-### Tool image: `wave/conda-layers`
+### Tool image: `wave/condasplit`
 
-**Registries.** The initial iteration and all tests use `public.cr.stage-seqera.io/wave/conda-layers`. The production registry `public.cr.seqera.io/wave/conda-layers` is used only for the production release (see [Rollout](#rollout)).
+**Registries.** The initial iteration and all tests use `public.cr.stage-seqera.io/wave/condasplit`. The production registry `public.cr.seqera.io/wave/condasplit` is used only for the production release (see [Rollout](#rollout)).
 
-This is a new top-level folder, `conda-layers/`, following the pattern of the existing Wave tool images such as `scanner/`:
+This is a new top-level folder, `condasplit/`, following the pattern of the existing Wave tool images such as `scanner/`:
 
 | File | Purpose |
 |---|---|
-| `conda-layers/go.mod`, `*.go` | The tool (standard library only) |
-| `conda-layers/*_test.go` | Unit tests (`go test ./...`) |
-| `conda-layers/Dockerfile` | Multi-stage build: `FROM --platform=$BUILDPLATFORM golang:1.27` (pinned) cross-compiles for `$TARGETARCH` and runs `go test`. `FROM scratch` then contains only `/conda-layers`. |
-| `conda-layers/Makefile` | `docker buildx build --push --platform linux/amd64,linux/arm64 --tag ${registry}/conda-layers:${version} .`, with `registry ?= public.cr.stage-seqera.io/wave` (production: `make all registry=public.cr.seqera.io/wave`) |
-| `conda-layers/README.md` | What the tool does and how to release it |
-| `.github/workflows/build-conda-layers.yml` | Manual (`workflow_dispatch`) production publish job running `make all version=… registry=public.cr.seqera.io/wave`, modeled on `build-plugin-scanner.yml`, plus a `go test` job on pull requests touching `conda-layers/**` |
+| `condasplit/go.mod`, `*.go` | The tool (standard library only) |
+| `condasplit/*_test.go` | Unit tests (`go test ./...`) |
+| `condasplit/Dockerfile` | Multi-stage build: `FROM --platform=$BUILDPLATFORM golang:1.27` (pinned) cross-compiles for `$TARGETARCH` and runs `go test`. `FROM scratch` then contains only `/condasplit`. |
+| `condasplit/Makefile` | `docker buildx build --push --platform linux/amd64,linux/arm64 --tag ${registry}/condasplit:${version} .`, with `registry ?= public.cr.stage-seqera.io/wave` (production: `make all registry=public.cr.seqera.io/wave`) |
+| `condasplit/README.md` | What the tool does and how to release it |
+| `.github/workflows/build-condasplit.yml` | Manual (`workflow_dispatch`) production publish job running `make all version=… registry=public.cr.seqera.io/wave`, modeled on `build-plugin-scanner.yml`, plus a `go test` job on pull requests touching `condasplit/**` |
 
 ```dockerfile
 FROM --platform=$BUILDPLATFORM golang:1.27 AS build
@@ -314,29 +314,29 @@ ARG TARGETARCH
 WORKDIR /src
 COPY . .
 RUN go test ./... \
- && CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" -o /conda-layers .
+ && CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" -o /condasplit .
 
 FROM scratch
-COPY --from=build /conda-layers /conda-layers
+COPY --from=build /condasplit /condasplit
 ```
 
 **How the binary reaches the build.** The v3 Dockerfile names the image in `RUN --mount=type=bind,from={{layers_image}},…`. BuildKit resolves the variant for the build's platform, pulls its single layer (a few MB), caches it on the builder, and mounts it read-only for the one `RUN`. It is pulled the same way `{{mamba_image}}` is, with the configured registry credentials.
 
 Wave schedules each platform's build on nodes of that architecture (node selector per platform), so the tool always runs natively. The binary is never written into any stage's filesystem, so it is absent from both the final image and the build cache.
 
-**Versioning.** Each release gets a new immutable tag (`v1`, `v2`, …). Wave pins the exact tag in config, so a tool change always changes the v3 container file and container id. The config value may also pin a digest (`…/conda-layers:v1@sha256:…`).
+**Versioning.** Each release gets a new immutable tag (`v1`, `v2`, …). Wave pins the exact tag in config, so a tool change always changes the v3 container file and container id. The config value may also pin a digest (`…/condasplit:v1@sha256:…`).
 
 ### Wave service changes
 
 | Area | Change |
 |---|---|
 | `wave-api` `BuildTemplate` | Add `CONDA_MICROMAMBA_V3 = "conda/micromamba:v3"`. `defaultTemplate()` is unchanged and still returns v2. |
-| `BuildConfig` | Add `@Value('${wave.build.conda-layers-image:`public.cr.stage-seqera.io/wave/conda-layers:v1`}') String condaLayersImage` and include it in the config log line. The default points to the stage registry for the initial iteration and switches to `public.cr.seqera.io/wave/conda-layers:v1` at the production release. |
-| `application.yml` | Document `wave.build.conda-layers-image` next to `buildkit-image` and `singularity-image`. |
+| `BuildConfig` | Add `@Value('${wave.build.condasplit-image:`public.cr.stage-seqera.io/wave/condasplit:v1`}') String condasplitImage` and include it in the config log line. The default points to the stage registry for the initial iteration and switches to `public.cr.seqera.io/wave/condasplit:v1` at the production release. |
+| `application.yml` | Document `wave.build.condasplit-image` next to `buildkit-image` and `singularity-image`. |
 | `TemplateUtils` | Add `condaFileToDockerFileUsingV3(CondaOpts, String layersImage)` and `condaPackagesToDockerFileUsingV3(String packages, List<String> channels, CondaOpts, String layersImage)`. They render the v3 templates with the v2 bindings plus `layers_image`, and they reuse `addCommands`. |
 | `CondaHelper` | Add `containerFileV3(PackagesSpec spec, String containerImage, String layersImage)`. It applies the same CONDA-type check, lock-file detection, v1-image override and `containerImage → baseImage` handling as `containerFileV2`, but has no Singularity branch. |
-| `ContainerHelper.containerFileFromRequest` | Add a `String condaLayersImage` parameter. Route `CONDA_MICROMAMBA_V3` to `CondaHelper.containerFileV3`. When the format is Singularity, throw `BadRequestException("Build template 'conda/micromamba:v3' does not support Singularity format")`. The branches for other templates are unchanged. |
-| `ContainerController` | Pass `buildConfig.condaLayersImage` to `containerFileFromRequest`. |
+| `ContainerHelper.containerFileFromRequest` | Add a `String condasplitImage` parameter. Route `CONDA_MICROMAMBA_V3` to `CondaHelper.containerFileV3`. When the format is Singularity, throw `BadRequestException("Build template 'conda/micromamba:v3' does not support Singularity format")`. The branches for other templates are unchanged. |
+| `ContainerController` | Pass `buildConfig.condasplitImage` to `containerFileFromRequest`. |
 | `ContainerInspectServiceImpl` | `findRepositories` also collects images referenced by `RUN --mount=...,from=<image>` (build stage names are ignored), so the tool image gets registry credentials like `FROM` images. |
 | Templates | Add `src/main/resources/templates/conda-micromamba-v3/dockerfile-conda-file.txt` and `dockerfile-conda-packages.txt`. There are no Singularity files. |
 
@@ -365,14 +365,14 @@ The generated Dockerfile (about 3 KB) is not affected by `wave.build.max-contain
 - **FR-001**: Wave MUST accept `buildTemplate: "conda/micromamba:v3"` for CONDA package requests in Docker format.
 - **FR-002**: Wave MUST reject v3 with Singularity format, and v3 with non-CONDA package types, with HTTP 400.
 - **FR-003**: The container file produced for any template other than v3 MUST be byte-identical to the previous release.
-- **FR-004**: The v3 build MUST install the environment with the same commands as v2, including base packages, the CUDA retry and the lock-file markers.
+- **FR-004**: The v3 build MUST install the environment with the same commands as v2, including base packages, the CUDA retry and the lock-file markers. The one exception is a lock-file URL, which v3 first adds to the build stage with `ADD` and installs from the local path, because micromamba can't read an explicit lock file from a URL.
 - **FR-005**: The v3 image MUST contain every path of the installed prefix except `pkgs/`, with the same type, size, mode, owner, symlink target and hardlink grouping.
 - **FR-006**: Each conda layer MUST be at most 500 MB before compression. The only exceptions are an atom that is individually larger (a single file or hardlink group) and layers merged because of slot overflow. Both cases MUST produce a warning in the build log.
 - **FR-007**: Packages of at least 50 MB MUST each occupy their own layer or layers, unless merged because of slot overflow.
 - **FR-008**: Packages larger than 500 MB MUST be split across several layers.
 - **FR-009**: The build log MUST contain the layer plan between `>> CONDA_LAYERS_START` and `<< CONDA_LAYERS_END`.
 - **FR-010**: The tool MUST be mounted into the build step, not copied, and MUST NOT be present in the final image.
-- **FR-011**: The tool image MUST be configurable with `wave.build.conda-layers-image`, so that Enterprise installs can mirror it.
+- **FR-011**: The tool image MUST be configurable with `wave.build.condasplit-image`, so that Enterprise installs can mirror it.
 - **FR-012**: v3 MUST support the conda-file and lock-file-URL inputs, custom `baseImage`/`containerImage`, `mambaImage`, `basePackages` and `commands`, as v2 does.
 - **FR-013**: v3 MUST work for single-platform and multi-platform (`linux/amd64,linux/arm64`) builds.
 - **FR-014**: The tool MUST fail the build if any non-directory path is left under `--src` (other than excluded paths) after moving.
@@ -389,7 +389,7 @@ The generated Dockerfile (about 3 KB) is not affected by `wave.build.max-contain
 ## Success Criteria *(mandatory)*
 
 - **SC-001**: For the reference environment ([Appendix A](#appendix-a-proof-of-concept-results)), the largest compressed conda layer is under 512 MB. The POC's largest was 399 MB.
-- **SC-002**: For the reference environment, the v3 listing of `/opt/conda` equals the v2 listing minus `pkgs/`: 0 differing paths and the same hardlink grouping, meaning the same sets of paths share an inode. Link counts drop by the number of links that were in `pkgs/`.
+- **SC-002**: For the reference environment, the v3 listing of `/opt/conda` equals the v2 listing minus `pkgs/`: 0 differing paths and the same hardlink grouping, meaning the same sets of paths share an inode. Link counts drop by the number of links that were in `pkgs/`. Directory link counts are not compared, because overlayfs reports `nlink=1` for a directory whose entries come from more than one layer.
 - **SC-003**: Golden-file tests show unchanged output for all existing templates.
 - **SC-004**: v3 total image size is at most v2's for the same environment. The POC measured 1859 MB against 2013 MB.
 - **SC-005**: In a small environment (such as `bioconda::samtools`), every unused slot is the 32-byte empty layer `sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1`.
@@ -403,9 +403,9 @@ The generated Dockerfile (about 3 KB) is not affected by `wave.build.max-contain
 - `TemplateUtilsTest`: render both v3 templates. Assert the bindings (`mamba_image`, `base_image`, `layers_image`, `base_packages`, `channel_opts`/`target`), the `RUN --mount` line, exactly 32 `COPY --link` slot lines, and `commands` appended at the end.
 - `CondaHelperTest`: cover `containerFileV3` for a conda file, a lock URL, a `containerImage` override, a v1 `mambaImage` override, and a non-CONDA type (which fails).
 - `ContainerHelperTest`: v3 routes to `containerFileV3`. v3 with Singularity returns 400. Golden-file output for no template, v1, v2, pixi and cran is unchanged.
-- `BuildConfigTest`: default value and override of `conda-layers-image`.
+- `BuildConfigTest`: default value and override of `condasplit-image`.
 
-**Unit tests (`conda-layers`, `go test`)**, using synthetic prefixes in `t.TempDir()`. Owner tests need root and run in the image build; they are skipped otherwise.
+**Unit tests (`condasplit`, `go test`)**, using synthetic prefixes in `t.TempDir()`. Owner tests need root and run in the image build; they are skipped otherwise.
 - Ownership from `conda-meta`, unowned files going to `rest`, and first-wins clobbering.
 - Hardlinks within one package, across a package and an excluded path, and across two packages.
 - Symlinks, directory symlinks and originally empty directories.
@@ -419,7 +419,7 @@ The generated Dockerfile (about 3 KB) is not affected by `wave.build.max-contain
 - Error exits for a missing `conda-meta/`, a malformed JSON file and a relative `--src`.
 
 **Integration (manual or CI job, BuildKit `v0.25.2-rootless` as in production)**
-- Build the reference lock with v2 and v3, then check SC-001, SC-002 and SC-004 with `crane manifest` and a `find -printf` listing diff. For hardlinks, group paths by inode (`%i`) in each image, drop `pkgs/` paths, and compare the groups; raw link counts (`%n`) differ by design. Run `gatk --version` and `python -c "import gcnvkernel"`. Confirm `conda-layers` is absent from the image.
+- Build the reference lock with v2 and v3, then check SC-001, SC-002 and SC-004 with `crane manifest` and a `find -printf` listing diff. For hardlinks, group paths by inode (`%i`) in each image, drop `pkgs/` paths, and compare the groups. Leave raw link counts (`%n`) out of the listing diff, since they differ by design: file link counts drop by the `pkgs/` links, and overlayfs reports `nlink=1` for directories merged across layers. Run `gatk --version` and `python -c "import gcnvkernel"`. Confirm `condasplit` is absent from the image.
 - Build a small environment, then check SC-005.
 - Build an arm64 image on an arm64 node.
 - Compare the build cache size and peak build disk usage of v2 and v3 (NFR-003).
@@ -429,11 +429,11 @@ The generated Dockerfile (about 3 KB) is not affected by `wave.build.max-contain
 
 ## Rollout
 
-1. Build and push `public.cr.stage-seqera.io/wave/conda-layers:v1` (multi-arch) from `conda-layers/` with `make all`. Wave's default for `wave.build.conda-layers-image` points there during the initial iteration.
+1. Build and push `public.cr.stage-seqera.io/wave/condasplit:v1` (multi-arch) from `condasplit/` with `make all`. Wave's default for `wave.build.condasplit-image` points there during the initial iteration.
 2. Validate in staging, including the reference environment and rootless BuildKit.
-3. Publish `public.cr.seqera.io/wave/conda-layers:v1` with the `build-conda-layers.yml` workflow and switch the default of `wave.build.conda-layers-image` to it.
+3. Publish `public.cr.seqera.io/wave/condasplit:v1` with the `build-condasplit.yml` workflow and switch the default of `wave.build.condasplit-image` to it.
 4. Release Wave with the template, config default and docs. Nothing changes for existing users.
-5. Announce as opt-in. Enterprise installs mirror the tool image and set `wave.build.conda-layers-image` if they have no access to `public.cr.seqera.io`.
+5. Announce as opt-in. Enterprise installs mirror the tool image and set `wave.build.condasplit-image` if they have no access to `public.cr.seqera.io`.
 6. Possible follow-up, not part of this spec: consider making v3 the default in a later major version, as a separate decision.
 
 ---
@@ -449,7 +449,7 @@ The generated Dockerfile (about 3 KB) is not affected by `wave.build.max-contain
 | R5 | Slot overflow | The merge rule is designed but was not exercised by the POC. | Covered by the tool's unit tests. Add an integration check with a large environment. |
 | R6 | Pull speed | Not measured against a remote registry. The POC's local pulls were equal (25–28 s). | Measure in staging: pull the reference image with v2 and v3 from the production registry. |
 | R7 | Compressed size estimate | The cap is applied before compression. Tar headers and padding add up to about 1 KB per file. With 12 MB of headroom and gzip compressing padding to nearly nothing, the POC maximum was 399 MB. | Accept. If a guarantee is needed, add a post-push manifest check that logs a warning when a layer exceeds 512 MB. This is a follow-up, not part of this spec. |
-| R8 | Go in the repository | This is the first Go code in the `wave` repo. CI needs a Go toolchain for the tool's tests. | The Go code is isolated in `conda-layers/`. The toolchain comes from the pinned `golang` image in the Dockerfile and `actions/setup-go` in the workflow. |
+| R8 | Go in the repository | This is the first Go code in the `wave` repo. CI needs a Go toolchain for the tool's tests. | The Go code is isolated in `condasplit/`. The toolchain comes from the pinned `golang` image, both in the Dockerfile and in the workflow's test job. That job runs `go vet` and `go test` as root in a `golang:1.27` container, so the owner tests run too. |
 
 ---
 
@@ -491,5 +491,5 @@ Layer plan of the "Layered" run (sizes before → after compression): mkl split 
 
 Findings that shaped this design:
 1. Micromamba's `clean -a` keeps extracted packages in `pkgs/`, and they are hardlinked to the environment. Splitting the pair doubled the content: the first attempt produced a 4.4 GB leftover layer. v3 excludes `pkgs/`, and the tool keeps every hardlink group in one layer.
-2. Copying slot directories to `/opt/conda/` reset the prefix's mode and made each empty slot a slightly different tiny layer. Rooting layers at `/` and carrying the prefix directory with its original metadata fixes both.
+2. Copying slot directories to `/opt/conda/` reset the prefix's mode and made each empty slot a slightly different tiny layer. Rooting layers at `/` and carrying the prefix directory with the same fixed metadata in every layer fixes both.
 3. The copy-based split took 21–28 s and doubled the environment on disk. That motivated moving files inside the install step.

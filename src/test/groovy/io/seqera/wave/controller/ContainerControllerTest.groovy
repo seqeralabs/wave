@@ -647,9 +647,9 @@ class ContainerControllerTest extends Specification {
         and:
         response.status.code == 200
         and:
-        buildConfig.condaLayersImage == 'public.cr.stage-seqera.io/wave/conda-layers:v1'
+        buildConfig.condasplitImage == 'public.cr.stage-seqera.io/wave/condasplit:v1'
         build.buildTemplate == BuildTemplate.CONDA_MICROMAMBA_V3
-        build.containerFile.contains("RUN --mount=type=bind,from=${buildConfig.condaLayersImage},source=/,target=/opt/wave-tools \\\n")
+        build.containerFile.contains("RUN --mount=type=bind,from=${buildConfig.condasplitImage},source=/,target=/opt/wave-tools \\\n")
         build.containerFile.contains('COPY --link --from=build /layers/31/ /\n')
     }
 

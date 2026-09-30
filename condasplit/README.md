@@ -1,4 +1,4 @@
-# conda-layers
+# condasplit
 
 A small static tool used by the `conda/micromamba:v3` build template to ship a conda
 environment as several image layers instead of one large layer.
@@ -9,7 +9,7 @@ installed prefix (e.g. `/opt/conda`) into a fixed number of slot directories,
 stage of the template then adds each slot directory as a separate layer with
 `COPY --link --from=build /layers/NN/ /`.
 
-The tool image is `FROM scratch` and contains only the `/conda-layers` binary. The build
+The tool image is `FROM scratch` and contains only the `/condasplit` binary. The build
 mounts it read-only for that one step (`RUN --mount=type=bind,from=<image>,...`), so the
 tool never ends up in the built image or in the build cache.
 
@@ -40,7 +40,7 @@ The layer plan is printed to stdout, so it shows in the build log:
 
 ```
 >> CONDA_LAYERS_START
-slots=19/32 files=88215 size=4481.1MB packages=322 clobbers=7 unowned=0.0MB max-layer=500MB own-layer=50MB
+slots=19/32 files=88231 size=4505.0MB packages=323 clobbers=28 unowned=0.0MB max-layer=500MB own-layer=50MB
 00  454.5MB     29  mkl#0
 01  425.8MB      4  gatk4
 ...
@@ -63,7 +63,7 @@ with a one-line message on stderr, for a missing or relative `--src`, a missing
 ## Usage
 
 ```
-conda-layers --src DIR --out DIR --slots N
+condasplit --src DIR --out DIR --slots N
              [--max-layer-size BYTES] [--own-layer-size BYTES] [--exclude RELPATH ...]
 ```
 
@@ -79,7 +79,7 @@ conda-layers --src DIR --out DIR --slots N
 The `conda/micromamba:v3` template runs:
 
 ```
-/opt/wave-tools/conda-layers --src /opt/conda --out /layers \
+/opt/wave-tools/condasplit --src /opt/conda --out /layers \
     --slots 32 --max-layer-size 500000000 --own-layer-size 50000000 --exclude pkgs
 ```
 
@@ -88,7 +88,7 @@ The `conda/micromamba:v3` template runs:
 The tool uses only the Go standard library. Run the unit tests:
 
 ```bash
-cd conda-layers
+cd condasplit
 go test ./...
 ```
 
@@ -99,13 +99,13 @@ as the image build and the CI job do:
 make test
 ```
 
-Build a single-arch image into the local docker as `conda-layers:dev` (never pushed) and
+Build a single-arch image into the local docker as `condasplit:dev` (never pushed) and
 try it against a prefix:
 
 ```bash
 make load
-docker run --rm -v <prefix>:/opt/conda -v <out>:/layers --entrypoint /conda-layers \
-    conda-layers:dev --src /opt/conda --out /layers --slots 32 --exclude pkgs
+docker run --rm -v <prefix>:/opt/conda -v <out>:/layers --entrypoint /condasplit \
+    condasplit:dev --src /opt/conda --out /layers --slots 32 --exclude pkgs
 ```
 
 ## Release
@@ -114,23 +114,23 @@ The image is multi-arch (`linux/amd64`, `linux/arm64`). The Dockerfile runs the 
 and cross-compiles a static binary (`CGO_ENABLED=0`) from the pinned `golang` image.
 
 Each release gets a new immutable tag (`v1`, `v2`, ...). Wave pins the exact tag with the
-`wave.build.conda-layers-image` setting, so a new tool version changes the v3 container
+`wave.build.condasplit-image` setting, so a new tool version changes the v3 container
 file and therefore the container id. Never overwrite an existing tag.
 
 **Stage** (default registry, used for the initial iteration and tests):
 
 ```bash
-cd conda-layers
+cd condasplit
 make all version=v1
-# pushes public.cr.stage-seqera.io/wave/conda-layers:v1
+# pushes public.cr.stage-seqera.io/wave/condasplit:v1
 ```
 
-**Production**: run the *Build and publish conda-layers container image* GitHub workflow
-(`.github/workflows/build-conda-layers.yml`) with the `version` input. It runs:
+**Production**: run the *Build and publish condasplit container image* GitHub workflow
+(`.github/workflows/build-condasplit.yml`) with the `version` input. It runs:
 
 ```bash
 make all version=v1 registry=public.cr.seqera.io/wave
-# pushes public.cr.seqera.io/wave/conda-layers:v1
+# pushes public.cr.seqera.io/wave/condasplit:v1
 ```
 
-Then point the default of `wave.build.conda-layers-image` to the new tag.
+Then point the default of `wave.build.condasplit-image` to the new tag.

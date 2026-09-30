@@ -2,7 +2,7 @@
 
 ## Summary
 
-This document describes the `conda/micromamba:v3` build template, which ships the Conda environment of a Docker image as multiple layers grouped by package, instead of one large layer. The template installs the environment exactly like `conda/micromamba:v2`. In the same build step, a small static Go tool (`conda-layers`) moves the installed files into 32 fixed layer slots, each holding at most 500 MB before compression. The template is opt-in: existing templates, the default template and existing container ids are unchanged.
+This document describes the `conda/micromamba:v3` build template, which ships the Conda environment of a Docker image as multiple layers grouped by package, instead of one large layer. The template installs the environment exactly like `conda/micromamba:v2`. In the same build step, a small static Go tool (`condasplit`) moves the installed files into 32 fixed layer slots, each holding at most 500 MB before compression. The template is opt-in: existing templates, the default template and existing container ids are unchanged.
 
 ## Context
 
@@ -30,9 +30,9 @@ For the reference environment (`bioconda::gatk4=4.6.2.0` and `bioconda::gcnvkern
 ### How it works
 
 1. User submits a container request with `buildTemplate: "conda/micromamba:v3"`
-2. Wave renders the v3 Dockerfile, naming the tool image configured with `wave.build.conda-layers-image`
+2. Wave renders the v3 Dockerfile, naming the tool image configured with `wave.build.condasplit-image`
 3. Two-stage build executes:
-   - **Stage 1 (build)**: Runs the `conda/micromamba:v2` install commands unchanged and prints the conda lock. In the same `RUN`, it runs `conda-layers` from the mounted tool image, which moves every file of `/opt/conda` (except `pkgs/`) into `/layers/00` … `/layers/31`, each rooted at `/`, and prints the layer plan
+   - **Stage 1 (build)**: Runs the `conda/micromamba:v2` install commands and prints the conda lock. A lock-file URL is first added to the stage with `ADD` and installed from the local copy, because micromamba can't read an explicit lock file from a URL. In the same `RUN`, it runs `condasplit` from the mounted tool image, which moves every file of `/opt/conda` (except `pkgs/`) into `/layers/00` … `/layers/31`, each rooted at `/`, and prints the layer plan
    - **Stage 2 (prod)**: Starts from `{{base_image}}` and adds each slot directory as its own layer with `COPY --link`
 4. Unused slots are empty directories and produce the standard 32-byte empty layer
 
@@ -83,19 +83,19 @@ COPY --link --from=build /layers/31/ /
 
 ### 3. Go Static Tool in a `FROM scratch` Image
 
-**Decision:** The layering logic is a Go program in the new `conda-layers/` folder, built with the standard library only as a static binary (`CGO_ENABLED=0`). It ships as a multi-arch (amd64, arm64) `FROM scratch` image containing only `/conda-layers`, and is mounted read-only into the install step:
+**Decision:** The layering logic is a Go program in the new `condasplit/` folder, built with the standard library only as a static binary (`CGO_ENABLED=0`). It ships as a multi-arch (amd64, arm64) `FROM scratch` image containing only `/condasplit`, and is mounted read-only into the install step:
 
 ```dockerfile
 RUN --mount=type=bind,from={{layers_image}},source=/,target=/opt/wave-tools \
     ... v2 install commands and conda lock markers ... \
-    && /opt/wave-tools/conda-layers --src /opt/conda --out /layers \
+    && /opt/wave-tools/condasplit --src /opt/conda --out /layers \
         --slots 32 --max-layer-size 500000000 --own-layer-size 50000000 --exclude pkgs
 ```
 
 | Registry | Usage |
 |----------|-------|
-| `public.cr.stage-seqera.io/wave/conda-layers` | Initial iteration and tests |
-| `public.cr.seqera.io/wave/conda-layers` | Production, published by the `build-conda-layers.yml` workflow |
+| `public.cr.stage-seqera.io/wave/condasplit` | Initial iteration and tests |
+| `public.cr.seqera.io/wave/condasplit` | Production, published by the `build-condasplit.yml` workflow |
 
 **Rationale:**
 - A static binary with no runtime dependencies runs in any `{{mamba_image}}`. The default `mambaorg/micromamba:2-amazon2023` lacks `find` and `tar`, which rules out a shell implementation
@@ -123,7 +123,7 @@ RUN --mount=type=bind,from={{layers_image}},source=/,target=/opt/wave-tools \
 - Hardlinks, owners, modes and timestamps survive automatically, because a moved file is the same file
 - Completeness is verifiable: after the move, `/opt/conda` must contain only directories and the excluded `pkgs/`, otherwise the tool fails listing up to 20 offending paths
 - Files inherited from lower image layers (custom `mambaImage`) fall back to copy with metadata, then delete, when `rename()` fails with `EXDEV`
-- Each layer is rooted at `/` and carries `/opt` (0755 root:root) and `/opt/conda` with the prefix's original metadata, so the prefix mode is preserved and every empty slot is the identical empty layer
+- Each layer is rooted at `/`, so every empty slot is the identical empty layer. Used layers carry `/opt` and `/opt/conda`, both 0755 root:root as in the v2 image, and only the prefix's timestamps are kept
 
 ### 5. Grouping Rules
 
@@ -202,7 +202,7 @@ No new request fields. The template accepts the same inputs as `conda/micromamba
 
 | Property | Default | Description |
 |----------|---------|-------------|
-| `wave.build.conda-layers-image` | `public.cr.stage-seqera.io/wave/conda-layers:v1` | Tool image mounted into `conda/micromamba:v3` builds. Switches to `public.cr.seqera.io/wave/conda-layers:v1` at the production release |
+| `wave.build.condasplit-image` | `public.cr.stage-seqera.io/wave/condasplit:v1` | Tool image mounted into `conda/micromamba:v3` builds. Switches to `public.cr.seqera.io/wave/condasplit:v1` at the production release |
 
 Each tool release gets a new immutable tag (`v1`, `v2`, …) and the config value may also pin a digest. The image reference is part of the v3 container file, so a tool upgrade changes container ids for v3 images only. Enterprise installs without access to `public.cr.seqera.io` mirror the image and set this property.
 
@@ -214,7 +214,7 @@ Each tool release gets a new immutable tag (`v1`, `v2`, …) and the config valu
 | Conda environment layers | 1 | 32 slots, at most 500 MB each before compression |
 | Package cache (`/opt/conda/pkgs`) | Included | Dropped |
 | Layer plan in build log | No | Yes |
-| Build-time tool image | None | `conda-layers` (mounted, not shipped) |
+| Build-time tool image | None | `condasplit` (mounted, not shipped) |
 | Singularity support | Yes (single-stage) | No (HTTP 400) |
 | Default template | Yes | No |
 
@@ -239,8 +239,8 @@ Reference environment built with BuildKit v0.25.2, gzip compression and OCI medi
 | Helpers | `TemplateUtils.java`, `CondaHelper.groovy`, `ContainerHelper.groovy` |
 | Controller | `ContainerController.groovy` |
 | Services | `ContainerInspectServiceImpl.groovy` |
-| Tool | `conda-layers/` (Go sources and tests, `Dockerfile`, `Makefile`, `README.md`) |
-| CI | `.github/workflows/build-conda-layers.yml` |
+| Tool | `condasplit/` (Go sources and tests, `Dockerfile`, `Makefile`, `README.md`) |
+| CI | `.github/workflows/build-condasplit.yml` |
 | Tests | `*Test.groovy` for all modified components, golden files for the existing templates |
 | Docs | `api.md`, `features/container-builds.mdx`, `cli/use-cases.md`, `install/reference.md` |
 
@@ -271,7 +271,7 @@ Reference environment built with BuildKit v0.25.2, gzip compression and OCI medi
 
 ## Follow-ups
 
-- **Production default**: At the production release, switch the default of `wave.build.conda-layers-image` to `public.cr.seqera.io/wave/conda-layers:v1` in `BuildConfig.groovy`, `application.yml` and `docs/install/reference.md`
+- **Production default**: At the production release, switch the default of `wave.build.condasplit-image` to `public.cr.seqera.io/wave/condasplit:v1` in `BuildConfig.groovy`, `application.yml` and `docs/install/reference.md`
 - **Nextflow**: Add `conda/micromamba:v3` to the `wave.build.template` description in `plugins/nf-wave/src/main/io/seqera/wave/plugin/config/WaveConfig.groovy`, and correct its stated default to `conda/micromamba:v2`
 - **Wave CLI**: Add `conda/micromamba:v3` to the `--build-template` help text in `app/src/main/java/io/seqera/wave/cli/App.java`
 

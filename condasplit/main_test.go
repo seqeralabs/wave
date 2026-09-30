@@ -128,7 +128,7 @@ func TestErrors(t *testing.T) {
 				t.Fatalf("expected a non-zero exit")
 			}
 			msg := stderr.String()
-			if strings.Count(msg, "\n") != 1 || !strings.HasPrefix(msg, "conda-layers: ") || !strings.Contains(msg, tt.error) {
+			if strings.Count(msg, "\n") != 1 || !strings.HasPrefix(msg, "condasplit: ") || !strings.Contains(msg, tt.error) {
 				t.Errorf("expected one line error containing %q, got %q", tt.error, msg)
 			}
 			if stdout.Len() != 0 {
@@ -150,7 +150,7 @@ func TestErrors(t *testing.T) {
 
 func TestHelp(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	if code := run([]string{"--help"}, &stdout, &stderr); code != 0 || !strings.HasPrefix(stdout.String(), "Usage: conda-layers") {
+	if code := run([]string{"--help"}, &stdout, &stderr); code != 0 || !strings.HasPrefix(stdout.String(), "Usage: condasplit") {
 		t.Errorf("unexpected help output: %d %q", code, stdout.String())
 	}
 }

@@ -957,12 +957,12 @@ class TemplateUtilsTest extends Specification {
     /* *********************************************************************************
      * Micromamba v3 template tests
      *
-     * Same build stage as the v2 template, plus the `conda-layers` tool (mounted from the
+     * Same build stage as the v2 template, plus the `condasplit` tool (mounted from the
      * layers image) moving the environment into 32 layer directories, which the final
      * stage adds with one `COPY --link` per slot.
      * *********************************************************************************/
 
-    static final private String LAYERS_IMAGE = 'public.cr.stage-seqera.io/wave/conda-layers:v1'
+    static final private String LAYERS_IMAGE = 'public.cr.stage-seqera.io/wave/condasplit:v1'
 
     static final private List<String> LAYERS_SLOTS = (0..<32).collect { String.format('COPY --link --from=build /layers/%02d/ /', it) }
 
@@ -980,8 +980,8 @@ class TemplateUtilsTest extends Specification {
                 USER root
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
                 # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
-                # the conda-layers tool is mounted read-only for this step only and never ends up in the image
-                RUN --mount=type=bind,from=public.cr.stage-seqera.io/wave/conda-layers:v1,source=/,target=/opt/wave-tools \\
+                # the condasplit tool is mounted read-only for this step only and never ends up in the image
+                RUN --mount=type=bind,from=public.cr.stage-seqera.io/wave/condasplit:v1,source=/,target=/opt/wave-tools \\
                     micromamba install -y -n base conda-forge::which \\
                     && ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which \\
                     && (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
@@ -994,7 +994,7 @@ class TemplateUtilsTest extends Specification {
                     && echo ">> CONDA_LOCK_START" \\
                     && cat environment.lock \\
                     && echo "<< CONDA_LOCK_END" \\
-                    && /opt/wave-tools/conda-layers --src /opt/conda --out /layers \\
+                    && /opt/wave-tools/condasplit --src /opt/conda --out /layers \\
                         --slots 32 --max-layer-size 500000000 --own-layer-size 50000000 --exclude pkgs
 
                 FROM ubuntu:24.04 AS prod
@@ -1048,12 +1048,12 @@ class TemplateUtilsTest extends Specification {
         ])
 
         expect:
-        TemplateUtils.condaPackagesToDockerFileUsingV3(PACKAGES, CHANNELS, CONDA_OPTS, 'my.registry.io/wave/conda-layers:v2') == '''\
+        TemplateUtils.condaPackagesToDockerFileUsingV3(PACKAGES, CHANNELS, CONDA_OPTS, 'my.registry.io/wave/condasplit:v2') == '''\
                 FROM mambaorg/micromamba:2.1.1 AS build
                 USER root
                 # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
-                # the conda-layers tool is mounted read-only for this step only and never ends up in the image
-                RUN --mount=type=bind,from=my.registry.io/wave/conda-layers:v2,source=/,target=/opt/wave-tools \\
+                # the condasplit tool is mounted read-only for this step only and never ends up in the image
+                RUN --mount=type=bind,from=my.registry.io/wave/condasplit:v2,source=/,target=/opt/wave-tools \\
                     micromamba install -y -n base conda-forge::which \\
                     && ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which \\
                     && (micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1 > /tmp/mamba.log 2>&1 \\
@@ -1065,7 +1065,7 @@ class TemplateUtilsTest extends Specification {
                     && echo ">> CONDA_LOCK_START" \\
                     && cat environment.lock \\
                     && echo "<< CONDA_LOCK_END" \\
-                    && /opt/wave-tools/conda-layers --src /opt/conda --out /layers \\
+                    && /opt/wave-tools/condasplit --src /opt/conda --out /layers \\
                         --slots 32 --max-layer-size 500000000 --own-layer-size 50000000 --exclude pkgs
 
                 FROM debian:12 AS prod
@@ -1133,7 +1133,7 @@ class TemplateUtilsTest extends Specification {
         result.contains('        && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -c conda-forge -f /tmp/conda-lock/conda-lock.yml)) \\\n')
         result.count('https://foo.com/some/conda-lock.yml') == 1
         result.contains('    && micromamba install -y -n base conda-forge::procps-ng \\\n')
-        result.contains('RUN --mount=type=bind,from=public.cr.stage-seqera.io/wave/conda-layers:v1,source=/,target=/opt/wave-tools \\\n')
+        result.contains('RUN --mount=type=bind,from=public.cr.stage-seqera.io/wave/condasplit:v1,source=/,target=/opt/wave-tools \\\n')
         result.contains('FROM ubuntu:24.04 AS prod\n')
     }
 
@@ -1192,12 +1192,12 @@ class TemplateUtilsTest extends Specification {
         and:
         // the tool is mounted in the install step
         lines.count { it.startsWith('RUN --mount=') } == 1
-        lines.find { it.startsWith('RUN ') } =='RUN --mount=type=bind,from=public.cr.stage-seqera.io/wave/conda-layers:v1,source=/,target=/opt/wave-tools \\'
+        lines.find { it.startsWith('RUN ') } =='RUN --mount=type=bind,from=public.cr.stage-seqera.io/wave/condasplit:v1,source=/,target=/opt/wave-tools \\'
         and:
         // the tool runs after the conda lock has been printed
         lines.indexOf('    && echo ">> CONDA_LOCK_START" \\') < lines.indexOf('    && echo "<< CONDA_LOCK_END" \\')
-        lines.indexOf('    && echo "<< CONDA_LOCK_END" \\') + 1 == lines.indexOf('    && /opt/wave-tools/conda-layers --src /opt/conda --out /layers \\')
-        lines.indexOf('    && /opt/wave-tools/conda-layers --src /opt/conda --out /layers \\') + 1 == lines.indexOf('        --slots 32 --max-layer-size 500000000 --own-layer-size 50000000 --exclude pkgs')
+        lines.indexOf('    && echo "<< CONDA_LOCK_END" \\') + 1 == lines.indexOf('    && /opt/wave-tools/condasplit --src /opt/conda --out /layers \\')
+        lines.indexOf('    && /opt/wave-tools/condasplit --src /opt/conda --out /layers \\') + 1 == lines.indexOf('        --slots 32 --max-layer-size 500000000 --own-layer-size 50000000 --exclude pkgs')
         and:
         // exactly 32 slot layers, in order, in the final stage
         lines.findAll { it.startsWith('COPY --link') } == LAYERS_SLOTS

@@ -53,7 +53,7 @@ class BuildConfigTest extends Specification {
         def ctx = ApplicationContext.run()
 
         expect:
-        ctx.getBean(BuildConfig).condaLayersImage == 'public.cr.stage-seqera.io/wave/conda-layers:v1'
+        ctx.getBean(BuildConfig).condasplitImage == 'public.cr.stage-seqera.io/wave/condasplit:v1'
 
         cleanup:
         ctx.close()
@@ -61,10 +61,10 @@ class BuildConfigTest extends Specification {
 
     def 'should return custom conda layers image' () {
         given:
-        def ctx = ApplicationContext.run(['wave.build.conda-layers-image': 'my.registry.io/wave/conda-layers:v2'])
+        def ctx = ApplicationContext.run(['wave.build.condasplit-image': 'my.registry.io/wave/condasplit:v2'])
 
         expect:
-        ctx.getBean(BuildConfig).condaLayersImage == 'my.registry.io/wave/conda-layers:v2'
+        ctx.getBean(BuildConfig).condasplitImage == 'my.registry.io/wave/condasplit:v2'
 
         cleanup:
         ctx.close()

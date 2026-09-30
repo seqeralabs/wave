@@ -50,11 +50,11 @@ class BuildConfig {
     String singularityImageInit
 
     /**
-     * The image providing the {@code conda-layers} tool used by the {@code conda/micromamba:v3}
+     * The image providing the {@code condasplit} tool used by the {@code conda/micromamba:v3}
      * build template to split the Conda environment into multiple image layers
      */
-    @Value('${wave.build.conda-layers-image:`public.cr.stage-seqera.io/wave/conda-layers:v1`}')
-    String condaLayersImage
+    @Value('${wave.build.condasplit-image:`public.cr.stage-seqera.io/wave/condasplit:v1`}')
+    String condasplitImage
 
     @Value('${wave.build.repo}')
      String defaultBuildRepository
@@ -171,7 +171,7 @@ class BuildConfig {
         log.info("Builder config: " +
                 "buildkit-image=${buildkitImage}; " +
                 "singularity-image=${singularityImage}; " +
-                "conda-layers-image=${condaLayersImage}; " +
+                "condasplit-image=${condasplitImage}; " +
                 "default-build-repository=${defaultBuildRepository}; " +
                 "default-cache-repository=${defaultCacheRepository}; " +
                 "cache-bucket-region=${cacheBucketRegion}; " +

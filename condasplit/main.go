@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// conda-layers moves the content of an installed conda prefix into a fixed
+// condasplit moves the content of an installed conda prefix into a fixed
 // number of layer directories, grouping files by conda package, so that each
 // directory can be added to a container image as a separate layer.
 package main
@@ -36,8 +36,8 @@ const (
 	defaultOwnLayerSize = 50_000_000
 )
 
-const usage = `Usage: conda-layers --src DIR --out DIR --slots N
-                    [--max-layer-size BYTES] [--own-layer-size BYTES] [--exclude RELPATH ...]
+const usage = `Usage: condasplit --src DIR --out DIR --slots N
+                  [--max-layer-size BYTES] [--own-layer-size BYTES] [--exclude RELPATH ...]
 
   --src DIR               absolute path of the installed prefix, e.g. /opt/conda (required)
   --out DIR               output root, one NN/ directory is created for each slot (required)
@@ -83,7 +83,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	}
 	if err != nil {
 		// the error must fit on one line of the build log
-		fmt.Fprintf(stderr, "conda-layers: %s\n", strings.ReplaceAll(err.Error(), "\n", " "))
+		fmt.Fprintf(stderr, "condasplit: %s\n", strings.ReplaceAll(err.Error(), "\n", " "))
 		return 1
 	}
 	return 0
@@ -92,7 +92,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 func parseArgs(args []string) (config, error) {
 	var cfg config
 	var excludes stringList
-	fs := flag.NewFlagSet("conda-layers", flag.ContinueOnError)
+	fs := flag.NewFlagSet("condasplit", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	fs.StringVar(&cfg.src, "src", "", "")
 	fs.StringVar(&cfg.out, "out", "", "")
