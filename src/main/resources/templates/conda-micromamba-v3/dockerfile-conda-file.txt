@@ -23,37 +23,7 @@ RUN --mount=type=bind,from={{layers_image}},source=/,target=/opt/wave-tools \
 FROM {{base_image}} AS prod
 ARG MAMBA_ROOT_PREFIX="/opt/conda"
 ENV MAMBA_ROOT_PREFIX=$MAMBA_ROOT_PREFIX
-COPY --link --from=build /layers/00/ /
-COPY --link --from=build /layers/01/ /
-COPY --link --from=build /layers/02/ /
-COPY --link --from=build /layers/03/ /
-COPY --link --from=build /layers/04/ /
-COPY --link --from=build /layers/05/ /
-COPY --link --from=build /layers/06/ /
-COPY --link --from=build /layers/07/ /
-COPY --link --from=build /layers/08/ /
-COPY --link --from=build /layers/09/ /
-COPY --link --from=build /layers/10/ /
-COPY --link --from=build /layers/11/ /
-COPY --link --from=build /layers/12/ /
-COPY --link --from=build /layers/13/ /
-COPY --link --from=build /layers/14/ /
-COPY --link --from=build /layers/15/ /
-COPY --link --from=build /layers/16/ /
-COPY --link --from=build /layers/17/ /
-COPY --link --from=build /layers/18/ /
-COPY --link --from=build /layers/19/ /
-COPY --link --from=build /layers/20/ /
-COPY --link --from=build /layers/21/ /
-COPY --link --from=build /layers/22/ /
-COPY --link --from=build /layers/23/ /
-COPY --link --from=build /layers/24/ /
-COPY --link --from=build /layers/25/ /
-COPY --link --from=build /layers/26/ /
-COPY --link --from=build /layers/27/ /
-COPY --link --from=build /layers/28/ /
-COPY --link --from=build /layers/29/ /
-COPY --link --from=build /layers/30/ /
-COPY --link --from=build /layers/31/ /
+# the condasplit frontend repeats this line for each layer directory: /layers/00, /layers/01, ...
+COPY --link --from=build /layers/NN/ /
 USER root
 ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"

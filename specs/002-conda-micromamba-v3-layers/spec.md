@@ -19,7 +19,7 @@
 
 ## Summary
 
-Add a new, opt-in conda build template, `conda/micromamba:v3`. It installs the environment exactly like `conda/micromamba:v2`. Then, in the same build step, a small static Go tool (`condasplit`) moves the installed files from `/opt/conda` into up to 32 layer directories, grouped by conda package, with each layer at most 500 MB before compression. The final stage adds each used directory as its own image layer: a small BuildKit frontend, shipped in the same image as the tool, drops the slots the environment left empty.
+Add a new, opt-in conda build template, `conda/micromamba:v3`. It installs the environment exactly like `conda/micromamba:v2`. Then, in the same build step, a small static Go tool (`condasplit`) moves the installed files from `/opt/conda` into up to 32 layer directories, grouped by conda package, with each layer at most 500 MB before compression. The final stage adds each directory as its own image layer: its single `COPY` line is repeated for each directory by a small BuildKit frontend, shipped in the same image as the tool.
 
 The tool and the frontend ship as one `FROM scratch` image under the same path as the other Wave tool images: `public.cr.stage-seqera.io/wave/condasplit` for the initial iteration and tests, and `public.cr.seqera.io/wave/condasplit` for production. The Dockerfile selects it as its frontend with a `# syntax=` directive and mounts it into the build step. It is never copied into the image. The container's file content is the same as v2, except the unused package cache (`/opt/conda/pkgs`) is dropped.
 
@@ -71,7 +71,7 @@ A Nextflow user whose images are too large for their registry's blob limit sets 
 
 **Acceptance Scenarios**:
 
-1. **Given** a request with `buildTemplate: "conda/micromamba:v3"` and a conda environment, **When** the build completes, **Then** the image manifest contains the base image layers, one layer for each conda slot the environment uses, and any layers from custom `commands`.
+1. **Given** a request with `buildTemplate: "conda/micromamba:v3"` and a conda environment, **When** the build completes, **Then** the image manifest contains the base image layers, one layer for each conda layer directory the tool created, and any layers from custom `commands`.
 2. **Given** the reference environment ([Appendix A](#appendix-a-proof-of-concept-results)), **When** built with v3, **Then** no conda layer is larger than 512 MB compressed, and packages of at least 50 MB (such as `gatk4`, `openjdk`, `pytorch`) each occupy their own layer.
 3. **Given** a v3 request with a remote conda lock file URL in `packages.entries`, **When** the build runs, **Then** the environment is installed from the lock file and layered the same way.
 4. **Given** a v3 multi-platform request (`linux/amd64,linux/arm64`), **When** the build runs, **Then** each platform image is layered independently, using the matching tool binary, and the index is assembled as today.
@@ -147,7 +147,7 @@ Environments that cannot fit the normal rules still build, with clear warnings.
 
 ### Edge Cases
 
-- **Empty or tiny environment.** Only a few slots are used. The frontend drops the `COPY` lines of the others, so the image has no empty layers.
+- **Empty or tiny environment.** The tool creates only a few layer directories, and the image has one layer for each of them.
 - **Files not claimed by any package.** Examples are `conda-meta/history`, `.messages.txt` and files created by post-link scripts. They go into a trailing leftovers layer, which is also capped at 500 MB.
 - **Path claimed by two packages (clobbering).** The file is placed once, with the owner taken from the first `conda-meta` file in sorted order. The on-disk content is always the final installed version, so layer order never matters.
 - **Symlinks, directory symlinks and empty directories.** They are preserved as-is. An originally empty directory is recreated in the leftovers layer.
@@ -179,8 +179,8 @@ conda.yml ─▶│ build   {{mamba_image}}                        │ ───
                             │ build log: conda lock, layer plan
 ```
 
-1. **build**: runs v2's install commands and prints the conda lock between the existing markers. A lock-file URL is first added with `ADD` and installed from the local copy (see the lock-file URL variant below). In the same `RUN`, it then runs `condasplit` from the mounted tool image. The tool moves every file of `/opt/conda` (except `pkgs/`) into `/layers/00` … `/layers/31`, each rooted at `/`, and prints the layer plan.
-2. **prod**: starts from `{{base_image}}` and copies each used layer directory with `COPY --link`. The frontend drops the `COPY` lines of the empty slots, see below.
+1. **build**: runs v2's install commands and prints the conda lock between the existing markers. A lock-file URL is first added with `ADD` and installed from the local copy (see the lock-file URL variant below). In the same `RUN`, it then runs `condasplit` from the mounted tool image. The tool moves every file of `/opt/conda` (except `pkgs/`) into at most 32 directories `/layers/00`, `/layers/01`, …, each rooted at `/`, and prints the layer plan.
+2. **prod**: starts from `{{base_image}}` and copies each layer directory with `COPY --link`. The template has one `COPY` line, which the frontend repeats for each directory, see below.
 
 **Why move instead of copy?** The install and the tool run in the same `RUN`, so every installed file is in the same writable layer and `rename()` only updates directory entries. This has four effects:
 - Build disk usage and build cache size stay at v2's level.
@@ -188,17 +188,15 @@ conda.yml ─▶│ build   {{mamba_image}}                        │ ───
 - The step takes seconds.
 - The tool can check it placed everything: after the move, `/opt/conda` must contain only directories and the excluded `pkgs/`.
 
-### Fixed slots and the frontend
+### Layer count and the frontend
 
-Wave generates the Dockerfile before the environment is solved, so the number of layers is not known in advance. The template therefore declares a fixed set of 32 `COPY` slots, and the tool decides what each slot contains.
+Wave generates the Dockerfile before the environment is solved, so the number of layers is not known in advance, and a Dockerfile can't loop. The template therefore has a single `COPY --link --from=build /layers/NN/ /` line, and names the tool image as its frontend with `# syntax={{layers_image}}` on the first line. The frontend (`condasplit/frontend/`) builds the `build` stage, lists `/layers`, repeats the `COPY` line for each directory the tool created and builds the whole Dockerfile. Built without the frontend, the Dockerfile fails because `/layers/NN` doesn't exist. It delegates both builds to BuildKit's built-in Dockerfile frontend, so the Dockerfile syntax is unchanged, and the install stage runs once because the second build finds it in the cache of the first. The `buildctl` invocation doesn't change either: the built-in frontend forwards a build to the image named by the directive.
 
-BuildKit adds a layer for every `COPY`, even an empty one, so the template names the tool image as its frontend with `# syntax={{layers_image}}` on the first line. The frontend (`condasplit/frontend/`) builds the `build` stage, lists `/layers/NN`, removes the `COPY` lines of the empty slots and builds the whole Dockerfile. It delegates both builds to BuildKit's built-in Dockerfile frontend, so the Dockerfile syntax is unchanged, and the install stage runs once because the second build finds it in the cache of the first. The `buildctl` invocation doesn't change either: the built-in frontend forwards a build to the image named by the directive.
-
-32 slots allow up to about 16 GB of environment before compression at 500 MB per slot. With a typical base image (ubuntu:24.04 has one layer) the image stays around 35 layers, well under the ~125-layer overlay limit.
+The tool creates at most 32 layers (`--slots 32`), about 16 GB of environment before compression at 500 MB per layer. With a typical base image (ubuntu:24.04 has one layer) the image stays around 35 layers, well under the ~125-layer overlay limit.
 
 ### Template: `conda-micromamba-v3/dockerfile-conda-file.txt`
 
-This is v2's stage 1 plus the tool call, the frontend directive, and a different final stage. The slot lines are written out literally in the template file, so the file shows every possible layer; the frontend drops the empty ones at build time.
+This is v2's stage 1 plus the tool call, the frontend directive, and a different final stage with one `COPY` line for the layer directories.
 
 ```dockerfile
 # syntax={{layers_image}}
@@ -226,10 +224,8 @@ RUN --mount=type=bind,from={{layers_image}},source=/,target=/opt/wave-tools \
 FROM {{base_image}} AS prod
 ARG MAMBA_ROOT_PREFIX="/opt/conda"
 ENV MAMBA_ROOT_PREFIX=$MAMBA_ROOT_PREFIX
-COPY --link --from=build /layers/00/ /
-COPY --link --from=build /layers/01/ /
-# ... one line per slot ...
-COPY --link --from=build /layers/31/ /
+# the condasplit frontend repeats this line for each layer directory: /layers/00, /layers/01, ...
+COPY --link --from=build /layers/NN/ /
 USER root
 ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
 ```
@@ -254,8 +250,8 @@ condasplit --src DIR --out DIR --slots N
 | Option | Default | Meaning |
 |---|---|---|
 | `--src` | (required) | Absolute path of the installed prefix, e.g. `/opt/conda`. The same path is used inside each layer. |
-| `--out` | (required) | Output root. The tool creates `NN/` for every slot `00` … `N-1` |
-| `--slots` | (required) | Number of slots declared by the template |
+| `--out` | (required) | Output root. The tool creates `NN/` for every layer, `00`, `01`, … |
+| `--slots` | (required) | Maximum number of layers. Above it the smallest layers are merged |
 | `--max-layer-size` | 500000000 | Cap per layer: the sum of file sizes before compression |
 | `--own-layer-size` | 50000000 | Packages at least this size get a layer to themselves |
 | `--exclude` | none | Paths relative to `--src` that are left in place and not layered (v3 passes `pkgs`) |
@@ -273,7 +269,6 @@ condasplit --src DIR --out DIR --slots N
    - `rename()` each path of each atom to `--out/NN/<src>/<relpath>`, creating missing parent directories with the metadata of the source directory.
    - Recreate originally empty directories in the leftovers layer.
    - Finally, set directory mtimes from the inventory.
-   - Leave unused slot directories empty.
 8. **Verify.** Walk `--src` again. Anything other than directories and excluded paths is an error, and the tool fails listing up to 20 of the offending paths.
 9. **Plan.** Print the layer plan to stdout between `>> CONDA_LAYERS_START` and `<< CONDA_LAYERS_END`. The example below uses the reference environment's numbers:
 
@@ -407,7 +402,7 @@ The generated Dockerfile (about 3 KB) is not affected by `wave.build.max-contain
 ## Testing Strategy
 
 **Unit tests (Wave, Spock)**
-- `TemplateUtilsTest`: render both v3 templates. Assert the bindings (`mamba_image`, `base_image`, `layers_image`, `base_packages`, `channel_opts`/`target`), the `# syntax=` first line, the `RUN --mount` line, exactly 32 `COPY --link` slot lines, and `commands` appended at the end.
+- `TemplateUtilsTest`: render both v3 templates. Assert the bindings (`mamba_image`, `base_image`, `layers_image`, `base_packages`, `channel_opts`/`target`), the `# syntax=` first line, the `RUN --mount` line, the single `COPY --link --from=build /layers/NN/ /` line, and `commands` appended at the end.
 - `CondaHelperTest`: cover `containerFileV3` for a conda file, a lock URL, a `containerImage` override, a v1 `mambaImage` override, and a non-CONDA type (which fails).
 - `ContainerHelperTest`: v3 routes to `containerFileV3`. v3 with Singularity returns 400. Golden-file output for no template, v1, v2, pixi and cran is unchanged.
 - `BuildConfigTest`: default value and override of `condasplit-image`.
@@ -470,7 +465,7 @@ The generated Dockerfile (about 3 KB) is not affected by `wave.build.max-contain
   - *Go binary bundled in the Wave jar and written into the build context*: no image to publish, but it adds about 10 MB to the jar, needs per-platform selection in Wave, and needs the version printed into the Dockerfile so container ids change.
   - The chosen tiny image follows the existing `public.cr.seqera.io/wave/` tool-image path.
 - **Separate layering stage that copies instead of moves.** This is the POC layout. Rejected: it doubles the environment on disk and in the build cache.
-- **Solve first, then generate an exact Dockerfile.** Run the solver (or use the lock) before generating the Dockerfile, so the layer count is exact and there are no empty slots. Rejected: it adds a solve job to the pipeline, and the frontend removes the empty slots without one. Revisit if environments often need more than 32 layers.
+- **Solve first, then generate an exact Dockerfile.** Run the solver (or use the lock) before generating the Dockerfile, so the layer count is exact. Rejected: it adds a solve job to the pipeline, and the frontend gets the exact count without one. Revisit if environments often need more than 32 layers.
 - **Custom BuildKit frontend generating the LLB.** A frontend creating the layers itself could produce any number of them, with no fixed slots. Rejected: it would reimplement the Dockerfile frontend. The chosen frontend only edits the Dockerfile and delegates the build to the built-in one.
 - **Removing the empty layers after the push.** Wave could rewrite the pushed manifest and image config without them. Rejected: it replaces the image BuildKit pushed with a new digest, needs registry writes from Wave, and must run before the multi-platform index is assembled.
 - **Wave-managed per-package layer store (Nixery-style).** Rejected: it brings the most storage savings across images, but it is a new subsystem and isn't needed to meet the size limit.

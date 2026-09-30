@@ -25,10 +25,7 @@ FROM mambaorg/micromamba:2-amazon2023 AS build
 RUN micromamba install -y -n base bwa
 
 FROM ubuntu:24.04 AS prod
-COPY --link --from=build /layers/00/ /
-COPY --link --from=build /layers/01/ /
-COPY --link --from=build /layers/02/ /
-COPY --link --from=build /layers/03/ /
+COPY --link --from=build /layers/NN/ /
 RUN apt-get update
 `
 
@@ -44,20 +41,25 @@ func TestSyntaxLine(t *testing.T) {
 	}
 }
 
-func TestDropEmptySlots(t *testing.T) {
-	got := string(dropEmptySlots([]byte(dockerfile), func(slot string) bool {
-		return slot == "01" || slot == "03"
-	}))
+func TestExpandLayers(t *testing.T) {
+	got, err := expandLayers([]byte(dockerfile), []string{"02", "00", "01"})
+	if err != nil {
+		t.Fatal(err)
+	}
 	expected := `# syntax=public.cr.stage-seqera.io/wave/condasplit:v1
 FROM mambaorg/micromamba:2-amazon2023 AS build
 RUN micromamba install -y -n base bwa
 
 FROM ubuntu:24.04 AS prod
 COPY --link --from=build /layers/00/ /
+COPY --link --from=build /layers/01/ /
 COPY --link --from=build /layers/02/ /
 RUN apt-get update
 `
-	if got != expected {
+	if string(got) != expected {
 		t.Errorf("unexpected Dockerfile:\n%s", got)
+	}
+	if _, err := expandLayers([]byte("FROM foo\n"), []string{"00"}); err == nil {
+		t.Error("expected an error when the COPY line is missing")
 	}
 }

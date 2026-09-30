@@ -53,14 +53,10 @@ func TestRun(t *testing.T) {
 	if !strings.HasPrefix(rows[0], "slots=3/32 files=5 ") || strings.Join(rows[1:], "\n") != strings.Join(expected, "\n") {
 		t.Errorf("unexpected plan:\n%s", stdout.String())
 	}
+	// one directory for each layer, none for the unused slots
 	entries, err := os.ReadDir(p.out)
-	if err != nil || len(entries) != 32 || entries[0].Name() != "00" || entries[31].Name() != "31" {
-		t.Fatalf("expected 32 slot directories: %v", err)
-	}
-	for _, e := range entries[3:] {
-		if sub, _ := os.ReadDir(filepath.Join(p.out, e.Name())); len(sub) != 0 {
-			t.Errorf("unused slot %s is not empty", e.Name())
-		}
+	if err != nil || len(entries) != 3 || entries[0].Name() != "00" || entries[2].Name() != "02" {
+		t.Fatalf("expected 3 layer directories: %v %v", entries, err)
 	}
 	if !lstat(t, p.path("pkgs/b-1.0-0/lib/b.so")).Mode().IsRegular() || !lstat(t, p.path("share/tmp/cache")).Mode().IsRegular() {
 		t.Errorf("excluded paths not left in place")

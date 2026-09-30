@@ -311,8 +311,7 @@ class CondaHelperTest extends Specification {
         result.contains('micromamba install -y -n base conda-forge::procps-ng')
         result.contains('/opt/wave-tools/condasplit --src /opt/conda --out /layers')
         result.contains('FROM ubuntu:24.04 AS prod')
-        result.contains('COPY --link --from=build /layers/00/ /')
-        result.contains('COPY --link --from=build /layers/31/ /')
+        result.contains('COPY --link --from=build /layers/NN/ /')
         and:
         result == TemplateUtils.condaFileToDockerFileUsingV3(CondaOpts.v2(), LAYERS_IMAGE)
     }

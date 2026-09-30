@@ -17,12 +17,11 @@
  */
 
 // condasplit-frontend is the BuildKit frontend of the conda/micromamba:v3 build template.
-// The template declares a fixed set of slot layers because Wave writes the Dockerfile
-// before the environment is known: this frontend builds the install stage first, then
-// builds the image without the COPY lines of the slots condasplit left empty, so that
-// the image has no empty layers. Both builds are delegated to the built-in Dockerfile
-// frontend, and the install stage runs once because the second build finds it in the
-// cache of the first one
+// Wave writes the Dockerfile before the environment is known, so the template has one
+// COPY line for the layer directories: this frontend builds the install stage first,
+// then builds the image with that line repeated for each directory condasplit created.
+// Both builds are delegated to the built-in Dockerfile frontend, and the install stage
+// runs once because the second build finds it in the cache of the first one
 package main
 
 import (
@@ -31,6 +30,8 @@ import (
 	"maps"
 	"os"
 	"regexp"
+	"slices"
+	"strings"
 
 	"github.com/moby/buildkit/client/llb"
 	"github.com/moby/buildkit/frontend/dockerui"
@@ -43,8 +44,8 @@ import (
 var (
 	// the directive selecting this frontend, it must be the first line
 	syntaxLine = regexp.MustCompile(`\A#\s*syntax=.*\n`)
-	// the COPY line of a slot in the conda/micromamba:v3 template
-	slotLine = regexp.MustCompile(`(?m)^COPY --link --from=build /layers/(\d+)/ /\n`)
+	// the COPY line of the layer directories in the conda/micromamba:v3 template
+	layersLine = regexp.MustCompile(`(?m)^COPY --link --from=build /layers/NN/ /\n`)
 )
 
 func main() {
@@ -75,21 +76,30 @@ func build(ctx context.Context, c client.Client) (*client.Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	dockerfile = dropEmptySlots(dockerfile, func(slot string) bool {
-		entries, err := ref.ReadDir(ctx, client.ReadDirRequest{Path: "/layers/" + slot})
-		return err == nil && len(entries) == 0
-	})
+	entries, err := ref.ReadDir(ctx, client.ReadDirRequest{Path: "/layers"})
+	if err != nil {
+		return nil, err
+	}
+	var dirs []string
+	for _, e := range entries {
+		dirs = append(dirs, e.Path)
+	}
+	if dockerfile, err = expandLayers(dockerfile, dirs); err != nil {
+		return nil, err
+	}
 	return forward(ctx, c, src.Filename, dockerfile, "")
 }
 
-// dropEmptySlots removes the COPY lines of the slots for which empty returns true
-func dropEmptySlots(dockerfile []byte, empty func(slot string) bool) []byte {
-	return slotLine.ReplaceAllFunc(dockerfile, func(line []byte) []byte {
-		if empty(string(slotLine.FindSubmatch(line)[1])) {
-			return nil
-		}
-		return line
-	})
+// expandLayers repeats the COPY line of the layer directories for each of them, in order
+func expandLayers(dockerfile []byte, dirs []string) ([]byte, error) {
+	if !layersLine.Match(dockerfile) {
+		return nil, fmt.Errorf("missing line: COPY --link --from=build /layers/NN/ /")
+	}
+	var lines strings.Builder
+	for _, dir := range slices.Sorted(slices.Values(dirs)) {
+		fmt.Fprintf(&lines, "COPY --link --from=build /layers/%s/ /\n", dir)
+	}
+	return layersLine.ReplaceAllLiteral(dockerfile, []byte(lines.String())), nil
 }
 
 // forward builds the Dockerfile content with the built-in Dockerfile frontend,

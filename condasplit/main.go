@@ -40,8 +40,8 @@ const usage = `Usage: condasplit --src DIR --out DIR --slots N
                   [--max-layer-size BYTES] [--own-layer-size BYTES] [--exclude RELPATH ...]
 
   --src DIR               absolute path of the installed prefix, e.g. /opt/conda (required)
-  --out DIR               output root, one NN/ directory is created for each slot (required)
-  --slots N               number of layer slots declared by the build template (required)
+  --out DIR               output root, one NN/ directory is created for each layer (required)
+  --slots N               maximum number of layers, smaller layers are merged above it (required)
   --max-layer-size BYTES  cap per layer, as the sum of file sizes (default 500000000)
   --own-layer-size BYTES  packages at least this size get a layer to themselves (default 50000000)
   --exclude RELPATH       path relative to --src left in place and not layered (repeatable)
@@ -118,7 +118,7 @@ func layerize(cfg config, stdout io.Writer) error {
 	}
 	p := makePlan(inv, own, cfg)
 	m := &mover{src: cfg.src, out: cfg.out, inv: inv}
-	if err := m.move(p, cfg.slots); err != nil {
+	if err := m.move(p); err != nil {
 		return err
 	}
 	if err := verify(cfg.src, cfg.excludes); err != nil {

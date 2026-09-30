@@ -43,16 +43,11 @@ type createdDir struct {
 	meta *node
 }
 
-// move creates one directory for each slot and moves every path of each layer into
-// --out/NN/<src>/<relpath>. Unused slot directories are left empty
-func (m *mover) move(p *plan, slots int) error {
+// move moves every path of each layer into --out/NN/<src>/<relpath>, so that only
+// the directories of the layers are created
+func (m *mover) move(p *plan) error {
 	if err := os.MkdirAll(m.out, 0o755); err != nil {
 		return err
-	}
-	for i := 0; i < slots; i++ {
-		if err := os.Mkdir(filepath.Join(m.out, slotName(i)), 0o755); err != nil {
-			return err
-		}
 	}
 	for i, l := range p.layers {
 		if err := m.moveLayer(filepath.Join(m.out, slotName(i)), l); err != nil {

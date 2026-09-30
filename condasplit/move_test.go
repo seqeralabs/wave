@@ -242,11 +242,9 @@ func TestMetadata(t *testing.T) {
 			t.Errorf("%s: expected owner root, got %d:%d", dir, u, g)
 		}
 	}
-	// unused slots are left empty
-	for i := 2; i < 8; i++ {
-		if entries, err := os.ReadDir(filepath.Join(p.out, slotName(i))); err != nil || len(entries) != 0 {
-			t.Errorf("slot %d is not an empty directory: %v %v", i, entries, err)
-		}
+	// no directory for the unused slots
+	if entries, err := os.ReadDir(p.out); err != nil || len(entries) != 2 {
+		t.Errorf("expected 2 layer directories: %v %v", entries, err)
 	}
 }
 

@@ -964,7 +964,6 @@ class TemplateUtilsTest extends Specification {
 
     static final private String LAYERS_IMAGE = 'public.cr.stage-seqera.io/wave/condasplit:v1'
 
-    static final private List<String> LAYERS_SLOTS = (0..<32).collect { String.format('COPY --link --from=build /layers/%02d/ /', it) }
 
     def 'should create dockerfile using micromamba v3 template from conda file' () {
         given:
@@ -1001,38 +1000,8 @@ class TemplateUtilsTest extends Specification {
                 FROM ubuntu:24.04 AS prod
                 ARG MAMBA_ROOT_PREFIX="/opt/conda"
                 ENV MAMBA_ROOT_PREFIX=$MAMBA_ROOT_PREFIX
-                COPY --link --from=build /layers/00/ /
-                COPY --link --from=build /layers/01/ /
-                COPY --link --from=build /layers/02/ /
-                COPY --link --from=build /layers/03/ /
-                COPY --link --from=build /layers/04/ /
-                COPY --link --from=build /layers/05/ /
-                COPY --link --from=build /layers/06/ /
-                COPY --link --from=build /layers/07/ /
-                COPY --link --from=build /layers/08/ /
-                COPY --link --from=build /layers/09/ /
-                COPY --link --from=build /layers/10/ /
-                COPY --link --from=build /layers/11/ /
-                COPY --link --from=build /layers/12/ /
-                COPY --link --from=build /layers/13/ /
-                COPY --link --from=build /layers/14/ /
-                COPY --link --from=build /layers/15/ /
-                COPY --link --from=build /layers/16/ /
-                COPY --link --from=build /layers/17/ /
-                COPY --link --from=build /layers/18/ /
-                COPY --link --from=build /layers/19/ /
-                COPY --link --from=build /layers/20/ /
-                COPY --link --from=build /layers/21/ /
-                COPY --link --from=build /layers/22/ /
-                COPY --link --from=build /layers/23/ /
-                COPY --link --from=build /layers/24/ /
-                COPY --link --from=build /layers/25/ /
-                COPY --link --from=build /layers/26/ /
-                COPY --link --from=build /layers/27/ /
-                COPY --link --from=build /layers/28/ /
-                COPY --link --from=build /layers/29/ /
-                COPY --link --from=build /layers/30/ /
-                COPY --link --from=build /layers/31/ /
+                # the condasplit frontend repeats this line for each layer directory: /layers/00, /layers/01, ...
+                COPY --link --from=build /layers/NN/ /
                 USER root
                 ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
                 '''.stripIndent()
@@ -1073,38 +1042,8 @@ class TemplateUtilsTest extends Specification {
                 FROM debian:12 AS prod
                 ARG MAMBA_ROOT_PREFIX="/opt/conda"
                 ENV MAMBA_ROOT_PREFIX=$MAMBA_ROOT_PREFIX
-                COPY --link --from=build /layers/00/ /
-                COPY --link --from=build /layers/01/ /
-                COPY --link --from=build /layers/02/ /
-                COPY --link --from=build /layers/03/ /
-                COPY --link --from=build /layers/04/ /
-                COPY --link --from=build /layers/05/ /
-                COPY --link --from=build /layers/06/ /
-                COPY --link --from=build /layers/07/ /
-                COPY --link --from=build /layers/08/ /
-                COPY --link --from=build /layers/09/ /
-                COPY --link --from=build /layers/10/ /
-                COPY --link --from=build /layers/11/ /
-                COPY --link --from=build /layers/12/ /
-                COPY --link --from=build /layers/13/ /
-                COPY --link --from=build /layers/14/ /
-                COPY --link --from=build /layers/15/ /
-                COPY --link --from=build /layers/16/ /
-                COPY --link --from=build /layers/17/ /
-                COPY --link --from=build /layers/18/ /
-                COPY --link --from=build /layers/19/ /
-                COPY --link --from=build /layers/20/ /
-                COPY --link --from=build /layers/21/ /
-                COPY --link --from=build /layers/22/ /
-                COPY --link --from=build /layers/23/ /
-                COPY --link --from=build /layers/24/ /
-                COPY --link --from=build /layers/25/ /
-                COPY --link --from=build /layers/26/ /
-                COPY --link --from=build /layers/27/ /
-                COPY --link --from=build /layers/28/ /
-                COPY --link --from=build /layers/29/ /
-                COPY --link --from=build /layers/30/ /
-                COPY --link --from=build /layers/31/ /
+                # the condasplit frontend repeats this line for each layer directory: /layers/00, /layers/01, ...
+                COPY --link --from=build /layers/NN/ /
                 USER root
                 ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
                 '''.stripIndent()
@@ -1205,13 +1144,12 @@ class TemplateUtilsTest extends Specification {
         lines.indexOf('    && echo "<< CONDA_LOCK_END" \\') + 1 == lines.indexOf('    && /opt/wave-tools/condasplit --src /opt/conda --out /layers \\')
         lines.indexOf('    && /opt/wave-tools/condasplit --src /opt/conda --out /layers \\') + 1 == lines.indexOf('        --slots 32 --max-layer-size 500000000 --own-layer-size 50000000 --exclude pkgs')
         and:
-        // exactly 32 slot layers, in order, in the final stage
-        lines.findAll { it.startsWith('COPY --link') } == LAYERS_SLOTS
-        lines.indexOf(LAYERS_SLOTS[0]) == lines.indexOf('ENV MAMBA_ROOT_PREFIX=$MAMBA_ROOT_PREFIX') + 1
-        lines.indexOf(LAYERS_SLOTS[31]) == lines.indexOf(LAYERS_SLOTS[0]) + 31
+        // one COPY line in the final stage, the frontend repeats it for each layer directory
+        lines.findAll { it.startsWith('COPY --link') } == ['COPY --link --from=build /layers/NN/ /']
+        lines.indexOf('COPY --link --from=build /layers/NN/ /') == lines.indexOf('ENV MAMBA_ROOT_PREFIX=$MAMBA_ROOT_PREFIX') + 2
         and:
         // custom commands are appended at the end
-        result.endsWith('COPY --link --from=build /layers/31/ /\nUSER root\nENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"\nRUN apt-get update\nRUN apt-get install -y vim\n')
+        result.endsWith('COPY --link --from=build /layers/NN/ /\nUSER root\nENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"\nRUN apt-get update\nRUN apt-get install -y vim\n')
 
         where:
         VARIANT << ['conda-file', 'conda-packages']

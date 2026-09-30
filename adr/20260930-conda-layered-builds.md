@@ -32,9 +32,9 @@ For the reference environment (`bioconda::gatk4=4.6.2.0` and `bioconda::gcnvkern
 1. User submits a container request with `buildTemplate: "conda/micromamba:v3"`
 2. Wave renders the v3 Dockerfile, naming the tool image configured with `wave.build.condasplit-image`, both as its BuildKit frontend (`# syntax=`, first line) and as the image mounted into the install step
 3. Two-stage build executes:
-   - **Stage 1 (build)**: Runs the `conda/micromamba:v2` install commands and prints the conda lock. A lock-file URL is first added to the stage with `ADD` and installed from the local copy, because micromamba can't read an explicit lock file from a URL. In the same `RUN`, it runs `condasplit` from the mounted tool image, which moves every file of `/opt/conda` (except `pkgs/`) into `/layers/00` … `/layers/31`, each rooted at `/`, and prints the layer plan
-   - **Stage 2 (prod)**: Starts from `{{base_image}}` and adds each slot directory as its own layer with `COPY --link`
-4. The frontend builds stage 1 first, then builds the image without the `COPY` lines of the empty slots, so the image has one layer per used slot
+   - **Stage 1 (build)**: Runs the `conda/micromamba:v2` install commands and prints the conda lock. A lock-file URL is first added to the stage with `ADD` and installed from the local copy, because micromamba can't read an explicit lock file from a URL. In the same `RUN`, it runs `condasplit` from the mounted tool image, which moves every file of `/opt/conda` (except `pkgs/`) into at most 32 directories `/layers/00`, `/layers/01`, …, each rooted at `/`, and prints the layer plan
+   - **Stage 2 (prod)**: Starts from `{{base_image}}` and adds each layer directory as its own layer with `COPY --link`
+4. The frontend builds stage 1 first, then builds the image with the template's single `COPY` line repeated for each layer directory
 
 ## Decision Drivers
 
@@ -63,22 +63,19 @@ For the reference environment (`bioconda::gatk4=4.6.2.0` and `bioconda::gcnvkern
 - The tool parameters are literal in the template, so tuning them later means a new template version, which is the intended behaviour
 - Follows the versioned template approach introduced by the multi-stage build templates
 
-### 2. Fixed Number of Layer Slots
+### 2. At Most 32 Layers, One `COPY` Line
 
-**Decision:** The template declares 32 literal `COPY --link` slot lines. The tool decides what each slot contains.
+**Decision:** The tool creates at most 32 layer directories. The template has a single `COPY` line, which the frontend of decision 10 repeats for each of them.
 
 ```dockerfile
-COPY --link --from=build /layers/00/ /
-COPY --link --from=build /layers/01/ /
-# ... one line per slot ...
-COPY --link --from=build /layers/31/ /
+# the condasplit frontend repeats this line for each layer directory: /layers/00, /layers/01, ...
+COPY --link --from=build /layers/NN/ /
 ```
 
 **Rationale:**
-- Wave generates the Dockerfile before the environment is solved, so the number of layers is not known in advance
+- Wave generates the Dockerfile before the environment is solved, so the number of layers is not known in advance, and a Dockerfile can't loop
 - Keeps the whole build in a single Dockerfile, with no extra solve job
-- The empty slots are dropped at build time by the frontend, see decision 10
-- 32 slots allow about 16 GB of environment before compression. With a one-layer base image such as `ubuntu:24.04` the image stays around 35 layers, well under the ~125-layer overlay limit
+- 32 layers allow about 16 GB of environment before compression. With a one-layer base image such as `ubuntu:24.04` the image stays around 35 layers, well under the ~125-layer overlay limit
 - When an environment needs more than 32 layers, the two smallest layers are merged repeatedly until 32 remain, and the plan shows `WARN slots exceeded: merged <n> layers`
 
 ### 3. Go Static Tool in a `FROM scratch` Image
@@ -181,12 +178,13 @@ RUN --mount=type=bind,from={{layers_image}},source=/,target=/opt/wave-tools \
 - Conda lock extraction from the build log works exactly as for `conda/micromamba:v2`
 - No persistence or UI change is needed
 
-### 10. BuildKit Frontend Dropping the Empty Slots
+### 10. BuildKit Frontend Repeating the Layer `COPY` Line
 
-**Decision:** The v3 Dockerfile starts with `# syntax={{layers_image}}`, which makes the tool image its BuildKit frontend. The frontend (`condasplit/frontend/`, entrypoint `/condasplit-frontend`) builds the `build` stage, lists `/layers/NN`, removes the `COPY` lines of the empty slots and builds the whole Dockerfile. Both builds are delegated to the built-in Dockerfile frontend.
+**Decision:** The v3 Dockerfile starts with `# syntax={{layers_image}}`, which makes the tool image its BuildKit frontend. The frontend (`condasplit/frontend/`, entrypoint `/condasplit-frontend`) builds the `build` stage, lists `/layers`, repeats the `COPY --link --from=build /layers/NN/ /` line for each directory and builds the whole Dockerfile. Both builds are delegated to the built-in Dockerfile frontend.
 
 **Rationale:**
-- BuildKit adds a layer for every `COPY`, even an empty one: without the frontend a small environment such as `bioconda::samtools` has 30 empty layers
+- The image has exactly one layer per layer directory. BuildKit adds a layer for every `COPY`, even an empty one, so 32 fixed `COPY` lines gave a small environment such as `bioconda::samtools` 30 empty layers
+- Built without the frontend, the Dockerfile fails on the missing `/layers/NN` instead of producing a wrong image
 - The `buildctl` invocation doesn't change, since the built-in frontend forwards a build to the image named by the directive. Verified with Wave's arguments and the settings of the Kubernetes build pods (rootless, not privileged, `--oci-worker-no-process-sandbox`)
 - The install stage runs once: the second build finds it in the cache of the first
 - The Dockerfile syntax and the image content are those of the built-in frontend: the frontend only edits the Dockerfile text
@@ -196,7 +194,8 @@ RUN --mount=type=bind,from={{layers_image}},source=/,target=/opt/wave-tools \
 
 | Option | Reason |
 |--------|--------|
-| Keep the empty layers | Harmless in size, but every image carries up to 31 empty layers |
+| 32 fixed `COPY` lines, empty ones kept | Harmless in size, but every image carries up to 31 empty layers |
+| 32 fixed `COPY` lines, empty ones dropped by the frontend | Same images, but the template and the stored Dockerfile carry 32 lines |
 | Frontend generating the LLB itself | Could create any number of layers, but reimplements the Dockerfile frontend |
 | Remove the empty layers after the push | Replaces the image pushed by BuildKit with a new digest and needs registry writes from Wave, before the multi-platform index is assembled |
 | Solve first, then write an exact Dockerfile | Needs a solve job before the build |

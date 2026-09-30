@@ -942,7 +942,7 @@ class ContainerHelperTest extends Specification {
         result.contains('RUN --mount=type=bind,from=public.cr.stage-seqera.io/wave/condasplit:v1,source=/,target=/opt/wave-tools \\\n')
         result.contains('micromamba install -y -n base -f /tmp/conda.yml')
         result.contains('FROM ubuntu:24.04 AS prod\n')
-        result.readLines().findAll { it.startsWith('COPY --link --from=build /layers/') }.size() == 32
+        result.readLines().findAll { it.startsWith('COPY --link --from=build /layers/') } == ['COPY --link --from=build /layers/NN/ /']
         !result.contains('COPY --from=build "$MAMBA_ROOT_PREFIX" "$MAMBA_ROOT_PREFIX"')
     }
 
@@ -969,7 +969,7 @@ class ContainerHelperTest extends Specification {
         result.contains('micromamba install -y -n base -c conda-forge -c bioconda -f /tmp/conda-lock/lock.yml > /tmp/mamba.log 2>&1')
         result.contains('    && micromamba install -y -n base foo::one bar::two \\\n')
         result.contains('FROM debian:12 AS prod\n')
-        result.endsWith('COPY --link --from=build /layers/31/ /\nUSER root\nENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"\nRUN apt-get update\n')
+        result.endsWith('COPY --link --from=build /layers/NN/ /\nUSER root\nENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"\nRUN apt-get update\n')
     }
 
     def 'should reject singularity format with micromamba v3'() {

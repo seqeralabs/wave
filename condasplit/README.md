@@ -4,9 +4,9 @@ A small static tool used by the `conda/micromamba:v3` build template to ship a c
 environment as several image layers instead of one large layer.
 
 It runs in the same `RUN` step that installs the environment. It moves every file of the
-installed prefix (e.g. `/opt/conda`) into a fixed number of slot directories,
-`<out>/00` ... `<out>/N-1`, each rooted at `/`, grouping files by conda package. The final
-stage of the template then adds each slot directory as a separate layer with
+installed prefix (e.g. `/opt/conda`) into at most `--slots` layer directories,
+`<out>/00`, `<out>/01`, ..., each rooted at `/`, grouping files by conda package. The final
+stage of the template then adds each directory as a separate layer with
 `COPY --link --from=build /layers/NN/ /`.
 
 The tool image is `FROM scratch`. The build mounts it read-only for that one step
@@ -15,11 +15,11 @@ or in the build cache.
 
 The same image is the BuildKit frontend of the template, named by its first line
 `# syntax=<image>`, and its entrypoint is `/condasplit-frontend` (see `frontend/`).
-BuildKit adds a layer for every `COPY`, even an empty one, so the frontend builds the
-`build` stage, lists the slot directories, removes the `COPY` lines of the empty ones and
-builds the whole Dockerfile. It delegates both builds to BuildKit's built-in Dockerfile
-frontend, and the install stage runs once because the second build finds it in the cache
-of the first. The image then has one layer per used slot.
+The template has a single `COPY --link --from=build /layers/NN/ /` line: the frontend
+builds the `build` stage, lists `/layers`, repeats that line for each directory and builds
+the whole Dockerfile. It delegates both builds to BuildKit's built-in Dockerfile frontend,
+and the install stage runs once because the second build finds it in the cache of the
+first. The image then has one layer per layer directory.
 
 ## How files are grouped
 
@@ -79,7 +79,7 @@ condasplit --src DIR --out DIR --slots N
 |---|---|---|
 | `--src` | (required) | Absolute path of the installed prefix, e.g. `/opt/conda`. The same path is used inside each layer |
 | `--out` | (required) | Output root. One `NN/` directory is created for every slot `00` ... `N-1` |
-| `--slots` | (required) | Number of slots declared by the template |
+| `--slots` | (required) | Maximum number of layers. Above it the smallest layers are merged |
 | `--max-layer-size` | 500000000 | Cap per layer: the sum of file sizes before compression |
 | `--own-layer-size` | 50000000 | Packages at least this size get a layer to themselves |
 | `--exclude` | none | Path relative to `--src` left in place and not layered (repeatable) |

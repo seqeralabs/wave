@@ -650,7 +650,7 @@ class ContainerControllerTest extends Specification {
         buildConfig.condasplitImage == 'public.cr.stage-seqera.io/wave/condasplit:v1'
         build.buildTemplate == BuildTemplate.CONDA_MICROMAMBA_V3
         build.containerFile.contains("RUN --mount=type=bind,from=${buildConfig.condasplitImage},source=/,target=/opt/wave-tools \\\n")
-        build.containerFile.contains('COPY --link --from=build /layers/31/ /\n')
+        build.containerFile.contains('COPY --link --from=build /layers/NN/ /\n')
     }
 
     def 'should reject micromamba v3 template with singularity format' () {
