@@ -20,7 +20,6 @@ package io.seqera.wave.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,10 +72,6 @@ public class TemplateUtils {
     }
 
     static protected String condaPackagesTemplate1(String template, String packages, List<String> condaChannels, CondaOpts opts) {
-        return condaPackagesTemplate1(template, packages, condaChannels, opts, Map.of());
-    }
-
-    static protected String condaPackagesTemplate1(String template, String packages, List<String> condaChannels, CondaOpts opts, Map<String,String> extraBinding) {
         final List<String> channels0 = condaChannels!=null ? condaChannels : List.of();
         final String channelsOpts = channels0.stream().map(it -> "-c "+it).collect(Collectors.joining(" "));
         final boolean singularity = template.contains("/singularityfile");
@@ -89,7 +84,6 @@ public class TemplateUtils {
         binding.put("channel_opts", channelsOpts);
         binding.put("target", target);
         binding.put("base_packages", mambaInstallBasePackage0(opts.basePackages,singularity));
-        binding.putAll(extraBinding);
 
         final String result = renderTemplate0(template, binding) ;
         return addCommands(result, opts.commands, singularity);
@@ -109,13 +103,6 @@ public class TemplateUtils {
 
     static public String condaFileToSingularityFileV2(CondaOpts opts) {
         return condaFileTemplateV2("/templates/conda-micromamba-v2/singularityfile-conda-file.txt", opts);
-    }
-
-    static public String condaFileToDockerFileUsingV3(CondaOpts opts, String layersImage) {
-        return condaFileTemplateV2(
-                "/templates/conda-micromamba-v3/dockerfile-conda-file.txt",
-                opts,
-                Collections.singletonMap("layers_image", layersImage));
     }
 
     static public String condaFileToDockerFileUsingPixi(PixiOpts opts) {
@@ -142,24 +129,26 @@ public class TemplateUtils {
                 opts);
     }
 
-    static public String condaPackagesToDockerFileUsingV3(String packages, List<String> condaChannels, CondaOpts opts, String layersImage) {
+    /**
+     * Render the micromamba v3 Dockerfile, installing the environment from the {@code conda.yml}
+     * file of the build context or, when given, from a remote lock file
+     *
+     * @param lockFile The lock file URL or {@code null} to install the {@code conda.yml} file
+     */
+    static public String condaToDockerFileUsingV3(String lockFile, List<String> condaChannels, CondaOpts opts, String layersImage) {
         final Map<String,String> binding = new HashMap<>();
         binding.put("layers_image", layersImage);
-        binding.put("lock_file_add", null);
-        if( packages.startsWith("http://") || packages.startsWith("https://") ) {
+        binding.put("conda_file_add", "COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml");
+        binding.put("conda_file_opts", "-f /tmp/conda.yml");
+        if( lockFile != null ) {
             // micromamba can read a YAML file from a URL but not an explicit lock file,
-            // therefore the build adds the remote file and installs it from the local path,
-            // i.e. the `target` binding below replaces the URL target set by the template helper
-            final String lockFile = "/tmp/conda-lock/" + lockFileName(packages);
-            binding.put("lock_file_add", "# micromamba can't read an explicit lock file from a URL, add it to the build stage\nADD " + packages + " " + lockFile);
-            binding.put("target", "-f " + lockFile);
+            // therefore the build adds the remote file and installs it from the local path
+            final String path = "/tmp/conda-lock/" + lockFileName(lockFile);
+            final List<String> channels = condaChannels != null ? condaChannels : List.of();
+            binding.put("conda_file_add", "# micromamba can't read an explicit lock file from a URL, add it to the build stage\nADD " + lockFile + " " + path);
+            binding.put("conda_file_opts", channels.stream().map(it -> "-c " + it + " ").collect(Collectors.joining()) + "-f " + path);
         }
-        return condaPackagesTemplate1(
-                "/templates/conda-micromamba-v3/dockerfile-conda-packages.txt",
-                packages,
-                condaChannels,
-                opts,
-                binding);
+        return condaFileTemplateV2("/templates/conda-micromamba-v3/dockerfile-conda-file.txt", opts, binding);
     }
 
     /**

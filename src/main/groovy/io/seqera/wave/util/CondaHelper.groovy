@@ -25,14 +25,13 @@ import io.seqera.wave.exception.BadRequestException
 
 import static TemplateUtils.condaFileToDockerFile
 import static TemplateUtils.condaFileToDockerFileUsingV2
-import static TemplateUtils.condaFileToDockerFileUsingV3
 import static TemplateUtils.condaFileToSingularityFile
 import static TemplateUtils.condaFileToSingularityFileV2
 import static TemplateUtils.condaPackagesToDockerFile
 import static TemplateUtils.condaPackagesToDockerFileUsingV2
-import static TemplateUtils.condaPackagesToDockerFileUsingV3
 import static TemplateUtils.condaPackagesToSingularityFile
 import static TemplateUtils.condaPackagesToSingularityFileV2
+import static TemplateUtils.condaToDockerFileUsingV3
 
 /**
  * Helper class for Conda/Micromamba container builds.
@@ -111,10 +110,7 @@ class CondaHelper {
      */
     static String containerFileV3(PackagesSpec spec, String containerImage, String layersImage) {
         final opts = micromambaV2Opts(spec, containerImage, 'conda/micromamba:v3')
-        final lockFileUri = tryGetLockFile(spec.entries)
-        return lockFileUri
-                ? condaPackagesToDockerFileUsingV3(lockFileUri, spec.channels, opts, layersImage)
-                : condaFileToDockerFileUsingV3(opts, layersImage)
+        return condaToDockerFileUsingV3(tryGetLockFile(spec.entries), spec.channels, opts, layersImage)
     }
 
     /**

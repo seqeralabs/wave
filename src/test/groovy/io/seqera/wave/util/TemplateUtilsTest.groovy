@@ -958,8 +958,8 @@ class TemplateUtilsTest extends Specification {
      * Micromamba v3 template tests
      *
      * Same build stage as the v2 template, plus the `condasplit` tool (mounted from the
-     * layers image) moving the environment into 32 layer directories, which the final
-     * stage adds with one `COPY --link` per slot.
+     * layers image) moving the environment into at most 32 layer directories, which the
+     * frontend of the same image adds with one `COPY --link` each.
      * *********************************************************************************/
 
     static final private String LAYERS_IMAGE = 'public.cr.stage-seqera.io/wave/condasplit:v1'
@@ -974,7 +974,7 @@ class TemplateUtilsTest extends Specification {
         ])
 
         expect:
-        TemplateUtils.condaFileToDockerFileUsingV3(CONDA_OPTS, LAYERS_IMAGE) == '''\
+        TemplateUtils.condaToDockerFileUsingV3(null, null, CONDA_OPTS, LAYERS_IMAGE) == '''\
                 # syntax=public.cr.stage-seqera.io/wave/condasplit:v1
                 FROM mambaorg/micromamba:2.1.1 AS build
                 USER root
@@ -1007,88 +1007,20 @@ class TemplateUtilsTest extends Specification {
                 '''.stripIndent()
     }
 
-    def 'should create dockerfile using micromamba v3 template from packages' () {
-        given:
-        def PACKAGES = 'bwa=0.7.15 salmon=1.1.1'
-        def CHANNELS = ['conda-forge', 'bioconda']
-        def CONDA_OPTS = new CondaOpts([
-                mambaImage: 'mambaorg/micromamba:2.1.1',
-                baseImage: 'debian:12',
-                basePackages: null
-        ])
-
-        expect:
-        TemplateUtils.condaPackagesToDockerFileUsingV3(PACKAGES, CHANNELS, CONDA_OPTS, 'my.registry.io/wave/condasplit:v2') == '''\
-                # syntax=my.registry.io/wave/condasplit:v2
-                FROM mambaorg/micromamba:2.1.1 AS build
-                USER root
-                # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
-                # the condasplit tool is mounted read-only for this step only and never ends up in the image
-                RUN --mount=type=bind,from=my.registry.io/wave/condasplit:v2,source=/,target=/opt/wave-tools \\
-                    micromamba install -y -n base conda-forge::which \\
-                    && ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which \\
-                    && (micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1 > /tmp/mamba.log 2>&1 \\
-                    && cat /tmp/mamba.log \\
-                    || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \\
-                        && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -c conda-forge -c bioconda bwa=0.7.15 salmon=1.1.1)) \\
-                    && micromamba clean -a -y \\
-                    && micromamba env export --name base --explicit > environment.lock \\
-                    && echo ">> CONDA_LOCK_START" \\
-                    && cat environment.lock \\
-                    && echo "<< CONDA_LOCK_END" \\
-                    && /opt/wave-tools/condasplit --src /opt/conda --out /layers \\
-                        --slots 32 --max-layer-size 500000000 --own-layer-size 50000000 --exclude pkgs
-
-                FROM debian:12 AS prod
-                ARG MAMBA_ROOT_PREFIX="/opt/conda"
-                ENV MAMBA_ROOT_PREFIX=$MAMBA_ROOT_PREFIX
-                # the condasplit frontend repeats this line for each layer directory: /layers/00, /layers/01, ...
-                COPY --link --from=build /layers/NN/ /
-                USER root
-                ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
-                '''.stripIndent()
-    }
-
-    def 'should create dockerfile using micromamba v3 template with remote lock file' () {
-        given:
-        def PACKAGES = 'https://foo.com/some/conda-lock.yml'
-        def CHANNELS = ['conda-forge']
-        def CONDA_OPTS = new CondaOpts([
-                mambaImage: 'mambaorg/micromamba:2.1.1',
-                baseImage: 'ubuntu:24.04'
-        ])
-
-        when:
-        def result = TemplateUtils.condaPackagesToDockerFileUsingV3(PACKAGES, CHANNELS, CONDA_OPTS, LAYERS_IMAGE)
-
-        then:
-        // the lock file is added to the build stage and installed from the local path
-        result.startsWith('''\
-                # syntax=public.cr.stage-seqera.io/wave/condasplit:v1
-                FROM mambaorg/micromamba:2.1.1 AS build
-                USER root
-                # micromamba can't read an explicit lock file from a URL, add it to the build stage
-                ADD https://foo.com/some/conda-lock.yml /tmp/conda-lock/conda-lock.yml
-                # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
-                '''.stripIndent())
-        result.contains('    && (micromamba install -y -n base -c conda-forge -f /tmp/conda-lock/conda-lock.yml > /tmp/mamba.log 2>&1 \\\n')
-        result.contains('        && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -c conda-forge -f /tmp/conda-lock/conda-lock.yml)) \\\n')
-        result.count('https://foo.com/some/conda-lock.yml') == 1
-        result.contains('    && micromamba install -y -n base conda-forge::procps-ng \\\n')
-        result.contains('RUN --mount=type=bind,from=public.cr.stage-seqera.io/wave/condasplit:v1,source=/,target=/opt/wave-tools \\\n')
-        result.contains('FROM ubuntu:24.04 AS prod\n')
-    }
-
     def 'should add the remote lock file to the micromamba v3 build stage' () {
         given:
         def CONDA_OPTS = new CondaOpts([mambaImage: 'mambaorg/micromamba:2.1.1', baseImage: 'ubuntu:24.04'])
 
         when:
-        def lines = TemplateUtils.condaPackagesToDockerFileUsingV3(LOCK_URL, ['conda-forge', 'bioconda'], CONDA_OPTS, LAYERS_IMAGE).readLines()
+        def result = TemplateUtils.condaToDockerFileUsingV3(LOCK_URL, ['conda-forge', 'bioconda'], CONDA_OPTS, LAYERS_IMAGE)
+        def lines = result.readLines()
 
         then:
+        // the lock file is added to the build stage and installed from the local path
+        lines[3] == "# micromamba can't read an explicit lock file from a URL, add it to the build stage"
         lines[4] == "ADD ${LOCK_URL} ${LOCK}".toString()
         lines.count { it.contains("micromamba install -y -n base -c conda-forge -c bioconda -f ${LOCK}") } == 2
+        result.count(LOCK_URL) == 1
 
         where:
         LOCK_URL                                                                    | LOCK
@@ -1124,9 +1056,7 @@ class TemplateUtilsTest extends Specification {
         ])
 
         when:
-        def result = VARIANT=='conda-file'
-                ? TemplateUtils.condaFileToDockerFileUsingV3(CONDA_OPTS, LAYERS_IMAGE)
-                : TemplateUtils.condaPackagesToDockerFileUsingV3('bwa=0.7.15', ['bioconda'], CONDA_OPTS, LAYERS_IMAGE)
+        def result = TemplateUtils.condaToDockerFileUsingV3(VARIANT=='conda-file' ? null : 'https://foo.com/lock.yml', ['bioconda'], CONDA_OPTS, LAYERS_IMAGE)
         def lines = result.readLines()
 
         then:
@@ -1152,7 +1082,7 @@ class TemplateUtilsTest extends Specification {
         result.endsWith('COPY --link --from=build /layers/NN/ /\nUSER root\nENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"\nRUN apt-get update\nRUN apt-get install -y vim\n')
 
         where:
-        VARIANT << ['conda-file', 'conda-packages']
+        VARIANT << ['conda-file', 'lock-file']
     }
 
 }

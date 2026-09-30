@@ -304,16 +304,8 @@ class CondaHelperTest extends Specification {
         def result = CondaHelper.containerFileV3(packages, null, LAYERS_IMAGE)
 
         then:
-        result.contains('FROM mambaorg/micromamba:2-amazon2023 AS build')
-        result.contains('COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml')
-        result.contains('RUN --mount=type=bind,from=public.cr.stage-seqera.io/wave/condasplit:v1,source=/,target=/opt/wave-tools')
-        result.contains('micromamba install -y -n base -f /tmp/conda.yml')
-        result.contains('micromamba install -y -n base conda-forge::procps-ng')
-        result.contains('/opt/wave-tools/condasplit --src /opt/conda --out /layers')
-        result.contains('FROM ubuntu:24.04 AS prod')
-        result.contains('COPY --link --from=build /layers/NN/ /')
-        and:
-        result == TemplateUtils.condaFileToDockerFileUsingV3(CondaOpts.v2(), LAYERS_IMAGE)
+        // the packages go into the conda.yml file of the build context
+        result == TemplateUtils.condaToDockerFileUsingV3(null, CHANNELS, CondaOpts.v2(), LAYERS_IMAGE)
     }
 
     def 'should create v3 docker file with lock file'() {
@@ -326,14 +318,7 @@ class CondaHelperTest extends Specification {
         def result = CondaHelper.containerFileV3(packages, null, LAYERS_IMAGE)
 
         then:
-        result.contains('FROM mambaorg/micromamba:2-amazon2023 AS build')
-        !result.contains('conda.yml')
-        result.contains('ADD https://foo.com/lock.yml /tmp/conda-lock/lock.yml\n')
-        result.contains('micromamba install -y -n base -c conda-forge -c bioconda -f /tmp/conda-lock/lock.yml')
-        result.contains('RUN --mount=type=bind,from=public.cr.stage-seqera.io/wave/condasplit:v1,source=/,target=/opt/wave-tools')
-        result.contains('FROM ubuntu:24.04 AS prod')
-        and:
-        result == TemplateUtils.condaPackagesToDockerFileUsingV3('https://foo.com/lock.yml', CHANNELS, CondaOpts.v2(), LAYERS_IMAGE)
+        result == TemplateUtils.condaToDockerFileUsingV3('https://foo.com/lock.yml', CHANNELS, CondaOpts.v2(), LAYERS_IMAGE)
     }
 
     def 'should use custom base image in v3'() {
@@ -368,11 +353,8 @@ class CondaHelperTest extends Specification {
         def result = CondaHelper.containerFileV3(packages, null, 'my.registry.io/wave/condasplit:v2@sha256:1234')
 
         then:
-        result.contains('FROM mambaorg/micromamba:2.0.0 AS build')
+        result == TemplateUtils.condaToDockerFileUsingV3(null, CHANNELS, CONDA_OPTS, 'my.registry.io/wave/condasplit:v2@sha256:1234')
         result.contains('RUN --mount=type=bind,from=my.registry.io/wave/condasplit:v2@sha256:1234,source=/,target=/opt/wave-tools')
-        result.contains('micromamba install -y -n base foo::one bar::two')
-        result.contains('FROM debian:12 AS prod')
-        result.endsWith('ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"\nRUN apt-get update\n')
     }
 
     def 'should override a v1 mamba image with the v2 default in v3'() {

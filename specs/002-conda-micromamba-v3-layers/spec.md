@@ -179,7 +179,7 @@ conda.yml ─▶│ build   {{mamba_image}}                        │ ───
                             │ build log: conda lock, layer plan
 ```
 
-1. **build**: runs v2's install commands and prints the conda lock between the existing markers. A lock-file URL is first added with `ADD` and installed from the local copy (see the lock-file URL variant below). In the same `RUN`, it then runs `condasplit` from the mounted tool image. The tool moves every file of `/opt/conda` (except `pkgs/`) into at most 32 directories `/layers/00`, `/layers/01`, …, each rooted at `/`, and prints the layer plan.
+1. **build**: runs v2's install commands and prints the conda lock between the existing markers. A lock-file URL is first added with `ADD` and installed from the local copy (see the lock-file URL input below). In the same `RUN`, it then runs `condasplit` from the mounted tool image. The tool moves every file of `/opt/conda` (except `pkgs/`) into at most 32 directories `/layers/00`, `/layers/01`, …, each rooted at `/`, and prints the layer plan.
 2. **prod**: starts from `{{base_image}}` and copies each layer directory with `COPY --link`. The template has one `COPY` line, which the frontend repeats for each directory, see below.
 
 **Why move instead of copy?** The install and the tool run in the same `RUN`, so every installed file is in the same writable layer and `rename()` only updates directory entries. This has four effects:
@@ -196,22 +196,22 @@ The tool creates at most 32 layers (`--slots 32`), about 16 GB of environment be
 
 ### Template: `conda-micromamba-v3/dockerfile-conda-file.txt`
 
-This is v2's stage 1 plus the tool call, the frontend directive, and a different final stage with one `COPY` line for the layer directories.
+This is v2's stage 1 plus the tool call, the frontend directive, and a different final stage with one `COPY` line for the layer directories. One template serves both inputs: for a conda file `{{conda_file_add}}` is `COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml` and `{{conda_file_opts}}` is `-f /tmp/conda.yml`; for a lock-file URL they are the `ADD` line and `-c <channel> … -f /tmp/conda-lock/<name>` described below.
 
 ```dockerfile
 # syntax={{layers_image}}
 FROM {{mamba_image}} AS build
 USER root
-COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
+{{conda_file_add}}
 # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
 # the condasplit tool is mounted read-only for this step only and never ends up in the image
 RUN --mount=type=bind,from={{layers_image}},source=/,target=/opt/wave-tools \
     micromamba install -y -n base conda-forge::which \
     && ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which \
-    && (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \
+    && (micromamba install -y -n base {{conda_file_opts}} > /tmp/mamba.log 2>&1 \
     && cat /tmp/mamba.log \
     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \
-        && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /tmp/conda.yml)) \
+        && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base {{conda_file_opts}})) \
     {{base_packages}}
     && micromamba clean -a -y \
     && micromamba env export --name base --explicit > environment.lock \
@@ -230,7 +230,7 @@ USER root
 ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
 ```
 
-`conda-micromamba-v3/dockerfile-conda-packages.txt` (the lock-file URL variant) mirrors v2's `dockerfile-conda-packages.txt` (`{{channel_opts}} {{target}}`) with one difference. micromamba downloads `-f <url>` only for a YAML environment file, and treats an explicit-format lock URL as a local path. Wave's `/v1alpha1/builds/<id>/condalock` endpoint serves the explicit format. So when the entry is an `http(s)` URL, the build stage first adds the file with `ADD <url> /tmp/conda-lock/<name>`, and both install commands (the normal one and the CUDA retry) use `-f /tmp/conda-lock/<name>`. `<name>` is the last segment of the URL path without query or fragment, because micromamba picks the file format from the extension. It falls back to `conda.lock` when the segment is empty or has unusual characters. The lock stays in the build stage and never reaches the final image. v2 has the same limitation with explicit lock URLs but is left unchanged, so its container ids stay the same. The tool call and the final stage are identical in both files.
+**Lock-file URL input.** v2 has a separate `dockerfile-conda-packages.txt` that installs with `-f <url>`. micromamba downloads `-f <url>` only for a YAML environment file, and treats an explicit-format lock URL as a local path. Wave's `/v1alpha1/builds/<id>/condalock` endpoint serves the explicit format. So when the entry is an `http(s)` URL, the build stage first adds the file with `ADD <url> /tmp/conda-lock/<name>`, and both install commands (the normal one and the CUDA retry) use `-f /tmp/conda-lock/<name>`. `<name>` is the last segment of the URL path without query or fragment, because micromamba picks the file format from the extension. It falls back to `conda.lock` when the segment is empty or has unusual characters. The lock stays in the build stage and never reaches the final image. v2 has the same limitation with explicit lock URLs but is left unchanged, so its container ids stay the same.
 
 The tool's parameters are literal in the template. Changing any of them changes the container file, and therefore the container id, which is the intended behaviour. Tuning them later means a new template version.
 
@@ -335,12 +335,12 @@ Wave schedules each platform's build on nodes of that architecture (node selecto
 | `wave-api` `BuildTemplate` | Add `CONDA_MICROMAMBA_V3 = "conda/micromamba:v3"`. `defaultTemplate()` is unchanged and still returns v2. |
 | `BuildConfig` | Add `@Value('${wave.build.condasplit-image:`public.cr.stage-seqera.io/wave/condasplit:v1`}') String condasplitImage` and include it in the config log line. The default points to the stage registry for the initial iteration and switches to `public.cr.seqera.io/wave/condasplit:v1` at the production release. |
 | `application.yml` | Document `wave.build.condasplit-image` next to `buildkit-image` and `singularity-image`. |
-| `TemplateUtils` | Add `condaFileToDockerFileUsingV3(CondaOpts, String layersImage)` and `condaPackagesToDockerFileUsingV3(String packages, List<String> channels, CondaOpts, String layersImage)`. They render the v3 templates with the v2 bindings plus `layers_image`, and they reuse `addCommands`. |
+| `TemplateUtils` | Add `condaToDockerFileUsingV3(String lockFile, List<String> channels, CondaOpts, String layersImage)`, with a `null` lock file for the conda-file input. It renders the v3 template with the v2 bindings plus `layers_image`, `conda_file_add` and `conda_file_opts`, and reuses `addCommands`. |
 | `CondaHelper` | Add `containerFileV3(PackagesSpec spec, String containerImage, String layersImage)`. It applies the same CONDA-type check, lock-file detection, v1-image override and `containerImage → baseImage` handling as `containerFileV2`, but has no Singularity branch. |
 | `ContainerHelper.containerFileFromRequest` | Add a `String condasplitImage` parameter. Route `CONDA_MICROMAMBA_V3` to `CondaHelper.containerFileV3`. When the format is Singularity, throw `BadRequestException("Build template 'conda/micromamba:v3' does not support Singularity format")`. The branches for other templates are unchanged. |
 | `ContainerController` | Pass `buildConfig.condasplitImage` to `containerFileFromRequest`. |
 | `ContainerInspectServiceImpl` | `findRepositories` also collects images referenced by `RUN --mount=...,from=<image>` (build stage names are ignored), so the tool image gets registry credentials like `FROM` images. |
-| Templates | Add `src/main/resources/templates/conda-micromamba-v3/dockerfile-conda-file.txt` and `dockerfile-conda-packages.txt`. There are no Singularity files. |
+| Templates | Add `src/main/resources/templates/conda-micromamba-v3/dockerfile-conda-file.txt`, for both the conda-file and the lock-file URL inputs. There are no Singularity files. |
 
 These components need no changes: `BuildStrategy` (buildctl args, cache options, compression), `BuildLogServiceImpl` (lock markers are unchanged), persistence (`buildTemplate` is already stored and shown on the build page), `MultiPlatformBuildService`, scanning, mirroring and freeze.
 
@@ -402,7 +402,7 @@ The generated Dockerfile (about 3 KB) is not affected by `wave.build.max-contain
 ## Testing Strategy
 
 **Unit tests (Wave, Spock)**
-- `TemplateUtilsTest`: render both v3 templates. Assert the bindings (`mamba_image`, `base_image`, `layers_image`, `base_packages`, `channel_opts`/`target`), the `# syntax=` first line, the `RUN --mount` line, the single `COPY --link --from=build /layers/NN/ /` line, and `commands` appended at the end.
+- `TemplateUtilsTest`: render the v3 template for a conda file and a lock-file URL. Assert the bindings (`mamba_image`, `base_image`, `layers_image`, `base_packages`, `conda_file_add`/`conda_file_opts`), the `# syntax=` first line, the `RUN --mount` line, the single `COPY --link --from=build /layers/NN/ /` line, and `commands` appended at the end.
 - `CondaHelperTest`: cover `containerFileV3` for a conda file, a lock URL, a `containerImage` override, a v1 `mambaImage` override, and a non-CONDA type (which fails).
 - `ContainerHelperTest`: v3 routes to `containerFileV3`. v3 with Singularity returns 400. Golden-file output for no template, v1, v2, pixi and cran is unchanged.
 - `BuildConfigTest`: default value and override of `condasplit-image`.

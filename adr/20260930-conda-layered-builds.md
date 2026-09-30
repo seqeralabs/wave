@@ -254,7 +254,7 @@ Reference environment built with BuildKit v0.25.2, gzip compression and OCI medi
 |----------|-------|
 | API Models | `BuildTemplate.java` |
 | Configuration | `BuildConfig.groovy`, `application.yml` |
-| Templates | `conda-micromamba-v3/dockerfile-conda-file.txt`, `conda-micromamba-v3/dockerfile-conda-packages.txt` |
+| Templates | `conda-micromamba-v3/dockerfile-conda-file.txt` |
 | Helpers | `TemplateUtils.java`, `CondaHelper.groovy`, `ContainerHelper.groovy` |
 | Controller | `ContainerController.groovy` |
 | Services | `ContainerInspectServiceImpl.groovy` |

@@ -1,16 +1,16 @@
 # syntax={{layers_image}}
 FROM {{mamba_image}} AS build
 USER root
-COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
+{{conda_file_add}}
 # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
 # the condasplit tool is mounted read-only for this step only and never ends up in the image
 RUN --mount=type=bind,from={{layers_image}},source=/,target=/opt/wave-tools \
     micromamba install -y -n base conda-forge::which \
     && ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which \
-    && (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \
+    && (micromamba install -y -n base {{conda_file_opts}} > /tmp/mamba.log 2>&1 \
     && cat /tmp/mamba.log \
     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \
-        && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /tmp/conda.yml)) \
+        && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base {{conda_file_opts}})) \
     {{base_packages}}
     && micromamba clean -a -y \
     && micromamba env export --name base --explicit > environment.lock \

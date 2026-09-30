@@ -122,14 +122,12 @@ class ContainerInspectServiceImplTest extends Specification {
         def CONDA_OPTS = new CondaOpts([mambaImage: 'mambaorg/micromamba:2.1.1', baseImage: 'ubuntu:24.04'])
 
         expect:
-        ContainerInspectServiceImpl.findRepositories(TemplateUtils.condaFileToDockerFileUsingV3(CONDA_OPTS, LAYERS))
+        // the ADD line of a lock file adds no repository
+        ContainerInspectServiceImpl.findRepositories(TemplateUtils.condaToDockerFileUsingV3(LOCK_FILE, ['bioconda'], CONDA_OPTS, LAYERS))
                 == ['mambaorg/micromamba:2.1.1', LAYERS, 'ubuntu:24.04']
-        and:
-        ContainerInspectServiceImpl.findRepositories(TemplateUtils.condaPackagesToDockerFileUsingV3('bwa=0.7.15', ['bioconda'], CONDA_OPTS, LAYERS))
-                == ['mambaorg/micromamba:2.1.1', LAYERS, 'ubuntu:24.04']
-        and:
-        ContainerInspectServiceImpl.findRepositories(TemplateUtils.condaPackagesToDockerFileUsingV3('https://foo.com/lock.yml', ['bioconda'], CONDA_OPTS, LAYERS))
-                == ['mambaorg/micromamba:2.1.1', LAYERS, 'ubuntu:24.04']
+
+        where:
+        LOCK_FILE << [null, 'https://foo.com/lock.yml']
     }
 
     def 'should fetch container entry point' () {
