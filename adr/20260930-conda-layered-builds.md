@@ -297,7 +297,7 @@ Reference environment built with BuildKit v0.25.2, gzip compression and OCI medi
 ## References
 
 - [Feature specification](../specs/002-conda-micromamba-v3-layers/spec.md)
-- [Proof of concept results](../specs/002-conda-micromamba-v3-layers/spec.md#appendix-a-proof-of-concept-results)
+- [Acceptance and verification results](../specs/002-conda-micromamba-v3-layers/spec.md#acceptance-and-verification)
 - [Multi-Stage Build Templates ADR](20251203-multi-stage-build-templates.md)
 - [Layered Conda builds API documentation](../docs/api.md#layered-conda-builds)
 - [Dockerfile `RUN --mount`](https://docs.docker.com/reference/dockerfile/#run---mount)
