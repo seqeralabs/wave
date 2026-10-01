@@ -64,6 +64,11 @@ Use the following options to configure Wave build settings:
 : Compression algorithm for container builds. Options include: `gzip`, `estargz`, or `zstd`.
   Default: `gzip`.
 
+`wave.build.conda.baseImage`
+: Base image for the final stage of multi-stage Conda container builds.
+  Only applies when `wave.build.template` is set to `conda/micromamba:v2` or `conda/pixi:v1`.
+  Default: `ubuntu:24.04`.
+
 `wave.build.conda.basePackages`
 : Conda packages to always include in the container.
   Default: `conda-forge::procps-ng`.
@@ -78,6 +83,11 @@ Use the following options to configure Wave build settings:
 `wave.build.repository`
 : Container repository URL where Wave uploads built images.
   Requires corresponding credentials to be configured in your Seqera account.
+
+`wave.build.template`
+: Build template for container builds.
+  Supported values: `conda/pixi:v1` (Pixi with multi-stage builds), `conda/micromamba:v2` (Micromamba 2.x with multi-stage builds), `cran/installr:v1` (R/CRAN packages).
+  Default: `conda/micromamba:v1`.
 
 ## Conda
 
