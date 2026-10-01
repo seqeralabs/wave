@@ -93,6 +93,9 @@ func TestErrors(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(noMeta, "file"), nil, 0o644); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.Symlink(p.src, filepath.Join(noMeta, "link")); err != nil {
+		t.Fatal(err)
+	}
 	bad := newPrefix(t)
 	bad.pkg("a", 1000)
 	if err := os.WriteFile(bad.path("conda-meta/b-1.0-0.json"), []byte(`{"name": "b", "files": [`), 0o644); err != nil {
@@ -107,7 +110,8 @@ func TestErrors(t *testing.T) {
 		{"relative src", []string{"--src", "opt/conda", "--out", p.out, "--slots", "4"}, "--src must be an absolute path: opt/conda"},
 		{"missing src option", []string{"--out", p.out, "--slots", "4"}, "--src must be an absolute path"},
 		{"missing src", []string{"--src", filepath.Join(noMeta, "nope"), "--out", p.out, "--slots", "4"}, "no such file or directory"},
-		{"src is a file", []string{"--src", filepath.Join(noMeta, "file"), "--out", p.out, "--slots", "4"}, "missing conda-meta directory in " + filepath.Join(noMeta, "file")},
+		{"src is a file", []string{"--src", filepath.Join(noMeta, "file"), "--out", p.out, "--slots", "4"}, "--src must be a directory and not a symlink: " + filepath.Join(noMeta, "file")},
+		{"src is a symlink", []string{"--src", filepath.Join(noMeta, "link"), "--out", p.out, "--slots", "4"}, "--src must be a directory and not a symlink: " + filepath.Join(noMeta, "link")},
 		{"missing conda-meta", []string{"--src", noMeta, "--out", p.out, "--slots", "4"}, "missing conda-meta directory in " + noMeta},
 		{"malformed json", []string{"--src", bad.src, "--out", bad.out, "--slots", "4"}, "cannot parse conda-meta/b-1.0-0.json"},
 		{"missing out", []string{"--src", p.src, "--slots", "4"}, "missing required option --out"},

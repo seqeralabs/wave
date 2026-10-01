@@ -110,8 +110,10 @@ func forward(ctx context.Context, c client.Client, filename string, dockerfile [
 		return nil, err
 	}
 	opts := maps.Clone(c.BuildOpts().Opts)
+	// the built-in frontend never forwards a build with this option set, whatever
+	// the syntax directive or the BUILDKIT_SYNTAX build arg, so it cannot call this one again
+	opts["cmdline"] = "condasplit-frontend"
 	// set by the built-in frontend when it forwarded the build to this one
-	delete(opts, "cmdline")
 	delete(opts, "source")
 	if target != "" {
 		opts["target"] = target

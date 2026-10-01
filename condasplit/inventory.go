@@ -97,6 +97,11 @@ func scan(src string, excludes map[string]bool) (*inventory, error) {
 	if err != nil {
 		return nil, err
 	}
+	// walk does not descend a symlink, so a symlinked prefix would look empty and
+	// pass the verify step with nothing layered
+	if !fi.IsDir() {
+		return nil, fmt.Errorf("--src must be a directory and not a symlink: %s", src)
+	}
 	inv := &inventory{dirs: map[string]*node{}}
 	if inv.root, err = newNode(".", fi); err != nil {
 		return nil, err
