@@ -178,7 +178,13 @@ Returns the name of the container request made available by Wave.
                                 mambaImage: string,
                                 commands: string[],
                                 basePackages: string
-                              }
+                              },
+                  pixiOpts: {
+                                pixiImage: string,
+                                baseImage: string,
+                                commands: string[],
+                                basePackages: string
+                            }
 
               },
     nameStrategy: string
@@ -220,7 +226,10 @@ Returns the name of the container request made available by Wave.
 | `basePackages`                      | Names of base packages.                                                                                                                                        |
 | `baseImage`                         | Base image for the final stage of multi-stage Conda/Pixi Docker builds. Has no effect on Singularity builds.                                            |
 | `pixiOpts`                          | Pixi build options (when `type` is `CONDA` and `buildTemplate` is `conda/pixi:v1`).                                                                                  |
-| `pixiImage`                         | Name of the Docker image used for Pixi package manager (e.g., `ghcr.io/prefix-dev/pixi:latest`).                                                              |
+| `pixiOpts.pixiImage`                | Name of the Docker image used for Pixi package manager (default: `public.cr.seqera.io/wave/pixi:0.61.0-noble`).                                                      |
+| `pixiOpts.baseImage`                | Base image for the final stage of the multi-stage Docker build. Has no effect on Singularity builds (default: `ubuntu:24.04`).                                        |
+| `pixiOpts.commands`                 | Custom commands to execute during the container build (optional).                                                                                                      |
+| `pixiOpts.basePackages`             | Base packages to include in every Pixi build (default: `conda-forge::procps-ng`).                                                                                      |
 | `cranOpts`                          | CRAN build options (when `type` is `CRAN`).                                                                                                                        |
 | `rImage`                            | Name of the R Docker image used to build CRAN containers (e.g., `rocker/r-ver:4.4.1`).                                                                         |
 | `buildTemplate`                     | The build template to use for container builds. Supported values: `conda/pixi:v1` (multi-stage build using Pixi), `conda/micromamba:v2` (multi-stage build using Micromamba 2.x). Both produce smaller images by excluding the package manager from the final stage (Singularity still uses a single-stage build). Default: `conda/micromamba:v1`. |
