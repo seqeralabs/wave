@@ -29,18 +29,6 @@ COPY --link --from=build /layers/NN/ /
 RUN apt-get update
 `
 
-func TestSyntaxLine(t *testing.T) {
-	got := string(syntaxLine.ReplaceAll([]byte(dockerfile), nil))
-	if got != dockerfile[len("# syntax=public.cr.stage-seqera.io/wave/condasplit:v1\n"):] {
-		t.Errorf("unexpected Dockerfile:\n%s", got)
-	}
-	// only a directive on the first line is removed
-	other := "FROM foo\n# syntax=bar\n"
-	if got := string(syntaxLine.ReplaceAll([]byte(other), nil)); got != other {
-		t.Errorf("unexpected Dockerfile:\n%s", got)
-	}
-}
-
 func TestExpandLayers(t *testing.T) {
 	got, err := expandLayers([]byte(dockerfile), []string{"02", "00", "01"})
 	if err != nil {

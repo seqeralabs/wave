@@ -63,7 +63,7 @@ sequenceDiagram
     W->>B: buildctl build --frontend dockerfile.v0 (usual arguments)
     B->>D: load the Dockerfile
     D->>F: syntax directive names condasplit:v1, forward the build
-    F->>D: build target "build", Dockerfile without the directive
+    F->>D: build target "build", cmdline set so it is not forwarded again
     D->>S: RUN --mount condasplit: micromamba install, print conda lock
     S->>S: condasplit moves /opt/conda into /layers/00 … /layers/NN, prints layer plan
     S-->>F: install stage result

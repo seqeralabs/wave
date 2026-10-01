@@ -41,12 +41,8 @@ import (
 	"github.com/moby/buildkit/util/appcontext"
 )
 
-var (
-	// the directive selecting this frontend, it must be the first line
-	syntaxLine = regexp.MustCompile(`\A#\s*syntax=.*\n`)
-	// the COPY line of the layer directories in the conda/micromamba:v3 template
-	layersLine = regexp.MustCompile(`(?m)^COPY --link --from=build /layers/NN/ /\n`)
-)
+// the COPY line of the layer directories in the conda/micromamba:v3 template
+var layersLine = regexp.MustCompile(`(?m)^COPY --link --from=build /layers/NN/ /\n`)
 
 func main() {
 	if err := grpcclient.RunFromEnvironment(appcontext.Context(), build); err != nil {
@@ -64,10 +60,8 @@ func build(ctx context.Context, c client.Client) (*client.Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	// without the directive the built-in frontend does not forward the build back here
-	dockerfile := syntaxLine.ReplaceAll(src.Data, nil)
 	// the build stage of the template runs condasplit
-	res, err := forward(ctx, c, src.Filename, dockerfile, "build")
+	res, err := forward(ctx, c, src.Filename, src.Data, "build")
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +78,8 @@ func build(ctx context.Context, c client.Client) (*client.Result, error) {
 	for _, e := range entries {
 		dirs = append(dirs, e.Path)
 	}
-	if dockerfile, err = expandLayers(dockerfile, dirs); err != nil {
+	dockerfile, err := expandLayers(src.Data, dirs)
+	if err != nil {
 		return nil, err
 	}
 	return forward(ctx, c, src.Filename, dockerfile, "")
