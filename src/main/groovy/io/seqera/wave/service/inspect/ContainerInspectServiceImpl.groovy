@@ -148,6 +148,8 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
             if( repo )
                 result.add(repo)
             else
+                // images mounted with `RUN --mount=...,from=<image>` are pulled by the build too,
+                // e.g. the condasplit tool image of `conda/micromamba:v3` mirrored to a private registry
                 result.addAll(findMountRepositories(line.trim()))
         }
         return result
