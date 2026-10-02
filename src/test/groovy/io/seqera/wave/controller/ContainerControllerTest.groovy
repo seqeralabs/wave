@@ -617,7 +617,7 @@ class ContainerControllerTest extends Specification {
         }
     }
 
-    def 'should create response with conda packages using micromamba v3 template' () {
+    def 'should create response with conda packages using `conda/micromamba:v2-fast` template' () {
         given:
         def dockerAuth = Mock(ContainerInspectServiceImpl)
         def freeze = new FreezeServiceImpl( inspectService: dockerAuth)
@@ -631,7 +631,7 @@ class ContainerControllerTest extends Specification {
                 addressResolver: addressResolver, containerService: tokenService, persistenceService: persistence, validationService: validationService, serverUrl: 'http://wave.com')
         and:
         def packagesSpec = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['https://foo.com/lock.yml'], channels: ['conda-forge'])
-        def req = new SubmitContainerTokenRequest(packages: packagesSpec, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V3, freeze: true, buildRepository: 'docker.io/foo', towerAccessToken: '123')
+        def req = new SubmitContainerTokenRequest(packages: packagesSpec, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V2_FAST, freeze: true, buildRepository: 'docker.io/foo', towerAccessToken: '123')
         def user = new User(email: 'foo@bar.com', userName: 'foo')
         def id = PlatformId.of(user, req)
         and:
@@ -648,17 +648,17 @@ class ContainerControllerTest extends Specification {
         response.status.code == 200
         and:
         buildConfig.condasplitImage == 'public.cr.seqera.io/wave/condasplit:v1'
-        build.buildTemplate == BuildTemplate.CONDA_MICROMAMBA_V3
+        build.buildTemplate == BuildTemplate.CONDA_MICROMAMBA_V2_FAST
         build.containerFile.contains("RUN --mount=type=bind,from=${buildConfig.condasplitImage},source=/,target=/opt/wave-tools \\\n")
         build.containerFile.contains('COPY --link --from=build /layers/NN/ /\n')
     }
 
-    def 'should reject micromamba v3 template with singularity format' () {
+    def 'should reject `conda/micromamba:v2-fast` template with singularity format' () {
         given:
         def controller = new ContainerController(inspectService: Mock(ContainerInspectServiceImpl), buildConfig: buildConfig, validationService: validationService)
         and:
         def packagesSpec = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['bwa=0.7.15'], channels: ['bioconda'])
-        def req = new SubmitContainerTokenRequest(format: 'sif', packages: packagesSpec, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V3, freeze: true, buildRepository: 'docker.io/foo', towerAccessToken: '123')
+        def req = new SubmitContainerTokenRequest(format: 'sif', packages: packagesSpec, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V2_FAST, freeze: true, buildRepository: 'docker.io/foo', towerAccessToken: '123')
         def user = new User(email: 'foo@bar.com', userName: 'foo')
 
         when:
@@ -666,7 +666,7 @@ class ContainerControllerTest extends Specification {
 
         then:
         def e = thrown(BadRequestException)
-        e.message == "Build template 'conda/micromamba:v3' does not support Singularity format"
+        e.message == "Build template 'conda/micromamba:v2-fast' does not support Singularity format"
     }
 
     def 'should create multi-platform singularity response' () {

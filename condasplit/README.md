@@ -1,6 +1,6 @@
 # condasplit
 
-A small static tool used by the `conda/micromamba:v3` build template to ship a conda
+A small static tool used by the `conda/micromamba:v2-fast` build template to ship a conda
 environment as several image layers instead of one large layer.
 
 It runs in the same `RUN` step that installs the environment. It moves every file of the
@@ -84,7 +84,7 @@ condasplit --src DIR --out DIR --slots N
 | `--own-layer-size` | 50000000 | Packages at least this size get a layer to themselves |
 | `--exclude` | none | Path relative to `--src` left in place and not layered (repeatable) |
 
-The `conda/micromamba:v3` template runs:
+The `conda/micromamba:v2-fast` template runs:
 
 ```
 /opt/wave-tools/condasplit --src /opt/conda --out /layers \
@@ -126,7 +126,7 @@ and cross-compiles a static binary (`CGO_ENABLED=0`) from the pinned `golang` im
 
 Each release gets a new immutable tag (`v1`, `v2`, ...), set in the `VERSION` file. Wave
 pins the exact tag with the `wave.build.condasplit-image` setting, so a new tool version
-changes the v3 container file and therefore the container id. Never overwrite an existing tag.
+changes the v2-fast container file and therefore the container id. Never overwrite an existing tag.
 
 **Stage** (default registry of the `Makefile`, only for tests and local development):
 
@@ -140,7 +140,7 @@ make all
 `public.cr.seqera.io/wave/condasplit:<VERSION>` on the next Wave release commit (`[release]`
 on `master`). Then point the default of `wave.build.condasplit-image` to the new tag.
 
-The tag is always the `VERSION` value, never a checksum: Wave writes it into the v3 container
+The tag is always the `VERSION` value, never a checksum: Wave writes it into the v2-fast container
 file and the build logs, where `condasplit:v1` is readable and a checksum isn't. The checksum
 goes into an `io.seqera.condasplit.source` image label instead: a SHA-256 of the tracked files of
 this directory, the Markdown docs excluded. `make release` uses it to make sure a tag always holds

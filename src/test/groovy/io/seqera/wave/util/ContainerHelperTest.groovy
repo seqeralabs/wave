@@ -919,9 +919,9 @@ class ContainerHelperTest extends Specification {
                 '''.stripIndent()
     }
 
-    // === build with micromamba v3 tests
+    // === build with micromamba v2-fast tests
 
-    def 'should create conda docker file with packages and micromamba v3'() {
+    def 'should create conda docker file with packages and micromamba v2-fast'() {
         given:
         def CHANNELS = ['conda-forge', 'bioconda']
         def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
@@ -930,16 +930,16 @@ class ContainerHelperTest extends Specification {
                 entries:  PACKAGES,
                 channels: CHANNELS)
         and:
-        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V3)
+        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V2_FAST)
 
         when:
         def result = ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
 
         then:
-        result == CondaHelper.containerFileV3(new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: PACKAGES, channels: CHANNELS), null, LAYERS_IMAGE)
+        result == CondaHelper.containerFileV2Fast(new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: PACKAGES, channels: CHANNELS), null, LAYERS_IMAGE)
     }
 
-    def 'should create conda docker file with lock file, container image and micromamba v3'() {
+    def 'should create conda docker file with lock file, container image and micromamba v2-fast'() {
         given:
         def CHANNELS = ['conda-forge', 'bioconda']
         def PACKAGES = ['https://foo.com/lock.yml']
@@ -950,40 +950,40 @@ class ContainerHelperTest extends Specification {
                 channels: CHANNELS,
                 condaOpts: CONDA_OPTS)
         and:
-        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V3, containerImage: 'debian:12')
+        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V2_FAST, containerImage: 'debian:12')
 
         when:
         def result = ContainerHelper.containerFileFromRequest(req, 'my.registry.io/wave/condasplit:v2')
 
         then:
-        result == CondaHelper.containerFileV3(packages, 'debian:12', 'my.registry.io/wave/condasplit:v2')
+        result == CondaHelper.containerFileV2Fast(packages, 'debian:12', 'my.registry.io/wave/condasplit:v2')
         result.contains('FROM debian:12 AS prod\n')
     }
 
-    def 'should reject singularity format with micromamba v3'() {
+    def 'should reject singularity format with micromamba v2-fast'() {
         given:
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['bwa=0.7.15'], channels: ['bioconda'])
-        def req = new SubmitContainerTokenRequest(packages: packages, format: 'sif', buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V3)
+        def req = new SubmitContainerTokenRequest(packages: packages, format: 'sif', buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V2_FAST)
 
         when:
         ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
 
         then:
         def e = thrown(BadRequestException)
-        e.message == "Build template 'conda/micromamba:v3' does not support Singularity format"
+        e.message == "Build template 'conda/micromamba:v2-fast' does not support Singularity format"
     }
 
-    def 'should reject non-conda package type with micromamba v3'() {
+    def 'should reject non-conda package type with micromamba v2-fast'() {
         given:
         def packages = new PackagesSpec(type: PackagesSpec.Type.CRAN, entries: ['dplyr'])
-        def req = new SubmitContainerTokenRequest(packages: packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V3)
+        def req = new SubmitContainerTokenRequest(packages: packages, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V2_FAST)
 
         when:
         ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
 
         then:
         def e = thrown(BadRequestException)
-        e.message == "Package type 'CRAN' not supported by 'conda/micromamba:v3' build template"
+        e.message == "Package type 'CRAN' not supported by 'conda/micromamba:v2-fast' build template"
     }
 
     def 'should create cran docker file with packages'() {
@@ -1123,7 +1123,7 @@ class ContainerHelperTest extends Specification {
         def req = new SubmitContainerTokenRequest(packages: PACKAGES, buildTemplate: TEMPLATE, format: FORMAT, containerImage: CONTAINER_IMAGE)
 
         and:
-        // golden files captured from the release preceding 'conda/micromamba:v3'
+        // golden files captured from the release preceding 'conda/micromamba:v2-fast'
         def expected = this.class.getResource("/golden/${NAME}.txt").getText('UTF-8')
 
         when:

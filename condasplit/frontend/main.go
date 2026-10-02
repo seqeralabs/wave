@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// condasplit-frontend is the BuildKit frontend of the conda/micromamba:v3 build template.
+// condasplit-frontend is the BuildKit frontend of the conda/micromamba:v2-fast build template.
 // Wave writes the Dockerfile before the environment is known, so the template has one
 // COPY line for the layer directories: this frontend builds the install stage first,
 // then builds the image with that line repeated for each directory condasplit created.
@@ -41,7 +41,7 @@ import (
 	"github.com/moby/buildkit/util/appcontext"
 )
 
-// the COPY line of the layer directories in the conda/micromamba:v3 template
+// the COPY line of the layer directories in the conda/micromamba:v2-fast template
 var layersLine = regexp.MustCompile(`(?m)^COPY --link --from=build /layers/NN/ /\n`)
 
 func main() {

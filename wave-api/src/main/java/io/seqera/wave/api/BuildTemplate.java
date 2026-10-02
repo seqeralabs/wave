@@ -43,7 +43,7 @@ public final class BuildTemplate {
      * Build template for Micromamba v2-based multi-stage builds producing
      * the Conda environment as multiple image layers (Docker format only)
      */
-    public static final String CONDA_MICROMAMBA_V3 = "conda/micromamba:v3";
+    public static final String CONDA_MICROMAMBA_V2_FAST = "conda/micromamba:v2-fast";
 
     /**
      * Build template for R/CRAN package builds

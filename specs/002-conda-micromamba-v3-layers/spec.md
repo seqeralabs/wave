@@ -1,4 +1,4 @@
-# Layered Conda Builds (`conda/micromamba:v3`)
+# Layered Conda Builds (`conda/micromamba:v2-fast`)
 
 **Branch**: `002-conda-micromamba-v3-layers` · **PR**: [#1146](https://github.com/seqeralabs/wave/pull/1146) · **Created**: 2026-09-30
 **Status**: Implemented, pending staging validation and the production image release
@@ -7,7 +7,7 @@
 
 ## Summary
 
-`conda/micromamba:v3` is a new, opt-in build template. It installs the Conda environment exactly like `conda/micromamba:v2`, then ships it as several image layers grouped by package, each at most 500 MB before compression, instead of one multi-GB layer. Two small Go programs make this work. Both ship in one tool image, `wave/condasplit`:
+`conda/micromamba:v2-fast` is a new, opt-in build template. It installs the Conda environment exactly like `conda/micromamba:v2`, then ships it as several image layers grouped by package, each at most 500 MB before compression, instead of one multi-GB layer. Two small Go programs make this work. Both ship in one tool image, `wave/condasplit`:
 
 - **`condasplit`** runs inside the install step and moves the installed files into one directory per layer.
 - **`condasplit-frontend`** is a BuildKit frontend. It turns the template's single `COPY` line into one `COPY`, and so one image layer, per directory.
@@ -30,18 +30,18 @@ Every Conda template ships the environment as a single layer. For the reference 
 - No new services, API fields or persistence.
 
 **Non-goals.**
-- Singularity: a SIF image is one squashfs file, so v3 rejects it with HTTP 400.
+- Singularity: a SIF image is one squashfs file, so v2-fast rejects it with HTTP 400.
 - Changing v1, v2 or pixi.
-- Making v3 the default.
+- Making v2-fast the default.
 - Sharing package layers across images.
 - Showing the layer plan in the UI.
 
-## How a v3 build works
+## How a v2-fast build works
 
 | Component | Role |
 |---|---|
-| Wave | Renders the Dockerfile from the v3 template and starts the build with the usual `buildctl` arguments |
-| v3 Dockerfile | Two stages. The first line `# syntax=<condasplit image>` selects the frontend. The `build` stage installs the environment and runs `condasplit`. The `prod` stage has one `COPY --link --from=build /layers/NN/ /` line |
+| Wave | Renders the Dockerfile from the v2-fast template and starts the build with the usual `buildctl` arguments |
+| v2-fast Dockerfile | Two stages. The first line `# syntax=<condasplit image>` selects the frontend. The `build` stage installs the environment and runs `condasplit`. The `prod` stage has one `COPY --link --from=build /layers/NN/ /` line |
 | `condasplit-frontend` | The image's entrypoint. BuildKit runs it for the `# syntax=` directive. It builds the `build` stage, lists `/layers`, repeats the `COPY` line for each directory and builds the image. It delegates both builds to the built-in Dockerfile frontend |
 | `condasplit` | Mounted read-only into the install `RUN`. It moves `/opt/conda` (except `pkgs/`) into `/layers/00`, `/layers/01`, …, each rooted at `/`, and prints the layer plan |
 | BuildKit | Unchanged, rootless `v0.25.2` in a Kubernetes pod. It pulls the tool image once as the frontend and once for the mount |
@@ -57,8 +57,8 @@ sequenceDiagram
     participant S as build stage (mamba image)
     participant R as Registry
 
-    C->>W: container request, buildTemplate conda/micromamba:v3
-    W->>W: render the v3 Dockerfile (conda.yml or lock file URL)
+    C->>W: container request, buildTemplate conda/micromamba:v2-fast
+    W->>W: render the v2-fast Dockerfile (conda.yml or lock file URL)
     W-->>C: target image and build id, the build runs asynchronously
     W->>B: buildctl build --frontend dockerfile.v0 (usual arguments)
     B->>D: load the Dockerfile
@@ -75,7 +75,7 @@ sequenceDiagram
     B->>R: push
 ```
 
-**The template** (`src/main/resources/templates/conda-micromamba-v3/dockerfile-conda-file.txt`) is v2's install step plus the frontend directive, the tool call and a new final stage:
+**The template** (`src/main/resources/templates/conda-micromamba-v2-fast/dockerfile-conda-file.txt`) is v2's install step plus the frontend directive, the tool call and a new final stage:
 
 ```dockerfile
 # syntax={{layers_image}}
@@ -106,7 +106,7 @@ ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
 
 ## Key decisions
 
-**D1. A new template version.** The container id hashes the generated Dockerfile, so changing v2 would change every existing id and trigger rebuilds. v3 is opt-in, and `defaultTemplate()` still returns v2. The tool parameters are literal in the template, so tuning them means a new template version.
+**D1. A new template.** The container id hashes the generated Dockerfile, so changing v2 would change every existing id and trigger rebuilds. v2-fast is opt-in, and `defaultTemplate()` still returns v2. The tool parameters are literal in the template, so tuning them means a new template version.
 
 **D2. Split inside the install step, by moving files.** `condasplit` runs in the same `RUN` as `micromamba install`, so every installed file is in the same writable layer:
 - `rename()` only rewrites directory entries, which takes seconds (2.8 s for 88,231 files).
@@ -141,7 +141,7 @@ A final check fails the build if anything but directories and `pkgs/` is left be
 
 The frontend is its own Go module, so its `github.com/moby/buildkit` dependency (v0.25.2, the production version) never reaches the tool. Tags are immutable (`v1`, `v2`, …), so a new tool version means a new container id.
 
-**D8. Lock file URLs are added, not passed to micromamba.** `micromamba install -f <url>` downloads only YAML environment files and treats an explicit lock URL as a local path. Wave's `/v1alpha1/builds/<id>/condalock` endpoint serves explicit locks, so v3 uses `ADD <url>` and installs from the local copy. The file name is kept, since micromamba reads the format from the extension, and falls back to `conda.lock`. v1 and v2 have the same bug but stay unchanged to keep their container ids (follow-up).
+**D8. Lock file URLs are added, not passed to micromamba.** `micromamba install -f <url>` downloads only YAML environment files and treats an explicit lock URL as a local path. Wave's `/v1alpha1/builds/<id>/condalock` endpoint serves explicit locks, so v2-fast uses `ADD <url>` and installs from the local copy. The file name is kept, since micromamba reads the format from the extension, and falls back to `conda.lock`. v1 and v2 have the same bug but stay unchanged to keep their container ids (follow-up).
 
 **D9. The layer plan goes in the build log.** `condasplit` prints it between `>> CONDA_LAYERS_START` and `<< CONDA_LAYERS_END`, after the unchanged conda lock markers, so lock extraction works as for v2:
 
@@ -170,7 +170,7 @@ condasplit --src DIR --out DIR --slots N [--max-layer-size BYTES] [--own-layer-s
 | `--slots` | Maximum number of layers; above it the smallest are merged |
 | `--max-layer-size` | Cap per layer, the sum of file sizes before compression (default 500,000,000) |
 | `--own-layer-size` | Packages at least this size get their own layers (default 50,000,000) |
-| `--exclude` | Paths relative to `--src` left in place (v3 passes `pkgs`) |
+| `--exclude` | Paths relative to `--src` left in place (v2-fast passes `pkgs`) |
 
 **Steps:**
 1. Walk the prefix without following symlinks, skipping `--exclude` paths.
@@ -186,16 +186,16 @@ The prefix directory and its parents are `0755 root:root` in every layer, as v2'
 
 | Area | Change |
 |---|---|
-| `wave-api` `BuildTemplate` | `CONDA_MICROMAMBA_V3 = "conda/micromamba:v3"` |
+| `wave-api` `BuildTemplate` | `CONDA_MICROMAMBA_V2_FAST = "conda/micromamba:v2-fast"` |
 | `BuildConfig`, `application.yml` | `wave.build.condasplit-image`, default `public.cr.seqera.io/wave/condasplit:v1` |
-| `ContainerHelper`, `ContainerController` | Route v3 to `CondaHelper.containerFileV3`, passing the configured image. Singularity gets HTTP 400 |
-| `CondaHelper` | `containerFileV3`. It shares the CONDA-type check, the v1 mamba-image override and the base image handling with v2 (`micromambaV2Opts`) |
-| `TemplateUtils` | `condaToDockerFileUsingV3(lockFile, channels, opts, layersImage)` renders the template, with a `null` lock file for the conda-file input |
+| `ContainerHelper`, `ContainerController` | Route v2-fast to `CondaHelper.containerFileV2Fast`, passing the configured image. Singularity gets HTTP 400 |
+| `CondaHelper` | `containerFileV2Fast`. It shares the CONDA-type check, the v1 mamba-image override and the base image handling with v2 (`micromambaV2Opts`) |
+| `TemplateUtils` | `condaToDockerFileUsingV2Fast(lockFile, channels, opts, layersImage)` renders the template, with a `null` lock file for the conda-file input |
 | `ContainerInspectServiceImpl` | Collects `RUN --mount ... from=<image>` images for the build credentials, ignoring stage names |
 | `condasplit/` | Tool and tests, `frontend/` module, `Dockerfile` (`FROM scratch`, both binaries, frontend entrypoint), `Makefile`, `README.md` |
 | `.github/workflows/build-condasplit.yml` | Go tests on pull requests; on a Wave `[release]` commit, publishes the `condasplit/VERSION` tag. It skips a published tag with the same sources checksum (`io.seqera.condasplit.source` label) and fails for one with different sources |
 
-Unchanged: `BuildStrategy` (`buildctl` arguments, cache, compression), `BuildLogServiceImpl`, persistence, `MultiPlatformBuildService` (one build per platform), scanning, mirroring and freeze. v3 produces its own Dockerfile, so it gets its own container ids and never collides with images from other templates.
+Unchanged: `BuildStrategy` (`buildctl` arguments, cache, compression), `BuildLogServiceImpl`, persistence, `MultiPlatformBuildService` (one build per platform), scanning, mirroring and freeze. v2-fast produces its own Dockerfile, so it gets its own container ids and never collides with images from other templates.
 
 ## Acceptance and verification
 
@@ -212,7 +212,7 @@ The builds used Wave-rendered Dockerfiles on the production BuildKit (`v0.25.2-r
 | Build not slower than v2 | 146 s against 283 s; export 19 s against 125 s |
 | Tool absent from the image | Yes |
 | Existing templates unchanged | 23 golden files for v1, v2, pixi and cran, byte-identical |
-| Singularity or non-CONDA v3 requests | HTTP 400 |
+| Singularity or non-CONDA v2-fast requests | HTTP 400 |
 | Tool image under 10 MB compressed | 8.0 MB amd64, 7.2 MB arm64 |
 | Smoke tests | GATK 4.6.2.0, gcnvkernel 0.9, samtools 1.24 on arm64 and amd64 |
 
@@ -225,7 +225,7 @@ Tests:
 ## Rollout
 
 1. Publish `public.cr.seqera.io/wave/condasplit:v1`, Wave's default: the `build-condasplit` workflow does it on the next Wave `[release]` commit. `public.cr.stage-seqera.io/wave/condasplit` is only for tests and local development.
-2. Validate on the stage cluster: Nextflow with `wave.build.template = 'conda/micromamba:v3'`, the reference environment, and pull speed against v2.
+2. Validate on the stage cluster: Nextflow with `wave.build.template = 'conda/micromamba:v2-fast'`, the reference environment, and pull speed against v2.
 3. Release as opt-in. Enterprise installs mirror the image and set `wave.build.condasplit-image`.
 
 ## Risks and open items
@@ -238,7 +238,7 @@ Tests:
 | Oversized files | A single file over 500 MB still produces a blob over 512 MB (warned, build continues) |
 | Custom `mambaImage` with files under `/opt/conda` | overlayfs copies them up on `rename()`: metadata is kept, but hardlinks among those files are split |
 | Not exercised in a real build | Slot overflow, oversized files, custom `commands`/`baseImage`/`mambaImage` (unit and render tests only), and a multi-platform request through Wave |
-| Follow-ups | v3 in the Nextflow and `wave-cli` help text; an issue for the v1/v2 lock URL bug (D8) |
+| Follow-ups | v2-fast in the Nextflow and `wave-cli` help text; an issue for the v1/v2 lock URL bug (D8) |
 
 ## Alternatives considered
 
