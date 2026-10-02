@@ -292,7 +292,7 @@ class CondaHelperTest extends Specification {
 
     // === containerFileV3 (micromamba v3) tests ===
 
-    static final private String LAYERS_IMAGE = 'public.cr.stage-seqera.io/wave/condasplit:v1'
+    static final private String LAYERS_IMAGE = 'public.cr.seqera.io/wave/condasplit:v1'
 
     def 'should create v3 docker file with packages'() {
         given:

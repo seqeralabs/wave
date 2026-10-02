@@ -221,7 +221,7 @@ No new request fields. The template accepts the same inputs as `conda/micromamba
 
 | Property | Default | Description |
 |----------|---------|-------------|
-| `wave.build.condasplit-image` | `public.cr.stage-seqera.io/wave/condasplit:v1` | Tool image mounted into `conda/micromamba:v3` builds. Switches to `public.cr.seqera.io/wave/condasplit:v1` at the production release |
+| `wave.build.condasplit-image` | `public.cr.seqera.io/wave/condasplit:v1` | Tool image mounted into `conda/micromamba:v3` builds |
 
 Each tool release gets a new immutable tag (`v1`, `v2`, …) and the config value may also pin a digest. The image reference is part of the v3 container file, so a tool upgrade changes container ids for v3 images only. Enterprise installs without access to `public.cr.seqera.io` mirror the image and set this property.
 

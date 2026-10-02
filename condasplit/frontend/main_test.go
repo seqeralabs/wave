@@ -20,7 +20,7 @@ package main
 
 import "testing"
 
-const dockerfile = `# syntax=public.cr.stage-seqera.io/wave/condasplit:v1
+const dockerfile = `# syntax=public.cr.seqera.io/wave/condasplit:v1
 FROM mambaorg/micromamba:2-amazon2023 AS build
 RUN micromamba install -y -n base bwa
 
@@ -34,7 +34,7 @@ func TestExpandLayers(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expected := `# syntax=public.cr.stage-seqera.io/wave/condasplit:v1
+	expected := `# syntax=public.cr.seqera.io/wave/condasplit:v1
 FROM mambaorg/micromamba:2-amazon2023 AS build
 RUN micromamba install -y -n base bwa
 

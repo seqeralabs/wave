@@ -187,7 +187,7 @@ The prefix directory and its parents are `0755 root:root` in every layer, as v2'
 | Area | Change |
 |---|---|
 | `wave-api` `BuildTemplate` | `CONDA_MICROMAMBA_V3 = "conda/micromamba:v3"` |
-| `BuildConfig`, `application.yml` | `wave.build.condasplit-image`, default `public.cr.stage-seqera.io/wave/condasplit:v1` until the production release |
+| `BuildConfig`, `application.yml` | `wave.build.condasplit-image`, default `public.cr.seqera.io/wave/condasplit:v1` |
 | `ContainerHelper`, `ContainerController` | Route v3 to `CondaHelper.containerFileV3`, passing the configured image. Singularity gets HTTP 400 |
 | `CondaHelper` | `containerFileV3`. It shares the CONDA-type check, the v1 mamba-image override and the base image handling with v2 (`micromambaV2Opts`) |
 | `TemplateUtils` | `condaToDockerFileUsingV3(lockFile, channels, opts, layersImage)` renders the template, with a `null` lock file for the conda-file input |
@@ -224,9 +224,9 @@ Tests:
 
 ## Rollout
 
-1. `public.cr.stage-seqera.io/wave/condasplit:v1` is published and is Wave's default during the initial iteration.
+1. `public.cr.stage-seqera.io/wave/condasplit:v1` is published for the initial iteration and tests. Wave's default is `public.cr.seqera.io/wave/condasplit:v1`, so the stage cluster sets `wave.build.condasplit-image` to the stage image until the production image exists.
 2. Validate on the stage cluster: Nextflow with `wave.build.template = 'conda/micromamba:v3'`, the reference environment, and pull speed against v2.
-3. Publish `public.cr.seqera.io/wave/condasplit:v1`: the `build-condasplit` workflow does it on the next Wave `[release]` commit. Then switch the default of `wave.build.condasplit-image` and the docs to it.
+3. Publish `public.cr.seqera.io/wave/condasplit:v1`: the `build-condasplit` workflow does it on the next Wave `[release]` commit.
 4. Release as opt-in. Enterprise installs mirror the image and set `wave.build.condasplit-image`.
 
 ## Risks and open items

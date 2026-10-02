@@ -118,7 +118,7 @@ class ContainerInspectServiceImplTest extends Specification {
 
     def 'should find repos in micromamba v3 container file' () {
         given:
-        def LAYERS = 'public.cr.stage-seqera.io/wave/condasplit:v1'
+        def LAYERS = 'public.cr.seqera.io/wave/condasplit:v1'
         def CONDA_OPTS = new CondaOpts([mambaImage: 'mambaorg/micromamba:2.1.1', baseImage: 'ubuntu:24.04'])
 
         expect:

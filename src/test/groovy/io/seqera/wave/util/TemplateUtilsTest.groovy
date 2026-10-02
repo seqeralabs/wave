@@ -962,7 +962,7 @@ class TemplateUtilsTest extends Specification {
      * frontend of the same image adds with one `COPY --link` each.
      * *********************************************************************************/
 
-    static final private String LAYERS_IMAGE = 'public.cr.stage-seqera.io/wave/condasplit:v1'
+    static final private String LAYERS_IMAGE = 'public.cr.seqera.io/wave/condasplit:v1'
 
 
     def 'should create dockerfile using micromamba v3 template from conda file' () {
@@ -975,13 +975,13 @@ class TemplateUtilsTest extends Specification {
 
         expect:
         TemplateUtils.condaToDockerFileUsingV3(null, null, CONDA_OPTS, LAYERS_IMAGE) == '''\
-                # syntax=public.cr.stage-seqera.io/wave/condasplit:v1
+                # syntax=public.cr.seqera.io/wave/condasplit:v1
                 FROM mambaorg/micromamba:2.1.1 AS build
                 USER root
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
                 # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
                 # the condasplit tool is mounted read-only for this step only and never ends up in the image
-                RUN --mount=type=bind,from=public.cr.stage-seqera.io/wave/condasplit:v1,source=/,target=/opt/wave-tools \\
+                RUN --mount=type=bind,from=public.cr.seqera.io/wave/condasplit:v1,source=/,target=/opt/wave-tools \\
                     micromamba install -y -n base conda-forge::which \\
                     && ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which \\
                     && (micromamba install -y -n base -f /tmp/conda.yml > /tmp/mamba.log 2>&1 \\
@@ -1063,11 +1063,11 @@ class TemplateUtilsTest extends Specification {
         !result.contains('{{')
         and:
         // the tool image is also the frontend building the image without the empty slots
-        lines[0] == '# syntax=public.cr.stage-seqera.io/wave/condasplit:v1'
+        lines[0] == '# syntax=public.cr.seqera.io/wave/condasplit:v1'
         and:
         // the tool is mounted in the install step
         lines.count { it.startsWith('RUN --mount=') } == 1
-        lines.find { it.startsWith('RUN ') } =='RUN --mount=type=bind,from=public.cr.stage-seqera.io/wave/condasplit:v1,source=/,target=/opt/wave-tools \\'
+        lines.find { it.startsWith('RUN ') } =='RUN --mount=type=bind,from=public.cr.seqera.io/wave/condasplit:v1,source=/,target=/opt/wave-tools \\'
         and:
         // the tool runs after the conda lock has been printed
         lines.indexOf('    && echo ">> CONDA_LOCK_START" \\') < lines.indexOf('    && echo "<< CONDA_LOCK_END" \\')

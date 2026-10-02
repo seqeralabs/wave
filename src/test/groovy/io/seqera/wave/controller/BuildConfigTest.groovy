@@ -53,7 +53,7 @@ class BuildConfigTest extends Specification {
         def ctx = ApplicationContext.run()
 
         expect:
-        ctx.getBean(BuildConfig).condasplitImage == 'public.cr.stage-seqera.io/wave/condasplit:v1'
+        ctx.getBean(BuildConfig).condasplitImage == 'public.cr.seqera.io/wave/condasplit:v1'
 
         cleanup:
         ctx.close()

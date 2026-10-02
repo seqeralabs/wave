@@ -46,7 +46,7 @@ import io.seqera.wave.service.request.ContainerRequest.Type
  */
 class ContainerHelperTest extends Specification {
 
-    static final String LAYERS_IMAGE = 'public.cr.stage-seqera.io/wave/condasplit:v1'
+    static final String LAYERS_IMAGE = 'public.cr.seqera.io/wave/condasplit:v1'
 
     def 'should create conda singularity file with conda lock file'() {
         given:
