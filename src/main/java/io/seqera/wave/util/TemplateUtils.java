@@ -129,6 +129,41 @@ public class TemplateUtils {
                 opts);
     }
 
+    /**
+     * Render the micromamba v3 Dockerfile, installing the environment from the {@code conda.yml}
+     * file of the build context or, when given, from a remote lock file
+     *
+     * @param lockFile The lock file URL or {@code null} to install the {@code conda.yml} file
+     */
+    static public String condaToDockerFileUsingV3(String lockFile, List<String> condaChannels, CondaOpts opts, String layersImage) {
+        final Map<String,String> binding = new HashMap<>();
+        binding.put("layers_image", layersImage);
+        binding.put("conda_file_add", "COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml");
+        binding.put("conda_file_opts", "-f /tmp/conda.yml");
+        if( lockFile != null ) {
+            // micromamba can read a YAML file from a URL but not an explicit lock file,
+            // therefore the build adds the remote file and installs it from the local path
+            final String path = "/tmp/conda-lock/" + lockFileName(lockFile);
+            final List<String> channels = condaChannels != null ? condaChannels : List.of();
+            binding.put("conda_file_add", "# micromamba can't read an explicit lock file from a URL, add it to the build stage\nADD " + lockFile + " " + path);
+            binding.put("conda_file_opts", channels.stream().map(it -> "-c " + it + " ").collect(Collectors.joining()) + "-f " + path);
+        }
+        return condaFileTemplateV2("/templates/conda-micromamba-v3/dockerfile-conda-file.txt", opts, binding);
+    }
+
+    /**
+     * Get the file name of a remote lock file, i.e. the last segment of the URL path. The name
+     * is preserved because micromamba detects the file format from its extension, e.g. {@code .yml}.
+     *
+     * @param url The lock file URL
+     * @return The lock file name or {@code conda.lock} when the URL path has no usable file name
+     */
+    static protected String lockFileName(String url) {
+        final String path = url.replaceFirst("^https?://[^/?#]*", "").replaceFirst("[?#].*$", "");
+        final String name = path.substring(path.lastIndexOf('/') + 1);
+        return name.matches("\\w[\\w.-]*") ? name : "conda.lock";
+    }
+
     static protected String condaFileTemplate0(String template, CondaOpts opts) {
         final boolean singularity = template.contains("/singularityfile");
         // create the binding map
@@ -141,12 +176,17 @@ public class TemplateUtils {
     }
 
     static protected String condaFileTemplateV2(String template, CondaOpts opts) {
+        return condaFileTemplateV2(template, opts, Map.of());
+    }
+
+    static protected String condaFileTemplateV2(String template, CondaOpts opts, Map<String,String> extraBinding) {
         final boolean singularity = template.contains("/singularityfile");
         // create the binding map
         final Map<String,String> binding = new HashMap<>();
         binding.put("base_image", opts.baseImage);
         binding.put("mamba_image", opts.mambaImage);
         binding.put("base_packages", mambaInstallBasePackage0(opts.basePackages,singularity));
+        binding.putAll(extraBinding);
 
         final String result = renderTemplate0(template, binding, List.of("wave_context_dir"));
         return addCommands(result, opts.commands, singularity);

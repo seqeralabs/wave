@@ -35,6 +35,7 @@ import io.seqera.wave.service.request.TokenData
 import org.yaml.snakeyaml.Yaml
 import static io.seqera.wave.api.BuildTemplate.CONDA_MICROMAMBA_V1
 import static io.seqera.wave.api.BuildTemplate.CONDA_MICROMAMBA_V2
+import static io.seqera.wave.api.BuildTemplate.CONDA_MICROMAMBA_V3
 import static io.seqera.wave.api.BuildTemplate.CONDA_PIXI_V1
 import static io.seqera.wave.api.BuildTemplate.CRAN_INSTALLR_V1
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
@@ -54,15 +55,21 @@ class ContainerHelper {
      * Dispatches to the appropriate helper based on build template and package type.
      *
      * @param req The container token request
+     * @param condasplitImage The image providing the {@code condasplit} tool used by the {@code conda/micromamba:v3} template
      * @return The generated container file content
      */
-    static String containerFileFromRequest(SubmitContainerTokenRequest req) {
+    static String containerFileFromRequest(SubmitContainerTokenRequest req, String condasplitImage) {
         final singularity = req.formatSingularity()
         final spec = req.packages
 
         // Default templates based on package type (when no explicit template)
         if( spec.type == PackagesSpec.Type.CONDA && (!req.buildTemplate || req.buildTemplate==CONDA_MICROMAMBA_V2) ) {
             return CondaHelper.containerFileV2(spec, req.containerImage, singularity)
+        }
+        if( req.buildTemplate == CONDA_MICROMAMBA_V3 ) {
+            if( singularity )
+                throw new BadRequestException("Build template '${CONDA_MICROMAMBA_V3}' does not support Singularity format")
+            return CondaHelper.containerFileV3(spec, req.containerImage, condasplitImage)
         }
         if( req.buildTemplate == CONDA_MICROMAMBA_V1 ) {
             return CondaHelper.containerFile(spec, singularity)

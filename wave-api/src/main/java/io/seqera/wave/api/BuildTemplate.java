@@ -40,6 +40,12 @@ public final class BuildTemplate {
     public static final String CONDA_MICROMAMBA_V2 = "conda/micromamba:v2";
 
     /**
+     * Build template for Micromamba v2-based multi-stage builds producing
+     * the Conda environment as multiple image layers (Docker format only)
+     */
+    public static final String CONDA_MICROMAMBA_V3 = "conda/micromamba:v3";
+
+    /**
      * Build template for R/CRAN package builds
      */
     public static final String CRAN_INSTALLR_V1 = "cran/installr:v1";

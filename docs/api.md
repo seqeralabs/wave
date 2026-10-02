@@ -223,7 +223,7 @@ Returns the name of the container request made available by Wave.
 | `pixiImage`                         | Name of the Docker image used for Pixi package manager (e.g., `ghcr.io/prefix-dev/pixi:latest`).                                                              |
 | `cranOpts`                          | CRAN build options (when `type` is `CRAN`).                                                                                                                        |
 | `rImage`                            | Name of the R Docker image used to build CRAN containers (e.g., `rocker/r-ver:4.4.1`).                                                                         |
-| `buildTemplate`                     | The build template to use for container builds. Supported values: `conda/pixi:v1` (multi-stage build using Pixi), `conda/micromamba:v2` (multi-stage build using Micromamba 2.x). Both produce smaller images by excluding the package manager from the final stage (Singularity still uses a single-stage build). Default: `conda/micromamba:v1`. |
+| `buildTemplate`                     | The build template to use for container builds. Supported values: `conda/micromamba:v1` (single-stage build using Micromamba 1.x), `conda/pixi:v1` (multi-stage build using Pixi), `conda/micromamba:v2` (multi-stage build using Micromamba 2.x), `conda/micromamba:v3` (multi-stage build using Micromamba 2.x that splits the Conda environment into multiple image layers, Docker only, see [Layered Conda builds](#layered-conda-builds)), `cran/installr:v1` (CRAN packages). The multi-stage templates produce smaller images by excluding the package manager from the final stage (Singularity still uses a single-stage build with `conda/pixi:v1` and `conda/micromamba:v2`). Default: `conda/micromamba:v2` for `CONDA` packages, `cran/installr:v1` for `CRAN` packages. |
 | `nameStrategy`                      | The name strategy to be used to create the name of the container built by Wave. Options: `none`, `tagPrefix`, `imageSuffix`.                       |                                                     |
 
 #### Response
@@ -493,6 +493,48 @@ Get status of build against `buildId` passed as path variable
     }
     ```
 
+- Create Docker image with Micromamba v3 template (layered multi-stage build):
+
+    **Request**
+
+    ```shell
+    curl --location 'https://wave.seqera.io/v1alpha2/container' \
+    --header 'Content-Type: application/json' \
+    --data '{
+        "containerPlatform": "linux/amd64",
+        "format": "docker",
+        "buildTemplate": "conda/micromamba:v3",
+        "packages":{
+            "type": "CONDA",
+            "entries": ["gatk4=4.6.2.0", "gcnvkernel=0.9"],
+            "channels": ["conda-forge", "bioconda"],
+            "condaOpts": {
+                "mambaImage": "mambaorg/micromamba:2-amazon2023",
+                "basePackages": "conda-forge::procps-ng",
+                "baseImage": "ubuntu:24.04",
+                "commands": []
+            }
+        }
+    }'
+    ```
+
+    **Response**
+
+    ```json
+    {
+        "requestId":"5c1e0a7d93b4",
+        "containerToken":"5c1e0a7d93b4",
+        "targetImage":"wave.seqera.io/wt/5c1e0a7d93b4/hrma017/dev:gatk4-4.6.2.0_gcnvkernel-0.9--8d2f6b1c4e9a7035",
+        "expiration":"2026-09-30T12:31:08.117264Z",
+        "containerImage":"hrma017/dev:gatk4-4.6.2.0_gcnvkernel-0.9--8d2f6b1c4e9a7035",
+        "buildId":"bd-8d2f6b1c4e9a7035_1",
+        "cached":false,
+        "freeze":false,
+        "mirror":false,
+        "scanId":"sc-3a9e5f0b7c21d864_1"
+    }
+    ```
+
 - Create Singularity image with Pixi v1 template (single-stage build):
 
     **Request**
@@ -578,7 +620,7 @@ Get status of build against `buildId` passed as path variable
     ```
 
 :::note
-Multi-stage build templates (`conda/pixi:v1` and `conda/micromamba:v2`) create optimized Docker container images by separating the build environment from the final runtime environment. This results in smaller container images that only contain the installed packages and runtime dependencies, without the build tools.
+Multi-stage build templates (`conda/pixi:v1`, `conda/micromamba:v2`, and `conda/micromamba:v3`) create optimized Docker container images by separating the build environment from the final runtime environment. This results in smaller container images that only contain the installed packages and runtime dependencies, without the build tools.
 :::
 
 :::important
@@ -587,6 +629,27 @@ Multi-stage build templates (`conda/pixi:v1` and `conda/micromamba:v2`) create o
 When building Singularity images (`format: "sif"`) with the `conda/pixi:v1` or `conda/micromamba:v2` build templates, single-stage builds are used. Singularity's proot-based builder cannot preserve file permissions when transferring files across stages, so the conda/pixi environment is installed directly in a single stage using the mamba/pixi image as the base.
 
 As a result, the `baseImage` option has no effect on Singularity builds. It only applies to Docker builds. The multi-stage image size optimization is also not available for Singularity.
+:::
+
+#### Layered Conda builds
+
+The `conda/micromamba:v3` template installs the Conda environment with the same steps as `conda/micromamba:v2`, then splits it into multiple image layers instead of shipping it as one large layer. Use it when a registry, proxy, or CDN cache rejects or doesn't cache layers larger than 512 MB, or to let container runtimes download and unpack the environment in parallel.
+
+The environment is split by Conda package:
+
+- Each package of 50 MB or more gets its own layer. A package larger than 500 MB is split across several layers.
+- Smaller packages are grouped together into shared layers.
+- Every layer holds at most 500 MB of files before compression, so compressed layers stay under 512 MB. The only exceptions are a single file larger than 500 MB and layers merged when the environment needs more than 32 layers, as described below.
+- A single file larger than 500 MB can't be split. It gets a layer to itself, the build log shows a `WARN oversized file` line, and the build continues.
+
+The image has one layer for each Conda layer the environment needs, up to 32. If an environment needs more than 32 layers, the smallest layers are merged and the build log shows a `WARN slots exceeded` line. A merged layer can exceed 500 MB, in which case the build log also shows a `WARN merged layer` line.
+
+The build log shows the layer plan between the `>> CONDA_LAYERS_START` and `<< CONDA_LAYERS_END` markers, with one row per layer listing its size, file count, and packages. The layer plan is printed by the install step, so it's missing from the log when the build reuses that step from the build cache. The Conda lock file is printed before the layer plan and is extracted as for `conda/micromamba:v2`.
+
+The container content is the same as `conda/micromamba:v2` produces for the same environment, except that the unused package cache (`/opt/conda/pkgs`) is dropped, which also makes the image smaller. The template supports the same inputs as `conda/micromamba:v2`: Conda packages, Conda environment files, Conda lock file URLs, and the `condaOpts` options. Custom `commands` run after the Conda layers and add their own layers.
+
+:::important
+`conda/micromamba:v3` builds Docker images only. Singularity requests (`format: "sif"`) are rejected with HTTP 400 and the message `Build template 'conda/micromamba:v3' does not support Singularity format`.
 :::
 
 ### GET `/v1alpha1/builds/{buildId}/status`

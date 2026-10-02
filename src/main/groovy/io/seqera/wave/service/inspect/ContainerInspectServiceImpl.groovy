@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.inspect
 
+import java.util.regex.Pattern
+
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.PackageScope
@@ -145,9 +147,33 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
             final repo = RegHelper.parseFromStatement(line.trim())
             if( repo )
                 result.add(repo)
+            else
+                // images mounted with `RUN --mount=...,from=<image>` are pulled by the build too,
+                // e.g. the condasplit tool image of `conda/micromamba:v3` mirrored to a private registry
+                result.addAll(findMountRepositories(line.trim()))
         }
         return result
     }
+
+    /**
+     * Find the container images referenced by the {@code from=} option of a {@code RUN --mount} flag,
+     * e.g. {@code RUN --mount=type=bind,from=public.cr.seqera.io/wave/condasplit:v1,target=/opt/wave-tools ...}
+     *
+     * @param line A container file line
+     * @return The list of mounted container images, build stage names are ignored
+     */
+    static protected List<String> findMountRepositories(String line) {
+        final flags = RUN_FLAGS.matcher(line ?: '')
+        return flags.find()
+                ? MOUNT_FROM.matcher(flags.group(1)).results().map(it -> it.group(1)).toList()
+                : List.<String>of()
+    }
+
+    // the flags between `RUN` and the command
+    static private final Pattern RUN_FLAGS = ~/^RUN((?:\s+--\S+)*)/
+
+    // the `from=` image of a `--mount` flag, a build stage name has no registry, tag or digest separator
+    static private final Pattern MOUNT_FROM = ~/--mount=\S*?\bfrom=([^,\s]*[\/:@][^,\s]*)/
 
     static protected List<InspectItem> inspectItems(String containerFile) {
         final result = new ArrayList<InspectItem>(10)

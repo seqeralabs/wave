@@ -273,7 +273,7 @@ class ContainerController {
 
         if( v2 && req.packages ) {
             // generate the container file required to assemble the container
-            final generated = containerFileFromRequest(req)
+            final generated = containerFileFromRequest(req, buildConfig?.condasplitImage)
             req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
         }
         // make sure container platform is defined

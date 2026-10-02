@@ -303,6 +303,13 @@ Configure how Wave builds container images and manages build logs.
 : Compression type applied to cache layers (default: `gzip`).
   Options include: `uncompressed`, `estargz`, and `zstd`.
 
+`wave.build.condasplit-image` *(optional)*
+: Container image that supplies the `condasplit` tool used by `conda/micromamba:v3` builds to split the Conda environment into multiple image layers (default: `public.cr.seqera.io/wave/condasplit:v1`).
+  The same image is also the BuildKit frontend of these builds, named by the `# syntax=` directive of the generated Dockerfile. It adds one image layer for each layer directory created by `condasplit`.
+  The image is used by the build only and is not included in the built image.
+  If your installation can't access the default image, mirror it to a registry your build service can pull from and set this option to the mirrored image.
+  See [Layered Conda builds](../features/container-builds.mdx#layered-conda-builds).
+
 `wave.build.force-compression` *(optional)*
 : When `true`, forces compression for each cache layer produced by the build process (default: `false`).
 
