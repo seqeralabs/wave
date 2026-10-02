@@ -116,14 +116,14 @@ class ContainerInspectServiceImplTest extends Specification {
         'RUN --network=none --mount=type=cache,target=/c --mount=type=bind,from=bar:1,target=/o \\'     | ['bar:1']
     }
 
-    def 'should find repos in micromamba v3 container file' () {
+    def 'should find repos in micromamba v2-fast container file' () {
         given:
         def LAYERS = 'public.cr.seqera.io/wave/condasplit:v1'
         def CONDA_OPTS = new CondaOpts([mambaImage: 'mambaorg/micromamba:2.1.1', baseImage: 'ubuntu:24.04'])
 
         expect:
         // the ADD line of a lock file adds no repository
-        ContainerInspectServiceImpl.findRepositories(TemplateUtils.condaToDockerFileUsingV3(LOCK_FILE, ['bioconda'], CONDA_OPTS, LAYERS))
+        ContainerInspectServiceImpl.findRepositories(TemplateUtils.condaToDockerFileUsingV2Fast(LOCK_FILE, ['bioconda'], CONDA_OPTS, LAYERS))
                 == ['mambaorg/micromamba:2.1.1', LAYERS, 'ubuntu:24.04']
 
         where:

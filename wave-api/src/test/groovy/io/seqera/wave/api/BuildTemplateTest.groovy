@@ -40,7 +40,7 @@ class BuildTemplateTest extends Specification {
         BuildTemplate.CONDA_PIXI_V1 == 'conda/pixi:v1'
         BuildTemplate.CONDA_MICROMAMBA_V1 == 'conda/micromamba:v1'
         BuildTemplate.CONDA_MICROMAMBA_V2 == 'conda/micromamba:v2'
-        BuildTemplate.CONDA_MICROMAMBA_V3 == 'conda/micromamba:v3'
+        BuildTemplate.CONDA_MICROMAMBA_V2_FAST == 'conda/micromamba:v2-fast'
         BuildTemplate.CRAN_INSTALLR_V1 == 'cran/installr:v1'
     }
 }

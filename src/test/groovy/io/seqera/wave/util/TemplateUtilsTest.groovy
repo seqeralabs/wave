@@ -955,7 +955,7 @@ class TemplateUtilsTest extends Specification {
     }
 
     /* *********************************************************************************
-     * Micromamba v3 template tests
+     * `conda/micromamba:v2-fast` template tests
      *
      * Same build stage as the v2 template, plus the `condasplit` tool (mounted from the
      * layers image) moving the environment into at most 32 layer directories, which the
@@ -965,7 +965,7 @@ class TemplateUtilsTest extends Specification {
     static final private String LAYERS_IMAGE = 'public.cr.seqera.io/wave/condasplit:v1'
 
 
-    def 'should create dockerfile using micromamba v3 template from conda file' () {
+    def 'should create dockerfile using `conda/micromamba:v2-fast` template from conda file' () {
         given:
         def CONDA_OPTS = new CondaOpts([
                 mambaImage: 'mambaorg/micromamba:2.1.1',
@@ -974,7 +974,7 @@ class TemplateUtilsTest extends Specification {
         ])
 
         expect:
-        TemplateUtils.condaToDockerFileUsingV3(null, null, CONDA_OPTS, LAYERS_IMAGE) == '''\
+        TemplateUtils.condaToDockerFileUsingV2Fast(null, null, CONDA_OPTS, LAYERS_IMAGE) == '''\
                 # syntax=public.cr.seqera.io/wave/condasplit:v1
                 FROM mambaorg/micromamba:2.1.1 AS build
                 USER root
@@ -1007,12 +1007,12 @@ class TemplateUtilsTest extends Specification {
                 '''.stripIndent()
     }
 
-    def 'should add the remote lock file to the micromamba v3 build stage' () {
+    def 'should add the remote lock file to the micromamba v2-fast build stage' () {
         given:
         def CONDA_OPTS = new CondaOpts([mambaImage: 'mambaorg/micromamba:2.1.1', baseImage: 'ubuntu:24.04'])
 
         when:
-        def result = TemplateUtils.condaToDockerFileUsingV3(LOCK_URL, ['conda-forge', 'bioconda'], CONDA_OPTS, LAYERS_IMAGE)
+        def result = TemplateUtils.condaToDockerFileUsingV2Fast(LOCK_URL, ['conda-forge', 'bioconda'], CONDA_OPTS, LAYERS_IMAGE)
         def lines = result.readLines()
 
         then:
@@ -1046,7 +1046,7 @@ class TemplateUtilsTest extends Specification {
         'https://foo.com/my%20env.yml'                                              | 'conda.lock'
     }
 
-    def 'should render micromamba v3 #VARIANT template with commands' () {
+    def 'should render micromamba v2-fast #VARIANT template with commands' () {
         given:
         def CONDA_OPTS = new CondaOpts([
                 mambaImage: 'mambaorg/micromamba:2.1.1',
@@ -1056,7 +1056,7 @@ class TemplateUtilsTest extends Specification {
         ])
 
         when:
-        def result = TemplateUtils.condaToDockerFileUsingV3(VARIANT=='conda-file' ? null : 'https://foo.com/lock.yml', ['bioconda'], CONDA_OPTS, LAYERS_IMAGE)
+        def result = TemplateUtils.condaToDockerFileUsingV2Fast(VARIANT=='conda-file' ? null : 'https://foo.com/lock.yml', ['bioconda'], CONDA_OPTS, LAYERS_IMAGE)
         def lines = result.readLines()
 
         then:

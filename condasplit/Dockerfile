@@ -9,5 +9,5 @@ RUN go test ./... \
 
 FROM scratch
 COPY --from=build /condasplit /condasplit-frontend /
-# the image is also the BuildKit frontend of the conda/micromamba:v3 template, see frontend/
+# the image is also the BuildKit frontend of the conda/micromamba:v2-fast template, see frontend/
 ENTRYPOINT ["/condasplit-frontend"]

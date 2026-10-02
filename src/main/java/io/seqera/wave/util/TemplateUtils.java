@@ -130,12 +130,12 @@ public class TemplateUtils {
     }
 
     /**
-     * Render the micromamba v3 Dockerfile, installing the environment from the {@code conda.yml}
+     * Render the micromamba v2-fast Dockerfile, installing the environment from the {@code conda.yml}
      * file of the build context or, when given, from a remote lock file
      *
      * @param lockFile The lock file URL or {@code null} to install the {@code conda.yml} file
      */
-    static public String condaToDockerFileUsingV3(String lockFile, List<String> condaChannels, CondaOpts opts, String layersImage) {
+    static public String condaToDockerFileUsingV2Fast(String lockFile, List<String> condaChannels, CondaOpts opts, String layersImage) {
         final Map<String,String> binding = new HashMap<>();
         binding.put("layers_image", layersImage);
         binding.put("conda_file_add", "COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml");
@@ -148,7 +148,7 @@ public class TemplateUtils {
             binding.put("conda_file_add", "# micromamba can't read an explicit lock file from a URL, add it to the build stage\nADD " + lockFile + " " + path);
             binding.put("conda_file_opts", channels.stream().map(it -> "-c " + it + " ").collect(Collectors.joining()) + "-f " + path);
         }
-        return condaFileTemplateV2("/templates/conda-micromamba-v3/dockerfile-conda-file.txt", opts, binding);
+        return condaFileTemplateV2("/templates/conda-micromamba-v2-fast/dockerfile-conda-file.txt", opts, binding);
     }
 
     /**

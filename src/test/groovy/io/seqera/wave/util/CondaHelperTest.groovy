@@ -290,38 +290,38 @@ class CondaHelperTest extends Specification {
         ex.message.contains("not supported by 'conda/micromamba:v2' build template")
     }
 
-    // === containerFileV3 (micromamba v3) tests ===
+    // === containerFileV2Fast (micromamba v2-fast) tests ===
 
     static final private String LAYERS_IMAGE = 'public.cr.seqera.io/wave/condasplit:v1'
 
-    def 'should create v3 docker file with packages'() {
+    def 'should create v2-fast docker file with packages'() {
         given:
         def CHANNELS = ['conda-forge', 'bioconda']
         def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: PACKAGES, channels: CHANNELS)
 
         when:
-        def result = CondaHelper.containerFileV3(packages, null, LAYERS_IMAGE)
+        def result = CondaHelper.containerFileV2Fast(packages, null, LAYERS_IMAGE)
 
         then:
         // the packages go into the conda.yml file of the build context
-        result == TemplateUtils.condaToDockerFileUsingV3(null, CHANNELS, CondaOpts.v2(), LAYERS_IMAGE)
+        result == TemplateUtils.condaToDockerFileUsingV2Fast(null, CHANNELS, CondaOpts.v2(), LAYERS_IMAGE)
     }
 
-    def 'should create v3 docker file with lock file'() {
+    def 'should create v2-fast docker file with lock file'() {
         given:
         def CHANNELS = ['conda-forge', 'bioconda']
         def PACKAGES = ['https://foo.com/lock.yml']
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: PACKAGES, channels: CHANNELS)
 
         when:
-        def result = CondaHelper.containerFileV3(packages, null, LAYERS_IMAGE)
+        def result = CondaHelper.containerFileV2Fast(packages, null, LAYERS_IMAGE)
 
         then:
-        result == TemplateUtils.condaToDockerFileUsingV3('https://foo.com/lock.yml', CHANNELS, CondaOpts.v2(), LAYERS_IMAGE)
+        result == TemplateUtils.condaToDockerFileUsingV2Fast('https://foo.com/lock.yml', CHANNELS, CondaOpts.v2(), LAYERS_IMAGE)
     }
 
-    def 'should use custom base image in v3'() {
+    def 'should use custom base image in v2-fast'() {
         given:
         def CHANNELS = ['conda-forge']
         def PACKAGES = ['bwa=0.7.15']
@@ -329,7 +329,7 @@ class CondaHelperTest extends Specification {
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
 
         expect:
-        CondaHelper.containerFileV3(packages, CONTAINER_IMAGE, LAYERS_IMAGE).contains("FROM ${EXPECTED} AS prod")
+        CondaHelper.containerFileV2Fast(packages, CONTAINER_IMAGE, LAYERS_IMAGE).contains("FROM ${EXPECTED} AS prod")
 
         where:
         CONTAINER_IMAGE     | EXPECTED
@@ -337,7 +337,7 @@ class CondaHelperTest extends Specification {
         'ubuntu:22.04'      | 'ubuntu:22.04'    // container image takes precedence
     }
 
-    def 'should use custom condaOpts and layers image in v3'() {
+    def 'should use custom condaOpts and layers image in v2-fast'() {
         given:
         def CHANNELS = ['conda-forge']
         def PACKAGES = ['bwa=0.7.15']
@@ -350,14 +350,14 @@ class CondaHelperTest extends Specification {
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
 
         when:
-        def result = CondaHelper.containerFileV3(packages, null, 'my.registry.io/wave/condasplit:v2@sha256:1234')
+        def result = CondaHelper.containerFileV2Fast(packages, null, 'my.registry.io/wave/condasplit:v2@sha256:1234')
 
         then:
-        result == TemplateUtils.condaToDockerFileUsingV3(null, CHANNELS, CONDA_OPTS, 'my.registry.io/wave/condasplit:v2@sha256:1234')
+        result == TemplateUtils.condaToDockerFileUsingV2Fast(null, CHANNELS, CONDA_OPTS, 'my.registry.io/wave/condasplit:v2@sha256:1234')
         result.contains('RUN --mount=type=bind,from=my.registry.io/wave/condasplit:v2@sha256:1234,source=/,target=/opt/wave-tools')
     }
 
-    def 'should override a v1 mamba image with the v2 default in v3'() {
+    def 'should override a v1 mamba image with the v2 default in v2-fast'() {
         given:
         def CHANNELS = ['conda-forge']
         def PACKAGES = ['bwa=0.7.15']
@@ -365,7 +365,7 @@ class CondaHelperTest extends Specification {
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
 
         when:
-        def result = CondaHelper.containerFileV3(packages, null, LAYERS_IMAGE)
+        def result = CondaHelper.containerFileV2Fast(packages, null, LAYERS_IMAGE)
 
         then:
         result.contains("FROM ${EXPECTED} AS build")
@@ -378,15 +378,15 @@ class CondaHelperTest extends Specification {
         'quay.io/custom/base:latest'         | 'quay.io/custom/base:latest'        // custom image kept
     }
 
-    def 'should throw exception for non-CONDA package type in v3'() {
+    def 'should throw exception for non-CONDA package type in v2-fast'() {
         given:
         def packages = new PackagesSpec(type: PackagesSpec.Type.CRAN, entries: ['dplyr'])
 
         when:
-        CondaHelper.containerFileV3(packages, null, LAYERS_IMAGE)
+        CondaHelper.containerFileV2Fast(packages, null, LAYERS_IMAGE)
 
         then:
         def ex = thrown(BadRequestException)
-        ex.message == "Package type 'CRAN' not supported by 'conda/micromamba:v3' build template"
+        ex.message == "Package type 'CRAN' not supported by 'conda/micromamba:v2-fast' build template"
     }
 }

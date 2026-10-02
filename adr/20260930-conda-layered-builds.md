@@ -1,8 +1,8 @@
-# Layered Conda Builds (`conda/micromamba:v3`)
+# Layered Conda Builds (`conda/micromamba:v2-fast`)
 
 ## Summary
 
-This document describes the `conda/micromamba:v3` build template, which ships the Conda environment of a Docker image as multiple layers grouped by package, instead of one large layer. The template installs the environment exactly like `conda/micromamba:v2`. In the same build step, a small static Go tool (`condasplit`) moves the installed files into 32 fixed layer slots, each holding at most 500 MB before compression. The template is opt-in: existing templates, the default template and existing container ids are unchanged.
+This document describes the `conda/micromamba:v2-fast` build template, which ships the Conda environment of a Docker image as multiple layers grouped by package, instead of one large layer. The template installs the environment exactly like `conda/micromamba:v2`. In the same build step, a small static Go tool (`condasplit`) moves the installed files into 32 fixed layer slots, each holding at most 500 MB before compression. The template is opt-in: existing templates, the default template and existing container ids are unchanged.
 
 ## Context
 
@@ -29,8 +29,8 @@ For the reference environment (`bioconda::gatk4=4.6.2.0` and `bioconda::gcnvkern
 
 ### How it works
 
-1. User submits a container request with `buildTemplate: "conda/micromamba:v3"`
-2. Wave renders the v3 Dockerfile, naming the tool image configured with `wave.build.condasplit-image`, both as its BuildKit frontend (`# syntax=`, first line) and as the image mounted into the install step
+1. User submits a container request with `buildTemplate: "conda/micromamba:v2-fast"`
+2. Wave renders the v2-fast Dockerfile, naming the tool image configured with `wave.build.condasplit-image`, both as its BuildKit frontend (`# syntax=`, first line) and as the image mounted into the install step
 3. Two-stage build executes:
    - **Stage 1 (build)**: Runs the `conda/micromamba:v2` install commands and prints the conda lock. A lock-file URL is first added to the stage with `ADD` and installed from the local copy, because micromamba can't read an explicit lock file from a URL. In the same `RUN`, it runs `condasplit` from the mounted tool image, which moves every file of `/opt/conda` (except `pkgs/`) into at most 32 directories `/layers/00`, `/layers/01`, …, each rooted at `/`, and prints the layer plan
    - **Stage 2 (prod)**: Starts from `{{base_image}}` and adds each layer directory as its own layer with `COPY --link`
@@ -49,13 +49,13 @@ For the reference environment (`bioconda::gatk4=4.6.2.0` and `bioconda::gcnvkern
 
 ### 1. New Versioned Template
 
-**Decision:** Added `conda/micromamba:v3` (`BuildTemplate.CONDA_MICROMAMBA_V3`) instead of changing `conda/micromamba:v2`. `BuildTemplate.defaultTemplate()` still returns `conda/micromamba:v2`.
+**Decision:** Added `conda/micromamba:v2-fast` (`BuildTemplate.CONDA_MICROMAMBA_V2_FAST`) instead of changing `conda/micromamba:v2`. `BuildTemplate.defaultTemplate()` still returns `conda/micromamba:v2`.
 
 | Value | Conda layers | Default |
 |-------|--------------|---------|
 | `conda/micromamba:v1` | 1 (single-stage) | No |
 | `conda/micromamba:v2` | 1 | Yes (`CONDA` packages) |
-| `conda/micromamba:v3` | Up to 32, one per used slot | No |
+| `conda/micromamba:v2-fast` | Up to 32, one per used slot | No |
 | `conda/pixi:v1` | 1 | No |
 
 **Rationale:**
@@ -155,7 +155,7 @@ RUN --mount=type=bind,from={{layers_image}},source=/,target=/opt/wave-tools \
 
 ### 7. Package Cache Dropped
 
-**Decision:** `conda/micromamba:v3` excludes `/opt/conda/pkgs` from the image. The other templates keep it.
+**Decision:** `conda/micromamba:v2-fast` excludes `/opt/conda/pkgs` from the image. The other templates keep it.
 
 **Rationale:**
 - Extracted packages are not needed at runtime
@@ -164,7 +164,7 @@ RUN --mount=type=bind,from={{layers_image}},source=/,target=/opt/wave-tools \
 
 ### 8. Docker Only
 
-**Decision:** A `conda/micromamba:v3` request with `format: "sif"` fails with HTTP 400 `Build template 'conda/micromamba:v3' does not support Singularity format`. There are no Singularity template files.
+**Decision:** A `conda/micromamba:v2-fast` request with `format: "sif"` fails with HTTP 400 `Build template 'conda/micromamba:v2-fast' does not support Singularity format`. There are no Singularity template files.
 
 **Rationale:**
 - A SIF image is a single squashfs file, so layering doesn't apply
@@ -180,7 +180,7 @@ RUN --mount=type=bind,from={{layers_image}},source=/,target=/opt/wave-tools \
 
 ### 10. BuildKit Frontend Repeating the Layer `COPY` Line
 
-**Decision:** The v3 Dockerfile starts with `# syntax={{layers_image}}`, which makes the tool image its BuildKit frontend. The frontend (`condasplit/frontend/`, entrypoint `/condasplit-frontend`) builds the `build` stage, lists `/layers`, repeats the `COPY --link --from=build /layers/NN/ /` line for each directory and builds the whole Dockerfile. Both builds are delegated to the built-in Dockerfile frontend.
+**Decision:** The v2-fast Dockerfile starts with `# syntax={{layers_image}}`, which makes the tool image its BuildKit frontend. The frontend (`condasplit/frontend/`, entrypoint `/condasplit-frontend`) builds the `build` stage, lists `/layers`, repeats the `COPY --link --from=build /layers/NN/ /` line for each directory and builds the whole Dockerfile. Both builds are delegated to the built-in Dockerfile frontend.
 
 **Rationale:**
 - The image has exactly one layer per layer directory. BuildKit adds a layer for every `COPY`, even an empty one, so 32 fixed `COPY` lines gave a small environment such as `bioconda::samtools` 30 empty layers
@@ -206,7 +206,7 @@ RUN --mount=type=bind,from={{layers_image}},source=/,target=/opt/wave-tools \
 
 | Value | Constant | Description |
 |-------|----------|-------------|
-| `conda/micromamba:v3` | `BuildTemplate.CONDA_MICROMAMBA_V3` | Layered multi-stage Micromamba build, Docker only |
+| `conda/micromamba:v2-fast` | `BuildTemplate.CONDA_MICROMAMBA_V2_FAST` | Layered multi-stage Micromamba build, Docker only |
 
 No new request fields. The template accepts the same inputs as `conda/micromamba:v2`: conda file, conda lock file URL, custom `baseImage`/`containerImage`, `mambaImage`, `basePackages` and `commands`.
 
@@ -214,20 +214,20 @@ No new request fields. The template accepts the same inputs as `conda/micromamba
 
 | Condition | Response |
 |-----------|----------|
-| `format: "sif"` | HTTP 400 `Build template 'conda/micromamba:v3' does not support Singularity format` |
-| Non-`CONDA` package type | HTTP 400 `Package type '<type>' not supported by 'conda/micromamba:v3' build template` |
+| `format: "sif"` | HTTP 400 `Build template 'conda/micromamba:v2-fast' does not support Singularity format` |
+| Non-`CONDA` package type | HTTP 400 `Package type '<type>' not supported by 'conda/micromamba:v2-fast' build template` |
 
 ## Configuration Changes
 
 | Property | Default | Description |
 |----------|---------|-------------|
-| `wave.build.condasplit-image` | `public.cr.seqera.io/wave/condasplit:v1` | Tool image mounted into `conda/micromamba:v3` builds |
+| `wave.build.condasplit-image` | `public.cr.seqera.io/wave/condasplit:v1` | Tool image mounted into `conda/micromamba:v2-fast` builds |
 
-Each tool release gets a new immutable tag (`v1`, `v2`, …), taken from `condasplit/VERSION`, and the config value may also pin a digest. The tag stays readable because it appears in the v3 container file; a SHA-256 of the tool sources goes into the `io.seqera.condasplit.source` image label instead, and the release fails when an existing tag has different sources. The image reference is part of the v3 container file, so a tool upgrade changes container ids for v3 images only. Enterprise installs without access to `public.cr.seqera.io` mirror the image and set this property.
+Each tool release gets a new immutable tag (`v1`, `v2`, …), taken from `condasplit/VERSION`, and the config value may also pin a digest. The tag stays readable because it appears in the v2-fast container file; a SHA-256 of the tool sources goes into the `io.seqera.condasplit.source` image label instead, and the release fails when an existing tag has different sources. The image reference is part of the v2-fast container file, so a tool upgrade changes container ids for v2-fast images only. Enterprise installs without access to `public.cr.seqera.io` mirror the image and set this property.
 
 ## Template Comparison
 
-| Aspect | `conda/micromamba:v2` | `conda/micromamba:v3` |
+| Aspect | `conda/micromamba:v2` | `conda/micromamba:v2-fast` |
 |--------|-----------------------|-----------------------|
 | Build stages | 2 | 2 |
 | Conda environment layers | 1 | One per used slot, up to 32, at most 500 MB each before compression |
@@ -254,7 +254,7 @@ Reference environment built with BuildKit v0.25.2, gzip compression and OCI medi
 |----------|-------|
 | API Models | `BuildTemplate.java` |
 | Configuration | `BuildConfig.groovy`, `application.yml` |
-| Templates | `conda-micromamba-v3/dockerfile-conda-file.txt` |
+| Templates | `conda-micromamba-v2-fast/dockerfile-conda-file.txt` |
 | Helpers | `TemplateUtils.java`, `CondaHelper.groovy`, `ContainerHelper.groovy` |
 | Controller | `ContainerController.groovy` |
 | Services | `ContainerInspectServiceImpl.groovy` |
@@ -285,14 +285,14 @@ Reference environment built with BuildKit v0.25.2, gzip compression and OCI medi
 ### Neutral
 - `conda/micromamba:v2` remains the default template
 - Tuning the grouping parameters requires a new template version
-- A tool upgrade changes container ids of `conda/micromamba:v3` images only
+- A tool upgrade changes container ids of `conda/micromamba:v2-fast` images only
 - The same tool could later serve `conda/pixi` environments, which also have `conda-meta/`
 
 ## Follow-ups
 
 - **Production default**: At the production release, switch the default of `wave.build.condasplit-image` to `public.cr.seqera.io/wave/condasplit:v1` in `BuildConfig.groovy`, `application.yml` and `docs/install/reference.md`
-- **Nextflow**: Add `conda/micromamba:v3` to the `wave.build.template` description in `plugins/nf-wave/src/main/io/seqera/wave/plugin/config/WaveConfig.groovy`, and correct its stated default to `conda/micromamba:v2`
-- **Wave CLI**: Add `conda/micromamba:v3` to the `--build-template` help text in `app/src/main/java/io/seqera/wave/cli/App.java`
+- **Nextflow**: Add `conda/micromamba:v2-fast` to the `wave.build.template` description in `plugins/nf-wave/src/main/io/seqera/wave/plugin/config/WaveConfig.groovy`, and correct its stated default to `conda/micromamba:v2`
+- **Wave CLI**: Add `conda/micromamba:v2-fast` to the `--build-template` help text in `app/src/main/java/io/seqera/wave/cli/App.java`
 
 ## References
 

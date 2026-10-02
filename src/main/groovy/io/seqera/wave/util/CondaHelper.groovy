@@ -31,12 +31,12 @@ import static TemplateUtils.condaPackagesToDockerFile
 import static TemplateUtils.condaPackagesToDockerFileUsingV2
 import static TemplateUtils.condaPackagesToSingularityFile
 import static TemplateUtils.condaPackagesToSingularityFileV2
-import static TemplateUtils.condaToDockerFileUsingV3
+import static TemplateUtils.condaToDockerFileUsingV2Fast
 
 /**
  * Helper class for Conda/Micromamba container builds.
  * Supports the legacy v1 template, the v2 (MICROMAMBA_V2) template and the layered
- * v3 (MICROMAMBA_V3) template.
+ * v2-fast (MICROMAMBA_V2_FAST) template.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -98,7 +98,7 @@ class CondaHelper {
     }
 
     /**
-     * Generate a Dockerfile using the Micromamba v3 template. The Conda environment is installed
+     * Generate a Dockerfile using the `conda/micromamba:v2-fast` template. The Conda environment is installed
      * as with the v2 template and then split into multiple image layers by the {@code condasplit} tool.
      * Only supports CONDA package type and Docker format. Supports both lock files and environment files.
      *
@@ -108,13 +108,13 @@ class CondaHelper {
      * @return The generated Dockerfile content
      * @throws BadRequestException if package type is not CONDA
      */
-    static String containerFileV3(PackagesSpec spec, String containerImage, String layersImage) {
-        final opts = micromambaV2Opts(spec, containerImage, 'conda/micromamba:v3')
-        return condaToDockerFileUsingV3(tryGetLockFile(spec.entries), spec.channels, opts, layersImage)
+    static String containerFileV2Fast(PackagesSpec spec, String containerImage, String layersImage) {
+        final opts = micromambaV2Opts(spec, containerImage, 'conda/micromamba:v2-fast')
+        return condaToDockerFileUsingV2Fast(tryGetLockFile(spec.entries), spec.channels, opts, layersImage)
     }
 
     /**
-     * The Conda options of the templates based on micromamba 2.x, i.e. v2 and v3
+     * The Conda options of the templates based on micromamba 2.x, i.e. v2 and v2-fast
      *
      * @throws BadRequestException if package type is not CONDA
      */
