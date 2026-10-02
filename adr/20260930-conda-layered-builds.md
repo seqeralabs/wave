@@ -91,8 +91,8 @@ RUN --mount=type=bind,from={{layers_image}},source=/,target=/opt/wave-tools \
 
 | Registry | Usage |
 |----------|-------|
-| `public.cr.stage-seqera.io/wave/condasplit` | Initial iteration and tests |
-| `public.cr.seqera.io/wave/condasplit` | Production, published by the `build-condasplit.yml` workflow |
+| `public.cr.stage-seqera.io/wave/condasplit` | Tests and local development |
+| `public.cr.seqera.io/wave/condasplit` | Everything else, including the stage and production clusters. Published by the `build-condasplit.yml` workflow |
 
 **Rationale:**
 - A static binary with no runtime dependencies runs in any `{{mamba_image}}`. The default `mambaorg/micromamba:2-amazon2023` lacks `find` and `tar`, which rules out a shell implementation

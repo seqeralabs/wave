@@ -224,10 +224,9 @@ Tests:
 
 ## Rollout
 
-1. `public.cr.stage-seqera.io/wave/condasplit:v1` is published for the initial iteration and tests. Wave's default is `public.cr.seqera.io/wave/condasplit:v1`, so the stage cluster sets `wave.build.condasplit-image` to the stage image until the production image exists.
+1. Publish `public.cr.seqera.io/wave/condasplit:v1`, Wave's default: the `build-condasplit` workflow does it on the next Wave `[release]` commit. `public.cr.stage-seqera.io/wave/condasplit` is only for tests and local development.
 2. Validate on the stage cluster: Nextflow with `wave.build.template = 'conda/micromamba:v3'`, the reference environment, and pull speed against v2.
-3. Publish `public.cr.seqera.io/wave/condasplit:v1`: the `build-condasplit` workflow does it on the next Wave `[release]` commit.
-4. Release as opt-in. Enterprise installs mirror the image and set `wave.build.condasplit-image`.
+3. Release as opt-in. Enterprise installs mirror the image and set `wave.build.condasplit-image`.
 
 ## Risks and open items
 

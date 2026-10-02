@@ -128,7 +128,7 @@ Each release gets a new immutable tag (`v1`, `v2`, ...), set in the `VERSION` fi
 pins the exact tag with the `wave.build.condasplit-image` setting, so a new tool version
 changes the v3 container file and therefore the container id. Never overwrite an existing tag.
 
-**Stage** (default registry, used for the initial iteration and tests):
+**Stage** (default registry of the `Makefile`, only for tests and local development):
 
 ```bash
 cd condasplit
