@@ -176,6 +176,7 @@ Returns the name of the container request made available by Wave.
                   channels: string[],
                   condaOpts: {
                                 mambaImage: string,
+                                baseImage: string,
                                 commands: string[],
                                 basePackages: string
                               },
@@ -184,7 +185,7 @@ Returns the name of the container request made available by Wave.
                                 baseImage: string,
                                 commands: string[],
                                 basePackages: string
-                            }
+                              }
 
               },
     nameStrategy: string
@@ -221,10 +222,10 @@ Returns the name of the container request made available by Wave.
 | `entries`                           | List of the packages names.                                                                                                                                    |
 | `channels`                          | List of Conda channels or CRAN repositories, which will be used to download packages.                                                                                               |
 | `condaOpts`                         | Conda build options (when `type` is CONDA).                                                                                                                      |
-| `mambaImage`                        | Name of the Docker image used to build Conda containers.                                                                                              |
-| `commands`                          | Command to be included in the container.                                                                                                                       |
-| `basePackages`                      | Names of base packages.                                                                                                                                        |
-| `baseImage`                         | Base image for the final stage of multi-stage Conda/Pixi Docker builds. Has no effect on Singularity builds.                                            |
+| `condaOpts.mambaImage`              | Docker image that runs the Micromamba package manager. Default: `mambaorg/micromamba:1.5.10-noble`. With `conda/micromamba:v2`, a Micromamba 1.x image is replaced by `mambaorg/micromamba:2-amazon2023`. |
+| `condaOpts.baseImage`               | Base image for the final stage of the multi-stage Docker build (`conda/micromamba:v2` only). Has no effect on Singularity builds. Default: `ubuntu:24.04`.        |
+| `condaOpts.commands`                | Custom commands to run during the container build (optional).                                                                                                      |
+| `condaOpts.basePackages`            | Base packages included in every Conda build. Default: `conda-forge::procps-ng`.                                                                                    |
 | `pixiOpts`                          | Pixi build options (when `type` is `CONDA` and `buildTemplate` is `conda/pixi:v1`).                                                                                  |
 | `pixiOpts.pixiImage`                | Docker image that runs the Pixi package manager. Default: `public.cr.seqera.io/wave/pixi:0.61.0-noble`.                                                      |
 | `pixiOpts.baseImage`                | Base image for the final stage of the multi-stage Docker build. Has no effect on Singularity builds. Default: `ubuntu:24.04`.                                        |

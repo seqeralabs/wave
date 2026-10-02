@@ -2,7 +2,7 @@
 @example(#{
     basePackages: "python=3.8",
     commands: #["pip install numpy", "pip install pandas"],
-    pixiImage: "ghcr.io/prefix-dev/pixi:latest",
+    pixiImage: "public.cr.seqera.io/wave/pixi:0.61.0-noble",
     baseImage: "ubuntu:24.04"
 })
 model PixiOpts {
