@@ -193,7 +193,7 @@ The prefix directory and its parents are `0755 root:root` in every layer, as v2'
 | `TemplateUtils` | `condaToDockerFileUsingV3(lockFile, channels, opts, layersImage)` renders the template, with a `null` lock file for the conda-file input |
 | `ContainerInspectServiceImpl` | Collects `RUN --mount ... from=<image>` images for the build credentials, ignoring stage names |
 | `condasplit/` | Tool and tests, `frontend/` module, `Dockerfile` (`FROM scratch`, both binaries, frontend entrypoint), `Makefile`, `README.md` |
-| `.github/workflows/build-condasplit.yml` | Go tests on pull requests; on a Wave `[release]` commit, publishes the `condasplit/VERSION` tag unless it already exists |
+| `.github/workflows/build-condasplit.yml` | Go tests on pull requests; on a Wave `[release]` commit, publishes the `condasplit/VERSION` tag. It skips a published tag with the same sources checksum (`io.seqera.condasplit.source` label) and fails for one with different sources |
 
 Unchanged: `BuildStrategy` (`buildctl` arguments, cache, compression), `BuildLogServiceImpl`, persistence, `MultiPlatformBuildService` (one build per platform), scanning, mirroring and freeze. v3 produces its own Dockerfile, so it gets its own container ids and never collides with images from other templates.
 

@@ -64,7 +64,8 @@ jobs:
         if: steps.release.outputs.release == 'true'
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
-      # skipped when the condasplit/VERSION tag is already published
+      # skipped when the condasplit/VERSION tag is published with the same sources, fails when
+      # it's published with different ones, see `make release`
       - name: Build and Push Image to public.cr.seqera.io
         if: steps.release.outputs.release == 'true'
         run: make -C condasplit release registry=public.cr.seqera.io/wave

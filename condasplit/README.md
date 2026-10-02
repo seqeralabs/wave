@@ -138,5 +138,18 @@ make all
 
 **Production**: bump `VERSION`. The `build-condasplit.yml` GitHub workflow publishes
 `public.cr.seqera.io/wave/condasplit:<VERSION>` on the next Wave release commit (`[release]`
-on `master`), and skips the build when that tag already exists. Then point the default of
-`wave.build.condasplit-image` to the new tag.
+on `master`). Then point the default of `wave.build.condasplit-image` to the new tag.
+
+The tag is always the `VERSION` value, never a checksum: Wave writes it into the v3 container
+file and the build logs, where `condasplit:v1` is readable and a checksum isn't. The checksum
+goes into an `io.seqera.condasplit.source` image label instead: a SHA-256 of the tracked files of
+this directory, the Markdown docs excluded. `make release` uses it to make sure a tag always holds
+the same sources:
+
+| The tag | Result |
+|---|---|
+| doesn't exist | builds and pushes the image |
+| exists with the same checksum | skips the build, e.g. on a Wave release that doesn't change the tool |
+| exists with a different or no checksum | fails, bump `VERSION` to publish the changed sources |
+
+A registry error also fails the release, so it never overwrites a tag.
