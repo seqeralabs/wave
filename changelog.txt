@@ -6,7 +6,6 @@
 - fix(deps): upgrade typespec to 1.16.0 (COMP-2378) (#1143) [b8198f57b]
 - fix(deps): upgrade bouncycastle to 1.85 (COMP-2551) (#1141) [31dbcc5a4]
 - fix(deps): upgrade micronaut platform to 4.10.19 (COMP-2257) (#1142) [2878cf5f5]
-- docs: Document multi-platform container builds (#1137) [ec56841a1]
 
 1.38.0 - 15 Sep 2026
 - Upgrade jib plugin to 3.5.4 for Java 25 class file support (#1136) [ad179698b]
