@@ -1,4 +1,13 @@
 # Wave changelog
+1.39.0 - 2 Oct 2026
+- Add multi-architecture Singularity (SIF) build support (#1140) [0f9a23d93]
+- Add conda/micromamba:v2-fast template with layered conda builds (#1146, #1151) [5ffc92ca4, 2296d4ba7]
+- fix(deps): upgrade lib-pairing to 1.1.1 to accept large pairing messages (#1144) [0d74fc264]
+- fix(deps): upgrade typespec to 1.16.0 (COMP-2378) (#1143) [b8198f57b]
+- fix(deps): upgrade bouncycastle to 1.85 (COMP-2551) (#1141) [31dbcc5a4]
+- fix(deps): upgrade micronaut platform to 4.10.19 (COMP-2257) (#1142) [2878cf5f5]
+- docs: Document multi-platform container builds (#1137) [ec56841a1]
+
 1.38.0 - 15 Sep 2026
 - Upgrade jib plugin to 3.5.4 for Java 25 class file support (#1136) [ad179698b]
 - Support an authenticating egress proxy via shared lib-util-net ProxyConfig (#1125) [a992c7003]
