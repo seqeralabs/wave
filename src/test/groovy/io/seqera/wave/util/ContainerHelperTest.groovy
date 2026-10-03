@@ -986,6 +986,40 @@ class ContainerHelperTest extends Specification {
         e.message == "Package type 'CRAN' not supported by 'conda/micromamba:v2-fast' build template"
     }
 
+    // === build with pixi v1-fast tests
+
+    def 'should create conda docker file with packages and pixi v1-fast'() {
+        given:
+        def CHANNELS = ['conda-forge', 'bioconda']
+        def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
+        def packages = new PackagesSpec(
+                type: PackagesSpec.Type.CONDA,
+                entries:  PACKAGES,
+                channels: CHANNELS)
+        and:
+        def req = new SubmitContainerTokenRequest(packages:packages, buildTemplate: BuildTemplate.CONDA_PIXI_V1_FAST, containerImage: 'debian:12')
+
+        when:
+        def result = ContainerHelper.containerFileFromRequest(req, 'my.registry.io/wave/condasplit:v2')
+
+        then:
+        result == PixiHelper.containerFileV1Fast(new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: PACKAGES, channels: CHANNELS), 'debian:12', 'my.registry.io/wave/condasplit:v2')
+        result.contains('FROM debian:12 AS final\n')
+    }
+
+    def 'should reject singularity format with pixi v1-fast'() {
+        given:
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['bwa=0.7.15'], channels: ['bioconda'])
+        def req = new SubmitContainerTokenRequest(packages: packages, format: 'sif', buildTemplate: BuildTemplate.CONDA_PIXI_V1_FAST)
+
+        when:
+        ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
+
+        then:
+        def e = thrown(BadRequestException)
+        e.message == "Build template 'conda/pixi:v1-fast' does not support Singularity format"
+    }
+
     def 'should create cran docker file with packages'() {
         given:
         def REPOSITORIES = ['cran', 'bioconductor']

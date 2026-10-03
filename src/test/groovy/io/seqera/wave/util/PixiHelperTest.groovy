@@ -135,4 +135,31 @@ class PixiHelperTest extends Specification {
         def ex = thrown(BadRequestException)
         ex.message.contains("Conda lock file is not supported by 'conda/pixi:v1' template")
     }
+
+    def 'should create v1-fast docker file with packages'() {
+        given:
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['bwa=0.7.15', 'salmon=1.1.1'], channels: ['conda-forge'])
+
+        when:
+        def result = PixiHelper.containerFileV1Fast(packages, 'base/custom:1.0', 'public.cr.seqera.io/wave/condasplit:v1')
+
+        then:
+        result == TemplateUtils.condaFileToDockerFileUsingPixiV1Fast(new PixiOpts(baseImage: 'base/custom:1.0'), 'public.cr.seqera.io/wave/condasplit:v1')
+        result.startsWith('# syntax=public.cr.seqera.io/wave/condasplit:v1\n')
+        result.contains('FROM base/custom:1.0 AS final')
+    }
+
+    def 'should reject non-CONDA package type and lock file with v1-fast'() {
+        when:
+        PixiHelper.containerFileV1Fast(PACKAGES, null, 'public.cr.seqera.io/wave/condasplit:v1')
+
+        then:
+        def ex = thrown(BadRequestException)
+        ex.message == MESSAGE
+
+        where:
+        PACKAGES                                                                                                    | MESSAGE
+        new PackagesSpec(type: PackagesSpec.Type.CRAN, entries: ['dplyr'])                                          | "Package type 'CRAN' not supported by 'conda/pixi:v1-fast' build template"
+        new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['https://foo.com/lock.yml'], channels: ['conda-forge'])  | "Conda lock file is not supported by 'conda/pixi:v1-fast' template"
+    }
 }

@@ -96,6 +96,7 @@ The Wave CLI supports build templates for creating container images from Conda p
 | `conda/micromamba:v2` | Multi-stage build using Micromamba 2.x (default). Produces smaller images by excluding the package manager from the final stage (Singularity still uses a single-stage build). |
 | `conda/micromamba:v2-fast` | Multi-stage build using Micromamba 2.x that splits the Conda environment into multiple layers of at most 500 MB each before compression, with rare exceptions. Docker only. |
 | `conda/pixi:v1`       | Multi-stage build using [Pixi][pixi] package manager. Produces smaller images with faster dependency resolution (Singularity still uses a single-stage build). |
+| `conda/pixi:v1-fast`  | Multi-stage build using [Pixi][pixi] that splits the Conda environment into multiple layers of at most 500 MB each before compression, with rare exceptions. Docker only. |
 
 **Related CLI arguments**
 
@@ -119,9 +120,9 @@ As a result, the `baseImage` option has no effect on Singularity builds. It only
 
 **Layered Conda builds**
 
-The `conda/micromamba:v2-fast` template installs the environment like `conda/micromamba:v2`, then splits it into multiple image layers grouped by Conda package. Large packages get their own layer, small packages are grouped together, and every layer holds at most 500 MB of files before compression, so compressed layers stay under 512 MB. The only exceptions are a single file larger than 500 MB, which gets a layer to itself, and layers merged when the environment needs more than 32 layers. The build log shows a warning in both cases. Use it when your registry or proxy rejects large layers, or to speed up image pulls. The build log shows which packages went into each layer, unless the build reuses the environment install step from the build cache.
+The `conda/micromamba:v2-fast` and `conda/pixi:v1-fast` templates install the environment like `conda/micromamba:v2` and `conda/pixi:v1`, then split it into multiple image layers grouped by Conda package. Large packages get their own layer, small packages are grouped together, and every layer holds at most 500 MB of files before compression, so compressed layers stay under 512 MB. The only exceptions are a single file larger than 500 MB, which gets a layer to itself, and layers merged when the environment needs more than 32 layers. The build log shows a warning in both cases. Use it when your registry or proxy rejects large layers, or to speed up image pulls. The build log shows which packages went into each layer, unless the build reuses the environment install step from the build cache.
 
-The `conda/micromamba:v2-fast` template builds Docker images only. Wave rejects requests that combine it with `--singularity`. See [Layered Conda builds](../features/container-builds.mdx#layered-conda-builds) for more details.
+These templates build Docker images only. Wave rejects requests that combine them with `--singularity`. See [Layered Conda builds](../features/container-builds.mdx#layered-conda-builds) for more details.
 
 **Example usage**
 
@@ -148,6 +149,14 @@ Build a container with the Conda environment split into multiple layers using th
 wave \
   --conda-package bioconda::gatk4=4.6.2.0 \
   --build-template conda/micromamba:v2-fast
+```
+
+Build the same layered container using Pixi:
+
+```bash
+wave \
+  --conda-package bioconda::gatk4=4.6.2.0 \
+  --build-template conda/pixi:v1-fast
 ```
 
 Build a Singularity container using Pixi:
