@@ -91,7 +91,7 @@ RUN --mount=type=bind,from={{layers_image}},source=/,target=/opt/wave-tools \
 
 | Registry | Usage |
 |----------|-------|
-| `public.cr.stage-seqera.io/wave/condasplit` | Tests and local development |
+| `public.cr.stage-seqera.io/wave/condasplit` | Local development (`make` default) |
 | `public.cr.seqera.io/wave/condasplit` | Everything else, including the stage and production clusters. Published by the `build-condasplit.yml` workflow |
 
 **Rationale:**
@@ -290,7 +290,6 @@ Reference environment built with BuildKit v0.25.2, gzip compression and OCI medi
 
 ## Follow-ups
 
-- **Production default**: At the production release, switch the default of `wave.build.condasplit-image` to `public.cr.seqera.io/wave/condasplit:v1` in `BuildConfig.groovy`, `application.yml` and `docs/install/reference.md`
 - **Nextflow**: Add `conda/micromamba:v2-fast` to the `wave.build.template` description in `plugins/nf-wave/src/main/io/seqera/wave/plugin/config/WaveConfig.groovy`, and correct its stated default to `conda/micromamba:v2`
 - **Wave CLI**: Add `conda/micromamba:v2-fast` to the `--build-template` help text in `app/src/main/java/io/seqera/wave/cli/App.java`
 
@@ -305,6 +304,6 @@ Reference environment built with BuildKit v0.25.2, gzip compression and OCI medi
 
 ---
 
-**Status:** Implemented (branch 002-conda-micromamba-v3-layers)
+**Status:** Implemented (Wave 1.39.0)
 **Date:** 2026-09-30
 **Authors:** Wave Team
