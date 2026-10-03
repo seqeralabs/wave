@@ -51,7 +51,7 @@ class BuildConfig {
 
     /**
      * The image providing the {@code condasplit} tool used by the {@code conda/micromamba:v2-fast}
-     * build template to split the Conda environment into multiple image layers
+     * and {@code conda/pixi:v1-fast} build templates to split the Conda environment into multiple image layers
      */
     @Value('${wave.build.condasplit-image:`public.cr.seqera.io/wave/condasplit:v1`}')
     String condasplitImage
