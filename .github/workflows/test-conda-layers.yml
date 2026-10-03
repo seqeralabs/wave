@@ -19,6 +19,7 @@ permissions:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -76,19 +77,19 @@ jobs:
           render ${{ matrix.fast }} > ctx/Dockerfile.fast
           if [ "${{ matrix.name }}" = pixi ]; then
             sed -i 's#micromamba install -y -n base conda-forge::procps-ng#pixi add conda-forge::procps-ng#' ctx/Dockerfile.base ctx/Dockerfile.fast
+            # verbose pixi output, to show where the install spends its time
+            sed -i -e 's#pixi init #pixi init -v #' -e 's#pixi add #pixi add -v #g' ctx/Dockerfile.base ctx/Dockerfile.fast
           fi
           if grep -n '{{' ctx/Dockerfile.base ctx/Dockerfile.fast; then exit 1; fi
           cat ctx/Dockerfile.fast
 
       - name: Build base image
-        run: |
-          set -o pipefail
-          docker buildx build --load --progress=plain -t test:base -f ctx/Dockerfile.base ctx 2>&1 | tail -n 20
+        run: docker buildx build --load --progress=plain -t test:base -f ctx/Dockerfile.base ctx
 
       - name: Build layered image
         run: |
           set -o pipefail
-          docker buildx build --load --progress=plain -t test:fast -f ctx/Dockerfile.fast ctx 2>&1 | tee fast.log | tail -n 20
+          docker buildx build --load --progress=plain -t test:fast -f ctx/Dockerfile.fast ctx 2>&1 | tee fast.log
           echo "--- layer plan"
           sed -n '/>> CONDA_LAYERS_START/,/<< CONDA_LAYERS_END/p' fast.log
 
