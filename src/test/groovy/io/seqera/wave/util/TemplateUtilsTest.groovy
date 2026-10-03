@@ -358,8 +358,13 @@ class TemplateUtilsTest extends Specification {
                 WORKDIR /opt/wave
 
                 RUN pixi init --import /opt/wave/conda.yml \\
-                    && pixi add conda-forge::which \\
-                    && pixi add foo::bar \\
+                    && { pixi add conda-forge::which foo::bar > /tmp/pixi.log 2>&1 \\
+                        && cat /tmp/pixi.log \\
+                        || { cat /tmp/pixi.log >&2 && grep -q __cuda /tmp/pixi.log \\
+                            && pixi workspace system-requirements add cuda 99 \\
+                            && export CONDA_OVERRIDE_CUDA="99" \\
+                            && pixi add conda-forge::which foo::bar ; } ; } \\
+                    && pixi install \\
                     && pixi shell-hook > /shell-hook.sh \\
                     && echo 'exec "$@"' >> /shell-hook.sh \\
                     && echo ">> CONDA_LOCK_START" \\
@@ -397,8 +402,13 @@ class TemplateUtilsTest extends Specification {
                 WORKDIR /opt/wave
 
                 RUN pixi init --import /opt/wave/conda.yml \\
-                    && pixi add conda-forge::which \\
-                    && pixi add conda-forge::procps-ng \\
+                    && { pixi add conda-forge::which conda-forge::procps-ng > /tmp/pixi.log 2>&1 \\
+                        && cat /tmp/pixi.log \\
+                        || { cat /tmp/pixi.log >&2 && grep -q __cuda /tmp/pixi.log \\
+                            && pixi workspace system-requirements add cuda 99 \\
+                            && export CONDA_OVERRIDE_CUDA="99" \\
+                            && pixi add conda-forge::which conda-forge::procps-ng ; } ; } \\
+                    && pixi install \\
                     && pixi shell-hook > /shell-hook.sh \\
                     && echo 'exec "$@"' >> /shell-hook.sh \\
                     && echo ">> CONDA_LOCK_START" \\
@@ -439,8 +449,13 @@ class TemplateUtilsTest extends Specification {
                 WORKDIR /opt/wave
 
                 RUN pixi init --import /opt/wave/conda.yml \\
-                    && pixi add conda-forge::which \\
-                    && pixi add conda-forge::procps-ng \\
+                    && { pixi add conda-forge::which conda-forge::procps-ng > /tmp/pixi.log 2>&1 \\
+                        && cat /tmp/pixi.log \\
+                        || { cat /tmp/pixi.log >&2 && grep -q __cuda /tmp/pixi.log \\
+                            && pixi workspace system-requirements add cuda 99 \\
+                            && export CONDA_OVERRIDE_CUDA="99" \\
+                            && pixi add conda-forge::which conda-forge::procps-ng ; } ; } \\
+                    && pixi install \\
                     && pixi shell-hook > /shell-hook.sh \\
                     && echo 'exec "$@"' >> /shell-hook.sh \\
                     && echo ">> CONDA_LOCK_START" \\
@@ -693,8 +708,14 @@ class TemplateUtilsTest extends Specification {
                 %post
                     mkdir /opt/wave && cd /opt/wave
                     pixi init --import /scratch/conda.yml
-                    pixi add conda-forge::which
-                    pixi add conda-forge::procps-ng
+                    pixi add conda-forge::which conda-forge::procps-ng > /tmp/pixi.log 2>&1 \\
+                        && cat /tmp/pixi.log \\
+                        || { cat /tmp/pixi.log >&2 && grep -q __cuda /tmp/pixi.log \\
+                            && pixi workspace system-requirements add cuda 99 \\
+                            && export CONDA_OVERRIDE_CUDA="99" \\
+                            && pixi add conda-forge::which conda-forge::procps-ng ; } \\
+                        || exit 1
+                    pixi install
                     pixi shell-hook > /shell-hook.sh
                     echo ">> CONDA_LOCK_START"
                     cat /opt/wave/pixi.lock
@@ -714,8 +735,14 @@ class TemplateUtilsTest extends Specification {
                 %post
                     mkdir /opt/wave && cd /opt/wave
                     pixi init --import /scratch/conda.yml
-                    pixi add conda-forge::which
-                    pixi add conda-forge::procps-ng
+                    pixi add conda-forge::which conda-forge::procps-ng > /tmp/pixi.log 2>&1 \\
+                        && cat /tmp/pixi.log \\
+                        || { cat /tmp/pixi.log >&2 && grep -q __cuda /tmp/pixi.log \\
+                            && pixi workspace system-requirements add cuda 99 \\
+                            && export CONDA_OVERRIDE_CUDA="99" \\
+                            && pixi add conda-forge::which conda-forge::procps-ng ; } \\
+                        || exit 1
+                    pixi install
                     pixi shell-hook > /shell-hook.sh
                     echo ">> CONDA_LOCK_START"
                     cat /opt/wave/pixi.lock
@@ -742,7 +769,14 @@ class TemplateUtilsTest extends Specification {
                 %post
                     mkdir /opt/wave && cd /opt/wave
                     pixi init --import /scratch/conda.yml
-                    pixi add conda-forge::which
+                    pixi add conda-forge::which > /tmp/pixi.log 2>&1 \\
+                        && cat /tmp/pixi.log \\
+                        || { cat /tmp/pixi.log >&2 && grep -q __cuda /tmp/pixi.log \\
+                            && pixi workspace system-requirements add cuda 99 \\
+                            && export CONDA_OVERRIDE_CUDA="99" \\
+                            && pixi add conda-forge::which ; } \\
+                        || exit 1
+                    pixi install
                     pixi shell-hook > /shell-hook.sh
                     echo ">> CONDA_LOCK_START"
                     cat /opt/wave/pixi.lock
@@ -763,7 +797,7 @@ class TemplateUtilsTest extends Specification {
         def result = TemplateUtils.condaFileToDockerFileUsingPixi(PIXI_OPTS)
 
         then:
-        result.contains('pixi add conda-forge::procps-ng')
+        result.contains('pixi add conda-forge::which conda-forge::procps-ng')
         result.contains('RUN apt-get update')
         result.contains('RUN apt-get install -y curl')
     }
@@ -779,7 +813,7 @@ class TemplateUtilsTest extends Specification {
         def result = TemplateUtils.condaFileToSingularityFileUsingPixi(PIXI_OPTS)
 
         then:
-        result.contains('pixi add conda-forge::bash')
+        result.contains('pixi add conda-forge::which conda-forge::bash')
         result.contains('%post')
         result.contains('apt-get update')
         result.contains('apt-get install -y nano')
