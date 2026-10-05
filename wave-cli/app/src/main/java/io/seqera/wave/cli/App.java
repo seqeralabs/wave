@@ -427,9 +427,6 @@ public class App implements Runnable {
             }
         }
 
-        if( isMultiPlatform() && singularity )
-            throw new IllegalCliArgumentException("Multi-platform builds are not supported for Singularity format");
-
         if( isMultiPlatform() && mirror )
             throw new IllegalCliArgumentException("Multi-platform builds and --mirror conflict each other");
 

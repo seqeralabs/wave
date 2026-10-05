@@ -646,18 +646,21 @@ class AppTest extends Specification {
         app.@platform == "linux/amd64,linux/arm64"
     }
 
-    def 'should fail when specifying multi-platform and singularity' () {
+    def 'should allow multi-platform with singularity' () {
         given:
         def app = new App()
-        String[] args = ["--platform", "linux/amd64,linux/arm64", "--singularity", "--freeze", "-f", "Dockerfile"]
+        String[] args = ["--platform", "linux/amd64,linux/arm64", "--singularity", "--freeze", "-f", "Dockerfile", "--build-repo", "docker.io/foo", "--tower-token", "xyz"]
 
         when:
         new CommandLine(app).parseArgs(args)
         app.validateArgs()
 
         then:
-        def e = thrown(IllegalCliArgumentException)
-        e.getMessage() == "Multi-platform builds are not supported for Singularity format"
+        noExceptionThrown()
+        and:
+        app.@platform == "linux/amd64,linux/arm64"
+        app.@singularity
+        app.@freeze
     }
 
     def 'should fail when specifying multi-platform and mirror' () {

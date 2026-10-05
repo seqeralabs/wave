@@ -173,12 +173,26 @@ docker run --platform linux/arm64 $container sh -c 'fastp --version'
 #### Build a multi-architecture Conda package container (amd64 and arm64)
 
 Pass both platforms separated by a comma to build a single multi-architecture image
-backed by an index manifest. Note: multi-platform builds are not supported for Singularity.
+backed by an index manifest.
 
 ```bash
 container=$(wave --conda-package fastp --platform linux/amd64,linux/arm64)
 docker run $container sh -c 'fastp --version'
 ```
+
+#### Build a multi-architecture Singularity container (amd64 and arm64)
+
+The same applies to Singularity: a per-architecture SIF image is built for each platform and
+published under a single `oras://` URL backed by an OCI image index. Freeze mode is required
+for Singularity builds, and a build repository is typically required as well.
+
+```bash
+container=$(wave --conda-package fastp --singularity --freeze --build-repo <YOUR REGISTRY> --platform linux/amd64,linux/arm64)
+apptainer pull --arch arm64 $container
+```
+
+Note: Apptainer resolves the architecture at pull time, whereas SingularityCE does not yet
+support platform selection for `oras://` references (see [sylabs/singularity#4339](https://github.com/sylabs/singularity/pull/4339)).
 
 #### Build a Singularity container using a Conda package and pushing to a OCI registry
 
