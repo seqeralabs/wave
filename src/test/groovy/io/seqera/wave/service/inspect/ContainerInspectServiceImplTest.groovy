@@ -23,6 +23,7 @@ import spock.lang.Specification
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.config.CondaOpts
+import io.seqera.wave.config.PixiOpts
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.TemplateUtils
@@ -128,6 +129,16 @@ class ContainerInspectServiceImplTest extends Specification {
 
         where:
         LOCK_FILE << [null, 'https://foo.com/lock.yml']
+    }
+
+    def 'should find repos in pixi v1-fast container file' () {
+        given:
+        def LAYERS = 'public.cr.seqera.io/wave/condasplit:v1'
+        def PIXI_OPTS = new PixiOpts([pixiImage: 'ghcr.io/prefix-dev/pixi:0.47.0', baseImage: 'ubuntu:24.04'])
+
+        expect:
+        ContainerInspectServiceImpl.findRepositories(TemplateUtils.condaFileToDockerFileUsingPixiV1Fast(PIXI_OPTS, LAYERS))
+                == ['ghcr.io/prefix-dev/pixi:0.47.0', LAYERS, 'ubuntu:24.04']
     }
 
     def 'should fetch container entry point' () {

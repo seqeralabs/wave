@@ -113,6 +113,16 @@ public class TemplateUtils {
         return condaFileTemplate1("/templates/conda-pixi-v1/singularityfile-conda-file.txt", opts);
     }
 
+    /**
+     * Render the pixi v1-fast Dockerfile, installing the environment from the {@code conda.yml}
+     * file of the build context
+     *
+     * @param layersImage The image providing the {@code condasplit} tool
+     */
+    static public String condaFileToDockerFileUsingPixiV1Fast(PixiOpts opts, String layersImage) {
+        return condaFileTemplate1("/templates/conda-pixi-v1-fast/dockerfile-conda-file.txt", opts, Map.of("layers_image", layersImage));
+    }
+
     static public String condaPackagesToDockerFileUsingV2(String packages, List<String> condaChannels, CondaOpts opts) {
         return condaPackagesTemplate1(
                 "/templates/conda-micromamba-v2/dockerfile-conda-packages.txt",
@@ -193,12 +203,17 @@ public class TemplateUtils {
     }
 
     static protected String condaFileTemplate1(String template, PixiOpts opts) {
+        return condaFileTemplate1(template, opts, Map.of());
+    }
+
+    static protected String condaFileTemplate1(String template, PixiOpts opts, Map<String,String> extraBinding) {
         final boolean singularity = template.contains("/singularityfile");
         // create the binding map
         final Map<String,String> binding = new HashMap<>();
         binding.put("base_image", opts.baseImage);
         binding.put("pixi_image", opts.pixiImage);
         binding.put("base_packages", pixiAddBasePackage0(opts.basePackages,singularity));
+        binding.putAll(extraBinding);
 
         final String result = renderTemplate0(template, binding, List.of("wave_context_dir"));
         return addCommands(result, opts.commands, singularity);

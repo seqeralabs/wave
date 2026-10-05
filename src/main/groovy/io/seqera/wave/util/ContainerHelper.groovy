@@ -37,6 +37,7 @@ import static io.seqera.wave.api.BuildTemplate.CONDA_MICROMAMBA_V1
 import static io.seqera.wave.api.BuildTemplate.CONDA_MICROMAMBA_V2
 import static io.seqera.wave.api.BuildTemplate.CONDA_MICROMAMBA_V2_FAST
 import static io.seqera.wave.api.BuildTemplate.CONDA_PIXI_V1
+import static io.seqera.wave.api.BuildTemplate.CONDA_PIXI_V1_FAST
 import static io.seqera.wave.api.BuildTemplate.CRAN_INSTALLR_V1
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static DockerHelper.condaEnvironmentToCondaYaml
@@ -55,7 +56,7 @@ class ContainerHelper {
      * Dispatches to the appropriate helper based on build template and package type.
      *
      * @param req The container token request
-     * @param condasplitImage The image providing the {@code condasplit} tool used by the {@code conda/micromamba:v2-fast} template
+     * @param condasplitImage The image providing the {@code condasplit} tool used by the {@code conda/micromamba:v2-fast} and {@code conda/pixi:v1-fast} templates
      * @return The generated container file content
      */
     static String containerFileFromRequest(SubmitContainerTokenRequest req, String condasplitImage) {
@@ -76,6 +77,11 @@ class ContainerHelper {
         }
         if( req.buildTemplate == CONDA_PIXI_V1 ) {
             return PixiHelper.containerFile(spec, req.containerImage, singularity)
+        }
+        if( req.buildTemplate == CONDA_PIXI_V1_FAST ) {
+            if( singularity )
+                throw new BadRequestException("Build template '${CONDA_PIXI_V1_FAST}' does not support Singularity format")
+            return PixiHelper.containerFileV1Fast(spec, req.containerImage, condasplitImage)
         }
         if( spec.type == PackagesSpec.Type.CRAN && (!req.buildTemplate || req.buildTemplate == CRAN_INSTALLR_V1) ) {
             return CranHelper.containerFile(spec, singularity)

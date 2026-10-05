@@ -156,11 +156,12 @@ This setup installs both Conda and PyPI packages during the build.
 
 By default, Wave builds Conda images with the `conda/micromamba:v2` template, which runs a two-stage build. The first stage installs the environment. The second stage copies only the resolved environment into a minimal base image. Multi-stage builds typically reduce image size by 30–50%. They exclude build tools from the final image and emit a lock file for reproducibility. The `conda/micromamba:v1` template runs a single-stage build instead, which bundles the package manager with the runtime environment.
 
-Three multi-stage templates are available:
+Four multi-stage templates are available:
 
 - **`conda/micromamba:v2`** uses Micromamba and produces an `environment.lock` file. This is the default template for Conda builds.
 - **`conda/micromamba:v2-fast`** builds like `conda/micromamba:v2`, then splits the environment into multiple image layers. It produces Docker images only. See [Layered Conda builds](#layered-conda-builds).
 - **`conda/pixi:v1`** uses [Pixi](https://pixi.sh/) and produces a `pixi.lock` file. Conda lock files are not supported through this template. Pixi support was added in Wave 1.31.0.
+- **`conda/pixi:v1-fast`** builds like `conda/pixi:v1`, then splits the environment into multiple image layers. It produces Docker images only. See [Layered Conda builds](#layered-conda-builds).
 
 Select a template with the `buildTemplate` field on the build request, the `--build-template` option of the Wave CLI, or the `wave.build.template` setting in Nextflow. The `conda/micromamba:v2` and `conda/pixi:v1` templates accept Conda packages and Conda environment files, and both produce Docker and Singularity images.
 
@@ -168,14 +169,14 @@ Select a template with the `buildTemplate` field on the build request, the `--bu
 
 The `conda/micromamba:v1`, `conda/micromamba:v2`, and `conda/pixi:v1` templates ship the whole Conda environment as a single image layer, which can reach several gigabytes. Some registries, proxies, and CDN caches reject or don't cache layers larger than 512 MB. Container runtimes also download and unpack a single layer over one connection, even when they could fetch several layers in parallel.
 
-The `conda/micromamba:v2-fast` template installs the environment as `conda/micromamba:v2` does, then splits it into layers grouped by Conda package:
+The `conda/micromamba:v2-fast` and `conda/pixi:v1-fast` templates install the environment as `conda/micromamba:v2` and `conda/pixi:v1` do, then split it into layers grouped by Conda package:
 
 - Each package of 50 MB or more gets its own layer, and a package larger than 500 MB is split across several layers.
 - Smaller packages are grouped together into shared layers.
 - Every layer holds at most 500 MB of files before compression, so compressed layers stay under 512 MB. A single file larger than 500 MB gets a layer to itself, and the build log shows a warning.
 - The image has up to 32 Conda layers, only as many as the environment needs. If an environment needs more layers, the smallest layers are merged, a merged layer can exceed 500 MB, and the build log shows a warning.
 
-The tools, versions, and files in the image are the same as with `conda/micromamba:v2`, except that the unused package cache (`/opt/conda/pkgs`) is dropped. The build log lists which packages went into which layer and how large each layer is, unless the build reuses the environment install step from the build cache.
+The tools, versions, and files in the image are the same as with `conda/micromamba:v2` and `conda/pixi:v1`, except that `conda/micromamba:v2-fast` drops the unused package cache (`/opt/conda/pkgs`). The build log lists which packages went into which layer and how large each layer is, unless the build reuses the environment install step from the build cache.
 
 To build with this template using the Wave CLI:
 
@@ -185,7 +186,9 @@ wave \
   --build-template conda/micromamba:v2-fast
 ```
 
-`conda/micromamba:v2-fast` is opt-in. Existing templates and the default template are unchanged, so existing images keep their build IDs. Singularity builds are not supported with this template, and Wave rejects them. See [Layered Conda builds](../api.md#layered-conda-builds) in the API reference for details.
+Use `--build-template conda/pixi:v1-fast` to build the environment with Pixi instead.
+
+Both templates are opt-in. Existing templates and the default template are unchanged, so existing images keep their build IDs. Singularity builds are not supported with these templates, and Wave rejects them. See [Layered Conda builds](../api.md#layered-conda-builds) in the API reference for details.
 
 ### Build from CRAN packages
 

@@ -1,21 +1,21 @@
 # condasplit
 
-A small static tool used by the `conda/micromamba:v2-fast` build template to ship a conda
+A small static tool used by the `conda/micromamba:v2-fast` and `conda/pixi:v1-fast` build templates to ship a conda
 environment as several image layers instead of one large layer.
 
 It runs in the same `RUN` step that installs the environment. It moves every file of the
-installed prefix (e.g. `/opt/conda`) into at most `--slots` layer directories,
+installed prefix (e.g. `/opt/conda` or `/opt/wave/.pixi/envs/default`) into at most `--slots` layer directories,
 `<out>/00`, `<out>/01`, ..., each rooted at `/`, grouping files by conda package. The final
-stage of the template then adds each directory as a separate layer with
+stage of these templates then adds each directory as a separate layer with
 `COPY --link --from=build /layers/NN/ /`.
 
 The tool image is `FROM scratch`. The build mounts it read-only for that one step
 (`RUN --mount=type=bind,from=<image>,...`), so the tool never ends up in the built image
 or in the build cache.
 
-The same image is the BuildKit frontend of the template, named by its first line
+The same image is the BuildKit frontend of these templates, named by its first line
 `# syntax=<image>`, and its entrypoint is `/condasplit-frontend` (see `frontend/`).
-The template has a single `COPY --link --from=build /layers/NN/ /` line: the frontend
+Each template has a single `COPY --link --from=build /layers/NN/ /` line: the frontend
 builds the `build` stage, lists `/layers`, repeats that line for each directory and builds
 the whole Dockerfile. It delegates both builds to BuildKit's built-in Dockerfile frontend,
 and the install stage runs once because the second build finds it in the cache of the
@@ -91,6 +91,14 @@ The `conda/micromamba:v2-fast` template runs:
     --slots 32 --max-layer-size 500000000 --own-layer-size 50000000 --exclude pkgs
 ```
 
+The `conda/pixi:v1-fast` template runs the same command on the pixi environment. It has no
+`--exclude`, because the pixi package cache is outside the environment:
+
+```
+/opt/wave-tools/condasplit --src /opt/wave/.pixi/envs/default --out /layers \
+    --slots 32 --max-layer-size 500000000 --own-layer-size 50000000
+```
+
 ## Development
 
 The tool uses only the Go standard library. The frontend is a separate Go module,
@@ -126,7 +134,7 @@ and cross-compiles a static binary (`CGO_ENABLED=0`) from the pinned `golang` im
 
 Each release gets a new immutable tag (`v1`, `v2`, ...), set in the `VERSION` file. Wave
 pins the exact tag with the `wave.build.condasplit-image` setting, so a new tool version
-changes the v2-fast container file and therefore the container id. Never overwrite an existing tag.
+changes the `-fast` container files and therefore the container ids. Never overwrite an existing tag.
 
 **Stage** (default registry of the `Makefile`, only for tests and local development):
 
@@ -140,8 +148,8 @@ make all
 `public.cr.seqera.io/wave/condasplit:<VERSION>` on the next Wave release commit (`[release]`
 on `master`). Then point the default of `wave.build.condasplit-image` to the new tag.
 
-The tag is always the `VERSION` value, never a checksum: Wave writes it into the v2-fast container
-file and the build logs, where `condasplit:v1` is readable and a checksum isn't. The checksum
+The tag is always the `VERSION` value, never a checksum: Wave writes it into the `-fast` container
+files and the build logs, where `condasplit:v1` is readable and a checksum isn't. The checksum
 goes into an `io.seqera.condasplit.source` image label instead: a SHA-256 of the tracked files of
 this directory, the Markdown docs excluded. `make release` uses it to make sure a tag always holds
 the same sources:
