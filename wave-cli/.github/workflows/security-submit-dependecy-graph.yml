@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-    - uses: graalvm/setup-graalvm@cabbb10818fabc989d6dbd508e4846596d20dd2d # v1.6.0
+    - uses: graalvm/setup-graalvm@0426e2e191540e8514dff98dc52a5f5146a2a276 # v1.6.6
       with:
         java-version: 25
 
