@@ -35,6 +35,7 @@ jobs:
             fast: conda-pixi-v1-fast
             builder: public.cr.seqera.io/wave/pixi:0.61.0-noble
             prefix: /opt/wave/.pixi/envs/default
+            # nothing to ignore: the pixi package cache is outside the environment
             ignore: '^$'
     env:
       # the condasplit tool and frontend image, as Wave's `wave.build.condasplit-image` default
