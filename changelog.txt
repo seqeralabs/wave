@@ -1,4 +1,7 @@
 # Wave changelog
+1.40.0 - 5 Oct 2026
+- Add conda/pixi:v1-fast template with layered conda builds (#1153) [c260aff3a]
+
 1.39.0 - 2 Oct 2026
 - Add multi-architecture Singularity (SIF) build support (#1140) [0f9a23d93]
 - Add conda/micromamba:v2-fast template with layered conda builds (#1146, #1151) [5ffc92ca4, 2296d4ba7]
