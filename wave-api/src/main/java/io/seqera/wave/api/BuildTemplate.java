@@ -30,6 +30,12 @@ public final class BuildTemplate {
     public static final String CONDA_PIXI_V1 = "conda/pixi:v1";
 
     /**
+     * Build template for Pixi-based multi-stage builds producing
+     * the Conda environment as multiple image layers (Docker format only)
+     */
+    public static final String CONDA_PIXI_V1_FAST = "conda/pixi:v1-fast";
+
+    /**
      * Build template for Micromamba v1-based multi-stage builds
      */
     public static final String CONDA_MICROMAMBA_V1 = "conda/micromamba:v1";

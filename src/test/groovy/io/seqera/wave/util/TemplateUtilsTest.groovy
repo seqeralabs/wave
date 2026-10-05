@@ -1085,4 +1085,94 @@ class TemplateUtilsTest extends Specification {
         VARIANT << ['conda-file', 'lock-file']
     }
 
+    /* *********************************************************************************
+     * `conda/pixi:v1-fast` template tests
+     *
+     * Same build stage as the pixi v1 template, plus the `condasplit` tool (mounted from
+     * the layers image) moving the environment into at most 32 layer directories, which
+     * the frontend of the same image adds with one `COPY --link` each.
+     * *********************************************************************************/
+
+    def 'should create dockerfile using `conda/pixi:v1-fast` template from conda file' () {
+        given:
+        def PIXI_OPTS = new PixiOpts([basePackages: 'foo::bar'])
+
+        expect:
+        TemplateUtils.condaFileToDockerFileUsingPixiV1Fast(PIXI_OPTS, LAYERS_IMAGE) == '''\
+                # syntax=public.cr.seqera.io/wave/condasplit:v1
+                FROM public.cr.seqera.io/wave/pixi:0.61.0-noble AS build
+
+                COPY conda.yml /opt/wave/conda.yml
+                WORKDIR /opt/wave
+
+                # the condasplit tool is mounted read-only for this step only and never ends up in the image
+                RUN --mount=type=bind,from=public.cr.seqera.io/wave/condasplit:v1,source=/,target=/opt/wave-tools \\
+                    pixi init --import /opt/wave/conda.yml \\
+                    && pixi add conda-forge::which \\
+                    && pixi add foo::bar \\
+                    && pixi shell-hook > /shell-hook.sh \\
+                    && echo 'exec "$@"' >> /shell-hook.sh \\
+                    && echo ">> CONDA_LOCK_START" \\
+                    && cat /opt/wave/pixi.lock \\
+                    && echo "<< CONDA_LOCK_END" \\
+                    && /opt/wave-tools/condasplit --src /opt/wave/.pixi/envs/default --out /layers \\
+                        --slots 32 --max-layer-size 500000000 --own-layer-size 50000000
+
+                FROM ubuntu:24.04 AS final
+
+                # copy the pixi environment in the final container
+                # the condasplit frontend repeats this line for each layer directory: /layers/00, /layers/01, ...
+                COPY --link --from=build /layers/NN/ /
+                COPY --from=build /shell-hook.sh /shell-hook.sh
+
+                # set user and environment variables for Python compatibility
+                USER root
+                ENV USER=root
+
+                # add the env binaries to PATH for when the entrypoint is bypassed (e.g. 'singularity exec' on an OCI-converted image)
+                ENV PATH="/opt/wave/.pixi/envs/default/bin:${PATH}"
+
+                # set the entrypoint to the shell-hook script (activate the environment and run the command)
+                # no more pixi needed in the final container
+                ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]
+
+                # Default command for "docker run"
+                CMD ["/bin/bash"]
+                '''.stripIndent()
+    }
+
+    def 'should render pixi v1-fast template with custom options and commands' () {
+        given:
+        def PIXI_OPTS = new PixiOpts([
+                pixiImage: 'ghcr.io/prefix-dev/pixi:0.47.0',
+                baseImage: 'debian:12',
+                basePackages: null,
+                commands: ['RUN apt-get update', 'RUN apt-get install -y vim']
+        ])
+
+        when:
+        def result = TemplateUtils.condaFileToDockerFileUsingPixiV1Fast(PIXI_OPTS, 'my.registry.io/wave/condasplit:v2')
+        def lines = result.readLines()
+
+        then:
+        !result.contains('{{')
+        and:
+        // the tool image is also the frontend building the image without the empty slots
+        lines[0] == '# syntax=my.registry.io/wave/condasplit:v2'
+        lines[1] == 'FROM ghcr.io/prefix-dev/pixi:0.47.0 AS build'
+        and:
+        // the tool is mounted in the install step and runs after the lock has been printed
+        lines.count { it.startsWith('RUN --mount=') } == 1
+        lines.find { it.startsWith('RUN ') } == 'RUN --mount=type=bind,from=my.registry.io/wave/condasplit:v2,source=/,target=/opt/wave-tools \\'
+        !result.contains('pixi add foo')
+        lines.indexOf('    && echo "<< CONDA_LOCK_END" \\') + 1 == lines.indexOf('    && /opt/wave-tools/condasplit --src /opt/wave/.pixi/envs/default --out /layers \\')
+        and:
+        // one COPY line for the environment, the frontend repeats it for each layer directory
+        lines.findAll { it.startsWith('COPY --link') } == ['COPY --link --from=build /layers/NN/ /']
+        lines.contains('FROM debian:12 AS final')
+        and:
+        // custom commands are appended at the end
+        result.endsWith('CMD ["/bin/bash"]\nRUN apt-get update\nRUN apt-get install -y vim\n')
+    }
+
 }
