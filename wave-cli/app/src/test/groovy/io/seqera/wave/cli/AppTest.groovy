@@ -348,17 +348,20 @@ class AppTest extends Specification {
         req.buildTemplate == 'conda/pixi:v1'
     }
 
-    def 'should set build template micromamba' () {
+    def 'should set build template #TEMPLATE' () {
         given:
         def app = new App()
-        String[] args = ["--build-template", 'conda/micromamba:v2']
+        String[] args = ["--build-template", TEMPLATE]
 
         when:
         new CommandLine(app).parseArgs(args)
         and:
         def req = app.createRequest()
         then:
-        req.buildTemplate == 'conda/micromamba:v2'
+        req.buildTemplate == TEMPLATE
+
+        where:
+        TEMPLATE << ['conda/micromamba:v2', 'conda/micromamba:v2-fast', 'conda/pixi:v1-fast']
     }
 
     def 'should not allow dry-run and await' () {
