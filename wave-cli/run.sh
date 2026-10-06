@@ -16,4 +16,4 @@
 #
 
 args="${@:--h}"
-./gradlew run --args="$args"
+./gradlew run --console=plain --args="$args"

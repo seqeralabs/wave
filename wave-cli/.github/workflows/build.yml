@@ -118,10 +118,32 @@ jobs:
           name: test-reports-${{ matrix.os }}
           path: |
             **/build/reports/tests/test
+  smoke-test:
+    name: Smoke test linux-x86_64 on ${{ matrix.os }}
+    needs: [ build ]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+    steps:
+      - name: Download linux-x86_64 binary
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: nativeCompile-ubuntu-latest
+          path: ./bin
+
+      - name: Run binary
+        run: |
+          uname -a
+          lscpu
+          ulimit -a
+          chmod +x ./bin/wave
+          ./bin/wave --version
   release:
     name: Release
     if: "contains(github.event.head_commit.message, '[release]') && github.event.ref=='refs/heads/master'"
-    needs: [ build ]
+    needs: [ build, smoke-test ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
