@@ -1,0 +1,124 @@
+project:
+  name: wave-cli
+  description: Wave CLI
+  longDescription: Command line tool for Wave container provisioning
+  website: https://github.com/seqeralabs/wave-cli
+  authors:
+    - Seqera
+  license: Apache-2.0
+  extraProperties:
+    inceptionYear: 2023
+  java:
+    groupId: io.seqera.wave.cli
+    version: 21
+release:
+  github:
+    overwrite: true
+    draft: false
+    prerelease:
+      pattern: .*-beta
+    changelog:
+      formatted: ALWAYS
+      format: '- {{commitShortHash}} {{commitTitle}}'
+      contributors:
+        format: '- {{contributorName}}{{#contributorUsernameAsLink}} ({{.}}){{/contributorUsernameAsLink}}'
+      labelers:
+        - label: 'feature'
+          title: 'Resolves #'
+          body: 'Resolves #'
+        - label: 'feature'
+          title: '[feature]'
+        - label: 'issue'
+          title: 'Fixes #'
+          body: 'Fixes #'
+        - label: 'issue'
+          title: 'Relates to #'
+          body: 'Relates to #'
+        - label: 'issue'
+          title: '[bug]'
+        - label: 'task'
+          title: '[task]'
+        - label: 'merge_pull'
+          title: 'Merge pull'
+        - label: 'merge_branch'
+          title: 'Merge branch'
+        - label: 'release'
+          title: '[release]'
+      categories:
+        - title: '🚀 Features'
+          labels:
+            - 'feature'
+        - title: '✅ Issues'
+          labels:
+            - 'issue'
+        - title: '🧰 Tasks'
+          labels:
+            - 'task'
+        - title: 'Merge'
+          labels:
+            - 'merge_pull'
+            - 'merge_branch'
+        - title: 'Release'
+          labels:
+            - 'release'
+      hide:
+        categories:
+          - 'Merge'
+          - 'Release'
+        contributors:
+          - 'GitHub'
+      replacers:
+        - search: ' \[feature\]'
+        - search: ' \[bug\]'
+        - search: ' \[task\]'
+        - search: ' \[skip ci\]'
+        - search: ' \[release\]'
+
+distributions:
+  wave-cli:
+    type: FLAT_BINARY
+    executable:
+      name: wave
+    artifacts:
+      - path: "nativeCompile-ubuntu-latest/wave"
+        transform: "wave-{{projectEffectiveVersion}}-linux-x86_64"
+        platform: linux-x86_64
+        extraProperties:
+          graalVMNativeImage: true
+      - path: "nativeCompile-ubuntu-24.04-arm/wave"
+        transform: "wave-{{projectEffectiveVersion}}-linux-arm64"
+        platform: linux-aarch_64
+        extraProperties:
+          graalVMNativeImage: true
+      - path: "nativeCompile-windows-latest/wave.exe"
+        transform: "wave-{{projectEffectiveVersion}}-windows-x86_64.exe"
+        platform: windows-x86_64
+        extraProperties:
+          graalVMNativeImage: true
+      - path: "nativeCompile-macos-latest-large/wave"
+        transform: "wave-{{projectEffectiveVersion}}-macos-x86_64"
+        platform: osx-x86_64
+        extraProperties:
+          graalVMNativeImage: true
+      - path: "nativeCompile-macos-latest-xlarge/wave"
+        transform: "wave-{{projectEffectiveVersion}}-macos-arm64"
+        platform: osx-aarch_64
+        extraProperties:
+          graalVMNativeImage: true
+
+  wave-cli-jar:
+    type: SINGLE_JAR
+    artifacts:
+      - path: "wave-jar/wave.jar"
+        transform: "wave-{{projectEffectiveVersion}}.jar"
+
+packagers:
+  brew:
+    continueOnError: false
+    multiPlatform: true
+    repository:
+      active: RELEASE
+      tagName: '{{distributionName}}-{{tagName}}'
+      branch: HEAD
+      commitMessage: '{{distributionName}} {{tagName}}'
+
