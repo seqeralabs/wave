@@ -140,6 +140,8 @@ jobs:
           ulimit -a
           chmod +x ./bin/wave
           ./bin/wave --version
+          # must start with a virtual memory limit (#46)
+          for v in 2000000 1000000; do (ulimit -v $v && ./bin/wave --version); done
   release:
     name: Release
     if: "contains(github.event.head_commit.message, '[release]') && github.event.ref=='refs/heads/master'"

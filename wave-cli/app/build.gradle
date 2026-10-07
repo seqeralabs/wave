@@ -100,7 +100,10 @@ graalvmNative {
             configurationFileDirectories.from(file('conf'))
 
             if (System.env.getOrDefault("PLATFORM", "") == "linux-x86_64") {
-                buildArgs(['--static', '--libc=musl', '--gc=G1', '-march=compatibility'])
+                // Do not use G1: in a static musl image it calls getcpu via the legacy vsyscall page,
+                // which segfaults on kernels booted with vsyscall=none (e.g. WSL2). See #86.
+                // Cap the reserved heap address space instead, so it runs under `ulimit -v`. See #46.
+                buildArgs(['--static', '--libc=musl', '-march=compatibility', '-R:ReservedAddressSpaceSize=512m'])
             }
 
             javaLauncher = javaToolchains.launcherFor {
