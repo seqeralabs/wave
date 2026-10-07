@@ -273,7 +273,7 @@ JAVA_TOOL_OPTIONS="-Djdk.http.auth.tunneling.disabledSchemes="
 Configure how Wave builds container images and manages build logs.
 
 `wave.build.buildkit-image` *(optional)*
-: [Buildkit](https://github.com/moby/buildkit) container image used in the Wave build process (default: `public.cr.seqera.io/wave/buildkit:v0.25.2-rootless`).
+: [Buildkit](https://github.com/moby/buildkit) container image used in the Wave build process (default: `public.cr.seqera.io/wave/buildkit:v0.33.1-rootless`).
 
 `wave.build.cache` *(optional)*
 : Cache repository for images built by Wave. Supports both container registry paths and S3 bucket paths.
