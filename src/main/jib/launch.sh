@@ -29,6 +29,8 @@ WAVE_JVM_OPTS="${WAVE_JVM_OPTS:-\
   -Djdk.tracePinnedThreads=short \
   -Djdk.traceVirtualThreadInThreadDump=full \
 }"
+# -Dio.netty.noUnsafe=false keeps netty's direct buffers on jemalloc: with native access on
+# JDK 25, netty 4.2 otherwise mallocs them through FFM, which binds to glibc and bypasses it.
 exec java \
   -Dfile.encoding=UTF-8 \
   -Dcom.sun.security.enableAIAcaIssuers=true \
@@ -41,6 +43,8 @@ exec java \
   --add-opens java.base/java.io=ALL-UNNAMED \
   --add-opens java.base/java.nio=ALL-UNNAMED \
   --enable-native-access=ALL-UNNAMED \
+  -Dio.netty.noUnsafe=false \
+  --sun-misc-unsafe-memory-access=allow \
   ${WAVE_JVM_OPTS} \
   -cp /app/resources:/app/classes:/app/libs/* \
   io.seqera.wave.Application
