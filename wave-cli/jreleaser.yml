@@ -1,0 +1,80 @@
+project:
+  name: wave-cli
+  description: Wave CLI
+  longDescription: Command line tool for Wave container provisioning
+  website: https://github.com/seqeralabs/wave/tree/master/wave-cli
+  authors:
+    - Seqera
+  license: Apache-2.0
+  extraProperties:
+    inceptionYear: 2023
+  java:
+    groupId: io.seqera.wave.cli
+    version: 21
+release:
+  github:
+    owner: seqeralabs
+    name: wave
+    # the CLI is released from the Wave repository, the `cli-` prefix keeps
+    # its tags distinct from the Wave server ones
+    tagName: 'cli-v{{projectVersion}}'
+    releaseName: 'Wave CLI v{{projectVersion}}'
+    # keep the Wave server release as the repository latest release
+    makeLatest: 'FALSE'
+    overwrite: true
+    draft: false
+    prerelease:
+      pattern: .*-beta
+    changelog:
+      # extracted from wave-cli/changelog.txt by the release workflow, because
+      # the repository git log includes the Wave server commits
+      external: wave-cli-release-notes.md
+
+distributions:
+  wave-cli:
+    type: FLAT_BINARY
+    executable:
+      name: wave
+    artifacts:
+      - path: "nativeCompile-ubuntu-latest/wave"
+        transform: "wave-{{projectEffectiveVersion}}-linux-x86_64"
+        platform: linux-x86_64
+        extraProperties:
+          graalVMNativeImage: true
+      - path: "nativeCompile-ubuntu-24.04-arm/wave"
+        transform: "wave-{{projectEffectiveVersion}}-linux-arm64"
+        platform: linux-aarch_64
+        extraProperties:
+          graalVMNativeImage: true
+      - path: "nativeCompile-windows-latest/wave.exe"
+        transform: "wave-{{projectEffectiveVersion}}-windows-x86_64.exe"
+        platform: windows-x86_64
+        extraProperties:
+          graalVMNativeImage: true
+      - path: "nativeCompile-macos-latest-large/wave"
+        transform: "wave-{{projectEffectiveVersion}}-macos-x86_64"
+        platform: osx-x86_64
+        extraProperties:
+          graalVMNativeImage: true
+      - path: "nativeCompile-macos-latest-xlarge/wave"
+        transform: "wave-{{projectEffectiveVersion}}-macos-arm64"
+        platform: osx-aarch_64
+        extraProperties:
+          graalVMNativeImage: true
+
+  wave-cli-jar:
+    type: SINGLE_JAR
+    artifacts:
+      - path: "wave-jar/wave.jar"
+        transform: "wave-{{projectEffectiveVersion}}.jar"
+
+packagers:
+  brew:
+    continueOnError: false
+    multiPlatform: true
+    repository:
+      active: RELEASE
+      tagName: '{{distributionName}}-v{{projectVersion}}'
+      branch: HEAD
+      commitMessage: '{{distributionName}} {{tagName}}'
+

@@ -33,7 +33,7 @@ The functional checks use the Wave CLI.
 brew install seqeralabs/tap/wave-cli
 
 # Or download a binary from the releases page
-# https://github.com/seqeralabs/wave-cli/releases
+# https://github.com/seqeralabs/wave/releases?q=cli-v&expanded=true
 ```
 
 Point the CLI at your service with the `--wave-endpoint` flag or the `WAVE_ENDPOINT` environment variable:
