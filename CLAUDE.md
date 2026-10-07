@@ -95,6 +95,8 @@ the two, otherwise both releases are triggered.
 2. Update the `wave-cli/changelog.txt` file with changes against previous release. Use
    `git log --oneline cli-v<PREVIOUS VERSION>..HEAD -- wave-cli` to find them. This entry is used as GitHub release notes.
 3. Commit `wave-cli/VERSION` and `wave-cli/changelog.txt` adding the tag `[release]` in the commit comment first line.
-   The commit must only touch files in `wave-cli/` (Wave CI ignores those paths, so no Wave release is triggered).
+   The commit must only touch files in `wave-cli/` (Wave CI and the condasplit workflow ignore those paths, so no
+   Wave release is triggered). The `[release]` tag must be in the first line of a direct push: squash and merge
+   commits never trigger a release.
 4. Git push to upstream master branch. The `build-wave-cli.yml` workflow builds the native binaries and publishes
    the `cli-v<VERSION>` release and the Homebrew formula.

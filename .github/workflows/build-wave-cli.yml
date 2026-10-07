@@ -22,8 +22,31 @@ on:
       - 'wave-cli/**'
       - '.github/workflows/build-wave-cli.yml'
 jobs:
+  detect-release:
+    name: Detect release commit
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.detect.outputs.release }}
+    steps:
+      - name: Detect release commit
+        id: detect
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          REF: ${{ github.ref }}
+        run: |
+          # as in Wave CI: only direct pushes to master whose first line tags `[release]`,
+          # squash and merge commits excluded, so a PR mentioning the tag does not trigger a release
+          first_line=$(printf '%s\n' "$COMMIT_MSG" | head -n1)
+          release=false
+          if [[ "$REF" == "refs/heads/master" && "$first_line" == *"[release]"* && ! "$first_line" =~ \(#[0-9]+\)$ && ! "$first_line" =~ ^Merge\ pull\ request\ #[0-9]+ ]]; then
+            release=true
+          fi
+          echo "release=$release ref=$REF"
+          echo "release=$release" >> "$GITHUB_OUTPUT"
+
   build:
     name: Wave on ${{ matrix.os }}
+    needs: [ detect-release ]
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ${{ matrix.os }}
     defaults:
@@ -88,7 +111,7 @@ jobs:
         run: ./gradlew app:nativeCompile
 
       - name: Codesign binary
-        if: ${{ matrix.codesign  && contains(github.event.head_commit.message, '[release]') && github.event.ref=='refs/heads/master'}}
+        if: ${{ matrix.codesign && needs.detect-release.outputs.release == 'true' }}
         env:
           MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
           MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
@@ -104,7 +127,7 @@ jobs:
           /usr/bin/codesign --force -s "$MACOS_CERTIFICATE_NAME" --options runtime ./app/build/native/nativeCompile/wave -v
 
       - name: Notarize binary
-        if: ${{ matrix.codesign && contains(github.event.head_commit.message, '[release]') && github.event.ref=='refs/heads/master'}}
+        if: ${{ matrix.codesign && needs.detect-release.outputs.release == 'true' }}
         env:
           MACOS_AC_API_CERT: ${{ secrets.MACOS_AC_API_CERT }}
           MACOS_AC_API_ISSUER_ID: ${{ secrets.MACOS_AC_API_ISSUER_ID }}
@@ -154,8 +177,8 @@ jobs:
           for v in 2000000 1000000; do (ulimit -v $v && ./bin/wave --version); done
   release:
     name: Release
-    if: "contains(github.event.head_commit.message, '[release]') && github.event.ref=='refs/heads/master'"
-    needs: [ build, smoke-test ]
+    if: needs.detect-release.outputs.release == 'true'
+    needs: [ detect-release, build, smoke-test ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
