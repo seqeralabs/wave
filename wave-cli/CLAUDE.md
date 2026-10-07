@@ -216,9 +216,13 @@ The CLI supports three package ecosystems (mutually exclusive):
 
 ## Release Process
 
+The CLI lives in the `wave-cli/` directory of the Wave repository. It is an independent Gradle build,
+versioned and released separately from the Wave server by the `.github/workflows/build-wave-cli.yml` workflow.
+Releases are tagged `cli-v<VERSION>` in the Wave repository.
+
 1. Update the local Git repo and fetch latest tags
-2. Update the `VERSION` file with a semantic version.
+2. Update the `wave-cli/VERSION` file with a semantic version.
 3. Update the README with the new version number.
-4. Update the `changelog.txt file with changes against previous release. Use `git log --oneline v<PREVIOUS VERSION>..HEAD` to determine the changes to be added.
-5. Commit VERSION and changelog.txt file adding the tag `[release]` in the commit comment first line.
+4. Update the `wave-cli/changelog.txt` file with changes against previous release. Use `git log --oneline cli-v<PREVIOUS VERSION>..HEAD -- wave-cli` to determine the changes to be added. The GitHub release notes are taken from this entry.
+5. Commit `wave-cli/VERSION` and `wave-cli/changelog.txt` adding the tag `[release]` in the commit comment first line. The commit must only touch files in `wave-cli/`, otherwise the Wave server release is triggered as well.
 6. Git push to upstream master branch.

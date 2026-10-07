@@ -2,6 +2,9 @@ name: Generate and submit dependency graph for wave-cli
 on:
   push:
     branches: ['master']
+    paths:
+      - 'wave-cli/**'
+      - '.github/workflows/security-submit-dependecy-graph-wave-cli.yml'
 
 permissions:
   contents: write
@@ -18,6 +21,7 @@ jobs:
     - name: Generate and submit dependency graph for wave-cli
       uses: gradle/actions/dependency-submission@748248ddd2a24f49513d8f472f81c3a07d4d50e1 # v4.4.4
       with:
+        build-root-directory: wave-cli
         dependency-resolution-task: ":app:dependencies"
         additional-arguments: "--configuration runtimeClasspath"
         dependency-graph: generate-and-submit

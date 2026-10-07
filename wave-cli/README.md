@@ -24,7 +24,7 @@ that it can be used in your Docker (replace-with-your-own-fav-container-engine) 
 #### Binary download 
 
 Download the Wave pre-compiled binary for your operating system from the 
-[GitHub releases page](https://github.com/seqeralabs/wave-cli/releases/latest) and give execute permission to it.
+[GitHub releases page](https://github.com/seqeralabs/wave/releases?q=cli-v&expanded=true) and give execute permission to it.
 
 #### Homebrew (Linux and macOS)
 

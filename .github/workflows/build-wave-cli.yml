@@ -8,6 +8,9 @@ on:
       - '!refs/tags/.*'
     tags-ignore:
       - '*'
+    paths:
+      - 'wave-cli/**'
+      - '.github/workflows/build-wave-cli.yml'
   pull_request:
     types: [opened, reopened, synchronize]
     branches:
@@ -15,11 +18,17 @@ on:
       - '!refs/tags/.*'
     tags-ignore:
       - '*'
+    paths:
+      - 'wave-cli/**'
+      - '.github/workflows/build-wave-cli.yml'
 jobs:
   build:
     name: Wave on ${{ matrix.os }}
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: wave-cli
     strategy:
       matrix:
         os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest-large, macos-latest-xlarge, windows-latest]
@@ -33,6 +42,7 @@ jobs:
             codesign: true
     steps:
       - name: Environment
+        working-directory: .
         run: env | sort
 
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -65,7 +75,7 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: wave-jar
-          path: ./app/build/libs/wave.jar
+          path: ./wave-cli/app/build/libs/wave.jar
 
       - name: Build static native
         if: ${{ matrix.musl }}
@@ -109,7 +119,7 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: nativeCompile-${{ matrix.os }}
-          path: ./app/build/native/nativeCompile
+          path: ./wave-cli/app/build/native/nativeCompile
 
       - name: Publish tests report
         if: failure()
@@ -117,7 +127,7 @@ jobs:
         with:
           name: test-reports-${{ matrix.os }}
           path: |
-            **/build/reports/tests/test
+            wave-cli/**/build/reports/tests/test
   smoke-test:
     name: Smoke test linux-x86_64 on ${{ matrix.os }}
     needs: [ build ]
@@ -168,7 +178,7 @@ jobs:
       - name: Version
         id: version
         run: |
-          VERSION=$(cat ./VERSION)
+          VERSION=$(cat ./wave-cli/VERSION)
           echo "VERSION=$VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
@@ -183,8 +193,26 @@ jobs:
             echo "JRELEASER_PACKAGERS_BREW_ACTIVE=NEVER" >> $GITHUB_ENV
           fi
 
+      # release notes are taken from the version entry in wave-cli/changelog.txt, because the
+      # git log of this repository includes the Wave server commits
+      - name: Release notes
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          awk -v v="$VERSION" '
+            $0 ~ "^"v" - " { found=1; next }
+            found && /^[0-9]+\.[0-9]+\.[0-9]+.* - / { exit }
+            found { print }
+          ' ./wave-cli/changelog.txt > ./wave-cli-release-notes.md
+          if [[ ! -s ./wave-cli-release-notes.md ]]; then
+            echo "::error::Missing entry for version $VERSION in wave-cli/changelog.txt"
+            exit 1
+          fi
+          cat ./wave-cli-release-notes.md
+
       - name: Run JReleaser
         uses: jreleaser/release-action@90ac653bb9c79d11179e65d81499f3f34527dcd5 # 2.5.0
+        with:
+          arguments: full-release --config-file wave-cli/jreleaser.yml --basedir .
         env:
           JRELEASER_GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
           JRELEASER_PROJECT_VERSION: ${{ steps.version.outputs.VERSION }}

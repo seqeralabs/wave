@@ -2,7 +2,7 @@ project:
   name: wave-cli
   description: Wave CLI
   longDescription: Command line tool for Wave container provisioning
-  website: https://github.com/seqeralabs/wave-cli
+  website: https://github.com/seqeralabs/wave/tree/master/wave-cli
   authors:
     - Seqera
   license: Apache-2.0
@@ -13,66 +13,22 @@ project:
     version: 21
 release:
   github:
+    owner: seqeralabs
+    name: wave
+    # the CLI is released from the Wave repository, the `cli-` prefix keeps
+    # its tags distinct from the Wave server ones
+    tagName: 'cli-v{{projectVersion}}'
+    releaseName: 'Wave CLI v{{projectVersion}}'
+    # keep the Wave server release as the repository latest release
+    makeLatest: 'FALSE'
     overwrite: true
     draft: false
     prerelease:
       pattern: .*-beta
     changelog:
-      formatted: ALWAYS
-      format: '- {{commitShortHash}} {{commitTitle}}'
-      contributors:
-        format: '- {{contributorName}}{{#contributorUsernameAsLink}} ({{.}}){{/contributorUsernameAsLink}}'
-      labelers:
-        - label: 'feature'
-          title: 'Resolves #'
-          body: 'Resolves #'
-        - label: 'feature'
-          title: '[feature]'
-        - label: 'issue'
-          title: 'Fixes #'
-          body: 'Fixes #'
-        - label: 'issue'
-          title: 'Relates to #'
-          body: 'Relates to #'
-        - label: 'issue'
-          title: '[bug]'
-        - label: 'task'
-          title: '[task]'
-        - label: 'merge_pull'
-          title: 'Merge pull'
-        - label: 'merge_branch'
-          title: 'Merge branch'
-        - label: 'release'
-          title: '[release]'
-      categories:
-        - title: '🚀 Features'
-          labels:
-            - 'feature'
-        - title: '✅ Issues'
-          labels:
-            - 'issue'
-        - title: '🧰 Tasks'
-          labels:
-            - 'task'
-        - title: 'Merge'
-          labels:
-            - 'merge_pull'
-            - 'merge_branch'
-        - title: 'Release'
-          labels:
-            - 'release'
-      hide:
-        categories:
-          - 'Merge'
-          - 'Release'
-        contributors:
-          - 'GitHub'
-      replacers:
-        - search: ' \[feature\]'
-        - search: ' \[bug\]'
-        - search: ' \[task\]'
-        - search: ' \[skip ci\]'
-        - search: ' \[release\]'
+      # extracted from wave-cli/changelog.txt by the release workflow, because
+      # the repository git log includes the Wave server commits
+      external: wave-cli-release-notes.md
 
 distributions:
   wave-cli:
@@ -118,7 +74,7 @@ packagers:
     multiPlatform: true
     repository:
       active: RELEASE
-      tagName: '{{distributionName}}-{{tagName}}'
+      tagName: '{{distributionName}}-v{{projectVersion}}'
       branch: HEAD
       commitMessage: '{{distributionName}} {{tagName}}'
 
