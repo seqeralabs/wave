@@ -39,6 +39,11 @@ public class PixiOpts {
     final public static String DEFAULT_PIXI_IMAGE = "public.cr.seqera.io/wave/pixi:0.61.0-noble";
 
     /**
+     * Default Pixi builder image of the {@code conda/pixi:v1-lock} template, supporting lock file format v7.
+     */
+    final public static String DEFAULT_PIXI_LOCK_IMAGE = "ghcr.io/prefix-dev/pixi:0.81.0-noble";
+
+    /**
      * Default base image for the final container.
      */
     final public static String DEFAULT_BASE_IMAGE = "ubuntu:24.04";
@@ -69,6 +74,12 @@ public class PixiOpts {
     public String baseImage;
 
     /**
+     * Optional pixi manifest (pixi.toml) content. When provided alongside a pixi lock file,
+     * this manifest is used directly instead of generating one from the lock file.
+     */
+    public String manifest;
+
+    /**
      * Creates a new instance with default values.
      */
     public PixiOpts() {
@@ -86,6 +97,7 @@ public class PixiOpts {
         this.baseImage = opts.containsKey("baseImage") ? opts.get("baseImage").toString(): DEFAULT_BASE_IMAGE;
         this.commands = opts.containsKey("commands") ? (List<String>)opts.get("commands") : null;
         this.basePackages = opts.containsKey("basePackages") ? (String)opts.get("basePackages") : DEFAULT_PACKAGES;
+        this.manifest = opts.containsKey("manifest") ? opts.get("manifest").toString() : null;
     }
 
     public PixiOpts withPixiImage(String value) {
@@ -108,13 +120,19 @@ public class PixiOpts {
         return this;
     }
 
+    public PixiOpts withManifest(String value) {
+        this.manifest = value;
+        return this;
+    }
+
     @Override
     public String toString() {
-        return String.format("PixiOpts(pixiImage=%s; basePackages=%s, commands=%s, baseImage=%s)",
+        return String.format("PixiOpts(pixiImage=%s; basePackages=%s, commands=%s, baseImage=%s, manifest=%s)",
                 pixiImage,
                 basePackages,
                 commands != null ? String.join(",", commands) : "null",
-                baseImage
+                baseImage,
+                manifest != null ? "[provided]" : "null"
         );
     }
 
@@ -127,12 +145,13 @@ public class PixiOpts {
                 && Objects.equals(commands, pixiOpts.commands)
                 && Objects.equals(basePackages, pixiOpts.basePackages)
                 && Objects.equals(baseImage, pixiOpts.baseImage)
+                && Objects.equals(manifest, pixiOpts.manifest)
                 ;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(pixiImage, commands, basePackages, baseImage);
+        return Objects.hash(pixiImage, commands, basePackages, baseImage, manifest);
     }
 
 }

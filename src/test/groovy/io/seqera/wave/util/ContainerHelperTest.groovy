@@ -162,6 +162,36 @@ class ContainerHelperTest extends Specification {
                 '''.stripIndent()
     }
 
+    def 'should create container file for `conda/pixi:v1-lock` template with lock URL'() {
+        given:
+        def req = new SubmitContainerTokenRequest(
+                packages: new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['https://example.com/pixi.lock']),
+                buildTemplate: 'conda/pixi:v1-lock'
+        )
+
+        when:
+        def result = ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
+
+        then:
+        result.contains('ADD https://example.com/pixi.lock /opt/wave/pixi.lock')
+        result.contains('pixi install --frozen')
+    }
+
+    def 'should create container file for `conda/pixi:v1-lock` template with environment'() {
+        given:
+        def req = new SubmitContainerTokenRequest(
+                packages: new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: 'dmVyc2lvbjogNgo='),
+                buildTemplate: 'conda/pixi:v1-lock'
+        )
+
+        when:
+        def result = ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
+
+        then:
+        result.contains('COPY conda.yml /opt/wave/pixi.lock')
+        result.contains('pixi install --frozen')
+    }
+
     def 'should validate conda file helper' () {
         given:
         def CONDA = 'this and that'
@@ -233,6 +263,36 @@ class ContainerHelperTest extends Specification {
             - this
             - that
             '''.stripIndent()
+    }
+
+    def 'should return pixi lock content from condaFileFromRequest for `conda/pixi:v1-lock` template'() {
+        given:
+        def lockContent = 'version: 6\nenvironments:\n  default:\n'
+        def encoded = Base64.encoder.encodeToString(lockContent.bytes)
+        def req = new SubmitContainerTokenRequest(
+                packages: new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: encoded),
+                buildTemplate: 'conda/pixi:v1-lock'
+        )
+
+        when:
+        def result = ContainerHelper.condaFileFromRequest(req)
+
+        then:
+        result == lockContent
+    }
+
+    def 'should return null from condaFileFromRequest for `conda/pixi:v1-lock` template with URL'() {
+        given:
+        def req = new SubmitContainerTokenRequest(
+                packages: new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['https://example.com/pixi.lock']),
+                buildTemplate: 'conda/pixi:v1-lock'
+        )
+
+        when:
+        def result = ContainerHelper.condaFileFromRequest(req)
+
+        then:
+        result == null
     }
 
     def 'should create response v1' () {

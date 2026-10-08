@@ -469,6 +469,76 @@ class TemplateUtilsTest extends Specification {
                 '''.stripIndent()
     }
 
+    def 'should render pixi lock URL docker template'() {
+        given:
+        def opts = new PixiOpts([pixiImage: 'pixi:1.0', baseImage: 'ubuntu:22.04', basePackages: null])
+
+        when:
+        def result = TemplateUtils.pixiLockUrlToDockerFile('https://example.com/pixi.lock', opts)
+
+        then:
+        result.contains('FROM pixi:1.0 AS build')
+        result.contains('ADD https://example.com/pixi.lock /opt/wave/pixi.lock')
+        !result.contains('curl')
+        result.contains('pixi install --frozen')
+        result.contains('FROM ubuntu:22.04 AS final')
+        !result.contains('pixi add')
+    }
+
+    def 'should generate pixi manifest from lock file with valid shell quoting'() {
+        when:
+        def result = TemplateUtils.pixiLockFileToDockerFile(new PixiOpts())
+
+        then:
+        result.contains('''awk '{printf "\\"%s\\", ", $0}' ''')
+        result.contains('''printf "\\"%s\\", ",$0;next}''')
+        result.contains('''print nm" = \\"*\\""}' pixi.lock''')
+        !result.contains('\\\\"')
+        result.contains('pixi shell-hook --frozen > /shell-hook.sh')
+    }
+
+    def 'should render pixi lock file docker template'() {
+        given:
+        def opts = new PixiOpts([pixiImage: 'pixi:1.0', baseImage: 'ubuntu:22.04', basePackages: null])
+
+        when:
+        def result = TemplateUtils.pixiLockFileToDockerFile(opts)
+
+        then:
+        result.contains('FROM pixi:1.0 AS build')
+        result.contains('COPY conda.yml /opt/wave/pixi.lock')
+        result.contains('pixi install --frozen')
+        result.contains('FROM ubuntu:22.04 AS final')
+    }
+
+    def 'should render pixi lock URL singularity template'() {
+        given:
+        def opts = new PixiOpts([pixiImage: 'pixi:1.0', baseImage: 'ubuntu:22.04', basePackages: null])
+
+        when:
+        def result = TemplateUtils.pixiLockUrlToSingularityFile('https://example.com/pixi.lock', opts)
+
+        then:
+        result.contains('BootStrap: docker')
+        result.contains('From: pixi:1.0')
+        result.contains('pixi exec --spec curl -- curl -fsSL https://example.com/pixi.lock -o pixi.lock')
+        result.contains('pixi install --frozen')
+    }
+
+    def 'should render pixi lock file singularity template'() {
+        given:
+        def opts = new PixiOpts([pixiImage: 'pixi:1.0', baseImage: 'ubuntu:22.04', basePackages: null])
+
+        when:
+        def result = TemplateUtils.pixiLockFileToSingularityFile(opts)
+
+        then:
+        result.contains('BootStrap: docker')
+        result.contains('From: pixi:1.0')
+        result.contains('pixi install --frozen')
+        result.contains('/opt/wave/pixi.lock')
+    }
+
     /* *********************************************************************************
      * Micromamba v2 template tests
      *

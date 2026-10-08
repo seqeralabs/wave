@@ -97,6 +97,7 @@ The Wave CLI supports build templates for creating container images from Conda p
 | `conda/micromamba:v2-fast` | Multi-stage build using Micromamba 2.x that splits the Conda environment into multiple layers of at most 500 MB each before compression, with rare exceptions. Docker only. |
 | `conda/pixi:v1`       | Multi-stage build using [Pixi][pixi] package manager. Produces smaller images with faster dependency resolution (Singularity still uses a single-stage build). |
 | `conda/pixi:v1-fast`  | Multi-stage build using [Pixi][pixi] that splits the Conda environment into multiple layers of at most 500 MB each before compression, with rare exceptions. Docker only. |
+| `conda/pixi:v1-lock`  | Multi-stage build using [Pixi][pixi] that installs the environment from a `pixi.lock` file without re-solving it. See [Pixi lock file builds](../features/container-builds.mdx#pixi-lock-file-builds). |
 
 **Related CLI arguments**
 
