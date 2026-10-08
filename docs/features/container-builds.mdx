@@ -156,12 +156,13 @@ This setup installs both Conda and PyPI packages during the build.
 
 By default, Wave builds Conda images with the `conda/micromamba:v2` template, which runs a two-stage build. The first stage installs the environment. The second stage copies only the resolved environment into a minimal base image. Multi-stage builds typically reduce image size by 30–50%. They exclude build tools from the final image and emit a lock file for reproducibility. The `conda/micromamba:v1` template runs a single-stage build instead, which bundles the package manager with the runtime environment.
 
-Four multi-stage templates are available:
+Five multi-stage templates are available:
 
 - **`conda/micromamba:v2`** uses Micromamba and produces an `environment.lock` file. This is the default template for Conda builds.
 - **`conda/micromamba:v2-fast`** builds like `conda/micromamba:v2`, then splits the environment into multiple image layers. It produces Docker images only. See [Layered Conda builds](#layered-conda-builds).
 - **`conda/pixi:v1`** uses [Pixi](https://pixi.sh/) and produces a `pixi.lock` file. Conda lock files are not supported through this template. Pixi support was added in Wave 1.31.0.
 - **`conda/pixi:v1-fast`** builds like `conda/pixi:v1`, then splits the environment into multiple image layers. It produces Docker images only. See [Layered Conda builds](#layered-conda-builds).
+- **`conda/pixi:v1-lock`** installs the environment from an existing `pixi.lock` file with `pixi install --frozen`, without re-solving it. See [Pixi lock file builds](#pixi-lock-file-builds).
 
 Select a template with the `buildTemplate` field on the build request, the `--build-template` option of the Wave CLI, or the `wave.build.template` setting in Nextflow. The `conda/micromamba:v2` and `conda/pixi:v1` templates accept Conda packages and Conda environment files, and both produce Docker and Singularity images.
 
@@ -189,6 +190,16 @@ wave \
 Use `--build-template conda/pixi:v1-fast` to build the environment with Pixi instead.
 
 Both templates are opt-in. Existing templates and the default template are unchanged, so existing images keep their build IDs. Singularity builds are not supported with these templates, and Wave rejects them. See [Layered Conda builds](../api.md#layered-conda-builds) in the API reference for details.
+
+### Pixi lock file builds
+
+The `conda/pixi:v1-lock` template builds the image from a [Pixi](https://pixi.sh/) `pixi.lock` file instead of a Conda environment definition. Pixi installs the locked packages with `pixi install --frozen`, so the image contains exactly the package builds recorded in the lock file, regardless of when the image is built. The template produces Docker and Singularity images.
+
+Provide the lock file as the `environment` of the build request, or as a remote URL in the package `entries`. Pixi also needs the `pixi.toml` manifest of the lock file. Provide it with the `manifest` field of `pixiOpts` to keep activation scripts, environment variables, and other manifest settings. When it's omitted, Wave generates a minimal manifest with the channels, platforms, and packages of the lock file.
+
+The base packages (`conda-forge::procps-ng` by default) are installed with `pixi global install` in a separate prefix, so the locked environment is unchanged. Add any other dependency to the Pixi project before creating the lock file.
+
+The template uses a newer Pixi image than `conda/pixi:v1` by default (`ghcr.io/prefix-dev/pixi:0.81.0-noble`), which reads lock files created by recent Pixi versions. Use the `pixiImage` option to select a different one. If the lock file is a remote URL, Wave fetches it at build time and the URL, not the file content, identifies the build. Use a URL whose content doesn't change, otherwise Wave can return a container built from an earlier version of the file.
 
 ### Build from CRAN packages
 

@@ -26,10 +26,14 @@ import io.seqera.wave.exception.BadRequestException
 import static TemplateUtils.condaFileToDockerFileUsingPixi
 import static TemplateUtils.condaFileToDockerFileUsingPixiV1Fast
 import static TemplateUtils.condaFileToSingularityFileUsingPixi
+import static TemplateUtils.pixiLockFileToDockerFile
+import static TemplateUtils.pixiLockFileToSingularityFile
+import static TemplateUtils.pixiLockUrlToDockerFile
+import static TemplateUtils.pixiLockUrlToSingularityFile
 
 /**
- * Helper class for Pixi-based container builds, i.e. the v1 (PIXI_V1) template and the
- * layered v1-fast (PIXI_V1_FAST) template.
+ * Helper class for Pixi-based container builds, i.e. the v1 (PIXI_V1) template, the
+ * layered v1-fast (PIXI_V1_FAST) template and the lock file based v1-lock (PIXI_V1_LOCK) template.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -67,6 +71,43 @@ class PixiHelper {
     static String containerFileV1Fast(PackagesSpec spec, String containerImage, String layersImage) {
         final opts = pixiOpts(spec, containerImage, 'conda/pixi:v1-fast')
         return condaFileToDockerFileUsingPixiV1Fast(opts, layersImage)
+    }
+
+    /**
+     * Generate a container file (Dockerfile or Singularity) using the `conda/pixi:v1-lock` template.
+     * The environment is installed from a Pixi lock file with {@code pixi install --frozen}, i.e. without
+     * re-solving it. The lock file is either the build context {@code conda.yml} file or a remote URL.
+     *
+     * @param spec The packages specification (must be CONDA type)
+     * @param containerImage Optional base container image override
+     * @param singularity When true, generates Singularity format; otherwise Dockerfile
+     * @return The generated container file content
+     * @throws BadRequestException if package type is not CONDA or no lock file is provided
+     */
+    static String containerFileV1Lock(PackagesSpec spec, String containerImage, boolean singularity) {
+        if( spec.type != PackagesSpec.Type.CONDA ) {
+            throw new BadRequestException("Package type '${spec.type}' not supported by 'conda/pixi:v1-lock' build template")
+        }
+
+        final lockFileUrl = CondaHelper.tryGetLockFile(spec.entries)
+        if( !lockFileUrl && !spec.environment ) {
+            throw new BadRequestException("Build template 'conda/pixi:v1-lock' requires a Pixi lock file")
+        }
+        final opts = spec.pixiOpts ?: new PixiOpts()
+        // the v1 default image can't read lock files created by recent pixi versions
+        if( opts.pixiImage == PixiOpts.DEFAULT_PIXI_IMAGE )
+            opts.pixiImage = PixiOpts.DEFAULT_PIXI_LOCK_IMAGE
+        if( containerImage )
+            opts.baseImage = containerImage
+
+        if( lockFileUrl ) {
+            return singularity
+                    ? pixiLockUrlToSingularityFile(lockFileUrl, opts)
+                    : pixiLockUrlToDockerFile(lockFileUrl, opts)
+        }
+        return singularity
+                ? pixiLockFileToSingularityFile(opts)
+                : pixiLockFileToDockerFile(opts)
     }
 
     /**

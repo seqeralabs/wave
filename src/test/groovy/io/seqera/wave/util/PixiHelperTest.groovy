@@ -199,4 +199,128 @@ class PixiHelperTest extends Specification {
         new PackagesSpec(type: PackagesSpec.Type.CRAN, entries: ['dplyr'])                                          | "Package type 'CRAN' not supported by 'conda/pixi:v1-fast' build template"
         new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['https://foo.com/lock.yml'], channels: ['conda-forge'])  | "Conda lock file is not supported by 'conda/pixi:v1-fast' template"
     }
+
+    def 'should create docker file from remote lock URL with v1-lock'() {
+        given:
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['https://foo.com/pixi.lock'])
+
+        when:
+        def result = PixiHelper.containerFileV1Lock(packages, null, false)
+
+        then:
+        result.contains('FROM ghcr.io/prefix-dev/pixi:0.81.0-noble AS build')
+        result.contains('ADD https://foo.com/pixi.lock /opt/wave/pixi.lock')
+        result.contains('pixi install --frozen')
+        result.contains('pixi shell-hook --frozen > /shell-hook.sh')
+        result.contains('FROM ubuntu:24.04 AS final')
+        result.contains('COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default')
+        result.contains('COPY --from=build /root/.pixi /root/.pixi')
+        result.contains('pixi global install conda-forge::procps-ng')
+        result.contains('ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]')
+        !result.contains('pixi add')
+        result.contains('>> CONDA_LOCK_START')
+        result.contains('<< CONDA_LOCK_END')
+    }
+
+    def 'should create singularity file from remote lock URL with v1-lock'() {
+        given:
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['https://foo.com/pixi.lock'])
+
+        when:
+        def result = PixiHelper.containerFileV1Lock(packages, null, true)
+
+        then:
+        result.contains('BootStrap: docker')
+        result.contains('From: ghcr.io/prefix-dev/pixi:0.81.0-noble')
+        result.contains('pixi exec --spec curl -- curl -fsSL https://foo.com/pixi.lock -o pixi.lock')
+        result.contains('pixi install --frozen')
+        result.contains('pixi shell-hook --frozen > /shell-hook.sh')
+        result.contains('%post')
+        result.contains('%environment')
+        result.contains('. /shell-hook.sh')
+    }
+
+    def 'should reject non-CONDA package type with v1-lock'() {
+        when:
+        PixiHelper.containerFileV1Lock(PACKAGES, null, false)
+
+        then:
+        def ex = thrown(BadRequestException)
+        ex.message == MESSAGE
+
+        where:
+        PACKAGES                                                                    | MESSAGE
+        new PackagesSpec(type: PackagesSpec.Type.CRAN, entries: ['dplyr'])          | "Package type 'CRAN' not supported by 'conda/pixi:v1-lock' build template"
+        new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['bwa=0.7.15'])    | "Build template 'conda/pixi:v1-lock' requires a Pixi lock file"
+    }
+
+    def 'should use custom pixi opts with v1-lock'() {
+        given:
+        def opts = new PixiOpts([
+                pixiImage: 'ghcr.io/prefix-dev/pixi:0.47.0-jammy-cuda-12.8.1',
+                baseImage: 'base/image',
+                basePackages: null
+        ])
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: 'ZW52', pixiOpts: opts)
+
+        when:
+        def result = PixiHelper.containerFileV1Lock(packages, null, false)
+
+        then:
+        result.contains('FROM ghcr.io/prefix-dev/pixi:0.47.0-jammy-cuda-12.8.1 AS build')
+        result.contains('COPY conda.yml /opt/wave/pixi.lock')
+        result.contains('pixi install --frozen')
+        result.contains('FROM base/image AS final')
+        !result.contains('pixi add')
+        !result.contains('pixi global install')
+    }
+
+    def 'should install base packages via pixi global with v1-lock'() {
+        given:
+        def opts = new PixiOpts([
+                pixiImage: 'ghcr.io/prefix-dev/pixi:0.47.0-jammy-cuda-12.8.1',
+                baseImage: 'base/image',
+                basePackages: 'foo::one bar::two'
+        ])
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: 'ZW52', pixiOpts: opts)
+
+        when:
+        def result = PixiHelper.containerFileV1Lock(packages, null, false)
+
+        then:
+        result.contains('pixi install --frozen')
+        result.contains('pixi global install foo::one bar::two')
+        result.contains('COPY --from=build /root/.pixi /root/.pixi')
+        result.contains('ENV PATH="/opt/wave/.pixi/envs/default/bin:/root/.pixi/bin:${PATH}"')
+        !result.contains('pixi add')
+    }
+
+    def 'should use container image as base image with v1-lock'() {
+        given:
+        def opts = new PixiOpts([baseImage: 'base/image', basePackages: null])
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: 'ZW52', pixiOpts: opts)
+
+        when:
+        def result = PixiHelper.containerFileV1Lock(packages, 'override/base:2.0', false)
+
+        then:
+        result.contains('FROM ghcr.io/prefix-dev/pixi:0.81.0-noble AS build')
+        result.contains('FROM override/base:2.0 AS final')
+        !result.contains('FROM base/image AS final')
+    }
+
+    def 'should use the v1-lock default pixi image unless a custom one is given'() {
+        given:
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: 'ZW52', pixiOpts: OPTS)
+
+        expect:
+        PixiHelper.containerFileV1Lock(packages, null, false).startsWith("FROM ${EXPECTED} AS build")
+
+        where:
+        OPTS                                                    | EXPECTED
+        null                                                    | PixiOpts.DEFAULT_PIXI_LOCK_IMAGE
+        new PixiOpts()                                          | PixiOpts.DEFAULT_PIXI_LOCK_IMAGE
+        new PixiOpts(pixiImage: PixiOpts.DEFAULT_PIXI_IMAGE)    | PixiOpts.DEFAULT_PIXI_LOCK_IMAGE
+        new PixiOpts(pixiImage: 'my/pixi:1.0')                  | 'my/pixi:1.0'
+    }
 }

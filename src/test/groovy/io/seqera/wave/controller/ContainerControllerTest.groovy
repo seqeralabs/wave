@@ -773,6 +773,104 @@ class ContainerControllerTest extends Specification {
         e.message == "Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting"
     }
 
+    def 'should prepare `conda/pixi:v1-lock` build request from inline packages environment'() {
+        given:
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def builder = Mock(ContainerBuildService)
+        def tokenService = Mock(ContainerRequestService)
+        def controller = new ContainerController(
+                freezeService: new FreezeServiceImpl(inspectService: dockerAuth),
+                buildService: builder,
+                inspectService: dockerAuth,
+                registryProxyService: Mock(RegistryProxyService),
+                buildConfig: buildConfig,
+                inclusionService: Mock(ContainerInclusionService),
+                addressResolver: Mock(HttpClientAddressResolver),
+                containerService: tokenService,
+                persistenceService: Mock(PersistenceService),
+                validationService: validationService,
+                serverUrl: 'http://wave.com')
+        def lockContent = '''\
+                version: 6
+                environments:
+                  default:
+                    channels:
+                    - url: https://conda.anaconda.org/conda-forge/
+                '''.stripIndent()
+        def req = new SubmitContainerTokenRequest(
+                packages: new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: encode(lockContent)),
+                buildTemplate: BuildTemplate.CONDA_PIXI_V1_LOCK )
+        def user = new User(email: 'pixi-inline@bar.com', userName: 'pixi-inline')
+        def id = PlatformId.of(user, req)
+
+        when:
+        def response = controller.handleRequest(null, req, id, true)
+
+        then:
+        1 * builder.buildImage(_ as BuildRequest) >> { BuildRequest build ->
+            assert build.buildTemplate == BuildTemplate.CONDA_PIXI_V1_LOCK
+            assert build.condaFile == lockContent
+            assert build.containerFile.contains('COPY conda.yml /opt/wave/pixi.lock')
+            assert build.containerFile.contains('pixi install --frozen')
+            new BuildTrack('build-inline-pixi', build.targetImage, false, true)
+        }
+        1 * tokenService.computeToken(_) >> new TokenData('wavetoken-inline', Instant.now().plus(1, ChronoUnit.HOURS))
+        and:
+        response.status.code == 200
+        verifyAll(response.body.get() as SubmitContainerTokenResponse) {
+            buildId == 'build-inline-pixi'
+            containerToken == 'wavetoken-inline'
+            cached == false
+            succeeded == true
+        }
+    }
+
+    def 'should prepare `conda/pixi:v1-lock` build request from packages URL'() {
+        given:
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def builder = Mock(ContainerBuildService)
+        def tokenService = Mock(ContainerRequestService)
+        def controller = new ContainerController(
+                freezeService: new FreezeServiceImpl(inspectService: dockerAuth),
+                buildService: builder,
+                inspectService: dockerAuth,
+                registryProxyService: Mock(RegistryProxyService),
+                buildConfig: buildConfig,
+                inclusionService: Mock(ContainerInclusionService),
+                addressResolver: Mock(HttpClientAddressResolver),
+                containerService: tokenService,
+                persistenceService: Mock(PersistenceService),
+                validationService: validationService,
+                serverUrl: 'http://wave.com')
+        def lockUrl = 'https://example.com/pixi.lock'
+        def req = new SubmitContainerTokenRequest(
+                packages: new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: [lockUrl]),
+                buildTemplate: BuildTemplate.CONDA_PIXI_V1_LOCK )
+        def user = new User(email: 'pixi-url@bar.com', userName: 'pixi-url')
+        def id = PlatformId.of(user, req)
+
+        when:
+        def response = controller.handleRequest(null, req, id, true)
+
+        then:
+        1 * builder.buildImage(_ as BuildRequest) >> { BuildRequest build ->
+            assert build.buildTemplate == BuildTemplate.CONDA_PIXI_V1_LOCK
+            assert build.condaFile == null
+            assert build.containerFile.contains("ADD ${lockUrl} /opt/wave/pixi.lock")
+            assert build.containerFile.contains('pixi install --frozen')
+            new BuildTrack('build-url-pixi', build.targetImage, false, true)
+        }
+        1 * tokenService.computeToken(_) >> new TokenData('wavetoken-url', Instant.now().plus(1, ChronoUnit.HOURS))
+        and:
+        response.status.code == 200
+        verifyAll(response.body.get() as SubmitContainerTokenResponse) {
+            buildId == 'build-url-pixi'
+            containerToken == 'wavetoken-url'
+            cached == false
+            succeeded == true
+        }
+    }
+
     def 'should throw BadRequestException when more than one artifact (container image, container file or packages) is provided in the request' () {
         given:
         def controller = new ContainerController(validationService: validationService, inclusionService: Mock(ContainerInclusionService), allowAnonymous: false)
