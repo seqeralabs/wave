@@ -22,6 +22,7 @@ import spock.lang.Ignore
 import spock.lang.IgnoreIf
 import spock.lang.Shared
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Value
@@ -221,4 +222,20 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
         !tokenStore.get(stableKey)
     }
 
+
+    @Unroll
+    def 'should strip repository path from #REGISTRY'() {
+        expect:
+        RegistryAuthServiceImpl.stripRepositoryPath(REGISTRY) == EXPECTED
+
+        where:
+        REGISTRY                                | EXPECTED
+        null                                    | null
+        ''                                      | ''
+        'quay.io'                               | 'quay.io'
+        'quay.io/org/repo'                      | 'quay.io'
+        'localhost:5000/org'                    | 'localhost:5000'
+        'https://registry-1.docker.io'          | 'https://registry-1.docker.io'
+        'http://localhost:5000/org/repo'        | 'http://localhost:5000'
+    }
 }
