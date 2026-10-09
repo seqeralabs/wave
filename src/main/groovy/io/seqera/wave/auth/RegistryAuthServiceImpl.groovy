@@ -198,7 +198,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     @Override
     boolean validateUser(String registry, String user, String password){
         try {
-            final result = login(registry, user, password)
+            final result = login(stripRepositoryPath(registry), user, password)
             log.debug "Validate registry credentials userName=$user; password=${StringUtils.redact(password)}; registry=$registry; host=$registry; => result=$result"
             return result
         }
@@ -206,6 +206,20 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
             log.error "Unable to validate registry credentials userName=$user; password=${StringUtils.redact(password)}; registry=$registry; host=$registry -- cause: ${e.message}", e
             return false
         }
+    }
+
+    /**
+     * Credentials can be scoped to a repository path e.g. {@code quay.io/org}, while the login only needs the registry.
+     *
+     * @param registry The registry name or URL, optionally followed by a repository path
+     * @return The registry name or URL without the repository path
+     */
+    static protected String stripRepositoryPath(String registry) {
+        if( !registry )
+            return registry
+        final scheme = registry.indexOf('://')
+        final slash = registry.indexOf('/', scheme >= 0 ? scheme + 3 : 0)
+        return slash >= 0 ? registry.substring(0, slash) : registry
     }
 
     private HttpRequest makeRequest(String uri, RegistryCredentials creds) {

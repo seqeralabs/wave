@@ -48,7 +48,7 @@ class CredentialServiceImpl implements CredentialsService {
     private PairingService keyService
 
     @Override
-    ContainerRegistryKeys findRegistryCreds(String registryName, PlatformId identity) {
+    ContainerRegistryKeys findRegistryCreds(String repository, PlatformId identity) {
         if (!identity.userId)
             throw new IllegalArgumentException("Missing userId parameter")
         if (!identity.accessToken)
@@ -67,35 +67,44 @@ class CredentialServiceImpl implements CredentialsService {
             return null
         }
 
-        // find credentials with a matching registry
-        // TODO @t0randr
-        //  for the time being we take the first matching credentials.
-        //  A better approach would be to match the credentials
-        //  based on user repository, but this is not supported by tower:
-        //  For instance if we try to pull from docker.io/seqera/tower:v22
-        //  then we should match credentials for docker.io/seqera instead of
-        //  the ones associated with docker.io.
-        //  This cannot be implemented at the moment since, in tower, container registry
-        //  credentials are associated to the whole registry
-        final matchingRegistryName = registryName ?: DOCKER_IO
-        def creds = all.find {
-            it.provider == 'container-reg'  && (it.registry ?: DOCKER_IO) == matchingRegistryName
-        }
+        final target = repository ?: DOCKER_IO
+        final registryName = target.tokenize('/')[0]
+        def creds = findMostSpecificCreds(all, target)
         if (!creds && identity.workflowId && AwsEcrService.isEcrHost(registryName) ) {
             creds = findComputeCreds(identity)
         }
         if (!creds) {
-            log.debug "No credentials matching criteria registryName=$registryName; userId=$identity.userId; workspaceId=$identity.workspaceId; workflowId=${identity.workflowId}; endpoint=$identity.towerEndpoint"
+            log.debug "No credentials matching criteria repository=$target; userId=$identity.userId; workspaceId=$identity.workspaceId; workflowId=${identity.workflowId}; endpoint=$identity.towerEndpoint"
             return null
         }
 
         // log for debugging purposes
-        log.debug "Credentials matching criteria registryName=$registryName; userId=$identity.userId; workspaceId=$identity.workspaceId; endpoint=$identity.towerEndpoint => $creds"
+        log.debug "Credentials matching criteria repository=$target; userId=$identity.userId; workspaceId=$identity.workspaceId; endpoint=$identity.towerEndpoint => $creds"
         // now fetch the encrypted key
         final encryptedCredentials = towerClient.fetchEncryptedCredentials(identity.towerEndpoint, JwtAuth.of(identity), creds.id, pairing.pairingId, identity.workspaceId, identity.workflowId)
         final privateKey = pairing.privateKey
         final credentials = decryptCredentials(privateKey, encryptedCredentials.keys)
         return parsePayload(credentials)
+    }
+
+    /**
+     * Find the container registry credentials whose {@code registry} is the longest prefix of the target repository.
+     * A {@code registry} can be a bare host (e.g. {@code quay.io}) or a host followed by a path
+     * (e.g. {@code quay.io/org}), which allows different credentials for different repositories on the same host.
+     * When more credentials match with the same length, the first one wins.
+     *
+     * @param all The credentials available to the user
+     * @param repository The target repository e.g. {@code quay.io/org/image}
+     * @return The best matching credentials or {@code null} when none match
+     */
+    static protected CredentialsDescription findMostSpecificCreds(List<CredentialsDescription> all, String repository) {
+        return all
+                .findAll { it.provider == 'container-reg' && isPrefixOf(it.registry ?: DOCKER_IO, repository) }
+                .max { (it.registry ?: DOCKER_IO).length() }
+    }
+
+    static private boolean isPrefixOf(String registry, String repository) {
+        return repository == registry || repository.startsWith(registry + '/')
     }
 
     CredentialsDescription findComputeCreds(PlatformId identity) {

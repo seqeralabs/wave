@@ -91,14 +91,16 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
      */
     @Override
     String credentialsConfigJson(String containerFile, String buildRepo, String cacheRepo, PlatformId identity) {
-        final repos = new HashSet(10)
-        if( containerFile )
-            repos.addAll(findRepositories(containerFile))
+        // the docker config holds one credential per host, add the push targets first so that
+        // their credentials win over the ones of base images hosted on the same registry
+        final repos = new LinkedHashSet<String>(10)
         if( buildRepo )
             repos.add(buildRepo)
         // skip S3 bucket paths - they don't require container registry credentials
         if( cacheRepo && !BuildConfig.isBucketPath(cacheRepo) )
             repos.add(cacheRepo)
+        if( containerFile )
+            repos.addAll(findRepositories(containerFile))
         final result = credsJson(repos, identity)
         if( buildRepo && result && !result.contains(host0(buildRepo)) )
             throw new BadRequestException("Missing credentials for container repository: $buildRepo")
