@@ -15,10 +15,12 @@ repositories {
 java {
     // these settings apply to all jvm tooling, including groovy
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(25)
     }
-    sourceCompatibility = 17
-    targetCompatibility = 17
+    // Compile target is set by the applying convention: Profile A (--release 17) via
+    // io.seqera.wave.java-library-conventions for plain libraries, or Profile B
+    // (source/target 25) for Micronaut modules (the Wave app / groovy-library).
+    // See seqeralabs/adr#51.
 }
 
 group = 'io.seqera'

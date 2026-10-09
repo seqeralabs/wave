@@ -125,7 +125,7 @@ class ViewControllerTest extends Specification {
         binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
         binding.build_image == 'docker.io/some:image'
-        binding.build_user == 'paolo'
+        binding.build_user_id == '100'
         binding.build_platform == 'linux/amd64'
         binding.build_exit_status == 0
         binding.build_platform == 'linux/amd64'
@@ -148,9 +148,9 @@ class ViewControllerTest extends Specification {
                 buildId: '112233_1',
                 dockerFile: 'FROM docker.io/test:foo',
                 targetImage: 'test',
-                userName: 'test',
-                userEmail: 'test',
-                userId: 1,
+                userName: 'visible-build-user',
+                userEmail: 'visible-build-user@example.com',
+                userId: 1001,
                 requestIp: '127.0.0.1',
                 startTime: Instant.now(),
                 duration: Duration.ofSeconds(1),
@@ -166,6 +166,10 @@ class ViewControllerTest extends Specification {
         and:
         response.body().contains('Container file')
         response.body().contains('FROM docker.io/test:foo')
+        response.body().contains('User ID')
+        response.body().contains('1001')
+        !response.body().contains('visible-build-user')
+        !response.body().contains('visible-build-user@example.com')
         and:
         !response.body().contains('Conda file')
         and:
@@ -216,7 +220,7 @@ class ViewControllerTest extends Specification {
                 fingerprint: 'xyz',
                 timestamp: Instant.now().toString() )
         and:
-        def user = new User(id:1)
+        def user = new User(id:1, userName: 'container-view-user', email: 'container-view-user@example.com')
         def identity = new PlatformId(user,100)
         and:
         def token = '12345'
@@ -236,6 +240,15 @@ class ViewControllerTest extends Specification {
         then:
         response.body().contains(token)
         response.body().contains(token)
+        and:
+        response.body().contains('User ID')
+        response.body().contains('Workspace ID')
+        response.body().contains('Endpoint')
+        response.body().contains('https://tower.nf')
+        !response.body().contains('container-view-user')
+        !response.body().contains('container-view-user@example.com')
+        !response.body().contains('User name')
+        !response.body().contains('User email')
         and:
         response.body().contains(serverUrl)
     }
@@ -302,7 +315,7 @@ class ViewControllerTest extends Specification {
         binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
         binding.build_image == 'docker.io/some:image'
-        binding.build_user == 'paolo'
+        binding.build_user_id == '100'
         binding.build_platform == 'linux/amd64'
         binding.build_exit_status == '-'
         binding.build_platform == 'linux/amd64'
@@ -344,7 +357,7 @@ class ViewControllerTest extends Specification {
         binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
         binding.build_image == 'docker.io/some:image'
-        binding.build_user == 'paolo'
+        binding.build_user_id == '100'
         binding.build_platform == 'linux/amd64'
         binding.build_exit_status == 1
         binding.build_platform == 'linux/amd64'
@@ -446,7 +459,7 @@ class ViewControllerTest extends Specification {
                 "GMT",
                 'pditommaso',
                 'paolo@me.com',
-                1,
+                987654,
                 "sc-12456",
                 MirrorResult.Status.COMPLETED,
                 Duration.ofMinutes(1),
@@ -465,7 +478,10 @@ class ViewControllerTest extends Specification {
         response.body().contains(record1.sourceImage)
         response.body().contains(record1.targetImage)
         response.body().contains(record1.digest)
-        response.body().contains(record1.userName)
+        response.body().contains('User ID')
+        response.body().contains(record1.userId.toString())
+        !response.body().contains(record1.userName)
+        !response.body().contains(record1.userEmail)
         response.body().contains(serverUrl)
     }
 

@@ -236,9 +236,94 @@ class WaveContainerRecord {
         this.mirror = that.mirror
         this.scanId = that.scanId
         this.scanChildIds = that.scanChildIds
-        // -- digest part 
+        // -- digest part
         this.sourceDigest = sourceDigest
         this.waveDigest = waveDigest
+    }
+
+    // Full field-by-field copy constructor: the fields are immutable (final), so the only way to
+    // produce a record with a different expiration is to rebuild it. Copies every field verbatim
+    // except expiration — keep this in sync when adding fields.
+    private WaveContainerRecord(WaveContainerRecord that, Instant expiration) {
+        this.id = that.id
+        this.user = that.user
+        this.workspaceId = that.workspaceId
+        this.containerImage = that.containerImage
+        this.containerConfig = that.containerConfig
+        this.platform = that.platform
+        this.towerEndpoint = that.towerEndpoint
+        this.buildRepository = that.buildRepository
+        this.cacheRepository = that.cacheRepository
+        this.fingerprint = that.fingerprint
+        this.timestamp = that.timestamp
+        this.zoneId = that.zoneId
+        this.ipAddress = that.ipAddress
+        this.condaFile = that.condaFile
+        this.containerFile = that.containerFile
+        this.sourceImage = that.sourceImage
+        this.sourceDigest = that.sourceDigest
+        this.waveImage = that.waveImage
+        this.waveDigest = that.waveDigest
+        this.buildId = that.buildId
+        this.buildNew = that.buildNew
+        this.freeze = that.freeze
+        this.fusionVersion = that.fusionVersion
+        this.mirror = that.mirror
+        this.scanId = that.scanId
+        this.scanChildIds = that.scanChildIds
+        // -- overridden expiration
+        this.expiration = expiration
+    }
+
+    /**
+     * Return a copy of this record with the given expiration timestamp. Used by the watcher to
+     * persist an extended expiration without mutating the shared immutable record.
+     *
+     * @return A copy of this record with the given expiration timestamp
+     */
+    WaveContainerRecord withExpiration(Instant expiration) {
+        new WaveContainerRecord(this, expiration)
+    }
+
+    /**
+     * Copy constructor replacing the {@link User} identity, keeping all other fields unchanged.
+     */
+    WaveContainerRecord(WaveContainerRecord that, User user) {
+        this.id = that.id
+        this.user = user
+        this.workspaceId = that.workspaceId
+        this.containerImage = that.containerImage
+        this.containerConfig = that.containerConfig
+        this.platform = that.platform
+        this.towerEndpoint = that.towerEndpoint
+        this.buildRepository = that.buildRepository
+        this.cacheRepository = that.cacheRepository
+        this.fingerprint = that.fingerprint
+        this.timestamp = that.timestamp
+        this.zoneId = that.zoneId
+        this.ipAddress = that.ipAddress
+        this.condaFile = that.condaFile
+        this.containerFile = that.containerFile
+        this.sourceImage = that.sourceImage
+        this.sourceDigest = that.sourceDigest
+        this.waveImage = that.waveImage
+        this.waveDigest = that.waveDigest
+        this.expiration = that.expiration
+        this.buildId = that.buildId
+        this.buildNew = that.buildNew
+        this.freeze = that.freeze
+        this.fusionVersion = that.fusionVersion
+        this.mirror = that.mirror
+        this.scanId = that.scanId
+        this.scanChildIds = that.scanChildIds
+    }
+
+    /**
+     * @return A copy of this record exposing only the user id, so that the user name
+     *         and email are not leaked when the record is returned in an API response.
+     */
+    WaveContainerRecord withUserIdOnly() {
+        return user!=null ? new WaveContainerRecord(this, User.ofId(user.id)) : this
     }
 
     /**

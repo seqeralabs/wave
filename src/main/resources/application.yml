@@ -55,7 +55,19 @@ micronaut:
           - isAnonymous()
 ---
 wave:
-  allowAnonymous: true
+  # installation-level capability toggles; all default to `true` (permissive).
+  # See the `strict` environment (application-strict.yml) to lock them all down.
+  capabilities:
+    # when false, anonymous (unauthenticated) users cannot access the Wave server
+    # (legacy alias: wave.allowAnonymous)
+    anonymous-access: ${wave.allowAnonymous:true}
+    # when false, disable the ephemeral container pull/augmentation path; requests must use "freeze" mode
+    ephemeral-token: true
+    # when false, Wave does not broker registry credentials on the proxy pull path;
+    # images are pulled directly from the target registry with the caller's own credentials
+    credentials-federation: true
+    # when false, the HTML view pages under /view/** are disabled globally (return 404)
+    web-views: true
   server:
       url: "${WAVE_SERVER_URL:`http://localhost:9090`}"
   security:
@@ -73,6 +85,8 @@ wave:
     buildkit-image: "public.cr.seqera.io/wave/buildkit:v0.25.2-rootless"
     singularity-image: "public.cr.seqera.io/wave/singularity:v4.2.1-r4"
     singularity-image-init: "public.cr.seqera.io/wave/busybox:latest"
+    # image providing the `condasplit` tool used by the `conda/micromamba:v2-fast` and `conda/pixi:v1-fast` build templates
+    condasplit-image: "public.cr.seqera.io/wave/condasplit:v1"
     # note changing this should be matching the micronaut.server.idle-timeout (see above)
     timeout: 900s
     status:

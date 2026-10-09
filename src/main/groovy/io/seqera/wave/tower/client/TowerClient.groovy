@@ -56,7 +56,6 @@ class TowerClient {
     @Value('${wave.pairing.cache.long.duration:24h}')
     private Duration cacheLongDuration
 
-
     protected <T> CompletableFuture<T> getAsync(URI uri, String endpoint, @Nullable JwtAuth authorization, Class<T> type) {
         assert uri, "Missing uri argument"
         assert endpoint, "Missing endpoint argument"
@@ -146,6 +145,23 @@ class TowerClient {
         def uri = "${checkEndpoint(endpoint)}/workflow/${workflowId}/launch"
         if( workspaceId!=null )
             uri += '?workspaceId=' + workspaceId
+        return URI.create(uri)
+    }
+
+    DescribeWorkflowResponse describeWorkflow(String endpoint, JwtAuth authorization, Long workspaceId, String workflowId) {
+        final uri = workflowDescribeEndpoint(endpoint,workspaceId,workflowId)
+        final k = RegHelper.sipHash(uri, authorization.key, workspaceId, workflowId)
+        // NOTE: cached for a *short* duration keyed by workflowId so the many container tokens of a
+        // single run coalesce onto one Platform lookup per window instead of one lookup per token.
+        // Completion is thus observed up to cacheShortDuration late — harmless, since the token
+        // access-ttl (minutes) is what bounds post-completion access, not this cache.
+        return get0(uri, endpoint, authorization, DescribeWorkflowResponse, k, cacheShortDuration) as DescribeWorkflowResponse
+    }
+
+    protected static URI workflowDescribeEndpoint(String endpoint, Long workspaceId, String workflowId) {
+        def uri = "${checkEndpoint(endpoint)}/workflow/${workflowId}"
+        if( workspaceId!=null )
+            uri += "?workspaceId=$workspaceId"
         return URI.create(uri)
     }
 

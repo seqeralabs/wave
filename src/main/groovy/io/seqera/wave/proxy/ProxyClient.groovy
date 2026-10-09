@@ -386,6 +386,16 @@ class ProxyClient {
         final result = new ArrayList(20)
         result.add('curl')
         result.add('-s')
+        // fail with a non-zero exit status on HTTP errors, instead of writing
+        // the error body (or nothing at all) to stdout and exiting zero
+        result.add('-f')
+        // retry transient failures; note '--retry-all-errors' is deliberately not added because
+        // it would retry a response whose body was already partially piped to the upload command,
+        // duplicating those bytes in the uploaded object
+        result.add('--retry'); result.add(String.valueOf(httpConfig.retryAttempts))
+        // bound the connection setup only; an upstream that connects and then stalls mid-body is
+        // still capped by the transfer job timeout, not by this option
+        result.add('--connect-timeout'); result.add(String.valueOf(httpConfig.connectTimeout.toSeconds()))
         result.add('-X'); result.add('GET')
         //  copy headers
         for( Map.Entry<String,String> entry : headers )  {

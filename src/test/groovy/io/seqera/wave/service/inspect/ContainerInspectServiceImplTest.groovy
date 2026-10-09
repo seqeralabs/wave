@@ -22,8 +22,11 @@ import spock.lang.Specification
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.auth.RegistryCredentialsProvider
+import io.seqera.wave.config.CondaOpts
+import io.seqera.wave.config.PixiOpts
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.util.TemplateUtils
 import jakarta.inject.Inject
 
 /**
@@ -97,6 +100,45 @@ class ContainerInspectServiceImplTest extends Specification {
                 COPY --from=bkt /usr/bin/buildctl /usr/bin/buildctl
                 ''') == ['public.cr.seqera.io/wave/buildkit:v0.25.2-rootless', 'amazoncorretto:17.0.4']
 
+    }
+
+    def 'should find repos mounted in run statements' () {
+        expect:
+        ContainerInspectServiceImpl.findMountRepositories(LINE) == EXPECTED
+
+        where:
+        LINE                                                                                            | EXPECTED
+        null                                                                                            | []
+        'RUN echo hello'                                                                                | []
+        'COPY --from=quay.io/foo:1 /a /b'                                                               | []
+        'RUN --mount=type=bind,from=build,source=/,target=/opt echo hello'                              | []
+        'RUN --mount=type=bind,from=quay.io/foo:1,source=/,target=/opt echo hello'                      | ['quay.io/foo:1']
+        'RUN --mount=type=bind,from=foo@sha256:12345,target=/opt echo --mount=type=bind,from=bar:1'     | ['foo@sha256:12345']
+        'RUN --network=none --mount=type=cache,target=/c --mount=type=bind,from=bar:1,target=/o \\'     | ['bar:1']
+    }
+
+    def 'should find repos in micromamba v2-fast container file' () {
+        given:
+        def LAYERS = 'public.cr.seqera.io/wave/condasplit:v1'
+        def CONDA_OPTS = new CondaOpts([mambaImage: 'mambaorg/micromamba:2.1.1', baseImage: 'ubuntu:24.04'])
+
+        expect:
+        // the ADD line of a lock file adds no repository
+        ContainerInspectServiceImpl.findRepositories(TemplateUtils.condaToDockerFileUsingV2Fast(LOCK_FILE, ['bioconda'], CONDA_OPTS, LAYERS))
+                == ['mambaorg/micromamba:2.1.1', LAYERS, 'ubuntu:24.04']
+
+        where:
+        LOCK_FILE << [null, 'https://foo.com/lock.yml']
+    }
+
+    def 'should find repos in pixi v1-fast container file' () {
+        given:
+        def LAYERS = 'public.cr.seqera.io/wave/condasplit:v1'
+        def PIXI_OPTS = new PixiOpts([pixiImage: 'ghcr.io/prefix-dev/pixi:0.47.0', baseImage: 'ubuntu:24.04'])
+
+        expect:
+        ContainerInspectServiceImpl.findRepositories(TemplateUtils.condaFileToDockerFileUsingPixiV1Fast(PIXI_OPTS, LAYERS))
+                == ['ghcr.io/prefix-dev/pixi:0.47.0', LAYERS, 'ubuntu:24.04']
     }
 
     def 'should fetch container entry point' () {

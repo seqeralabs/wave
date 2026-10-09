@@ -31,10 +31,12 @@ import static TemplateUtils.condaPackagesToDockerFile
 import static TemplateUtils.condaPackagesToDockerFileUsingV2
 import static TemplateUtils.condaPackagesToSingularityFile
 import static TemplateUtils.condaPackagesToSingularityFileV2
+import static TemplateUtils.condaToDockerFileUsingV2Fast
 
 /**
  * Helper class for Conda/Micromamba container builds.
- * Supports both legacy v1 template and the newer v2 (MICROMAMBA_V2) template.
+ * Supports the legacy v1 template, the v2 (MICROMAMBA_V2) template and the layered
+ * v2-fast (MICROMAMBA_V2_FAST) template.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -79,22 +81,8 @@ class CondaHelper {
      * @throws BadRequestException if package type is not CONDA
      */
     static String containerFileV2(PackagesSpec spec, String containerImage, boolean singularity) {
-        if( spec.type != PackagesSpec.Type.CONDA ) {
-            throw new BadRequestException("Package type '${spec.type}' not supported by 'conda/micromamba:v2' build template")
-        }
-
+        final opts = micromambaV2Opts(spec, containerImage, 'conda/micromamba:v2')
         final lockFileUri = tryGetLockFile(spec.entries)
-        final opts = spec.condaOpts ?: CondaOpts.v2()
-        // The CondaOpts ctor always fills mambaImage with the v1 default image (the value
-        // can also be bumped client-side e.g. by Nextflow), but the v2 template requires
-        // micromamba 2.x. Override any micromamba 1.x image with the v2 default; an explicit
-        // 2.x or custom image is left untouched. Matching is by tag (not one exact string),
-        // so a bumped v1 tag still resolves correctly.
-        if( isMicromambaV1(opts.mambaImage) )
-            opts.mambaImage = CondaOpts.DEFAULT_MAMBA_IMAGE_V2
-        if( containerImage )
-            opts.baseImage = containerImage
-
         if( lockFileUri ) {
             // use the lock file uri as special package name
             return singularity
@@ -107,6 +95,43 @@ class CondaHelper {
                     ? condaFileToSingularityFileV2(opts)
                     : condaFileToDockerFileUsingV2(opts)
         }
+    }
+
+    /**
+     * Generate a Dockerfile using the `conda/micromamba:v2-fast` template. The Conda environment is installed
+     * as with the v2 template and then split into multiple image layers by the {@code condasplit} tool.
+     * Only supports CONDA package type and Docker format. Supports both lock files and environment files.
+     *
+     * @param spec The packages specification (must be CONDA type)
+     * @param containerImage Optional base container image override
+     * @param layersImage The image providing the {@code condasplit} tool
+     * @return The generated Dockerfile content
+     * @throws BadRequestException if package type is not CONDA
+     */
+    static String containerFileV2Fast(PackagesSpec spec, String containerImage, String layersImage) {
+        final opts = micromambaV2Opts(spec, containerImage, 'conda/micromamba:v2-fast')
+        return condaToDockerFileUsingV2Fast(tryGetLockFile(spec.entries), spec.channels, opts, layersImage)
+    }
+
+    /**
+     * The Conda options of the templates based on micromamba 2.x, i.e. v2 and v2-fast
+     *
+     * @throws BadRequestException if package type is not CONDA
+     */
+    static private CondaOpts micromambaV2Opts(PackagesSpec spec, String containerImage, String template) {
+        if( spec.type != PackagesSpec.Type.CONDA )
+            throw new BadRequestException("Package type '${spec.type}' not supported by '${template}' build template")
+        final opts = spec.condaOpts ?: CondaOpts.v2()
+        // The CondaOpts ctor always fills mambaImage with the v1 default image (the value
+        // can also be bumped client-side e.g. by Nextflow), but these templates require
+        // micromamba 2.x. Override any micromamba 1.x image with the v2 default; an explicit
+        // 2.x or custom image is left untouched. Matching is by tag (not one exact string),
+        // so a bumped v1 tag still resolves correctly.
+        if( isMicromambaV1(opts.mambaImage) )
+            opts.mambaImage = CondaOpts.DEFAULT_MAMBA_IMAGE_V2
+        if( containerImage )
+            opts.baseImage = containerImage
+        return opts
     }
 
     /**

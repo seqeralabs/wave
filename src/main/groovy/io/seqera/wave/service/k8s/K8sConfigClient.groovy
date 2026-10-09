@@ -41,7 +41,7 @@ import jakarta.inject.Singleton
  */
 @Slf4j
 @CompileStatic
-@Requires(property = 'wave.build.k8s.configPath')
+@Requires(property = 'wave.build.k8s.config-path')
 @Singleton
 class K8sConfigClient implements K8sClient {
 
@@ -49,7 +49,7 @@ class K8sConfigClient implements K8sClient {
     @Nullable
     private String context
 
-    @Value('${wave.build.k8s.configPath}')
+    @Value('${wave.build.k8s.config-path}')
     private String kubeConfigPath
 
     @Memoized

@@ -165,6 +165,14 @@ class PostgresPersistentService implements PersistenceService {
     }
 
     @Override
+    CompletableFuture<Void> updateContainerExpirationAsync(String token, Instant expiration) {
+        log.trace "Updating container request token=${token}; expiration=${expiration}"
+        CompletableFuture.runAsync(safeRun(()->
+                requestRepository.updateContainerExpiration(token, expiration.toString()),
+                "Unable to update container request token=${token}; expiration=${expiration}"))
+    }
+
+    @Override
     WaveContainerRecord loadContainerRequest(String token) {
         log.trace "Loading container request token=${token}"
         final row = requestRepository.findById(token).orElse(null)

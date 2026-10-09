@@ -16,7 +16,7 @@ Use cases for building custom images on demand include:
 - **Simplicity**: Declare tools in a Conda environment file. Wave generates the image. Pipelines remain free of boilerplate.
 - **Portability**: Build instructions reside inside the pipeline. A Conda-first pipeline adapts to any container technology without rewrites.
 - **Reproducibility**: Wave stores build logs for every build. Conda builds also produce precise lock files. Environments remain consistent, shareable, and reproducible.
-- **Multi-architecture workloads**: Build the same Dockerfile or Conda specification for `linux/amd64` or `linux/arm64`. Pipelines target the hardware that matches their cost and performance goals, including ARM cloud instances such as AWS Graviton, Azure Cobalt, and Google Cloud Axion.
+- **Multi-architecture workloads**: Build the same Dockerfile or Conda specification for `linux/amd64`, `linux/arm64`, or both at once. Pipelines target the hardware that matches their cost and performance goals, including ARM cloud instances such as AWS Graviton, Azure Cobalt, and Google Cloud Axion.
 
 ## How it works
 
@@ -71,10 +71,48 @@ Wave builds containers from Dockerfiles and Singularity build files. You define 
 
 The Wave CLI accepts an optional build context directory. Dockerfiles can then use `ADD` and `COPY` instructions to include local files. Nextflow supplies the build context automatically from the pipeline. See [Module binaries](https://www.nextflow.io/docs/latest/module.html#module-binaries).
 
-Set the `containerPlatform` field on the build request to `linux/amd64` or `linux/arm64` to target a specific architecture (the Wave CLI exposes this as `--platform`). The same Dockerfile or Conda specification builds for either target. Wave returns an image URI that resolves to the matching binary.
+Set the `containerPlatform` field on the build request to `linux/amd64` or `linux/arm64` to target a specific architecture (the Wave CLI exposes this as `--platform`). The same Dockerfile or Conda specification builds for either target. Wave returns an image URI that resolves to the matching binary. To build for both architectures in a single request, see [Multi-platform builds](#multi-platform-builds).
 
 :::note
 `linux/arm64` is not the same as Apple Silicon. Apple Silicon uses a system-on-chip design for macOS. `linux/arm64` is the Linux ARM specification used on server and cloud distributions. Wave does not build images for `macos/arm64`.
+:::
+
+### Multi-platform builds
+
+Wave can build a single image that runs on both `linux/amd64` and `linux/arm64`. Set the `containerPlatform` field to the comma-separated value `linux/amd64,linux/arm64` (Wave CLI: `--platform linux/amd64,linux/arm64`). Wave runs one build per platform and assembles the results into an [OCI image index](https://github.com/opencontainers/image-spec/blob/main/image-index.md). The returned image URI resolves to the matching binary for whichever architecture pulls it, so the same URI works across mixed-architecture compute environments.
+
+For example, build a multi-platform image from a Conda package with the Wave CLI:
+
+```bash
+wave --conda-package bwa --platform linux/amd64,linux/arm64
+```
+
+When security scanning is enabled, Wave scans each platform variant individually. Singularity (SIF) images are not scanned.
+
+The following constraints apply:
+
+- `linux/amd64,linux/arm64` is the only supported platform combination.
+- The request must include build instructions: either a `containerFile` or a `packages` specification (Conda, PyPI, or CRAN). Multi-platform requests that only augment an existing image are rejected.
+- Multi-platform builds are not compatible with [container mirroring](./mirroring.mdx) (`--mirror`).
+- The Singularity image format additionally requires [freeze mode](./container-freezes.mdx) and a custom build repository, as with any Singularity build.
+- The Wave deployment must support on-demand builds. Deployments without a build service, such as Wave Lite, reject multi-platform requests.
+
+Multi-platform builds were added in Wave 1.33.0. Multi-platform Singularity builds were added in Wave 1.39.0.
+
+#### Multi-platform Singularity images
+
+Wave builds multi-platform Singularity images the same way: one SIF per architecture, referenced by a single OCI image index published under the returned `oras://` URI.
+
+```bash
+wave --conda-package bwa --singularity --freeze --build-repo docker.io/user/repo --platform linux/amd64,linux/arm64
+```
+
+:::warning
+Client support for multi-architecture `oras://` URIs is not universal:
+
+- **Apptainer 1.5.0 or later** resolves the architecture from the image index. `apptainer pull oras://<uri>` fetches the image for the host architecture. Apptainer rejects a SIF whose architecture the host cannot run, so `--arch` only succeeds for the host architecture unless binfmt emulation is configured.
+- **Apptainer 1.4.x and earlier** ignore the image index for `oras://` sources and always fetch the `linux/amd64` image. On an `arm64` host the pull fails.
+- **SingularityCE** does not yet support platform selection for `oras://` sources. Pulling a multi-architecture Wave URI with SingularityCE fails — it does not fall back to a single architecture. Use a single-architecture build (`--platform linux/amd64` or `--platform linux/arm64`) with SingularityCE.
 :::
 
 ### Build from Conda packages
@@ -116,14 +154,41 @@ This setup installs both Conda and PyPI packages during the build.
 
 ### Multi-stage Conda builds
 
-By default, Wave produces single-stage Conda images that bundle the package manager with the runtime environment. Two build templates run a two-stage build instead. The first stage installs the environment. The second stage copies only the resolved environment into a minimal base image. Multi-stage builds typically reduce image size by 30–50%. They exclude build tools from the final image and emit a lock file for reproducibility.
+By default, Wave builds Conda images with the `conda/micromamba:v2` template, which runs a two-stage build. The first stage installs the environment. The second stage copies only the resolved environment into a minimal base image. Multi-stage builds typically reduce image size by 30–50%. They exclude build tools from the final image and emit a lock file for reproducibility. The `conda/micromamba:v1` template runs a single-stage build instead, which bundles the package manager with the runtime environment.
 
-Two multi-stage templates are available:
+Four multi-stage templates are available:
 
-- **`conda/micromamba:v2`** uses Micromamba and produces an `environment.lock` file.
+- **`conda/micromamba:v2`** uses Micromamba and produces an `environment.lock` file. This is the default template for Conda builds.
+- **`conda/micromamba:v2-fast`** builds like `conda/micromamba:v2`, then splits the environment into multiple image layers. It produces Docker images only. See [Layered Conda builds](#layered-conda-builds).
 - **`conda/pixi:v1`** uses [Pixi](https://pixi.sh/) and produces a `pixi.lock` file. Conda lock files are not supported through this template. Pixi support was added in Wave 1.31.0.
+- **`conda/pixi:v1-fast`** builds like `conda/pixi:v1`, then splits the environment into multiple image layers. It produces Docker images only. See [Layered Conda builds](#layered-conda-builds).
 
-Select a template with the `buildTemplate` field on the build request. Both templates accept Conda packages and Conda environment files, and both produce Docker and Singularity images.
+Select a template with the `buildTemplate` field on the build request, the `--build-template` option of the Wave CLI, or the `wave.build.template` setting in Nextflow. The `conda/micromamba:v2` and `conda/pixi:v1` templates accept Conda packages and Conda environment files, and both produce Docker and Singularity images.
+
+### Layered Conda builds
+
+The `conda/micromamba:v1`, `conda/micromamba:v2`, and `conda/pixi:v1` templates ship the whole Conda environment as a single image layer, which can reach several gigabytes. Some registries, proxies, and CDN caches reject or don't cache layers larger than 512 MB. Container runtimes also download and unpack a single layer over one connection, even when they could fetch several layers in parallel.
+
+The `conda/micromamba:v2-fast` and `conda/pixi:v1-fast` templates install the environment as `conda/micromamba:v2` and `conda/pixi:v1` do, then split it into layers grouped by Conda package:
+
+- Each package of 50 MB or more gets its own layer, and a package larger than 500 MB is split across several layers.
+- Smaller packages are grouped together into shared layers.
+- Every layer holds at most 500 MB of files before compression, so compressed layers stay under 512 MB. A single file larger than 500 MB gets a layer to itself, and the build log shows a warning.
+- The image has up to 32 Conda layers, only as many as the environment needs. If an environment needs more layers, the smallest layers are merged, a merged layer can exceed 500 MB, and the build log shows a warning.
+
+The tools, versions, and files in the image are the same as with `conda/micromamba:v2` and `conda/pixi:v1`, except that `conda/micromamba:v2-fast` drops the unused package cache (`/opt/conda/pkgs`). The build log lists which packages went into which layer and how large each layer is, unless the build reuses the environment install step from the build cache.
+
+To build with this template using the Wave CLI:
+
+```bash
+wave \
+  --conda-package bioconda::gatk4=4.6.2.0 \
+  --build-template conda/micromamba:v2-fast
+```
+
+Use `--build-template conda/pixi:v1-fast` to build the environment with Pixi instead.
+
+Both templates are opt-in. Existing templates and the default template are unchanged, so existing images keep their build IDs. Singularity builds are not supported with these templates, and Wave rejects them. See [Layered Conda builds](../api.md#layered-conda-builds) in the API reference for details.
 
 ### Build from CRAN packages
 

@@ -51,7 +51,8 @@ class DescribeWaveContainerResponse {
         RequestInfo() {}
 
         RequestInfo(WaveContainerRecord data) {
-            this.user = data.user
+            // only expose the user id, stripping the user name and email
+            this.user = data.user ? User.ofId(data.user.id) : null
             this.workspaceId = data.workspaceId
             this.containerImage = data.containerImage
             this.containerConfig = data.containerConfig

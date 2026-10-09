@@ -33,6 +33,7 @@ import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.api.BuildTemplate
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.ContainerStatusResponse
@@ -46,11 +47,13 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.exchange.DescribeWaveContainerResponse
+import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildTrack
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.FreezeService
 import io.seqera.wave.service.builder.FreezeServiceImpl
+import io.seqera.wave.service.builder.MultiPlatformBuildService
 import io.seqera.wave.service.inclusion.ContainerInclusionService
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.service.job.JobService
@@ -60,6 +63,7 @@ import io.seqera.service.pairing.PairingService
 import io.seqera.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerRecord
+import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.request.ContainerRequestService
 import io.seqera.wave.service.request.TokenData
 import io.seqera.wave.service.validation.ValidationService
@@ -145,6 +149,30 @@ class ContainerControllerTest extends Specification {
         then:
         thrown(BadRequestException)
 
+    }
+
+    def 'should reject pull request when container pull is disabled' () {
+        given:
+        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry, ephemeralToken: false)
+
+        when: 'a plain container image (pull/augment) request is rejected'
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', containerPlatform: 'linux/amd64')
+        controller.makeRequestData(req, PlatformId.NULL, "")
+        then:
+        def e = thrown(BadRequestException)
+        e.message == "Ephemeral container provisioning is not enabled in this Wave deployment - use 'freeze' mode to provision this container"
+    }
+
+    def 'should allow pull request when container pull is enabled' () {
+        given:
+        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry, ephemeralToken: true)
+
+        when:
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', containerPlatform: 'linux/amd64')
+        def data = controller.makeRequestData(req, PlatformId.NULL, "")
+        then:
+        data.containerImage == 'docker.io/library/ubuntu:latest'
+        data.type == ContainerRequest.Type.Container
     }
 
     def 'should create request data with freeze mode' () {
@@ -587,6 +615,162 @@ class ContainerControllerTest extends Specification {
             cached == true
             succeeded == true
         }
+    }
+
+    def 'should create response with conda packages using `conda/micromamba:v2-fast` template' () {
+        given:
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def freeze = new FreezeServiceImpl( inspectService: dockerAuth)
+        def builder = Mock(ContainerBuildService)
+        def proxyRegistry = Mock(RegistryProxyService)
+        def addressResolver = Mock(HttpClientAddressResolver)
+        def tokenService = Mock(ContainerRequestService)
+        def persistence = Mock(PersistenceService)
+        def controller = new ContainerController(freezeService:  freeze, buildService: builder, inspectService: dockerAuth,
+                registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService),
+                addressResolver: addressResolver, containerService: tokenService, persistenceService: persistence, validationService: validationService, serverUrl: 'http://wave.com')
+        and:
+        def packagesSpec = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['https://foo.com/lock.yml'], channels: ['conda-forge'])
+        def req = new SubmitContainerTokenRequest(packages: packagesSpec, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V2_FAST, freeze: true, buildRepository: 'docker.io/foo', towerAccessToken: '123')
+        def user = new User(email: 'foo@bar.com', userName: 'foo')
+        def id = PlatformId.of(user, req)
+        and:
+        BuildRequest build = null
+
+        when:
+        def response = controller.handleRequest(null, req, id, true)
+
+        then:
+        1 * builder.buildImage(_) >> { BuildRequest it -> build = it; new BuildTrack('build123', 'docker.io/foo:9b266d5b5c455fe0', true, true) }
+        and:
+        1 * tokenService.computeToken(_) >> new TokenData('wavetoken123', Instant.now().plus(1, ChronoUnit.HOURS))
+        and:
+        response.status.code == 200
+        and:
+        buildConfig.condasplitImage == 'public.cr.seqera.io/wave/condasplit:v1'
+        build.buildTemplate == BuildTemplate.CONDA_MICROMAMBA_V2_FAST
+        build.containerFile.contains("RUN --mount=type=bind,from=${buildConfig.condasplitImage},source=/,target=/opt/wave-tools \\\n")
+        build.containerFile.contains('COPY --link --from=build /layers/NN/ /\n')
+    }
+
+    def 'should reject `conda/micromamba:v2-fast` template with singularity format' () {
+        given:
+        def controller = new ContainerController(inspectService: Mock(ContainerInspectServiceImpl), buildConfig: buildConfig, validationService: validationService)
+        and:
+        def packagesSpec = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['bwa=0.7.15'], channels: ['bioconda'])
+        def req = new SubmitContainerTokenRequest(format: 'sif', packages: packagesSpec, buildTemplate: BuildTemplate.CONDA_MICROMAMBA_V2_FAST, freeze: true, buildRepository: 'docker.io/foo', towerAccessToken: '123')
+        def user = new User(email: 'foo@bar.com', userName: 'foo')
+
+        when:
+        controller.handleRequest(null, req, PlatformId.of(user, req), true)
+
+        then:
+        def e = thrown(BadRequestException)
+        e.message == "Build template 'conda/micromamba:v2-fast' does not support Singularity format"
+    }
+
+    def 'should create response with conda packages using `conda/pixi:v1-fast` template' () {
+        given:
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def freeze = new FreezeServiceImpl( inspectService: dockerAuth)
+        def builder = Mock(ContainerBuildService)
+        def proxyRegistry = Mock(RegistryProxyService)
+        def addressResolver = Mock(HttpClientAddressResolver)
+        def tokenService = Mock(ContainerRequestService)
+        def persistence = Mock(PersistenceService)
+        def controller = new ContainerController(freezeService:  freeze, buildService: builder, inspectService: dockerAuth,
+                registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService),
+                addressResolver: addressResolver, containerService: tokenService, persistenceService: persistence, validationService: validationService, serverUrl: 'http://wave.com')
+        and:
+        def packagesSpec = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['bwa=0.7.15', 'salmon=1.1.1'], channels: ['conda-forge', 'bioconda'])
+        def req = new SubmitContainerTokenRequest(packages: packagesSpec, buildTemplate: BuildTemplate.CONDA_PIXI_V1_FAST, freeze: true, buildRepository: 'docker.io/foo', towerAccessToken: '123')
+        def user = new User(email: 'foo@bar.com', userName: 'foo')
+        def id = PlatformId.of(user, req)
+        and:
+        BuildRequest build = null
+
+        when:
+        def response = controller.handleRequest(null, req, id, true)
+
+        then:
+        1 * builder.buildImage(_) >> { BuildRequest it -> build = it; new BuildTrack('build123', 'docker.io/foo:9b266d5b5c455fe0', true, true) }
+        and:
+        1 * tokenService.computeToken(_) >> new TokenData('wavetoken123', Instant.now().plus(1, ChronoUnit.HOURS))
+        and:
+        response.status.code == 200
+        and:
+        buildConfig.condasplitImage == 'public.cr.seqera.io/wave/condasplit:v1'
+        build.buildTemplate == BuildTemplate.CONDA_PIXI_V1_FAST
+        build.containerFile.contains("RUN --mount=type=bind,from=${buildConfig.condasplitImage},source=/,target=/opt/wave-tools \\\n")
+        build.containerFile.contains('COPY --link --from=build /layers/NN/ /\n')
+    }
+
+    def 'should reject `conda/pixi:v1-fast` template with singularity format' () {
+        given:
+        def controller = new ContainerController(inspectService: Mock(ContainerInspectServiceImpl), buildConfig: buildConfig, validationService: validationService)
+        and:
+        def packagesSpec = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['bwa=0.7.15'], channels: ['bioconda'])
+        def req = new SubmitContainerTokenRequest(format: 'sif', packages: packagesSpec, buildTemplate: BuildTemplate.CONDA_PIXI_V1_FAST, freeze: true, buildRepository: 'docker.io/foo', towerAccessToken: '123')
+        def user = new User(email: 'foo@bar.com', userName: 'foo')
+
+        when:
+        controller.handleRequest(null, req, PlatformId.of(user, req), true)
+
+        then:
+        def e = thrown(BadRequestException)
+        e.message == "Build template 'conda/pixi:v1-fast' does not support Singularity format"
+    }
+
+    def 'should create multi-platform singularity response' () {
+        given:
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def freeze = new FreezeServiceImpl( inspectService: dockerAuth)
+        def builder = Mock(ContainerBuildService)
+        def multiBuilder = Mock(MultiPlatformBuildService)
+        def proxyRegistry = Mock(RegistryProxyService)
+        def addressResolver = Mock(HttpClientAddressResolver)
+        def tokenService = Mock(ContainerRequestService)
+        def persistence = Mock(PersistenceService)
+        def controller = new ContainerController(freezeService:  freeze, buildService: builder, multiPlatformBuildService: multiBuilder,
+                inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService),
+                addressResolver: addressResolver, containerService: tokenService, persistenceService: persistence, validationService: validationService, serverUrl: 'http://wave.com')
+
+        when:
+        def packagesSpec = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['bwa=0.7.15'], channels: ['conda-forge','bioconda'])
+        def req = new SubmitContainerTokenRequest(format: 'sif', packages: packagesSpec, freeze: true, containerPlatform: 'linux/amd64,linux/arm64', buildRepository: 'docker.io/foo', towerAccessToken: '123')
+        def user = new User(email: 'foo@bar.com', userName: 'foo')
+        def id = PlatformId.of(user, req)
+        def response = controller.handleRequest(null, req, id, true)
+
+        then: 'the request is delegated to the multi-platform build service'
+        1 * multiBuilder.buildMultiPlatformImage({ BuildRequest it -> it.format == BuildFormat.SINGULARITY && it.platform == ContainerPlatform.MULTI_PLATFORM }, _, _, _) >> { args -> new BuildTrack('build123', args[2] as String, false, null) }
+        and:
+        1 * tokenService.computeToken(_) >> new TokenData('wavetoken123', Instant.now().plus(1, ChronoUnit.HOURS))
+        and:
+        0 * builder.buildImage(_) >> null
+
+        and:
+        response.status.code == 200
+        verifyAll(response.body.get() as SubmitContainerTokenResponse) {
+            targetImage.startsWith('oras://docker.io/library/foo:')
+            buildId == 'build123'
+            containerToken == null
+        }
+    }
+
+    def 'should reject multi-platform singularity request when freeze is not enabled' () {
+        given:
+        def controller = new ContainerController(freezeService: Mock(FreezeService), buildService: Mock(ContainerBuildService),
+                multiPlatformBuildService: Mock(MultiPlatformBuildService), inclusionService: Mock(ContainerInclusionService), addressResolver: Mock(HttpClientAddressResolver),
+                validationService: validationService, buildConfig: buildConfig)
+
+        when:
+        def req = new SubmitContainerTokenRequest(format: 'sif', containerFile: encode('FROM foo'), containerPlatform: 'linux/amd64,linux/arm64', buildRepository: 'docker.io/foo')
+        controller.handleRequest(null, req, new PlatformId(new User(id: 100)), true)
+
+        then:
+        def e = thrown(BadRequestException)
+        e.message == "Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting"
     }
 
     def 'should throw BadRequestException when more than one artifact (container image, container file or packages) is provided in the request' () {

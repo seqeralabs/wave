@@ -49,6 +49,13 @@ class BuildConfig {
     @Value('${wave.build.singularity-image-init:`public.cr.seqera.io/wave/busybox:latest`}')
     String singularityImageInit
 
+    /**
+     * The image providing the {@code condasplit} tool used by the {@code conda/micromamba:v2-fast}
+     * and {@code conda/pixi:v1-fast} build templates to split the Conda environment into multiple image layers
+     */
+    @Value('${wave.build.condasplit-image:`public.cr.seqera.io/wave/condasplit:v1`}')
+    String condasplitImage
+
     @Value('${wave.build.repo}')
      String defaultBuildRepository
 
@@ -153,7 +160,7 @@ class BuildConfig {
     /**
      * Max length allowed for build logs download
      */
-    @Value('${wave.build.logs.maxLength:100000}')
+    @Value('${wave.build.logs.max-length:100000}')
     long maxLength
 
     @Value('${wave.build.skip-cache:false}')
@@ -164,6 +171,7 @@ class BuildConfig {
         log.info("Builder config: " +
                 "buildkit-image=${buildkitImage}; " +
                 "singularity-image=${singularityImage}; " +
+                "condasplit-image=${condasplitImage}; " +
                 "default-build-repository=${defaultBuildRepository}; " +
                 "default-cache-repository=${defaultCacheRepository}; " +
                 "cache-bucket-region=${cacheBucketRegion}; " +

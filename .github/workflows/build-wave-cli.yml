@@ -1,0 +1,252 @@
+name: Wave-cli builds
+permissions:
+  contents: read
+on:
+  push:
+    branches:
+      - '*'
+      - '!refs/tags/.*'
+    tags-ignore:
+      - '*'
+    paths:
+      - 'wave-cli/**'
+      - '.github/workflows/build-wave-cli.yml'
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - '*'
+      - '!refs/tags/.*'
+    tags-ignore:
+      - '*'
+    paths:
+      - 'wave-cli/**'
+      - '.github/workflows/build-wave-cli.yml'
+jobs:
+  detect-release:
+    name: Detect release commit
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.detect.outputs.release }}
+    steps:
+      - name: Detect release commit
+        id: detect
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          REF: ${{ github.ref }}
+        run: |
+          # as in Wave CI: only direct pushes to master whose first line tags `[release]`,
+          # squash and merge commits excluded, so a PR mentioning the tag does not trigger a release
+          first_line=$(printf '%s\n' "$COMMIT_MSG" | head -n1)
+          release=false
+          if [[ "$REF" == "refs/heads/master" && "$first_line" == *"[release]"* && ! "$first_line" =~ \(#[0-9]+\)$ && ! "$first_line" =~ ^Merge\ pull\ request\ #[0-9]+ ]]; then
+            release=true
+          fi
+          echo "release=$release ref=$REF"
+          echo "release=$release" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Wave on ${{ matrix.os }}
+    needs: [ detect-release ]
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: wave-cli
+    strategy:
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest-large, macos-latest-xlarge, windows-latest]
+        include:
+          - os: ubuntu-latest
+            fatjar: true
+            musl: true
+          - os: macos-latest-large
+            codesign: true
+          - os: macos-latest-xlarge
+            codesign: true
+    steps:
+      - name: Environment
+        working-directory: .
+        run: env | sort
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: graalvm/setup-graalvm@0426e2e191540e8514dff98dc52a5f5146a2a276 # v1.6.6
+        if: ${{ matrix.musl }}
+        with:
+          java-version: '25'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          native-image-job-reports: 'true'
+          native-image-musl: 'true'
+
+      - uses: graalvm/setup-graalvm@0426e2e191540e8514dff98dc52a5f5146a2a276 # v1.6.6
+        if: ${{ !matrix.musl }}
+        with:
+          java-version: '25'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          native-image-job-reports: 'true'
+
+      - name: Run tests
+        run: |
+          ./gradlew test
+
+      - name: Build fat JAR
+        if: ${{ matrix.fatjar }}
+        run: ./gradlew shadowJar
+
+      - name: Upload fat JAR artifact
+        if: ${{ matrix.fatjar }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: wave-jar
+          path: ./wave-cli/app/build/libs/wave.jar
+
+      - name: Build static native
+        if: ${{ matrix.musl }}
+        run: ./gradlew app:nativeCompile
+        env:
+          PLATFORM: linux-x86_64
+
+      - name: Build native
+        if: ${{ !matrix.musl }}
+        run: ./gradlew app:nativeCompile
+
+      - name: Codesign binary
+        if: ${{ matrix.codesign && needs.detect-release.outputs.release == 'true' }}
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+          MACOS_CERTIFICATE_NAME: ${{ secrets.MACOS_CERTIFICATE_NAME }}
+          MACOS_CI_KEYCHAIN_PWD: ${{ secrets.MACOS_CI_KEYCHAIN_PWD }}
+        run: |
+          echo $MACOS_CERTIFICATE | base64 --decode > certificate.p12
+          security create-keychain -p "$MACOS_CI_KEYCHAIN_PWD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$MACOS_CI_KEYCHAIN_PWD" build.keychain
+          security import certificate.p12 -k build.keychain -P "$MACOS_CERTIFICATE_PWD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$MACOS_CI_KEYCHAIN_PWD" build.keychain
+          /usr/bin/codesign --force -s "$MACOS_CERTIFICATE_NAME" --options runtime ./app/build/native/nativeCompile/wave -v
+
+      - name: Notarize binary
+        if: ${{ matrix.codesign && needs.detect-release.outputs.release == 'true' }}
+        env:
+          MACOS_AC_API_CERT: ${{ secrets.MACOS_AC_API_CERT }}
+          MACOS_AC_API_ISSUER_ID: ${{ secrets.MACOS_AC_API_ISSUER_ID }}
+          MACOS_AC_API_KEY_ID: ${{ secrets.MACOS_AC_API_KEY_ID }}
+        run: |
+          echo $MACOS_AC_API_CERT | base64 --decode > AuthKey.p8
+          xcrun notarytool store-credentials "notarytool-profile" -k AuthKey.p8 -d "$MACOS_AC_API_KEY_ID" -i "$MACOS_AC_API_ISSUER_ID"
+          ditto -c -k --keepParent "./app/build/native/nativeCompile/wave" "notarization.zip"
+          xcrun notarytool submit "notarization.zip" --keychain-profile "notarytool-profile" --wait
+
+      - name: Upload Binary
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: nativeCompile-${{ matrix.os }}
+          path: ./wave-cli/app/build/native/nativeCompile
+
+      - name: Publish tests report
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: test-reports-${{ matrix.os }}
+          path: |
+            wave-cli/**/build/reports/tests/test
+  smoke-test:
+    name: Smoke test linux-x86_64 on ${{ matrix.os }}
+    needs: [ build ]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+    steps:
+      - name: Download linux-x86_64 binary
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: nativeCompile-ubuntu-latest
+          path: ./bin
+
+      - name: Run binary
+        run: |
+          uname -a
+          lscpu
+          ulimit -a
+          chmod +x ./bin/wave
+          ./bin/wave --version
+          # must start with a virtual memory limit (#46)
+          for v in 2000000 1000000; do (ulimit -v $v && ./bin/wave --version); done
+  release:
+    name: Release
+    if: needs.detect-release.outputs.release == 'true'
+    needs: [ detect-release, build, smoke-test ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+
+      - name: Setup Java for JReleaser
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
+        with:
+          java-version: '25'
+          distribution: 'corretto'
+
+      - name: Version
+        id: version
+        run: |
+          VERSION=$(cat ./wave-cli/VERSION)
+          echo "VERSION=$VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Enable Homebrew for final release
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Homebrew release enabled."
+            echo "JRELEASER_PACKAGERS_BREW_ACTIVE=ALWAYS" >> $GITHUB_ENV
+          else
+            echo "Homebrew release disabled (pre-release detected)."
+            echo "JRELEASER_PACKAGERS_BREW_ACTIVE=NEVER" >> $GITHUB_ENV
+          fi
+
+      # release notes are taken from the version entry in wave-cli/changelog.txt, because the
+      # git log of this repository includes the Wave server commits
+      - name: Release notes
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          awk -v v="$VERSION" '
+            $0 ~ "^"v" - " { found=1; next }
+            found && /^[0-9]+\.[0-9]+\.[0-9]+.* - / { exit }
+            found { print }
+          ' ./wave-cli/changelog.txt > ./wave-cli-release-notes.md
+          if [[ ! -s ./wave-cli-release-notes.md ]]; then
+            echo "::error::Missing entry for version $VERSION in wave-cli/changelog.txt"
+            exit 1
+          fi
+          cat ./wave-cli-release-notes.md
+
+      - name: Run JReleaser
+        uses: jreleaser/release-action@90ac653bb9c79d11179e65d81499f3f34527dcd5 # 2.5.0
+        with:
+          arguments: full-release --config-file wave-cli/jreleaser.yml --basedir .
+        env:
+          JRELEASER_GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
+          JRELEASER_PROJECT_VERSION: ${{ steps.version.outputs.VERSION }}
+          JRELEASER_PACKAGERS_BREW_ACTIVE: ${{ env.JRELEASER_PACKAGERS_BREW_ACTIVE }}
+
+      - name: JReleaser release output
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: jreleaser-release
+          path: |
+            out/jreleaser/trace.log
+            out/jreleaser/output.properties
+...

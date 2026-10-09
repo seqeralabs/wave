@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.persistence
 
+import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
@@ -91,6 +92,15 @@ interface PersistenceService {
      * @param digest The resolved digest
      */
     CompletableFuture<Void> updateContainerRequestAsync(String token, ContainerDigestPair digest)
+
+    /**
+     * Update the expiration of a container request. Used by the workflow-bound token watcher to roll
+     * the persisted expiration forward on each renewal.
+     *
+     * @param token The request unique token
+     * @param expiration The new expiration instant
+     */
+    CompletableFuture<Void> updateContainerExpirationAsync(String token, Instant expiration)
 
     /**
      * Retrieve a {@link WaveContainerRecord} object corresponding to the a specified request token
