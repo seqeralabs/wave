@@ -6,6 +6,9 @@ on:
     branches:
       - master
       - 'release-*'
+    # Wave CLI release commits only touch wave-cli/, see build-wave-cli.yml
+    paths-ignore:
+      - 'wave-cli/**'
   pull_request:
     paths:
       - 'condasplit/**'

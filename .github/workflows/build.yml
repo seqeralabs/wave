@@ -12,6 +12,9 @@ on:
       - '*.md'
       - .github/workflows/website_preview.yml
       - .github/workflows/website_deploy.yml
+      - 'wave-cli/**'
+      - .github/workflows/build-wave-cli.yml
+      - .github/workflows/security-submit-dependecy-graph-wave-cli.yml
   pull_request:
     types: [opened, reopened, synchronize]
     paths-ignore:
@@ -20,6 +23,9 @@ on:
       - '*.md'
       - .github/workflows/website_preview.yml
       - .github/workflows/website_deploy.yml
+      - 'wave-cli/**'
+      - .github/workflows/build-wave-cli.yml
+      - .github/workflows/security-submit-dependecy-graph-wave-cli.yml
 
 jobs:
   build:

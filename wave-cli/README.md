@@ -1,0 +1,247 @@
+# Wave CLI
+
+Command line tool for [Wave containers provisioning service](https://github.com/seqeralabs/wave).
+
+### Summary 
+
+Wave allows augmenting existing containers and building containers on demand so
+that it can be used in your Docker (replace-with-your-own-fav-container-engine) workflow.
+
+### Features
+
+* Build container images on-demand for a given container file (aka Dockerfile);
+* Build container images on-demand based on one or more [Conda](https://conda.io/) packages;
+* Build container images on-demand based on one or more R/[CRAN](https://cran.r-project.org/) packages;
+* Build container images for a specified target platform (currently linux/amd64 and linux/arm64);
+* Push and cache built containers to a user-provided container repository;
+* Push Singularity native container images to OCI-compliant registries;
+* Mirror (ie. copy) container images on-demand to a given registry;
+* Scan container images on-demand for security vulnerabilities;
+  
+### Installation 
+
+
+#### Binary download 
+
+Download the Wave pre-compiled binary for your operating system from the 
+[GitHub releases page](https://github.com/seqeralabs/wave/releases?q=cli-v&expanded=true) and give execute permission to it.
+
+#### Homebrew (Linux and macOS)
+
+If you use [Homebrew](https://brew.sh/), you can install like this:
+
+```bash
+ brew install seqeralabs/tap/wave-cli
+```
+
+> [!TIP]
+> If you cannot find the latest version, run `brew update` to refresh your local Homebrew database.
+
+### Get started
+
+1. Create a basic Dockerfile file (or use an existing one)
+   
+    ```bash
+    cat << EOF > ./Dockerfile
+    FROM alpine 
+
+    RUN apk update && apk add bash cowsay \
+            --update-cache \
+            --repository https://alpine.global.ssl.fastly.net/alpine/edge/community \
+            --repository https://alpine.global.ssl.fastly.net/alpine/edge/main \
+            --repository https://dl-3.alpinelinux.org/alpine/edge/testing
+    EOF
+    ```
+
+2. Run it provisioning the container on-the-fly
+
+
+    ```bash
+    docker run --rm $(wave -f ./Dockerfile) cowsay "Hello world"
+    ```
+
+
+### Examples 
+
+#### Augment a container image 
+
+1. Create a directory holding the files to be added to your container:
+
+    ```bash
+    mkdir -p new-layer/usr/local/bin
+    printf 'echo Hello world!' > new-layer/usr/local/bin/hello.sh 
+    chmod +x new-layer/usr/local/bin/hello.sh
+    ```
+
+2. Augment the container with the local layer and run with Docker:
+
+    ```bash
+    container=$(wave -i alpine --layer new-layer)
+    docker run $container sh -c hello.sh
+    ```
+
+#### Build a container with Dockerfile 
+
+1. Create a Dockerfile for your container image: 
+
+    ```bash
+    cat << EOF > ./Dockerfile
+    FROM alpine 
+    ADD hello.sh /usr/local/bin/
+    EOF
+    ```
+
+2. Create the build context directory:
+
+    ```bash
+    mkdir -p build-context/
+    printf 'echo Hello world!' > build-context/hello.sh 
+    chmod +x build-context/hello.sh 
+    ```
+
+3. Build and run the container on the fly:
+
+    ```bash
+    container=$(wave -f Dockerfile --context build-context)
+    docker run $container sh -c hello.sh
+    ```
+
+#### Build a Conda multi-packages container
+
+```bash
+container=$(wave --conda-package bamtools=2.5.2 --conda-package samtools=1.17)
+docker run $container sh -c 'bamtools --version && samtools --version'
+```
+
+#### Build a Conda container using Pixi (multi-stage build)
+
+Use the `--build-template` option to select an optimized build template. The `conda/pixi:v1` template
+uses the [Pixi](https://pixi.sh/) package manager with multi-stage builds for smaller, more secure images:
+
+```bash
+container=$(wave --conda-package bamtools=2.5.2 --build-template conda/pixi:v1)
+docker run $container bamtools --version
+```
+
+Available build templates:
+- `conda/micromamba:v1` - Single-stage build using Micromamba 1.x
+- `conda/micromamba:v2` - Multi-stage build using Micromamba 2.x (default for Conda packages)
+- `conda/micromamba:v2-fast` - Like `conda/micromamba:v2`, with the Conda environment split into multiple image layers grouped by package, each under 512 MB. Docker images only
+- `conda/pixi:v1` - Multi-stage build using Pixi package manager
+- `conda/pixi:v1-fast` - Like `conda/pixi:v1`, with the Conda environment split into multiple image layers grouped by package, each under 512 MB. Docker images only
+- `cran/installr:v1` - Build template for CRAN/R packages
+
+#### Build a container by using a Conda environment file
+
+1. Create the Conda environment file:
+
+    ```bash
+    cat << EOF > ./conda.yaml
+    name: my-conda
+    channels:
+    - bioconda
+    - conda-forge
+    dependencies:
+    - bamtools=2.5.2
+    - samtools=1.17
+    EOF
+    ```
+
+2. Build and run the container using the Conda environment:
+
+    ```bash
+    container=$(wave --conda-file ./conda.yaml)
+    docker run $container sh -c 'bamtools --version'
+    ```
+
+
+#### Build a container by using a Conda lock file
+
+```bash
+container=$(wave --conda-package https://prefix.dev/envs/pditommaso/wave/6x60arx3od13/conda-lock.yml)
+docker run $container cowpy 'Hello, world!'
+```
+
+
+#### Build a Conda package container arm64 architecture
+
+```bash
+container=$(wave --conda-package fastp --platform linux/arm64)
+docker run --platform linux/arm64 $container sh -c 'fastp --version'
+```
+
+#### Build a multi-architecture Conda package container (amd64 and arm64)
+
+Pass both platforms separated by a comma to build a single multi-architecture image
+backed by an index manifest.
+
+```bash
+container=$(wave --conda-package fastp --platform linux/amd64,linux/arm64)
+docker run $container sh -c 'fastp --version'
+```
+
+#### Build a multi-architecture Singularity container (amd64 and arm64)
+
+The same applies to Singularity: a per-architecture SIF image is built for each platform and
+published under a single `oras://` URL backed by an OCI image index. Freeze mode is required
+for Singularity builds, and a build repository is typically required as well.
+
+```bash
+container=$(wave --conda-package fastp --singularity --freeze --build-repo <YOUR REGISTRY> --platform linux/amd64,linux/arm64)
+apptainer pull --arch arm64 $container
+```
+
+Note: Apptainer resolves the architecture at pull time, whereas SingularityCE does not yet
+support platform selection for `oras://` references (see [sylabs/singularity#4339](https://github.com/sylabs/singularity/pull/4339)).
+
+#### Build a Singularity container using a Conda package and pushing to a OCI registry
+
+```bash
+container=$(wave --singularity --conda-package bamtools=2.5.2 --build-repo docker.io/user/repo --freeze --await)
+singularity exec $container bamtools --version
+```
+
+#### Mirror (aka copy) a container to another registry
+
+```bash
+container=$(wave -i ubuntu:latest --mirror --build-repo <YOUR REGISTRY> --tower-token <YOUR ACCESS TOKEN> --await)
+docker pull $container
+```
+
+#### Build a container and scan it for vulnerabilities
+
+```bash
+wave --conda-package bamtools=2.5.2 --scan-mode required --await -o yaml
+```
+
+### Development
+
+1. Install GraalVM-Java 21.0.1
+
+    ```bash
+    sdk install java 21.0.1-graal
+    ```
+
+    or if it's already installed
+
+   ```bash
+   sdk use java 21.0.1-graal
+   ```
+
+2. Compile & run tests 
+
+    ```bash
+    ./gradlew check
+    ```
+
+3. Native compile
+
+    ```bash
+    ./gradlew app:nativeCompile
+    ```
+
+4. Run the native binary 
+
+    ```bash
+    ./app/build/native/nativeCompile/wave --version
+    ```

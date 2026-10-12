@@ -1,0 +1,181 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "enabledManagers": [
+    "gradle",
+    "gradle-wrapper",
+    "gomod",
+    "npm",
+    "dockerfile",
+    "docker-compose",
+    "pre-commit",
+    "github-actions",
+    "custom.regex"
+  ],
+  "schedule": [
+    "after 10pm on sunday",
+    "before 6am on monday"
+  ],
+  "postUpdateOptions": [
+    "gomodTidy"
+  ],
+  "pre-commit": {
+    "enabled": true
+  },
+  "ignorePaths": [
+    "**/node_modules/**",
+    "docs/**",
+    "adr/**",
+    "specs/**",
+    ".specify/**",
+    "src/test/resources/**",
+    "src/main/resources/templates/**",
+    "scanner/Dockerfile",
+    "singularity/Dockerfile",
+    "s5cmd/Dockerfile"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Jib base image (jib { from { image = '...' } })",
+      "managerFilePatterns": [
+        "/(^|/)build\\.gradle$/"
+      ],
+      "matchStrings": [
+        "from\\s*\\{\\s*image\\s*=\\s*['\"](?<depName>[^:'\"\\s]+):(?<currentValue>[^@'\"\\s]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?['\"]"
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Micronaut platform version pinned in gradle.properties",
+      "managerFilePatterns": [
+        "/^gradle\\.properties$/"
+      ],
+      "matchStrings": [
+        "micronautVersion\\s*=\\s*(?<currentValue>\\S+)"
+      ],
+      "depNameTemplate": "io.micronaut.platform:micronaut-platform",
+      "datasourceTemplate": "maven"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchManagers": [
+        "gradle",
+        "gradle-wrapper"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "gradle minor and patch"
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "go minor and patch"
+    },
+    {
+      "matchManagers": [
+        "npm"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "npm minor and patch"
+    },
+    {
+      "matchManagers": [
+        "dockerfile",
+        "docker-compose"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "digest"
+      ],
+      "groupName": "docker images"
+    },
+    {
+      "matchManagers": [
+        "pre-commit"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "pre-commit hooks"
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "digest"
+      ],
+      "groupName": "github actions"
+    },
+    {
+      "matchManagers": [
+        "docker-compose"
+      ],
+      "matchPackageNames": [
+        "postgres",
+        "redis"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "enabled": false
+    },
+    {
+      "matchPackageNames": [
+        "cr.seqera.io/public/nf-jdk"
+      ],
+      "versionCompatibility": "^corretto-(?<version>\\d+\\.\\d+\\.\\d+)-(?<compatibility>.+)$",
+      "groupName": "jib base image",
+      "pinDigests": true
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchDepNames": [
+        "node",
+        "java-jdk"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "enabled": false
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchDepNames": [
+        "go"
+      ],
+      "enabled": false
+    },
+    {
+      "matchManagers": [
+        "docker-compose"
+      ],
+      "matchPackageNames": [
+        "<wave-container-image>"
+      ],
+      "enabled": false
+    }
+  ]
+}
