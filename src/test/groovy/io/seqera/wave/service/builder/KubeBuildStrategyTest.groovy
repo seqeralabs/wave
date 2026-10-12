@@ -101,7 +101,7 @@ class KubeBuildStrategyTest extends Specification {
         def req = BuildRequest.of(containerId: containerId, containerFile: dockerfile, workspace: PATH, targetImage: targetImage, identity: USER, platform: ContainerPlatform.of('amd64'), cacheRepository: cache, ip: "10.20.30.40", configJson: '{"config":"json"}', format: BuildFormat.DOCKER, maxDuration: Duration.ofMinutes(1), compression: BuildCompression.gzip)
 
         then: 'should return buildkit image'
-        strategy.getBuildImage(req) == 'public.cr.seqera.io/wave/buildkit:v0.25.2-rootless'
+        strategy.getBuildImage(req) == 'public.cr.seqera.io/wave/buildkit:v0.33.1-rootless'
 
         when:'getting singularity with amd64 arch in build request'
         req = BuildRequest.of(containerId: containerId, containerFile: dockerfile, workspace: PATH, targetImage: targetImage, identity: USER, platform: ContainerPlatform.of('amd64'), cacheRepository: cache, ip: "10.20.30.40", configJson: '{}', format: BuildFormat.SINGULARITY, maxDuration: Duration.ofMinutes(1), compression: BuildCompression.gzip)
