@@ -700,19 +700,12 @@ Email delivery requires `mail` in `MICRONAUT_ENVIRONMENTS`. Add `aws-ses` as wel
 `mail.smtp.ssl.protocols` *(optional)*
 : Space-separated list of permitted TLS protocols, for example `TLSv1.2 TLSv1.3`.
 
-## Metrics
-
-Configure the Wave Metrics service, which provides data about container builds and pulls per organization and date.
-
-`wave.metrics.enabled` *(optional)*
-: When `true`, activates Wave metrics (default: `false`).
-
 ## Accounts
 
 Configure user credentials for accessing authenticated Wave APIs and services.
 
 `wave.accounts` *(optional)*
-: Credentials for accessing authenticated Wave APIs such as the metrics API.
+: Credentials for accessing authenticated Wave APIs.
   A map of usernames to SHA-256 hex checksums of the corresponding passwords:
 
   <div style={{marginLeft: '2em'}}>
