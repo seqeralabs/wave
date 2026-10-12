@@ -1,4 +1,12 @@
 # Wave changelog
+1.40.1 - 12 Oct 2026
+- Bump Micronaut to 4.10.21 (#1171, #1176) [b964a699b, ced2ce56f]
+- Override vulnerable transitive JVM dependencies (#1175) [c8c71206e]
+- Bump logback to 1.5.34 (#1174) [46949fd60]
+- Bump nf-jdk base image to v25.0.4 (#1166) [91ce624b9]
+- Bump condasplit frontend Go dependencies to fix vulnerabilities (#1172) [018564437]
+- fix(deps): pin @typespec/openapi to 1.16.0 (#1173) [f6254fe43]
+
 1.40.0 - 5 Oct 2026
 - Add conda/pixi:v1-fast template with layered conda builds (#1153) [c260aff3a]
 
