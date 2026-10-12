@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -30,14 +30,15 @@ import io.micronaut.http.HttpMethod
 import io.micronaut.http.MutableHttpRequest
 import io.micronaut.http.server.exceptions.InternalServerException
 import io.micronaut.reactor.http.client.ReactorStreamingHttpClient
+import io.seqera.wave.exception.RegistryForwardException
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryInfo
-import io.seqera.wave.auth.RegistryUnauthorizedAccessException
+import io.seqera.wave.exception.RegistryUnauthorizedAccessException
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.util.RegHelper
-import io.seqera.wave.util.Retryable
+import io.seqera.util.retry.Retryable
 import reactor.core.publisher.Flux
 import static io.seqera.wave.WaveDefault.HTTP_REDIRECT_CODES
 import static io.seqera.wave.WaveDefault.HTTP_RETRYABLE_ERRORS
@@ -59,6 +60,8 @@ class ProxyClient {
     private RegistryAuthService loginService
     private ContainerPath route
     private HttpClientConfig httpConfig
+    private List<Integer> retryableHttpErrors = HTTP_RETRYABLE_ERRORS
+    private boolean pushMode
 
     ProxyClient(HttpClient httpClient, HttpClientConfig httpConfig) {
         if( httpClient.followRedirects()!= HttpClient.Redirect.NEVER )
@@ -96,9 +99,20 @@ class ProxyClient {
         return this
     }
 
-    private URI makeUri(String path) {
+    ProxyClient withRetryableHttpErrors(List<Integer> errors) {
+        if( errors!=null )
+            retryableHttpErrors = errors
+        return this
+    }
+
+    ProxyClient withPushMode(boolean value) {
+        this.pushMode = value
+        return this
+    }
+
+    URI makeUri(String path) {
         assert path.startsWith('/'), "Request past should start with a slash character — offending path: $path"
-        URI.create(registry.host.toString() + path)
+        return URI.create(registry.host.toString() + path)
     }
 
     HttpResponse<String> getString(String path, Map<String,List<String>> headers=null, boolean followRedirect=true) {
@@ -157,7 +171,7 @@ class ProxyClient {
     def <T> HttpResponse<T> get(URI origin, Map<String,List<String>> headers, BodyHandler<T> handler, boolean followRedirect) {
         final retryable = Retryable
                 .<HttpResponse<T>>of(httpConfig)
-                .retryIf((resp) -> resp.statusCode() in HTTP_RETRYABLE_ERRORS)
+                .retryIf((resp) -> resp.statusCode() in retryableHttpErrors)
                 .onRetry((event) -> "Failure on GET request: $origin - event: $event")
         // carry out the request
         return retryable.apply(()-> get0(origin, headers, handler, followRedirect))
@@ -187,7 +201,7 @@ class ProxyClient {
             }
             if( result.statusCode() in HTTP_REDIRECT_CODES && followRedirect ) {
                 final redirect = result.headers().firstValue('location').orElse(null)
-                log.trace "Redirecting (${++redirectCount}) $target ==> $redirect ${RegHelper.dumpHeaders(result.headers())}"
+                log.trace "Redirecting (${++redirectCount}) $target ==> $redirect ${RegHelper.dumpHeaders(result)}"
                 if( !redirect ) {
                     final msg = "Missing `Location` header for request URI '$target' ― origin request '$origin'"
                     throw new ClientResponseException(msg, result.request())
@@ -217,7 +231,7 @@ class ProxyClient {
             copyHeaders(headers, builder)
             if( authorize ) {
                 // add authorisation header
-                final header = loginService.getAuthorization(image, registry.auth, credentials)
+                final header = getAuthHeader()
                 if( header )
                     builder.setHeader("Authorization", header)
             }
@@ -232,7 +246,7 @@ class ProxyClient {
             // just re-throw it so that it's managed by the retry policy
             throw e
         }
-        catch (RegistryUnauthorizedAccessException e) {
+        catch (RegistryForwardException | RegistryUnauthorizedAccessException e) {
             // just re-throw it because it's a known error condition
             throw e
         }
@@ -246,10 +260,10 @@ class ProxyClient {
     }
 
 
-    HttpResponse<Void> head(URI uri, Map<String,List<String>> headers) {
+    HttpResponse<Void> head(URI uri, Map<String, List<String>> headers) {
         final retryable = Retryable
                 .<HttpResponse<Void>>of(httpConfig)
-                .retryIf((resp) -> resp.statusCode() in HTTP_RETRYABLE_ERRORS)
+                .retryIf((resp) -> resp.statusCode() in retryableHttpErrors)
                 .onRetry((event) -> "Failure on HEAD request: $uri - event: $event")
         // carry out the request
         return retryable.apply(()-> head0(uri,headers))
@@ -271,10 +285,10 @@ class ProxyClient {
         // https://zetcode.com/java/httpclient/
         final builder = HttpRequest.newBuilder(uri)
                 .method("HEAD", HttpRequest.BodyPublishers.noBody())
-        // copy headers 
+        // copy headers
         copyHeaders(headers, builder)
         // add authorisation header
-        final header = loginService.getAuthorization(image, registry.auth, credentials)
+        final header = getAuthHeader()
         if( header )
             builder.setHeader("Authorization", header)
         // build the request
@@ -283,6 +297,59 @@ class ProxyClient {
         final response = httpClient.send(request, HttpResponse.BodyHandlers.discarding())
         traceResponse(response)
         return response
+    }
+
+    private String getAuthHeader() {
+        return pushMode
+            ? loginService.getAuthorizationForPush(image, registry.auth, credentials)
+            : loginService.getAuthorization(image, registry.auth, credentials)
+    }
+
+    HttpResponse<String> put(String path, byte[] body, String contentType, Map<String,List<String>> headers=null) {
+        final uri = makeUri(path)
+        final retryable = Retryable
+                .<HttpResponse<String>>of(httpConfig)
+                .retryIf((resp) -> resp.statusCode() in retryableHttpErrors)
+                .onRetry((event) -> "Failure on PUT request: $uri - event: $event")
+        return retryable.apply(()-> put0(uri, body, contentType, headers))
+    }
+
+    private HttpResponse<String> put0(URI uri, byte[] body, String contentType, Map<String,List<String>> headers) {
+        int authRetry = 0
+        while( true ) {
+            final result = put1(uri, body, contentType, headers)
+            if( result.statusCode()==401 && (authRetry++)<2 && registry.auth.isRefreshable() ) {
+                loginService.invalidateAuthorization(image, registry.auth, credentials)
+                continue
+            }
+            return result
+        }
+    }
+
+    private HttpResponse<String> put1(URI uri, byte[] body, String contentType, Map<String,List<String>> headers) {
+        try {
+            final builder = HttpRequest.newBuilder(uri)
+                    .PUT(HttpRequest.BodyPublishers.ofByteArray(body))
+            if( contentType )
+                builder.setHeader("Content-Type", contentType)
+            copyHeaders(headers, builder)
+            final header = getAuthHeader()
+            if( header )
+                builder.setHeader("Authorization", header)
+            final request = builder.build()
+            final response = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
+            traceResponse(response)
+            return response
+        }
+        catch (IOException e) {
+            throw e
+        }
+        catch (RegistryForwardException | RegistryUnauthorizedAccessException e) {
+            throw e
+        }
+        catch (Exception e) {
+            throw new InternalServerException("Unexpected error on HTTP PUT request '$uri'", e)
+        }
     }
 
     private void traceResponse(HttpResponse resp) {
@@ -308,10 +375,45 @@ class ProxyClient {
         // copy headers
         copyHeaders(headers, request)
         // add authorisation header
-        final header = loginService.getAuthorization(image, registry.auth, credentials)
+        final header = getAuthHeader()
         if( header )
             request.header("Authorization", header)
 
         return streamingHttpClient.dataStream(request)
     }
+
+    List<String> curl(String path, Map<String,String> headers=null) {
+        final result = new ArrayList(20)
+        result.add('curl')
+        result.add('-s')
+        // fail with a non-zero exit status on HTTP errors, instead of writing
+        // the error body (or nothing at all) to stdout and exiting zero
+        result.add('-f')
+        // retry transient failures; note '--retry-all-errors' is deliberately not added because
+        // it would retry a response whose body was already partially piped to the upload command,
+        // duplicating those bytes in the uploaded object
+        result.add('--retry'); result.add(String.valueOf(httpConfig.retryAttempts))
+        // bound the connection setup only; an upstream that connects and then stalls mid-body is
+        // still capped by the transfer job timeout, not by this option
+        result.add('--connect-timeout'); result.add(String.valueOf(httpConfig.connectTimeout.toSeconds()))
+        result.add('-X'); result.add('GET')
+        //  copy headers
+        for( Map.Entry<String,String> entry : headers )  {
+            if( entry.key.toLowerCase() in SKIP_HEADERS )
+                continue
+            result.add('-H')
+            result.add("${entry.key}: $entry.value")
+        }
+        // add authorisation header
+        final header = getAuthHeader()
+        if( header ) {
+            result.add('-H')
+            result.add("Authorization: $header")
+        }
+
+        // the target URI
+        result.add(makeUri(path).toString())
+        return result
+    }
+
 }

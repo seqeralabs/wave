@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -22,8 +22,8 @@ import spock.lang.Specification
 import spock.lang.Unroll
 
 import io.seqera.wave.exception.NotFoundException
-import io.seqera.wave.service.ContainerRequestData
-import io.seqera.wave.service.token.ContainerTokenService
+import io.seqera.wave.service.request.ContainerRequest
+import io.seqera.wave.service.request.ContainerRequestService
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -66,7 +66,7 @@ class RouteHandlerTest extends Specification {
     @Unroll
     def 'should get manifests route #PATH'() {
         given:
-        def tokenService = Mock(ContainerTokenService)
+        def tokenService = Mock(ContainerRequestService)
         
         when:
         def route = new RouteHandler(tokenService).parse(PATH)
@@ -88,7 +88,7 @@ class RouteHandlerTest extends Specification {
 
     def 'should throw bad not found exception' () {
         given:
-        def tokenService = Mock(ContainerTokenService)
+        def tokenService = Mock(ContainerRequestService)
 
         when:
         new RouteHandler(tokenService).parse(PATH)
@@ -110,12 +110,12 @@ class RouteHandlerTest extends Specification {
     @Unroll
     def 'should find container name via token service' () {
         given:
-        def tokenService = Mock(ContainerTokenService)
+        def tokenService = Mock(ContainerRequestService)
 
         when:
         def route = new RouteHandler(tokenService).parse(REQ_PATH)
         then:
-        1 * tokenService.getRequest(ROUTE_TKN) >> new ContainerRequestData(null,null,REQ_IMAGE)
+        1 * tokenService.getRequest(ROUTE_TKN) >> ContainerRequest.of(containerImage: REQ_IMAGE)
         and:
         route.image == ROUTE_IMAGE
         route.type == ROUTE_TYPE
@@ -131,6 +131,26 @@ class RouteHandlerTest extends Specification {
         'biocontainers/biocontainers:v1.2.0_cv1'    | '/v2/wt/d4/biocontainers/biocontainers/blobs/v1.2.0_cv1'      | 'docker.io'   | 'd4'          | 'blobs'       | 'biocontainers/biocontainers'     | 'v1.2.0_cv1'      | '/v2/biocontainers/biocontainers/blobs/v1.2.0_cv1'
         'my_host:2000/canonical/ubuntu:latest'      | '/v2/wt/e5/canonical/ubuntu/blobs/latest'                     | 'my_host:2000'| 'e5'          | 'blobs'       | 'canonical/ubuntu'                | 'latest'          | '/v2/canonical/ubuntu/blobs/latest'
 
+    }
+
+    @Unroll
+    def 'should reject proxy pull for durable freeze/mirror requests' () {
+        given:
+        def tokenService = Mock(ContainerRequestService)
+
+        when:
+        new RouteHandler(tokenService).parse(REQ_PATH)
+        then:
+        1 * tokenService.getRequest(TOKEN) >> REQUEST
+        and:
+        def e = thrown(NotFoundException)
+        // the error must point the caller to the direct image reference
+        e.message.contains(IMAGE)
+
+        where:
+        REQ_PATH                                      | TOKEN | IMAGE                       | REQUEST
+        '/v2/wt/a1/library/ubuntu/manifests/latest'   | 'a1'  | 'quay.io/org/ubuntu:1.0'    | ContainerRequest.of(containerImage: 'quay.io/org/ubuntu:1.0', freeze: true)
+        '/v2/wt/b2/library/ubuntu/blobs/latest'       | 'b2'  | 'quay.io/org/ubuntu:1.0'    | ContainerRequest.of(containerImage: 'quay.io/org/ubuntu:1.0', type: ContainerRequest.Type.Mirror)
     }
 
 }

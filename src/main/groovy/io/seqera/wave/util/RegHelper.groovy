@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -18,7 +18,6 @@
 
 package io.seqera.wave.util
 
-import java.net.http.HttpHeaders
 import java.net.http.HttpResponse
 import java.nio.charset.Charset
 import java.nio.file.Files
@@ -33,7 +32,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.model.ContainerCoordinates
-import org.yaml.snakeyaml.Yaml
 /**
  * Helper methods
  *
@@ -46,7 +44,7 @@ class RegHelper {
     final private static char PADDING = '_' as char
     final private static BaseEncoding BASE32 = BaseEncoding.base32() .withPadChar(PADDING)
 
-    // this clas is not to be extended
+    // this class is not to be extended
     private RegHelper(){
         throw new AssertionError()
     }
@@ -106,12 +104,26 @@ class RegHelper {
         }
     }
 
-    static String dumpHeaders(HttpHeaders headers) {
-        return dumpHeaders(headers.map())
+    static String dumpHeaders(io.micronaut.http.HttpRequest request) {
+        dumpHeaders(request.getHeaders().asMap())
+    }
+
+    static String dumpHeaders(io.micronaut.http.HttpResponse response) {
+        dumpHeaders(response.getHeaders().asMap())
+    }
+
+    static String dumpHeaders(java.net.http.HttpRequest request) {
+        return dumpHeaders(request.headers().map())
+    }
+
+    static String dumpHeaders(java.net.http.HttpResponse response) {
+        return dumpHeaders(response.headers().map())
     }
 
     static String dumpHeaders(Map<String, List<String>> headers) {
-        def result = new StringBuilder()
+        if( !headers )
+            null
+        final result = new StringBuilder()
         for( Map.Entry<String,List<String>> entry : headers )  {
             for( String val : entry.value )
                 result.append("\n  $entry.key=$val")
@@ -186,63 +198,6 @@ class RegHelper {
         """.stripIndent()
     }
 
-
-    static String guessCondaRecipeName(String condaFileContent) {
-        if( !condaFileContent )
-            return null
-        try {
-            final yaml = (Map)new Yaml().load(condaFileContent)
-            if( yaml.name )
-                return yaml.name
-            if( yaml.dependencies instanceof List ) {
-                final LinkedHashSet<String> result = new LinkedHashSet()
-                for( String it : yaml.dependencies ) {
-                    final int p=it.indexOf('::')
-                    if( p!=-1 )
-                        it = it.substring(p+2)
-                    it = it.replace('=','-')
-                    if( it )
-                        result.add(it)
-                }
-                return result.join('_')
-            }
-            return null
-        }
-        catch (Exception e) {
-            log.warn "Unable to infer conda recipe name - cause: ${e.message}", e
-            return null
-        }
-    }
-
-
-    static String guessSpackRecipeName(String spackFileContent) {
-        if( !spackFileContent )
-            return null
-        try {
-            final yaml = new Yaml().load(spackFileContent) as Map
-            final spack = yaml.spack as Map
-            if( spack.specs instanceof List ) {
-                final LinkedHashSet<String> result = new LinkedHashSet()
-                for( String it : spack.specs ) {
-                    final p = it.indexOf(' ')
-                    // remove everything after the first blank because they are supposed package directives
-                    if( p!=-1 )
-                        it = it.substring(0,p)
-                    // replaces '@' version separator with `'`
-                    it = it.replace('@','-')
-                    if( it )
-                        result.add(it)
-                }
-                return result.join('_')
-            }
-            return null
-        }
-        catch (Exception e) {
-            log.warn "Unable to infer spack recipe name - cause: ${e.message}", e
-            return null
-        }
-    }
-
     static String sipHash(LinkedHashMap<String,String> values) {
         if( values == null )
             throw new IllegalArgumentException("Missing argument for sipHash method")
@@ -257,6 +212,20 @@ class RegHelper {
         }
 
         return hasher.hash().toString()
+    }
+
+    static String sipHash(Object... keys) {
+        if( keys == null )
+            throw new IllegalArgumentException("Missing argument for sipHash method")
+
+        final hasher = Hashing.sipHash24().newHasher()
+        for( Object it :  keys ) {
+            if( it!=null )
+                hasher.putUnencodedChars(it.toString())
+            hasher.putUnencodedChars(Character.toString(0x1C))
+        }
+        hasher.putUnencodedChars(Character.toString(0x1E))
+        return hasher.hash()
     }
 
     static String layerName(ContainerLayer layer) {

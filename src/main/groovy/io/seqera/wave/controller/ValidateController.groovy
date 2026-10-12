@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2026, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -18,25 +18,54 @@
 
 package io.seqera.wave.controller
 
-import javax.validation.Valid
-
+import groovy.transform.CompileStatic
+import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Post
+import io.micronaut.scheduling.TaskExecutors
+import io.micronaut.scheduling.annotation.ExecuteOn
+import io.seqera.util.net.SsrfValidationException
+import io.seqera.util.net.SsrfValidator
 import io.seqera.wave.auth.RegistryAuthService
+import io.seqera.wave.auth.RegistryAuthServiceImpl
+import io.seqera.wave.configuration.SsrfConfig
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.exchange.ValidateRegistryCredsRequest
 import jakarta.inject.Inject
-import reactor.core.publisher.Mono
+import jakarta.validation.Valid
 
-@Controller("/validate-creds")
+@CompileStatic
+@Controller("/")
+@ExecuteOn(TaskExecutors.BLOCKING)
 class ValidateController {
 
     @Inject RegistryAuthService loginService
 
-    @Post
-    Mono<Boolean> validateCreds(@Valid ValidateRegistryCredsRequest request){
-        Mono.just(
-            loginService.validateUser(request.registry, request.userName, request.password)
-        )
+    @Inject SsrfConfig ssrfConfig
+
+    @Deprecated
+    @Post("/validate-creds")
+    Boolean validateCreds(@Valid ValidateRegistryCredsRequest request){
+        validateRegistry(request.registry)
+        loginService.validateUser(request.registry, request.userName, request.password)
+    }
+
+    @Post("/v1alpha2/validate-creds")
+    Boolean validateCredsV2(@Valid @Body ValidateRegistryCredsRequest request){
+        validateRegistry(request.registry)
+        loginService.validateUser(request.registry, request.userName, request.password)
+    }
+
+    private void validateRegistry(String registry) {
+        if (ssrfConfig.ssrfProtectionEnabled) {
+            try {
+                // the registry may include a repository path e.g. docker.io/user/repo, validate the host only
+                SsrfValidator.validateHost(RegistryAuthServiceImpl.TargetInfo.parse(registry).registry)
+            }
+            catch (SsrfValidationException e) {
+                throw new BadRequestException(e.message)
+            }
+        }
     }
 
 }

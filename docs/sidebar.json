@@ -1,26 +1,78 @@
 {
   "sidebar": [
-    "index",
     {
       "type": "category",
-      "label": "Wave CLI",
-      "collapsed": false,
+      "label": "Wave",
       "link": {
         "type": "doc",
-        "id": "cli/index"
+        "id": "index"
       },
+      "collapsed": true,
       "items": [
-        "cli/install",
-        "cli/build-directory",
-        "cli/build-docker",
-        "cli/build-conda",
-        "cli/build-spack",
-        "cli/build-singularity",
-        "cli/build-freeze"
+        "how-wave-works",
+        {
+          "type": "category",
+          "label": "Features",
+          "link": {
+            "type": "doc",
+            "id": "features/index"
+          },
+          "collapsed": true,
+          "items": [
+            "features/augmentation",
+            "features/inspection",
+            "features/authentication",
+            "features/container-builds",
+            "features/container-freezes",
+            "features/mirroring",
+            "features/security"
+          ]
+        },
+        "seqera-containers"
       ]
     },
-    "guide",
-    "api",
-    "faq"
+    {
+      "type": "category",
+      "label": "Self-hosted Wave",
+      "link": {
+        "type": "doc",
+        "id": "install/index"
+      },
+      "collapsed": false,
+      "items": [
+        {
+          "type": "category",
+          "label": "Wave Lite",
+          "collapsed": false,
+          "items": [
+            "install/docker-compose",
+            "install/kubernetes-lite"
+          ]
+        },
+        "install/post-install",
+        "install/aws-build",
+        "install/configure-wave",
+        "install/reference"
+      ]
+    },
+    "nextflow/index",
+    {
+      "type": "category",
+      "label": "Developer tools",
+      "collapsed": true,
+      "items": [
+        "cli/index",
+        "cli/installation",
+        "cli/use-cases",
+        "api"
+      ]
+    },
+    "faq",
+    "troubleshoot",
+    {
+      "type": "link",
+      "label": "Changelog",
+      "href": "/changelog/tags/wave"
+    }
   ]
 }

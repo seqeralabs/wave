@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -18,14 +18,14 @@
 
 package io.seqera.wave.ratelimit
 
-
+import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
+import io.seqera.fixtures.redis.RedisTestContainer
 import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.configuration.RateLimiterConfig
 import io.seqera.wave.ratelimit.impl.SpillwayRateLimiter
-import io.seqera.wave.test.RedisTestContainer
 import redis.clients.jedis.Jedis
 
 /**
@@ -34,17 +34,17 @@ import redis.clients.jedis.Jedis
  */
 class SpillwayRedisRateLimiterTest extends Specification implements RedisTestContainer {
 
+    @Shared
     ApplicationContext applicationContext
 
+    @Shared
     SpillwayRateLimiter rateLimiter
 
+    @Shared
     Jedis jedis
 
     def setup() {
-        applicationContext = ApplicationContext.run([
-                REDIS_HOST   : redisHostName,
-                REDIS_PORT   : redisPort
-        ], 'test', 'redis','rate-limit')
+        applicationContext = ApplicationContext.run('test', 'redis','rate-limit')
         rateLimiter = applicationContext.getBean(SpillwayRateLimiter)
         jedis = new Jedis(redisHostName, redisPort as int)
         jedis.flushAll()
@@ -52,6 +52,7 @@ class SpillwayRedisRateLimiterTest extends Specification implements RedisTestCon
 
     def cleanup(){
         jedis.close()
+        applicationContext.close()
     }
 
     void "can acquire 1 auth resource"() {

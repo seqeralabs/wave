@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -19,37 +19,41 @@
 package io.seqera.wave.service.builder
 
 import java.nio.file.Path
+import java.time.Duration
 import java.time.Instant
 import java.time.OffsetDateTime
-import io.micronaut.core.annotation.Nullable
+import java.time.ZoneId
 
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
+import io.seqera.wave.api.BuildCompression
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.tower.User
-import io.seqera.wave.util.RegHelper
+import io.seqera.wave.tower.PlatformId
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
-import static io.seqera.wave.util.RegHelper.guessCondaRecipeName
-import static io.seqera.wave.util.RegHelper.guessSpackRecipeName
 import static io.seqera.wave.util.StringUtils.trunc
 /**
  * Model a container builder result
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@EqualsAndHashCode(includes = 'id,targetImage')
+@EqualsAndHashCode(includes = 'containerId,targetImage,buildId')
 @CompileStatic
 class BuildRequest {
+
+    static final public String SEP = '_'
+
+    static final public String ID_PREFIX = "bd-"
 
     /**
      * Unique request Id. This is computed as a consistent hash generated from
      * the container build assets e.g. Dockerfile. Therefore the same container build
      * request should result in the same `id`
      */
-    final String id
+    final String containerId
 
     /**
      * The container file content corresponding to this request
@@ -62,14 +66,9 @@ class BuildRequest {
     final String condaFile
 
     /**
-     * The spock file recipe associated with this request
-     */
-    final String spackFile
-
-    /**
      * The build context work directory
      */
-    final Path workDir
+    final Path workspace
 
     /**
      * The target fully qualified image of the built container. It includes the target registry name
@@ -79,7 +78,7 @@ class BuildRequest {
     /**
      * The (tower) user made this request
      */
-    final User user
+    final PlatformId identity
 
     /**
      * Container platform
@@ -95,11 +94,6 @@ class BuildRequest {
      * Build request start time
      */
     final Instant startTime
-
-    /**
-     * Build job unique id
-     */
-    final String job
 
     /**
      * The client IP if available
@@ -122,11 +116,6 @@ class BuildRequest {
     final ContainerConfig containerConfig
 
     /**
-     * Whenever is a spack build
-     */
-    final boolean isSpackBuild
-
-    /** 
      * The ID of the security scan triggered by this build 
      */
     final String scanId
@@ -140,98 +129,156 @@ class BuildRequest {
      * The target build format, either Docker or Singularity
      */
     final BuildFormat format
-    
+
     /**
-     * Mark this request as not cached
+     * Max allow time duration for this build
      */
-    volatile boolean uncached
+    final Duration maxDuration
 
-    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, BuildFormat format, User user, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
-        this.id = computeDigest(containerFile, condaFile, spackFile, platform, repo, buildContext)
+    /**
+     * The compression mode for the  container build
+     */
+    final BuildCompression compression
+
+    /**
+     * The build unique request id
+     */
+    final String buildId
+
+    /**
+     * The build template used to generate the container file
+     */
+    final String buildTemplate
+
+    /**
+     * When {@code true}, email notifications should not be sent for this build
+     */
+    final boolean noEmail
+
+    /**
+     * Child build IDs for multi-platform builds
+     */
+    final ChildRefs buildChildIds
+
+    /**
+     * Child scan IDs for multi-platform builds
+     */
+    final ChildRefs scanChildIds
+
+    BuildRequest(
+            String containerId,
+            String containerFile,
+            String condaFile,
+            Path workspace,
+            String targetImage,
+            PlatformId identity,
+            ContainerPlatform platform,
+            String cacheRepository,
+            String ip,
+            String configJson,
+            String offsetId,
+            ContainerConfig containerConfig,
+            String scanId,
+            BuildContext buildContext,
+            BuildFormat format,
+            Duration maxDuration,
+            BuildCompression compression,
+            String buildTemplate,
+            boolean noEmail = false
+    )
+    {
+        this.containerId = containerId
         this.containerFile = containerFile
-        this.containerConfig = containerConfig
-        this.buildContext = buildContext
         this.condaFile = condaFile
-        this.spackFile = spackFile
-        this.targetImage = makeTarget(format, repo, id, condaFile, spackFile)
-        this.format = format
-        this.user = user
+        this.workspace = workspace
+        this.targetImage = targetImage
+        this.identity = identity
         this.platform = platform
-        this.configJson = configJson
-        this.cacheRepository = cacheRepo
-        this.workDir = workspace.resolve(id).toAbsolutePath()
-        this.offsetId = offsetId ?: OffsetDateTime.now().offset.id
+        this.cacheRepository = cacheRepository
         this.startTime = Instant.now()
-        this.job = "${id}-${startTime.toEpochMilli().toString().md5()[-5..-1]}"
         this.ip = ip
-        this.isSpackBuild = spackFile
+        this.configJson = configJson
+        this.offsetId = offsetId ?: OffsetDateTime.now().offset.id
+        this.containerConfig = containerConfig
         this.scanId = scanId
+        this.buildContext = buildContext
+        this.format = format
+        this.maxDuration = maxDuration
+        this.compression = compression
+        this.buildTemplate = buildTemplate
+        this.noEmail = noEmail
+        // NOTE: this is meant to be updated - automatically - when the request is submitted
+        this.buildId = computeBuildId(containerId)
     }
 
-    static protected String makeTarget(BuildFormat format, String repo, String id, @Nullable String condaFile, @Nullable String spackFile) {
-        assert id, "Argument 'id' cannot be null or empty"
-        assert repo, "Argument 'repo' cannot be null or empty"
-        assert format, "Argument 'format' cannot be null"
-
-        String prefix
-        def tag = id
-        if( condaFile && (prefix=guessCondaRecipeName(condaFile)) ) {
-            tag = "${normaliseTag(prefix)}--${id}"
-        }
-        else if( spackFile && (prefix=guessSpackRecipeName(spackFile)) ) {
-            tag = "${normaliseTag(prefix)}--${id}"
-        }
-
-        format==SINGULARITY ? "oras://${repo}:${tag}" : "${repo}:${tag}"
+    /**
+     * Map-based constructor for testing purposes where buildId and startTime need to be set manually
+     */
+    private BuildRequest(Map opts) {
+        this.containerId = opts.containerId
+        this.containerFile = opts.containerFile
+        this.condaFile = opts.condaFile
+        this.workspace = opts.workspace as Path
+        this.targetImage = opts.targetImage
+        this.identity = opts.identity as PlatformId
+        this.platform = opts.platform as ContainerPlatform
+        this.cacheRepository = opts.cacheRepository
+        this.startTime = opts.startTime as Instant ?: Instant.now()
+        this.ip = opts.ip
+        this.configJson = opts.configJson
+        this.offsetId = opts.offsetId ?: OffsetDateTime.ofInstant(this.startTime, ZoneId.systemDefault()).offset.id
+        this.containerConfig = opts.containerConfig as ContainerConfig
+        this.scanId = opts.scanId
+        this.buildContext = opts.buildContext as BuildContext
+        this.format = opts.format as BuildFormat
+        this.maxDuration = opts.maxDuration as Duration
+        this.compression = opts.compression as BuildCompression
+        this.buildId = opts.buildId ?: computeBuildId(containerId)
+        this.buildTemplate = opts.buildTemplate
+        this.noEmail = opts.noEmail as boolean
+        this.buildChildIds = opts.buildChildIds as ChildRefs
+        this.scanChildIds = opts.scanChildIds as ChildRefs
     }
 
-    static protected String normaliseTag(String tag, int maxLength=80) {
-        assert maxLength>0, "Argument maxLength cannot be less or equals to zero"
-        if( !tag )
-            return null
-        // docker tag only allows [a-z0-9.-_]
-        tag = tag.replaceAll(/[^a-zA-Z0-9_.-]/,'')
-        // only allow max 100 chars
-        if( tag.length()>maxLength ) {
-            // try to tokenize splitting by `_`
-            def result = ''
-            def parts = tag.tokenize('_')
-            for( String it : parts ) {
-                if( result )
-                    result += '_'
-                result += it
-                if( result.size()>maxLength )
-                    break
-            }
-            tag = result
-        }
-        // still too long, trunc it
-        if( tag.length()>maxLength ) {
-            tag = tag.substring(0,maxLength)
-        }
-        // remove trailing or leading special chars
-        tag = tag.replaceAll(/^(\W|_)+|(\W|_)+$/,'')
-        return tag ?: null
+    static BuildRequest of(Map opts) {
+        new BuildRequest(opts)
     }
 
-    static private String computeDigest(String containerFile, String condaFile, String spackFile, ContainerPlatform platform, String repository, BuildContext buildContext) {
-        final attrs = new LinkedHashMap<String,String>(10)
-        attrs.containerFile = containerFile
-        attrs.condaFile = condaFile
-        attrs.platform = platform?.toString()
-        attrs.repository = repository
-        if( spackFile ) attrs.spackFile = spackFile
-        if( buildContext ) attrs.buildContext = buildContext.tarDigest
-        return RegHelper.sipHash(attrs)
+    BuildRequest withChildScanIds(ChildRefs scanChildIds) {
+        return BuildRequest.of(
+                containerId: this.containerId,
+                containerFile: this.containerFile,
+                condaFile: this.condaFile,
+                workspace: this.workspace,
+                targetImage: this.targetImage,
+                identity: this.identity,
+                platform: this.platform,
+                cacheRepository: this.cacheRepository,
+                startTime: this.startTime,
+                ip: this.ip,
+                configJson: this.configJson,
+                offsetId: this.offsetId,
+                containerConfig: this.containerConfig,
+                scanId: this.scanId,
+                buildContext: this.buildContext,
+                format: this.format,
+                maxDuration: this.maxDuration,
+                compression: this.compression,
+                buildId: this.buildId,
+                buildTemplate: this.buildTemplate,
+                noEmail: this.noEmail,
+                buildChildIds: this.buildChildIds,
+                scanChildIds: scanChildIds
+        )
     }
 
     @Override
     String toString() {
-        return "BuildRequest[id=$id; targetImage=$targetImage; user=$user; dockerFile=${trunc(containerFile)}; condaFile=${trunc(condaFile)}; spackFile=${trunc(spackFile)}]"
+        return "BuildRequest[containerId=$containerId; targetImage=$targetImage; identity=$identity; dockerFile=${trunc(containerFile)}; condaFile=${trunc(condaFile)}; buildId=$buildId, maxDuration=$maxDuration]"
     }
 
-    String getId() {
-        return id
+    String getContainerId() {
+        return containerId
     }
 
     @Deprecated
@@ -247,20 +294,16 @@ class BuildRequest {
         return condaFile
     }
 
-    String getSpackFile() {
-        return spackFile
-    }
-
     Path getWorkDir() {
-        return workDir
+        return workspace.resolve(buildId).toAbsolutePath()
     }
 
     String getTargetImage() {
         return targetImage
     }
 
-    User getUser() {
-        return user
+    PlatformId getIdentity() {
+        return identity
     }
 
     ContainerPlatform getPlatform() {
@@ -275,10 +318,6 @@ class BuildRequest {
         return startTime
     }
 
-    String getJob() {
-        return job
-    }
-
     String getIp() {
         return ip
     }
@@ -291,6 +330,14 @@ class BuildRequest {
         return offsetId
     }
 
+    Duration getMaxDuration() {
+        return maxDuration
+    }
+
+    BuildCompression getCompression() {
+        return compression
+    }
+
     boolean formatDocker() {
         !format || format==DOCKER
     }
@@ -298,4 +345,15 @@ class BuildRequest {
     boolean formatSingularity() {
         format==SINGULARITY
     }
+
+    static String legacyBuildId(String id) {
+        if( !id )
+            return null
+        return id.contains(SEP) ? id.tokenize(SEP)[0] : null
+    }
+
+    static private String computeBuildId(String containerId) {
+        ID_PREFIX + containerId + SEP + '0'
+    }
+
 }

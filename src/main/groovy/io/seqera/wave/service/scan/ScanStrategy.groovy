@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -23,32 +23,58 @@ import java.nio.file.Path
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.core.ContainerPlatform
 /**
  * Implements ScanStrategy for Docker
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @CompileStatic
 abstract class ScanStrategy {
 
-    abstract ScanResult scanContainer(ScanRequest request)
+    abstract void scanContainer(String jobName, ScanEntry entry)
 
-    protected List<String> scanCommand(String targetImage, Path outputFile, ScanConfig config) {
-        def cmd = ['--quiet',
-                'image',
-                '--timeout',
-                "${config.timeout.toMinutes()}m".toString(),
-                '--format',
-                'json',
-                '--output',
-                outputFile.toString()]
+    /**
+     * Build unified scan command that works for both container and plugin scans
+     * The scan.sh script handles all the complexity internally
+     *
+     * Currently wave detects whether is a plugin or container scan based on the image name
+     * if image name container "nextflow/plugin" then it is a plugin scan otherwise container scan
+     * This is a work around we will improve using mediatype in future
+     * for more details see https://github.com/seqeralabs/wave/issues/919
+     *
+     * For container scans: [scanType, image, workDir, platform, timeout, severity, format]
+     * For plugin scans:    [scanType, plugin, workDir, timeout, severity, format]
+     */
+    protected List<String> buildScanCommand(String containerImage, Path workDir, ContainerPlatform platform, ScanConfig scanConfig) {
+        final scanType = containerImage.contains("nextflow/plugin") ? "plugin" : "container"
 
-        if( config.severity ) {
+        final platformStr = scanType == 'container' ? platform.toString() : "none"
+        final cmd = new ArrayList<String>()
+                << '/usr/local/bin/scan.sh'
+                << '--type'
+                << scanType
+                << '--target'
+                << containerImage
+                << '--work-dir'
+                << workDir.toString()
+                << '--platform'
+                << platformStr
+                << '--timeout'
+                << "${scanConfig.timeout.toMinutes()}".toString()
+                << '--format'
+                << 'default'
+                << '--cache-dir'
+                << Trivy.CACHE_MOUNT_PATH
+
+        if( scanConfig.severity ) {
             cmd << '--severity'
-            cmd << config.severity
+            cmd << scanConfig.severity
         }
-        cmd << targetImage
+
         return cmd
     }
+
 }

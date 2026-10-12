@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Wave container build data">
+    <title>Wave Container Builds History</title>
+    <link href="https://fonts.googleapis.com/css?family=SF+Pro+Display:400,500,600&display=swap" rel="stylesheet">
+    <link href="/assets/style.css" rel="stylesheet">
+    <script src="/assets/copy.js"></script>
+</head>
+<body>
+{{> io/seqera/wave/partials/header}}
+<div class="container">
+    <div class="header-section">
+        <h1 class="main-title">Wave Container Builds History</h1>
+    </div>
+
+    {{#if build_records}}
+        <div class="content-section">
+            <h3 class="section-title">Container</h3>
+            <table class="info-table">
+                <tr>
+                    <td>Image</td>
+                    <td>
+                        {{build_image}}
+                        <button class="action-btn" data-copy="{{build_image}}" title="Copy image name">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
+                                <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
+                            </svg>
+                        </button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Format</td>
+                    <td>{{build_format}}</td>
+                </tr>
+                <tr>
+                    <td>Platform</td>
+                    <td>{{build_platform}}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="content-section">
+            <h3 class="section-title">History</h3>
+            <table class="content-table">
+                <thead>
+                <tr>
+                    <th>Build ID</th>
+                    <th>Container Digest</th>
+                    <th>Build Time</th>
+                    <th>Status</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{#each build_records}}
+                    <tr>
+                        <td class="nowrap"><a href="{{server_url}}/view/builds/{{build_id}}">{{build_id}}</a></td>
+                        <td >{{build_digest}}</td>
+                        <td>{{build_time}}</td>
+                        <td class="nowrap">
+                            {{#if build_failed}}
+                                <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 16px; background-color: #fee; border: 1px solid #fcc; color: #c33; font-size: 12px; font-weight: 500;">
+                                    <span style="width: 16px; height: 16px; border-radius: 50%; border: 1px solid #c33; color: #c33; display: flex; align-items: center; justify-content: center; font-size: 10px;">!</span>
+                                    Failed
+                                </span>
+                            {{else if build_success}}
+                                <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 16px; background-color: #efe; border: 1px solid #cfc; color: #484; font-size: 12px; font-weight: 500;">
+                                    <span style="width: 16px; height: 16px; border-radius: 50%; border: 1px solid #484; color: #484; display: flex; align-items: center; justify-content: center; font-size: 10px;">✓</span>
+                                    Succeeded
+                                </span>
+                            {{else if build_unknown}}
+                                <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 16px; background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; font-size: 12px; font-weight: 500;">
+                                    <span style="width: 16px; height: 16px; border-radius: 50%; border: 1px solid #856404; color: #856404; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">?</span>
+                                    Unknown
+                                </span>
+                            {{else if build_running}}
+                                <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 16px; background-color: #e7f3ff; border: 1px solid #b3d9ff; color: #0066cc; font-size: 12px; font-weight: 500;">
+                                    <div class="running-spinner"></div>
+                                    Running
+                                </span>
+                            {{else}}
+                                <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 16px; background-color: #f8f9fa; border: 1px solid #dee2e6; color: #6c757d; font-size: 12px; font-weight: 500;">
+                                    {{build_status}}
+                                </span>
+                            {{/if}}
+                        </td>
+                    </tr>
+                {{/each}}
+                </tbody>
+            </table>
+        </div>
+    {{else}}
+    <div class="error-div">
+        <div class="status-alert error">
+            <p class="status-message">No Build Record Found</p>
+        </div>
+    </div>
+    {{/if}}
+    {{> io/seqera/wave/partials/footer}}
+</div>
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {{#if mirror_in_progress}}
+        <meta http-equiv="refresh" content="5">
+    {{/if}}
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Wave container build data">
+    <title>Wave container mirror notification</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link href="/assets/style.css" rel="stylesheet">
+    <script src="/assets/copy.js"></script>
+</head>
+<body>
+
+{{> io/seqera/wave/partials/header}}
+
+<div class="container">
+    <div class="header-section">
+        <h1 class="main-title">Container Mirror Completion</h1>
+    {{#if error_message}}
+        <div class="error-div">
+            <div class="status-alert error">
+                <div class="status-icon"></div>
+                <p class="status-message">{{error_message}}</p>
+            </div>
+        </div>
+    {{else}}
+        {{#if mirror_success}}
+            <div class="status-alert">
+                <div class="status-icon">✓</div>
+                <p class="status-message">Container mirror completed successfully!</p>
+            </div>
+        {{else mirror_failed}}
+            <div class="status-alert error">
+                <div class="status-icon">✗</div>
+                <p class="status-message">Container mirror failed</p>
+            </div>
+        {{else mirror_in_progress}}
+        <div class="error-progress">
+            <div class="status-alert progress">
+                <div class="status-icon">
+                    <div class="lds-dual-ring"></div>
+                </div>
+                <p class="status-message">Container mirror in progress</p>
+            </div>
+        </div>
+        {{/if}}
+    </div>
+
+    <div class="content-section">
+        <h2 class="section-title">Summary</h2>
+        <table>
+            <tr>
+                <td>Mirror ID</td>
+                <td>{{mirror_id}}</td>
+            </tr>
+            <tr>
+                <td>User ID</td>
+                <td>{{mirror_user_id}}</td>
+            </tr>
+            <tr>
+                <td>Source container</td>
+                <td>
+                    {{mirror_source_image}}
+                    <button class="action-btn" data-copy="{{mirror_source_image}}" title="Copy source container">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
+                        </svg>
+                    </button>
+                </td>
+            </tr>
+            <tr>
+                <td>Target container</td>
+                <td>
+                    {{mirror_target_image}}
+                    <button class="action-btn" data-copy="{{mirror_target_image}}" title="Copy target container">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
+                        </svg>
+                    </button>
+                </td>
+            </tr>
+            <tr>
+                <td>Container digest</td>
+                <td>
+                    {{mirror_digest}}
+                    <button class="action-btn" data-copy="{{mirror_digest}}" title="Copy digest">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
+                        </svg>
+                    </button>
+                </td>
+            </tr>
+            <tr>
+                <td>Platform</td>
+                <td>{{mirror_platform}}</td>
+            </tr>
+            <tr>
+                <td>Creation time</td>
+                <td>{{mirror_time}}</td>
+            </tr>
+            <tr>
+                <td>Duration</td>
+                <td>{{mirror_duration}}</td>
+            </tr>
+            {{#if mirror_exitcode}}
+                <tr>
+                    <td>Exit status</td>
+                    <td>{{mirror_exitcode}}</td>
+                </tr>
+            {{/if}}
+            {{#if scan_entries}}
+                {{#each scan_entries}}
+                <tr>
+                    <td>Security scan ({{scan_platform}})</td>
+                    <td><a href="{{scan_url}}">{{scan_id}}</a></td>
+                </tr>
+                {{/each}}
+            {{else if scan_url}}
+                <tr>
+                    <td>Security scan</td>
+                    <td><a href="{{scan_url}}">{{scan_id}}</a></td>
+                </tr>
+            {{/if}}
+        </table>
+    </div>
+
+    {{#if mirror_logs}}
+        <div class="content-section">
+            <h3 class="section-title">Logs</h3>
+            <div class="code-section build-logs">
+                <div class="code-container">
+                    <div class="code-content">
+                        <pre class="code-text" id="logData">{{mirror_logs}}</pre>
+                    </div>
+                    <div class="code-actions">
+                        <button class="action-btn" data-copy-from-element="logData" title="Copy logs">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
+                                <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
+                            </svg>
+                        </button>
+                        <button class="action-btn" data-download-url="{{mirror_log_url}}" title="Download">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="black" d="M5 20h14v-2H5m14-9h-4V3H9v6H5l7 7z"/></svg>
+                        </button>
+                    </div>
+                </div>
+                {{#if mirror_logs_truncated}}
+                    <div class="truncated-message">
+                        <p>Log output has been truncated. <a href="{{mirror_full_logs_url}}" target="_blank">View full logs</a></p>
+                    </div>
+                {{/if}}
+            </div>
+        </div>
+    {{/if}}
+    {{/if}}
+
+    {{> io/seqera/wave/partials/footer}}
+
+</div>
+</body>
+</html>

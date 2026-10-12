@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -35,7 +35,7 @@ class AcquireRequest {
     /**
      * Principal key to use in the search. Can be null
      */
-    String userId
+    String user
 
     /**
      * Secondary key to use if principal is not present

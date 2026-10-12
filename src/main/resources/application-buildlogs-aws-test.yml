@@ -1,12 +1,8 @@
 ---
-micronaut:
-  object-storage:
-    aws:
-      build-logs:
-        bucket: "${wave.build.logs.bucket}"
----
 wave:
   build:
     logs:
-      bucket: "nextflow-ci"
+      path: "s3://nextflow-ci/test/l1"
+    locks:
+      path: "s3://nextflow-ci"
 ...

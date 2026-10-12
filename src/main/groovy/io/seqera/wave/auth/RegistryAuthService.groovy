@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -17,6 +17,8 @@
  */
 
 package io.seqera.wave.auth
+
+import io.seqera.wave.exception.RegistryUnauthorizedAccessException
 
 /**
  * Declares container registry authentication & authorization operations
@@ -59,6 +61,16 @@ interface RegistryAuthService {
      * @return The authorization header including the 'Basic' or 'Bearer' prefix
      */
     String getAuthorization(String image, RegistryAuth auth, RegistryCredentials creds) throws RegistryUnauthorizedAccessException
+
+    /**
+     * Get the authorization header for push operations (pull,push scope).
+     *
+     * @param image The image name for which the authorisation is needed
+     * @param auth The {@link RegistryAuth} information modelling the target registry
+     * @param creds The user credentials
+     * @return The authorization header including the 'Basic' or 'Bearer' prefix
+     */
+    String getAuthorizationForPush(String image, RegistryAuth auth, RegistryCredentials creds) throws RegistryUnauthorizedAccessException
 
     /**
      * Invalidate a cached authorization token

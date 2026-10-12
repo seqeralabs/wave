@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -20,27 +20,35 @@ package io.seqera.wave.auth
 
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.util.concurrent.ExecutionException
+import java.time.Duration
+import java.util.concurrent.CompletionException
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
-import com.google.common.util.concurrent.UncheckedExecutionException
+import com.github.benmanes.caffeine.cache.CacheLoader
+import com.github.benmanes.caffeine.cache.Caffeine
+import com.github.benmanes.caffeine.cache.LoadingCache
 import groovy.json.JsonSlurper
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import groovy.transform.PackageScope
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
+import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.HttpClientConfig
+import io.seqera.wave.exception.RegistryForwardException
+import io.seqera.wave.exception.RegistryUnauthorizedAccessException
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
-import io.seqera.wave.util.Retryable
+import io.seqera.wave.util.RegHelper
+import io.seqera.util.retry.Retryable
 import io.seqera.wave.util.StringUtils
+import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
-import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
+import static io.seqera.wave.auth.RegistryUtils.isServerError
 /**
  * Implement Docker authentication & login service
  *
@@ -53,8 +61,17 @@ import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
 @CompileStatic
 class RegistryAuthServiceImpl implements RegistryAuthService {
 
+    @PackageScope static final Duration _1_HOUR = Duration.ofHours(1)
+
     @Inject
     private HttpClientConfig httpConfig
+
+    @Inject
+    private RegistryTokenStore tokenStore
+
+    @Inject
+    @Named(TaskExecutors.BLOCKING)
+    private ExecutorService ioExecutor
 
     @Canonical
     @ToString(includePackage = false, includeNames = true)
@@ -62,26 +79,69 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         final String image
         final RegistryAuth auth
         final RegistryCredentials creds
+
+        String stableKey() {
+            return RegHelper.sipHash(['content': toString()])
+        }
     }
 
     private CacheLoader<CacheKey, String> loader = new CacheLoader<CacheKey, String>() {
         @Override
         String load(CacheKey key) throws Exception {
-            return getToken0(key)
+            return getToken(key)
         }
     }
 
-    private LoadingCache<CacheKey, String> cacheTokens = CacheBuilder<CacheKey, String>
-                    .newBuilder()
-                    .maximumSize(10_000)
-                    .expireAfterAccess(1, TimeUnit.HOURS)
-                    .build(loader)
+    protected String getToken(CacheKey key){
+        // check if there's a record in the store cache (redis)
+        // since the key is shared across replicas, it should be stable (java hashCode is not good)
+        final stableKey = getStableKey(key)
+        def result = tokenStore.get(stableKey)
+        if( result ) {
+            log.debug "Registry auth token for cachekey: '$key' [$stableKey] => ${StringUtils.redact(result)} [from store]"
+            return result
+        }
+        // look-up using the corresponding API endpoint
+        result = getToken0(key)
+        log.debug "Registry auth token for cachekey: '$key' [$stableKey] => ${StringUtils.redact(result)}"
+        // save it in the store cache (redis)
+        tokenStore.put(stableKey, result)
+        return result
+    }
+
+    private LoadingCache<CacheKey, String> cacheTokens
+
+    private CacheLoader<CacheKey, String> pushLoader = new CacheLoader<CacheKey, String>() {
+        @Override
+        String load(CacheKey key) throws Exception {
+            return getPushToken(key)
+        }
+    }
+
+    private LoadingCache<CacheKey, String> cachePushTokens
 
     @Inject
     private RegistryLookupService lookupService
 
-    @Inject RegistryCredentialsFactory credentialsFactory
+    @Inject
+    private RegistryCredentialsFactory credentialsFactory
 
+    @PostConstruct
+    private void init() {
+        cacheTokens = Caffeine
+                .newBuilder()
+                .maximumSize(10_000)
+                .expireAfterAccess(_1_HOUR.toMillis(), TimeUnit.MILLISECONDS)
+                .executor(ioExecutor)
+                .build(loader)
+
+        cachePushTokens = Caffeine
+                .newBuilder()
+                .maximumSize(1_000)
+                .expireAfterAccess(_1_HOUR.toMillis(), TimeUnit.MILLISECONDS)
+                .executor(ioExecutor)
+                .build(pushLoader)
+    }
 
     /**
      * Implements container registry login
@@ -118,10 +178,13 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
                 .header("Authorization", "Basic $basic")
                 .build()
         // retry strategy
+        // note: do not retry on 429 error code because it just continues to report the error
+        // for a while. better returning the error to the upstream client
+        // see also https://github.com/docker/hub-feedback/issues/1907#issuecomment-631028965
         final retryable = Retryable
                 .<HttpResponse<String>>of(httpConfig)
-                .retryIf( (response) -> response.statusCode() in HTTP_SERVER_ERRORS)
-                .onRetry((event) -> log.warn("Unable to connect '$endpoint' - event: $event}"))
+                .retryIf((response) -> isServerError(response))
+                .onRetry((event) -> log.warn("Unable to connect '$endpoint' - attempt: ${event.attempt} status: ${event.result?.statusCode()}; body: ${event.result?.body()}"))
         // make the request
         final response = retryable.apply(()-> httpClient.send(request, HttpResponse.BodyHandlers.ofString()))
         final body = response.body()
@@ -172,23 +235,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
      */
     @Override
     String getAuthorization(String image, RegistryAuth auth, RegistryCredentials creds) throws RegistryUnauthorizedAccessException {
-        if( !auth )
-            throw new RegistryUnauthorizedAccessException("Missing authentication credentials")
-
-        if( !auth.type )
-            return null
-
-        if( auth.type == RegistryAuth.Type.Bearer ) {
-            final token = getAuthToken(image, auth, creds)
-            return "Bearer $token"
-        }
-
-        if( auth.type == RegistryAuth.Type.Basic ) {
-            final String basic = creds ? "$creds.username:$creds.password".bytes.encodeBase64() : null
-            return basic ? "Basic $basic" : null
-        }
-
-        throw new RegistryUnauthorizedAccessException("Unknown authentication type: $auth.type")
+        return getAuthorization0(image, auth, creds, false)
     }
 
     /**
@@ -199,16 +246,22 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
      * @return The resulting bearer token to authorise a pull request
      */
     protected String getToken0(CacheKey key) {
+        return fetchToken(buildLoginUrl(key.auth.realm, key.image, key.auth.service), key.creds)
+    }
+
+    private String fetchToken(String login, RegistryCredentials creds) {
         final httpClient = HttpClientFactory.followRedirectsHttpClient()
-        final login = buildLoginUrl(key.auth.realm, key.image, key.auth.service)
-        final req = makeRequest(login, key.creds)
+        final req = makeRequest(login, creds)
         log.trace "Token request=$req"
 
         // retry strategy
+        // note: do not retry on 429 error code because it just continues to report the error
+        // for a while. better returning the error to the upstream client
+        // see also https://github.com/docker/hub-feedback/issues/1907#issuecomment-631028965
         final retryable = Retryable
                 .<HttpResponse<String>>of(httpConfig)
-                .retryIf( (response) -> ((HttpResponse)response).statusCode() in HTTP_SERVER_ERRORS )
-                .onRetry((event) -> log.warn("Unable to connect '$login' - event: $event"))
+                .retryIf((response) -> isServerError(response))
+                .onRetry((event) -> log.warn("Unable to connect '$login' - attempt: ${event.attempt} status: ${event.result?.statusCode()}; body: ${event.result?.body()}"))
         // submit http request
         final response = retryable.apply(()-> httpClient.send(req, HttpResponse.BodyHandlers.ofString()))
         // check the response
@@ -223,28 +276,64 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
                 return token
             }
         }
-
-        throw new RegistryUnauthorizedAccessException("Unable to authorize request: $login", response.statusCode(), body)
+        throw new RegistryForwardException("Unexpected response acquiring token for '$login' [${response.statusCode()}]", response)
     }
 
-    String buildLoginUrl(URI realm, String image, String service){
-        String result = "${realm}?scope=repository:${image}:pull"
-        if(service) {
+    String buildLoginUrl(URI realm, String image, String service, String scope='pull') {
+        String result = "${realm}?scope=repository:${image}:${scope}"
+        if( service ) {
             result += "&service=$service"
         }
         return result
     }
 
     protected String getAuthToken(String image, RegistryAuth auth, RegistryCredentials creds) {
+        return getCachedToken(cacheTokens, image, auth, creds)
+    }
+
+    protected String getPushToken(CacheKey key) {
+        return fetchToken(buildLoginUrl(key.auth.realm, key.image, key.auth.service, 'pull,push'), key.creds)
+    }
+
+    protected String getPushAuthToken(String image, RegistryAuth auth, RegistryCredentials creds) {
+        return getCachedToken(cachePushTokens, image, auth, creds)
+    }
+
+    private String getCachedToken(LoadingCache<CacheKey, String> cache, String image, RegistryAuth auth, RegistryCredentials creds) {
         final key = new CacheKey(image, auth, creds)
         try {
-            return cacheTokens.get(key)
+            return cache.get(key)
         }
-        catch (UncheckedExecutionException | ExecutionException e) {
+        catch (CompletionException e) {
             // this catches the exception thrown in the cache loader lookup
             // and throws the causing exception that should be `RegistryUnauthorizedAccessException`
             throw e.cause
         }
+    }
+
+    @Override
+    String getAuthorizationForPush(String image, RegistryAuth auth, RegistryCredentials creds) throws RegistryUnauthorizedAccessException {
+        return getAuthorization0(image, auth, creds, true)
+    }
+
+    private String getAuthorization0(String image, RegistryAuth auth, RegistryCredentials creds, boolean push) {
+        if( !auth )
+            throw new RegistryUnauthorizedAccessException("Missing authentication credentials")
+
+        if( !auth.type )
+            return null
+
+        if( auth.type == RegistryAuth.Type.Bearer ) {
+            final token = push ? getPushAuthToken(image, auth, creds) : getAuthToken(image, auth, creds)
+            return "Bearer $token"
+        }
+
+        if( auth.type == RegistryAuth.Type.Basic ) {
+            final String basic = creds ? "$creds.username:$creds.password".bytes.encodeBase64() : null
+            return basic ? "Basic $basic" : null
+        }
+
+        throw new RegistryUnauthorizedAccessException("Unknown authentication type: $auth.type")
     }
 
     /**
@@ -257,8 +346,16 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     void invalidateAuthorization(String image, RegistryAuth auth, RegistryCredentials creds) {
         final key = new CacheKey(image, auth, creds)
         cacheTokens.invalidate(key)
+        cachePushTokens.invalidate(key)
+        tokenStore.remove(getStableKey(key))
     }
 
+    /**
+     * Invalidate all cached authorization tokens
+     */
+    private static String getStableKey(CacheKey key) {
+        return "key-" + key.stableKey()
+    }
 
     @Canonical
     static class TargetInfo {
@@ -267,6 +364,9 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
 
         static TargetInfo parse(String registryOrRepository) {
             assert registryOrRepository, "Missing 'registryOrRepository' argument"
+            // registry URLs e.g. https://registry-1.docker.io are used as they are
+            if( registryOrRepository.startsWith('http://') || registryOrRepository.startsWith('https://') )
+                return new TargetInfo(registryOrRepository)
             if( registryOrRepository.contains('/') ) {
                 final coords = ContainerCoordinates.parse(registryOrRepository)
                 return new TargetInfo(coords.getRegistry(), coords.getImage())

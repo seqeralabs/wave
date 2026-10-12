@@ -1,0 +1,84 @@
+/*
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2023-2024, Seqera Labs
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package io.seqera.wave.service.aws.cache
+
+import java.time.Duration
+
+import com.squareup.moshi.JsonAdapter
+import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
+import io.seqera.serde.Encodable
+import io.seqera.serde.moshi.MoshiEncodeStrategy
+import io.seqera.cache.tiered.AbstractTieredCache
+import io.seqera.cache.tiered.L2TieredCache
+import jakarta.inject.Singleton
+
+/**
+ * Implement a tiered cache for AWS STS jump role credentials.
+ * Avoids redundant STS AssumeRole calls when jump role chaining is configured.
+ *
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
+ */
+@Slf4j
+@Singleton
+@CompileStatic
+class AwsRoleCache extends AbstractTieredCache<String, AwsStsCredentials> {
+
+    @Value('${wave.aws.jump-role-cache.duration:45m}')
+    private Duration duration
+
+    @Value('${wave.aws.jump-role-cache.max-size:100}')
+    private int maxSize
+
+    AwsRoleCache(@Nullable L2TieredCache l2) {
+        super(l2, encoder())
+    }
+
+    @Override
+    int getMaxSize() {
+        return maxSize
+    }
+
+    @Override
+    protected String getName() {
+        return 'aws-role-cache'
+    }
+
+    @Override
+    protected String getPrefix() {
+        return 'aws-role-cache/v1'
+    }
+
+    Duration getDuration() {
+        return duration
+    }
+
+    static MoshiEncodeStrategy encoder() {
+        new MoshiEncodeStrategy<AbstractTieredCache.Entry>(factory()) {}
+    }
+
+    static JsonAdapter.Factory factory() {
+        PolymorphicJsonAdapterFactory.of(Encodable.class, "@type")
+                .withSubtype(AbstractTieredCache.Entry.class, AbstractTieredCache.Entry.name)
+                .withSubtype(AwsStsCredentials.class, AwsStsCredentials.simpleName)
+    }
+}

@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -18,11 +18,13 @@
 
 package io.seqera.wave.controller
 
+import groovy.transform.CompileStatic
 import io.micronaut.core.annotation.Nullable
 
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpResponse
+import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.scheduling.TaskExecutors
@@ -37,7 +39,8 @@ import io.seqera.wave.util.BuildInfo
  */
 @Slf4j
 @Controller("/")
-@ExecuteOn(TaskExecutors.IO)
+@CompileStatic
+@ExecuteOn(TaskExecutors.BLOCKING)
 class ServiceInfoController {
 
     @Value('${wave.landing.url}')
@@ -50,11 +53,6 @@ class ServiceInfoController {
         HttpResponse.ok(new ServiceInfoResponse(info))
     }
 
-    @Get('/ping')
-    HttpResponse<ServiceInfoResponse> ping() {
-        HttpResponse.ok()
-    }
-
     @Get("/")
     HttpResponse landing() {
         return landingUrl
@@ -62,4 +60,15 @@ class ServiceInfoController {
                 : HttpResponse.badRequest()
     }
 
+    @Get(uri = "/favicon.ico", produces = MediaType.IMAGE_X_ICON)
+    HttpResponse getFavicon() {
+        final inputStream = getClass().getResourceAsStream("/io/seqera/wave/assets/wave.ico");
+        return inputStream != null ? HttpResponse.ok(inputStream) : HttpResponse.notFound();
+    }
+
+    @Get(uri = "/robots.txt", produces = MediaType.TEXT_PLAIN)
+    HttpResponse getRobotsTxt() {
+        final inputStream = getClass().getResourceAsStream("/io/seqera/wave/assets/robots.txt");
+        return inputStream != null ? HttpResponse.ok(inputStream) : HttpResponse.notFound();
+    }
 }

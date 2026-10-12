@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -18,7 +18,6 @@
 
 package io.seqera.wave.controller
 
-import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Timeout
 
@@ -26,7 +25,6 @@ import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
-import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
@@ -38,31 +36,28 @@ import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.model.ContentType
-import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.ContainerBuildService
-import io.seqera.wave.service.builder.ContainerBuildServiceImpl
-import io.seqera.wave.service.token.ContainerTokenService
+import io.seqera.wave.service.builder.impl.ContainerBuildServiceImpl
+import io.seqera.wave.service.request.ContainerRequest
+import io.seqera.wave.service.request.ContainerRequestService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.test.DockerRegistryContainer
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.Base32
 import jakarta.inject.Inject
 /**
  *
  * @author Jorge Aguilera <jorge.aguilera@seqera.io>
  */
-@MicronautTest(environments = ['test', 'h2', 'build'])
+@MicronautTest(environments = ['test', 'build'])
 @Timeout(value = 3, unit = TimeUnit.MINUTES)
 class CustomImageControllerTest extends Specification implements DockerRegistryContainer {
 
     @Inject
     @Client("/")
     HttpClient client;
-
-    @Inject
-    @Shared
-    ApplicationContext applicationContext
 
     BuildResult expected
 
@@ -82,16 +77,13 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
         }
     }
 
-    @MockBean(ContainerTokenService)
-    ContainerTokenService containerTokenService(){
-        Mock(ContainerTokenService){
-            getRequest(_) >> new ContainerRequestData(
-                    null,
-                    null,
-                    "library/hello-world",
-                    "FROM busybox",
-                    null,
-                    null)
+    @MockBean(ContainerRequestService)
+    ContainerRequestService containerTokenService(){
+        Mock(ContainerRequestService){
+            getRequest(_) >> ContainerRequest.of(
+                    identity: PlatformId.NULL,
+                    containerImage: "library/hello-world",
+                    containerFile:  "FROM busybox" )
         }
     }
 
@@ -125,7 +117,7 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
     }
 
     def setupSpec() {
-        initRegistryContainer(applicationContext)
+        initRegistryContainer()
     }
 
     void 'should fails head manifest when no image'() {
@@ -145,7 +137,7 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
 
     void 'should retrieve head manifest when image is completed'() {
         given:
-        expected = BuildResult.completed('xyz', 0, 'OK', Instant.now())
+        expected = BuildResult.completed('xyz', 0, 'OK', Instant.now(), null)
 
         when:
         HttpRequest request = HttpRequest.HEAD("/v2/wt/1234/library/hello-world/manifests/latest").headers({h->
@@ -160,7 +152,7 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
 
     void 'should wait for head manifest when image is under construction'() {
         given:
-        expected = BuildResult.completed('xyz', 0, 'OK', Instant.now())
+        expected = BuildResult.completed('xyz', 0, 'OK', Instant.now(), null)
         resolveImageAsync = true
 
         when:

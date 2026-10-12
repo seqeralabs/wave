@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -19,6 +19,11 @@
 package io.seqera.wave.core
 
 
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
+
+import com.google.common.hash.Hashing
+import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.cache.annotation.Cacheable
@@ -26,9 +31,11 @@ import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.io.buffer.ByteBuffer
 import io.micronaut.http.client.annotation.Client
-import io.micronaut.http.exceptions.HttpException
 import io.micronaut.reactor.http.client.ReactorStreamingHttpClient
-import io.micronaut.retry.annotation.Retryable
+import io.micronaut.scheduling.TaskExecutors
+import io.seqera.cache.tiered.AbstractTieredCache
+import io.seqera.util.retry.Retryable
+import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.WaveDefault
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
@@ -37,16 +44,22 @@ import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
+import io.seqera.wave.proxy.DelegateResponse
+import io.seqera.wave.proxy.ProxyCache
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.service.CredentialsService
+import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 import reactor.core.publisher.Flux
 import static io.seqera.wave.WaveDefault.HTTP_REDIRECT_CODES
+import static io.seqera.wave.WaveDefault.HTTP_RETRYABLE_ERRORS
 /**
  * Proxy service that forwards incoming container request
  * to the target repository, resolving credentials and augmentation
@@ -71,6 +84,16 @@ class RegistryProxyService {
     private RegistryCredentialsProvider credentialsProvider
 
     /**
+     * When {@code true} (default) Wave brokers the resolved registry credentials on the proxy pull
+     * path (credentials federation). When {@code false} no credentials are injected, so images are
+     * expected to be pulled directly from the target registry using the caller's own credentials
+     * (for example an EC2 instance profile or IAM role). Build, inspect and augmentation flows are
+     * unaffected.
+     */
+    @Value('${wave.capabilities.credentials-federation:true}')
+    private boolean credentialsFederation
+
+    /**
      * Service to query credentials stored into tower
      */
     @Inject
@@ -85,12 +108,19 @@ class RegistryProxyService {
     @Inject
     private HttpClientConfig httpConfig
 
-    @Value('${wave.httpclient.streamThreshold:65536}')
-    private int streamThreshold
-
     @Inject
     @Client("stream-client")
     private ReactorStreamingHttpClient streamClient
+
+    @Inject
+    private ProxyCache cache
+
+    // note this use explicitly executors (instead of blocking) because it must be
+    // platform thread executor pool (not a virtual threads pool).
+    // See the details in comment where the executor is used below
+    @Inject
+    @Named(TaskExecutors.IO)
+    private ExecutorService httpClientExecutor
 
     private ContainerAugmenter scanner(ProxyClient proxyClient) {
         return new ContainerAugmenter()
@@ -111,11 +141,12 @@ class RegistryProxyService {
     }
 
     protected RegistryCredentials getCredentials(RoutePath route) {
-        final req = route.request
-        final result = !req || !req.userId
-                ? credentialsProvider.getDefaultCredentials(route)
-                : credentialsProvider.getUserCredentials(route, req.userId, req.workspaceId, req.towerToken, req.towerEndpoint)
-        log.debug "Credentials for route path=${route.targetContainer}; user=${req?.userId}; wsp=${req?.workspaceId} => ${result}"
+        if( !credentialsFederation ) {
+            log.debug "Credentials federation disabled - skipping credentials for route path=${route.targetContainer}"
+            return null
+        }
+        final result = credentialsProvider.getCredentials(route, route.identity)
+        log.debug "Credentials for route path=${route.targetContainer}; identity=${route.identity} => ${result}"
         return result
     }
 
@@ -139,13 +170,95 @@ class RegistryProxyService {
             return
 
         try {
-            persistenceService.updateContainerRequest(route.token, digest)
+            persistenceService.updateContainerRequestAsync(route.token, digest)
         } catch (Throwable t) {
             log.error("Unable store container request for token: $route.token", t)
         }
     }
 
-    DelegateResponse handleRequest(RoutePath route, Map<String,List<String>> headers){
+    static private final List<String> CACHEABLE_HEADERS = [
+            'Accept',
+            'Accept-Encoding',
+            'Authorization',
+            'Cache-Control',
+            'Connection',
+            'Content-Type',
+            'Content-Length',
+            'Content-Range',
+            'Docker-Distribution-API',
+            'If-Modified-Since',
+            'If-None-Match',
+            'If-None-Match',
+            'Etag',
+            'Host',
+            'Location',
+            'Last-Modified',
+            'User-Agent',
+            'Range',
+            'X-Registry-Auth'
+    ]
+
+    static protected boolean isCacheableHeader(String key) {
+        if( !key )
+            return false
+        for(int i=0; i<CACHEABLE_HEADERS.size(); i++ ) {
+          if( key.equalsIgnoreCase(CACHEABLE_HEADERS.get(i)))
+              return true
+        }
+        return false
+    }
+
+    @Deprecated
+    static protected String requestKey(RoutePath route, Map<String,List<String>> headers) {
+        assert route!=null, "Argument route cannot be null"
+        final hasher = Hashing.sipHash24().newHasher()
+        hasher.putUnencodedChars(route.stableHash())
+        hasher.putUnencodedChars('/')
+        if( !headers )
+            headers = Map.of()
+        for( Map.Entry<String,List<String>> entry : headers ) {
+            if( "Cache-Control".equalsIgnoreCase(entry.key) ) {
+                // ignore caching when cache-control header is provided
+                return null
+            }
+            if( !isCacheableHeader(entry.key) ) {
+                continue
+            }
+            hasher.putUnencodedChars(entry.key)
+            for( String it : entry.value ) {
+                if( it )
+                    hasher.putUnencodedChars(it)
+                hasher.putUnencodedChars('/')
+            }
+            hasher.putUnencodedChars('/')
+        }
+        final result = hasher.hash().toString()
+        if( log.isTraceEnabled() ) {
+            final m = Map.of(
+                    'route', route.getTargetPath(),
+                    'identity', route.identity,
+                    'headers', headers )
+            log.trace "Proxy cache key=${result}; values=${JsonOutput.toJson(m)}"
+        }
+        return result
+    }
+
+    DelegateResponse handleRequest(RoutePath route, Map<String,List<String>> headers) {
+        if( !cache.enabled || !route.isBlob() ) {
+            return handleRequest0(route, headers)
+        }
+        final key = route.getTargetPath()
+        return cache.getOrCompute(key,(String k)-> {
+            final resp = handleRequest0(route, headers)
+            // when the response is not cacheable, return null as TTL
+            final ttl = route.isDigest() && resp.isCacheable() ? cache.duration : null
+            return new AbstractTieredCache.Pair<>(resp, ttl)
+        })
+    }
+
+    @TraceElapsedTime(thresholdMillis = '${wave.trace.proxy-service.threshold:1000}')
+    protected DelegateResponse handleRequest0(RoutePath route, Map<String,List<String>> headers) {
+        log.trace "Request processing ${route}"
         ProxyClient proxyClient = client(route)
         final resp1 = proxyClient.getStream(route.path, headers, false)
         final redirect = resp1.headers().firstValue('Location').orElse(null)
@@ -168,13 +281,13 @@ class RegistryProxyService {
             log.warn "Unexpected redirect location '${redirect}' with status code: ${status}"
         }
         else if( status>=300 && status<400 ) {
-            log.warn "Unexpected redirect status code: ${status}; headers: ${RegHelper.dumpHeaders(resp1.headers())}"
+            log.warn "Unexpected redirect status code: ${status}; headers: ${RegHelper.dumpHeaders(resp1)}"
         }
 
         final len = resp1.headers().firstValueAsLong('Content-Length').orElse(0)
         // when it's a large blob return a null body response to signal that
         // the call needs to fetch the blob binary using the streaming client
-        if( route.isBlob() && len > streamThreshold ) {
+        if( route.isBlob() && len > httpConfig.streamThreshold ) {
             final res = new DelegateResponse(
                     statusCode: resp1.statusCode(),
                     headers: resp1.headers().map() )
@@ -186,43 +299,67 @@ class RegistryProxyService {
         // otherwise read it and include the body input stream in the response
         // the caller must consume and close the body to prevent memory leaks
         else {
+            // create the retry logic on error
+            final retryable = Retryable
+                    .<byte[]>of(httpConfig)
+                    .onRetry((event) -> log.warn("Unable to read blob body - request: $route; event: $event"))
+            // read the body - note this must use a separate *platform* thread to prevent a possible
+            // deep deadlock caused by the HttpClient implementation. See problem #4 in post
+            // https://medium.com/@phil_3582/java-virtual-threads-some-early-gotchas-to-look-out-for-f65df1bad0db#:~:text=The%20virtual%20threads%20can%20use,using%20complex%20constructs%20like%20CompletableFuture.
+            final bb = retryable.applyAsync(()-> resp1.body().bytes, httpClientExecutor).get()
+            // and compose the response
             return new DelegateResponse(
                     statusCode: resp1.statusCode(),
                     headers: resp1.headers().map(),
-                    body: resp1.body() )
+                    body: bb )
         }
     }
 
-    boolean isManifestPresent(String image){
+    String getImageDigest(BuildRequest request, boolean retryOnNotFound=false) {
+        return getImageDigest(request.targetImage, request.identity, retryOnNotFound)
+    }
+
+    String getImageDigest(String containerImage, PlatformId identity, boolean retryOnNotFound=false) {
         try {
-            return isManifestPresent0(image)
+            return getImageDigest0(containerImage, identity, retryOnNotFound).get()
         }
         catch(Exception e) {
-            log.warn "Unable to check status for container image '$image' -- cause: ${e.message}"
-            return false
+            log.warn "Unable to retrieve digest for image '${containerImage}' -- cause: ${e.message}"
+            return null
         }
     }
 
-    @Cacheable('cache-1min')
-    @Retryable(includes=[IOException, HttpException])
-    protected boolean isManifestPresent0(String image) {
-        final coords = ContainerCoordinates.parse(image)
-        final route = RoutePath.v2manifestPath(coords)
-        final proxyClient = client(route)
-        final resp = proxyClient.head(route.path, WaveDefault.ACCEPT_HEADERS)
-        return resp.statusCode() == 200
+    static private List<Integer> RETRY_ON_NOT_FOUND = HTTP_RETRYABLE_ERRORS + 404
+
+    // note: return a CompletableFuture to force micronaut to use caffeine AsyncCache
+    // that provides a workaround about the use of virtual threads with SyncCache
+    // see https://github.com/ben-manes/caffeine/issues/1468#issuecomment-1906733926
+    @Cacheable(value = 'cache-registry-proxy', atomic = true, parameters = ['image'])
+    protected CompletableFuture<String> getImageDigest0(String image, PlatformId identity, boolean retryOnNotFound) {
+        CompletableFuture.completedFuture(getImageDigest1(image, identity, retryOnNotFound))
     }
 
-    static class DelegateResponse {
-        int statusCode
-        Map<String,List<String>> headers
-        InputStream body
-        String location
-        boolean isRedirect() { location }
+    protected String getImageDigest1(String image, PlatformId identity, boolean retryOnNotFound) {
+        final coords = ContainerCoordinates.parse(image)
+        final route = RoutePath.v2manifestPath(coords, identity)
+        final proxyClient = client(route)
+                .withRetryableHttpErrors(retryOnNotFound ? RETRY_ON_NOT_FOUND : HTTP_RETRYABLE_ERRORS)
+        final resp = proxyClient.head(route.path, WaveDefault.ACCEPT_HEADERS)
+        final result = resp.headers().firstValue('docker-content-digest').orElse(null)
+        if( !result && (resp.statusCode()!=404 || retryOnNotFound) ) {
+            log.warn "Unable to retrieve digest for image '$image' -- response status=${resp.statusCode()}; headers:\n${RegHelper.dumpHeaders(resp)}"
+        }
+        return result
     }
 
     Flux<ByteBuffer<?>> streamBlob(RoutePath route, Map<String,List<String>> headers) {
         ProxyClient proxyClient = client(route)
         return proxyClient.stream(streamClient, route.path, headers)
     }
+
+    List<String> curl(RoutePath route, Map<String,String> headers) {
+        ProxyClient proxyClient = client(route)
+        return proxyClient.curl(route.path, headers)
+    } 
+
 }

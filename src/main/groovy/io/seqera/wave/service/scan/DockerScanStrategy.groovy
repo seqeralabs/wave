@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -18,28 +18,24 @@
 
 package io.seqera.wave.service.scan
 
-import java.nio.file.FileAlreadyExistsException
-import java.nio.file.Files
 import java.nio.file.Path
-import java.time.Instant
 
-import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.configuration.ScanEnabled
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import static java.nio.file.StandardOpenOption.CREATE
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
-import static java.nio.file.StandardOpenOption.WRITE
 /**
  * Implements ScanStrategy for Docker
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @Singleton
+@Requires(bean = ScanEnabled)
 @Requires(missingProperty = 'wave.build.k8s')
 @CompileStatic
 class DockerScanStrategy extends ScanStrategy {
@@ -52,60 +48,35 @@ class DockerScanStrategy extends ScanStrategy {
     }
 
     @Override
-    ScanResult scanContainer(ScanRequest req) {
-        log.info("Launching container scan for buildId: ${req.buildId} with scanId ${req.id}")
-        final startTime = Instant.now()
+    void scanContainer(String jobName, ScanEntry entry) {
+        log.info("Launching container scan job: $jobName for entry: $entry}")
+        // config (docker auth) file name
+        final Path configFile = entry.configJson ? entry.workDir.resolve('config.json') : null
+        // create the launch command
+        final dockerCommand = dockerWrapper(jobName, entry.workDir, configFile, scanConfig.environment)
 
-        try {
-            // create the scan dir
-            try {
-                Files.createDirectory(req.workDir)
-            }
-            catch (FileAlreadyExistsException e) {
-                log.warn("Container scan directory already exists: $e")
-            }
+        // Use unified scan command for both container and plugin scans
+        final scanCommand = buildScanCommand(entry.containerImage, entry.workDir, entry.platform, scanConfig)
+        final command = dockerCommand + scanConfig.scanImage + scanCommand
 
-            // save the config file with docker auth credentials
-            Path configFile = null
-            if( req.configJson ) {
-                configFile = req.workDir.resolve('config.json')
-                Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
-            }
+        //launch scanning
+        log.debug("Container scan command: ${command.join(' ')}")
+        final process = new ProcessBuilder()
+                .command(command)
+                .redirectErrorStream(true)
+                .start()
 
-            // outfile file name
-            final reportFile = req.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
-            // create the launch command 
-            final dockerCommand = dockerWrapper(req.workDir, configFile)
-            final trivyCommand = List.of(scanConfig.scanImage) + scanCommand(req.targetImage, reportFile, scanConfig)
-            final command = dockerCommand + trivyCommand
-
-            //launch scanning
-            log.debug("Container scan command: ${command.join(' ')}")
-            final process = new ProcessBuilder()
-                    .command(command)
-                    .redirectErrorStream(true)
-                    .start()
-
-            final exitCode = process.waitFor()
-            if ( exitCode != 0 ) {
-                log.warn("Container scan failed to scan container, it exited with code: ${exitCode} - cause: ${process.text}")
-                return ScanResult.failure(req, startTime)
-            }
-            else{
-                log.info("Container scan completed with id: ${req.id}")
-                return ScanResult.success(req, startTime, TrivyResultProcessor.process(reportFile.text))
-            }
-        }
-        catch (Throwable e){
-            log.error("Container scan failed to scan container - cause: ${e.getMessage()}", e)
-            return ScanResult.failure(req, startTime)
+        if( process.waitFor()!=0 ) {
+            throw new IllegalStateException("Unable to launch scan container - exitCode=${process.exitValue()}; output=${process.text}")
         }
     }
 
-    protected List<String> dockerWrapper(Path scanDir, Path credsFile) {
+    protected List<String> dockerWrapper(String jobName, Path scanDir, Path credsFile, List<String> env) {
 
-        final wrapper = ['docker','run', '--rm']
-        
+        final wrapper = ['docker','run']
+        wrapper.add('--detach')
+        wrapper.add('--name')
+        wrapper.add(jobName)
         // scan work dir
         wrapper.add('-w')
         wrapper.add(scanDir.toString())
@@ -122,6 +93,12 @@ class DockerScanStrategy extends ScanStrategy {
             wrapper.add("${credsFile}:${Trivy.CONFIG_MOUNT_PATH}:ro".toString())
         }
 
+        if( env ) {
+            for( String it : env ) {
+                wrapper.add('-e')
+                wrapper.add(it)
+            }
+        }
 
         return wrapper
     }

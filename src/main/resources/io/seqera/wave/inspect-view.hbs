@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Wave container inspect">
+    <title>Wave inspect: {{imageName}}</title>
+    <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="/assets/style.css" rel="stylesheet">
+    <script src="/assets/copy.js"></script>
+    <script src="/assets/inspect.js"></script>
+</head>
+<body>
+
+{{> io/seqera/wave/partials/header}}
+
+<div class="container">
+    <div class="header-section">
+        <h1 class="main-title">Container Inspect</h1>
+    {{#if error_message}}
+        <div class="error-div">
+        <div class="status-alert error">
+            <p class="status-message">{{error_message}}</p>
+        </div>
+        </div>
+    </div>
+    {{else}}
+    {{#if schemaVersion}}
+        <div class="content-section">
+            <h2 class="section-title">Index Specification</h2>
+            <table>
+                <tr>
+                    <td>Image Name</td>
+                    <td>
+                        {{imageName}}
+                        <button class="action-btn" data-copy="{{imageName}}" title="Copy image name">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
+                                <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
+                            </svg>
+                        </button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Digest</td>
+                    <td>
+                        {{digest}}
+                        <button class="action-btn" data-copy="{{digest}}" title="Copy digest">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
+                                <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
+                            </svg>
+                        </button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Schema Version</td>
+                    <td>{{schemaVersion}}</td>
+                </tr>
+                <tr>
+                    <td>Media Type</td>
+                    <td>{{mediaType}}</td>
+                </tr>
+                <tr>
+                    <td>Manifests</td>
+                    <td>
+                        <div class="code-section">
+                            <div class="code-container">
+                                <div class="code-content">
+                                    <div id="manifests-div"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    {{else}}
+        <div class="content-section">
+            <h2 class="section-title">Container Specification</h2>
+            <table>
+                <tr>
+                    <td>Image Name</td>
+                    <td>
+                        {{imageName}}
+                        <button class="action-btn" data-copy="{{imageName}}" title="Copy image name">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
+                                <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
+                            </svg>
+                        </button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Reference (tag)</td>
+                    <td>{{reference}}</td>
+                </tr>
+                <tr>
+                    <td>Digest</td>
+                    <td>
+                        {{digest}}
+                        <button class="action-btn" data-copy="{{digest}}" title="Copy digest">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
+                                <path fill="currentColor" d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/>
+                            </svg>
+                        </button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Registry</td>
+                    <td>{{registry}}</td>
+                </tr>
+                <tr>
+                    <td>Host Name</td>
+                    <td>{{hostName}}</td>
+                </tr>
+                <tr>
+                    <td>Config</td>
+                    <td>
+                        <div class="code-section">
+                            <div class="code-container">
+                                <div class="code-content">
+                                    <div id="config-div"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Manifest</td>
+                    <td>
+                        <div class="code-section">
+                            <div class="code-container">
+                                <div class="code-content">
+                                    <div id="manifest-div"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    {{/if}}
+        {{/if}}
+    {{> io/seqera/wave/partials/footer}}
+
+</div>
+
+{{#if schemaVersion}}
+<textarea id="inspect-manifests" hidden>{{{manifests}}}</textarea>
+<div id="inspect-data" data-type="index" data-server-url="{{{server_url}}}" data-image-name="{{{imageName}}}"></div>
+{{else}}
+<textarea id="inspect-config" hidden>{{{config}}}</textarea>
+<textarea id="inspect-manifest" hidden>{{{manifest}}}</textarea>
+<div id="inspect-data" data-type="container"></div>
+{{/if}}
+</body>
+</html>

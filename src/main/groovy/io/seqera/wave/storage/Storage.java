@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -21,7 +21,7 @@ package io.seqera.wave.storage;
 
 import java.util.Optional;
 
-import io.seqera.wave.storage.reader.ContentReader;
+import io.seqera.wave.api.ContainerLayer;
 
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
@@ -38,5 +38,5 @@ public interface Storage {
 
     DigestStore saveBlob(String path, byte[] content, String type, String digest);
 
-    DigestStore saveBlob(String path, ContentReader content, String type, String digest, int size);
+    DigestStore saveBlob(String path, ContainerLayer layer);
 }

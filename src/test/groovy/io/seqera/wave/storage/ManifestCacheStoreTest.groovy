@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -20,11 +20,22 @@ package io.seqera.wave.storage
 
 import spock.lang.Specification
 
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import jakarta.inject.Inject
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@MicronautTest
 class ManifestCacheStoreTest extends Specification {
 
+    @Inject
+    ManifestCacheStore store
+
+    def 'should return entry key' () {
+        expect:
+        store.key0('foo') == 'wave-blobs/v1:foo'
+    }
 
 }

@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -44,6 +44,14 @@ class StringUtils {
         return lines.size()==1 ? lines[0] : lines[0] + ' (more omitted)'
     }
 
+    static String trunc(String value, int max) {
+        if( value==null )
+            return null;
+        if( value.length()>max)
+            return value.substring(0,max) + "..";
+        return value;
+    }
+
     static String indent(String text) {
         if( !text ) return text
         final result = new StringBuilder()
@@ -60,14 +68,16 @@ class StringUtils {
         return m.matches() ? m.group(1) : null
     }
 
-    static String surrealId(String id) {
-        if( !id )
-            return null
-        final p = id.indexOf(':')
-        if( p!=-1 )
-            id = id.substring(p+1)
-        if( id.startsWith('⟨') && id.endsWith('⟩'))
-            id = id.substring(1,id.length()-1)
-        return id
+    static String pathConcat(String base, String path) {
+        assert base, "Missing 'base' argument"
+        // strip ending slash
+        while( base.endsWith('/') && !base.endsWith('://') )
+            base = base.substring(0,base.length()-1)
+        if( base.endsWith('/') )
+            throw new IllegalArgumentException("Invalid base path - offending value: '$base'")
+        // add leading slash
+        if( !path.startsWith('/') )
+            path = '/' + path
+        return base + path
     }
 }

@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -145,7 +145,7 @@ class ProxyClientTest extends Specification {
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should call target manifest on amazon' () {
         given:
-        def IMAGE = 'wave/kaniko'
+        def IMAGE = 'wave/app'
         def REG = '195996028523.dkr.ecr.eu-west-1.amazonaws.com'
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
@@ -158,7 +158,28 @@ class ProxyClientTest extends Specification {
                 .withCredentials(creds)
 
         when:
-        def resp = proxy.getString("/v2/$IMAGE/manifests/0.1.0")
+        def resp = proxy.getString("/v2/$IMAGE/manifests/1.0.0")
+        then:
+        resp.statusCode() == 200
+    }
+
+    @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
+    def 'should call head manifest on amazon' () {
+        given:
+        def IMAGE = 'wave/app'
+        def REG = '195996028523.dkr.ecr.eu-west-1.amazonaws.com'
+        def registry = lookupService.lookup(REG)
+        def creds = credentialsProvider.getDefaultCredentials(REG)
+        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
+        and:
+        def proxy = new ProxyClient(httpClient, httpConfig)
+                .withImage(IMAGE)
+                .withRegistry(registry)
+                .withLoginService(loginService)
+                .withCredentials(creds)
+
+        when:
+        def resp = proxy.head("/v2/$IMAGE/manifests/1.0.0")
         then:
         resp.statusCode() == 200
     }
@@ -244,5 +265,41 @@ class ProxyClientTest extends Specification {
         def resp = proxy.getString("/v2/$IMAGE/manifests/latest")
         then:
         resp.statusCode() == 200
+    }
+
+    def 'should return curl command' () {
+        given:
+        def REG = 'docker.io'
+        def IMAGE = 'library/hello-world'
+        def PATH = '/v2/library/hello-world/manifests/sha256:aa0cc8055b82dc2509bed2e19b275c8f463506616377219d9642221ab53cf9fe'
+        def HEADERS = ['content-type': 'application/octet-stream']
+        and:
+        def registry = lookupService.lookup(REG)
+        def creds = credentialsProvider.getDefaultCredentials(REG)
+        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
+        and:
+        def proxy = new ProxyClient(httpClient, httpConfig)
+                .withImage(IMAGE)
+                .withRegistry(registry)
+                .withLoginService(loginService)
+                .withCredentials(creds)
+
+        when:
+        def cli = proxy.curl(PATH, HEADERS)
+        then:
+        cli[0] == 'curl'
+        cli[1] == '-s'
+        cli[2] == '-f'
+        cli[3] == '--retry'
+        cli[4] == String.valueOf(httpConfig.retryAttempts)
+        cli[5] == '--connect-timeout'
+        cli[6] == String.valueOf(httpConfig.connectTimeout.toSeconds())
+        cli[7] == '-X'
+        cli[8] == 'GET'
+        cli[9] == '-H'
+        cli[10] == 'content-type: application/octet-stream'
+        cli[11] == '-H'
+        cli[12] =~ /Authorization: Bearer.*/
+        cli[13] == 'https://registry-1.docker.io/v2/library/hello-world/manifests/sha256:aa0cc8055b82dc2509bed2e19b275c8f463506616377219d9642221ab53cf9fe'
     }
 }

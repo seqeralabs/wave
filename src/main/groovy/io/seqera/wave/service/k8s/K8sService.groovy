@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -19,13 +19,13 @@
 package io.seqera.wave.service.k8s
 
 import java.nio.file.Path
+import java.time.Duration
 
-import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1Pod
+import io.seqera.wave.configuration.BlobCacheConfig
+import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.configuration.ScanConfig
-import io.seqera.wave.configuration.SpackConfig
-
 /**
  * Defines Kubernetes operations
  *
@@ -33,23 +33,26 @@ import io.seqera.wave.configuration.SpackConfig
  */
 interface K8sService {
 
-    enum JobStatus { Pending, Running, Succeeded, Failed }
-
-    V1Job createJob(String name, String containerImage, List<String> args)
-
-    V1Job getJob(String name)
-
-    JobStatus getJobStatus(String name)
+    enum JobStatus { Pending, Running, Succeeded, Failed; boolean completed() { return this == Succeeded || this == Failed } }
 
     V1Pod getPod(String name)
 
-    String logsPod(String name)
+    String logsPod(V1Pod pod)
 
     void deletePod(String name)
 
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector)
+    JobStatus getJobStatus(String name)
 
-    V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map <String,String> nodeSelector)
+    void deleteJob(String name)
+  
+    V1Job launchTransferJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig, Map<String,String> nodeSelector)
 
-    V1ContainerStateTerminated waitPod(V1Pod pod, long timeout)
+    V1Job launchBuildJob(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, Map<String,String> nodeSelector)
+
+    V1Job launchScanJob(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector)
+
+    V1Job launchMirrorJob(String name, String containerImage, List<String> args, Path workDir, Path creds, MirrorConfig config, Map<String,String> nodeSelector)
+
+    V1Pod getLatestPodForJob(String jobName)
+
 }

@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -18,16 +18,17 @@
 
 package io.seqera.wave.core
 
-import io.micronaut.core.annotation.Nullable
+import java.util.regex.Pattern
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
+import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.model.ContainerCoordinates
-import io.seqera.wave.service.ContainerRequestData
-
+import io.seqera.wave.service.request.ContainerRequest
+import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.util.RegHelper
 import static io.seqera.wave.WaveDefault.DOCKER_IO
-
 /**
  * Model a container registry route path
  *
@@ -39,6 +40,8 @@ import static io.seqera.wave.WaveDefault.DOCKER_IO
 class RoutePath implements ContainerPath {
 
     static final private List<String> ALLOWED_TYPES = ['manifests','blobs','tags']
+
+    static final private Pattern REGEX = ~/([^:\\/]+(?::[0-9]+)?)?\\/v2\\/([a-z0-9][a-z0-9_.-]+(?:\\/[a-z0-9][a-z0-9_.-]+)?(?:\[a-zA-Z0-9][a-zA-Z0-9_.-]+)*)\\/(manifests|blobs)\\/(.+)/
 
     /**
      * Route type, either {@code manifests} or {@code blobs}
@@ -66,9 +69,9 @@ class RoutePath implements ContainerPath {
     final String path
 
     /**
-     * The {@link ContainerRequestData} metadata associated with the wave request
+     * The {@link ContainerRequest} metadata associated with the wave request
      */
-    final ContainerRequestData request
+    final ContainerRequest request
 
     /**
      * The unique token associated with the wave container request. it may be null when mapping
@@ -82,6 +85,10 @@ class RoutePath implements ContainerPath {
     boolean isTagList() { type=='tags' && reference=='list' }
     boolean isTag() { type!='tags' && reference && !isDigest() }
     boolean isDigest() { reference && reference.startsWith('sha256:') }
+
+    PlatformId getIdentity() {
+        request?.identity ?: PlatformId.NULL
+    }
 
     String getRepository() { "$registry/$image" }
 
@@ -113,16 +120,44 @@ class RoutePath implements ContainerPath {
         return token && isManifest() && isTag()
     }
 
-    static RoutePath v2path(String type, String registry, String image, String ref, ContainerRequestData request=null, String token=null) {
+    static RoutePath v2path(String type, String registry, String image, String ref, ContainerRequest request=null, String token=null) {
         assert type in ALLOWED_TYPES, "Unknown container path type: '$type'"
         new RoutePath(type, registry ?: DOCKER_IO, image, ref, "/v2/$image/$type/$ref", request, token)
     }
 
-    static RoutePath v2manifestPath(ContainerCoordinates container) {
-        new RoutePath('manifests', container.registry, container.image, container.reference, "/v2/${container.image}/manifests/${container.reference}")
+    static RoutePath v2manifestPath(ContainerCoordinates container, PlatformId identity=null) {
+        ContainerRequest data = identity!=null ? ContainerRequest.of(identity) : null
+        return new RoutePath('manifests', container.registry, container.image, container.reference, "/v2/${container.image}/manifests/${container.reference}", data)
     }
 
     static RoutePath empty() {
         new RoutePath(null, null, null, null, null)
+    }
+
+    static RoutePath parse(String location, PlatformId identity=null) {
+        assert location, "Missing 'location' attribute"
+        if( location.startsWith('docker://') )
+            location = location.substring(9)
+
+        final m = REGEX.matcher(location)
+        if( m.matches() ) {
+            final registry = m.group(1)
+            final image = m.group(2)
+            final type = m.group(3)
+            final reference = m.group(4)
+            final data = identity!=null ? ContainerRequest.of(identity) : null
+            return v2path(type, registry, image, reference, data)
+        }
+        else
+            throw new IllegalArgumentException("Not a valid container path - offending value: '$location'")
+    }
+
+    String stableHash() {
+        RegHelper.sipHash(getTargetPath(), identity.stableHash())
+    }
+
+    @Override
+    String toString() {
+        return "RoutePath[target=${getTargetPath()}; identity=${getIdentity()}]"
     }
 }

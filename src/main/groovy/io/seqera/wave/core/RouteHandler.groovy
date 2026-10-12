@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -24,7 +24,7 @@ import java.util.regex.Pattern
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.exception.NotFoundException
-import io.seqera.wave.service.token.ContainerTokenService
+import io.seqera.wave.service.request.ContainerRequestService
 import jakarta.inject.Singleton
 /**
  * Helper service to decode container request paths
@@ -38,9 +38,9 @@ class RouteHandler {
 
     final public static Pattern ROUTE_PATHS = ~'/v2(?:/wt)?/([a-z0-9][a-z0-9_.-]+(?:/[a-z0-9][a-z0-9_.-]+)?(?:/[a-zA-Z0-9][a-zA-Z0-9_.-]+)*)/(manifests|blobs|tags)/(.+)'
 
-    private ContainerTokenService tokenService
+    private ContainerRequestService tokenService
 
-    RouteHandler(ContainerTokenService tokenService) {
+    RouteHandler(ContainerRequestService tokenService) {
         this.tokenService = tokenService
     }
 
@@ -61,6 +61,12 @@ class RouteHandler {
             final request = tokenService.getRequest(token)
             if( !request ) {
                 throw new NotFoundException("Unknown Wave container for token '$token'")
+            }
+            // freeze and mirror requests publish the image to the target registry and are
+            // meant to be pulled directly from there - they must not be served via the Wave
+            // proxy token path (see also ContainerRequest.durable)
+            if( request.durable() ) {
+                throw new NotFoundException("Container '$token' is a freeze/mirror image and must be pulled directly from '${request.containerImage}'")
             }
             // the image name (without tag) must match
             final coords = request.coordinates()

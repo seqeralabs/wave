@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -18,16 +18,36 @@
 
 package io.seqera.wave.service.scan
 
-
+import io.micronaut.http.server.types.files.StreamedFile
+import io.seqera.wave.api.ScanMode
+import io.seqera.wave.service.builder.BuildEntry
+import io.seqera.wave.service.mirror.MirrorEntry
 import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.request.ContainerRequest
 /**
  * Declare operations to scan containers
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 interface ContainerScanService {
 
+    String getScanId(String targetImage, String digest, ScanMode mode, String format)
+
     void scan(ScanRequest request)
 
-    WaveScanRecord getScanResult(String scanId)
+    void scanOnBuild(BuildEntry build)
+
+    void scanOnMirror(MirrorEntry entry)
+
+    void scanOnRequest(ContainerRequest request)
+
+    WaveScanRecord getScanRecord(String scanId)
+
+    ScanEntry getScanState(String scanId)
+
+    List<WaveScanRecord> getAllScans(String scanId)
+
+    StreamedFile fetchReportStream(String scanId, ScanType type)
+
 }

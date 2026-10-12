@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -19,14 +19,19 @@
 package io.seqera.wave.tower.client
 
 import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
+import groovy.transform.ToString
+import io.seqera.serde.moshi.MoshiSerializable
 
 /**
  * Models an encrypted credentials keys response
  *
  * @author Andrea Tortorella <andrea.tortorella@seqera.io>
  */
+@ToString(includePackage = false, includeNames = true)
+@EqualsAndHashCode
 @CompileStatic
-class GetCredentialsKeysResponse {
+class GetCredentialsKeysResponse implements MoshiSerializable {
 
     /**
      * Secret keys associated with the credentials

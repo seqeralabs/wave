@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -18,8 +18,6 @@
 
 package io.seqera.wave.ratelimit.impl
 
-import javax.validation.constraints.NotNull
-
 import com.coveo.spillway.storage.InMemoryStorage
 import com.coveo.spillway.storage.LimitUsageStorage
 import com.coveo.spillway.storage.RedisStorage
@@ -27,8 +25,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.configuration.RateLimiterConfig
-import io.seqera.wave.configuration.RedisConfig
 import jakarta.inject.Singleton
 import redis.clients.jedis.JedisPool
 
@@ -53,9 +49,7 @@ class SpillWayStorageFactory {
 
     @Singleton
     @Requires(property = 'redis.uri')
-    LimitUsageStorage redisStorage(@NotNull RedisConfig redisConfig){
-        log.info "Using redis $redisConfig.uri as storage for rate limit"
-        def jedisPool = new JedisPool(redisConfig.uri)
-        return RedisStorage.builder().withJedisPool(jedisPool).build()
+    LimitUsageStorage redisStorage(JedisPool pool){
+        return RedisStorage.builder().withJedisPool(pool).build()
     }
 }

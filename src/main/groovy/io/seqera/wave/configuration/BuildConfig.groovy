@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -22,38 +22,66 @@ import javax.annotation.Nullable
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
+import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
-import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.util.BucketTokenizer
 import jakarta.inject.Singleton
 /**
  * Model Wave build config settings
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
+@Requires(bean = BuildEnabled)
 @CompileStatic
 @Singleton
 @Slf4j
 class BuildConfig {
 
-    @Value('${wave.build.kaniko-image}')
-    String kanikoImage
+    @Value('${wave.build.buildkit-image}')
+    String buildkitImage
 
     @Value('${wave.build.singularity-image}')
     String singularityImage
 
-    @Nullable
-    @Value('${wave.build.singularity-image-arm64}')
-    String singularityImageArm64
+    @Value('${wave.build.singularity-image-init:`public.cr.seqera.io/wave/busybox:latest`}')
+    String singularityImageInit
+
+    /**
+     * The image providing the {@code condasplit} tool used by the {@code conda/micromamba:v2-fast}
+     * and {@code conda/pixi:v1-fast} build templates to split the Conda environment into multiple image layers
+     */
+    @Value('${wave.build.condasplit-image:`public.cr.seqera.io/wave/condasplit:v1`}')
+    String condasplitImage
 
     @Value('${wave.build.repo}')
      String defaultBuildRepository
 
+    @Nullable
     @Value('${wave.build.cache}')
     String defaultCacheRepository
 
+    /**
+     * AWS region for the S3 cache bucket specified in {@link #defaultCacheRepository}.
+     * Only used when {@link #defaultCacheRepository} is an S3 bucket path.
+     */
     @Nullable
-    @Value('${wave.build.public}')
+    @Value('${wave.build.cache-bucket-region}')
+    String cacheBucketRegion
+
+    /**
+     * Number of layers to upload to S3 in parallel during cache export.
+     * Each individual layer is uploaded with 5 threads using the AWS SDK Upload Manager.
+     * Only used when {@link #defaultCacheRepository} is an S3 bucket path.
+     */
+    @Nullable
+    @Value('${wave.build.cache-bucket-upload-parallelism}')
+    Integer cacheBucketUploadParallelism
+
+    @Nullable
+    @Value('${wave.build.public-repo}')
     String defaultPublicRepository
 
     /**
@@ -66,42 +94,173 @@ class BuildConfig {
     Duration statusDelay
 
     @Value('${wave.build.timeout:5m}')
-    Duration buildTimeout
+    Duration defaultTimeout
+
+    @Value('${wave.build.trusted-timeout:10m}')
+    Duration trustedTimeout
 
     @Value('${wave.build.status.duration}')
     Duration statusDuration
 
-    @Value('${wave.build.cleanup}')
     @Nullable
-    String cleanup
+    @Value('${wave.build.failure.duration}')
+    Duration failureDuration
 
-    @Value('${wave.build.compress-caching:true}')
-    Boolean compressCaching = true
+    Duration getFailureDuration() {
+        return failureDuration ?: statusDelay.multipliedBy(10)
+    }
+
+    @Value('${wave.build.reserved-words:[]}')
+    Set<String> reservedWords
+
+    @Value('${wave.build.record.duration:5d}')
+    Duration recordDuration
+
+    @Value('${wave.build.oci-mediatypes:true}')
+    Boolean ociMediatypes
+
+    //check here for other options https://github.com/moby/buildkit?tab=readme-ov-file#registry-push-image-and-cache-separately
+    @Value('${wave.build.compression}')
+    @Nullable
+    String compression
+
+    @Value('${wave.build.force-compression}')
+    @Nullable
+    Boolean forceCompression
+
+    @Value('${wave.build.retry-attempts:1}')
+    int retryAttempts
+
+    @Value('${wave.build.max-conda-file-size:50000}')
+    int maxCondaFileSize
+
+    @Value('${wave.build.max-container-file-size:10000}')
+    int maxContainerFileSize
+
+    // ~10 MiB payload limit including base64 encoding overhead (4/3 ratio)
+    @Value('${wave.build.max-data-layer-size:14000000}')
+    int maxDataLayerSize
+
+    /**
+     * The path where build logs locks files are stored. Can be either
+     * a S3 path e.g. {@code s3://some-bucket/data/path} or a local file system
+     * path e.g. {@code /some/data/path}
+     */
+    @Value('${wave.build.logs.path}')
+    String logsPath
+
+    /**
+     * The path where Conda locks files are stored. Can be either
+     * a S3 path e.g. {@code s3://some-bucket/data/path} or a local file system
+     * path e.g. {@code /some/data/path}
+     */
+    @Value('${wave.build.locks.path}')
+    String locksPath
+
+    /**
+     * Max length allowed for build logs download
+     */
+    @Value('${wave.build.logs.max-length:100000}')
+    long maxLength
+
+    @Value('${wave.build.skip-cache:false}')
+    boolean skipCache
 
     @PostConstruct
     private void init() {
-        log.debug("Builder config: " +
-                "kaniko-image=${kanikoImage}; " +
+        log.info("Builder config: " +
+                "buildkit-image=${buildkitImage}; " +
                 "singularity-image=${singularityImage}; " +
-                "singularity-image-amr64=${singularityImageArm64}; " +
+                "condasplit-image=${condasplitImage}; " +
                 "default-build-repository=${defaultBuildRepository}; " +
                 "default-cache-repository=${defaultCacheRepository}; " +
+                "cache-bucket-region=${cacheBucketRegion}; " +
+                "cache-bucket-upload-parallelism=${cacheBucketUploadParallelism}; " +
                 "default-public-repository=${defaultPublicRepository}; " +
                 "build-workspace=${buildWorkspace}; " +
-                "build-timeout=${buildTimeout}; " +
+                "build-timeout=${defaultTimeout}; " +
+                "build-trusted-timeout=${trustedTimeout}; " +
+                "build-logs-path=${logsPath}; " +
+                "build-locks-path=${locksPath}; " +
                 "status-delay=${statusDelay}; " +
                 "status-duration=${statusDuration}; " +
-                "compress-caching=$compressCaching; " +
-                "cleanup=${cleanup}; ")
+                "failure-duration=${getFailureDuration()}; " +
+                "record-duration=${recordDuration}; " +
+                "oci-mediatypes=${ociMediatypes}; " +
+                "compression=${compression}; " +
+                "force-compression=${forceCompression}; " +
+                "retry-attempts=${retryAttempts}")
+        // minimal validation
+        if( trustedTimeout < defaultTimeout ) {
+            log.warn "Trusted build timeout should be longer than default timeout - check configuration setting 'wave.build.trusted-timeout'"
+        }
+        // validate at least one cache location is configured
+        if( !defaultCacheRepository ) {
+            log.warn "No cache location configured - 'wave.build.cache' should be set to a container registry or S3 bucket path"
+        }
     }
 
-    String singularityImage(ContainerPlatform containerPlatform){
-        return containerPlatform.arch == "arm64"
-                ? getSingularityImageArm64()
-                : singularityImage
+    Duration buildMaxDuration(SubmitContainerTokenRequest request) {
+        // build max duration - when the user identity is provided and freeze is enabled
+        // use `trustedTimeout` which is expected to be longer than `defaultTimeout`
+        return request.towerAccessToken && request.freeze && trustedTimeout>defaultTimeout
+                ? trustedTimeout
+                : defaultTimeout
     }
 
-    String getSingularityImageArm64(){
-        return singularityImageArm64 ?: singularityImage + "-arm64"
+    /**
+     * The file name prefix applied when storing a build logs file into an object storage.
+     * For example having {@link #logsPath} as {@code s3://bucket-name/foo/bar} the
+     * value returned by this method is {@code foo/bar}.
+     *
+     * When using a local path the prefix is {@code null}.
+     *
+     * @return the log file name prefix
+     */
+    @Memoized
+    String getLogsPrefix() {
+        if( !logsPath )
+            return null
+        final store = BucketTokenizer.from(logsPath)
+        return store.scheme ? store.getKey() : null
+    }
+
+    /**
+     * The file name prefix applied when storing a Conda lock file into an object storage.
+     * For example having {@link #logsPath} as {@code s3://bucket-name/foo/bar} the
+     * value returned by this method is {@code foo/bar}.
+     *
+     * When using a local path the prefix is {@code null}.
+     *
+     * @return the log file name prefix
+     */
+    @Memoized
+    String getLocksPrefix() {
+        if( !locksPath )
+            return null
+        final store = BucketTokenizer.from(locksPath)
+        return store.scheme ? store.getKey() : null
+    }
+
+    /**
+     * Get the AWS region for S3 cache bucket.
+     *
+     * @return The AWS region to use for S3 cache operations, or {@code null} if not configured.
+     *         When {@code null}, BuildKit will use the AWS SDK default region resolution chain
+     *         (environment variables, EC2 instance metadata, etc.)
+     */
+    String getCacheBucketRegion() {
+        return cacheBucketRegion
+    }
+
+    /**
+     * Check if the given path is an S3 bucket path (object storage).
+     * This is used to distinguish between container registry paths and object storage paths.
+     *
+     * @param path The path to check
+     * @return {@code true} if the path starts with {@code s3://}, {@code false} otherwise
+     */
+    static boolean isBucketPath(String path) {
+        return path?.startsWith('s3://')
     }
 }

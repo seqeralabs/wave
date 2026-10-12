@@ -2,16 +2,19 @@ name: Wave CI
 on:
   push:
     branches:
-      - '*'
+      - '**'
       - '!refs/tags/.*'
     tags-ignore:
-      - '*'
+      - '**'
     paths-ignore:
       - 'docs/**'
       - mkdocs.yml
       - '*.md'
       - .github/workflows/website_preview.yml
       - .github/workflows/website_deploy.yml
+      - 'wave-cli/**'
+      - .github/workflows/build-wave-cli.yml
+      - .github/workflows/security-submit-dependecy-graph-wave-cli.yml
   pull_request:
     types: [opened, reopened, synchronize]
     paths-ignore:
@@ -20,6 +23,9 @@ on:
       - '*.md'
       - .github/workflows/website_preview.yml
       - .github/workflows/website_deploy.yml
+      - 'wave-cli/**'
+      - .github/workflows/build-wave-cli.yml
+      - .github/workflows/security-submit-dependecy-graph-wave-cli.yml
 
 jobs:
   build:
@@ -30,23 +36,74 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java_version: [19]
+        java_version: [25]
+    permissions:
+      contents: write
+      id-token: write
 
     steps:
       - name: Environment
         run: env | sort
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           fetch-depth: 1
           submodules: true
 
+      - name: Detect release commit
+        id: detect-release
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          REF: ${{ github.ref }}
+        run: |
+          # Only direct pushes whose first line tags `[release]` or `[preview]` build an image.
+          # Squash merges append "(#NNN)" and merge commits start with "Merge pull request #NNN" —
+          # both must be excluded so a PR body mentioning the tag does not trigger anything.
+          first_line=$(printf '%s\n' "$COMMIT_MSG" | head -n1)
+
+          has_tag() {
+            [[ "$first_line" == *"$1"* ]] \
+              && [[ ! "$first_line" =~ \(#[0-9]+\)$ ]] \
+              && [[ ! "$first_line" =~ ^Merge\ pull\ request\ #[0-9]+ ]]
+          }
+
+          is_release=false
+          is_preview=false
+          has_tag "[release]" && is_release=true
+          has_tag "[preview]" && is_preview=true
+
+          # [release] is the production path: it publishes to the customer-facing enterprise repo,
+          # maven, a git tag and a GitHub release. Those require the wave-ecr-pusher /
+          # MavenPublisherRole OIDC roles, which only trust master and release-* (infrastructure
+          # central-container-registry/iam.tf + management/iam), and we only want quality-bar
+          # builds reaching customer-deployed locations. So [release] only publishes from
+          # master or a release-* branch.
+          is_publish=false
+          if [[ "$is_release" == "true" && ( "$REF" == "refs/heads/master" || "$REF" == refs/heads/release-* ) ]]; then
+            is_publish=true
+          elif [[ "$is_release" == "true" ]]; then
+            echo "::warning::[release] on non-release branch $REF will not publish to the enterprise repo. Use [preview] to push a dev image from a feature branch."
+          fi
+
+          # [preview] mirrors [release] but only pushes to the internal (dev) ECR, from any branch,
+          # so features can be built and validated without surfacing in customer-deployed locations.
+          # Build the image once whenever we are going to push it somewhere.
+          do_build=false
+          if [[ "$is_preview" == "true" || "$is_publish" == "true" ]]; then
+            do_build=true
+          fi
+
+          echo "release=$is_release preview=$is_preview publish=$is_publish build=$do_build ref=$REF"
+          echo "is_preview=$is_preview" >> "$GITHUB_OUTPUT"
+          echo "is_publish=$is_publish" >> "$GITHUB_OUTPUT"
+          echo "do_build=$do_build" >> "$GITHUB_OUTPUT"
+
       - name: Setup Java ${{ matrix.java_version }}
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           java-version: ${{matrix.java_version}}
-          distribution: 'temurin'
+          distribution: 'corretto'
           architecture: x64
           cache: gradle
 
@@ -61,34 +118,160 @@ jobs:
           make check
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
-          GITHUB_TOKEN: ${{ secrets.GH_SEQERA_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{secrets.TOWER_CI_AWS_ACCESS}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.TOWER_CI_AWS_SECRET}}
           DOCKER_USER: ${{ secrets.DOCKER_USER }}
           DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
-          QUAY_USER: ${{ secrets.QUAY_USER }}
+          QUAY_USER: "pditommaso+wave_ci_tests"
           QUAY_PAT: ${{ secrets.QUAY_PAT }}
           AZURECR_USER: ${{ secrets.AZURECR_USER }}
           AZURECR_PAT: ${{ secrets.AZURECR_PAT }}
           GOOGLECR_KEYS: ${{ secrets.GOOGLECR_KEYS }}
 
-      - name: Release
-        if: "contains(github.event.head_commit.message, '[release]')"
+      - name: Cleanup build workspace
+        if: always()
         run: |
-          bash tag-and-push.sh
+          sudo rm -rf /home/runner/work/wave/wave/build-workspace
+
+      # Build the image once. A [preview] pushes it to the internal (dev) ECR below; a [release]
+      # on master/release-* promotes it to the enterprise repo + maven.
+      - name: Build wave server image
+        id: build
+        if: "steps.detect-release.outputs.do_build == 'true'"
+        run: |
+          set -euo pipefail
+          TAG=v$(cat VERSION)
+          ./gradlew -PjibRepo=wave/server:$TAG jibDockerBuild
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
-          AWS_ACCESS_KEY_ID: ${{secrets.TOWER_CI_AWS_ACCESS}}
-          AWS_SECRET_ACCESS_KEY: ${{secrets.TOWER_CI_AWS_SECRET}}
+
+      # --- Internal (dev) ECR push: [preview] only, any branch ---
+      # Lets features be built from any branch and pulled into dev/testing without reaching a
+      # customer-deployed location. Inlined from seqeralabs/actions/push because that action is
+      # private and wave is public (SEC-1409). Two-step role chain: gha-seqeralabs-action-role ->
+      # gha-generic-internal-pusher. The repository is carried from the OIDC claim into a session
+      # tag by the role trust, so the chained role may only push to internal/<org>/<repo>/*.
+      - name: Configure AWS credentials for internal action role
+        if: "steps.detect-release.outputs.is_preview == 'true'"
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          aws-region: eu-west-2
+          role-to-assume: arn:aws:iam::232933512461:role/gha-seqeralabs-action-role
+          role-session-name: GitHubActions-${{ github.run_id }}
+
+      - name: Configure AWS credentials for internal pusher
+        if: "steps.detect-release.outputs.is_preview == 'true'"
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          aws-region: eu-west-2
+          role-to-assume: arn:aws:iam::232933512461:role/gha-generic-internal-pusher
+          role-session-name: ${{ github.event.repository.name }}
+          role-chaining: true
+
+      - name: Login to internal Amazon ECR
+        id: login-ecr-internal
+        if: "steps.detect-release.outputs.is_preview == 'true'"
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
+
+      - name: Push image to internal ECR
+        if: "steps.detect-release.outputs.is_preview == 'true'"
+        run: |
+          set -euo pipefail
+          TAG=${{ steps.build.outputs.tag }}
+          # Tag preview images by commit so previews from different branches/PRs do not
+          # collide on the same VERSION tag and each build is individually pullable.
+          PREVIEW_TAG=${TAG}-${GITHUB_SHA::7}
+          REMOTE=${{ steps.login-ecr-internal.outputs.registry }}/internal/${{ github.repository }}/server:$PREVIEW_TAG
+          docker tag wave/server:$TAG "$REMOTE"
+          docker push "$REMOTE"
+          echo "Pushed preview image: $REMOTE"
+
+      # --- Enterprise repo + maven publish + git tag + GitHub release: master / release-* only ---
+      - name: Login to legacy ECR
+        if: "steps.detect-release.outputs.is_publish == 'true'"
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: 195996028523.dkr.ecr.eu-west-1.amazonaws.com
+          username: ${{ secrets.TOWER_CI_AWS_ACCESS }}
+          password: ${{ secrets.TOWER_CI_AWS_SECRET }}
+        env:
+          AWS_REGION: eu-west-1
+
+      - name: Configure AWS credentials for platform pusher
+        if: "steps.detect-release.outputs.is_publish == 'true'"
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          aws-region: eu-west-2
+          role-to-assume: arn:aws:iam::232933512461:role/wave-ecr-pusher
+          role-session-name: GitHubActions-${{ github.run_id }}
+
+      - name: Login to enterprise Amazon ECR
+        if: "steps.detect-release.outputs.is_publish == 'true'"
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
+
+      - name: Configure AWS credentials for maven publish
+        if: "steps.detect-release.outputs.is_publish == 'true'"
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          aws-region: eu-west-1
+          role-to-assume: arn:aws:iam::195996028523:role/MavenPublisherRole
+          role-session-name: GitHubActions-${{ github.run_id }}-maven-publish
+
+      - name: Promote release to enterprise repo and maven
+        id: release
+        if: "steps.detect-release.outputs.is_publish == 'true'"
+        run: |
+          set -e
+          set -x
+          bash publish.sh wave-api
+          bash publish.sh wave-utils
+
+          TAG=${{ steps.build.outputs.tag }}
+
+          # Tag repo
+          REMOTE=https://oauth:$GITHUB_TOKEN@github.com/${GITHUB_REPOSITORY}.git
+          git tag $TAG
+          git push $REMOTE $TAG
+
+          # Push nf-tower-enterprise/wave to legacy ECR
+          LEGACY_ECR=195996028523.dkr.ecr.eu-west-1.amazonaws.com
+          docker tag wave/server:$TAG $LEGACY_ECR/nf-tower-enterprise/wave:$TAG
+          docker push $LEGACY_ECR/nf-tower-enterprise/wave:$TAG
+
+          # Push to enterprise ECR (new central registry)
+          ENTERPRISE_ECR=232933512461.dkr.ecr.eu-west-2.amazonaws.com
+          docker tag wave/server:$TAG $ENTERPRISE_ECR/wave/server:$TAG
+          docker push $ENTERPRISE_ECR/wave/server:$TAG
+
+          # Create GitHub release (draft for alpha/beta/RC tags)
+          grep -Ei '.*-(A[0-9]+|B[0-9]+|RC[0-9]+)$' VERSION &>/dev/null && DRAFT='--draft' || DRAFT=''
+          gh release create $TAG --generate-notes $DRAFT
+
+          echo "version=$TAG" >> $GITHUB_OUTPUT
+        env:
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false'
+          AWS_JAVA_V1_DISABLE_DEPRECATION_ANNOUNCEMENT: true
+          AWS_DEFAULT_REGION: 'eu-west-1'
+          PUBLISH_REPO_URL: "s3://maven.seqera.io/releases"
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
           QUAY_PAT: ${{ secrets.QUAY_PAT }}
-          GITHUB_TOKEN: ${{ secrets.GH_SEQERA_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish tests report
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # ratchet:actions/upload-artifact@v7.0.1
         with:
           name: test-reports-jdk-${{ matrix.java_version }}
           path: |
             **/build/reports/tests/test
+
+      - name: Publish code coverage report
+        if: success()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # ratchet:actions/upload-artifact@v7.0.1
+        with:
+          name: code-coverage-reports-jdk-${{ matrix.java_version }}
+          path: |
+            **/build/reports/jacoco/test

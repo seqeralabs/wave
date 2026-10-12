@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -22,6 +22,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
+import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
@@ -34,6 +35,7 @@ import io.seqera.wave.test.SecureDockerRegistryContainer
 import jakarta.inject.Inject
 
 @MicronautTest
+@Property(name = 'wave.security.ssrf-protection.enabled', value = 'false')
 class ValidateCredsControllerTest extends Specification implements SecureDockerRegistryContainer {
 
     @Inject
@@ -67,9 +69,9 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
 
     void 'should validate username required'() {
         when:
-        HttpRequest request = HttpRequest.POST("/validate-creds", [
+        HttpRequest request = HttpRequest.POST("/validate-creds", [request: [
                 password: 'test',
-        ])
+        ]])
         client.toBlocking().exchange(request, Boolean)
         then:
         def e = thrown(HttpClientResponseException)
@@ -77,9 +79,9 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
 
     void 'should validate pwd required'() {
         when:
-        HttpRequest request = HttpRequest.POST("/validate-creds", [
+        HttpRequest request = HttpRequest.POST("/validate-creds", [request:[
                 userName: 'test',
-        ])
+        ]])
         client.toBlocking().exchange(request, Boolean)
         then:
         def e = thrown(HttpClientResponseException)
@@ -87,10 +89,10 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
 
     void 'should validate the test user'() {
         given:
-        def req = [
+        def req = [request: [
                 userName:'test',
                 password:'test',
-                registry: getTestRegistryName('test') ]
+                registry: getTestRegistryName('test') ]]
         and:
         HttpRequest request = HttpRequest.POST("/validate-creds", req)
         when:
@@ -103,11 +105,11 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
 
     void 'test validateController valid login'() {
         given:
-        def req = [
+        def req = [request: [
                 userName: USER,
                 password: PWD,
                 registry: getTestRegistryName(REGISTRY)
-        ]
+        ]]
         HttpRequest request = HttpRequest.POST("/validate-creds", req)
         when:
         HttpResponse<Boolean> response = client.toBlocking().exchange(request, Boolean)
@@ -127,4 +129,68 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
         'nope'           | 'yepes'         | "quay.io"                  | false
         'test'           | 'test'          | 'test'                     | true
     }
+
+    void 'should validate username required'() {
+        when:
+        HttpRequest request = HttpRequest.POST("/v1alpha2/validate-creds", [
+                password: 'test',
+        ])
+        client.toBlocking().exchange(request, Boolean)
+        then:
+        def e = thrown(HttpClientResponseException)
+    }
+
+    void 'should validate pwd required'() {
+        when:
+        HttpRequest request = HttpRequest.POST("/v1alpha2/validate-creds", [
+                userName: 'test',
+        ])
+        client.toBlocking().exchange(request, Boolean)
+        then:
+        def e = thrown(HttpClientResponseException)
+    }
+
+    void 'should validate the test user'() {
+        given:
+        def req = [
+                userName:'test',
+                password:'test',
+                registry: getTestRegistryUrl('test') ]
+        and:
+        HttpRequest request = HttpRequest.POST("/v1alpha2/validate-creds", req)
+        when:
+        HttpResponse<Boolean> response = client.toBlocking().exchange(request, Boolean)
+        then:
+        response.status() == HttpStatus.OK
+        and:
+        response.body()
+    }
+
+    void 'test validateController valid login'() {
+        given:
+        def req = [
+                userName: USER,
+                password: PWD,
+                registry: getTestRegistryUrl(REGISTRY_URL)
+        ]
+        HttpRequest request = HttpRequest.POST("/v1alpha2/validate-creds", req)
+        when:
+        HttpResponse<Boolean> response = client.toBlocking().exchange(request, Boolean)
+
+        then:
+        response.status() == HttpStatus.OK
+        and:
+        response.body() == VALID
+
+        where:
+        USER             | PWD             | REGISTRY_URL                   | VALID
+        'test'           | 'test'          | 'test'                         | true
+        'nope'           | 'yepes'         | 'test'                         | false
+        dockerUsername   | dockerPassword  | "https://registry-1.docker.io" | true
+        'nope'           | 'yepes'         | "https://registry-1.docker.io" | false
+        quayUsername     | quayPassword    | "https://quay.io"              | true
+        'nope'           | 'yepes'         | "https://quay.io"              | false
+        'test'           | 'test'          | 'test'                         | true
+    }
+
 }

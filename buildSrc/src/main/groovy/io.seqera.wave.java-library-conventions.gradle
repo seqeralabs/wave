@@ -15,18 +15,23 @@ repositories {
 }
 
 java {
+    // these settings apply to all jvm tooling, including groovy
     toolchain {
-        languageVersion = JavaLanguageVersion.of(19)
+        languageVersion = JavaLanguageVersion.of(25)
     }
 }
 
-compileJava {
-    options.release.set(11)
+// Profile A (default): build on the Java 25 toolchain but target Java 17. For Java
+// sources use --release, which also constrains the API surface to the Java 17 stdlib;
+// Groovy does not honor --release, so its bytecode level is pinned via source/target.
+// --release and -source/-target cannot coexist on the same javac task, hence the split
+// across compile task types. See seqeralabs/adr#51.
+tasks.withType(JavaCompile).configureEach {
+    options.release = 17
 }
-
-tasks.withType(GroovyCompile) {
-    sourceCompatibility = '11'
-    targetCompatibility = '11'
+tasks.withType(GroovyCompile).configureEach {
+    sourceCompatibility = '17'
+    targetCompatibility = '17'
 }
 
 test {
@@ -40,22 +45,24 @@ java {
 }
 
 dependencies {
-    implementation 'org.slf4j:slf4j-api:1.7.36'
+    implementation 'org.slf4j:slf4j-api:2.0.16'
+    implementation 'org.slf4j:slf4j-jdk-platform-logging:2.0.16'
 
-    testImplementation 'ch.qos.logback:logback-core:1.2.11'
-    testImplementation 'ch.qos.logback:logback-classic:1.2.11'
-    testImplementation "org.codehaus.groovy:groovy:3.0.15"
-    testImplementation "org.codehaus.groovy:groovy-nio:3.0.15"
-    testImplementation ("org.codehaus.groovy:groovy-test:3.0.17")
-    testImplementation ("cglib:cglib-nodep:3.3.0")
-    testImplementation ("org.objenesis:objenesis:3.2")
-    testImplementation ("org.spockframework:spock-core:2.3-groovy-3.0") { exclude group: 'org.codehaus.groovy'; exclude group: 'net.bytebuddy' }
-    testImplementation ('org.spockframework:spock-junit4:2.3-groovy-3.0') { exclude group: 'org.codehaus.groovy'; exclude group: 'net.bytebuddy' }
+    testImplementation 'ch.qos.logback:logback-core:1.5.34'
+    testImplementation 'ch.qos.logback:logback-classic:1.5.34'
+    testImplementation 'org.apache.groovy:groovy:4.0.31'
+    testImplementation 'org.apache.groovy:groovy-nio:4.0.31'
+    testImplementation 'org.apache.groovy:groovy-test:4.0.31'
+    testImplementation 'org.objenesis:objenesis:3.4'
+    testImplementation 'net.bytebuddy:byte-buddy:1.14.17'
+    testImplementation 'org.spockframework:spock-core:2.3-groovy-4.0'
+    testImplementation 'org.spockframework:spock-junit4:2.3-groovy-4.0'
+    // Gradle 9 no longer provides the JUnit Platform launcher automatically
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.5'
 }
 
-tasks.withType(Test) {
-    jvmArgs ([
-            '--enable-preview',
+tasks.withType(Test).configureEach {
+    jvmArgs([
             '--add-opens=java.base/java.lang=ALL-UNNAMED',
             '--add-opens=java.base/java.io=ALL-UNNAMED',
             '--add-opens=java.base/java.nio=ALL-UNNAMED',
@@ -78,11 +85,13 @@ tasks.withType(Test) {
 publishing {
     repositories {
         maven {
-            name = "SeqeraRepository"
+            name = "Seqera"
             url = project.findProperty('publish_repo_url') ?: System.getenv('PUBLISH_REPO_URL') ?: "s3://maven.seqera.io/snapshots"
             credentials(AwsCredentials) {
                 accessKey = project.findProperty('aws_access_key_id') ?: System.getenv('AWS_ACCESS_KEY_ID')
                 secretKey = project.findProperty('aws_secret_access_key') ?: System.getenv('AWS_SECRET_ACCESS_KEY')
+                // required for temporary STS credentials (e.g. OIDC role assumption); null/unset for long-term IAM keys
+                sessionToken = project.findProperty('aws_session_token') ?: System.getenv('AWS_SESSION_TOKEN')
             }
         }
     }

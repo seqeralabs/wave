@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -33,6 +33,7 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.mail.MailService
 import io.seqera.wave.service.mail.MailSpooler
+import io.seqera.wave.tower.WaveBuildNotification
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.util.DataTimeUtils.formatDuration
@@ -59,49 +60,57 @@ class MailServiceImpl implements MailService {
 
     @EventListener
     void onBuildEvent(BuildEvent event) {
+        if( event.request.noEmail )
+            return
         try {
             sendCompletionEmail(event.request, event.result)
         }
         catch (Exception e) {
-            log.warn "Unable to send completion notication - reason: ${e.message?:e}"
+            log.warn "Unable to send completion notification - reason: ${e.message ?: e}"
         }
     }
 
     @Override
     void sendCompletionEmail(BuildRequest request, BuildResult build) {
-        // send to user email address or fallback to the system `mail.from` address
-        final user = request.user
+        final user = request.identity.user
         final recipient = user ? user.email : config.from
-        if( recipient ) {
-            final result = build ?: BuildResult.unknown()
-            final mail = buildCompletionMail(request, result, recipient)
-            spooler.sendMail(mail)
+        final result = build ?: BuildResult.unknown()
+        if( !recipient ) {
+            log.debug "Missing email recipient from build id=$request.buildId - user=$user"
+            return
         }
-        else {
-            log.debug "Missing email recipient from build id=$build.id - user=$user"
-        }
+        // honor the user notification preference; a null preference (older Tower
+        // clients, an unknown enum value, or anonymous builds using the system
+        // `mail.from`) defaults to ALWAYS_ON to preserve the historical behaviour
+        final pref = user?.waveBuildNotification ?: WaveBuildNotification.ALWAYS_ON
+        if( pref == WaveBuildNotification.ALWAYS_OFF )
+            return
+        // ON_ERROR: notify only on failures - skip when the build succeeded
+        if( pref == WaveBuildNotification.ON_ERROR && result.succeeded() )
+            return
+        final mail = buildCompletionMail(request, result, recipient)
+        spooler.sendMail(mail)
     }
 
     Mail buildCompletionMail(BuildRequest req, BuildResult result, String recipient) {
         // create template binding
         final binding = new HashMap(20)
         final status = result.succeeded() ? 'DONE': 'FAILED'
-        binding.build_id = result.id
-        binding.build_user =  "${req.user ? req.user.userName : 'n/a'} (${req.ip})"
-        binding.build_success = result.exitStatus==0
+        binding.build_id = result.buildId
+        binding.build_user =  "${req.identity?.user ? req.identity.user.userName : '-'} (${req.ip})"
+        binding.build_success = result.succeeded()
         binding.build_exit_status = result.exitStatus
         binding.build_time = formatTimestamp(result.startTime, req.offsetId) ?: '-'
         binding.build_duration = formatDuration(result.duration) ?: '-'
-        binding.build_image = req.targetImage
+        binding.build_image = preventLinkFormatting(req.targetImage)
         binding.build_format = req.format?.render() ?: 'Docker'
+        binding.build_compression = req.compression?.mode ?: '(default)'
         binding.build_platform = req.platform
+        binding.build_template = req.buildTemplate ?: '(default)'
         binding.build_containerfile = req.containerFile ?: '-'
         binding.build_condafile = req.condaFile
-        binding.build_spackfile = req.spackFile
-        binding.put('build_log_data', result.logs)
-        binding.build_url = "$serverUrl/view/builds/${result.id}"
-        binding.scan_url = req.scanId && result.succeeded() ? "$serverUrl/view/scans/${req.scanId}" : null
-        binding.scan_id = req.scanId
+        binding.build_digest = result.digest ?: '-'
+        binding.build_url = "$serverUrl/view/builds/${result.buildId}"
         binding.put('server_url', serverUrl)
         // result the main object
         Mail mail = new Mail()
@@ -113,4 +122,16 @@ class MailServiceImpl implements MailService {
         return mail
     }
 
+    /**
+     * Replaces dot characters in the image name with zero-with blank entity followed by a dot
+     * to prevent the mail client to render the container image name as a uri.
+     *
+     * @param name
+     *      The container image name as a string
+     * @return
+     *      The image string in which dot chars are replaced with {@code &#8203;.}
+     */
+    static protected String preventLinkFormatting(String name) {
+        name ? name.replaceAll(/\./,'&#8203;.') : null
+    }
 }

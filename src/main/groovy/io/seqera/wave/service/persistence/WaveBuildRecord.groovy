@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -24,24 +24,29 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
+import io.seqera.wave.api.BuildCompression
+import io.seqera.wave.api.BuildStatusResponse
+import io.seqera.wave.core.ChildRefs
+import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
-
+import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.builder.BuildResult
 /**
  * A collection of request and response properties to be stored
  *
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
-@ToString
+@ToString(includePackage = false, includeNames = true)
 @CompileStatic
 @EqualsAndHashCode
 class WaveBuildRecord {
 
+    @PostgresIgnore
     String buildId
     String dockerFile
     String condaFile
-    String spackFile
     String targetImage
     String userName
     String userEmail
@@ -50,35 +55,70 @@ class WaveBuildRecord {
     Instant startTime
     String offsetId
     Duration duration
-    int exitStatus
+    Integer exitStatus
     String platform
     String scanId
     BuildFormat format
+    String digest
+    BuildCompression compression
+    String buildTemplate
+    ChildRefs buildChildIds
+    ChildRefs scanChildIds
 
-    boolean succeeded() { exitStatus==0 }
+    Boolean succeeded() {
+        return duration != null ? (exitStatus==0) : null
+    }
 
+    Boolean done() {
+        return duration != null
+    }
+
+    static WaveBuildRecord fromEntry(BuildEntry entry) {
+        create0(entry.request, entry.result)
+    }
+    
     static WaveBuildRecord fromEvent(BuildEvent event) {
-        if( event.request.id != event.result.id )
+        create0(event.request, event.result)
+    }
+    
+    static private WaveBuildRecord create0(BuildRequest request, BuildResult result) {
+        if( result && request.buildId != result.buildId )
             throw new IllegalStateException("Build id must match the result id")
         return new WaveBuildRecord(
-                buildId: event.request.id,
-                // note: the string replacement is needed to a bug in the SurrealDb version 1.0.0-beta.8
-                // see https://pullanswer.com/questions/bug-unicode-escaped-characters-with-surrogate-pairs-causes-surrealdb-to-panic
-                dockerFile: event.request.containerFile?.replaceAll("[\ud83c\udf00-\ud83d\ude4f]|[\ud83d\ude80-\ud83d\udeff]", ""),
-                condaFile: event.request.condaFile?.replaceAll("[\ud83c\udf00-\ud83d\ude4f]|[\ud83d\ude80-\ud83d\udeff]", ""),
-                spackFile: event.request.spackFile?.replaceAll("[\ud83c\udf00-\ud83d\ude4f]|[\ud83d\ude80-\ud83d\udeff]", ""),
-                targetImage: event.request.targetImage,
-                userName: event.request.user?.userName,
-                userEmail: event.request.user?.email,
-                userId: event.request.user?.id,
-                requestIp: event.request.ip,
-                startTime: event.request.startTime,
-                duration: event.result.duration,
-                exitStatus: event.result.exitStatus,
-                platform: event.request.platform,
-                offsetId: event.request.offsetId,
-                scanId: event.request.scanId,
-                format: event.request.format
+                buildId: request.buildId,
+                dockerFile: request.containerFile,
+                condaFile: request.condaFile,
+                targetImage: request.targetImage,
+                userName: request.identity.user?.userName,
+                userEmail: request.identity.user?.email,
+                userId: request.identity.user?.id,
+                requestIp: request.ip,
+                startTime: request.startTime,
+                platform: request.platform?.toString(),
+                offsetId: request.offsetId,
+                scanId: request.scanId,
+                format: request.format,
+                duration: result?.duration,
+                exitStatus: result?.exitStatus,
+                digest: result?.digest,
+                compression: request?.compression,
+                buildTemplate: request?.buildTemplate,
+                buildChildIds: request?.buildChildIds,
+                scanChildIds: request?.scanChildIds
         )
     }
+    
+    BuildStatusResponse toStatusResponse() {
+        final status = duration!=null
+                ? BuildStatusResponse.Status.COMPLETED
+                : BuildStatusResponse.Status.PENDING
+
+        return new BuildStatusResponse(
+                buildId,
+                status,
+                startTime,
+                duration,
+                succeeded() )
+    }
+
 }

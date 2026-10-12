@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -17,17 +17,19 @@
  */
 
 package io.seqera.wave
+
+import groovy.transform.CompileStatic
 /**
  * Wave app defaults
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@CompileStatic
 interface WaveDefault {
 
     final static public String DOCKER_IO = 'docker.io'
     final static public String DOCKER_REGISTRY_1 = 'https://registry-1.docker.io'
     final static public String DOCKER_INDEX_V1 = 'https://index.docker.io/v1/'
-    final static public String TOWER = 'tower'
 
     final static public Map<String,List<String>> ACCEPT_HEADERS = Map.of(
             'Accept', List.of(
@@ -39,10 +41,10 @@ interface WaveDefault {
                     'application/vnd.docker.distribution.manifest.list.v2+json' ) )
 
 
-    final public static int[] HTTP_REDIRECT_CODES = [301, 302, 303, 307, 308]
+    final public static List<Integer> HTTP_REDIRECT_CODES = List.of(301, 302, 303, 307, 308)
 
-    final public static List<Integer> HTTP_SERVER_ERRORS = [500, 502, 503, 504]
+    final public static List<Integer> HTTP_SERVER_ERRORS = List.of(500, 502, 503, 504)
 
-    final public static List<Integer> HTTP_RETRYABLE_ERRORS = [429, 500, 502, 503, 504]
+    final public static List<Integer> HTTP_RETRYABLE_ERRORS = List.of(429, 500, 502, 503, 504)
     
 }

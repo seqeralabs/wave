@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -18,67 +18,81 @@
 
 package io.seqera.wave.tower.client
 
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
-import io.micronaut.cache.annotation.Cacheable
-import io.seqera.wave.tower.client.connector.HttpTowerConnector
-import io.seqera.wave.tower.client.connector.WebSocketTowerConnector
+import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.seqera.wave.tower.auth.JwtAuth
+import io.seqera.wave.tower.client.cache.ClientCache
+import io.seqera.wave.tower.client.connector.TowerConnector
+import io.seqera.wave.tower.compute.DescribeWorkflowLaunchResponse
+import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import org.apache.commons.lang3.StringUtils
-
 /**
  * Implement a client to interact with Tower services
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  * @author Jordi Deu-Pons <jordi@seqera.io>
  */
+@Slf4j
 @Singleton
 @CompileStatic
 class TowerClient {
 
     @Inject
-    private HttpTowerConnector httpClient
+    private TowerConnector connector
 
     @Inject
-    private WebSocketTowerConnector socketClient
+    private ClientCache cache
 
-    protected <T> CompletableFuture<T> getAsync(URI uri, String endpoint, @Nullable String authorization, Class<T> type) {
+    @Value('${wave.pairing.cache.short.duration:60s}')
+    private Duration cacheShortDuration
+
+    @Value('${wave.pairing.cache.long.duration:24h}')
+    private Duration cacheLongDuration
+
+    protected <T> CompletableFuture<T> getAsync(URI uri, String endpoint, @Nullable JwtAuth authorization, Class<T> type) {
         assert uri, "Missing uri argument"
         assert endpoint, "Missing endpoint argument"
-
-        // Connect using websocket connection when available
-        if( socketClient.isEndpointRegistered(endpoint) )
-            return socketClient.sendAsync(endpoint, uri, authorization, type)
-
-        // Fallback to public HTTP connection
-        return httpClient.sendAsync(endpoint, uri, authorization, type)
+        return connector.sendAsync(endpoint, uri, authorization, type)
     }
 
-    @Cacheable('cache-20sec')
-    CompletableFuture<ServiceInfoResponse> serviceInfo(String towerEndpoint) {
-        final uri = serviceInfoEndpoint(towerEndpoint)
-        return getAsync(uri, towerEndpoint, null, ServiceInfoResponse)
+    protected Object get0(URI uri, String endpoint, @Nullable JwtAuth auth, Class type, String cacheKey, Duration ttl) {
+        log.trace "Tower client cache - key=$cacheKey; uri=$uri; ttl=$ttl; auth=${auth}"
+        return cache.getOrCompute(cacheKey, (k)-> getAsync(uri, endpoint, auth, type).get(), ttl)
     }
 
-    @Cacheable('cache-20sec')
-    CompletableFuture<UserInfoResponse> userInfo(String towerEndpoint, String authorization) {
+    GetUserInfoResponse userInfo(String towerEndpoint, JwtAuth authorization, boolean force=false) {
         final uri = userInfoEndpoint(towerEndpoint)
-        return getAsync(uri, towerEndpoint, authorization, UserInfoResponse)
+        if( force )
+            return getAsync(uri, towerEndpoint, authorization, GetUserInfoResponse).get()
+        final k = RegHelper.sipHash(uri, authorization.key, null, null)
+        // NOTE: it assumes the user info metadata does nor change over time
+        // and therefore the *long* expiration cached is used
+        get0(uri, towerEndpoint, authorization, GetUserInfoResponse, k, cacheLongDuration) as GetUserInfoResponse
     }
 
-    @Cacheable('cache-20sec')
-    CompletableFuture<ListCredentialsResponse> listCredentials(String towerEndpoint, String authorization, Long workspaceId) {
+    ListCredentialsResponse listCredentials(String towerEndpoint, JwtAuth authorization, Long workspaceId, String workflowId) {
         final uri = listCredentialsEndpoint(towerEndpoint, workspaceId)
-        return getAsync(uri, towerEndpoint, authorization, ListCredentialsResponse)
+        final k = RegHelper.sipHash(uri, authorization.key, workspaceId, workflowId)
+        // NOTE: when the 'workflowId' is provided it assumes credentials will not change during
+        // the workflow execution and therefore the *long* expiration cached is used
+        final ttl = workflowId ? cacheLongDuration : cacheShortDuration
+        return get0(uri, towerEndpoint, authorization, ListCredentialsResponse, k, ttl) as ListCredentialsResponse
     }
 
-    @Cacheable('cache-20sec')
-    CompletableFuture<GetCredentialsKeysResponse> fetchEncryptedCredentials(String towerEndpoint, String authorization, String credentialsId, String pairingId, Long workspaceId) {
+    GetCredentialsKeysResponse fetchEncryptedCredentials(String towerEndpoint, JwtAuth authorization, String credentialsId, String pairingId, Long workspaceId, String workflowId) {
         final uri = fetchCredentialsEndpoint(towerEndpoint, credentialsId, pairingId, workspaceId)
-        return getAsync(uri, towerEndpoint, authorization, GetCredentialsKeysResponse)
+        final k = RegHelper.sipHash(uri, authorization.key, workspaceId, workflowId)
+        // NOTE: when the 'workflowId' is provided it assumes credentials will not change during
+        // the workflow execution and therefore the *long* expiration cached is used
+        final ttl = workflowId ? cacheLongDuration : cacheShortDuration
+        return get0(uri, towerEndpoint, authorization, GetCredentialsKeysResponse, k, ttl) as GetCredentialsKeysResponse
     }
 
     protected static URI fetchCredentialsEndpoint(String towerEndpoint, String credentialsId, String pairingId, Long workspaceId) {
@@ -89,9 +103,7 @@ class TowerClient {
         if (!pairingId)
             throw new IllegalArgumentException("Missing encryptionKey argument")
 
-        // keep `keyId` only for backward compatibility
-        // it should be removed in a following version in favour of `pairingId`
-        def uri = "${checkEndpoint(towerEndpoint)}/credentials/$credentialsId/keys?pairingId=$pairingId&keyId=$pairingId"
+        def uri = "${checkEndpoint(towerEndpoint)}/credentials/$credentialsId/keys?pairingId=$pairingId"
         if( workspaceId!=null )
             uri += "&workspaceId=$workspaceId"
 
@@ -109,10 +121,6 @@ class TowerClient {
         return URI.create("${checkEndpoint(towerEndpoint)}/user-info")
     }
 
-    protected static URI serviceInfoEndpoint(String towerEndpoint) {
-        return URI.create("${checkEndpoint(towerEndpoint)}/service-info")
-    }
-
     static String checkEndpoint(String endpoint) {
         if( !endpoint )
             throw new IllegalArgumentException("Missing endpoint argument")
@@ -122,4 +130,43 @@ class TowerClient {
         StringUtils.removeEnd(endpoint, "/")
     }
 
+    DescribeWorkflowLaunchResponse describeWorkflowLaunch(String towerEndpoint, JwtAuth authorization, Long workspaceId, String workflowId) {
+        final uri = workflowLaunchEndpoint(towerEndpoint, workspaceId, workflowId)
+        final k = RegHelper.sipHash(uri, authorization.key, workspaceId, workflowId)
+        // NOTE: it assumes the workflow launch definition cannot change for the specified 'workflowId'
+        // and therefore the *long* expiration cached is used
+        return get0(uri, towerEndpoint, authorization, DescribeWorkflowLaunchResponse.class, k, cacheLongDuration) as DescribeWorkflowLaunchResponse
+    }
+
+    protected static URI workflowLaunchEndpoint(String endpoint, Long workspaceId, String workflowId) {
+        assert endpoint
+        assert workflowId
+
+        def uri = "${checkEndpoint(endpoint)}/workflow/${workflowId}/launch"
+        if( workspaceId!=null )
+            uri += '?workspaceId=' + workspaceId
+        return URI.create(uri)
+    }
+
+    DescribeWorkflowResponse describeWorkflow(String endpoint, JwtAuth authorization, Long workspaceId, String workflowId) {
+        final uri = workflowDescribeEndpoint(endpoint,workspaceId,workflowId)
+        final k = RegHelper.sipHash(uri, authorization.key, workspaceId, workflowId)
+        // NOTE: cached for a *short* duration keyed by workflowId so the many container tokens of a
+        // single run coalesce onto one Platform lookup per window instead of one lookup per token.
+        // Completion is thus observed up to cacheShortDuration late — harmless, since the token
+        // access-ttl (minutes) is what bounds post-completion access, not this cache.
+        return get0(uri, endpoint, authorization, DescribeWorkflowResponse, k, cacheShortDuration) as DescribeWorkflowResponse
+    }
+
+    protected static URI workflowDescribeEndpoint(String endpoint, Long workspaceId, String workflowId) {
+        def uri = "${checkEndpoint(endpoint)}/workflow/${workflowId}"
+        if( workspaceId!=null )
+            uri += "?workspaceId=$workspaceId"
+        return URI.create(uri)
+    }
+
+    /** Only for testing - do not use */
+    protected void invalidateCache() {
+        cache.invalidateAll()
+    }
 }

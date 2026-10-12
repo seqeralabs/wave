@@ -3,17 +3,19 @@ micronaut:
   application:
     name: wave-app
   caches :
-    cache-20sec:
-      expire-after-access: 20s
-    cache-1min:
-      expire-after-access: 1m
+    # IMPORTANT: use `expire-after-write` strategy to guarantee cached entries are not retained more than the declared period.
+    # Using `expire-after-read` can cause an entry to be retained in the cache more than expected if it is hit continuously
+    # with a frequency shorter than the declared cache period.
+    cache-registry-proxy:
+      expire-after-write: 20s
+      record-stats: true
     # Discovery client by default uses a cache for results. This is a transitive behaviour
     # introduced by prometheus and management dependencies and below line disables as
     # it is unused at the moment by the wave project. See https://micronaut-projects.github.io/micronaut-discovery-client/latest/guide/#introduction
     discovery-client :
       enabled : false
   server:
-    port: 9090
+    port: "${WAVE_SERVER_PORT:9090}"
     # https://docs.micronaut.io/latest/guide/#atBlocking
     thread-selection: AUTO
     # note this should be >= the build timeout (which is 15 minutes) see below
@@ -30,38 +32,66 @@ micronaut:
         paths: 'classpath:io/seqera/wave/assets'
         mapping: '/assets/**'
         enabled: true
+      openapi:
+        paths: 'classpath:public/openapi'
+        mapping: '/openapi/**'
+        enabled: true
+      webjars:
+        paths: 'classpath:META-INF/resources/webjars'
+        mapping: '/webjars/**'
+        enabled: true
 # http client configuration
 # https://docs.micronaut.io/latest/guide/configurationreference.html#io.micronaut.http.client.DefaultHttpClientConfiguration
-  executors:
-    stream-executor:
-      type: FIXED
-      number-of-threads: 16
-  netty:
-    event-loops:
-      stream-pool:
-        executor: 'stream-executor'
   http:
     services:
       stream-client:
         read-timeout: '30s'
         read-idle-timeout: '120s'
-        event-loop-group: 'stream-pool'
+  security:
+    enabled: true
+    intercept-url-map:
+      - pattern: '/**'
+        access:
+          - isAnonymous()
 ---
 wave:
-  allowAnonymous: true
+  # installation-level capability toggles; all default to `true` (permissive).
+  # See the `strict` environment (application-strict.yml) to lock them all down.
+  capabilities:
+    # when false, anonymous (unauthenticated) users cannot access the Wave server
+    # (legacy alias: wave.allowAnonymous)
+    anonymous-access: ${wave.allowAnonymous:true}
+    # when false, disable the ephemeral container pull/augmentation path; requests must use "freeze" mode
+    ephemeral-token: true
+    # when false, Wave does not broker registry credentials on the proxy pull path;
+    # images are pulled directly from the target registry with the caller's own credentials
+    credentials-federation: true
+    # when false, the HTML view pages under /view/** are disabled globally (return 404)
+    web-views: true
   server:
       url: "${WAVE_SERVER_URL:`http://localhost:9090`}"
+  security:
+    http-headers:
+      enabled: true
+      hsts:
+        max-age: 31536000
+        include-sub-domains: true
+      frame-options: "DENY"
+      content-type-options: "nosniff"
+      referrer-policy: "strict-origin-when-cross-origin"
+      permissions-policy: "camera=(), microphone=(), geolocation=()"
+      content-security-policy: "default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; frame-ancestors 'none'"
   build:
-    kaniko-image: "gcr.io/kaniko-project/executor:v1.19.2"
-    singularity-image: "quay.io/singularity/singularity:v3.11.4-slim"
-    singularity-image-arm64: "quay.io/singularity/singularity:v3.11.4-slim-arm64"
-    repo: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/dev"
-    cache: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/cache"
+    buildkit-image: "public.cr.seqera.io/wave/buildkit:v0.25.2-rootless"
+    singularity-image: "public.cr.seqera.io/wave/singularity:v4.2.1-r4"
+    singularity-image-init: "public.cr.seqera.io/wave/busybox:latest"
+    # image providing the `condasplit` tool used by the `conda/micromamba:v2-fast` and `conda/pixi:v1-fast` build templates
+    condasplit-image: "public.cr.seqera.io/wave/condasplit:v1"
     # note changing this should be matching the micronaut.server.idle-timeout (see above)
     timeout: 900s
     status:
       delay: 5s
-      duration: 1d
+      duration: 90m
   httpclient:
     retry:
       delay: '500ms'
@@ -69,7 +99,13 @@ wave:
       multiplier: '1.75'
   scan:
     image:
-      name: aquasec/trivy:0.47.0
+      name: public.cr.seqera.io/wave/scanner:v1-0.65.0-oras-1.3.0
+    environment:
+      # see https://github.com/aquasecurity/trivy/discussions/7668#discussioncomment-11028887
+      - "TRIVY_DB_REPOSITORY=public.ecr.aws/aquasecurity/trivy-db"
+      - "TRIVY_JAVA_DB_REPOSITORY=public.ecr.aws/aquasecurity/trivy-java-db"
+  blobCache:
+    s5cmdImage: public.cr.seqera.io/wave/s5cmd:v2.3.0
 ---
 jackson:
   serialization:
@@ -78,12 +114,5 @@ jackson:
 logger:
   levels:
     io.seqera: "DEBUG"
-    io.micronaut.retry.intercept.RecoveryInterceptor: "OFF"
-#   ^^^^^^^^^^^^^^^^^^^^^
-#   Disable logs of `RecoveryInterceptor`, as they have been found to be noisy.
-#   Declarative `io.micronaut.http.client.annotation.@Client`s are annotated with `io.micronaut.retry.annotation@Recoverable`
-#   and throw an exception on every error response by default. `RecoveryInterceptor` ends up logging those exceptions
-#   even if they are handled and no actual recovery/fallback logic gets to take place.
-#   TODO remove once the project is updated to Micronaut 4.x, as @Client won't be annotated with @Recoverable anymore
-#   See https://github.com/micronaut-projects/micronaut-core/issues/3719; https://github.com/micronaut-projects/micronaut-core/pull/8235
+    com.github.benmanes.caffeine.cache.LocalAsyncCache: "ERROR"
 ...

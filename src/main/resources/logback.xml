@@ -1,6 +1,6 @@
 <!--
   ~  Wave, containers provisioning service
-  ~  Copyright (c) 2023, Seqera Labs
+  ~  Copyright (c) 2023-2024, Seqera Labs
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU Affero General Public License as published by
@@ -19,12 +19,13 @@
 <configuration>
     <property name="WAVE_LOG_ROOT" value="${WAVE_LOG_ROOT:-.}" />
     <property name="WAVE_LOG_NAME" value="${WAVE_LOG_NAME:-wave}" />
+    <property name="WAVE_LOG_PATTERN" value="${WAVE_LOG_PATTERN:-%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg >> wt=%X{requestId}%n}" />
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <!-- ansi escape mess-up with non-ansi terminal and loggers -->
         <withJansi>false</withJansi>
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>${WAVE_LOG_PATTERN}</pattern>
         </encoder>
 <!--        <filter class="io.seqera.wave.util.LoggerLevelFilter">-->
 <!--            <level>${WAVE_LOG_LEVEL:-INFO}</level>-->

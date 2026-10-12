@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -20,6 +20,7 @@ package io.seqera.wave.service.builder
 
 import groovy.transform.CompileStatic
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.util.BucketTokenizer
 import jakarta.inject.Inject
 /**
  * Defines an abstract container build strategy.
@@ -35,11 +36,11 @@ abstract class BuildStrategy {
     @Inject
     private BuildConfig buildConfig
 
-    abstract BuildResult build(BuildRequest req)
+    abstract void build(String jobName, BuildRequest req)
 
-    void cleanup(BuildRequest req) {
-        req.workDir?.deleteDir()
-    }
+    abstract List<String> singularityLaunchCmd(BuildRequest req)
+
+    static final public String BUILDKIT_ENTRYPOINT = 'buildctl-daemonless.sh'
 
     List<String> launchCmd(BuildRequest req) {
         if(req.formatDocker()) {
@@ -55,46 +56,143 @@ abstract class BuildStrategy {
     protected List<String> dockerLaunchCmd(BuildRequest req) {
         final result = new ArrayList(10)
         result
-                << "--dockerfile"
-                << "$req.workDir/Containerfile".toString()
-                << "--context"
-                << "$req.workDir/context".toString()
-                << "--destination"
-                << req.targetImage
-                << "--cache=true"
-                << "--custom-platform"
-                << req.platform.toString()
+                << "build"
+                << "--frontend"
+                << "dockerfile.v0"
+                << "--local"
+                << "dockerfile=$req.workDir".toString()
+                << "--opt"
+                << "filename=Containerfile"
+                << "--local"
+                << "context=$req.workDir/context".toString()
+                << "--output"
+                << outputOpts(req, buildConfig)
+                << "--opt"
+                << "platform=$req.platform".toString()
 
         if( req.cacheRepository ) {
-            result << "--cache-repo" << req.cacheRepository
-        }
-
-        if( !buildConfig.compressCaching ){
-            result << "--compressed-caching=false"
-        }
-
-        if(req.spackFile){
-            result << '--build-arg'
-            result << 'AWS_STS_REGIONAL_ENDPOINTS=$(AWS_STS_REGIONAL_ENDPOINTS)'
-            result << '--build-arg'
-            result << 'AWS_REGION=$(AWS_REGION)'
-            result << '--build-arg'
-            result << 'AWS_DEFAULT_REGION=$(AWS_DEFAULT_REGION)'
-            result << '--build-arg'
-            result << 'AWS_ROLE_ARN=$(AWS_ROLE_ARN)'
-            result << '--build-arg'
-            result << 'AWS_WEB_IDENTITY_TOKEN_FILE=$(AWS_WEB_IDENTITY_TOKEN_FILE)'
+            result << "--export-cache"
+            result << cacheExportOpts(req, buildConfig)
+            result << "--import-cache"
+            result << cacheImportOpts(req, buildConfig)
         }
 
         return result
     }
 
-    protected List<String> singularityLaunchCmd(BuildRequest req) {
-        final result = new ArrayList(10)
-        result
-            << 'sh'
-            << '-c'
-            << "singularity build image.sif ${req.workDir}/Containerfile && singularity push image.sif ${req.targetImage}".toString()
-        return result
+
+    static protected String compressOpts(BuildRequest req, BuildConfig config) {
+        final result = new StringBuilder()
+        final compression = req.compression?.mode?.toString() ?: config.compression
+        final level = req.compression?.level
+        final force = req.compression?.force!=null
+                ? req.compression.force
+                : ( config.forceCompression != null
+                ? config.forceCompression
+                : (compression=='estargz' ? true : null) )
+        if( compression )
+            result << ",compression=${compression}"
+        if( level!=null )
+            result << ",compression-level=${level}"
+        if( force!=null )
+            result << ",force-compression=${force}"
+        return result.toString()
     }
+
+    static protected String outputOpts(BuildRequest req, BuildConfig config) {
+        final result = new StringBuilder()
+        result << "type=image"
+        result << ",name=${req.targetImage}"
+        result << ",push=true"
+        result << ",oci-mediatypes=${config.ociMediatypes}"
+        result << compressOpts(req, config)
+        return result.toString()
+    }
+
+    static protected String cacheExportOpts(BuildRequest req, BuildConfig config) {
+        return BuildConfig.isBucketPath(req.cacheRepository)
+                ? s3ExportCacheOpts(req, config)
+                : registryExportCacheOpts(req, config)
+    }
+
+    static protected String cacheImportOpts(BuildRequest req, BuildConfig config) {
+        return BuildConfig.isBucketPath(req.cacheRepository)
+                ? s3ImportCacheOpts(req, config)
+                : registryImportCacheOpts(req, config)
+    }
+
+    static protected String registryExportCacheOpts(BuildRequest req, BuildConfig config) {
+        final result = new StringBuilder()
+        result << "type=registry"
+        result << ",image-manifest=true"
+        result << ",ref=${req.cacheRepository}:${req.containerId}"
+        result << ",mode=max"
+        result << ",ignore-error=true"
+        result << ",oci-mediatypes=${config.ociMediatypes}"
+        result << compressOpts(req, config)
+        return result.toString()
+    }
+
+    static protected String registryImportCacheOpts(BuildRequest req, BuildConfig config) {
+        return "type=registry,ref=${req.cacheRepository}:${req.containerId}".toString()
+    }
+
+    static protected String s3ExportCacheOpts(BuildRequest req, BuildConfig config) {
+        final bucket = parseBucketFromS3Path(req.cacheRepository)
+        final prefix = parsePrefixFromS3Path(req.cacheRepository)
+        final region = config.getCacheBucketRegion()
+        final uploadParallelism = config.cacheBucketUploadParallelism
+
+        final result = new StringBuilder()
+        result << "type=s3"
+        if (region) {
+            result << ",region=${region}"
+        }
+        result << ",bucket=${bucket}"
+        if (prefix) {
+            result << ",prefix=${prefix}"
+        }
+        result << ",name=${req.containerId}"
+        result << ",mode=max"
+        result << ",ignore-error=true"
+        if (uploadParallelism) {
+            result << ",upload_parallelism=${uploadParallelism}"
+        }
+        result << compressOpts(req, config)
+        return result.toString()
+    }
+
+    static protected String s3ImportCacheOpts(BuildRequest req, BuildConfig config) {
+        final bucket = parseBucketFromS3Path(req.cacheRepository)
+        final prefix = parsePrefixFromS3Path(req.cacheRepository)
+        final region = config.getCacheBucketRegion()
+
+        final result = new StringBuilder()
+        result << "type=s3"
+        if (region) {
+            result << ",region=${region}"
+        }
+        result << ",bucket=${bucket}"
+        if (prefix) {
+            result << ",prefix=${prefix}"
+        }
+        result << ",name=${req.containerId}"
+        return result.toString()
+    }
+
+    private static String parseBucketFromS3Path(String s3Path) {
+        final tokenizer = BucketTokenizer.from(s3Path)
+        return tokenizer.bucket
+    }
+
+    private static String parsePrefixFromS3Path(String s3Path) {
+        final tokenizer = BucketTokenizer.from(s3Path)
+        final prefix = tokenizer.key
+        // return null if prefix is null or empty
+        if( !prefix )
+            return null
+        // ensure prefix always has a trailing slash
+        return prefix.endsWith('/') ? prefix : prefix + '/'
+    }
+
 }

@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -55,19 +55,34 @@ class StringUtilsTest extends Specification {
     }
 
     @Unroll
-    def 'should strip surreal prefix' () {
+    def 'should concat paths' () {
         expect:
-        StringUtils.surrealId(ID) == EXPECTED
+        StringUtils.pathConcat(BASE, PATH) == EXPECTED
 
         where:
-        ID                  | EXPECTED
-        null                | null
-        'foo'               | 'foo'
+        BASE            | PATH          | EXPECTED
+        '/'             | 'bar'         | '/bar'
+        '/'             | '/bar'        | '/bar'
         and:
-        'foo:100'           | '100'
-        'foo-bar:1-2-3'     | '1-2-3'
+        'foo'           | 'bar'         | 'foo/bar'
+        'foo/'          | 'bar'         | 'foo/bar'
+        'foo'           | '/bar'        | 'foo/bar'
+        'foo/'          | '/bar'        | 'foo/bar'
+        'foo//'         | '/bar'        | 'foo/bar'
         and:
-        'foo:⟨100⟩'         | '100'
-        'foo-bar:⟨1-2-3⟩'   | '1-2-3'
+        'http://foo'    | '/bar'        | 'http://foo/bar'
+        'http://foo/'   | '/bar'        | 'http://foo/bar'
+    }
+
+    def 'should truncate a string' () {
+        expect:
+        StringUtils.trunc(STR, MAX) == EXPECTED
+        where:
+        STR             | MAX       | EXPECTED
+        null            | 100       | null
+        '1234567890'    | 100       | '1234567890'
+        '1234567890'    | 5         | '12345..'
+        '12345'         | 5         | '12345'
+
     }
 }

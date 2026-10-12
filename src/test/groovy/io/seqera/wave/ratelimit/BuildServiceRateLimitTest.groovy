@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -24,18 +24,20 @@ import spock.lang.Specification
 import java.nio.file.Files
 
 import io.micronaut.context.ApplicationContext
+import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.configuration.RateLimiterConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.builder.ContainerBuildServiceImpl
-import io.seqera.wave.tower.User
+import io.seqera.wave.service.builder.impl.ContainerBuildServiceImpl
+import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.util.ContainerHelper
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
-class BuildServiceRateLimitTest extends Specification{
+class BuildServiceRateLimitTest extends Specification {
 
     @Shared
     String buildRepo = 'quay.io/repo/name'
@@ -58,8 +60,8 @@ class BuildServiceRateLimitTest extends Specification{
         configuration = applicationContext.getBean(RateLimiterConfig)
     }
 
-    def mockUser = Mock(User){
-        getId() >> 1234
+    def cleanupSpec() {
+        applicationContext.close()
     }
 
     def 'should not allow more auth builds than rate limit' () {
@@ -71,7 +73,19 @@ class BuildServiceRateLimitTest extends Specification{
         RUN echo hi > hello.txt
         """.stripIndent()
         and:
-        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', cacheRepo, null, "127.0.0.1", null)
+        def CONTAINER_ID = ContainerHelper.makeContainerId(dockerfile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
+        def TARGET_IMAGE = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, CONTAINER_ID, null, null)
+        def REQ = BuildRequest.of(
+                containerId: CONTAINER_ID,
+                containerFile: dockerfile,
+                workspace:  folder,
+                targetImage:  TARGET_IMAGE,
+                identity:  Mock(PlatformId),
+                platform:  ContainerPlatform.of('amd64'),
+                cacheRepository:  cacheRepo,
+                ip:  "127.0.0.1",
+                configJson:  '{"config":"json"}',
+                format: BuildFormat.DOCKER )
 
         when:
         (0..configuration.build.authenticated.max).each {
@@ -93,7 +107,19 @@ class BuildServiceRateLimitTest extends Specification{
         RUN echo hi > hello.txt
         """.stripIndent()
         and:
-        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', cacheRepo, null, "127.0.0.1", null)
+        def CONTAINER_ID = ContainerHelper.makeContainerId(dockerfile, null, ContainerPlatform.of('amd64'), buildRepo, null, Mock(ContainerConfig))
+        def TARGET_IMAGE = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, CONTAINER_ID, null, null)
+        def REQ = BuildRequest.of(
+                containerId: CONTAINER_ID,
+                containerFile: dockerfile,
+                workspace: folder,
+                targetImage: TARGET_IMAGE,
+                identity: Mock(PlatformId),
+                platform: ContainerPlatform.of('amd64'),
+                cacheRepository: cacheRepo,
+                ip: "127.0.0.1",
+                configJson: '{"config":"json"}',
+                format:  BuildFormat.DOCKER)
 
         when:
         (0..configuration.build.anonymous.max).each {

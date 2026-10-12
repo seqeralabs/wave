@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -21,8 +21,6 @@ package io.seqera.wave.service.cleanup
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
-import io.seqera.wave.configuration.BuildConfig
-import io.seqera.wave.service.builder.BuildResult
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -36,27 +34,23 @@ import jakarta.inject.Singleton
 class CleanupStrategy {
 
     @Value('${wave.debug:false}')
-    Boolean debugMode
+    private Boolean debugMode
 
     @Inject
-    BuildConfig buildConfig
-
-    boolean shouldCleanup(BuildResult result) {
-        shouldCleanup(result?.exitStatus)
-    }
+    private CleanupConfig config
 
     boolean shouldCleanup(Integer exitStatus) {
-        final cleanup = buildConfig.cleanup
+        final cleanup = config.strategy
         if( cleanup==null )
             return !debugMode
-        if( cleanup == 'true' )
+        if( cleanup == 'always' )
             return true
-        if( cleanup == 'false' )
+        if( cleanup == 'never' )
             return false
         if( cleanup.toLowerCase() == 'onsuccess' ) {
             return exitStatus==0
         }
-        log.debug "Invalid cleanup value: '$cleanup'"
+        log.debug "Invalid cleanup strategy: '$cleanup' - check setting 'wave.cleanup.strategy'"
         return true
     }
 

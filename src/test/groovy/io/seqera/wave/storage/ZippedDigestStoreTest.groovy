@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -30,7 +30,7 @@ class ZippedDigestStoreTest extends Specification {
         def CONTENT = 'Hello world!'
 
         when:
-        def digest = new ZippedDigestStore(CONTENT.bytes, 'text', 'sha256:122345567890', 3000)
+        def digest = ZippedDigestStore.fromUncompressed(CONTENT.bytes, 'text', 'sha256:122345567890', 3000)
         then:
         digest.bytes == CONTENT.bytes
         digest.digest == 'sha256:122345567890'

@@ -1,0 +1,115 @@
+name: Test layered conda builds
+
+# builds each layered (`-fast`) conda template next to the template it layers and checks
+# that both images have the same conda environment, file by file
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'src/main/resources/templates/conda-micromamba-v2/**'
+      - 'src/main/resources/templates/conda-micromamba-v2-fast/**'
+      - 'src/main/resources/templates/conda-pixi-v1/**'
+      - 'src/main/resources/templates/conda-pixi-v1-fast/**'
+      - 'condasplit/**'
+      - '.github/workflows/test-conda-layers.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: micromamba
+            base: conda-micromamba-v2
+            fast: conda-micromamba-v2-fast
+            builder: mambaorg/micromamba:2-amazon2023
+            prefix: /opt/conda
+            # the package cache is not shipped by the layered template
+            ignore: '^pkgs(/|$)'
+          - name: pixi
+            base: conda-pixi-v1
+            fast: conda-pixi-v1-fast
+            builder: public.cr.seqera.io/wave/pixi:0.61.0-noble
+            prefix: /opt/wave/.pixi/envs/default
+            # nothing to ignore: the pixi package cache is outside the environment
+            ignore: '^$'
+    env:
+      # the condasplit tool and frontend image, as Wave's `wave.build.condasplit-image` default
+      LAYERS_IMAGE: public.cr.seqera.io/wave/condasplit:v1
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+        with:
+          # the BuildKit version of the Wave build pods
+          driver-opts: image=moby/buildkit:v0.25.2
+
+      - name: Render container files
+        run: |
+          mkdir -p ctx
+          cat > ctx/conda.yml <<'EOF'
+          channels:
+          - conda-forge
+          - bioconda
+          dependencies:
+          - bioconda::gatk4=4.6.2.0
+          - bioconda::samtools=1.21
+          EOF
+          # the bindings Wave uses for a conda.yml file request with the default options
+          render() {
+            sed -e "s#{{layers_image}}#${LAYERS_IMAGE}#g" \
+                -e "s#{{mamba_image}}#${{ matrix.builder }}#" \
+                -e "s#{{pixi_image}}#${{ matrix.builder }}#" \
+                -e 's#{{base_image}}#ubuntu:24.04#' \
+                -e 's#{{conda_file_add}}#COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml#' \
+                -e 's#{{conda_file_opts}}#-f /tmp/conda.yml#g' \
+                -e 's#^    {{base_packages}}$#    \&\& micromamba install -y -n base conda-forge::procps-ng \\#' \
+                "src/main/resources/templates/$1/dockerfile-conda-file.txt"
+          }
+          render ${{ matrix.base }} > ctx/Dockerfile.base
+          render ${{ matrix.fast }} > ctx/Dockerfile.fast
+          if [ "${{ matrix.name }}" = pixi ]; then
+            sed -i 's#micromamba install -y -n base conda-forge::procps-ng#pixi add conda-forge::procps-ng#' ctx/Dockerfile.base ctx/Dockerfile.fast
+            # verbose pixi output, to show where the install spends its time
+            sed -i -e 's#pixi init #pixi init -v #' -e 's#pixi add #pixi add -v #g' ctx/Dockerfile.base ctx/Dockerfile.fast
+          fi
+          if grep -n '{{' ctx/Dockerfile.base ctx/Dockerfile.fast; then exit 1; fi
+          cat ctx/Dockerfile.fast
+
+      - name: Build base image
+        run: docker buildx build --load --progress=plain -t test:base -f ctx/Dockerfile.base ctx
+
+      - name: Build layered image
+        run: |
+          set -o pipefail
+          docker buildx build --load --progress=plain -t test:fast -f ctx/Dockerfile.fast ctx 2>&1 | tee fast.log
+          echo "--- layer plan"
+          sed -n '/>> CONDA_LAYERS_START/,/<< CONDA_LAYERS_END/p' fast.log
+
+      - name: Compare images
+        run: |
+          echo "--- layers"
+          docker history --no-trunc --format '{{.Size}}\t{{.CreatedBy}}' test:fast | cut -c1-120
+          echo "--- image size"
+          docker image ls --format '{{.Tag}}\t{{.Size}}' test
+          # type, size, mode, owner, symlink target and path of every entry of the environment;
+          # directory sizes, link counts and times are not compared, see the layered conda builds ADR
+          list() {
+            docker run --rm --entrypoint find "$1" ${{ matrix.prefix }} -mindepth 1 -printf '%y %s %m %u:%g %l\t%P\n' \
+              | awk -F'\t' -v ignore='${{ matrix.ignore }}' '$2 !~ ignore { if ($1 ~ /^d /) sub(/^d [0-9]+/, "d -", $1); print $1 "\t" $2 }' \
+              | sort
+          }
+          list test:base > base.txt
+          list test:fast > fast.txt
+          echo "--- base: $(wc -l < base.txt) entries, fast: $(wc -l < fast.txt) entries"
+          if ! cmp -s base.txt fast.txt; then
+            diff base.txt fast.txt | head -n 50
+            exit 1
+          fi

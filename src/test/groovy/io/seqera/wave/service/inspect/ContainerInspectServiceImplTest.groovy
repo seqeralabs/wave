@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -22,6 +22,11 @@ import spock.lang.Specification
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.auth.RegistryCredentialsProvider
+import io.seqera.wave.config.CondaOpts
+import io.seqera.wave.config.PixiOpts
+import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.util.TemplateUtils
 import jakarta.inject.Inject
 
 /**
@@ -39,7 +44,7 @@ class ContainerInspectServiceImplTest extends Specification {
         def creds = credentialsProvider.getDefaultCredentials('docker.io')
         def EXPECTED = "$creds.username:$creds.password".bytes.encodeBase64()
         when:
-        def result = service.credsJson(['docker.io'] as Set, null, null, null, null)
+        def result = service.credsJson(['docker.io'] as Set, PlatformId.NULL)
         then:
         // note: the auth below depends on the docker user and password used for test
         result == """{"auths":{"https://index.docker.io/v1/":{"auth":"$EXPECTED"}}}"""
@@ -53,7 +58,7 @@ class ContainerInspectServiceImplTest extends Specification {
         def creds2 = credentialsProvider.getDefaultCredentials('quay.io')
         def EXPECTED2 = "$creds2.username:$creds2.password".bytes.encodeBase64()
         when:
-        def result = service.credsJson(['docker.io/busybox','quay.io/alpine'] as Set, null, null,null, null)
+        def result = service.credsJson(['docker.io/busybox','quay.io/alpine'] as Set, PlatformId.NULL)
         then:
         // note: the auth below depends on the docker user and password used for test
         result == """{"auths":{"https://index.docker.io/v1/":{"auth":"$EXPECTED1"},"https://quay.io":{"auth":"$EXPECTED2"}}}"""
@@ -64,13 +69,13 @@ class ContainerInspectServiceImplTest extends Specification {
         def creds1 = credentialsProvider.getDefaultCredentials('docker.io')
         def EXPECTED1 = "$creds1.username:$creds1.password".bytes.encodeBase64()
         when:
-        def result = service.credsJson(['docker.io/busybox','docker.io/ubuntu:latest'] as Set, null, null, null, null)
+        def result = service.credsJson(['docker.io/busybox','docker.io/ubuntu:latest'] as Set, PlatformId.NULL)
         then:
         // note: the auth below depends on the docker user and password used for test
         result == """{"auths":{"https://index.docker.io/v1/":{"auth":"$EXPECTED1"}}}"""
 
         when:
-        result = service.credsJson(['busybox','docker.io/ubuntu:latest'] as Set, null, null, null, null)
+        result = service.credsJson(['busybox','docker.io/ubuntu:latest'] as Set, PlatformId.NULL)
         then:
         // note: the auth below depends on the docker user and password used for test
         result == """{"auths":{"https://index.docker.io/v1/":{"auth":"$EXPECTED1"}}}"""
@@ -89,19 +94,58 @@ class ContainerInspectServiceImplTest extends Specification {
 
         and:
         ContainerInspectServiceImpl.findRepositories('''
-                FROM gcr.io/kaniko-project/executor:latest AS knk
+                FROM public.cr.seqera.io/wave/buildkit:v0.25.2-rootless AS bkt
                 RUN this and that
                 FROM amazoncorretto:17.0.4
-                COPY --from=knk /kaniko/executor /kaniko/executor
-                ''') == ['gcr.io/kaniko-project/executor:latest', 'amazoncorretto:17.0.4']
+                COPY --from=bkt /usr/bin/buildctl /usr/bin/buildctl
+                ''') == ['public.cr.seqera.io/wave/buildkit:v0.25.2-rootless', 'amazoncorretto:17.0.4']
 
+    }
+
+    def 'should find repos mounted in run statements' () {
+        expect:
+        ContainerInspectServiceImpl.findMountRepositories(LINE) == EXPECTED
+
+        where:
+        LINE                                                                                            | EXPECTED
+        null                                                                                            | []
+        'RUN echo hello'                                                                                | []
+        'COPY --from=quay.io/foo:1 /a /b'                                                               | []
+        'RUN --mount=type=bind,from=build,source=/,target=/opt echo hello'                              | []
+        'RUN --mount=type=bind,from=quay.io/foo:1,source=/,target=/opt echo hello'                      | ['quay.io/foo:1']
+        'RUN --mount=type=bind,from=foo@sha256:12345,target=/opt echo --mount=type=bind,from=bar:1'     | ['foo@sha256:12345']
+        'RUN --network=none --mount=type=cache,target=/c --mount=type=bind,from=bar:1,target=/o \\'     | ['bar:1']
+    }
+
+    def 'should find repos in micromamba v2-fast container file' () {
+        given:
+        def LAYERS = 'public.cr.seqera.io/wave/condasplit:v1'
+        def CONDA_OPTS = new CondaOpts([mambaImage: 'mambaorg/micromamba:2.1.1', baseImage: 'ubuntu:24.04'])
+
+        expect:
+        // the ADD line of a lock file adds no repository
+        ContainerInspectServiceImpl.findRepositories(TemplateUtils.condaToDockerFileUsingV2Fast(LOCK_FILE, ['bioconda'], CONDA_OPTS, LAYERS))
+                == ['mambaorg/micromamba:2.1.1', LAYERS, 'ubuntu:24.04']
+
+        where:
+        LOCK_FILE << [null, 'https://foo.com/lock.yml']
+    }
+
+    def 'should find repos in pixi v1-fast container file' () {
+        given:
+        def LAYERS = 'public.cr.seqera.io/wave/condasplit:v1'
+        def PIXI_OPTS = new PixiOpts([pixiImage: 'ghcr.io/prefix-dev/pixi:0.47.0', baseImage: 'ubuntu:24.04'])
+
+        expect:
+        ContainerInspectServiceImpl.findRepositories(TemplateUtils.condaFileToDockerFileUsingPixiV1Fast(PIXI_OPTS, LAYERS))
+                == ['ghcr.io/prefix-dev/pixi:0.47.0', LAYERS, 'ubuntu:24.04']
     }
 
     def 'should fetch container entry point' () {
         given:
         def DOCKERFILE = 'FROM busybox'
         when:
-        service.containerEntrypoint(DOCKERFILE, null, null, null, null)
+        service.containerEntrypoint(DOCKERFILE, ContainerPlatform.DEFAULT, PlatformId.NULL)
         then:
         noExceptionThrown()
     }
@@ -110,7 +154,7 @@ class ContainerInspectServiceImplTest extends Specification {
         given:
         def DOCKERFILE = 'FROM quay.io/biocontainers/fastqc:0.11.9--0'
         when:
-        service.containerEntrypoint(DOCKERFILE, null, null, null, null)
+        service.containerEntrypoint(DOCKERFILE, ContainerPlatform.DEFAULT, PlatformId.NULL)
         then:
         noExceptionThrown()
     }
@@ -126,7 +170,7 @@ class ContainerInspectServiceImplTest extends Specification {
         and:
         def result = ContainerInspectServiceImpl.inspectItems(DOCKERFILE)
         then:
-        // capture both the repository name and the explicity entrypoint
+        // capture both the repository name and the explicit entrypoint
         // the entrypoint is returned first because it has higher priority
         result == [
                 new ContainerInspectServiceImpl.InspectEntrypoint(["this","--that"]),

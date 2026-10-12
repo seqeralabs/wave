@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -24,9 +24,7 @@ import java.nio.file.Path
 
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.tower.User
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -36,99 +34,106 @@ class DockerBuildStrategyTest extends Specification {
 
     def 'should get docker command' () {
         given:
-        def props = [
-                'wave.build.spack.secretKeyFile':'/host/spack/key',
-                'wave.build.spack.secretMountPath':'/opt/spack/key'  ]
-        def ctx = ApplicationContext.run(props)
+        def ctx = ApplicationContext.run()
         and:
         def service = ctx.getBean(DockerBuildStrategy)
-        def spackConfig = ctx.getBean(SpackConfig)
         and:
         def work = Path.of('/work/foo')
         when:
-        def cmd = service.cmdForKaniko(work, null, null, null)
+        def cmd = service.cmdForBuildkit('build-job-name', work, null, null)
         then:
         cmd == ['docker',
                 'run',
-                '--rm',
+                '--detach',
+                '--name',
+                'build-job-name',
+                '--privileged',
                 '-v', '/work/foo:/work/foo',
-                'gcr.io/kaniko-project/executor:v1.19.2']
+                '--entrypoint',
+                'buildctl-daemonless.sh',
+                'public.cr.seqera.io/wave/buildkit:v0.25.2-rootless']
 
         when:
-        cmd = service.cmdForKaniko(work, Path.of('/foo/creds.json'), null, ContainerPlatform.of('arm64'))
+        cmd = service.cmdForBuildkit('build-job-name', work, Path.of('/foo/creds.json'), ContainerPlatform.of('arm64'))
         then:
         cmd == ['docker',
                 'run',
-                '--rm',
+                '--detach',
+                '--name',
+                'build-job-name',
+                '--privileged',
                 '-v', '/work/foo:/work/foo',
-                '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
+                '--entrypoint',
+                'buildctl-daemonless.sh',
+                '-v', '/foo/creds.json:/home/user/.docker/config.json:ro',
                 '--platform', 'linux/arm64',
-                'gcr.io/kaniko-project/executor:v1.19.2']
+                'public.cr.seqera.io/wave/buildkit:v0.25.2-rootless']
 
         when:
-        cmd = service.cmdForKaniko(work, Path.of('/foo/creds.json'), spackConfig, null)
+        cmd = service.cmdForBuildkit('build-job-name', work, Path.of('/foo/creds.json'), null)
         then:
         cmd == ['docker',
                 'run',
-                '--rm',
+                '--detach',
+                '--name',
+                'build-job-name',
+                '--privileged',
                 '-v', '/work/foo:/work/foo',
-                '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
-                '-v', '/host/spack/key:/opt/spack/key:ro',
-                'gcr.io/kaniko-project/executor:v1.19.2']
+                '--entrypoint',
+                'buildctl-daemonless.sh',
+                '-v', '/foo/creds.json:/home/user/.docker/config.json:ro',
+                'public.cr.seqera.io/wave/buildkit:v0.25.2-rootless']
 
         cleanup:
         ctx.close()
     }
 
-    def 'should get kaniko build command' () {
+    def 'should get buildkit build command' () {
         given:
         def ctx = ApplicationContext.run()
         def service = ctx.getBean(DockerBuildStrategy)
         and:
-        def work = Path.of('/work/foo')
         def creds = Path.of('/work/creds.json')
-        def cache = 'reg.io/wave/build/cache'
-        def req = new BuildRequest('from foo', work, 'repo', null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "1.2.3.4", null)
+        and:
+        def req = BuildRequest.of(
+                containerId: '89fb83ce6ec8627b',
+                buildId: 'bd-89fb83ce6ec8627b_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'repo:89fb83ce6ec8627b',
+                cacheRepository: 'reg.io/wave/build/cache' )
         when:
-        def cmd = service.buildCmd(req, creds)
+        def cmd = service.buildCmd('build-job-name', req, creds)
         then:
         cmd == ['docker',
                 'run',
-                '--rm',
-                '-v', '/work/foo/89fb83ce6ec8627b:/work/foo/89fb83ce6ec8627b',
-                '-v', '/work/creds.json:/kaniko/.docker/config.json:ro',
+                '--detach',
+                '--name',
+                'build-job-name',
+                '--privileged',
+                '-v', '/work/foo/bd-89fb83ce6ec8627b_1:/work/foo/bd-89fb83ce6ec8627b_1',
+                '--entrypoint',
+                'buildctl-daemonless.sh',
+                '-v', '/work/creds.json:/home/user/.docker/config.json:ro',
                 '--platform', 'linux/amd64',
-                'gcr.io/kaniko-project/executor:v1.19.2',
-                '--dockerfile', '/work/foo/89fb83ce6ec8627b/Containerfile',
-                '--context', '/work/foo/89fb83ce6ec8627b/context',
-                '--destination', 'repo:89fb83ce6ec8627b',
-                '--cache=true',
-                '--custom-platform', 'linux/amd64',
-                '--cache-repo', 'reg.io/wave/build/cache' ]
-
-        cleanup:
-        ctx.close()
-    }
-
-    def 'should disable compress-caching' () {
-        given:
-        def ctx = ApplicationContext.run(['wave.build.compress-caching': false])
-        def service = ctx.getBean(DockerBuildStrategy)
-        and:
-        def work = Path.of('/work/foo')
-        def cache    = 'reg.io/wave/build/cache'
-        def req = new BuildRequest('from foo', work, 'repo', null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "1.2.3.4", null)
-        when:
-        def cmd = service.launchCmd(req)
-        then:
-        cmd == [
-                '--dockerfile', '/work/foo/89fb83ce6ec8627b/Containerfile',
-                '--context', '/work/foo/89fb83ce6ec8627b/context',
-                '--destination', 'repo:89fb83ce6ec8627b',
-                '--cache=true',
-                '--custom-platform', 'linux/amd64',
-                '--cache-repo', 'reg.io/wave/build/cache',
-                '--compressed-caching=false' ]
+                'public.cr.seqera.io/wave/buildkit:v0.25.2-rootless',
+                'build',
+                '--frontend',
+                'dockerfile.v0',
+                '--local',
+                'dockerfile=/work/foo/bd-89fb83ce6ec8627b_1',
+                '--opt',
+                'filename=Containerfile',
+                '--local',
+                'context=/work/foo/bd-89fb83ce6ec8627b_1/context',
+                '--output',
+                'type=image,name=repo:89fb83ce6ec8627b,push=true,oci-mediatypes=true',
+                '--opt',
+                'platform=linux/amd64',
+                '--export-cache',
+                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:89fb83ce6ec8627b,mode=max,ignore-error=true,oci-mediatypes=true',
+                '--import-cache',
+                'type=registry,ref=reg.io/wave/build/cache:89fb83ce6ec8627b' ]
 
         cleanup:
         ctx.close()
@@ -136,72 +141,76 @@ class DockerBuildStrategyTest extends Specification {
 
     def 'should get singularity build command' () {
         given:
-        def props = [
-                'wave.build.spack.secretKeyFile':'/host/spack/key',
-                'wave.build.spack.secretMountPath':'/opt/spack/key'  ]
-        def ctx = ApplicationContext.run(props)
+        def ctx = ApplicationContext.run()
         def service = ctx.getBean(DockerBuildStrategy)
-        SpackConfig spackConfig = ctx.getBean(SpackConfig)
-        service.setSpackConfig(spackConfig)
         and:
-        def work = Path.of('/work/foo')
         def creds = Path.of('/work/creds.json')
-        def spackFile = '/work/spack.yaml'
-        def req = new BuildRequest('from foo', work, 'repo', null, spackFile, BuildFormat.SINGULARITY, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', null, null, "1.2.3.4", null)
+        and:
+        def req = BuildRequest.of(
+                containerId: 'd4869cc39b8d7d55',
+                buildId: 'bd-d4869cc39b8d7d55_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'oras://repo:d4869cc39b8d7d55',
+                cacheRepository: 'reg.io/wave/build/cache',
+                format: BuildFormat.SINGULARITY  )
         when:
-        def cmd = service.buildCmd(req, creds)
+        def cmd = service.buildCmd('build-job-name', req, creds)
         then:
         cmd == ['docker',
                 'run',
-                '--rm',
+                '--detach',
+                '--name',
+                'build-job-name',
                 '--privileged',
                 '--entrypoint', '',
-                '-v', '/work/foo/d4869cc39b8d7d55:/work/foo/d4869cc39b8d7d55',
+                '-v', '/work/foo/bd-d4869cc39b8d7d55_1:/work/foo/bd-d4869cc39b8d7d55_1',
                 '-v', '/work/creds.json:/root/.singularity/docker-config.json:ro',
                 '-v', '/work/singularity-remote.yaml:/root/.singularity/remote.yaml:ro',
-                '-v', '/host/spack/key:/opt/spack/key:ro',
                 '--platform', 'linux/amd64',
-                'quay.io/singularity/singularity:v3.11.4-slim',
+                'public.cr.seqera.io/wave/singularity:v4.2.1-r4',
                 'sh',
                 '-c',
-                'singularity build image.sif /work/foo/d4869cc39b8d7d55/Containerfile && singularity push image.sif oras://repo:d4869cc39b8d7d55'
+                'singularity build image.sif /work/foo/bd-d4869cc39b8d7d55_1/Containerfile && singularity push image.sif oras://repo:d4869cc39b8d7d55'
         ]
-        
+
         cleanup:
         ctx.close()
     }
 
     def 'should get singularity build command for arm64 architecture' () {
         given:
-        def props = [
-                'wave.build.spack.secretKeyFile':'/host/spack/key',
-                'wave.build.spack.secretMountPath':'/opt/spack/key'  ]
-        def ctx = ApplicationContext.run(props)
+        def ctx = ApplicationContext.run()
         def service = ctx.getBean(DockerBuildStrategy)
-        SpackConfig spackConfig = ctx.getBean(SpackConfig)
-        service.setSpackConfig(spackConfig)
         and:
-        def work = Path.of('/work/foo')
         def creds = Path.of('/work/creds.json')
-        def spackFile = '/work/spack.yaml'
-        def req = new BuildRequest('from foo', work, 'repo', null, spackFile, BuildFormat.SINGULARITY, Mock(User), null, null, ContainerPlatform.of('arm64'),'{auth}', null, null, "1.2.3.4", null)
+        and:
+        def req = BuildRequest.of(
+                containerId: '9c68af894bb2419c',
+                buildId: 'bd-9c68af894bb2419c_1',
+                workspace: Path.of('/work/foo'),
+                platform: ContainerPlatform.of('linux/arm64'),
+                targetImage: 'oras://repo:9c68af894bb2419c',
+                cacheRepository: 'reg.io/wave/build/cache',
+                format: BuildFormat.SINGULARITY )
         when:
-        def cmd = service.buildCmd(req, creds)
+        def cmd = service.buildCmd('build-job-name', req, creds)
         then:
         cmd == ['docker',
                 'run',
-                '--rm',
+                '--detach',
+                '--name',
+                'build-job-name',
                 '--privileged',
                 '--entrypoint', '',
-                '-v', '/work/foo/9c68af894bb2419c:/work/foo/9c68af894bb2419c',
+                '-v', '/work/foo/bd-9c68af894bb2419c_1:/work/foo/bd-9c68af894bb2419c_1',
                 '-v', '/work/creds.json:/root/.singularity/docker-config.json:ro',
                 '-v', '/work/singularity-remote.yaml:/root/.singularity/remote.yaml:ro',
-                '-v', '/host/spack/key:/opt/spack/key:ro',
                 '--platform', 'linux/arm64',
-                'quay.io/singularity/singularity:v3.11.4-slim-arm64',
+                'public.cr.seqera.io/wave/singularity:v4.2.1-r4',
                 'sh',
                 '-c',
-                'singularity build image.sif /work/foo/9c68af894bb2419c/Containerfile && singularity push image.sif oras://repo:9c68af894bb2419c'
+                'singularity build image.sif /work/foo/bd-9c68af894bb2419c_1/Containerfile && singularity push image.sif oras://repo:9c68af894bb2419c'
         ]
 
         cleanup:

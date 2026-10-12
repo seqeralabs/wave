@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -21,9 +21,11 @@ package io.seqera.wave.auth
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.service.CredentialsService
+import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -38,7 +40,8 @@ import jakarta.inject.Singleton
 class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
 
     @Inject
-    private RegistryConfig registryConfigurationFactory
+    @Nullable
+    private RegistryConfig registryConfig
 
     @Inject
     private RegistryCredentialsFactory credentialsFactory
@@ -47,6 +50,7 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
     private CredentialsService credentialsService
 
     @Inject
+    @Nullable
     private BuildConfig buildConfig
 
     /**
@@ -65,13 +69,11 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
 
     @Override
     RegistryCredentials getDefaultCredentials(ContainerPath container) {
-        return container && container.repository==buildConfig.defaultPublicRepository
-                ? getDefaultRepoCredentials0(container)
-                : getDefaultCredentials0(container?.registry)
+        return getDefaultCredentials0(container?.registry)
     }
 
     protected RegistryCredentials getDefaultCredentials0(String registry) {
-        final config = registryConfigurationFactory.getRegistryKeys(registry)
+        final config = registryConfig?.getRegistryKeys(registry)
         if( !config ){
             log.debug "Unable to find default credentials for registry '$registry'"
             return null
@@ -80,7 +82,7 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
     }
 
     protected RegistryCredentials getDefaultRepoCredentials0(ContainerPath container) {
-        final config = registryConfigurationFactory.getRegistryKeys(container.repository)
+        final config = registryConfig?.getRegistryKeys(container.repository)
         if( !config ){
             log.debug "Unable to find default credentials for repository '$container.repository'"
             return null
@@ -107,25 +109,27 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
      *      if not credentials can be found
      */
     @Override
-    RegistryCredentials getUserCredentials(ContainerPath container, Long userId, Long workspaceId, String towerToken, String towerEndpoint) {
-        if( !userId )
+    RegistryCredentials getUserCredentials(ContainerPath container, PlatformId identity) {
+        if( !identity )
             throw new IllegalArgumentException("Missing required parameter userId -- Unable to retrieve credentials for container repository '$container'")
 
         // use default credentials for default repositories
-        final repo = container.repository
-        if( repo==buildConfig.defaultBuildRepository || repo==buildConfig.defaultCacheRepository || repo==buildConfig.defaultPublicRepository)
+        // NOTE: this requires that 'defaultBuildRepository', 'defaultCacheRepository' and 'defaultPublicRepository' have a unique registry host name
+        // that means that for example docker.io/some/repo should not be used otherwise wave credentials could be used in place of user credentials
+        // for a repo having the same registry host
+        if( container.sameRegistry(buildConfig?.defaultBuildRepository) || container.sameRegistry(buildConfig?.defaultCacheRepository) || container.sameRegistry(buildConfig?.defaultPublicRepository) )
             return getDefaultCredentials(container)
 
-        return getUserCredentials0(container, userId, workspaceId, towerToken, towerEndpoint)
+        return getUserCredentials0(container, identity)
     }
 
-    protected RegistryCredentials getUserCredentials0(ContainerPath container, Long userId, Long workspaceId, String towerToken, String towerEndpoint) {
-        final keys = credentialsService.findRegistryCreds(container, userId, workspaceId, towerToken, towerEndpoint)
+    protected RegistryCredentials getUserCredentials0(ContainerPath container, PlatformId identity) {
+        final keys = credentialsService.findRegistryCreds(container, identity)
         final result = keys
                 ? credentialsFactory.create(container.registry, keys.userName, keys.password)
                 // create a missing credentials class with a unique key (the access token) because even when
                 // no credentials are provided a registry auth token token can be associated to this user
-                : new MissingCredentials(towerToken)
+                : new MissingCredentials(identity.accessToken)
         return result
     }
 }

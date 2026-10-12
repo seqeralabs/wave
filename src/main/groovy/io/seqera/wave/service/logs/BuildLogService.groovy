@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -39,4 +39,8 @@ interface BuildLogService {
     StreamedFile fetchLogStream(String buildId)
 
     BuildLog fetchLogString(String buildId)
+
+    String fetchCondaLockString(String buildId)
+
+    StreamedFile fetchCondaLockStream(String buildId)
 }

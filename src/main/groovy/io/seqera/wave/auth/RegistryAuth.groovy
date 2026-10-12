@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -23,6 +23,7 @@ import java.util.regex.Pattern
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
+import io.seqera.serde.moshi.MoshiSerializable
 
 /**
  * Model container registry authentication meta-info
@@ -32,10 +33,10 @@ import groovy.transform.ToString
 @Canonical
 @CompileStatic
 @ToString(includePackage = false, includeNames = true)
-class RegistryAuth {
+class RegistryAuth implements MoshiSerializable {
 
     private static final Pattern AUTH = ~/(?i)(?<type>.+) realm="(?<realm>[^"]+)",service="(?<service>[^"]+)"/
-    // some registries doesnt send the service
+    // some registries doesn't send the service
     private static final Pattern AUTH2 = ~/(?i)(?<type>.+) realm="(?<realm>[^"]+)"/
 
     enum Type { Basic, Bearer }

@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.persistence
 
+import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
@@ -25,9 +26,8 @@ import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
-import io.seqera.wave.service.scan.ScanResult
+import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
-import io.seqera.wave.util.StringUtils
 /**
  * Model a Wave container scan result
  *
@@ -37,46 +37,103 @@ import io.seqera.wave.util.StringUtils
 @ToString(includeNames = true, includePackage = false)
 @EqualsAndHashCode
 @CompileStatic
-class WaveScanRecord {
+class WaveScanRecord implements Cloneable {
+
+    @PostgresIgnore
     String id
     String buildId
+    String mirrorId
+    String requestId
+    String containerImage
+    String platform
     Instant startTime
     Duration duration
     String status
     List<ScanVulnerability> vulnerabilities
+    Integer exitCode
+    String logs
+    Path workDir
 
     /* required by jackson deserialization - do not remove */
     WaveScanRecord() {}
 
-    WaveScanRecord(String id, String buildId, Instant startTime) {
-        this.id = StringUtils.surrealId(id)
+    WaveScanRecord(
+            String id,
+            String buildId,
+            String mirrorId,
+            String requestId,
+            String containerImage,
+            String platform,
+            Instant startTime,
+            Duration duration,
+            String status,
+            List<ScanVulnerability> vulnerabilities,
+            Integer exitCode,
+            String logs,
+            Path workDir
+    )
+    {
+        this.id = id
         this.buildId = buildId
-        this.startTime = startTime
-    }
-
-    WaveScanRecord(String id, String buildId, Instant startTime, Duration duration, String status, List<ScanVulnerability> vulnerabilities) {
-        this.id = StringUtils.surrealId(id)
-        this.buildId = buildId
+        this.mirrorId = mirrorId
+        this.requestId = requestId
+        this.containerImage = containerImage
+        this.platform = platform
         this.startTime = startTime
         this.duration = duration
         this.status = status
         this.vulnerabilities = vulnerabilities
                 ? new ArrayList<ScanVulnerability>(vulnerabilities)
                 : List.<ScanVulnerability>of()
+        this.exitCode = exitCode
+        this.logs = sanitize0(logs)
+        this.workDir = workDir
     }
 
-    WaveScanRecord(String id, ScanResult scanResult) {
-        this.id = StringUtils.surrealId(id)
-        this.buildId = scanResult.buildId
-        this.startTime = scanResult.startTime
-        this.duration = scanResult.duration
-        this.status = scanResult.status
-        this.vulnerabilities = scanResult.vulnerabilities
-                ? new ArrayList<ScanVulnerability>(scanResult.vulnerabilities)
+    WaveScanRecord(ScanEntry scan) {
+        this.id = scan.scanId
+        this.buildId = scan.buildId
+        this.mirrorId = scan.mirrorId
+        this.requestId = scan.requestId
+        this.containerImage = scan.containerImage
+        this.platform = scan.platform?.toString()
+        this.startTime = scan.startTime
+        this.duration = scan.duration
+        this.status = scan.status
+        this.vulnerabilities = scan.vulnerabilities
+                ? new ArrayList<ScanVulnerability>(scan.vulnerabilities)
                 : List.<ScanVulnerability>of()
+        this.exitCode = scan.exitCode
+        this.logs = sanitize0(scan.logs)
+        this.workDir = scan.workDir
+    }
+
+    private static String sanitize0(String str) {
+        if( !str )
+            return null
+        // remove quotes that break sql statement
+        str = str.replaceAll(/'/,'')
+        if( str.size()>10_000 )
+            str = str.substring(0,10_000) + ' [truncated]'
+        return str
     }
 
     void setId(String id) {
-        this.id = StringUtils.surrealId(id)
+        this.id = id
+    }
+
+    Boolean succeeded() {
+        return duration != null
+                ? status == ScanEntry.SUCCEEDED
+                : null
+    }
+
+    Boolean done() {
+        return duration != null
+    }
+
+    @Override
+    WaveScanRecord clone() {
+        return (WaveScanRecord) super.clone()
     }
 }

@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -20,12 +20,15 @@ package io.seqera.wave.service.builder
 
 import java.util.concurrent.CompletableFuture
 
+import groovy.transform.CompileStatic
 import io.seqera.wave.core.RoutePath
+import io.seqera.wave.service.persistence.WaveBuildRecord
 /**
  * Declare container build service interface
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@CompileStatic
 interface ContainerBuildService {
 
     /**
@@ -36,7 +39,7 @@ interface ContainerBuildService {
      * @return
      *      The container image where the resulting image is going to be hosted
      */
-    void buildImage(BuildRequest request)
+    BuildTrack buildImage(BuildRequest request)
 
     /**
      * Get a completable future that holds the build result
@@ -49,6 +52,10 @@ interface ContainerBuildService {
      *      {@code null} if not request has been submitted for such image
      */
     CompletableFuture<BuildResult> buildResult(String targetImage)
+
+    default CompletableFuture<BuildResult> buildResult(BuildRequest request) {
+        return buildResult(request.targetImage)
+    }
 
     /**
      * Get a completable future that holds the build result
@@ -64,5 +71,34 @@ interface ContainerBuildService {
                 ? buildResult(route.request.containerImage)
                 : null
     }
+
+
+    // **************************************************************
+    // **               build record operations
+    // **************************************************************
+
+    /**
+     * Retrieve the build record for the specified id.
+     *
+     * @param buildId The ID of the build record to be retrieve
+     * @return The {@link WaveBuildRecord} associated with the corresponding Id, or {@code null} if it cannot be found
+     */
+    WaveBuildRecord getBuildRecord(String buildId)
+
+    /**
+     * Retrieve the latest build record available for the specified container id.
+     *
+     * @param containerId The ID of the container for which the build record needs to be retrieve
+     * @return The {@link WaveBuildRecord} associated with the corresponding Id, or {@code null} if it cannot be found
+     */
+    WaveBuildRecord getLatestBuild(String containerId)
+
+    /**
+     * Retrieve the all build record available for the specified container id.
+     *
+     * @param containerId The ID of the container for which the build record needs to be retrieve
+     * @return The {@link WaveBuildRecord} associated with the corresponding Id, or {@code null} if it cannot be found
+     */
+    List<WaveBuildRecord> getAllBuilds(String containerId)
 
 }

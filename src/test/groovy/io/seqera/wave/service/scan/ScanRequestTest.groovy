@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -21,13 +21,12 @@ package io.seqera.wave.service.scan
 import spock.lang.Specification
 
 import java.nio.file.Path
+import java.time.Instant
 
-import io.seqera.wave.api.BuildContext
-import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.builder.BuildFormat
-import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -36,20 +35,33 @@ class ScanRequestTest extends Specification {
 
     def 'should create a scan request' () {
         given:
-        def workspace = Path.of('/some/workspace')
-        def platform = ContainerPlatform.of('amd64')
-        def build = new BuildRequest('FROM ubuntu', workspace, 'docker.io', null, null, BuildFormat.DOCKER, Mock(User), Mock(ContainerConfig), Mock(BuildContext), platform, '{json}', null, null, "", null)
-
+        def timestamp = Instant.now()
+        def identity = new PlatformId(new User(id:1))
         when:
-        def scan = ScanRequest.fromBuild(build)
+        def scan = ScanRequest.of(
+                scanId: 'sc-123',
+                buildId: 'bd-123',
+                mirrorId: 'mr-123',
+                requestId: 'rq-123',
+                configJson: '{config}',
+                targetImage: 'tg-image',
+                platform: ContainerPlatform.DEFAULT,
+                workDir: Path.of('/some/dir'),
+                creationTime: timestamp,
+                identity: identity
+        )
+        
         then:
-        scan.id == build.scanId
-        scan.buildId == build.id
-        scan.workDir != build.workDir
-        scan.configJson == build.configJson
-        scan.targetImage == build.targetImage
-        scan.platform == build.platform
-        scan.workDir.startsWith(workspace)
+        scan.scanId == 'sc-123'
+        scan.buildId == 'bd-123'
+        scan.mirrorId == 'mr-123'
+        scan.requestId == 'rq-123'
+        scan.configJson == '{config}'
+        scan.targetImage == 'tg-image'
+        scan.platform == ContainerPlatform.DEFAULT
+        scan.workDir == Path.of('/some/dir')
+        scan.creationTime == timestamp
+        scan.identity == identity
     }
 
 }

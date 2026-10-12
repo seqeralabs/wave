@@ -1,0 +1,11 @@
+FROM {{base_image}}
+RUN \
+    micromamba install -y -n base {{channel_opts}} {{target}} \
+    {{base_packages}}
+    && micromamba env export --name base --explicit > environment.lock \
+    && echo ">> CONDA_LOCK_START" \
+    && cat environment.lock \
+    && echo "<< CONDA_LOCK_END" \
+    && micromamba clean -a -y
+USER root
+ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"

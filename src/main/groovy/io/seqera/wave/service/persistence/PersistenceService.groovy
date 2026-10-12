@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -18,12 +18,14 @@
 
 package io.seqera.wave.service.persistence
 
+import java.time.Instant
+import java.util.concurrent.CompletableFuture
+
 import groovy.transform.CompileStatic
-import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
-import io.seqera.wave.exception.NotFoundException
-import io.seqera.wave.service.scan.ScanResult
-import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.mirror.MirrorEntry
+import io.seqera.wave.service.mirror.MirrorResult
+
 /**
  * A storage for statistic data
  *
@@ -33,11 +35,6 @@ import io.seqera.wave.service.builder.BuildEvent
 @CompileStatic
 interface PersistenceService {
 
-    @EventListener
-    default void onBuildEvent(BuildEvent event) {
-        saveBuild(WaveBuildRecord.fromEvent(event))
-    }
-
     /**
      * Store a {@link WaveBuildRecord} object in the underlying persistence layer.
      *
@@ -46,7 +43,7 @@ interface PersistenceService {
      *
      * @param build A {@link WaveBuildRecord} object
      */
-    void saveBuild(WaveBuildRecord build)
+    CompletableFuture<Void> saveBuildAsync(WaveBuildRecord build)
 
     /**
      * Retrieve a {@link WaveBuildRecord} object for the given build id
@@ -57,12 +54,36 @@ interface PersistenceService {
     WaveBuildRecord loadBuild(String buildId)
 
     /**
-     * Store a {@link WaveContainerRecord} object in the Surreal wave_request table.
+     * Retrieve a {@link WaveBuildRecord} object for the given target image and container digest
      *
-     * @param token The request token associated with this request
+     * @param targetImage The container target image name e.g. docker.io/user/image:tag
+     * @param digest The container image sha256 checksum
+     * @return The corresponding {@link WaveBuildRecord} object or {@code null} if no record is found
+     */
+    WaveBuildRecord loadBuildSucceed(String targetImage, String digest)
+
+    /**
+     * Retrieve the latest {@link WaveBuildRecord} object for the given container id
+     *
+     * @param containerId The container id for which the latest build record should be retrieved
+     * @return The corresponding {@link WaveBuildRecord} object or {@code null} if no record is found
+     */
+    WaveBuildRecord latestBuild(String containerId)
+
+    /**
+     * Retrieve all {@link WaveBuildRecord} object for the given container id
+     *
+     * @param containerId The container id for which all the builds record should be retrieved
+     * @return The corresponding list of {@link WaveBuildRecord} objects or an empty list if no record is found
+     */
+    List<WaveBuildRecord> allBuilds(String containerId)
+
+    /**
+     * Store a {@link WaveContainerRecord} object in the persistence layer.
+     *
      * @param data A {@link WaveContainerRecord} object representing a Wave request record
      */
-    void saveContainerRequest(String token, WaveContainerRecord data)
+    CompletableFuture<Void> saveContainerRequestAsync(WaveContainerRecord data)
 
     /**
      * Update a container request with the digest of the resolved request
@@ -70,7 +91,16 @@ interface PersistenceService {
      * @param token The request unique token
      * @param digest The resolved digest
      */
-    void updateContainerRequest(String token, ContainerDigestPair digest)
+    CompletableFuture<Void> updateContainerRequestAsync(String token, ContainerDigestPair digest)
+
+    /**
+     * Update the expiration of a container request. Used by the workflow-bound token watcher to roll
+     * the persisted expiration forward on each renewal.
+     *
+     * @param token The request unique token
+     * @param expiration The new expiration instant
+     */
+    CompletableFuture<Void> updateContainerExpirationAsync(String token, Instant expiration)
 
     /**
      * Retrieve a {@link WaveContainerRecord} object corresponding to the a specified request token
@@ -81,18 +111,11 @@ interface PersistenceService {
     WaveContainerRecord loadContainerRequest(String token)
 
     /**
-     * Create a scan record, this signal that a container scan request has been created
-     *
-     * @param scanRecord Create a record with the object specified
-     */
-    void createScanRecord(WaveScanRecord scanRecord)
-
-    /**
-     * Store a {@link WaveScanRecord} object in the Surreal wave_scan table.
+     * Store a {@link WaveScanRecord} object in the persistence layer.
      *
      * @param data A {@link WaveScanRecord} object representing the a container scan request
      */
-    void updateScanRecord(WaveScanRecord scanRecord)
+    CompletableFuture<Void> saveScanRecordAsync(WaveScanRecord scanRecord)
 
     /**
      * Retrieve a {@link WaveScanRecord} object for the specified build ID
@@ -103,24 +126,44 @@ interface PersistenceService {
     WaveScanRecord loadScanRecord(String scanId)
 
     /**
-     * Retrieve a {@link ScanResult} object for the specified build ID
+     * Check if a scan record exist
      *
-     * @param buildId The ID of the build for which load the scan result
-     * @return The {@link ScanResult} object associated with the specified build ID or throws the exception {@link NotFoundException} otherwise
-     * @throws NotFoundException If the a record for the specified build ID cannot be found
+     * @param scanId The Id of the scan to check
+     * @return {@code true} if the scan record with the specified id exists or {@code false} otherwise
      */
-    default ScanResult loadScanResult(String scanId) {
-        final scanRecord = loadScanRecord(scanId)
-        if( !scanRecord )
-            throw new NotFoundException("No scan report exists with id: ${scanId}")
+    boolean existsScanRecord(String scanId)
 
-        return ScanResult.create(
-                scanRecord.id,
-                scanRecord.buildId,
-                scanRecord.startTime,
-                scanRecord.duration,
-                scanRecord.status,
-                scanRecord.vulnerabilities )
-    }
+    /**
+     * Load a mirror state record
+     *
+     * @param mirrorId The ID of the mirror record
+     * @return The corresponding {@link MirrorEntry} object or null if it cannot be found
+     */
+    MirrorResult loadMirrorResult(String mirrorId)
+
+    /**
+     * Load a mirror state record given the target image name and the image digest.
+     * It returns the latest succeed mirror result.
+     *
+     * @param targetImage The target mirrored image name
+     * @param digest The image content SHA256 digest
+     * @return The corresponding {@link MirrorEntry} object or null if it cannot be found
+     */
+    MirrorResult loadMirrorSucceed(String targetImage, String digest)
+
+    /**
+     * Persists a {@link MirrorEntry} state record
+     *
+     * @param mirror {@link MirrorEntry} object
+     */
+    CompletableFuture<Void> saveMirrorResultAsync(MirrorResult mirror)
+
+    /**
+     * Retrieve all {@link WaveScanRecord} object for the given partial scan id
+     *
+     * @param scanId The scan id for which all the scan records should be retrieved
+     * @return The corresponding list of {@link WaveScanRecord} objects or an empty list if no record is found
+     */
+    List<WaveScanRecord> allScans(String scanId)
 
 }

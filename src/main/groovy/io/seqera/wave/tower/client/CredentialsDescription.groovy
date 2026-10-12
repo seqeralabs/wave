@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -20,12 +20,15 @@ package io.seqera.wave.tower.client
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import io.seqera.wave.WaveDefault
+import io.seqera.serde.moshi.MoshiSerializable
 
+@EqualsAndHashCode
 @CompileStatic
 @ToString(includePackage = false, includeNames = true)
-class CredentialsDescription {
+class CredentialsDescription implements MoshiSerializable {
 
     /**
      * The credential record unique ID
@@ -47,7 +50,7 @@ class CredentialsDescription {
     @JsonProperty("keys")
     private void unpackRegistry(Map<String,Object> keys) {
         if (this.provider == 'container-reg') {
-            this.registry = keys?.get("registry")?: WaveDefault.DOCKER_IO
+            this.registry = keys?.get("registry") ?: WaveDefault.DOCKER_IO
         } else {
             this.registry = null
         }

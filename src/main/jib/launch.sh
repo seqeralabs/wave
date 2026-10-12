@@ -1,6 +1,6 @@
 #
 #  Wave, containers provisioning service
-#  Copyright (c) 2023, Seqera Labs
+#  Copyright (c) 2023-2024, Seqera Labs
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU Affero General Public License as published by
@@ -18,6 +18,17 @@
 
 # Launch backend server
 [ "$WAVE_JVM_OPTS" ] && echo "Detected WAVE_JVM_OPTS=$WAVE_JVM_OPTS"
+WAVE_JVM_OPTS="${WAVE_JVM_OPTS:-\
+  -XX:+UseG1GC \
+  -Xms512m \
+  -Xmx850m \
+  -XX:MaxDirectMemorySize=100m \
+  -Dio.netty.maxDirectMemory=0 \
+  -Dio.netty.allocator.type=pooled \
+  -Djdk.httpclient.keepalive.timeout=10 \
+  -Djdk.tracePinnedThreads=short \
+  -Djdk.traceVirtualThreadInThreadDump=full \
+}"
 exec java \
   -Dfile.encoding=UTF-8 \
   -Dcom.sun.security.enableAIAcaIssuers=true \
@@ -27,9 +38,9 @@ exec java \
   --add-opens java.base/java.text=ALL-UNNAMED \
   --add-opens java.base/java.util=ALL-UNNAMED \
   --add-opens java.base/java.util.concurrent=ALL-UNNAMED \
-  --add-opens=java.base/java.io=ALL-UNNAMED \
-  --add-opens=java.base/java.nio=ALL-UNNAMED \
-  --add-opens=java.base/java.util=ALL-UNNAMED \
+  --add-opens java.base/java.io=ALL-UNNAMED \
+  --add-opens java.base/java.nio=ALL-UNNAMED \
+  --enable-native-access=ALL-UNNAMED \
   ${WAVE_JVM_OPTS} \
   -cp /app/resources:/app/classes:/app/libs/* \
   io.seqera.wave.Application

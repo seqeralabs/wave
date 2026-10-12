@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -92,5 +92,13 @@ class ContainerCoordinatesTest extends Specification {
         'http:foo.com'          | false
         'http:foo.com:80'       | false
 
+    }
+
+    def'should throw exception when container image name is not provided'() {
+        when:
+        ContainerCoordinates.parse(null)
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message == 'Container image name is not provided'
     }
 }

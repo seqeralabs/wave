@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -51,7 +51,8 @@ class DescribeWaveContainerResponse {
         RequestInfo() {}
 
         RequestInfo(WaveContainerRecord data) {
-            this.user = data.user
+            // only expose the user id, stripping the user name and email
+            this.user = data.user ? User.ofId(data.user.id) : null
             this.workspaceId = data.workspaceId
             this.containerImage = data.containerImage
             this.containerConfig = data.containerConfig

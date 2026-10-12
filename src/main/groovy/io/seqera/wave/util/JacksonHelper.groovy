@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -29,6 +29,8 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import groovy.transform.CompileStatic
+import io.seqera.util.pool.SimplePool
+
 /**
  * Helper class to handle JSON rendering and parsing
  *
@@ -37,11 +39,11 @@ import groovy.transform.CompileStatic
 @CompileStatic
 class JacksonHelper {
 
-    static private ObjectMapper DEFAULT_JSON_MAPPER = defaultJsonMapper()
+    static private SimplePool<ObjectMapper> defaultJsonMapper = new SimplePool<>(()-> defaultJsonMapper())
 
-    static private ObjectMapper PUBLIC_JSON_MAPPER = publicViewJsonMapper()
+    static private SimplePool<ObjectMapper> publicJsonMapper = new SimplePool<>(()-> publicViewJsonMapper())
 
-    static private ObjectMapper YAML_MAPPER = defaultYamlMapper() 
+    static private SimplePool<ObjectMapper> yamlMapper = new SimplePool<>(()-> defaultYamlMapper())
 
     static private ObjectMapper createMapper0(boolean yaml=false, boolean failOnUnknownProperties=false) {
         // GString serializer
@@ -53,6 +55,10 @@ class JacksonHelper {
                 .configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
                 .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, failOnUnknownProperties)
+                // tolerate enum values not (yet) known to Wave: map them to `null` instead of
+                // failing the whole payload — e.g. a `waveBuildNotification` value added on the
+                // Tower side would otherwise break user-info deserialization for all builds
+                .configure(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL, true)
                 .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
                 .registerModule(new JavaTimeModule())
                 .registerModule(module)
@@ -77,11 +83,15 @@ class JacksonHelper {
      * @return A concrete instance of {@code T}
      */
     static <T> T fromJson(String str, Class<T> type) {
-        str != null ? DEFAULT_JSON_MAPPER.readValue(str, type) : null
+        if( str==null )
+            return null
+        return defaultJsonMapper.apply((mapper)-> mapper.readValue(str, type))
     }
 
     static <T> T fromJson(String str, TypeReference<T> type) {
-        str != null ? DEFAULT_JSON_MAPPER.readValue(str, type) : null
+        if( str==null )
+            return null
+        return defaultJsonMapper.apply((mapper)->mapper.readValue(str, type))
     }
 
     /**
@@ -92,11 +102,15 @@ class JacksonHelper {
      * @return A json representation of the specified object
      */
     static String toJson(Object config) {
-        config != null ? DEFAULT_JSON_MAPPER.writeValueAsString(config) : null
+        if( config==null )
+            return null
+        return defaultJsonMapper.apply((mapper)-> mapper.writeValueAsString(config))
     }
 
     static String toJsonWithPublicView(Object config) {
-        config != null ? PUBLIC_JSON_MAPPER.writerWithView(Views.Public).writeValueAsString(config) : null
+        if( config==null )
+            return null
+        return publicJsonMapper.apply((mapper)-> mapper.writerWithView(Views.Public).writeValueAsString(config))
     }
 
     /**
@@ -106,7 +120,9 @@ class JacksonHelper {
      * @return A concrete instance of {@code T}
      */
     static <T> T fromYaml(String str, Class<T> type) {
-        str != null ? YAML_MAPPER.readValue(str, type) : null
+        if( str==null )
+            return null
+        return yamlMapper.apply((mapper)->mapper.readValue(str, type))
     }
 
     /**
@@ -117,7 +133,9 @@ class JacksonHelper {
      * @return A yaml representation of the specified object
      */
     static String toYaml(Object config) {
-        config != null ? YAML_MAPPER.writeValueAsString(config) : null
+        if( config==null )
+            return null
+        return yamlMapper.apply((mapper)->mapper.writeValueAsString(config))
     }
 
 }

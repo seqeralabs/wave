@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -21,11 +21,10 @@ package io.seqera.wave.core
 import spock.lang.Shared
 import spock.lang.Specification
 
+import java.net.http.HttpHeaders
+import java.net.http.HttpResponse
 import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
 
-import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import io.micronaut.context.annotation.Value
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
@@ -41,6 +40,7 @@ import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContentType
 import io.seqera.wave.proxy.ProxyClient
+import io.seqera.wave.storage.DockerDigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.test.ManifestConst
 import io.seqera.wave.util.ContainerConfigFactory
@@ -135,59 +135,69 @@ class ContainerAugmenterTest extends Specification {
         result == 'sha256:f130bd2d67e6e9280ac6d0a6c83857bfaf70234e8ef4236876eccfbd30973b1c'
     }
 
-    Path folder
-    File layerPath
-    File layerJson
 
-    def unpackLayer(){
-        folder = Files.createTempDirectory('test')
-        layerPath =  Files.createFile(Paths.get(folder.toString(),"dummy.gzip")).toFile()
-        layerPath.bytes = this.class.getResourceAsStream("/foo/dummy.gzip").bytes
-
-        def string = this.class.getResourceAsStream("/foo/layer.json").text
-        def layerConfig = new JsonSlurper().parseText(string)
-        layerConfig.layers[0].location = layerPath.absolutePath
-
-        layerJson = new File("$folder/layer.json")
-        layerJson.text = JsonOutput.prettyPrint(JsonOutput.toJson(layerConfig))
-    }
-
-    def 'create the layer' () {
+    def 'create digest store' () {
         given:
         def IMAGE = 'hello-world'
         def REGISTRY = 'docker.io'
         and:
-        unpackLayer()
+        def data = 'Hello world'.bytes
+        def digest = RegHelper.digest(data)
+        def layer = new ContainerLayer("data:${data.encodeBase64().toString()}",digest, 100, 'sha256:222')
+        def config = new ContainerConfig(layers: [layer])
 
         def info = new RegistryInfo(REGISTRY, new URI('http://docker.io'), Mock(RegistryAuth))
         def client = Mock(ProxyClient) { getRegistry()>>info }
-        def config = ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath))
         def scanner = new ContainerAugmenter()
                             .withStorage(storage)
                             .withContainerConfig(config)
                             .withClient(client)
-        and:
-        def digest = RegHelper.digest(layerPath.bytes)
 
         when:
-        def layer = scanner.getContainerConfig().layers.get(0)
         def blob = scanner.layerBlob(IMAGE, layer)
 
         then:
         blob.get('mediaType') == 'application/vnd.docker.image.rootfs.diff.tar.gzip'
-        blob.get('digest') == digest
-        blob.get('size') == layerPath.size()
-        and:
-        blob.get('size') == 2
+        blob.get('digest') == layer.gzipDigest
+        blob.get('size') == layer.gzipSize
 
         and:
         def entry = storage.getBlob("$REGISTRY/v2/$IMAGE/blobs/$digest").get()
-        entry.bytes == layerPath.bytes
+        entry.bytes == data
+        entry.digest == digest
         entry.mediaType == ContentType.DOCKER_IMAGE_TAR_GZIP
-        entry.digest == RegHelper.digest(layerPath.bytes)
 
-        cleanup:
-        folder?.toFile()?.deleteDir()
+    }
+
+    def 'create digest store with docker mapping' () {
+        given:
+        def IMAGE = 'hello-world'
+        def REGISTRY = 'docker.io'
+
+        def info = new RegistryInfo(REGISTRY, new URI('http://docker.io'), Mock(RegistryAuth))
+        def client = Mock(ProxyClient) { getRegistry()>>info }
+        def augumenter = new ContainerAugmenter()
+                .withStorage(storage)
+                .withClient(client)
+
+        and:
+        def TARGET = 'docker://quay.io/v2/foo/blobs/1234567890'
+        def layer = new ContainerLayer(TARGET, 'sha256:1234567890', 100)
+
+        when:
+        def blob = augumenter.layerBlob(IMAGE, layer)
+
+        then:
+        blob.get('mediaType') == 'application/vnd.docker.image.rootfs.diff.tar.gzip'
+        blob.get('digest') == 'sha256:1234567890'
+        blob.get('size') == 100
+
+        and:
+        def entry = storage.getBlob("$REGISTRY/v2/$IMAGE/blobs/sha256:1234567890").get()
+        entry instanceof DockerDigestStore
+        entry.mediaType == ContentType.DOCKER_IMAGE_TAR_GZIP
+        entry.digest == 'sha256:1234567890'
+        (entry as DockerDigestStore).location == TARGET
     }
 
     def 'should update image manifest' () {
@@ -200,8 +210,10 @@ class ContainerAugmenterTest extends Specification {
         def REGISTRY = 'docker.io'
 
         and:
-        unpackLayer()
-        def layerDigest = RegHelper.digest(layerPath.bytes)
+        def data = 'Hello world'.bytes
+        def digest = RegHelper.digest(data)
+        def layer = new ContainerLayer("data:${data.encodeBase64().toString()}",digest, 100, 'sha256:222')
+        def config = new ContainerConfig(layers: [layer])
 
         and:
         def info = new RegistryInfo(REGISTRY, new URI('http://docker.io'), Mock(RegistryAuth))
@@ -209,7 +221,7 @@ class ContainerAugmenterTest extends Specification {
         def scanner = new ContainerAugmenter()
                 .withStorage(storage)
                 .withClient(client)
-                .withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
+                .withContainerConfig(config)
 
         when:
         def result = scanner.updateImageManifest(IMAGE, MANIFEST, NEW_CONFIG_DIGEST, NEW_CONFIG_SIZE, false)
@@ -231,15 +243,13 @@ class ContainerAugmenterTest extends Specification {
         json.layers[0].get('mediaType') == ContentType.DOCKER_IMAGE_TAR_GZIP
         and:
         // the new layer is valid
-        json.layers[1].get('digest') == layerDigest
-        json.layers[1].get('size') == layerPath.size()
+        json.layers[1].get('digest') == layer.gzipDigest
+        json.layers[1].get('size') == layer.gzipSize
         json.layers[1].get('mediaType') == ContentType.DOCKER_IMAGE_TAR_GZIP
         and:
         json.config.digest == NEW_CONFIG_DIGEST
         json.config.size == NEW_CONFIG_SIZE
 
-        cleanup:
-        folder?.toFile()?.deleteDir()
     }
 
     def 'should update manifests list' () {
@@ -277,7 +287,10 @@ class ContainerAugmenterTest extends Specification {
         def NEW_SIZE = 123
         def REGISTRY = 'docker.io'
         and:
-        unpackLayer()
+        def data = 'Hello world'.bytes
+        def checksum = RegHelper.digest(data)
+        def layer = new ContainerLayer("data:${data.encodeBase64().toString()}", checksum, 100, 'sha256:222')
+        def config = new ContainerConfig(layers: [layer])
 
         and:
         def info = new RegistryInfo(REGISTRY, new URI('http://docker.io'), Mock(RegistryAuth))
@@ -285,10 +298,10 @@ class ContainerAugmenterTest extends Specification {
         def scanner = new ContainerAugmenter()
                 .withStorage(storage)
                 .withClient(client)
-                .withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
+                .withContainerConfig(config)
 
         when:
-        def digest = scanner.updateImageIndex(IMAGE, MANIFEST, DIGEST, NEW_DIGEST, NEW_SIZE, false)
+        def digest = scanner.updateImageIndex(IMAGE, MANIFEST, [(DIGEST): new ContainerAugmenter.AugmentedManifest(NEW_DIGEST, NEW_SIZE)], false)
 
         then:
         def entry = storage.getManifest("$REGISTRY/v2/$IMAGE/manifests/$digest").get()
@@ -309,35 +322,6 @@ class ContainerAugmenterTest extends Specification {
             manifests[1].platform == [architecture: 'arm64', os: 'linux']
         }
 
-        cleanup:
-        folder?.toFile()?.deleteDir()
-    }
-
-    def 'should find image config digest' () {
-        given:
-        def scanner = new ContainerAugmenter()
-        def CONFIG = '''
-          {
-            "schemaVersion": 2,
-            "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
-            "config": {
-                "mediaType": "application/vnd.docker.container.image.v1+json",
-                "size": 1469,
-                "digest": "sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412"
-            },
-            "layers": [
-                {
-                  "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
-                  "size": 2479,
-                  "digest": "sha256:2db29710123e3e53a794f2694094b9b4338aa9ee5c40b930cb8063a1be392c54"
-                }
-            ]
-          }
-        '''
-        when:
-        def result = scanner.findImageConfigDigest(CONFIG)
-        then:
-        result == 'sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412'
     }
 
     def 'should update image config with new layer' () {
@@ -423,7 +407,9 @@ class ContainerAugmenterTest extends Specification {
         def IMAGE_NAME = 'hello-world'
         def REGISTRY = 'docker.io'
         and:
-        unpackLayer()
+        def data = 'Hello world'.bytes
+        def checksum = RegHelper.digest(data)
+        def layer = new ContainerLayer("data:${data.encodeBase64().toString()}", checksum, 100, 'sha256:222')
 
         and:
         def info = new RegistryInfo(REGISTRY, new URI('http://docker.io'), Mock(RegistryAuth))
@@ -431,7 +417,7 @@ class ContainerAugmenterTest extends Specification {
         def scanner = new ContainerAugmenter()
                 .withStorage(storage)
                 .withClient(client)
-                .withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
+                .withContainerConfig(new ContainerConfig(layers: [layer]))
 
         when:
         def (digest, config) = scanner.updateImageConfig(IMAGE_NAME, IMAGE_CONFIG, false)
@@ -446,8 +432,6 @@ class ContainerAugmenterTest extends Specification {
         and:
         config == new String(entry.bytes)
 
-        cleanup:
-        folder?.toFile()?.deleteDir()
     }
 
     def 'should update image config with new layer v1' () {
@@ -497,7 +481,9 @@ class ContainerAugmenterTest extends Specification {
         def IMAGE_NAME = 'hello-world'
         def REGISTRY = 'docker.io'
         and:
-        unpackLayer()
+        def data = 'Hello world'.bytes
+        def checksum = RegHelper.digest(data)
+        def layer = new ContainerLayer("data:${data.encodeBase64().toString()}", checksum, 100, 'sha256:222')
 
         and:
         def info = new RegistryInfo(REGISTRY, new URI('http://docker.io'), Mock(RegistryAuth))
@@ -505,7 +491,7 @@ class ContainerAugmenterTest extends Specification {
         def scanner = new ContainerAugmenter()
                 .withStorage(storage)
                 .withClient(client)
-                .withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
+                .withContainerConfig(new ContainerConfig(layers: [layer]))
 
         when:
         def digest = scanner.resolveV1Manifest(MANIFEST, IMAGE_NAME)
@@ -520,8 +506,7 @@ class ContainerAugmenterTest extends Specification {
         and:
         manifest.history.first()['v1Compatibility'].indexOf('parent') != -1
         manifest.history[1]['v1Compatibility'] == originalManifest.history[0]['v1Compatibility']
-        cleanup:
-        folder?.toFile()?.deleteDir()
+
     }
 
     def 'should not rewrite the history' () {
@@ -669,19 +654,19 @@ class ContainerAugmenterTest extends Specification {
         def mutableManifest = new JsonSlurper().parseText(MANIFEST)
 
         and:
-        unpackLayer()
+        def data = 'Hello world'.bytes
+        def checksum = RegHelper.digest(data)
+        def layer = new ContainerLayer("data:${data.encodeBase64().toString()}", checksum, 100, 'sha256:222')
+        def config = new ContainerConfig(layers: [layer])
 
         and:
-        def scanner = new ContainerAugmenter().withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
+        def scanner = new ContainerAugmenter() .withContainerConfig(config)
 
         when:
         scanner.rewriteHistoryV1(mutableManifest.history)
 
         then:
-        def e = thrown(AssertionError)
-
-        cleanup:
-        folder?.toFile()?.deleteDir()
+        thrown(AssertionError)
     }
 
     def 'add a new layer v1 format requires a layer' () {
@@ -695,21 +680,23 @@ class ContainerAugmenterTest extends Specification {
         def mutableManifest = new JsonSlurper().parseText(MANIFEST)
 
         and:
-        unpackLayer()
+        def data = 'Hello world'.bytes
+        def checksum = RegHelper.digest(data)
+        def layer = new ContainerLayer("data:${data.encodeBase64().toString()}", checksum, 100, 'sha256:222')
+        def config = new ContainerConfig(layers: [layer])
+
         and:
         def IMAGE_NAME = 'hello-world'
 
         and:
-        def scanner = new ContainerAugmenter().withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
+        def scanner = new ContainerAugmenter().withContainerConfig(config)
 
         when:
         scanner.rewriteLayersV1(IMAGE_NAME, mutableManifest.fsLayers)
 
         then:
-        def e = thrown(AssertionError)
+        thrown(AssertionError)
 
-        cleanup:
-        folder?.toFile()?.deleteDir()
     }
 
     def 'add a new layer v1 format' () {
@@ -730,7 +717,11 @@ class ContainerAugmenterTest extends Specification {
         def mutableManifest = new JsonSlurper().parseText(MANIFEST)
 
         and:
-        unpackLayer()
+        def data = 'Hello world'.bytes
+        def checksum = RegHelper.digest(data)
+        def layer = new ContainerLayer("data:${data.encodeBase64().toString()}", checksum, 100, 'sha256:222')
+        def config = new ContainerConfig(layers: [layer])
+
         and:
         def IMAGE_NAME = 'hello-world'
         def REGISTRY = 'docker.io'
@@ -741,7 +732,7 @@ class ContainerAugmenterTest extends Specification {
         def scanner = new ContainerAugmenter()
                 .withStorage(storage)
                 .withClient(client)
-                .withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
+                .withContainerConfig(config)
 
         when:
         scanner.rewriteLayersV1(IMAGE_NAME, mutableManifest.fsLayers)
@@ -751,8 +742,6 @@ class ContainerAugmenterTest extends Specification {
         originalManifest.fsLayers.first().blobSum != mutableManifest.fsLayers.first().blobSum
         originalManifest.fsLayers.first().blobSum == mutableManifest.fsLayers[1].blobSum
 
-        cleanup:
-        folder?.toFile()?.deleteDir()
     }
 
     def 'should resolve busybox' () {
@@ -784,10 +773,72 @@ class ContainerAugmenterTest extends Specification {
         storage.getManifest("$REGISTRY/v2/$IMAGE/manifests/${digest.target}")
     }
 
+    def 'should fetch container index' () {
+        given:
+        def REGISTRY = 'docker.io'
+        def IMAGE = 'library/busybox'
+        def REFERENCE = 'latest'
+        def registry = lookupService.lookup(REGISTRY)
+        def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
+        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
+        and:
+
+        def client = new ProxyClient(httpClient, httpConfig)
+                .withRoute(Mock(RoutePath))
+                .withImage(IMAGE)
+                .withRegistry(registry)
+                .withCredentials(creds)
+                .withLoginService(loginService)
+        and:
+        def scanner = new ContainerAugmenter()
+                .withClient(client)
+
+        when:
+        def spec = scanner
+                .getContainerSpec(IMAGE, REFERENCE, WaveDefault.ACCEPT_HEADERS)
+                .getIndex()
+        then:
+        spec.schemaVersion == 2
+        spec.mediaType == 'application/vnd.oci.image.index.v1+json'
+        spec.manifests.size()>0
+    }
+
+    def 'should fetch container index with digest' () {
+        given:
+        def REGISTRY = 'docker.io'
+        def IMAGE = 'library/busybox'
+        def REFERENCE = 'sha256:a5d0ce49aa801d475da48f8cb163c354ab95cab073cd3c138bd458fc8257fbf1'
+        def registry = lookupService.lookup(REGISTRY)
+        def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
+        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
+        and:
+
+        def client = new ProxyClient(httpClient, httpConfig)
+                .withRoute(Mock(RoutePath))
+                .withImage(IMAGE)
+                .withRegistry(registry)
+                .withCredentials(creds)
+                .withLoginService(loginService)
+        and:
+        def scanner = new ContainerAugmenter()
+                .withClient(client)
+
+        when:
+        def spec = scanner
+                .getContainerSpec(IMAGE, REFERENCE, WaveDefault.ACCEPT_HEADERS)
+                .getIndex()
+        then:
+        spec.digest == 'sha256:a5d0ce49aa801d475da48f8cb163c354ab95cab073cd3c138bd458fc8257fbf1'
+        spec.schemaVersion == 2
+        spec.mediaType == 'application/vnd.oci.image.index.v1+json'
+        spec.manifests.size()>0
+    }
+
     def 'should fetch container manifest' () {
         given:
         def REGISTRY = 'docker.io'
         def IMAGE = 'library/busybox'
+        def REFERENCE = 'sha256:79c9716db559ffde1170a4faf04910a08d930f511e6904c4899a1f7be2abfb34'
         def registry = lookupService.lookup(REGISTRY)
         def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
         def httpClient = HttpClientFactory.neverRedirectsHttpClient()
@@ -805,38 +856,110 @@ class ContainerAugmenterTest extends Specification {
                 .withPlatform('amd64')
 
         when:
-        def manifest = scanner.getImageConfig(IMAGE, 'latest', WaveDefault.ACCEPT_HEADERS)
+        def spec = scanner
+                .getContainerSpec(IMAGE, REFERENCE, WaveDefault.ACCEPT_HEADERS)
+                .getContainer()
         then:
-        manifest.architecture == 'amd64'
-        manifest.config.cmd == ['sh']
+        spec.registry == 'docker.io'
+        spec.imageName == 'library/busybox'
+        spec.reference == 'sha256:79c9716db559ffde1170a4faf04910a08d930f511e6904c4899a1f7be2abfb34'
+        spec.digest == 'sha256:79c9716db559ffde1170a4faf04910a08d930f511e6904c4899a1f7be2abfb34'
+        and:
+        !spec.isV1()
+        spec.isV2()
+        spec.isOci()
+        and:
+        spec.config.architecture == 'amd64'
+        spec.config.config.cmd == ['sh']
+        and:
+        spec.manifest.schemaVersion == 2
+        spec.manifest.mediaType == 'application/vnd.oci.image.manifest.v1+json'
+        spec.manifest.config.mediaType == 'application/vnd.oci.image.config.v1+json'
+        spec.manifest.config.digest == 'sha256:af47096251092caf59498806ab8d58e8173ecf5a182f024ce9d635b5b4a55d66'
+        spec.manifest.config.size == 372
     }
+
 
     def 'should fetch container manifest for legacy image' () {
         given:
-        def REGISTRY = 'quay.io'
-        def IMAGE = 'biocontainers/fastqc'
-        def TAG = '0.11.9--0'
-        def registry = lookupService.lookup(REGISTRY)
-        def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
-        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
+        def REGISTRY = 'mockreg.io'
+        def IMAGE = 'repo/image'
+        def TAG = '1.0.0'
         and:
 
-        def client = new ProxyClient(httpClient, httpConfig)
-                .withRoute(Mock(RoutePath))
-                .withImage(IMAGE)
-                .withRegistry(registry)
-                .withCredentials(creds)
-                .withLoginService(loginService)
+        def client = Mock(ProxyClient)
+
+        and:
+        def headers = ['content-type': List.of('application/vnd.docker.distribution.manifest.v1+prettyjws'),
+                       'docker-content-digest': List.of('sha256:samplesha')]
+        def response1 = Mock(HttpResponse)
+        response1.headers() >> HttpHeaders.of(headers, (a, b)->true)
+        and:
+        String manifest = """
+                {
+                    "schemaVersion": 1,
+                    "name": "mockImage",
+                    "tag": "latest",
+                    "architecture": "amd64",
+                    "fsLayers": [
+                        {"blobSum": "sha256:mockBlobSum1"},
+                        {"blobSum": "sha256:mockBlobSum2"}
+                    ],
+                    "history": [
+                        {
+                            "v1Compatibility": "{\\"id\\":\\"mockId1\\",\\"architecture\\": \\"amd64\\",\\"config\\": {\\"Cmd\\": [\\"/bin/sh\\"],\\"Env\\": [\\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\\"],\\"Entrypoint\\": null,\\"WorkingDir\\": \\"\\"},\\"created\\": \\"2021-09-23T23:47:57.442225064Z\\",\\"docker_version\\": \\"20.10.7\\",\\"os\\": \\"linux\\",\\"parent\\": \\"mockParent1\\"}"
+                        }
+                    ]
+                }
+                """
+        def response2 = Mock(HttpResponse)
+        response2.headers() >> HttpHeaders.of(Map.of('content-type', List.of('application/vnd.docker.distribution.manifest.v1+prettyjws')), (a, b)->true)
+        response2.body() >> manifest
         and:
         def scanner = new ContainerAugmenter()
                 .withClient(client)
                 .withPlatform('amd64')
 
         when:
-        def manifest = scanner.getImageConfig(IMAGE, TAG, WaveDefault.ACCEPT_HEADERS)
+        def spec = scanner
+                .getContainerSpec(IMAGE, TAG, WaveDefault.ACCEPT_HEADERS)
+                .getContainer()
+
         then:
-        manifest.architecture == 'amd64'
-        manifest.config.cmd == ['/bin/sh']
+        client.head("/v2/$IMAGE/manifests/$TAG", _) >> response1
+        client.getString(_, _ ) >> response2
+        client.route >> new RoutePath('docker', REGISTRY, IMAGE)
+        client.getRegistry() >> new RegistryInfo(REGISTRY, new URI(REGISTRY), Mock(RegistryAuth))
+        then:
+        spec.registry == 'mockreg.io'
+        spec.imageName == 'repo/image'
+        spec.reference == '1.0.0'
+        spec.digest == 'sha256:samplesha'
+        and:
+        spec.isV1()
+        !spec.isV2()
+        !spec.isOci()
+        and:
+        spec.config.architecture == 'amd64'
+        spec.config.config.cmd == ['/bin/sh']
+        and:
+        spec.manifest.schemaVersion == 1
+        spec.manifest.mediaType == 'application/vnd.docker.distribution.manifest.v1+prettyjws'
+        spec.manifest.config == null
     }
 
+    def 'should get the correct entrypoint'(){
+        expect:
+        ContainerAugmenter.processEntryPoint(INPUT_VALUE) == ENTRYPOINT
+
+        where:
+        INPUT_VALUE                         | ENTRYPOINT
+        null                                | null
+        'entrypoint'                        | 'entrypoint'
+        ['entrypoint']                      | 'entrypoint'
+        ['entrypoint', 'list']              | '["entrypoint","list"]'
+        ["/bin/sh", "-c", "\"echo Hola\""]  | '["/bin/sh","-c","\\"echo Hola\\""]'
+        ["foo", "bar foo"]                  | '["foo","bar foo"]'
+        ["foo", "'bar foo'"]                | '["foo","\'bar foo\'"]'
+    }
 }

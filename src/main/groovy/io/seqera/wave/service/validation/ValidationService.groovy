@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -29,6 +29,8 @@ interface ValidationService {
 
     String checkContainerName(String name)
 
-    String checkBuildRepository(String repo, boolean cache)
+    String checkBuildRepository(String repo, ValidationServiceImpl.RepoType type)
+
+    boolean isCustomRepo(String repo)
 
 }

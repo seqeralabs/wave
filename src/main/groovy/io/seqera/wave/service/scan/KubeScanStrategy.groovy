@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -18,35 +18,32 @@
 
 package io.seqera.wave.service.scan
 
-import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
 import java.nio.file.Path
-import java.time.Instant
-import io.micronaut.core.annotation.Nullable
 
-import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.openapi.ApiException
-import io.kubernetes.client.openapi.models.V1Job
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
+import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.configuration.ScanEnabled
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Singleton
 import static io.seqera.wave.util.K8sHelper.getSelectorLabel
-import static java.nio.file.StandardOpenOption.CREATE
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
-import static java.nio.file.StandardOpenOption.WRITE
+
 /**
  * Implements ScanStrategy for Kubernetes
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @Primary
+@Requires(bean = ScanEnabled)
 @Requires(property = 'wave.build.k8s')
 @Singleton
 @CompileStatic
@@ -66,53 +63,19 @@ class KubeScanStrategy extends ScanStrategy {
     }
 
     @Override
-    ScanResult scanContainer(ScanRequest req) {
-        log.info("Launching container scan for buildId: ${req.buildId} with scanId ${req.id}")
-        final startTime = Instant.now()
-
-        final podName = "scan-${req.id}"
+    void scanContainer(String jobName, ScanEntry entry) {
+        log.info("Launching container scan job: $jobName for entry: ${entry}")
         try{
-            // create the scan dir
-            try {
-                Files.createDirectory(req.workDir)
-            }
-            catch (FileAlreadyExistsException e) {
-                log.warn("Container scan directory already exists: $e")
-            }
+            Files.createDirectories(entry.workDir)
+            final Path configFile = entry.configJson ? entry.workDir.resolve('config.json') : null
 
-            // save the config file with docker auth credentials
-            Path configFile = null
-            if( req.configJson ) {
-                configFile = req.workDir.resolve('config.json')
-                Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
-            }
-
-            final reportFile = req.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
-
-            V1Job job
-            final trivyCommand = scanCommand(req.targetImage, reportFile, scanConfig)
-            final selector= getSelectorLabel(req.platform, nodeSelectorMap)
-            final pod = k8sService.scanContainer(podName, scanConfig.scanImage, trivyCommand, req.workDir, configFile, scanConfig, selector)
-            final terminated = k8sService.waitPod(pod, scanConfig.timeout.toMillis())
-            if( terminated ) {
-                log.info("Container scan completed for id: ${req.id}")
-                return ScanResult.success(req, startTime, TrivyResultProcessor.process(reportFile.text))
-            }
-            else{
-                final stdout = k8sService.logsPod(podName)
-                log.info("Container scan failed for scan id: ${req.id} - stdout: $stdout")
-                return ScanResult.failure(req, startTime)
-            }
+            // Use unified scan image and command for both container and plugin scans
+            final command = buildScanCommand(entry.containerImage, entry.workDir, entry.platform, scanConfig)
+            final selector = getSelectorLabel(entry.platform, nodeSelectorMap)
+            k8sService.launchScanJob(jobName, scanConfig.scanImage, command, entry.workDir, configFile, scanConfig, selector)
         }
         catch (ApiException e) {
             throw new BadRequestException("Unexpected scan failure: ${e.responseBody}", e)
-        }
-        catch (Throwable e){
-            log.error("Error while scanning with id: ${req.id} - cause: ${e.getMessage()}", e)
-            return ScanResult.failure(req, startTime)
-        }
-        finally {
-            cleanup(podName)
         }
     }
 

@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -23,26 +23,32 @@ import java.time.Instant
 
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
-import groovy.transform.CompileDynamic
+import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.http.HttpStatus
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
+import io.seqera.wave.core.spec.ConfigSpec
+import io.seqera.wave.core.spec.ContainerSpec
+import io.seqera.wave.core.spec.IndexSpec
 import io.seqera.wave.core.spec.ManifestSpec
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.exception.DockerRegistryException
+import io.seqera.wave.model.ContainerOrIndexSpec
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.storage.Storage
-import io.seqera.wave.storage.reader.ContentReaderFactory
+import io.seqera.wave.util.JacksonHelper
+import io.seqera.wave.service.builder.MultiPlatformBuildService
 import io.seqera.wave.util.RegHelper
 import static io.seqera.wave.model.ContentType.DOCKER_IMAGE_CONFIG_V1
 import static io.seqera.wave.model.ContentType.DOCKER_IMAGE_INDEX_V2
 import static io.seqera.wave.model.ContentType.DOCKER_MANIFEST_V1_JWS_TYPE
+import static io.seqera.wave.model.ContentType.DOCKER_MANIFEST_V1_TYPE
 import static io.seqera.wave.model.ContentType.DOCKER_MANIFEST_V2_TYPE
 import static io.seqera.wave.model.ContentType.OCI_IMAGE_CONFIG_V1
 import static io.seqera.wave.model.ContentType.OCI_IMAGE_INDEX_V1
 import static io.seqera.wave.model.ContentType.OCI_IMAGE_MANIFEST_V1
-
 /**
  * Implement the logic of container manifest manipulation and
  * layers injections
@@ -53,11 +59,29 @@ import static io.seqera.wave.model.ContentType.OCI_IMAGE_MANIFEST_V1
 @CompileStatic
 class ContainerAugmenter {
 
+    @Canonical
+    static class ManifestInfo {
+        final String imageManifest
+        final String configDigest
+        final String targetDigest
+        final Boolean oci
+        final ManifestSpec manifestSpec
+    }
+
+    /**
+     * Holds the digest and size of an augmented manifest, used to update
+     * entries in a manifest index after per-platform augmentation.
+     */
+    @Canonical
+    static class AugmentedManifest {
+        final String digest
+        final int size
+    }
+    
     private ProxyClient client
     private ContainerConfig containerConfig
-    private ContainerPlatform platform = ContainerPlatform.DEFAULT
+    private ContainerPlatform platform
     private Storage storage
-
 
     ContainerConfig getContainerConfig() {
         return containerConfig
@@ -74,7 +98,12 @@ class ContainerAugmenter {
     }
 
     ContainerAugmenter withPlatform(String value) {
-        this.platform = ContainerPlatform.of(value)
+        this.platform = value ? ContainerPlatform.of(value) : null
+        return this
+    }
+
+    ContainerAugmenter withPlatform(ContainerPlatform platform) {
+        this.platform = platform
         return this
     }
 
@@ -89,12 +118,17 @@ class ContainerAugmenter {
 
     ContainerDigestPair resolve(RoutePath route, Map<String,List<String>> headers) {
         assert route, "Missing route"
-        if( route.request?.platform )
-            this.platform = route.request.platform
+        this.platform = route.request?.platform ?: ContainerPlatform.DEFAULT
         // note: do not propagate container config when "freeze" mode is enabled, because it has been already
-        // during the container build phase, and therefore it should be ignored by the augmenter
-        if( route.request?.containerConfig && !route.request.freeze )
-            this.containerConfig = route.request.containerConfig
+        // applied during the container build phase, and therefore it should be ignored by the augmenter
+        if( route.request?.containerConfig && !route.request.freeze ) {
+            log.debug "Augmenter resolve: platform=${this.platform}; layers=${route.request.containerConfig?.layers?.collect { it.location }}"
+            // for single-arch: filters fusion layers to keep only the matching arch
+            // for multi-arch: this is a no-op (returns all layers); per-platform filtering
+            // happens later in augmentManifest() when the actual image architecture is known
+            this.containerConfig = MultiPlatformBuildService.filterLayersForPlatform(route.request.containerConfig, this.platform)
+            log.debug "Augmenter resolve: filtered layers=${this.containerConfig?.layers?.collect { it.location }}"
+        }
         return resolve(route.image, route.reference, headers)
     }
 
@@ -129,7 +163,8 @@ class ContainerAugmenter {
         // resolve image tag to digest
         final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
         final digest = resp1.headers().firstValue('docker-content-digest').orElse(null)
-        log.trace "Resolve (1): image $imageName:$tag => digest=$digest; reponse code=${resp1.statusCode()}"
+        if( log.isTraceEnabled() )
+            log.trace "Resolve (1): image $imageName:$tag => digest=$digest; response code=${resp1.statusCode()}"
         checkResponseCode(resp1, client.route, false)
 
         // get manifest list for digest
@@ -137,12 +172,14 @@ class ContainerAugmenter {
         final type = resp2.headers().firstValue('content-type').orElse(null)
         checkResponseCode(resp2, client.route, false)
         final manifestsList = resp2.body()
-        log.trace "Resolve (2): image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"
+        if( log.isTraceEnabled() )
+            log.trace "Resolve (2): image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"
 
         // when there's no container config, not much to do
         // just cache the manifest content and return the digest
         if( !containerConfig ) {
-            log.trace "Resolve (3): container config provided for image=$imageName:$tag"
+            if( log.isTraceEnabled() )
+                log.trace "Resolve (3): container config provided for image=$imageName:$tag"
             final target = "$client.registry.name/v2/$imageName/manifests/$digest"
             storage.saveManifest(target, manifestsList, type, digest)
             return new ContainerDigestPair(digest,digest)
@@ -165,60 +202,234 @@ class ContainerAugmenter {
             return new ContainerDigestPair(digest, v1Digest)
         }
 
-        final manifestResult = findImageManifestAndDigest(manifestsList, imageName, tag, headers)
-        final imageManifest = manifestResult.v1
-        final configDigest = manifestResult.v2
-        final targetDigest = manifestResult.v3
-        final oci = manifestResult.v4
+        // Parse the manifest body to inspect its mediaType field.
+        // This determines whether we're dealing with a manifest index (multi-platform list)
+        // or a single platform manifest.
+        final parsedManifest = new JsonSlurper().parseText(manifestsList) as Map
+        final media = parsedManifest.mediaType as String
 
-        // fetch the image config
-        final resp5 = client.getString("/v2/$imageName/blobs/$configDigest", headers)
-        checkResponseCode(resp5, client.route, true)
-        final imageConfig = resp5.body()
-        log.trace "Resolve (5): image $imageName:$tag => image config=\n${JsonOutput.prettyPrint(imageConfig)}"
-
-        // update the image config adding the new layer
-        final newConfigResult = updateImageConfig(imageName, imageConfig, oci)
-        final newConfigDigest = newConfigResult[0]
-        final newConfigJson = newConfigResult[1]
-        log.trace "Resolve (6) ==> new config digest: $newConfigDigest => new config=\n${JsonOutput.prettyPrint(newConfigJson)} "
-
-        // update the image manifest adding a new layer
-        // returns the updated image manifest digest
-        final newManifestResult = updateImageManifest(imageName, imageManifest, newConfigDigest, newConfigJson.size(), oci)
-        final newManifestDigest = newManifestResult.v1
-        final newManifestSize = newManifestResult.v2
-        log.trace "Resolve (7) ==> new image digest: $newManifestDigest"
-
-        if( !targetDigest ) {
-            return new ContainerDigestPair(digest, newManifestDigest)
-        }
-        else {
-            // update the manifests list with the new digest
-            // returns the manifests list digest
-            final newListDigest = updateImageIndex(imageName, manifestsList, targetDigest, newManifestDigest, newManifestSize, oci)
-            log.trace "Resolve (8) ==> new list digest: $newListDigest"
-            return new ContainerDigestPair(digest, newListDigest)
+        // Manifest index (Docker v2 or OCI):
+        // Contains a list of platform-specific manifests. Delegate to resolveImageIndex
+        // which iterates over matching platform entries, augments each one separately
+        // with the correct arch-specific fusion layers, and updates the index.
+        // This handles both single-arch (one match) and multi-arch (multiple matches).
+        if( media==DOCKER_IMAGE_INDEX_V2 || media==OCI_IMAGE_INDEX_V1 ) {
+            return resolveImageIndex(imageName, tag, headers, manifestsList, digest, parsedManifest, media)
         }
 
+        // Single platform manifest (Docker v2 or OCI):
+        // No index wrapping — augment the manifest directly with fusion layers.
+        if( media==DOCKER_MANIFEST_V2_TYPE || media==OCI_IMAGE_MANIFEST_V1 ) {
+            final ref = ManifestSpec.of(parsedManifest)
+            // targetDigest is null because there's no parent index entry to update
+            final manifestInfo = new ManifestInfo(manifestsList, ref.config.digest, null, media==OCI_IMAGE_MANIFEST_V1, ref)
+            final result = augmentManifest(imageName, tag, headers, manifestInfo)
+            return new ContainerDigestPair(digest, result.digest)
+        }
+
+        throw new IllegalArgumentException("Unexpected media type for request '$imageName:$tag' - offending value: $media")
     }
 
-    protected Tuple4<String,String,String,Boolean> findImageManifestAndDigest(String manifest, String imageName, String tag, Map<String,List<String>> headers) {
+    /**
+     * Resolve an image index (manifest list) by augmenting each matching platform manifest.
+     *
+     * An image index is a JSON document listing platform-specific manifests (e.g. linux/amd64,
+     * linux/arm64). This method iterates over those entries, finds the ones matching our target
+     * platform(s), and augments each one separately with the correct arch-specific fusion layers.
+     *
+     * For single-arch requests (e.g. platform=linux/amd64): only one entry matches, so we
+     * augment one manifest and update one index entry.
+     *
+     * For multi-arch requests (e.g. platform=linux/amd64,linux/arm64): multiple entries match,
+     * each gets augmented with its own filtered fusion layers (amd64 gets fusion-amd64.tar.gz,
+     * arm64 gets fusion-arm64.tar.gz), and all index entries are updated.
+     *
+     * @param imageName       the repository name (e.g. "library/ubuntu")
+     * @param tag             the image tag or reference
+     * @param headers         HTTP headers for upstream registry requests
+     * @param manifestsList   the raw JSON string of the manifest index
+     * @param originalDigest  the original digest of the unmodified index
+     * @param indexJson       the already-parsed index JSON (avoids double parsing)
+     * @param indexMedia      the mediaType of the index (OCI or Docker)
+     * @return a pair of (original digest, new augmented index digest)
+     */
+    protected ContainerDigestPair resolveImageIndex(String imageName, String tag, Map<String,List<String>> headers, String manifestsList, String originalDigest, Map indexJson, String indexMedia) {
+        final oci = indexMedia == OCI_IMAGE_INDEX_V1
+        // each entry in this list represents a platform-specific manifest (os/arch/variant)
+        final manifests = indexJson.manifests as List<Map>
+        // save the original container config (with ALL fusion layers for all platforms)
+        // because augmentManifest mutates this.containerConfig via filterLayersForPlatform,
+        // and we need to reset it before processing each platform
+        final originalConfig = this.containerConfig
+        // collect old digest → (new digest, new size) for each augmented platform
+        final digestUpdates = new LinkedHashMap<String, AugmentedManifest>()
+
+        try {
+            for( Map indexEntry : manifests ) {
+                // each index entry has a 'platform' object with os/architecture/variant fields
+                final entryPlatform = indexEntry.platform as Map
+                if( !entryPlatform )
+                    continue
+
+                // verify the entry's mediaType matches what we expect for this index type:
+                // OCI indexes reference OCI manifests, Docker indexes reference Docker v2 manifests
+                final entryMedia = indexEntry.mediaType as String
+                final expectedMedia = oci ? OCI_IMAGE_MANIFEST_V1 : DOCKER_MANIFEST_V2_TYPE
+                if( entryMedia != expectedMedia )
+                    continue
+
+                // check if this entry's platform (e.g. linux/amd64) matches any of our
+                // target platforms — for single-arch this matches one, for multi-arch it
+                // matches each platform in turn
+                if( !matchesPlatformEntry(entryPlatform) )
+                    continue
+
+                final targetDigest = indexEntry.digest as String
+                if( !targetDigest )
+                    continue
+
+                // fetch the actual platform-specific manifest (not the index — the real manifest
+                // that contains the layer list and config reference for this architecture)
+                final resp = client.getString("/v2/$imageName/manifests/$targetDigest", headers)
+                checkResponseCode(resp, client.route, false)
+                final platformManifest = resp.body() as String
+                // parse the manifest to extract config digest, layer info, and mediaType
+                final manifestInfo = parseManifest(platformManifest, targetDigest)
+                if( !manifestInfo )
+                    continue
+
+                // reset to the original unfiltered container config before each platform,
+                // because augmentManifest will filter it down to only the layers matching
+                // this specific architecture (e.g. keep fusion-amd64, discard fusion-arm64)
+                this.containerConfig = originalConfig
+                // augment this platform's manifest: fetch config, filter layers, inject layers
+                final result = augmentManifest(imageName, tag, headers, manifestInfo)
+                // record the mapping from old digest to new digest+size for the index update
+                digestUpdates.put(targetDigest, result)
+            }
+        }
+        finally {
+            // always restore the original container config, even if an exception occurs,
+            // to avoid leaving the augmenter in a partially-filtered state
+            this.containerConfig = originalConfig
+        }
+
+        if( digestUpdates.isEmpty() ) {
+            throw new BadRequestException("Cannot find matching platform '${platform}' in the image index for '$imageName:$tag'")
+        }
+
+        // rewrite the image index: replace old digests with new augmented digests,
+        // recompute the index's own digest, and store it in the cache
+        final newListDigest = updateImageIndex(imageName, manifestsList, digestUpdates, oci)
+        if( log.isTraceEnabled() )
+            log.trace "resolveImageIndex: new index digest: $newListDigest (updated ${digestUpdates.size()} platform entries)"
+        // return: original unmodified index digest + new augmented index digest
+        return new ContainerDigestPair(originalDigest, newListDigest)
+    }
+
+    /**
+     * Check if a manifest index entry's platform matches any of our target platforms.
+     * For single-arch (e.g. linux/amd64), the platforms list has one entry.
+     * For multi-arch (e.g. linux/amd64,linux/arm64), it has multiple entries.
+     * Delegates to Platform.matches() which handles arch aliases (x86_64→amd64)
+     * and variant normalization (arm64/v8→arm64).
+     */
+    protected boolean matchesPlatformEntry(Map entryPlatform) {
+        return platform.platforms.any { it.matches(entryPlatform) }
+    }
+
+    /**
+     * Augment a single platform manifest by injecting fusion layers and config changes.
+     *
+     * This is the core augmentation logic shared by both single-manifest and index-based
+     * resolution. It performs three steps:
+     * 1. Fetch the image config blob to determine the actual architecture
+     * 2. Filter fusion layers to keep only those matching the resolved architecture
+     *    (e.g. for amd64: keep fusion-amd64.tar.gz, discard fusion-arm64.tar.gz)
+     * 3. Inject the filtered layers into both the image config and manifest
+     *
+     * NOTE: This method mutates this.containerConfig via filterLayersForPlatform.
+     * When called from resolveImageIndex, the caller must reset this.containerConfig
+     * before each invocation to ensure correct filtering per platform.
+     *
+     * @return a Tuple2 of (newManifestDigest, newManifestSize) for updating the parent index
+     */
+    protected AugmentedManifest augmentManifest(String imageName, String tag, Map<String,List<String>> headers, ManifestInfo manifestInfo) {
+        // fetch the image config blob — this JSON contains the architecture field,
+        // rootfs layer digests, and container config (env, entrypoint, etc.)
+        final resp = client.getString("/v2/$imageName/blobs/$manifestInfo.configDigest", headers)
+        checkResponseCode(resp, client.route, true)
+        final imageConfig = resp.body() as String
+        if( log.isTraceEnabled() )
+            log.trace "Augment: image $imageName:$tag => image config=\n${JsonOutput.prettyPrint(imageConfig)}"
+
+        // read the architecture from the image config to determine which fusion layers to keep.
+        // this is the authoritative source of the image's architecture — more reliable than
+        // the platform field in the manifest index, which may be missing or incorrect.
+        final configJson = new JsonSlurper().parseText(imageConfig) as Map
+        final resolvedArch = configJson.architecture as String
+        if( resolvedArch ) {
+            // filter this.containerConfig.layers to only include:
+            // - non-fusion layers (always kept, e.g. the wave launcher data layer)
+            // - fusion layers matching this architecture (e.g. fusion-amd64.tar.gz for amd64)
+            // fusion layers for other architectures are discarded
+            final resolvedPlatform = ContainerPlatform.of("linux/${resolvedArch}")
+            this.containerConfig = MultiPlatformBuildService.filterLayersForPlatform(this.containerConfig, resolvedPlatform)
+            log.debug "Augment: filtered layers for arch=${resolvedArch}; remaining=${this.containerConfig?.layers?.size()}"
+        }
+
+        // update the image config: add layer tar digests to rootfs.diff_ids,
+        // apply container config changes (env, entrypoint, cmd, workingDir),
+        // then store the new config blob and return its digest
+        final newConfigResult = updateImageConfig(imageName, imageConfig, manifestInfo.oci)
+        final newConfigDigest = newConfigResult[0]
+        final newConfigJson = newConfigResult[1]
+        if( log.isTraceEnabled() )
+            log.trace "Augment: new config digest: $newConfigDigest"
+
+        // update the image manifest: append new layer blobs to the layers array,
+        // update the config reference to point to the new config digest,
+        // then store the new manifest and return its digest + size
+        final newManifestResult = updateImageManifest(imageName, manifestInfo.imageManifest, newConfigDigest, newConfigJson.size(), manifestInfo.oci)
+        return new AugmentedManifest(newManifestResult.v1, newManifestResult.v2)
+    }
+
+    protected ManifestInfo parseManifest(String manifest, String targetDigest) {
+        final json = new JsonSlurper().parseText(manifest) as Map
+        final media = json.mediaType as String
+        return parseManifest(media, manifest, json, targetDigest)
+    }
+
+    protected ManifestInfo parseManifest(String media, String manifest, String targetDigest) {
+        final json = new JsonSlurper().parseText(manifest) as Map
+        return parseManifest(media, manifest, json, targetDigest)
+    }
+
+    protected ManifestInfo parseManifest(String media, String manifest, Map json, String targetDigest) {
+        if( media==DOCKER_MANIFEST_V2_TYPE || media==OCI_IMAGE_MANIFEST_V1 ) {
+            final ref = ManifestSpec.of(json)
+            return new ManifestInfo(manifest, ref.config.digest, targetDigest, media==OCI_IMAGE_MANIFEST_V1, ref)
+        }
+        return null
+    }
+
+    protected ManifestInfo findImageManifestAndDigest(String manifest, String imageName, String tag, Map<String,List<String>> headers) {
 
         def json = new JsonSlurper().parseText(manifest) as Map
         // check the response mime, can be either
         // 1. application/vnd.docker.distribution.manifest.list.v2+json ==> image list
         // 2. application/vnd.docker.distribution.manifest.v2+json  ==> image manifest
 
-        def targetDigest = null
-        def media = json.mediaType
+        String targetDigest = null
+        String media = json.mediaType
         if( media==DOCKER_IMAGE_INDEX_V2 || media==OCI_IMAGE_INDEX_V1 ) {
             // get target manifest
             final oci = media == OCI_IMAGE_INDEX_V1
             targetDigest = findTargetDigest(json, oci)
             final resp3 = client.getString("/v2/$imageName/manifests/$targetDigest", headers)
             manifest = resp3.body()
-            log.trace("Image $imageName:$tag => image manifest=\n${JsonOutput.prettyPrint(manifest)}")
+            if( log.isTraceEnabled() )
+                log.trace("Image $imageName:$tag => image manifest=\n${JsonOutput.prettyPrint(manifest)}")
             // parse the new manifest
             json = new JsonSlurper().parseText(manifest) as Map
             media = json.mediaType
@@ -226,8 +437,8 @@ class ContainerAugmenter {
 
         if( media==DOCKER_MANIFEST_V2_TYPE || media==OCI_IMAGE_MANIFEST_V1 ) {
             // find the image config digest
-            final configDigest = findImageConfigDigest(manifest)
-            return new Tuple4(manifest, configDigest, targetDigest, media==OCI_IMAGE_MANIFEST_V1)
+            final ref = ManifestSpec.of(json)
+            return new ManifestInfo(manifest, ref.config.digest, targetDigest, media==OCI_IMAGE_MANIFEST_V1, ref)
         }
         else {
             throw new IllegalArgumentException("Unexpected media type for request '$imageName:$tag' - offending value: $media")
@@ -235,77 +446,49 @@ class ContainerAugmenter {
 
     }
 
-    protected String updateImageIndex(String imageName, String manifestsList, String targetDigest, String newDigest, Integer newSize, boolean oci) {
+    /**
+     * Rewrite the image index by replacing old platform manifest digests with new augmented ones.
+     * Handles one or more digest replacements in a single pass, then stores the updated index.
+     */
+    protected String updateImageIndex(String imageName, String manifestsList, Map<String, AugmentedManifest> digestUpdates, boolean oci) {
+        // parse the original index JSON
         final json = new JsonSlurper().parseText(manifestsList) as Map
         final list = json.manifests as List<Map>
-        final entry = list.find( it -> it.digest==targetDigest )
-        if( !entry )
-            throw new IllegalStateException("Missing manifest entry for digest: $targetDigest")
-        // update the target entry digest and size
-        entry.digest = newDigest
-        entry.size = newSize
-        // serialize to json again  
+
+        // replace each old digest with the new augmented digest and size
+        for( Map.Entry<String, AugmentedManifest> update : digestUpdates.entrySet() ) {
+            final entry = list.find( it -> it.digest == update.key )
+            if( !entry )
+                throw new IllegalStateException("Missing manifest entry for digest: ${update.key}")
+            entry.digest = update.value.digest
+            entry.size = update.value.size
+        }
+
         final updated = JsonOutput.toJson(json)
         final result = RegHelper.digest(updated)
         final type = oci ? OCI_IMAGE_INDEX_V1 : DOCKER_IMAGE_INDEX_V2
-        // make sure the manifest was updated
-        if( manifestsList==updated )
-            throw new IllegalArgumentException("Unable to find target digest '$targetDigest' into image index")
-        // store in the cache
+        if( manifestsList == updated )
+            throw new IllegalArgumentException("Unable to update image index - no entries were modified")
         final target = "$client.registry.name/v2/$imageName/manifests/$result"
         storage.saveManifest(target, updated, type, result)
-        // return the updated manifests list digest
         return result
     }
 
-    synchronized protected Map layerBlob(String image, ContainerLayer layer) {
-        log.debug "Adding layer: $layer to image: $client.registry.name/$image"
+    protected Map layerBlob(String image, ContainerLayer layer) {
+        log.debug "Adding layer: gzipDigest=$layer.gzipDigest; size=$layer.gzipSize to image: $client.registry.name/$image"
         // store the layer blob in the cache
-        final type = "application/vnd.docker.image.rootfs.diff.tar.gzip"
-        final location = layer.location
-        final digest = layer.gzipDigest
-        final size = layer.gzipSize
-        final String path = "$client.registry.name/v2/$image/blobs/$digest"
-        final content = ContentReaderFactory.of(location)
-        storage.saveBlob(path, content, type, digest, size)
+        final String path = "$client.registry.name/v2/$image/blobs/$layer.gzipDigest"
+        final store = storage.saveBlob(path, layer)
 
         final result = new LinkedHashMap(10)
-        result."mediaType" = type
-        result."size" = size
-        result."digest" = digest
+        result."mediaType" = store.mediaType
+        result."size" = store.size
+        result."digest" = store.digest
         return result
     }
 
-    /**
-     * @param imageManifest hold the image config json. It has the following structure
-     * <pre>
-     *     {
-     *      "schemaVersion": 2,
-     *      "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
-     *      "config": {
-     *              "mediaType": "application/vnd.docker.container.image.v1+json",
-     *              "size": 1469,
-     *              "digest": "sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412"
-     *          },
-     *      "layers": [
-     *          {
-     *              "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
-     *              "size": 2479,
-     *              "digest": "sha256:2db29710123e3e53a794f2694094b9b4338aa9ee5c40b930cb8063a1be392c54"
-     *          }
-     *      ]
-     *    }
-     * </pre>
-     * @return
-     */
-    @CompileDynamic
-    protected String findImageConfigDigest(String imageManifest) {
-        final json = (Map) new JsonSlurper().parseText(imageManifest)
-        return json.config.digest
-    }
 
     protected Tuple2<String,Integer> updateImageManifest(String imageName, String imageManifest, String newImageConfigDigest, newImageConfigSize, boolean oci) {
-
         // turn the json string into a json map
         // and append the new layer
         final manifest = (Map) new JsonSlurper().parseText(imageManifest)
@@ -336,12 +519,13 @@ class ContainerAugmenter {
         return new Tuple2<String, Integer>(digest, size)
     }
 
-    protected String getFirst(value) {
+    protected static String processEntryPoint(value) {
         if( !value )
             return null
         if( value instanceof List ) {
-            if( value.size()>1 ) log.warn "Invalid Entrypoint value: $value -- Only the first array element will be taken"
-            return value.get(0)
+            if( value.size() == 1 )
+                return value.get(0)
+            return JacksonHelper.toJson(value)
         }
         if( value instanceof String )
             return value
@@ -358,7 +542,7 @@ class ContainerAugmenter {
     }
 
     protected Map enrichConfig(Map config){
-        final entryChain = getFirst(config.Entrypoint)
+        final entryChain = processEntryPoint(config.Entrypoint)
         if( containerConfig.entrypoint ) {
             config.Entrypoint = containerConfig.entrypoint
         }
@@ -412,17 +596,22 @@ class ContainerAugmenter {
 
     protected String findTargetDigest(Map json, boolean oci) {
         final record = (Map)json.manifests.find(oci ? this.&matchesOciManifest : this.&matchesDockerManifest)
+        if( !record )
+            throw new BadRequestException("Cannot find platform '${platform}' in the manifest: ${JsonOutput.toJson(json)}")
         final result = record.get('digest')
-        log.trace "Find target digest platform: $platform ==> digest: $result"
+        if( !result )
+            throw new BadRequestException("Cannot find digest entry for platform '${platform}' in the manifest: ${JsonOutput.toJson(json)}")
+        if( log.isTraceEnabled() )
+            log.trace "Find target digest platform: $platform ==> digest: $result"
         return result
     }
 
     protected boolean matchesDockerManifest(Map<String,String> record) {
-        return record.mediaType == DOCKER_MANIFEST_V2_TYPE && platform.matches(record.platform as Map)
+        return record.mediaType == DOCKER_MANIFEST_V2_TYPE && matchesPlatformEntry(record.platform as Map)
     }
 
     protected boolean matchesOciManifest(Map<String,String> record) {
-        return record.mediaType == OCI_IMAGE_MANIFEST_V1 && platform.matches(record.platform as Map)
+        return record.mediaType == OCI_IMAGE_MANIFEST_V1 && matchesPlatformEntry(record.platform as Map)
     }
 
     protected void rewriteHistoryV1( List<Map> history ){
@@ -507,14 +696,14 @@ class ContainerAugmenter {
         return newManifestDigest
     }
 
-    ManifestSpec getImageConfig(String imageName, String tag, Map<String,List<String>> headers) {
+    ContainerOrIndexSpec getContainerSpec(String imageName, String tag, Map<String,List<String>> headers) {
         assert client, "Missing client"
-        assert platform, "Missing 'platform' parameter"
 
         // resolve image tag to digest
         final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
         final digest = resp1.headers().firstValue('docker-content-digest').orElse(null)
-        log.trace "Config (1): image $imageName:$tag => digest=$digest"
+        if( log.isTraceEnabled() )
+            log.trace "Config (1): image $imageName:$tag => digest=$digest"
         checkResponseCode(resp1, client.route, false)
 
         // get manifest list for digest
@@ -522,21 +711,55 @@ class ContainerAugmenter {
         final type = resp2.headers().firstValue('content-type').orElse(null)
         checkResponseCode(resp2, client.route, false)
         final manifestsList = resp2.body()
-        log.trace "Config (2): image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"
+        if( log.isTraceEnabled() )
+            log.trace "Config (2): image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"
 
-        if( type == DOCKER_MANIFEST_V1_JWS_TYPE ) {
-            return ManifestSpec.parseV1(manifestsList)
+        // check for legacy docker manifest type
+        if( type==DOCKER_MANIFEST_V1_JWS_TYPE || type==DOCKER_MANIFEST_V1_TYPE ) {
+            final json = new JsonSlurper().parseText(manifestsList) as Map
+            final config = ConfigSpec.parseV1(json)
+            final manifest = ManifestSpec.parseV1(json)
+            final spec = new ContainerSpec(
+                    client.registry.name,
+                    client.registry.host.toString(),
+                    imageName,
+                    tag,
+                    digest,
+                    config,
+                    manifest)
+            return new ContainerOrIndexSpec(spec)
         }
 
-        final manifestResult = findImageManifestAndDigest(manifestsList, imageName, tag, headers)
-        final configDigest = manifestResult.second
+        // when the target platform is not specific and it's a index media type
+        // return the container index specification
+        if( !platform && (type==DOCKER_IMAGE_INDEX_V2 || type==OCI_IMAGE_INDEX_V1) ) {
+            final spec = IndexSpec
+                    .parse(manifestsList)
+                    .withDigest(digest)
+            return new ContainerOrIndexSpec(spec)
+        }
+
+        final ManifestInfo manifestResult
+                = parseManifest(type, manifestsList, digest)
+                ?: findImageManifestAndDigest(manifestsList, imageName, tag, headers)
 
         // fetch the image config
-        final resp5 = client.getString("/v2/$imageName/blobs/$configDigest", headers)
+        final resp5 = client.getString("/v2/$imageName/blobs/$manifestResult.configDigest", headers)
         checkResponseCode(resp5, client.route, true)
         final imageConfig = resp5.body()
-        log.trace "Config (4): image $imageName:$tag => image config=\n${JsonOutput.prettyPrint(imageConfig)}"
+        if( log.isTraceEnabled() )
+            log.trace "Config (4): image $imageName:$tag => image config=\n${JsonOutput.prettyPrint(imageConfig)}"
 
-        return ManifestSpec.parse(imageConfig)
+        final config = ConfigSpec.parse(imageConfig)
+        final manifest = manifestResult.manifestSpec
+        final spec = new ContainerSpec(
+                client.registry.name,
+                client.registry.host.toString(),
+                imageName,
+                tag,
+                manifestResult.targetDigest,
+                config,
+                manifest)
+        return new ContainerOrIndexSpec(spec)
     }
 }

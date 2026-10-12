@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -21,14 +21,14 @@ package io.seqera.wave.configuration
 import java.time.Duration
 
 import groovy.transform.CompileStatic
-
-
+import groovy.transform.ToString
 /**
  * A simple bean to configure a max items per duration
  *
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
+@ToString(includePackage = false, includeNames = true)
 @CompileStatic
 class LimitConfig {
     int max

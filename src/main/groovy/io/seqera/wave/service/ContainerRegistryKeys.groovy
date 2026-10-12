@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -20,6 +20,7 @@ package io.seqera.wave.service
 
 import groovy.json.JsonSlurper
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.seqera.wave.util.StringUtils
 
 /**
@@ -27,19 +28,47 @@ import io.seqera.wave.util.StringUtils
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @CompileStatic
 class ContainerRegistryKeys {
+    /**
+     * The registry user name.
+     * For ECR with static credentials, this holds the AWS access key.
+     * For ECR with IAM role authentication, this holds the IAM role ARN.
+     */
     String userName
+
+    /**
+     * The registry secret.
+     * For ECR with static credentials, this holds the AWS secret key.
+     * For ECR with IAM role authentication, this holds the role external ID.
+     */
     String password
+
+    /**
+     * The registry target host - NOTE: this can be null when the keys where obtained by AWS credentials record
+     */
     String registry
 
     static ContainerRegistryKeys fromJson(String json) {
         final root = (Map) new JsonSlurper().parseText(json)
-        return new ContainerRegistryKeys(userName: root.userName, password: root.password, registry: root.registry)
+        // parse container registry credentials
+        if( root.discriminator == 'container-reg' ) {
+            return new ContainerRegistryKeys(userName: root.userName, password: root.password, registry: root.registry)
+        }
+        // Map AWS keys to registry username and password
+        if( root.discriminator == 'aws' ) {
+            if( root.assumeRoleArn ) {
+                log.debug "Using AWS IAM role authentication - roleArn=${root.assumeRoleArn}; externalId=${root.externalId ? 'present' : 'missing'}"
+                return new ContainerRegistryKeys(userName: root.assumeRoleArn, password: root.externalId)
+            }
+            return new ContainerRegistryKeys(userName: root.accessKey, password: root.secretKey)
+        }
+        throw new IllegalArgumentException("Unsupported credentials key discriminator type: ${root.discriminator}")
     }
 
     @Override
     String toString() {
-        return "ContainerRegistryKeys[registry=$registry; userName=$userName; password=${StringUtils.redact(password)})]"
+        return "ContainerRegistryKeys[registry=${registry}; userName=${userName}; password=${StringUtils.redact(password)})]"
     }
 }

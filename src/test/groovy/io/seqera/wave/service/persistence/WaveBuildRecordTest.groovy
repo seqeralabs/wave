@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -19,16 +19,21 @@
 package io.seqera.wave.service.persistence
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
+import io.seqera.wave.api.BuildCompression
+import io.seqera.wave.api.BuildStatusResponse
+import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.JacksonHelper
 /**
  *
@@ -38,31 +43,144 @@ class WaveBuildRecordTest extends Specification {
 
     def 'should serialise-deserialize build record' () {
         given:
-        final request = new BuildRequest(
-                'FROM foo:latest',
-                Path.of("/some/path"),
-                "buildrepo",
-                'conda::recipe',
-                'some-spack-recipe',
-                BuildFormat.DOCKER,
-                null,
-                null,
-                null,
-                ContainerPlatform.of('amd64'),
-                '{auth}',
-                'docker.io/my/repo',
-                '12345',
-                "1.2.3.4",
-                null )
-        final result = new BuildResult(request.id, -1, "ok", Instant.now(), Duration.ofSeconds(3))
+        final request = BuildRequest.of(
+                containerId: 'container1234',
+                containerFile: 'FROM foo:latest',
+                condaFile: 'conda::recipe',
+                workspace: Path.of("/some/path"),
+                targetImage: 'docker.io/my/repo:container1234',
+                identity: PlatformId.NULL,
+                platform: ContainerPlatform.of('amd64'),
+                cacheRepository: 'docker.io/my/cache',
+                ip: '1.2.3.4',
+                configJson: '{"config":"json"}',
+                scanId: 'scan12345',
+                format: BuildFormat.DOCKER,
+                maxDuration: Duration.ofMinutes(1),
+                compression: BuildCompression.gzip,
+                buildChildIds: new ChildRefs([
+                        new ChildRefs.Ref('bd-abc_0', 'linux/amd64'),
+                        new ChildRefs.Ref('bd-def_0', 'linux/arm64')
+                ]),
+                scanChildIds: new ChildRefs([
+                        new ChildRefs.Ref('sc-abc_1', 'linux/amd64'),
+                        new ChildRefs.Ref('sc-def_2', 'linux/arm64')
+                ])
+        )
+        final result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         final event = new BuildEvent(request, result)
         final record = WaveBuildRecord.fromEvent(event)
 
         when:
         def json = JacksonHelper.toJson(record)
         then:
-        JacksonHelper.fromJson(json, WaveBuildRecord) == record
+        def restored = JacksonHelper.fromJson(json, WaveBuildRecord)
+        restored.buildId == record.buildId
+        restored.targetImage == record.targetImage
+        restored.buildChildIds.size() == 2
+        restored.buildChildIds[0].id == 'bd-abc_0'
+        restored.buildChildIds[0].value == 'linux/amd64'
+        restored.buildChildIds[1].id == 'bd-def_0'
+        restored.buildChildIds[1].value == 'linux/arm64'
+        restored.scanChildIds.size() == 2
+        restored.scanChildIds[0].id == 'sc-abc_1'
+        restored.scanChildIds[0].value == 'linux/amd64'
+        restored.scanChildIds[1].id == 'sc-def_2'
+        restored.scanChildIds[1].value == 'linux/arm64'
 
     }
 
+    def 'should convert to status response' () {
+        given:
+        final request = BuildRequest.of(
+                containerId: 'container1234',
+                containerFile: 'FROM foo:latest',
+                condaFile: 'conda::recipe',
+                workspace: Path.of("/some/path"),
+                targetImage: 'docker.io/my/repo:container1234',
+                identity: PlatformId.NULL,
+                platform: ContainerPlatform.of('amd64'),
+                cacheRepository: 'docker.io/my/cache',
+                ip: '1.2.3.4',
+                configJson: '{"config":"json"}',
+                scanId: 'scan12345',
+                format: BuildFormat.DOCKER,
+                maxDuration: Duration.ofMinutes(1),
+                compression: BuildCompression.gzip
+        )
+
+        and:
+        final event = new BuildEvent(request)
+        final record = WaveBuildRecord.fromEvent(event)
+        when:
+        def resp = record.toStatusResponse()
+        then:
+        resp.id == request.buildId
+        resp.status == BuildStatusResponse.Status.PENDING
+        resp.startTime == request.startTime
+        and:
+        resp.duration == null
+        resp.succeeded == null
+
+        when:
+        final result2 = new BuildResult(request.buildId, 1, "ok", Instant.now(), Duration.ofSeconds(3), null)
+        final event2 = new BuildEvent(request, result2)
+        final record2 = WaveBuildRecord.fromEvent(event2)
+        final resp2 = record2.toStatusResponse()
+        then:
+        resp2.duration == record2.duration
+        resp2.succeeded == false
+
+        when:
+        final result3 = new BuildResult(request.buildId, 0, "ok", Instant.now(), Duration.ofSeconds(3), null)
+        final event3 = new BuildEvent(request, result3)
+        final record3 = WaveBuildRecord.fromEvent(event3)
+        final resp3 = record3.toStatusResponse()
+        then:
+        resp3.duration == record3.duration
+        resp3.succeeded == true
+
+    }
+
+    @Unroll
+    def 'should validate status and succeeded' () {
+       given:
+        final request = BuildRequest.of(
+                containerId: 'container1234',
+                containerFile: 'FROM foo:latest',
+                condaFile: 'conda::recipe',
+                workspace: Path.of("/some/path"),
+                targetImage: 'docker.io/my/repo:container1234',
+                identity: PlatformId.NULL,
+                platform: ContainerPlatform.of('amd64'),
+                cacheRepository: 'docker.io/my/cache',
+                ip: '1.2.3.4',
+                configJson: '{"config":"json"}',
+                scanId: 'scan12345',
+                format: BuildFormat.DOCKER,
+                maxDuration: Duration.ofMinutes(1),
+                compression: BuildCompression.gzip
+        )
+
+        final result = new BuildResult(request.buildId, EXIT, "ok", Instant.now(), DURATION, null)
+        final event = new BuildEvent(request, result)
+
+        when:
+        final build = WaveBuildRecord.fromEvent(event)
+        then:
+        build.succeeded() == EXPECT_SUCCEED
+        build.done() == EXPECT_DONE
+
+        when:
+        def resp = build.toStatusResponse()
+        then:
+        resp.succeeded == EXPECT_SUCCEED
+        resp.status == EXPECT_STATUS
+        where:
+        EXIT    | DURATION              | EXPECT_SUCCEED   | EXPECT_STATUS                          | EXPECT_DONE
+        null    | null                  | null             | BuildStatusResponse.Status.PENDING     | false
+        0       | null                  | null             | BuildStatusResponse.Status.PENDING     | false
+        1       | Duration.ofSeconds(1) | false            | BuildStatusResponse.Status.COMPLETED   | true
+        0       | Duration.ofSeconds(1) | true             | BuildStatusResponse.Status.COMPLETED   | true
+    }
 }

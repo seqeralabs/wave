@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -20,6 +20,7 @@ package io.seqera.wave.auth
 
 
 import io.seqera.wave.core.ContainerPath
+import io.seqera.wave.tower.PlatformId
 
 /**
  * Model an abstract provider for container registry credentials
@@ -39,6 +40,15 @@ interface RegistryCredentialsProvider {
      */
     RegistryCredentials getDefaultCredentials(String registry)
 
+    /**
+     * Provides the default credentials for the specified container
+     *
+     * @param container
+     *      A container name e.g. docker.io/library/ubuntu.
+     * @return
+     *      A {@link RegistryCredentials} object holding the credentials for the specified container or {@code null}
+     *      if not credentials can be found
+     */
     RegistryCredentials getDefaultCredentials(ContainerPath container)
 
     /**
@@ -47,18 +57,29 @@ interface RegistryCredentialsProvider {
      *
      * @param container
      *      A container name e.g. docker.io/library/ubuntu.
-     * @param userId
-     *      The tower user Id.
-     * @param workspaceId
-     *      The tower workspace Id.
-     * @param towerToken
-     *      The auth token used to access tower
-     * @param towerEndpoint
-     *      The tower endpoint used in the registration
+     * @param identity
+     *      The platform identity of the user submitting the request
      * @return
      *      A {@link RegistryCredentials} object holding the credentials for the specified container or {@code null}
      *      if not credentials can be found
      */
-    RegistryCredentials getUserCredentials(ContainerPath container, Long userId, Long workspaceId, String towerToken, String towerEndpoint)
+    RegistryCredentials getUserCredentials(ContainerPath container, PlatformId identity)
 
+    /**
+     * Provides the credentials for the specified container. When the platform identity is provider
+     * this is equivalent to #getUserCredentials.
+     *
+     * @param container
+     *      A container name e.g. docker.io/library/ubuntu.
+     * @param identity
+     *      The platform identity of the user submitting the request
+     * @return
+     *      A {@link RegistryCredentials} object holding the credentials for the specified container or {@code null}
+     *      if not credentials can be found
+     */
+    default RegistryCredentials getCredentials(ContainerPath container, PlatformId identity) {
+        return !identity
+                ? getDefaultCredentials(container)
+                : getUserCredentials(container, identity)
+    }
 }

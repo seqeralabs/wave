@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -18,12 +18,13 @@
 
 package io.seqera.wave.tower
 
-import javax.validation.constraints.NotNull
-import javax.validation.constraints.Size
-
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
+import io.seqera.serde.moshi.MoshiSerializable
+import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.Size
+
 /**
  * Model a tower user
  *
@@ -32,7 +33,7 @@ import groovy.transform.ToString
 @ToString(includeNames = true, includePackage = false, includes = 'id,userName,email')
 @EqualsAndHashCode
 @CompileStatic
-class User {
+class User implements MoshiSerializable {
 
     Long id
 
@@ -43,5 +44,25 @@ class User {
     @NotNull
     @Size(max = 255)
     String email
+
+    /**
+     * Build email notification preference forwarded by Tower in the user-info payload.
+     * May be {@code null} for older Tower clients that don't send the field (or a
+     * value not known to Wave), in which case {@link WaveBuildNotification#ALWAYS_ON} applies.
+     */
+    WaveBuildNotification waveBuildNotification
+
+    /**
+     * Create a {@link User} instance carrying only the user id, so that the user name
+     * and email are not exposed when the identity is included in API responses.
+     *
+     * @param id The Tower user id, or {@code null}
+     * @return A {@link User} holding the given id and no other details
+     */
+    static User ofId(Long id) {
+        final result = new User()
+        result.id = id
+        return result
+    }
 
 }

@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -18,22 +18,54 @@
 
 package io.seqera.wave.controller
 
-import io.micronaut.core.annotation.Nullable
+import java.util.regex.Pattern
 
+import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
+import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
+import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
+import io.micronaut.http.annotation.Post
+import io.micronaut.http.annotation.QueryValue
+import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.annotation.Client
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
+import io.micronaut.views.ModelAndView
 import io.micronaut.views.View
+import io.seqera.wave.api.ScanMode
+import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.api.SubmitContainerTokenResponse
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.exception.NotFoundException
+import io.seqera.wave.exception.UnsupportedBuildServiceException
+import io.seqera.wave.exception.UnsupportedMirrorServiceException
+import io.seqera.wave.exception.UnsupportedScanServiceException
+import io.seqera.wave.service.builder.ContainerBuildService
+import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.logs.BuildLogService
-import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.mirror.ContainerMirrorService
+import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.WaveBuildRecord
-import io.seqera.wave.service.scan.ScanResult
+import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.request.ContainerRequestService
+import io.seqera.wave.service.scan.ContainerScanService
+import io.seqera.wave.service.scan.ScanEntry
+import io.seqera.wave.core.ChildRefs
+import io.seqera.wave.service.scan.ScanType
+import io.seqera.wave.service.scan.ScanVulnerability
+import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+import org.reactivestreams.Subscription
+import reactor.core.publisher.Mono
 import static io.seqera.wave.util.DataTimeUtils.formatDuration
 import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
 /**
@@ -41,9 +73,11 @@ import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @CompileStatic
+@Requires(property = 'wave.capabilities.web-views', value = 'true', defaultValue = 'true')
 @Controller("/view")
-@ExecuteOn(TaskExecutors.IO)
+@ExecuteOn(TaskExecutors.BLOCKING)
 class ViewController {
 
     @Inject
@@ -51,39 +85,181 @@ class ViewController {
     private String serverUrl
 
     @Inject
-    private PersistenceService persistenceService
+    private ContainerRequestService containerService
+
+    @Inject
+    @Nullable
+    private ContainerBuildService buildService
 
     @Inject
     @Nullable
     private BuildLogService buildLogService
 
-    @View("build-view")
+    @Inject
+    private ContainerInspectService inspectService
+
+    @Inject
+    @Nullable
+    private ContainerScanService scanService
+
+    @Inject
+    @Nullable
+    private ContainerMirrorService mirrorService
+
+    @Inject
+    @Client("/")
+    private HttpClient httpClient
+
+    @View("mirror-view")
+    @Get('/mirrors/{mirrorId}')
+    HttpResponse viewMirror(String mirrorId) {
+        if( !mirrorService )
+            throw new UnsupportedMirrorServiceException()
+        final result = mirrorService.getMirrorResult(mirrorId)
+        if( !result ){
+            return HttpResponse.ok(["error_message": "Unknown container mirror id '$mirrorId'"])
+        }
+        return HttpResponse.ok(renderMirrorView(result))
+    }
+
+    protected Map<String,Object> renderMirrorView(MirrorResult result) {
+        // create template binding
+        final binding = new HashMap(20)
+        binding.mirror_id = result.mirrorId
+        binding.mirror_success = result.succeeded()
+        binding.mirror_failed = result.exitCode  && result.exitCode != 0
+        binding.mirror_in_progress = result.exitCode == null
+        binding.mirror_exitcode = result.exitCode ?: null
+        binding.mirror_logs = result.exitCode ? result.logs : null
+        binding.mirror_log_url = result.logs ? "$serverUrl/v1alpha1/mirrors/${result.mirrorId}/logs" : null
+        binding.mirror_time = formatTimestamp(result.creationTime, result.offsetId) ?: '-'
+        binding.mirror_duration = formatDuration(result.duration) ?: '-'
+        binding.mirror_source_image = result.sourceImage
+        binding.mirror_target_image = result.targetImage
+        binding.mirror_platform = result.platform ?: '(all)'
+        binding.mirror_digest = result.digest ?: '-'
+        binding.mirror_user_id = result.userId != null ? result.userId.toString() : '-'
+        binding.put('server_url', serverUrl)
+        ChildRefs.populateScanBinding(binding, result.scanId, null, result.succeeded(), serverUrl)
+        return binding
+    }
+
     @Get('/builds/{buildId}')
-    HttpResponse<Map<String,String>> viewBuild(String buildId) {
-        final record = persistenceService.loadBuild(buildId)
-        if( !record )
-            throw new NotFoundException("Unknown build id '$buildId'")
-        return HttpResponse.ok(renderBuildView(record))
+    HttpResponse viewBuild(String buildId) {
+        if( !buildService )
+            throw new UnsupportedBuildServiceException()
+        // check redirection for invalid suffix in the form `-nn`
+        final r1 = isBuildInvalidSuffix(buildId)
+        if( r1 ) {
+            log.debug "Redirect to build page [1]: $r1"
+            return HttpResponse.redirect(URI.create(r1))
+        }
+
+        // check all builds matching the pattern
+        if( isBuildMissingSuffix(buildId) ) {
+            final builds = buildService.getAllBuilds(buildId)
+            if( !builds ) {
+                log.debug "Found not build with id: $buildId"
+                return HttpResponse.ok(new ModelAndView("build-list", ["error_message": "Unknown build id '$buildId'"]))
+            }
+            if( builds.size()==1 ) {
+                log.debug "Redirect to build page [2]: ${builds.first().buildId}"
+                return HttpResponse.temporaryRedirect(URI.create("/view/builds/${builds.first().buildId}"))
+            }
+            else
+                return HttpResponse.ok(new ModelAndView("build-list", renderBuildsView(builds)))
+        }
+
+        // go ahead with proper handling
+        final record = buildService.getBuildRecord(buildId)
+        if( !record ){
+            return HttpResponse.ok(new ModelAndView("build-view", ["error_message": "Unknown build id '$buildId'"]))
+        }
+        return HttpResponse.ok(new ModelAndView("build-view", renderBuildView(record)))
+    }
+
+    static final private Pattern DASH_SUFFIX_REGEX = ~/([0-9a-zA-Z\-]+)-(\d+)$/
+
+    static final private Pattern CONTAINER_ID_REGEX = ~/((bd-)?[0-9a-z\-]{14,16})(?<!_\d{2})$/
+
+    protected String isBuildInvalidSuffix(String buildId) {
+        // check for build id containing a -nn suffix
+        final check1 = DASH_SUFFIX_REGEX.matcher(buildId)
+        if( check1.matches() ) {
+            return "/view/builds/${check1.group(1)}_${check1.group(2)}"
+        }
+        return null
+    }
+
+    protected boolean isBuildMissingSuffix(String buildId) {
+        // check build id missing the _nn suffix
+        return buildId
+                ? CONTAINER_ID_REGEX.matcher(buildId).matches()
+                : false
+    }
+
+    Map<String,?> renderBuildsView(List<WaveBuildRecord> results) {
+        // create template binding
+        final bindingMap = new HashMap<String, ?>(3)
+        if( results ) {
+            bindingMap.put("build_image", results[0].targetImage)
+            bindingMap.put("build_format", results[0].format?.render() ?: 'Docker')
+            bindingMap.put("build_platform", results[0].platform)
+            final binding = new ArrayList<Map<String,String>>()
+            for (def result : results) {
+                final bind = new HashMap(20)
+                bind.build_id = result.buildId
+                bind.build_digest = result.digest
+                bind.build_status = getStatus(result)
+                bind.build_success = getStatus(result) == "SUCCEEDED"
+                bind.build_failed = getStatus(result) == "FAILED"
+                bind.build_in_progress = getStatus(result) == "IN PROGRESS"
+                bind.build_status = getStatus(result)
+                bind.build_time = formatTimestamp(result.startTime, result.offsetId) ?: '-'
+                binding.add(bind)
+            }
+            bindingMap.put('build_records', binding)
+        }
+        // result the main object
+        bindingMap.put('server_url', serverUrl)
+        return bindingMap
+    }
+
+    protected static String getStatus(WaveBuildRecord result){
+        if( result.done() && result.succeeded() )
+            return "SUCCEEDED"
+        else if ( result.done() && !result.succeeded() )
+            return "FAILED"
+        else if (!result.done())
+            return "IN PROGRESS"
+        else
+            return "UNKNOWN"
     }
 
     Map<String,String> renderBuildView(WaveBuildRecord result) {
         // create template binding
         final binding = new HashMap(20)
         binding.build_id = result.buildId
-        binding.build_success = result.succeeded()
-        binding.build_exit_status = result.exitStatus
-        binding.build_user = (result.userName ?: '-') + " (ip: ${result.requestIp})"
+        binding.build_success = result.done() && result.succeeded()
+        binding.build_failed = result.done() && !result.succeeded() 
+        binding.build_in_progress = !result.done()
+        binding.build_exit_status = result.exitStatus != null ? result.exitStatus : '-'
+        binding.build_user_id = result.userId != null ? result.userId.toString() : '-'
         binding.build_time = formatTimestamp(result.startTime, result.offsetId) ?: '-'
         binding.build_duration = formatDuration(result.duration) ?: '-'
         binding.build_image = result.targetImage
         binding.build_format = result.format?.render() ?: 'Docker'
+        binding.build_compression = result.compression?.mode ?: '(default)'
         binding.build_platform = result.platform
+        binding.build_template = result.buildTemplate ?: '(default)'
         binding.build_containerfile = result.dockerFile ?: '-'
         binding.build_condafile = result.condaFile
-        binding.build_spackfile = result.spackFile
+        binding.build_digest = result.digest ?: '-'
         binding.put('server_url', serverUrl)
-        binding.scan_url = result.scanId && result.succeeded() ? "$serverUrl/view/scans/${result.scanId}" : null
-        binding.scan_id = result.scanId
+        ChildRefs.populateScanBinding(binding, result.scanId, result.scanChildIds, result.succeeded(), serverUrl)
+        ChildRefs.populateBuildBinding(binding, result.buildChildIds, serverUrl)
+        // inspect uri
+        binding.inspect_url = result.succeeded() ? "$serverUrl/view/inspect?image=${result.targetImage}&platform=${result.platform}" : null
         // configure build logs when available
         if( buildLogService ) {
             final buildLog = buildLogService.fetchLogString(result.buildId)
@@ -91,20 +267,29 @@ class ViewController {
             binding.build_log_truncated = buildLog?.truncated
             binding.build_log_url = "$serverUrl/v1alpha1/builds/${result.buildId}/logs"
         }
+        //add conda lock file when available
+        if( buildLogService && result.condaFile ) {
+            binding.build_conda_lock_data = buildLogService.fetchCondaLockString(result.buildId)
+            binding.build_conda_lock_url = "$serverUrl/v1alpha1/builds/${result.buildId}/condalock"
+        }
         // result the main object
         return binding
       }
 
     @View("container-view")
     @Get('/containers/{token}')
-    HttpResponse<Map<String,Object>> viewContainer(String token) {
-        final data = persistenceService.loadContainerRequest(token)
+    HttpResponse<?> viewContainer(String token) {
+        // Go through ContainerRequestService (not PersistenceService directly) so the view sees the
+        // same record — including any watcher-extended expiration — as the rest of the request flow.
+        final data = containerService.loadContainerRecord(token)
+        // Throw NotFoundException (rendered as a proper 404 page) for consistency with the other
+        // view endpoints, instead of returning a bare notFound body into the template.
         if( !data )
             throw new NotFoundException("Unknown container token: $token")
         // return the response
         final binding = new HashMap(20)
         binding.request_token = token
-        binding.request_container_image = data.containerImage
+        binding.request_container_image = data.containerImage ?: '-'
         binding.request_contaiener_platform = data.platform ?: '-'
         binding.request_fingerprint = data.fingerprint ?: '-'
         binding.request_timestamp = formatTimestamp(data.timestamp, data.zoneId) ?: '-'
@@ -114,45 +299,111 @@ class ViewController {
         binding.source_container_image = data.sourceImage ?: '-'
         binding.source_container_digest = data.sourceDigest ?: '-'
 
+        binding.wave_container_show = !data.freeze && !data.mirror ? true : null
         binding.wave_container_image = data.waveImage ?: '-'
         binding.wave_container_digest = data.waveDigest ?: '-'
 
         // user & tower data
         binding.tower_user_id = data.user?.id
-        binding.tower_user_email = data.user?.email
-        binding.tower_user_name = data.user?.userName
         binding.tower_workspace_id = data.workspaceId ?: '-'
         binding.tower_endpoint = data.towerEndpoint
 
         binding.build_container_file = data.containerFile
-        binding.build_conda_file = data.condaFile ?: '-'
+        binding.build_conda_file = data.condaFile
         binding.build_repository = data.buildRepository ?: '-'
         binding.build_cache_repository = data.cacheRepository  ?: '-'
+        binding.build_id = data.buildId ?: '-'
+        binding.build_cached = data.buildId ? !data.buildNew : '-'
+        binding.build_freeze = data.buildId ? data.freeze : '-'
+        binding.build_url = data.buildId ? "$serverUrl/view/builds/${data.buildId}" : null
+        binding.fusion_version = data.fusionVersion ?: '-'
 
+        ChildRefs.populateScanBinding(binding, data.scanId, data.scanChildIds, true, serverUrl)
 
+        binding.mirror_id = data.mirror ? data.buildId : null
+        binding.mirror_url =  data.mirror ? "$serverUrl/view/mirrors/${data.buildId}" : null
+        binding.mirror_cached = data.mirror ? !data.buildNew : null
+        binding.server_url = serverUrl
         return HttpResponse.<Map<String,Object>>ok(binding)
     }
 
-    @View("scan-view")
+    /**
+     * Get a container image name name and create a container scan request for it, redirecting
+     * to the corresponding scan view image
+     *
+     * @param image
+     *      The container image to be scanned
+     * @return
+     *      The redirect response to the scan view for the requested container image
+     */
+    @Post('/scans')
+    Publisher<HttpResponse> requestScan(@Body String image) {
+        final req = new SubmitContainerTokenRequest(containerImage: image, scanMode: ScanMode.required)
+        final post = HttpRequest.POST("/v1alpha2/container", req)
+        final resp = httpClient.retrieve(post, SubmitContainerTokenResponse)
+
+        // Use Mono to handle the Publisher and create a Publisher<HttpResponse>
+        return Mono.create { sink ->
+            resp.subscribe(new Subscriber<SubmitContainerTokenResponse>() {
+
+                @Override
+                void onSubscribe(Subscription subscription) {
+                    subscription.request(1) // Request one item
+                }
+
+                @Override
+                void onNext(SubmitContainerTokenResponse response) {
+                    // Create the redirect response
+                    final redirect = HttpResponse.redirect(URI.create("/view/scans/${response.scanId}"))
+                    sink.success(redirect)
+                }
+
+                @Override
+                void onError(Throwable t) {
+                    final msg = "Error processing scan request - cause: ${t.message}"
+                    final err = t instanceof BadRequestException
+                            ? HttpResponse.badRequest(msg)
+                            : HttpResponse.serverError(msg)
+                    sink.success(err)
+                }
+
+                @Override
+                void onComplete() {
+                    // No-op
+                }
+            })
+        }
+    }
+
     @Get('/scans/{scanId}')
-    HttpResponse<Map<String,Object>> viewScan(String scanId) {
+    HttpResponse viewScan(String scanId) {
+        if( !scanService )
+            throw new UnsupportedScanServiceException()
+        // check redirection for invalid suffix in the form `-nn`
+        final r1 = isScanInvalidSuffix(scanId)
+        if( r1 ) {
+            log.debug "Redirect to scan page [1]: $r1"
+            return HttpResponse.redirect(URI.create(r1))
+        }
+        // check all scans matching the pattern
+        if( isScanMissingSuffix(scanId) ) {
+            final scans = scanService.getAllScans(scanId)
+            if( !scans ) {
+                log.debug "Found not scan with id: $scanId"
+                throw new NotFoundException("Unknown container scan id '$scanId'")
+            }
+            if( scans.size()==1 ) {
+                log.debug "Redirect to scan page [2]: ${scans.first().id}"
+                return HttpResponse.temporaryRedirect(URI.create("/view/scans/${scans.first().id}"))
+            }
+            else
+                return HttpResponse.ok(new ModelAndView("scan-list", renderScansView(scans)))
+        }
         final binding = new HashMap(10)
         try {
-            final result = persistenceService.loadScanResult(scanId)
-            binding.should_refresh = !result.isCompleted()
-            binding.scan_id = result.id
-            binding.scan_exist = true
-            binding.scan_completed = result.isCompleted()
-            binding.scan_status = result.status
-            binding.scan_failed = result.status == ScanResult.FAILED
-            binding.scan_succeeded = result.status == ScanResult.SUCCEEDED
-            binding.build_id = result.buildId
-            binding.build_url = "$serverUrl/view/builds/${result.buildId}"
-            binding.scan_time = formatTimestamp(result.startTime) ?: '-'
-            binding.scan_duration = formatDuration(result.duration) ?: '-'
-            if ( result.vulnerabilities )
-                binding.vulnerabilities = result.vulnerabilities.toSorted().reverse()
-
+            final result = loadScanRecord(scanId)
+            log.debug "Render scan record=$result"
+            makeScanViewBinding(result, binding)
         }
         catch (NotFoundException e){
             binding.scan_exist = false
@@ -163,7 +414,156 @@ class ViewController {
 
         // return the response
         binding.put('server_url', serverUrl)
+        return HttpResponse.ok(new ModelAndView("scan-view", binding))
+    }
+
+    Map<String,?> renderScansView(List<WaveScanRecord> results) {
+        // create template binding
+        final bindingMap = new HashMap<String, ?>(3)
+        if( results ) {
+            bindingMap.put("scan_container_image", results[0].containerImage)
+            final binding = new ArrayList<Map<String,String>>()
+            for (def result : results) {
+                final bind = new HashMap(20)
+                bind.scan_id = result.id
+                bind.scan_status = result.status
+                bind.scan_success = result.status == ScanEntry.SUCCEEDED
+                bind.scan_failed = result.status == ScanEntry.FAILED
+                bind.scan_pending = result.status == ScanEntry.PENDING
+                bind.scan_time = formatTimestamp(result.startTime) ?: '-'
+                bind.scan_vuls_count = result.status == 'SUCCEEDED' ? result.vulnerabilities.size() : '-'
+                binding.add(bind)
+            }
+            bindingMap.put('scan_records', binding)
+        }
+        // result the main object
+        bindingMap.put('server_url', serverUrl)
+        return bindingMap
+    }
+
+    protected String isScanInvalidSuffix(String scanId) {
+        // check for scan id containing a -nn suffix
+        final check1 = DASH_SUFFIX_REGEX.matcher(scanId)
+        if( check1.matches() ) {
+            return "/view/scans/${check1.group(1)}_${check1.group(2)}"
+        }
+        return null
+    }
+
+    static final private Pattern SCAN_ID_REGEX = ~/((sc-)?[0-9a-z\-]{14,16})(?<!_\d{2})$/
+
+    protected boolean isScanMissingSuffix(String scanId) {
+        // check scan id missing the _nn suffix
+        return scanId
+                ? SCAN_ID_REGEX.matcher(scanId).matches()
+                : false
+    }
+
+    /**
+     * Retrieve a {@link ScanEntry} object for the specified scan ID
+     *
+     * @param scanId The ID of the scan for which load the scan result
+     * @return The {@link ScanEntry} object associated with the specified build ID or throws the exception {@link NotFoundException} otherwise
+     * @throws NotFoundException If the a record for the specified scan ID cannot be found
+     */
+    protected WaveScanRecord loadScanRecord(String scanId) {
+        if( !scanService )
+            throw new UnsupportedScanServiceException()
+        final scanRecord = scanService.getScanRecord(scanId)
+        if( !scanRecord )
+            throw new NotFoundException("No scan report exists with id: ${scanId}")
+        return scanRecord
+    }
+
+    @View("inspect-view")
+    @Get('/inspect')
+    HttpResponse<Map<String,Object>> viewInspect(@QueryValue String image, @Nullable @QueryValue String platform) {
+        final binding = new HashMap(10)
+        try {
+            final spec = inspectService.containerOrIndexSpec(image, platform, null)
+            if ( spec.container ){
+                binding.imageName = spec.container.imageName
+                binding.reference = spec.container.reference
+                binding.digest = spec.container.digest
+                binding.registry = spec.container.registry
+                binding.hostName = spec.container.hostName
+                binding.config = JacksonHelper.toJson(spec.container.config)
+                binding.manifest = JacksonHelper.toJson(spec.container.manifest)
+            }
+            else {
+                binding.imageName = image
+                binding.digest = spec.index.digest
+                binding.schemaVersion = spec.index.schemaVersion
+                binding.mediaType = spec.index.mediaType
+                binding.manifests = JacksonHelper.toJson(spec.index.manifests)
+            }
+        }
+        catch (Exception e){
+            binding.error_message = e.getMessage()
+        }
+
+        // return the response
+        binding.put('server_url', serverUrl)
         return HttpResponse.<Map<String,Object>>ok(binding)
+    }
+
+    Map<String, Object> makeScanViewBinding(WaveScanRecord result, Map<String,Object> binding=new HashMap(10)) {
+        final color = getScanColor(result.vulnerabilities)
+        binding.should_refresh = !result.done()
+        binding.scan_color_bg = color.background
+        binding.scan_color_fg = color.foreground
+        binding.scan_id = result.id
+        binding.scan_container_image = result.containerImage ?: '-'
+        binding.scan_platform = result.platform?.toString()  ?: '-'
+        binding.scan_exist = true
+        binding.scan_completed = result.done()
+        binding.scan_status = result.status
+        binding.scan_failed = result.status == ScanEntry.FAILED
+        binding.scan_succeeded = result.status == ScanEntry.SUCCEEDED
+        binding.scan_exitcode = result.exitCode
+        binding.scan_sbom_spdx_url = hasSpdx(result) ? "$serverUrl/v1alpha1/scans/${result.id}/spdx" : null
+        binding.scan_logs = result.logs
+        binding.scan_log_url = result.logs ? "$serverUrl/v1alpha1/scans/${result.id}/logs" : null
+        // build info
+        binding.build_id = result.buildId
+        binding.build_url = result.buildId ? "$serverUrl/view/builds/${result.buildId}" : null
+        // mirror info
+        binding.mirror_id = result.mirrorId
+        binding.mirror_url = result.mirrorId ? "$serverUrl/view/mirrors/${result.mirrorId}" : null
+        // container info
+        binding.request_id = result.requestId
+        binding.request_url = result.requestId ? "$serverUrl/view/containers/${result.requestId}" : null
+
+        binding.scan_time = formatTimestamp(result.startTime) ?: '-'
+        binding.scan_duration = formatDuration(result.duration) ?: '-'
+        if ( result.vulnerabilities )
+            binding.vulnerabilities = result.vulnerabilities.toSorted().reverse()
+
+        return binding
+    }
+
+    private boolean hasSpdx(WaveScanRecord result) {
+        result.succeeded() && scanService.fetchReportStream(result.id, ScanType.Spdx)
+    }
+
+    @Canonical
+    static class Colour {
+        final background
+        final foreground
+    }
+
+    protected static Colour getScanColor(List<ScanVulnerability> vulnerabilities){
+        boolean hasMedium = vulnerabilities.stream()
+                .anyMatch(v -> v.severity.equals("MEDIUM"))
+        boolean hasHighOrCritical = vulnerabilities.stream()
+                .anyMatch(v -> v.severity.equals("HIGH") || v.severity.equals("CRITICAL"))
+        if(hasHighOrCritical){
+            return new Colour('#ffe4e2', '#242424')
+        }
+        else if(hasMedium){
+            return new Colour('#fff8c5', "#242424")
+        }
+        return new Colour('#e5f5eC', '#242424')
     }
 
 }

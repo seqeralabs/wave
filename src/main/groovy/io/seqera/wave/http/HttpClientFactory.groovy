@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -22,9 +22,11 @@ import java.net.http.HttpClient
 import java.time.Duration
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.locks.ReentrantLock
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.util.net.ProxyConfig
 import io.seqera.wave.util.CustomThreadFactory
 /**
  * Java HttpClient factory
@@ -39,32 +41,47 @@ class HttpClientFactory {
 
     static private Duration timeout = Duration.ofSeconds(20)
 
-    static private final Object l1 = new Object()
+    static private final ReentrantLock l1 = new ReentrantLock()
 
-    static private final Object l2 = new Object()
+    static private final ReentrantLock l2 = new ReentrantLock()
 
     private static HttpClient client1
 
     private static HttpClient client2
 
+    private static volatile ProxyConfig proxyConfig
+
+    /**
+     * Set the egress proxy applied to the clients created by this factory. Resolved once at
+     * bootstrap by {@link io.seqera.wave.configuration.HttpClientConfig}, before any client is built.
+     */
+    static void setProxyConfig(ProxyConfig config) {
+        proxyConfig = config
+    }
 
     static HttpClient followRedirectsHttpClient() {
         if( client1!=null )
             return client1
-        synchronized (l1) {
+        l1.lock()
+        try {
             if( client1!=null )
                 return client1
             return client1=followRedirectsHttpClient0()
+        } finally {
+            l1.unlock()
         }
     }
 
     static HttpClient neverRedirectsHttpClient() {
         if( client2!=null )
             return client2
-        synchronized (l2) {
+        l2.lock()
+        try {
             if( client2!=null )
                 return client2
             return client2=neverRedirectsHttpClient0()
+        } finally {
+            l2.unlock()
         }
     }
 
@@ -73,25 +90,36 @@ class HttpClientFactory {
     }
 
     static private HttpClient followRedirectsHttpClient0() {
-        final result = HttpClient.newBuilder()
+        final result = applyProxy(HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .connectTimeout(timeout)
-                .executor(threadPool)
+                .executor(threadPool))
                 .build()
         log.debug "Creating new followRedirectsHttpClient: $result"
         return result
     }
 
     static private HttpClient neverRedirectsHttpClient0() {
-        final result = HttpClient.newBuilder()
+        final result = applyProxy(HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NEVER)
                 .connectTimeout(timeout)
-                .executor(threadPool)
+                .executor(threadPool))
                 .build()
         log.debug "Creating new neverRedirectsHttpClient: $result"
         return result
+    }
+
+    static private HttpClient.Builder applyProxy(HttpClient.Builder builder) {
+        final proxy = proxyConfig
+        if( proxy ) {
+            builder.proxy(proxy.toProxySelector())
+            final auth = proxy.toAuthenticator()
+            if( auth )
+                builder.authenticator(auth)
+        }
+        return builder
     }
 
 }

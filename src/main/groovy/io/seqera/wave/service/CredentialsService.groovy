@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -19,6 +19,7 @@
 package io.seqera.wave.service
 
 import io.seqera.wave.core.ContainerPath
+import io.seqera.wave.tower.PlatformId
 
 /**
  * Declare operations to access container registry credentials from Tower
@@ -28,21 +29,16 @@ import io.seqera.wave.core.ContainerPath
 interface CredentialsService {
 
     /**
+     * Find the container registry credentials matching the specified container repository
      *
      * @param container
      *          The container for which the registry credentials should be retrieved
-     * @param userId
-     *          The unique ID of the Tower user
-     * @param workspaceId
-     *          The unique ID of the Tower workspace
-     * @param towerToken
-     *          The Tower access token
-     * @param towerEndpoint
-     *          The Tower endpoint
+     * @param identity
+     *          The Platform identity of the user requesting the credentials
      * @return
      *          The container registry credentials to be used to authenticate the specified container registry or repository
      *          or {@code null} if no match is found
      */
-    ContainerRegistryKeys findRegistryCreds(ContainerPath container, Long userId, Long workspaceId, String towerToken, String towerEndpoint)
+    ContainerRegistryKeys findRegistryCreds(ContainerPath container, PlatformId identity)
 
 }
