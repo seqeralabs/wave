@@ -79,5 +79,5 @@ To install the latest Wave CLI release with [Homebrew]:
         wave.seqera.io/wt/xxxxxxxxxxxx/wave/build:xxxxxxxxxxxxxxxx
         ```
 
-[download]: https://github.com/seqeralabs/wave-cli/releases
+[download]: https://github.com/seqeralabs/wave/releases?q=cli-v&expanded=true
 [Homebrew]: https://brew.sh/

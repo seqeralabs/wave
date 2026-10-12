@@ -1,0 +1,20 @@
+BootStrap: docker
+From: rocker/r-ver:4.3.0
+%files
+    . /opt/wave_context_dir
+%post
+    apt-get update && apt-get install -y build-essential
+    rm -rf /var/lib/apt/lists/*
+    cd /opt/wave_context_dir
+    if [ -f "renv.lock" ]; then
+        R -e "install.packages('renv'); renv::restore()"
+    elif [ -f "install.R" ]; then
+        Rscript install.R
+    else
+        echo "No renv.lock or install.R file found"
+    fi
+    rm -rf /tmp/downloaded_packages/ /tmp/*.rds
+%environment
+    export R_LIBS_USER="/usr/local/lib/R/site-library"
+%post
+    apt-get update

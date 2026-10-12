@@ -92,9 +92,11 @@ The Wave CLI supports build templates for creating container images from Conda p
 
 | Template              | Description                                                                                                      |
 |-----------------------|------------------------------------------------------------------------------------------------------------------|
-| `conda/micromamba:v1` | Single-stage build using Micromamba v1 (default). The final image includes the package manager.                  |
-| `conda/micromamba:v2` | Multi-stage build using Micromamba 2.x. Produces smaller images by excluding the package manager from the final stage (Singularity still uses a single-stage build). |
+| `conda/micromamba:v1` | Single-stage build using Micromamba v1. The final image includes the package manager.                  |
+| `conda/micromamba:v2` | Multi-stage build using Micromamba 2.x (default). Produces smaller images by excluding the package manager from the final stage (Singularity still uses a single-stage build). |
+| `conda/micromamba:v2-fast` | Multi-stage build using Micromamba 2.x that splits the Conda environment into multiple layers of at most 500 MB each before compression, with rare exceptions. Docker only. |
 | `conda/pixi:v1`       | Multi-stage build using [Pixi][pixi] package manager. Produces smaller images with faster dependency resolution (Singularity still uses a single-stage build). |
+| `conda/pixi:v1-fast`  | Multi-stage build using [Pixi][pixi] that splits the Conda environment into multiple layers of at most 500 MB each before compression, with rare exceptions. Docker only. |
 
 **Related CLI arguments**
 
@@ -116,6 +118,12 @@ When building Singularity containers (`--singularity`) with the `conda/micromamb
 
 As a result, the `baseImage` option has no effect on Singularity builds. It only applies to Docker builds. The multi-stage image size optimization is also not available for Singularity.
 
+**Layered Conda builds**
+
+The `conda/micromamba:v2-fast` and `conda/pixi:v1-fast` templates install the environment like `conda/micromamba:v2` and `conda/pixi:v1`, then split it into multiple image layers grouped by Conda package. Large packages get their own layer, small packages are grouped together, and every layer holds at most 500 MB of files before compression, so compressed layers stay under 512 MB. The only exceptions are a single file larger than 500 MB, which gets a layer to itself, and layers merged when the environment needs more than 32 layers. The build log shows a warning in both cases. Use it when your registry or proxy rejects large layers, or to speed up image pulls. The build log shows which packages went into each layer, unless the build reuses the environment install step from the build cache.
+
+These templates build Docker images only. Wave rejects requests that combine them with `--singularity`. See [Layered Conda builds](../features/container-builds.mdx#layered-conda-builds) for more details.
+
 **Example usage**
 
 Build a container using the Pixi template:
@@ -133,6 +141,22 @@ wave \
   --conda-package samtools=1.17 \
   --conda-package bwa=0.7.15 \
   --build-template conda/micromamba:v2
+```
+
+Build a container with the Conda environment split into multiple layers using the `conda/micromamba:v2-fast` template:
+
+```bash
+wave \
+  --conda-package bioconda::gatk4=4.6.2.0 \
+  --build-template conda/micromamba:v2-fast
+```
+
+Build the same layered container using Pixi:
+
+```bash
+wave \
+  --conda-package bioconda::gatk4=4.6.2.0 \
+  --build-template conda/pixi:v1-fast
 ```
 
 Build a Singularity container using Pixi:
@@ -227,6 +251,7 @@ Singularity container builds support the following arguments:
 
 - `--build-repo`: A target repository for the built container.
 - `--freeze`: Enables container freeze mode.
+- `--platform`: A target platform. Accepts `linux/amd64`, `linux/arm64`, or `linux/amd64,linux/arm64` for a multi-architecture build.
 - `--singularity`, `-s`: Enables Singularity container builds.
 - `--tower-token`: A Seqera access token for accessing private registry credentials stored in Platform (env: `TOWER_ACCESS_TOKEN`).
 - `--tower-workspace-id`: A Seqera workspace ID where credentials are stored (e.g., `1234567890`). Requires `--tower-token` or `TOWER_ACCESS_TOKEN` to be set.
@@ -235,7 +260,8 @@ Singularity container builds support the following arguments:
 
 The following limitations apply:
 
-- The `linux/arm64` platform is not currently supported.
+- Singularity containers are not scanned for security vulnerabilities.
+- Multi-architecture builds (`--platform linux/amd64,linux/arm64`) require a client that resolves the architecture from an OCI image index over `oras://`. Apptainer 1.5.0 or later does this (earlier versions always fetch the `linux/amd64` image); SingularityCE does not yet support platform selection for `oras://` sources and fails to pull a multi-architecture URI rather than falling back to a single architecture.
 
 **Example usage**
 
@@ -264,6 +290,22 @@ wave --conda-package bamtools=2.5.2 \
   --freeze \
   --singularity \
   --build-repo docker.io/user/repo
+```
+
+Build a multi-architecture Singularity container from Conda packages. Wave builds one SIF per architecture and returns a single `oras://` URI backed by an OCI image index:
+
+```bash
+wave --conda-package bwa=0.7.15 \
+  --platform linux/amd64,linux/arm64 \
+  --freeze \
+  --singularity \
+  --build-repo docker.io/user/repo
+```
+
+Pull it with Apptainer 1.5.0 or later. Apptainer fetches the image that matches the host architecture:
+
+```bash
+apptainer pull oras://docker.io/user/repo:bwa-0.7.15--<hash>
 ```
 
 </details>

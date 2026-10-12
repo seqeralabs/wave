@@ -5,7 +5,7 @@ using TypeSpec.Rest;
 using TypeSpec.Versioning;
 
 @versioned(wave.Versions)
-@service({
+@service(#{
   title: "Wave service"
 })
 namespace wave {
@@ -109,7 +109,10 @@ namespace wave {
 
   @route("/v1alpha2/validate-creds")
   @doc("This endpoint allows you to validate the credentials of a container registry.")
-  @post op validateCredsV2(@body request: ValidateRegistryCredsRequest):  boolean;
+  @post op validateCredsV2(@body request: ValidateRegistryCredsRequest): {
+    @header contentType: "application/json";
+    @body valid: boolean;
+  };
 
   @route("/v1alpha1/mirrors")
   interface getMirrorRecord {
