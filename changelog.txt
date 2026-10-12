@@ -1,4 +1,7 @@
 # Wave changelog
+1.40.2 - 12 Oct 2026
+- Bump buildkit to v0.33.1 (#1152) [bc7cb0a2e]
+
 1.40.1 - 12 Oct 2026
 - Bump Micronaut to 4.10.21 (#1171, #1176) [b964a699b, ced2ce56f]
 - Override vulnerable transitive JVM dependencies (#1175) [c8c71206e]
