@@ -295,6 +295,7 @@ class CredentialsServiceTest extends Specification {
                 new CredentialsDescription(id: 'set-a', provider: 'container-reg', registry: '1000.dkr.ecr.eu-west-2.amazonaws.com/dev/set-a'),
                 new CredentialsDescription(id: 'hub', provider: 'container-reg'),
                 new CredentialsDescription(id: 'hub-2', provider: 'container-reg', registry: 'docker.io'),
+                new CredentialsDescription(id: 'ubuntu', provider: 'container-reg', registry: 'docker.io/library/ubuntu'),
         ]
 
         expect:
@@ -308,7 +309,9 @@ class CredentialsServiceTest extends Specification {
         '1000.dkr.ecr.eu-west-2.amazonaws.com/dev/set-ab'           | 'ecr'
         '1000.dkr.ecr.eu-west-2.amazonaws.com/other'                | 'ecr'
         '1000.dkr.ecr.eu-west-2.amazonaws.com'                      | 'ecr'
-        'docker.io/library/ubuntu'                                  | 'hub'
+        'docker.io/library/ubuntu'                                  | 'ubuntu'
+        'docker.io/library/alpine'                                  | 'hub'
+        'docker.io/ubuntu'                                          | 'hub'
         'quay.io/org/image'                                         | null
     }
 

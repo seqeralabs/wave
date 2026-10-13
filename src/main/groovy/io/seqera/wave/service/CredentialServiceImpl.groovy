@@ -92,6 +92,9 @@ class CredentialServiceImpl implements CredentialsService {
      * A {@code registry} can be a bare host (e.g. {@code quay.io}) or a host followed by a path
      * (e.g. {@code quay.io/org}), which allows different credentials for different repositories on the same host.
      * When more credentials match with the same length, the first one wins.
+     * The repository is normalised (e.g. {@code ubuntu} is {@code docker.io/library/ubuntu}) while the {@code registry}
+     * is not, because {@code docker.io/foo} can be a user namespace as well as an official image. Credentials for
+     * official images must therefore include the {@code library/} path.
      *
      * @param all The credentials available to the user
      * @param repository The target repository e.g. {@code quay.io/org/image}
