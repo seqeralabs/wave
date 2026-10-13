@@ -18,6 +18,8 @@
 
 package io.seqera.wave.controller
 
+import java.util.regex.Pattern
+
 import groovy.transform.CompileStatic
 import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
@@ -37,6 +39,12 @@ import jakarta.validation.Valid
 @ExecuteOn(TaskExecutors.BLOCKING)
 class ValidateController {
 
+    /**
+     * Zero or more repository path components, as defined by the distribution reference grammar.
+     * It rejects a tag, a digest, an empty component and a trailing slash.
+     */
+    static private final Pattern REPOSITORY_PATH = ~/(\/[a-z0-9]+([._-]+[a-z0-9]+)*)*/
+
     @Inject RegistryAuthService loginService
 
     @Inject SsrfConfig ssrfConfig
@@ -44,25 +52,42 @@ class ValidateController {
     @Deprecated
     @Post("/validate-creds")
     Boolean validateCreds(@Valid ValidateRegistryCredsRequest request){
-        validateRegistry(request.registry)
-        loginService.validateUser(request.registry, request.userName, request.password)
+        final registry = validateRegistry(request.registry)
+        loginService.validateUser(registry, request.userName, request.password)
     }
 
     @Post("/v1alpha2/validate-creds")
     Boolean validateCredsV2(@Valid @Body ValidateRegistryCredsRequest request){
-        validateRegistry(request.registry)
-        loginService.validateUser(request.registry, request.userName, request.password)
+        final registry = validateRegistry(request.registry)
+        loginService.validateUser(registry, request.userName, request.password)
     }
 
-    private void validateRegistry(String registry) {
+    /**
+     * Credentials can be scoped to a repository e.g. {@code quay.io/org}, while the login only needs the registry.
+     * Note the login only checks the registry: it does not prove the credentials can access the repository.
+     *
+     * @param registry The registry name or URL, optionally followed by a repository path
+     * @return The registry name or URL without the repository path
+     */
+    private String validateRegistry(String registry) {
+        final host = stripRepositoryPath(registry)
+        if( !REPOSITORY_PATH.matcher(registry.substring(host.length())).matches() )
+            throw new BadRequestException("Invalid registry or repository name '$registry' - tags, digests and trailing slashes are not allowed")
         if (ssrfConfig.ssrfProtectionEnabled) {
             try {
-                SsrfValidator.validateHost(registry)
+                SsrfValidator.validateHost(host)
             }
             catch (SsrfValidationException e) {
                 throw new BadRequestException(e.message)
             }
         }
+        return host
+    }
+
+    static protected String stripRepositoryPath(String registry) {
+        final scheme = registry.indexOf('://')
+        final slash = registry.indexOf('/', scheme >= 0 ? scheme + 3 : 0)
+        return slash >= 0 ? registry.substring(0, slash) : registry
     }
 
 }
