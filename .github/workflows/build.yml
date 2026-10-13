@@ -134,18 +134,14 @@ jobs:
         run: |
           sudo rm -rf /home/runner/work/wave/wave/build-workspace
 
-      # Build the image once. A [preview] pushes it to the internal (dev) ECR below; a [release]
-      # on master/release-* promotes it to the enterprise repo + maven.
-      - name: Build wave server image
+      # A [preview] pushes the image to the internal (dev) ECR below; a [release] on master/release-*
+      # promotes it to the enterprise repo + maven. The image is built and pushed by `jib` directly to
+      # the registry: `jibDockerBuild` loads a single-platform image into the local daemon, which
+      # would drop the arm64 variant declared in build.gradle.
+      - name: Resolve wave server image tag
         id: build
         if: "steps.detect-release.outputs.do_build == 'true'"
-        run: |
-          set -euo pipefail
-          TAG=v$(cat VERSION)
-          ./gradlew -PjibRepo=wave/server:$TAG jibDockerBuild
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-        env:
-          GRADLE_OPTS: '-Dorg.gradle.daemon=false'
+        run: echo "tag=v$(cat VERSION)" >> "$GITHUB_OUTPUT"
 
       # --- Internal (dev) ECR push: [preview] only, any branch ---
       # Lets features be built from any branch and pulled into dev/testing without reaching a
@@ -184,9 +180,10 @@ jobs:
           # collide on the same VERSION tag and each build is individually pullable.
           PREVIEW_TAG=${TAG}-${GITHUB_SHA::7}
           REMOTE=${{ steps.login-ecr-internal.outputs.registry }}/internal/${{ github.repository }}/server:$PREVIEW_TAG
-          docker tag wave/server:$TAG "$REMOTE"
-          docker push "$REMOTE"
+          ./gradlew -PjibRepo="$REMOTE" jib
           echo "Pushed preview image: $REMOTE"
+        env:
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false'
 
       # --- Enterprise repo + maven publish + git tag + GitHub release: master / release-* only ---
       - name: Login to legacy ECR
@@ -235,15 +232,14 @@ jobs:
           git tag $TAG
           git push $REMOTE $TAG
 
-          # Push nf-tower-enterprise/wave to legacy ECR
-          LEGACY_ECR=195996028523.dkr.ecr.eu-west-1.amazonaws.com
-          docker tag wave/server:$TAG $LEGACY_ECR/nf-tower-enterprise/wave:$TAG
-          docker push $LEGACY_ECR/nf-tower-enterprise/wave:$TAG
-
-          # Push to enterprise ECR (new central registry)
+          # Build and push the multi-arch image to enterprise ECR (new central registry)
           ENTERPRISE_ECR=232933512461.dkr.ecr.eu-west-2.amazonaws.com
-          docker tag wave/server:$TAG $ENTERPRISE_ECR/wave/server:$TAG
-          docker push $ENTERPRISE_ECR/wave/server:$TAG
+          ./gradlew -PjibRepo=$ENTERPRISE_ECR/wave/server:$TAG jib
+
+          # Copy the same multi-arch index to the legacy ECR as nf-tower-enterprise/wave
+          # (a second `jib` run would produce a different digest, the image creation time is not fixed)
+          LEGACY_ECR=195996028523.dkr.ecr.eu-west-1.amazonaws.com
+          docker buildx imagetools create --tag $LEGACY_ECR/nf-tower-enterprise/wave:$TAG $ENTERPRISE_ECR/wave/server:$TAG
 
           # Create GitHub release (draft for alpha/beta/RC tags)
           grep -Ei '.*-(A[0-9]+|B[0-9]+|RC[0-9]+)$' VERSION &>/dev/null && DRAFT='--draft' || DRAFT=''
