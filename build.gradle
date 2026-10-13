@@ -125,8 +125,8 @@ dependencies {
     // rate limit
     implementation 'com.coveo:spillway:3.0.0'
     // logging
-    implementation 'ch.qos.logback:logback-classic:1.5.20'
-    implementation 'ch.qos.logback:logback-core:1.5.20'
+    implementation 'ch.qos.logback:logback-classic:1.5.34'
+    implementation 'ch.qos.logback:logback-core:1.5.34'
     // monitoring
     implementation 'io.micronaut.micrometer:micronaut-micrometer-core'
     implementation 'io.micronaut.micrometer:micronaut-micrometer-registry-prometheus'
@@ -137,6 +137,13 @@ dependencies {
     // bump version to prevent security issue
     runtimeOnly 'org.apache.commons:commons-lang3:3.18.0'
     runtimeOnly platform("io.netty:netty-bom:$nettyVersion")
+    implementation platform('com.fasterxml.jackson:jackson-bom:2.22.3')
+    constraints {
+        implementation 'org.jsoup:jsoup:1.23.2'
+        implementation 'org.apache.httpcomponents.core5:httpcore5-h2:5.4.4'
+        implementation 'org.apache.httpcomponents.client5:httpclient5:5.6.5'
+        implementation 'com.github.jknack:handlebars:4.5.5'
+    }
     implementation 'org.bouncycastle:bcpkix-jdk18on:1.85'
     implementation 'org.bouncycastle:bcprov-jdk18on:1.85'
     implementation 'org.bouncycastle:bcutil-jdk18on:1.85'
@@ -162,7 +169,7 @@ micronaut {
 //
 jib {
     from {
-        image = 'cr.seqera.io/public/nf-jdk:corretto-25.0.3-al2023-jemalloc@sha256:fd64a2faf08bc89223bda4763352deaaf205e06c10f40706542e9d6b3d04fd85'
+        image = 'cr.seqera.io/public/nf-jdk:corretto-25.0.4-al2023-jemalloc@sha256:ddeb5dfa6d459071c7be575f65978fdf3888a6ff13650bbefe8236185578f181'
         platforms {
             platform { architecture = 'amd64'; os = 'linux' }
             platform { architecture = 'arm64'; os = 'linux' }
