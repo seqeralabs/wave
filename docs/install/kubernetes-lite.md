@@ -15,7 +15,7 @@ You need the following:
 - PostgreSQL 16 or later, reachable from the cluster.
 - Redis 6.2 or later, reachable from the cluster.
 - A Seqera Platform deployment and its endpoint URL.
-- Access to the Wave container image from `cr.seqera.io`, using credentials provided by Seqera.
+- Access to the Wave container image `cr.seqera.io/enterprise/wave/server`, using credentials provided by Seqera.
 :::
 
 :::tip[Install with the Helm chart]
@@ -187,7 +187,7 @@ spec:
       imagePullSecrets:
         - name: seqera-reg-creds
       containers:
-        - image: cr.seqera.io/<wave-image-path>:<tag>   # Use the image path and tag provided by Seqera.
+        - image: cr.seqera.io/enterprise/wave/server:<tag>   # Replace <tag> with a Wave version, e.g. v1.40.2. There is no latest tag.
           name: wave-app
           ports:
             - containerPort: 9090
