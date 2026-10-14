@@ -31,6 +31,7 @@ import io.seqera.util.net.SsrfValidator
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.configuration.SsrfConfig
 import io.seqera.wave.exception.BadRequestException
+import io.seqera.wave.model.ContainerCoordinates
 import jakarta.inject.Inject
 import jakarta.validation.Valid
 
@@ -66,7 +67,8 @@ class ValidateController {
      * Credentials can be scoped to a repository e.g. {@code quay.io/org}, while the login only needs the registry.
      * Note the login only checks the registry: it does not prove the credentials can access the repository.
      *
-     * A scheme is rejected too: {@code https://quay.io} splits into the host {@code https:} and a path with an empty component.
+     * A scheme is rejected too: {@code https://quay.io} splits into the host {@code https:} and a path with an empty component,
+     * while {@code http:quay.io} is not a valid {@code host[:port]} as the lookup parses it.
      *
      * @param registry The registry name, optionally followed by a repository path
      * @return The registry name without the repository path
@@ -74,7 +76,7 @@ class ValidateController {
     private String validateRegistry(String registry) {
         final slash = registry.indexOf('/')
         final host = slash >= 0 ? registry.substring(0, slash) : registry
-        if( !REPOSITORY_PATH.matcher(registry.substring(host.length())).matches() )
+        if( !ContainerCoordinates.isValidRegistry(host) || !REPOSITORY_PATH.matcher(registry.substring(host.length())).matches() )
             throw new BadRequestException("Invalid registry or repository name '$registry' - use a registry optionally followed by a repository path e.g. quay.io/org, without scheme, tag, digest or trailing slash")
         if (ssrfConfig.ssrfProtectionEnabled) {
             try {

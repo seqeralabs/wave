@@ -68,9 +68,8 @@ class CredentialServiceImpl implements CredentialsService {
         }
 
         final target = repository ?: DOCKER_IO
-        final registryName = target.tokenize('/')[0]
         def creds = findMostSpecificCreds(all, target)
-        if (!creds && identity.workflowId && AwsEcrService.isEcrHost(registryName) ) {
+        if (!creds && identity.workflowId && AwsEcrService.isEcrHost(registryName(target)) ) {
             creds = findComputeCreds(identity)
         }
         if (!creds) {
@@ -104,6 +103,14 @@ class CredentialServiceImpl implements CredentialsService {
         return all
                 .findAll { it.provider == 'container-reg' && isPrefixOf(it.registry ?: DOCKER_IO, repository) }
                 .max { (it.registry ?: DOCKER_IO).length() }
+    }
+
+    /**
+     * @param repository The target repository e.g. {@code quay.io/org/image}
+     * @return The registry host of the repository e.g. {@code quay.io}, or {@code docker.io} when the repository is empty
+     */
+    static protected String registryName(String repository) {
+        return (repository ?: DOCKER_IO).tokenize('/')[0]
     }
 
     static private boolean isPrefixOf(String registry, String repository) {

@@ -118,5 +118,8 @@ class ValidateCredsSsrfControllerTest extends Specification {
         '/v1alpha2/validate-creds'  | 'localhost/org'
         '/v1alpha2/validate-creds'  | 'https://quay.io'
         '/v1alpha2/validate-creds'  | 'https://quay.io/org'
+        '/v1alpha2/validate-creds'  | 'http:quay.io'
+        '/v1alpha2/validate-creds'  | 'https:quay.io/org'
+        '/v1alpha2/validate-creds'  | 'quay.io:/org'
     }
 }

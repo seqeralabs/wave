@@ -315,6 +315,21 @@ class CredentialsServiceTest extends Specification {
         'quay.io/org/image'                                         | null
     }
 
+    def 'should get the registry name of repository #REPOSITORY'() {
+        expect:
+        CredentialServiceImpl.registryName(REPOSITORY) == EXPECTED
+
+        where:
+        REPOSITORY                                          | EXPECTED
+        null                                                | 'docker.io'
+        ''                                                  | 'docker.io'
+        'docker.io/library/ubuntu'                          | 'docker.io'
+        'quay.io'                                           | 'quay.io'
+        'quay.io/org/image'                                 | 'quay.io'
+        'localhost:5000/org/image'                          | 'localhost:5000'
+        '1000.dkr.ecr.eu-west-2.amazonaws.com/dev/set-a'    | '1000.dkr.ecr.eu-west-2.amazonaws.com'
+    }
+
     private static GetCredentialsKeysResponse encryptedCredentialsFromTower(PublicKey key, String credentials) {
         if( credentials )
             return new GetCredentialsKeysResponse(keys: TEST_CIPHER.encrypt(key,credentials.getBytes()).encode())
