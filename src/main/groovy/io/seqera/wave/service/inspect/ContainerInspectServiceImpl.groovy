@@ -123,16 +123,17 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
             final path = ContainerCoordinates.parse(repo)
             final info = lookupService.lookup(path.registry)
             final hostName = info.getIndexHost()
-            if( !hosts.add(hostName) ) {
+            if( hosts.contains(hostName) ) {
                 // skip this index host because it has already be added to the list
                 continue
             }
             final creds = credentialsProvider.getCredentials(path, identity)
             log.debug "Build credentials for repository: $repo => $creds"
             if( !creds ) {
-                // skip this host because there are no credentials
+                // credentials are scoped by repository, a later repository on the same host may still have them
                 continue
             }
+            hosts.add(hostName)
             final encode = "${creds.username}:${creds.password}".getBytes().encodeBase64()
             if( result.size() )
                 result.append(',')
