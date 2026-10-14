@@ -66,13 +66,16 @@ class ValidateController {
      * Credentials can be scoped to a repository e.g. {@code quay.io/org}, while the login only needs the registry.
      * Note the login only checks the registry: it does not prove the credentials can access the repository.
      *
-     * @param registry The registry name or URL, optionally followed by a repository path
-     * @return The registry name or URL without the repository path
+     * A scheme is rejected too: {@code https://quay.io} splits into the host {@code https:} and a path with an empty component.
+     *
+     * @param registry The registry name, optionally followed by a repository path
+     * @return The registry name without the repository path
      */
     private String validateRegistry(String registry) {
-        final host = stripRepositoryPath(registry)
+        final slash = registry.indexOf('/')
+        final host = slash >= 0 ? registry.substring(0, slash) : registry
         if( !REPOSITORY_PATH.matcher(registry.substring(host.length())).matches() )
-            throw new BadRequestException("Invalid registry or repository name '$registry' - tags, digests and trailing slashes are not allowed")
+            throw new BadRequestException("Invalid registry or repository name '$registry' - use a registry optionally followed by a repository path e.g. quay.io/org, without scheme, tag, digest or trailing slash")
         if (ssrfConfig.ssrfProtectionEnabled) {
             try {
                 SsrfValidator.validateHost(host)
@@ -82,12 +85,6 @@ class ValidateController {
             }
         }
         return host
-    }
-
-    static protected String stripRepositoryPath(String registry) {
-        final scheme = registry.indexOf('://')
-        final slash = registry.indexOf('/', scheme >= 0 ? scheme + 3 : 0)
-        return slash >= 0 ? registry.substring(0, slash) : registry
     }
 
 }

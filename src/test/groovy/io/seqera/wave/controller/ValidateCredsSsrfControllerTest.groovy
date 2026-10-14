@@ -96,7 +96,6 @@ class ValidateCredsSsrfControllerTest extends Specification {
         '/v1alpha2/validate-creds'  | 'quay.io'                             | 'quay.io'
         '/v1alpha2/validate-creds'  | 'quay.io/org'                         | 'quay.io'
         '/v1alpha2/validate-creds'  | 'quay.io:443/org/sub_dir.x-y/repo'    | 'quay.io:443'
-        '/v1alpha2/validate-creds'  | 'https://quay.io/org'                 | 'https://quay.io'
     }
 
     @Unroll
@@ -117,5 +116,7 @@ class ValidateCredsSsrfControllerTest extends Specification {
         '/v1alpha2/validate-creds'  | 'quay.io/org/'
         '/v1alpha2/validate-creds'  | 'quay.io//org'
         '/v1alpha2/validate-creds'  | 'localhost/org'
+        '/v1alpha2/validate-creds'  | 'https://quay.io'
+        '/v1alpha2/validate-creds'  | 'https://quay.io/org'
     }
 }
