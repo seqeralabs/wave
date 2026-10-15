@@ -227,23 +227,43 @@ jobs:
 
           TAG=${{ steps.build.outputs.tag }}
 
+          # Each step below is skipped when its output already exists, so a failed
+          # release can be completed by re-running the job
+
           # Tag repo
           REMOTE=https://oauth:$GITHUB_TOKEN@github.com/${GITHUB_REPOSITORY}.git
-          git tag $TAG
-          git push $REMOTE $TAG
+          if git ls-remote --exit-code --tags $REMOTE refs/tags/$TAG >/dev/null; then
+            echo "Tag $TAG already exists - skipping"
+          else
+            git tag $TAG
+            git push $REMOTE $TAG
+          fi
 
           # Build and push the multi-arch image to enterprise ECR (new central registry)
+          # (the repository tags are immutable, so an existing image must not be rebuilt)
           ENTERPRISE_ECR=232933512461.dkr.ecr.eu-west-2.amazonaws.com
-          ./gradlew -PjibRepo=$ENTERPRISE_ECR/wave/server:$TAG jib
+          if docker buildx imagetools inspect $ENTERPRISE_ECR/wave/server:$TAG >/dev/null 2>&1; then
+            echo "Image $ENTERPRISE_ECR/wave/server:$TAG already exists - skipping"
+          else
+            ./gradlew -PjibRepo=$ENTERPRISE_ECR/wave/server:$TAG jib
+          fi
 
           # Copy the same multi-arch index to the legacy ECR as nf-tower-enterprise/wave
           # (a second `jib` run would produce a different digest, the image creation time is not fixed)
           LEGACY_ECR=195996028523.dkr.ecr.eu-west-1.amazonaws.com
-          docker buildx imagetools create --tag $LEGACY_ECR/nf-tower-enterprise/wave:$TAG $ENTERPRISE_ECR/wave/server:$TAG
+          if docker buildx imagetools inspect $LEGACY_ECR/nf-tower-enterprise/wave:$TAG >/dev/null 2>&1; then
+            echo "Image $LEGACY_ECR/nf-tower-enterprise/wave:$TAG already exists - skipping"
+          else
+            docker buildx imagetools create --tag $LEGACY_ECR/nf-tower-enterprise/wave:$TAG $ENTERPRISE_ECR/wave/server:$TAG
+          fi
 
           # Create GitHub release (draft for alpha/beta/RC tags)
-          grep -Ei '.*-(A[0-9]+|B[0-9]+|RC[0-9]+)$' VERSION &>/dev/null && DRAFT='--draft' || DRAFT=''
-          gh release create $TAG --generate-notes $DRAFT
+          if gh release view $TAG >/dev/null 2>&1; then
+            echo "GitHub release $TAG already exists - skipping"
+          else
+            grep -Ei '.*-(A[0-9]+|B[0-9]+|RC[0-9]+)$' VERSION &>/dev/null && DRAFT='--draft' || DRAFT=''
+            gh release create $TAG --generate-notes $DRAFT
+          fi
 
           echo "version=$TAG" >> $GITHUB_OUTPUT
         env:
