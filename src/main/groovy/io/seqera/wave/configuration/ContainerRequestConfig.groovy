@@ -101,15 +101,8 @@ class ContainerRequestConfig {
      * The maximum time the watcher waits for a Platform workflow lookup. When exceeded the token is
      * renewed anyway (fail-open).
      */
-    @Value('${wave.tokens.watcher.lookup-timeout:10s}')
+    @Value('${wave.tokens.watcher.lookup-timeout:5s}')
     Duration watcherLookupTimeout
-
-    /**
-     * How long a Platform endpoint whose lookup timed out is skipped by the watcher. Tokens bound to
-     * that endpoint are renewed without a lookup in the meantime, instead of each paying the timeout.
-     */
-    @Value('${wave.tokens.watcher.endpoint-backoff:60s}')
-    Duration watcherEndpointBackoff
 
     Duration getWatcherDelayRandomized() {
         DurationUtils.randomDuration(watcherDelay, 0.4f)

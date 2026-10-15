@@ -66,10 +66,7 @@ Configure general Wave application settings.
 : Maximum number of container requests checked concurrently in a watcher cycle (default: `8`).
 
 `wave.tokens.watcher.lookup-timeout` *(optional)*
-: Maximum time the watcher waits for a Platform workflow lookup. If the lookup fails or times out, the token is renewed anyway, up to `cache.max-duration` (default: `10s`).
-
-`wave.tokens.watcher.endpoint-backoff` *(optional)*
-: How long a Platform endpoint whose lookup timed out is skipped by the watcher. Its tokens are renewed without a lookup in the meantime (default: `60s`).
+: Maximum time the watcher waits for a Platform workflow lookup. If the lookup fails or times out, the token is renewed anyway, up to `cache.max-duration` (default: `5s`).
 
 ## Feature toggles
 

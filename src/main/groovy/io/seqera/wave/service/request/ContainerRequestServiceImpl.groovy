@@ -28,8 +28,6 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.function.Supplier
 
-import com.github.benmanes.caffeine.cache.Cache
-import com.github.benmanes.caffeine.cache.Caffeine
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micrometer.core.instrument.MeterRegistry
@@ -131,15 +129,6 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
     private ExecutorService ioExecutor
 
     /**
-     * Platform endpoints whose lookup recently timed out. Their tokens are renewed without a lookup
-     * until the entry expires, so they don't each pay the full timeout.
-     */
-    @Lazy
-    private Cache<String,Boolean> unreachableEndpoints = Caffeine.newBuilder()
-            .expireAfterWrite(config.watcherEndpointBackoff)
-            .build()
-
-    /**
      * Prometheus counter for the token-refresh path. The {@code result} tag records each check
      * outcome:
      * <ul>
@@ -147,7 +136,6 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
      *   <li>{@code completed}  - workflow reached a confirmed terminal status, token left to lapse
      *   <li>{@code unresolved} - status could not be confirmed (unknown/null); token revoked fail-closed
      *   <li>{@code error}      - Platform lookup failed or timed out; token renewed fail-open
-     *   <li>{@code backoff}    - Platform endpoint recently timed out; token renewed without a lookup
      *   <li>{@code expired}    - hard 48h lifetime cap reached
      *   <li>{@code gone}       - request already evicted from the store
      * </ul>
@@ -295,17 +283,8 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
             return
         }
 
-        // 4. Skip the lookup for an endpoint that recently timed out, renewing fail-open instead.
-        final endpoint = request.identity.towerEndpoint
-        if( endpoint && unreachableEndpoints.getIfPresent(endpoint) ) {
-            meterRefresh('backoff')
-            log.debug "Container request '${entry.requestId}' - endpoint ${endpoint} recently timed out; renewing without lookup"
-            renew(entry, request, now, maxExpire)
-            return
-        }
-
-        // 5. Renew only while the workflow is still active. A failed or
-        //    timed-out lookup renews the token anyway (fail-open): a Platform connectivity problem
+        // 4. Renew only while the workflow is still active. A failed or timed-out lookup renews the
+        //    token anyway (fail-open): a Platform connectivity problem
         //    must not kill a running pipeline's image access. The max lifetime cap still applies.
         final Workflow workflow
         try {
@@ -322,8 +301,7 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
                 return
             }
             meterRefresh('error')
-            if( endpoint && t instanceof TimeoutException )
-                unreachableEndpoints.put(endpoint, Boolean.TRUE)
+            final endpoint = request.identity.towerEndpoint
             if( isConnectivityError(t) )
                 log.warn "Container request watcher could not confirm workflow status - request=${entry.requestId}; workflow=${entry.workflowId}; endpoint=${endpoint}; cause=${rootCauseMessage(t)}; renewing anyway"
             else
@@ -384,8 +362,9 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
 
     protected Workflow describeWorkflow(ContainerRequest request) {
         // Reuse the request's own Platform identity/credentials to ask Tower about the workflow.
-        // The client short-caches the response by workflowId so all tokens of one run coalesce onto
-        // a single lookup; the small staleness is bounded well below accessTtl.
+        // The client short-caches the response by workflowId. Concurrent misses of the same workflow
+        // are not coalesced until seqeralabs/libseqera#151 is fixed, so the tokens of one run can each
+        // make a Platform call (up to watcher concurrency at a time).
         final resp = towerClient.describeWorkflow(
                 request.identity.towerEndpoint,
                 JwtAuth.of(request.identity),

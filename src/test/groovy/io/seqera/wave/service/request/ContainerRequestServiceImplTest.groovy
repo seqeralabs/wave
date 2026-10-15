@@ -103,8 +103,7 @@ class ContainerRequestServiceImplTest extends Specification {
                 cacheMaxDuration: Duration.ofDays(2),
                 refreshInterval: Duration.ofSeconds(270),
                 watcherConcurrency: 8,
-                watcherLookupTimeout: Duration.ofSeconds(10),
-                watcherEndpointBackoff: Duration.ofSeconds(60) )
+                watcherLookupTimeout: Duration.ofSeconds(5) )
     }
 
     private static ContainerRequest containerRequest(String requestId, Instant creationTime, String endpoint=null, String workflowId=null) {
@@ -321,46 +320,6 @@ class ContainerRequestServiceImplTest extends Specification {
 
         where:
         CODE << [401, 403, 404]
-    }
-
-    def 'check0 should renew without a lookup while the endpoint is backing off after a timeout'() {
-        given:
-        def registry = new SimpleMeterRegistry()
-        def store = Mock(ContainerRequestStore)
-        def range = Mock(ContainerRequestRange)
-        def persistence = Mock(PersistenceService)
-        def service = Spy(new ContainerRequestServiceImpl(
-                containerRequestStore: store, containerRequestRange: range,
-                persistenceService: persistence, config: watcherConfig(), meterRegistry: registry))
-        and:
-        def req1 = containerRequest('req-1', Instant.now(), 'https://slow.io')
-        def req2 = containerRequest('req-2', Instant.now(), 'https://slow.io')
-        def req3 = containerRequest('req-3', Instant.now(), 'https://fast.io')
-        def expiration = Instant.now().plus(Duration.ofMinutes(15))
-
-        when: 'the lookup times out'
-        service.check0(new ContainerRequestRange.Entry('req-1', 'wf-1', expiration), Instant.now())
-        then:
-        1 * store.get('req-1') >> req1
-        1 * service.lookupWorkflow(req1) >> { throw new TimeoutException('Workflow lookup timed out') }
-        1 * store.put('req-1', req1, _ as Duration)
-        registry.counter('wave.tokens.refresh', 'result', 'error').count() == 1d
-
-        when: 'another token of the same endpoint is checked'
-        service.check0(new ContainerRequestRange.Entry('req-2', 'wf-2', expiration), Instant.now())
-        then: 'it is renewed without a lookup'
-        1 * store.get('req-2') >> req2
-        0 * service.lookupWorkflow(_)
-        1 * store.put('req-2', req2, _ as Duration)
-        registry.counter('wave.tokens.refresh', 'result', 'backoff').count() == 1d
-
-        when: 'a token of another endpoint is checked'
-        service.check0(new ContainerRequestRange.Entry('req-3', 'wf-3', expiration), Instant.now())
-        then: 'it is looked up as usual'
-        1 * store.get('req-3') >> req3
-        1 * service.lookupWorkflow(req3) >> new Workflow(id: 'wf-3', status: Workflow.WorkflowStatus.RUNNING)
-        1 * store.put('req-3', req3, _ as Duration)
-        registry.counter('wave.tokens.refresh', 'result', 'renewed').count() == 1d
     }
 
     def 'watch should renew other tokens while one workflow lookup hangs'() {
