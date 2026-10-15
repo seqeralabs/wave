@@ -36,6 +36,18 @@ jobs:
           go test ./...
           cd frontend && go vet ./... && go test ./...
 
+  # fails when the sources change without a VERSION bump, otherwise the next Wave release fails
+  # to publish the image, see `make check`
+  check-version:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Check the VERSION tag
+        run: make -C condasplit check registry=public.cr.seqera.io/wave
+
   build-and-push:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
