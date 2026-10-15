@@ -20,23 +20,21 @@ package io.seqera.wave.service.request
 
 import java.time.Duration
 import java.time.Instant
-import java.util.concurrent.Callable
-import java.util.concurrent.CancellationException
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.Future
-import java.util.concurrent.FutureTask
-import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import java.util.function.Supplier
 
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.TaskScheduler
 import io.seqera.wave.configuration.ContainerRequestConfig
 import io.seqera.wave.exception.HttpResponseException
@@ -47,8 +45,8 @@ import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.client.TowerClient
 import io.seqera.wave.tower.client.Workflow
 import jakarta.annotation.PostConstruct
-import jakarta.annotation.PreDestroy
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 /**
  * Service to fulfill request for an augmented container
@@ -128,23 +126,18 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
     @Nullable
     private MeterRegistry meterRegistry
 
-    /**
-     * Runs the per-entry checks and the Platform lookups, so that a slow or unreachable Platform
-     * endpoint only holds its own virtual thread instead of the whole watcher tick.
-     */
-    private final ExecutorService watcherExecutor = Executors.newVirtualThreadPerTaskExecutor()
+    @Inject
+    @Named(TaskExecutors.BLOCKING)
+    private ExecutorService ioExecutor
 
     /**
-     * Platform endpoints whose lookup recently timed out, mapped to the instant until which they are
-     * skipped. Their tokens are renewed without a lookup so they don't each pay the full timeout.
+     * Platform endpoints whose lookup recently timed out. Their tokens are renewed without a lookup
+     * until the entry expires, so they don't each pay the full timeout.
      */
-    private final Map<String,Instant> unreachableEndpoints = new ConcurrentHashMap<>()
-
-    /**
-     * Workflow lookups currently in flight, so that concurrent checks of the many tokens of one run
-     * share a single Platform call.
-     */
-    private final Map<String,Future<Workflow>> inflightLookups = new ConcurrentHashMap<>()
+    @Lazy
+    private Cache<String,Boolean> unreachableEndpoints = Caffeine.newBuilder()
+            .expireAfterWrite(config.watcherEndpointBackoff)
+            .build()
 
     /**
      * Prometheus counter for the token-refresh path. The {@code result} tag records each check
@@ -183,17 +176,18 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
         return false
     }
 
+    private static final List<Integer> REJECTION_CODES = [401, 403, 404]
+
     /**
-     * Whether the given error is a definite answer from Platform denying the lookup (e.g. 401, 403,
-     * 404) rather than a transient failure. Request timeouts and rate limiting are transient.
+     * Whether the given error is a definite answer from Platform denying the lookup: the workflow is
+     * gone (404) or the credentials no longer grant access (403, or 401 after a failed token refresh).
+     * Everything else (5xx, 408, 429, IO errors) is transient and handled fail-open.
      */
     protected static boolean isDefiniteRejection(Throwable t) {
         Throwable e = t
         for( int i = 0; e != null && i < MAX_CAUSE_DEPTH; e = e.cause, i++ ) {
-            if( e instanceof HttpResponseException ) {
-                final code = ((HttpResponseException) e).statusCode()?.code ?: 0
-                return code >= 400 && code < 500 && code != 408 && code != 429
-            }
+            if( e instanceof HttpResponseException )
+                return ((HttpResponseException) e).statusCode()?.code in REJECTION_CODES
         }
         return false
     }
@@ -231,11 +225,6 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
                 this.&watch )
     }
 
-    @PreDestroy
-    private void destroy() {
-        watcherExecutor.shutdownNow()
-    }
-
     protected void watch() {
         final now = Instant.now()
         // getEntriesUntil atomically pops the due entries (score <= now), so across replicas each
@@ -248,38 +237,11 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
         // only delay its own tokens. The tick waits for all of them so ticks never overlap; each check
         // is bounded by the lookup timeout.
         final permits = new Semaphore(Math.max(1, config.watcherConcurrency))
-        final futures = new ArrayList<Future>(keys.size())
-        try {
-            for( Entry it : keys ) {
-                // copy the loop variable: a Groovy for-each variable is shared across iterations
-                final entry = it
-                permits.acquire()
-                futures.add(watcherExecutor.submit({
-                    try { process(entry, now) } finally { permits.release() }
-                } as Runnable))
-            }
-            for( Future it : futures )
-                it.get()
+        final futures = keys.collect { Entry entry ->
+            permits.acquire()
+            CompletableFuture.runAsync({ try { process(entry, now) } finally { permits.release() } }, ioExecutor)
         }
-        catch (InterruptedException | RejectedExecutionException e) {
-            // Shutting down: the entries were already popped, so re-queue the ones never submitted
-            // for another replica to pick up; the submitted ones re-queue themselves when interrupted.
-            log.warn "Container request watcher interrupted - re-queueing ${keys.size()-futures.size()} unprocessed entries"
-            futures.each { it.cancel(true) }
-            for( int i=futures.size(); i<keys.size(); i++ )
-                requeue(keys[i])
-            if( e instanceof InterruptedException )
-                Thread.currentThread().interrupt()
-        }
-    }
-
-    private void requeue(Entry entry) {
-        try {
-            containerRequestRange.add(entry, Instant.now())
-        }
-        catch (Throwable t) {
-            log.warn "Unable to re-queue container request entry $entry - cause: ${t.message}"
-        }
+        CompletableFuture.allOf(futures as CompletableFuture[]).join()
     }
 
     protected void process(Entry entry, Instant now) {
@@ -287,8 +249,7 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
             check0(entry, now)
         }
         catch (InterruptedException e) {
-            log.warn "Container request watcher interrupted while processing key: $entry - re-queueing"
-            requeue(entry)
+            log.warn "Container request watcher interrupted while processing key: $entry"
             Thread.currentThread().interrupt()
         }
         catch (Throwable t) {
@@ -336,26 +297,23 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
 
         // 4. Skip the lookup for an endpoint that recently timed out, renewing fail-open instead.
         final endpoint = request.identity.towerEndpoint
-        final backoffUntil = endpoint ? unreachableEndpoints.get(endpoint) : null
-        if( backoffUntil && Instant.now().isBefore(backoffUntil) ) {
+        if( endpoint && unreachableEndpoints.getIfPresent(endpoint) ) {
             meterRefresh('backoff')
-            log.debug "Container request '${entry.requestId}' - endpoint ${endpoint} is backing off until ${backoffUntil}; renewing without lookup"
+            log.debug "Container request '${entry.requestId}' - endpoint ${endpoint} recently timed out; renewing without lookup"
             renew(entry, request, now, maxExpire)
             return
         }
 
-        // 5. Renew only while the workflow is still active. describeWorkflow is short-cached by
-        //    workflowId so the many tokens of one run share a single Platform lookup. A failed or
+        // 5. Renew only while the workflow is still active. A failed or
         //    timed-out lookup renews the token anyway (fail-open): a Platform connectivity problem
         //    must not kill a running pipeline's image access. The max lifetime cap still applies.
         final Workflow workflow
         try {
             workflow = lookupWorkflow(request)
         }
-        catch (InterruptedException e) {
-            throw e
-        }
         catch (Throwable t) {
+            if( t instanceof InterruptedException )
+                throw t
             if( isDefiniteRejection(t) ) {
                 // Platform answered: the workflow is gone or the credentials no longer grant access.
                 // That is not a connectivity problem, so revoke fail-closed.
@@ -365,7 +323,7 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
             }
             meterRefresh('error')
             if( endpoint && t instanceof TimeoutException )
-                unreachableEndpoints.put(endpoint, Instant.now().plus(config.watcherEndpointBackoff))
+                unreachableEndpoints.put(endpoint, Boolean.TRUE)
             if( isConnectivityError(t) )
                 log.warn "Container request watcher could not confirm workflow status - request=${entry.requestId}; workflow=${entry.workflowId}; endpoint=${endpoint}; cause=${rootCauseMessage(t)}; renewing anyway"
             else
@@ -373,8 +331,6 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
             renew(entry, request, now, maxExpire)
             return
         }
-        if( endpoint )
-            unreachableEndpoints.remove(endpoint)
 
         if( !isWorkflowActive(workflow) ) {
             // Distinguish a confirmed completion from a status we could not confirm (null/UNKNOWN):
@@ -410,33 +366,16 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
     }
 
     protected Workflow lookupWorkflow(ContainerRequest request) {
-        // Bound the Platform lookup so one hanging endpoint cannot hold a check for minutes.
-        // Concurrent checks of the same workflow share one in-flight lookup, so the many tokens of a
-        // run cost a single Platform call. Cancelling interrupts the virtual thread blocked on the
-        // Tower client.
-        final identity = request.identity
-        final key = "${identity.towerEndpoint}|${identity.workspaceId}|${identity.workflowId}|${JwtAuth.of(identity).key}".toString()
-        final Future<Workflow> future = inflightLookups.computeIfAbsent(key, (String k) -> {
-            final FutureTask<Workflow>[] self = new FutureTask[1]
-            self[0] = new FutureTask<Workflow>({
-                try { return describeWorkflow(request) }
-                finally { inflightLookups.remove(k, self[0]) }
-            } as Callable<Workflow>)
-            watcherExecutor.execute(self[0])
-            return (Future<Workflow>) self[0]
-        })
+        // Bound the Platform lookup so one hanging endpoint cannot hold a check for minutes. On timeout
+        // the stray lookup is left to finish: the connector's retry limit bounds it, and if it succeeds
+        // it fills the client cache for the next check.
         try {
-            return future.get(config.watcherLookupTimeout.toMillis(), TimeUnit.MILLISECONDS)
+            return CompletableFuture
+                    .supplyAsync({ describeWorkflow(request) } as Supplier<Workflow>, ioExecutor)
+                    .get(config.watcherLookupTimeout.toMillis(), TimeUnit.MILLISECONDS)
         }
-        catch (TimeoutException | CancellationException e) {
-            // a timed-out lookup is cancelled for every waiter
-            future.cancel(true)
-            inflightLookups.remove(key, future)
+        catch (TimeoutException e) {
             throw new TimeoutException("Workflow lookup timed out after ${config.watcherLookupTimeout}")
-        }
-        catch (InterruptedException e) {
-            future.cancel(true)
-            throw e
         }
         catch (ExecutionException e) {
             throw e.cause ?: e

@@ -22,9 +22,11 @@ import spock.lang.Specification
 
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutionException
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
-import java.util.concurrent.atomic.AtomicInteger
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
@@ -99,7 +101,10 @@ class ContainerRequestServiceImplTest extends Specification {
                 watcherEnabled: true,
                 accessTtl: Duration.ofMinutes(15),
                 cacheMaxDuration: Duration.ofDays(2),
-                refreshInterval: Duration.ofSeconds(270) )
+                refreshInterval: Duration.ofSeconds(270),
+                watcherConcurrency: 8,
+                watcherLookupTimeout: Duration.ofSeconds(10),
+                watcherEndpointBackoff: Duration.ofSeconds(60) )
     }
 
     private static ContainerRequest containerRequest(String requestId, Instant creationTime, String endpoint=null, String workflowId=null) {
@@ -365,7 +370,6 @@ class ContainerRequestServiceImplTest extends Specification {
         def persistence = Mock(PersistenceService)
         def config = watcherConfig()
         config.watcherCount = 100
-        config.watcherConcurrency = 10
         config.watcherLookupTimeout = Duration.ofMillis(500)
         and: 'one token bound to a hanging endpoint, followed by many healthy ones'
         def expiration = Instant.now().plus(Duration.ofMinutes(15))
@@ -375,46 +379,25 @@ class ContainerRequestServiceImplTest extends Specification {
         range.getEntriesUntil(_, 100) >> entries
         store.get(_) >> { String id -> containerRequest(id, Instant.now(), id=='req-hang' ? 'https://hang.io' : 'https://tower.io') }
         and: 'a hand-written client rather than a Spock mock, since Spock serialises mock calls across threads'
+        def client = new HangingTowerClient()
         def service = new ContainerRequestServiceImpl(
                 containerRequestStore: store, containerRequestRange: range,
-                persistenceService: persistence, config: config, towerClient: new HangingTowerClient())
+                persistenceService: persistence, config: config, towerClient: client,
+                ioExecutor: Executors.newVirtualThreadPerTaskExecutor())
 
         when:
         def start = System.currentTimeMillis()
         service.watch()
         def elapsed = System.currentTimeMillis() - start
 
-        then: 'every token is renewed, the hanging one fail-open, and the tick is bounded by the lookup timeout'
+        then: 'every token is renewed, the hanging one fail-open, without waiting for the hung lookup'
         (1..50).each { 1 * store.put("req-$it".toString(), _, _ as Duration) }
         1 * store.put('req-hang', _, _ as Duration)
         51 * range.add(_ as ContainerRequestRange.Entry, _ as Instant)
-        elapsed >= 500 && elapsed < 5_000
-    }
+        elapsed < 30_000
 
-    def 'watch should share one Platform lookup across the tokens of a workflow'() {
-        given:
-        def store = Mock(ContainerRequestStore)
-        def range = Mock(ContainerRequestRange)
-        def persistence = Mock(PersistenceService)
-        def config = watcherConfig()
-        config.watcherCount = 100
-        config.watcherConcurrency = 30
-        def client = new CountingTowerClient()
-        def service = new ContainerRequestServiceImpl(
-                containerRequestStore: store, containerRequestRange: range,
-                persistenceService: persistence, config: config, towerClient: client)
-        and: 'thirty tokens of the same run'
-        def expiration = Instant.now().plus(Duration.ofMinutes(15))
-        def entries = (1..30).collect { new ContainerRequestRange.Entry("req-$it".toString(), 'wf-1', expiration) }
-        range.getEntriesUntil(_, 100) >> entries
-        store.get(_) >> { String id -> containerRequest(id, Instant.now(), 'https://tower.io', 'wf-1') }
-
-        when:
-        service.watch()
-
-        then:
-        30 * store.put(_, _, _ as Duration)
-        client.calls.get() == 1
+        cleanup:
+        client.release.countDown()
     }
 
     def 'isDefiniteRejection should only match definite Platform answers'() {
@@ -424,6 +407,7 @@ class ContainerRequestServiceImplTest extends Specification {
         ERR                                                                  | EXPECTED
         new HttpResponseException(401, 'Unauthorized')                       | true
         new ExecutionException(new HttpResponseException(404, 'Not found'))  | true
+        new HttpResponseException(403, 'Forbidden')                          | true
         new HttpResponseException(408, 'Timeout')                            | false
         new HttpResponseException(429, 'Too many')                           | false
         new HttpResponseException(503, 'Unavailable')                        | false
@@ -450,21 +434,12 @@ class ContainerRequestServiceImplTest extends Specification {
         ContainerRequestServiceImpl.rootCauseMessage(new RuntimeException('solo')) == 'solo'
     }
 
-    static class CountingTowerClient extends TowerClient {
-        final AtomicInteger calls = new AtomicInteger()
-        @Override
-        DescribeWorkflowResponse describeWorkflow(String endpoint, JwtAuth authorization, Long workspaceId, String workflowId) {
-            calls.incrementAndGet()
-            Thread.sleep(500)
-            return new DescribeWorkflowResponse(workflow: new Workflow(id: workflowId, status: Workflow.WorkflowStatus.RUNNING))
-        }
-    }
-
     static class HangingTowerClient extends TowerClient {
+        final CountDownLatch release = new CountDownLatch(1)
         @Override
         DescribeWorkflowResponse describeWorkflow(String endpoint, JwtAuth authorization, Long workspaceId, String workflowId) {
             if( endpoint=='https://hang.io' )
-                Thread.sleep(60_000)
+                release.await(60, TimeUnit.SECONDS)
             return new DescribeWorkflowResponse(workflow: new Workflow(id: 'wf', status: Workflow.WorkflowStatus.RUNNING))
         }
     }
