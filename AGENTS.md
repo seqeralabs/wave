@@ -63,6 +63,7 @@ Wave requires several environment variables for registry authentication:
 - **Security**: JWT authentication for Tower integration
 
 ## Important Notes
+- Groovy 5: `if( path )` / `assert path` on a `java.nio.file.Path` means `Files.exists(path)`, not a null check. Use explicit `!= null` (do not rely on `groovy.truth.file.exists.enabled`). See `adr/20261015-micronaut-5-migration.md` §3.5.
 - The codebase uses custom Gradle conventions defined in `buildSrc/`
 - Container images are built using Amazon Corretto 25 with jemalloc
 - The service requires Kubernetes cluster for production builds

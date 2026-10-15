@@ -210,6 +210,17 @@ every truth-check on a path that does not exist on disk silently turns false. Tw
 `if(`, `assert`, `?:`, `!`, `&&`, `||` usages (see git history of this migration). Note `String`
 truth is unchanged.
 
+Source: `org.apache.groovy.nio.extensions.NioExtensions.asBoolean(Path)` (`@since 5.0.0`), which
+aligns `Path` with the long-standing `File` truth (`file.exists()`). Its javadoc documents an
+escape hatch: the system property `groovy.truth.file.exists.enabled=false` restores the
+pre-Groovy-5 behaviour (any non-null `Path` is truthy). We deliberately did **not** use it: it is a
+JVM-wide switch that must be repeated on every launch path (`src/main/jib/launch.sh`, `run.sh`,
+`lite/docker-compose.yml`, the Gradle `test` JVM) and silently reverts wherever it is forgotten,
+whereas explicit `!= null` states the intent in the code. Reviewers of other migrations should
+decide per project; in either case audit `assert path` / `if( path )` sites, because in
+production most paths exist when checked and the bug stays latent (in Wave only
+`MirrorRequest.create()` asserted a workspace before creating it).
+
 ### 3.6 Spock + Groovy 5: stubbing a `void` method no longer works
 
 Groovy 5 `DefaultTypeTransformation.castToType(null, void.class)` throws
