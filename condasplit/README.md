@@ -161,3 +161,7 @@ the same sources:
 | exists with a different or no checksum | fails, bump `VERSION` to publish the changed sources |
 
 A registry error also fails the release, so it never overwrites a tag.
+
+`make check` runs the same verification without building, the `build-condasplit.yml` workflow
+runs it on the pull requests changing this directory, so that changed sources without a `VERSION`
+bump fail before reaching a Wave release.
