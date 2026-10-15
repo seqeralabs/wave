@@ -62,6 +62,15 @@ Configure general Wave application settings.
 `wave.tokens.watcher.count` *(optional)*
 : Maximum number of container requests processed in a single watcher cycle (default: `250`).
 
+`wave.tokens.watcher.concurrency` *(optional)*
+: Maximum number of container requests checked concurrently in a watcher cycle (default: `50`).
+
+`wave.tokens.watcher.lookup-timeout` *(optional)*
+: Maximum time the watcher waits for a Platform workflow lookup. If the lookup fails or times out, the token is renewed anyway, up to `cache.max-duration` (default: `10s`).
+
+`wave.tokens.watcher.endpoint-backoff` *(optional)*
+: How long a Platform endpoint whose lookup timed out is skipped by the watcher. Its tokens are renewed without a lookup in the meantime (default: `60s`).
+
 ## Feature toggles
 
 Each Wave feature is an independent toggle. Wave Lite runs with all four off, which is what the `lite` Micronaut environment applies.

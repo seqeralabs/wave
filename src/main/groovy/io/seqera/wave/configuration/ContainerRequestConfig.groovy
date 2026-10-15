@@ -90,6 +90,27 @@ class ContainerRequestConfig {
     @Value('${wave.tokens.watcher.count:250}')
     int watcherCount
 
+    /**
+     * The maximum number of container requests checked concurrently in a watcher cycle, so that one
+     * slow Platform endpoint cannot block the renewal of every other token.
+     */
+    @Value('${wave.tokens.watcher.concurrency:50}')
+    int watcherConcurrency = 50
+
+    /**
+     * The maximum time the watcher waits for a Platform workflow lookup. When exceeded the token is
+     * renewed anyway (fail-open).
+     */
+    @Value('${wave.tokens.watcher.lookup-timeout:10s}')
+    Duration watcherLookupTimeout = Duration.ofSeconds(10)
+
+    /**
+     * How long a Platform endpoint whose lookup timed out is skipped by the watcher. Tokens bound to
+     * that endpoint are renewed without a lookup in the meantime, instead of each paying the timeout.
+     */
+    @Value('${wave.tokens.watcher.endpoint-backoff:60s}')
+    Duration watcherEndpointBackoff = Duration.ofSeconds(60)
+
     Duration getWatcherDelayRandomized() {
         DurationUtils.randomDuration(watcherDelay, 0.4f)
     }

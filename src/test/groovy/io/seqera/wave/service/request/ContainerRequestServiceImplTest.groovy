@@ -33,6 +33,9 @@ import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
+import io.seqera.wave.tower.auth.JwtAuth
+import io.seqera.wave.tower.client.DescribeWorkflowResponse
+import io.seqera.wave.tower.client.TowerClient
 import io.seqera.wave.tower.client.Workflow
 import jakarta.inject.Inject
 /**
@@ -98,12 +101,12 @@ class ContainerRequestServiceImplTest extends Specification {
                 refreshInterval: Duration.ofSeconds(270) )
     }
 
-    private static ContainerRequest containerRequest(String requestId, Instant creationTime) {
+    private static ContainerRequest containerRequest(String requestId, Instant creationTime, String endpoint=null) {
         final user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
         ContainerRequest.of(
                 requestId: requestId,
                 type: ContainerRequest.Type.Container,
-                identity: new PlatformId(user, 100),
+                identity: new PlatformId(user, 100L, null, endpoint, null),
                 containerImage: 'hello-world',
                 creationTime: creationTime )
     }
@@ -125,7 +128,7 @@ class ContainerRequestServiceImplTest extends Specification {
 
         then:
         1 * store.get('req-1') >> request
-        1 * service.describeWorkflow(request) >> new Workflow(id: 'wf-1', status: Workflow.WorkflowStatus.RUNNING)
+        1 * service.lookupWorkflow(request) >> new Workflow(id: 'wf-1', status: Workflow.WorkflowStatus.RUNNING)
         and: 'the live token is re-granted, the persisted expiration is updated in place, and the next check is re-armed'
         1 * store.put('req-1', request, _ as Duration)
         1 * persistence.updateContainerExpirationAsync('req-1', _ as Instant)
@@ -149,7 +152,7 @@ class ContainerRequestServiceImplTest extends Specification {
 
         then:
         1 * store.get('req-1') >> request
-        1 * service.describeWorkflow(request) >> new Workflow(id: 'wf-1', status: STATUS)
+        1 * service.lookupWorkflow(request) >> new Workflow(id: 'wf-1', status: STATUS)
         and: 'no renewal and no re-arm - the token is left to lapse'
         0 * store.put('req-1', _, _)
         0 * range.add(_, _)
@@ -175,7 +178,7 @@ class ContainerRequestServiceImplTest extends Specification {
 
         then:
         1 * store.get('req-1') >> request
-        1 * service.describeWorkflow(request) >> null
+        1 * service.lookupWorkflow(request) >> null
         0 * store.put('req-1', _, _)
         0 * range.add(_, _)
     }
@@ -197,7 +200,7 @@ class ContainerRequestServiceImplTest extends Specification {
         service.check0(entry, Instant.now())
         then:
         1 * store.get('req-1') >> request
-        1 * service.describeWorkflow(request) >> null
+        1 * service.lookupWorkflow(request) >> null
         and:
         registry.counter('wave.tokens.refresh', 'result', 'unresolved').count() == 1d
 
@@ -205,7 +208,7 @@ class ContainerRequestServiceImplTest extends Specification {
         service.check0(entry, Instant.now())
         then:
         1 * store.get('req-1') >> request
-        1 * service.describeWorkflow(request) >> new Workflow(id: 'wf-1', status: Workflow.WorkflowStatus.RUNNING)
+        1 * service.lookupWorkflow(request) >> new Workflow(id: 'wf-1', status: Workflow.WorkflowStatus.RUNNING)
         1 * persistence.updateContainerExpirationAsync('req-1', _ as Instant)
         and:
         registry.counter('wave.tokens.refresh', 'result', 'renewed').count() == 1d
@@ -228,7 +231,7 @@ class ContainerRequestServiceImplTest extends Specification {
         then:
         1 * store.get('req-1') >> null
         and: 'no Tower lookup, no renewal, no re-arm'
-        0 * service.describeWorkflow(_)
+        0 * service.lookupWorkflow(_)
         0 * store.put(_, _, _)
         0 * range.add(_, _)
     }
@@ -250,10 +253,113 @@ class ContainerRequestServiceImplTest extends Specification {
 
         then:
         1 * store.get('req-1') >> request
-        1 * service.describeWorkflow(request) >> new Workflow(id: 'wf-1', status: Workflow.WorkflowStatus.RUNNING)
-        and: 'even though the workflow is still running, the token is not renewed'
+        and: 'no Tower lookup and no renewal'
+        0 * service.lookupWorkflow(_)
         0 * store.put('req-1', _, _)
         0 * range.add(_, _)
+    }
+
+    def 'check0 should renew the token (fail-open) when the workflow lookup fails'() {
+        given:
+        def registry = new SimpleMeterRegistry()
+        def store = Mock(ContainerRequestStore)
+        def range = Mock(ContainerRequestRange)
+        def persistence = Mock(PersistenceService)
+        def service = Spy(new ContainerRequestServiceImpl(
+                containerRequestStore: store, containerRequestRange: range,
+                persistenceService: persistence, config: watcherConfig(), meterRegistry: registry))
+        and:
+        def request = containerRequest('req-1', Instant.now(), 'https://tower.io')
+        def entry = new ContainerRequestRange.Entry('req-1', 'wf-1', Instant.now().plus(Duration.ofMinutes(15)))
+
+        when:
+        service.check0(entry, Instant.now())
+
+        then:
+        1 * store.get('req-1') >> request
+        1 * service.lookupWorkflow(request) >> { throw ERROR }
+        and: 'the token is renewed and the next check re-armed'
+        1 * store.put('req-1', request, _ as Duration)
+        1 * persistence.updateContainerExpirationAsync('req-1', _ as Instant)
+        1 * range.add(_ as ContainerRequestRange.Entry, _ as Instant)
+        and:
+        registry.counter('wave.tokens.refresh', 'result', 'error').count() == 1d
+
+        where:
+        ERROR << [new HttpResponseException(503, 'Unavailable'), new IllegalStateException('Unable to retrieve a value for key: pairing-inbound-queue/v1:foo')]
+    }
+
+    def 'check0 should renew without a lookup while the endpoint is backing off after a timeout'() {
+        given:
+        def registry = new SimpleMeterRegistry()
+        def store = Mock(ContainerRequestStore)
+        def range = Mock(ContainerRequestRange)
+        def persistence = Mock(PersistenceService)
+        def service = Spy(new ContainerRequestServiceImpl(
+                containerRequestStore: store, containerRequestRange: range,
+                persistenceService: persistence, config: watcherConfig(), meterRegistry: registry))
+        and:
+        def req1 = containerRequest('req-1', Instant.now(), 'https://slow.io')
+        def req2 = containerRequest('req-2', Instant.now(), 'https://slow.io')
+        def req3 = containerRequest('req-3', Instant.now(), 'https://fast.io')
+        def expiration = Instant.now().plus(Duration.ofMinutes(15))
+
+        when: 'the lookup times out'
+        service.check0(new ContainerRequestRange.Entry('req-1', 'wf-1', expiration), Instant.now())
+        then:
+        1 * store.get('req-1') >> req1
+        1 * service.lookupWorkflow(req1) >> { throw new TimeoutException('Workflow lookup timed out') }
+        1 * store.put('req-1', req1, _ as Duration)
+        registry.counter('wave.tokens.refresh', 'result', 'error').count() == 1d
+
+        when: 'another token of the same endpoint is checked'
+        service.check0(new ContainerRequestRange.Entry('req-2', 'wf-2', expiration), Instant.now())
+        then: 'it is renewed without a lookup'
+        1 * store.get('req-2') >> req2
+        0 * service.lookupWorkflow(_)
+        1 * store.put('req-2', req2, _ as Duration)
+        registry.counter('wave.tokens.refresh', 'result', 'backoff').count() == 1d
+
+        when: 'a token of another endpoint is checked'
+        service.check0(new ContainerRequestRange.Entry('req-3', 'wf-3', expiration), Instant.now())
+        then: 'it is looked up as usual'
+        1 * store.get('req-3') >> req3
+        1 * service.lookupWorkflow(req3) >> new Workflow(id: 'wf-3', status: Workflow.WorkflowStatus.RUNNING)
+        1 * store.put('req-3', req3, _ as Duration)
+        registry.counter('wave.tokens.refresh', 'result', 'renewed').count() == 1d
+    }
+
+    def 'watch should renew other tokens while one workflow lookup hangs'() {
+        given:
+        def store = Mock(ContainerRequestStore)
+        def range = Mock(ContainerRequestRange)
+        def persistence = Mock(PersistenceService)
+        def config = watcherConfig()
+        config.watcherCount = 100
+        config.watcherConcurrency = 10
+        config.watcherLookupTimeout = Duration.ofMillis(500)
+        and: 'one token bound to a hanging endpoint, followed by many healthy ones'
+        def expiration = Instant.now().plus(Duration.ofMinutes(15))
+        def entries = [new ContainerRequestRange.Entry('req-hang', 'wf-hang', expiration)]
+        (1..50).each { entries << new ContainerRequestRange.Entry("req-$it".toString(), "wf-$it".toString(), expiration) }
+        and:
+        range.getEntriesUntil(_, 100) >> entries
+        store.get(_) >> { String id -> containerRequest(id, Instant.now(), id=='req-hang' ? 'https://hang.io' : 'https://tower.io') }
+        and: 'a hand-written client rather than a Spock mock, since Spock serialises mock calls across threads'
+        def service = new ContainerRequestServiceImpl(
+                containerRequestStore: store, containerRequestRange: range,
+                persistenceService: persistence, config: config, towerClient: new HangingTowerClient())
+
+        when:
+        def start = System.currentTimeMillis()
+        service.watch()
+        def elapsed = System.currentTimeMillis() - start
+
+        then: 'every token is renewed, the hanging one fail-open, and the tick is bounded by the lookup timeout'
+        (1..50).each { 1 * store.put("req-$it".toString(), _, _ as Duration) }
+        1 * store.put('req-hang', _, _ as Duration)
+        51 * range.add(_ as ContainerRequestRange.Entry, _ as Instant)
+        elapsed >= 500 && elapsed < 5_000
     }
 
     def 'isConnectivityError should detect Tower connectivity failures in the cause chain'() {
@@ -273,6 +379,15 @@ class ContainerRequestServiceImplTest extends Specification {
         expect:
         ContainerRequestServiceImpl.rootCauseMessage(new RuntimeException('outer', new TimeoutException('inner'))) == 'inner'
         ContainerRequestServiceImpl.rootCauseMessage(new RuntimeException('solo')) == 'solo'
+    }
+
+    static class HangingTowerClient extends TowerClient {
+        @Override
+        DescribeWorkflowResponse describeWorkflow(String endpoint, JwtAuth authorization, Long workspaceId, String workflowId) {
+            if( endpoint=='https://hang.io' )
+                Thread.sleep(60_000)
+            return new DescribeWorkflowResponse(workflow: new Workflow(id: 'wf', status: Workflow.WorkflowStatus.RUNNING))
+        }
     }
 
 }

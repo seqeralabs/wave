@@ -20,6 +20,14 @@ package io.seqera.wave.service.request
 
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.Callable
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
+import java.util.concurrent.Semaphore
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
 import groovy.transform.CompileStatic
@@ -36,6 +44,7 @@ import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.client.TowerClient
 import io.seqera.wave.tower.client.Workflow
 import jakarta.annotation.PostConstruct
+import jakarta.annotation.PreDestroy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -117,18 +126,32 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
     private MeterRegistry meterRegistry
 
     /**
+     * Runs the per-entry checks and the Platform lookups, so that a slow or unreachable Platform
+     * endpoint only holds its own virtual thread instead of the whole watcher tick.
+     */
+    private final ExecutorService watcherExecutor = Executors.newVirtualThreadPerTaskExecutor()
+
+    /**
+     * Platform endpoints whose lookup recently timed out, mapped to the instant until which they are
+     * skipped. Their tokens are renewed without a lookup so they don't each pay the full timeout.
+     */
+    private final Map<String,Instant> unreachableEndpoints = new ConcurrentHashMap<>()
+
+    /**
      * Prometheus counter for the token-refresh path. The {@code result} tag records each check
-     * outcome so operators can watch the fail-closed revocations Gavin flagged:
+     * outcome:
      * <ul>
      *   <li>{@code renewed}    - workflow active, token renewed
      *   <li>{@code completed}  - workflow reached a confirmed terminal status, token left to lapse
      *   <li>{@code unresolved} - status could not be confirmed (unknown/null); token revoked fail-closed
-     *   <li>{@code error}      - Platform lookup threw (unreachable); check retried with slack
+     *   <li>{@code error}      - Platform lookup failed or timed out; token renewed fail-open
+     *   <li>{@code backoff}    - Platform endpoint recently timed out; token renewed without a lookup
      *   <li>{@code expired}    - hard 48h lifetime cap reached
      *   <li>{@code gone}       - request already evicted from the store
      * </ul>
-     * Describe-call volume is derivable as the sum of all results except {@code gone} (which stops
-     * before the lookup). Registry may be absent in unit tests, hence the null-safe navigation.
+     * Describe-call volume is derivable as the sum of {@code renewed}, {@code completed},
+     * {@code unresolved} and {@code error}. Registry may be absent in unit tests, hence the
+     * null-safe navigation.
      */
     private void meterRefresh(String result) {
         meterRegistry?.counter('wave.tokens.refresh', 'result', result)?.increment()
@@ -138,8 +161,8 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
 
     /**
      * Whether the given error is an expected Platform connectivity failure (a timeout or an HTTP
-     * error reaching Tower) as opposed to an unexpected bug. Such failures are transient and retried,
-     * so they should not be logged at ERROR with a full stack trace. The cause chain is walked up to
+     * error reaching Tower) as opposed to an unexpected bug. Such failures are transient, so they
+     * should not be logged at ERROR with a full stack trace. The cause chain is walked up to
      * {@link #MAX_CAUSE_DEPTH} to guard against cyclic cause references.
      */
     protected static boolean isConnectivityError(Throwable t) {
@@ -163,8 +186,7 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
 
     protected void scheduleRefresh(Entry entry) {
         // Re-check this request one refreshInterval from now. refreshInterval is deliberately shorter
-        // than accessTtl so several checks fit inside a token's lifetime — a transient Tower failure
-        // can be retried before the token would lapse.
+        // than accessTtl so several checks fit inside a token's lifetime.
         final future = Instant.now() + config.refreshInterval
         log.trace "Scheduling container request $entry - event ts=$future"
         containerRequestRange.add(entry, future)
@@ -176,7 +198,7 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
             log.info "Container request watcher is disabled - workflow-bound token lifecycle tracking off"
             return
         }
-        log.info "Creating Container request watcher - access-ttl=${config.accessTtl}; refresh-interval=${config.refreshInterval}; max-duration=${config.cacheMaxDuration}; watcher-interval=${config.watcherInterval}"
+        log.info "Creating Container request watcher - access-ttl=${config.accessTtl}; refresh-interval=${config.refreshInterval}; max-duration=${config.cacheMaxDuration}; watcher-interval=${config.watcherInterval}; concurrency=${config.watcherConcurrency}; lookup-timeout=${config.watcherLookupTimeout}"
         // Randomize the initial delay so that, with multiple replicas, the watchers do not all
         // fire on the same tick and hammer Tower / the range store simultaneously.
         scheduler.scheduleAtFixedRate(
@@ -185,38 +207,57 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
                 this.&watch )
     }
 
+    @PreDestroy
+    private void destroy() {
+        watcherExecutor.shutdownNow()
+    }
+
     protected void watch() {
         final now = Instant.now()
         // getEntriesUntil atomically pops the due entries (score <= now), so across replicas each
         // entry is processed by exactly one watcher; the cap bounds the work done per tick.
         final keys = containerRequestRange.getEntriesUntil(now, config.watcherCount)
-        if( keys )
-            log.debug "Container request watcher processing ${keys.size()} entries"
-        for( Entry it : keys ) {
-            try {
-                check0(it, now)
+        if( !keys )
+            return
+        log.debug "Container request watcher processing ${keys.size()} entries"
+        // Check the entries concurrently, bounded by the semaphore, so a slow Platform endpoint can
+        // only delay its own tokens. The tick waits for all of them so ticks never overlap; each check
+        // is bounded by the lookup timeout.
+        final permits = new Semaphore(Math.max(1, config.watcherConcurrency))
+        final futures = new ArrayList<Future>(keys.size())
+        try {
+            for( Entry it : keys ) {
+                // copy the loop variable: a Groovy for-each variable is shared across iterations
+                final entry = it
+                permits.acquire()
+                futures.add(watcherExecutor.submit({
+                    try { process(entry, now) } finally { permits.release() }
+                } as Runnable))
             }
-            catch (InterruptedException e) {
-                // Preserve the interrupt flag so a shutdown request is not swallowed by this loop.
-                log.warn "Container request watcher interrupted while processing key: $it"
-                Thread.currentThread().interrupt()
-            }
-            catch (Throwable t) {
-                meterRefresh('error')
-                // The entry was already popped by getEntriesUntil; re-add it so a transient failure
-                // (e.g. a Tower blip) does not silently drop the request and let its token lapse.
-                scheduleRefresh(it)
-                if( isConnectivityError(t) ) {
-                    // Expected when the workflow's Platform endpoint is briefly unreachable — e.g. a
-                    // paired self-hosted instance whose pairing WebSocket times out. The token is not
-                    // renewed, so it lapses fail-closed; log a concise warning rather than a full
-                    // stack trace to avoid flooding the logs while the entry is retried.
-                    log.warn "Container request watcher could not confirm workflow status - request=${it.requestId}; workflow=${it.workflowId}; cause=${rootCauseMessage(t)}; will retry"
-                }
-                else {
-                    log.error("Unexpected error in container request watcher while processing key: $it", t)
-                }
-            }
+            for( Future it : futures )
+                it.get()
+        }
+        catch (InterruptedException e) {
+            // Preserve the interrupt flag so a shutdown request is not swallowed.
+            log.warn "Container request watcher interrupted"
+            futures.each { it.cancel(true) }
+            Thread.currentThread().interrupt()
+        }
+    }
+
+    protected void process(Entry entry, Instant now) {
+        try {
+            check0(entry, now)
+        }
+        catch (InterruptedException e) {
+            log.warn "Container request watcher interrupted while processing key: $entry"
+            Thread.currentThread().interrupt()
+        }
+        catch (Throwable t) {
+            // The entry was already popped by getEntriesUntil; re-add it so a transient failure
+            // (e.g. a store blip) does not silently drop the request and let its token lapse.
+            scheduleRefresh(entry)
+            log.error("Unexpected error in container request watcher while processing key: $entry", t)
         }
     }
 
@@ -246,47 +287,100 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
         }
         log.trace "Checking container request '${entry.requestId}' - workflow=${entry.workflowId}; current expiration=${entry.expiration}; now=${now}"
 
-        // 3. Renew only while the workflow is still active. describeWorkflow is short-cached by
-        //    workflowId so the many tokens of one run share a single Platform lookup; completion is
-        //    still observed well within accessTtl. isWorkflowActive treats an unknown/failed lookup
-        //    as inactive (fail-closed).
-        final workflow = describeWorkflow(request)
+        // 3. Hard lifetime cap: never keep a token alive past requestCreationTime + maxDuration,
+        //    even for a still-running workflow. Once reached, stop and let it lapse.
+        final maxExpire = request.creationTime.plus(config.cacheMaxDuration)
+        if( !now.isBefore(maxExpire) ) {
+            meterRefresh('expired')
+            log.info "Container request '${entry.requestId}' reached max allowed lifetime (${config.cacheMaxDuration}) - workflow=${entry.workflowId}; stop tracking"
+            return
+        }
+
+        // 4. Skip the lookup for an endpoint that recently timed out, renewing fail-open instead.
+        final endpoint = request.identity.towerEndpoint
+        final backoffUntil = endpoint ? unreachableEndpoints.get(endpoint) : null
+        if( backoffUntil && now.isBefore(backoffUntil) ) {
+            meterRefresh('backoff')
+            log.debug "Container request '${entry.requestId}' - endpoint ${endpoint} is backing off until ${backoffUntil}; renewing without lookup"
+            renew(entry, request, now, maxExpire)
+            return
+        }
+
+        // 5. Renew only while the workflow is still active. describeWorkflow is short-cached by
+        //    workflowId so the many tokens of one run share a single Platform lookup. A failed or
+        //    timed-out lookup renews the token anyway (fail-open): a Platform connectivity problem
+        //    must not kill a running pipeline's image access. The max lifetime cap still applies.
+        final Workflow workflow
+        try {
+            workflow = lookupWorkflow(request)
+        }
+        catch (InterruptedException e) {
+            throw e
+        }
+        catch (Throwable t) {
+            meterRefresh('error')
+            if( endpoint && t instanceof TimeoutException )
+                unreachableEndpoints.put(endpoint, now.plus(config.watcherEndpointBackoff))
+            if( isConnectivityError(t) )
+                log.warn "Container request watcher could not confirm workflow status - request=${entry.requestId}; workflow=${entry.workflowId}; endpoint=${endpoint}; cause=${rootCauseMessage(t)}; renewing anyway"
+            else
+                log.error("Unexpected error looking up workflow status - request=${entry.requestId}; workflow=${entry.workflowId}; endpoint=${endpoint}; renewing anyway", t)
+            renew(entry, request, now, maxExpire)
+            return
+        }
+        if( endpoint )
+            unreachableEndpoints.remove(endpoint)
+
         if( !isWorkflowActive(workflow) ) {
             // Distinguish a confirmed completion from a status we could not confirm (null/UNKNOWN):
-            // the latter is a fail-closed revocation — the signal to watch for connectivity issues.
+            // the latter is a fail-closed revocation.
             final resolved = workflow!=null && workflow.status!=Workflow.WorkflowStatus.UNKNOWN
             meterRefresh(resolved ? 'completed' : 'unresolved')
             log.debug "Container request '${entry.requestId}' - workflow ${workflow?.id} ${resolved ? 'completed' : 'status unresolved'}; stop tracking"
             return
         }
 
-        // 4. Hard lifetime cap: never keep a token alive past requestCreationTime + maxDuration,
-        //    even for a still-running workflow. Once reached, stop and let it lapse.
-        final maxExpire = request.creationTime.plus(config.cacheMaxDuration)
-        if( !now.isBefore(maxExpire) ) {
-            meterRefresh('expired')
-            log.info "Container request '${entry.requestId}' reached max allowed lifetime (${config.cacheMaxDuration}) - workflow=${workflow.id}; stop tracking"
-            return
-        }
+        meterRefresh('renewed')
+        renew(entry, request, now, maxExpire)
+    }
 
-        // 5. Renew: grant another accessTtl, but never beyond the max cap.
+    protected void renew(Entry entry, ContainerRequest request, Instant now, Instant maxExpire) {
+        // Grant another accessTtl, but never beyond the max cap.
         final newExpire = [now.plus(config.accessTtl), maxExpire].min()
         final newTtl = Duration.between(now, newExpire)
         if( newTtl.isNegative() || newTtl.isZero() ) {
             // Defensive: a non-positive TTL must never reach the store, which could treat it as
             // "no expiry" and leave the token alive indefinitely.
-            meterRefresh('expired')
             log.warn "Container request '${entry.requestId}' computed TTL is not positive: ${newTtl}; stop tracking"
             return
         }
-        meterRefresh('renewed')
-        log.debug "Container request '${entry.requestId}' renewed for ${newTtl}; expires at ${newExpire}; workflow=${workflow.id}"
+        log.debug "Container request '${entry.requestId}' renewed for ${newTtl}; expires at ${newExpire}; workflow=${entry.workflowId}"
         containerRequestStore.put(entry.requestId, request, newTtl)
         // mirror the new expiration onto the persisted record for display (in-place JSON update, not
         // a re-insert — the record already exists from request creation)
         persistenceService.updateContainerExpirationAsync(entry.requestId, newExpire)
         // re-arm the next check
         scheduleRefresh(entry.withExpiration(newExpire))
+    }
+
+    protected Workflow lookupWorkflow(ContainerRequest request) {
+        // Bound the Platform lookup so one hanging endpoint cannot hold a check for minutes.
+        // Cancelling interrupts the virtual thread blocked on the Tower client.
+        final Future<Workflow> future = watcherExecutor.submit({ describeWorkflow(request) } as Callable<Workflow>)
+        try {
+            return future.get(config.watcherLookupTimeout.toMillis(), TimeUnit.MILLISECONDS)
+        }
+        catch (TimeoutException e) {
+            future.cancel(true)
+            throw new TimeoutException("Workflow lookup timed out after ${config.watcherLookupTimeout}")
+        }
+        catch (InterruptedException e) {
+            future.cancel(true)
+            throw e
+        }
+        catch (ExecutionException e) {
+            throw e.cause ?: e
+        }
     }
 
     protected Workflow describeWorkflow(ContainerRequest request) {
