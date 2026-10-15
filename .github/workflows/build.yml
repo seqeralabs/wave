@@ -32,7 +32,8 @@ jobs:
     name: Build Wave
     if: "github.event == 'push' || github.repository != github.event.pull_request.head.repo.full_name"
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # includes the condasplit image build on a release, ~6 minutes when the tag is new
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -142,6 +143,26 @@ jobs:
         id: build
         if: "steps.detect-release.outputs.do_build == 'true'"
         run: echo "tag=v$(cat VERSION)" >> "$GITHUB_OUTPUT"
+
+      # --- condasplit image: [release] on master/release-* only, before anything is published ---
+      # Wave defaults to the condasplit/VERSION tag (see `buildInfo` in build.gradle), so the tag must
+      # be published before the Wave release: a failure here stops it. `make release` skips the build
+      # when the tag is already published with the same sources.
+      - name: Docker Login to Seqera public CR
+        if: "steps.detect-release.outputs.is_publish == 'true'"
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: public.cr.seqera.io
+          username: ${{ vars.SEQERA_PUBLIC_CR_USERNAME }}
+          password: ${{ secrets.SEQERA_PUBLIC_CR_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        if: "steps.detect-release.outputs.is_publish == 'true'"
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Publish condasplit image
+        if: "steps.detect-release.outputs.is_publish == 'true'"
+        run: make -C condasplit release registry=public.cr.seqera.io/wave
 
       # --- Internal (dev) ECR push: [preview] only, any branch ---
       # Lets features be built from any branch and pulled into dev/testing without reaching a

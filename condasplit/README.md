@@ -133,7 +133,8 @@ The image is multi-arch (`linux/amd64`, `linux/arm64`). The Dockerfile runs the 
 and cross-compiles a static binary (`CGO_ENABLED=0`) from the pinned `golang` image.
 
 Each release gets a new immutable tag (`v1`, `v2`, ...), set in the `VERSION` file. Wave
-pins the exact tag with the `wave.build.condasplit-image` setting, so a new tool version
+pins the exact tag: the default of the `wave.build.condasplit-image` setting is
+`public.cr.seqera.io/wave/condasplit:<VERSION>`, read from this file at build time, so a new tool version
 changes the `-fast` container files and therefore the container ids. Never overwrite an existing tag.
 
 **Stage** (default registry of the `Makefile`, only for tests and local development):
@@ -144,9 +145,10 @@ make all
 # pushes public.cr.stage-seqera.io/wave/condasplit:<VERSION>
 ```
 
-**Production**: bump `VERSION`. The `build-condasplit.yml` GitHub workflow publishes
-`public.cr.seqera.io/wave/condasplit:<VERSION>` on the next Wave release commit (`[release]`
-on `master`). Then point the default of `wave.build.condasplit-image` to the new tag.
+**Production**: bump `VERSION`, nothing else. The next Wave release commit (`[release]` on
+`master`) publishes `public.cr.seqera.io/wave/condasplit:<VERSION>` with `make release`, in
+the Wave CI workflow (`build.yml`) before anything else is published, and the Wave version it
+releases uses the new tag by default. A failed image build stops the Wave release.
 
 The tag is always the `VERSION` value, never a checksum: Wave writes it into the `-fast` container
 files and the build logs, where `condasplit:v1` is readable and a checksum isn't. The checksum

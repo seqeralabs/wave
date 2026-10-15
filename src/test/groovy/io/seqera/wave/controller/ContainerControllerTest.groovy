@@ -71,6 +71,7 @@ import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
+import io.seqera.wave.util.BuildInfo
 import jakarta.inject.Inject
 /**
  *
@@ -647,7 +648,7 @@ class ContainerControllerTest extends Specification {
         and:
         response.status.code == 200
         and:
-        buildConfig.condasplitImage == 'public.cr.seqera.io/wave/condasplit:v1'
+        buildConfig.condasplitImage == BuildInfo.condasplitImage
         build.buildTemplate == BuildTemplate.CONDA_MICROMAMBA_V2_FAST
         build.containerFile.contains("RUN --mount=type=bind,from=${buildConfig.condasplitImage},source=/,target=/opt/wave-tools \\\n")
         build.containerFile.contains('COPY --link --from=build /layers/NN/ /\n')
@@ -699,7 +700,7 @@ class ContainerControllerTest extends Specification {
         and:
         response.status.code == 200
         and:
-        buildConfig.condasplitImage == 'public.cr.seqera.io/wave/condasplit:v1'
+        buildConfig.condasplitImage == BuildInfo.condasplitImage
         build.buildTemplate == BuildTemplate.CONDA_PIXI_V1_FAST
         build.containerFile.contains("RUN --mount=type=bind,from=${buildConfig.condasplitImage},source=/,target=/opt/wave-tools \\\n")
         build.containerFile.contains('COPY --link --from=build /layers/NN/ /\n')
