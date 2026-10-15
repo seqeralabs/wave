@@ -46,6 +46,7 @@ import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
+import org.apache.commons.lang3.exception.ExceptionUtils
 /**
  * Service to fulfill request for an augmented container
  *
@@ -172,12 +173,8 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
      * Everything else (5xx, 408, 429, IO errors) is transient and handled fail-open.
      */
     protected static boolean isDefiniteRejection(Throwable t) {
-        Throwable e = t
-        for( int i = 0; e != null && i < MAX_CAUSE_DEPTH; e = e.cause, i++ ) {
-            if( e instanceof HttpResponseException )
-                return ((HttpResponseException) e).statusCode()?.code in REJECTION_CODES
-        }
-        return false
+        final http = ExceptionUtils.getThrowableList(t).find { it instanceof HttpResponseException } as HttpResponseException
+        return http?.statusCode()?.code in REJECTION_CODES
     }
 
     protected static String rootCauseMessage(Throwable t) {
@@ -283,44 +280,55 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
             return
         }
 
-        // 4. Renew only while the workflow is still active. A failed or timed-out lookup renews the
-        //    token anyway (fail-open): a Platform connectivity problem
-        //    must not kill a running pipeline's image access. The max lifetime cap still applies.
+        // 4. Renew only while the workflow is still active. The max lifetime cap still applies.
+        if( shouldRenew(entry, request) )
+            renew(entry, request, now, maxExpire)
+    }
+
+    protected boolean shouldRenew(Entry entry, ContainerRequest request) {
         final Workflow workflow
         try {
             workflow = lookupWorkflow(request)
         }
+        catch (InterruptedException e) {
+            throw e
+        }
         catch (Throwable t) {
-            if( t instanceof InterruptedException )
-                throw t
-            if( isDefiniteRejection(t) ) {
-                // Platform answered: the workflow is gone or the credentials no longer grant access.
-                // That is not a connectivity problem, so revoke fail-closed.
-                meterRefresh('unresolved')
-                log.info "Container request '${entry.requestId}' - workflow ${entry.workflowId} lookup rejected by Platform (${rootCauseMessage(t)}); stop tracking"
-                return
-            }
-            meterRefresh('error')
-            final endpoint = request.identity.towerEndpoint
-            if( isConnectivityError(t) )
-                log.warn "Container request watcher could not confirm workflow status - request=${entry.requestId}; workflow=${entry.workflowId}; endpoint=${endpoint}; cause=${rootCauseMessage(t)}; renewing anyway"
-            else
-                log.error("Unexpected error looking up workflow status - request=${entry.requestId}; workflow=${entry.workflowId}; endpoint=${endpoint}; renewing anyway", t)
-            renew(entry, request, now, maxExpire)
-            return
+            return onLookupError(entry, request, t)
         }
+        return onLookupResult(entry, workflow)
+    }
 
-        if( !isWorkflowActive(workflow) ) {
-            // Distinguish a confirmed completion from a status we could not confirm (null/UNKNOWN):
-            // the latter is a fail-closed revocation.
-            final resolved = workflow!=null && workflow.status!=Workflow.WorkflowStatus.UNKNOWN
-            meterRefresh(resolved ? 'completed' : 'unresolved')
-            log.debug "Container request '${entry.requestId}' - workflow ${workflow?.id} ${resolved ? 'completed' : 'status unresolved'}; stop tracking"
-            return
+    private boolean onLookupResult(Entry entry, Workflow workflow) {
+        if( isWorkflowActive(workflow) ) {
+            meterRefresh('renewed')
+            return true
         }
+        // Distinguish a confirmed completion from a status we could not confirm (null/UNKNOWN):
+        // the latter is a fail-closed revocation.
+        final resolved = workflow!=null && workflow.status!=Workflow.WorkflowStatus.UNKNOWN
+        meterRefresh(resolved ? 'completed' : 'unresolved')
+        log.debug "Container request '${entry.requestId}' - workflow ${workflow?.id} ${resolved ? 'completed' : 'status unresolved'}; stop tracking"
+        return false
+    }
 
-        meterRefresh('renewed')
-        renew(entry, request, now, maxExpire)
+    private boolean onLookupError(Entry entry, ContainerRequest request, Throwable t) {
+        if( isDefiniteRejection(t) ) {
+            // Platform answered: the workflow is gone or the credentials no longer grant access.
+            // That is not a connectivity problem, so revoke fail-closed.
+            meterRefresh('unresolved')
+            log.info "Container request '${entry.requestId}' - workflow ${entry.workflowId} lookup rejected by Platform (${rootCauseMessage(t)}); stop tracking"
+            return false
+        }
+        // Any other failure renews the token anyway (fail-open): a Platform connectivity problem
+        // must not kill a running pipeline's image access.
+        meterRefresh('error')
+        final endpoint = request.identity.towerEndpoint
+        if( isConnectivityError(t) )
+            log.warn "Container request watcher could not confirm workflow status - request=${entry.requestId}; workflow=${entry.workflowId}; endpoint=${endpoint}; cause=${rootCauseMessage(t)}; renewing anyway"
+        else
+            log.error("Unexpected error looking up workflow status - request=${entry.requestId}; workflow=${entry.workflowId}; endpoint=${endpoint}; renewing anyway", t)
+        return true
     }
 
     protected void renew(Entry entry, ContainerRequest request, Instant now, Instant maxExpire) {
