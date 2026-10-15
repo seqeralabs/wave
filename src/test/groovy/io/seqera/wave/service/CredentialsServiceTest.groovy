@@ -19,6 +19,7 @@
 package io.seqera.wave.service
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.security.PublicKey
 import java.time.Duration
@@ -282,6 +283,51 @@ class CredentialsServiceTest extends Specification {
         containerCredentials.userName == 'me'
         containerCredentials.password == "you"
         noExceptionThrown()
+    }
+
+    @Unroll
+    def 'should find the most specific credentials for repository #REPOSITORY'() {
+        given:
+        def all = [
+                new CredentialsDescription(id: 'aws', provider: 'aws'),
+                new CredentialsDescription(id: 'ecr', provider: 'container-reg', registry: '1000.dkr.ecr.eu-west-2.amazonaws.com'),
+                new CredentialsDescription(id: 'set-b', provider: 'container-reg', registry: '1000.dkr.ecr.eu-west-2.amazonaws.com/dev/set-b'),
+                new CredentialsDescription(id: 'set-a', provider: 'container-reg', registry: '1000.dkr.ecr.eu-west-2.amazonaws.com/dev/set-a'),
+                new CredentialsDescription(id: 'hub', provider: 'container-reg'),
+                new CredentialsDescription(id: 'hub-2', provider: 'container-reg', registry: 'docker.io'),
+                new CredentialsDescription(id: 'ubuntu', provider: 'container-reg', registry: 'docker.io/library/ubuntu'),
+        ]
+
+        expect:
+        CredentialServiceImpl.findMostSpecificCreds(all, REPOSITORY)?.id == EXPECTED
+
+        where:
+        REPOSITORY                                                  | EXPECTED
+        '1000.dkr.ecr.eu-west-2.amazonaws.com/dev/set-a'            | 'set-a'
+        '1000.dkr.ecr.eu-west-2.amazonaws.com/dev/set-a/image'      | 'set-a'
+        '1000.dkr.ecr.eu-west-2.amazonaws.com/dev/set-b'            | 'set-b'
+        '1000.dkr.ecr.eu-west-2.amazonaws.com/dev/set-ab'           | 'ecr'
+        '1000.dkr.ecr.eu-west-2.amazonaws.com/other'                | 'ecr'
+        '1000.dkr.ecr.eu-west-2.amazonaws.com'                      | 'ecr'
+        'docker.io/library/ubuntu'                                  | 'ubuntu'
+        'docker.io/library/alpine'                                  | 'hub'
+        'docker.io/ubuntu'                                          | 'hub'
+        'quay.io/org/image'                                         | null
+    }
+
+    def 'should get the registry name of repository #REPOSITORY'() {
+        expect:
+        CredentialServiceImpl.registryName(REPOSITORY) == EXPECTED
+
+        where:
+        REPOSITORY                                          | EXPECTED
+        null                                                | 'docker.io'
+        ''                                                  | 'docker.io'
+        'docker.io/library/ubuntu'                          | 'docker.io'
+        'quay.io'                                           | 'quay.io'
+        'quay.io/org/image'                                 | 'quay.io'
+        'localhost:5000/org/image'                          | 'localhost:5000'
+        '1000.dkr.ecr.eu-west-2.amazonaws.com/dev/set-a'    | '1000.dkr.ecr.eu-west-2.amazonaws.com'
     }
 
     private static GetCredentialsKeysResponse encryptedCredentialsFromTower(PublicKey key, String credentials) {
