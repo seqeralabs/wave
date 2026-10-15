@@ -462,7 +462,7 @@ spec:
       imagePullSecrets:
         - name: seqera-reg-creds
       containers:
-        - image: cr.seqera.io/<wave-image-path>:<tag>   # Use the image path and tag provided by Seqera.
+        - image: cr.seqera.io/enterprise/wave/server:<tag>   # Replace <tag> with a Wave version, e.g. v1.40.2. There is no latest tag.
           name: wave-app
           ports:
             - containerPort: 9090
