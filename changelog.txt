@@ -1,4 +1,7 @@
 # Wave changelog
+1.40.4 - 15 Oct 2026
+- Re-release of 1.40.3: the 1.40.3 image was not published to the legacy ECR
+
 1.40.3 - 15 Oct 2026
 - Fix token watcher head-of-line blocking on slow Platform endpoints (#1181) [fa56deaf7]
 - Bump lib-pairing to 1.2.0 to close pairing sessions that stop sending heartbeats (#1184) [db02cdaf4]
