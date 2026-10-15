@@ -19,7 +19,7 @@
 package io.seqera.wave.service.job
 
 import java.time.Instant
-import javax.annotation.Nullable
+import io.micronaut.core.annotation.Nullable
 
 import com.google.common.hash.Hashing
 import groovy.transform.CompileStatic

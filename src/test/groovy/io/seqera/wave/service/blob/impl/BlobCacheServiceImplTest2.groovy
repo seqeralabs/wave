@@ -141,7 +141,7 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
         service.onJobCompletion(job, blob, failed)
         then:
         // a failed pipeline can still have uploaded a partial object, remove it
-        1 * service.deleteBlob('s3://some/blob') >> null
+        1 * service.deleteBlob('s3://some/blob')
         and:
         1 * store.storeBlob(blob.getKey(), _ as BlobEntry) >> { id, BlobEntry info -> info.state==BlobEntry.State.ERRORED }
 

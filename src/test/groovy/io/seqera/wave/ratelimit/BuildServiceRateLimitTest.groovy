@@ -55,7 +55,7 @@ class BuildServiceRateLimitTest extends Specification {
     RateLimiterConfig configuration
 
     def setupSpec() {
-        applicationContext = ApplicationContext.run('test', 'rate-limit')
+        applicationContext = ApplicationContext.run('test', 'rate-limit', 'rate-limit-test')
         containerBuildService = applicationContext.getBean(ContainerBuildServiceImpl)
         configuration = applicationContext.getBean(RateLimiterConfig)
     }

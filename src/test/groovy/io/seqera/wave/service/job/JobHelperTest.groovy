@@ -49,7 +49,7 @@ class JobHelperTest extends Specification {
         JobHelper.awaitDockerLaunch(run(CONFLICT, 125), 'bd-123', 'build container')
 
         then:
-        1 * JobHelper.startIfCreated('bd-123', 'build container') >> null
+        1 * JobHelper.startIfCreated('bd-123', 'build container') >> { }
         noExceptionThrown()
     }
 

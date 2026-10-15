@@ -134,7 +134,7 @@ class BlobCacheServiceImplTest extends Specification implements AwsS3TestContain
         1 * service.blobSize(OBJECT) >> 0L
         and:
         // the invalid object is removed so it is not served as a valid cache entry
-        1 * service.deleteBlob(OBJECT) >> null
+        1 * service.deleteBlob(OBJECT)
         and:
         1 * blobStore.storeBlob(OBJECT, { BlobEntry it -> it.state==BlobEntry.State.ERRORED && !it.succeeded() })
     }
@@ -152,7 +152,7 @@ class BlobCacheServiceImplTest extends Specification implements AwsS3TestContain
         then:
         1 * service.blobSize(OBJECT) >> 100L
         and:
-        0 * service.deleteBlob(_) >> null
+        0 * service.deleteBlob(_)
         and:
         1 * blobStore.storeBlob(OBJECT, { BlobEntry it -> it.state==BlobEntry.State.COMPLETED && it.succeeded() })
     }
@@ -171,7 +171,7 @@ class BlobCacheServiceImplTest extends Specification implements AwsS3TestContain
         0 * service.blobSize(_) >> null
         and:
         // a failed pipeline can still have uploaded a partial object, remove it
-        1 * service.deleteBlob(OBJECT) >> null
+        1 * service.deleteBlob(OBJECT)
         and:
         1 * blobStore.storeBlob(OBJECT, { BlobEntry it -> it.state==BlobEntry.State.ERRORED && it.logs=='curl failed' })
     }

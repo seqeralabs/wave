@@ -115,7 +115,7 @@ class BlobStateStoreImplTest extends Specification {
         1 * config.getStatusDuration() >> DELAY_ONE
         0 * config.getFailureDuration() >> null
         and:
-        1 * cache.put(key, info_ok, DELAY_ONE)  >> null
+        1 * cache.put(key, info_ok, DELAY_ONE)
 
         when:
         cache.storeBlob(key, info_err)
@@ -124,7 +124,7 @@ class BlobStateStoreImplTest extends Specification {
         0 * config.getStatusDuration() >> null
         1 * config.getFailureDuration() >> DELAY_TWO
         and:
-        1 * cache.put(key, info_err, DELAY_TWO)  >> null
+        1 * cache.put(key, info_err, DELAY_TWO)
     }
 
 }

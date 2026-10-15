@@ -87,7 +87,7 @@ class DockerScanStrategy extends ScanStrategy {
         wrapper.add('-v')
         wrapper.add("${scanConfig.cacheDirectory}:${Trivy.CACHE_MOUNT_PATH}:rw".toString())
 
-        if(credsFile) {
+        if( credsFile != null ) {
             wrapper.add('-v')
             wrapper.add("${credsFile}:${Trivy.CONFIG_MOUNT_PATH}:ro".toString())
         }

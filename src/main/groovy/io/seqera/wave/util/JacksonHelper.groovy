@@ -19,17 +19,19 @@
 package io.seqera.wave.util
 
 import com.fasterxml.jackson.annotation.JsonInclude
-import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.MapperFeature
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.databind.module.SimpleModule
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import groovy.transform.CompileStatic
 import io.seqera.util.pool.SimplePool
+import tools.jackson.core.type.TypeReference
+import tools.jackson.databind.DeserializationFeature
+import tools.jackson.databind.MapperFeature
+import tools.jackson.databind.ObjectMapper
+import tools.jackson.databind.cfg.DateTimeFeature
+import tools.jackson.databind.cfg.EnumFeature
+import tools.jackson.databind.cfg.MapperBuilder
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.databind.module.SimpleModule
+import tools.jackson.databind.ser.std.ToStringSerializer
+import tools.jackson.dataformat.yaml.YAMLMapper
 
 /**
  * Helper class to handle JSON rendering and parsing
@@ -45,35 +47,62 @@ class JacksonHelper {
 
     static private SimplePool<ObjectMapper> yamlMapper = new SimplePool<>(()-> defaultYamlMapper())
 
-    static private ObjectMapper createMapper0(boolean yaml=false, boolean failOnUnknownProperties=false) {
+    /**
+     * NOTE: kept in a separate method on purpose. Choosing the builder inline (ternary or if/else)
+     * makes Groovy static compilation infer the type of the first branch ({@code YAMLMapper.Builder})
+     * and insert a cast that fails at runtime for {@code JsonMapper.Builder}.
+     */
+    static private MapperBuilder newBuilder(boolean yaml) {
+        if( yaml )
+            return YAMLMapper.builder()
+        return JsonMapper.builder()
+    }
+
+    /**
+     * Creates a Jackson 3 mapper builder with the Wave defaults. Jackson 3 mappers are
+     * immutable once built, therefore all the configuration is applied on the builder
+     * (see {@link #defaultJsonMapperBuilder()} for callers needing further customisation).
+     */
+    static private MapperBuilder createBuilder0(boolean yaml=false, boolean failOnUnknownProperties=false) {
         // GString serializer
         final module = new SimpleModule()
-        module.addSerializer( GString, new ToStringSerializer() )
-        module.addSerializer( String, new ToStringSerializer() )
+        module.addSerializer( GString, ToStringSerializer.instance )
+        module.addSerializer( String, ToStringSerializer.instance )
 
-        return (yaml ? new ObjectMapper(new YAMLFactory()) : new ObjectMapper())
-                .configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
-                .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+        return newBuilder(yaml)
+                .configure(DateTimeFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
+                .configure(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS, false)
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, failOnUnknownProperties)
+                // restore Jackson 2 defaults changed by Jackson 3 (see adr/20261015-micronaut-5-migration.md)
+                .enable(MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS)   // Groovy @Canonical/final fields
+                .enable(MapperFeature.USE_GETTERS_AS_SETTERS)
+                .enable(MapperFeature.DEFAULT_VIEW_INCLUSION)
+                .disable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
+                .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
                 // tolerate enum values not (yet) known to Wave: map them to `null` instead of
                 // failing the whole payload — e.g. a `waveBuildNotification` value added on the
                 // Tower side would otherwise break user-info deserialization for all builds
-                .configure(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL, true)
-                .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
-                .registerModule(new JavaTimeModule())
-                .registerModule(module)
+                .configure(EnumFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL, true)
+                // same semantic as Jackson 2 `setSerializationInclusion(NON_ABSENT)`
+                .changeDefaultPropertyInclusion((JsonInclude.Value incl) -> JsonInclude.Value.construct(JsonInclude.Include.NON_ABSENT, JsonInclude.Include.NON_ABSENT))
+                // java.time support is built-in in Jackson 3 (no JavaTimeModule needed)
+                .addModule(module)
+    }
+
+    static MapperBuilder defaultJsonMapperBuilder() {
+        return createBuilder0()
     }
 
     static ObjectMapper defaultJsonMapper() {
-        return createMapper0()
+        return createBuilder0().build() as ObjectMapper
     }
 
     static ObjectMapper publicViewJsonMapper() {
-        return defaultJsonMapper() .disable(MapperFeature.DEFAULT_VIEW_INCLUSION)
+        return createBuilder0().disable(MapperFeature.DEFAULT_VIEW_INCLUSION).build() as ObjectMapper
     }
 
     static ObjectMapper defaultYamlMapper() {
-        return createMapper0(true, true)
+        return createBuilder0(true, true).build() as ObjectMapper
     }
 
     /**

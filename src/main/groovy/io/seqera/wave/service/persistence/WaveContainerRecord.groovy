@@ -22,7 +22,6 @@ import java.time.Instant
 import java.time.OffsetDateTime
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
@@ -34,6 +33,7 @@ import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.tower.RecordOwner
 import io.seqera.wave.tower.User
 import io.seqera.wave.util.FusionVersionStringDeserializer
+import tools.jackson.databind.annotation.JsonDeserialize
 import static io.seqera.wave.util.DataTimeUtils.parseOffsetDateTime
 /**
  * Model a Wave container request record 

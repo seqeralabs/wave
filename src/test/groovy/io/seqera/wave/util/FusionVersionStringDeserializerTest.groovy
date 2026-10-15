@@ -18,9 +18,9 @@
 
 package io.seqera.wave.util
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.module.SimpleModule
 import spock.lang.Specification
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.databind.module.SimpleModule
 /**
  * Test for the FusionVersionStringDeserializer.
  *
@@ -33,8 +33,7 @@ class FusionVersionStringDeserializerTest extends Specification {
         def module = new SimpleModule()
         module.addDeserializer(String, new FusionVersionStringDeserializer())
 
-        def mapper = new ObjectMapper()
-        mapper.registerModule(module)
+        def mapper = JsonMapper.builder().addModule(module).build()
 
         expect:
         mapper.readValue(json, String) == expected

@@ -40,7 +40,7 @@ import jakarta.inject.Inject
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@MicronautTest(environments = ['test', 'rate-limit'])
+@MicronautTest(environments = ['test', 'rate-limit', 'rate-limit-test'])
 class SpillwayRegistryControllerTest extends Specification implements DockerRegistryContainer{
 
     @Inject

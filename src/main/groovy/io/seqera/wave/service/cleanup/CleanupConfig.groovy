@@ -19,7 +19,7 @@
 package io.seqera.wave.service.cleanup
 
 import java.time.Duration
-import javax.annotation.Nullable
+import io.micronaut.core.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.transform.ToString

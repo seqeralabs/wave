@@ -18,15 +18,16 @@
 
 package io.seqera.wave.service.persistence.postgres
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.introspect.AnnotatedMember
-import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector
-import com.fasterxml.jackson.databind.node.ObjectNode
 import groovy.transform.CompileStatic
 import io.seqera.util.pool.SimplePool
 import io.seqera.wave.service.persistence.PersistOnly
 import io.seqera.wave.service.persistence.PostgresIgnore
 import io.seqera.wave.util.JacksonHelper
+import tools.jackson.databind.ObjectMapper
+import tools.jackson.databind.cfg.MapperConfig
+import tools.jackson.databind.introspect.AnnotatedMember
+import tools.jackson.databind.introspect.JacksonAnnotationIntrospector
+import tools.jackson.databind.node.ObjectNode
 /**
  * Implementation of a mapper for JSON objects
  *
@@ -40,13 +41,15 @@ class Mapper {
     static private SimplePool<ObjectMapper> ignoreMapperPool = new SimplePool<>(()-> ignoreMapper())
 
     static private ObjectMapper defaultMapper() {
-        return JacksonHelper.defaultJsonMapper()
-                .setAnnotationIntrospector(new PersistenceIntrospector(false))
+        return JacksonHelper.defaultJsonMapperBuilder()
+                .annotationIntrospector(new PersistenceIntrospector(false))
+                .build() as ObjectMapper
     }
 
     static private ObjectMapper ignoreMapper() {
-        JacksonHelper.defaultJsonMapper()
-                .setAnnotationIntrospector(new PersistenceIntrospector(true))
+        return JacksonHelper.defaultJsonMapperBuilder()
+                .annotationIntrospector(new PersistenceIntrospector(true))
+                .build() as ObjectMapper
     }
 
     /**
@@ -63,12 +66,12 @@ class Mapper {
         }
 
         @Override
-        boolean hasIgnoreMarker(AnnotatedMember a) {
+        boolean hasIgnoreMarker(MapperConfig<?> config, AnnotatedMember a) {
             if( honourPostgresIgnore && a.hasAnnotation(PostgresIgnore) )
                 return true
             if( a.hasAnnotation(PersistOnly) )
                 return false
-            return super.hasIgnoreMarker(a)
+            return super.hasIgnoreMarker(config, a)
         }
     }
 

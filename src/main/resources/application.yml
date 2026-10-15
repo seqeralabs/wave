@@ -115,8 +115,16 @@ wave:
     s5cmdImage: public.cr.seqera.io/wave/s5cmd:v2.3.0
 ---
 jackson:
-  serialization:
+  date-time-features:
     writeDatesAsTimestamps: false
+  # restore Jackson 2 defaults changed by Jackson 3 (see adr/20261015-micronaut-5-migration.md)
+  mapper-features:
+    allowFinalFieldsAsMutators: true
+    useGettersAsSetters: true
+    defaultViewInclusion: true
+    sortPropertiesAlphabetically: false
+  deserialization-features:
+    failOnNullForPrimitives: false
 ---
 logger:
   levels:

@@ -52,7 +52,7 @@ Wave requires several environment variables for registry authentication:
 - Uses Micronaut's configuration system with property injection
 
 ## Technology Stack
-- **Framework**: Micronaut 4.10.6 with Netty runtime
+- **Framework**: Micronaut 5.2 with Netty runtime (Jackson 3, Groovy 5, Spock 2.5). Gradle itself must run on JDK 25: `gradle/gradle-daemon-jvm.properties` pins the daemon JVM. See `adr/20261015-micronaut-5-migration.md` for the migration record.
 - **Language**: Groovy with Java 21+
 - **Build Tool**: Gradle with custom conventions
 - **Container**: JIB for multi-platform builds (AMD64/ARM64)
