@@ -24,6 +24,7 @@ import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicInteger
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
@@ -101,12 +102,12 @@ class ContainerRequestServiceImplTest extends Specification {
                 refreshInterval: Duration.ofSeconds(270) )
     }
 
-    private static ContainerRequest containerRequest(String requestId, Instant creationTime, String endpoint=null) {
+    private static ContainerRequest containerRequest(String requestId, Instant creationTime, String endpoint=null, String workflowId=null) {
         final user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
         ContainerRequest.of(
                 requestId: requestId,
                 type: ContainerRequest.Type.Container,
-                identity: new PlatformId(user, 100L, null, endpoint, null),
+                identity: new PlatformId(user, 100L, null, endpoint, workflowId),
                 containerImage: 'hello-world',
                 creationTime: creationTime )
     }
@@ -289,6 +290,34 @@ class ContainerRequestServiceImplTest extends Specification {
         ERROR << [new HttpResponseException(503, 'Unavailable'), new IllegalStateException('Unable to retrieve a value for key: pairing-inbound-queue/v1:foo')]
     }
 
+    def 'check0 should stop tracking (fail-closed) when Platform rejects the workflow lookup'() {
+        given:
+        def registry = new SimpleMeterRegistry()
+        def store = Mock(ContainerRequestStore)
+        def range = Mock(ContainerRequestRange)
+        def persistence = Mock(PersistenceService)
+        def service = Spy(new ContainerRequestServiceImpl(
+                containerRequestStore: store, containerRequestRange: range,
+                persistenceService: persistence, config: watcherConfig(), meterRegistry: registry))
+        and:
+        def request = containerRequest('req-1', Instant.now(), 'https://tower.io')
+        def entry = new ContainerRequestRange.Entry('req-1', 'wf-1', Instant.now().plus(Duration.ofMinutes(15)))
+
+        when:
+        service.check0(entry, Instant.now())
+
+        then:
+        1 * store.get('req-1') >> request
+        1 * service.lookupWorkflow(request) >> { throw new ExecutionException(new HttpResponseException(CODE, 'Rejected')) }
+        0 * store.put(_, _, _)
+        0 * range.add(_, _)
+        and:
+        registry.counter('wave.tokens.refresh', 'result', 'unresolved').count() == 1d
+
+        where:
+        CODE << [401, 403, 404]
+    }
+
     def 'check0 should renew without a lookup while the endpoint is backing off after a timeout'() {
         given:
         def registry = new SimpleMeterRegistry()
@@ -362,6 +391,46 @@ class ContainerRequestServiceImplTest extends Specification {
         elapsed >= 500 && elapsed < 5_000
     }
 
+    def 'watch should share one Platform lookup across the tokens of a workflow'() {
+        given:
+        def store = Mock(ContainerRequestStore)
+        def range = Mock(ContainerRequestRange)
+        def persistence = Mock(PersistenceService)
+        def config = watcherConfig()
+        config.watcherCount = 100
+        config.watcherConcurrency = 30
+        def client = new CountingTowerClient()
+        def service = new ContainerRequestServiceImpl(
+                containerRequestStore: store, containerRequestRange: range,
+                persistenceService: persistence, config: config, towerClient: client)
+        and: 'thirty tokens of the same run'
+        def expiration = Instant.now().plus(Duration.ofMinutes(15))
+        def entries = (1..30).collect { new ContainerRequestRange.Entry("req-$it".toString(), 'wf-1', expiration) }
+        range.getEntriesUntil(_, 100) >> entries
+        store.get(_) >> { String id -> containerRequest(id, Instant.now(), 'https://tower.io', 'wf-1') }
+
+        when:
+        service.watch()
+
+        then:
+        30 * store.put(_, _, _ as Duration)
+        client.calls.get() == 1
+    }
+
+    def 'isDefiniteRejection should only match definite Platform answers'() {
+        expect:
+        ContainerRequestServiceImpl.isDefiniteRejection(ERR) == EXPECTED
+        where:
+        ERR                                                                  | EXPECTED
+        new HttpResponseException(401, 'Unauthorized')                       | true
+        new ExecutionException(new HttpResponseException(404, 'Not found'))  | true
+        new HttpResponseException(408, 'Timeout')                            | false
+        new HttpResponseException(429, 'Too many')                           | false
+        new HttpResponseException(503, 'Unavailable')                        | false
+        new TimeoutException('nope')                                         | false
+        new IllegalStateException('boom')                                    | false
+    }
+
     def 'isConnectivityError should detect Tower connectivity failures in the cause chain'() {
         expect:
         ContainerRequestServiceImpl.isConnectivityError(ERR) == EXPECTED
@@ -379,6 +448,16 @@ class ContainerRequestServiceImplTest extends Specification {
         expect:
         ContainerRequestServiceImpl.rootCauseMessage(new RuntimeException('outer', new TimeoutException('inner'))) == 'inner'
         ContainerRequestServiceImpl.rootCauseMessage(new RuntimeException('solo')) == 'solo'
+    }
+
+    static class CountingTowerClient extends TowerClient {
+        final AtomicInteger calls = new AtomicInteger()
+        @Override
+        DescribeWorkflowResponse describeWorkflow(String endpoint, JwtAuth authorization, Long workspaceId, String workflowId) {
+            calls.incrementAndGet()
+            Thread.sleep(500)
+            return new DescribeWorkflowResponse(workflow: new Workflow(id: workflowId, status: Workflow.WorkflowStatus.RUNNING))
+        }
     }
 
     static class HangingTowerClient extends TowerClient {

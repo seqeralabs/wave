@@ -21,11 +21,14 @@ package io.seqera.wave.service.request
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.Callable
+import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
+import java.util.concurrent.FutureTask
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -138,6 +141,12 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
     private final Map<String,Instant> unreachableEndpoints = new ConcurrentHashMap<>()
 
     /**
+     * Workflow lookups currently in flight, so that concurrent checks of the many tokens of one run
+     * share a single Platform call.
+     */
+    private final Map<String,Future<Workflow>> inflightLookups = new ConcurrentHashMap<>()
+
+    /**
      * Prometheus counter for the token-refresh path. The {@code result} tag records each check
      * outcome:
      * <ul>
@@ -170,6 +179,21 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
         for( int i = 0; e != null && i < MAX_CAUSE_DEPTH; e = e.cause, i++ ) {
             if( e instanceof TimeoutException || e instanceof HttpResponseException )
                 return true
+        }
+        return false
+    }
+
+    /**
+     * Whether the given error is a definite answer from Platform denying the lookup (e.g. 401, 403,
+     * 404) rather than a transient failure. Request timeouts and rate limiting are transient.
+     */
+    protected static boolean isDefiniteRejection(Throwable t) {
+        Throwable e = t
+        for( int i = 0; e != null && i < MAX_CAUSE_DEPTH; e = e.cause, i++ ) {
+            if( e instanceof HttpResponseException ) {
+                final code = ((HttpResponseException) e).statusCode()?.code ?: 0
+                return code >= 400 && code < 500 && code != 408 && code != 429
+            }
         }
         return false
     }
@@ -237,11 +261,24 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
             for( Future it : futures )
                 it.get()
         }
-        catch (InterruptedException e) {
-            // Preserve the interrupt flag so a shutdown request is not swallowed.
-            log.warn "Container request watcher interrupted"
+        catch (InterruptedException | RejectedExecutionException e) {
+            // Shutting down: the entries were already popped, so re-queue the ones never submitted
+            // for another replica to pick up; the submitted ones re-queue themselves when interrupted.
+            log.warn "Container request watcher interrupted - re-queueing ${keys.size()-futures.size()} unprocessed entries"
             futures.each { it.cancel(true) }
-            Thread.currentThread().interrupt()
+            for( int i=futures.size(); i<keys.size(); i++ )
+                requeue(keys[i])
+            if( e instanceof InterruptedException )
+                Thread.currentThread().interrupt()
+        }
+    }
+
+    private void requeue(Entry entry) {
+        try {
+            containerRequestRange.add(entry, Instant.now())
+        }
+        catch (Throwable t) {
+            log.warn "Unable to re-queue container request entry $entry - cause: ${t.message}"
         }
     }
 
@@ -250,7 +287,8 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
             check0(entry, now)
         }
         catch (InterruptedException e) {
-            log.warn "Container request watcher interrupted while processing key: $entry"
+            log.warn "Container request watcher interrupted while processing key: $entry - re-queueing"
+            requeue(entry)
             Thread.currentThread().interrupt()
         }
         catch (Throwable t) {
@@ -299,7 +337,7 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
         // 4. Skip the lookup for an endpoint that recently timed out, renewing fail-open instead.
         final endpoint = request.identity.towerEndpoint
         final backoffUntil = endpoint ? unreachableEndpoints.get(endpoint) : null
-        if( backoffUntil && now.isBefore(backoffUntil) ) {
+        if( backoffUntil && Instant.now().isBefore(backoffUntil) ) {
             meterRefresh('backoff')
             log.debug "Container request '${entry.requestId}' - endpoint ${endpoint} is backing off until ${backoffUntil}; renewing without lookup"
             renew(entry, request, now, maxExpire)
@@ -318,9 +356,16 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
             throw e
         }
         catch (Throwable t) {
+            if( isDefiniteRejection(t) ) {
+                // Platform answered: the workflow is gone or the credentials no longer grant access.
+                // That is not a connectivity problem, so revoke fail-closed.
+                meterRefresh('unresolved')
+                log.info "Container request '${entry.requestId}' - workflow ${entry.workflowId} lookup rejected by Platform (${rootCauseMessage(t)}); stop tracking"
+                return
+            }
             meterRefresh('error')
             if( endpoint && t instanceof TimeoutException )
-                unreachableEndpoints.put(endpoint, now.plus(config.watcherEndpointBackoff))
+                unreachableEndpoints.put(endpoint, Instant.now().plus(config.watcherEndpointBackoff))
             if( isConnectivityError(t) )
                 log.warn "Container request watcher could not confirm workflow status - request=${entry.requestId}; workflow=${entry.workflowId}; endpoint=${endpoint}; cause=${rootCauseMessage(t)}; renewing anyway"
             else
@@ -351,6 +396,7 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
         if( newTtl.isNegative() || newTtl.isZero() ) {
             // Defensive: a non-positive TTL must never reach the store, which could treat it as
             // "no expiry" and leave the token alive indefinitely.
+            meterRefresh('expired')
             log.warn "Container request '${entry.requestId}' computed TTL is not positive: ${newTtl}; stop tracking"
             return
         }
@@ -365,13 +411,27 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
 
     protected Workflow lookupWorkflow(ContainerRequest request) {
         // Bound the Platform lookup so one hanging endpoint cannot hold a check for minutes.
-        // Cancelling interrupts the virtual thread blocked on the Tower client.
-        final Future<Workflow> future = watcherExecutor.submit({ describeWorkflow(request) } as Callable<Workflow>)
+        // Concurrent checks of the same workflow share one in-flight lookup, so the many tokens of a
+        // run cost a single Platform call. Cancelling interrupts the virtual thread blocked on the
+        // Tower client.
+        final identity = request.identity
+        final key = "${identity.towerEndpoint}|${identity.workspaceId}|${identity.workflowId}|${JwtAuth.of(identity).key}".toString()
+        final Future<Workflow> future = inflightLookups.computeIfAbsent(key, (String k) -> {
+            final FutureTask<Workflow>[] self = new FutureTask[1]
+            self[0] = new FutureTask<Workflow>({
+                try { return describeWorkflow(request) }
+                finally { inflightLookups.remove(k, self[0]) }
+            } as Callable<Workflow>)
+            watcherExecutor.execute(self[0])
+            return (Future<Workflow>) self[0]
+        })
         try {
             return future.get(config.watcherLookupTimeout.toMillis(), TimeUnit.MILLISECONDS)
         }
-        catch (TimeoutException e) {
+        catch (TimeoutException | CancellationException e) {
+            // a timed-out lookup is cancelled for every waiter
             future.cancel(true)
+            inflightLookups.remove(key, future)
             throw new TimeoutException("Workflow lookup timed out after ${config.watcherLookupTimeout}")
         }
         catch (InterruptedException e) {
