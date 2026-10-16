@@ -108,12 +108,11 @@ class BuildLogsServiceTest extends Specification implements AwsS3TestContainer {
         def result = service.extractCondaLockFile(logs)
 
         then:
-        result == """
-             # This file may be used to create an environment using:
-             # \$ conda create --name <env> --file <this file>
-             # platform: linux-aarch64
-             @EXPLICIT
-             """.stripIndent()
+        result == """# This file may be used to create an environment using:
+# \$ conda create --name <env> --file <this file>
+# platform: linux-aarch64
+@EXPLICIT
+"""
     }
 
     def 'should extract conda lockfile from s3' (){
@@ -155,12 +154,11 @@ class BuildLogsServiceTest extends Specification implements AwsS3TestContainer {
         service.storeCondaLock(buildID, logs)
 
         then:
-        service.fetchCondaLockString(buildID) == """
-             # This file may be used to create an environment using:
-             # \$ conda create --name <env> --file <this file>
-             # platform: linux-aarch64
-             @EXPLICIT
-             """.stripIndent()
+        service.fetchCondaLockString(buildID) == """# This file may be used to create an environment using:
+# \$ conda create --name <env> --file <this file>
+# platform: linux-aarch64
+@EXPLICIT
+"""
     }
 
     def 'should throw no exception when there is no conda lockfile in logs' (){
