@@ -29,6 +29,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Requires
 import io.micronaut.scheduling.TaskExecutors
+import io.seqera.data.workqueue.MessageConsumer.Decision
 import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.configuration.JobManagerConfig
 import io.seqera.wave.configuration.WaveLite
@@ -75,8 +76,10 @@ class JobManager {
                 .expireAfterWrite(config.graceInterval.multipliedBy(2))
                 .executor(ioExecutor)
                 .build()
-        pendingQueue.addConsumer((job)-> launchJob(job))
-        processingQueue.addConsumer((job)-> processJob(job))
+        // a `false` outcome settles the message as RETRY, leaving it queued for
+        // redelivery once the lease expires; `true` acknowledges and removes it
+        pendingQueue.addConsumer((job, lease)-> launchJob(job) ? Decision.ACK : Decision.RETRY)
+        processingQueue.addConsumer((job, lease)-> processJob(job) ? Decision.ACK : Decision.RETRY)
     }
 
     @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:500}')
