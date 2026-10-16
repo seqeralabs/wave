@@ -1,5 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "commitMessageSuffix": "[NOTASK]",
   "enabledManagers": [
     "gradle",
     "gradle-wrapper",
@@ -47,7 +48,7 @@
     },
     {
       "customType": "regex",
-      "description": "Micronaut platform version pinned in gradle.properties",
+      "description": "Micronaut platform version in gradle.properties, read by the Micronaut Gradle plugin and so invisible to the gradle manager",
       "managerFilePatterns": [
         "/^gradle\\.properties$/"
       ],
@@ -56,13 +57,36 @@
       ],
       "depNameTemplate": "io.micronaut.platform:micronaut-platform",
       "datasourceTemplate": "maven"
+    },
+    {
+      "customType": "regex",
+      "description": "Go image used by the condasplit `make test` target, kept in step with condasplit/Dockerfile",
+      "managerFilePatterns": [
+        "/^condasplit/Makefile$/"
+      ],
+      "matchStrings": [
+        "golang:(?<currentValue>\\d+\\.\\d+(?:\\.\\d+)?)"
+      ],
+      "depNameTemplate": "golang",
+      "datasourceTemplate": "docker"
     }
   ],
   "packageRules": [
     {
+      "description": "Majors usually need a migration: wait for approval on the Dependency Dashboard",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Wave server libraries and Gradle wrapper. wave-cli is released on its own, so it gets its own PRs",
       "matchManagers": [
         "gradle",
         "gradle-wrapper"
+      ],
+      "matchFileNames": [
+        "!wave-cli/**"
       ],
       "matchUpdateTypes": [
         "minor",
@@ -71,14 +95,47 @@
       "groupName": "gradle minor and patch"
     },
     {
+      "description": "wave-cli libraries and Gradle wrapper, kept apart from the server ones so a PR never touches both builds",
       "matchManagers": [
-        "gomod"
+        "gradle",
+        "gradle-wrapper"
+      ],
+      "matchFileNames": [
+        "wave-cli/**"
       ],
       "matchUpdateTypes": [
         "minor",
         "patch"
       ],
-      "groupName": "go minor and patch"
+      "groupName": "wave-cli gradle minor and patch"
+    },
+    {
+      "description": "Micronaut platform BOM and the Micronaut Gradle plugin move together",
+      "matchDepNames": [
+        "io.micronaut.platform:micronaut-platform",
+        "io.micronaut.minimal.application"
+      ],
+      "groupName": "micronaut"
+    },
+    {
+      "description": "Spock artifacts carry the Groovy line in the version: stay on the Groovy 4 build",
+      "matchManagers": [
+        "gradle"
+      ],
+      "matchPackageNames": [
+        "org.spockframework:*"
+      ],
+      "allowedVersions": "/-groovy-4\\.0$/"
+    },
+    {
+      "description": "Guava publishes -jre and -android flavours of each release: stay on -jre",
+      "matchManagers": [
+        "gradle"
+      ],
+      "matchPackageNames": [
+        "com.google.guava:guava"
+      ],
+      "allowedVersions": "/-jre$/"
     },
     {
       "matchManagers": [
@@ -89,6 +146,16 @@
         "patch"
       ],
       "groupName": "npm minor and patch"
+    },
+    {
+      "description": "TypeSpec packages are released in lockstep: one PR, or the spec build breaks on a version skew",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchPackageNames": [
+        "@typespec/*"
+      ],
+      "groupName": "typespec"
     },
     {
       "matchManagers": [
@@ -126,6 +193,42 @@
       "groupName": "github actions"
     },
     {
+      "description": "Any change to condasplit sources needs a condasplit/VERSION bump, or its CI check fails: one PR for all of them, so it's bumped once",
+      "matchFileNames": [
+        "condasplit/**"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "digest"
+      ],
+      "groupName": "condasplit",
+      "prBodyNotes": [
+        "Bump `condasplit/VERSION` in this PR, otherwise the `check-version` job fails."
+      ]
+    },
+    {
+      "description": "The go directive is the minimum Go version for the module, bumped by hand",
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchDepNames": [
+        "go"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Strip the variant suffix (e.g. -al2023-jemalloc) so nf-jdk tags parse as versions instead of getting digest-only updates",
+      "matchPackageNames": [
+        "cr.seqera.io/public/nf-jdk"
+      ],
+      "versionCompatibility": "^corretto-(?<version>\\d+\\.\\d+\\.\\d+)-(?<compatibility>.+)$",
+      "groupName": "jib base image",
+      "pinDigests": true
+    },
+    {
+      "description": "Local dev stack: stay on the Postgres and Redis majors used in production",
       "matchManagers": [
         "docker-compose"
       ],
@@ -139,36 +242,7 @@
       "enabled": false
     },
     {
-      "matchPackageNames": [
-        "cr.seqera.io/public/nf-jdk"
-      ],
-      "versionCompatibility": "^corretto-(?<version>\\d+\\.\\d+\\.\\d+)-(?<compatibility>.+)$",
-      "groupName": "jib base image",
-      "pinDigests": true
-    },
-    {
-      "matchManagers": [
-        "github-actions"
-      ],
-      "matchDepNames": [
-        "node",
-        "java-jdk"
-      ],
-      "matchUpdateTypes": [
-        "major"
-      ],
-      "enabled": false
-    },
-    {
-      "matchManagers": [
-        "gomod"
-      ],
-      "matchDepNames": [
-        "go"
-      ],
-      "enabled": false
-    },
-    {
+      "description": "Placeholder in lite/docker-compose.yml, not a real image",
       "matchManagers": [
         "docker-compose"
       ],
