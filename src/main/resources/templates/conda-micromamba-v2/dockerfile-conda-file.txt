@@ -9,8 +9,9 @@ RUN micromamba install -y -n base conda-forge::which \
     || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \
         && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /tmp/conda.yml)) \
     {{base_packages}}
+    && micromamba install -y -n base conda-forge::conda-lock \
+    && micromamba run -n base conda-lock --file /tmp/conda.yml --platform linux-64 --lockfile environment.lock \
     && micromamba clean -a -y \
-    && micromamba env export --name base --explicit > environment.lock \
     && echo ">> CONDA_LOCK_START" \
     && cat environment.lock \
     && echo "<< CONDA_LOCK_END"
