@@ -365,6 +365,18 @@ class MultiPlatformBuildServiceTest extends Specification {
                 gzipSize: 200,
                 tarDigest: 'sha256:ddd'
         )
+        def amd64SnapLayer = new ContainerLayer(
+                location: 'https://fusionfs.seqera.io/fusion-snapshot/releases/1/9/0/fusion-snapshot-amd64.tgz',
+                gzipDigest: 'sha256:ggg',
+                gzipSize: 300,
+                tarDigest: 'sha256:hhh'
+        )
+        def arm64SnapLayer = new ContainerLayer(
+                location: 'https://fusionfs.seqera.io/fusion-snapshot/releases/1/9/0/fusion-snapshot-arm64.tgz',
+                gzipDigest: 'sha256:iii',
+                gzipSize: 400,
+                tarDigest: 'sha256:jjj'
+        )
         def dataLayer = new ContainerLayer(
                 location: 'data:H4sIAAAAAAAA/+2STQ6C',
                 gzipDigest: 'sha256:eee',
@@ -376,24 +388,20 @@ class MultiPlatformBuildServiceTest extends Specification {
                 null,
                 ['FUSION_CONFIG_PROFILE=nextflow'] as List<String>,
                 null,
-                [dataLayer, amd64Layer, arm64Layer]
+                [dataLayer, amd64Layer, amd64SnapLayer, arm64Layer, arm64SnapLayer]
         )
 
         when: 'filtering for amd64'
         def amd64Config = MultiPlatformBuildService.filterLayersForPlatform(config, ContainerPlatform.of('linux/amd64'))
         then:
-        amd64Config.layers.size() == 2
-        amd64Config.layers[0].location == dataLayer.location
-        amd64Config.layers[1].location == amd64Layer.location
+        amd64Config.layers*.location == [dataLayer, amd64Layer, amd64SnapLayer]*.location
         amd64Config.entrypoint == ['/usr/bin/fusion']
         amd64Config.env == ['FUSION_CONFIG_PROFILE=nextflow']
 
         when: 'filtering for arm64'
         def arm64Config = MultiPlatformBuildService.filterLayersForPlatform(config, ContainerPlatform.of('linux/arm64'))
         then:
-        arm64Config.layers.size() == 2
-        arm64Config.layers[0].location == dataLayer.location
-        arm64Config.layers[1].location == arm64Layer.location
+        arm64Config.layers*.location == [dataLayer, arm64Layer, arm64SnapLayer]*.location
     }
 
     def 'should return config as-is when no fusion layers'() {
