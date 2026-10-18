@@ -15,20 +15,29 @@ build:
 			--tag ${image} \
 			.
 
-# build and push the image when the tag is missing, skip it when the tag has the same sources,
-# fail otherwise: tags are immutable, so changed sources need a new VERSION
-release:
+# fail when the VERSION tag is published with different sources: tags are immutable, so changed
+# sources need a new VERSION. Run by the pull requests, so that a missing bump fails before the release
+check:
 	@found=$$(docker buildx imagetools inspect ${image} --format '{{ index (index .Image "linux/amd64").Config.Labels "${label}" }}' 2>&1) || { \
 		case "$$found" in \
-			*": not found"*) exec $(MAKE) build ;; \
+			*": not found"*) echo "${image} is not published yet"; exit 0 ;; \
 			*) echo "$$found" >&2; exit 1 ;; \
 		esac; \
 	}; \
 	if [ "$$found" = "${source}" ]; then \
-		echo "${image} already exists with the same sources, skipping the build"; \
+		echo "${image} already exists with the same sources"; \
 	else \
 		echo "${image} already exists with different sources (${label}: '$$found', expected: '${source}'), bump VERSION to publish them" >&2; \
 		exit 1; \
+	fi
+
+# build and push the image when the tag is missing, skip it when the tag has the same sources,
+# fail otherwise, see `check`
+release: check
+	@if docker buildx imagetools inspect ${image} >/dev/null 2>&1; then \
+		echo "skipping the build of ${image}"; \
+	else \
+		$(MAKE) build; \
 	fi
 
 # run the unit tests as root, so that the owner tests are not skipped
@@ -42,4 +51,4 @@ load:
 			--tag condasplit:dev \
 			.
 
-.PHONY: all build release test load
+.PHONY: all build check release test load

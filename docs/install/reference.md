@@ -62,6 +62,12 @@ Configure general Wave application settings.
 `wave.tokens.watcher.count` *(optional)*
 : Maximum number of container requests processed in a single watcher cycle (default: `250`).
 
+`wave.tokens.watcher.concurrency` *(optional)*
+: Maximum number of container requests checked concurrently in a watcher cycle (default: `8`).
+
+`wave.tokens.watcher.lookup-timeout` *(optional)*
+: Maximum time the watcher waits for a Platform workflow lookup. If the lookup fails or times out, the token is renewed anyway, up to `cache.max-duration` (default: `5s`).
+
 ## Feature toggles
 
 Each Wave feature is an independent toggle. Wave Lite runs with all four off, which is what the `lite` Micronaut environment applies.
@@ -273,7 +279,7 @@ JAVA_TOOL_OPTIONS="-Djdk.http.auth.tunneling.disabledSchemes="
 Configure how Wave builds container images and manages build logs.
 
 `wave.build.buildkit-image` *(optional)*
-: [Buildkit](https://github.com/moby/buildkit) container image used in the Wave build process (default: `public.cr.seqera.io/wave/buildkit:v0.25.2-rootless`).
+: [Buildkit](https://github.com/moby/buildkit) container image used in the Wave build process (default: `public.cr.seqera.io/wave/buildkit:v0.33.1-rootless`).
 
 `wave.build.cache` *(optional)*
 : Cache repository for images built by Wave. Supports both container registry paths and S3 bucket paths.

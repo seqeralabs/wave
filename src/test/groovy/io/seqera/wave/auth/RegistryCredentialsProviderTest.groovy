@@ -26,6 +26,7 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.service.ContainerRegistryKeys
+import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.CredentialsService
 import io.seqera.wave.service.aws.AwsEcrService
 import io.seqera.wave.tower.PlatformId
@@ -101,7 +102,7 @@ class RegistryCredentialsProviderTest extends Specification {
 
     def 'should get credentials from user' () {
         given:
-        def REGISTRY = 'foo'
+        def REGISTRY = 'foo.io'
         def USER_ID = 100
         def WORKSPACE_ID = 200
         def TOWER_TOKEN = "token"
@@ -113,10 +114,12 @@ class RegistryCredentialsProviderTest extends Specification {
         def provider = Spy(new RegistryCredentialsProviderImpl(credentialsFactory: credentialsFactory, credentialsService: credentialService))
         and:
         def identity = new PlatformId(new User(id:USER_ID), WORKSPACE_ID, TOWER_TOKEN, TOWER_ENDPOINT)
+        and:
+        def container = ContainerCoordinates.parse("$REGISTRY/org/image:latest")
         when:
-        def result = provider.getUserCredentials0(REGISTRY, identity)
+        def result = provider.getUserCredentials0(container, identity)
         then:
-        1 * credentialService.findRegistryCreds(REGISTRY, identity) >> new ContainerRegistryKeys(userName:'usr1',password:'pwd2',registry:REGISTRY)
+        1 * credentialService.findRegistryCreds("$REGISTRY/org/image", identity) >> new ContainerRegistryKeys(userName:'usr1',password:'pwd2',registry:REGISTRY)
         and:
         result.getUsername() == 'usr1'
         result.getPassword() == 'pwd2'
