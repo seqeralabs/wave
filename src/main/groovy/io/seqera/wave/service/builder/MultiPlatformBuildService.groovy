@@ -257,7 +257,8 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
         }
     }
 
-    static final private Pattern FUSION_LAYER_ARCH = Pattern.compile('.*/fusion-(\\w+)\\.tar\\.gz$')
+    // matches both the fusion layer (fusion-amd64.tar.gz) and the snapshot layer (fusion-snapshot-amd64.tgz)
+    static final private Pattern FUSION_LAYER_ARCH = Pattern.compile('.*/fusion(?:-[\\w-]+)?-(amd64|arm64)\\.(?:tar\\.gz|tgz)$')
 
     /**
      * Filter container config layers to only include fusion layers matching the target platform arch.
