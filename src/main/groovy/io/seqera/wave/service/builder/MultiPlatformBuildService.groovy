@@ -46,6 +46,7 @@ import jakarta.inject.Named
 import jakarta.inject.Singleton
 import static io.seqera.wave.util.ContainerHelper.makeContainerId
 import static io.seqera.wave.util.ContainerHelper.makeTargetImage
+import static io.seqera.wave.util.RegHelper.layerDir
 /**
  * Orchestrates multi-platform container builds by fanning out
  * two single-platform builds (linux/amd64 + linux/arm64) and
@@ -279,11 +280,32 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
         return new ContainerConfig(config.entrypoint, config.cmd, config.env, config.workingDir, filtered)
     }
 
+    /**
+     * Remove from a frozen container file the lines adding the layers dropped by {@link #filterLayersForPlatform}.
+     * Freeze mode adds every layer to the container file before the multi-platform split, while only the
+     * platform's layers are copied into the build context.
+     */
+    static String removeDroppedLayers(String containerFile, ContainerConfig config, ContainerConfig filtered) {
+        if( !containerFile || !config?.layers )
+            return containerFile
+        final dropped = (config.layers - filtered.layers)
+                .findAll { ContainerLayer it -> it.gzipDigest }
+                .collect { ContainerLayer it -> layerDir(it) }
+        if( !dropped )
+            return containerFile
+        final result = containerFile
+                .readLines()
+                .findAll { String line -> !dropped.any { String it -> line.contains(it) } }
+                .join('\n')
+        return containerFile.endsWith('\n') ? result + '\n' : result
+    }
+
     protected BuildRequest createPlatformRequest(BuildRequest template, ContainerPlatform platform, String suffix) {
         final repo = ContainerCoordinates.parse(template.targetImage).repository
         final containerConfig = filterLayersForPlatform(template.containerConfig, platform)
+        final containerFile = removeDroppedLayers(template.containerFile, template.containerConfig, containerConfig)
         final platformId = makeContainerId(
-                template.containerFile,
+                containerFile,
                 template.condaFile,
                 platform,
                 repo,
@@ -294,7 +316,7 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
 
         return new BuildRequest(
                 platformId,
-                template.containerFile,
+                containerFile,
                 template.condaFile,
                 template.workspace,
                 platformImage,
