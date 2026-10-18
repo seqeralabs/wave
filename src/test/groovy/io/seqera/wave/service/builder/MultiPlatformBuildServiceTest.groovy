@@ -404,6 +404,83 @@ class MultiPlatformBuildServiceTest extends Specification {
         arm64Config.layers*.location == [dataLayer, arm64Layer, arm64SnapLayer]*.location
     }
 
+    def 'should remove the other platform layers from a frozen container file'() {
+        given:
+        def amd64Layer = new ContainerLayer(location: 'https://fusionfs.seqera.io/releases/pkg/2/6/10/fusion-amd64.tar.gz', gzipDigest: 'sha256:aaa')
+        def arm64Layer = new ContainerLayer(location: 'https://fusionfs.seqera.io/releases/pkg/2/6/10/fusion-arm64.tar.gz', gzipDigest: 'sha256:bbb')
+        def amd64SnapLayer = new ContainerLayer(location: 'https://fusionfs.seqera.io/fusion-snapshot/releases/1/9/0/fusion-snapshot-amd64.tgz', gzipDigest: 'sha256:ccc')
+        def arm64SnapLayer = new ContainerLayer(location: 'https://fusionfs.seqera.io/fusion-snapshot/releases/1/9/0/fusion-snapshot-arm64.tgz', gzipDigest: 'sha256:ddd')
+        def config = new ContainerConfig(['/usr/bin/fusion'], null, null, null, [amd64Layer, amd64SnapLayer, arm64Layer, arm64SnapLayer])
+        def amd64Config = MultiPlatformBuildService.filterLayersForPlatform(config, ContainerPlatform.of('linux/amd64'))
+        def arm64Config = MultiPlatformBuildService.filterLayersForPlatform(config, ContainerPlatform.of('linux/arm64'))
+
+        when: 'docker format'
+        def dockerFile = 'FROM ubuntu:latest\n' + FreezeServiceImpl.appendDockerConfig0(config)
+        then:
+        MultiPlatformBuildService.removeDroppedLayers(dockerFile, config, amd64Config) == """\
+            FROM ubuntu:latest
+            ADD layer-aaa.tar.gz /
+            ADD layer-ccc.tar.gz /
+            ENTRYPOINT ["/usr/bin/fusion"]
+            """.stripIndent()
+        MultiPlatformBuildService.removeDroppedLayers(dockerFile, config, arm64Config) == """\
+            FROM ubuntu:latest
+            ADD layer-bbb.tar.gz /
+            ADD layer-ddd.tar.gz /
+            ENTRYPOINT ["/usr/bin/fusion"]
+            """.stripIndent()
+
+        when: 'singularity format'
+        def singularityFile = 'BootStrap: docker\nFrom: ubuntu:latest\n' + FreezeServiceImpl.appendSingularityConfig0(config)
+        def amd64File = MultiPlatformBuildService.removeDroppedLayers(singularityFile, config, amd64Config)
+        then:
+        amd64File.contains('{{wave_context_dir}}/layer-aaa/* /')
+        amd64File.contains('{{wave_context_dir}}/layer-ccc/* /')
+        !amd64File.contains('layer-bbb')
+        !amd64File.contains('layer-ddd')
+
+        and: 'container file unchanged when no layer is dropped'
+        MultiPlatformBuildService.removeDroppedLayers('FROM ubuntu:latest\n', config, config) == 'FROM ubuntu:latest\n'
+        MultiPlatformBuildService.removeDroppedLayers('FROM ubuntu:latest', null, null) == 'FROM ubuntu:latest'
+
+        and: 'line terminators are preserved'
+        MultiPlatformBuildService.removeDroppedLayers('FROM ubuntu:latest\r\nADD layer-aaa.tar.gz /\r\nADD layer-bbb.tar.gz /\r\n', config, amd64Config) == 'FROM ubuntu:latest\r\nADD layer-aaa.tar.gz /\r\n'
+        MultiPlatformBuildService.removeDroppedLayers('FROM ubuntu:latest\nADD layer-bbb.tar.gz /', config, amd64Config) == 'FROM ubuntu:latest\n'
+    }
+
+    def 'should create platform requests with only the platform layers in a frozen container file'() {
+        given:
+        def service = new MultiPlatformBuildService()
+        def amd64Layer = new ContainerLayer(location: 'https://fusionfs.seqera.io/releases/pkg/2/6/10/fusion-amd64.tar.gz', gzipDigest: 'sha256:aaa')
+        def arm64Layer = new ContainerLayer(location: 'https://fusionfs.seqera.io/releases/pkg/2/6/10/fusion-arm64.tar.gz', gzipDigest: 'sha256:bbb')
+        def config = new ContainerConfig(['/usr/bin/fusion'], null, null, null, [amd64Layer, arm64Layer])
+        def template = BuildRequest.of(
+                containerId: 'abc123',
+                containerFile: 'FROM ubuntu:latest\n' + FreezeServiceImpl.appendDockerConfig0(config),
+                workspace: Path.of('/tmp'),
+                targetImage: 'docker.io/wave:abc123',
+                identity: TEST_IDENTITY,
+                platform: ContainerPlatform.MULTI_PLATFORM,
+                containerConfig: config,
+                ip: '10.0.0.1',
+                configJson: '{}',
+                offsetId: '+0',
+                format: BuildFormat.DOCKER,
+                maxDuration: Duration.ofMinutes(5)
+        )
+
+        when:
+        def amd64Req = service.createPlatformRequest(template, MultiPlatformBuildService.PLATFORM_AMD64, '-linux-amd64')
+        def arm64Req = service.createPlatformRequest(template, MultiPlatformBuildService.PLATFORM_ARM64, '-linux-arm64')
+
+        then:
+        amd64Req.containerConfig.layers == [amd64Layer]
+        amd64Req.containerFile == 'FROM ubuntu:latest\nADD layer-aaa.tar.gz /\nENTRYPOINT ["/usr/bin/fusion"]\n'
+        and:
+        arm64Req.containerConfig.layers == [arm64Layer]
+        arm64Req.containerFile == 'FROM ubuntu:latest\nADD layer-bbb.tar.gz /\nENTRYPOINT ["/usr/bin/fusion"]\n'
+    }
+
     def 'should return config as-is when no fusion layers'() {
         given:
         def dataLayer = new ContainerLayer(location: 'data:H4sIAAAAAAAA/+2STQ6C')
