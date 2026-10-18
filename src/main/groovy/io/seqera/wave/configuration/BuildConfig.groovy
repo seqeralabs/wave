@@ -28,7 +28,6 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.util.BucketTokenizer
-import io.seqera.wave.util.BuildInfo
 import jakarta.inject.Singleton
 /**
  * Model Wave build config settings
@@ -52,16 +51,10 @@ class BuildConfig {
 
     /**
      * The image providing the {@code condasplit} tool used by the {@code conda/micromamba:v2-fast}
-     * and {@code conda/pixi:v1-fast} build templates to split the Conda environment into multiple image layers.
-     * Defaults to the image of the {@code condasplit/VERSION} tag, published by the Wave release
+     * and {@code conda/pixi:v1-fast} build templates to split the Conda environment into multiple image layers
      */
-    @Nullable
-    @Value('${wave.build.condasplit-image}')
+    @Value('${wave.build.condasplit-image:`public.cr.seqera.io/wave/condasplit:v2`}')
     String condasplitImage
-
-    String getCondasplitImage() {
-        return condasplitImage ?: BuildInfo.condasplitImage
-    }
 
     @Value('${wave.build.repo}')
      String defaultBuildRepository
@@ -178,7 +171,7 @@ class BuildConfig {
         log.info("Builder config: " +
                 "buildkit-image=${buildkitImage}; " +
                 "singularity-image=${singularityImage}; " +
-                "condasplit-image=${getCondasplitImage()}; " +
+                "condasplit-image=${condasplitImage}; " +
                 "default-build-repository=${defaultBuildRepository}; " +
                 "default-cache-repository=${defaultCacheRepository}; " +
                 "cache-bucket-region=${cacheBucketRegion}; " +

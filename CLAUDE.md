@@ -77,7 +77,7 @@ by `.github/workflows/build-wave-cli.yml`. See `wave-cli/CLAUDE.md`.
 
 ## Release Process
 
-Wave (server) and Wave CLI are versioned and released independently. Both use a `[release]` commit pushed to
+Wave (server) and Wave CLI are versioned and released independently, the condasplit image is released with Wave. Both use a `[release]` commit pushed to
 master: which one is released depends only on the files the commit touches. A release commit must never mix
 the two, otherwise both releases are triggered.
 
@@ -87,7 +87,19 @@ the two, otherwise both releases are triggered.
 2. Update the root `changelog.txt` file with changes against previous release (tag `v<VERSION>`)
 3. Commit `VERSION` and `changelog.txt` adding the tag `[release]` in the commit comment first line.
    The commit must not touch any file in `wave-cli/`.
-4. Git push to upstream master branch. The `build.yml` workflow publishes the image and the `v<VERSION>` release.
+4. Git push to upstream master branch. The `build.yml` workflow publishes the condasplit image (when its tag is
+   missing), then the Wave image and the `v<VERSION>` release. A failed condasplit build stops the release.
+
+### Condasplit
+
+The `condasplit/` image has its own immutable tag, set in `condasplit/VERSION`, and no release commit of its own.
+
+1. In the pull request that changes `condasplit/`, bump `condasplit/VERSION` (e.g. `v2` -> `v3`) and set the
+   `wave.build.condasplit-image` default to `public.cr.seqera.io/wave/condasplit:<VERSION>` in
+   `src/main/resources/application.yml` and in the `@Value` fallback of `BuildConfig`. The `check-version` job of
+   `build-condasplit.yml` fails when the sources change without a bump or the default doesn't match the tag.
+2. The next Wave release publishes the tag, see step 4 of the Wave release. Until then, builds from master
+   default to an unpublished tag: the conda `-fast` builds fail on them.
 
 ### Wave CLI
 

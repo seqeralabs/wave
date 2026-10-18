@@ -145,8 +145,8 @@ jobs:
         run: echo "tag=v$(cat VERSION)" >> "$GITHUB_OUTPUT"
 
       # --- condasplit image: [release] on master/release-* only, before anything is published ---
-      # Wave defaults to the condasplit/VERSION tag (see `buildInfo` in build.gradle), so the tag must
-      # be published before the Wave release: a failure here stops it. `make release` skips the build
+      # Wave defaults to the condasplit/VERSION tag (`wave.build.condasplit-image` in application.yml), so
+      # the tag must be published before the Wave release: a failure here stops it. `make release` skips the build
       # when the tag is already published with the same sources.
       - name: Docker Login to Seqera public CR
         if: "steps.detect-release.outputs.is_publish == 'true'"

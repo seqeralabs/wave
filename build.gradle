@@ -222,14 +222,11 @@ test {
 
 /** Update version number for backend app and modules */
 task buildInfo { doLast {
-    // the condasplit image published by the Wave release, see `make -C condasplit release` in build.yml
-    def condasplitImage = "public.cr.seqera.io/wave/condasplit:${file('condasplit/VERSION').text.trim()}"
     def info = """\
                 name=${project.name}
                 group=${project.group}
                 version=${version}
                 commitId=${project.property('commitId')}
-                condasplitImage=${condasplitImage}
             """.stripIndent().toString()
     def f = file("${buildDir}/resources/main/META-INF/build-info.properties")
     f.parentFile.mkdirs()

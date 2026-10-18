@@ -6,6 +6,9 @@ on:
     paths:
       - 'condasplit/**'
       - '.github/workflows/build-condasplit.yml'
+      # the `wave.build.condasplit-image` default, see the check-version job
+      - 'src/main/resources/application.yml'
+      - 'src/main/groovy/io/seqera/wave/configuration/BuildConfig.groovy'
 
 permissions:
   contents: read
@@ -38,3 +41,15 @@ jobs:
 
       - name: Check the VERSION tag
         run: make -C condasplit check registry=public.cr.seqera.io/wave
+
+      # Wave defaults to the image published by the Wave release, so the default must name the VERSION tag
+      - name: Check the Wave default image
+        run: |
+          expected="public.cr.seqera.io/wave/condasplit:$(cat condasplit/VERSION)"
+          for f in src/main/resources/application.yml src/main/groovy/io/seqera/wave/configuration/BuildConfig.groovy; do
+            if ! grep -qF "$expected" "$f" || grep -o 'public\.cr\.seqera\.io/wave/condasplit:[^"`]*' "$f" | grep -vqxF "$expected"; then
+              echo "::error file=$f::the wave.build.condasplit-image default must be $expected, as condasplit/VERSION" >&2
+              exit 1
+            fi
+          done
+          echo "the Wave default image is $expected"

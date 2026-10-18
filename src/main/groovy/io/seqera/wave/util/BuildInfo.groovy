@@ -51,8 +51,6 @@ class BuildInfo {
 
     static String getName() { properties.getProperty('name') }
 
-    static String getCondasplitImage() { properties.getProperty('condasplitImage') }
-
     static String getFullVersion() {
         "${version}_${commitId}"
     }
