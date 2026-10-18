@@ -127,6 +127,31 @@ docker run --rm -v <prefix>:/opt/conda -v <out>:/layers --entrypoint /condasplit
     condasplit:dev --src /opt/conda --out /layers --slots 32 --exclude pkgs
 ```
 
+### Testing before the release
+
+The production image is published only by the next Wave release, so test a new version
+before it:
+
+1. **Pull request checks**, run on every pull request changing this directory:
+   - `build-condasplit.yml`: the unit tests, and `check-version`, which fails when the sources
+     change without a `VERSION` bump or the Wave default doesn't name the `VERSION` tag.
+   - `test-conda-layers.yml`: builds this image from the pull request into a local registry,
+     builds each `-fast` conda template next to the template it layers, and checks that both
+     images have the same conda environment, file by file. It covers `linux/amd64` and a fixed
+     environment only, without Wave.
+2. **Through Wave**, for riskier changes (layering logic, frontend), push the multi-arch image to
+   the stage registry:
+
+   ```bash
+   make all
+   # pushes public.cr.stage-seqera.io/wave/condasplit:<VERSION>
+   ```
+
+   Then set `wave.build.condasplit-image` to that image in a local Wave (`./run.sh`) or in the
+   dev deployment of a `[preview]` image, and submit a few layered conda builds (`-fast`
+   templates), on both architectures. The stage tag is overwritten by every `make all`, and the
+   container ids differ from the production ones, since the image name is part of the container file.
+
 ## Release
 
 The image is multi-arch (`linux/amd64`, `linux/arm64`). The Dockerfile runs the unit tests
