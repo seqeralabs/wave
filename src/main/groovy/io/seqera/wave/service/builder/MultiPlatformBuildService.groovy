@@ -293,11 +293,11 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
                 .collect { ContainerLayer it -> layerDir(it) }
         if( !dropped )
             return containerFile
-        final result = containerFile
-                .readLines()
+        // split after each newline to keep the original line terminators
+        return containerFile
+                .split(/(?<=\n)/)
                 .findAll { String line -> !dropped.any { String it -> line.contains(it) } }
-                .join('\n')
-        return containerFile.endsWith('\n') ? result + '\n' : result
+                .join('')
     }
 
     protected BuildRequest createPlatformRequest(BuildRequest template, ContainerPlatform platform, String suffix) {
