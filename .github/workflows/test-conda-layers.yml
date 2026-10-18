@@ -21,7 +21,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:
-      # throwaway registry for the condasplit image built from this tree
+      # throwaway registry for the condasplit image built from this tree: the `-fast` builds need it
+      # and BuildKit pulls it from a registry only, not from the local docker images. So the tests use
+      # the condasplit sources of the pull request and nothing is published, the registry is gone with the job
       registry:
         image: registry:2
         ports:
