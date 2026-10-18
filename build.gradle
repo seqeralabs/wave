@@ -1,6 +1,13 @@
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
+buildscript {
+    dependencies {
+        // jib pulls a vulnerable jackson on the plugins classpath, see the jackson-bom of the dependencies
+        classpath platform('com.fasterxml.jackson:jackson-bom:2.22.3')
+    }
+}
+
 plugins {
     id 'io.seqera.wave.java-library-conventions'
     id 'io.seqera.wave.groovy-application-conventions'
