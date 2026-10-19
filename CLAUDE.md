@@ -101,6 +101,11 @@ The `condasplit/` image has its own immutable tag, set in `condasplit/VERSION`, 
 2. The next Wave release publishes the tag, see step 4 of the Wave release. Until then, builds from master
    default to an unpublished tag: the conda `-fast` builds fail on them.
 
+### Helm chart
+
+After a Wave (server) release is published, open a PR to `seqeralabs/helm-charts` bumping the
+Wave subchart, following `misc/release-helm-chart.md`.
+
 ### Wave CLI
 
 1. Update the `wave-cli/VERSION` file with a semantic version
