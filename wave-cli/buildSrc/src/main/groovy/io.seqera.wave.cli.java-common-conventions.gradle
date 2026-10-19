@@ -32,18 +32,18 @@ repositories {
 dependencies {
     constraints {
         // Define dependency versions as constraints
-        implementation 'org.apache.commons:commons-text:1.9'
+        implementation 'org.apache.commons:commons-text:1.15.0'
     }
 
-    implementation "org.slf4j:slf4j-api:2.0.17"
-    implementation "org.slf4j:jcl-over-slf4j:2.0.17"
-    implementation "org.slf4j:jul-to-slf4j:2.0.17"
-    implementation "org.slf4j:log4j-over-slf4j:2.0.17"
-    implementation "ch.qos.logback:logback-classic:1.5.34"
-    implementation "ch.qos.logback:logback-core:1.5.34"
+    implementation "org.slf4j:slf4j-api:2.0.20"
+    implementation "org.slf4j:jcl-over-slf4j:2.0.20"
+    implementation "org.slf4j:jul-to-slf4j:2.0.20"
+    implementation "org.slf4j:log4j-over-slf4j:2.0.20"
+    implementation "ch.qos.logback:logback-classic:1.6.5"
+    implementation "ch.qos.logback:logback-core:1.6.5"
 
     // Use JUnit Jupiter for testing.
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.14.4'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 

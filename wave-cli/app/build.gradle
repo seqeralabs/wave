@@ -2,7 +2,7 @@ plugins {
     id 'groovy'
     id 'io.seqera.wave.cli.java-application-conventions'
     id 'org.graalvm.buildtools.native' version '0.11.5'
-    id 'com.gradleup.shadow' version '9.5.0'
+    id 'com.gradleup.shadow' version '9.6.1'
 }
 
 java {
@@ -27,25 +27,25 @@ repositories {
 }
 
 dependencies {
-    implementation 'io.seqera:wave-api:1.31.2'
-    implementation 'io.seqera:wave-utils:1.31.2'
-    implementation 'info.picocli:picocli:4.6.1'
+    implementation 'io.seqera:wave-api:1.40.2'
+    implementation 'io.seqera:wave-utils:1.40.2'
+    implementation 'info.picocli:picocli:4.7.7'
     implementation 'com.squareup.moshi:moshi:1.15.2'
     implementation 'com.squareup.moshi:moshi-adapters:1.15.2'
-    implementation 'dev.failsafe:failsafe:3.1.0'
-    implementation 'org.apache.commons:commons-lang3:3.19.0'
-    implementation 'org.yaml:snakeyaml:2.1'
-    implementation 'org.semver4j:semver4j:5.4.0'
-    annotationProcessor 'info.picocli:picocli-codegen:4.6.1'
+    implementation 'dev.failsafe:failsafe:3.3.2'
+    implementation 'org.apache.commons:commons-lang3:3.21.0'
+    implementation 'org.yaml:snakeyaml:2.7'
+    implementation 'org.semver4j:semver4j:5.8.0'
+    annotationProcessor 'info.picocli:picocli-codegen:4.7.7'
     // bump commons-io version to address security vulnerabilities
-    runtimeOnly 'commons-io:commons-io:2.18.0'
+    runtimeOnly 'commons-io:commons-io:2.22.0'
 
-    testImplementation "org.apache.groovy:groovy:4.0.31"
-    testImplementation "org.apache.groovy:groovy-nio:4.0.31"
-    testImplementation "org.apache.groovy:groovy-test:4.0.31"
-    testImplementation "org.apache.groovy:groovy-json:4.0.31"
-    testImplementation "net.bytebuddy:byte-buddy:1.14.11"
-    testImplementation ("org.spockframework:spock-core:2.4-groovy-4.0") { exclude group: 'org.apache.groovy' }
+    testImplementation "org.apache.groovy:groovy:4.0.33"
+    testImplementation "org.apache.groovy:groovy-nio:4.0.33"
+    testImplementation "org.apache.groovy:groovy-test:4.0.33"
+    testImplementation "org.apache.groovy:groovy-json:4.0.33"
+    testImplementation "net.bytebuddy:byte-buddy:1.18.15-jdk5"
+    testImplementation ("org.spockframework:spock-core:2.5-groovy-6.0") { exclude group: 'org.apache.groovy' }
 }
 
 test {
