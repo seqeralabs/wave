@@ -425,6 +425,9 @@ Configure Kubernetes-specific settings for Wave. Build and scan processes share 
 
   </div>
 
+`wave.build.k8s.read-timeout` *(optional)*
+: Maximum time to wait for data from the Kubernetes API server on an open connection before the request fails (default: `50s`).
+
 `wave.build.k8s.resources.requests.cpu` *(optional)*
 : [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to Wave build processes.
   For example, set to `2` (2 CPU cores) or `1500Mi` (1.5 CPU cores).
