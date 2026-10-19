@@ -1,4 +1,14 @@
 # Wave changelog
+1.41.0 - 18 Oct 2026
+- Match registry credentials by repository path (#1165) [937c765e0]
+- Keep only the platform's Fusion snapshot layer in multi-arch images (#1191) [841582c0e]
+- Drop the other platform's layers from frozen multi-arch container files (#1193) [4dc0e98e6]
+- Disable SSRF protection by default (#1192) [8dea8f578]
+- Fix stray leading blank line in extracted conda lock file (#1082) [cfd7a5629]
+- Publish condasplit with the Wave release and check its default matches VERSION (#1188) [731e30b97]
+- Bump condasplit to v2 and check the VERSION bump on pull requests (#1187) [7fd08af18]
+- Override the vulnerable jackson on the Gradle plugins classpath (#1194) [2929baf00]
+
 1.40.4 - 15 Oct 2026
 - Re-release of 1.40.3: the 1.40.3 image was not published to the legacy ECR
 
