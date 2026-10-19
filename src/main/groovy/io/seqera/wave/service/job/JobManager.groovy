@@ -21,6 +21,9 @@ package io.seqera.wave.service.job
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Future
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.atomic.AtomicInteger
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
@@ -29,7 +32,9 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Requires
 import io.micronaut.scheduling.TaskExecutors
+import io.seqera.data.workqueue.MessageConsumer
 import io.seqera.data.workqueue.MessageConsumer.Decision
+import io.seqera.data.workqueue.MessageLease
 import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.configuration.JobManagerConfig
 import io.seqera.wave.configuration.WaveLite
@@ -68,6 +73,12 @@ class JobManager {
 
     private Cache<String,Instant> debounceCache
 
+    /**
+     * Number of {@link #processJob(JobSpec)} tasks submitted to the {@link #ioExecutor}
+     * that have not completed yet
+     */
+    private final AtomicInteger processingInflight = new AtomicInteger()
+
     @PostConstruct
     void init() {
         log.info "Creating job manager - config=$config"
@@ -79,11 +90,81 @@ class JobManager {
         // a `false` outcome settles the message as RETRY, leaving it queued for
         // redelivery once the lease expires; `true` acknowledges and removes it
         pendingQueue.addConsumer((job, lease)-> launchJob(job) ? Decision.ACK : Decision.RETRY)
-        processingQueue.addConsumer((job, lease)-> processJob(job) ? Decision.ACK : Decision.RETRY)
+        // job status checks run in parallel on the IO executor, each task settling its own lease
+        processingQueue.addConsumer(new MessageConsumer<JobSpec>() {
+            @Override
+            Decision accept(JobSpec job, MessageLease lease) {
+                return dispatchProcessJob(job, lease)
+            }
+
+            @Override
+            boolean ready() {
+                return canProcessJob()
+            }
+        })
+    }
+
+    /**
+     * Admission gate of the processing queue: stop claiming jobs while `maxRunningJobs`
+     * status checks are in flight
+     */
+    protected boolean canProcessJob() {
+        // `maxRunningJobs` caps the running jobs across the whole cluster (see `launchJob0`), while
+        // this counter is local to this replica: since every in-flight check holds a processing
+        // queue entry, it can hardly reach the limit, so this gate is a safety net rather than a
+        // per-replica cap on concurrent k8s status calls
+        return processingInflight.get() < config.maxRunningJobs
+    }
+
+    /**
+     * Submit the processing of a job to the {@link #ioExecutor}. The submitted task owns
+     * the message lease from here on and settles it when {@link #processJob(JobSpec)} returns.
+     *
+     * @param job
+     *      A {@link JobSpec} object representing the job to be processed
+     * @param lease
+     *      The {@link MessageLease} of the queue entry holding the job
+     * @return
+     *      {@link Decision#DEFERRED} when the task has been submitted, or {@link Decision#RETRY}
+     *      when the executor rejected it, so the entry is redelivered once the lease expires
+     */
+    protected Decision dispatchProcessJob(JobSpec job, MessageLease lease) {
+        processingInflight.incrementAndGet()
+        try {
+            final Future<?> task = ioExecutor.submit(() -> runProcessJob(job, lease))
+            // the lease is renewed for as long as the task runs, so a slow status check
+            // is never redelivered to another consumer while it is still in progress
+            lease.bindLiveness(() -> !task.isDone())
+            return Decision.DEFERRED
+        }
+        catch (RejectedExecutionException e) {
+            processingInflight.decrementAndGet()
+            log.warn "Unable to submit processing of job=${job.operationName} - cause: ${e.message}"
+            return Decision.RETRY
+        }
+    }
+
+    protected void runProcessJob(JobSpec job, MessageLease lease) {
+        try {
+            if( processJob(job) )
+                lease.ack()
+            else
+                lease.retry()
+        }
+        catch (Throwable e) {
+            log.error "Unexpected error processing job=${job.operationName} - cause: ${e.message}", e
+            lease.retry()
+        }
+        finally {
+            processingInflight.decrementAndGet()
+        }
     }
 
     @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:500}')
     protected boolean launchJob0(JobSpec job) {
+        // the processing queue is shared by all replicas and holds one entry per running job, so
+        // `maxRunningJobs` is a cluster-wide limit, not a per-replica one. It is a soft limit: the
+        // length is read before launching, so replicas launching concurrently can overshoot it
         final processingQueueLen = processingQueue.length()
         final canLaunchNewJobs = processingQueueLen < config.maxRunningJobs
         if( canLaunchNewJobs ) {

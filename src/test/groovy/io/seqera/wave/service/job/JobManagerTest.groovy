@@ -18,12 +18,18 @@
 
 package io.seqera.wave.service.job
 
+import io.seqera.data.workqueue.MessageConsumer.Decision
+import io.seqera.data.workqueue.MessageLease
 import io.seqera.wave.configuration.JobManagerConfig
 import spock.lang.Specification
 
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.TimeUnit
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
@@ -174,5 +180,96 @@ class JobManagerTest extends Specification {
         result == FAILED
         cache.getIfPresent('1') == null
 
+    }
+
+    def 'should process job on the executor and ack the lease when completed'() {
+        given:
+        def jobService = Mock(JobService)
+        def jobDispatcher = Mock(JobDispatcher)
+        def executor = Executors.newSingleThreadExecutor()
+        def config = new JobManagerConfig(graceInterval: Duration.ofMillis(1), maxRunningJobs: 10)
+        def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config: config, debounceCache: Caffeine.newBuilder().build(), ioExecutor: executor)
+        def lease = Mock(MessageLease)
+        and:
+        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now(), Duration.ofMinutes(10))
+
+        when:
+        def result = manager.dispatchProcessJob(jobSpec, lease)
+        executor.shutdown()
+        executor.awaitTermination(5, TimeUnit.SECONDS)
+
+        then:
+        result == Decision.DEFERRED
+        1 * lease.bindLiveness(_)
+        1 * jobService.status(jobSpec) >> JobState.completed(0, 'My job logs')
+        1 * jobDispatcher.notifyJobCompletion(jobSpec, _)
+        1 * lease.ack()
+        0 * lease.retry()
+        and:
+        manager.canProcessJob()
+    }
+
+    def 'should process job on the executor and retry the lease when not completed'() {
+        given:
+        def jobService = Mock(JobService)
+        def executor = Executors.newSingleThreadExecutor()
+        def config = new JobManagerConfig(graceInterval: Duration.ofMillis(1), maxRunningJobs: 10)
+        def manager = new JobManager(jobService: jobService, dispatcher: Mock(JobDispatcher), config: config, debounceCache: Caffeine.newBuilder().build(), ioExecutor: executor)
+        def lease = Mock(MessageLease)
+        and:
+        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now(), Duration.ofMinutes(10))
+
+        when:
+        def result = manager.dispatchProcessJob(jobSpec, lease)
+        executor.shutdown()
+        executor.awaitTermination(5, TimeUnit.SECONDS)
+
+        then:
+        result == Decision.DEFERRED
+        1 * jobService.status(jobSpec) >> JobState.running()
+        1 * lease.retry()
+        0 * lease.ack()
+    }
+
+    def 'should retry the job when the executor rejects it'() {
+        given:
+        def executor = Mock(ExecutorService)
+        def config = new JobManagerConfig(maxRunningJobs: 1)
+        def manager = new JobManager(config: config, ioExecutor: executor)
+        def lease = Mock(MessageLease)
+        and:
+        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now(), Duration.ofMinutes(10))
+
+        when:
+        def result = manager.dispatchProcessJob(jobSpec, lease)
+
+        then:
+        1 * executor.submit(_) >> { throw new RejectedExecutionException('Rejected') }
+        result == Decision.RETRY
+        0 * lease._
+        and:
+        manager.canProcessJob()
+    }
+
+    def 'should stop claiming jobs when max running jobs are in flight'() {
+        given:
+        def executor = Mock(ExecutorService)
+        def config = new JobManagerConfig(maxRunningJobs: 2)
+        def manager = new JobManager(config: config, ioExecutor: executor)
+        and:
+        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now(), Duration.ofMinutes(10))
+
+        expect:
+        manager.canProcessJob()
+
+        when:
+        manager.dispatchProcessJob(jobSpec, Mock(MessageLease))
+        then:
+        manager.canProcessJob()
+
+        when:
+        manager.dispatchProcessJob(jobSpec, Mock(MessageLease))
+        then:
+        !manager.canProcessJob()
     }
 }
