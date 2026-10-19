@@ -144,7 +144,7 @@ docker login cr.seqera.io -u <username>
 
 ## Create the Compose file
 
-Define the Wave service in `docker-compose.yml`. Replace `<tag>` with the Wave version to deploy, for example `v1.40.2`. The image has no `latest` tag, so you must specify a version. See [Wave releases](https://github.com/seqeralabs/wave/releases) for available versions:
+Define the Wave service in `docker-compose.yml`. Replace `<tag>` with the Wave version to deploy, for example `v1.40.2`. The image has no `latest` tag, so you must specify a version. See [Wave releases](https://github.com/seqeralabs/wave/releases) for available versions. Only the `v*` tags apply to the Wave image; `cli-v*` tags are Wave CLI releases.
 
 ```yaml
 services:
