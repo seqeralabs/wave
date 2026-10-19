@@ -748,6 +748,10 @@ Configure the connection to the Seqera license management server:
 
 Configure polling and scheduling intervals for Wave's asynchronous job processing.
 
+`wave.job-manager.drain-timeout` *(optional)*
+: Maximum time the application shutdown waits for the jobs being launched or checked for completion. Jobs not completed within this time are handed over to another replica (default: `15s`).
+  It must be shorter than `micronaut.lifecycle.graceful-shutdown.grace-period` (default: `20s`).
+
 `wave.job-manager.max-running-jobs` *(optional)*
 : Maximum number of build, scan, and mirror jobs Wave runs concurrently (default: `20`).
   Pair this with a `ResourceQuota` on the build namespace to bound build resource usage.

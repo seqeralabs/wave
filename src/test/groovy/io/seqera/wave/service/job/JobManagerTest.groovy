@@ -29,6 +29,7 @@ import java.time.Instant
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 import com.github.benmanes.caffeine.cache.Cache
@@ -271,5 +272,92 @@ class JobManagerTest extends Specification {
         manager.dispatchProcessJob(jobSpec, Mock(MessageLease))
         then:
         !manager.canProcessJob()
+    }
+
+    def 'should drain job queues and wait for in-flight jobs'() {
+        given:
+        def jobService = Mock(JobService)
+        def pendingQueue = Mock(JobPendingQueue)
+        def processingQueue = Mock(JobProcessingQueue)
+        def executor = Executors.newSingleThreadExecutor()
+        def config = new JobManagerConfig(graceInterval: Duration.ofMillis(1), maxRunningJobs: 10)
+        def manager = new JobManager(jobService: jobService, dispatcher: Mock(JobDispatcher), config: config, debounceCache: Caffeine.newBuilder().build(), ioExecutor: executor, pendingQueue: pendingQueue, processingQueue: processingQueue)
+        def lease = Mock(MessageLease)
+        def started = new CountDownLatch(1)
+        and:
+        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now(), Duration.ofMinutes(10))
+        and:
+        jobService.status(jobSpec) >> { started.countDown(); sleep 500; JobState.completed(0, 'My job logs') }
+
+        when:
+        manager.dispatchProcessJob(jobSpec, lease)
+        started.await(5, TimeUnit.SECONDS)
+        def result = manager.drain(Duration.ofSeconds(5))
+
+        then:
+        1 * pendingQueue.awaitQuiescent(Duration.ofMillis(1250)) >> true
+        1 * processingQueue.awaitQuiescent(Duration.ofMillis(1250)) >> true
+        1 * lease.ack()
+        and:
+        1 * pendingQueue.close(_ as Duration)
+        1 * processingQueue.close(_ as Duration)
+        and:
+        result
+        manager.reportActiveTasks().asLong == 0
+
+        cleanup:
+        executor.shutdownNow()
+    }
+
+    def 'should report incomplete drain when jobs do not complete in time'() {
+        given:
+        def jobService = Mock(JobService)
+        def pendingQueue = Mock(JobPendingQueue)
+        def processingQueue = Mock(JobProcessingQueue)
+        def executor = Executors.newSingleThreadExecutor()
+        def config = new JobManagerConfig(graceInterval: Duration.ofMillis(1), maxRunningJobs: 10)
+        def manager = new JobManager(jobService: jobService, dispatcher: Mock(JobDispatcher), config: config, debounceCache: Caffeine.newBuilder().build(), ioExecutor: executor, pendingQueue: pendingQueue, processingQueue: processingQueue)
+        def release = new CountDownLatch(1)
+        def started = new CountDownLatch(1)
+        and:
+        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now(), Duration.ofMinutes(10))
+        and:
+        jobService.status(jobSpec) >> { started.countDown(); release.await(); JobState.running() }
+
+        when:
+        manager.dispatchProcessJob(jobSpec, Mock(MessageLease))
+        started.await(5, TimeUnit.SECONDS)
+        def result = manager.drain(Duration.ofMillis(500))
+
+        then:
+        pendingQueue.awaitQuiescent(_) >> true
+        processingQueue.awaitQuiescent(_) >> true
+        and:
+        !result
+        manager.reportActiveTasks().asLong == 1
+
+        cleanup:
+        release.countDown()
+        executor.shutdownNow()
+    }
+
+    def 'should not start processing a job once draining'() {
+        given:
+        def jobService = Mock(JobService)
+        def config = new JobManagerConfig(maxRunningJobs: 10)
+        def manager = new JobManager(jobService: jobService, config: config, pendingQueue: Mock(JobPendingQueue), processingQueue: Mock(JobProcessingQueue))
+        def lease = Mock(MessageLease)
+        and:
+        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now(), Duration.ofMinutes(10))
+
+        when:
+        manager.drain(Duration.ofMillis(100))
+        and:
+        manager.runProcessJob(jobSpec, lease)
+
+        then:
+        0 * jobService.status(_)
+        1 * lease.retry()
+        0 * lease.ack()
     }
 }

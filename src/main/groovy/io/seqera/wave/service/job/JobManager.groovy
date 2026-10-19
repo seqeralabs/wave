@@ -20,6 +20,9 @@ package io.seqera.wave.service.job
 
 import java.time.Duration
 import java.time.Instant
+import java.util.OptionalLong
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionStage
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
 import java.util.concurrent.RejectedExecutionException
@@ -31,6 +34,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Requires
+import io.micronaut.runtime.graceful.GracefulShutdownCapable
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.data.workqueue.MessageConsumer
 import io.seqera.data.workqueue.MessageConsumer.Decision
@@ -50,7 +54,7 @@ import jakarta.inject.Named
 @Context
 @Requires(missingBeans = WaveLite)
 @CompileStatic
-class JobManager {
+class JobManager implements GracefulShutdownCapable {
 
     @Inject
     private JobService jobService
@@ -78,6 +82,11 @@ class JobManager {
      * that have not completed yet
      */
     private final AtomicInteger processingInflight = new AtomicInteger()
+
+    /**
+     * Set when the application shutdown begins, see {@link #drain(Duration)}
+     */
+    private volatile boolean draining
 
     @PostConstruct
     void init() {
@@ -146,7 +155,11 @@ class JobManager {
 
     protected void runProcessJob(JobSpec job, MessageLease lease) {
         try {
-            if( processJob(job) )
+            // do not start a status check once the shutdown has begun, it may not complete
+            // within the drain timeout. The entry is redelivered to another replica
+            if( draining )
+                lease.retry()
+            else if( processJob(job) )
                 lease.ack()
             else
                 lease.retry()
@@ -158,6 +171,81 @@ class JobManager {
         finally {
             processingInflight.decrementAndGet()
         }
+    }
+
+    /**
+     * Drain the job queues when the application shutdown begins. Micronaut invokes this
+     * before destroying any bean, so the jobs being processed can complete while the
+     * services they depend on are still available.
+     *
+     * <p>Requires {@code micronaut.lifecycle.graceful-shutdown.enabled=true}. The drain
+     * runs asynchronously because Micronaut invokes each {@link GracefulShutdownCapable}
+     * bean sequentially on the same thread.
+     */
+    @Override
+    CompletionStage<?> shutdownGracefully() {
+        log.info "Draining job queues - timeout=${config.drainTimeout}"
+        return CompletableFuture.runAsync(() -> drainQuietly())
+    }
+
+    @Override
+    OptionalLong reportActiveTasks() {
+        return OptionalLong.of(processingInflight.get())
+    }
+
+    private void drainQuietly() {
+        try {
+            if( !drain(config.drainTimeout) )
+                log.warn "Job queues drain incomplete after ${config.drainTimeout} - jobs still processing=${processingInflight.get()}; they will be redelivered to another replica"
+        }
+        catch (Throwable e) {
+            log.error "Unexpected error draining job queues - cause: ${e.message}", e
+        }
+    }
+
+    /**
+     * Drain the job queues within the given timeout:
+     * <ol>
+     *     <li>stop both queues claiming new jobs and wait for their dispatchers to complete
+     *     the current cycle, including a job launch in progress. Bounded by a quarter of the
+     *     timeout, so that the next step is always given the remaining time</li>
+     *     <li>wait for the job status checks still running on the IO executor</li>
+     *     <li>release the queues</li>
+     * </ol>
+     *
+     * Jobs not completed when the timeout expires keep their queue entry and are
+     * redelivered to another replica once their lease expires.
+     *
+     * @param timeout
+     *      The maximum time to wait
+     * @return
+     *      {@code true} when the queues have been drained within the timeout, or {@code false} otherwise
+     */
+    protected boolean drain(Duration timeout) {
+        draining = true
+        final deadline = System.currentTimeMillis() + timeout.toMillis()
+        // 1. stop claiming new jobs, quiescing both queues in parallel
+        final quiesceTimeout = timeout.dividedBy(4)
+        final pending = CompletableFuture.supplyAsync(() -> pendingQueue.awaitQuiescent(quiesceTimeout))
+        final processingQuiesced = processingQueue.awaitQuiescent(quiesceTimeout)
+        final pendingQuiesced = pending.join()
+        final quiesced = processingQuiesced && pendingQuiesced
+        // 2. wait for the status checks in flight
+        while( processingInflight.get()>0 && System.currentTimeMillis()<deadline ) {
+            try {
+                Thread.sleep(100)
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt()
+                break
+            }
+        }
+        final completed = processingInflight.get()==0
+        // 3. release the queues with the remaining budget
+        final remaining = Duration.ofMillis(Math.max(1, deadline - System.currentTimeMillis()))
+        pendingQueue.close(remaining)
+        processingQueue.close(remaining)
+        return quiesced && completed
     }
 
     @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:500}')

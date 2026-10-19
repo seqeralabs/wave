@@ -49,4 +49,12 @@ class JobManagerConfig {
 
     @Value('${wave.job-manager.max-running-jobs:20}')
     int maxRunningJobs
+
+    /**
+     * How long the application shutdown waits for the jobs being processed. Keep it below
+     * {@code micronaut.lifecycle.graceful-shutdown.grace-period}: when that expires Micronaut
+     * proceeds to destroy the beans regardless
+     */
+    @Value('${wave.job-manager.drain-timeout:15s}')
+    Duration drainTimeout
 }
