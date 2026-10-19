@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.job
 
-import io.seqera.data.workqueue.MessageConsumer.Decision
 import io.seqera.data.workqueue.MessageLease
 import io.seqera.wave.configuration.JobManagerConfig
 import spock.lang.Specification
@@ -26,11 +25,8 @@ import spock.lang.Specification
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.function.BooleanSupplier
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
@@ -183,181 +179,31 @@ class JobManagerTest extends Specification {
 
     }
 
-    def 'should process job on the executor and ack the lease when completed'() {
+    def 'should keep the lease alive while the consumer runs'() {
         given:
-        def jobService = Mock(JobService)
-        def jobDispatcher = Mock(JobDispatcher)
-        def executor = Executors.newSingleThreadExecutor()
-        def config = new JobManagerConfig(graceInterval: Duration.ofMillis(1), maxRunningJobs: 10)
-        def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config: config, debounceCache: Caffeine.newBuilder().build(), ioExecutor: executor)
         def lease = Mock(MessageLease)
-        and:
-        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now(), Duration.ofMinutes(10))
+        BooleanSupplier probe = null
 
         when:
-        def result = manager.dispatchProcessJob(jobSpec, lease)
-        executor.shutdown()
-        executor.awaitTermination(5, TimeUnit.SECONDS)
-
+        JobManager.keepAlive(lease)
         then:
-        result == Decision.DEFERRED
-        1 * lease.bindLiveness(_)
-        1 * jobService.status(jobSpec) >> JobState.completed(0, 'My job logs')
-        1 * jobDispatcher.notifyJobCompletion(jobSpec, _)
-        1 * lease.ack()
-        0 * lease.retry()
+        1 * lease.bindLiveness(_) >> { args -> probe = args[0] as BooleanSupplier }
         and:
-        manager.canProcessJob()
+        probe.getAsBoolean()
     }
 
-    def 'should process job on the executor and retry the lease when not completed'() {
+    def 'should close the job queues on graceful shutdown'() {
         given:
-        def jobService = Mock(JobService)
-        def executor = Executors.newSingleThreadExecutor()
-        def config = new JobManagerConfig(graceInterval: Duration.ofMillis(1), maxRunningJobs: 10)
-        def manager = new JobManager(jobService: jobService, dispatcher: Mock(JobDispatcher), config: config, debounceCache: Caffeine.newBuilder().build(), ioExecutor: executor)
-        def lease = Mock(MessageLease)
-        and:
-        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now(), Duration.ofMinutes(10))
-
-        when:
-        def result = manager.dispatchProcessJob(jobSpec, lease)
-        executor.shutdown()
-        executor.awaitTermination(5, TimeUnit.SECONDS)
-
-        then:
-        result == Decision.DEFERRED
-        1 * jobService.status(jobSpec) >> JobState.running()
-        1 * lease.retry()
-        0 * lease.ack()
-    }
-
-    def 'should retry the job when the executor rejects it'() {
-        given:
-        def executor = Mock(ExecutorService)
-        def config = new JobManagerConfig(maxRunningJobs: 1)
-        def manager = new JobManager(config: config, ioExecutor: executor)
-        def lease = Mock(MessageLease)
-        and:
-        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now(), Duration.ofMinutes(10))
-
-        when:
-        def result = manager.dispatchProcessJob(jobSpec, lease)
-
-        then:
-        1 * executor.submit(_) >> { throw new RejectedExecutionException('Rejected') }
-        result == Decision.RETRY
-        0 * lease._
-        and:
-        manager.canProcessJob()
-    }
-
-    def 'should stop claiming jobs when max running jobs are in flight'() {
-        given:
-        def executor = Mock(ExecutorService)
-        def config = new JobManagerConfig(maxRunningJobs: 2)
-        def manager = new JobManager(config: config, ioExecutor: executor)
-        and:
-        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now(), Duration.ofMinutes(10))
-
-        expect:
-        manager.canProcessJob()
-
-        when:
-        manager.dispatchProcessJob(jobSpec, Mock(MessageLease))
-        then:
-        manager.canProcessJob()
-
-        when:
-        manager.dispatchProcessJob(jobSpec, Mock(MessageLease))
-        then:
-        !manager.canProcessJob()
-    }
-
-    def 'should drain job queues and wait for in-flight jobs'() {
-        given:
-        def jobService = Mock(JobService)
         def pendingQueue = Mock(JobPendingQueue)
         def processingQueue = Mock(JobProcessingQueue)
-        def executor = Executors.newSingleThreadExecutor()
-        def config = new JobManagerConfig(graceInterval: Duration.ofMillis(1), maxRunningJobs: 10)
-        def manager = new JobManager(jobService: jobService, dispatcher: Mock(JobDispatcher), config: config, debounceCache: Caffeine.newBuilder().build(), ioExecutor: executor, pendingQueue: pendingQueue, processingQueue: processingQueue)
-        def lease = Mock(MessageLease)
-        def started = new CountDownLatch(1)
-        and:
-        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now(), Duration.ofMinutes(10))
-        and:
-        jobService.status(jobSpec) >> { started.countDown(); sleep 500; JobState.completed(0, 'My job logs') }
+        def config = new JobManagerConfig(drainTimeout: Duration.ofSeconds(5))
+        def manager = new JobManager(config: config, pendingQueue: pendingQueue, processingQueue: processingQueue)
 
         when:
-        manager.dispatchProcessJob(jobSpec, lease)
-        started.await(5, TimeUnit.SECONDS)
-        def result = manager.drain(Duration.ofSeconds(5))
+        manager.shutdownGracefully().toCompletableFuture().get(5, TimeUnit.SECONDS)
 
         then:
-        1 * pendingQueue.awaitQuiescent(Duration.ofMillis(1250)) >> true
-        1 * processingQueue.awaitQuiescent(Duration.ofMillis(1250)) >> true
-        1 * lease.ack()
-        and:
-        1 * pendingQueue.close(_ as Duration)
-        1 * processingQueue.close(_ as Duration)
-        and:
-        result
-        manager.reportActiveTasks().asLong == 0
-
-        cleanup:
-        executor.shutdownNow()
-    }
-
-    def 'should report incomplete drain when jobs do not complete in time'() {
-        given:
-        def jobService = Mock(JobService)
-        def pendingQueue = Mock(JobPendingQueue)
-        def processingQueue = Mock(JobProcessingQueue)
-        def executor = Executors.newSingleThreadExecutor()
-        def config = new JobManagerConfig(graceInterval: Duration.ofMillis(1), maxRunningJobs: 10)
-        def manager = new JobManager(jobService: jobService, dispatcher: Mock(JobDispatcher), config: config, debounceCache: Caffeine.newBuilder().build(), ioExecutor: executor, pendingQueue: pendingQueue, processingQueue: processingQueue)
-        def release = new CountDownLatch(1)
-        def started = new CountDownLatch(1)
-        and:
-        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now(), Duration.ofMinutes(10))
-        and:
-        jobService.status(jobSpec) >> { started.countDown(); release.await(); JobState.running() }
-
-        when:
-        manager.dispatchProcessJob(jobSpec, Mock(MessageLease))
-        started.await(5, TimeUnit.SECONDS)
-        def result = manager.drain(Duration.ofMillis(500))
-
-        then:
-        pendingQueue.awaitQuiescent(_) >> true
-        processingQueue.awaitQuiescent(_) >> true
-        and:
-        !result
-        manager.reportActiveTasks().asLong == 1
-
-        cleanup:
-        release.countDown()
-        executor.shutdownNow()
-    }
-
-    def 'should not start processing a job once draining'() {
-        given:
-        def jobService = Mock(JobService)
-        def config = new JobManagerConfig(maxRunningJobs: 10)
-        def manager = new JobManager(jobService: jobService, config: config, pendingQueue: Mock(JobPendingQueue), processingQueue: Mock(JobProcessingQueue))
-        def lease = Mock(MessageLease)
-        and:
-        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now(), Duration.ofMinutes(10))
-
-        when:
-        manager.drain(Duration.ofMillis(100))
-        and:
-        manager.runProcessJob(jobSpec, lease)
-
-        then:
-        0 * jobService.status(_)
-        1 * lease.retry()
-        0 * lease.ack()
+        1 * pendingQueue.close(Duration.ofSeconds(5))
+        1 * processingQueue.close(Duration.ofSeconds(5))
     }
 }
