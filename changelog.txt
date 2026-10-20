@@ -1,4 +1,10 @@
 # Wave changelog
+1.42.0 - 20 Oct 2026
+- Move job queues to lib-data-workqueue, fix duplicate job processing and drain on shutdown (#1201) [60d327e19]
+- Update postgres docker tag to v16.15 (#1198) [7cf0fa273]
+- Update npm minor and patch (#1197) [1f5a2a871]
+- Update github actions (#1195) [5d57cc8a7]
+
 1.41.0 - 18 Oct 2026
 - Match registry credentials by repository path (#1165) [937c765e0]
 - Keep only the platform's Fusion snapshot layer in multi-arch images (#1191) [841582c0e]
