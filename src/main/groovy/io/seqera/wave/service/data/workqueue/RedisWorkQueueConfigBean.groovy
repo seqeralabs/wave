@@ -39,14 +39,15 @@ import jakarta.inject.Singleton
  *   <li>{@code wave.work-queue.consumer-group-name} - Name for the Redis consumer group
  *       (falls back to {@code wave.message-stream.consumer-group-name}; default: "wave-message-stream")</li>
  *   <li>{@code wave.work-queue.visibility-timeout} - How long a claimed message stays invisible to other
- *       consumers before being redelivered (falls back to {@code wave.message-stream.claim-timeout}; default: 45s)</li>
+ *       consumers before being redelivered (falls back to {@code wave.message-stream.claim-timeout}; default: 20s)</li>
  *   <li>{@code wave.work-queue.consumer-warn-timeout} - Timeout threshold for consumer warnings
  *       (falls back to {@code wave.message-stream.consume-warn-timeout}; default: 45s)</li>
  * </ul>
  *
  * <p>The fallback to the legacy {@code message-stream} keys means a deployment configured for the
  * message-stream implementation keeps its values after the work-queue upgrade with no config change;
- * the final defaults (45s) match the current production deployment.
+ * the visibility timeout default (20s) bounds the redelivery delay of a job re-check, while leaving
+ * room for missed lease renewals (renewed every visibility timeout / 4).
  *
  * <p>Note the consumer group name default is intentionally {@code wave-message-stream}:
  * the work queue reuses the Redis streams and consumer group created by the message
@@ -80,7 +81,7 @@ class RedisWorkQueueConfigBean implements RedisWorkQueueConfig {
     @Value('${wave.work-queue.consumer-group-name:wave.message-stream.consumer-group-name:wave-message-stream}')
     String defaultConsumerGroupName
 
-    @Value('${wave.work-queue.visibility-timeout:wave.message-stream.claim-timeout:45s}')
+    @Value('${wave.work-queue.visibility-timeout:wave.message-stream.claim-timeout:20s}')
     Duration visibilityTimeout
 
     @Value('${wave.work-queue.consumer-warn-timeout:wave.message-stream.consume-warn-timeout:45s}')

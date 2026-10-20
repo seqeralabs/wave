@@ -772,10 +772,11 @@ Each setting falls back to the legacy `wave.message-stream.*` property it replac
 : Name of the Redis consumer group used to read the work queues. Falls back to `wave.message-stream.consumer-group-name` (default: `wave-message-stream`).
 
 `wave.work-queue.visibility-timeout` *(optional)*
-: How long a claimed message stays invisible to other consumers before it is redelivered. Falls back to `wave.message-stream.claim-timeout` (default: `45s`).
+: How long a claimed message stays invisible to other consumers before it is redelivered. Falls back to `wave.message-stream.claim-timeout` (default: `20s`, previously `5s`).
+  A job that is still running is checked again once this timeout elapses, so a longer value delays the detection of completed jobs. It must exceed a few seconds, as the lease of a message being processed is renewed every quarter of this timeout.
 
 `wave.work-queue.consumer-warn-timeout` *(optional)*
-: Threshold duration after which a slow message consumer triggers a warning. Falls back to `wave.message-stream.consume-warn-timeout` (default: `45s`).
+: Threshold duration after which a slow message consumer triggers a warning. Falls back to `wave.message-stream.consume-warn-timeout` (default: `45s`, previously `4s`).
 
 ## Thread monitor
 
