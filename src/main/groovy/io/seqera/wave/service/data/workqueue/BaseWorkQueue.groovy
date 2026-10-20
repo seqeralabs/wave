@@ -18,8 +18,10 @@
 
 package io.seqera.wave.service.data.workqueue
 
+import io.micronaut.core.annotation.Nullable
 import io.seqera.data.workqueue.AbstractWorkQueue
 import io.seqera.data.workqueue.WorkQueue
+import io.seqera.data.workqueue.metrics.QueueMetrics
 import io.seqera.lang.type.TypeHelper
 import io.seqera.serde.encode.StringEncodingStrategy
 import io.seqera.serde.moshi.MoshiEncodeStrategy
@@ -48,9 +50,11 @@ abstract class BaseWorkQueue<M> extends AbstractWorkQueue<M> {
      *
      * @param target the underlying string-based work queue that handles
      *               the actual message transport and lease management
+     * @param metrics the {@link QueueMetrics} recording the queue activity,
+     *               or {@code null} when metrics are disabled
      */
-    BaseWorkQueue(WorkQueue<String> target) {
-        super(target)
+    BaseWorkQueue(WorkQueue<String> target, @Nullable QueueMetrics metrics) {
+        super(target, metrics)
     }
 
     /**
