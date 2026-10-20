@@ -425,6 +425,9 @@ Configure Kubernetes-specific settings for Wave. Build and scan processes share 
 
   </div>
 
+`wave.build.k8s.read-timeout` *(optional)*
+: Maximum time to wait for data from the Kubernetes API server on an open connection before the request fails (default: `50s`).
+
 `wave.build.k8s.resources.requests.cpu` *(optional)*
 : [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to Wave build processes.
   For example, set to `2` (2 CPU cores) or `1500Mi` (1.5 CPU cores).
@@ -745,6 +748,10 @@ Configure the connection to the Seqera license management server:
 
 Configure polling and scheduling intervals for Wave's asynchronous job processing.
 
+`wave.job-manager.drain-timeout` *(optional)*
+: Maximum time the application shutdown waits for the jobs being launched or checked for completion. Jobs not completed within this time are handed over to another replica (default: `15s`).
+  It must be shorter than `micronaut.lifecycle.graceful-shutdown.grace-period` (default: `20s`).
+
 `wave.job-manager.max-running-jobs` *(optional)*
 : Maximum number of build, scan, and mirror jobs Wave runs concurrently (default: `20`).
   Pair this with a `ResourceQuota` on the build namespace to bound build resource usage.
@@ -755,15 +762,21 @@ Configure polling and scheduling intervals for Wave's asynchronous job processin
 `wave.job-manager.scheduler-interval` *(optional)*
 : Interval for the job scheduler to process queued jobs (default: `1s`).
 
-## Message stream
+## Work queue
 
-Configure how Wave consumes messages from the Redis stream used for internal event processing.
+Configure how Wave consumes messages from the Redis backed work queue used for internal job processing.
 
-`wave.message-stream.claim-timeout` *(optional)*
-: Timeout for claiming messages from the Redis stream (default: `5s`).
+Each setting falls back to the legacy `wave.message-stream.*` property it replaces, so a deployment configured for the previous message-stream implementation keeps its values after upgrading with no configuration change.
 
-`wave.message-stream.consume-warn-timeout` *(optional)*
-: Threshold duration after which a slow message consumer triggers a warning (default: `4s`).
+`wave.work-queue.consumer-group-name` *(optional)*
+: Name of the Redis consumer group used to read the work queues. Falls back to `wave.message-stream.consumer-group-name` (default: `wave-message-stream`).
+
+`wave.work-queue.visibility-timeout` *(optional)*
+: How long a claimed message stays invisible to other consumers before it is redelivered. Falls back to `wave.message-stream.claim-timeout` (default: `20s`, previously `5s`).
+  A job that is still running is checked again once this timeout elapses, so a longer value delays the detection of completed jobs. It must exceed a few seconds, as the lease of a message being processed is renewed every quarter of this timeout.
+
+`wave.work-queue.consumer-warn-timeout` *(optional)*
+: Threshold duration after which a slow message consumer triggers a warning. Falls back to `wave.message-stream.consume-warn-timeout` (default: `45s`, previously `4s`).
 
 ## Thread monitor
 

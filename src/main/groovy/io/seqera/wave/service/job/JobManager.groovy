@@ -20,6 +20,8 @@ package io.seqera.wave.service.job
 
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionStage
 import java.util.concurrent.ExecutorService
 
 import com.github.benmanes.caffeine.cache.Cache
@@ -28,7 +30,10 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Requires
+import io.micronaut.runtime.graceful.GracefulShutdownCapable
 import io.micronaut.scheduling.TaskExecutors
+import io.seqera.data.workqueue.MessageConsumer.Decision
+import io.seqera.data.workqueue.MessageLease
 import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.configuration.JobManagerConfig
 import io.seqera.wave.configuration.WaveLite
@@ -44,7 +49,7 @@ import jakarta.inject.Named
 @Context
 @Requires(missingBeans = WaveLite)
 @CompileStatic
-class JobManager {
+class JobManager implements GracefulShutdownCapable {
 
     @Inject
     private JobService jobService
@@ -75,12 +80,51 @@ class JobManager {
                 .expireAfterWrite(config.graceInterval.multipliedBy(2))
                 .executor(ioExecutor)
                 .build()
-        pendingQueue.addConsumer((job)-> launchJob(job))
-        processingQueue.addConsumer((job)-> processJob(job))
+        // a `false` outcome settles the message as RETRY, leaving it queued for
+        // redelivery once the lease expires; `true` acknowledges and removes it
+        pendingQueue.addConsumer((job, lease)-> {
+            keepAlive(lease)
+            return launchJob(job) ? Decision.ACK : Decision.RETRY
+        })
+        processingQueue.addConsumer((job, lease)-> {
+            keepAlive(lease)
+            return processJob(job) ? Decision.ACK : Decision.RETRY
+        })
+    }
+
+    /**
+     * Keep the lease renewed for as long as the consumer runs, so a slow job launch or status
+     * check is never redelivered to another replica while it is still in progress. The probe
+     * can be constant because the consumer is synchronous: the lease is registered before the
+     * consumer is invoked and released when it returns
+     */
+    protected static void keepAlive(MessageLease lease) {
+        lease.bindLiveness(() -> true)
+    }
+
+    /**
+     * Drain the job queues when the application shutdown begins. Micronaut invokes this
+     * before destroying any bean, so the jobs being launched or checked can complete while
+     * the services they depend on are still available. Requires
+     * {@code micronaut.lifecycle.graceful-shutdown.enabled=true}.
+     *
+     * <p>Jobs not completed within the drain timeout keep their queue entry and are
+     * redelivered to another replica once their lease expires.
+     */
+    @Override
+    CompletionStage<?> shutdownGracefully() {
+        log.info "Draining job queues - timeout=${config.drainTimeout}"
+        // close both queues in parallel, Micronaut invokes each shutdown hook on the same thread
+        return CompletableFuture.allOf(
+                CompletableFuture.runAsync(() -> pendingQueue.close(config.drainTimeout)),
+                CompletableFuture.runAsync(() -> processingQueue.close(config.drainTimeout)) )
     }
 
     @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:500}')
     protected boolean launchJob0(JobSpec job) {
+        // the processing queue is shared by all replicas and holds one entry per running job, so
+        // `maxRunningJobs` is a cluster-wide limit, not a per-replica one. It is a soft limit: the
+        // length is read before launching, so replicas launching concurrently can overshoot it
         final processingQueueLen = processingQueue.length()
         final canLaunchNewJobs = processingQueueLen < config.maxRunningJobs
         if( canLaunchNewJobs ) {

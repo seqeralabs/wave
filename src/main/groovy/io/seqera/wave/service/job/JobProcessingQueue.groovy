@@ -23,11 +23,11 @@ import java.time.Duration
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.seqera.data.stream.MessageConsumer
-import io.seqera.data.stream.MessageStream
+import io.seqera.data.workqueue.MessageConsumer
+import io.seqera.data.workqueue.WorkQueue
 import io.seqera.wave.configuration.JobManagerConfig
 import io.seqera.wave.configuration.WaveLite
-import io.seqera.wave.service.data.stream.BaseMessageStream
+import io.seqera.wave.service.data.workqueue.BaseWorkQueue
 import jakarta.annotation.PreDestroy
 import jakarta.inject.Singleton
 /**
@@ -39,15 +39,15 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-class JobProcessingQueue extends BaseMessageStream<JobSpec> {
+class JobProcessingQueue extends BaseWorkQueue<JobSpec> {
 
     private final static String QUEUE_NAME = "jobs-queue"
 
-    private final static String STREAM_NAME = "jobs-queue/v1"
+    private final static String QUEUE_ID = "jobs-queue/v1"
 
     private final JobManagerConfig config
 
-    JobProcessingQueue(MessageStream<String> target, JobManagerConfig config) {
+    JobProcessingQueue(WorkQueue<String> target, JobManagerConfig config) {
         super(target)
         this.config = config
         log.info "Created jobs processing queue - config=${config}"
@@ -64,15 +64,15 @@ class JobProcessingQueue extends BaseMessageStream<JobSpec> {
     }
 
     final void offer(JobSpec jobSpec) {
-        super.offer(STREAM_NAME, jobSpec)
+        super.offer(QUEUE_ID, jobSpec)
     }
 
     final void addConsumer(MessageConsumer<JobSpec> consumer) {
-        super.addConsumer(STREAM_NAME, consumer)
+        super.addConsumer(QUEUE_ID, consumer)
     }
 
     final int length() {
-        return super.length(STREAM_NAME)
+        return super.length(QUEUE_ID)
     }
 
     @PreDestroy
