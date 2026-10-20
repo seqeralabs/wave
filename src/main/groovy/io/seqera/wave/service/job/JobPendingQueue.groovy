@@ -22,9 +22,12 @@ import java.time.Duration
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.annotation.Requires
+import io.micronaut.core.annotation.Nullable
 import io.seqera.data.workqueue.MessageConsumer
 import io.seqera.data.workqueue.WorkQueue
+import io.seqera.data.workqueue.metrics.MicrometerQueueMetrics
 import io.seqera.wave.configuration.JobManagerConfig
 import io.seqera.wave.configuration.WaveLite
 import io.seqera.wave.service.data.workqueue.BaseWorkQueue
@@ -42,19 +45,21 @@ import jakarta.inject.Singleton
 @CompileStatic
 class JobPendingQueue extends BaseWorkQueue<JobSpec> {
 
+    private final static String QUEUE_NAME = 'jobs-pending'
+
     private final static String QUEUE_ID = 'jobs-pending/v2'
 
     private JobManagerConfig config
 
-    JobPendingQueue(WorkQueue<String> target, JobManagerConfig config) {
-        super(target)
+    JobPendingQueue(WorkQueue<String> target, JobManagerConfig config, @Nullable MeterRegistry registry) {
+        super(target, registry ? new MicrometerQueueMetrics(registry, QUEUE_NAME) : null)
         this.config = config
         log.info "Created jobs pending queue - config=${config}"
     }
 
     @Override
     protected String name() {
-        return "jobs-pending"
+        return QUEUE_NAME
     }
 
     @Override

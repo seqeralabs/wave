@@ -22,9 +22,12 @@ import java.time.Duration
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.annotation.Requires
+import io.micronaut.core.annotation.Nullable
 import io.seqera.data.workqueue.MessageConsumer
 import io.seqera.data.workqueue.WorkQueue
+import io.seqera.data.workqueue.metrics.MicrometerQueueMetrics
 import io.seqera.wave.configuration.JobManagerConfig
 import io.seqera.wave.configuration.WaveLite
 import io.seqera.wave.service.data.workqueue.BaseWorkQueue
@@ -47,8 +50,8 @@ class JobProcessingQueue extends BaseWorkQueue<JobSpec> {
 
     private final JobManagerConfig config
 
-    JobProcessingQueue(WorkQueue<String> target, JobManagerConfig config) {
-        super(target)
+    JobProcessingQueue(WorkQueue<String> target, JobManagerConfig config, @Nullable MeterRegistry registry) {
+        super(target, registry ? new MicrometerQueueMetrics(registry, QUEUE_NAME) : null)
         this.config = config
         log.info "Created jobs processing queue - config=${config}"
     }
