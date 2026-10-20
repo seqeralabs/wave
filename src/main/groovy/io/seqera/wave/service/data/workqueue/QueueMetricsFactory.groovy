@@ -40,6 +40,6 @@ class QueueMetricsFactory {
     @Singleton
     @Requires(beans = MeterRegistry)
     QueueMetrics queueMetrics(MeterRegistry registry) {
-        return new MicrometerQueueMetrics(registry, 'redis-workqueue')
+        return new MicrometerQueueMetrics(registry, 'wave-workqueue')
     }
 }
