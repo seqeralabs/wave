@@ -1,4 +1,8 @@
 # Wave changelog
+1.42.1 - 20 Oct 2026
+- Publish work queue metrics for the job queues (#1203) [4001b8eae]
+- Pull nf-jdk base image from public.cr.seqera.io (#1200) [c162e2d00]
+
 1.42.0 - 20 Oct 2026
 - Move job queues to lib-data-workqueue, fix duplicate job processing and drain on shutdown (#1201) [60d327e19]
 - Update postgres docker tag to v16.15 (#1198) [7cf0fa273]
