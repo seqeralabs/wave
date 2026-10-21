@@ -1,0 +1,50 @@
+name: "Lint Pull Request Title"
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+      - labeled
+      - unlabeled
+
+permissions:
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number }}
+  cancel-in-progress: true
+
+jobs:
+  main:
+    name: Validate PR title
+    runs-on: ubuntu-latest
+    # [release] titles drive the org-wide release convention (the build reads it from
+    # the merged commit message), so they keep their free-form wording.
+    if: ${{ !contains(github.event.pull_request.title, '[release]') }}
+    steps:
+      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            tweak
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+          requireScope: false
+          # Format: type(scope)!: subject [TICKET|NOTASK]
+          headerPattern: '^(\w+)(?:\(([^)]*)\))?(!?): (.+?)(?:\s+\[([A-Z]+-\d+|NOTASK)\])?$'
+          headerPatternCorrespondence: type,scope,breaking,subject,ticket
+          ignoreLabels: |
+            bot
+            ignore-semantic-pull-request
