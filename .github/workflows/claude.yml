@@ -34,6 +34,12 @@ jobs:
         (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude') && contains(fromJSON('["COLLABORATOR", "MEMBER", "OWNER"]'), github.event.review.author_association))
       )
     runs-on: ubuntu-latest
+    # One review per PR at a time: an @claude comment made while the automatic
+    # review is running queues behind it. Job-level on purpose, so comments that
+    # skip the job never enter the group and cannot cancel a running review.
+    concurrency:
+      group: claude-review-${{ github.event.issue.number || github.event.pull_request.number }}
+      cancel-in-progress: false
     permissions:
       contents: read
       pull-requests: write
@@ -151,8 +157,10 @@ jobs:
             an unavailable tool, a test you could not run — rather than implying coverage
             you do not have.
           # Agent mode adds no tools of its own, so this list is everything Claude
-          # gets. Keep gh scoped to these four verbs: a blanket Bash(gh api:*) would
-          # grant write access to every GitHub endpoint. Write is needed for the
+          # gets. Keep gh scoped to these verbs: a blanket Bash(gh api:*) would
+          # grant write access to every GitHub endpoint. The two write verbs are
+          # pinned to this PR's number, so a prompt injected in the diff cannot
+          # review or comment on a different PR. Write is needed for the
           # --body-file review body.
           claude_args: |
-            --allowedTools "Read,Grep,Glob,Write,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr review:*),Bash(gh pr comment:*),Bash(gh pr checks:*)"
+            --allowedTools "Read,Grep,Glob,Write,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr review ${{ github.event.issue.number || github.event.pull_request.number }}:*),Bash(gh pr comment ${{ github.event.issue.number || github.event.pull_request.number }}:*),Bash(gh pr checks:*)"
