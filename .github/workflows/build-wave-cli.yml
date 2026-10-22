@@ -90,8 +90,13 @@ jobs:
       - name: Remove distrusted CA roots
         shell: bash
         run: |
-          if keytool -list -cacerts -storepass changeit -alias comodoaaaca >/dev/null 2>&1; then
-            keytool -delete -cacerts -storepass changeit -alias comodoaaaca
+          # JDK-bundled entries carry a " [jdk]" suffix in their alias
+          alias="comodoaaaca [jdk]"
+          if keytool -list -cacerts -storepass changeit -alias "$alias" >/dev/null 2>&1; then
+            keytool -delete -cacerts -storepass changeit -alias "$alias"
+            echo "Removed '$alias' from the GraalVM trust store"
+          else
+            echo "'$alias' not present in the GraalVM trust store"
           fi
 
       - name: Run tests
