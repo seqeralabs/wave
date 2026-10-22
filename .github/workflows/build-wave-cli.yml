@@ -85,6 +85,15 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           native-image-job-reports: 'true'
 
+      # native-image embeds the build JDK trust store into the binary: drop the Comodo AAA root,
+      # which chains to the compromised eMudhra intermediates (CVE-2026-91403)
+      - name: Remove distrusted CA roots
+        shell: bash
+        run: |
+          if keytool -list -cacerts -storepass changeit -alias comodoaaaca >/dev/null 2>&1; then
+            keytool -delete -cacerts -storepass changeit -alias comodoaaaca
+          fi
+
       - name: Run tests
         run: |
           ./gradlew test
@@ -109,6 +118,14 @@ jobs:
       - name: Build native
         if: ${{ !matrix.musl }}
         run: ./gradlew app:nativeCompile
+
+      - name: Check embedded trust store
+        shell: bash
+        run: |
+          if LC_ALL=C grep -q -a "AAA Certificate Services" app/build/native/nativeCompile/wave*; then
+            echo "::error::Native binary still embeds the Comodo AAA root (CVE-2026-91403)"
+            exit 1
+          fi
 
       - name: Codesign binary
         if: ${{ matrix.codesign && needs.detect-release.outputs.release == 'true' }}
