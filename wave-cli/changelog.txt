@@ -1,5 +1,10 @@
 WAVE CLI CHANGE-LOG
 ===================
+1.9.1 - 22 Oct 2026
+- Remove Comodo AAA root from native binary trust store (CVE-2026-91403) (#1205) [7ed38c5]
+- Bump logback to 1.5.34 (#1174) [46949fd]
+- Move wave-cli build and release into the wave repository [16a8f7f]
+
 1.9.0 - 7 Oct 2026
 - Fix segmentation fault of linux-x86_64 binary on WSL2 and vsyscall=none kernels (#86) [2403b10]
 - Allow multi-platform builds for Singularity format [8130a05]
