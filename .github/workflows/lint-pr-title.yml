@@ -21,8 +21,9 @@ jobs:
     name: Validate PR title
     runs-on: ubuntu-latest
     # [release] titles drive the org-wide release convention (the build reads it from
-    # the merged commit message), so they keep their free-form wording.
-    if: ${{ !contains(github.event.pull_request.title, '[release]') }}
+    # the merged commit message), so they keep their free-form wording. Renovate
+    # titles carry no ticket and Renovate adds no label here, so it is exempt by author.
+    if: ${{ !contains(github.event.pull_request.title, '[release]') && github.event.pull_request.user.login != 'seqeralabs-renovate[bot]' }}
     steps:
       - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
         env:
@@ -43,7 +44,7 @@ jobs:
             revert
           requireScope: false
           # Format: type(scope)!: subject [TICKET|NOTASK]
-          headerPattern: '^(\w+)(?:\(([^)]*)\))?(!?): (.+?)(?:\s+\[([A-Z]+-\d+|NOTASK)\])?$'
+          headerPattern: '^(\w+)(?:\(([^)]*)\))?(!?): (.+?)\s+\[([A-Z]+-\d+|NOTASK)\]$'
           headerPatternCorrespondence: type,scope,breaking,subject,ticket
           ignoreLabels: |
             bot
