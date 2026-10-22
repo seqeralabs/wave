@@ -4,6 +4,7 @@ on:
   pull_request:
     types:
       - opened
+      - reopened
       - edited
       - synchronize
       - labeled
@@ -20,10 +21,10 @@ jobs:
   main:
     name: Validate PR title
     runs-on: ubuntu-latest
-    # [release] titles drive the org-wide release convention (the build reads it from
-    # the merged commit message), so they keep their free-form wording. Renovate
-    # titles carry no ticket and Renovate adds no label here, so it is exempt by author.
-    if: ${{ !contains(github.event.pull_request.title, '[release]') && github.event.pull_request.user.login != 'seqeralabs-renovate[bot]' }}
+    # Renovate titles carry no ticket and Renovate adds no label here, so it is
+    # exempt by author. No [release] exemption: wave releases are direct pushes, so
+    # a PR title never drives a release here.
+    if: ${{ github.event.pull_request.user.login != 'seqeralabs-renovate[bot]' }}
     steps:
       - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
         env:
