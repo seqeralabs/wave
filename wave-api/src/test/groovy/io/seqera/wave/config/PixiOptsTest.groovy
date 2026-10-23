@@ -78,7 +78,19 @@ class PixiOptsTest extends Specification {
         ])
 
         then:
-        opts.toString() == "PixiOpts(pixiImage=custom/image:1.0; basePackages=custom-package, commands=cmd1,cmd2, baseImage=debian:11)"
+        opts.toString() == "PixiOpts(pixiImage=custom/image:1.0; basePackages=custom-package, commands=cmd1,cmd2, baseImage=debian:11, manifest=null)"
+        and:
+        opts.withManifest('[workspace]').toString() == "PixiOpts(pixiImage=custom/image:1.0; basePackages=custom-package, commands=cmd1,cmd2, baseImage=debian:11, manifest=[provided])"
+    }
+
+    def "sets manifest from map and withManifest"() {
+        expect:
+        new PixiOpts([manifest: '[workspace]']).manifest == '[workspace]'
+        new PixiOpts().withManifest('[workspace]').manifest == '[workspace]'
+        new PixiOpts().manifest == null
+        and:
+        new PixiOpts([manifest: 'a']) == new PixiOpts([manifest: 'a'])
+        new PixiOpts([manifest: 'a']) != new PixiOpts([manifest: 'b'])
     }
 
     def "equals and hashCode work for equal objects"() {

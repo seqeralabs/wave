@@ -38,6 +38,7 @@ import static io.seqera.wave.api.BuildTemplate.CONDA_MICROMAMBA_V2
 import static io.seqera.wave.api.BuildTemplate.CONDA_MICROMAMBA_V2_FAST
 import static io.seqera.wave.api.BuildTemplate.CONDA_PIXI_V1
 import static io.seqera.wave.api.BuildTemplate.CONDA_PIXI_V1_FAST
+import static io.seqera.wave.api.BuildTemplate.CONDA_PIXI_V1_LOCK
 import static io.seqera.wave.api.BuildTemplate.CRAN_INSTALLR_V1
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static DockerHelper.condaEnvironmentToCondaYaml
@@ -83,6 +84,9 @@ class ContainerHelper {
                 throw new BadRequestException("Build template '${CONDA_PIXI_V1_FAST}' does not support Singularity format")
             return PixiHelper.containerFileV1Fast(spec, req.containerImage, condasplitImage)
         }
+        if( req.buildTemplate == CONDA_PIXI_V1_LOCK ) {
+            return PixiHelper.containerFileV1Lock(spec, req.containerImage, singularity)
+        }
         if( spec.type == PackagesSpec.Type.CRAN && (!req.buildTemplate || req.buildTemplate == CRAN_INSTALLR_V1) ) {
             return CranHelper.containerFile(spec, singularity)
         }
@@ -96,6 +100,13 @@ class ContainerHelper {
 
         if( req.packages.type != PackagesSpec.Type.CONDA )
             return null
+
+        if( req.buildTemplate == CONDA_PIXI_V1_LOCK ) {
+            // the pixi lock file is used verbatim, i.e. without appending the base packages
+            return req.packages.environment
+                    ? decodeBase64OrFail(req.packages.environment, 'packages.environment')
+                    : null
+        }
 
         if( req.packages.environment ) {
             // parse the attribute as a conda file path *and* append the base packages if any
