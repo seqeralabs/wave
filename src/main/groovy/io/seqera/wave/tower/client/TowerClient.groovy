@@ -159,9 +159,11 @@ class TowerClient {
     }
 
     protected static URI workflowDescribeEndpoint(String endpoint, Long workspaceId, String workflowId) {
-        def uri = "${checkEndpoint(endpoint)}/workflow/${workflowId}"
+        // only the workflow status is needed: 'attributes=minimal' asks Platform to omit the large fields
+        // (params, config, error report, progress). Platform versions not supporting it ignore the value
+        def uri = "${checkEndpoint(endpoint)}/workflow/${workflowId}?attributes=minimal"
         if( workspaceId!=null )
-            uri += "?workspaceId=$workspaceId"
+            uri += "&workspaceId=$workspaceId"
         return URI.create(uri)
     }
 

@@ -291,7 +291,12 @@ class ContainerRequestServiceImplTest extends Specification {
         registry.counter('wave.tokens.refresh', 'result', 'error').count() == 1d
 
         where:
-        ERROR << [new HttpResponseException(503, 'Unavailable'), new IllegalStateException('Unable to retrieve a value for key: pairing-inbound-queue/v1:foo')]
+        ERROR << [
+                new HttpResponseException(503, 'Unavailable'),
+                new HttpResponseException(408, 'Timeout'),
+                new HttpResponseException(429, 'Too many'),
+                new TimeoutException('Workflow lookup timed out'),
+                new IllegalStateException('Unable to retrieve a value for key: pairing-inbound-queue/v1:foo') ]
     }
 
     def 'check0 should stop tracking (fail-closed) when Platform rejects the workflow lookup'() {
@@ -319,7 +324,7 @@ class ContainerRequestServiceImplTest extends Specification {
         registry.counter('wave.tokens.refresh', 'result', 'unresolved').count() == 1d
 
         where:
-        CODE << [401, 403, 404]
+        CODE << [400, 401, 403, 404, 413]
     }
 
     def 'watch should renew other tokens while one workflow lookup hangs'() {
@@ -367,9 +372,12 @@ class ContainerRequestServiceImplTest extends Specification {
         new HttpResponseException(401, 'Unauthorized')                       | true
         new ExecutionException(new HttpResponseException(404, 'Not found'))  | true
         new HttpResponseException(403, 'Forbidden')                          | true
+        new HttpResponseException(413, 'Too large')                          | true
+        new HttpResponseException(400, 'Bad request')                        | true
         new HttpResponseException(408, 'Timeout')                            | false
         new HttpResponseException(429, 'Too many')                           | false
         new HttpResponseException(503, 'Unavailable')                        | false
+        new HttpResponseException(500, 'Error')                              | false
         new TimeoutException('nope')                                         | false
         new IllegalStateException('boom')                                    | false
     }
