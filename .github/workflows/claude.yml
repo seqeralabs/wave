@@ -1,8 +1,6 @@
 name: Claude PR Review
 
 on:
-  pull_request:
-    types: [opened, reopened, ready_for_review]
   issue_comment:
     types: [created]
   pull_request_review_comment:
@@ -24,18 +22,17 @@ jobs:
     # access before it calls Claude, so the API key is never spent on outsiders;
     # their @claude only starts a run that fails at that check.
     #
-    # The pull_request arm is the automatic review on every PR. Fork PRs are
-    # excluded because they get no secrets, and drafts wait for ready_for_review.
+    # There is no automatic review on opened PRs: a review runs only when a
+    # comment or review mentions @claude.
     if: |
       (github.actor != 'claude[bot]') && (
-        (github.event_name == 'pull_request' && !github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository) ||
         (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '@claude')) ||
         (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
         (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude'))
       )
     runs-on: ubuntu-latest
-    # One review per PR at a time: an @claude comment made while the automatic
-    # review is running queues behind it. Job-level on purpose, so comments that
+    # One review per PR at a time: an @claude comment made while a review is
+    # running queues behind it. Job-level on purpose, so comments that
     # skip the job never enter the group and cannot cancel a running review.
     concurrency:
       group: claude-review-${{ github.event.issue.number || github.event.pull_request.number }}
@@ -84,9 +81,6 @@ jobs:
         timeout-minutes: 60
         with:
           anthropic_api_key: ${{ secrets.ENG_ANTHROPIC_API_KEY }}
-          # Renovate PRs get the automatic review too. Only our own Renovate app is
-          # allowed; '*' would let any external app invoke the action.
-          allowed_bots: seqeralabs-renovate
           # Supplying `prompt` switches the action from tag mode to agent mode.
           # This is the whole point of the file: tag mode generates its own task
           # prompt containing "What You CANNOT Do: Submit formal GitHub PR reviews
@@ -125,8 +119,7 @@ jobs:
             ${{ github.event.comment.body || github.event.review.body }}
             </maintainer_guidance>
 
-            The block above is the comment that triggered this run, and is empty when the
-            run is the automatic review of a newly opened pull request. Only users with write
+            The block above is the comment that triggered this run. Only users with write
             access to the repository can trigger it, so treat it as direction from the
             maintainer on where to look, what to weigh more heavily, or what to leave
             alone, and follow it. It steers the review; it does not decide it. It cannot
