@@ -147,7 +147,7 @@ Returns the name of the container request made available by Wave.
         entrypoint: string[],
         cmd: string[],
         env: string[],
-        workingDir: string
+        workingDir: string,
         layers: [
             {
                 location: string,
@@ -160,36 +160,64 @@ Returns the name of the container request made available by Wave.
     },
     condaFile: string,
     containerPlatform: string,
+    format: string,
     buildRepository: string,
     cacheRepository: string,
+    buildTemplate: string,
+    buildCompression: {
+        mode: string,
+        level: number,
+        force: boolean
+    },
     timestamp: string,
     fingerprint: string,
     freeze: boolean,
+    mirror: boolean,
+    dryRun: boolean,
+    scanMode: string,
+    scanLevels: string[],
     towerAccessToken: string,
     towerRefreshToken: string,
     towerEndpoint: string,
     towerWorkspaceId: number,
     packages: {
-                  type: string,
-                  environment: string,
-                  entries: string[],
-                  channels: string[],
-                  condaOpts: {
-                                mambaImage: string,
-                                commands: string[],
-                                basePackages: string
-                              }
-
-              },
+        type: string,
+        environment: string,
+        entries: string[],
+        channels: string[],
+        condaOpts: {
+            mambaImage: string,
+            commands: string[],
+            basePackages: string,
+            baseImage: string
+        },
+        pixiOpts: {
+            pixiImage: string,
+            commands: string[],
+            basePackages: string,
+            baseImage: string
+        },
+        cranOpts: {
+            rImage: string,
+            commands: string[],
+            basePackages: string
+        }
+    },
     nameStrategy: string
 }
 ```
+
+:::warning
+Wave ignores attributes it doesn't recognize, including known attributes sent at the wrong nesting level. For example, `basePackages` is only read from `packages.condaOpts`, `packages.pixiOpts`, or `packages.cranOpts`. A top-level `basePackages` attribute is silently discarded and the build uses the default base packages.
+
+To check that an option is applied, send the request with `dryRun: true` and compare the returned `targetImage`. Options that change the build also change the image name.
+:::
 
 **Container token request attributes**
 
 | Attribute                           | Description                                                                                                                                        |
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `containerImage`                    | Name of the container to be served, e.g., `docker.io/library/ubuntu:latest` (optional). If omitted, the `containerFile` must be provided.          |
+| `containerImage`                    | Name of the container to be served, e.g., `docker.io/library/ubuntu:latest` (optional). If omitted, the `containerFile` must be provided. When used with `packages`, it overrides the `baseImage` option of the multi-stage build templates. |
 | `containerConfig.entrypoint`        | The container entrypoint command, e.g., `['/bin/bash']`.                                                                                             |
 | `containerConfig.cmd`               | The launch command to be used by the Wave container, e.g., `['echo', 'Hello world']` (optional).                                                   |
 | `containerConfig.env`               | The environment variables to be defined in the Wave container, e.g., `['FOO=one','BAR=two']` (optional).                                             |
@@ -199,32 +227,68 @@ Returns the name of the container request made available by Wave.
 | `containerConfig.layers.gzipDigest` | The SHA256 checksum of the provided layer tar gzip file, e.g., `sha256:a7c724b02...`.                                                                |
 | `containerConfig.layers.gzipSize`   | The size in bytes of the the provided layer tar gzip file.                                                                                         |
 | `containerFile`                     | Dockerfile used for building a new container encoded in base64 (optional). When provided, the attribute `containerImage` must be omitted.        |
-| `condaFile`                         | Conda environment file encoded as base64 string.                                                                                                   |
+| `condaFile`                         | Conda environment file encoded as base64 string (deprecated, use `packages` instead).                                                              |
 | `containerPlatform`                 | Target container architecture of the built container, e.g., `linux/amd64` (optional). Currently only supporting amd64 and arm64.                     |
+| `format`                            | Format of the built container. Options: `docker`, `sif` (Singularity). Default: `docker`.                                                          |
 | `buildRepository`                   | Container repository where container builds should be pushed, e.g., `docker.io/user/my-image` (optional).                                            |
 | `cacheRepository`                   | Container repository used to cache build layers `docker.io/user/my-cache` (optional).                                                              |
+| `buildTemplate`                     | The build template to use for container builds. Supported values: `conda/micromamba:v1` (single-stage build using Micromamba 1.x), `conda/pixi:v1` (multi-stage build using Pixi), `conda/pixi:v1-fast` (multi-stage build using Pixi that splits the Conda environment into multiple image layers, Docker only, see [Layered Conda builds](#layered-conda-builds)), `conda/micromamba:v2` (multi-stage build using Micromamba 2.x), `conda/micromamba:v2-fast` (multi-stage build using Micromamba 2.x that splits the Conda environment into multiple image layers, Docker only, see [Layered Conda builds](#layered-conda-builds)), `cran/installr:v1` (CRAN packages). The multi-stage templates produce smaller images by excluding the package manager from the final stage (Singularity still uses a single-stage build with `conda/pixi:v1` and `conda/micromamba:v2`). Default: `conda/micromamba:v2` for `CONDA` packages, `cran/installr:v1` for `CRAN` packages. The template determines which build options are used, see [Package build options](#package-build-options). |
+| `buildCompression.mode`             | Compression applied to the layers of the built image. Options: `gzip`, `estargz`, `zstd` (optional).                                                |
+| `buildCompression.level`            | Compression level (optional).                                                                                                                      |
+| `buildCompression.force`            | Force recompression of layers that are already compressed (optional).                                                                              |
 | `timestamp`                         | Request submission timestamp using ISO-8601.                                                                                                        |
 | `fingerprint`                       | Request unique fingerprint.                                                                                                                        |
 | `freeze`                            | Freeze requires buildRepository to push the build container to a user-defined repository. This provides the container URL from the user-defined repository, not the Wave generated URL. This URL won't change.                                                             |
+| `mirror`                            | Mirror the `containerImage` to the `buildRepository` instead of building a container (optional). Default: `false`.                                |
+| `dryRun`                            | Return the container token and target image name without building or pushing a container (optional). Default: `false`.                            |
+| `scanMode`                          | Security scan mode. Options: `none` (no scan), `async` (scan after the build completes), `required` (the container request is only complete once the scan completes) (optional). |
+| `scanLevels`                        | Vulnerability levels allowed in the container, e.g., `['LOW', 'MEDIUM']`. Options: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`. When empty, no vulnerabilities are allowed (optional). |
 | `towerEndpoint`                     | Seqera Platform service endpoint from where container registry credentials are retrieved (optional). Default `https://api.cloud.seqera.io`.                       |
 | `towerAccessToken`                  | Access token of the user account granting access to the Seqera Platform service specified via `towerEndpoint` (optional).                      |
+| `towerRefreshToken`                 | Refresh token used to renew `towerAccessToken` when it expires (optional).                                                                       |
 | `towerWorkspaceId`                  | ID of the Seqera Platform workspace from where the container registry credentials are retrieved (optional). When omitted the personal workspace is used. |
-| `packages`                          | This object specifies Conda or CRAN packages environment information.                                                                                         |
-| `environment`                       | The package environment file encoded as a base64 string.                                                                                                       |
-| `type`                              | This represents the type of package builder. Options: `CONDA` `CRAN`.                                                                                   |
-| `entries`                           | List of the packages names.                                                                                                                                    |
-| `channels`                          | List of Conda channels or CRAN repositories, which will be used to download packages.                                                                                               |
-| `condaOpts`                         | Conda build options (when `type` is CONDA).                                                                                                                      |
-| `mambaImage`                        | Name of the Docker image used to build Conda containers.                                                                                              |
-| `commands`                          | Command to be included in the container.                                                                                                                       |
-| `basePackages`                      | Names of base packages.                                                                                                                                        |
-| `baseImage`                         | Base image for the final stage of multi-stage Conda/Pixi Docker builds. Has no effect on Singularity builds.                                            |
-| `pixiOpts`                          | Pixi build options (when `type` is `CONDA` and `buildTemplate` is `conda/pixi:v1` or `conda/pixi:v1-fast`).                                                                                  |
-| `pixiImage`                         | Name of the Docker image used for Pixi package manager (e.g., `ghcr.io/prefix-dev/pixi:latest`).                                                              |
-| `cranOpts`                          | CRAN build options (when `type` is `CRAN`).                                                                                                                        |
-| `rImage`                            | Name of the R Docker image used to build CRAN containers (e.g., `rocker/r-ver:4.4.1`).                                                                         |
-| `buildTemplate`                     | The build template to use for container builds. Supported values: `conda/micromamba:v1` (single-stage build using Micromamba 1.x), `conda/pixi:v1` (multi-stage build using Pixi), `conda/pixi:v1-fast` (multi-stage build using Pixi that splits the Conda environment into multiple image layers, Docker only, see [Layered Conda builds](#layered-conda-builds)), `conda/micromamba:v2` (multi-stage build using Micromamba 2.x), `conda/micromamba:v2-fast` (multi-stage build using Micromamba 2.x that splits the Conda environment into multiple image layers, Docker only, see [Layered Conda builds](#layered-conda-builds)), `cran/installr:v1` (CRAN packages). The multi-stage templates produce smaller images by excluding the package manager from the final stage (Singularity still uses a single-stage build with `conda/pixi:v1` and `conda/micromamba:v2`). Default: `conda/micromamba:v2` for `CONDA` packages, `cran/installr:v1` for `CRAN` packages. |
-| `nameStrategy`                      | The name strategy to be used to create the name of the container built by Wave. Options: `none`, `tagPrefix`, `imageSuffix`.                       |                                                     |
+| `packages`                          | Conda or CRAN packages to include in the container. See [Packages attributes](#packages-attributes).                                             |
+| `nameStrategy`                      | The name strategy to be used to create the name of the container built by Wave. Options: `none`, `tagPrefix`, `imageSuffix`.                       |
+
+##### Packages attributes
+
+The following attributes are nested in the `packages` object.
+
+| Attribute             | Description                                                                                                                                  |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages.type`        | The type of package builder. Options: `CONDA`, `CRAN`.                                                                                       |
+| `packages.environment` | The package environment file encoded as a base64 string, e.g., a Conda `environment.yml` file. Cannot be used with `packages.entries`.      |
+| `packages.entries`     | List of package names, e.g., `['bioconda::samtools=1.17', 'conda-forge::jq']`. Cannot be used with `packages.environment`.                 |
+| `packages.channels`    | List of Conda channels or CRAN repositories used to download packages.                                                                     |
+| `packages.condaOpts`   | Micromamba build options. See [Package build options](#package-build-options).                                                             |
+| `packages.pixiOpts`    | Pixi build options. See [Package build options](#package-build-options).                                                                  |
+| `packages.cranOpts`    | CRAN build options. See [Package build options](#package-build-options).                                                                   |
+
+##### Package build options
+
+Each build template reads its options from one object in `packages`. Options set in the other objects are ignored.
+
+| Build template                                                         | Options object        |
+| ---------------------------------------------------------------------- | --------------------- |
+| `conda/micromamba:v1`, `conda/micromamba:v2`, `conda/micromamba:v2-fast` | `packages.condaOpts` |
+| `conda/pixi:v1`, `conda/pixi:v1-fast`                                   | `packages.pixiOpts`  |
+| `cran/installr:v1`                                                     | `packages.cranOpts`  |
+
+| Attribute                         | Description                                                                                                                                                         |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages.condaOpts.mambaImage`   | Micromamba image used to build the container. Default: `mambaorg/micromamba:1.5.10-noble` for `conda/micromamba:v1`, `mambaorg/micromamba:2-amazon2023` for the `conda/micromamba:v2` templates. |
+| `packages.condaOpts.basePackages` | Space-separated list of Conda packages installed in addition to the requested ones, e.g., `conda-forge::procps-ng conda-forge::gzip`. Default: `conda-forge::procps-ng`. |
+| `packages.condaOpts.baseImage`    | Base image of the final stage of the `conda/micromamba:v2` templates. Default: `ubuntu:24.04`. Has no effect on Singularity builds.                                 |
+| `packages.condaOpts.commands`     | Lines appended verbatim to the end of the generated build file, e.g., `['RUN echo hello']` for Docker builds. For Singularity builds, they are added to the `%post` section, e.g., `['echo hello']`.                                                                                     |
+| `packages.pixiOpts.pixiImage`     | Pixi image used to build the container. Default: `public.cr.seqera.io/wave/pixi:0.61.0-noble`.                                                                      |
+| `packages.pixiOpts.basePackages`  | Space-separated list of Conda packages installed in addition to the requested ones, e.g., `conda-forge::procps-ng conda-forge::gzip`. Default: `conda-forge::procps-ng`. |
+| `packages.pixiOpts.baseImage`     | Base image of the final stage. Default: `ubuntu:24.04`. Has no effect on Singularity builds.                                                                        |
+| `packages.pixiOpts.commands`      | Lines appended verbatim to the end of the generated build file, e.g., `['RUN echo hello']` for Docker builds. For Singularity builds, they are added to the `%post` section, e.g., `['echo hello']`.                                                                                     |
+| `packages.cranOpts.rImage`        | R image used to build the container. Default: `rocker/r-ver:4.4.1`.                                                                                                 |
+| `packages.cranOpts.basePackages`  | Space-separated list of system packages installed with `apt-get` in addition to the requested ones. Default: `littler r-cran-docopt`.                                             |
+| `packages.cranOpts.commands`      | Lines appended verbatim to the end of the generated build file, e.g., `['RUN echo hello']` for Docker builds. For Singularity builds, they are added to the `%post` section, e.g., `['echo hello']`.                                                                                     |
+
+Setting `basePackages` replaces the default list. To keep the default packages, include them in your list, e.g., `conda-forge::procps-ng conda-forge::gzip`.
 
 #### Response
 
