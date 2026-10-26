@@ -87,7 +87,7 @@ class RegistryCredentialsProviderTest extends Specification {
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should get ecr registry creds' () {
         given:
-        def reg = '195996028523.dkr.ecr.eu-west-1.amazonaws.com'
+        def reg = '935786761764.dkr.ecr.eu-west-1.amazonaws.com'
         when:
         def creds = credentialsProvider.getDefaultCredentials(reg)
         then:

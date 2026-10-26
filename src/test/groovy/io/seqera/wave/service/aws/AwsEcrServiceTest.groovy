@@ -46,11 +46,11 @@ class AwsEcrServiceTest extends Specification {
     @Inject
     AwsEcrService provider
 
-    @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
+    @Requires({System.getenv('WAVE_TEST_ECR_USERNAME') && System.getenv('WAVE_TEST_ECR_PASSWORD')})
     def 'should get registry token' () {
         given:
-        def accessKey = System.getenv('AWS_ACCESS_KEY_ID')
-        def secretKey = System.getenv('AWS_SECRET_ACCESS_KEY')
+        def accessKey = System.getenv('WAVE_TEST_ECR_USERNAME')
+        def secretKey = System.getenv('WAVE_TEST_ECR_PASSWORD')
         def REGION = 'eu-west-1'
 
         when:
@@ -70,8 +70,8 @@ class AwsEcrServiceTest extends Specification {
         expect:
         provider.getEcrHostInfo(null) == null
         provider.getEcrHostInfo('foo') == null
-        provider.getEcrHostInfo('195996028523.dkr.ecr.eu-west-1.amazonaws.com') == new AwsEcrService.AwsEcrHostInfo('195996028523', 'eu-west-1')
-        provider.getEcrHostInfo('195996028523.dkr.ecr.eu-west-1.amazonaws.com/foo') == new AwsEcrService.AwsEcrHostInfo('195996028523', 'eu-west-1')
+        provider.getEcrHostInfo('935786761764.dkr.ecr.eu-west-1.amazonaws.com') == new AwsEcrService.AwsEcrHostInfo('935786761764', 'eu-west-1')
+        provider.getEcrHostInfo('935786761764.dkr.ecr.eu-west-1.amazonaws.com/foo') == new AwsEcrService.AwsEcrHostInfo('935786761764', 'eu-west-1')
         and:
         provider.getEcrHostInfo('public.ecr.aws') == new AwsEcrService.AwsEcrHostInfo(null, 'us-east-1')
     }
@@ -80,8 +80,8 @@ class AwsEcrServiceTest extends Specification {
         expect:
         !AwsEcrService.isEcrHost(null)
         !AwsEcrService.isEcrHost('foo')
-        AwsEcrService.isEcrHost('195996028523.dkr.ecr.eu-west-1.amazonaws.com')
-        AwsEcrService.isEcrHost('195996028523.dkr.ecr.eu-west-1.amazonaws.com/foo')
+        AwsEcrService.isEcrHost('935786761764.dkr.ecr.eu-west-1.amazonaws.com')
+        AwsEcrService.isEcrHost('935786761764.dkr.ecr.eu-west-1.amazonaws.com/foo')
         and:
         AwsEcrService.isEcrHost('public.ecr.aws')
         AwsEcrService.isEcrHost('public.ecr.aws/foo')
