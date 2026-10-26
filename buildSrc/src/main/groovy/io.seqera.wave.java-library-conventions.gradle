@@ -45,20 +45,20 @@ java {
 }
 
 dependencies {
-    implementation 'org.slf4j:slf4j-api:2.0.16'
-    implementation 'org.slf4j:slf4j-jdk-platform-logging:2.0.16'
+    implementation 'org.slf4j:slf4j-api:2.0.20'
+    implementation 'org.slf4j:slf4j-jdk-platform-logging:2.0.20'
 
-    testImplementation 'ch.qos.logback:logback-core:1.5.34'
-    testImplementation 'ch.qos.logback:logback-classic:1.5.34'
-    testImplementation 'org.apache.groovy:groovy:4.0.31'
-    testImplementation 'org.apache.groovy:groovy-nio:4.0.31'
-    testImplementation 'org.apache.groovy:groovy-test:4.0.31'
-    testImplementation 'org.objenesis:objenesis:3.4'
-    testImplementation 'net.bytebuddy:byte-buddy:1.14.17'
-    testImplementation 'org.spockframework:spock-core:2.3-groovy-4.0'
-    testImplementation 'org.spockframework:spock-junit4:2.3-groovy-4.0'
+    testImplementation 'ch.qos.logback:logback-core:1.6.5'
+    testImplementation 'ch.qos.logback:logback-classic:1.6.5'
+    testImplementation 'org.apache.groovy:groovy:4.0.33'
+    testImplementation 'org.apache.groovy:groovy-nio:4.0.33'
+    testImplementation 'org.apache.groovy:groovy-test:4.0.33'
+    testImplementation 'org.objenesis:objenesis:3.6'
+    testImplementation 'net.bytebuddy:byte-buddy:1.18.15'
+    testImplementation 'org.spockframework:spock-core:2.5-groovy-6.0'
+    testImplementation 'org.spockframework:spock-junit4:2.5-groovy-6.0'
     // Gradle 9 no longer provides the JUnit Platform launcher automatically
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.5'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.14.4'
 }
 
 tasks.withType(Test).configureEach {
