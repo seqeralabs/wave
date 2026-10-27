@@ -165,16 +165,19 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
         return false
     }
 
-    private static final List<Integer> REJECTION_CODES = [401, 403, 404]
+    // client errors that are transient: 408 is also how the connector reports its own timeouts
+    private static final List<Integer> TRANSIENT_CLIENT_CODES = [408, 429]
 
     /**
-     * Whether the given error is a definite answer from Platform denying the lookup: the workflow is
-     * gone (404) or the credentials no longer grant access (403, or 401 after a failed token refresh).
-     * Everything else (5xx, 408, 429, IO errors) is transient and handled fail-open.
+     * Whether the given error is a definite answer from Platform to the lookup: any 4xx reply, such as
+     * the workflow is gone (404), the credentials no longer grant access (403, or 401 after a failed
+     * token refresh) or the response is too large to relay over pairing (413). Retrying would get the
+     * same answer. Everything else (5xx, 408, 429, IO errors) is transient and handled fail-open.
      */
     protected static boolean isDefiniteRejection(Throwable t) {
         final http = ExceptionUtils.getThrowableList(t).find { it instanceof HttpResponseException } as HttpResponseException
-        return http?.statusCode()?.code in REJECTION_CODES
+        final code = http?.statusCode()?.code
+        return code!=null && code>=400 && code<500 && !(code in TRANSIENT_CLIENT_CODES)
     }
 
     protected static String rootCauseMessage(Throwable t) {
@@ -314,7 +317,7 @@ class ContainerRequestServiceImpl implements ContainerRequestService {
 
     private boolean onLookupError(Entry entry, ContainerRequest request, Throwable t) {
         if( isDefiniteRejection(t) ) {
-            // Platform answered: the workflow is gone or the credentials no longer grant access.
+            // Platform answered with a 4xx: e.g. the workflow is gone or the credentials no longer grant access.
             // That is not a connectivity problem, so revoke fail-closed.
             meterRefresh('unresolved')
             log.info "Container request '${entry.requestId}' - workflow ${entry.workflowId} lookup rejected by Platform (${rootCauseMessage(t)}); stop tracking"
