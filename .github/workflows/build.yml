@@ -207,16 +207,6 @@ jobs:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
 
       # --- Enterprise repo + maven publish + git tag + GitHub release: master / release-* only ---
-      - name: Login to legacy ECR
-        if: "steps.detect-release.outputs.is_publish == 'true'"
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
-        with:
-          registry: 195996028523.dkr.ecr.eu-west-1.amazonaws.com
-          username: ${{ secrets.TOWER_CI_AWS_ACCESS }}
-          password: ${{ secrets.TOWER_CI_AWS_SECRET }}
-        env:
-          AWS_REGION: eu-west-1
-
       - name: Configure AWS credentials for platform pusher
         if: "steps.detect-release.outputs.is_publish == 'true'"
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
@@ -256,11 +246,6 @@ jobs:
           # Build and push the multi-arch image to enterprise ECR (new central registry)
           ENTERPRISE_ECR=232933512461.dkr.ecr.eu-west-2.amazonaws.com
           ./gradlew -PjibRepo=$ENTERPRISE_ECR/wave/server:$TAG jib
-
-          # Copy the same multi-arch index to the legacy ECR as nf-tower-enterprise/wave
-          # (a second `jib` run would produce a different digest, the image creation time is not fixed)
-          LEGACY_ECR=195996028523.dkr.ecr.eu-west-1.amazonaws.com
-          docker buildx imagetools create --tag $LEGACY_ECR/nf-tower-enterprise/wave:$TAG $ENTERPRISE_ECR/wave/server:$TAG
 
           # Create GitHub release (draft for alpha/beta/RC tags)
           grep -Ei '.*-(A[0-9]+|B[0-9]+|RC[0-9]+)$' VERSION &>/dev/null && DRAFT='--draft' || DRAFT=''
