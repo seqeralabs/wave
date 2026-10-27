@@ -61,10 +61,10 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
     String azurePassword
 
     @Shared
-    @Value('${wave.registries.935786761764.dkr.ecr.eu-west-1.amazonaws.com.username}')
+    @Value('${wave.registries.935786761764.dkr.ecr.us-east-1.amazonaws.com.username}')
     String awsEcrUsername
     @Shared
-    @Value('${wave.registries.935786761764.dkr.ecr.eu-west-1.amazonaws.com.password}')
+    @Value('${wave.registries.935786761764.dkr.ecr.us-east-1.amazonaws.com.password}')
     String awsEcrPassword
 
     @Inject
@@ -107,7 +107,7 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
     @IgnoreIf({!System.getenv('AWS_ACCESS_KEY_ID')})
     void 'test valid aws ecr private'() {
         given:
-        String REGISTRY_URL = '935786761764.dkr.ecr.eu-west-1.amazonaws.com'
+        String REGISTRY_URL = '935786761764.dkr.ecr.us-east-1.amazonaws.com'
         expect:
         loginService.login(REGISTRY_URL, awsEcrUsername, awsEcrPassword)
     }

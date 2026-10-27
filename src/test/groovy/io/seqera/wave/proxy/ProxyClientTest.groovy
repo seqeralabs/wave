@@ -132,21 +132,21 @@ class ProxyClientTest extends Specification {
 
     def 'should lookup aws registry' () {
         when:
-        def registry = lookupService.lookup('935786761764.dkr.ecr.eu-west-1.amazonaws.com')
+        def registry = lookupService.lookup('935786761764.dkr.ecr.us-east-1.amazonaws.com')
         then:
-        registry.name == '935786761764.dkr.ecr.eu-west-1.amazonaws.com'
-        registry.host == new URI('https://935786761764.dkr.ecr.eu-west-1.amazonaws.com')
-        registry.auth.realm == new URI('https://935786761764.dkr.ecr.eu-west-1.amazonaws.com/')
+        registry.name == '935786761764.dkr.ecr.us-east-1.amazonaws.com'
+        registry.host == new URI('https://935786761764.dkr.ecr.us-east-1.amazonaws.com')
+        registry.auth.realm == new URI('https://935786761764.dkr.ecr.us-east-1.amazonaws.com/')
         registry.auth.service == 'ecr.amazonaws.com'
         registry.auth.type == RegistryAuth.Type.Basic
-        registry.auth.endpoint == new URI('https://935786761764.dkr.ecr.eu-west-1.amazonaws.com/v2/')
+        registry.auth.endpoint == new URI('https://935786761764.dkr.ecr.us-east-1.amazonaws.com/v2/')
     }
 
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should call target manifest on amazon' () {
         given:
         def IMAGE = 'wave/app'
-        def REG = '935786761764.dkr.ecr.eu-west-1.amazonaws.com'
+        def REG = '935786761764.dkr.ecr.us-east-1.amazonaws.com'
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
         def httpClient = HttpClientFactory.neverRedirectsHttpClient()
@@ -167,7 +167,7 @@ class ProxyClientTest extends Specification {
     def 'should call head manifest on amazon' () {
         given:
         def IMAGE = 'wave/app'
-        def REG = '935786761764.dkr.ecr.eu-west-1.amazonaws.com'
+        def REG = '935786761764.dkr.ecr.us-east-1.amazonaws.com'
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
         def httpClient = HttpClientFactory.neverRedirectsHttpClient()

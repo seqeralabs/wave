@@ -51,7 +51,7 @@ class AwsEcrServiceTest extends Specification {
         given:
         def accessKey = System.getenv('WAVE_TEST_ECR_USERNAME')
         def secretKey = System.getenv('WAVE_TEST_ECR_PASSWORD')
-        def REGION = 'eu-west-1'
+        def REGION = 'us-east-1'
 
         when:
         def creds = provider.getLoginToken(accessKey, secretKey, REGION, false).tokenize(":")
@@ -70,8 +70,8 @@ class AwsEcrServiceTest extends Specification {
         expect:
         provider.getEcrHostInfo(null) == null
         provider.getEcrHostInfo('foo') == null
-        provider.getEcrHostInfo('935786761764.dkr.ecr.eu-west-1.amazonaws.com') == new AwsEcrService.AwsEcrHostInfo('935786761764', 'eu-west-1')
-        provider.getEcrHostInfo('935786761764.dkr.ecr.eu-west-1.amazonaws.com/foo') == new AwsEcrService.AwsEcrHostInfo('935786761764', 'eu-west-1')
+        provider.getEcrHostInfo('935786761764.dkr.ecr.us-east-1.amazonaws.com') == new AwsEcrService.AwsEcrHostInfo('935786761764', 'us-east-1')
+        provider.getEcrHostInfo('935786761764.dkr.ecr.us-east-1.amazonaws.com/foo') == new AwsEcrService.AwsEcrHostInfo('935786761764', 'us-east-1')
         and:
         provider.getEcrHostInfo('public.ecr.aws') == new AwsEcrService.AwsEcrHostInfo(null, 'us-east-1')
     }
@@ -80,8 +80,8 @@ class AwsEcrServiceTest extends Specification {
         expect:
         !AwsEcrService.isEcrHost(null)
         !AwsEcrService.isEcrHost('foo')
-        AwsEcrService.isEcrHost('935786761764.dkr.ecr.eu-west-1.amazonaws.com')
-        AwsEcrService.isEcrHost('935786761764.dkr.ecr.eu-west-1.amazonaws.com/foo')
+        AwsEcrService.isEcrHost('935786761764.dkr.ecr.us-east-1.amazonaws.com')
+        AwsEcrService.isEcrHost('935786761764.dkr.ecr.us-east-1.amazonaws.com/foo')
         and:
         AwsEcrService.isEcrHost('public.ecr.aws')
         AwsEcrService.isEcrHost('public.ecr.aws/foo')
