@@ -29,13 +29,13 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 
 import dev.failsafe.Failsafe;
 import dev.failsafe.FailsafeException;
 import dev.failsafe.RetryPolicy;
 import dev.failsafe.event.EventListener;
 import dev.failsafe.event.ExecutionAttemptedEvent;
+import dev.failsafe.function.CheckedPredicate;
 import dev.failsafe.function.CheckedSupplier;
 import io.seqera.wave.api.ContainerInspectRequest;
 import io.seqera.wave.api.ContainerInspectResponse;
@@ -79,7 +79,6 @@ public class Client {
     private HttpClient httpClient;
 
     private String endpoint = DEFAULT_ENDPOINT;
-
 
     Client() {
         // create http client
@@ -147,12 +146,12 @@ public class Client {
         return this;
     }
 
-    protected <T> RetryPolicy<T> retryPolicy(Predicate<? extends Throwable> cond) {
+    protected <T> RetryPolicy<T> retryPolicy(CheckedPredicate<? extends Throwable> cond) {
         final RetryOpts cfg = new RetryOpts();
         final EventListener<ExecutionAttemptedEvent<T>> listener = new EventListener<ExecutionAttemptedEvent<T>>() {
             @Override
             public void accept(ExecutionAttemptedEvent<T> event) throws Throwable {
-                log.debug("Wave connection failure - attempt: " + event.getAttemptCount(), event.getLastFailure());
+                log.debug("Wave connection failure - attempt: " + event.getAttemptCount(), event.getLastException());
             }
         };
 
@@ -166,7 +165,7 @@ public class Client {
     }
 
     protected <T> T safeApply(CheckedSupplier<T> action) {
-        final Predicate<? extends Throwable> cond = (e -> e instanceof IOException);
+        final CheckedPredicate<? extends Throwable> cond = (e -> e instanceof IOException);
         final RetryPolicy<T> policy = retryPolicy(cond);
         return Failsafe.with(policy).get(action);
     }

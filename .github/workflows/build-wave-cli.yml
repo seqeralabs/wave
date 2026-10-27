@@ -262,7 +262,7 @@ jobs:
           # the release is created in this repository with the workflow token, the PAT is
           # only needed to push the formula to the Homebrew tap repository
           JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          JRELEASER_HOMEBREW_GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
+          JRELEASER_HOMEBREW_GITHUB_TOKEN: ${{ secrets.JRELEASER_HOMEBREW_GITHUB_TOKEN }}
           JRELEASER_PROJECT_VERSION: ${{ steps.version.outputs.VERSION }}
           JRELEASER_PACKAGERS_BREW_ACTIVE: ${{ env.JRELEASER_PACKAGERS_BREW_ACTIVE }}
 
