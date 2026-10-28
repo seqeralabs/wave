@@ -1,0 +1,21 @@
+BootStrap: docker
+From: mambaorg/micromamba:2-amazon2023
+%files
+    {{wave_context_dir}}/conda.yml /scratch/conda.yml
+%post
+    # expose `which` at /usr/bin/which for R (bioconda) post-link scripts; the amazon2023 base image lacks it
+    micromamba install -y -n base conda-forge::which
+    ln -sf "$MAMBA_ROOT_PREFIX/bin/which" /usr/bin/which
+    micromamba install -y -n base -f /scratch/conda.yml > /tmp/mamba.log 2>&1 \
+        && cat /tmp/mamba.log \
+        || (cat /tmp/mamba.log >&2 && grep -q __cuda /tmp/mamba.log \
+            && CONDA_OVERRIDE_CUDA="99" micromamba install -y -n base -f /scratch/conda.yml)
+    micromamba install -y -n base conda-forge::procps-ng
+    micromamba clean -a -y
+    micromamba env export --name base --explicit > environment.lock
+    echo ">> CONDA_LOCK_START"
+    cat environment.lock
+    echo "<< CONDA_LOCK_END"
+%environment
+    export MAMBA_ROOT_PREFIX=/opt/conda
+    export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"

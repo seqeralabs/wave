@@ -1,4 +1,56 @@
 # Wave changelog
+1.42.1 - 20 Oct 2026
+- Publish work queue metrics for the job queues (#1203) [4001b8eae]
+- Pull nf-jdk base image from public.cr.seqera.io (#1200) [c162e2d00]
+
+1.42.0 - 20 Oct 2026
+- Move job queues to lib-data-workqueue, fix duplicate job processing and drain on shutdown (#1201) [60d327e19]
+- Update postgres docker tag to v16.15 (#1198) [7cf0fa273]
+- Update npm minor and patch (#1197) [1f5a2a871]
+- Update github actions (#1195) [5d57cc8a7]
+
+1.41.0 - 18 Oct 2026
+- Match registry credentials by repository path (#1165) [937c765e0]
+- Keep only the platform's Fusion snapshot layer in multi-arch images (#1191) [841582c0e]
+- Drop the other platform's layers from frozen multi-arch container files (#1193) [4dc0e98e6]
+- Disable SSRF protection by default (#1192) [8dea8f578]
+- Fix stray leading blank line in extracted conda lock file (#1082) [cfd7a5629]
+- Publish condasplit with the Wave release and check its default matches VERSION (#1188) [731e30b97]
+- Bump condasplit to v2 and check the VERSION bump on pull requests (#1187) [7fd08af18]
+- Override the vulnerable jackson on the Gradle plugins classpath (#1194) [2929baf00]
+
+1.40.4 - 15 Oct 2026
+- Re-release of 1.40.3: the 1.40.3 image was not published to the legacy ECR
+
+1.40.3 - 15 Oct 2026
+- Fix token watcher head-of-line blocking on slow Platform endpoints (#1181) [fa56deaf7]
+- Bump lib-pairing to 1.2.0 to close pairing sessions that stop sending heartbeats (#1184) [db02cdaf4]
+- Bump lib-cache-tiered-redis to 1.1.1 to coalesce concurrent cache misses (#1182) [bbbbc2beb]
+- Publish multi-arch Wave image on release and preview (#1180) [7fee8756b]
+- Bump condasplit frontend github.com/moby/go-archive to v0.3.0 [security] (#1177) [9645160de]
+
+1.40.2 - 12 Oct 2026
+- Bump buildkit to v0.33.1 (#1152) [bc7cb0a2e]
+
+1.40.1 - 12 Oct 2026
+- Bump Micronaut to 4.10.21 (#1171, #1176) [b964a699b, ced2ce56f]
+- Override vulnerable transitive JVM dependencies (#1175) [c8c71206e]
+- Bump logback to 1.5.34 (#1174) [46949fd60]
+- Bump nf-jdk base image to v25.0.4 (#1166) [91ce624b9]
+- Bump condasplit frontend Go dependencies to fix vulnerabilities (#1172) [018564437]
+- fix(deps): pin @typespec/openapi to 1.16.0 (#1173) [f6254fe43]
+
+1.40.0 - 5 Oct 2026
+- Add conda/pixi:v1-fast template with layered conda builds (#1153) [c260aff3a]
+
+1.39.0 - 2 Oct 2026
+- Add multi-architecture Singularity (SIF) build support (#1140) [0f9a23d93]
+- Add conda/micromamba:v2-fast template with layered conda builds (#1146, #1151) [5ffc92ca4, 2296d4ba7]
+- fix(deps): upgrade lib-pairing to 1.1.1 to accept large pairing messages (#1144) [0d74fc264]
+- fix(deps): upgrade typespec to 1.16.0 (COMP-2378) (#1143) [b8198f57b]
+- fix(deps): upgrade bouncycastle to 1.85 (COMP-2551) (#1141) [31dbcc5a4]
+- fix(deps): upgrade micronaut platform to 4.10.19 (COMP-2257) (#1142) [2878cf5f5]
+
 1.38.0 - 15 Sep 2026
 - Upgrade jib plugin to 3.5.4 for Java 25 class file support (#1136) [ad179698b]
 - Support an authenticating egress proxy via shared lib-util-net ProxyConfig (#1125) [a992c7003]

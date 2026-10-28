@@ -18,11 +18,14 @@
 
 package io.seqera.wave.service.k8s
 
+import java.time.Duration
+
 import groovy.transform.CompileStatic
 import groovy.transform.Memoized
 import io.kubernetes.client.openapi.ApiClient
 import io.kubernetes.client.util.ClientBuilder
 import io.micronaut.context.annotation.Requires
+import io.micronaut.context.annotation.Value
 import jakarta.inject.Singleton
 
 /**
@@ -38,6 +41,9 @@ import jakarta.inject.Singleton
 @Singleton
 class K8sClusterClient implements K8sClient {
 
+    @Value('${wave.build.k8s.read-timeout:50s}')
+    private Duration readTimeout
+
     @Override
     @Memoized
     ApiClient apiClient() {
@@ -46,6 +52,11 @@ class K8sClusterClient implements K8sClient {
         //   2. service-account bearer-token
         //   3. service-account namespace
         //   4. master endpoints(ip, port) from pre-set environment variables
-        return ClientBuilder.cluster().build();
+        // the read timeout is set explicitly because the client default is none (`0`),
+        // which lets a stalled API server connection block the caller indefinitely
+        return ClientBuilder
+                .cluster()
+                .setReadTimeout(readTimeout)
+                .build()
     }
 }

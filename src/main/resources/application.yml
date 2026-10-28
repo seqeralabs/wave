@@ -14,6 +14,13 @@ micronaut:
     # it is unused at the moment by the wave project. See https://micronaut-projects.github.io/micronaut-discovery-client/latest/guide/#introduction
     discovery-client :
       enabled : false
+  lifecycle:
+    # drain the job queues and in-flight HTTP requests before the application beans are destroyed.
+    # the grace period must exceed `wave.job-manager.drain-timeout` (15s) and stay within the pod
+    # `terminationGracePeriodSeconds` (30s by default), leaving time for the beans teardown
+    graceful-shutdown:
+      enabled: true
+      grace-period: 20s
   server:
     port: "${WAVE_SERVER_PORT:9090}"
     # https://docs.micronaut.io/latest/guide/#atBlocking
@@ -82,9 +89,11 @@ wave:
       permissions-policy: "camera=(), microphone=(), geolocation=()"
       content-security-policy: "default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; frame-ancestors 'none'"
   build:
-    buildkit-image: "public.cr.seqera.io/wave/buildkit:v0.25.2-rootless"
+    buildkit-image: "public.cr.seqera.io/wave/buildkit:v0.33.1-rootless"
     singularity-image: "public.cr.seqera.io/wave/singularity:v4.2.1-r4"
     singularity-image-init: "public.cr.seqera.io/wave/busybox:latest"
+    # image providing the `condasplit` tool used by the `conda/micromamba:v2-fast` and `conda/pixi:v1-fast` build templates
+    condasplit-image: "public.cr.seqera.io/wave/condasplit:v2"
     # note changing this should be matching the micronaut.server.idle-timeout (see above)
     timeout: 900s
     status:

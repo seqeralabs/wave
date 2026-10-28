@@ -62,6 +62,12 @@ Configure general Wave application settings.
 `wave.tokens.watcher.count` *(optional)*
 : Maximum number of container requests processed in a single watcher cycle (default: `250`).
 
+`wave.tokens.watcher.concurrency` *(optional)*
+: Maximum number of container requests checked concurrently in a watcher cycle (default: `8`).
+
+`wave.tokens.watcher.lookup-timeout` *(optional)*
+: Maximum time the watcher waits for a Platform workflow lookup. If the lookup fails or times out, the token is renewed anyway, up to `cache.max-duration` (default: `5s`).
+
 ## Feature toggles
 
 Each Wave feature is an independent toggle. Wave Lite runs with all four off, which is what the `lite` Micronaut environment applies.
@@ -273,7 +279,7 @@ JAVA_TOOL_OPTIONS="-Djdk.http.auth.tunneling.disabledSchemes="
 Configure how Wave builds container images and manages build logs.
 
 `wave.build.buildkit-image` *(optional)*
-: [Buildkit](https://github.com/moby/buildkit) container image used in the Wave build process (default: `public.cr.seqera.io/wave/buildkit:v0.25.2-rootless`).
+: [Buildkit](https://github.com/moby/buildkit) container image used in the Wave build process (default: `public.cr.seqera.io/wave/buildkit:v0.33.1-rootless`).
 
 `wave.build.cache` *(optional)*
 : Cache repository for images built by Wave. Supports both container registry paths and S3 bucket paths.
@@ -302,6 +308,13 @@ Configure how Wave builds container images and manages build logs.
 `wave.build.compression` *(optional)*
 : Compression type applied to cache layers (default: `gzip`).
   Options include: `uncompressed`, `estargz`, and `zstd`.
+
+`wave.build.condasplit-image` *(optional)*
+: Container image that supplies the `condasplit` tool used by `conda/micromamba:v2-fast` and `conda/pixi:v1-fast` builds to split the Conda environment into multiple image layers (default: `public.cr.seqera.io/wave/condasplit:v2`).
+  The same image is also the BuildKit frontend of these builds, named by the `# syntax=` directive of the generated Dockerfile. It adds one image layer for each layer directory created by `condasplit`.
+  The image is used by the build only and is not included in the built image.
+  If your installation can't access the default image, mirror it to a registry your build service can pull from and set this option to the mirrored image.
+  See [Layered Conda builds](../features/container-builds.mdx#layered-conda-builds).
 
 `wave.build.force-compression` *(optional)*
 : When `true`, forces compression for each cache layer produced by the build process (default: `false`).
@@ -411,6 +424,9 @@ Configure Kubernetes-specific settings for Wave. Build and scan processes share 
   ```
 
   </div>
+
+`wave.build.k8s.read-timeout` *(optional)*
+: Maximum time to wait for data from the Kubernetes API server on an open connection before the request fails (default: `50s`).
 
 `wave.build.k8s.resources.requests.cpu` *(optional)*
 : [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to Wave build processes.
@@ -732,6 +748,10 @@ Configure the connection to the Seqera license management server:
 
 Configure polling and scheduling intervals for Wave's asynchronous job processing.
 
+`wave.job-manager.drain-timeout` *(optional)*
+: Maximum time the application shutdown waits for the jobs being launched or checked for completion. Jobs not completed within this time are handed over to another replica (default: `15s`).
+  It must be shorter than `micronaut.lifecycle.graceful-shutdown.grace-period` (default: `20s`).
+
 `wave.job-manager.max-running-jobs` *(optional)*
 : Maximum number of build, scan, and mirror jobs Wave runs concurrently (default: `20`).
   Pair this with a `ResourceQuota` on the build namespace to bound build resource usage.
@@ -742,15 +762,21 @@ Configure polling and scheduling intervals for Wave's asynchronous job processin
 `wave.job-manager.scheduler-interval` *(optional)*
 : Interval for the job scheduler to process queued jobs (default: `1s`).
 
-## Message stream
+## Work queue
 
-Configure how Wave consumes messages from the Redis stream used for internal event processing.
+Configure how Wave consumes messages from the Redis backed work queue used for internal job processing.
 
-`wave.message-stream.claim-timeout` *(optional)*
-: Timeout for claiming messages from the Redis stream (default: `5s`).
+Each setting falls back to the legacy `wave.message-stream.*` property it replaces, so a deployment configured for the previous message-stream implementation keeps its values after upgrading with no configuration change.
 
-`wave.message-stream.consume-warn-timeout` *(optional)*
-: Threshold duration after which a slow message consumer triggers a warning (default: `4s`).
+`wave.work-queue.consumer-group-name` *(optional)*
+: Name of the Redis consumer group used to read the work queues. Falls back to `wave.message-stream.consumer-group-name` (default: `wave-message-stream`).
+
+`wave.work-queue.visibility-timeout` *(optional)*
+: How long a claimed message stays invisible to other consumers before it is redelivered. Falls back to `wave.message-stream.claim-timeout` (default: `20s`, previously `5s`).
+  A job that is still running is checked again once this timeout elapses, so a longer value delays the detection of completed jobs. It must exceed a few seconds, as the lease of a message being processed is renewed every quarter of this timeout.
+
+`wave.work-queue.consumer-warn-timeout` *(optional)*
+: Threshold duration after which a slow message consumer triggers a warning. Falls back to `wave.message-stream.consume-warn-timeout` (default: `45s`, previously `4s`).
 
 ## Thread monitor
 

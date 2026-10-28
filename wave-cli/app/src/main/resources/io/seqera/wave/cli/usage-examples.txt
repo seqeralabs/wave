@@ -1,0 +1,49 @@
+
+Examples:
+  # Augment a container image with the content of a local directory
+  wave -i alpine --layer layer-dir/
+
+  # Build a container with Dockerfile
+  wave -f Dockerfile --context context-dir/
+
+  # Build a container based on Conda packages
+  wave --conda-package bamtools=2.5.2 --conda-package samtools=1.17
+
+  # Build a container based on Conda packages using arm64 CPU architecture
+  wave --conda-package fastp --platform linux/arm64
+
+  # Build a container based on Conda packages using both amd64 and arm64 CPU architectures
+  wave --conda-package fastp --platform linux/amd64,linux/arm64
+
+  # Build a container based on Conda lock file served via prefix.dev service
+  wave --conda-package https://prefix.dev/envs/pditommaso/wave/conda-lock.yml
+
+  # Build a container based on Conda packages using Pixi build template
+  wave --conda-package bamtools=2.5.2 --build-template conda/pixi:v1
+
+  # Build a container based on CRAN packages
+  wave --cran-package dplyr=1.1.0 --cran-package ggplot2
+
+  # Build a container based on CRAN packages with custom R base image
+  wave --cran shiny --cran-base-image rocker/tidyverse:4.3.0
+
+  # Build a container based on CRAN packages using arm64 architecture
+  wave --cran dplyr --platform linux/arm64
+
+  # Build a container getting a persistent image name
+  wave -i alpine --freeze --build-repo docker.io/user/repo --tower-token <YOUR TOKEN>
+
+  # Build a Singularity container and push it to an OCI registry
+  wave -f Singularityfile --singularity --freeze --build-repo docker.io/user/repo
+
+  # Build a Singularity container based on Conda packages
+  wave --conda-package bamtools=2.5.2 --singularity --freeze --build-repo docker.io/user/repo
+
+  # Build a Singularity container based on CRAN packages
+  wave --cran-package dplyr --singularity --freeze --build-repo docker.io/user/repo
+
+  # Copy a container image to another registry
+  wave -i quay.io/biocontainers/bwa:0.7.15--0 --mirror --build-repository <YOUR REGISTRY> --tower-token <YOUR TOKEN>
+
+  # Scan a container for security vulnerability
+  wave -i ubuntu --scan-mode required --await
