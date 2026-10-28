@@ -65,8 +65,9 @@ Use the following options to configure Wave build settings:
   Default: `gzip`.
 
 `wave.build.conda.baseImage`
-: Base image for the final stage of multi-stage Conda container builds.
-  Only applies when `wave.build.template` is set to `conda/micromamba:v2` or `conda/pixi:v1`.
+: _Requires Nextflow version 26.08.0-edge or later._
+: Base image for the final stage of the `conda/micromamba:v2` and `conda/micromamba:v2-fast` build templates.
+  Not supported with the `conda/pixi:v1` and `conda/pixi:v1-fast` templates.
   Default: `ubuntu:24.04`.
 
 `wave.build.conda.basePackages`
@@ -85,9 +86,11 @@ Use the following options to configure Wave build settings:
   Requires corresponding credentials to be configured in your Seqera account.
 
 `wave.build.template`
+: _Requires Nextflow version 25.12.0-edge or later._
 : Build template for container builds.
-  Supported values: `conda/pixi:v1` (Pixi with multi-stage builds), `conda/micromamba:v2` (Micromamba 2.x with multi-stage builds), `cran/installr:v1` (R/CRAN packages).
-  Default: `conda/micromamba:v1`.
+  Supported values: `conda/micromamba:v1` (Micromamba 1.x with single-stage builds), `conda/micromamba:v2` (Micromamba 2.x with multi-stage builds), `conda/micromamba:v2-fast` (like `conda/micromamba:v2`, with the Conda environment split into multiple image layers, Docker only), `conda/pixi:v1` (Pixi with multi-stage builds), `conda/pixi:v1-fast` (like `conda/pixi:v1`, with the Conda environment split into multiple image layers, Docker only), `cran/installr:v1` (R/CRAN packages).
+  See [Multi-stage Conda builds](../features/container-builds.mdx#multi-stage-conda-builds) for details.
+  Default: `conda/micromamba:v2` for Conda packages.
 
 ## Conda
 
