@@ -170,6 +170,21 @@
     },
     {
       "matchManagers": [
+        "gomod"
+      ],
+      "matchFileNames": [
+        "condasplit/**"
+      ],
+      "groupName": "condasplit go dependencies",
+      "addLabels": [
+        "condasplit-bump"
+      ],
+      "prBodyNotes": [
+        "This PR changes the condasplit image sources: bump `condasplit/VERSION` and set the `wave.build.condasplit-image` default in `application.yml` and `BuildConfig` to the new tag, otherwise the `check-version` check fails and blocks the merge."
+      ]
+    },
+    {
+      "matchManagers": [
         "docker-compose"
       ],
       "matchPackageNames": [
