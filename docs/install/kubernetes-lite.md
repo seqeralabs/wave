@@ -15,7 +15,7 @@ You need the following:
 - PostgreSQL 16 or later, reachable from the cluster.
 - Redis 6.2 or later, reachable from the cluster.
 - A Seqera Platform deployment and its endpoint URL.
-- Access to the Wave container image from `cr.seqera.io`, using credentials provided by Seqera.
+- Access to the Wave container image `cr.seqera.io/enterprise/wave/server`, using credentials provided by Seqera.
 :::
 
 :::tip[Install with the Helm chart]
@@ -164,7 +164,7 @@ Anonymous access is enabled by default. Any client that can reach Wave can use t
 
 ## Create the deployment
 
-Deploy Wave with a Deployment that pulls the Wave image and mounts the `wave-cfg` ConfigMap:
+Deploy Wave with a Deployment that pulls the Wave image and mounts the `wave-cfg` ConfigMap. Replace `<tag>` with the Wave version to deploy, for example `v1.40.2`. The image has no `latest` tag, so you must specify a version. See [Wave releases](https://github.com/seqeralabs/wave/releases) for available versions. Only the `v*` tags apply to the Wave image; `cli-v*` tags are Wave CLI releases.
 
 ```yaml
 apiVersion: apps/v1
@@ -187,7 +187,7 @@ spec:
       imagePullSecrets:
         - name: seqera-reg-creds
       containers:
-        - image: cr.seqera.io/<wave-image-path>:<tag>   # Use the image path and tag provided by Seqera.
+        - image: cr.seqera.io/enterprise/wave/server:<tag>   # Replace <tag> with a Wave version.
           name: wave-app
           ports:
             - containerPort: 9090

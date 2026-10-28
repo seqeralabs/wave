@@ -31,7 +31,7 @@ import jakarta.inject.Singleton
 @Singleton
 class SsrfConfig {
 
-    @Value('${wave.security.ssrf-protection.enabled:true}')
+    @Value('${wave.security.ssrf-protection.enabled:false}')
     Boolean ssrfProtectionEnabled
 
 }

@@ -1,0 +1,55 @@
+name: Test condasplit
+
+# the image is published by the Wave release, see the `Publish condasplit image` step in build.yml
+on:
+  pull_request:
+    paths:
+      - 'condasplit/**'
+      - '.github/workflows/build-condasplit.yml'
+      # the `wave.build.condasplit-image` default, see the check-version job
+      - 'src/main/resources/application.yml'
+      - 'src/main/groovy/io/seqera/wave/configuration/BuildConfig.groovy'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    # the owner tests need root, they are skipped otherwise
+    container:
+      image: golang:1.27
+      options: --user root
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Run tests
+        working-directory: condasplit
+        run: |
+          go vet ./...
+          go test ./...
+          cd frontend && go vet ./... && go test ./...
+
+  # fails when the sources change without a VERSION bump, otherwise the next Wave release fails
+  # to publish the image, see `make check`
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Check the VERSION tag
+        run: make -C condasplit check registry=public.cr.seqera.io/wave
+
+      # Wave defaults to the image published by the Wave release, so the default must name the VERSION tag
+      - name: Check the Wave default image
+        run: |
+          expected="public.cr.seqera.io/wave/condasplit:$(cat condasplit/VERSION)"
+          for f in src/main/resources/application.yml src/main/groovy/io/seqera/wave/configuration/BuildConfig.groovy; do
+            if ! grep -qF "$expected" "$f" || grep -o 'public\.cr\.seqera\.io/wave/condasplit:[^"`]*' "$f" | grep -vqxF "$expected"; then
+              echo "::error file=$f::the wave.build.condasplit-image default must be $expected, as condasplit/VERSION" >&2
+              exit 1
+            fi
+          done
+          echo "the Wave default image is $expected"

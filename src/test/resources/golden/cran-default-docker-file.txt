@@ -1,0 +1,16 @@
+FROM rocker/r-ver:4.4.1
+RUN \
+    apt-get update && apt-get install -y littler r-cran-docopt \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=wave_context_dir . .
+RUN \
+    if [ -f "renv.lock" ]; then \
+        R -e "install.packages('renv'); renv::restore()"; \
+    elif [ -f "install.R" ]; then \
+        Rscript install.R; \
+    else \
+        echo "No renv.lock or install.R file found"; \
+    fi \
+    && rm -rf /tmp/downloaded_packages/ /tmp/*.rds
+USER root
+ENV R_LIBS_USER="/usr/local/lib/R/site-library"

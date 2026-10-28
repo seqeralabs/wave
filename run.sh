@@ -18,4 +18,25 @@
 
 mv wave.log wave.log.bak
 export AWS_REGION=${AWS_REGION:-'eu-west-1'}
-./gradlew run --continuous --watch-fs
+
+# AWS SSO: Wave needs static keys for the ECR build registry, and an SSO session only has
+# temporary ones. So push through the ECR dual-stack endpoint instead, which Wave treats as
+# a plain registry, with the ECR login token of the session. Run `aws sso login` first and
+# `AWS_PROFILE=<profile> ./run.sh`; run it again when the SSO session credentials expire.
+if [ -n "$AWS_PROFILE" ] && [ -z "$AWS_ACCESS_KEY_ID" ]; then
+  ECR_HOST=195996028523.dkr-ecr.eu-west-1.on.aws
+  ECR_LOGIN_TOKEN=$(aws ecr get-login-password --region eu-west-1) || exit 1
+  export ECR_LOGIN_TOKEN
+  # the session credentials for the AWS SDK clients, e.g. the SES mailer
+  eval "$(aws configure export-credentials --format env)" || exit 1
+  export WAVE_BUILD_REPO=$ECR_HOST/wave/build/dev
+  export WAVE_BUILD_CACHE=$ECR_HOST/wave/build/cache
+  # config.yml plus the dual-stack registry, the token stays in the environment
+  export WAVE_CONFIG_FILE=$PWD/build/config-sso.yml
+  mkdir -p build
+  { sed '/^\.\.\.$/d' config.yml
+    printf '    %s:\n      username: "AWS"\n      password: "${ECR_LOGIN_TOKEN:}"\n' $ECR_HOST
+  } > $WAVE_CONFIG_FILE
+fi
+
+./gradlew run --continuous --watch-fs --console=plain
