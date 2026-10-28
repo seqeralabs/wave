@@ -1,8 +1,8 @@
 ---
 title: On-demand container builds
-description: Build container images just-in-time from a Dockerfile, Singularity recipe, Conda environment, Conda lock file, or list of PyPI or CRAN packages.
+description: Build container images just-in-time from a Dockerfile, Singularity recipe, Conda environment, Conda lock file, or list of PyPI or CRAN packages, with Micromamba or Pixi for Conda builds.
 date: 2026-04-23
-tags: [build, conda, pypi, cran, dockerfile, singularity, multi-stage, multi-architecture]
+tags: [build, conda, pixi, pypi, cran, dockerfile, singularity, multi-stage, multi-architecture]
 ---
 
 Wave builds container images from a Dockerfile, Singularity recipe, Conda packages, Conda environment file (which can include PyPI packages), Conda lock file, or list of CRAN packages. Conda builds can use Micromamba or Pixi templates. This *just-in-time (JIT)* strategy creates images on demand. You don't need to pre-build and curate images ahead of each pipeline run. Wave returns an image URI immediately. The build runs in the background.
@@ -160,7 +160,7 @@ Four multi-stage templates are available:
 
 - **`conda/micromamba:v2`** uses Micromamba and produces an `environment.lock` file. This is the default template for Conda builds.
 - **`conda/micromamba:v2-fast`** builds like `conda/micromamba:v2`, then splits the environment into multiple image layers. It produces Docker images only. See [Layered Conda builds](#layered-conda-builds).
-- **`conda/pixi:v1`** uses [Pixi](https://pixi.sh/) and produces a `pixi.lock` file. Conda lock files are not supported through this template. Pixi support was added in Wave 1.31.0.
+- **`conda/pixi:v1`** uses [Pixi](https://pixi.sh/) and produces a `pixi.lock` file. See [Build with Pixi](#build-with-pixi).
 - **`conda/pixi:v1-fast`** builds like `conda/pixi:v1`, then splits the environment into multiple image layers. It produces Docker images only. See [Layered Conda builds](#layered-conda-builds).
 
 Select a template with the `buildTemplate` field on the build request, the `--build-template` option of the Wave CLI, or the `wave.build.template` setting in Nextflow. The `conda/micromamba:v2` and `conda/pixi:v1` templates accept Conda packages and Conda environment files, and both produce Docker and Singularity images.
@@ -207,6 +207,30 @@ wave \
 Use `--build-template conda/pixi:v1-fast` to build the environment with Pixi instead.
 
 Both templates are opt-in. Existing templates and the default template are unchanged, so existing images keep their build IDs. Singularity builds are not supported with these templates, and Wave rejects them. See [Layered Conda builds](../api.md#layered-conda-builds) in the API reference for details.
+
+### Build with Pixi
+
+[Pixi](https://pixi.sh/) is a package manager that resolves and installs Conda packages. Wave can use Pixi instead of Micromamba to build images from Conda packages or Conda environment files.
+
+To use Pixi, select the `conda/pixi:v1` build template, or `conda/pixi:v1-fast` for a [layered build](#layered-conda-builds):
+
+| Client    | Setting                                                    |
+| --------- | ---------------------------------------------------------- |
+| Wave API  | `buildTemplate` field set to `conda/pixi:v1`               |
+| Wave CLI  | `--build-template conda/pixi:v1`                           |
+| Nextflow  | `wave.build.template = 'conda/pixi:v1'` in the pipeline configuration |
+
+The template runs a [multi-stage build](#multi-stage-conda-builds). The final Docker image does not include Pixi.
+
+Pixi builds accept the same Conda packages and environment files as Micromamba builds, with the package type `CONDA`. Pixi builds produce a `pixi.lock` file instead of a Conda lock file. The `conda/pixi:v1` template does not accept Conda lock files as input.
+
+The `conda/pixi:v1` template produces Docker and Singularity images, `conda/pixi:v1-fast` produces Docker images only. For Singularity images, Wave runs a single-stage build because Singularity's proot-based builder cannot preserve file permissions across stages. The `baseImage` option has no effect on Singularity builds.
+
+To customize a Pixi build, set the `packages.pixiOpts` object on the API request. It sets the Pixi builder image, the final-stage base image, base packages, and custom commands. See [Package build options](../api.md#package-build-options).
+
+:::note
+Pixi support was added in Wave 1.31.0.
+:::
 
 ### Build from CRAN packages
 
