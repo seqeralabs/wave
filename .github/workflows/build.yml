@@ -31,7 +31,10 @@ jobs:
   build:
     name: Build Wave
     if: "github.event == 'push' || github.repository != github.event.pull_request.head.repo.full_name"
-    runs-on: ubuntu-latest
+    # A sched spot VM (8 vCPU / 32 GiB, current-generation m7a/m7i). A spot reclaim fails the job and
+    # sched re-runs it once on on-demand, so a [release] push, which tags, publishes to maven and
+    # pushes to the enterprise repo and must not run twice, stays on a GitHub-hosted runner
+    runs-on: ${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '[release]')) && 'ubuntu-latest' || format('sched/run={0}/cpu=8/mem=32/type=m7a+m7i/spot=true', github.run_id) }}
     # includes the condasplit image build on a release, ~6 minutes when the tag is new, plus headroom
     # for registry stalls: a release cancelled on timeout publishes nothing and must be pushed again
     timeout-minutes: 45
@@ -134,7 +137,7 @@ jobs:
       - name: Cleanup build workspace
         if: always()
         run: |
-          sudo rm -rf /home/runner/work/wave/wave/build-workspace
+          sudo rm -rf "$GITHUB_WORKSPACE/build-workspace"
 
       # A [preview] pushes the image to the internal (dev) ECR below; a [release] on master/release-*
       # promotes it to the enterprise repo + maven. The image is built and pushed by `jib` directly to
