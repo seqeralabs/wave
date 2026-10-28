@@ -1,4 +1,11 @@
 # Wave changelog
+1.42.2 - 28 Oct 2026
+- Request the minimal workflow record and stop renewing on any 4xx lookup reply (#1209) [5e016009c]
+- Stop copying the release image to the legacy ECR (#1216) [f1b42ed8d]
+- Use public.cr.seqera.io/seqeralabs/nf-jdk base image (#1207) [d4b9a35de]
+- Update nf-jdk base image digest to 15e35e9 (#1212) [67a0522e5]
+- Update gradle minor and patch (#1215) [396787ae9]
+
 1.42.1 - 20 Oct 2026
 - Publish work queue metrics for the job queues (#1203) [4001b8eae]
 - Pull nf-jdk base image from public.cr.seqera.io (#1200) [c162e2d00]
