@@ -32,8 +32,9 @@ jobs:
     name: Build Wave
     if: "github.event == 'push' || github.repository != github.event.pull_request.head.repo.full_name"
     runs-on: ubuntu-latest
-    # includes the condasplit image build on a release, ~6 minutes when the tag is new
-    timeout-minutes: 25
+    # includes the condasplit image build on a release, ~6 minutes when the tag is new, plus headroom
+    # for registry stalls: a release cancelled on timeout publishes nothing and must be pushed again
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
