@@ -147,8 +147,8 @@ jobs:
 
       # --- condasplit image: [release] on master/release-* only, before anything is published ---
       # Wave defaults to the condasplit/VERSION tag (`wave.build.condasplit-image` in application.yml), so
-      # the tag must be published before the Wave release: a failure here stops it. `make release` skips the build
-      # when the tag is already published with the same sources.
+      # the tag must be published before the Wave release: a failure here stops it. The build is skipped
+      # when the tag is already published with the same sources, see `make check`.
       - name: Docker Login to Seqera public CR
         if: "steps.detect-release.outputs.is_publish == 'true'"
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
@@ -163,7 +163,16 @@ jobs:
 
       - name: Publish condasplit image
         if: "steps.detect-release.outputs.is_publish == 'true'"
-        run: make -C condasplit release registry=public.cr.seqera.io/wave
+        # same as `make release`, without its second `imagetools inspect`: on a missing tag it hangs ~17 minutes
+        # when logged in to the registry, while the inspect in `make check` returns at once
+        run: |
+          status=$(make -s --no-print-directory -C condasplit check registry=public.cr.seqera.io/wave)
+          echo "$status"
+          if [[ "$status" == *"is not published yet"* ]]; then
+            make --no-print-directory -C condasplit build registry=public.cr.seqera.io/wave
+          else
+            echo "skipping the condasplit build"
+          fi
 
       # --- Internal (dev) ECR push: [preview] only, any branch ---
       # Lets features be built from any branch and pulled into dev/testing without reaching a
