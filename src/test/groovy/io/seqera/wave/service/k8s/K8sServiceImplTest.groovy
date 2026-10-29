@@ -27,6 +27,7 @@ import java.time.OffsetDateTime
 
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.openapi.ApiClient
+import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.openapi.apis.BatchV1Api
 import io.kubernetes.client.openapi.apis.CoreV1Api
 import io.kubernetes.client.openapi.models.V1EnvVar
@@ -39,6 +40,7 @@ import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
 import io.micronaut.context.ApplicationContext
 import io.seqera.wave.configuration.BlobCacheConfig
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.configuration.ScanConfig
 /**
@@ -1114,6 +1116,55 @@ class K8sServiceImplTest extends Specification {
         jobStarted()              | K8sService.JobStatus.Pending
         jobUnknown()              | K8sService.JobStatus.Pending
         jobConditionFailed()      | K8sService.JobStatus.Failed
+    }
+
+    def 'should adopt the existing job when a launch is redelivered'() {
+        given:
+        def NS = 'foo'
+        def NAME = 'wave-build-123'
+        def k8sClient = Mock(K8sClient)
+        def api = Mock(BatchV1Api)
+        def createRequest = Mock(BatchV1Api.APIcreateNamespacedJobRequest)
+        def readRequest = Mock(BatchV1Api.APIreadNamespacedJobRequest)
+        def existing = new V1Job(metadata: new V1ObjectMeta(name: NAME))
+        def service = new K8sServiceImpl(k8sClient: k8sClient, namespace: NS, buildConfig: new BuildConfig())
+
+        when:
+        def result = service.launchBuildJob(NAME, 'docker://test-image', ['arg1'], Path.of('/build/work/xyz'), null, Duration.ofMinutes(10), null)
+
+        then: 'the job is created by the first launch attempt'
+        1 * k8sClient.batchV1Api() >> api
+        1 * api.createNamespacedJob(NS, _) >> createRequest
+        1 * createRequest.execute() >> { throw new ApiException(409, 'Conflict', null, '{"reason":"AlreadyExists"}') }
+        and: 'the redelivered launch adopts the running job instead of failing'
+        1 * api.readNamespacedJob(NAME, NS) >> readRequest
+        1 * readRequest.execute() >> existing
+        and:
+        noExceptionThrown()
+        result.is(existing)
+    }
+
+    def 'should propagate a job launch failure other than a conflict'() {
+        given:
+        def NS = 'foo'
+        def NAME = 'wave-build-123'
+        def k8sClient = Mock(K8sClient)
+        def api = Mock(BatchV1Api)
+        def createRequest = Mock(BatchV1Api.APIcreateNamespacedJobRequest)
+        def service = new K8sServiceImpl(k8sClient: k8sClient, namespace: NS, buildConfig: new BuildConfig())
+
+        when:
+        service.launchBuildJob(NAME, 'docker://test-image', ['arg1'], Path.of('/build/work/xyz'), null, Duration.ofMinutes(10), null)
+
+        then:
+        1 * k8sClient.batchV1Api() >> api
+        1 * api.createNamespacedJob(NS, _) >> createRequest
+        1 * createRequest.execute() >> { throw new ApiException(403, 'Forbidden') }
+        and:
+        0 * api.readNamespacedJob(_, _)
+        and:
+        def e = thrown(ApiException)
+        e.code == 403
     }
 
     def 'should create scan job spec with dns config'() {
