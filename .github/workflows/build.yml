@@ -114,6 +114,15 @@ jobs:
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
 
+      # Fork PRs get no OIDC token, so the ECR tests skip there as they did without the secrets.
+      - name: Configure AWS credentials for ECR tests
+        if: "github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip test]')"
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ vars.WAVE_CI_ECR_ROLE_ARN }}
+          role-session-name: GitHubActions-${{ github.run_id }}-tests
+
       - name: Tests
         if: "!contains(github.event.head_commit.message, '[skip test]')"
         run: |
@@ -121,8 +130,8 @@ jobs:
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          AWS_ACCESS_KEY_ID: ${{secrets.TOWER_CI_AWS_ACCESS}}
-          AWS_SECRET_ACCESS_KEY: ${{secrets.TOWER_CI_AWS_SECRET}}
+          WAVE_TEST_ECR_USERNAME: ${{ github.event_name == 'push' && vars.WAVE_CI_ECR_ROLE_ARN || '' }}
+          WAVE_TEST_ECR_PASSWORD: ${{ github.event_name == 'push' && 'wave-ci' || '' }}
           DOCKER_USER: ${{ secrets.DOCKER_USER }}
           DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
           QUAY_USER: "pditommaso+wave_ci_tests"
