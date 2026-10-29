@@ -53,12 +53,12 @@ class RegistryLookupServiceTest extends Specification {
         info.auth == new RegistryAuth(new URI('https://quay.io/v2/auth'),'quay.io', RegistryAuth.Type.Bearer)
 
         when:
-        info = service.lookup('935786761764.dkr.ecr.us-east-1.amazonaws.com')
+        info = service.lookup('195996028523.dkr.ecr.eu-west-1.amazonaws.com')
         then:
-        info.name == '935786761764.dkr.ecr.us-east-1.amazonaws.com'
-        info.host == new URI('https://935786761764.dkr.ecr.us-east-1.amazonaws.com')
-        info.indexHost == 'https://935786761764.dkr.ecr.us-east-1.amazonaws.com'
-        info.auth == new RegistryAuth(new URI('https://935786761764.dkr.ecr.us-east-1.amazonaws.com/'), 'ecr.amazonaws.com', RegistryAuth.Type.Basic)
+        info.name == '195996028523.dkr.ecr.eu-west-1.amazonaws.com'
+        info.host == new URI('https://195996028523.dkr.ecr.eu-west-1.amazonaws.com')
+        info.indexHost == 'https://195996028523.dkr.ecr.eu-west-1.amazonaws.com'
+        info.auth == new RegistryAuth(new URI('https://195996028523.dkr.ecr.eu-west-1.amazonaws.com/'), 'ecr.amazonaws.com', RegistryAuth.Type.Basic)
     }
 
     def 'should normalize registry url' () {

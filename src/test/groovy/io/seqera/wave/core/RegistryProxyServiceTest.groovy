@@ -57,7 +57,7 @@ class RegistryProxyServiceTest extends Specification {
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should retrieve image digest on ECR' () {
         given:
-        def IMAGE = '935786761764.dkr.ecr.us-east-1.amazonaws.com/wave/app:1.0.0'
+        def IMAGE = '195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/app:1.0.0'
         def request = Mock(BuildRequest)
 
         when:
