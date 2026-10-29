@@ -119,7 +119,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           aws-region: us-east-1
-          role-to-assume: arn:aws:iam::935786761764:role/github/gha-wave-ci-ecr
+          role-to-assume: ${{ vars.WAVE_CI_ECR_ROLE_ARN }}
           role-session-name: GitHubActions-${{ github.run_id }}-tests
 
       - name: Tests
@@ -129,7 +129,7 @@ jobs:
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          WAVE_TEST_ECR_USERNAME: ${{ github.event_name == 'push' && 'arn:aws:iam::935786761764:role/github/gha-wave-ci-ecr' || '' }}
+          WAVE_TEST_ECR_USERNAME: ${{ github.event_name == 'push' && vars.WAVE_CI_ECR_ROLE_ARN || '' }}
           WAVE_TEST_ECR_PASSWORD: ${{ github.event_name == 'push' && 'wave-ci' || '' }}
           DOCKER_USER: ${{ secrets.DOCKER_USER }}
           DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
