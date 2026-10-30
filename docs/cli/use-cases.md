@@ -100,9 +100,15 @@ The Wave CLI supports build templates for creating container images from Conda p
 
 **Related CLI arguments**
 
-Build template selection supports the following argument:
+Build template selection supports the following arguments:
 
 - `--build-template`: A build template for container builds.
+- `--pixi-image`: The Pixi image used to build the container with the `conda/pixi:v1` and `conda/pixi:v1-fast` templates (default: `public.cr.seqera.io/wave/pixi:0.61.0-noble`).
+- `--pixi-base-image`: The base image of the final stage of Pixi builds (default: `ubuntu:24.04`). Docker builds only.
+- `--pixi-base-packages`: A space-separated list of Conda packages installed alongside the requested ones in Pixi builds (default: `conda-forge::procps-ng`). Replaces the default list.
+- `--pixi-run-command`: A line appended to the generated build file of Pixi builds, for example `RUN mkdir -p /data`. Can be specified multiple times.
+
+Wave CLI 1.9.1 added the `--pixi-*` arguments. See [Pixi build options](../features/container-builds.mdx#pixi-build-options) for more details.
 
 **Benefits of multi-stage templates**
 
@@ -132,6 +138,17 @@ Build a container using the Pixi template:
 wave \
   --conda-package bamtools=2.5.2 \
   --build-template conda/pixi:v1
+```
+
+Build a container using the Pixi template with a custom base image, base packages, and build command:
+
+```bash
+wave \
+  --conda-package bioconda::samtools=1.17 \
+  --build-template conda/pixi:v1 \
+  --pixi-base-image rocker/r-ver:4.4.1 \
+  --pixi-base-packages 'conda-forge::procps-ng conda-forge::gzip' \
+  --pixi-run-command 'RUN mkdir -p /data'
 ```
 
 Build a container using the Micromamba v2 template:

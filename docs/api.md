@@ -217,7 +217,7 @@ To check that an option is applied, send the request with `dryRun: true` and com
 
 | Attribute                           | Description                                                                                                                                        |
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `containerImage`                    | Name of the container to be served, e.g., `docker.io/library/ubuntu:latest` (optional). If omitted, the `containerFile` must be provided. When used with `packages`, it overrides the `baseImage` option of the multi-stage build templates. |
+| `containerImage`                    | Name of the container to be served, e.g., `docker.io/library/ubuntu:latest` (optional). If omitted, the `containerFile` must be provided. |
 | `containerConfig.entrypoint`        | The container entrypoint command, e.g., `['/bin/bash']`.                                                                                             |
 | `containerConfig.cmd`               | The launch command to be used by the Wave container, e.g., `['echo', 'Hello world']` (optional).                                                   |
 | `containerConfig.env`               | The environment variables to be defined in the Wave container, e.g., `['FOO=one','BAR=two']` (optional).                                             |
