@@ -53,6 +53,29 @@ jobs:
           fetch-depth: 1
           submodules: true
 
+      # TEMPORARY (sched runner trial): replays DockerRegistryContainer.initRegistryContainer()
+      # step by step, to find which one fails on the sched runner
+      - name: Debug nested registry container
+        continue-on-error: true
+        run: |
+          set -x
+          docker info --format 'dockerd {{.ServerVersion}} driver={{.Driver}} cgroup={{.CgroupVersion}} security={{.SecurityOptions}}'
+          id=$(docker run -d --privileged -p 5000 registry:2)
+          sleep 3
+          docker exec "$id" apk add docker bash; echo "apk exit=$?"
+          # as the test: dockerd in the background, then pull right away
+          docker exec "$id" sh -c "dockerd &"; echo "dockerd-start exit=$?"
+          docker exec "$id" docker pull hello-world@sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6; echo "pull-immediate exit=$?"
+          # same, with dockerd kept alive and its log captured, after waiting for it
+          docker exec -d "$id" sh -c "dockerd > /tmp/dockerd.log 2>&1"
+          for i in $(seq 1 20); do docker exec "$id" docker info >/dev/null 2>&1 && break; sleep 1; done
+          docker exec "$id" docker info --format 'inner dockerd {{.ServerVersion}} driver={{.Driver}}'; echo "inner-info exit=$?"
+          docker exec "$id" docker pull hello-world@sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6; echo "pull-waited exit=$?"
+          docker exec "$id" docker tag hello-world@sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6 localhost:5000/hello-world
+          docker exec "$id" docker push localhost:5000/hello-world; echo "push exit=$?"
+          docker exec "$id" tail -40 /tmp/dockerd.log
+          docker rm -f "$id"
+
       - name: Detect release commit
         id: detect-release
         env:
