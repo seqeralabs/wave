@@ -217,7 +217,7 @@ To check that an option is applied, send the request with `dryRun: true` and com
 
 | Attribute                           | Description                                                                                                                                        |
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `containerImage`                    | Name of the container to be served, e.g., `docker.io/library/ubuntu:latest` (optional). If omitted, the `containerFile` must be provided. When used with `packages`, it overrides the `baseImage` option of the multi-stage build templates. |
+| `containerImage`                    | Name of the container to be served, e.g., `docker.io/library/ubuntu:latest` (optional). If omitted, the `containerFile` must be provided. |
 | `containerConfig.entrypoint`        | The container entrypoint command, e.g., `['/bin/bash']`.                                                                                             |
 | `containerConfig.cmd`               | The launch command to be used by the Wave container, e.g., `['echo', 'Hello world']` (optional).                                                   |
 | `containerConfig.env`               | The environment variables to be defined in the Wave container, e.g., `['FOO=one','BAR=two']` (optional).                                             |
@@ -282,7 +282,7 @@ Each build template reads its options from one object in `packages`. Options set
 | `packages.condaOpts.commands`     | Lines appended verbatim to the end of the generated build file, e.g., `['RUN echo hello']` for Docker builds. For Singularity builds, they are added to the `%post` section, e.g., `['echo hello']`.                                                                                     |
 | `packages.pixiOpts.pixiImage`     | Pixi image used to build the container. Default: `public.cr.seqera.io/wave/pixi:0.61.0-noble`.                                                                      |
 | `packages.pixiOpts.basePackages`  | Space-separated list of Conda packages installed in addition to the requested ones, e.g., `conda-forge::procps-ng conda-forge::gzip`. Default: `conda-forge::procps-ng`. |
-| `packages.pixiOpts.baseImage`     | Base image of the final stage. Default: `ubuntu:24.04`. Has no effect on Singularity builds.                                                                        |
+| `packages.pixiOpts.baseImage`     | Base image of the final stage. Must provide `/bin/bash`. Default: `ubuntu:24.04`. Has no effect on Singularity builds.                                              |
 | `packages.pixiOpts.commands`      | Lines appended verbatim to the end of the generated build file, e.g., `['RUN echo hello']` for Docker builds. For Singularity builds, they are added to the `%post` section, e.g., `['echo hello']`.                                                                                     |
 | `packages.cranOpts.rImage`        | R image used to build the container. Default: `rocker/r-ver:4.4.1`.                                                                                                 |
 | `packages.cranOpts.basePackages`  | Space-separated list of system packages installed with `apt-get` in addition to the requested ones. Default: `littler r-cran-docopt`.                                             |
