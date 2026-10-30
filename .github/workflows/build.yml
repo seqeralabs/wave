@@ -31,7 +31,7 @@ jobs:
   build:
     name: Build Wave
     if: "github.event == 'push' || github.repository != github.event.pull_request.head.repo.full_name"
-    runs-on: ubuntu-latest
+    runs-on: sched/run=${{ github.run_id }}-build-${{ matrix.java_version }}/cpu=8/mem=32/type=m7a+m7i/spot=true
     # includes the condasplit image build on a release, ~6 minutes when the tag is new, plus headroom
     # for registry stalls: a release cancelled on timeout publishes nothing and must be pushed again
     timeout-minutes: 45
@@ -108,6 +108,12 @@ jobs:
           distribution: 'corretto'
           architecture: x64
           cache: gradle
+
+      # processResources builds the TypeSpec API with npm, which the sched runner image lacks
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24.22.0'
 
       - name: Compile
         run: make compile
