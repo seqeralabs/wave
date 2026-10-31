@@ -1,0 +1,39 @@
+name: Test soci-indexer
+
+# the image is published by the Wave release, see the `Publish soci-indexer image` step in build.yml
+on:
+  pull_request:
+    paths:
+      - 'soci-indexer/**'
+      - '.github/workflows/build-soci-indexer.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: golang:1.26-bookworm
+      options: --user root
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Run tests
+        working-directory: soci-indexer
+        run: |
+          apt-get update -qq && apt-get install -y -qq zlib1g-dev
+          go vet ./...
+          go test ./...
+
+  # fails when the sources change without a VERSION bump, otherwise the next Wave release fails
+  # to publish the image, see `make check`
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Check the VERSION tag
+        run: make -C soci-indexer check registry=public.cr.seqera.io/wave
