@@ -62,19 +62,19 @@ class SociConfig {
      * How long a zTOC lookup entry is kept in the cache. It must be shorter than the
      * lifecycle expiry of the zTOC repository
      */
-    @Value('${wave.soci.ztoc-cache-duration:30d}')
+    @Value('${wave.soci.ztoc.duration:30d}')
     Duration ztocCacheDuration
 
     @Value('${wave.soci.indexer-image:`public.cr.seqera.io/wave/soci-indexer:v0.1.0`}')
     String indexerImage
 
-    @Value('${wave.soci.job-timeout:10m}')
+    @Value('${wave.soci.timeout:10m}')
     Duration jobTimeout
 
     /**
      * How long a layer whose indexing failed is not re-submitted
      */
-    @Value('${wave.soci.failure-duration:10m}')
+    @Value('${wave.soci.failure.duration:10m}')
     Duration failureDuration
 
     /**
