@@ -19,6 +19,7 @@
 package io.seqera.wave.core
 
 
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
@@ -250,10 +251,21 @@ class RegistryProxyService {
         final key = route.getTargetPath()
         return cache.getOrCompute(key,(String k)-> {
             final resp = handleRequest0(route, headers)
-            // when the response is not cacheable, return null as TTL
-            final ttl = route.isDigest() && resp.isCacheable() ? cache.duration : null
-            return new AbstractTieredCache.Pair<>(resp, ttl)
+            return new AbstractTieredCache.Pair<>(resp, cacheTtl(route, resp))
         })
+    }
+
+    /**
+     * The TTL for caching a blob response, or {@code null} when it must not be cached.
+     * A partial content (206) response is never cached, because the cache key does not
+     * include the {@code Range} header and a later request would get a truncated blob
+     */
+    protected Duration cacheTtl(RoutePath route, DelegateResponse resp) {
+        if( !route.isDigest() || !resp.isCacheable() )
+            return null
+        if( resp.statusCode==206 )
+            return null
+        return cache.duration
     }
 
     @TraceElapsedTime(thresholdMillis = '${wave.trace.proxy-service.threshold:1000}')

@@ -18,6 +18,10 @@
 
 package io.seqera.wave.core
 
+import java.time.Duration
+
+import io.seqera.wave.proxy.DelegateResponse
+import io.seqera.wave.proxy.ProxyCache
 import spock.lang.Requires
 import spock.lang.Shared
 import spock.lang.Specification
@@ -102,6 +106,23 @@ class RegistryProxyServiceTest extends Specification {
         def k6 = RegistryProxyService.requestKey(p1, ["cache-control":["none"]])
         then:
         k6 == null
+    }
+
+    def 'should not cache partial blob responses' () {
+        given:
+        def cache = Mock(ProxyCache) { getDuration() >> Duration.ofMinutes(10) }
+        def service = new RegistryProxyService(cache: cache)
+        def route = RoutePath.v2path('blobs', 'docker.io', 'library/ubuntu', 'sha256:a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8')
+
+        expect:
+        service.cacheTtl(route, new DelegateResponse(statusCode: STATUS, body: BODY, location: LOCATION)) == EXPECTED
+
+        where:
+        STATUS | BODY          | LOCATION          | EXPECTED
+        200    | 'x'.bytes     | null              | Duration.ofMinutes(10)
+        206    | 'x'.bytes     | null              | null
+        307    | null          | 'https://s3/blob' | Duration.ofMinutes(10)
+        200    | null          | null              | null
     }
 
     def 'check is cacheable header' () {
