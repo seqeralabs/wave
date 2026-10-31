@@ -53,10 +53,17 @@ class SociConfig {
     long minLayerSize
 
     /**
-     * How long a manifest resolved while the SOCI index is still pending is cached
+     * How long the request of a container manifest is held while its layers are indexed. When the
+     * indexing does not complete in time the container is served without SOCI index
      */
-    @Value('${wave.soci.pending-cache-duration:30s}')
-    Duration pendingCacheDuration
+    @Value('${wave.soci.await-timeout:5m}')
+    Duration awaitTimeout
+
+    /**
+     * How often the indexing status is checked while a manifest request is held
+     */
+    @Value('${wave.soci.status-delay:1s}')
+    Duration statusDelay
 
     /**
      * How long a zTOC lookup entry is kept in the cache. It must be shorter than the

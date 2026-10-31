@@ -40,7 +40,6 @@ import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.ErrorHandler
 import io.seqera.wave.configuration.HttpClientConfig
-import io.seqera.wave.configuration.SociConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.core.RoutePath
@@ -99,10 +98,6 @@ class RegistryProxyController {
     @Inject
     @Nullable
     private BlobCacheService blobCacheService
-
-    @Inject
-    @Nullable
-    private SociConfig sociConfig
 
     @Value('${wave.cache.digest-store.max-weight-mb:350}')
     private int cacheMaxWeightMb
@@ -248,16 +243,12 @@ class RegistryProxyController {
         }
         // resolve the manifest using the proxy service
         Map<String, List<String>> headers = httpRequest.headers.asMap() as Map<String, List<String>>
-        final result = proxyService.resolveManifest(route, headers)
+        final result = proxyService.handleManifest(route, headers)
         // cache the digest with the original route path to avoid to resolve one more time
-        // a manifest whose SOCI index is pending is cached briefly, so that a later pull gets the SOCI-enabled one
-        if( result.store && unsolvedContainer ) {
-            if( result.sociPending && sociConfig )
-                storage.saveManifest(key, result.store, sociConfig.pendingCacheDuration)
-            else
-                storage.saveManifest(key, result.store)
+        if( result && unsolvedContainer ) {
+            storage.saveManifest(key, result)
         }
-        return result.store
+        return result
     }
 
     static protected MutableHttpResponse<?> badRequest(String message) {

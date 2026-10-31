@@ -81,13 +81,6 @@ class ManifestCacheStore extends AbstractStateStore<DigestStore> implements Stor
     }
 
     @Override
-    DigestStore saveManifest(String path, DigestStore store, Duration ttl) {
-        log.trace "Save Manifest [store; ttl=$ttl] ==> $path"
-        this.put(path, store, ttl)
-        return store
-    }
-
-    @Override
     Optional<DigestStore> getBlob(String path) {
         log.trace "Get Blob ==> $path"
         final result = this.get(path)

@@ -28,7 +28,6 @@ import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.cache.annotation.Cacheable
-import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.BeanProvider
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Value
@@ -129,10 +128,6 @@ class RegistryProxyService {
     @Named(TaskExecutors.IO)
     private ExecutorService httpClientExecutor
 
-    @Inject
-    @Nullable
-    private MeterRegistry meterRegistry
-
     // note: lazy provider because the SOCI index service depends on this service
     @Inject
     private BeanProvider<SociIndexService> sociIndexService
@@ -177,15 +172,6 @@ class RegistryProxyService {
     }
 
     DigestStore handleManifest(RoutePath route, Map<String,List<String>> headers){
-        return resolveManifest(route, headers).store
-    }
-
-    /**
-     * Resolve the manifest of a container request
-     *
-     * @return The resolved manifest and whenever its SOCI index is still pending
-     */
-    ManifestResult resolveManifest(RoutePath route, Map<String,List<String>> headers){
         ProxyClient proxyClient = client(route)
 
         final digest = scanner(proxyClient, route).resolve(route, headers)
@@ -194,12 +180,10 @@ class RegistryProxyService {
 
         // update the container metadata for this request
         updateContainerRequest(route, digest)
-        if( route.request?.soci )
-            meterRegistry?.counter('wave.soci.manifest.served', 'state', digest.sociPending ? 'pending' : 'resolved')?.increment()
 
         // find out the target digest for the request
         final target = "$route.registry/v2/${route.image}/manifests/${digest.target}"
-        return new ManifestResult(storage.getManifest(target).orElse(null), digest.sociPending)
+        return storage.getManifest(target).orElse(null)
     }
 
     protected void updateContainerRequest(RoutePath route, ContainerDigestPair digest) {

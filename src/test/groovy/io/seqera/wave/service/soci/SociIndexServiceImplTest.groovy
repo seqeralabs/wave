@@ -42,7 +42,7 @@ class SociIndexServiceImplTest extends Specification {
     static final String GZIP = 'application/vnd.oci.image.layer.v1.tar+gzip'
 
     SociConfig config = new SociConfig(spanSize: 4194304, minLayerSize: 10485760, repo: 'registry.io/wave/soci-ztoc',
-            pendingCacheDuration: Duration.ofSeconds(30), jobTimeout: Duration.ofMinutes(10))
+            jobTimeout: Duration.ofMinutes(10))
 
     static String manifest() {
         JsonOutput.toJson([

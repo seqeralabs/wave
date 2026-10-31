@@ -177,6 +177,11 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
         }
     }
 
+    @Override
+    boolean awaitLayers(Collection<String> layerDigests) {
+        return jobStore.awaitCompletion(layerDigests.collect((String it) -> SociIndexRequest.key(it, config.spanSize)))
+    }
+
     protected void launchIndex(String repository, Map layer, String authJson) {
         final digest = layer.digest as String
         final request = SociIndexRequest.create(

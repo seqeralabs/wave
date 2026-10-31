@@ -29,6 +29,7 @@ import io.seqera.wave.service.soci.SociDocs
 import io.seqera.wave.service.soci.SociIndexService
 import io.seqera.wave.service.soci.SociManifestAssembler
 import io.seqera.wave.service.soci.SociPlatforms
+import io.seqera.wave.service.soci.ZtocEntry
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.tower.PlatformId
 import static io.seqera.wave.model.ContentType.DOCKER_IMAGE_INDEX_V2
@@ -37,11 +38,11 @@ import static io.seqera.wave.model.ContentType.OCI_IMAGE_INDEX_V1
 import static io.seqera.wave.model.ContentType.OCI_IMAGE_MANIFEST_V1
 /**
  * Make a container resolved by the {@link ContainerAugmenter} SOCI-enabled, by adding the
- * SOCI index manifest v2 to its image index, when the zTOCs of its layers are available.
+ * SOCI index manifest v2 to its image index.
  *
- * When they are not, the container is served as it is and the indexing of the missing layers is
- * requested, so that a later pull is SOCI-enabled. The documents are saved in the {@link Storage},
- * the zTOC blobs are served from the zTOC repository.
+ * The manifest request is held until the zTOCs of the image layers are available, like for a container
+ * build. When the indexing fails or times out, the container is served as it is. The documents are saved
+ * in the {@link Storage}, the zTOC blobs are served from the zTOC repository.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -49,7 +50,7 @@ import static io.seqera.wave.model.ContentType.OCI_IMAGE_MANIFEST_V1
 @CompileStatic
 class SociInjector {
 
-    enum State { READY, PENDING, NONE }
+    enum State { READY, NONE }
 
     @Canonical
     static class Docs {
@@ -112,33 +113,32 @@ class SociInjector {
         if( SociManifestAssembler.hasSociIndex(content) )
             return pair
         final ready = new LinkedHashMap<String,SociDocs>()
-        boolean pending = false
         for( Map entry : SociPlatforms.targetEntries(json, platform) ) {
             final manifest = loadManifest(imageName, entry.digest as String, headers)
             final docs = manifest!=null ? docsFor(imageName, manifest) : new Docs(State.NONE, null)
-            if( docs.state==State.PENDING )
-                pending = true
-            else if( docs.state==State.READY )
+            if( docs.state==State.READY )
                 ready.put(entry.digest as String, docs.docs)
         }
-        if( pending || !ready )
-            return new ContainerDigestPair(pair.source, pair.target, pending)
+        if( !ready )
+            return pair
         final index = SociManifestAssembler.updateIndex(content, ready)
-        return new ContainerDigestPair(pair.source, saveIndex(imageName, index), false)
+        return new ContainerDigestPair(pair.source, saveIndex(imageName, index))
     }
 
     protected ContainerDigestPair applyManifest(String imageName, ContainerDigestPair pair, String content, Map json, Map<String,List<String>> headers) {
         final docs = docsFor(imageName, content)
         if( docs.state!=State.READY )
-            return new ContainerDigestPair(pair.source, pair.target, docs.state==State.PENDING)
+            return pair
         final configDigest = (json.config as Map).digest as String
         final index = SociManifestAssembler.wrapInIndex(docs.docs, imagePlatform(imageName, configDigest, headers))
-        return new ContainerDigestPair(pair.source, saveIndex(imageName, index), false)
+        return new ContainerDigestPair(pair.source, saveIndex(imageName, index))
     }
 
     /**
-     * Create the SOCI documents of an image manifest when the zTOCs of all its eligible layers are available,
-     * otherwise request the indexing of the missing ones
+     * Create the SOCI documents of an image manifest. The indexing of the layers without zTOC is
+     * launched (unless already running) and awaited
+     *
+     * @return The SOCI documents, or {@link State#NONE} when the zTOC of some eligible layer is not available
      */
     protected Docs docsFor(String imageName, String manifest) {
         final layers = SociManifestAssembler
@@ -146,13 +146,18 @@ class SociInjector {
                 .findAll((Map it) -> !excludedLayers.contains(it.digest as String))
         if( !layers )
             return new Docs(State.NONE, null)
-        final ztocs = service.findZtocs(layers.collect((Map it) -> it.digest as String))
+        final digests = layers.collect((Map it) -> it.digest as String)
+        Map<String,ZtocEntry> ztocs = service.findZtocs(digests)
         final missing = layers.findAll((Map it) -> !ztocs.containsKey(it.digest as String))
         if( missing ) {
-            log.debug "SOCI index pending for image ${client.registry.name}/${imageName} - indexed ${ztocs.size()} of ${layers.size()} layers"
+            log.debug "SOCI index awaiting for image ${client.registry.name}/${imageName} - indexed ${ztocs.size()} of ${layers.size()} layers"
             service.indexLayers("${client.registry.name}/${imageName}".toString(), missing, identity)
-            return new Docs(State.PENDING, null)
+            if( !service.awaitLayers(missing.collect((Map it) -> it.digest as String)) )
+                log.warn "SOCI index timed out for image ${client.registry.name}/${imageName} - serving it without SOCI index"
+            ztocs = service.findZtocs(digests)
         }
+        if( ztocs.size()<layers.size() )
+            return new Docs(State.NONE, null)
         final docs = SociManifestAssembler.assemble(manifest, ztocs, config.spanSize)
         saveDocs(imageName, docs)
         return new Docs(State.READY, docs)

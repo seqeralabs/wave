@@ -60,11 +60,32 @@ class SociIndexStateStore extends AbstractStateStore<SociIndexEntry> {
     }
 
     /**
-     * Store a completed job. A failed one is kept briefly to allow a retry, a succeeded one is
-     * not needed anymore once its zTOC is in the {@link SociZtocStore}
+     * Store a completed job. A failed layer is not re-submitted before the failure duration, so that
+     * a layer that cannot be indexed does not churn jobs. A succeeded one is not needed anymore once
+     * its zTOC is in the {@link SociZtocStore}
      */
     void putEntry(SociIndexEntry entry) {
-        // a failed layer is not re-submitted before the failure duration, so a layer that cannot be indexed does not churn jobs
-        put(entry.key, entry, entry.succeeded() ? config.pendingCacheDuration : config.failureDuration)
+        put(entry.key, entry, config.failureDuration)
+    }
+
+    /**
+     * Wait for the completion of the indexing jobs with the given keys
+     *
+     * @param keys The keys of the jobs, see {@link SociIndexRequest#key}
+     * @return {@code true} when all jobs completed, or {@code false} when the {@code wave.soci.await-timeout} expired
+     */
+    boolean awaitCompletion(Collection<String> keys) {
+        final beg = System.currentTimeMillis()
+        while( keys.stream().anyMatch(this::pending) ) {
+            if( System.currentTimeMillis()-beg > config.awaitTimeout.toMillis() )
+                return false
+            Thread.sleep(config.statusDelay.toMillis())
+        }
+        return true
+    }
+
+    protected boolean pending(String key) {
+        final entry = get(key)
+        return entry!=null && !entry.done()
     }
 }
