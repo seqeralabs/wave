@@ -44,6 +44,7 @@ import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.config.CondaOpts
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.SociConfig
+import io.seqera.wave.service.soci.SociPushService
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
@@ -364,6 +365,30 @@ class ContainerControllerTest extends Specification {
         'docker.io/source/image:latest' | 'quay.io'       | 'quay.io/source/image:latest'
         'docker.io/source/image:latest' | 'quay.io/lib'   | 'quay.io/lib/source/image:latest'
         'docker.io/source/image:latest' | 'quay.io/lib/'  | 'quay.io/lib/source/image:latest'
+    }
+
+    def 'should return the soci tag of a mirrored container' () {
+        given:
+        def mirrorService = Mock(ContainerMirrorService)
+        def inspectService = Mock(ContainerInspectServiceImpl)
+        def sociPush = Mock(SociPushService)
+        def controller = new ContainerController(mirrorService: mirrorService, inspectService: inspectService, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService), sociPushService: sociPush, sociConfig: new SociConfig())
+        def user = new PlatformId(new User(id: 100))
+        def req = new SubmitContainerTokenRequest(containerImage: 'docker.io/source/image:latest', containerPlatform: 'arm64', buildRepository: 'quay.io', mirror: true, soci: true)
+
+        when:
+        def data = controller.makeRequestData(req, user, "")
+        then:
+        1 * proxyRegistry.getImageDigest('docker.io/source/image:latest', user) >> 'sha256:12345'
+        1 * proxyRegistry.getImageDigest('quay.io/source/image:latest', user) >> null
+        1 * mirrorService.mirrorImage(_) >> new BuildTrack('mr-1', 'quay.io/source/image:latest', false, null)
+        1 * sociPush.sociTarget('quay.io/source/image:latest', ContainerPlatform.of('arm64'), user) >> RESULT
+        and:
+        data.containerImage == RESULT
+        data.soci
+
+        where:
+        RESULT << ['quay.io/source/image:latest-soci', 'quay.io/source/image:latest']
     }
 
     def 'should create build request' () {

@@ -71,6 +71,16 @@ class SociConfig {
     @Value('${wave.soci.job-timeout:10m}')
     Duration jobTimeout
 
+    /**
+     * How long the publication of the SOCI-enabled tag of a durable container waits for the container
+     * (build or mirror) and for its layers indexing
+     */
+    @Value('${wave.soci.publish-timeout:30m}')
+    Duration publishTimeout
+
+    @Value('${wave.soci.status-delay:5s}')
+    Duration statusDelay
+
     @Value('${wave.soci.retry-attempts:2}')
     Integer retryAttempts
 

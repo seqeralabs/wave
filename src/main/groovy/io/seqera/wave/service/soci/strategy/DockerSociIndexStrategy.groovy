@@ -26,7 +26,6 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.SociConfig
 import io.seqera.wave.configuration.SociEnabled
-import io.seqera.wave.service.soci.SociIndexRequest
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -44,12 +43,12 @@ class DockerSociIndexStrategy extends SociIndexStrategy {
     private SociConfig config
 
     @Override
-    void launchJob(String jobName, SociIndexRequest request) {
-        final cli = dockerCommand(jobName, request)
-        log.debug "SOCI index command: ${cli.join(' ')}"
+    void launchCommand(String jobName, Path workDir, List<String> command) {
+        final cli = dockerCommand(jobName, workDir, command)
+        log.debug "SOCI job command: ${cli.join(' ')}"
         final process = new ProcessBuilder()
                 .command(cli)
-                .directory(request.workDir.toFile())
+                .directory(workDir.toFile())
                 .redirectErrorStream(true)
                 .start()
         if( process.waitFor()!=0 ) {
@@ -57,10 +56,10 @@ class DockerSociIndexStrategy extends SociIndexStrategy {
         }
     }
 
-    protected List<String> dockerCommand(String jobName, SociIndexRequest request) {
-        final Path configFile = request.workDir.resolve('config.json')
+    protected List<String> dockerCommand(String jobName, Path workDir, List<String> command) {
+        final Path configFile = workDir.resolve('config.json')
         final result = new ArrayList<String>(30)
-        result.addAll(['docker', 'run', '--detach', '--name', jobName])
+        result.addAll(['docker', 'run', '--detach', '--name', jobName, '-v', "${workDir}:${workDir}:ro".toString()])
         if( Files.exists(configFile) ) {
             result.add('-v')
             result.add("${configFile}:${DOCKER_CONFIG_DIR}/config.json:ro".toString())
@@ -68,7 +67,7 @@ class DockerSociIndexStrategy extends SociIndexStrategy {
             result.add("DOCKER_CONFIG=${DOCKER_CONFIG_DIR}".toString())
         }
         result.add(config.indexerImage)
-        result.addAll(indexCommand(request))
+        result.addAll(command)
         return result
     }
 }

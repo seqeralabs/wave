@@ -31,7 +31,6 @@ import io.seqera.wave.configuration.SociConfig
 import io.seqera.wave.configuration.SociEnabled
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
-import io.seqera.wave.service.soci.SociIndexRequest
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.util.K8sHelper.getNoArchSelector
@@ -58,14 +57,14 @@ class KubeSociIndexStrategy extends SociIndexStrategy {
     private Map<String, String> nodeSelectorMap
 
     @Override
-    void launchJob(String jobName, SociIndexRequest request) {
-        final Path configFile = request.workDir.resolve('config.json')
+    void launchCommand(String jobName, Path workDir, List<String> command) {
+        final Path configFile = workDir.resolve('config.json')
         try {
             k8sService.launchSociIndexJob(
                     jobName,
                     config.indexerImage,
-                    indexCommand(request),
-                    request.workDir,
+                    command,
+                    workDir,
                     Files.exists(configFile) ? configFile : null,
                     config,
                     getNoArchSelector(nodeSelectorMap) )

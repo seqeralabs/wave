@@ -32,6 +32,7 @@ import io.seqera.wave.service.builder.MultiBuildRequest
 import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.configuration.SociConfig
 import io.seqera.wave.service.soci.SociIndexRequest
+import io.seqera.wave.service.soci.SociPushRequest
 import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.scan.ScanRequest
 import jakarta.inject.Inject
@@ -106,6 +107,17 @@ class JobFactory {
         assert request.requestId.startsWith(SociIndexRequest.ID_PREFIX)
         JobSpec.sociIndex(
                 request.key,
+                request.requestId,
+                request.creationTime,
+                sociConfig.jobTimeout,
+                request.workDir
+        )
+    }
+
+    JobSpec sociPush(SociPushRequest request) {
+        assert request.requestId.startsWith(SociPushRequest.ID_PREFIX)
+        JobSpec.sociPush(
+                request.sociImage,
                 request.requestId,
                 request.creationTime,
                 sociConfig.jobTimeout,

@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.soci.strategy
 
+import java.nio.file.Path
+
 import groovy.transform.CompileStatic
 import io.seqera.wave.service.soci.SociIndexRequest
 /**
@@ -31,7 +33,18 @@ abstract class SociIndexStrategy {
     /** Where the docker auth file is mounted in the job container, see {@code DOCKER_CONFIG} */
     static final String DOCKER_CONFIG_DIR = '/tmp/docker'
 
-    abstract void launchJob(String jobName, SociIndexRequest request)
+    /**
+     * Launch a {@code soci-indexer} command as a job
+     *
+     * @param jobName The job name
+     * @param workDir The job work directory, holding the docker auth file {@code config.json}, mounted in the job
+     * @param command The command to run
+     */
+    abstract void launchCommand(String jobName, Path workDir, List<String> command)
+
+    void launchJob(String jobName, SociIndexRequest request) {
+        launchCommand(jobName, request.workDir, indexCommand(request))
+    }
 
     protected List<String> indexCommand(SociIndexRequest request) {
         return List.of(
