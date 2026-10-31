@@ -6,6 +6,8 @@ on:
     paths:
       - 'soci-indexer/**'
       - '.github/workflows/build-soci-indexer.yml'
+      # the `wave.soci.indexer-image` default, see the check-version job
+      - 'src/main/groovy/io/seqera/wave/configuration/SociConfig.groovy'
 
 permissions:
   contents: read
@@ -37,3 +39,14 @@ jobs:
 
       - name: Check the VERSION tag
         run: make -C soci-indexer check registry=public.cr.seqera.io/wave
+
+      # Wave defaults to the image published by the Wave release, so the default must name the VERSION tag
+      - name: Check the Wave default image
+        run: |
+          expected="public.cr.seqera.io/wave/soci-indexer:$(cat soci-indexer/VERSION)"
+          f=src/main/groovy/io/seqera/wave/configuration/SociConfig.groovy
+          if ! grep -qF "$expected" "$f" || grep -o 'public\.cr\.seqera\.io/wave/soci-indexer:[^"`]*' "$f" | grep -vqxF "$expected"; then
+            echo "::error file=$f::the wave.soci.indexer-image default must be $expected, as soci-indexer/VERSION" >&2
+            exit 1
+          fi
+          echo "the Wave default image is $expected"
