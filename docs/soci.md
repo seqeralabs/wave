@@ -13,10 +13,11 @@ once per layer digest and stored in the `wave.soci.repo` repository, so it is re
 image sharing that layer. Indexing starts when the container is requested, and takes seconds
 (the 5 eligible layers of `python:3.12`, 394 MB, were indexed in 11.5 s).
 
-**Ephemeral containers** (pulled through Wave). Once the zTOCs of all the eligible layers are
-available, Wave adds the SOCI index manifest to the image index it serves. Until then it serves
-the plain image (pulled in full) and caches it for 30 s only, so a later pull is SOCI-enabled.
-Layers added by Wave (e.g. Fusion) are not indexed. Containers requested by digest cannot be
+**Ephemeral containers** (pulled through Wave). Wave adds the SOCI index manifest to the image
+index it serves. As for a container build, the manifest request is held until the zTOCs of all the
+eligible layers are available, at most `wave.soci.await-timeout`. A layer is indexed once, so only
+the first pull of new layers waits. When the indexing fails or times out, the image is served as it
+is, without SOCI index. Layers added by Wave (e.g. Fusion) are not indexed. Containers requested by digest cannot be
 altered and are rejected with `soci: true`.
 
 **Freeze and mirror containers** (pulled from their registry). Wave pushes a SOCI-enabled copy

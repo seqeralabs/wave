@@ -510,8 +510,11 @@ Configure the SOCI lazy loading support, see [SOCI lazy loading](../soci.md).
 `wave.soci.min-layer-size` *(optional)*
 : Layers smaller than this size in bytes are not indexed (default: `10485760`).
 
-`wave.soci.pending-cache-duration` *(optional)*
-: How long a manifest resolved while its SOCI index is pending is cached (default: `30s`).
+`wave.soci.await-timeout` *(optional)*
+: How long a container manifest request is held while its layers are indexed. When the indexing does not complete in time, the container is served without SOCI index (default: `5m`).
+
+`wave.soci.status-delay` *(optional)*
+: How often the indexing status is checked while a manifest request is held (default: `1s`).
 
 `wave.soci.ztoc-cache-duration` *(optional)*
 : How long a zTOC lookup is cached (default: `30d`).

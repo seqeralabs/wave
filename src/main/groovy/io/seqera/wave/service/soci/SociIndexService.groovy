@@ -53,6 +53,14 @@ interface SociIndexService {
     void indexLayers(String repository, List<Map> layers, PlatformId identity)
 
     /**
+     * Wait for the indexing of the given layers to complete, successfully or not
+     *
+     * @param layerDigests The layer digests
+     * @return {@code true} when the indexing of all layers completed, {@code false} when the wait timed out
+     */
+    boolean awaitLayers(Collection<String> layerDigests)
+
+    /**
      * Launch, in the background, the indexing of a container image for the given platform
      *
      * @param containerImage The container image e.g. {@code docker.io/library/ubuntu:24.04}
