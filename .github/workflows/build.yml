@@ -59,6 +59,16 @@ jobs:
         continue-on-error: true
         run: |
           set +e -x
+          # Option A probe: are the legacy iptables modules there, and does loading them fix the inner dockerd?
+          uname -r
+          grep -E '^(ip_tables|iptable_|nf_nat|nf_tables|x_tables) ' /proc/modules
+          sudo mkdir -p /mnt/hostusr
+          usr=$(sudo blkid -t PARTLABEL=USR-A -o device || true); [ -n "$usr" ] || usr=$(sudo blkid -t PARTLABEL=USR-B -o device)
+          echo "USR partition: $usr"
+          sudo mount -o ro "$usr" /mnt/hostusr
+          ls /mnt/hostusr/lib/modules/"$(uname -r)"/kernel/net/ipv4/netfilter/ | grep -E 'iptable_(nat|filter)'
+          sudo modprobe -d /mnt/hostusr -a iptable_nat iptable_filter; echo "modprobe exit=$?"
+          grep -E '^(ip_tables|iptable_|nf_nat) ' /proc/modules
           docker info --format 'dockerd {{.ServerVersion}} driver={{.Driver}} cgroup={{.CgroupVersion}} security={{.SecurityOptions}}'
           id=$(docker run -d --privileged -p 5000 registry:2)
           sleep 3
