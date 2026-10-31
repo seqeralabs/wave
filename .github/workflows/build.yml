@@ -63,10 +63,12 @@ jobs:
           uname -r
           grep -E '^(ip_tables|iptable_|nf_nat|nf_tables|x_tables) ' /proc/modules
           sudo mkdir -p /mnt/hostusr
-          usr=$(sudo blkid -t PARTLABEL=USR-A -o device || true); [ -n "$usr" ] || usr=$(sudo blkid -t PARTLABEL=USR-B -o device)
-          echo "USR partition: $usr"
-          sudo mount -o ro "$usr" /mnt/hostusr
+          ls -l /dev/mapper/ 2>&1; lsblk -o NAME,TYPE,MOUNTPOINTS 2>&1 | head -20
+          # the USR partition is in use through dm-verity: mount the mapped device instead
+          dev=$(ls /dev/mapper/usr 2>/dev/null || ls /dev/dm-0)
+          sudo mount -o ro "$dev" /mnt/hostusr; echo "mount $dev exit=$?"
           ls /mnt/hostusr/lib/modules/"$(uname -r)"/kernel/net/ipv4/netfilter/ | grep -E 'iptable_(nat|filter)'
+          command -v modprobe || sudo apt-get install -y -qq kmod >/dev/null
           sudo modprobe -d /mnt/hostusr -a iptable_nat iptable_filter; echo "modprobe exit=$?"
           grep -E '^(ip_tables|iptable_|nf_nat) ' /proc/modules
           docker info --format 'dockerd {{.ServerVersion}} driver={{.Driver}} cgroup={{.CgroupVersion}} security={{.SecurityOptions}}'
