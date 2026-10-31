@@ -41,7 +41,7 @@ import io.seqera.wave.tower.PlatformId
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Canonical
-@ToString(includeNames = true, includePackage = false)
+@ToString(includeNames = true, includePackage = false, excludes = ['identity'])
 @CompileStatic
 class SociPushRequest {
 

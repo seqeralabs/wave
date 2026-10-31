@@ -216,6 +216,21 @@ class SociIndexServiceImplTest extends Specification {
         dir?.deleteDir()
     }
 
+    def 'should find the layers that failed recently' () {
+        given:
+        def jobStore = Mock(SociIndexStateStore)
+        def service = new SociIndexServiceImpl(config: config, jobStore: jobStore)
+        def request = new SociIndexRequest(layerDigest: BIG, spanSize: 4194304)
+
+        when:
+        def result = service.failedLayers([BIG, CACHED, SMALL])
+        then:
+        jobStore.get("4194304/$BIG") >> SociIndexEntry.of(request).complete(1, null, 'error')
+        jobStore.get("4194304/$CACHED") >> SociIndexEntry.of(request)
+        jobStore.get("4194304/$SMALL") >> null
+        result == [BIG] as Set
+    }
+
     def 'should parse the result line' () {
         expect:
         SociIndexServiceImpl.parseResult(STDOUT)?.ztocDigest == EXPECTED

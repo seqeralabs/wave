@@ -57,13 +57,15 @@ class SociWaitersStore extends AbstractStateStore<SociWaiters> {
     }
 
     /**
-     * Add a waiter to a layer. Note: a read-modify-write, so a concurrent addition may be lost; the publication
-     * re-checks the zTOCs after registering, and its state expires after the publish timeout
+     * Add a waiter to a layer. The read-modify-write is verified by reading back the waiters and repeated
+     * when a concurrent addition overwrote it
      */
     void add(String layerDigest, String sociImage) {
-        final current = get(layerDigest)?.sociImages ?: List.<String>of()
-        if( current.contains(sociImage) )
-            return
-        put(layerDigest, new SociWaiters(current + sociImage))
+        for( int i=0; i<5; i++ ) {
+            final current = get(layerDigest)?.sociImages ?: List.<String>of()
+            if( current.contains(sociImage) )
+                return
+            put(layerDigest, new SociWaiters(current + sociImage))
+        }
     }
 }

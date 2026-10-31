@@ -47,13 +47,19 @@ class SociPushEntry implements StateEntry<String>, JobEntry {
     final SociPushRequest request
     final Status status
     final String error
+    /** the digest of the target image content the SOCI tag is published from */
+    final String sourceDigest
+    /** the digests of the layers to be indexed */
+    final List<String> layers
 
     protected SociPushEntry() {}
 
-    SociPushEntry(SociPushRequest request, Status status, String error) {
+    SociPushEntry(SociPushRequest request, Status status, String error, String sourceDigest=null, List<String> layers=null) {
         this.request = request
         this.status = status
         this.error = error
+        this.sourceDigest = sourceDigest
+        this.layers = layers
     }
 
     @Override
@@ -71,11 +77,19 @@ class SociPushEntry implements StateEntry<String>, JobEntry {
     }
 
     SociPushEntry withStatus(Status status) {
-        return new SociPushEntry(request, status, null)
+        return new SociPushEntry(request, status, null, sourceDigest, layers)
+    }
+
+    SociPushEntry withLayers(List<String> layers) {
+        return new SociPushEntry(request, status, null, sourceDigest, layers)
+    }
+
+    SociPushEntry withSourceDigest(String digest) {
+        return new SociPushEntry(request, status, null, digest, layers)
     }
 
     SociPushEntry failed(String error) {
-        return new SociPushEntry(request, Status.FAILED, error)
+        return new SociPushEntry(request, Status.FAILED, error, sourceDigest, layers)
     }
 
     static SociPushEntry of(SociPushRequest request, Status status) {

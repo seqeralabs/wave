@@ -87,17 +87,20 @@ class SociPushServiceImplTest extends Specification {
         'ubuntu'                            | 'docker.io/library/ubuntu:latest-soci'
     }
 
-    def 'should return the soci tag of a recent publication without registry requests' () {
+    def 'should return the soci tag of a recent publication with a single registry request' () {
         given:
         def proxy = Mock(RegistryProxyService)
         def store = Mock(SociPushStateStore)
         def service = new SociPushServiceImpl(config: config, proxyService: proxy, store: store)
 
+        def target = '{"schemaVersion":2}'
+
         when:
         def result = service.sociTarget(TARGET, ContainerPlatform.of('linux/amd64'), PlatformId.NULL)
-        then:
-        1 * store.get(SOCI) >> entry(SUCCEEDED)
-        0 * proxy._
+        then: 'only the target manifest is fetched'
+        1 * store.get(SOCI) >> entry(SUCCEEDED).withSourceDigest(RegHelper.digest(target))
+        1 * proxy.getManifestContent(TARGET, PlatformId.NULL) >> target
+        0 * proxy.getManifestContent(SOCI, _)
         result == SOCI
     }
 
@@ -127,7 +130,7 @@ class SociPushServiceImplTest extends Specification {
         when:
         def result = service.sociTarget(TARGET, ContainerPlatform.of('linux/amd64'), PlatformId.NULL)
         then: 'the container does not exist yet, the build event starts the publication'
-        1 * proxy.getManifestContent(TARGET, PlatformId.NULL) >> null
+        2 * proxy.getManifestContent(TARGET, PlatformId.NULL) >> null
         1 * store.putIfAbsent(SOCI, { SociPushEntry it -> it.status == WAITING_CONTAINER }) >> true
         0 * executor.execute(_)
         result == TARGET
@@ -168,8 +171,9 @@ class SociPushServiceImplTest extends Specification {
         service.onContainerCompletion(TARGET, true)
         then:
         1 * store.get(SOCI) >> entry(WAITING_CONTAINER)
-        1 * store.putEntry({ SociPushEntry it -> it.status == WAITING_INDEX })
+        1 * store.putEntry({ SociPushEntry it -> it.status == WAITING_INDEX && it.layers == [LAYER1, LAYER3] })
         2 * index.findZtocs([LAYER1, LAYER3]) >> ztocs().subMap([LAYER1])
+        1 * index.failedLayers([LAYER3]) >> Set.of()
         1 * waiters.add(LAYER3, SOCI)
         1 * index.indexLayers('quay.io/user/python', { List<Map> it -> it*.digest == [LAYER3] }, PlatformId.NULL)
         0 * store.putIfAbsent(_, _, _)
@@ -183,7 +187,7 @@ class SociPushServiceImplTest extends Specification {
         def jobService = Mock(JobService)
         def inspect = Mock(ContainerInspectService)
         def service = new SociPushServiceImpl(config: config, store: store, waiters: waiters, indexService: index, proxyService: proxy(), jobService: jobService, inspectService: inspect, ioExecutor: direct)
-        def pending = entry(WAITING_INDEX)
+        def pending = entry(WAITING_INDEX).withLayers([LAYER1, LAYER3])
 
         when:
         service.onLayerEvent(new SociLayerEvent(LAYER3, true))
@@ -192,7 +196,7 @@ class SociPushServiceImplTest extends Specification {
         2 * store.get(SOCI) >> pending
         1 * store.putIfAbsent("push/$SOCI", _, Duration.ofMinutes(1)) >> true
         1 * inspect.credentialsConfigJson('FROM public.cr.stage-seqera.io/wave/soci-ztoc', TARGET, null, PlatformId.NULL) >> '{}'
-        1 * store.putEntry({ SociPushEntry it -> it.status == PUSHING })
+        1 * store.putEntry({ SociPushEntry it -> it.status == PUSHING && it.sourceDigest == INDEX })
         1 * jobService.launchSociPush(pending.request)
         and: 'the plan pushes the index with the source digest under the soci tag'
         def plan = new JsonSlurper().parse(pending.request.workDir.resolve('plan.json')) as Map
@@ -214,6 +218,39 @@ class SociPushServiceImplTest extends Specification {
         1 * store.get(SOCI) >> entry(WAITING_INDEX)
         1 * store.putIfAbsent("push/$SOCI", _, _) >> false
         0 * jobService._
+    }
+
+    def 'should fail at once when a layer failed recently' () {
+        given:
+        def store = Mock(SociPushStateStore)
+        def waiters = Mock(SociWaitersStore)
+        def index = Mock(SociIndexService) { findZtocs(_) >> ztocs().subMap([LAYER1]) }
+        def service = new SociPushServiceImpl(config: config, store: store, waiters: waiters, indexService: index, proxyService: proxy(), ioExecutor: direct)
+
+        when:
+        service.onContainerCompletion(TARGET, true)
+        then:
+        1 * store.get(SOCI) >> entry(WAITING_CONTAINER)
+        1 * index.failedLayers([LAYER3]) >> Set.of(LAYER3)
+        1 * store.putEntry({ SociPushEntry it -> it.status == FAILED })
+        0 * waiters.add(_, _)
+        0 * index.indexLayers(_, _, _)
+    }
+
+    def 'should release the push claim when the push fails' () {
+        given:
+        def store = Mock(SociPushStateStore)
+        def proxy = Mock(RegistryProxyService)
+        def service = new SociPushServiceImpl(config: config, store: store, proxyService: proxy)
+
+        when:
+        service.push(entry(WAITING_INDEX))
+        then:
+        1 * store.get(SOCI) >> entry(WAITING_INDEX)
+        1 * store.putIfAbsent("push/$SOCI", _, _) >> true
+        1 * proxy.getManifestContent(TARGET, PlatformId.NULL) >> { throw new IllegalStateException('registry error') }
+        1 * store.remove("push/$SOCI")
+        thrown(IllegalStateException)
     }
 
     def 'should fail the publication when a layer cannot be indexed' () {

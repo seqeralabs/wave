@@ -67,6 +67,7 @@ class SociPushStateStore extends AbstractStateStore<SociPushEntry> {
         final ttl = switch (entry.status) {
             case SociPushEntry.Status.SUCCEEDED -> config.currentCacheDuration
             case SociPushEntry.Status.FAILED -> config.failureDuration
+            case SociPushEntry.Status.PUSHING -> config.publishTimeout.plus(config.jobTimeout)
             default -> config.publishTimeout
         }
         put(entry.key, entry, ttl)

@@ -135,44 +135,61 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
             return targetImage
         final soci = sociImage(targetImage)
         final entry = store.get(soci)
-        // a recently published tag is assumed current, no registry request
-        if( entry?.succeeded() )
-            return soci
         // a publication is pending or failed recently
-        if( entry )
+        if( entry && !entry.succeeded() )
             return targetImage
-        final target = getManifest(targetImage, identity)
-        if( target && isCurrent(soci, target, identity) ) {
-            store.putEntry(SociPushEntry.of(SociPushRequest.create(targetImage, soci, platform, identity, workspace()), SUCCEEDED))
+        final String target
+        try {
+            target = proxyService.getManifestContent(targetImage, identity)
+        }
+        catch (Exception e) {
+            log.warn "Unable to fetch manifest of '${targetImage}' - cause: ${e.message}"
+            return targetImage
+        }
+        final digest = target ? RegHelper.digest(target) : null
+        // a recent publication of the current content, a single registry request
+        if( digest && entry?.sourceDigest==digest )
+            return soci
+        if( target && isCurrent(soci, digest, identity) ) {
+            store.putEntry(SociPushEntry.of(SociPushRequest.create(targetImage, soci, platform, identity, SociPlatforms.workspace(buildConfig)), SUCCEEDED).withSourceDigest(digest))
             return soci
         }
-        final pending = SociPushEntry.of(SociPushRequest.create(targetImage, soci, platform, identity, workspace()), WAITING_CONTAINER)
-        if( store.putIfAbsent(soci, pending) && target ) {
-            // the container exists already e.g. a cached build, there is no event to wait for
+        final pending = SociPushEntry.of(SociPushRequest.create(targetImage, soci, platform, identity, SociPlatforms.workspace(buildConfig)), WAITING_CONTAINER)
+        if( entry )
+            store.remove(soci)
+        if( !store.putIfAbsent(soci, pending) )
+            return targetImage
+        // the container exists already e.g. a cached build, or completed meanwhile: there is no event to wait for
+        if( target || exists(targetImage, identity) )
             CompletableFuture.runAsync(() -> start(pending), ioExecutor)
-        }
         return targetImage
     }
 
-    protected String getManifest(String image, PlatformId identity) {
+    protected boolean exists(String image, PlatformId identity) {
         try {
-            return proxyService.getManifestContent(image, identity)
+            return proxyService.getManifestContent(image, identity) != null
         }
         catch (Exception e) {
             log.warn "Unable to fetch manifest of '${image}' - cause: ${e.message}"
-            return null
+            return false
         }
     }
 
     /**
      * @return {@code true} when the SOCI image exists and was published from the given content of the target image
      */
-    protected boolean isCurrent(String sociImage, String target, PlatformId identity) {
-        final soci = getManifest(sociImage, identity)
-        if( !soci )
+    protected boolean isCurrent(String sociImage, String targetDigest, PlatformId identity) {
+        try {
+            final soci = proxyService.getManifestContent(sociImage, identity)
+            if( !soci )
+                return false
+            final annotations = ((new JsonSlurper().parseText(soci) as Map).annotations ?: [:]) as Map
+            return annotations.get(ANNOTATION_SOURCE_DIGEST) == targetDigest
+        }
+        catch (Exception e) {
+            log.warn "Unable to fetch manifest of '${sociImage}' - cause: ${e.message}"
             return false
-        final annotations = ((new JsonSlurper().parseText(soci) as Map).annotations ?: [:]) as Map
-        return annotations.get(ANNOTATION_SOURCE_DIGEST) == RegHelper.digest(target)
+        }
     }
 
     @EventListener
@@ -197,12 +214,17 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
      */
     protected void start(SociPushEntry entry) {
         try {
-            final waiting = entry.withStatus(WAITING_INDEX)
-            store.putEntry(waiting)
             final layers = layersToIndex(entry.request)
+            final waiting = entry.withStatus(WAITING_INDEX).withLayers(layers.collect((Map it) -> it.digest as String))
+            store.putEntry(waiting)
             final missing = missingLayers(layers)
             if( !missing ) {
                 push(waiting)
+                return
+            }
+            final failed = indexService.failedLayers(missing.collect((Map it) -> it.digest as String))
+            if( failed ) {
+                fail(waiting, "Unable to index layers ${failed}")
                 return
             }
             for( Map it : missing )
@@ -235,7 +257,8 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
 
     protected void pushWhenIndexed(SociPushEntry entry) {
         try {
-            if( !missingLayers(layersToIndex(entry.request)) )
+            final layers = entry.layers ?: List.<String>of()
+            if( indexService.findZtocs(layers).keySet().containsAll(layers) )
                 push(entry)
         }
         catch (Throwable t) {
@@ -267,20 +290,28 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
         if( current?.status!=WAITING_INDEX )
             return
         // claim the push, a concurrent layer event finds it in PUSHING status
-        if( !store.putIfAbsent("push/${entry.key}".toString(), entry.withStatus(PUSHING), config.jobTimeout) )
+        final claim = "push/${entry.key}".toString()
+        if( !store.putIfAbsent(claim, entry.withStatus(PUSHING), config.jobTimeout) )
             return
-        final prepared = prepare(entry.request)
-        if( prepared==null ) {
-            fail(entry, 'Nothing to index')
-            return
+        try {
+            final prepared = prepare(entry.request)
+            if( prepared==null ) {
+                store.remove(claim)
+                fail(entry, 'Nothing to index')
+                return
+            }
+            final request = entry.request
+            final authJson = inspectService.credentialsConfigJson("FROM ${config.repo}", request.targetImage, null, request.identity)
+            saveDockerAuth(request.workDir, authJson)
+            Files.write(request.workDir.resolve('plan.json'), pushPlan(prepared, request.sociImage).bytes)
+            store.putEntry(entry.withStatus(PUSHING).withSourceDigest(prepared.sourceDigest))
+            log.info "== SOCI push submitted - request=${request}"
+            jobService.launchSociPush(request)
         }
-        final request = entry.request
-        final authJson = inspectService.credentialsConfigJson("FROM ${config.repo}", request.targetImage, null, request.identity)
-        saveDockerAuth(request.workDir, authJson)
-        Files.write(request.workDir.resolve('plan.json'), pushPlan(prepared, request.sociImage).bytes)
-        store.putEntry(entry.withStatus(PUSHING))
-        log.info "== SOCI push submitted - request=${request}"
-        jobService.launchSociPush(request)
+        catch (Throwable t) {
+            store.remove(claim)
+            throw t
+        }
     }
 
     /**
@@ -292,6 +323,7 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
     static class Prepared {
         String index
         Collection<SociDocs> docs
+        String sourceDigest
     }
 
     /**
@@ -317,7 +349,8 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
         final index = isIndex(json)
                 ? SociManifestAssembler.updateIndex(content, docs)
                 : SociManifestAssembler.wrapInIndex(docs.values().first(), imagePlatform(request, json))
-        return new Prepared(index: withSourceDigest(index, RegHelper.digest(content)), docs: docs.values())
+        final digest = RegHelper.digest(content)
+        return new Prepared(index: withSourceDigest(index, digest), docs: docs.values(), sourceDigest: digest)
     }
 
     static protected boolean isIndex(Map json) {
@@ -393,10 +426,6 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
 
     static protected Map manifest(String reference, String mediaType, String body) {
         return [reference: reference, mediaType: mediaType, body: body.bytes.encodeBase64().toString()]
-    }
-
-    protected java.nio.file.Path workspace() {
-        return SociPlatforms.workspace(buildConfig)
     }
 
     protected void fail(SociPushEntry entry, String error) {

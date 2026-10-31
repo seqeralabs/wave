@@ -163,6 +163,13 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
     }
 
     @Override
+    Set<String> failedLayers(Collection<String> layerDigests) {
+        return layerDigests
+                .findAll((String it) -> { final e = jobStore.get(SociIndexRequest.key(it, config.spanSize)); e && e.done() && !e.succeeded() })
+                .toSet()
+    }
+
+    @Override
     void indexLayers(String repository, List<Map> layers, PlatformId identity) {
         final missing = layers.findAll((Map it) -> !findZtoc(it.digest as String))
         if( !missing )
