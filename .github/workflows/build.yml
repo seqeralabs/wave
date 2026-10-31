@@ -58,7 +58,7 @@ jobs:
       - name: Debug nested registry container
         continue-on-error: true
         run: |
-          set -x
+          set +e -x
           docker info --format 'dockerd {{.ServerVersion}} driver={{.Driver}} cgroup={{.CgroupVersion}} security={{.SecurityOptions}}'
           id=$(docker run -d --privileged -p 5000 registry:2)
           sleep 3
@@ -73,7 +73,10 @@ jobs:
           docker exec "$id" docker pull hello-world@sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6; echo "pull-waited exit=$?"
           docker exec "$id" docker tag hello-world@sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6 localhost:5000/hello-world
           docker exec "$id" docker push localhost:5000/hello-world; echo "push exit=$?"
-          docker exec "$id" tail -40 /tmp/dockerd.log
+          docker exec "$id" sh -c 'ps aux | grep -v grep | grep dockerd'; echo "dockerd-alive exit=$?"
+          docker exec "$id" sh -c 'mount | grep -E " / |/var/lib/docker"; df -h /var/lib/docker 2>/dev/null'
+          docker exec "$id" grep -E 'level=(error|fatal|warning)|graceful|storage-driver|shutdown|signal' /tmp/dockerd.log
+          docker exec "$id" tail -25 /tmp/dockerd.log
           docker rm -f "$id"
 
       - name: Detect release commit
