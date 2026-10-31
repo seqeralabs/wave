@@ -54,6 +54,7 @@ import io.seqera.wave.proxy.ProxyCache
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.service.CredentialsService
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
@@ -398,6 +399,22 @@ class RegistryProxyService {
             return null
         if( resp.statusCode()!=200 )
             throw new IllegalStateException("Unable to fetch manifest for image '${image}' - response status=${resp.statusCode()}")
+        return resp.body()
+    }
+
+    /**
+     * Fetch the content of a (small) blob e.g. an image config
+     *
+     * @param image The blob reference e.g. {@code docker.io/library/ubuntu@sha256:...}
+     * @param identity The identity used to resolve the registry credentials
+     * @return The blob content
+     */
+    String getBlobContent(String image, PlatformId identity) {
+        final coords = ContainerCoordinates.parse(image)
+        final route = RoutePath.v2path('blobs', coords.registry, coords.image, coords.reference, identity!=null ? ContainerRequest.of(identity) : null)
+        final resp = client(route).getString(route.path, Map.<String,List<String>>of())
+        if( resp.statusCode()!=200 )
+            throw new IllegalStateException("Unable to fetch blob '${image}' - response status=${resp.statusCode()}")
         return resp.body()
     }
 

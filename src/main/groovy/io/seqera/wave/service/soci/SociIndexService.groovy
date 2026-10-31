@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.soci
 
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
 import io.seqera.wave.core.ContainerPlatform
@@ -50,9 +51,10 @@ interface SociIndexService {
      * Wait for the indexing of the given layers to complete, successfully or not
      *
      * @param layerDigests The layer digests
+     * @param timeout The max wait duration
      * @return {@code true} when the indexing of all layers completed, {@code false} when the wait timed out
      */
-    boolean awaitLayers(Collection<String> layerDigests)
+    boolean awaitLayers(Collection<String> layerDigests, Duration timeout)
 
     /**
      * Launch, in the background, the indexing of a container image for the given platform

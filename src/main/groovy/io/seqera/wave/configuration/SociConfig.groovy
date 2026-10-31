@@ -78,6 +78,13 @@ class SociConfig {
     Duration failureDuration
 
     /**
+     * How long the publication of the SOCI-enabled tag of a durable container waits for the container
+     * (build or mirror) and for its layers indexing
+     */
+    @Value('${wave.soci.publish-timeout:30m}')
+    Duration publishTimeout
+
+    /**
      * The OCI repository where zTOC artifacts are stored. Defaults to {@code <wave.build.repo>/soci-ztoc}
      */
     @Nullable

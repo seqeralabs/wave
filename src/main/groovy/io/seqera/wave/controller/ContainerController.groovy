@@ -71,6 +71,7 @@ import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.mirror.ContainerMirrorService
 import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.soci.SociIndexService
+import io.seqera.wave.service.soci.SociPushService
 import io.seqera.service.pairing.PairingService
 import io.seqera.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
@@ -194,6 +195,10 @@ class ContainerController {
     @Inject
     @Nullable
     private SociIndexService sociIndexService
+
+    @Inject
+    @Nullable
+    private SociPushService sociPushService
 
     @Inject
     private ContainerStatusService statusService
@@ -517,9 +522,7 @@ class ContainerController {
             throw new BadRequestException("SOCI index is not enabled in this Wave deployment - see 'wave.soci.enabled' setting")
         if( req.soci && req.formatSingularity() )
             throw new BadRequestException("Singularity format does not support the 'soci' attribute")
-        if( req.soci && (req.freeze || req.mirror) )
-            throw new BadRequestException("Freeze and mirror modes do not support the 'soci' attribute")
-        if( req.soci && req.containerImage?.contains('@sha256:') )
+        if( req.soci && req.containerImage?.contains('@sha256:') && !req.freeze && !req.mirror )
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'soci' attribute")
 
         // expand inclusions
@@ -608,6 +611,10 @@ class ContainerController {
         }
         else
             throw new IllegalStateException("Specify either 'containerImage' or 'containerFile' attribute")
+
+        // a durable container is pulled from its registry, return its SOCI-enabled tag when published
+        if( req.soci && sociPushService && (req.freeze || req.mirror) && !req.dryRun )
+            targetImage = sociPushService.sociTarget(targetImage, ContainerPlatform.of(req.containerPlatform), identity)
 
         ContainerRequest.create(
                 type,

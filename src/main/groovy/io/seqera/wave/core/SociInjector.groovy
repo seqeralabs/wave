@@ -143,7 +143,7 @@ class SociInjector {
         if( missing ) {
             log.debug "SOCI index awaiting for image ${client.registry.name}/${imageName} - indexed ${ztocs.size()} of ${layers.size()} layers"
             service.indexLayers("${client.registry.name}/${imageName}".toString(), missing, identity)
-            if( !service.awaitLayers(missing.collect((Map it) -> it.digest as String)) )
+            if( !service.awaitLayers(missing.collect((Map it) -> it.digest as String), config.awaitTimeout) )
                 log.warn "SOCI index timed out for image ${client.registry.name}/${imageName} - serving it without SOCI index"
             ztocs = service.findZtocs(digests)
         }

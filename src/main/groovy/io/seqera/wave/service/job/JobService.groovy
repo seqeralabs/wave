@@ -24,6 +24,7 @@ import io.seqera.wave.service.builder.MultiBuildRequest
 import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.scan.ScanRequest
 import io.seqera.wave.service.soci.SociIndexRequest
+import io.seqera.wave.service.soci.SociPushRequest
 
 /**
  * Define the contract for submitting and monitoring jobs
@@ -43,6 +44,8 @@ interface JobService {
     JobSpec launchMultiBuild(MultiBuildRequest request)
 
     JobSpec launchSociIndex(SociIndexRequest request)
+
+    JobSpec launchSociPush(SociPushRequest request)
 
     JobState status(JobSpec jobSpec)
 

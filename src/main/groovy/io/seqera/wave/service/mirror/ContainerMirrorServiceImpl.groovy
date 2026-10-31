@@ -37,6 +37,7 @@ import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.service.mirror.strategy.MirrorStrategy
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.scan.ContainerScanService
+import io.seqera.wave.service.soci.SociPushService
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -75,6 +76,10 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
 
     @Inject
     private MirrorStrategy mirrorStrategy
+
+    @Inject
+    @Nullable
+    private SociPushService sociPushService
 
     /**
      * {@inheritDoc}
@@ -141,6 +146,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
         scanService?.scanOnMirror(updated)
         store.putEntry(updated)
         persistence.saveMirrorResultAsync(result)
+        sociPushService?.onContainerCompletion(entry.request.targetImage, result.succeeded())
         log.debug "Mirror container completed - job=${jobSpec.operationName}; result=${result}; state=${jobState}"
     }
 
@@ -151,6 +157,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
     void onJobTimeout(JobSpec jobSpec, MirrorEntry entry) {
         final result = entry.result.complete(null, "Container mirror timed out")
         store.putEntry(entry.withResult(result))
+        sociPushService?.onContainerCompletion(entry.request.targetImage, false)
         persistence.saveMirrorResultAsync(result)
         log.warn "Mirror container timed out - job=${jobSpec.operationName}; result=${result}"
     }
@@ -162,6 +169,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
     void onJobException(JobSpec job, MirrorEntry entry, Throwable error) {
         final result = entry.result.complete(null, error.message)
         store.putEntry(entry.withResult(result))
+        sociPushService?.onContainerCompletion(entry.request.targetImage, false)
         persistence.saveMirrorResultAsync(result)
         log.error("Mirror container errored - job=${job.operationName}; result=${result}", error)
     }

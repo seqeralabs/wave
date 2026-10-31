@@ -29,7 +29,11 @@ with the same token also get the image without SOCI index; request a new token t
 layers are indexed. Layers added by Wave (e.g. Fusion) are not indexed. Containers requested by digest cannot be
 altered and are rejected with `soci: true`.
 
-**Freeze and mirror containers** are not supported yet: requests with `soci: true` are rejected.
+**Freeze and mirror containers** (pulled from their registry). Wave pushes a SOCI-enabled copy
+of the image index to the sibling tag `<tag>-soci`, once the container exists and its layers are
+indexed. The original tag is never changed. The request returns the `-soci` tag only once it
+exists, otherwise the original tag: the first request of a container is not SOCI-enabled. A container
+with no layer to index has no `-soci` tag. The target registry must accept OCI image indexes with artifact manifests.
 
 Clients without the SOCI snapshotter ignore the SOCI index and pull the image as usual.
 

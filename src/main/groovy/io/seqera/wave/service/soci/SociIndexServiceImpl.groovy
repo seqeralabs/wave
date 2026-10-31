@@ -19,6 +19,7 @@
 package io.seqera.wave.service.soci
 
 import java.nio.file.Path
+import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
@@ -35,7 +36,6 @@ import io.seqera.wave.configuration.SociConfig
 import io.seqera.wave.configuration.SociEnabled
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
-import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
@@ -46,8 +46,6 @@ import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
-import static io.seqera.wave.model.ContentType.DOCKER_IMAGE_INDEX_V2
-import static io.seqera.wave.model.ContentType.OCI_IMAGE_INDEX_V1
 import static io.seqera.wave.service.job.JobHelper.saveDockerAuth
 /**
  * Build the zTOC of image layers with a {@code soci-indexer} job and look them up.
@@ -165,8 +163,8 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
     }
 
     @Override
-    boolean awaitLayers(Collection<String> layerDigests) {
-        return jobStore.awaitCompletion(layerDigests.collect((String it) -> SociIndexRequest.key(it, config.spanSize)))
+    boolean awaitLayers(Collection<String> layerDigests, Duration timeout) {
+        return jobStore.awaitCompletion(layerDigests.collect((String it) -> SociIndexRequest.key(it, config.spanSize)), timeout)
     }
 
     protected void launchIndex(String repository, Map layer, String authJson) {
@@ -192,34 +190,18 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
 
     protected void requestIndex0(String containerImage, ContainerPlatform platform, PlatformId identity) {
         try {
-            final coords = ContainerCoordinates.parse(containerImage)
-            final repository = "${coords.registry}/${coords.image}".toString()
-            for( String manifest : platformManifests(containerImage, repository, platform, identity) ) {
+            final content = proxyService.getManifestContent(containerImage, identity)
+            if( !content )
+                return
+            final repository = SociPlatforms.repository(containerImage)
+            final manifests = SociPlatforms.platformManifests(content, platform, (String digest) -> proxyService.getManifestContent("${repository}@${digest}".toString(), identity))
+            for( String manifest : manifests.values() ) {
                 indexLayers(repository, SociManifestAssembler.eligibleLayers(manifest, config.minLayerSize), identity)
             }
         }
         catch (Throwable t) {
             log.warn "Unable to request SOCI index for image '${containerImage}' - cause: ${t.message}", t
         }
-    }
-
-    /**
-     * @return The image manifests of a container matching the given platform
-     */
-    protected List<String> platformManifests(String containerImage, String repository, ContainerPlatform platform, PlatformId identity) {
-        final content = proxyService.getManifestContent(containerImage, identity)
-        if( !content )
-            return List.<String>of()
-        final json = new JsonSlurper().parseText(content) as Map
-        if( json.mediaType != OCI_IMAGE_INDEX_V1 && json.mediaType != DOCKER_IMAGE_INDEX_V2 )
-            return List.of(content)
-        final result = new ArrayList<String>()
-        for( Map entry : SociPlatforms.targetEntries(json, platform) ) {
-            final manifest = proxyService.getManifestContent("${repository}@${entry.digest}", identity)
-            if( manifest )
-                result.add(manifest)
-        }
-        return result
     }
 
     @Override
@@ -272,7 +254,7 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
     protected void recordJob(SociIndexEntry entry, String result) {
         meterRegistry?.counter('wave.soci.index.jobs', 'result', result)?.increment()
         if( entry.request.creationTime )
-            meterRegistry?.timer('wave.soci.index.duration', 'result', result)?.record(java.time.Duration.between(entry.request.creationTime, Instant.now()))
+            meterRegistry?.timer('wave.soci.index.duration', 'result', result)?.record(Duration.between(entry.request.creationTime, Instant.now()))
     }
 
     /**

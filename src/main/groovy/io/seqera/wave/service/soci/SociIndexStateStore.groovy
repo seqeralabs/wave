@@ -74,12 +74,13 @@ class SociIndexStateStore extends AbstractStateStore<SociIndexEntry> {
      * Wait for the completion of the indexing jobs with the given keys
      *
      * @param keys The keys of the jobs, see {@link SociIndexRequest#key}
-     * @return {@code true} when all jobs completed, or {@code false} when the {@code wave.soci.await-timeout} expired
+     * @param timeout The max wait duration
+     * @return {@code true} when all jobs completed, or {@code false} when the timeout expired
      */
-    boolean awaitCompletion(Collection<String> keys) {
+    boolean awaitCompletion(Collection<String> keys, Duration timeout) {
         final beg = System.currentTimeMillis()
         while( keys.stream().anyMatch(this::pending) ) {
-            if( System.currentTimeMillis()-beg > config.awaitTimeout.toMillis() )
+            if( System.currentTimeMillis()-beg > timeout.toMillis() )
                 return false
             Thread.sleep(STATUS_DELAY.toMillis())
         }
