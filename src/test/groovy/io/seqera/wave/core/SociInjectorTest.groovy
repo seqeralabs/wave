@@ -126,7 +126,7 @@ class SociInjectorTest extends Specification {
         then:
         1 * service.indexLayers('docker.io/library/python', { List<Map> it -> it*.digest == [LAYER3] }, PlatformId.NULL)
         then:
-        1 * service.awaitLayers([LAYER3]) >> true
+        1 * service.awaitLayers([LAYER3], _) >> true
         then:
         1 * service.findZtocs([LAYER1, LAYER3]) >> ztocs()
         and:
@@ -146,7 +146,7 @@ class SociInjectorTest extends Specification {
         then:
         2 * service.findZtocs([LAYER1, LAYER3]) >> ztocs().subMap([LAYER1])
         1 * service.indexLayers('docker.io/library/python', _, PlatformId.NULL)
-        1 * service.awaitLayers([LAYER3]) >> COMPLETED
+        1 * service.awaitLayers([LAYER3], _) >> COMPLETED
         and:
         result == new ContainerDigestPair(INDEX, INDEX)
 

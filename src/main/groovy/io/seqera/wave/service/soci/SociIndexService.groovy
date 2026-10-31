@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.soci
 
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
 import io.seqera.wave.core.ContainerPlatform
@@ -38,12 +39,6 @@ interface SociIndexService {
     Map<String,ZtocEntry> findZtocs(Collection<String> layerDigests)
 
     /**
-     * @param layerDigests The layer digests
-     * @return The layers whose indexing failed recently, and is not retried before {@code wave.soci.failure-duration}
-     */
-    Set<String> failedLayers(Collection<String> layerDigests)
-
-    /**
      * Launch the indexing of the given layers that have no zTOC yet
      *
      * @param repository The image repository including the registry e.g. {@code docker.io/library/ubuntu}
@@ -56,9 +51,10 @@ interface SociIndexService {
      * Wait for the indexing of the given layers to complete, successfully or not
      *
      * @param layerDigests The layer digests
+     * @param timeout The max wait duration
      * @return {@code true} when the indexing of all layers completed, {@code false} when the wait timed out
      */
-    boolean awaitLayers(Collection<String> layerDigests)
+    boolean awaitLayers(Collection<String> layerDigests, Duration timeout)
 
     /**
      * Launch, in the background, the indexing of a container image for the given platform

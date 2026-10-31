@@ -85,12 +85,6 @@ class SociConfig {
     Duration publishTimeout
 
     /**
-     * How long a published SOCI tag is assumed to be current, before checking it again on the registry
-     */
-    @Value('${wave.soci.current-cache-duration:5m}')
-    Duration currentCacheDuration
-
-    /**
      * The OCI repository where zTOC artifacts are stored. Defaults to {@code <wave.build.repo>/soci-ztoc}
      */
     @Nullable

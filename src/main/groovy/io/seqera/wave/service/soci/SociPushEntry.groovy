@@ -36,12 +36,12 @@ class SociPushEntry implements StateEntry<String>, JobEntry {
     enum Status {
         /** waiting for the container build or mirror */
         WAITING_CONTAINER,
-        /** waiting for the indexing of the container layers */
-        WAITING_INDEX,
-        /** the push job is running */
-        PUSHING,
+        /** the container layers are indexed, then the push job runs */
+        PUBLISHING,
         SUCCEEDED,
-        FAILED
+        FAILED,
+        /** the container has no layer to index, there is nothing to publish */
+        NONE
     }
 
     final SociPushRequest request
@@ -49,17 +49,14 @@ class SociPushEntry implements StateEntry<String>, JobEntry {
     final String error
     /** the digest of the target image content the SOCI tag is published from */
     final String sourceDigest
-    /** the digests of the layers to be indexed */
-    final List<String> layers
 
     protected SociPushEntry() {}
 
-    SociPushEntry(SociPushRequest request, Status status, String error, String sourceDigest=null, List<String> layers=null) {
+    SociPushEntry(SociPushRequest request, Status status, String error, String sourceDigest=null) {
         this.request = request
         this.status = status
         this.error = error
         this.sourceDigest = sourceDigest
-        this.layers = layers
     }
 
     @Override
@@ -69,7 +66,7 @@ class SociPushEntry implements StateEntry<String>, JobEntry {
 
     @Override
     boolean done() {
-        return status==Status.SUCCEEDED || status==Status.FAILED
+        return status==Status.SUCCEEDED || status==Status.FAILED || status==Status.NONE
     }
 
     boolean succeeded() {
@@ -77,19 +74,15 @@ class SociPushEntry implements StateEntry<String>, JobEntry {
     }
 
     SociPushEntry withStatus(Status status) {
-        return new SociPushEntry(request, status, null, sourceDigest, layers)
-    }
-
-    SociPushEntry withLayers(List<String> layers) {
-        return new SociPushEntry(request, status, null, sourceDigest, layers)
+        return new SociPushEntry(request, status, null, sourceDigest)
     }
 
     SociPushEntry withSourceDigest(String digest) {
-        return new SociPushEntry(request, status, null, digest, layers)
+        return new SociPushEntry(request, status, null, digest)
     }
 
     SociPushEntry failed(String error) {
-        return new SociPushEntry(request, Status.FAILED, error, sourceDigest, layers)
+        return new SociPushEntry(request, Status.FAILED, error, sourceDigest)
     }
 
     static SociPushEntry of(SociPushRequest request, Status status) {

@@ -522,9 +522,6 @@ Configure the SOCI lazy loading support, see [SOCI lazy loading](../soci.md).
 `wave.soci.failure-duration` *(optional)*
 : How long a layer that could not be indexed, or a failed publication, is not retried. The next request after it indexes the layer again (default: `10m`).
 
-`wave.soci.current-cache-duration` *(optional)*
-: How long a published `-soci` tag is assumed current before checking it again on the registry (default: `5m`).
-
 `wave.soci.k8s.resources.requests.cpu`, `wave.soci.k8s.resources.requests.memory`, `wave.soci.k8s.resources.limits.cpu`, `wave.soci.k8s.resources.limits.memory` *(optional)*
 : Kubernetes resources of the `soci-indexer` jobs.
 

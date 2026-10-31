@@ -147,8 +147,7 @@ class SociIndexServiceImplTest extends Specification {
     def 'should store entry on job completion' () {
         given:
         def jobStore = Mock(SociIndexStateStore)
-        def events = Mock(io.micronaut.context.event.ApplicationEventPublisher)
-        def service = new SociIndexServiceImpl(config: config, jobStore: jobStore, eventPublisher: events)
+        def service = new SociIndexServiceImpl(config: config, jobStore: jobStore)
         def request = new SociIndexRequest(requestId: 'soci-1', layerDigest: BIG, spanSize: 4194304)
         def entry = SociIndexEntry.of(request)
         def stdout = 'some log line\n{"layerDigest":"' + BIG + '","layerMediaType":"' + GZIP + '","ztocDigest":"sha256:zbig","ztocSize":1234,"spanSize":4194304}\n'
@@ -157,15 +156,13 @@ class SociIndexServiceImplTest extends Specification {
         service.onJobCompletion(Mock(JobSpec), entry, JobState.completed(0, stdout))
         then:
         1 * jobStore.putEntry({ SociIndexEntry it -> it.done() && it.succeeded() && it.ztoc.ztocDigest == 'sha256:zbig' })
-        1 * events.publishEvent(new SociLayerEvent(BIG, true))
     }
 
     def 'should record a failed job' () {
         given:
         def jobStore = Mock(SociIndexStateStore)
         def jobService = Mock(JobService)
-        def events = Mock(io.micronaut.context.event.ApplicationEventPublisher)
-        def service = new SociIndexServiceImpl(config: config, jobStore: jobStore, jobService: jobService, eventPublisher: events)
+        def service = new SociIndexServiceImpl(config: config, jobStore: jobStore, jobService: jobService)
         def request = new SociIndexRequest(requestId: 'soci-1', layerDigest: BIG, spanSize: 4194304)
 
         when:
@@ -173,7 +170,6 @@ class SociIndexServiceImplTest extends Specification {
         then:
         0 * jobService.launchSociIndex(_)
         1 * jobStore.putEntry({ SociIndexEntry it -> it.done() && !it.succeeded() && it.error.contains('unable to access layer') })
-        1 * events.publishEvent(new SociLayerEvent(BIG, false))
     }
 
     def 'should launch the job with the docker auth' () {
@@ -193,21 +189,6 @@ class SociIndexServiceImplTest extends Specification {
 
         cleanup:
         dir?.deleteDir()
-    }
-
-    def 'should find the layers that failed recently' () {
-        given:
-        def jobStore = Mock(SociIndexStateStore)
-        def service = new SociIndexServiceImpl(config: config, jobStore: jobStore)
-        def request = new SociIndexRequest(layerDigest: BIG, spanSize: 4194304)
-
-        when:
-        def result = service.failedLayers([BIG, CACHED, SMALL])
-        then:
-        jobStore.get("4194304/$BIG") >> SociIndexEntry.of(request).complete(1, null, 'error')
-        jobStore.get("4194304/$CACHED") >> SociIndexEntry.of(request)
-        jobStore.get("4194304/$SMALL") >> null
-        result == [BIG] as Set
     }
 
     def 'should parse the result line' () {
