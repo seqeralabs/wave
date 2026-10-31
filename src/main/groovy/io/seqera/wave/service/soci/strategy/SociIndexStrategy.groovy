@@ -54,7 +54,6 @@ abstract class SociIndexStrategy {
                 '-digest', request.layerDigest,
                 '-media-type', request.layerMediaType,
                 '-span', String.valueOf(request.spanSize),
-                '-min-size', String.valueOf(request.minLayerSize),
                 '-repo', request.repository )
     }
 }

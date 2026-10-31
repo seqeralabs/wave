@@ -38,12 +38,6 @@ interface SociIndexService {
     Map<String,ZtocEntry> findZtocs(Collection<String> layerDigests)
 
     /**
-     * @param layerDigests The layer digests
-     * @return The layers whose indexing failed recently, and is not retried before {@code wave.soci.failure-duration}
-     */
-    Set<String> failedLayers(Collection<String> layerDigests)
-
-    /**
      * Launch the indexing of the given layers that have no zTOC yet
      *
      * @param repository The image repository including the registry e.g. {@code docker.io/library/ubuntu}

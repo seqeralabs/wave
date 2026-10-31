@@ -24,7 +24,7 @@ import groovy.transform.ToString
 import io.seqera.data.store.state.StateEntry
 import io.seqera.wave.service.job.JobEntry
 /**
- * Model the state of a zTOC indexing job
+ * Model the state of a zTOC indexing job. A succeeded entry caches the layer zTOC
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -33,8 +33,9 @@ import io.seqera.wave.service.job.JobEntry
 @CompileStatic
 class SociIndexEntry implements StateEntry<String>, JobEntry {
 
+    /** The indexing request, {@code null} when the zTOC was found in the zTOC repository */
     final SociIndexRequest request
-    /** The zTOC built by the job, {@code null} while pending, on failure or when the layer is skipped */
+    /** The zTOC of the layer, {@code null} while pending or on failure */
     final ZtocEntry ztoc
     final boolean completed
     final Integer exitCode
@@ -52,7 +53,7 @@ class SociIndexEntry implements StateEntry<String>, JobEntry {
 
     @Override
     String getKey() {
-        return request.key
+        return request ? request.key : SociIndexRequest.key(ztoc.layerDigest, ztoc.spanSize)
     }
 
     @Override
@@ -70,5 +71,12 @@ class SociIndexEntry implements StateEntry<String>, JobEntry {
 
     static SociIndexEntry of(SociIndexRequest request) {
         return new SociIndexEntry(request, null, false, null, null)
+    }
+
+    /**
+     * @return A succeeded entry for a zTOC found in the zTOC repository
+     */
+    static SociIndexEntry found(ZtocEntry ztoc) {
+        return new SociIndexEntry(null, ztoc, true, 0, null)
     }
 }

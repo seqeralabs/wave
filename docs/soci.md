@@ -17,7 +17,9 @@ image sharing that layer. Indexing starts when the container is requested, and t
 index it serves. As for a container build, the manifest request is held until the zTOCs of all the
 eligible layers are available, at most `wave.soci.await-timeout`. A layer is indexed once, so only
 the first pull of new layers waits. When the indexing fails or times out, the image is served as it
-is, without SOCI index. Layers added by Wave (e.g. Fusion) are not indexed. Containers requested by digest cannot be
+is, without SOCI index. Wave caches the manifest it served for the container token, so later pulls
+with the same token also get the image without SOCI index; request a new token to get it once the
+layers are indexed. Layers added by Wave (e.g. Fusion) are not indexed. Containers requested by digest cannot be
 altered and are rejected with `soci: true`.
 
 **Freeze and mirror containers** are not supported yet: requests with `soci: true` are rejected.

@@ -37,8 +37,6 @@ import (
 const (
 	// DefaultSpanSize is the soci default distance between two decompression checkpoints
 	DefaultSpanSize = int64(1 << 22)
-	// DefaultMinLayerSize is the soci default size below which layers are not indexed
-	DefaultMinLayerSize = int64(10 << 20)
 
 	// BuildToolIdentifier is written into every zTOC built by this tool
 	BuildToolIdentifier = "Seqera Wave soci-indexer v0.1"
@@ -53,23 +51,17 @@ const (
 	AnnotationZtocDigest     = "io.seqera.wave.ztoc.digest"
 	AnnotationZtocSize       = "io.seqera.wave.ztoc.size"
 	AnnotationSpanSize       = "io.seqera.wave.ztoc.span-size"
-
-	ReasonMinSize     = "min-size"
-	ReasonCompression = "compression"
 )
 
-// IndexRequest holds the parameters to index one layer
+// IndexRequest holds the parameters to index one layer. Wave only requests gzip layers
+// above the soci minimum size
 type IndexRequest struct {
-	// LayerFile is the path of the layer blob; when empty the layer is downloaded from Source
-	LayerFile string
-	// Source is the layer reference e.g. docker.io/library/ubuntu@sha256:…, used when LayerFile is empty
+	// Source is the layer reference e.g. docker.io/library/ubuntu@sha256:…
 	Source         string
 	LayerDigest    string
 	LayerMediaType string
 	SpanSize       int64
-	MinLayerSize   int64
 	Repository     string
-	Insecure       bool
 }
 
 // IndexResult is printed on stdout as a single JSON line and parsed by Wave
@@ -79,25 +71,6 @@ type IndexResult struct {
 	ZtocDigest     string `json:"ztocDigest,omitempty"`
 	ZtocSize       int64  `json:"ztocSize,omitempty"`
 	SpanSize       int64  `json:"spanSize"`
-	Skipped        bool   `json:"skipped"`
-	Reason         string `json:"reason,omitempty"`
-}
-
-// IsGzipLayer reports whether a layer media type is a gzip compressed tar, the only
-// compression indexed by Wave
-func IsGzipLayer(mediaType string) bool {
-	return strings.HasSuffix(mediaType, ".tar+gzip") || strings.HasSuffix(mediaType, ".tar.gzip")
-}
-
-// SkipReason returns why a layer is not indexed, or "" when it must be indexed
-func SkipReason(mediaType string, size int64, minSize int64) string {
-	if !IsGzipLayer(mediaType) {
-		return ReasonCompression
-	}
-	if size < minSize {
-		return ReasonMinSize
-	}
-	return ""
 }
 
 // ZtocTag is the tag of the zTOC artifact for a layer digest and span size
@@ -120,25 +93,13 @@ func BuildZtoc(layerFile string, spanSize int64) ([]byte, error) {
 
 // IndexLayer builds the zTOC of a layer and pushes it as an OCI artifact to the zTOC repository
 func IndexLayer(req IndexRequest) (*IndexResult, error) {
-	if req.LayerFile == "" {
-		file, err := downloadLayer(req.Source, req.Insecure)
-		if err != nil {
-			return nil, err
-		}
-		defer os.Remove(file)
-		req.LayerFile = file
-	}
-	info, err := os.Stat(req.LayerFile)
+	file, err := downloadLayer(req.Source)
 	if err != nil {
 		return nil, err
 	}
+	defer os.Remove(file)
 	result := &IndexResult{LayerDigest: req.LayerDigest, LayerMediaType: req.LayerMediaType, SpanSize: req.SpanSize}
-	if reason := SkipReason(req.LayerMediaType, info.Size(), req.MinLayerSize); reason != "" {
-		result.Skipped = true
-		result.Reason = reason
-		return result, nil
-	}
-	data, err := BuildZtoc(req.LayerFile, req.SpanSize)
+	data, err := BuildZtoc(file, req.SpanSize)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +109,7 @@ func IndexLayer(req IndexRequest) (*IndexResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	reg, err := newRegistry(req.Repository, req.Insecure)
+	reg, err := newRegistry(req.Repository)
 	if err != nil {
 		return nil, err
 	}
@@ -193,11 +154,8 @@ func ZtocArtifactManifest(r IndexResult) ([]byte, error) {
 }
 
 // downloadLayer saves a layer blob into a temporary file, verifying its digest
-func downloadLayer(source string, insecure bool) (string, error) {
-	if source == "" {
-		return "", fmt.Errorf("missing layer file or source")
-	}
-	ref, err := name.NewDigest(source, nameOptions(insecure)...)
+func downloadLayer(source string) (string, error) {
+	ref, err := name.NewDigest(source)
 	if err != nil {
 		return "", fmt.Errorf("invalid layer source '%s': %w", source, err)
 	}

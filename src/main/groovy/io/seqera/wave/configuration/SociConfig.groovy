@@ -41,10 +41,9 @@ import jakarta.inject.Singleton
 class SociConfig {
 
     /**
-     * The zTOC span size, i.e. the distance between two decompression checkpoints. Same default as soci
+     * The zTOC span size, i.e. the distance between two decompression checkpoints. Same as soci
      */
-    @Value('${wave.soci.span-size:4194304}')
-    long spanSize
+    final long spanSize = 4194304
 
     /**
      * Layers smaller than this size are not indexed. Same default as soci
@@ -58,12 +57,6 @@ class SociConfig {
      */
     @Value('${wave.soci.await-timeout:5m}')
     Duration awaitTimeout
-
-    /**
-     * How often the indexing status is checked while a manifest request is held
-     */
-    @Value('${wave.soci.status-delay:1s}')
-    Duration statusDelay
 
     /**
      * How long a zTOC lookup entry is kept in the cache. It must be shorter than the
@@ -83,9 +76,6 @@ class SociConfig {
      */
     @Value('${wave.soci.failure-duration:10m}')
     Duration failureDuration
-
-    @Value('${wave.soci.retry-attempts:2}')
-    Integer retryAttempts
 
     /**
      * The OCI repository where zTOC artifacts are stored. Defaults to {@code <wave.build.repo>/soci-ztoc}

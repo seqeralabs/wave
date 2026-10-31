@@ -504,17 +504,11 @@ Configure the SOCI lazy loading support, see [SOCI lazy loading](../soci.md).
 `wave.soci.indexer-image` *(optional)*
 : Container image of the `soci-indexer` job (default: `public.cr.seqera.io/wave/soci-indexer:v0.1.0`).
 
-`wave.soci.span-size` *(optional)*
-: zTOC span size in bytes (default: `4194304`).
-
 `wave.soci.min-layer-size` *(optional)*
 : Layers smaller than this size in bytes are not indexed (default: `10485760`).
 
 `wave.soci.await-timeout` *(optional)*
 : How long a container manifest request is held while its layers are indexed. When the indexing does not complete in time, the container is served without SOCI index (default: `5m`).
-
-`wave.soci.status-delay` *(optional)*
-: How often the indexing status is checked while a manifest request is held (default: `1s`).
 
 `wave.soci.ztoc-cache-duration` *(optional)*
 : How long a zTOC lookup is cached (default: `30d`).
@@ -522,11 +516,8 @@ Configure the SOCI lazy loading support, see [SOCI lazy loading](../soci.md).
 `wave.soci.job-timeout` *(optional)*
 : Max duration of a `soci-indexer` job (default: `10m`).
 
-`wave.soci.retry-attempts` *(optional)*
-: Attempts to index a layer before giving up (default: `2`).
-
 `wave.soci.failure-duration` *(optional)*
-: How long a layer that could not be indexed is not retried (default: `10m`).
+: How long a layer that could not be indexed is not retried. The next pull after it indexes the layer again (default: `10m`).
 
 `wave.soci.k8s.resources.requests.cpu`, `wave.soci.k8s.resources.requests.memory`, `wave.soci.k8s.resources.limits.cpu`, `wave.soci.k8s.resources.limits.memory` *(optional)*
 : Kubernetes resources of the `soci-indexer` jobs.

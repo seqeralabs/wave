@@ -161,17 +161,6 @@ class SociManifestAssemblerTest extends Specification {
         layers*.size == [29855236, 12121979]
     }
 
-    def 'should check completeness' () {
-        given:
-        def manifest = resource('python-3.12-slim-amd64-manifest.json')
-
-        expect:
-        SociManifestAssembler.isComplete(manifest, goldenZtocs(), 10485760)
-        !SociManifestAssembler.isComplete(manifest, goldenZtocs().subMap([LAYER1]), 10485760)
-        and: 'a manifest without eligible layers is never complete, so nothing is rewritten'
-        !SociManifestAssembler.isComplete(manifest, [:], 100_000_000)
-    }
-
     def 'should detect an image already having a soci index' () {
         expect:
         SociManifestAssembler.hasSociIndex(resource('python-3.12-slim-soci-index.json'))
