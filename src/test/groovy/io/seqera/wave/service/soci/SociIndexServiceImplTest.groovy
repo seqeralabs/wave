@@ -69,7 +69,7 @@ class SociIndexServiceImplTest extends Specification {
         def service = new SociIndexServiceImpl(config: config, ztocStore: ztocStore, jobStore: jobStore, jobService: jobService, proxyService: proxy, inspectService: inspect)
 
         when:
-        service.indexLayers('docker.io/library/app', manifest(), PlatformId.NULL)
+        service.indexLayers('docker.io/library/app', SociManifestAssembler.eligibleLayers(manifest(), 10485760), PlatformId.NULL)
 
         then:
         ztocStore.get("4194304/$CACHED") >> ztoc(CACHED)
@@ -97,7 +97,7 @@ class SociIndexServiceImplTest extends Specification {
         def service = new SociIndexServiceImpl(config: config, ztocStore: ztocStore, jobStore: jobStore, jobService: jobService, proxyService: proxy, inspectService: Mock(ContainerInspectService))
 
         when:
-        service.indexLayers('docker.io/library/app', manifest(), PlatformId.NULL)
+        service.indexLayers('docker.io/library/app', SociManifestAssembler.eligibleLayers(manifest(), 10485760), PlatformId.NULL)
 
         then:
         ztocStore.get(_) >> null

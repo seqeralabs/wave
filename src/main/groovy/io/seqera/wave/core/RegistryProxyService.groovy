@@ -30,6 +30,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.core.io.buffer.ByteBuffer
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.reactor.http.client.ReactorStreamingHttpClient
@@ -43,6 +44,8 @@ import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.HttpClientConfig
+import io.seqera.wave.configuration.SociConfig
+import io.seqera.wave.service.soci.SociIndexService
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.proxy.DelegateResponse
@@ -123,10 +126,25 @@ class RegistryProxyService {
     @Named(TaskExecutors.IO)
     private ExecutorService httpClientExecutor
 
+    @Inject
+    @Nullable
+    private SociIndexService sociIndexService
+
+    @Inject
+    @Nullable
+    private SociConfig sociConfig
+
     private ContainerAugmenter scanner(ProxyClient proxyClient) {
         return new ContainerAugmenter()
                 .withStorage(storage)
                 .withClient(proxyClient)
+    }
+
+    private ContainerAugmenter scanner(ProxyClient proxyClient, RoutePath route) {
+        final result = scanner(proxyClient)
+        return route.request?.soci && sociIndexService
+                ? result.withSoci(sociIndexService, sociConfig)
+                : result
     }
 
     private ProxyClient client(RoutePath route) {
@@ -152,9 +170,18 @@ class RegistryProxyService {
     }
 
     DigestStore handleManifest(RoutePath route, Map<String,List<String>> headers){
+        return resolveManifest(route, headers).store
+    }
+
+    /**
+     * Resolve the manifest of a container request
+     *
+     * @return The resolved manifest and whenever its SOCI index is still pending
+     */
+    ManifestResult resolveManifest(RoutePath route, Map<String,List<String>> headers){
         ProxyClient proxyClient = client(route)
 
-        final digest = scanner(proxyClient).resolve(route, headers)
+        final digest = scanner(proxyClient, route).resolve(route, headers)
         if( digest == null )
             throw new IllegalStateException("Missing digest for request: $route")
 
@@ -163,7 +190,7 @@ class RegistryProxyService {
 
         // find out the target digest for the request
         final target = "$route.registry/v2/${route.image}/manifests/${digest.target}"
-        return storage.getManifest(target).orElse(null)
+        return new ManifestResult(storage.getManifest(target).orElse(null), digest.sociPending)
     }
 
     protected void updateContainerRequest(RoutePath route, ContainerDigestPair digest) {

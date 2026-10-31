@@ -154,10 +154,8 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
     }
 
     @Override
-    void indexLayers(String repository, String manifestJson, PlatformId identity) {
-        final missing = SociManifestAssembler
-                .eligibleLayers(manifestJson, config.minLayerSize)
-                .findAll((Map it) -> !findZtoc(it.digest as String))
+    void indexLayers(String repository, List<Map> layers, PlatformId identity) {
+        final missing = layers.findAll((Map it) -> !findZtoc(it.digest as String))
         if( !missing )
             return
         // credentials to pull the layers and to push the zTOC artifacts
@@ -200,7 +198,7 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
             final coords = ContainerCoordinates.parse(containerImage)
             final repository = "${coords.registry}/${coords.image}".toString()
             for( String manifest : platformManifests(containerImage, repository, platform, identity) ) {
-                indexLayers(repository, manifest, identity)
+                indexLayers(repository, SociManifestAssembler.eligibleLayers(manifest, config.minLayerSize), identity)
             }
         }
         catch (Throwable t) {

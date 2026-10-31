@@ -38,13 +38,13 @@ interface SociIndexService {
     Map<String,ZtocEntry> findZtocs(Collection<String> layerDigests)
 
     /**
-     * Launch the indexing of the eligible layers of an image manifest that have no zTOC yet
+     * Launch the indexing of the given layers that have no zTOC yet
      *
      * @param repository The image repository including the registry e.g. {@code docker.io/library/ubuntu}
-     * @param manifestJson The image manifest
+     * @param layers The layer descriptors to index, see {@link SociManifestAssembler#eligibleLayers}
      * @param identity The identity of the requester, used to access private repositories
      */
-    void indexLayers(String repository, String manifestJson, PlatformId identity)
+    void indexLayers(String repository, List<Map> layers, PlatformId identity)
 
     /**
      * Launch, in the background, the indexing of a container image for the given platform

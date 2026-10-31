@@ -70,6 +70,7 @@ import io.seqera.wave.service.inclusion.ContainerInclusionService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.mirror.ContainerMirrorService
 import io.seqera.wave.service.mirror.MirrorRequest
+import io.seqera.wave.service.soci.SociIndexService
 import io.seqera.service.pairing.PairingService
 import io.seqera.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
@@ -191,6 +192,10 @@ class ContainerController {
     private SociConfig sociConfig
 
     @Inject
+    @Nullable
+    private SociIndexService sociIndexService
+
+    @Inject
     private ContainerStatusService statusService
 
     @Inject
@@ -310,6 +315,9 @@ class ContainerController {
         // persist request
         storeContainerRequest0(req, data, token, target, ip)
         scanService?.scanOnRequest(data)
+        // index the container layers ahead of the pull
+        if( data.soci && data.isContainer() && !data.dryRun )
+            sociIndexService?.requestIndex(data.containerImage, data.platform, identity)
         // log the response
         log.debug "New container request fulfilled - token=$token.value; expiration=$token.expiration; container=$data.containerImage; build=$resp.buildId; identity=$identity"
         // return response

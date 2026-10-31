@@ -19,6 +19,7 @@
 package io.seqera.wave.storage;
 
 
+import java.time.Duration;
 import java.util.Optional;
 
 import io.seqera.wave.api.ContainerLayer;
@@ -33,6 +34,8 @@ public interface Storage {
     DigestStore saveManifest(String path, String manifest, String type, String digest);
 
     DigestStore saveManifest(String path, DigestStore store);
+
+    DigestStore saveManifest(String path, DigestStore store, Duration ttl);
 
     Optional<DigestStore> getBlob(String path);
 
