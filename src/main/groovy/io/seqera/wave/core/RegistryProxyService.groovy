@@ -28,6 +28,7 @@ import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.cache.annotation.Cacheable
+import io.micronaut.context.BeanProvider
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
@@ -126,9 +127,9 @@ class RegistryProxyService {
     @Named(TaskExecutors.IO)
     private ExecutorService httpClientExecutor
 
+    // note: lazy provider because the SOCI index service depends on this service
     @Inject
-    @Nullable
-    private SociIndexService sociIndexService
+    private BeanProvider<SociIndexService> sociIndexService
 
     @Inject
     @Nullable
@@ -142,8 +143,8 @@ class RegistryProxyService {
 
     private ContainerAugmenter scanner(ProxyClient proxyClient, RoutePath route) {
         final result = scanner(proxyClient)
-        return route.request?.soci && sociIndexService
-                ? result.withSoci(sociIndexService, sociConfig)
+        return route.request?.soci && sociIndexService.isPresent()
+                ? result.withSoci(sociIndexService.get(), sociConfig)
                 : result
     }
 
