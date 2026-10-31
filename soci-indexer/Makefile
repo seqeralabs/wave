@@ -1,4 +1,4 @@
-version ?= v$(shell cat VERSION)
+version ?= $(shell cat VERSION)
 # non-prod default, the Wave release publishes to public.cr.seqera.io/wave, see build.yml
 registry ?= public.cr.stage-seqera.io/wave
 image = ${registry}/soci-indexer:${version}
@@ -17,7 +17,7 @@ build:
 			.
 
 # fail when the VERSION tag is published with different sources: tags are immutable, so changed
-# sources need a new VERSION
+# sources need a new VERSION. Run by the pull requests, so that a missing bump fails before the release
 check:
 	@found=$$(docker buildx imagetools inspect ${image} --format '{{ index (index .Image "linux/amd64").Config.Labels "${label}" }}' 2>&1) || { \
 		case "$$found" in \
@@ -32,7 +32,8 @@ check:
 		exit 1; \
 	fi
 
-# build and push the image when the tag is missing, skip it when the tag has the same sources
+# build and push the image when the tag is missing, skip it when the tag has the same sources,
+# fail otherwise, see `check`
 release: check
 	@if docker buildx imagetools inspect ${image} >/dev/null 2>&1; then \
 		echo "skipping the build of ${image}"; \
@@ -45,7 +46,7 @@ test:
 	docker run --rm -v ${CURDIR}:/src -w /src -v soci-indexer-gomod:/go/pkg/mod golang:1.26-bookworm \
 		bash -c 'apt-get update -qq && apt-get install -y -qq zlib1g-dev >/dev/null && go vet ./... && go test ./...'
 
-# image loaded into the local docker as soci-indexer:dev, it is never pushed
+# single-arch image loaded into the local docker as soci-indexer:dev, it is never pushed
 load:
 	docker buildx build \
 			--load \
