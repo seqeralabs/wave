@@ -37,6 +37,12 @@ wave:
   security:
     ssrf-protection:
       enabled: false
+  soci:
+    enabled: true
+    # pushed with the docker.io credentials, see DOCKER_USER and DOCKER_PAT in config.yml
+    repo: "docker.io/pditommaso/tests"
+    # built with 'make load' in soci-indexer/
+    indexer-image: "soci-indexer:dev"
 ---
 endpoints:
   metrics:
