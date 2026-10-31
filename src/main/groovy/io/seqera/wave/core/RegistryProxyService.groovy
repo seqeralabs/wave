@@ -19,6 +19,7 @@
 package io.seqera.wave.core
 
 
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
@@ -27,8 +28,11 @@ import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.cache.annotation.Cacheable
+import io.micrometer.core.instrument.MeterRegistry
+import io.micronaut.context.BeanProvider
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.core.io.buffer.ByteBuffer
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.reactor.http.client.ReactorStreamingHttpClient
@@ -42,6 +46,8 @@ import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.HttpClientConfig
+import io.seqera.wave.configuration.SociConfig
+import io.seqera.wave.service.soci.SociIndexService
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.proxy.DelegateResponse
@@ -49,6 +55,7 @@ import io.seqera.wave.proxy.ProxyCache
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.service.CredentialsService
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
@@ -122,10 +129,29 @@ class RegistryProxyService {
     @Named(TaskExecutors.IO)
     private ExecutorService httpClientExecutor
 
+    @Inject
+    @Nullable
+    private MeterRegistry meterRegistry
+
+    // note: lazy provider because the SOCI index service depends on this service
+    @Inject
+    private BeanProvider<SociIndexService> sociIndexService
+
+    @Inject
+    @Nullable
+    private SociConfig sociConfig
+
     private ContainerAugmenter scanner(ProxyClient proxyClient) {
         return new ContainerAugmenter()
                 .withStorage(storage)
                 .withClient(proxyClient)
+    }
+
+    private ContainerAugmenter scanner(ProxyClient proxyClient, RoutePath route) {
+        final result = scanner(proxyClient)
+        return route.request?.soci && sociIndexService.isPresent()
+                ? result.withSoci(sociIndexService.get(), sociConfig)
+                : result
     }
 
     private ProxyClient client(RoutePath route) {
@@ -151,18 +177,29 @@ class RegistryProxyService {
     }
 
     DigestStore handleManifest(RoutePath route, Map<String,List<String>> headers){
+        return resolveManifest(route, headers).store
+    }
+
+    /**
+     * Resolve the manifest of a container request
+     *
+     * @return The resolved manifest and whenever its SOCI index is still pending
+     */
+    ManifestResult resolveManifest(RoutePath route, Map<String,List<String>> headers){
         ProxyClient proxyClient = client(route)
 
-        final digest = scanner(proxyClient).resolve(route, headers)
+        final digest = scanner(proxyClient, route).resolve(route, headers)
         if( digest == null )
             throw new IllegalStateException("Missing digest for request: $route")
 
         // update the container metadata for this request
         updateContainerRequest(route, digest)
+        if( route.request?.soci )
+            meterRegistry?.counter('wave.soci.manifest.served', 'state', digest.sociPending ? 'pending' : 'resolved')?.increment()
 
         // find out the target digest for the request
         final target = "$route.registry/v2/${route.image}/manifests/${digest.target}"
-        return storage.getManifest(target).orElse(null)
+        return new ManifestResult(storage.getManifest(target).orElse(null), digest.sociPending)
     }
 
     protected void updateContainerRequest(RoutePath route, ContainerDigestPair digest) {
@@ -250,10 +287,21 @@ class RegistryProxyService {
         final key = route.getTargetPath()
         return cache.getOrCompute(key,(String k)-> {
             final resp = handleRequest0(route, headers)
-            // when the response is not cacheable, return null as TTL
-            final ttl = route.isDigest() && resp.isCacheable() ? cache.duration : null
-            return new AbstractTieredCache.Pair<>(resp, ttl)
+            return new AbstractTieredCache.Pair<>(resp, cacheTtl(route, resp))
         })
+    }
+
+    /**
+     * The TTL for caching a blob response, or {@code null} when it must not be cached.
+     * A partial content (206) response is never cached, because the cache key does not
+     * include the {@code Range} header and a later request would get a truncated blob
+     */
+    protected Duration cacheTtl(RoutePath route, DelegateResponse resp) {
+        if( !route.isDigest() || !resp.isCacheable() )
+            return null
+        if( resp.statusCode==206 )
+            return null
+        return cache.duration
     }
 
     @TraceElapsedTime(thresholdMillis = '${wave.trace.proxy-service.threshold:1000}')
@@ -350,6 +398,40 @@ class RegistryProxyService {
             log.warn "Unable to retrieve digest for image '$image' -- response status=${resp.statusCode()}; headers:\n${RegHelper.dumpHeaders(resp)}"
         }
         return result
+    }
+
+    /**
+     * Fetch the content of a manifest
+     *
+     * @param image The image reference, by tag or digest e.g. {@code docker.io/library/ubuntu:24.04}
+     * @param identity The identity used to resolve the registry credentials, or {@code null} for Wave own ones
+     * @return The manifest content or {@code null} when it does not exist
+     */
+    String getManifestContent(String image, PlatformId identity) {
+        final coords = ContainerCoordinates.parse(image)
+        final route = RoutePath.v2manifestPath(coords, identity)
+        final resp = client(route).getString(route.path, WaveDefault.ACCEPT_HEADERS)
+        if( resp.statusCode()==404 )
+            return null
+        if( resp.statusCode()!=200 )
+            throw new IllegalStateException("Unable to fetch manifest for image '${image}' - response status=${resp.statusCode()}")
+        return resp.body()
+    }
+
+    /**
+     * Fetch the content of a (small) blob e.g. an image config
+     *
+     * @param image The blob reference e.g. {@code docker.io/library/ubuntu@sha256:...}
+     * @param identity The identity used to resolve the registry credentials
+     * @return The blob content
+     */
+    String getBlobContent(String image, PlatformId identity) {
+        final coords = ContainerCoordinates.parse(image)
+        final route = RoutePath.v2path('blobs', coords.registry, coords.image, coords.reference, identity!=null ? ContainerRequest.of(identity) : null)
+        final resp = client(route).getString(route.path, Map.<String,List<String>>of())
+        if( resp.statusCode()!=200 )
+            throw new IllegalStateException("Unable to fetch blob '${image}' - response status=${resp.statusCode()}")
+        return resp.body()
     }
 
     Flux<ByteBuffer<?>> streamBlob(RoutePath route, Map<String,List<String>> headers) {

@@ -60,6 +60,7 @@ class ContainerRequest {
     boolean dryRun
     Boolean succeeded
     Instant creationTime
+    boolean soci
 
     boolean durable() {
         return freeze || getMirror()
@@ -96,6 +97,7 @@ class ContainerRequest {
                 "dryRun=${dryRun}; " +
                 "succeeded=${succeeded}; " +
                 "creationTime=${creationTime}; " +
+                "soci=${soci}; " +
                 "]"
     }
 
@@ -171,6 +173,10 @@ class ContainerRequest {
         return creationTime
     }
 
+    boolean getSoci() {
+        return soci
+    }
+
     static ContainerRequest create(
             Type type,
             PlatformId identity,
@@ -188,7 +194,8 @@ class ContainerRequest {
             List<ScanLevel> scanLevels,
             boolean dryRun,
             Boolean succeeded,
-            Instant creationTime
+            Instant creationTime,
+            boolean soci
     )
     {
         return new ContainerRequest(
@@ -209,7 +216,8 @@ class ContainerRequest {
                 scanLevels,
                 dryRun,
                 succeeded,
-                creationTime
+                creationTime,
+                soci
         )
     }
 
@@ -236,7 +244,8 @@ class ContainerRequest {
                 data.scanLevels as List<ScanLevel>,
                 data.dryRun as boolean,
                 data.succeeded as Boolean,
-                data.creationTime as Instant
+                data.creationTime as Instant,
+                data.soci as boolean
         )
     }
 }

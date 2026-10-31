@@ -1,0 +1,212 @@
+/*
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2026, Seqera Labs
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package main
+
+import (
+	"archive/tar"
+	"compress/gzip"
+	"crypto/rand"
+	"encoding/json"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+	"testing"
+
+	"github.com/awslabs/soci-snapshotter/ztoc"
+	"github.com/google/go-containerregistry/pkg/crane"
+	"github.com/google/go-containerregistry/pkg/registry"
+)
+
+const gzipLayer = "application/vnd.oci.image.layer.v1.tar+gzip"
+
+// writeLayer writes a gzip tar with the given files, each one filled with random (incompressible) bytes
+func writeLayer(t *testing.T, files map[string]int) (string, []string) {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "layer.tar.gz")
+	f, err := os.Create(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gz := gzip.NewWriter(f)
+	tw := tar.NewWriter(gz)
+	names := make([]string, 0, len(files))
+	for n := range files {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	for _, n := range names {
+		data := make([]byte, files[n])
+		_, _ = rand.Read(data)
+		if err := tw.WriteHeader(&tar.Header{Name: n, Mode: 0644, Size: int64(len(data)), Typeflag: tar.TypeReg}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := tw.Write(data); err != nil {
+			t.Fatal(err)
+		}
+	}
+	_ = tw.Close()
+	_ = gz.Close()
+	_ = f.Close()
+	return path, names
+}
+
+func testRegistry(t *testing.T) string {
+	t.Helper()
+	srv := httptest.NewServer(registry.New())
+	t.Cleanup(srv.Close)
+	return strings.TrimPrefix(srv.URL, "http://")
+}
+
+func TestSkipReason(t *testing.T) {
+	cases := []struct {
+		mediaType string
+		size      int64
+		expected  string
+	}{
+		{gzipLayer, 20 << 20, ""},
+		{"application/vnd.docker.image.rootfs.diff.tar.gzip", 20 << 20, ""},
+		{gzipLayer, 1 << 20, ReasonMinSize},
+		{"application/vnd.oci.image.layer.v1.tar+zstd", 20 << 20, ReasonCompression},
+		{"application/vnd.oci.image.layer.v1.tar", 20 << 20, ReasonCompression},
+	}
+	for _, c := range cases {
+		if got := SkipReason(c.mediaType, c.size, DefaultMinLayerSize); got != c.expected {
+			t.Errorf("SkipReason(%s, %d) = %q, expected %q", c.mediaType, c.size, got, c.expected)
+		}
+	}
+}
+
+func TestZtocTag(t *testing.T) {
+	got := ZtocTag("sha256:6fc242d221a673263eabd14a9ad9584d3177c96e5cb504c891497338e2f912f5", DefaultSpanSize)
+	expected := "ztoc-4194304-6fc242d221a673263eabd14a9ad9584d3177c96e5cb504c891497338e2f912f5"
+	if got != expected {
+		t.Errorf("got %s, expected %s", got, expected)
+	}
+}
+
+func TestIndexGzipLayer(t *testing.T) {
+	layer, names := writeLayer(t, map[string]int{"bin/tool": 8 << 20, "lib/data.bin": 4 << 20, "etc/conf": 100})
+	repo := testRegistry(t) + "/wave/soci-ztoc"
+	digest := "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+
+	result, err := IndexLayer(IndexRequest{LayerFile: layer, LayerDigest: digest, LayerMediaType: gzipLayer,
+		SpanSize: DefaultSpanSize, MinLayerSize: DefaultMinLayerSize, Repository: repo, Insecure: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Skipped || result.ZtocDigest == "" || result.ZtocSize == 0 {
+		t.Fatalf("unexpected result %+v", result)
+	}
+
+	// the artifact is resolvable by tag and its annotations describe the zTOC
+	raw, err := crane.Manifest(repo+":"+ZtocTag(digest, DefaultSpanSize), crane.Insecure)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m struct {
+		ArtifactType string            `json:"artifactType"`
+		Annotations  map[string]string `json:"annotations"`
+		Layers       []struct {
+			Digest string `json:"digest"`
+		} `json:"layers"`
+	}
+	_ = json.Unmarshal(raw, &m)
+	if m.ArtifactType != ZtocArtifactType || m.Annotations[AnnotationZtocDigest] != result.ZtocDigest ||
+		m.Annotations[AnnotationLayerDigest] != digest || m.Layers[0].Digest != result.ZtocDigest {
+		t.Fatalf("unexpected artifact manifest %s", raw)
+	}
+
+	// the zTOC blob lists the files of the layer
+	blob, err := crane.PullLayer(repo+"@"+result.ZtocDigest, crane.Insecure)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rc, _ := blob.Compressed()
+	toc, err := ztoc.Unmarshal(rc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, e := range toc.TOC.FileMetadata {
+		got = append(got, e.Name)
+	}
+	sort.Strings(got)
+	if strings.Join(got, ",") != strings.Join(names, ",") {
+		t.Fatalf("ztoc files %v, expected %v", got, names)
+	}
+	if toc.BuildToolIdentifier != BuildToolIdentifier {
+		t.Fatalf("unexpected build tool %s", toc.BuildToolIdentifier)
+	}
+}
+
+func TestIndexLayerFromSource(t *testing.T) {
+	layer, names := writeLayer(t, map[string]int{"bin/tool": 12 << 20})
+	host := testRegistry(t)
+	// upload the layer into an image repository
+	data, _ := os.ReadFile(layer)
+	digest := sha256Digest(data)
+	src, _ := newRegistry(host+"/library/app", true)
+	if err := src.putBlob(strings.NewReader(string(data)), digest, int64(len(data))); err != nil {
+		t.Fatal(err)
+	}
+	repo := host + "/wave/soci-ztoc"
+	result, err := IndexLayer(IndexRequest{Source: host + "/library/app@" + digest, LayerDigest: digest, LayerMediaType: gzipLayer,
+		SpanSize: DefaultSpanSize, MinLayerSize: DefaultMinLayerSize, Repository: repo, Insecure: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	blob, err := crane.PullLayer(repo+"@"+result.ZtocDigest, crane.Insecure)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rc, _ := blob.Compressed()
+	toc, err := ztoc.Unmarshal(rc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(toc.TOC.FileMetadata) != len(names) || toc.TOC.FileMetadata[0].Name != names[0] {
+		t.Fatalf("unexpected ztoc files %+v", toc.TOC.FileMetadata)
+	}
+}
+
+func TestSkipSmallLayer(t *testing.T) {
+	layer, _ := writeLayer(t, map[string]int{"small": 1 << 20})
+	result, err := IndexLayer(IndexRequest{LayerFile: layer, LayerDigest: "sha256:01", LayerMediaType: gzipLayer,
+		SpanSize: DefaultSpanSize, MinLayerSize: DefaultMinLayerSize, Repository: "localhost:1/none", Insecure: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.Skipped || result.Reason != ReasonMinSize {
+		t.Fatalf("unexpected result %+v", result)
+	}
+}
+
+func TestSkipNonGzip(t *testing.T) {
+	layer, _ := writeLayer(t, map[string]int{"big": 12 << 20})
+	result, err := IndexLayer(IndexRequest{LayerFile: layer, LayerDigest: "sha256:01", LayerMediaType: "application/vnd.oci.image.layer.v1.tar+zstd",
+		SpanSize: DefaultSpanSize, MinLayerSize: DefaultMinLayerSize, Repository: "localhost:1/none", Insecure: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.Skipped || result.Reason != ReasonCompression {
+		t.Fatalf("unexpected result %+v", result)
+	}
+}

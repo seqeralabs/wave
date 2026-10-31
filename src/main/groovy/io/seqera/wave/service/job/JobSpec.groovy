@@ -37,7 +37,7 @@ import io.seqera.random.LongRndKey
 @CompileStatic
 class JobSpec {
 
-    enum Type { Transfer, Build, Scan, Mirror, MultiBuild }
+    enum Type { Transfer, Build, Scan, Mirror, MultiBuild, SociIndex }
 
     /**
      * The job unique identifier
@@ -135,6 +135,19 @@ class JobSpec {
         new JobSpec(
                 LongRndKey.rndHex(),
                 Type.Mirror,
+                recordId,
+                operationName,
+                creationTime,
+                null,
+                maxDuration,
+                workDir
+        )
+    }
+
+    static JobSpec sociIndex(String recordId, String operationName, Instant creationTime, Duration maxDuration, Path workDir) {
+        new JobSpec(
+                LongRndKey.rndHex(),
+                Type.SociIndex,
                 recordId,
                 operationName,
                 creationTime,
