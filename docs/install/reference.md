@@ -491,6 +491,37 @@ Configure Kubernetes resource requirements for Wave container mirroring operatio
 `wave.mirror.k8s.resources.limits.memory` *(optional)*
 : Memory resource limit for mirror Kubernetes pods.
 
+## SOCI index
+
+Configure the SOCI lazy loading support, see [SOCI lazy loading](../soci.md).
+
+`wave.soci.enabled` *(optional)*
+: Enables the `soci` container request attribute (default: `false`).
+
+`wave.soci.repo` *(optional)*
+: Repository where the zTOC artifacts are stored (default: `<wave.build.repo>/soci-ztoc`). Its lifecycle expiry must be longer than `wave.soci.ztoc.duration`.
+
+`wave.soci.indexer-image` *(optional)*
+: Container image of the `soci-indexer` job (default: `public.cr.seqera.io/wave/soci-indexer:v0.1.0`).
+
+`wave.soci.min-layer-size` *(optional)*
+: Layers smaller than this size in bytes are not indexed (default: `10485760`).
+
+`wave.soci.await-timeout` *(optional)*
+: How long a container manifest request is held while its layers are indexed. When the indexing does not complete in time, the container is served without SOCI index (default: `5m`).
+
+`wave.soci.ztoc.duration` *(optional)*
+: How long a zTOC lookup is cached (default: `30d`).
+
+`wave.soci.timeout` *(optional)*
+: Max duration of a `soci-indexer` job (default: `10m`).
+
+`wave.soci.failure.duration` *(optional)*
+: How long a layer that could not be indexed is not retried. The next pull after it indexes the layer again (default: `10m`).
+
+`wave.soci.k8s.resources.requests.cpu`, `wave.soci.k8s.resources.requests.memory`, `wave.soci.k8s.resources.limits.cpu`, `wave.soci.k8s.resources.limits.memory` *(optional)*
+: Kubernetes resources of the `soci-indexer` jobs.
+
 ## Proxy cache
 
 Configure the Wave in-memory proxy cache for registry responses.
