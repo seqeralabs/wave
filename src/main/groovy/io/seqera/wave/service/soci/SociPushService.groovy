@@ -30,8 +30,8 @@ interface SociPushService {
 
     /**
      * The image to be returned for a durable container requested with SOCI. The SOCI-enabled tag is
-     * returned only when it already exists, otherwise its publication is started and the given image
-     * is returned, so that a pull never hits a missing tag
+     * returned only when it exists and is current, otherwise its publication is registered and the given
+     * image is returned, so that a pull never hits a missing tag
      *
      * @param targetImage The container image e.g. {@code quay.io/user/app:1.0}
      * @param platform The container platform
@@ -39,4 +39,12 @@ interface SociPushService {
      * @return The SOCI-enabled image e.g. {@code quay.io/user/app:1.0-soci}, or {@code targetImage}
      */
     String sociTarget(String targetImage, ContainerPlatform platform, PlatformId identity)
+
+    /**
+     * Notify the completion of a container mirror, which starts or drops the pending publication of its SOCI tag
+     *
+     * @param targetImage The mirrored image
+     * @param succeeded Whenever the mirror succeeded
+     */
+    void onContainerCompletion(String targetImage, boolean succeeded)
 }

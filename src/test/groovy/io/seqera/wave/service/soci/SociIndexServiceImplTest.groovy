@@ -157,7 +157,8 @@ class SociIndexServiceImplTest extends Specification {
         given:
         def ztocStore = Mock(SociZtocStore)
         def jobStore = Mock(SociIndexStateStore)
-        def service = new SociIndexServiceImpl(config: config, ztocStore: ztocStore, jobStore: jobStore)
+        def events = Mock(io.micronaut.context.event.ApplicationEventPublisher)
+        def service = new SociIndexServiceImpl(config: config, ztocStore: ztocStore, jobStore: jobStore, eventPublisher: events)
         def request = new SociIndexRequest(requestId: 'soci-1', layerDigest: BIG, spanSize: 4194304)
         def entry = SociIndexEntry.of(request)
         def stdout = 'some log line\n{"layerDigest":"' + BIG + '","layerMediaType":"' + GZIP + '","ztocDigest":"sha256:zbig","ztocSize":1234,"spanSize":4194304,"skipped":false}\n'
@@ -167,20 +168,33 @@ class SociIndexServiceImplTest extends Specification {
         then:
         1 * ztocStore.put("4194304/$BIG", new ZtocEntry(BIG, GZIP, 'sha256:zbig', 1234, 4194304))
         1 * jobStore.putEntry({ SociIndexEntry it -> it.done() && it.succeeded() && it.ztoc.ztocDigest == 'sha256:zbig' })
+        1 * events.publishEvent(new SociLayerEvent(BIG, true))
     }
 
-    def 'should not store entry on job failure and allow retry' () {
+    def 'should retry a failed job then notify the failure' () {
         given:
         def ztocStore = Mock(SociZtocStore)
         def jobStore = Mock(SociIndexStateStore)
-        def service = new SociIndexServiceImpl(config: config, ztocStore: ztocStore, jobStore: jobStore)
-        def entry = SociIndexEntry.of(new SociIndexRequest(requestId: 'soci-1', layerDigest: BIG, spanSize: 4194304))
+        def jobService = Mock(JobService)
+        def events = Mock(io.micronaut.context.event.ApplicationEventPublisher)
+        config.retryAttempts = 2
+        def service = new SociIndexServiceImpl(config: config, ztocStore: ztocStore, jobStore: jobStore, jobService: jobService, eventPublisher: events)
+        def request = new SociIndexRequest(requestId: 'soci-1', layerDigest: BIG, spanSize: 4194304, workDir: java.nio.file.Path.of('/tmp/soci-1'), attempt: 1)
 
-        when:
-        service.onJobCompletion(Mock(JobSpec), entry, JobState.completed(1, 'soci-indexer: unable to access layer'))
+        when: 'the first attempt fails'
+        service.onJobCompletion(Mock(JobSpec), SociIndexEntry.of(request), JobState.completed(1, 'soci-indexer: unable to access layer'))
+        then:
+        1 * jobStore.put("4194304/$BIG", { SociIndexEntry it -> !it.done() && it.request.attempt == 2 })
+        1 * jobService.launchSociIndex({ SociIndexRequest it -> it.attempt == 2 && it.layerDigest == BIG && it.requestId != 'soci-1' })
+        0 * events.publishEvent(_)
+
+        when: 'the last attempt fails'
+        service.onJobCompletion(Mock(JobSpec), SociIndexEntry.of(request.retry(java.nio.file.Path.of('/tmp'))), JobState.completed(1, 'soci-indexer: unable to access layer'))
         then:
         0 * ztocStore.put(_, _)
+        0 * jobService.launchSociIndex(_)
         1 * jobStore.putEntry({ SociIndexEntry it -> it.done() && !it.succeeded() && it.error.contains('unable to access layer') })
+        1 * events.publishEvent(new SociLayerEvent(BIG, false))
     }
 
     def 'should launch the job with the docker auth' () {

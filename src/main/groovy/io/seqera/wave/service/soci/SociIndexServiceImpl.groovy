@@ -27,6 +27,7 @@ import groovy.json.JsonSlurper
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micrometer.core.instrument.MeterRegistry
+import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.scheduling.TaskExecutors
@@ -104,6 +105,9 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
     @Nullable
     private MeterRegistry meterRegistry
 
+    @Inject
+    private ApplicationEventPublisher<SociLayerEvent> eventPublisher
+
     /**
      * @return The tag of the zTOC artifact of a layer
      */
@@ -180,17 +184,12 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
                 config.spanSize,
                 config.minLayerSize,
                 config.repo,
-                workspace(),
+                SociPlatforms.workspace(buildConfig),
                 authJson )
         if( jobStore.putIfAbsent(request.key, SociIndexEntry.of(request)) ) {
             log.info "== SOCI index submitted - request=${request}"
             jobService.launchSociIndex(request)
         }
-    }
-
-    protected Path workspace() {
-        final dir = buildConfig?.buildWorkspace ?: System.getProperty('java.io.tmpdir')
-        return Path.of(dir).toAbsolutePath()
     }
 
     @Override
@@ -222,9 +221,7 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
         if( json.mediaType != OCI_IMAGE_INDEX_V1 && json.mediaType != DOCKER_IMAGE_INDEX_V2 )
             return List.of(content)
         final result = new ArrayList<String>()
-        for( Map entry : (json.manifests as List<Map>) ) {
-            if( !entry.platform || !platform.platforms.any((ContainerPlatform.Platform it) -> it.matches(entry.platform as Map)) )
-                continue
+        for( Map entry : SociPlatforms.targetEntries(json, platform) ) {
             final manifest = proxyService.getManifestContent("${repository}@${entry.digest}", identity)
             if( manifest )
                 result.add(manifest)
@@ -251,13 +248,14 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
         recordJob(entry, result!=null ? 'succeeded' : 'failed')
         if( result==null ) {
             log.warn "== SOCI index failed - job=${job.operationName}; layer=${entry.request.layerDigest}; state=${state}"
-            jobStore.putEntry(entry.complete(state.exitCode, null, state.stdout ?: 'Unknown error'))
+            failed(entry, state.exitCode, state.stdout ?: 'Unknown error')
             return
         }
         final ztoc = result.skipped ? null : toZtoc(result)
         if( ztoc )
             ztocStore.put(entry.key, ztoc)
         jobStore.putEntry(entry.complete(state.exitCode, ztoc, null))
+        eventPublisher.publishEvent(new SociLayerEvent(entry.request.layerDigest, ztoc!=null))
         log.info "== SOCI index completed - job=${job.operationName}; layer=${entry.request.layerDigest}; ztoc=${ztoc?.ztocDigest}; skipped=${result.skipped}; reason=${result.reason}"
     }
 
@@ -265,14 +263,29 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
     void onJobException(JobSpec job, SociIndexEntry entry, Throwable error) {
         recordJob(entry, 'failed')
         log.error("== SOCI index errored - job=${job.operationName}; layer=${entry.request.layerDigest}", error)
-        jobStore.putEntry(entry.complete(null, null, error.message ?: error.toString()))
+        failed(entry, null, error.message ?: error.toString())
     }
 
     @Override
     void onJobTimeout(JobSpec job, SociIndexEntry entry) {
         recordJob(entry, 'timeout')
         log.warn "== SOCI index timed out - job=${job.operationName}; layer=${entry.request.layerDigest}"
-        jobStore.putEntry(entry.complete(null, null, 'SOCI index job timed out'))
+        failed(entry, null, 'SOCI index job timed out')
+    }
+
+    /**
+     * Retry a failed layer up to {@code wave.soci.retry-attempts} times, then record the failure and notify it
+     */
+    protected void failed(SociIndexEntry entry, Integer exitCode, String error) {
+        if( entry.request.attempt < config.retryAttempts ) {
+            final retry = entry.request.retry(SociPlatforms.workspace(buildConfig))
+            log.info "== SOCI index retry - attempt=${retry.attempt}; request=${retry}"
+            jobStore.put(retry.key, SociIndexEntry.of(retry))
+            jobService.launchSociIndex(retry)
+            return
+        }
+        jobStore.putEntry(entry.complete(exitCode, null, error))
+        eventPublisher.publishEvent(new SociLayerEvent(entry.request.layerDigest, false))
     }
 
     protected void recordJob(SociIndexEntry entry, String result) {

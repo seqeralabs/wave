@@ -39,6 +39,7 @@ import io.seqera.random.LongRndKey
  * @param workDir The job work directory, holding the docker auth file
  * @param authJson The docker config json authorising the layer pull and the zTOC push
  * @param creationTime When the request was created
+ * @param attempt The attempt number, starting from 1
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -60,6 +61,7 @@ class SociIndexRequest {
     Path workDir
     String authJson
     Instant creationTime
+    int attempt
 
     /**
      * @return The key identifying the zTOC of this layer
@@ -85,6 +87,15 @@ class SociIndexRequest {
                 repository,
                 workspace.resolve(id),
                 authJson,
-                Instant.now() )
+                Instant.now(),
+                1 )
+    }
+
+    /**
+     * @return A new request to retry this one
+     */
+    SociIndexRequest retry(Path workspace) {
+        final id = ID_PREFIX + LongRndKey.rndHex()
+        return new SociIndexRequest(id, source, layerDigest, layerMediaType, layerSize, spanSize, minLayerSize, repository, workspace.resolve(id), authJson, Instant.now(), attempt+1)
     }
 }

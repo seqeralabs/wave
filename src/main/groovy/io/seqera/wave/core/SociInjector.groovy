@@ -28,6 +28,7 @@ import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.service.soci.SociDocs
 import io.seqera.wave.service.soci.SociIndexService
 import io.seqera.wave.service.soci.SociManifestAssembler
+import io.seqera.wave.service.soci.SociPlatforms
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.tower.PlatformId
 import static io.seqera.wave.model.ContentType.DOCKER_IMAGE_INDEX_V2
@@ -112,9 +113,7 @@ class SociInjector {
             return pair
         final ready = new LinkedHashMap<String,SociDocs>()
         boolean pending = false
-        for( Map entry : (json.manifests as List<Map>) ) {
-            if( !isTargetManifest(entry) )
-                continue
+        for( Map entry : SociPlatforms.targetEntries(json, platform) ) {
             final manifest = loadManifest(imageName, entry.digest as String, headers)
             final docs = manifest!=null ? docsFor(imageName, manifest) : new Docs(State.NONE, null)
             if( docs.state==State.PENDING )
@@ -135,17 +134,6 @@ class SociInjector {
         final configDigest = (json.config as Map).digest as String
         final index = SociManifestAssembler.wrapInIndex(docs.docs, imagePlatform(imageName, configDigest, headers))
         return new ContainerDigestPair(pair.source, saveIndex(imageName, index), false)
-    }
-
-    protected boolean isTargetManifest(Map entry) {
-        final media = entry.mediaType as String
-        if( media!=OCI_IMAGE_MANIFEST_V1 && media!=DOCKER_MANIFEST_V2_TYPE )
-            return false
-        // skip non-image manifests e.g. attestations and soci indexes
-        if( entry.artifactType )
-            return false
-        final entryPlatform = entry.platform as Map
-        return entryPlatform && platform.platforms.any((ContainerPlatform.Platform it) -> it.matches(entryPlatform))
     }
 
     /**
@@ -197,14 +185,7 @@ class SociInjector {
     }
 
     protected Map imagePlatform(String imageName, String configDigest, Map<String,List<String>> headers) {
-        final config = loadBlob(imageName, configDigest, headers)
-        final json = config ? new JsonSlurper().parseText(config) as Map : [:]
-        final result = new LinkedHashMap<String,Object>()
-        result.architecture = json.architecture ?: platform.arch
-        result.os = json.os ?: 'linux'
-        if( json.variant )
-            result.variant = json.variant
-        return result
+        return SociPlatforms.platformOf(loadBlob(imageName, configDigest, headers), platform)
     }
 
     /**

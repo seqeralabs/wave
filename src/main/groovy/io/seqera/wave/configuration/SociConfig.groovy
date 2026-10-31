@@ -84,8 +84,11 @@ class SociConfig {
     @Value('${wave.soci.failure-duration:10m}')
     Duration failureDuration
 
-    @Value('${wave.soci.status-delay:5s}')
-    Duration statusDelay
+    /**
+     * How long a published SOCI tag is assumed to be current, before checking it again on the registry
+     */
+    @Value('${wave.soci.current-cache-duration:5m}')
+    Duration currentCacheDuration
 
     @Value('${wave.soci.retry-attempts:2}')
     Integer retryAttempts

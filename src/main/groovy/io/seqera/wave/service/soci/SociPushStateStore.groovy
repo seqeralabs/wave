@@ -52,17 +52,23 @@ class SociPushStateStore extends AbstractStateStore<SociPushEntry> {
     }
 
     /**
-     * A publication waits for the container build and for the layers indexing
+     * A pending publication is dropped after the publish timeout, so nothing is held for ever
      */
     @Override
     protected Duration getDuration() {
-        return config.publishTimeout.plus(config.jobTimeout)
+        return config.publishTimeout
     }
 
     /**
-     * Store a completed publication, kept briefly: once pushed, the tag existence is checked on the registry
+     * Store a publication with a TTL depending on its status: a succeeded one is kept as the cache of the
+     * SOCI tag existence, a failed one blocks retries for the failure duration
      */
     void putEntry(SociPushEntry entry) {
-        put(entry.key, entry, config.pendingCacheDuration)
+        final ttl = switch (entry.status) {
+            case SociPushEntry.Status.SUCCEEDED -> config.currentCacheDuration
+            case SociPushEntry.Status.FAILED -> config.failureDuration
+            default -> config.publishTimeout
+        }
+        put(entry.key, entry, ttl)
     }
 }

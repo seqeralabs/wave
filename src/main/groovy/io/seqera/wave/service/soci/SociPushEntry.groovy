@@ -33,17 +33,26 @@ import io.seqera.wave.service.job.JobEntry
 @CompileStatic
 class SociPushEntry implements StateEntry<String>, JobEntry {
 
+    enum Status {
+        /** waiting for the container build or mirror */
+        WAITING_CONTAINER,
+        /** waiting for the indexing of the container layers */
+        WAITING_INDEX,
+        /** the push job is running */
+        PUSHING,
+        SUCCEEDED,
+        FAILED
+    }
+
     final SociPushRequest request
-    final boolean completed
-    final Integer exitCode
+    final Status status
     final String error
 
     protected SociPushEntry() {}
 
-    SociPushEntry(SociPushRequest request, boolean completed, Integer exitCode, String error) {
+    SociPushEntry(SociPushRequest request, Status status, String error) {
         this.request = request
-        this.completed = completed
-        this.exitCode = exitCode
+        this.status = status
         this.error = error
     }
 
@@ -54,18 +63,22 @@ class SociPushEntry implements StateEntry<String>, JobEntry {
 
     @Override
     boolean done() {
-        return completed
+        return status==Status.SUCCEEDED || status==Status.FAILED
     }
 
     boolean succeeded() {
-        return completed && exitCode==0 && error==null
+        return status==Status.SUCCEEDED
     }
 
-    SociPushEntry complete(Integer exitCode, String error) {
-        return new SociPushEntry(request, true, exitCode, error)
+    SociPushEntry withStatus(Status status) {
+        return new SociPushEntry(request, status, null)
     }
 
-    static SociPushEntry of(SociPushRequest request) {
-        return new SociPushEntry(request, false, null, null)
+    SociPushEntry failed(String error) {
+        return new SociPushEntry(request, Status.FAILED, error)
+    }
+
+    static SociPushEntry of(SociPushRequest request, Status status) {
+        return new SociPushEntry(request, status, null)
     }
 }

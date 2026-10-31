@@ -19,7 +19,6 @@
 package io.seqera.wave.service.soci
 
 import java.nio.file.Files
-import java.nio.file.Path
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
@@ -31,6 +30,7 @@ import groovy.util.logging.Slf4j
 import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.SociConfig
@@ -38,6 +38,7 @@ import io.seqera.wave.configuration.SociEnabled
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.model.ContainerCoordinates
+import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
@@ -45,19 +46,29 @@ import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.soci.strategy.SociIndexStrategy
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 import static io.seqera.wave.model.ContentType.DOCKER_IMAGE_INDEX_V2
-import static io.seqera.wave.model.ContentType.DOCKER_MANIFEST_V2_TYPE
 import static io.seqera.wave.model.ContentType.OCI_IMAGE_INDEX_V1
 import static io.seqera.wave.model.ContentType.OCI_IMAGE_MANIFEST_V1
 import static io.seqera.wave.service.job.JobHelper.saveDockerAuth
+import static io.seqera.wave.service.soci.SociPushEntry.Status.FAILED
+import static io.seqera.wave.service.soci.SociPushEntry.Status.PUSHING
+import static io.seqera.wave.service.soci.SociPushEntry.Status.SUCCEEDED
+import static io.seqera.wave.service.soci.SociPushEntry.Status.WAITING_CONTAINER
+import static io.seqera.wave.service.soci.SociPushEntry.Status.WAITING_INDEX
 /**
- * Publish the SOCI-enabled tag of durable containers: once the container exists, its layers are
- * indexed (see {@link SociIndexService}) and a {@code soci-indexer push} job uploads the SOCI
- * documents to the container repository, under the tag {@code <tag>-soci}. The original tag is
- * never changed.
+ * Publish the SOCI-enabled tag of durable containers, driven by events:
+ * <ol>
+ *     <li>the container request registers the publication, waiting for the container;</li>
+ *     <li>the build event or the mirror completion starts it: the missing layers are indexed;</li>
+ *     <li>each layer indexing completion re-checks the publications waiting for it;</li>
+ *     <li>once all the layers are indexed, a {@code soci-indexer push} job uploads the SOCI documents
+ *     under the tag {@code <tag>-soci}. The original tag is never changed.</li>
+ * </ol>
+ * Pending publications expire after {@code wave.soci.publish-timeout}.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -81,6 +92,9 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
 
     @Inject
     private SociPushStateStore store
+
+    @Inject
+    private SociWaitersStore waiters
 
     @Inject
     private JobService jobService
@@ -120,56 +134,157 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
         if( ContainerCoordinates.parse(targetImage).reference?.startsWith('sha256:') )
             return targetImage
         final soci = sociImage(targetImage)
-        if( isCurrent(soci, targetImage, identity) )
+        final entry = store.get(soci)
+        // a recently published tag is assumed current, no registry request
+        if( entry?.succeeded() )
             return soci
-        if( store.putIfAbsent(soci, SociPushEntry.of(new SociPushRequest(targetImage: targetImage, sociImage: soci))) ) {
-            CompletableFuture.runAsync(() -> publish(targetImage, soci, platform, identity), ioExecutor)
+        // a publication is pending or failed recently
+        if( entry )
+            return targetImage
+        final target = getManifest(targetImage, identity)
+        if( target && isCurrent(soci, target, identity) ) {
+            store.putEntry(SociPushEntry.of(SociPushRequest.create(targetImage, soci, platform, identity, workspace()), SUCCEEDED))
+            return soci
+        }
+        final pending = SociPushEntry.of(SociPushRequest.create(targetImage, soci, platform, identity, workspace()), WAITING_CONTAINER)
+        if( store.putIfAbsent(soci, pending) && target ) {
+            // the container exists already e.g. a cached build, there is no event to wait for
+            CompletableFuture.runAsync(() -> start(pending), ioExecutor)
         }
         return targetImage
     }
 
-    /**
-     * @return {@code true} when the SOCI image exists and was published from the current content of the
-     *      target image, see {@link #ANNOTATION_SOURCE_DIGEST}. A stale one is republished
-     */
-    protected boolean isCurrent(String sociImage, String targetImage, PlatformId identity) {
+    protected String getManifest(String image, PlatformId identity) {
         try {
-            final soci = proxyService.getManifestContent(sociImage, identity)
-            if( !soci )
-                return false
-            final target = proxyService.getManifestContent(targetImage, identity)
-            final annotations = ((new JsonSlurper().parseText(soci) as Map).annotations ?: [:]) as Map
-            return target && annotations.get(ANNOTATION_SOURCE_DIGEST) == io.seqera.wave.util.RegHelper.digest(target)
+            return proxyService.getManifestContent(image, identity)
         }
         catch (Exception e) {
-            log.warn "Unable to check image '${sociImage}' - cause: ${e.message}"
-            return false
-        }
-    }
-
-    protected void publish(String targetImage, String sociImage, ContainerPlatform platform, PlatformId identity) {
-        try {
-            final docs = prepare(targetImage, platform, identity)
-            if( docs==null ) {
-                store.putEntry(SociPushEntry.of(new SociPushRequest(targetImage: targetImage, sociImage: sociImage)).complete(null, 'Nothing to index'))
-                return
-            }
-            final authJson = inspectService.credentialsConfigJson("FROM ${config.repo}", targetImage, null, identity)
-            final request = SociPushRequest.create(targetImage, sociImage, workspace(), authJson)
-            saveDockerAuth(request.workDir, authJson)
-            Files.write(request.workDir.resolve('plan.json'), pushPlan(docs, sociImage).bytes)
-            store.put(sociImage, SociPushEntry.of(request))
-            log.info "== SOCI push submitted - request=${request}"
-            jobService.launchSociPush(request)
-        }
-        catch (Throwable t) {
-            log.warn "== SOCI push failed for image '${targetImage}' - cause: ${t.message}", t
-            store.putEntry(SociPushEntry.of(new SociPushRequest(targetImage: targetImage, sociImage: sociImage)).complete(null, t.message ?: t.toString()))
+            log.warn "Unable to fetch manifest of '${image}' - cause: ${e.message}"
+            return null
         }
     }
 
     /**
-     * The SOCI documents of a container, available once its layers are indexed
+     * @return {@code true} when the SOCI image exists and was published from the given content of the target image
+     */
+    protected boolean isCurrent(String sociImage, String target, PlatformId identity) {
+        final soci = getManifest(sociImage, identity)
+        if( !soci )
+            return false
+        final annotations = ((new JsonSlurper().parseText(soci) as Map).annotations ?: [:]) as Map
+        return annotations.get(ANNOTATION_SOURCE_DIGEST) == RegHelper.digest(target)
+    }
+
+    @EventListener
+    void onBuildEvent(BuildEvent event) {
+        onContainerCompletion(event.request.targetImage, event.result.succeeded())
+    }
+
+    @Override
+    void onContainerCompletion(String targetImage, boolean succeeded) {
+        final entry = store.get(sociImage(targetImage))
+        if( entry?.status!=WAITING_CONTAINER )
+            return
+        if( !succeeded ) {
+            fail(entry, "Container ${targetImage} failed")
+            return
+        }
+        CompletableFuture.runAsync(() -> start(entry), ioExecutor)
+    }
+
+    /**
+     * Start a publication: request the indexing of the missing layers, or push when all are indexed
+     */
+    protected void start(SociPushEntry entry) {
+        try {
+            final waiting = entry.withStatus(WAITING_INDEX)
+            store.putEntry(waiting)
+            final layers = layersToIndex(entry.request)
+            final missing = missingLayers(layers)
+            if( !missing ) {
+                push(waiting)
+                return
+            }
+            for( Map it : missing )
+                waiters.add(it.digest as String, entry.key)
+            indexService.indexLayers(repository(entry.request.targetImage), missing, entry.request.identity)
+            // the layers may have been indexed meanwhile
+            if( !missingLayers(layers) )
+                push(waiting)
+        }
+        catch (Throwable t) {
+            log.warn "== SOCI push failed for image '${entry.request.targetImage}' - cause: ${t.message}", t
+            fail(entry, t.message ?: t.toString())
+        }
+    }
+
+    @EventListener
+    void onLayerEvent(SociLayerEvent event) {
+        final images = waiters.get(event.layerDigest)?.sociImages ?: List.<String>of()
+        for( String soci : images ) {
+            final entry = store.get(soci)
+            if( entry?.status!=WAITING_INDEX )
+                continue
+            if( !event.succeeded ) {
+                fail(entry, "Unable to index layer ${event.layerDigest}")
+                continue
+            }
+            CompletableFuture.runAsync(() -> pushWhenIndexed(entry), ioExecutor)
+        }
+    }
+
+    protected void pushWhenIndexed(SociPushEntry entry) {
+        try {
+            if( !missingLayers(layersToIndex(entry.request)) )
+                push(entry)
+        }
+        catch (Throwable t) {
+            log.warn "== SOCI push failed for image '${entry.request.targetImage}' - cause: ${t.message}", t
+            fail(entry, t.message ?: t.toString())
+        }
+    }
+
+    /**
+     * @return The eligible layers of the target image platform manifests
+     */
+    protected List<Map> layersToIndex(SociPushRequest request) {
+        final result = new ArrayList<Map>()
+        for( String manifest : platformManifests(request).values() )
+            result.addAll(SociManifestAssembler.eligibleLayers(manifest, config.minLayerSize))
+        return result.unique((Map it) -> it.digest)
+    }
+
+    protected List<Map> missingLayers(List<Map> layers) {
+        final ztocs = indexService.findZtocs(layers.collect((Map it) -> it.digest as String))
+        return layers.findAll((Map it) -> !ztocs.containsKey(it.digest as String))
+    }
+
+    /**
+     * Prepare the SOCI documents and launch the push job; the publication is pushed at most once
+     */
+    protected void push(SociPushEntry entry) {
+        final current = store.get(entry.key)
+        if( current?.status!=WAITING_INDEX )
+            return
+        // claim the push, a concurrent layer event finds it in PUSHING status
+        if( !store.putIfAbsent("push/${entry.key}".toString(), entry.withStatus(PUSHING), config.jobTimeout) )
+            return
+        final prepared = prepare(entry.request)
+        if( prepared==null ) {
+            fail(entry, 'Nothing to index')
+            return
+        }
+        final request = entry.request
+        final authJson = inspectService.credentialsConfigJson("FROM ${config.repo}", request.targetImage, null, request.identity)
+        saveDockerAuth(request.workDir, authJson)
+        Files.write(request.workDir.resolve('plan.json'), pushPlan(prepared, request.sociImage).bytes)
+        store.putEntry(entry.withStatus(PUSHING))
+        log.info "== SOCI push submitted - request=${request}"
+        jobService.launchSociPush(request)
+    }
+
+    /**
+     * The SOCI documents of a container
      *
      * @param index The image index to push, with the SOCI index descriptors
      * @param docs The SOCI documents of each indexed platform manifest
@@ -180,35 +295,33 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
     }
 
     /**
-     * Wait for the container and the indexing of its layers, then create its SOCI documents
+     * Create the SOCI documents of the container, whose layers are all indexed
      *
      * @return The SOCI documents or {@code null} when the container has no layer to index
      */
-    protected Prepared prepare(String targetImage, ContainerPlatform platform, PlatformId identity) {
-        final deadline = Instant.now().plus(config.publishTimeout)
-        final content = awaitManifest(targetImage, identity, deadline)
-        final coords = ContainerCoordinates.parse(targetImage)
-        final repository = "${coords.registry}/${coords.image}".toString()
+    protected Prepared prepare(SociPushRequest request) {
+        final content = proxyService.getManifestContent(request.targetImage, request.identity)
+        if( !content )
+            throw new IllegalStateException("Missing image '${request.targetImage}'")
         final json = new JsonSlurper().parseText(content) as Map
-        final isIndex = json.mediaType==OCI_IMAGE_INDEX_V1 || json.mediaType==DOCKER_IMAGE_INDEX_V2
-        // the platform manifests to index, by digest
-        final manifests = isIndex
-                ? platformManifests(repository, json, platform, identity)
-                : [(io.seqera.wave.util.RegHelper.digest(content)): content]
         final docs = new LinkedHashMap<String,SociDocs>()
-        for( Map.Entry<String,String> it : manifests ) {
+        for( Map.Entry<String,String> it : platformManifests(request, content).entrySet() ) {
             final layers = SociManifestAssembler.eligibleLayers(it.value, config.minLayerSize)
             if( !layers )
                 continue
-            final ztocs = awaitZtocs(repository, layers, identity, deadline)
+            final ztocs = indexService.findZtocs(layers.collect((Map l) -> l.digest as String))
             docs.put(it.key, SociManifestAssembler.assemble(it.value, ztocs, config.spanSize))
         }
         if( !docs )
             return null
-        final index = isIndex
+        final index = isIndex(json)
                 ? SociManifestAssembler.updateIndex(content, docs)
-                : SociManifestAssembler.wrapInIndex(docs.values().first(), configPlatform(repository, json, platform, identity))
-        return new Prepared(index: withSourceDigest(index, io.seqera.wave.util.RegHelper.digest(content)), docs: docs.values())
+                : SociManifestAssembler.wrapInIndex(docs.values().first(), imagePlatform(request, json))
+        return new Prepared(index: withSourceDigest(index, RegHelper.digest(content)), docs: docs.values())
+    }
+
+    static protected boolean isIndex(Map json) {
+        return json.mediaType==OCI_IMAGE_INDEX_V1 || json.mediaType==DOCKER_IMAGE_INDEX_V2
     }
 
     static protected String withSourceDigest(String index, String digest) {
@@ -219,70 +332,44 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
         return JsonOutput.toJson(json)
     }
 
-    protected String awaitManifest(String image, PlatformId identity, Instant deadline) {
-        while( true ) {
-            final content = proxyService.getManifestContent(image, identity)
-            if( content )
-                return content
-            if( Instant.now().isAfter(deadline) )
-                throw new IllegalStateException("Timeout waiting for image '${image}'")
-            sleep(config.statusDelay.toMillis())
-        }
+    protected Map<String,String> platformManifests(SociPushRequest request) {
+        final content = proxyService.getManifestContent(request.targetImage, request.identity)
+        if( !content )
+            throw new IllegalStateException("Missing image '${request.targetImage}'")
+        return platformManifests(request, content)
     }
 
-    protected Map<String,ZtocEntry> awaitZtocs(String repository, List<Map> layers, PlatformId identity, Instant deadline) {
-        final digests = layers.collect((Map it) -> it.digest as String)
-        indexService.indexLayers(repository, layers, identity)
-        while( true ) {
-            final ztocs = indexService.findZtocs(digests)
-            if( ztocs.keySet().containsAll(digests) )
-                return ztocs
-            if( Instant.now().isAfter(deadline) )
-                throw new IllegalStateException("Timeout waiting for the SOCI index of '${repository}' - indexed ${ztocs.size()} of ${digests.size()} layers")
-            sleep(config.statusDelay.toMillis())
-            // re-submit the layers whose indexing failed
-            indexService.indexLayers(repository, layers, identity)
-        }
-    }
-
-    protected Map<String,String> platformManifests(String repository, Map index, ContainerPlatform platform, PlatformId identity) {
+    /**
+     * @return The platform manifests of the target image, by digest
+     */
+    protected Map<String,String> platformManifests(SociPushRequest request, String content) {
+        final json = new JsonSlurper().parseText(content) as Map
+        if( !isIndex(json) )
+            return Map.of(RegHelper.digest(content), content)
         final result = new LinkedHashMap<String,String>()
-        for( Map entry : (index.manifests as List<Map>) ) {
-            final media = entry.mediaType as String
-            if( media!=OCI_IMAGE_MANIFEST_V1 && media!=DOCKER_MANIFEST_V2_TYPE )
-                continue
-            if( entry.artifactType || !entry.platform )
-                continue
-            if( !platform.platforms.any((ContainerPlatform.Platform it) -> it.matches(entry.platform as Map)) )
-                continue
-            final manifest = proxyService.getManifestContent("${repository}@${entry.digest}", identity)
+        final repository = repository(request.targetImage)
+        for( Map entry : SociPlatforms.targetEntries(json, request.platform) ) {
+            final manifest = proxyService.getManifestContent("${repository}@${entry.digest}", request.identity)
             if( manifest )
                 result.put(entry.digest as String, manifest)
         }
         return result
     }
 
-    /**
-     * The platform of a single image manifest, read from its config blob, used to wrap it in an image index
-     */
-    protected Map configPlatform(String repository, Map manifest, ContainerPlatform platform, PlatformId identity) {
-        final result = new LinkedHashMap<String,Object>()
-        result.architecture = platform.arch
-        result.os = platform.os ?: 'linux'
+    protected Map imagePlatform(SociPushRequest request, Map manifest) {
+        String config = null
         try {
-            final config = proxyService.getBlobContent("${repository}@${(manifest.config as Map).digest}", identity)
-            final json = new JsonSlurper().parseText(config) as Map
-            if( json.architecture )
-                result.architecture = json.architecture
-            if( json.os )
-                result.os = json.os
-            if( json.variant )
-                result.variant = json.variant
+            config = proxyService.getBlobContent("${repository(request.targetImage)}@${(manifest.config as Map).digest}", request.identity)
         }
         catch (Exception e) {
-            log.warn "Unable to read the config of '${repository}' - cause: ${e.message}"
+            log.warn "Unable to read the config of '${request.targetImage}' - cause: ${e.message}"
         }
-        return result
+        return SociPlatforms.platformOf(config, request.platform)
+    }
+
+    static protected String repository(String image) {
+        final coords = ContainerCoordinates.parse(image)
+        return "${coords.registry}/${coords.image}".toString()
     }
 
     /**
@@ -308,9 +395,13 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
         return [reference: reference, mediaType: mediaType, body: body.bytes.encodeBase64().toString()]
     }
 
-    protected Path workspace() {
-        final dir = buildConfig?.buildWorkspace ?: System.getProperty('java.io.tmpdir')
-        return Path.of(dir).toAbsolutePath()
+    protected java.nio.file.Path workspace() {
+        return SociPlatforms.workspace(buildConfig)
+    }
+
+    protected void fail(SociPushEntry entry, String error) {
+        log.warn "== SOCI push failed - image=${entry.request.sociImage}; cause=${error}"
+        store.putEntry(entry.failed(error))
     }
 
     @Override
@@ -321,10 +412,9 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
     @Override
     JobSpec launchJob(JobSpec job, SociPushEntry entry) {
         final request = entry.request
-        final coords = ContainerCoordinates.parse(request.sociImage)
         final command = List.of(
                 'soci-indexer', 'push',
-                '-target', "${coords.registry}/${coords.image}".toString(),
+                '-target', repository(request.sociImage),
                 '-plan', request.workDir.resolve('plan.json').toString() )
         strategy.launchCommand(job.operationName, request.workDir, command)
         return job.withLaunchTime(Instant.now())
@@ -333,25 +423,25 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
     @Override
     void onJobCompletion(JobSpec job, SociPushEntry entry, JobState state) {
         meterRegistry?.counter('wave.soci.push.jobs', 'result', state.succeeded() ? 'succeeded' : 'failed')?.increment()
+        store.remove("push/${entry.key}".toString())
         if( state.succeeded() ) {
             log.info "== SOCI push completed - job=${job.operationName}; image=${entry.request.sociImage}"
-            store.putEntry(entry.complete(state.exitCode, null))
+            store.putEntry(entry.withStatus(SUCCEEDED))
         }
-        else {
-            log.warn "== SOCI push failed - job=${job.operationName}; image=${entry.request.sociImage}; state=${state}"
-            store.putEntry(entry.complete(state.exitCode, state.stdout ?: 'Unknown error'))
-        }
+        else
+            fail(entry, state.stdout ?: 'Unknown error')
     }
 
     @Override
     void onJobException(JobSpec job, SociPushEntry entry, Throwable error) {
         log.error("== SOCI push errored - job=${job.operationName}; image=${entry.request.sociImage}", error)
-        store.putEntry(entry.complete(null, error.message ?: error.toString()))
+        store.remove("push/${entry.key}".toString())
+        fail(entry, error.message ?: error.toString())
     }
 
     @Override
     void onJobTimeout(JobSpec job, SociPushEntry entry) {
-        log.warn "== SOCI push timed out - job=${job.operationName}; image=${entry.request.sociImage}"
-        store.putEntry(entry.complete(null, 'SOCI push job timed out'))
+        store.remove("push/${entry.key}".toString())
+        fail(entry, 'SOCI push job timed out')
     }
 }

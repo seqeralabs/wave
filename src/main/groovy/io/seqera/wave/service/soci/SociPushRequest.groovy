@@ -25,20 +25,23 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.seqera.random.LongRndKey
+import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.tower.PlatformId
 /**
  * Model the request to publish the SOCI-enabled tag of a durable (freeze or mirror) container
  *
- * @param requestId The unique id of the request, used to name the job
+ * @param requestId The unique id of the request, used to name the push job
  * @param targetImage The container image e.g. {@code quay.io/user/app:1.0}
  * @param sociImage The SOCI-enabled image to be pushed e.g. {@code quay.io/user/app:1.0-soci}
- * @param workDir The job work directory, holding the docker auth file and the push plan
- * @param authJson The docker config json authorising the push
+ * @param platform The container platform
+ * @param identity The identity of the requester
+ * @param workDir The push job work directory, holding the docker auth file and the push plan
  * @param creationTime When the request was created
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Canonical
-@ToString(includeNames = true, includePackage = false, excludes = ['authJson'])
+@ToString(includeNames = true, includePackage = false)
 @CompileStatic
 class SociPushRequest {
 
@@ -47,12 +50,13 @@ class SociPushRequest {
     String requestId
     String targetImage
     String sociImage
+    ContainerPlatform platform
+    PlatformId identity
     Path workDir
-    String authJson
     Instant creationTime
 
-    static SociPushRequest create(String targetImage, String sociImage, Path workspace, String authJson) {
+    static SociPushRequest create(String targetImage, String sociImage, ContainerPlatform platform, PlatformId identity, Path workspace) {
         final id = ID_PREFIX + LongRndKey.rndHex()
-        return new SociPushRequest(id, targetImage, sociImage, workspace.resolve(id), authJson, Instant.now())
+        return new SociPushRequest(id, targetImage, sociImage, platform, identity, workspace.resolve(id), Instant.now())
     }
 }
