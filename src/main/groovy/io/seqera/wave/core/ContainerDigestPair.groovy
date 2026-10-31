@@ -37,9 +37,4 @@ class ContainerDigestPair {
      * Digest of the augmented container image
      */
     final String target
-
-    /**
-     * Whenever a SOCI index was requested for the container but its zTOCs are not available yet
-     */
-    final boolean sociPending
 }

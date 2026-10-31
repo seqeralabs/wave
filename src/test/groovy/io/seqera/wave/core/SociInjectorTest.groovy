@@ -21,7 +21,6 @@ package io.seqera.wave.core
 import spock.lang.Specification
 
 import java.net.http.HttpResponse
-import java.time.Duration
 
 import groovy.json.JsonSlurper
 import io.seqera.wave.api.ContainerLayer
@@ -48,8 +47,7 @@ class SociInjectorTest extends Specification {
     static final String GZIP = 'application/vnd.oci.image.layer.v1.tar+gzip'
     static final String PREFIX = 'docker.io/v2/library/python'
 
-    SociConfig config = new SociConfig(spanSize: 4194304, minLayerSize: 10485760, repo: 'public.cr.stage-seqera.io/wave/soci-ztoc',
-            pendingCacheDuration: Duration.ofSeconds(30))
+    SociConfig config = new SociConfig(spanSize: 4194304, minLayerSize: 10485760, repo: 'public.cr.stage-seqera.io/wave/soci-ztoc')
 
     static String resource(String name) {
         SociInjectorTest.getResourceAsStream("/soci/$name").text
@@ -65,11 +63,9 @@ class SociInjectorTest extends Specification {
     /** a map-backed storage */
     static class MapStorage implements Storage {
         Map<String,DigestStore> entries = [:]
-        Map<String,Duration> ttls = [:]
         Optional<DigestStore> getManifest(String path) { Optional.ofNullable(entries[path]) }
         DigestStore saveManifest(String path, String manifest, String type, String digest) { entries[path] = ZippedDigestStore.fromUncompressed(manifest.bytes, type, digest, manifest.bytes.length) }
         DigestStore saveManifest(String path, DigestStore store) { entries[path] = store }
-        DigestStore saveManifest(String path, DigestStore store, Duration ttl) { ttls[path] = ttl; entries[path] = store }
         Optional<DigestStore> getBlob(String path) { Optional.ofNullable(entries[path]) }
         DigestStore saveBlob(String path, byte[] content, String type, String digest) { entries[path] = ZippedDigestStore.fromUncompressed(content, type, digest, content.length) }
         DigestStore saveBlob(String path, ContainerLayer layer) { entries[path] = DigestStoreFactory.of(layer) }
@@ -101,7 +97,6 @@ class SociInjectorTest extends Specification {
         and:
         result.source == INDEX
         result.target != INDEX
-        !result.sociPending
         and: 'the index served for the target digest has the soci index descriptor'
         def index = new JsonSlurper().parseText(new String(storage.entries["$PREFIX/manifests/${result.target}"].bytes)) as Map
         def soci = (index.manifests as List<Map>).last()
@@ -117,7 +112,7 @@ class SociInjectorTest extends Specification {
         ztoc.size == 1224072
     }
 
-    def 'should serve plain manifest and request index when ztocs incomplete' () {
+    def 'should index the missing layers and await them' () {
         given:
         def storage = storage()
         def service = Mock(SociIndexService)
@@ -128,9 +123,35 @@ class SociInjectorTest extends Specification {
 
         then:
         1 * service.findZtocs([LAYER1, LAYER3]) >> ztocs().subMap([LAYER1])
+        then:
         1 * service.indexLayers('docker.io/library/python', { List<Map> it -> it*.digest == [LAYER3] }, PlatformId.NULL)
+        then:
+        1 * service.awaitLayers([LAYER3]) >> true
+        then:
+        1 * service.findZtocs([LAYER1, LAYER3]) >> ztocs()
         and:
-        result == new ContainerDigestPair(INDEX, INDEX, true)
+        result.source == INDEX
+        result.target != INDEX
+    }
+
+    def 'should serve the container as it is when some layer is not indexed' () {
+        given:
+        def storage = storage()
+        def service = Mock(SociIndexService)
+        def injector = new SociInjector(client(), storage, service, config, PlatformId.NULL, ContainerPlatform.of('linux/amd64'), null)
+
+        when:
+        def result = injector.apply('library/python', new ContainerDigestPair(INDEX, INDEX), [:])
+
+        then:
+        2 * service.findZtocs([LAYER1, LAYER3]) >> ztocs().subMap([LAYER1])
+        1 * service.indexLayers('docker.io/library/python', _, PlatformId.NULL)
+        1 * service.awaitLayers([LAYER3]) >> COMPLETED
+        and:
+        result == new ContainerDigestPair(INDEX, INDEX)
+
+        where:
+        COMPLETED << [true, false]
     }
 
     def 'should serve the container as it is when the soci index fails' () {
@@ -157,7 +178,6 @@ class SociInjectorTest extends Specification {
         0 * service.indexLayers(_, _, _)
         and:
         result.target != INDEX
-        !result.sociPending
     }
 
     def 'should wrap a single manifest in an index' () {
