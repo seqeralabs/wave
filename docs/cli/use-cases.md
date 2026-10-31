@@ -427,3 +427,21 @@ wave -i quay.io/biocontainers/samtools:0.1.16--2 \
 [singularity]: https://docs.sylabs.io/guides/latest/user-guide/introduction.html
 [singularityce]: https://docs.sylabs.io/guides/latest/user-guide/definition_files.html
 [start]: /wave_docs/wave_repo/docs/tutorials/wave-cli.mdx
+
+## Enable SOCI lazy loading
+
+Attach a [SOCI](../soci.md) index to a container, so that hosts running the SOCI snapshotter start it before the image is fully downloaded:
+
+```bash
+wave -i rocker/r-ver:4.4.1 --platform linux/arm64 --soci
+```
+
+Wave indexes the container layers when the container is requested. A pull made before the indexing completes gets the plain image.
+
+With `--freeze` or `--mirror`, Wave publishes the SOCI-enabled image to the sibling tag `<tag>-soci`, and returns it once it exists:
+
+```bash
+wave -i ubuntu:24.04 --freeze --build-repo <repo> --tower-token <token> --soci
+```
+
+- `--soci`: Attaches a SOCI index (index manifest v2) to the container.
