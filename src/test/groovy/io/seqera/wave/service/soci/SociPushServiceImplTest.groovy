@@ -70,12 +70,43 @@ class SociPushServiceImplTest extends Specification {
         def store = Mock(SociPushStateStore)
         def service = new SociPushServiceImpl(config: config, proxyService: proxy, store: store)
 
+        def target = '{"schemaVersion":2}'
+        def soci = '{"annotations":{"io.seqera.wave.soci.source-digest":"' + io.seqera.wave.util.RegHelper.digest(target) + '"}}'
+
         when:
         def result = service.sociTarget('quay.io/user/app:1.0', ContainerPlatform.of('linux/amd64'), PlatformId.NULL)
         then:
-        1 * proxy.getManifestContent('quay.io/user/app:1.0-soci', PlatformId.NULL) >> '{}'
+        1 * proxy.getManifestContent('quay.io/user/app:1.0-soci', PlatformId.NULL) >> soci
+        1 * proxy.getManifestContent('quay.io/user/app:1.0', PlatformId.NULL) >> target
         0 * store.putIfAbsent(_, _)
         result == 'quay.io/user/app:1.0-soci'
+    }
+
+    def 'should republish a stale soci tag' () {
+        given:
+        def proxy = Mock(RegistryProxyService)
+        def store = Mock(SociPushStateStore)
+        def service = new SociPushServiceImpl(config: config, proxyService: proxy, store: store, ioExecutor: Mock(ExecutorService))
+
+        when:
+        def result = service.sociTarget('quay.io/user/app:1.0', ContainerPlatform.of('linux/amd64'), PlatformId.NULL)
+        then:
+        1 * proxy.getManifestContent('quay.io/user/app:1.0-soci', PlatformId.NULL) >> '{"annotations":{"io.seqera.wave.soci.source-digest":"sha256:old"}}'
+        1 * proxy.getManifestContent('quay.io/user/app:1.0', PlatformId.NULL) >> '{"schemaVersion":2}'
+        1 * store.putIfAbsent('quay.io/user/app:1.0-soci', _) >> true
+        result == 'quay.io/user/app:1.0'
+    }
+
+    def 'should not publish a soci tag for a digest reference' () {
+        given:
+        def proxy = Mock(RegistryProxyService)
+        def service = new SociPushServiceImpl(config: config, proxyService: proxy)
+
+        when:
+        def result = service.sociTarget('quay.io/user/app@sha256:' + 'a'*64, ContainerPlatform.of('linux/amd64'), PlatformId.NULL)
+        then:
+        0 * proxy._
+        result == 'quay.io/user/app@sha256:' + 'a'*64
     }
 
     def 'should return original tag and schedule push when soci tag missing' () {
@@ -113,6 +144,7 @@ class SociPushServiceImplTest extends Specification {
         and:
         def json = new JsonSlurper().parseText(result.index) as Map
         (json.manifests as List<Map>).last().artifactType == 'application/vnd.amazon.soci.index.v2+json'
+        json.annotations['io.seqera.wave.soci.source-digest'] == INDEX
         result.docs.size() == 1
     }
 

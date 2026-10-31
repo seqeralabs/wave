@@ -128,9 +128,19 @@ class SociInjectorTest extends Specification {
 
         then:
         1 * service.findZtocs([LAYER1, LAYER3]) >> ztocs().subMap([LAYER1])
-        1 * service.indexLayers('docker.io/library/python', { List<Map> it -> it*.digest == [LAYER1, LAYER3] }, PlatformId.NULL)
+        1 * service.indexLayers('docker.io/library/python', { List<Map> it -> it*.digest == [LAYER3] }, PlatformId.NULL)
         and:
         result == new ContainerDigestPair(INDEX, INDEX, true)
+    }
+
+    def 'should serve the container as it is when the soci index fails' () {
+        given:
+        def storage = storage()
+        def service = Mock(SociIndexService) { findZtocs(_) >> { throw new IllegalStateException('registry error') } }
+        def injector = new SociInjector(client(), storage, service, config, PlatformId.NULL, ContainerPlatform.of('linux/amd64'), null)
+
+        expect:
+        injector.apply('library/python', new ContainerDigestPair(INDEX, INDEX), [:]) == new ContainerDigestPair(INDEX, INDEX)
     }
 
     def 'should not index the layers added by wave' () {

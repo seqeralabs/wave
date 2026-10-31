@@ -70,6 +70,9 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
 
     static final String SOCI_TAG_SUFFIX = '-soci'
 
+    /** annotation of the SOCI image index holding the digest of the target image it was created from */
+    static final String ANNOTATION_SOURCE_DIGEST = 'io.seqera.wave.soci.source-digest'
+
     @Inject
     private SociConfig config
 
@@ -113,8 +116,11 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
 
     @Override
     String sociTarget(String targetImage, ContainerPlatform platform, PlatformId identity) {
+        // a container referenced by digest cannot have a sibling tag
+        if( ContainerCoordinates.parse(targetImage).reference?.startsWith('sha256:') )
+            return targetImage
         final soci = sociImage(targetImage)
-        if( exists(soci, identity) )
+        if( isCurrent(soci, targetImage, identity) )
             return soci
         if( store.putIfAbsent(soci, SociPushEntry.of(new SociPushRequest(targetImage: targetImage, sociImage: soci))) ) {
             CompletableFuture.runAsync(() -> publish(targetImage, soci, platform, identity), ioExecutor)
@@ -122,12 +128,21 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
         return targetImage
     }
 
-    protected boolean exists(String image, PlatformId identity) {
+    /**
+     * @return {@code true} when the SOCI image exists and was published from the current content of the
+     *      target image, see {@link #ANNOTATION_SOURCE_DIGEST}. A stale one is republished
+     */
+    protected boolean isCurrent(String sociImage, String targetImage, PlatformId identity) {
         try {
-            return proxyService.getManifestContent(image, identity) != null
+            final soci = proxyService.getManifestContent(sociImage, identity)
+            if( !soci )
+                return false
+            final target = proxyService.getManifestContent(targetImage, identity)
+            final annotations = ((new JsonSlurper().parseText(soci) as Map).annotations ?: [:]) as Map
+            return target && annotations.get(ANNOTATION_SOURCE_DIGEST) == io.seqera.wave.util.RegHelper.digest(target)
         }
         catch (Exception e) {
-            log.warn "Unable to check image '${image}' - cause: ${e.message}"
+            log.warn "Unable to check image '${sociImage}' - cause: ${e.message}"
             return false
         }
     }
@@ -193,7 +208,15 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
         final index = isIndex
                 ? SociManifestAssembler.updateIndex(content, docs)
                 : SociManifestAssembler.wrapInIndex(docs.values().first(), configPlatform(repository, json, platform, identity))
-        return new Prepared(index: index, docs: docs.values())
+        return new Prepared(index: withSourceDigest(index, io.seqera.wave.util.RegHelper.digest(content)), docs: docs.values())
+    }
+
+    static protected String withSourceDigest(String index, String digest) {
+        final json = new JsonSlurper().parseText(index) as Map
+        final annotations = new TreeMap<String,Object>((json.annotations ?: [:]) as Map)
+        annotations.put(ANNOTATION_SOURCE_DIGEST, digest)
+        json.annotations = annotations
+        return JsonOutput.toJson(json)
     }
 
     protected String awaitManifest(String image, PlatformId identity, Instant deadline) {
@@ -247,7 +270,7 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
         result.architecture = platform.arch
         result.os = platform.os ?: 'linux'
         try {
-            final config = proxyService.getBlobContent("\${repository}@\${(manifest.config as Map).digest}", identity)
+            final config = proxyService.getBlobContent("${repository}@${(manifest.config as Map).digest}", identity)
             final json = new JsonSlurper().parseText(config) as Map
             if( json.architecture )
                 result.architecture = json.architecture
@@ -257,7 +280,7 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
                 result.variant = json.variant
         }
         catch (Exception e) {
-            log.warn "Unable to read the config of '\${repository}' - cause: \${e.message}"
+            log.warn "Unable to read the config of '${repository}' - cause: ${e.message}"
         }
         return result
     }

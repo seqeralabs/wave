@@ -78,6 +78,12 @@ class SociConfig {
     @Value('${wave.soci.publish-timeout:30m}')
     Duration publishTimeout
 
+    /**
+     * How long a layer whose indexing failed is not re-submitted
+     */
+    @Value('${wave.soci.failure-duration:10m}')
+    Duration failureDuration
+
     @Value('${wave.soci.status-delay:5s}')
     Duration statusDelay
 

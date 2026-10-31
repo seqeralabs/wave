@@ -64,6 +64,7 @@ class SociIndexStateStore extends AbstractStateStore<SociIndexEntry> {
      * not needed anymore once its zTOC is in the {@link SociZtocStore}
      */
     void putEntry(SociIndexEntry entry) {
-        put(entry.key, entry, config.pendingCacheDuration)
+        // a failed layer is not re-submitted before the failure duration, so a layer that cannot be indexed does not churn jobs
+        put(entry.key, entry, entry.succeeded() ? config.pendingCacheDuration : config.failureDuration)
     }
 }

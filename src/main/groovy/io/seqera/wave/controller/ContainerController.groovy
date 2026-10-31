@@ -518,6 +518,8 @@ class ContainerController {
             throw new BadRequestException("Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting")
         if( req.scanMode && !scanService )
             throw new UnsupportedScanServiceException()
+        if( req.soci && !sociConfig )
+            throw new BadRequestException("SOCI index is not enabled in this Wave deployment - see 'wave.soci.enabled' setting")
         if( req.soci && req.formatSingularity() )
             throw new BadRequestException("Singularity format does not support the 'soci' attribute")
         if( req.soci && req.containerImage?.contains('@sha256:') && !req.freeze && !req.mirror )

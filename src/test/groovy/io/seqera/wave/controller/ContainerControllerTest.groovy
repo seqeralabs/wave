@@ -187,9 +187,20 @@ class ContainerControllerTest extends Specification {
 
         where:
         CONFIG          | SOCI  | EXPECTED
-        null            | true  | false
+        null            | false | false
         new SociConfig()| false | false
         new SociConfig()| true  | true
+    }
+
+    def 'should reject soci when not enabled' () {
+        given:
+        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry)
+
+        when:
+        controller.makeRequestData(new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', soci: true), PlatformId.NULL, "")
+        then:
+        def e = thrown(BadRequestException)
+        e.message == "SOCI index is not enabled in this Wave deployment - see 'wave.soci.enabled' setting"
     }
 
     def 'should reject pull request when container pull is disabled' () {

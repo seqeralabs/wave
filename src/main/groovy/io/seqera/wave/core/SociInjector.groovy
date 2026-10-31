@@ -84,6 +84,17 @@ class SociInjector {
      * @return The digests of the SOCI-enabled container, or the given ones when the container cannot be SOCI-enabled (yet)
      */
     ContainerDigestPair apply(String imageName, ContainerDigestPair pair, Map<String,List<String>> headers) {
+        try {
+            return apply0(imageName, pair, headers)
+        }
+        catch (Exception e) {
+            // SOCI is an optional enhancement, serve the container as it is
+            log.warn "Unable to apply SOCI index to image ${client.registry.name}/${imageName} - cause: ${e.message}", e
+            return pair
+        }
+    }
+
+    protected ContainerDigestPair apply0(String imageName, ContainerDigestPair pair, Map<String,List<String>> headers) {
         final content = loadManifest(imageName, pair.target, headers)
         if( content==null )
             return pair
@@ -148,9 +159,10 @@ class SociInjector {
         if( !layers )
             return new Docs(State.NONE, null)
         final ztocs = service.findZtocs(layers.collect((Map it) -> it.digest as String))
-        if( !layers.every((Map it) -> ztocs.containsKey(it.digest as String)) ) {
+        final missing = layers.findAll((Map it) -> !ztocs.containsKey(it.digest as String))
+        if( missing ) {
             log.debug "SOCI index pending for image ${client.registry.name}/${imageName} - indexed ${ztocs.size()} of ${layers.size()} layers"
-            service.indexLayers("${client.registry.name}/${imageName}".toString(), layers, identity)
+            service.indexLayers("${client.registry.name}/${imageName}".toString(), missing, identity)
             return new Docs(State.PENDING, null)
         }
         final docs = SociManifestAssembler.assemble(manifest, ztocs, config.spanSize)
